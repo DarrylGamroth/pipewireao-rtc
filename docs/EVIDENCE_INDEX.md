@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Typed scientific schema declarations — 2026-10-23
+
+The [migration review](reviews/20261023-schemas/REVIEW.md) records the shared
+catalog, generated consumers, instrument references and CPU validation.
+
 ## Instrument metadata without prose provenance — 2026-10-23
 
 The [review](reviews/20261023-provenance/REVIEW.md) records the coordinated RTC,

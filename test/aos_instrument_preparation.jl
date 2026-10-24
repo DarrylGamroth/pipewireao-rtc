@@ -78,8 +78,8 @@ function instrument_document(; backend="cpu", package="CountingInstrument", sett
         "command_count" => 3, "frame_shape" => [2, 3],
         "rate" => 500, "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10,
         "backend" => backend, "device" => 0, "frame_encoding" => "uint16",
-        "frame_schema" => "org.calculon.ao.raw-detector-pixels/1",
-        "command_schema" => "org.calculon.ao.demanded-pdm-command/1", "command_scale" => 1e-6)
+        "frame_schema" => "pipewireao/raw-detector-pixels-u16/1",
+        "command_schema" => "pipewireao/dm-command-opd-um-f32/1", "command_scale" => 1e-6)
 end
 
 function instrument_options(document, path, plant_module)

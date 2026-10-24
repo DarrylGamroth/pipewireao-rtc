@@ -1,5 +1,7 @@
 module OpticalObservation
 
+import PipeWireAORTC
+
 using AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: prepare_graph_output_snapshot, snapshot_values,
@@ -12,11 +14,11 @@ using ThreadPinning
 using Base.Threads: Atomic, atomic_add!, atomic_cas!
 
 const Optics = AdaptiveOpticsSim.Optics
-const FOCAL_IMAGE_SCHEMA = "org.calculon.ao.focal-photon-rate.f32/1"
+const FOCAL_IMAGE_SCHEMA = PipeWireAORTC.Schemas.identifier("focal_photon_rate")
 # Piston-removed OPD in nm on the transmitting pupil; excluded pixels are NaN.
-const WAVEFRONT_SCHEMA = "org.calculon.ao.residual-pupil-opd.nm.f32/1"
+const WAVEFRONT_SCHEMA = PipeWireAORTC.Schemas.identifier("residual_pupil_opd_nm")
 # One row: uncorrected atmosphere RMS, corrected pupil RMS; both in nm OPD.
-const RMS_SCHEMA = "org.calculon.ao.pupil-opd-rms.nm.f32/1"
+const RMS_SCHEMA = PipeWireAORTC.Schemas.identifier("pupil_opd_rms_nm")
 const PERIOD_NS = UInt64(50_000_000)
 const ZERO_PADDING = 2
 const RMS_SHAPE = (1, 2)
@@ -61,10 +63,11 @@ function port_contracts(nodes::Tuple; atmosphere::Bool)
     config = guide_sensor(nodes)
     resolution = config.telescope.resolution
     focal_resolution = Base.checked_mul(resolution, ZERO_PADDING)
-    contract(shape) = Dict("shape" => collect(shape), "element-type" => "F32_LE")
-    result = Dict("focal-image" => contract((focal_resolution, focal_resolution)),
-        "residual-wavefront" => contract((resolution, resolution)))
-    atmosphere && (result["wavefront-rms"] = contract(RMS_SHAPE))
+    contract(shape, name) = Dict("shape" => collect(shape),
+        "element-type" => PipeWireAORTC.Schemas.declaration(name)["wire_type"])
+    result = Dict("focal-image" => contract((focal_resolution, focal_resolution), "focal_photon_rate"),
+        "residual-wavefront" => contract((resolution, resolution), "residual_pupil_opd_nm"))
+    atmosphere && (result["wavefront-rms"] = contract(RMS_SHAPE, "pupil_opd_rms_nm"))
     return result
 end
 port_contracts(definition::AlgorithmGraphDefinition) =

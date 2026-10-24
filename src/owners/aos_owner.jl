@@ -1,6 +1,8 @@
 """Cold declarations for optional graph and instrument AOS owners."""
 module AOSOwner
 
+import ..Schemas
+
 import TOML
 import UUIDs
 
@@ -200,8 +202,8 @@ function configuration(path::AbstractString)
     command_node = node_name(get(document, "command_node", "simulator-command"), "command node")
     frame_encoding = version == 1 ? :uint16 : Symbol(text(document["frame_encoding"], "frame_encoding"))
     frame_encoding === :uint16 || throw(ArgumentError("AOS frame_encoding must be uint16"))
-    frame_schema = text(get(document, "frame_schema", "org.calculon.ao.raw-detector-pixels/1"), "frame_schema")
-    command_schema = text(get(document, "command_schema", "org.calculon.ao.demanded-pdm-command/1"), "command_schema")
+    frame_schema = text(get(document, "frame_schema", Schemas.identifier("raw_detector_pixels")), "frame_schema")
+    command_schema = text(get(document, "command_schema", Schemas.identifier("demanded_pdm_command")), "command_schema")
     scale = get(document, "command_scale", 1.0f-6)
     scale isa Real && !(scale isa Bool) && isfinite(scale) && 0 < scale <= floatmax(Float32) ||
         throw(ArgumentError("command_scale must be finite and positive"))

@@ -188,7 +188,7 @@ function check_updates(handle, application, stage, graph, properties)
                 ["parameter-generation",graph,"engineering-offset"])
             write(path,bytes)
             request(handle,stage,name,["parameter",graph,"engineering-offset","F32_LE",
-                "277","org.calculon.ao.pdm-engineering-offset/1",path])
+                "277","pipewireao/dm-offset-opd-um-f32/1",path])
             adopted(handle,stage,name*"-active","parameter-generation",graph,"engineering-offset";
                 baseline=previous["result"]["requested"])
             sleep(0.15)

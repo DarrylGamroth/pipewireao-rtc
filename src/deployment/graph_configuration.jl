@@ -10,7 +10,7 @@ function graph_context(instrument::AbstractDict; dimensions::AbstractDict=Dict()
         Dict("subaperture_count" => length(sensor["layout"]["subaperture_origins"]),
             "pixel_to_image" => pixel_to_image(sensor["layout"]["detector_shape"])))
         for (name, sensor) in resolved["wavefront_sensors"])
-    return Dict("instrument" => resolved, "rtc" => Dict("dimensions" => deepcopy(dimensions),
+    return Dict("schemas" => Schemas.CATALOG, "instrument" => resolved, "rtc" => Dict("dimensions" => deepcopy(dimensions),
         "deformable_mirrors" => deepcopy(mirror_controls)))
 end
 

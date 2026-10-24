@@ -254,8 +254,8 @@ end
         document = owner_configuration(directory)
         document["version"] = 2
         document["frame_encoding"] = "uint16"
-        document["frame_schema"] = "org.calculon.ao.raw-detector-pixels/1"
-        document["command_schema"] = "org.calculon.ao.demanded-pdm-command/1"
+        document["frame_schema"] = "pipewireao/raw-detector-pixels-u16/1"
+        document["command_schema"] = "pipewireao/dm-command-opd-um-f32/1"
         document["command_scale"] = 1e-6
         document["calibration_identity"] = "classic-test-startup-calibration"
         delete!(document, "graph")

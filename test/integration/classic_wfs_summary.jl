@@ -13,7 +13,7 @@ const COUNT = 32
 const NAMES = (:detector, :demanded, :slopes, :flux, :validity, :summary)
 const SUMMARY = (name="summary", node="rtc-wfs-summary-queue-output", media="wfs-summary",
     type=Float32, wire=NdArray.F32_LE, shape=(8,),
-    schema="org.calculon.ao.shack-hartmann-summary/1", rate=nothing)
+    schema="pipewireao/shack-hartmann-summary-f32/1", rate=nothing)
 const STREAMS = (map(NAMES[1:5]) do name
     only(filter(spec -> spec.name == string(name), M.CLASSIC_OBSERVATION_STREAMS))
 end..., SUMMARY)

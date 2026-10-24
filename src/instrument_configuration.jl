@@ -6,6 +6,7 @@ preparation runs here; numerical execution remains in the prepared AOS graph.
 module InstrumentConfiguration
 
 import JSON, SHA, FITSIO, Interpolations
+import ..Schemas
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
@@ -31,7 +32,7 @@ end
 fields(value, allowed, required, label) = throw(ArgumentError("$label must be an object"))
 
 function bounded_yaml(path)
-    document = Common.read_yaml(path)
+    document = Schemas.resolve(Common.read_yaml(path))
     InstrumentDefinition.bounded(document, Ref(131072))
     return document
 end
@@ -182,7 +183,7 @@ function configuration_context(declaration, configured)
             acquisition["exposure_us"] = seconds * 1e6
         end
     end
-    context = Dict("instrument" => instrument)
+    context = Dict("instrument" => instrument, "schemas" => Schemas.CATALOG)
     if haskey(declaration.document, "frame_period_s")
         simulation = deepcopy(declaration.document)
         period_ns = round(UInt64, Float64(Float32(simulation["frame_period_s"])) * 1e9)

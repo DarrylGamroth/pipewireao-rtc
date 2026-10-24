@@ -4,12 +4,13 @@ using JSON
 using SHA
 using PipeWireAO
 using ..Common
+import ..Schemas
 import ..RuntimeExport: copy_file, copy_tree, copy_entries
 
 import ..package_root, ..resource_root, ..source_relative_path
-const RAW_SCHEMA = "org.calculon.ao.raw-detector-pixels/1"
-const ROW_SCHEMA = "org.calculon.ao.raw-pixel-row-block/1"
-const COMMAND_SCHEMA = "org.calculon.ao.demanded-pdm-command/1"
+const RAW_SCHEMA = Schemas.identifier("raw_detector_pixels")
+const ROW_SCHEMA = Schemas.identifier("raw_pixel_row_block")
+const COMMAND_SCHEMA = Schemas.identifier("demanded_pdm_command")
 const TYPE_BYTES = Dict("F32_LE" => 4, "F64_LE" => 8, "U16_LE" => 2, "U32_LE" => 4, "U8" => 1, "Bool" => 1)
 const JULIA_TYPES = Dict("F32_LE" => "Float32", "U16_LE" => "UInt16", "U32_LE" => "UInt32", "U8" => "UInt8", "Bool" => "Bool")
 
@@ -115,7 +116,7 @@ end
 
 # Shared operational closure; instrument projects export their own sources.
 const RUNTIME_ENTRIES = (
-    "Project.toml", "Manifest.toml", "src", "ext", "test",
+    "Project.toml", "Manifest.toml", "src", "ext", "test", "data",
     "session_cli.jl", "session_launch.jl",
     "session_configuration.jl", "session_install.jl",
 )
@@ -196,7 +197,10 @@ function validate_parameter(directory::AbstractString, p::Parameter)
     return path
 end
 
-function port(name, direction, shape, schema, element_type="F32_LE"; parameter=false, rate=nothing)
+function port(name, direction, shape, schema, element_type=nothing; parameter=false, rate=nothing)
+    contract = get(Schemas.BY_ID, schema, nothing)
+    element_type === nothing && (element_type = contract === nothing ? "F32_LE" : contract["wire_type"])
+    Schemas.validate(Dict("schema" => schema, "element-type" => element_type))
     value = Dict{String,Any}("name" => name, "direction" => direction, "element-type" => element_type,
                              "shape" => collect(shape), "schema" => schema)
     parameter && (value["parameter"] = true)

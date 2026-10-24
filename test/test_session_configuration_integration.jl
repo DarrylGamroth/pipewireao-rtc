@@ -24,7 +24,7 @@ reference(pointer) = Dict("\$ref" => pointer)
                         initial_flat = null initial_background = null } }
                     { type = ndarray name = select label = pixel-selection-f32
                       config = { image_size = [ 3 7 ]
-                        input_schema = org.calculon.ao.calibrated-pixels/1
+                        input_schema = pipewireao/calibrated-pixels-f32/1
                         output_schema = test.selected-pixels/1
                         mask = [ true true true true true true true
                                  false false false false false false false

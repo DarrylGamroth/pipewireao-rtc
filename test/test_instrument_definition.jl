@@ -40,7 +40,7 @@ function operational_instrument()
     dm["limiter"] = Dict("kind" => "amplitude", "lower" => fill(-0.5, 3), "upper" => fill(0.5, 3))
     document["schema_version"] = 2
     document["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] =
-        "org.calculon.ao.raw-detector-pixels/1"
+        "pipewireao/raw-detector-pixels-u16/1"
     return document
 end
 
@@ -170,7 +170,7 @@ end
         write(path, JSON.json(document))
         options = (; instrument=path, calibration_identity=document["calibration_identity"],
             command_count=3, frame_shape=(2, 3), command_scale=1f-6,
-            frame_schema="org.calculon.ao.raw-detector-pixels/1",plant=(;settings=NamedTuple()))
+            frame_schema="pipewireao/raw-detector-pixels-u16/1",plant=(;settings=NamedTuple()))
         @test Instrument.verify_plant(options, InstrumentPlantForTest) === nothing
         @test Instrument.verify_plant((; instrument=nothing), Module(:NoDefinition)) === nothing
         @test_throws ArgumentError Instrument.verify_plant(options, Module(:NoDefinition))
@@ -183,7 +183,7 @@ end
         @test_throws ArgumentError Instrument.verify_plant(options,InstrumentPlantForTest)
         write(path,JSON.json(document))
         for changed in ((; calibration_identity="sha256:" * repeat("b", 64)),
-                (; command_scale=1f0), (; frame_schema="org.revolt.classic.shwfs-frame.f32/1"))
+                (; command_scale=1f0), (; frame_schema="pipewireao/detector-frame-f32/1"))
             @test_throws ArgumentError Instrument.verify_plant(merge(options, changed), InstrumentPlantForTest)
         end
         for changed in ((; command_count=2), (; frame_shape=(3, 2)))
@@ -197,7 +197,7 @@ end
             d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"][2]["definition"]["frequencies"][1] = [2, 0]),
             d -> (d["deformable_mirrors"]["dm"]["pupil_coordinates"][1] = [-0.5, 0]),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] = [1, 0]),
-            d -> (d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "org.revolt.classic.shwfs-frame.f32/1"),
+            d -> (d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "pipewireao/detector-frame-f32/1"),
             d -> (d["deformable_mirrors"]["extra"] = deepcopy(d["deformable_mirrors"]["dm"])),
         )
             invalid = deepcopy(document)
@@ -267,8 +267,8 @@ end
             "command_input" => "pdm_command", "frame_output" => "detector_frame",
             "command_count" => 3, "frame_shape" => [2, 3], "rate" => 500,
             "exposure_ns" => 1_896_000, "pacing_rate_hz" => 10, "backend" => "cpu", "device" => 0,
-            "frame_encoding" => "uint16", "frame_schema" => "org.calculon.ao.raw-detector-pixels/1",
-            "command_schema" => "org.calculon.ao.demanded-pdm-command/1", "command_scale" => 1e-6,
+            "frame_encoding" => "uint16", "frame_schema" => "pipewireao/raw-detector-pixels-u16/1",
+            "command_schema" => "pipewireao/dm-command-opd-um-f32/1", "command_scale" => 1e-6,
             "calibration_identity" => instrument["calibration_identity"], "instrument" => "instrument.json")
         write(path, JSON.json(document))
         selected = PipeWireAORTC.AOSOwner.configuration(path)

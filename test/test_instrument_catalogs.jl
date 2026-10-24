@@ -74,7 +74,7 @@ end
     @test atmosphere["layer_ids"]["uniqueItems"]
     @test atmosphere["rng_seed"]["minimum"] == 0
     @test Set(keys(atmosphere)) == Set(("r0", "reference_wavelength_m", "L0", "fractional_cn2",
-        "wind_speed", "wind_direction_deg", "altitude", "layer_ids", "rng_seed"))
+        "wind_speed_m_s", "wind_direction_deg", "altitude_m", "layer_ids", "rng_seed"))
     atmosphere["r0"]["title"] = "Changed"
     @test second["properties"]["atmosphere"]["properties"]["r0"]["title"] == "Fried parameter r0 (m)"
     @test IC.resolve_settings_schema("atmosphere")["properties"] == second["properties"]

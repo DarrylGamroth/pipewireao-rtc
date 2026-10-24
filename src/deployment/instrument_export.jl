@@ -8,6 +8,7 @@ using ..RuntimeExport
 using ..ScienceExport
 using ..InstrumentConfiguration
 import PipeWireAO
+import ..Schemas
 import ..InstrumentDefinition
 import ..DeploymentConfiguration as D
 import ..resource_root

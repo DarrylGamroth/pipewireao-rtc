@@ -50,7 +50,7 @@ properties:
         items:
           type: number
           minimum: 0
-      wind_speed:
+      wind_speed_m_s:
         type: array
         title: Layer wind speeds (m/s)
         readOnly: false
@@ -67,7 +67,7 @@ properties:
         minItems: 1
         items:
           type: number
-      altitude:
+      altitude_m:
         type: array
         title: Layer altitudes (m)
         readOnly: false

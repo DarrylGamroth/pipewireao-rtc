@@ -388,9 +388,10 @@ introduces another graph executor or private transport.
 
 The deprecated product name is not part of the RTC domain model. Runner-local
 configuration uses `pipewireao.fgn-native`, and implementation types use FGN
-terminology. Existing `org.calculon...` schema strings and legacy Rust artifact
-paths remain unchanged compatibility boundaries until a separate versioned
-schema and package migration defines their replacements.
+terminology. Scientific schema identifiers now use the shared typed catalog
+described below. Frozen validation records and externally owned HEART contracts
+retain their original identifiers; legacy Rust artifact paths remain historical
+package boundaries.
 
 ## Scientist boundary
 
@@ -887,7 +888,25 @@ representation fields (element type, shape, layout and rate). Their namespaces
 and version suffixes are application conventions: no schema document is fetched,
 no unit conversion is selected, and no namespace/version parser interprets them.
 They are separate from authoring `schema_version` fields and the settings
-validation descriptions below. Existing payload identifiers remain unchanged.
+validation descriptions below.
+
+The shared `JuliaFilterGraph/schemas/catalog.toml` is the authoring authority for
+scientific payload contracts. Each entry declares a quantity name, Julia element
+type, version and scientific definition. The generator derives identifiers such
+as `pipewireao/dm-command-opd-um-f32/1`, SPA element types and consumer declarations
+for FilterGraphAlgorithms, the RTC, GUI and HIL adapter. The numeric suffix
+specifies precision; byte order, layout, shape and rate remain explicit SPA
+fields. An f64 variant has its own identifier. Known identifier/type mismatches
+are rejected; custom externally owned schemas remain supported. Identifiers do
+not select a conversion or a numerical implementation.
+
+RTC instrument authoring references `/schemas/<catalog-key>/id`, `wire_type`,
+`element_type` or `frame_encoding` through the existing `$ref` mechanism. Its
+`data/schemas.yaml` is generated from the shared catalog, not independently
+authored. Graph-derived shapes and element types still come from the prepared
+scientific declarations. Native runtime files contain concrete values only.
+This source migration does not rewrite installed sessions or stored artifacts;
+all participants must use the same declarations when a new deployment is built.
 
 Package `data/simulation/` supplies shared startup-settings schemas. A simulation
 selects `settings_schema: {template: atmosphere, title: ..., description: ...}`;

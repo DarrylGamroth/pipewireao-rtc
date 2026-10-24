@@ -12,6 +12,17 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Typed scientific schema declarations — 2026-10-23
+
+Scientific payload names and element types now derive from the shared JFG schema
+catalog. RTC authoring references the generated declarations; the GUI and HIL
+adapter consume generated constants. Classic uses instrument-independent
+`pipewireao/<quantity>-<type>/<version>` identifiers. External HEART identities
+and frozen evidence remain unchanged. Simulator atmosphere authoring names wind
+speed in m/s and altitude in m; layer IDs omit the instrument prefix. See the
+[schema migration evidence](reviews/20261023-schemas/REVIEW.md) for validation and
+scope. The installed live RTC is unchanged.
+
 ### Remove prose provenance from configuration — 2026-10-23
 
 Mirror descriptions, sensor layouts and modal basis declarations no longer carry

@@ -1,0 +1,637 @@
+# This file is generated from schemas/catalog.toml in JuliaFilterGraph.
+# Run `julia scripts/generate_schemas.jl` with the consumer root options to regenerate.
+
+biquad_coefficients:
+  id: "pipewireao/biquad-coefficients-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+controller_residual_error:
+  id: "pipewireao/controller-residual-error-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pseudo_open_loop_interaction_matrix:
+  id: "pipewireao/pseudo-open-loop-interaction-matrix-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pseudo_open_loop_reconstructor:
+  id: "pipewireao/pseudo-open-loop-reconstructor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pseudo_open_loop_corrector_to_error:
+  id: "pipewireao/pseudo-open-loop-corrector-to-error-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+controller_command:
+  id: "pipewireao/controller-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+controller_state:
+  id: "pipewireao/controller-state-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+controller_constraint_feedback:
+  id: "pipewireao/controller-constraint-feedback-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+vdm_command:
+  id: "pipewireao/vdm-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+controller_to_vdm_projection:
+  id: "pipewireao/controller-to-vdm-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+vdm_to_controller_projection:
+  id: "pipewireao/vdm-to-controller-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+requested_pdm_command:
+  id: "pipewireao/requested-pdm-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_system_flat:
+  id: "pipewireao/pdm-system-flat-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_engineering_offset:
+  id: "pipewireao/dm-offset-opd-um-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+inter_actuator_stroke_limit:
+  id: "pipewireao/inter-actuator-stroke-limit-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+preferred_pdm_command:
+  id: "pipewireao/preferred-pdm-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_command_to_null_modes:
+  id: "pipewireao/pdm-command-to-null-modes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_null_modes_to_command:
+  id: "pipewireao/pdm-null-modes-to-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+demanded_pdm_command:
+  id: "pipewireao/dm-command-opd-um-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_constraint_feedback:
+  id: "pipewireao/pdm-constraint-feedback-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+vdm_constraint_feedback:
+  id: "pipewireao/vdm-constraint-feedback-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+active_to_full_vdm_projection:
+  id: "pipewireao/active-to-full-vdm-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+full_to_active_vdm_projection:
+  id: "pipewireao/full-to-active-vdm-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+vdm_to_pdm_projection:
+  id: "pipewireao/vdm-to-pdm-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_to_vdm_projection:
+  id: "pipewireao/pdm-to-vdm-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shape_to_hidden_projection:
+  id: "pipewireao/shape-to-hidden-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+hidden_to_shape_projection:
+  id: "pipewireao/hidden-to-shape-projection-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+docrime_excitation:
+  id: "pipewireao/docrime-excitation-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+docrime_excitation_amplitude:
+  id: "pipewireao/docrime-excitation-amplitude-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+docrime_covariance_sample_count:
+  id: "pipewireao/docrime-covariance-sample-count-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+docrime_covariance_complete:
+  id: "pipewireao/docrime-covariance-complete-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+docrime_interaction_matrix_status:
+  id: "pipewireao/docrime-interaction-matrix-status-u8/1"
+  element_type: "UInt8"
+  wire_type: "U8"
+docrime_interaction_matrix_status_coordinates:
+  id: "pipewireao/docrime-interaction-matrix-status-coordinates-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+docrime_corrector_variance_range:
+  id: "pipewireao/docrime-corrector-variance-range-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+docrime_maximum_absolute_corrector_correlation:
+  id: "pipewireao/docrime-maximum-absolute-corrector-correlation-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+docrime_minimum_factorization_pivot_ratio:
+  id: "pipewireao/docrime-minimum-factorization-pivot-ratio-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+interaction_matrix_stability_status:
+  id: "pipewireao/interaction-matrix-stability-status-u8/1"
+  element_type: "UInt8"
+  wire_type: "U8"
+corrector_coordinate:
+  id: "pipewireao/corrector-coordinate-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+interaction_matrix_stability_column_norms:
+  id: "pipewireao/interaction-matrix-stability-column-norms-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+interaction_matrix_stability_relative_column:
+  id: "pipewireao/interaction-matrix-stability-relative-column-difference-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+interaction_matrix_stability_relative_frobenius:
+  id: "pipewireao/interaction-matrix-stability-relative-frobenius-difference-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+matched_calibration_filtered:
+  id: "pipewireao/matched-calibration-filtered-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+calibration_pattern_index:
+  id: "pipewireao/calibration-pattern-index-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+calibration_probe_polarity:
+  id: "pipewireao/calibration-probe-polarity-u8/1"
+  element_type: "UInt8"
+  wire_type: "U8"
+calibration_cycle_complete:
+  id: "pipewireao/calibration-cycle-complete-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+calibration_probe_amplitudes:
+  id: "pipewireao/calibration-probe-amplitudes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+modal_positive_commands:
+  id: "pipewireao/modal-positive-commands-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+raw_pixel_row_block:
+  id: "pipewireao/raw-pixel-row-block-u16/1"
+  element_type: "UInt16"
+  wire_type: "U16_LE"
+raw_detector_pixels:
+  id: "pipewireao/raw-detector-pixels-u16/1"
+  element_type: "UInt16"
+  wire_type: "U16_LE"
+  frame_encoding: "uint16"
+raw_pixel_readout_block:
+  id: "pipewireao/raw-pixel-readout-block-u16/1"
+  element_type: "UInt16"
+  wire_type: "U16_LE"
+calibrated_pixel_row_block:
+  id: "pipewireao/calibrated-pixel-row-block-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+calibrated_pixels:
+  id: "pipewireao/calibrated-pixels-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+reconstructed_modes:
+  id: "pipewireao/reconstructed-modes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+llowfs_modes:
+  id: "pipewireao/llowfs-modes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+ml_llowfs_parameters:
+  id: "pipewireao/ml-llowfs-parameters-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+physical_optical_gain:
+  id: "pipewireao/physical-optical-gain-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_dither_command:
+  id: "pipewireao/optical-gain-dither-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_dither_window_frame:
+  id: "pipewireao/optical-gain-dither-window-frame-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+optical_gain_dither_phase_indices:
+  id: "pipewireao/optical-gain-dither-phase-indices-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+optical_gain_dither_window_complete:
+  id: "pipewireao/optical-gain-dither-window-complete-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+optical_gain_dither_response:
+  id: "pipewireao/optical-gain-dither-response-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_calibration_response:
+  id: "pipewireao/optical-gain-calibration-response-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_command_amplitude:
+  id: "pipewireao/optical-gain-command-amplitude-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_response_amplitude:
+  id: "pipewireao/optical-gain-response-amplitude-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_dither_estimate:
+  id: "pipewireao/optical-gain-dither-estimate-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_phase_lag:
+  id: "pipewireao/optical-gain-phase-lag-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+optical_gain_estimate_validity:
+  id: "pipewireao/optical-gain-estimate-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+optical_gain_estimate_complete:
+  id: "pipewireao/optical-gain-estimate-complete-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+optical_gain_accepted_dither_modes:
+  id: "pipewireao/optical-gain-accepted-dither-modes-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+optical_gain_updated_reconstructed_modes:
+  id: "pipewireao/optical-gain-updated-reconstructed-modes-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+calibrated_pixel_validity:
+  id: "pipewireao/calibrated-pixel-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+scc_push_pull_response:
+  id: "pipewireao/scc-push-pull-response-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_chopped_image_difference:
+  id: "pipewireao/scc-chopped-image-difference-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_chopped_difference_validity:
+  id: "pipewireao/scc-chopped-difference-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+scc_chopped_difference_status:
+  id: "pipewireao/scc-chopped-difference-status-u8/1"
+  element_type: "UInt8"
+  wire_type: "U8"
+scc_reference_image:
+  id: "pipewireao/scc-reference-image-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_selected_pixel_residuals:
+  id: "pipewireao/scc-selected-pixel-residuals-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_selected_pixel_validity:
+  id: "pipewireao/scc-selected-pixel-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+scc_selected_pixel_valid_fraction:
+  id: "pipewireao/scc-selected-pixel-valid-fraction-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_spatial_carrier_measurements:
+  id: "pipewireao/scc-spatial-carrier-measurements-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_measurement_weights:
+  id: "pipewireao/scc-measurement-weights-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_measurement_validity:
+  id: "pipewireao/scc-measurement-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+scc_spatial_carrier_valid_fraction:
+  id: "pipewireao/scc-spatial-carrier-valid-fraction-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_carrier_phase:
+  id: "pipewireao/scc-carrier-phase-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_spatial_fir:
+  id: "pipewireao/scc-spatial-fir-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_interaction_matrix:
+  id: "pipewireao/scc-interaction-matrix-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_regularization_operator:
+  id: "pipewireao/scc-regularization-operator-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+scc_reconstructor:
+  id: "pipewireao/scc-reconstructor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+calibrated_pixel_readout_block:
+  id: "pipewireao/calibrated-pixel-readout-block-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+flat_calibration:
+  id: "pipewireao/flat-calibration-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+background_calibration:
+  id: "pipewireao/background-calibration-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pixel_selection_mask:
+  id: "pipewireao/pixel-selection-mask-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+region_pixels:
+  id: "pipewireao/region-pixels-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_pixels:
+  id: "pipewireao/center-of-gravity-pixels-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_coordinates:
+  id: "pipewireao/center-of-gravity-coordinates-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_weights:
+  id: "pipewireao/center-of-gravity-weights-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+weighted_center_of_gravity_flux:
+  id: "pipewireao/weighted-center-of-gravity-flux-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_offset:
+  id: "pipewireao/center-of-gravity-offset-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_flux:
+  id: "pipewireao/center-of-gravity-flux-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+center_of_gravity_validity:
+  id: "pipewireao/center-of-gravity-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+shack_hartmann_slopes:
+  id: "pipewireao/shack-hartmann-slopes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_flux:
+  id: "pipewireao/shack-hartmann-flux-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+weighted_shack_hartmann_flux:
+  id: "pipewireao/weighted-shack-hartmann-flux-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_validity:
+  id: "pipewireao/shack-hartmann-validity-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+shack_hartmann_summary:
+  id: "pipewireao/shack-hartmann-summary-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_coordinates:
+  id: "pipewireao/shack-hartmann-coordinates-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_reference_slopes:
+  id: "pipewireao/shack-hartmann-reference-slopes-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_thresholds:
+  id: "pipewireao/shack-hartmann-thresholds-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_weights:
+  id: "pipewireao/shack-hartmann-weights-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+shack_hartmann_active:
+  id: "pipewireao/shack-hartmann-active-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+shwfs_reconstructor:
+  id: "pipewireao/shwfs-reconstructor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+region_origins:
+  id: "pipewireao/region-origins-u32/1"
+  element_type: "UInt32"
+  wire_type: "U32_LE"
+pyramid_reconstruction_pixels:
+  id: "pipewireao/pyramid-reconstruction-pixels-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+bi_o_edge_frame_calibration_signature:
+  id: "pipewireao/bi-o-edge-frame-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+bi_o_edge_calibration_signature:
+  id: "pipewireao/bi-o-edge-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+bi_o_edge_signal:
+  id: "pipewireao/bi-o-edge-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+bi_o_edge_normalization_divisor:
+  id: "pipewireao/bi-o-edge-normalization-divisor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+bi_o_edge_support:
+  id: "pipewireao/bi-o-edge-support-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+bi_o_edge_reference_signal:
+  id: "pipewireao/bi-o-edge-reference-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+bi_o_edge_optical_gain:
+  id: "pipewireao/bi-o-edge-optical-gain-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+zernike_pupil_signal_frame_calibration_signature:
+  id: "pipewireao/zernike-pupil-signal-frame-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+zernike_pupil_signal_calibration_signature:
+  id: "pipewireao/zernike-pupil-signal-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+zernike_pupil_signal:
+  id: "pipewireao/zernike-pupil-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+zernike_pupil_signal_normalization_divisor:
+  id: "pipewireao/zernike-pupil-signal-normalization-divisor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+zernike_pupil_signal_support:
+  id: "pipewireao/zernike-pupil-signal-support-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+zernike_pupil_signal_reference_pupil_image:
+  id: "pipewireao/zernike-pupil-signal-reference-pupil-image-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+zernike_pupil_signal_incidence_flux:
+  id: "pipewireao/zernike-pupil-signal-incidence-flux-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+curvature_paired_image:
+  id: "pipewireao/curvature-paired-image-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+curvature_paired_channels:
+  id: "pipewireao/curvature-paired-channels-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+curvature_paired_frame_calibration_signature:
+  id: "pipewireao/curvature-paired-frame-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+curvature_paired_calibration_signature:
+  id: "pipewireao/curvature-paired-calibration-signature-u64/1"
+  element_type: "UInt64"
+  wire_type: "U64_LE"
+curvature_paired_signal:
+  id: "pipewireao/curvature-paired-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+curvature_paired_support:
+  id: "pipewireao/curvature-paired-support-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+curvature_paired_reference_signal:
+  id: "pipewireao/curvature-paired-reference-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+curvature_paired_branch_scales:
+  id: "pipewireao/curvature-paired-branch-scales-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_i4q_signal:
+  id: "pipewireao/pyramid-i4q-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_normalization_divisor:
+  id: "pipewireao/pyramid-normalization-divisor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_i4q_support:
+  id: "pipewireao/pyramid-i4q-support-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+pyramid_reference_signal:
+  id: "pipewireao/pyramid-reference-signal-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_optical_gain:
+  id: "pipewireao/pyramid-optical-gain-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_i4q_reconstructor:
+  id: "pipewireao/pyramid-i4q-reconstructor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_mean_pupil_intensity:
+  id: "pipewireao/pyramid-mean-pupil-intensity-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pyramid_pupil_mask:
+  id: "pipewireao/pyramid-pupil-mask-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
+pwfs_reconstructor:
+  id: "pipewireao/pwfs-reconstructor-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pdm_correction_role:
+  id: "pipewireao/pdm-correction-role-u8/1"
+  element_type: "UInt8"
+  wire_type: "U8"
+detector_frame:
+  id: "pipewireao/detector-frame-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+  frame_encoding: "float32"
+atmosphere_opd_m:
+  id: "pipewireao/atmosphere-opd-m-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+actuator_command_opd_m:
+  id: "pipewireao/actuator-command-opd-m-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+dm_surface_opd_m:
+  id: "pipewireao/dm-surface-opd-m-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+actuator_grid_indices:
+  id: "pipewireao/actuator-grid-indices-i32/1"
+  element_type: "Int32"
+  wire_type: "I32_LE"
+normalized_pupil_actuator_coordinates:
+  id: "pipewireao/normalized-pupil-actuator-coordinates-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+influence_functions:
+  id: "pipewireao/influence-functions-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pupil_opd_m:
+  id: "pipewireao/pupil-opd-m-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+photon_rate:
+  id: "pipewireao/photon-rate-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+focal_photon_rate:
+  id: "pipewireao/focal-photon-rate-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+residual_pupil_opd_nm:
+  id: "pipewireao/residual-pupil-opd-nm-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+pupil_opd_rms_nm:
+  id: "pipewireao/pupil-opd-rms-nm-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+applied_dm_command_opd_um:
+  id: "pipewireao/applied-dm-command-opd-um-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"

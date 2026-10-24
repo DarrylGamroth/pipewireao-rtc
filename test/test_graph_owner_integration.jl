@@ -90,8 +90,8 @@ end
                     { type = ndarray name = select label = pixel-selection-f32
                       config = { image_size = [ 2 3 ]
                         mask = [ true false true false true false ]
-                        input_schema = org.calculon.ao.calibrated-pixels/1
-                        output_schema = org.calculon.test.selected-pixels/1 } }
+                        input_schema = pipewireao/calibrated-pixels-f32/1
+                        output_schema = pipewireao/test.selected-pixels/1 } }
                     { type = ndarray name = extract label = region-extraction-f32
                       config = { image_size = [ 2 3 ] region_size = [ 1 1 ]
                         origins = [ [ 0 0 ] ] } }

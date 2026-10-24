@@ -35,8 +35,8 @@ println("AOS_DEFAULT_LOADING julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) s
                  "command_count":277,"frame_shape":[352,352],
                  "rate":500,"exposure_ns":1896000,"pacing_rate_hz":10,
                  "backend":"$LoadingBackend","device":0,"frame_encoding":"uint16",
-                 "frame_schema":"org.calculon.ao.raw-detector-pixels/1",
-                 "command_schema":"org.calculon.ao.demanded-pdm-command/1","command_scale":0.000001}
+                 "frame_schema":"pipewireao/raw-detector-pixels-u16/1",
+                 "command_schema":"pipewireao/dm-command-opd-um-f32/1","command_scale":0.000001}
                 """)
         end
         args = ["--config", config, "--remote", "/tmp/aos-loading-private",

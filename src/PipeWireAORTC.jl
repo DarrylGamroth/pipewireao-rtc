@@ -32,6 +32,7 @@ end
 
 
 include("common.jl")
+include("schemas.jl")
 include("artifacts.jl")
 include("deployment/placement.jl")
 include("deployment/systemd_owners.jl")

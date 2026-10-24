@@ -3,7 +3,7 @@ config:
   L0:
     $ref: /settings/atmosphere/L0
   altitude:
-    $ref: /settings/atmosphere/altitude
+    $ref: /settings/atmosphere/altitude_m
   aperture_revision:
     $ref: /instrument/telescope/aperture_revision
   atmosphere_step:
@@ -29,6 +29,6 @@ config:
   wind_direction_deg:
     $ref: /settings/atmosphere/wind_direction_deg
   wind_speed:
-    $ref: /settings/atmosphere/wind_speed
+    $ref: /settings/atmosphere/wind_speed_m_s
   atmosphere_opd_schema:
     $ref: /schemas/atmosphere_opd_schema
