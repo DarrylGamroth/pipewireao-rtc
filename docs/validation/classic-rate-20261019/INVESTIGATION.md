@@ -206,3 +206,64 @@ The optional default leaves existing applications unchanged. Independent review
 accepts the lifetime/cancellation design; 20 standalone tests exercise exact
 TID, unchanged caller, self-callback rejection, cancellation, failures and cleanup.
 Final sustained trials will use registered RTC 0.1.8/HIL 0.1.5.
+
+
+The following notes were recovered during the 2026-10-24 worktree cleanup.
+They describe the RTC 0.1.8/HIL 0.1.5 deployment below, not the current runtime.
+The named raw captures were not found during cleanup; their reported numbers
+are retained as historical observations and were not independently reverified.
+They do not establish current throughput or latency qualification.
+
+## Historical invocation: GUI independence was not qualified
+
+Stage `rate-final-session-001`, invocation
+`a63e9a54d04c416181e9afcec415853b`, uses the registered versions above.
+Native readiness verifies transport TID 141248 on CPU 7. Reset and all eight
+finite, advancing observation streams pass, including WFS frame association.
+
+| GUI condition | Frames | Rate (Hz) | Skipped release slots | Process GC (ms) |
+|---|---:|---:|---:|---:|
+| Closed | 32,768 | 499.923771 | 5 | 0 |
+| Open | 32,768 | 493.167301 | 454 | 0 |
+| Open, per-client Waypipe affinity experiment | 5,527 | 499.091078 | 10 | 0 |
+
+The first open window fails the predeclared gate. The last row is a partial
+diagnostic window, also outside the throughput band; it cannot replace the
+four-window qualification. All three have contiguous frame sequences and
+160 process-allocated bytes per frame. Preserve `phase-final-closed-1.json`,
+`phase-final-open-1.json` and `phase-forwarder-bounded-1.json` and their
+`summary-*.json` files as failed/incomplete qualification evidence.
+
+GUI PID 143764 is restricted to CPUs 12–13, but its Waypipe compression child
+143767 originally has unrestricted affinity. Reciprocal Unix socket inode
+identities establish that this child serves this GUI. A reversible experiment
+restricts only that child and its existing workers to CPUs 0,1,12,13; the shared
+Waypipe parent is unchanged. Original masks and process identity are saved in
+`waypipe-affinity-experiment.json`. This improves observed transport tails in
+the partial window but does not establish a complete remedy. Other user Julia
+workloads are present on the workstation and are not stopped or modified.
+
+## Queue and observer pacing inspection
+
+The simulator owner sets the acquisition target of 500 Hz. The RTC processes
+those acquisitions. GUI observation has a separate timer and drives its own
+input streams through `trigger_process()`. Deployment observation queues use
+copy storage, capacity one and `drop-oldest`; a slow consumer should lose
+intermediate observation frames rather than pace the scientific producer.
+This bounds pending samples, not rendering, compression or shared CPU costs.
+
+GUI source inspection finds an explicit exception to ordinary display-rate
+collection: `sample_observation/groups.rs` sets `COLLECTION_PERIOD` to 1 ms
+when a complete SHWFS group is subscribed and ready. It collects pixels,
+slopes, flux and validity frequently to match exact sequence and timestamp,
+while publishing display state at the configured display period (default
+33 ms). Reducing that timer blindly can lose coherent groups because four
+independent capacity-one queues need not be sampled on the same acquisition.
+This mechanism needs a separately validated approach if changed.
+
+The current GUI layout has five ordinary ndarray observations, without an
+active SHWFS group. A native profiler inspection while the source is held
+identifies these five GUI drivers (`native-gui-pull-held-3.json`); it does not
+measure active-run sample throughput. Therefore the 1 ms group path is not an
+established cause of the failed GUI-open window. No GUI sampling or scientific
+equations have been changed on the basis of that hypothesis.
