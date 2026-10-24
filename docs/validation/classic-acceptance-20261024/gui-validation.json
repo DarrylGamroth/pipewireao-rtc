@@ -1,0 +1,42 @@
+{
+  "scope": "Read-only production NativeAdapter,ClientModel,ViewPanel with offscreen egui renderer; no RTC requests or lifecycle changes; voluntary own observer close/reopen; no remote failure injection, native window validation, scientific qualification or RTC real-time qualification.",
+  "source_commit": "c7ee423ee2502909bfabc6afb23a9fbc8504ef46",
+  "baseline_commit": "96b94cd",
+  "checks": [
+    {
+      "command": "source /tmp/gui-yaml-env.sh; cargo fmt --package pipewireao-gui -- --check",
+      "result": "pass",
+      "reason": null
+    },
+    {
+      "command": "source /tmp/gui-yaml-env.sh; cargo test",
+      "result": "pass",
+      "reason": null
+    },
+    {
+      "command": "source /tmp/gui-yaml-env.sh; cargo check-wasm",
+      "result": "pass",
+      "reason": null
+    },
+    {
+      "command": "source /tmp/gui-yaml-env.sh; cargo clippy --all-targets -- -D warnings",
+      "result": "known-baseline-fail",
+      "reason": "four unchanged DM chunks_exact_to_as_chunks findings"
+    },
+    {
+      "command": "source /tmp/gui-yaml-env.sh; cargo clippy --all-targets -- -D warnings -A clippy::chunks_exact_to_as_chunks -A deprecated",
+      "result": "pass",
+      "reason": null
+    },
+    {
+      "command": "julia --startup-file=no --project=scripts scripts/runtests.jl",
+      "result": "pass",
+      "reason": null
+    },
+    {
+      "command": "source /tmp/gui-yaml-env.sh; set -a; source /run/user/1000/pipewireao-session-a011acbb2e6a/current.env; set +a; export PIPEWIREAO_CONFIG_DIR=\"$PIPEWIRE_RUNTIME_DIR/session\"; export CLASSIC_ACCEPTANCE_VIEW_CONFIG=\"$EVIDENCE/published-classic-observation-views.yaml\"; export CLASSIC_ACCEPTANCE_REMOTE=\"$PIPEWIREAO_REMOTE\"; export CLASSIC_ACCEPTANCE_REPORT=\"$EVIDENCE/acceptance.json\"; cargo test --example native-observation classic_summary_xy_survives_hidden_wfs_and_adapter_reconnect -- --ignored --nocapture",
+      "result": "pass",
+      "reason": null
+    }
+  ]
+}

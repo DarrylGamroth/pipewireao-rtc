@@ -1,0 +1,21 @@
+{
+  "invocation": "7846ffc58ec54fea8db9f7d0dba7d393",
+  "unit": "pipewireao-session@5b1f68c588e3.service",
+  "backend": "cpu",
+  "complete": true,
+  "native_quit_accepted": true,
+  "shutdown_and_cleanup_seconds": 29.938516143,
+  "prefix": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021",
+  "test_sha256": "1ec97946c94c28282cca7da582df49fd0f134b2bd0258ba405905af52db908e1",
+  "deployment_sha256": "a8c41894656aacb8f643dc75d5faa5940a69134341d93ac76bcb7e20b94d6ba4",
+  "manifest_sha256": "dadb2440daf70f0f2ed28597b2505bbc7cdf57c9cc1c47312435e52ab7b95193",
+  "native_sha256": {
+    "bin/pipewireao-rtc": "b00d2bc3c6f21adc608a9cd9022ddcdba978c982d6e8c7bce6016f0aae0332aa",
+    "lib/libwireplumber-0.5.so.0": "01a466da9539fd04ccdd8fc44dee1529dd6d36c934cf09a655950419a8f7d0ba",
+    "lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so": "f6c374cf3784523b01562ac6d66cb118a26b066b6fde38c736a8a456a7ec38ce"
+  },
+  "policy_sha256": {
+    "ao/session.lua": "4f6f75997db6d2cae2b416a7ec0d6d8de0ef529582582c740356f025705c209e",
+    "lib/ao-owner.lua": "34880c0fbd06af4ce618b69a57cea00d11f697a9aa0989490f4b1f63392df3f5"
+  }
+}

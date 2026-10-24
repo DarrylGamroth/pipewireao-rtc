@@ -1,0 +1,51 @@
+{
+  "complete": true,
+  "calibration_scope": "seeded simulated atmosphere and provisional Gaussian DM; no physical hardware qualification",
+  "samples": 2313,
+  "uncorrected": {
+    "max_nm": 577.886474609375,
+    "mean_nm": 281.6863940907308,
+    "median_nm": 267.4042663574219,
+    "min_nm": 113.38701629638672,
+    "p05_nm": 157.3874969482422,
+    "p95_nm": 465.38203735351567
+  },
+  "corrected": {
+    "max_nm": 82.05957794189453,
+    "mean_nm": 51.57540843087875,
+    "median_nm": 50.19671630859375,
+    "min_nm": 39.17437744140625,
+    "p05_nm": 43.56306686401367,
+    "p95_nm": 64.4837142944336
+  },
+  "mean_rms_reduction_percent": 81.69048647260315,
+  "model_seconds": 80.66,
+  "wall_seconds": 128.939960374,
+  "rtc_invocation": "cd7880af467248cba745ba1bfc9b00aa",
+  "observation": {
+    "minimum_duration_s": 120.0,
+    "observation_started_s": 209198.272987298,
+    "observation_ended_s": 209318.98560106,
+    "drive_interval_s": 0.005,
+    "boundary": "capacity-one copy/drop-oldest queues",
+    "stream": {
+      "count": 2312,
+      "distinct_sequences": 2312,
+      "first_sequence": 1241642,
+      "last_sequence": 1281774,
+      "schema": "pipewireao/pupil-opd-rms-nm-f32/1",
+      "rate": [
+        20,
+        1
+      ],
+      "shape": [
+        1,
+        2
+      ],
+      "media": "wavefront-rms",
+      "element_type": "F32_LE",
+      "finite": true,
+      "canonical_boolean": true
+    }
+  }
+}

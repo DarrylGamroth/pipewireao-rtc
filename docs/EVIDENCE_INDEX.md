@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Classic acceptance — 2026-10-24
+
+[Acceptance evidence](validation/classic-acceptance-20261024/README.md) records
+the completed hidden-SHWFS GUI/X–Y/reconnect gate, paired simulated pupil OPD
+RMS observation, installed CPU Ready/Quit, required-link-loss and controller-loss
+recovery gates. It preserves source/deployment identities, bounded machine-readable
+receipts, concise test summaries and the controller-loss uncertain-Hold/emergency
+cleanup outcome. No physical, GPU or timing qualification is claimed. The
+[roadmap](roadmap.md) now marks the Classic gates complete and GPI 2.0 as next.
+
 ## Typed scientific schema declarations — 2026-10-23
 
 The [migration review](reviews/20261023-schemas/REVIEW.md) records the shared
