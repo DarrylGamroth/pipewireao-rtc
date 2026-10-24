@@ -24,8 +24,8 @@ logs remain at `/home/dgamroth/.local/state/pipewireao/classic-acceptance-202610
   summary contains 2,313 paired callback samples; this one-sample difference is
   the observer snapshot versus retained callback-pair count at teardown. Mean
   pupil OPD RMS changed from 281.686 nm to 51.575 nm, an 81.69% reduction. The
-  simulation modeled 80.66 s while wall time was 128.94 s; cold startup dominated
-  elapsed time. These results use a seeded simulated atmosphere and provisional
+  simulation modeled 80.66 s while wall time was 128.94 s, including a minimum
+  120 s observation window. These results use a seeded simulated atmosphere and provisional
   Gaussian DM calibration. They are a software simulation result, not physical
   calibration, hardware, cadence or latency qualification. The captured sample
   CSV is intentionally not copied here.
@@ -35,7 +35,7 @@ logs remain at `/home/dgamroth/.local/state/pipewireao/classic-acceptance-202610
   Earlier failed evidence remains historical and is not reclassified.
 - **Required-link loss:** the focused actual link-removal gate passed 146/146
   assertions. Ready and Running were observed before fault; the RTC reported
-  Fault after link removal. Emergency/systemd cleanup completed, followed by a
+  Fault after link removal and confirmed source Hold. Owned cleanup completed, followed by a
   fresh session reaching Ready and Running and completing cleanup.
 - **Controller loss:** the focused actual controller-exit gate passed 40/40
   assertions. Ready and Running were observed before fault; the RTC reported
@@ -65,7 +65,7 @@ test-content SHA-256 is
 shutdown test-content SHA-256 is
 `1ec97946c94c28282cca7da582df49fd0f134b2bd0258ba405905af52db908e1`.
 The fault selectors are in `test/integration/session_faults.jl` (`--case
-link-removal` and `--case controller-exit --controller-role julia-command`);
+link-removal` and `--case controller-exit --controller-role julia`);
 the Ready/Quit selector is in `test/integration/classic_shutdown.jl`. The RMS
 capture program was `/home/dgamroth/.local/state/pipewireao/classic-acceptance-20261024/observe-rms.jl`,
 which included `test/integration/classic_observation.jl` from the RTC source
@@ -96,6 +96,6 @@ are [gui.json](gui.json), [rms.json](rms.json), [shutdown.json](shutdown.json),
 [link-loss.json](link-loss.json) and [controller-loss.json](controller-loss.json).
 
 The original running CUDA RTC and GUI were left unchanged; the CPU application
-and fault sessions were separate. No external service or hardware action was
-performed. These gates do not qualify GPU execution, physical hardware,
+and fault sessions were separate. Only the qualification sessions were started,
+faulted and stopped. No physical hardware was used. These gates do not qualify GPU execution, physical hardware,
 real-time cadence, worst-case latency or arbitrary deployments.
