@@ -1,0 +1,34 @@
+Test Summary:                 | Pass  Total  Time
+cold HIL admission validation |   26     26  1.3s
+Test Summary:                                | Pass  Total  Time
+observed exposure staging before publication |   13     13  0.2s
+Test Summary:                                    | Pass  Total  Time
+publication time is not simulated exposure start |   18     18  0.2s
+Test Summary:                                    | Pass  Total  Time
+v3 command acquisition before numerical adoption |   64     64  0.4s
+Test Summary:                                  | Pass  Total  Time
+teardown after callback or child cleanup error |   15     15  0.2s
+Test Summary:               | Pass  Total  Time
+partial construction unwind |   18     18  0.5s
+Test Summary:                        | Pass  Total  Time
+optional observation resource unwind |    3      3  0.1s
+Test Summary:                  | Pass  Total  Time
+optional image resource unwind |    3      3  0.1s
+Test Summary:                                                     | Pass  Total  Time
+independent image group closes all resources after stream failure |    4      4  0.1s
+Test Summary:                             | Pass  Total  Time
+named command configuration and admission |   23     23  1.9s
+Test Summary:                                         | Pass  Total  Time
+coherent command set adoption and reordered callbacks |   17     17  0.4s
+Test Summary:                                                     | Pass  Total  Time
+command set rejects duplicate stale wrong and invalid final ports |   35     35  0.0s
+Test Summary:                                     | Pass  Total  Time
+each named command validates acquisition identity |    6      6  0.0s
+Test Summary:                                             | Pass  Total  Time
+all named command streams close despite one cleanup error |    3      3  0.1s
+Test Summary:                                       | Pass  Total  Time
+named adopted observations follow coherent adoption |    6      6  0.1s
+Test Summary:                                     | Pass  Total  Time
+resized named command storage rejects before copy |   36     36  0.0s
+Test Summary:                 | Pass  Total   Time
+private-core node publication |  231    231  20.0s

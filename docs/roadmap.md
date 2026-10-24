@@ -12,6 +12,18 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI 2.0 optical model and named command sets — 2026-10-24
+
+The instrument monorepo now contains data-only GPI woofer/tweeter/tip/tilt and
+pyramid/EMCCD optical declarations. Three distinct command inputs replace the
+legacy concatenated vector. The existing AOS/HIL interfaces collect a matching
+command set before one adoption; Classic's scalar path remains supported.
+CPU optical/reference checks and private-core delayed/missing/duplicate-port
+checks pass. See the [multi-command evidence](validation/gpi-multiport-20261024/README.md)
+for independent review and qualification limits. GPI controller/calibration
+integration, multi-corrector publication and tip/tilt presentation remain next;
+this is not a live GPI closed-loop deployment.
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running
@@ -25,7 +37,7 @@ CUDA deployment remains separate from new CPU fault-test sessions.
 3. Complete: requalify Ready/Quit, required-link loss, controller loss and fresh
    recovery on the current data-only Classic CPU application and installed native
    runtime. Record actual outcomes without reclassifying old failures.
-4. Next: migrate GPI 2.0 into the instrument monorepo using the shared
+4. In progress: GPI 2.0 now has a data-only optical model using the shared
    configuration/runtime interfaces. Preserve its woofer, tweeter, tip/tilt and
    pyramid conventions and keep provisional calibration explicit. Add a generic
    tip/tilt stage view if the existing panels cannot express it.

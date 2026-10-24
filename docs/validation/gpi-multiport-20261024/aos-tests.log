@@ -1,0 +1,82 @@
+┌ Info: Running test suite
+└   suite = "algorithm-graphs"
+Test Summary:                                             | Pass  Total  Time
+graph port contracts reject execution-unsafe declarations |    4      4  0.3s
+Test Summary:                                               | Pass  Total  Time
+portable algorithm graph direct links and sparse parameters |   16     16  1.0s
+Test Summary:                                       | Pass  Total  Time
+portable algorithm graph delayed feedback and reset |    8      8  0.4s
+Test Summary:                                              | Pass  Total  Time
+portable algorithm graph asynchronous completion ownership |   13     13  0.2s
+Test Summary:                          | Pass  Total  Time
+bounded grouped stream graph execution |   18     18  1.1s
+Test Summary:                                          | Pass  Total  Time
+portable algorithm graph admits pure sources and sinks |    3      3  0.3s
+Test Summary:                                              | Pass  Total  Time
+portable algorithm graph binds exact node execution owners |    7      7  0.2s
+Test Summary:               | Pass  Total  Time
+graph HIL lockstep boundary |   42     42  0.8s
+Test Summary:                                 | Pass  Total  Time
+portable algorithm graph failure is fail-stop |    5      5  0.1s
+Test Summary:               | Pass  Total  Time
+native modal OPD graph node |    7      7  1.0s
+Test Summary:                                 | Pass  Total  Time
+measured deformable-mirror surface graph node |   12     12  1.4s
+Test Summary:                                          | Pass  Total  Time
+analytic Gaussian deformable-mirror surface graph node |   10     10  0.6s
+Test Summary:                                        | Pass  Total  Time
+separable grid Gaussian deformable-mirror graph node |    9      9  2.0s
+Test Summary:                               | Pass  Total  Time
+finite multilayer-atmosphere OPD graph node |    9      9  2.1s
+Test Summary:                             | Pass  Total  Time
+additive pupil-OPD composition graph node |    4      4  0.5s
+Test Summary:                                     | Pass  Total  Time
+diffractive Shack-Hartmann photon-rate graph node |    8      8  2.2s
+Test Summary:                              | Pass  Total  Time
+diffractive Pyramid photon-rate graph node |    8      8  2.4s
+Test Summary:                                  | Pass  Total  Time
+fractional Pyramid pupil shifts in graph files |    9      9  6.0s
+Test Summary:                                   | Pass  Total  Time
+single-read CCD detector-acquisition graph node |   12     12  2.7s
+Test Summary:                                       | Pass  Total  Time
+global-shutter CMOS detector-acquisition graph node |   10     10  1.9s
+Test Summary:                                        | Pass  Total  Time
+complete-frame EMCCD detector-acquisition graph node |   11     11  1.7s
+Test Summary:                                        | Pass  Total  Time
+YAML graph files compile to native graph definitions |   30     30  1.6s
+Test Summary:                                 | Pass  Total  Time
+YAML graph binds a measured deformable mirror |    3      3  0.7s
+Test Summary:                        | Pass  Total  Time
+fully declared HIL reference systems |   76     76  8.9s
+Test Summary:                                     | Pass  Total  Time
+portable algorithm graph rejects invalid topology |    9      9  0.6s
+Test Summary:                | Pass  Total  Time
+fixed-step model-time driver |   21     21  0.1s
+Test Summary:                       | Pass  Total  Time
+prepared-boundary model-time driver |   13     13  0.1s
+Test Summary:                         | Pass  Total  Time
+periodic prepared-boundary model time |    7      7  0.4s
+Test Summary:              | Pass  Total  Time
+captured model-time replay |   13     13  0.1s
+Test Summary:                              | Pass  Total  Time
+model-time graph stepping commits together |   10     10  0.1s
+Test Summary:                         | Pass  Total  Time
+graph calibration held-probe boundary |   55     55  0.4s
+Test Summary:                          | Pass  Total  Time
+graph calibration model-time exposures |   24     24  0.1s
+Test Summary:                                                   | Pass  Total  Time
+HIL boundary rejects shared Array storage before initialization |   56     56  0.0s
+Test Summary:                             | Pass  Total  Time
+graph calibration ownership and fail-stop |   34     34  0.5s
+Test Summary:                             | Pass  Total  Time
+graph HIL complete multi-command response |   39     39  0.9s
+Test Summary:                                 | Pass  Total  Time
+graph HIL multi-command preparation contracts |   16     16  0.6s
+Test Summary:                             | Pass  Total  Time
+graph HIL multi-command storage ownership |   28     28  0.1s
+Test Summary:                                                   | Pass  Total  Time
+graph HIL multi-command pending frames and partial copy failure |   17     17  0.2s
+Test Summary:                                                     | Pass  Total  Time
+HIL single-command and calibration buffers retain complete shapes |   68     68  0.1s
+Test Summary:                                           | Pass  Total  Time
+HIL multi-command shape checks complete before mutation |   68     68  0.0s

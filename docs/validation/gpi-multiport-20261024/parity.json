@@ -1,0 +1,45 @@
+{
+  "source": "GPI2Sim a12a6d5",
+  "target": "GPI YAML three-command boundary + shared RTC",
+  "backend": "cpu",
+  "noise": false,
+  "model_rate_hz": 2000,
+  "relative_tolerance": 2.0e-5,
+  "outputs": [
+    {
+      "output": "woofer_opd",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 5.899112309748489e-9
+    },
+    {
+      "output": "tweeter_opd",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 1.9084638383515262e-12
+    },
+    {
+      "output": "tiptilt_opd",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 8.60000071156719e-9
+    },
+    {
+      "output": "pupil_opd",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 8.60000071156719e-9
+    },
+    {
+      "output": "photon_rate",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 16508.962890625
+    },
+    {
+      "output": "detector_frame",
+      "max_absolute_difference": 0.0,
+      "max_absolute_reference": 37145.16796875
+    },
+    {
+      "output": "frame",
+      "max_absolute_difference": 4.76837158203125e-7,
+      "max_absolute_reference": 7.4290337562561035
+    }
+  ]
+}

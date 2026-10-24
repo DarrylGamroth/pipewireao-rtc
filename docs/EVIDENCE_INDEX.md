@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI optical model and multi-command HIL — 2026-10-24
+
+The [validation record](validation/gpi-multiport-20261024/README.md) records
+three-port adoption, failure/reset checks, native delayed/missing/duplicate
+responses, numerical comparison and independent review boundaries.
+
 ## Classic acceptance — 2026-10-24
 
 [Acceptance evidence](validation/classic-acceptance-20261024/README.md) records

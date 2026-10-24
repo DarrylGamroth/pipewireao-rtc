@@ -1,0 +1,124 @@
+Test Summary: | Pass  Total  Time
+configuration |   19     19  0.5s
+Test Summary:                 | Pass  Total  Time
+cold HIL admission validation |   26     26  0.9s
+Test Summary:                                       | Pass  Total  Time
+completion notifications do not constitute evidence |   14     14  0.3s
+Test Summary:                                | Pass  Total  Time
+observed exposure staging before publication |   13     13  0.2s
+Test Summary:                                    | Pass  Total  Time
+publication time is not simulated exposure start |   18     18  0.3s
+Test Summary:                                    | Pass  Total  Time
+v3 command acquisition before numerical adoption |   64     64  0.4s
+Test Summary:                       | Pass  Total  Time
+frame-to-command timing observation |   14     14  0.0s
+Test Summary:                                                   | Pass  Total  Time
+owner exchange phase timing and successful sequence attribution |   17     17  0.1s
+Test Summary:                    | Pass  Total  Time
+applied command owner properties |   14     14  0.1s
+Test Summary:                         | Pass  Total  Time
+simulator adopted command observation |   47     47  0.7s
+Test Summary:                       | Pass  Total  Time
+concurrent copied adopted snapshots |    5      5  0.0s
+Test Summary:                                              | Pass  Total  Time
+applied observation reports micrometre OPD for metre input |    2      2  0.0s
+Test Summary:                                              | Pass  Total  Time
+optional DM observation qualifies physical command meaning |   11     11  0.0s
+Test Summary:               | Pass  Total  Time
+optional image declarations |   24     24  0.3s
+Test Summary:                                       | Pass  Total  Time
+copied row-major images and originating acquisition |   44     44  0.2s
+Test Summary:                       | Pass  Total  Time
+coherent concurrent image snapshots |    5      5  0.0s
+Test Summary:                             | Pass  Total  Time
+bounded completion wait and retry cadence |   12     12  0.1s
+Test Summary:                                            | Pass  Total  Time
+suppressed driver trigger does not consume retry cadence |   18     18  0.1s
+Test Summary:                                           | Pass  Total  Time
+suppressed retries retain yielding, timeout and failure |    6      6  0.0s
+Test Summary:                                     | Pass  Total  Time
+completion polling yields without per-poll timers |    3      3  0.0s
+Test Summary:                                | Pass  Total  Time
+completion checks use one published sequence |    7      7  0.0s
+Test Summary:                         | Pass  Total  Time
+driver cycle ownership and completion |    5      5  0.0s
+Test Summary:                                    | Pass  Total  Time
+driver cycle only accepts completion after issue |    7      7  0.0s
+Test Summary:                                         | Pass  Total  Time
+driver cycle trigger serialization and issuer failure |    8      8  0.0s
+Test Summary:                              | Pass  Total  Time
+driver cycle failures retain pending state |    7      7  0.0s
+Test Summary:                                                | Pass  Total  Time
+driver cycle reset requires quiescence and preserves counter |    9      9  0.0s
+Test Summary:                                                       | Pass  Total  Time
+driver cycle wait yields and immediate completion allocates nothing |    4      4  0.0s
+Test Summary:                        | Pass  Total  Time
+driver cycle pending wait allocation |    3      3  0.0s
+Test Summary:                  | Pass  Total  Time
+cold source buffer cardinality |   33     33  0.5s
+Test Summary:                      | Pass  Total  Time
+borrowed frame and command buffers |   15     15  0.2s
+Test Summary:             | Pass  Total  Time
+packed frame chunk stride |   40     40  0.2s
+Test Summary:               | Pass  Total  Time
+ndarray layout chunk stride |    8      8  0.0s
+Test Summary:                     | Pass  Total  Time
+Float32 and UInt16 frame encoding |   29     29  0.1s
+Test Summary:                                | Pass  Total  Time
+command units and validation before mutation |   45     45  0.2s
+Test Summary:             | Pass  Total  Time
+quiescent transport reset |   12     12  0.0s
+Test Summary:                                  | Pass  Total  Time
+teardown after callback or child cleanup error |   15     15  0.2s
+Test Summary:               | Pass  Total  Time
+partial construction unwind |   18     18  0.5s
+Test Summary:                        | Pass  Total  Time
+optional observation resource unwind |    3      3  0.1s
+Test Summary:                  | Pass  Total  Time
+optional image resource unwind |    3      3  0.1s
+Test Summary:                                                     | Pass  Total  Time
+independent image group closes all resources after stream failure |    4      4  0.1s
+Test Summary:                             | Pass  Total  Time
+named command configuration and admission |   19     19  1.4s
+Test Summary:                                         | Pass  Total  Time
+coherent command set adoption and reordered callbacks |   17     17  0.5s
+Test Summary:                                                     | Pass  Total  Time
+command set rejects duplicate stale wrong and invalid final ports |   35     35  0.0s
+Test Summary:                                     | Pass  Total  Time
+each named command validates acquisition identity |    6      6  0.0s
+Test Summary:                                             | Pass  Total  Time
+all named command streams close despite one cleanup error |    3      3  0.1s
+Test Summary:                                       | Pass  Total  Time
+named adopted observations follow coherent adoption |    6      6  0.1s
+Test Summary:                                     | Pass  Total  Time
+resized named command storage rejects before copy |   36     36  0.0s
+Test Summary:                                        | Pass  Total  Time
+calibration probe mailbox correlation and validation |   53     53  0.4s
+Test Summary:                                       | Pass  Total  Time
+held exposure completion fence and reset generation |   35     35  0.2s
+Test Summary:                                        | Pass  Total  Time
+submission failures and unknown outcomes fail closed |   16     16  0.0s
+Test Summary:                                                  | Pass  Total  Time
+calibration borrowed command copy and notification allocations |    4      4  0.1s
+Test Summary:                                              | Pass  Total  Time
+calibration model exposure range validates before stepping |    8      8  0.0s
+Test Summary:                                                | Pass  Total  Time
+calibration transport preparation requires a fresh AOS owner |    2      2  1.0s
+Test Summary:                                   | Pass  Total  Time
+exposure owner arming precedes source admission |   20     20  0.1s
+Test Summary:                                                      | Pass  Total  Time
+exposure owner arming failure retains one step and no source frame |   12     12  0.0s
+Test Summary:                                                 | Pass  Total  Time
+calibration operation budget validation and original deadline |   16     16  0.0s
+Test Summary:                                       | Pass  Total  Time
+adopted probe readback preserves demanded wire bits |   23     23  0.1s
+Test Summary:                                                       | Pass  Total  Time
+calibration disconnect fences readback and exposure acknowledgement |    8      8  0.0s
+Test Summary:                           | Pass  Total  Time
+PipeWire acquisition model-time capture |   17     17  0.3s
+Test Summary:                 | Pass  Total   Time
+private-core node publication |  173    173  15.2s
+Test Summary:                                                 | Pass  Total  Time
+private-core held-probe command and exposure transport: throw |  374    374  4.9s
+Test Summary:                                                    | Pass  Total  Time
+private-core held-probe command and exposure transport: deadline |  374    374  1.1s
