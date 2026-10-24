@@ -181,17 +181,62 @@ function _validate_shape_control(value, units, directory)
 end
 
 function _validate_sensor_declaration(spec, directory, name)
+    sensor = _declaration_object(spec, "sensor $name")
+    _validate_sensor_declaration(sensor_kind(sensor), sensor, directory, name)
+    haskey(sensor, "acquisition") && _validate_acquisition(sensor["acquisition"])
+    _declaration_text(sensor["expected_schema"], "sensor expected_schema")
+    return nothing
+end
+
+sensor_kind(spec::AbstractDict) = sensor_kind(get(spec, "kind", "shack_hartmann"))
+sensor_kind(kind::AbstractString) = kind == "shack_hartmann" ? Val(:shack_hartmann) :
+    kind == "pyramid" ? Val(:pyramid) : throw(ArgumentError("unsupported sensor kind"))
+sensor_kind(kind) = throw(ArgumentError("sensor kind must be shack_hartmann or pyramid"))
+
+function _validate_sensor_declaration(::Val{:shack_hartmann}, spec, directory, name)
     sensor = _declaration_fields(spec,
-        ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "optical_prescription", "acquisition"),
+        ("kind", "detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema", "optical_prescription", "acquisition"),
         ("detector_shape", "subaperture_shape", "subaperture_origins", "expected_schema"),
         "sensor $name")
     _validate_positive_shape(sensor["detector_shape"], "sensor detector_shape")
     _validate_positive_shape(sensor["subaperture_shape"], "sensor subaperture_shape")
     haskey(sensor, "optical_prescription") && _validate_sensor_optics(sensor)
-    haskey(sensor, "acquisition") && _validate_acquisition(sensor["acquisition"])
     _validate_artifact(sensor["subaperture_origins"], directory, "subaperture_origins")
-    _declaration_text(sensor["expected_schema"], "sensor expected_schema")
     return nothing
+end
+
+function _validate_sensor_declaration(::Val{:pyramid}, spec, directory, name)
+    required = ("kind", "detector_shape", "pupil_shape", "pupil_separation_pixels",
+        "pupil_edge_pixels", "expected_schema")
+    sensor = _declaration_fields(spec, (required..., "acquisition"), required, "sensor $name")
+    pyramid_geometry(sensor)
+    return nothing
+end
+
+function sensor_pixel_pair(value, label; positive=false)
+    pair = _declaration_array(value, label)
+    valid = positive ? ispositive_integer : isnonnegative_integer
+    length(pair) == 2 && all(x -> valid(x) && x <= typemax(Int), pair) ||
+        throw(ArgumentError("$label requires two $(positive ? "positive" : "nonnegative") Int [row,column] values"))
+    return (Int(pair[1]), Int(pair[2]))
+end
+
+function pyramid_geometry(sensor)
+    detector_shape = sensor_pixel_pair(sensor["detector_shape"], "sensor detector_shape"; positive=true)
+    pupil_shape = sensor_pixel_pair(sensor["pupil_shape"], "sensor pupil_shape"; positive=true)
+    separation = sensor_pixel_pair(sensor["pupil_separation_pixels"], "sensor pupil_separation_pixels")
+    edge = sensor_pixel_pair(sensor["pupil_edge_pixels"], "sensor pupil_edge_pixels")
+    # Subtract each extent before adding origins, so even Int-sized inputs
+    # reject an overflowing or out-of-detector four-pupil arrangement.
+    all(axis -> pupil_shape[axis] <= detector_shape[axis] &&
+        edge[axis] <= detector_shape[axis] - pupil_shape[axis] &&
+        pupil_shape[axis] <= detector_shape[axis] - pupil_shape[axis] - edge[axis] &&
+        separation[axis] <= detector_shape[axis] - pupil_shape[axis] - edge[axis] - pupil_shape[axis], 1:2) ||
+        throw(ArgumentError("pyramid pupil region lies outside the detector"))
+    far = ntuple(axis -> edge[axis] + pupil_shape[axis] + separation[axis], 2)
+    pupil_origins = ((edge[1], edge[2]), (far[1], edge[2]),
+        (edge[1], far[2]), (far[1], far[2]))
+    return (;detector_shape, pupil_shape, pupil_origins)
 end
 
 function _validate_acquisition(value)

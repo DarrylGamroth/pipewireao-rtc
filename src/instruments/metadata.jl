@@ -24,7 +24,7 @@ function artifact_paths(declaration,configured)
         push!(paths,spec["description"])
     end
     for spec in values(declaration.instrument.document["wavefront_sensors"])
-        push!(paths,spec["subaperture_origins"]["path"])
+        union!(paths,sensor_artifact_paths(sensor_kind(spec),spec))
     end
     for name in selected_binding_names(declaration,configured)
         binding = declaration.document["bindings"][name]
@@ -34,6 +34,9 @@ function artifact_paths(declaration,configured)
     end
     return paths
 end
+
+sensor_artifact_paths(::Val{:shack_hartmann},spec) = (spec["subaperture_origins"]["path"],)
+sensor_artifact_paths(::Val{:pyramid},spec) = ()
 
 graph_source_identity(directory, source::AbstractString) = Common.sha256_file(D.relative_asset(directory, source))
 graph_source_identity(directory, source::AbstractDict) = InstrumentDefinition.scientific_identity(canonical(source))
@@ -83,7 +86,10 @@ function prescription_identity(declaration,configured)
     return InstrumentDefinition.scientific_identity(body)
 end
 
-function sensor_layout(declaration,spec)
+sensor_layout(declaration,spec) = sensor_layout(sensor_kind(spec),declaration,spec)
+sensor_layout(::Val{:pyramid},declaration,spec) = merge((;kind="pyramid"),pyramid_geometry(spec))
+
+function sensor_layout(::Val{:shack_hartmann},declaration,spec)
     source = spec["subaperture_origins"]
     shape = Tuple(spec["subaperture_shape"])
     detector_shape = Tuple(spec["detector_shape"])
