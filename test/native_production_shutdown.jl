@@ -1,3 +1,7 @@
+# Historical REVOLTRTC qualification only; not part of test/runtests.jl.
+# The REVOLTRTC repository is retired. This script is preserved to interpret
+# dated receipts, not to validate the current headless RTC. Current shutdown
+# and fault checks are documented in test/integration/README.md.
 # Opt-in system/application qualification against an explicitly supplied sealed
 # REVOLT SDK. No SDK source, algorithm, graph, placement or deadline is changed.
 using REVOLTRTC

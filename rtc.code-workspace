@@ -9,10 +9,6 @@
       "path": "../revolt-classic-rtc"
     },
     {
-      "name": "revolt-rtc",
-      "path": "../REVOLTRTC.jl"
-    },
-    {
       "name": "scientific-graphs",
       "path": "../JuliaFilterGraph.jl"
     },

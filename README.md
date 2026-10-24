@@ -146,15 +146,11 @@ session publication. The caller's absolute deadline must also cover installation
 and startup. Live controls and acquisition retain their existing deadlines.
 Budgets above five minutes require the matching RTC owner policy.
 
-For an exported REVOLT instrument package, use its preflight before session
-startup. From this shared repository root:
-
-```sh
-julia --startup-file=no --project=../REVOLTRTC.jl -e '
-    using REVOLTRTC
-    println(REVOLTRTC.Installation.start!(ARGS[1], ARGS[2]))
-' /absolute/sealed-package /absolute/fresh-stage
-```
+Classic's instrument authoring files and build/preflight commands live in the
+[instrument repository](../../adaptive-optics-simulations/README.md).
+Launch its sealed output with `PipeWireAORTC.SessionRuntime.start!` as above.
+The former `REVOLTRTC.jl` launcher is retired; older sealed packages retain
+their recorded runtime and are not migrated by this command.
 
 ## Native session control
 
@@ -200,10 +196,11 @@ See [headless artifact registration and shared update history](docs/JULIA_DEPLOY
 Session lifecycle policy lives in the headless RTC process under `native/`. The RTC Rust crate is
 retired: the GUI owns its native Rust client, and calibration driving uses the
 shared Julia implementation. Existing sealed SDKs retain their original files
-and launchers. REVOLT Classic/Copper/HEART integration is in the independent
-[REVOLTRTC.jl project](../REVOLTRTC.jl/README.md). Use its export/calibration
-commands and `REVOLTRTC.Installation.start!` for instrument preflight; shared
-session clients remain instrument-independent.
+and launchers. Current instrument definitions are in the
+[instrument repository](../../adaptive-optics-simulations/README.md), with reusable
+preparation and deployment in this package. Dated REVOLTRTC/Copper/HEART guides
+preserve historical procedures and evidence; they do not establish qualification
+of those instruments on the current shared path.
 
 ## Qualification scope
 
