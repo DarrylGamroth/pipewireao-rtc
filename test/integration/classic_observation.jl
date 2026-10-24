@@ -26,7 +26,7 @@ const CLASSIC_OBSERVATION_STREAMS = (
         type=Float32, wire=NdArray.F32_LE, shape=(277,),
         schema="pipewireao/dm-offset-opd-um-f32/1", rate=nothing),
     (name="focal", node="simulator-focal-image-queue-output", media="focal-image",
-        type=Float32, wire=NdArray.F32_LE, shape=(480,480),
+        type=Float32, wire=NdArray.F32_LE, shape=(960,960),
         schema="pipewireao/focal-photon-rate-f32/1", rate=nothing),
 )
 

@@ -209,3 +209,23 @@ Native source, control/insertion/isolation runs, GUI driver snapshots, suspensio
 counters and stream receipts are preserved under
 `/home/dgamroth/.local/state/pipewireao/classic-telemetry-isolation-20261024/`.
 The temporary diagnostic HIL build is not the production fix.
+
+Final non-diagnostic application: RTC source 084910b, package tree
+`da0410c6d72e8198fde2e103f74b74e0ac3fe41d`; HIL retains ac16cf0's publication
+retry without the temporary failure-capture hook. The application and final
+receipts are under `~/.local/state/pipewireao/classic-telemetry-20261024/`.
+The prior diagnostic deployment stopped cleanly. Full Classic CPU offline export
+passed in the scientific application environment (the base tooling environment
+lacks the optional FilterGraphIsland dependency required by this export).
+
+The final CUDA session passed Stop/Reset/Start before reopening the GUI. A
+30-second observation accepted all eight products, including 587 focal images
+and 1417–1419 distinct samples per other product, with finite payloads and
+Acquisition generation 2 after reset. The initial observer's old 480x480 focal
+expectation was rejected; the current 480-sample pupil uses twofold padding and
+publishes 960x960. The maintained Classic observation expectation is corrected
+to that declared output, independently confirmed against the published format.
+That observer negotiation failure did not stop the RTC. The telemetry/analysis
+driver remained 45, distinct from source 120, after reset and GUI attachment.
+RTC and GUI are left active. This remains functional evidence, not long-duration
+or deadline qualification.
