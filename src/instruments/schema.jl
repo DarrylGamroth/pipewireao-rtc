@@ -85,6 +85,9 @@ function validate_simulation(document, instrument, directory, graphs)
     _validate_settings_bindings(document["settings_bindings"], profiles, defaults,
         settings_schema, all_graph_nodes)
     _validate_hil(document["hil"], graph_inputs, graph_outputs)
+    for contract in document["wire_contracts"]
+        validate_boundary_contract(document["hil"]["command_input"],contract["command_schema"])
+    end
     return nothing
 end
 
@@ -369,12 +372,34 @@ function _validate_wire_contracts(value)
             "wire contract")
         _declaration_text(contract["frame_encoding"], "wire contract frame_encoding")
         _declaration_text(contract["frame_schema"], "wire contract frame_schema")
-        _declaration_text(contract["command_schema"], "wire contract command_schema")
-        isfinite_positive(contract["command_scale"]) ||
-            throw(ArgumentError("wire contract command_scale must be finite and positive"))
+        validate_command_contract(contract["command_schema"],contract["command_scale"])
     end
     return nothing
 end
+
+function validate_command_contract(schema::AbstractString,scale::Real)
+    _declaration_text(schema,"wire contract command_schema")
+    isfinite_positive(scale) && isfinite_positive(Float32(scale)) ||
+        throw(ArgumentError("wire command_scale must be finite and positive in Float32"))
+    return nothing
+end
+function validate_command_contract(schemas::AbstractDict,scales::AbstractDict)
+    1 <= length(schemas) <= 16 && Set(keys(schemas)) == Set(keys(scales)) ||
+        throw(ArgumentError("wire command schema/scale maps require the same 1:16 names"))
+    for name in keys(schemas)
+        _declaration_identifier(name,"wire command name")
+        validate_command_contract(_declaration_text(schemas[name],"wire command schema"),scales[name])
+    end
+    return nothing
+end
+validate_command_contract(schemas,scales) = throw(ArgumentError("wire commands require scalar or matching named schema/scale maps"))
+
+validate_boundary_contract(::AbstractString,::AbstractString) = nothing
+function validate_boundary_contract(names::AbstractVector,schemas::AbstractDict)
+    Set(names) == Set(keys(schemas)) || throw(ArgumentError("wire command names differ from the HIL boundary"))
+    return nothing
+end
+validate_boundary_contract(names,schemas) = throw(ArgumentError("wire command contracts must match the scalar or named HIL boundary"))
 
 function _validate_bindings(bindings, mirrors, defaults, settings_schema, profiles, directory)
     for (name, binding_value) in bindings
@@ -388,6 +413,11 @@ function _validate_bindings(bindings, mirrors, defaults, settings_schema, profil
             all(extent -> _valid_zero_extent(extent, defaults, settings_schema, profiles), shape) ||
                 throw(ArgumentError("zero binding shape must use positive extents or existing setting names"))
             _validate_element_type(binding["type"], "zero binding")
+        elseif kind in ("pupil_coordinates", "pupil_support")
+            binding = _declaration_fields(binding_value, ("kind", "resolution"),
+                ("kind", "resolution"), "pupil binding $name")
+            _valid_zero_extent(binding["resolution"], defaults, settings_schema, profiles) ||
+                throw(ArgumentError("pupil binding resolution must be a positive extent or existing setting"))
         elseif kind in ("mirror_coordinates", "mirror_grid_indices")
             binding = _declaration_fields(binding_value, ("kind", "mirror"),
                 ("kind", "mirror"), "mirror geometry binding $name")
@@ -503,9 +533,10 @@ end
 function _validate_hil(value, graph_inputs, graph_outputs)
     hil = _declaration_fields(value, ("command_input", "frame_output"),
         ("command_input", "frame_output"), "HIL boundary")
-    command_input = _declaration_text(hil["command_input"], "HIL command_input")
+    command_inputs = hil_command_endpoints(hil["command_input"])
+    foreach(name -> _declaration_identifier(name,"HIL command_input"),command_inputs)
     frame_output = _declaration_text(hil["frame_output"], "HIL frame_output")
-    all(command_input in graph_inputs[mode] for mode in keys(graph_inputs)) ||
+    all(name in graph_inputs[mode] for name in command_inputs for mode in keys(graph_inputs)) ||
         throw(ArgumentError("HIL command_input is absent from a declared graph"))
     all(frame_output in graph_outputs[mode] for mode in keys(graph_outputs)) ||
         throw(ArgumentError("HIL frame_output is absent from a declared graph"))

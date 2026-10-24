@@ -279,15 +279,31 @@ function expand_simulation_components!(document, instrument, directory)
     hil = document["hil"]
     if haskey(hil, "command") || haskey(hil, "frame")
         fields(hil, ("command", "frame"), ("command", "frame"), "HIL endpoints")
-        inputs, outputs = Set{String}(), Set{String}()
+        inputs, outputs = Vector{String}[], Set{String}()
         for graph in values(graphs)
-            commands = [entry["name"] for entry in graph["inputs"] if entry["destination"] == hil["command"]]
+            endpoints = hil_command_endpoints(hil["command"])
+            commands = map(endpoints) do endpoint
+                matches = [entry["name"] for entry in graph["inputs"] if entry["destination"] == endpoint]
+                length(matches) == 1 || throw(ArgumentError("HIL command endpoint must name exactly one graph input"))
+                only(matches)
+            end
             frames = [entry["name"] for entry in graph["outputs"] if entry["source"] == hil["frame"]]
-            length(commands) == length(frames) == 1 || throw(ArgumentError("HIL endpoints require one explicit boundary in every graph"))
-            push!(inputs, only(commands)); push!(outputs, only(frames))
+            length(frames) == 1 || throw(ArgumentError("HIL frame endpoint must name exactly one graph output"))
+            push!(inputs, collect(commands)); push!(outputs, only(frames))
         end
-        length(inputs) == length(outputs) == 1 || throw(ArgumentError("HIL boundary names differ across graphs"))
-        document["hil"] = Dict("command_input" => only(inputs), "frame_output" => only(outputs))
+        all(==(first(inputs)), inputs) && length(outputs) == 1 || throw(ArgumentError("HIL boundary names differ across graphs"))
+        commands = first(inputs)
+        document["hil"] = Dict("command_input" => hil_command_selection(hil["command"], commands), "frame_output" => only(outputs))
     end
     return (;graphs, templates=Tuple(sort!(collect(templates))))
 end
+
+hil_command_endpoints(value::AbstractString) = (value,)
+function hil_command_endpoints(value::AbstractVector)
+    1 <= length(value) <= 16 && all(InstrumentDefinition.nonempty_text, value) &&
+        length(unique(value)) == length(value) || throw(ArgumentError("HIL commands require 1:16 unique endpoints"))
+    return value
+end
+hil_command_endpoints(value) = throw(ArgumentError("HIL command must be an endpoint or endpoint array"))
+hil_command_selection(::AbstractString, names) = only(names)
+hil_command_selection(::AbstractVector, names) = collect(names)

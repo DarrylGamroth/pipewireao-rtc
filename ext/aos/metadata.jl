@@ -1,10 +1,11 @@
 using AdaptiveOpticsSim.AlgorithmGraphs: MultiLayerAtmosphereOPDNodeConfig,
-    CMOSDetectorAcquisitionNodeConfig
+    CMOSDetectorAcquisitionNodeConfig, EMCCDDetectorAcquisitionNodeConfig
 
 atmosphere_seed(config) = nothing
 atmosphere_seed(config::MultiLayerAtmosphereOPDNodeConfig) = config.rng_seed
 detector_seed(config) = nothing
 detector_seed(config::CMOSDetectorAcquisitionNodeConfig) = config.rng_seed
+detector_seed(config::EMCCDDetectorAcquisitionNodeConfig) = config.rng_seed
 
 function single_seed(definition::AlgorithmGraphDefinition, select)
     seeds = filter(!isnothing, map(node -> select(node.config), definition.nodes))

@@ -7,7 +7,7 @@ function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractS
     document = Instruments.graph_document(declaration, configured)
     # Public AOS factories return cold typed declarations. They do not prepare
     # numerical state or require any input/parameter artifact arrays.
-    factories = builtin_graph_node_types()
+    factories = configured_graph_node_types()
     nodes = Tuple(map(document["nodes"]) do entry
         factory = getproperty(factories, Symbol(entry["type"]))
         factory(Symbol(entry["name"]), Instruments._instrument_seal(entry["config"]),
@@ -40,12 +40,12 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
         copy_to_target(target,source)
     end)
     bindings = NamedTuple{Tuple(Symbol.(names))}(arrays)
-    definition = load_algorithm_graph(document;bindings)
+    definition = load_algorithm_graph(document;bindings,node_types=configured_graph_node_types())
     graph = prepare_algorithm_graph(definition;target,execution)
     hil = declaration.document["hil"]
     Instruments.fields(hil,("command_input","frame_output"),("command_input","frame_output"),"instrument HIL boundary")
     boundary = prepare_graph_hil_boundary(graph;
-        command_input=Symbol(hil["command_input"]),frame_output=Symbol(hil["frame_output"]))
+        command_input=configured_command_inputs(hil["command_input"]),frame_output=Symbol(hil["frame_output"]))
     frame_period_s = Float32(declaration.document["frame_period_s"])
     isfinite(frame_period_s) && frame_period_s>0 || throw(ArgumentError("invalid instrument frame period"))
     period_ns = round(UInt64,Float64(frame_period_s)*1e9)
@@ -58,6 +58,9 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
         settings=Instruments._instrument_seal(configured))
 end
 
+configured_command_inputs(value::AbstractString) = Symbol(value)
+configured_command_inputs(value::AbstractVector) = Tuple(Symbol.(value))
+
 function prepare_configured_science(options,device;check=()->nothing)
     execution = options.backend===:cpu ? StreamGraphExecution() : CapturedGraphExecution()
     system = Instruments.prepare_system(options.plant.definition;
@@ -68,8 +71,8 @@ function prepare_configured_science(options,device;check=()->nothing)
         command_shape=(options.command_count,),frame_shape=options.frame_shape)
     declaration = Instruments.load_simulation(options.plant.definition)
     contracts = Tuple((;frame_encoding=Symbol(entry["frame_encoding"]),
-        frame_schema=entry["frame_schema"],command_schema=entry["command_schema"],
-        command_scale=Float32(entry["command_scale"])) for entry in declaration.document["wire_contracts"])
+        frame_schema=entry["frame_schema"],command_schema=Instruments._instrument_seal(entry["command_schema"]),
+        command_scale=configured_command_scales(Instruments._instrument_seal(entry["command_scale"]))) for entry in declaration.document["wire_contracts"])
     AdaptiveOpticsSimPipeWireHIL.validate_wire_contract(options.frame_encoding,
         options.frame_schema,options.command_schema,options.command_scale,contracts)
     configuration = wire_configuration(options)
@@ -83,6 +86,9 @@ function prepare_configured_science(options,device;check=()->nothing)
     return (;system.definition,system.graph,system.boundary,target=device,artifacts=(),configuration)
 end
 
+configured_command_scales(value::Real) = Float32(value)
+configured_command_scales(values::NamedTuple) = map(Float32,values)
+
 validate_node_timing(config,options) = nothing
 function validate_node_timing(config::AlgorithmGraphs.MultiLayerAtmosphereOPDNodeConfig,options)
     round(UInt64,Float64(config.atmosphere_step)*1e9)==options.period_ns ||
@@ -91,4 +97,46 @@ end
 function validate_node_timing(config::AlgorithmGraphs.CMOSDetectorAcquisitionNodeConfig,options)
     round(UInt64,Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
         throw(ArgumentError("detector exposure differs from configured acquisition"))
+end
+function validate_node_timing(config::AlgorithmGraphs.EMCCDDetectorAcquisitionNodeConfig,options)
+    round(UInt64,Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
+        throw(ArgumentError("detector exposure differs from configured acquisition"))
+end
+
+# These cold bindings reuse AOS's telescope definition, including its aperture
+# convention. The coefficients of the coordinate basis are metres of OPD;
+# neither a physical stage angle nor a mirror reflection factor is inferred.
+function pupil_binding_resolution(declaration, configured, binding)
+    value = Instruments.Common.configuration_value(binding["resolution"],
+        Instruments.configuration_context(declaration, configured))
+    resolution = Instruments.dimension(configured, value)
+    Instruments.Artifacts.checked_shape((resolution, resolution, 2), sizeof(Float32))
+    return Int(resolution)
+end
+
+function configured_telescope(declaration, configured, binding)
+    resolution = pupil_binding_resolution(declaration, configured, binding)
+    spec = declaration.instrument.document["telescope"]
+    return AdaptiveOpticsSim.Optics.prepare_telescope(
+        AdaptiveOpticsSim.Optics.TelescopeDefinition(;
+            resolution, diameter=spec["telescope_diameter_m"],
+            central_obstruction=spec["central_obstruction_ratio"],
+            pupil_reflectivity=spec["pupil_reflectivity"],
+            revision=spec["aperture_revision"], T=Float32), Backends.HostComputeDevice())
+end
+
+function Instruments.binding_values(::Val{:pupil_support}, declaration, configured, binding)
+    telescope = configured_telescope(declaration, configured, binding)
+    return copy(AdaptiveOpticsSim.Optics.pupil_mask(telescope))
+end
+
+function Instruments.binding_values(::Val{:pupil_coordinates}, declaration, configured, binding)
+    n = pupil_binding_resolution(declaration, configured, binding)
+    basis = Array{Float32}(undef, n, n, 2)
+    center, radius = Float32((n + 1) / 2), Float32(n / 2)
+    for j in axes(basis, 2), i in axes(basis, 1)
+        basis[i,j,1] = (i-center)/radius
+        basis[i,j,2] = (j-center)/radius
+    end
+    return basis
 end

@@ -1,18 +1,6 @@
-# Generic array operations for configured AOS graphs. Boundary semantics follow
-# GPI2Sim's CommandRoutingNode and FrameLayoutNode; these cold
-# factories independently express vector partitioning and rectangular placement.
+# Detector placement and affine conversion for configured AOS graphs.
+# Boundary semantics follow the former GPI2Sim FrameLayoutNode.
 # Dimensions are [rows, columns]; the detector origin counts from zero.
-
-struct VectorPartitionNode end
-struct VectorPartitionConfig{P}
-    input_size::Tuple{Int}
-    input_schema::String
-    partitions::P
-end
-struct VectorPartitionOwner{I,O}
-    inputs::I
-    outputs::O
-end
 
 struct DetectorFrameLayoutNode end
 struct DetectorFrameLayoutConfig{R}
@@ -60,12 +48,6 @@ function _adapter_string(value::AbstractString, context)
 end
 _adapter_string(value, context) = throw(_adapter_error("$context must be a string"))
 
-function _adapter_identifier(value, context)
-    text = _adapter_string(value, context)
-    Base.isidentifier(text) || throw(_adapter_error("$context must be an identifier"))
-    return Symbol(text)
-end
-
 function _adapter_tuple(value::Tuple, rank, context)
     length(value) == rank || throw(_adapter_error("$context must have $rank entries"))
     return value
@@ -95,45 +77,6 @@ function _adapter_f32(value::Real, context)
 end
 _adapter_f32(value, context) = throw(_adapter_error("$context must be a real number"))
 _adapter_f32(value::Bool, context) = throw(_adapter_error("$context must be a real number"))
-
-function _vector_partition_f32_node(name::Symbol, config::NamedTuple, props::NamedTuple)
-    fields = (:input_size, :input_schema, :partitions)
-    context = "node '$name' config"
-    _adapter_fields(config, fields, fields, context)
-    _adapter_fields(props, (), (), "node '$name' props")
-    input_size = _adapter_shape(config.input_size, 1, "$context.input_size")
-    input_schema = _adapter_string(config.input_schema, "$context.input_schema")
-    partitions = _adapter_partitions(config.partitions, input_size[1], context)
-    return algorithm_node(name, VectorPartitionNode,
-        VectorPartitionConfig(input_size, input_schema, partitions))
-end
-
-function _adapter_partitions(partitions::Tuple, count::Int, context)
-    1 <= length(partitions) <= 256 ||
-        throw(_adapter_error("$context.partitions must contain 1:256 entries"))
-    # Input coverage bounds total output storage by the input's admitted size.
-    configured = map(partitions) do partition
-        fields = (:name, :size, :schema)
-        _adapter_fields(partition, fields, fields, "$context.partitions")
-        name = _adapter_identifier(partition.name, "$context.partitions.name")
-        name === :command && throw(_adapter_error("partition name conflicts with input command"))
-        shape = _adapter_shape(partition.size, 1, "$context.partitions.size")
-        schema = _adapter_string(partition.schema, "$context.partitions.schema")
-        return (; name, size=shape, schema)
-    end
-    names = map(partition -> partition.name, configured)
-    length(unique(names)) == length(names) || throw(_adapter_error("partition names must be distinct"))
-    covered = 0
-    for partition in configured
-        partition.size[1] <= count - covered ||
-            throw(_adapter_error("partition sizes exceed the input vector"))
-        covered += partition.size[1]
-    end
-    covered == count || throw(_adapter_error("partitions must cover the complete input vector"))
-    return configured
-end
-_adapter_partitions(partitions, count, context) =
-    throw(_adapter_error("$context.partitions must be an array"))
 
 function _adapter_range(value::Tuple, context)
     _adapter_tuple(value, 2, context)
@@ -170,33 +113,19 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
 end
 
 """
-Cold factory registry extending AOS with two CPU array operations:
+Cold factory registry extending AOS with CPU detector layout:
 
-- `vector_partition_f32`: `input_size=[N]`, `input_schema`, and
-  1:256 ordered `partitions=[{name, size=[count], schema}, ...]` covering all N elements.
-  Input port `command` is copied into the named, independent output buffers.
 - `detector_frame_layout_f32`: `input_size` and `output_size` in [rows, columns],
   zero-based `origin`, `scale`, `bias`, `input_schema`, and `output_schema`.
   Input `detector_frame` is placed in output `frame` with zero padding. Omit
   `range` for `input * scale + bias`; provide `[lower, upper]` to clamp it.
 
-Both nodes reset their output buffers to zero and require one-based Float32
+The node resets its output buffer to zero and requires one-based Float32
 arrays. Accelerator execution and command-graph capture are unsupported.
 """
 function configured_graph_node_types()
     return merge(builtin_graph_node_types(), (
-        vector_partition_f32=_vector_partition_f32_node,
-        detector_frame_layout_f32=_detector_frame_layout_f32_node))
-end
-
-function AlgorithmGraphs.graph_node_ports(::Type{VectorPartitionNode}, config::VectorPartitionConfig)
-    input = AlgorithmGraphs.graph_port_contract(:command, :input, :data, Float32,
-        config.input_size, config.input_schema, :column_major)
-    outputs = map(config.partitions) do partition
-        AlgorithmGraphs.graph_port_contract(partition.name, :output, :data, Float32,
-            partition.size, partition.schema, :column_major)
-    end
-    return (input, outputs...)
+        detector_frame_layout_f32=_detector_frame_layout_f32_node,))
 end
 
 function AlgorithmGraphs.graph_node_ports(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig)
@@ -214,28 +143,6 @@ function _adapter_buffer(values::AbstractArray{Float32,N}, shape::NTuple{N,Int})
 end
 _adapter_buffer(values, shape) = throw(_adapter_error("graph adapter requires Float32 arrays of the declared rank"))
 
-function AlgorithmGraphs.prepare_graph_node(::Type{VectorPartitionNode}, config::VectorPartitionConfig,
-        ::NamedTuple{()}, inputs::NamedTuple{(:command,)}, outputs::NamedTuple,
-        ::NamedTuple{()}, ::Backends.HostComputeDevice)
-    command = _adapter_buffer(inputs.command, config.input_size)
-    names = map(partition -> partition.name, config.partitions)
-    keys(outputs) == names || throw(_adapter_error("partition output names differ from declaration"))
-    offset = 0
-    views = map(config.partitions) do partition
-        output = _adapter_buffer(getproperty(outputs, partition.name), partition.size)
-        Base.mightalias(output, command) &&
-            throw(_adapter_error("partition output must not alias its input"))
-        indices = (offset + 1):(offset + partition.size[1])
-        offset += partition.size[1]
-        view(command, indices)
-    end
-    for i in 1:length(outputs), j in (i + 1):length(outputs)
-        Base.mightalias(outputs[i], outputs[j]) &&
-            throw(_adapter_error("partition outputs must not alias each other"))
-    end
-    return VectorPartitionOwner(views, values(outputs))
-end
-
 function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig,
         ::NamedTuple{()}, inputs::NamedTuple{(:detector_frame,)}, outputs::NamedTuple{(:frame,)},
         ::NamedTuple{()}, ::Backends.HostComputeDevice)
@@ -251,17 +158,7 @@ end
 
 # Host wrappers and strided views are supported at the node protocol. Accelerator
 # preparation and command-graph capture remain unqualified and unsupported.
-AlgorithmGraphs.graph_node_capture_capability(::VectorPartitionOwner) = AlgorithmGraphs.GraphNodeCaptureUnsupported()
 AlgorithmGraphs.graph_node_capture_capability(::DetectorFrameLayoutOwner) = AlgorithmGraphs.GraphNodeCaptureUnsupported()
-
-function AlgorithmGraphs.step_graph_node!(owner::VectorPartitionOwner)
-    map(copyto!, owner.outputs, owner.inputs)
-    return nothing
-end
-function AlgorithmGraphs.reset_graph_node!(owner::VectorPartitionOwner)
-    foreach(output -> fill!(output, 0f0), owner.outputs)
-    return nothing
-end
 
 _layout_value(value, scale, bias, ::Nothing) = value * scale + bias
 _layout_value(value, scale, bias, range::Tuple{Float32,Float32}) =

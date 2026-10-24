@@ -587,12 +587,26 @@ detector_frame:
   element_type: "Float32"
   wire_type: "F32_LE"
   frame_encoding: "float32"
+detector_em_output_electrons:
+  id: "pipewireao/detector-em-output-electrons-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+  frame_encoding: "float32"
+detector_input_equivalent_electrons:
+  id: "pipewireao/detector-input-equivalent-electrons-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+  frame_encoding: "float32"
 atmosphere_opd_m:
   id: "pipewireao/atmosphere-opd-m-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
 actuator_command_opd_m:
   id: "pipewireao/actuator-command-opd-m-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+tip_tilt_opd_coefficients_m:
+  id: "pipewireao/tip-tilt-opd-coefficients-m-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
 dm_surface_opd_m:
@@ -607,6 +621,14 @@ normalized_pupil_actuator_coordinates:
   id: "pipewireao/normalized-pupil-actuator-coordinates-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
+normalized_pupil_xy:
+  id: "pipewireao/normalized-pupil-xy-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+annular_pupil_support:
+  id: "pipewireao/annular-pupil-support-bool/1"
+  element_type: "Bool"
+  wire_type: "BOOL8"
 influence_functions:
   id: "pipewireao/influence-functions-f32/1"
   element_type: "Float32"

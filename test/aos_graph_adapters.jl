@@ -6,19 +6,9 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL
 
 const AdapterExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
-# Permit validation against the frozen RTC science environment before wiring
-# the new shared extension include into the deployment environment.
-if !isdefined(AdapterExtension, :configured_graph_node_types)
-    Base.include(AdapterExtension, joinpath(@__DIR__, "..", "ext", "aos", "graph_adapters.jl"))
-end
 const AdapterAOG = AdaptiveOpticsSim.AlgorithmGraphs
 const AdapterTarget = AdaptiveOpticsSim.Backends.HostComputeDevice()
 
-partition_config() = Dict{String,Any}(
-    "input_size" => [5], "input_schema" => "test.command.f32/1",
-    "partitions" => [
-        Dict("name" => "first", "size" => [2], "schema" => "test.first.f32/1"),
-        Dict("name" => "second", "size" => [3], "schema" => "test.second.f32/1")])
 layout_config() = Dict{String,Any}(
     "input_size" => [2, 3], "output_size" => [5, 7], "origin" => [1, 2],
     "scale" => 2, "bias" => -3,
@@ -26,15 +16,14 @@ layout_config() = Dict{String,Any}(
     "output_schema" => "test.input-electrons.f32/1")
 
 function adapter_document(type, config; props=Dict())
-    vector = type == "vector_partition_f32"
     return Dict{String,Any}(
         "schema_version" => 1, "name" => "array_operations",
         "nodes" => [Dict("name" => "operation", "type" => type,
             "config" => config, "props" => props)],
-        "inputs" => [Dict("name" => "command", "binding" => "input",
-            "destination" => "operation." * (vector ? "command" : "detector_frame"))],
+        "inputs" => [Dict("name" => "detector_frame", "binding" => "input",
+            "destination" => "operation.detector_frame")],
         "outputs" => [Dict("name" => "frame",
-            "source" => "operation." * (vector ? "first" : "frame"))])
+            "source" => "operation.frame")])
 end
 
 function adapter_definition(type, config, input; props=Dict())
@@ -77,57 +66,6 @@ end
     @test all(key -> hasproperty(registry, key), keys(builtin_graph_node_types()))
     @test registry.pyramid_rate_f32 === builtin_graph_node_types().pyramid_rate_f32
 
-    @testset "Ordered vector partitions and command adoption" begin
-        input = Float32.(1:5)
-        definition = adapter_definition("vector_partition_f32", partition_config(), input)
-        graph = prepare_algorithm_graph(definition; target=AdapterTarget)
-        first = AdapterAOG.graph_output(graph, :frame)
-        @test all(iszero, first)
-        step_graph!(graph)
-        @test first == input[1:2]
-        input .= -10f0
-        @test first == Float32[1, 2]
-        step_graph!(graph)
-        @test first == fill(-10f0, 2)
-        reset_graph!(graph)
-        @test all(iszero, first)
-
-        # GPI's existing contiguous 97/2304/2 routing is a data configuration.
-        config = partition_config()
-        config["input_size"] = [2403]
-        config["partitions"] = [Dict("name" => name, "size" => [count],
-            "schema" => "test.$name.f32/1") for (name, count) in
-            (("woofer", 97), ("tweeter", 2304), ("tiptilt", 2))]
-        document = adapter_document("vector_partition_f32", config)
-        document["outputs"] = [Dict("name" => name, "source" => "operation.$name")
-            for name in ("woofer", "tweeter", "tiptilt")]
-        source = Float32.(1:2403)
-        routed = prepare_algorithm_graph(load_algorithm_graph(document;
-            node_types=registry, bindings=(input=source,)); target=AdapterTarget)
-        step_graph!(routed)
-        @test AdapterAOG.graph_output(routed, :woofer) == source[1:97]
-        @test AdapterAOG.graph_output(routed, :tweeter) == source[98:2401]
-        @test AdapterAOG.graph_output(routed, :tiptilt) == source[2402:2403]
-        reset_graph!(routed)
-        @test all(name -> all(iszero, AdapterAOG.graph_output(routed, name)),
-            (:woofer, :tweeter, :tiptilt))
-
-        fill!(input, 0f0)
-        exchange = prepare_graph_hil_boundary(
-            prepare_algorithm_graph(definition; target=AdapterTarget);
-            command_input=:command, frame_output=:frame)
-        hil_command_buffer(exchange) .= 7f0
-        sequence = step_hil_frame!(exchange)
-        @test all(iszero, hil_frame_buffer(exchange))
-        @test all(iszero, input)
-        adopt_hil_command!(exchange, sequence)
-        @test all(==(7f0), input)
-        step_hil_frame!(exchange)
-        @test hil_frame_buffer(exchange) == fill(7f0, 2)
-        reset_hil_boundary!(exchange)
-        @test all(iszero, input)
-    end
-
     @testset "Rectangular placement, scale, bias, and optional clipping" begin
         input = reshape(Float32.(1:6), 2, 3)
         config = layout_config()
@@ -168,23 +106,6 @@ end
     end
 
     @testset "Host views, one-based axes, concrete ownership, and allocation" begin
-        definition = adapter_definition("vector_partition_f32", partition_config(), zeros(Float32, 5))
-        input = view(Float32.(1:10), 1:2:10)
-        outputs = (first=view(zeros(Float32, 4), 1:2:4), second=view(zeros(Float32, 6), 2:2:6))
-        owner = adapter_owner(definition, (; command=input), outputs)
-        AdapterAOG.step_graph_node!(owner)
-        @test outputs.first == input[1:2]
-        @test outputs.second == input[3:5]
-        @test isconcretetype(typeof(owner))
-        @test all(isconcretetype, fieldtypes(typeof(owner)))
-        @test adapter_allocations(owner) == (; step=0, reset=0)
-        @test AdapterAOG.graph_node_capture_capability(owner) isa AdapterAOG.GraphNodeCaptureUnsupported
-        @test_throws ArgumentError adapter_owner(definition, (; command=AdapterOffsetArray(zeros(Float32, 5))), outputs)
-        @test_throws DimensionMismatch adapter_owner(definition, (; command=zeros(Float32, 4)), outputs)
-        @test_throws AlgorithmGraphError adapter_owner(definition, (; command=zeros(Float64, 5)), outputs)
-        @test_throws AlgorithmGraphError adapter_owner(definition, (; command=input),
-            (first=view(input, 1:2), second=zeros(Float32, 3)))
-
         definition = adapter_definition("detector_frame_layout_f32", layout_config(), zeros(Float32, 2, 3))
         input = view(reshape(Float32.(1:24), 4, 6), 1:2:4, 1:2:6)
         frame = view(fill(99f0, 10, 14), 1:2:10, 2:2:14)
@@ -208,38 +129,6 @@ end
     end
 
     @testset "Malformed configurations fail through the public loader" begin
-        vector_changes = (
-            config -> (config["extra"] = 1),
-            config -> delete!(config, "input_schema"),
-            config -> (config["input_schema"] = 1),
-            config -> (config["input_schema"] = ""),
-            config -> (config["input_size"] = [5, 1]),
-            config -> (config["input_size"] = [0]),
-            config -> (config["input_size"] = [true]),
-            config -> (config["input_size"] = [5.0]),
-            config -> (config["input_size"] = [typemax(Int)]),
-            config -> (config["input_size"] = [big(typemax(Int)) + 1]),
-            config -> (config["partitions"] = []),
-            config -> (config["partitions"] = "first"),
-            config -> (config["partitions"][1]["offset"] = 0),
-            config -> (config["partitions"][1]["name"] = "command"),
-            config -> (config["partitions"][1]["name"] = "second"),
-            config -> (config["partitions"][1]["name"] = "bad name"),
-            config -> (config["partitions"][1]["size"] = [1]),
-            config -> (config["partitions"][1]["size"] = [3]),
-            config -> (config["partitions"][1]["size"] = [-1]),
-            config -> (config["partitions"][1]["size"] = [2, 1]),
-            config -> (config["partitions"][1]["schema"] = false))
-        for change in vector_changes
-            config = partition_config()
-            change(config)
-            @test_throws AlgorithmGraphError adapter_definition("vector_partition_f32", config, zeros(Float32, 5))
-        end
-        excessive = partition_config()
-        excessive["input_size"] = [257]
-        excessive["partitions"] = [Dict("name" => "partition$i", "size" => [1],
-            "schema" => "test.partition.f32/1") for i in 1:257]
-        @test_throws AlgorithmGraphError adapter_definition("vector_partition_f32", excessive, zeros(Float32, 257))
         layout_changes = (
             config -> (config["extra"] = 1),
             config -> delete!(config, "scale"),
@@ -269,11 +158,8 @@ end
             change(config)
             @test_throws AlgorithmGraphError adapter_definition("detector_frame_layout_f32", config, zeros(Float32, 2, 3))
         end
-        for (type, config, input) in (("vector_partition_f32", partition_config(), zeros(Float32, 5)),
-                ("detector_frame_layout_f32", layout_config(), zeros(Float32, 2, 3)))
-            @test_throws AlgorithmGraphError adapter_definition(type, config, input; props=Dict("extra" => 1))
-        end
-        @test_throws AlgorithmGraphError adapter_graph("vector_partition_f32", partition_config(), zeros(Float32, 4))
+        @test_throws AlgorithmGraphError adapter_definition("detector_frame_layout_f32", layout_config(),
+            zeros(Float32, 2, 3); props=Dict("extra" => 1))
         @test_throws AlgorithmGraphError adapter_graph("detector_frame_layout_f32", layout_config(), zeros(Float64, 2, 3))
     end
 end
