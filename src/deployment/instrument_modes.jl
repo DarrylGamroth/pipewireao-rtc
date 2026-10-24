@@ -43,7 +43,12 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix; confi
         fullpath = D.relative_asset(application, path)
         original = D.decode(fullpath, prefix)
         combined = merge_configuration(original, get(mode, field, Dict()))
-        ScienceExport.write_spa_config(fullpath, substitute(combined, bindings))
+        combined = substitute(combined, bindings)
+        if field == "core"
+            telemetry_queues!(combined)
+            validate_telemetry_groups(combined)
+        end
+        ScienceExport.write_spa_config(fullpath, combined)
     end
     calibration = get(profile, "calibration", nothing)
     if calibration !== nothing

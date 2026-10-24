@@ -151,3 +151,61 @@ latency SLO, arbitrary overload, hardware, GPU or other instruments. Mean slopes
 remain detector-pixel measurements, not calibrated physical tip/tilt/focus.
 More algorithms can share this analysis graph; further optional processes can
 use distinct names and exclusive output queues when isolation is useful.
+
+## Driver assignment correction — 2026-10-24
+
+The earlier finite isolation gate did not cover GUI-driver retirement. A live
+CUDA Classic failure was captured before owner cleanup: frame 186251 had been
+published, the matching command had not arrived, and the simulator driver was
+NOT_TRIGGERED with pending 5. Five newly appended analysis-branch targets had
+stale FINISHED activations: slopes/flux/validity queue playback, WFS analysis,
+and summary queue capture. Broken-pipe messages followed owner failure/cleanup.
+They were not the initiating error.
+
+The native scheduler assigns unconnected graphs that want a driver to an active
+driver. Removing the GUI driver can therefore move analysis onto the externally
+triggered simulator driver. Non-async target activation increments its current
+pending count; targets added after that cycle's initial scan have not been
+triggered. The HIL completion gate correctly refuses another overlapping cycle.
+
+A private CPU-only native test holds the original follower while adding an
+unrelated subgraph, then releases it. It reproduces the scheduling stall without
+AOS, CUDA, altered source buffers or command adoption:
+
+| Native case | Publications | Completion callbacks | Final source pending |
+| --- | ---: | ---: | ---: |
+| Original graph | 1 | 1 | 0 |
+| Subgraph added mid-cycle | 1 | 0 | 2 |
+| Subgraph on a separate support driver | 1 | 1 | 0 |
+
+All three preserve the held payload. This establishes a topology/scheduling
+mechanism; it does not attribute every historical timeout to the same event.
+No native scheduler, buffer lifetime, Acquisition validation, HIL completion
+policy or timeout was weakened.
+
+Shared instrument export now supplies a standard telemetry support driver and
+groups copy/drop-oldest queue playback with it, including mode-added queues.
+Reliable/lease/backpressure queues retain their routing. Explicit groups must
+resolve to an owned support driver after mode composition. This validates clock
+presence, not arbitrary user-defined links or synchronization groups; the tested
+isolation is the default exported topology. Analysis admission also checks real
+module-level queue policy rather than trusting endpoint metadata.
+
+The focused exporter/analysis selectors pass 253 checks without warnings.
+Independent review found no remaining defect in the default topology.
+
+On the exact Classic candidate (telemetry priority 100), eleven completed real GUI reconnects
+kept all five analysis nodes on telemetry driver 45, distinct from source 120.
+Control publications advanced throughout detached intervals. During a 15-second
+analysis SIGSTOP they advanced 103549 to 108812, and to 109851 after SIGCONT.
+A 60-second stream observation received over 2800 distinct samples each for
+WFS detector, slopes, demanded and applied commands, checking existing formats,
+shapes, finite-value and Acquisition identity rules. This is functional progress
+and transport evidence, not deadline or hardware qualification.
+
+Raw first-failure logs are under
+`/home/dgamroth/.local/state/pipewireao/classic-driver-debug-20261024/`.
+Native source, control/insertion/isolation runs, GUI driver snapshots, suspension
+counters and stream receipts are preserved under
+`/home/dgamroth/.local/state/pipewireao/classic-telemetry-isolation-20261024/`.
+The temporary diagnostic HIL build is not the production fix.

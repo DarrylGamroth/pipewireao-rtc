@@ -74,6 +74,12 @@ function observation_queues(spec, root, prefix)
         args isa AbstractDict || continue
         capture, playback = get(args,"capture.props",nothing), get(args,"playback.props",nothing)
         capture isa AbstractDict && playback isa AbstractDict || continue
+        # Native queue policy is selected from module arguments, not endpoint
+        # metadata. An endpoint must not make a retaining queue look like a copy.
+        maximum = get(args, "queue.max-buffers", nothing)
+        get(args, "queue.storage", nothing) == "copy" &&
+            get(args, "queue.overflow", nothing) == "drop-oldest" &&
+            ((typeof(maximum) === Int && maximum == 1) || maximum == "1") || continue
         all((capture,playback)) do props
             maximum = get(props,"queue.max-buffers",get(args,"queue.max-buffers",nothing))
             get(props,"queue.storage",get(args,"queue.storage",nothing)) == "copy" &&

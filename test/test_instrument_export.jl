@@ -271,15 +271,54 @@ end
     mktempdir() do directory
         mkpath(joinpath(directory, "rtc"))
         C.write_json(joinpath(directory, "rtc", "core.conf"), Dict("context.modules" =>
-            [Dict("name" => "libpipewire-module-queue", "args" => Dict("node.name" => "test-data-queue"))]))
+            [Dict("name" => "libpipewire-module-queue", "args" => Dict(
+                "node.name" => "test-data-queue", "queue.storage" => "copy",
+                "queue.overflow" => "drop-oldest")),
+             Dict("name" => "libpipewire-module-queue", "args" => Dict(
+                "node.name" => "retained-data-queue", "queue.storage" => "lease",
+                "queue.overflow" => "backpressure", "playback.props" => Dict(
+                    "queue.storage" => "copy", "queue.overflow" => "drop-oldest"))),
+             Dict("name" => "libpipewire-module-queue", "args" => Dict(
+                "node.name" => "explicit-data-queue", "queue.storage" => "copy",
+                "queue.overflow" => "drop-oldest", "playback.props" => Dict(
+                    "queue.storage" => "copy", "queue.overflow" => "drop-oldest",
+                    "node.group" => "explicit-clock"))),
+             Dict("name" => "libpipewire-module-queue", "args" => Dict(
+                "node.name" => "mixed-data-queue", "queue.storage" => "copy",
+                "queue.overflow" => "drop-oldest", "playback.props" => Dict(
+                    "queue.overflow" => "backpressure")))]))
         spec=Dict("core"=>"shared-runtime/core.conf.in","client"=>Dict("rtc"=>"shared-runtime/client-rtc.conf.in"))
         process(cpus)=Dict("rt-priority"=>0,"data-loops"=>cpus)
         profile=Dict("scheduling"=>Dict("processes"=>Dict("core"=>process(Dict("rtc-data-loop"=>[2],"telemetry-loop"=>[3])),
             "rtc"=>process(Dict("rtc-data-loop"=>[2])))))
         E.render_templates!(directory, spec, profile, prefix)
         core = D.decode(joinpath(directory, "shared-runtime", "core.conf.in"), prefix)
-        @test count(module_ -> module_["name"] == "libpipewire-module-queue", core["context.modules"]) == 1
-        @test length(core["context.objects"]) == 3
+        @test count(module_ -> module_["name"] == "libpipewire-module-queue", core["context.modules"]) == 4
+        @test length(core["context.objects"]) == 4
+        queues = Dict(module_["args"]["node.name"] => module_["args"] for module_ in core["context.modules"]
+            if module_["name"] == "libpipewire-module-queue")
+        @test !haskey(queues["retained-data-queue"]["playback.props"], "node.group")
+        @test queues["mixed-data-queue"]["playback.props"]["node.group"] == "pipewireao-telemetry"
+        @test queues["explicit-data-queue"]["playback.props"]["node.group"] == "explicit-clock"
+        queue = Dict("args" => queues["test-data-queue"])
+        group = queue["args"]["playback.props"]["node.group"]
+        driver = only(filter(object -> object["args"]["node.group"] == group, core["context.objects"]))
+        @test driver["args"]["factory.name"] == "support.node.driver"
+        @test driver["args"]["node.loop.name"] == "telemetry-loop"
+        @test !haskey(queue["args"], "capture.props")
+        @test_throws ArgumentError E.validate_telemetry_groups(core)
+        custom = deepcopy(driver)
+        custom["args"]["node.name"] = "Custom-Telemetry-Driver"
+        custom["args"]["node.group"] = "explicit-clock"
+        push!(core["context.objects"], custom)
+        @test E.validate_telemetry_groups(core) === nothing
+        added = Dict("name" => "libpipewire-module-queue", "args" => Dict{String,Any}(
+            "node.name" => "mode-data-queue", "queue.storage" => "copy",
+            "queue.overflow" => "drop-oldest"))
+        push!(core["context.modules"], added)
+        E.telemetry_queues!(core)
+        @test added["args"]["playback.props"]["node.group"] == group
+        @test E.validate_telemetry_groups(core) === nothing
         @test core["context.properties"]["core.name"] == "@REMOTE@"
         @test core["context.properties"]["context.data-loops"][1]["thread.affinity"] == [2]
         @test core["context.properties"]["context.data-loops"][2]["thread.affinity"] == [3]

@@ -56,6 +56,7 @@ function render_templates!(application, spec, profile, prefix)
     declarations = modules["context.modules"]
     declarations isa AbstractVector || throw(ArgumentError("instrument context.modules must be a list"))
     append!(core["context.modules"], declarations)
+    telemetry_queues!(core)
     outputs = Dict{String,Any}(corepath => core)
     clients = Dict{String,String}()
     for (role, path) in spec["client"]
@@ -83,4 +84,38 @@ function render_templates!(application, spec, profile, prefix)
     end
     spec["client"] = clients
     return runtime
+end
+
+# Check after mode composition, which may declare additional native clocks.
+function validate_telemetry_groups(core)
+    groups = Set(get(object["args"], "node.group", nothing)
+        for object in get(core, "context.objects", [])
+        if get(object, "factory", nothing) == "spa-node-factory" &&
+            get(get(object, "args", Dict()), "factory.name", nothing) == "support.node.driver")
+    for declaration in get(core, "context.modules", [])
+        get(declaration, "name", nothing) == "libpipewire-module-queue" || continue
+        args = declaration["args"]
+        get(args, "queue.storage", nothing) == "copy" &&
+            get(args, "queue.overflow", nothing) == "drop-oldest" || continue
+        group = get(get(args, "playback.props", Dict()), "node.group", nothing)
+        group isa AbstractString && !isempty(group) && group in groups ||
+            throw(ArgumentError("copy/drop-oldest queue playback requires an owned driver group: " *
+                string(get(args, "node.name", "unnamed queue"))))
+    end
+    return nothing
+end
+
+function telemetry_queues!(core)
+    # Copy/drop-oldest playback is independent of the control clock. Without an
+    # explicit driver group, the scheduler can attach it to the active RTC driver
+    # when the last GUI driver disappears, adding completion dependencies mid-cycle.
+    for declaration in get(core, "context.modules", [])
+        get(declaration, "name", nothing) == "libpipewire-module-queue" || continue
+        args = declaration["args"]
+        get(args, "queue.storage", nothing) == "copy" &&
+            get(args, "queue.overflow", nothing) == "drop-oldest" || continue
+        playback = get!(args, "playback.props", Dict{String,Any}())
+        get!(playback, "node.group", "pipewireao-telemetry")
+    end
+    return nothing
 end

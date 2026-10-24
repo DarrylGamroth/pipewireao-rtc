@@ -6,11 +6,22 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-23. This section is the current delivery summary. Later sections
+Updated 2026-10-24. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Classic observer driver isolation — 2026-10-24
+
+GUI retirement exposed a scheduler dependency: unassigned optional analysis
+could join the externally triggered simulator driver during a cycle. A native
+CPU reproduction fails before isolation and completes with a separate support
+driver. Shared export now gives copy/drop-oldest telemetry playback an owned
+clock group, preserving retaining queues and HIL completion guarantees.
+Exact-config CUDA GUI reconnects, analysis suspension and stream observations
+pass; see the [driver assignment correction](validation/optional-analysis-20261022/README.md#driver-assignment-correction--2026-10-24).
+Long-duration timing and arbitrary custom routing remain unqualified.
 
 ### Typed scientific schema declarations — 2026-10-23
 

@@ -94,6 +94,14 @@ end
         @test_throws D.DeploymentError A.validate_deployment(spec,deployment,root)
         C.write_json(session,Dict("links"=>[]))
         queue_doc=C.read_json(core)
+        spoofed = deepcopy(queue_doc)
+        args = spoofed["context.modules"][1]["args"]
+        args["queue.storage"] = "lease"
+        for key in ("capture.props", "playback.props")
+            args[key]["queue.storage"] = "copy"
+        end
+        C.write_json(core, spoofed)
+        @test_throws D.DeploymentError A.validate_deployment(spec, deployment, root)
         queue_doc["context.modules"][1]["args"]["capture.props"]["queue.storage"]="retain"
         C.write_json(core,queue_doc)
         @test_throws D.DeploymentError A.validate_deployment(spec,deployment,root)

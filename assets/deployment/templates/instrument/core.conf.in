@@ -32,6 +32,17 @@
         "priority.driver": 100,
         "node.group": "pipewireao-optical-observation"
       }
+    },
+    {
+      "factory": "spa-node-factory",
+      "args": {
+        "node.loop.name": "telemetry-loop",
+        "node.name": "PipeWireAO-Telemetry-Driver",
+        "factory.name": "support.node.driver",
+        "node.sync-group": "sync.pipewireao-telemetry",
+        "priority.driver": 100,
+        "node.group": "pipewireao-telemetry"
+      }
     }
   ],
   "context.properties": {
