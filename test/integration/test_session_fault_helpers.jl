@@ -182,3 +182,20 @@ end
         @test last(after["settling_observations"])["checks"]["manager_cgroup_empty"] === true
     end
 end
+
+@testset "fault injection selects the exact declared command link" begin
+    captured = Dict("controller"=>(;identity=(;id=UInt32(10),serial=UInt64(11))),
+        "corrector"=>(;identity=(;id=UInt32(20),serial=UInt64(21))))
+    link(path,output,input,id) = (;identity=(;id=UInt32(id),serial=UInt64(id+1)),
+        properties=Dict("object.path"=>path,"link.output.node"=>string(output),"link.input.node"=>string(input)))
+    optional = link("pipewireao/session/first",10,30,1)
+    command = link("pipewireao/session/second",10,20,3)
+    reverse = link("pipewireao/session/third",20,10,5)
+    links = [optional,command,reverse]
+    @test selected_link((;case="link-removal"),captured,links) === optional
+    exact = (;case="link-removal",link_nodes=("controller","corrector"))
+    @test selected_link(exact,captured,links) === command
+    @test_throws ArgumentError selected_link(exact,captured,[optional,reverse])
+    @test_throws ArgumentError selected_link(exact,captured,[command,command])
+    @test_throws KeyError selected_link((;link_nodes=("unowned","corrector")),captured,links)
+end

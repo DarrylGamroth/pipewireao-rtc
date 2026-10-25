@@ -131,6 +131,16 @@ function verify_nodes(captured, objects, spec, selected)
     end
 end
 
+function selected_link(selected, captured, links)
+    pair = get(selected, :link_nodes, nothing)
+    pair === nothing && return first(sort(links; by=x -> x.properties["object.path"]))
+    output, input = captured[pair[1]], captured[pair[2]]
+    return only(filter(links) do link
+        link.properties["link.output.node"] == string(output.identity.id) &&
+            link.properties["link.input.node"] == string(input.identity.id)
+    end)
+end
+
 function inject!(selected, spec, session, ledger, loop, core, registry, captured, links)
     if selected.case == "controller-exit"
         role = selected.controller
@@ -158,7 +168,7 @@ function inject!(selected, spec, session, ledger, loop, core, registry, captured
         selected.sink in getindex.(session["sinks"], "node.name") || error("sink is not declared")
         captured[selected.sink]
     else
-        first(sort(links; by=x -> x.properties["object.path"]))
+        selected_link(selected, captured, links)
     end
     roundtrip(core)
     current = only(filter(x -> x.identity == target.identity && x.interface == target.interface,
@@ -468,7 +478,9 @@ function require_fault_outcome(outcome, policy, cleanup=nothing)
     return nothing
 end
 
-function run_case(selected)
+_no_session_progress(handle, destination, ledger) = nothing
+
+function run_case(selected; progress=_no_session_progress)
     !ispath(selected.stage) && !islink(selected.stage) || error("stage root must be fresh")
     spec = D.profile(joinpath(selected.package, "deployment.conf"), selected.prefix)
     session = D.decode(D.relative_asset(selected.package, spec["session"]), selected.prefix)
@@ -511,6 +523,8 @@ function run_case(selected)
         receipt["first_ledger"] = ledger
         receipt["ready_status"] = session_phase(handle, "Ready")
         receipt["running_status"] = session_phase(handle, "Running"; start=true)
+        receipt["running_progress"] = progress(handle, first_stage, ledger)
+        save()
         verify_owners(ledger)
         with_registry(ledger["remote"]) do loop, core, registry
             before = snapshot(loop, registry)
@@ -608,6 +622,7 @@ function run_case(selected)
         end
         receipt["fresh_ready_status"] = fresh
         receipt["fresh_running_status"] = session_phase(handle, "Running"; start=true)
+        receipt["fresh_running_progress"] = progress(handle, second_stage, second)
         verify_owners(second)
         receipt["fresh_ledger"] = second
         receipt["fresh_cleanup"] = cleanup!(handle, second_stage; failed=false)
