@@ -1,0 +1,4 @@
+Test Summary:                     | Pass  Total   Time
+GPI 2.0 declarative optical model |   57     57  54.1s
+Test Summary:                                                  | Pass  Total  Time
+GPI calibrated ADC clipping, rounding and detector orientation |   21     21  2.3s

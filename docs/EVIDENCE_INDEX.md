@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## GPI calibrated multi-corrector integration — 2026-10-24
+
+The [integration record](validation/gpi-closed-loop-20261024/README.md) records
+the calibrated pyramid/woofer/tweeter/stage graph, actual UInt16 camera path,
+typed FITS adoption, generic GUI presentation, independent review findings and
+completed CPU/CUDA native lifecycle and optical checks, fault recovery and measured
+throughput. Retained failed extreme-small-signal tests, manual stopped test-alias
+cleanup and physical/performance qualification limits are explicit.
+
 ## GPI optical model and multi-command HIL — 2026-10-24
 
 The [validation record](validation/gpi-multiport-20261024/README.md) records

@@ -1,0 +1,885 @@
+{
+  "audits": [
+    {
+      "timestamp_utc": "2026-10-25T04:31:55Z",
+      "cohorts": [
+        {
+          "receipt": "/tmp/gpi2-native-ready-quit/ready-quit/final-launch.json",
+          "unit": "pipewireao-session@f48e896c581a.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@f48e896c581a.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4b/ready-quit/final-launch.json",
+          "unit": "pipewireao-session@26b4916f85d1.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@26b4916f85d1.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/controller-exit/readmitted/final-launch.json",
+          "unit": "pipewireao-session@2191b1dcf80b.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@2191b1dcf80b.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/controller-exit/faulted/observed-cleanup.json",
+          "unit": "pipewireao-session@e1361145cbd4.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@e1361145cbd4.service",
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@e1361145cbd4.service"
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/link-removal/readmitted/final-launch.json",
+          "unit": "pipewireao-session@6d8d7681ea46.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@6d8d7681ea46.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/link-removal/faulted/observed-cleanup.json",
+          "unit": "pipewireao-session@3f806ea67918.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@3f806ea67918.service",
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@3f806ea67918.service"
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/stop-start/final-launch.json",
+          "unit": "pipewireao-session@1310d06af862.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@1310d06af862.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-v4c/ready-quit/final-launch.json",
+          "unit": "pipewireao-session@4993a99d1129.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@4993a99d1129.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-lifecycle-cuda-v4d/stop-start/final-launch.json",
+          "unit": "pipewireao-session@3f97ac8dab3c.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@3f97ac8dab3c.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        },
+        {
+          "receipt": "/tmp/gpi2-native-optical-cuda-v4d/final-launch.json",
+          "unit": "pipewireao-session@f919b919f955.service",
+          "all_owner_pids_absent": true,
+          "private_socket_absent": true,
+          "cleanup_complete": true,
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@f919b919f955.service",
+            "LoadState": "not-found",
+            "ActiveState": "inactive",
+            "SubState": "dead",
+            "FragmentPath": ""
+          },
+          "manager_alias_absent": true
+        }
+      ],
+      "manual_alias_removals": [
+        {
+          "unit": "pipewireao-session@e1361145cbd4.service",
+          "alias": "/run/user/1000/systemd/user/pipewireao-session@e1361145cbd4.service",
+          "verified_target": "/tmp/gpi2-native-lifecycle-v4c/controller-exit/faulted/installed/systemd/pipewireao-session@e1361145cbd4.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@e1361145cbd4.service",
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@e1361145cbd4.service"
+          },
+          "alias_absent_after": true,
+          "command_stdout": "",
+          "command_stderr": "Removed '/run/user/1000/systemd/user/pipewireao-session@e1361145cbd4.service'.\n"
+        },
+        {
+          "unit": "pipewireao-session@3f806ea67918.service",
+          "alias": "/run/user/1000/systemd/user/pipewireao-session@3f806ea67918.service",
+          "verified_target": "/tmp/gpi2-native-lifecycle-v4c/link-removal/faulted/installed/systemd/pipewireao-session@3f806ea67918.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@3f806ea67918.service",
+            "LoadState": "loaded",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@3f806ea67918.service"
+          },
+          "alias_absent_after": true,
+          "command_stdout": "",
+          "command_stderr": "Removed '/run/user/1000/systemd/user/pipewireao-session@3f806ea67918.service'.\n"
+        }
+      ],
+      "failed_unit_cache_resets": [
+        {
+          "unit": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-julia.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-julia.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-parameters.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-parameters.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-simulator.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-simulator.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-julia.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-julia.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-parameters.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-parameters.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-simulator.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-simulator.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-julia.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-julia.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-parameters.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-parameters.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-simulator.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-simulator.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-julia.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-julia.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-parameters.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-parameters.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-simulator.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-simulator.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-session@26b4916f85d1.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@26b4916f85d1.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-session@3f806ea67918.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@3f806ea67918.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-session@e1361145cbd4.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@e1361145cbd4.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        },
+        {
+          "unit": "pipewireao-session@f48e896c581a.service",
+          "before": {
+            "MainPID": "0",
+            "Id": "pipewireao-session@f48e896c581a.service",
+            "LoadState": "not-found",
+            "ActiveState": "failed",
+            "SubState": "failed",
+            "FragmentPath": ""
+          },
+          "command_stdout": "",
+          "command_stderr": ""
+        }
+      ],
+      "unit_states_after": {
+        "pipewireao-owner-03703edee56147bf9c50ff553063cad1-cohort.target": {
+          "Id": "pipewireao-owner-03703edee56147bf9c50ff553063cad1-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-03703edee56147bf9c50ff553063cad1-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-03703edee56147bf9c50ff553063cad1-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-03703edee56147bf9c50ff553063cad1-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-03703edee56147bf9c50ff553063cad1-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-03703edee56147bf9c50ff553063cad1-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-03703edee56147bf9c50ff553063cad1-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-03703edee56147bf9c50ff553063cad1-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-03703edee56147bf9c50ff553063cad1-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3679e745567b48718abedaa2a3451e60-cohort.target": {
+          "Id": "pipewireao-owner-3679e745567b48718abedaa2a3451e60-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3679e745567b48718abedaa2a3451e60-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3679e745567b48718abedaa2a3451e60-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3679e745567b48718abedaa2a3451e60-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3679e745567b48718abedaa2a3451e60-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3679e745567b48718abedaa2a3451e60-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3679e745567b48718abedaa2a3451e60-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3679e745567b48718abedaa2a3451e60-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3679e745567b48718abedaa2a3451e60-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-cohort.target": {
+          "Id": "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-3d9a471c360040c486f5c90333ab9c73-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-cohort.target": {
+          "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-40a75c58fb044d949307db3b7d3bcd06-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-cohort.target": {
+          "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-b33af240dd20458fb5bad70a6208e950-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-cohort.target": {
+          "Id": "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d2eec1cb5da54c9c8d44b2d12d20b135-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d5738de302d84316bdb2292437ff2165-cohort.target": {
+          "Id": "pipewireao-owner-d5738de302d84316bdb2292437ff2165-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d5738de302d84316bdb2292437ff2165-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d5738de302d84316bdb2292437ff2165-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d5738de302d84316bdb2292437ff2165-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d5738de302d84316bdb2292437ff2165-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d5738de302d84316bdb2292437ff2165-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d5738de302d84316bdb2292437ff2165-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d5738de302d84316bdb2292437ff2165-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d5738de302d84316bdb2292437ff2165-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-cohort.target": {
+          "Id": "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-d681df4f2ab649af81b573b8cd1ec984-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-cohort.target": {
+          "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-e69e5980cd954568a807088d4905dc8d-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-cohort.target": {
+          "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-cohort.target",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-core.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-core.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-julia.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-julia.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-parameters.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-parameters.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-simulator.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-owner-efb2395c6edf43fb83506975c481e15a-simulator.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@1310d06af862.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@1310d06af862.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@2191b1dcf80b.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@2191b1dcf80b.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@26b4916f85d1.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@26b4916f85d1.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@3f806ea67918.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@3f806ea67918.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@3f97ac8dab3c.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@3f97ac8dab3c.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@4993a99d1129.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@4993a99d1129.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@6d8d7681ea46.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@6d8d7681ea46.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@e1361145cbd4.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@e1361145cbd4.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@f48e896c581a.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@f48e896c581a.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        },
+        "pipewireao-session@f919b919f955.service": {
+          "MainPID": "0",
+          "Id": "pipewireao-session@f919b919f955.service",
+          "LoadState": "not-found",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "FragmentPath": ""
+        }
+      }
+    }
+  ]
+}

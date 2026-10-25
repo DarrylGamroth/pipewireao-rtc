@@ -1,0 +1,4 @@
+Test Summary:                         | Pass  Total  Time
+UInt16 camera output before transport |    8      8  3.5s
+Test Summary:                          | Pass  Total  Time
+Configured AOS generic array factories |   69     69  5.6s

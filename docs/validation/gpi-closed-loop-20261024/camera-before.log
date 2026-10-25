@@ -1,0 +1,56 @@
+ERROR: LoadError: Some tests did not pass: 0 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:36
+
+UInt16 camera output before transport: Error During Test at /home/dgamroth/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:36
+  Got exception outside of a @test
+  node 'operation' config contains an unknown field
+  Stacktrace:
+    [1] _adapter_fields(values::@NamedTuple{bias::Float64, input_schema::String, input_size::Tuple{Int64, Int64}, origin::Tuple{Int64, Int64}, output_element_type::String, output_schema::String, output_size::Tuple{Int64, Int64}, range::Tuple{Int64, Int64}, rounding::String, scale::Int64}, allowed::NTuple{9, Symbol}, required::NTuple{7, Symbol}, context::String)
+      @ PipeWireAORTCAOSExt ~/workspaces/codex/rtc-gpi2-integration/ext/aos/graph_adapters.jl:30
+    [2] _detector_frame_layout_f32_node(name::Symbol, config::@NamedTuple{bias::Float64, input_schema::String, input_size::Tuple{Int64, Int64}, origin::Tuple{Int64, Int64}, output_element_type::String, output_schema::String, output_size::Tuple{Int64, Int64}, range::Tuple{Int64, Int64}, rounding::String, scale::Int64}, props::@NamedTuple{})
+      @ PipeWireAORTCAOSExt ~/workspaces/codex/rtc-gpi2-integration/ext/aos/graph_adapters.jl:110
+    [3] _parse_file_node(entry::Dict{String, Any}, node_types::@NamedTuple{ccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._ccd_detector_acquisition_f32_node), cmos_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._cmos_detector_acquisition_f32_node), deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._deformable_mirror_surface_f32_node), emccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._emccd_detector_acquisition_f32_node), gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._gaussian_deformable_mirror_surface_f32_node), grid_gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._grid_gaussian_deformable_mirror_surface_f32_node), modal_opd_expansion_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._modal_opd_expansion_f32_node), multilayer_atmosphere_opd_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._multilayer_atmosphere_opd_f32_node), pupil_opd_composition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pupil_opd_composition_f32_node), pyramid_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pyramid_rate_f32_node), shack_hartmann_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._shack_hartmann_rate_f32_node), detector_frame_layout_f32::typeof(PipeWireAORTCAOSExt._detector_frame_layout_f32_node)}, index::Int64)
+      @ AdaptiveOpticsSim.AlgorithmGraphs ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1320
+    [4] #80
+      @ ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1483 [inlined]
+    [5] #_parse_entries##0
+      @ ./none:-1 [inlined]
+    [6] iterate
+      @ ./generator.jl:48 [inlined]
+    [7] collect(itr::Base.Generator{Base.Pairs{Int64, Dict{String, Any}, LinearIndices{1, Tuple{Base.OneTo{Int64}}}, Vector{Dict{String, Any}}}, AdaptiveOpticsSim.AlgorithmGraphs.var"#_parse_entries##0#_parse_entries##1"{AdaptiveOpticsSim.AlgorithmGraphs.var"#80#81"{@NamedTuple{ccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._ccd_detector_acquisition_f32_node), cmos_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._cmos_detector_acquisition_f32_node), deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._deformable_mirror_surface_f32_node), emccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._emccd_detector_acquisition_f32_node), gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._gaussian_deformable_mirror_surface_f32_node), grid_gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._grid_gaussian_deformable_mirror_surface_f32_node), modal_opd_expansion_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._modal_opd_expansion_f32_node), multilayer_atmosphere_opd_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._multilayer_atmosphere_opd_f32_node), pupil_opd_composition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pupil_opd_composition_f32_node), pyramid_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pyramid_rate_f32_node), shack_hartmann_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._shack_hartmann_rate_f32_node), detector_frame_layout_f32::typeof(PipeWireAORTCAOSExt._detector_frame_layout_f32_node)}}}})
+      @ Base ./array.jl:828
+    [8] _totuple
+      @ ./tuple.jl:484 [inlined]
+    [9] Tuple
+      @ ./tuple.jl:450 [inlined]
+   [10] _parse_entries(entries::Vector{Dict{String, Any}}, parse_entry::AdaptiveOpticsSim.AlgorithmGraphs.var"#80#81"{@NamedTuple{ccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._ccd_detector_acquisition_f32_node), cmos_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._cmos_detector_acquisition_f32_node), deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._deformable_mirror_surface_f32_node), emccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._emccd_detector_acquisition_f32_node), gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._gaussian_deformable_mirror_surface_f32_node), grid_gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._grid_gaussian_deformable_mirror_surface_f32_node), modal_opd_expansion_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._modal_opd_expansion_f32_node), multilayer_atmosphere_opd_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._multilayer_atmosphere_opd_f32_node), pupil_opd_composition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pupil_opd_composition_f32_node), pyramid_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pyramid_rate_f32_node), shack_hartmann_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._shack_hartmann_rate_f32_node), detector_frame_layout_f32::typeof(PipeWireAORTCAOSExt._detector_frame_layout_f32_node)}})
+      @ AdaptiveOpticsSim.AlgorithmGraphs ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1384
+   [11] _load_algorithm_graph(root::Dict{String, Any}; node_types::@NamedTuple{ccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._ccd_detector_acquisition_f32_node), cmos_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._cmos_detector_acquisition_f32_node), deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._deformable_mirror_surface_f32_node), emccd_detector_acquisition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._emccd_detector_acquisition_f32_node), gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._gaussian_deformable_mirror_surface_f32_node), grid_gaussian_deformable_mirror_surface_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._grid_gaussian_deformable_mirror_surface_f32_node), modal_opd_expansion_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._modal_opd_expansion_f32_node), multilayer_atmosphere_opd_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._multilayer_atmosphere_opd_f32_node), pupil_opd_composition_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pupil_opd_composition_f32_node), pyramid_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._pyramid_rate_f32_node), shack_hartmann_rate_f32::typeof(AdaptiveOpticsSim.AlgorithmGraphs._shack_hartmann_rate_f32_node), detector_frame_layout_f32::typeof(PipeWireAORTCAOSExt._detector_frame_layout_f32_node)}, bindings::@NamedTuple{input::Matrix{Float32}}, context::String)
+      @ AdaptiveOpticsSim.AlgorithmGraphs ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1481
+   [12] _load_algorithm_graph
+      @ ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1446 [inlined]
+   [13] #load_algorithm_graph#74
+      @ ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1438 [inlined]
+   [14] load_algorithm_graph
+      @ ~/workspaces/codex/aos-gpi2-calibration/src/algorithm_graphs/graph_files.jl:1433 [inlined]
+   [15] #adapter_definition#2
+      @ ~/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:30 [inlined]
+   [16] adapter_definition
+      @ ~/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:29 [inlined]
+   [17] adapter_graph(type::String, config::Dict{String, Any}, input::Matrix{Float32}; kwargs::@Kwargs{})
+      @ Main ~/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:33
+   [18] macro expansion
+      @ ~/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:41 [inlined]
+   [19] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [20] top-level scope
+      @ ~/workspaces/codex/rtc-gpi2-integration/test/aos_graph_adapters.jl:37
+   [21] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [22] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [23] _start()
+      @ Base ./client.jl:577
+Test Summary:                         | Error  Total  Time
+UInt16 camera output before transport |     1      1  2.4s
+RNG of the outermost testset: Random.Xoshiro(0x15f416c926495f1a, 0x33ccaa6ac3434834, 0x63d8bf0b19052b78, 0x24dc2900715bdf54, 0xa69af04406b02c5a)

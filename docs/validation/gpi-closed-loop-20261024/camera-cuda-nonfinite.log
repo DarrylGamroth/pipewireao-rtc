@@ -1,0 +1,43 @@
+ERROR: a exception was thrown during kernel execution on thread (1, 1, 1) in block (1, 1, 1).
+Stacktrace not available, run Julia on debug level 2 for more details (by passing -g2 to the executable).
+
+ERROR: KernelException: exception thrown during kernel execution on device NVIDIA GeForce RTX 3080
+Stacktrace:
+  [1] check_exceptions()
+    @ CUDACore ~/.julia/packages/CUDACore/6N8AA/src/compiler/exceptions.jl:38
+  [2] synchronize(stream::CuStream; blocking::Bool, spin::Bool)
+    @ CUDACore ~/.julia/packages/CUDACore/6N8AA/lib/cudadrv/synchronization.jl:73
+  [3] synchronize
+    @ ~/.julia/packages/CUDACore/6N8AA/lib/cudadrv/synchronization.jl:59 [inlined]
+  [4] macro expansion
+    @ ~/.julia/packages/CUDACore/6N8AA/src/memory.jl:582 [inlined]
+  [5] macro expansion
+    @ ./lock.jl:376 [inlined]
+  [6] synchronize(managed::CUDACore.Managed{CUDACore.DeviceMemory})
+    @ CUDACore ~/.julia/packages/CUDACore/6N8AA/src/memory.jl:581
+  [7] synchronize
+    @ ~/.julia/packages/CUDACore/6N8AA/src/array.jl:595 [inlined]
+  [8] (::CUDACore.var"#793#794"{UInt16, Vector{UInt16}, Int64, CuArray{UInt16, 1, CUDACore.DeviceMemory}, Int64, Int64})()
+    @ CUDACore ~/.julia/packages/CUDACore/6N8AA/src/array.jl:718
+  [9] context!
+    @ ~/.julia/packages/CUDACore/6N8AA/lib/cudadrv/state.jl:158 [inlined]
+ [10] unsafe_copyto!(dest::Vector{UInt16}, doffs::Int64, src::CuArray{UInt16, 1, CUDACore.DeviceMemory}, soffs::Int64, n::Int64)
+    @ CUDACore ~/.julia/packages/CUDACore/6N8AA/src/array.jl:713
+ [11] copyto!
+    @ ~/.julia/packages/CUDACore/6N8AA/src/array.jl:665 [inlined]
+ [12] copyto!
+    @ ~/.julia/packages/CUDACore/6N8AA/src/array.jl:669 [inlined]
+ [13] copyto_axcheck!
+    @ ./abstractarray.jl:1186 [inlined]
+ [14] Array
+    @ ./array.jl:652 [inlined]
+ [15] Array(A::CuArray{UInt16, 1, CUDACore.DeviceMemory})
+    @ Core ./boot.jl:677
+ [16] top-level scope
+    @ none:1
+ [17] eval(m::Module, e::Any)
+    @ Core ./boot.jl:489
+ [18] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:310
+ [19] _start()
+    @ Base ./client.jl:577

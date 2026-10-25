@@ -1,0 +1,2 @@
+Test Summary:                                                   | Pass  Total  Time
+calibration FITS preserves non-square and coefficient-bank axes |    3      3  3.6s

@@ -1,0 +1,12 @@
+Test Summary:             | Pass  Total   Time
+test_instrument_export.jl |  158    158  41.2s
+Test Summary:               | Pass  Total  Time
+test_graph_configuration.jl |   45     45  6.6s
+Test Summary:           | Pass  Total  Time
+test_hil_declaration.jl |   53     53  2.2s
+Test Summary:                         | Pass  Total     Time
+test_instrument_declaration_schema.jl |   69     69  1m02.7s
+Test Summary:     | Pass  Total   Time
+test_aos_owner.jl |  204    204  14.0s
+Test Summary:                             | Pass  Total   Time
+test_session_configuration_integration.jl |   53     53  29.1s

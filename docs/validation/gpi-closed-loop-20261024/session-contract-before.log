@@ -1,0 +1,18 @@
+ERROR: LoadError: Some tests did not pass: 14 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/instruments-gpi2-integration/test/gpi2_controller.jl:2
+
+GPI native session control and boundary: Test Failed at /home/dgamroth/workspaces/codex/instruments-gpi2-integration/test/gpi2_controller.jl:18
+  Expression: get(graph, "run-control", nothing) == (only(classic["graphs"]))["run-control"] == "session"
+   Evaluated: nothing == "session" == "session"
+  Stacktrace:
+   [1] top-level scope
+     @ ~/workspaces/codex/instruments-gpi2-integration/test/gpi2_controller.jl:13
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/workspaces/codex/instruments-gpi2-integration/test/gpi2_controller.jl:18 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+Test Summary:                           | Pass  Fail  Total   Time
+GPI native session control and boundary |   14     1     15  11.0s
+RNG of the outermost testset: Random.Xoshiro(0xc86be0862f737cba, 0x9825826b5dc95082, 0xfadcf12507420e88, 0xe60ca21acc0b0a2e, 0xc1858c3d0166fe2a)
