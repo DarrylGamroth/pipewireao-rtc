@@ -8,7 +8,7 @@ const Managed = ManagedSessionLifecycle
         mkpath(joinpath(application,"rtc"))
         descriptions = (("camera",UInt16,"U16_LE",[242,240]),
             ("low",Float32,"F32_LE",[97]),("high",Float32,"F32_LE",[2304]),
-            ("ramp",Float32,"F32_LE",[2]))
+            ("ramp",Float32,"F32_LE",[2]),("role",UInt8,"U8",[2304]))
         modules, sinks = [], []
         for (name,element,wire,shape) in descriptions
             push!(modules,Dict("name"=>"libpipewire-module-queue","args"=>Dict(

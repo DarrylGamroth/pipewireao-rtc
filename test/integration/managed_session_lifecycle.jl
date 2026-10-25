@@ -60,6 +60,7 @@ function observation_spec(application, session, queue_input, name, prefix)
     port = only(sink["ports"])
     wire = getproperty(NdArray,Symbol(port["element-type"]))
     element = port["element-type"] == "U16_LE" ? UInt16 :
+        port["element-type"] == "U8" ? UInt8 :
         port["element-type"] == "F32_LE" ? Float32 : error("unsupported observation element type")
     rate = if haskey(port,"rate")
         fraction = parse.(UInt32,split(port["rate"],'/'))
