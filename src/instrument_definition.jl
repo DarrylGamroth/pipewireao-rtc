@@ -95,6 +95,20 @@ function validate(document)
         positive_scale(scale) ||
             throw(ArgumentError("instrument mirror requires a positive command scale"))
         mirror_layout(layout,length(positions))
+        if haskey(mirror,"pupil_coordinates")
+            coordinates=mirror["pupil_coordinates"]
+            array_value(coordinates) && length(coordinates)==length(positions) &&
+                all(pair -> array_value(pair) && length(pair)==2 && all(finite_bound,pair),coordinates) ||
+                throw(ArgumentError("pupil coordinates must be finite command-indexed Cartesian pairs"))
+        end
+        if haskey(mirror,"pupil")
+            pupil=mirror["pupil"]
+            object_value(pupil) && Set(keys(pupil))==Set(("inner_radius","outer_radius")) &&
+                haskey(mirror,"pupil_coordinates") || throw(ArgumentError("registered pupil requires radii and command-indexed coordinates"))
+            inner,outer=pupil["inner_radius"],pupil["outer_radius"]
+            finite_bound(inner) && finite_bound(outer) && 0<=inner<outer ||
+                throw(ArgumentError("registered pupil radii must be finite and ordered"))
+        end
         units = get(mirror,"units",nothing)
         nonempty_text(units) || throw(ArgumentError("instrument mirror requires command units"))
         validate_shape_control(get(mirror,"shape_control",nothing),units,length(positions))

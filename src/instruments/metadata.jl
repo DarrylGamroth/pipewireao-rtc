@@ -202,8 +202,11 @@ function publication(path)
             shape_control = (;bases)
             n = length(dm.layout.command_positions)
             InstrumentDefinition.validate_shape_control(json_value(shape_control),spec["units"],n)
+            pupil = hasproperty(scientific,:telescope) && hasproperty(scientific.telescope,:central_obstruction_ratio) ?
+                (;pupil=(;outer_radius=1.0,inner_radius=scientific.telescope.central_obstruction_ratio)) : NamedTuple()
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
+                pupil...,
                 limiter=(;kind=control["limiter"]["kind"],
                     lower=limit_values(control["limiter"]["lower"],n),upper=limit_values(control["limiter"]["upper"],n)),
                 shape_control)

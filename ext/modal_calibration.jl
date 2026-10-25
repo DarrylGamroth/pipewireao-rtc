@@ -5,6 +5,8 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 const FGA = FilterGraphAlgorithms
 const LA = LinearAlgebra
 
+include("modal_completion.jl")
+
 function modal_frame!(system, commands::NamedTuple)
     boundary = system.boundary
     sequence = HIL.hil_boundary_status(boundary).frame_sequence
@@ -34,6 +36,8 @@ end
 function Calibration.calibrate_modal_system(source, recipe, output;
         target=AdaptiveOpticsSim.Backends.HostComputeDevice())
     ispath(output) && throw(ArgumentError("calibration output must be fresh"))
+    any(entry -> entry["name"]==recipe["tiptilt"]["mirror"] && haskey(entry,"completion"),recipe["mirrors"]) &&
+        throw(ArgumentError("annular completion cannot be combined with the fitted tip/tilt-coupled mirror basis"))
     declaration=IC.load_simulation(joinpath(source,recipe["simulation"]))
     settings=IC.settings(declaration,get(recipe,"settings",Dict()))
     prescription=IC.prescription_identity(declaration,settings)
@@ -60,12 +64,18 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     adc_scale=Float32(settings["adc"]["electrons_per_adu"])/Float32(detector["config"]["gain"])
     reference=pupil_measurement!(pixels,mean,estimator,calibrated,flat,background,adc_scale)
     mirror_specs=recipe["mirrors"]
-    counts=Int[entry["mode_count"] for entry in mirror_specs]
-    n=sum(counts)
     projections=Dict{String,Matrix{Float32}}()
+    completions=Dict{String,Any}()
     for entry in mirror_specs
-        name=entry["name"];count=entry["mode_count"]
+        name=entry["name"]
         mirror=IC.mirror(declaration,settings,name)
+        if haskey(entry,"completion")
+            completed=modal_completion(mirror.description,mirror.registration,entry["completion"];obstruction)
+            completions[name]=completed
+            projections[name]=completed.completion
+            continue
+        end
+        count=entry["mode_count"]
         coords=IC.actuator_coordinates(mirror.description;pupil_registration=mirror.registration)
         count <= size(coords,2) || throw(DimensionMismatch("mode count exceeds physical commands"))
         selected=sortperm(vec(sum(abs2,coords;dims=1));alg=Base.Sort.MergeSort)[1:count]
@@ -75,6 +85,8 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         end
         projections[name]=projection
     end
+    counts=Int[size(projections[entry["name"]],2) for entry in mirror_specs]
+    n=sum(counts)
     stage=recipe["tiptilt"]
     stage_name=Symbol(stage["command_input"]);coupled=stage["mirror"]
     # Fit the existing simulator mirror response to the declared normalized-pupil ramps.
@@ -140,10 +152,16 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         "temporal"=>Dict("modal_section_count"=>1,"tiptilt_section_count"=>1),
         "controller-to-tiptilt"=>Dict("schema"=>PipeWireAORTC.Schemas.CATALOG["controller_to_tip_tilt"]["id"]),
         String(stage_name)*"-to-"*coupled=>Dict("schema"=>PipeWireAORTC.Schemas.CATALOG["tip_tilt_to_actuators"]["id"]))
+    dimensions=Dict("controller_command_count"=>n)
+    for entry in mirror_specs
+        name=entry["name"]
+        dimensions[name*"_mode_count"]=size(projections[name],2)
+    end
     rtc=IC.load_rtc(joinpath(source,recipe["rtc_configuration"]))
     publication=IC.json_value(IC.physical_definition(rtc.instrument))
     context_graph=PipeWireAORTC.InstrumentExport.graph_context(publication;
         dimensions=rtc.document["dimensions"],mirror_controls=rtc.controls["deformable_mirrors"],calibration=context)
+    merge!(context_graph["rtc"]["dimensions"],dimensions)
     for entry in mirror_specs
         context[entry["name"]*"-command"]=Dict("slew_limit"=>nothing)
     end
@@ -171,10 +189,17 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         parameters[Symbol(name*"-vdm-to-controller")] .= transpose(selection)
         for suffix in ("active-to-full","full-to-active")
             matrix=parameters[Symbol(name*"-"*suffix)]
-            matrix .= Matrix{Float32}(LA.I,size(matrix)...)
+            matrix .= haskey(completions,name) ?
+                (suffix=="active-to-full" ? completions[name].completion : completions[name].feedback) :
+                Matrix{Float32}(LA.I,size(matrix)...)
         end
-        parameters[Symbol(name*"-vdm-to-pdm")] .= projection
-        parameters[Symbol(name*"-pdm-to-vdm")] .= name==coupled ? LA.pinv(projection) : transpose(projection)
+        if haskey(completions,name)
+            parameters[Symbol(name*"-vdm-to-pdm")] .= Matrix{Float32}(LA.I,size(projection,1),size(projection,1))
+            parameters[Symbol(name*"-pdm-to-vdm")] .= Matrix{Float32}(LA.I,size(projection,1),size(projection,1))
+        else
+            parameters[Symbol(name*"-vdm-to-pdm")] .= projection
+            parameters[Symbol(name*"-pdm-to-vdm")] .= name==coupled ? LA.pinv(projection) : transpose(projection)
+        end
         name==coupled && (parameters[Symbol("controller-to-tiptilt")][:,start+1:start+2] .= Matrix{Float32}(LA.I,2,2))
         start+=count
     end
@@ -195,6 +220,9 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         "backend"=>string(typeof(target)),
         "scope"=>"simulation-local; provisional Gaussian mirrors and ADC; not hardware calibration",
         "mode_count"=>n,"measurement_count"=>length(reference),"retained_rank"=>AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
+        "dimensions"=>dimensions,
+        "actuator_roles"=>Dict(name=>Dict("controlled"=>Base.count(==(UInt8(1)),value.roles),
+            "extrapolated"=>Base.count(==(UInt8(2)),value.roles),"no_correction"=>Base.count(iszero,value.roles)) for (name,value) in completions),
         "tiptilt_fit_relative_residual"=>LA.norm(response*fit-ramps)/LA.norm(ramps),
         "tiptilt_fit_max_coefficient"=>maximum(abs,fit),
         "coupled_projection_condition"=>LA.cond(projections[coupled]),

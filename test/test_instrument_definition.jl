@@ -44,6 +44,27 @@ function operational_instrument()
     return document
 end
 
+@testset "registered optical pupil is distinct from the source grid" begin
+    document=operational_instrument()
+    mirror=document["deformable_mirrors"]["dm"]
+    mirror["pupil"]=Dict("inner_radius"=>0.13,"outer_radius"=>1.0)
+    @test Instrument.validate(document)===document
+    # Outlying actuator coordinates remain legitimate guard channels.
+    mirror["pupil_coordinates"][1]=[-1.1,0.0]
+    @test Instrument.validate(document)===document
+    for radii in ((1.0,1.0),(-0.1,1.0),(0.0,NaN),(false,1.0))
+        invalid=deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["pupil"]=Dict("inner_radius"=>radii[1],"outer_radius"=>radii[2])
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    missing=deepcopy(document)
+    delete!(missing["deformable_mirrors"]["dm"],"pupil_coordinates")
+    @test_throws ArgumentError Instrument.validate(missing)
+    mismatch=deepcopy(document)
+    pop!(mismatch["deformable_mirrors"]["dm"]["pupil_coordinates"])
+    @test_throws ArgumentError Instrument.validate(mismatch)
+end
+
 @testset "bounded sealed instrument publication" begin
     mktempdir() do root
         package = mkpath(joinpath(root, "application"))

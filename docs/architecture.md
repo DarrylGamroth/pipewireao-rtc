@@ -746,9 +746,26 @@ instrument components, not GUI panel IDs. DM declarations carry source-grid
 `layout` in explicit `command_positions` order, `units`, `command_scale_m`,
 amplitude `limiter` bounds and `shape_control` declarations. Optional
 `pupil_coordinates` use the scientific model's normalized pupil radius convention;
-they are distinct from source-grid Zernike/Fourier coordinates. WFS `layout`
-declares detector/subaperture extents and zero-based `[row,column]` origins.
+they are distinct from source-grid Zernike/Fourier coordinates.
+An optional DM `pupil` supplies `inner_radius` and `outer_radius` in the same
+normalized Cartesian frame, with 0 ≤ inner < outer. It requires command-indexed
+`pupil_coordinates`; coordinates may lie outside the annulus. This optical
+aperture is distinct from the physical mirror boundary. Without it, clients
+must not infer an optical aperture from the actuator-grid extent.
+WFS `layout` declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
+
+A simulation calibration recipe may select `thin_plate_annulus` completion for
+a zonal mirror. Actuator centres in the registered annulus are independent
+coordinates. Obscured central coordinates and an outer guard of
+`guard_width_pitches` actuator spacings are completed by the existing FGA
+thin-plate algorithm; farther coordinates receive no correction. System flats
+and offsets remain separate. This policy does not define device health or
+claim measured registration. Calibration stores the completion C and its cold
+least-squares reverse F = C⁺ in the existing active/full VDM parameter ports;
+guard clipping therefore contributes to reverse constraint feedback. Correction
+roles come from the owner's actual projection matrices. The fitted tip/tilt
+coupled mirror basis currently excludes this zonal completion policy.
 
 A mirror's `shape_control` contains only `bases`, an ordered array of at most
 16 instrument-defined bases. Each basis has exactly `id`, `name`, `units`,
