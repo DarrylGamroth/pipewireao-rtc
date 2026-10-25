@@ -37,6 +37,17 @@ and preceding [multi-command evidence](validation/gpi-multiport-20261024/README.
 These provisional simulation checks do not qualify physical GPI hardware or
 2 kHz deadlines. The installed Classic application remains unchanged.
 
+Both mirrors now have native adopted-offset readbacks and generic RTC-mediated
+Zernike/Fourier controls. Live 4 nm probes and exact baseline restores pass,
+followed by a twelve-stream identity/unit check. DM rendering shares ndarray's
+YAML colormap catalog, defaults to blue–white–red and uses closer actuator
+spacing with optional role outlines. The replacement CUDA RTC/GUI are running
+at 10 Hz functional pacing. Observed clipping is genuine at the provisional
+±1 µm OPD limits; no supported gain/limit change was established. Retiring the
+previous GPI again produced an unknown native Quit reply, followed by confirmed
+process cleanup; the shutdown timeout remains unresolved. See the
+[controls record](validation/gpi-closed-loop-20261024/README.md#gpi-offset-controls-and-shared-dm-presentation--2026-10-25).
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running

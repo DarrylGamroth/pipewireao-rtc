@@ -1,0 +1,58 @@
+{
+  "comparison": {
+    "woofer": {
+      "channel_count": 97,
+      "zero_voltage_range_channels": 0,
+      "source_phase_lower_extrema_microns": [
+        -3.4,
+        -3.4
+      ],
+      "source_phase_upper_extrema_microns": [
+        3.4,
+        3.4
+      ],
+      "minimum_span_microns": 6.8,
+      "maximum_span_microns": 6.8,
+      "files": {
+        "wfrMinMaxVolts.csv": {
+          "path": "/home/dgamroth/workspaces/codex/heart/gpi2.0-rtc/source/template/config/handlers/wfrMinMaxVolts.csv",
+          "sha256": "4424e3ef86b19bfbedd2b5ef4802ffe796c8dd24461a967cb0e66a71ca4a209e"
+        },
+        "wfrPhaseToVoltsCoeff.csv": {
+          "path": "/home/dgamroth/workspaces/codex/heart/gpi2.0-rtc/source/template/config/handlers/wfrPhaseToVoltsCoeff.csv",
+          "sha256": "09a13a3067498cab5481c058b13504e4d9121b1f660de8794182fa29c368e3c3"
+        }
+      }
+    },
+    "tweeter": {
+      "channel_count": 2304,
+      "zero_voltage_range_channels": 5,
+      "source_phase_lower_extrema_microns": [
+        -1.0700000524520874,
+        -0.0859504159854752
+      ],
+      "source_phase_upper_extrema_microns": [
+        0.09669421761978475,
+        1.6700001137777707
+      ],
+      "minimum_span_microns": 0.18264463360525995,
+      "maximum_span_microns": 2.140000142388,
+      "files": {
+        "twtMinMaxVolts.csv": {
+          "path": "/home/dgamroth/workspaces/codex/heart/gpi2.0-rtc/source/template/config/handlers/twtMinMaxVolts.csv",
+          "sha256": "059b9c79bff3e28040af8bec0d728e6e35bec21d521ba65b8e03c01531506bd5"
+        },
+        "twtPhaseToVoltsCoeff.csv": {
+          "path": "/home/dgamroth/workspaces/codex/heart/gpi2.0-rtc/source/template/config/handlers/twtPhaseToVoltsCoeff.csv",
+          "sha256": "e33338c8a348c19944a847992f8086a33c618fd52aba31c412875e604ef747e8"
+        }
+      }
+    }
+  },
+  "units_caveat": "HEART labels physical phase in microns; source does not resolve surface-displacement versus wavefront-OPD convention, calibrated offsets/orientation or validity of example files. These values must not be directly adopted as hardware-qualified mOPD limits.",
+  "simulator_limits_m_opd": [
+    -1e-06,
+    1e-06
+  ],
+  "model_qualification": "Provisional Gaussian influence model, not measured GPI actuator response."
+}

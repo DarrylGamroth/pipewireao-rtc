@@ -1,0 +1,10 @@
+GUI_PARSE views=9 overlays=1 requires_instrument=true
+GUI_INSTRUMENT resolved_panels=9
+GUI_DM_PALETTE id=blue-white-red name=Blue–white–red
+GUI_DM_PALETTE id=blue-white-red name=Blue–white–red
+GUI_SHAPE parameter=woofer-offset units=m OPD bases=["zernike", "fourier"] offset_schema=pipewireao/requested-pdm-command-f32/1
+GUI_DM id=woofer demanded_units=m OPD coordinates=97 pupil=Some(NativeDeformableMirrorPupil { outer_radius: 1.0, inner_radius: 0.13178893 })
+GUI_APPLIED units=µm OPD schema=pipewireao/applied-dm-command-opd-um-f32/1
+GUI_SHAPE parameter=tweeter-offset units=m OPD bases=["zernike", "fourier"] offset_schema=pipewireao/requested-pdm-command-f32/1
+GUI_DM id=tweeter demanded_units=m OPD coordinates=2304 pupil=Some(NativeDeformableMirrorPupil { outer_radius: 1.0, inner_radius: 0.13178893 })
+GUI_APPLIED units=µm OPD schema=pipewireao/applied-dm-command-opd-um-f32/1

@@ -1,0 +1,10 @@
+Test Summary:                | Pass  Total   Time
+finite JSON tuple validation |    6      6  22.2s
+Test Summary:                           | Pass  Total  Time
+Julia operational preparation utilities |   32     32  8.2s
+Test Summary:                      | Pass  Total  Time
+single-document YAML configuration |   13     13  3.3s
+ 34.477938 seconds (18.82 M allocations: 1.063 GiB, 0.83% gc time, 99.04% compilation time: <1% of which was recompilation)
+Test Summary:                 | Pass  Total     Time
+instrument declaration schema |   69     69  1m15.2s
+ 75.382672 seconds (54.30 M allocations: 2.981 GiB, 0.68% gc time, 98.87% compilation time: <1% of which was recompilation)

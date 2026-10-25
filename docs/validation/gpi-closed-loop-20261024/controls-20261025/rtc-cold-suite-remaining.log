@@ -1,0 +1,36 @@
+Test Summary:                                     | Pass  Total   Time
+YAML authoring materializes native configurations |   25     25  13.0s
+Test Summary:                                                         | Pass  Total  Time
+controller dimensions follow declared coordinates and mirror geometry |   18     18  3.6s
+Test Summary:                                                           | Pass  Total  Time
+shared mirror source descriptions become independent application assets |   15     15  0.4s
+Test Summary:                                                | Pass  Total  Time
+cold source staging defers runtime configuration compilation |    3      3  0.8s
+Test Summary:                                                          | Pass  Total  Time
+derived YAML and calibration files share the export reference contract |   12     12  7.5s
+Test Summary:                                                         | Pass  Total  Time
+session references resolve the whole composed document before sealing |   23     23  5.7s
+Test Summary:                                                           | Pass  Total  Time
+session wire element types preserve Boolean and integer representations |   13     13  0.1s
+Test Summary:                        | Pass  Total  Time
+instrument exporter profile bindings |   20     20  2.7s
+Test Summary:                                   | Pass  Total  Time
+instrument application seal and contained paths |   10     10  2.1s
+Test Summary:                                     | Pass  Total  Time
+simulation profile changes only deployment fields |   20     20  0.9s
+Test Summary:               | Pass  Total  Time
+shared instrument templates |   16     16  1.7s
+Test Summary:                                                  | Pass  Total  Time
+offline exports require the complete native placement contract |    3      3  0.1s
+Test Summary:                        | Pass  Total  Time
+generic application mode composition |   11     11  1.8s
+Test Summary:                                                     | Pass  Total  Time
+generated application selects one optional accelerator dependency |   12     12  0.2s
+Test Summary:                                                    | Pass  Total  Time
+typed graph references retain instrument and coordinate meanings |   11     11  1.7s
+Test Summary:                                                               | Pass  Total  Time
+pyramid graph and session references share the declared calibration context |    5      5  3.4s
+Test Summary:                                                  | Pass  Total  Time
+JSON Pointer preserves escaping and rejects invalid references |   18     18  0.1s
+Test Summary:                                                             | Pass  Total  Time
+graph materialization is declared, generated and validated before writing |   11     11  0.8s

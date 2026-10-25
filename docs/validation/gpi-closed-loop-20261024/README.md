@@ -355,3 +355,129 @@ maximum error 1.93×10⁻⁶ µm. Sampled wavefront means are 835.48 nm uncorrec
 63.70 nm corrected. These observations do not establish appropriate hardware
 limits or diagnose the optimal woofer/tweeter allocation. All owned observers
 were removed and the same session remained Running; no controls were changed.
+
+## GPI offset controls and shared DM presentation — 2026-10-25
+
+The existing `VectorOffsetF32` now publishes its adopted `current-offset` on
+successful frames, with the requested command's acquisition metadata. Both
+GPI mirrors expose this through capacity-one, copy/drop-oldest telemetry queues.
+GUI consumers are optional and do not gate control-loop admission. Rejection
+preserves both outputs; reset retains the adopted parameter. The existing
+single-output numerical operation remains bitwise unchanged.
+
+GPI's published instrument metadata now supplies Zernike and Fourier controls
+for both mirrors. The generic GUI uses the declared RTC parameter, actuator
+order, schema and units: offsets and demanded commands are metres OPD; Applied
+remains independently declared micrometres OPD. Shape coefficients have a
+50 nm range, with zero initial coefficients. No instrument-specific renderer,
+unit inference, gain or stroke-limit change was introduced. The GUI's small-value
+editor is tested by actually entering a 5 nm value through the widget.
+
+DM maps, surfaces and colour bars now share ndarray's YAML palette catalog and
+selector, including custom palettes; the default is blue–white–red. Circle
+diameters use 96% of the nearest actuator spacing, computed once when preparing
+the layout. Persistent correction-role outlines are optional and off by default;
+hover information, selection and genuine clipping indications remain available.
+Missing-data views retain one centred, generic message.
+
+Both basis families make the exact full-precision GPI instrument publication
+291,918 bytes. The common native/RTC/GUI bound is now 1 MiB, tested at and above
+the boundary. The cold finite-JSON validator uses ordinary iteration for tuples
+and named tuples instead of compiler expansion proportional to tuple length.
+A normal-compiler declaration selector interrupted after about 292 s before this
+change passes 69/69 in 75 s afterward; this is cold software-test evidence,
+not a controlled performance benchmark or a frame-processing timing claim.
+
+Source revisions are GUI `08e575c`, instruments `66005d8`, JFG/FGA `ababcd3`
+and runtime RTC `48fd3c7`; the later RTC test-only `5caa6ba` replaces a stale
+three-driver assertion with equality to the actual native template. The immutable
+[runtime cohort](controls-20261025/runtime-sources.toml) records package trees.
+The [frozen comparison](controls-20261025/gpi2-controls-frozen-comparison.log)
+and [hashes](controls-20261025/gpi2-controls-frozen-hashes.json) establish that all
+28 numerical nodes, 30 links, 29 inputs, ten existing outputs and 30 FITS files
+are unchanged. Only two observational outputs were added. Historical calibration
+receipts and their byte-bound YAML/context files are preserved; their recorded
+graph hash describes the calibration graph, not this later telemetry export.
+This scoped numerical reuse does not assert a new calibration measurement.
+
+Software checks include [617 GUI library tests, one ignored](controls-20261025/gpi2-gui-palette-final-lib-tests.log),
+formatting, Clippy, native build and WASM check; actual exported metadata resolves
+[all nine GUI panels and both bases](controls-20261025/gpi2-gui-controls-final-hydration.log).
+The [metre-unit feedback regression](controls-20261025/gpi2-gui-feedback-fail-before.log)
+fails before and [passes after](controls-20261025/gpi2-gui-feedback-pass-after.log)
+tolerance is scaled to the actual command bound, rather than a one-unit floor.
+[FGA tests](controls-20261025/gpi2-offset-final-tests.log) cover output preservation,
+alias rejection, metadata, reset and warmed zero allocation; the declaration
+selector passes. GPI [controller](controls-20261025/gpi2-offset-controller.log)
+and [native feedback contracts](controls-20261025/gpi2-offset-native-contract.log)
+pass 76 and 180 assertions respectively.
+
+The [full cold RTC run](controls-20261025/rtc-cold-suite.log) passed preceding
+selectors and stopped at the stale driver-count assertion. The repaired
+[native configuration selector](controls-20261025/native-configuration-tests.log)
+passes 39/39; the [remaining four selectors](controls-20261025/rtc-cold-suite-remaining.log)
+also pass. This is combined selector coverage, not an unbroken all-green suite
+run. The initial Git `cat-file` diagnostic belongs to the passing missing-object
+negative test. Two unchanged calibration-receipt-bound YAML files retain their
+pre-existing formatting differences; changed authoring files pass formatting.
+
+The [saved-frame optical analysis](controls-20261025/clipping-optical-analysis.json)
+reconstructs the exact registered Gaussian mirrors and annular pupil on CPU.
+Clipping changes the combined mirror OPD by 9.12 nm piston-removed RMS on average
+in the retained 32-frame capture (6.75–14.84 nm range). This counterfactual OPD
+difference is not a predicted closed-loop residual improvement.
+[Allocation checks](controls-20261025/clipping-allocation-analysis.json) reproduce
+the coupled woofer/stage coordinates to Float32 precision. The
+[HEART comparison](controls-20261025/clipping-heart-limit-comparison.json) does
+not establish hardware identity, ordering or phase-to-OPD conversion. The
+[adjudicated conclusion](controls-20261025/clipping-scientific-conclusions.json)
+is to retain the explicitly provisional ±1 µm OPD limits: the observed clips are
+real, and these checks do not justify changing gains, allocation or hardware
+limits merely to remove them from the display.
+
+Independent read-only source review checked the two-output alias/rejection
+semantics, metadata, units, counts, targets and queue declarations against the
+generic GUI. It found one verification-script issue: the restore-attempt fence
+was armed before observer negotiation. This was corrected to arm immediately
+before an actual baseline request. The waiting script was stopped before any
+native observers or controls attached; the corrected script then performed the
+live gate. No additional production finding remained.
+
+The replacement CUDA application is Running as
+`pipewireao-session@461ad9bb9189.service`, invocation
+`ffc6c76566dd4fef81146e446559514c`, PID 2660185. It uses CPUs 6/7, a 2 kHz model
+and 10 Hz functional pacing, not a 2 kHz execution claim. The
+[native offset roundtrip](controls-20261025/offset-roundtrip.json) confirms one
+4 nm probe and one exact baseline restore per mirror, requested/active generations
+1 then 2, with no rejected or unknown response. Each readback is bitwise equal
+to the intended parameter and shares acquisition identity with camera, woofer,
+tweeter and tip/tilt commands. The session identity is unchanged and every owned
+observer is removed. This exercises the same native RTC parameter path as the
+GUI; it does not claim a manual live mouse interaction.
+
+The [final twelve-stream check](controls-20261025/native-stream-verification.json)
+passes schemas/types/shapes, 35–37 distinct sequences per stream and a common
+acquisition identity across the ten metadata-bearing products. Both adopted
+offsets match the restored baseline bits. Both Applied products match 32
+same-Header-sequence demanded frames after the declared m→µm conversion; their
+Header-only association is not full acquisition-domain identity. The
+[combined receipt](controls-20261025/native-controls-qualification.json) confirms
+the same Running session, zero owned observers and no transient payload files.
+
+The previous GPI `39b42bfdc81e` received exactly one native Quit. Its
+[retirement record](controls-20261025/previous-retirement.json) retains an unknown
+reply after the 8 s deadline and a service failure. Cleanup completed; the
+[independent process/cgroup audit](controls-20261025/previous-cleanup-audit.json)
+confirms every old owner and manager is gone. The exact stopped manager alias
+was removed only after its target and PID were checked; it is now not-found.
+This is confirmed process retirement, not a successful native Quit. The timeout
+remains unresolved and was not retried or reclassified.
+
+The [GUI verification](controls-20261025/gui-live-verification.json) confirms the
+new binary SHA-256, exact replacement remote, three running visible-view
+observers and absence of software-renderer overrides. The first GUI discovery
+saw both GPI instances; it was restarted after old-session retirement so it
+could select the sole matching GPI session. The new CUDA session and matching
+GUI are left running. Classic retains PID 2432242 and invocation
+`e23f5c8b3e5142ccb11311f4d7c27550`. No manual visual acceptance, hardware
+qualification or real-time deadline claim is made.

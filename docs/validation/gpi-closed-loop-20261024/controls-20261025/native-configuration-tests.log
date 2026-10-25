@@ -1,0 +1,4 @@
+Test Summary:                   | Pass  Total   Time
+named process native scheduling |   25     25  12.4s
+Test Summary:                                        | Pass  Total  Time
+native loop declarations are exact and paths bounded |   14     14  0.6s

@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## GPI offset controls and shared DM presentation — 2026-10-25
+
+The [controls integration record](validation/gpi-closed-loop-20261024/README.md#gpi-offset-controls-and-shared-dm-presentation--2026-10-25)
+records adopted-offset telemetry, generic RTC-mediated Zernike/Fourier controls,
+shared YAML colormaps, actuator spacing and bounded instrument publication.
+Clipping reconstruction preserves provisional limits and distinguishes a
+counterfactual OPD difference from closed-loop improvement.
+
 ## GPI annular tweeter and registered GUI pupils — 2026-10-25
 
 The [annular integration record](validation/gpi-closed-loop-20261024/README.md#annular-tweeter-control-and-registered-gui-geometry--2026-10-25)

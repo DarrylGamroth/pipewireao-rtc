@@ -1,0 +1,20 @@
+{
+  "completed": true,
+  "offset_result": "offset-validation/result.json",
+  "stream_result": "native-stream-verification.json",
+  "same_running_unit": true,
+  "unit_after": {
+    "ActiveState": "active",
+    "InvocationID": "ffc6c76566dd4fef81146e446559514c",
+    "MainPID": "2660185",
+    "SubState": "running"
+  },
+  "owned_observer_nodes_remaining": 0,
+  "transient_payload_files_remaining": [],
+  "drivers_sha256": {
+    "native_offset_roundtrip.jl": "d29c1b5ccaef7a3ec5924e03b8238d0516ab17f6ad80102c3e1aa6aade372c70",
+    "native_stream_verification.jl": "6934a12fa2ff6436a173ce06384d00041ef027f54bc9f4c6b1b50562067c5f3b",
+    "native_observation_helpers.jl": "f20bcc4da0857f611dbfb73670cac141bd574195407cffabd377f724315f848f"
+  },
+  "scope": "One4nm native offset probe and one exact baseline restore perDM, then read-only12stream qualification. No gain,limit,lifecycle or unrelated-session changes."
+}

@@ -1,0 +1,47 @@
+[AdaptiveOpticsSim]
+git-tree-sha1 = "1ab34d91bb9cda0f36e9d22080d447b5bdcb7ee4"
+source = "/home/dgamroth/workspaces/codex/aos-gpi2-calibration"
+source_commit = "a0c2ee173a60962197ce59583cab54bda45aa516"
+source_project_version = "0.2.3"
+source_subdirectory = "."
+version = "0.2.3+gpi2validate.20261025.a0c2ee17"
+
+[AdaptiveOpticsSimPipeWireHIL]
+git-tree-sha1 = "1e87524bd9fa3b59470af209293450628e58aa04"
+source = "/home/dgamroth/workspaces/codex/AdaptiveOpticsSimPipeWireHIL-gpi2-calibration"
+source_commit = "f5fa45c21f790efe327c472bec012d6c40b22779"
+source_project_version = "0.2.2"
+source_subdirectory = "."
+version = "0.2.2+gpi2validate.20261025.f5fa45c2"
+
+[FilterGraphAlgorithms]
+git-tree-sha1 = "10b4b1ae2603d0417bc6f23c7a7994097624685a"
+source = "/home/dgamroth/workspaces/codex/jfg-gpi2-integration/julia/FilterGraphAlgorithms"
+source_commit = "ababcd35e411c7caa3c6206b62aa6329572082d0"
+source_project_version = "0.8.0"
+source_subdirectory = "julia/FilterGraphAlgorithms"
+version = "0.8.0+gpi2validate.20261025.ababcd35"
+
+[GPI2Sim]
+git-tree-sha1 = "a4ef4534635aa7f71d95b162272b079532b3efcf"
+source = "/home/dgamroth/workspaces/codex/GPI2Sim.jl"
+source_commit = "a12a6d5a7e8639bacd3834c06b365eaf50a6b045"
+source_project_version = "0.1.0"
+source_subdirectory = "."
+version = "0.1.0+gpi2validate.20261025.a12a6d5a"
+
+[JuliaFilterGraph]
+git-tree-sha1 = "6b21ce6800d0d670c029c618ca67e0750767cf3f"
+source = "/home/dgamroth/workspaces/codex/jfg-gpi2-integration/julia/JuliaFilterGraph"
+source_commit = "ababcd35e411c7caa3c6206b62aa6329572082d0"
+source_project_version = "0.4.2"
+source_subdirectory = "julia/JuliaFilterGraph"
+version = "0.4.2+gpi2validate.20261025.ababcd35"
+
+[PipeWireAORTC]
+git-tree-sha1 = "3af5b2170654a9ad4600d28dfc33070c5300c480"
+source = "/home/dgamroth/workspaces/codex/rtc-gpi2-integration"
+source_commit = "48fd3c7d29fe7851f9f57a5e95327c93117d8ce2"
+source_project_version = "0.2.9"
+source_subdirectory = "."
+version = "0.2.9+gpi2validate.20261025.48fd3c7d"

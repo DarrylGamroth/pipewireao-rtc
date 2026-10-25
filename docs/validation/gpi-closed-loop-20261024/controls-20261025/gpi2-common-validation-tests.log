@@ -1,0 +1,6 @@
+Test Summary:                | Pass  Total  Time
+finite JSON tuple validation |    6      6  0.9s
+Test Summary:                           | Pass  Total  Time
+Julia operational preparation utilities |   32     32  8.2s
+Test Summary:                      | Pass  Total  Time
+single-document YAML configuration |   13     13  3.3s

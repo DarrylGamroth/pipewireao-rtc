@@ -1,0 +1,42 @@
+{
+  "completed": true,
+  "observed": {
+    "mirror_counterfactual_opd_difference_rms_nm_mean": {
+      "woofer": 7.701390802319013,
+      "tweeter": 4.814482251884238,
+      "tweeter_controlled": 4.468742987962155,
+      "tweeter_extrapolated": 1.1648510089183401,
+      "combined": 9.123533539737208
+    },
+    "combined_range_nm": [
+      6.752470292279121,
+      14.836251825532933
+    ],
+    "mirror_superposition_error_nm_max": 0.0006821210263296962,
+    "woofer_stage_recovered_coordinate_error_nm_max": 0.00017053025658242404,
+    "woofer_prelimit_fitted_tiptilt_coordinate_nm_max": 0.00011368683772161603,
+    "woofer_tweeter_demanded_spatial_correlation_mean": -0.5034596675584951
+  },
+  "derived": [
+    "Observed clipping follows the explicit common provisional +/-1um OPD limits; native payloads, completion and fitted woofer/stage allocation are consistent with the exact calibrated model.",
+    "Negative intermirror spatial correlation demonstrates overlapping cancellation, but does not establish incorrect allocation. The paired woofer/stage coordinate invariant passes at Float32 precision.",
+    "The optical difference from clipping is modest in this32-frame sample; it is not numerically equal to an improvement in closed-loop residual RMS."
+  ],
+  "limits_and_units": [
+    "The installed mirror descriptions are explicitly provisional/unverified and have no established hardware serial/calibration mapping.",
+    "HEART example conversion files imply woofer +/-3.4microns phase and nonuniform tweeter phase bounds, but phase-to-surface/OPD convention and current physical mapping are unproved. No factor of2 or2pi is inferred.",
+    "Keep current +/-1um OPD limits explicitly provisional; no qualified replacement hardware bounds were established."
+  ],
+  "correction_assessment": "No scientifically justified numerical limit/gain/allocation correction established. Do not change live parameters solely to remove true clipping indications.",
+  "possible_bounded_followup": "A simulation-only limit-sensitivity comparison can reuse the existing noisy replay and calibration because command limits are downstream conditioning and the linear optical prescription is unchanged. A candidate limit still needs a declared simulation objective; saved maxima or ambiguous HEART phase limits do not establish its value. No such limit experiment was run.",
+  "scope": "Offline CPU exact registered AOS mirror nodes and annular pupil,240x240, source-pinned immutable v5 installed application; saved32native same-sequence vectors only; no live connections or controls, no hardware qualification.",
+  "artifacts": [
+    "clipping-optical-analysis.json",
+    "clipping-allocation-analysis.json",
+    "clipping-heart-limit-comparison.json"
+  ],
+  "scripts_sha256": {
+    "gpi2-clipping-optics.jl": "60e17fefd8faef74f72730693706d2afe260b9c6d272f7ff7b033ae1ab6b6226",
+    "gpi2-clipping-allocation.jl": "12a455b6c1a8f261fc68c458ea6aeb45c30522407bac69e35fc134ceb883b950"
+  }
+}

@@ -1,0 +1,7 @@
+EXACT_GRAPH_NODES=28
+EXACT_GRAPH_LINKS=30
+EXACT_GRAPH_INPUTS=29
+EXACT_EXISTING_OUTPUTS=10 ADDED_OUTPUTS=tweeter-current-offset,woofer-current-offset
+EXACT_FROZEN_FITS=30 EXACT_RECEIPT_CONTEXT_GRAPH=4
+EXACT_PARAMETER_BINDINGS=true
+Numerical reuse evidence for telemetry-only external outputs; historical calibration receipt unchanged, no new calibration receipt or hardware qualification claim.

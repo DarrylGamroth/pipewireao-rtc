@@ -1,0 +1,14 @@
+Test Summary:                                         | Pass  Total  Time
+same-schema offset parameters reuse vector arithmetic |   14     14  0.8s
+Test Summary:                                                               | Pass  Total  Time
+adopted offset readback shares the configured schema and commits atomically |   19     19  0.3s
+Test Summary:                                             | Pass  Total  Time
+vector combination declaration and calibrated coordinates |   13     13  0.2s
+Test Summary:                                          | Pass  Total  Time
+linear combinations retain signs and reject atomically |   23     23  0.1s
+Test Summary:                                    | Pass  Total  Time
+staging permits overlap and reset reuses storage |   13     13  0.2s
+Test Summary:                                         | Pass  Total  Time
+invalid preparation never allocates oversized storage |   10     10  0.0s
+Test Summary:                                       | Pass  Total  Time
+offset readback follows successful requested frames |   13     13  3.2s
