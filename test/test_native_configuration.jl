@@ -50,7 +50,8 @@ end
         @test loops["rtc-data-loop"]["thread.affinity"] == [2, 3]
         @test loops["telemetry-loop"]["thread.affinity"] == [4]
         @test all(loop["loop.rt-prio"] == 12 for loop in values(loops))
-        @test length(core["context.objects"]) == 3
+        template_core = ND.decode(NE.native_template("shared-runtime/core.conf.in"), prefix)
+        @test core["context.objects"] == template_core["context.objects"]
         queue = only(filter(item -> item["name"] == "libpipewire-module-queue", core["context.modules"]))
         @test queue["args"]["schema"]["shape"] == [2, 3]
         @test core["context.properties"]["core.name"] == "@REMOTE@"
