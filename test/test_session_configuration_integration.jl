@@ -8,7 +8,9 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
-const Observation = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).OpticalObservation
+const AOS = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+const Observation = AOS.OpticalObservation
+completed_timing_bytes(timings) = @allocated AOS.completed_frame_timing(timings)
 const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
 reference(pointer) = Dict("\$ref" => pointer)
 
@@ -124,4 +126,71 @@ end
     end
     @test !any(id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"), keys(Base.loaded_modules))
     @test isempty(filter(path -> occursin(r"(?i)(libcuda|libcudart|libcublas|libcufft|libamdhip|libhsa-runtime)", path), Libdl.dllist()))
+end
+
+@testset "pyramid raw camera and named corrector session contracts remain distinct" begin
+    mktempdir() do directory
+        shape = [8, 12]
+        pixel = Dict("type" => "ndarray", "name" => "pixels", "label" => "pixel-calibration-u16-f32",
+            "config" => Dict("image_size" => shape, "initial_flat" => nothing, "initial_background" => nothing))
+        pyramid = Dict("type" => "ndarray", "name" => "pyramid", "label" => "pyramid-pupil-image-f32",
+            "config" => Dict("image_size" => shape, "pupil_size" => [2, 3],
+                "pupil_origins" => [[1, 1], [5, 1], [1, 8], [5, 8]], "pupil_mask" => fill(true, 6)))
+        counts = (woofer=97, tweeter=2304, tiptilt=2)
+        correctors = [Dict("type" => "ndarray", "name" => string(name), "label" => "vector-conditioning-f32",
+            "config" => Dict("count" => counts[name], "requested_schema" => "test.$name/1",
+                "demanded_schema" => "test.$name/1", "feedback_schema" => "test.$name.feedback/1",
+                "command_limits" => [-1, 1], "slew_limit" => nothing, "initial_current" => nothing,
+                "quantization_origin" => nothing, "quantization_step" => nothing, "dither_seed" => nothing))
+            for name in keys(counts)]
+        inputs = [Dict("name" => "raw", "endpoint" => "pixels:raw");
+            [Dict("name" => string(name) * "-request", "endpoint" => string(name) * ":requested") for name in keys(counts)]]
+        outputs = [Dict("name" => string(name), "endpoint" => string(name) * ":demanded") for name in keys(counts)]
+        push!(outputs, Dict("name" => "mean-pupil-intensity", "endpoint" => "pyramid:mean-pupil-intensity"))
+        declaration = Dict("node.name" => "named-pyramid-science", "filter.graph" => Dict(
+            "nodes" => [pixel, pyramid, correctors...], "inputs" => inputs, "outputs" => outputs,
+            "links" => [Dict("output" => "pixels:calibrated", "input" => "pyramid:image")]))
+        graph = joinpath(directory, "graph.conf")
+        PipeWireAORTC.ScienceExport.write_spa_config(graph, declaration)
+        contracts = E.graph_port_contracts(graph)
+        @test contracts["inputs"]["raw"] == Dict("shape" => shape, "element-type" => "U16_LE")
+        @test contracts["outputs"]["mean-pupil-intensity"]["element-type"] == "F32_LE"
+        queues = [Dict("name" => string(name), "shape" => reference("/graphs/named-pyramid-science/outputs/$name/shape"),
+            "element-type" => reference("/graphs/named-pyramid-science/outputs/$name/element-type")) for name in keys(counts)]
+        C.write_json(joinpath(directory, "session.conf"), Dict("queues" => queues))
+        C.write_json(joinpath(directory, "core.conf"), Dict())
+        C.write_json(joinpath(directory, "instrument.json"), Dict("deformable_mirrors" => Dict(),
+            "wavefront_sensors" => Dict("pyramid" => Dict("layout" => Dict("kind" => "pyramid", "detector_shape" => shape)))))
+        E.prepare_session_configuration!(directory, Dict("session" => "session.conf", "core" => "core.conf"),
+            [Dict("path" => "graph.conf")], "instrument.json", PREFIX)
+        resolved = D.decode(joinpath(directory, "session.conf"), PREFIX)["queues"]
+        @test [row["shape"] for row in resolved] == [[97], [2304], [2]]
+        @test all(row["element-type"] == "F32_LE" for row in resolved)
+        @test !occursin("\$ref", read(joinpath(directory, "session.conf"), String))
+    end
+end
+
+@testset "named simulator warmup and diagnostics use every command" begin
+    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    commands = (; tweeter=fill(1.0f0, 5), woofer=fill(2.0f0, 3), tiptilt=fill(3.0f0, 2))
+    @test isnothing(extension.validate_command_buffers(commands, (; woofer=3, tweeter=5, tiptilt=2)))
+    @test_throws DimensionMismatch extension.validate_command_buffers(commands, (; woofer=3, tweeter=5, tiptilt=3))
+    @test_throws ArgumentError extension.validate_command_buffers(commands, (; woofer=3, tweeter=5))
+    extension.zero_command_buffers!(commands)
+    @test all(command -> all(iszero, command), values(commands))
+    timing = AdaptiveOpticsSimPipeWireHIL.PipeWireFrameCommandTiming
+    timings = (; woofer=timing(UInt64(2), Int64(100), Int64(110)),
+        tweeter=timing(UInt64(2), Int64(100), Int64(135)), tiptilt=timing(UInt64(2), Int64(100), Int64(120)))
+    completed = extension.completed_frame_timing(timings)
+    @test completed.sequence == 2
+    @test completed.source_published_nanoseconds == 100
+    @test completed.command_received_nanoseconds == 135
+    completed_timing_bytes(timings) # warm the concrete successful call and measurement
+    @test completed_timing_bytes(timings) == 0
+    @test_throws ErrorException extension.completed_frame_timing(merge(timings,
+        (; woofer=timing(UInt64(3), Int64(100), Int64(110)))))
+    @test extension.applied_command_names((; woofer="woofer", tweeter="tweeter", tiptilt="tiptilt"), true) ==
+        (; woofer="woofer-applied", tweeter="tweeter-applied", tiptilt="tiptilt-applied")
+    @test extension.applied_command_names("command", true) == "simulator-applied-command"
+    @test extension.applied_command_names((; woofer="woofer"), false) === nothing
 end

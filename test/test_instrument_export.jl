@@ -56,6 +56,21 @@ const D = PipeWireAORTC.DeploymentConfiguration
     end
 end
 
+@testset "cold source staging defers runtime configuration compilation" begin
+    mktempdir() do directory
+        source = joinpath(directory, "source")
+        mkpath(joinpath(source, "rtc"))
+        C.write_yaml(joinpath(source, "rtc", "application.yaml"), Dict("runtime-configurations" =>
+            [Dict("source" => "rtc/parameters.yaml", "path" => "rtc/parameters.conf", "format" => "json")]))
+        output = E.copy_source(source, joinpath(directory, "staged"); runtime_configurations=false)
+        @test isfile(joinpath(output, "rtc", "application.yaml"))
+        @test !ispath(joinpath(output, "rtc", "application.conf"))
+        C.write_yaml(joinpath(output, "rtc", "parameters.yaml"), Dict("parameters" => []))
+        E.prepare_runtime_configurations!(output)
+        @test C.read_json(joinpath(output, "rtc", "parameters.conf")) == Dict("parameters" => [])
+    end
+end
+
 @testset "derived YAML and calibration files share the export reference contract" begin
     mktempdir() do directory
         C.write_json(joinpath(directory, "instrument.json"),

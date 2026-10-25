@@ -253,6 +253,39 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
     end
 
+    @testset "pyramid publication and bounded calibration context export without simulation" begin
+        mktempdir() do directory
+            documents = declaration_documents(directory)
+            documents.physical["wavefront_sensors"]["sensor"] = Dict(
+                "kind" => "pyramid", "detector_shape" => [8, 12],
+                "pupil_shape" => [2, 3], "pupil_separation_pixels" => [2, 4],
+                "pupil_edge_pixels" => [1, 1], "expected_schema" => "test.pyramid/1")
+            documents.rtc["calibration"] = "rtc/calibration.yaml"
+            calibration_path = joinpath(directory, "rtc", "calibration.yaml")
+            C.write_yaml(calibration_path, Dict("pupil" => Dict("selected_pixel_count" => 5)))
+            write_documents(documents)
+            rm(dirname(documents.paths.simulation); recursive=true)
+            @test IC.load_rtc(documents.paths.rtc).calibration ==
+                Dict("pupil" => Dict("selected_pixel_count" => 5))
+            target = IC.prepare_publication(directory)
+            sensor = JSON.parsefile(target)["wavefront_sensors"]["sensor"]["layout"]
+            @test sensor == Dict("kind" => "pyramid", "detector_shape" => [8, 12],
+                "pupil_shape" => [2, 3], "pupil_origins" => [[1, 1], [5, 1], [1, 8], [5, 8]],
+                "expected_schema" => "test.pyramid/1")
+            @test !haskey(sensor, "subaperture_origins")
+            for value in ([], 1, "invalid")
+                write(calibration_path, JSON.json(value))
+                @test_throws ArgumentError IC.load_rtc(documents.paths.rtc)
+            end
+            C.write_yaml(calibration_path, Dict())
+            mktemp() do outside, _
+                documents.rtc["calibration"] = relpath(outside, directory)
+                C.write_yaml(documents.paths.rtc, documents.rtc)
+                @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load_rtc(documents.paths.rtc)
+            end
+        end
+    end
+
     @testset "sampled artifact publication preserves scientific values and identity" begin
         mktempdir() do directory
             documents = declaration_documents(directory)

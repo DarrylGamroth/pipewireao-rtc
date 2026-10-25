@@ -13,7 +13,7 @@ import ..InstrumentExport
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
-    controller_graph, controller_storage, measure!, calibration_frame!
+    controller_graph, controller_storage, measure!, calibration_frame!, calibrate_modal_system, validate_modal_system
 
 "Return the SHA-256 digest of a file's bytes."
 digest(path) = bytes2hex(sha256(read(path)))
@@ -49,7 +49,7 @@ function write_fits(path, array)
     isfile(path) && rm(path)
     Artifacts.FITSIO.FITS(path, "w") do file
         values = eltype(array) === Bool ? UInt8.(array) : array
-        write(file, ndims(values) == 1 ? values : permutedims(values))
+        write(file, ndims(values) == 1 ? values : permutedims(values, reverse(ntuple(identity,ndims(values)))))
     end
     return path
 end
@@ -358,5 +358,7 @@ function controller_graph end
 function controller_storage end
 function measure! end
 function calibration_frame! end
+function calibrate_modal_system end
+function validate_modal_system end
 
 end

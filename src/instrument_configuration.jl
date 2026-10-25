@@ -87,7 +87,7 @@ end
 function load_rtc(path::AbstractString)
     authoring = bounded_yaml(path)
     document = deepcopy(authoring)
-    fields(document, ("schema_version", "instrument", "dimensions", "controller", "mirror_controls", "publication", "calibration_identity"),
+    fields(document, ("schema_version", "instrument", "dimensions", "controller", "mirror_controls", "publication", "calibration_identity", "calibration"),
         ("schema_version", "instrument", "dimensions", "mirror_controls", "publication", "calibration_identity"), "RTC configuration")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported RTC configuration schema"))
     _declaration_text(document["publication"], "RTC publication")
@@ -112,7 +112,9 @@ function load_rtc(path::AbstractString)
         _validate_shape_control(control["shape_control"],
             instrument.document["deformable_mirrors"][name]["units"], instrument.directory)
     end
-    return (;path=abspath(path),directory=instrument.directory,document,instrument,controls,authoring,control_authoring)
+    calibration = haskey(document, "calibration") ? bounded_yaml(D.relative_asset(instrument.directory, document["calibration"])) : Dict{String,Any}()
+    _declaration_object(calibration, "RTC calibration context")
+    return (;path=abspath(path),directory=instrument.directory,document,instrument,controls,calibration,authoring,control_authoring)
 end
 
 "Merge the declared defaults and validate the selected profile's startup settings."

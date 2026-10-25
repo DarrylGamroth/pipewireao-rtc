@@ -33,13 +33,13 @@ end
 adapter_graph(type, config, input; kwargs...) =
     prepare_algorithm_graph(adapter_definition(type, config, input; kwargs...); target=AdapterTarget)
 
-adapter_owner(definition::AlgorithmGraphDefinition, inputs, outputs) =
-    adapter_owner(only(definition.nodes), inputs, outputs)
-function adapter_owner(node::AlgorithmNodeDefinition{Name,Node}, inputs, outputs) where {Name,Node}
+adapter_owner(definition::AlgorithmGraphDefinition, inputs, outputs; target=AdapterTarget) =
+    adapter_owner(only(definition.nodes), inputs, outputs; target)
+function adapter_owner(node::AlgorithmNodeDefinition{Name,Node}, inputs, outputs; target=AdapterTarget) where {Name,Node}
     ports = AdapterAOG.graph_node_ports(Node, node.config)
     @test !isempty(ports)
     return AdapterAOG.prepare_graph_node(Node, node.config,
-        node.props, inputs, outputs, NamedTuple(), AdapterTarget)
+        node.props, inputs, outputs, NamedTuple(), target)
 end
 
 # Minimal offset-indexed host wrapper: rejection is the documented contract.
@@ -171,6 +171,10 @@ end
             (; detector_frame=AdapterOffsetArray(zeros(Float32, 2, 3))), (; frame))
         @test_throws AlgorithmGraphError adapter_owner(definition,
             (; detector_frame=zeros(Float32, 2, 3)), (; frame=zeros(Float64, 5, 7)))
+        @test_throws AlgorithmGraphError adapter_owner(definition,
+            (; detector_frame=zeros(Float32, 2, 3)), (; frame=zeros(Float32, 5, 7));
+            target=AdaptiveOpticsSim.Backends.AcceleratorComputeDevice(
+                AdaptiveOpticsSim.Backends.CUDABackend(), 0))
     end
 
     @testset "Malformed configurations fail through the public loader" begin

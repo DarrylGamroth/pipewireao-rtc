@@ -130,7 +130,7 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
 end
 
 """
-Cold factory registry extending AOS with CPU detector layout:
+Cold factory registry extending AOS with detector layout:
 
 - `detector_frame_layout_f32`: `input_size` and `output_size` in [rows, columns],
   zero-based `origin`, `scale`, `bias`, `input_schema`, and `output_schema`.
@@ -141,7 +141,8 @@ Cold factory registry extending AOS with CPU detector layout:
   retaining Float32 storage. Rounded ranges require integral bounds.
 
 The node resets its output buffer to zero and requires one-based Float32
-arrays. Accelerator execution and command-graph capture are unsupported.
+arrays on the declared compute device. CUDA and AMDGPU owners support
+fixed-address command-graph capture; host owners retain stream execution.
 """
 function configured_graph_node_types()
     return merge(builtin_graph_node_types(), (
@@ -165,9 +166,11 @@ _adapter_buffer(values, shape) = throw(_adapter_error("graph adapter requires Fl
 
 function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig,
         ::NamedTuple{()}, inputs::NamedTuple{(:detector_frame,)}, outputs::NamedTuple{(:frame,)},
-        ::NamedTuple{()}, ::Backends.HostComputeDevice)
+        ::NamedTuple{()}, target::Backends.AbstractComputeDevice)
     detector_frame = _adapter_buffer(inputs.detector_frame, config.input_size)
     frame = _adapter_buffer(outputs.frame, config.output_size)
+    Backends.compute_device(detector_frame) == target && Backends.compute_device(frame) == target ||
+        throw(_adapter_error("graph adapter buffers must use the declared compute device"))
     Base.mightalias(frame, detector_frame) &&
         throw(_adapter_error("frame output must not alias its detector input"))
     rows = (config.origin[1] + 1):(config.origin[1] + config.input_size[1])
@@ -176,9 +179,13 @@ function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, con
         config.scale, config.bias, config.range, config.rounding)
 end
 
-# Host wrappers and strided views are supported at the node protocol. Accelerator
-# preparation and command-graph capture remain unqualified and unsupported.
-AlgorithmGraphs.graph_node_capture_capability(::DetectorFrameLayoutOwner) = AlgorithmGraphs.GraphNodeCaptureUnsupported()
+# Device fill and fused broadcast retain input/output addresses and enqueue on
+# the graph's prepared context, without host scientific-state updates or waits.
+_adapter_capture_capability(::Backends.AbstractComputeDevice) = AlgorithmGraphs.GraphNodeCaptureUnsupported()
+_adapter_capture_capability(::Backends.AcceleratorComputeDevice{<:Union{Backends.CUDABackend,Backends.AMDGPUBackend}}) =
+    AlgorithmGraphs.GraphNodeCaptureSafe()
+AlgorithmGraphs.graph_node_capture_capability(owner::DetectorFrameLayoutOwner) =
+    _adapter_capture_capability(Backends.compute_device(owner.frame))
 
 _layout_value(value, scale, bias, ::Nothing) = value * scale + bias
 _layout_value(value, scale, bias, range::Tuple{Float32,Float32}) =

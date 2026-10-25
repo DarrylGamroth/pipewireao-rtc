@@ -154,6 +154,35 @@ function validate_configuration(configuration::PipeWireHILConfiguration, options
     return nothing
 end
 
+function validate_command_buffers(command::AbstractArray, count::Integer)
+    size(command) == (count,) || throw(DimensionMismatch("AOS command shape differs from configured count"))
+    return nothing
+end
+function validate_command_buffers(commands::NamedTuple, counts::NamedTuple)
+    Set(keys(commands)) == Set(keys(counts)) || throw(ArgumentError("AOS command buffer names differ from configuration"))
+    for name in keys(commands)
+        validate_command_buffers(commands[name], counts[name])
+    end
+    return nothing
+end
+zero_command_buffers!(command::AbstractArray) = fill!(command, 0.0f0)
+zero_command_buffers!(commands::NamedTuple) = foreach(zero_command_buffers!, values(commands))
+command_streams(stream) = (stream,)
+command_streams(streams::NamedTuple) = values(streams)
+
+# A named exchange completes after every command has arrived. Diagnostics use
+# the latest receipt from that same source frame, retaining the scalar contract.
+completed_frame_timing(timing) = timing
+function completed_frame_timing(timings::NamedTuple)
+    first_timing = first(values(timings))
+    all(timing -> timing.sequence == first_timing.sequence &&
+        timing.source_published_nanoseconds == first_timing.source_published_nanoseconds, values(timings)) ||
+        error("completed command timings differ from their common source frame")
+    received = maximum(timing -> timing.command_received_nanoseconds, values(timings))
+    return PipeWireFrameCommandTiming(first_timing.sequence,
+        first_timing.source_published_nanoseconds, received)
+end
+
 "Prepare and warm the exact plant boundary once, then restore its initial cursor."
 function Owner.prepare_science(options; check=()->nothing)
     check()
@@ -166,8 +195,7 @@ function Owner.prepare_science(options; check=()->nothing)
     boundary = science.boundary
     size(hil_frame_buffer(boundary)) == options.frame_shape ||
         throw(DimensionMismatch("AOS detector frame differs from configured $(options.frame_shape)"))
-    size(hil_command_buffer(boundary)) == (options.command_count,) ||
-        throw(DimensionMismatch("AOS command shape differs from configured count"))
+    validate_command_buffers(hil_command_buffer(boundary), options.command_count)
     driver = FixedStepModelTimeDriver(PeriodicSchedule(; period_ns=options.period_ns))
     warm = step_hil_frame_at!(boundary, driver)
     check()
@@ -175,7 +203,7 @@ function Owner.prepare_science(options; check=()->nothing)
         isfinite(value) && 0 <= value <= typemax(UInt16) ||
             throw(ArgumentError("prepared detector frame cannot encode as UInt16"))
     end
-    fill!(hil_command_buffer(boundary), 0.0f0)
+    zero_command_buffers!(hil_command_buffer(boundary))
     adopt_hil_command!(boundary, warm.sequence)
     reset_hil_boundary!(boundary, driver)
     check()
@@ -230,11 +258,10 @@ function wait_registered!(pipewire, runtime, ticket)
     while true
         Bootstrap.check_connect!(runtime, ticket)
         registered = with_frame_stream(pipewire) do frame
-            command = pipewire.command_stream
-            states = (stream_state(frame), stream_state(command))
-            node_id(frame) != typemax(UInt32) && node_id(command) != typemax(UInt32) &&
-                all(state -> state in (PipeWireAO.LibPipeWire.PW_STREAM_STATE_PAUSED,
-                    PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING), states)
+            streams = (frame, command_streams(pipewire.command_stream)...)
+            all(stream -> node_id(stream) != typemax(UInt32) && stream_state(stream) in
+                (PipeWireAO.LibPipeWire.PW_STREAM_STATE_PAUSED,
+                    PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING), streams)
         end
         Bootstrap.check_connect!(runtime, ticket)
         registered && return nothing
@@ -290,7 +317,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
         # Public exchange returns only after the matching command is adopted.
         state.sequence = sequence
         model_time_sequence(science.driver) == sequence || error("model-time sequence differs from source")
-        frame_timing = frame_command_timing(pipewire)
+        frame_timing = completed_frame_timing(frame_command_timing(pipewire))
         OpticalObservation.sample!(observation, frame_timing, model_ns, time_ns())
         optical_finished = timing === nothing ? UInt64(0) : time_ns()
         state.deadline_ns = options.pacing_period_ns == 0 ? UInt64(0) :
@@ -307,6 +334,25 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
     end
     return nothing
 end
+
+command_mirror_properties(options, ::AbstractString, properties) = properties
+function command_mirror_properties(options, names::NamedTuple, properties)
+    return NamedTuple{keys(names)}(map(name ->
+        PipeWireAORTC.InstrumentDefinition.mirror_properties(options, name), keys(names)))
+end
+function publish_mirror_properties!(stream, properties)
+    isempty(properties) || update_properties!(stream, properties)
+    return nothing
+end
+function publish_mirror_properties!(streams::NamedTuple, properties::NamedTuple)
+    for name in keys(streams)
+        publish_mirror_properties!(streams[name], properties[name])
+    end
+    return nothing
+end
+
+applied_command_names(name::AbstractString, enabled) = enabled ? "simulator-applied-command" : nothing
+applied_command_names(names::NamedTuple, enabled) = enabled ? map(name -> name * "-applied", names) : nothing
 
 function Owner.run_owner(options)
     runtime = options.bootstrap_runtime
@@ -329,10 +375,11 @@ function Owner.run_owner(options)
         options.owner_check()
         mailbox = prepare_source_control(options, state, source_instance)
         mirror_properties = PipeWireAORTC.InstrumentDefinition.mirror_properties(options)
+        command_properties = command_mirror_properties(options, options.command_node, mirror_properties)
         pipewire = prepare_pipewire_hil(science.boundary, science.configuration;
             frame_buffers=options.detector_observation ? 3 : 2,
             command_buffers=options.command_observation ? 3 : 2,
-            applied_command_node_name=options.applied_command_observation ? "simulator-applied-command" : nothing,
+            applied_command_node_name=applied_command_names(options.command_node, options.applied_command_observation),
             applied_command_buffers=3,
             applied_command_properties=merge(Dict("node.group" => "pipewireao-applied-observation",
                 "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "telemetry-loop"),
@@ -343,10 +390,11 @@ function Owner.run_owner(options)
             on_frame_param_changed=SourceControl.ParameterChanged(mailbox),
             frame_param_buffer=PodBuffer(4096),
             on_frame_param_overflow=SourceControl.ParameterOverflow(mailbox))
-        if !isempty(mirror_properties)
-            with_thread_loop_lock(pipewire.loop) do _
-                update_properties!(pipewire.command_stream,mirror_properties)
-            end
+        with_thread_loop_lock(pipewire.loop) do _
+            publish_mirror_properties!(pipewire.command_stream, command_properties)
+        end
+        with_applied_command_stream(pipewire) do streams
+            publish_mirror_properties!(streams, command_properties)
         end
         pipewire_cpu = get(options, :pipewire_cpu, nothing)
         if pipewire_cpu !== nothing

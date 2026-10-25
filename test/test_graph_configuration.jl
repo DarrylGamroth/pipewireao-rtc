@@ -48,6 +48,35 @@ end
 
 end
 
+@testset "pyramid graph and session references share the declared calibration context" begin
+    scientific = Dict("deformable_mirrors" => instrument()["deformable_mirrors"],
+        "wavefront_sensors" => Dict("sensor-one" => Dict("layout" => Dict(
+            "kind" => "pyramid", "detector_shape" => [8, 12], "pupil_shape" => [2, 3],
+            "pupil_origins" => [[1, 1], [5, 1], [1, 8], [5, 8]]))))
+    calibration = Dict("pupil" => Dict("shape" =>
+        reference("/instrument/wavefront_sensors/sensor-one/layout/pupil_shape"),
+        "selected_pixel_count" => 5))
+    context = E.graph_context(scientific; calibration)
+    @test context["calibration"]["pupil"]["shape"] == [2, 3]
+    @test !haskey(context["instrument"]["wavefront_sensors"]["sensor-one"], "subaperture_count")
+    @test haskey(calibration["pupil"]["shape"], "\$ref")
+    mktempdir() do directory
+        C.write_json(joinpath(directory, "instrument.json"), scientific)
+        declaration = graph()
+        only(declaration["filter.graph"]["nodes"])["config"] = Dict("count" =>
+            reference("/calibration/pupil/selected_pixel_count"))
+        C.write_json(joinpath(directory, "graph.conf"), declaration)
+        E.prepare_graph_configurations!(directory, [Dict("path" => "graph.conf")],
+            "instrument.json", PREFIX; calibration)
+        @test only(D.decode(joinpath(directory, "graph.conf"), PREFIX)["filter.graph"]["nodes"])["config"]["count"] == 5
+        C.write_json(joinpath(directory, "session.conf"), Dict("shape" => reference("/calibration/pupil/shape")))
+        C.write_json(joinpath(directory, "core.conf"), Dict())
+        E.prepare_session_configuration!(directory, Dict("session" => "session.conf", "core" => "core.conf"),
+            [], "instrument.json", PREFIX; calibration)
+        @test D.decode(joinpath(directory, "session.conf"), PREFIX)["shape"] == [2, 3]
+    end
+end
+
 @testset "JSON Pointer preserves escaping and rejects invalid references" begin
     context = Dict("" => 4, "a/b" => Dict("~key" => [3, 7]), "~1" => 8)
     @test E.graph_pointer(context, "") === context

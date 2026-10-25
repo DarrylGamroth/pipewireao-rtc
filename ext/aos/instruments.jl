@@ -68,7 +68,7 @@ function prepare_configured_science(options,device;check=()->nothing)
     check()
     AdaptiveOpticsSimPipeWireHIL.validate_hil_system(system;
         command_input=options.command_input,frame_output=options.frame_output,
-        command_shape=(options.command_count,),frame_shape=options.frame_shape)
+        command_shape=Owner.command_shapes(options.command_count),frame_shape=options.frame_shape)
     declaration = Instruments.load_simulation(options.plant.definition)
     contracts = Tuple((;frame_encoding=Symbol(entry["frame_encoding"]),
         frame_schema=entry["frame_schema"],command_schema=Instruments._instrument_seal(entry["command_schema"]),

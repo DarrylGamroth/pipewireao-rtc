@@ -61,4 +61,7 @@ function Calibration.calibration_frame!(system, physical)
     return HIL.hil_frame_buffer(boundary)
 end
 
+include("modal_calibration.jl")
+include("modal_validation.jl")
+
 end

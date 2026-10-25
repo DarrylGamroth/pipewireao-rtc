@@ -657,3 +657,11 @@ applied_dm_command_opd_um:
   id: "pipewireao/applied-dm-command-opd-um-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
+controller_to_tip_tilt:
+  id: "pipewireao/controller-to-tip-tilt-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
+tip_tilt_to_actuators:
+  id: "pipewireao/tip-tilt-to-actuators-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"

@@ -352,6 +352,22 @@ function mirror_properties(options)
     return Dict(MIRROR_PROPERTY=>json)
 end
 
+"Publish the intrinsic description for a named physical mirror command."
+function mirror_properties(options, name::Symbol)
+    options.version == 3 || return Dict{String,String}()
+    declaration = getproperty(parentmodule(@__MODULE__), :InstrumentConfiguration)
+    rtc = declaration.load_rtc(options.rtc_configuration)
+    spec = get(rtc.instrument.document["deformable_mirrors"], string(name), nothing)
+    spec === nothing && return Dict{String,String}()
+    path = declaration.mirror_description_path(rtc.directory, spec["description"])
+    (;json, document) = _mirror_description(path)
+    validate_mirror_description(document; command_count=options.command_count[name])
+    instrument = load(options.instrument).document
+    document["layout"] == instrument["deformable_mirrors"][string(name)]["layout"] ||
+        throw(ArgumentError("mirror and instrument layouts differ for $name"))
+    return Dict(MIRROR_PROPERTY => json)
+end
+
 "Validate the scientific package and one-DM/one-WFS transport before execution."
 function verify_plant(options,plant_module)
     options.instrument===nothing && return nothing
@@ -404,12 +420,33 @@ function verify_declaration(options)
     options.prescription_identity == declaration.prescription_identity(simulation, configured) ||
         throw(ArgumentError("simulation prescription differs from its prepared identity"))
     mirrors,sensors=actual["deformable_mirrors"],actual["wavefront_sensors"]
-    length(mirrors)==length(sensors)==1 || throw(ArgumentError("this AOS boundary requires one DM and one WFS"))
-    dm,wfs=only(values(mirrors)),only(values(sensors))
-    length(dm["layout"]["command_positions"]) == options.command_count || throw(DimensionMismatch("instrument DM command count differs"))
+    length(sensors) == 1 || throw(ArgumentError("this AOS boundary requires one WFS"))
+    wfs = only(values(sensors))
+    verify_mirror_commands(mirrors, options.command_count, options.command_scale)
     Tuple(wfs["layout"]["detector_shape"]) == options.frame_shape || throw(DimensionMismatch("instrument WFS detector shape differs"))
     wfs["layout"]["expected_schema"] == options.frame_schema || throw(ArgumentError("instrument frame schema differs"))
-    Float32(dm["command_scale_m"]) == options.command_scale || throw(ArgumentError("instrument command scale differs"))
+    return nothing
+end
+
+function verify_mirror_commands(mirrors, count::Integer, scale::Real)
+    length(mirrors) == 1 || throw(ArgumentError("a scalar AOS command requires one DM"))
+    dm = only(values(mirrors))
+    length(dm["layout"]["command_positions"]) == count || throw(DimensionMismatch("instrument DM command count differs"))
+    Float32(dm["command_scale_m"]) == scale || throw(ArgumentError("instrument command scale differs"))
+    return nothing
+end
+function verify_mirror_commands(mirrors, counts::NamedTuple, scales::NamedTuple)
+    # Other named correctors (for example a tip/tilt OPD basis) are validated
+    # against the typed scientific HIL boundary rather than invented DM geometry.
+    all(name -> Symbol(name) in keys(counts), keys(mirrors)) ||
+        throw(ArgumentError("every instrument mirror must have a matching named AOS command"))
+    for (name, mirror) in mirrors
+        key = Symbol(name)
+        length(mirror["layout"]["command_positions"]) == counts[key] ||
+            throw(DimensionMismatch("instrument DM command count differs for $name"))
+        Float32(mirror["command_scale_m"]) == scales[key] ||
+            throw(ArgumentError("instrument command scale differs for $name"))
+    end
     return nothing
 end
 

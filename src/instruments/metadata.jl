@@ -263,8 +263,11 @@ function prepare_publication(application::AbstractString; configuration="rtc/con
         push!(protected,mirror_description_path(application,mirror["description"]))
     end
     for sensor in values(rtc.instrument.document["wavefront_sensors"])
-        push!(protected,D.relative_asset(application,sensor["subaperture_origins"]["path"]))
+        for asset in sensor_artifact_paths(sensor_kind(sensor), sensor)
+            push!(protected, D.relative_asset(application, asset))
+        end
     end
+    haskey(rtc.document, "calibration") && push!(protected, D.relative_asset(application, rtc.document["calibration"]))
     for control in values(rtc.controls["deformable_mirrors"]), basis in control["shape_control"]["bases"]
         definition = basis["definition"]
         definition["kind"] == "sampled" && push!(protected,D.relative_asset(application,definition["artifact"]["path"]))
