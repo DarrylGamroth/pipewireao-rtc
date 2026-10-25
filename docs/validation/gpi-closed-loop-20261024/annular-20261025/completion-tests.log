@@ -1,0 +1,19 @@
+┌ Info: Provisional GPI completion diagnostics
+│   maximum_affine_error = 1.9073486f-6
+│   relative_affine_error = 1.5810028f-7
+│   maximum_absolute_weight = 1.321671f0
+│   completion_infinity_norm = 7.690598f0
+│   feedback_infinity_norm = 2.8871038f0
+└   feedback_two_norm = 1.0000018f0
+┌ Info: GPI guard-only clipping pipeline
+│   clipped_guard_channels = 70
+│   maximum_requested_m = 1.0975614f-6
+└   maximum_feedback_m = 2.6242875f-8
+Test Summary:                                              | Pass  Total  Time
+Annular completion preserves geometry and reverse feedback |   18     18  7.3s
+Test Summary:                    | Pass  Total  Time
+Selected GPI geometric partition |   24     24  8.9s
+Test Summary:                                       | Pass  Total  Time
+Malformed completion policies and maps are rejected |   19     19  4.5s
+Test Summary:                                        | Pass  Total   Time
+Completion cannot replace the coupled tip/tilt basis |    2      2  28.5s

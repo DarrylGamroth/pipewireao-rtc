@@ -1,0 +1,20 @@
+Test Summary:                                             | Pass  Total  Time
+registered optical pupil is distinct from the source grid |    8      8  5.7s
+Test Summary:                         | Pass  Total   Time
+bounded sealed instrument publication |   40     40  10.1s
+Test Summary:                                             | Pass  Total  Time
+invalid operational mirror declarations are not published |   24     24  0.3s
+Test Summary:                           | Pass  Total  Time
+selected scientific plant compatibility |   19     19  1.0s
+Test Summary:                                                 | Pass  Total  Time
+basis publication rejects malformed and unbounded definitions |   23     23  1.7s
+Test Summary:                                       | Pass  Total  Time
+AOS instrument selection remains a cold declaration |   11     11  3.0s
+Test Summary:                                               | Pass  Total  Time
+instrument properties belong to the public session endpoint |   11     11  2.1s
+Test Summary:                                         | Pass  Total  Time
+simulated mirror uses the device NodeInfo description |   32     32  4.5s
+Test Summary:                                  | Pass  Total  Time
+mirror input is relocated with its application |    6      6  0.4s
+Test Summary:                                                       | Pass  Total  Time
+measured influence-function input is relocated with its application |    6      6  0.6s

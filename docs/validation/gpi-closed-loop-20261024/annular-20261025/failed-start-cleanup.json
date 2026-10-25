@@ -1,0 +1,101 @@
+{
+  "unit": "pipewireao-session@18987704c786.service",
+  "invocation": "2ac194dfc8f64c06a70bacff8e4574e4",
+  "launch_cleanup_complete": true,
+  "launch_unit_files_removed": true,
+  "manual_manager_alias_removals": [],
+  "units": {
+    "pipewireao-session@18987704c786.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-2ac194dfc8f64c06a70bacff8e4574e4-cohort.target": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-2ac194dfc8f64c06a70bacff8e4574e4-core.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-2ac194dfc8f64c06a70bacff8e4574e4-julia.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-2ac194dfc8f64c06a70bacff8e4574e4-parameters.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-2ac194dfc8f64c06a70bacff8e4574e4-simulator.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    }
+  },
+  "historical_processes": {
+    "core": {
+      "pid": 2528321,
+      "pid_exists": false,
+      "recorded_start_ticks": 32764402,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "julia": {
+      "pid": 2528348,
+      "pid_exists": false,
+      "recorded_start_ticks": 32764482,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "parameters": {
+      "pid": 2528349,
+      "pid_exists": false,
+      "recorded_start_ticks": 32764482,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "simulator": {
+      "pid": 2528350,
+      "pid_exists": false,
+      "recorded_start_ticks": 32764482,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    }
+  },
+  "verifier_pid_exists": false,
+  "recorded_unit_files_remaining": [],
+  "all_owned_processes_absent": true,
+  "all_owned_aliases_absent": true
+}

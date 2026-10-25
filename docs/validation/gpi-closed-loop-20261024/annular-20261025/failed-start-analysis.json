@@ -1,0 +1,103 @@
+{
+  "unit": "pipewireao-session@18987704c786.service",
+  "invocation": "2ac194dfc8f64c06a70bacff8e4574e4",
+  "start_failure": {
+    "cleanup_confirmed": true,
+    "failure": "subprocess exceeded 900.0 second deadline",
+    "invocation": "2ac194dfc8f64c06a70bacff8e4574e4",
+    "stop_command_error": null,
+    "unit": "pipewireao-session@18987704c786.service"
+  },
+  "service_start_timeout_seconds": 900.0,
+  "event_order": [
+    {
+      "utc": "2026-10-25T18:13:22.562445+00:00",
+      "monotonic_us": 327583882733,
+      "pid": "1353",
+      "message": "Starting pipewireao-session@18987704c786.service - Headless PipeWireAO RTC session 18987704c786..."
+    },
+    {
+      "utc": "2026-10-25T18:28:23.567280+00:00",
+      "monotonic_us": 328484887569,
+      "pid": "2528589",
+      "message": "[2528589] signal 15: Terminated"
+    },
+    {
+      "utc": "2026-10-25T18:28:23.569212+00:00",
+      "monotonic_us": 328484889501,
+      "pid": "2528588",
+      "message": "wp-event-dispatcher: <WpAsyncEventHook:0x55b3a4cce110> failed: Session control publication failed"
+    },
+    {
+      "utc": "2026-10-25T18:28:23.569435+00:00",
+      "monotonic_us": 328484889723,
+      "pid": "2528588",
+      "message": "m-lua-scripting: AO session fault: Session control publication failed"
+    },
+    {
+      "utc": "2026-10-25T18:28:24.387094+00:00",
+      "monotonic_us": 328485707382,
+      "pid": "2528589",
+      "message": "publish! at /home/dgamroth/.julia/packages/PipeWireAORTC/mz7TE/src/session_cli.jl:160"
+    },
+    {
+      "utc": "2026-10-25T18:28:24.865548+00:00",
+      "monotonic_us": 328486185837,
+      "pid": "2528589",
+      "message": "[2528589] signal 11 (1): Segmentation fault"
+    },
+    {
+      "utc": "2026-10-25T18:28:24.884552+00:00",
+      "monotonic_us": 328486204840,
+      "pid": "2528589",
+      "message": "publish! at /home/dgamroth/.julia/packages/PipeWireAORTC/mz7TE/src/session_cli.jl:160"
+    },
+    {
+      "utc": "2026-10-25T18:28:25.110016+00:00",
+      "monotonic_us": 328486430304,
+      "pid": "1353",
+      "message": "pipewireao-session@18987704c786.service: Control process exited, code=killed, status=11/SEGV"
+    },
+    {
+      "utc": "2026-10-25T18:29:34.692041+00:00",
+      "monotonic_us": 328556012329,
+      "pid": "1353",
+      "message": "pipewireao-session@18987704c786.service: Failed with result 'signal'."
+    },
+    {
+      "utc": "2026-10-25T18:29:34.692429+00:00",
+      "monotonic_us": 328556012717,
+      "pid": "1353",
+      "message": "Stopped pipewireao-session@18987704c786.service - Headless PipeWireAO RTC session 18987704c786."
+    }
+  ],
+  "seconds_start_to_sigterm": 901.004836,
+  "seconds_sigterm_to_publication_failure": 0.001932,
+  "seconds_sigterm_to_segv": 1.298268,
+  "observed": [
+    "Outer W.start! failed with subprocess exceeded 900.0 second deadline.",
+    "SIGTERM publisher stack retained SessionCLI.publish! warmup polling sleep line160; no direct-session publication-deadline exception was logged.",
+    "Native Session control publication failed followed first SIGTERM, and SEGV followed in Julia atexit proxy finalization."
+  ],
+  "derived": [
+    "The admission failure preceded Running and the observed publication failure is downstream of startup timeout cleanup; journal does not establish a spontaneous earlier publication error."
+  ],
+  "unresolved": [
+    "The exact native publish-records false-return branch is not exposed by this journal.",
+    "Root independently investigates why GraphOwner had not completed preparation before outer startup deadline."
+  ],
+  "source_sha256": {
+    "publisher": {
+      "path": "/tmp/gpi2-native-source-cohort-v5/depot/packages/PipeWireAORTC/mz7TE/src/session_cli.jl",
+      "sha256": "4f3f3e31fee0b6576037ba460101ce103d4ed7aef29c7a8e6e0f12cde790dbdc"
+    },
+    "runtime": {
+      "path": "/tmp/gpi2-native-source-cohort-v5/depot/packages/PipeWireAORTC/mz7TE/src/deployment/session_runtime.jl",
+      "sha256": "46575531701277c10acf91386bdccab5b1df8710f01073a4748fa2675b986418"
+    },
+    "lua": {
+      "path": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/share/pipewireao-rtc/scripts/lib/ao-session-control.lua",
+      "sha256": "fe858636fc51b7cea9eb9676f1b748ab30e776a226ae3f2d937cd8636f46ad47"
+    }
+  }
+}

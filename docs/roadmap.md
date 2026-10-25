@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-24. This section is the current delivery summary. Later sections
+Updated 2026-10-25. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -24,9 +24,14 @@ both mirrors and stage from typed FITS artifacts. The camera has actual UInt16
 output storage, transport and controller input. Generic published geometry
 drives both DM views, the pyramid overlay and existing stage X–Y charts.
 CPU calibrated replay, noisy CPU/CUDA correction, private native lifecycle and
-fault recovery pass. Native CUDA observation measured about 54 nm residual RMS;
+fault recovery pass. The current provisional annular tweeter policy controls
+1,412 coordinates, extrapolates 304 central/guard coordinates and leaves 588
+farther coordinates without correction. The 4,096-frame noisy CUDA check gives
+65.28 nm residual RMS; the preceding selection gave about 54 nm. Its measured
 completed-step CUDA plant/CPU controller throughput was about 120 Hz on the
-shared workstation. Absolute subnanometre residual-error tests retain failures;
+shared workstation; this throughput has not been requalified for the annular
+matrices. Generic GUI views use registered optical pupils and independently
+declared Applied products. Absolute subnanometre residual-error tests retain failures;
 their cause and incremental weak-signal response are not established. See the [integration evidence](validation/gpi-closed-loop-20261024/README.md)
 and preceding [multi-command evidence](validation/gpi-multiport-20261024/README.md).
 These provisional simulation checks do not qualify physical GPI hardware or

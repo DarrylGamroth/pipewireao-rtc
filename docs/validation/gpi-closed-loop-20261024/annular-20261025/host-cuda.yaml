@@ -1,0 +1,71 @@
+simulation:
+  pacing_rate_hz: 10
+  device: 0
+  backend: "cuda"
+environment:
+  julia:
+    JULIA_DEPOT_PATH: "/tmp/gpi2-native-source-cohort-v5/depot:/home/dgamroth/.local/state/pipewireao/classic-cuda-20261023/depot:/home/dgamroth/.local/share/classic-review-20261020/depot"
+    JULIA_PKG_GC_AUTO: "false"
+    JULIA_PKG_PRECOMPILE_AUTO: "0"
+  simulator:
+    JULIA_DEPOT_PATH: "/tmp/gpi2-native-source-cohort-v5/depot:/home/dgamroth/.local/state/pipewireao/classic-cuda-20261023/depot:/home/dgamroth/.local/share/classic-review-20261020/depot"
+    JULIA_PKG_GC_AUTO: "false"
+    JULIA_PKG_PRECOMPILE_AUTO: "0"
+    ROCR_VISIBLE_DEVICES: ""
+  session:
+    JULIA_DEPOT_PATH: "/tmp/gpi2-native-source-cohort-v5/depot:/home/dgamroth/.local/state/pipewireao/classic-cuda-20261023/depot:/home/dgamroth/.local/share/classic-review-20261020/depot"
+    JULIA_PKG_GC_AUTO: "false"
+    JULIA_PKG_PRECOMPILE_AUTO: "0"
+scheduling:
+  processes:
+    julia:
+      cpus:
+        - 14
+        - 15
+      leader-cpu: 15
+      data-loops:
+        julia-data-loop:
+          - 14
+      workers:
+        julia:
+          - 15
+          - 14
+    rtc:
+      cpus:
+        - 14
+        - 15
+      leader-cpu: 15
+      data-loops:
+        rtc-data-loop:
+          - 14
+    simulator:
+      cpus:
+        - 14
+        - 15
+      leader-cpu: 14
+      workers:
+        pipewire:
+          - 14
+        optical-diagnostics:
+          - 15
+    session:
+      cpus:
+        - 15
+      leader-cpu: 15
+      data-loops:
+        rtc-data-loop:
+          - 15
+    core:
+      cpus:
+        - 14
+        - 15
+      leader-cpu: 15
+      data-loops:
+        telemetry-loop:
+          - 15
+        rtc-data-loop:
+          - 14
+  defaults:
+    threads: []
+    rt-priority: 0
+    locked-bytes: 0

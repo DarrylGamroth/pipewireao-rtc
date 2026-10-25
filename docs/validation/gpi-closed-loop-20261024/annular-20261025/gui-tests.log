@@ -1,0 +1,1101 @@
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo fix --lib -p smithay-client-toolkit` to apply 5 suggestions)
+warning: use of deprecated method `std::sync::atomic::Atomic::<i64>::fetch_update`: renamed to `try_update` for consistency
+   --> src/native_rtc/session/transport.rs:894:14
+    |
+894 |             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| v.checked_add(1))
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+894 -             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| v.checked_add(1))
+894 +             .try_update(Ordering::Relaxed, Ordering::Relaxed, |v| v.checked_add(1))
+    |
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> src/pipewire_worker.rs:215:14
+    |
+215 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+    |              ^^^^^^^^^^^^
+    |
+help: replace the use of the deprecated method
+    |
+215 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+215 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+    |
+
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+  --> src/rtc_adapter.rs:28:14
+   |
+28 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+   |              ^^^^^^^^^^^^
+   |
+help: replace the use of the deprecated method
+   |
+28 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+28 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+   |
+
+warning: `pipewireao-gui` (bin "pipewireao-gui") generated 3 warnings (run `cargo fix --bin "pipewireao-gui" -p pipewireao-gui` to apply 3 suggestions)
+warning: `pipewireao-gui` (bin "pipewireao-gui" test) generated 3 warnings (3 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> src/pipewire_worker.rs:215:14
+    |
+215 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+215 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+215 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+    |
+
+warning: `pipewireao-gui` (example "native-artifact") generated 2 warnings (2 duplicates)
+warning: `pipewireao-gui` (example "native-observation") generated 1 warning (run `cargo fix --example "native-observation" -p pipewireao-gui` to apply 1 suggestion)
+   Compiling pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/gui-gpi2-presentation)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.93s
+     Running unittests src/lib.rs (target/gpi2-pupil/debug/deps/pipewireao_gui-9015aa663cbf03fc)
+
+running 604 tests
+test array_display::measurement_tests::broad_range_cancellation_preserves_unscaled_residuals ... ok
+test array_display::measurement_tests::cancelled_extreme_sum_preserves_small_remainder ... ok
+test array_display::measurement_tests::constant_and_nonfinite_regions_have_unambiguous_readouts ... ok
+test array_display::measurement_tests::cropped_regions_only_include_inside_samples ... ok
+test array_display::measurement_tests::large_offset_variance_and_extreme_magnitude_rms_remain_finite ... ok
+test array_display::measurement_tests::overflowing_cancellation_with_normalization_loss_is_unavailable ... ok
+test actuator_layout::tests::preserves_command_order_without_row_major_sorting ... ok
+test actuator_layout::tests::rejects_malformed_unknown_missing_and_wrong_version_input ... ok
+test array_display::measurement_tests::restored_selections_cannot_exceed_the_closed_statistic_set ... ok
+test array_display::measurement_tests::selections_and_display_transforms_reuse_raw_statistics ... ok
+test array_display::measurement_tests::signed_finite_values_use_population_deviation_and_raw_rms ... ok
+test array_display::measurement_tests::saved_measurement_selection_is_ordered_deduplicated_and_legacy_compatible ... ok
+test array_display::scale::tests::logarithmic_decades_are_even_and_nonpositive_values_are_under_range ... ok
+test array_display::tests::binding_a_different_source_resets_source_scoped_display_state ... ok
+test array_display::scale::tests::symmetric_log_preserves_sign_zero_and_a_linear_core ... ok
+test array_display::tests::colorbar_brightness_can_move_a_full_format_range ... ok
+test array_display::tests::colorbar_drag_retains_subpixel_level_changes ... ok
+test array_display::tests::colorbar_vertical_drag_changes_brightness ... ok
+test array_display::tests::contrast_levels_clip_and_scale_raw_values ... ok
+test array_display::tests::display_adjustments_survive_source_refresh ... ok
+test array_display::tests::frames_are_fitted_inside_the_existing_canvas ... ok
+test array_display::tests::gray16_little_endian_values_use_the_selected_contrast_levels ... ok
+test array_display::tests::initialized_levels_stay_fixed_across_new_frames ... ok
+test array_display::tests::image_coordinates_include_the_current_viewport ... ok
+test array_display::scale::tests::normalization_rejects_invalid_levels_and_covers_negative_only_ranges ... ok
+test array_display::tests::colorbar_horizontal_drag_changes_contrast ... ok
+test array_display::tests::data_palettes_use_the_existing_scalar_interpolation_for_every_level ... ok
+test array_display::tests::display_adjustments_are_owned_by_each_panel ... ok
+test array_display::tests::logarithmic_rendering_keeps_pixels_and_levels_in_source_units ... ok
+test array_display::tests::ndarray_scale_ignores_nonfinite_values_and_retains_negative_range ... ok
+test array_display::tests::numeric_scale_selects_expected_symmetric_quantiles ... ok
+test array_display::tests::ndarray_retains_native_bytes_and_maps_column_major_values ... ok
+test array_display::tests::ordinary_log_handles_a_frame_without_positive_values ... ok
+test array_display::tests::query_region_can_become_the_viewport ... ok
+test array_display::tests::query_region_uses_raw_pixel_statistics ... ok
+test array_display::tests::invalid_persisted_presentation_uses_safe_source_defaults ... ok
+test array_display::tests::presentation_round_trip_preserves_only_panel_owned_display_state ... ok
+test array_display::tests::query_region_starts_in_the_image_center ... ok
+test array_display::tests::resize_never_returns_non_finite_or_non_positive_extents ... ok
+test array_display::tests::negotiated_dimension_change_resets_the_viewport ... ok
+test array_display::tests::invalid_video_byte_count_is_rejected ... ok
+test array_display::tests::reset_levels_restores_the_selected_percentile_range ... ok
+test array_display::measurement_tests::empty_selection_reserves_no_footer_for_waiting_or_image ... ok
+test actuator_layout::tests::accepts_exact_metadata_grid_and_actuator_limits ... ok
+test array_display::tests::scale_and_threshold_invalidate_the_texture_and_survive_saved_state ... ok
+test array_display::tests::settings::percentile_drag_updates_levels_without_confirmation ... ok
+test array_display::tests::image_context_menu_exposes_colormap_and_viewport_choices ... ok
+test actuator_layout::tests::rejects_invalid_bounds_duplicates_and_empty_metadata ... ok
+test array_display::tests::runtime_palette_menu_selection_and_saved_identity_use_the_current_catalog ... ok
+test array_display::tests::scale_choices_and_threshold_can_be_set_before_data_arrives ... ok
+test array_display::tests::settings::image_metadata_contains_sample_fields_without_gui_display_state ... ok
+test array_display::tests::renderer_survives_intermediate_window_resize_extents ... ok
+test array_display::tests::viewport_pan_stays_inside_the_source_frame ... ok
+test array_display::tests::viewport_zoom_keeps_the_pointer_pixel_anchored ... ok
+test array_display::tests::zero_sized_video_frame_is_rejected_before_texture_upload ... ok
+test artifact::tests::checked_extent_includes_the_native_limit_without_allocating_payloads ... ok
+test artifact::tests::checked_extent_rejects_invalid_dimensions_overflow_and_oversize ... ok
+test artifact::tests::checked_extent_validates_the_complete_binding ... ok
+test artifact::tests::fgn_inlet_is_an_owner_advertised_literal_name ... ok
+test artifact::tests::parameter_schema_type_must_match_f32_but_custom_schemas_remain_valid ... ok
+test client::model::observation_group::tests::complete_groups_advance_atomically_while_individual_samples_advance_independently ... ok
+test array_display::tests::settings::percentile_label_and_entry_share_a_compact_settings_row ... ok
+test client::model::observation_group::tests::discontinuous_frames_are_admitted_only_with_an_exact_current_cohort ... ok
+test client::model::observation_group::tests::corruption_missing_header_and_reset_clear_groups_without_replacing_generic_frames ... ok
+test array_display::tests::settings::component_measurements_share_the_image_header_and_grid ... ok
+test client::model::observation_group::tests::five_member_groups_reject_duplicate_swapped_missing_and_extra_roles ... ok
+test client::model::observation_group::tests::group_lifecycle_clears_retired_members_and_bounds_view_storage_to_desired_ids ... ok
+test client::model::observation_group::tests::repeated_sources_cannot_qualify_distinct_roles_or_announce_group_mode ... ok
+test array_display::tests::image_help_reports_actual_query_and_reset_gestures ... ok
+test client::model::observation_group::tests::summary_is_required_only_when_desired_and_arity_is_exactly_four_or_five ... ok
+test client::model::observation_group::tests::stale_boundaries_cannot_retire_a_newer_complete_group ... ok
+test client::model::observation_group::tests::four_and_five_member_groups_retire_on_schema_reset_replacement_and_disconnect ... ok
+test client::model::observation_group::tests::groups_reject_stale_generations_sources_revisions_and_header_tuples ... ok
+test client::port_observation::tests::ambiguous_exports_and_multiport_outputs_are_unavailable ... ok
+test client::port_observation::tests::pinned_model_stops_on_port_replacement_and_never_rebinds_by_name ... ok
+test client::port_observation::tests::queue_output_and_linked_producer_resolve_to_same_safe_source ... ok
+test client::port_observation::tests::reliable_output_without_existing_queue_export_is_unavailable ... ok
+test client::port_observation::tests::serial_generation_and_mapping_changes_invalidate_selection ... ok
+test client::port_observation::tests::port_observation_requires_declared_non_gating_queue_profile ... ok
+test client::tests::complete_props_omissions_settle_submitted_property_requests_as_unavailable ... ok
+test client::tests::complete_props_remove_values_while_sparse_props_preserve_omissions ... ok
+test client::tests::configured_source_resolution_rejects_ambiguous_compatibility_matches ... ok
+test client::tests::failed_observation_submissions_are_retried_deterministically ... ok
+test client::tests::observation_invalidation_clears_old_frames_and_accepts_replacement_stream_revisions ... ok
+test client::tests::property_drafts_coalesce_behind_one_in_flight_request ... ok
+test client::tests::reconnect_invalidates_in_flight_work_and_reconciles_desired_observation ... ok
+test client::tests::source_commands_allow_only_one_request_awaiting_submission ... ok
+test client::tests::client_info_metadata_tracks_graph_replacement_removal_and_connection_generation ... ok
+test client::tests::source_resolution_uses_exact_node_and_media_names_with_the_expected_class ... ok
+test client::tests::source_replacement_starts_unknown_and_retains_a_draft_needing_validation ... ok
+test client::tests::sparse_props_omissions_do_not_settle_submitted_property_requests ... ok
+test client::model::tests::retained_property_drafts_have_deterministic_bounded_storage ... ok
+test client::tests::unavailable_replacement_does_not_abandon_an_established_observation ... ok
+test client::tests::view_bindings_keep_independent_observation_lifecycles ... ok
+test array_display::tests::pixel_hover_uses_displayed_viewport_and_logical_array_coordinates ... ok
+test client::model::observation_group::tests::summary_members_preserve_exact_headers_generations_and_owned_revisions ... ok
+test client::tests::stale_observations_are_ignored_and_latest_delivery_has_capacity_one ... ok
+test dm_control::encapsulation_tests::all_basis_definitions_prepare_in_order_and_sum_with_manual_offsets ... ok
+test dm_control::encapsulation_tests::constructor_rejects_command_count_above_native_dimension_range ... ok
+test dm_control::encapsulation_tests::basis_identity_units_normalization_hash_and_bounds_are_checked ... ok
+test dm_control::encapsulation_tests::rejected_live_edit_still_composes_but_does_not_queue ... ok
+test dm_control::encapsulation_tests::owner_prose_and_strict_basis_ids_follow_the_publication_contract ... ok
+test dm_control::fourier_tests::fourier_composition_follows_owner_command_order ... ok
+test dm_control::encapsulation_tests::scoped_edits_compose_without_changing_fixed_lengths_or_binding ... ok
+test dm_control::fourier_tests::fourier_requires_valid_geometry_and_non_degenerate_samples ... ok
+test dm_control::tests::adoption_timeout_discards_latest_without_retry ... ok
+test dm_control::tests::cancelled_queue_never_rebinds_an_issue_after_source_or_session_replacement ... ok
+test dm_control::tests::cancelling_hidden_editor_queue_preserves_issued_adoption_and_draft ... ok
+test dm_control::tests::cancelling_prepared_unsent_vector_preserves_draft_without_adoption_wait_or_retry ... ok
+test dm_control::tests::external_offset_cancels_queued_edit_and_adopts_without_emission ... ok
+test dm_control::tests::hidden_adoption_timeout_retains_issued_record_without_retrying_or_rebasing ... ok
+test dm_control::tests::observation_and_reconnect_never_emit_a_mutation ... ok
+test dm_control::tests::latest_edit_waits_for_exact_issued_vector_and_owner_outcome ... ok
+test dm_control::tests::sample_before_response_is_not_native_completion_and_rate_is_bounded ... ok
+test dm_control::tests::rejection_and_unknown_never_replay_latest_edit ... ok
+test dm_control::tests::stale_status_wrong_session_and_missing_sample_discard_unsent_edits ... ok
+test dm_control::zernike_tests::invalid_orders_names_duplicates_and_sample_dimensions_are_rejected ... ok
+test dm_control::zernike_tests::mode_identity_is_explicit_nm_and_unknown_fields_are_rejected ... ok
+test dm_control::zernike_tests::peak_normalization_matches_independent_low_order_cartesian_polynomials ... ok
+test fits_inspection::tests::adopted_read_refreshes_metadata_and_resets_geometry_before_settings_render ... ok
+test dm_control::encapsulation_tests::constructor_validates_binding_and_prepares_fixed_length_state ... ok
+test dm_control::encapsulation_tests::sampled_basis_rejects_an_identically_zero_row ... ok
+test fits_inspection::tests::higher_axis_selection_preserves_first_axis_fast_planes_and_revision ... ok
+test fits_inspection::tests::inconsistent_empty_and_oversized_owned_arrays_are_rejected ... ok
+test dm_control::fourier_tests::fourier_phase_preserves_rms_amplitude_and_adds_to_existing_components ... ok
+test dm_control::zernike_tests::declared_subset_order_and_names_survive_decode_and_prepare ... ok
+test fits_inspection::tests::owned_fits_plane_preserves_axes_and_nonfinite_samples ... ok
+test graph_panel::blocks::tests::absent_or_empty_group_ids_leave_declared_nodes_separate ... ok
+test graph_panel::blocks::tests::client_titles_use_published_metadata_and_refresh_without_name_rules ... ok
+test graph_panel::blocks::tests::explicit_groups_preserve_published_labels_classes_ids_and_unknown_plugins ... ok
+test graph_panel::blocks::tests::group_ids_are_connection_local_and_stale_members_do_not_join ... ok
+test graph_panel::blocks::tests::grouping_requires_current_generation_and_leaves_explicit_declarations_separate ... ok
+test graph_panel::blocks::tests::grouping_uses_client_ids_and_preserves_all_endpoint_identities ... ok
+test graph_panel::blocks::tests::node_display_uses_description_and_published_class_or_category_exactly ... ok
+test graph_panel::blocks::tests::partial_or_conflicting_metadata_is_never_repaired_from_names_or_client_ids ... ok
+test graph_panel::selection::tests::selections_follow_live_state_but_do_not_follow_reused_objects ... ok
+test array_display::tests::image_context_menu_updates_levels_on_percentile_edit ... ok
+test graph_panel::tests::filters_node_info_properties ... ok
+test array_display::tests::view_and_colour_combo_boxes_change_presentation ... ok
+test graph_panel::tests::processing_flow_groups_visible_endpoints_and_all_nodes_expands_them ... ok
+test graph_panel::tests::selection_tracks_connection_generation ... ok
+test graph_panel::tests::selects_first_node ... ok
+test array_display::tests::shared_hover_rows_keep_width_columns_and_single_line_values_stable ... ok
+test graph_panel::tests::unused_ports_are_visible_in_both_views_until_compact_mode_is_selected ... ok
+test fits_inspection::tests::file_action_requires_interaction_and_busy_controls_do_not_emit_actions ... ok
+test array_display::tests::settings::measurement_checklist_keeps_all_choices_and_selection_order ... ok
+test fits_inspection::tests::fits_open_button_fills_the_same_settings_column_as_hdu ... ok
+test graph_panel::tests::controls_follow_node_selection_and_start_collapsed ... ok
+test fits_inspection::tests::short_fits_settings_scroll_to_the_measurement_checklist ... ok
+test fits_inspection::tests::local_panel_presentation_and_read_actions_never_create_rtc_bindings ... ok
+test graph_panel::topology::engine::tests::actual_engine_sections_are_flattened_as_chained_cubic_beziers ... ok
+test array_display::tests::settings_scale_and_query_actions_work_before_first_image_render ... ok
+test graph_panel::topology::routing::tests::cubic_controls_are_not_drawn_as_bends_and_share_exact_hit_geometry ... ok
+test graph_panel::topology::layout::tests::empty_and_unlinked_graphs_keep_actual_nodes_and_ports ... ok
+test graph_panel::topology::engine::tests::invalid_engine_geometry_is_reported_without_a_fallback_route ... ok
+test graph_panel::topology::tests::client_port_labels_identify_endpoint_and_multiple_ports ... ok
+test array_display::tests::query_statistics_fit_a_narrow_display_with_room_for_wrapped_cards ... ok
+test array_display::tests::settings::percentile_typing_commits_on_enter_or_focus_loss_and_escape_cancels ... ok
+test graph_panel::topology::tests::explicit_group_ports_keep_exact_names_and_real_selection_ids ... ok
+test graph_panel::topology::tests::client_layout_keeps_every_member_port_and_internal_link ... ok
+test array_display::measurement_tests::all_wrapped_readouts_fit_without_a_hover_scrollbar ... ok
+test graph_panel::topology::tests::explicit_group_block_preserves_ports_and_places_connected_blocks_in_order ... ok
+test array_display::measurement_tests::measurement_cards_keep_their_label_positions_as_values_change ... ok
+test graph_panel::topology::layout::tests::grouped_clients_and_explicit_groups_keep_every_real_port_and_internal_link ... ok
+test graph_panel::topology::layout::tests::measured_labels_and_real_unused_ports_survive_engine_placement ... ok
+test graph_panel::topology::tests::client_ports_select_real_endpoints_and_resolve_hidden_observation_queue ... ok
+test graph_panel::topology::tests::viewport_height_fills_available_panel ... ok
+test graph_panel::topology::layout::tests::request_and_layout_are_stable_under_snapshot_reordering ... ok
+test graph_panel::visibility::tests::explicit_analysis_group_is_observation_only_without_processing_consumers ... ok
+test graph_panel::visibility::tests::group_observation_ignores_internal_links_and_requires_all_external_consumers ... ok
+test graph_panel::visibility::tests::malformed_or_non_analysis_groups_stay_visible ... ok
+test graph_panel::visibility::tests::processing_or_unknown_group_consumer_keeps_both_endpoints_in_data_flow ... ok
+test graph_panel::visibility::tests::visibility_hides_only_optional_categories_until_toggled_or_all_nodes ... ok
+test graph_panel::topology::tests::group_ports_select_their_real_endpoint_and_header_retains_selection ... ok
+test graph_panel::visibility::tests::categories_require_topology_and_roles_not_names_or_advertisements_alone ... ok
+test operator_view::colormap::tests::file_loader_resolves_relative_catalogs_and_rejects_unknown_or_missing_files ... ok
+test operator_view::colormap::tests::catalog_is_typed_bounded_and_rejects_ambiguous_palettes_atomically ... ok
+test operator_view::instrument::tests::independently_unit_declared_applied_product_preserves_command_controls ... ok
+test operator_view::instrument::tests::inline_science_preview_and_unknown_keys_cannot_mix_with_component_references ... ok
+test operator_view::instrument::tests::malformed_unbounded_and_inconsistent_owner_definitions_are_rejected ... ok
+test operator_view::instrument::tests::missing_components_and_instrument_or_units_or_parameter_mismatches_fail_closed ... ok
+test graph_panel::topology::tests::feedback_path_stays_outside_the_intervening_blocks ... ok
+test operator_view::instrument::tests::optical_pupil_registration_resolves_all_products_without_becoming_view_configuration ... ok
+test operator_view::instrument::tests::optical_pupil_metadata_rejects_unrenderable_or_unregistered_apertures ... ok
+test operator_view::tests::accepts_only_schema_version_11 ... ok
+test operator_view::tests::accepts_ungrouped_views ... ok
+test operator_view::instrument::tests::modal_controls_select_order_and_present_owner_bases_only_after_resolution ... ok
+test operator_view::instrument::tests::pyramid_owner_layout_resolves_without_persisting_geometry_or_preview ... ok
+test graph_panel::topology::tests::port_context_action_requests_the_existing_ndarray_queue ... ok
+test operator_view::tests::bounds_overlays_independently_of_views_and_groups ... ok
+test operator_view::tests::bounds_groups_independently_of_views ... ok
+test operator_view::tests::inline_native_shape_definitions_require_the_instrument_authority ... ok
+test operator_view::tests::measurement_defaults_are_typed_ordered_and_optional ... ok
+test operator_view::tests::bindings::source_names_allow_bounded_text ... ok
+test graph_panel::topology::layout::tests::single_sided_labels_use_full_width_and_extreme_labels_are_bounded ... ok
+test operator_view::tests::native_dm_feedback_requires_demanded_order_units_and_finite_amplitude_bounds ... ok
+test operator_view::tests::overlay_presentation_is_optional_and_identity_namespaces_are_separate ... ok
+test operator_view::tests::parses_egrabber_configuration_with_current_schema ... ok
+test graph_panel::topology::tests::rendered_links_and_ports_select_the_exact_physical_object ... ok
+test operator_view::tests::every_view_kind_supports_optional_grouping ... ok
+test operator_view::tests::parses_pyramid_overlay_bindings_and_display_defaults ... ok
+test operator_view::tests::parses_multi_corrector_pyramid_and_stage_presentation_example ... ok
+test operator_view::tests::parses_science_camera_pixel_template_without_inventing_science_view_kinds ... ok
+test operator_view::tests::bindings::rejects_retired_or_cross_boundary_fields ... ok
+test operator_view::tests::pyramid_overlay_display_defaults_are_optional ... ok
+test operator_view::tests::parses_nested_groups_with_forward_parent_references_and_separate_id_namespaces ... ok
+test operator_view::tests::rejects_duplicate_groups_and_unknown_references ... ok
+test operator_view::tests::native_dm_products_require_explicit_owner_declarations_and_reject_preview_mixing ... ok
+test operator_view::tests::rejects_duplicate_overlay_ids_and_unknown_pixel_references ... ok
+test operator_view::tests::parses_the_repository_example ... ok
+test operator_view::tests::rejects_duplicate_view_id ... ok
+test operator_view::instrument::tests::parse_unresolved_then_resolve_shared_native_products_without_preview_or_persistence ... ok
+test operator_view::tests::rejects_unknown_or_missing_pyramid_overlay_fields ... ok
+test operator_view::tests::rejects_self_parent_and_nested_parent_cycles ... ok
+test operator_view::tests::rejects_standalone_shack_hartmann_view_kind ... ok
+test operator_view::tests::rejects_unknown_fields_and_view_kinds ... ok
+test operator_view::tests::rejects_unknown_group_fields_and_unsupported_grouped_versions ... ok
+test operator_view::tests::rejects_older_schema_versions_with_overlay_declarations_or_references ... ok
+test operator_view::tests::parses_repeated_instances_of_every_closed_view_kind_with_independent_bindings_and_defaults ... ok
+test operator_view::tests::residual_views_accept_independent_owner_schemas_without_command_products ... ok
+test operator_view::tests::round_trips_exact_overlay_specs_with_preview_declaration_fields ... ok
+test graph_panel::topology::tests::layout_cache_reuses_geometry_until_topology_or_measurements_change ... ok
+test graph_panel::topology::tests::unused_real_ports_are_visible_and_hollow_while_linked_ports_are_filled ... ok
+test operator_view::tests::validates_overlay_ids_bindings_and_references ... ok
+test operator_view::tests::validates_group_fields_with_existing_identifier_and_title_bounds ... ok
+test graph_panel::tests::inspector_selector_and_metadata_use_shared_columns_at_narrow_and_wide_widths ... ok
+test operator_view::tests::validates_pyramid_overlay_identifiers_and_shared_namespace ... ok
+test property_editor::rtc::tests::changed_owner_value_requires_explicit_rebase ... ok
+test property_editor::rtc::tests::completed_row_transaction_excludes_other_unfinished_or_conflicting_drafts ... ok
+test operator_view::tests::schema_11_accepts_independent_optional_native_dm_products ... ok
+test property_editor::rtc::tests::float_boundaries_and_decimal_steps_use_advertised_storage_precision ... ok
+test property_editor::rtc::tests::explicit_same_value_drafts_build_one_exact_typed_transaction ... ok
+test operator_view::tests::rejects_unknown_overlay_kinds_fields_and_panel_fields ... ok
+test property_editor::rtc::tests::metadata_flags_and_exact_string_identity_bound_editing ... ok
+test property_editor::rtc::tests::numeric_constraints_and_storage_reject_lossy_integer_conversion ... ok
+test property_editor::rtc::tests::stale_mismatched_or_pending_owner_cannot_submit ... ok
+test property_editor::rtc::tests::owner_observations_enable_only_compatible_declared_scalars ... ok
+test graph_panel::topology::tests::background_drag_pans_both_axes_without_selecting_or_relaying_out ... ok
+test property_editor::rtc::tests::node_schema_graph_and_session_changes_discard_drafts ... ok
+test operator_view::tests::repeats_pixel_views_with_shared_overlay_and_independent_defaults ... ok
+test graph_panel::topology::layout::tests::elk_owns_chain_fork_cycle_feedback_and_long_edge_geometry ... ok
+test property_editor::rtc_controls::tests::catalog_choices_require_declared_target_shape_type_schema_and_units ... ok
+test array_display::tests::settings_remain_usable_while_waiting_without_resetting_presentation ... ok
+test panel::tests::module_actions_remain_typed_and_are_delivered_only_after_interaction ... ok
+test property_editor::rtc_controls::tests::artifact_composer_is_discarded_on_declaration_and_session_change ... ok
+test property_editor::rtc_controls::tests::rendering_both_editors_never_submits_a_property ... ok
+test property_editor::tests::boolean_momentary_commands_submit_true ... ok
+test property_editor::rtc_controls::tests::settings_drag_stages_locally_and_sends_exact_owner_command_only_on_release ... ok
+test property_editor::rtc_controls::tests::scalar_composer_is_discarded_on_metadata_revision_change ... ok
+test property_editor::tests::display_metadata_is_optional_and_target_neutral ... ok
+test property_editor::rtc_controls::tests::registration_selects_only_the_matching_live_composer_or_staged_target ... ok
+test property_editor::rtc_controls::tests::table_catalog_choice_prepares_then_submits_mixed_updates_without_discarding_drafts ... ok
+test property_editor::rtc_controls::tests::prepared_artifact_status_fits_inside_its_table_cell ... ok
+test property_editor::tests::momentary_command_reports_the_submission_boundary ... ok
+test property_editor::rtc_controls::tests::transaction_owner_is_retired_when_native_graph_disappears_or_is_replaced ... ok
+test graph_panel::topology::tests::topology_text_scales_without_overlap_and_selection_is_preserved ... ok
+test property_editor::tests::enumeration_selection_emits_exact_intent ... ok
+test property_editor::tests::property_tooltips_retain_the_wire_name_and_description ... ok
+test property_editor::tests::continuous_typing_retains_pending_value ... ok
+test property_editor::tests::search_matches_display_labels_and_exact_advertised_names ... ok
+test property_editor::tests::generic_editor_preserves_names_without_display_metadata ... ok
+test property_editor::tests::disabled_enumeration_does_not_open_or_emit_an_intent ... ok
+test property_editor::tests::editable_value_precedence_preserves_observation_and_request_state ... ok
+test property_editor::tests::visibility_filters_nested_properties_even_when_search_matches ... ok
+test property_editor::rtc_controls::tests::artifact_callbacks_reject_changed_removed_and_redeclared_rows_but_survive_catalog_paging ... ok
+test rtc::simulated::tests::single_slot_and_unknown_preserve_identity ... ok
+test rtc::tests::accepted_failure_without_inner_result_requires_fresh_status ... ok
+test rtc::tests::connection_loss_resolves_an_admitted_pending_mutation_as_unknown ... ok
+test property_editor::rtc_controls::tests::artifact_drafts_survive_pending_queries_but_invalidate_on_owner_or_freshness_loss ... ok
+test rtc::tests::idle_connection_loss_clears_status_without_fabricating_a_command_or_stopped_state ... ok
+test rtc::tests::fresh_direct_session_status_establishes_exact_identity_and_lifecycle ... ok
+test rtc::tests::lifecycle_completion_requires_status_refresh ... ok
+test rtc::tests::mutations_require_status_and_detect_session_replacement ... ok
+test property_editor::rtc_controls::tests::transaction_table_fills_the_panel_after_initial_content_sizing ... ok
+test rtc::tests::pending_disconnect_and_old_reply_never_replay ... ok
+test rtc::tests::native_rejection_preserves_observations_and_failed_mutation_requires_refresh ... ok
+test rtc::tests::unavailable_generation_replaces_old_observation ... ok
+test rtc::tests::pending_identity_and_query_cache_remain_bounded ... ok
+test rtc::tests::unknown_mutation_survives_later_status_and_missing_session_is_unknown ... ok
+test simulated_adapter::tests::event_order_is_deterministic ... ok
+test simulated_adapter::tests::sample_delivery_keeps_only_the_latest_pending_sample ... ok
+test simulated_adapter::tests::multi_panel_scenario_is_deterministic_across_reconnection ... ok
+test simulated_adapter::tests::request_delivery_is_bounded ... ok
+test simulator_settings::form::tests::groups_parallel_arrays_by_length_without_instrument_names ... ok
+test simulator_settings::form::tests::invalid_display_scales_are_rejected_before_rendering ... ok
+test simulator_settings::form::tests::invalid_display_titles_are_rejected_before_rendering ... ok
+test property_editor::tests::request_failure_renders_queued_edit_without_changing_observation ... ok
+test simulator_settings::form::tests::readonly_and_ancestor_readonly_disable_scalar_widgets ... ok
+test property_editor::rtc_controls::tests::artifact_only_submission_requires_every_row_prepared_and_keeps_display_order ... ok
+test property_editor::rtc_controls::tests::transaction_edits_wait_for_submit_and_are_separate_from_settings_edits ... ok
+test simulator_settings::tests::classic_owner_description_fixture_is_supported_and_renders_without_mutation ... ignored, requires a scientific-owner-generated JSON description in PIPEWIREAO_SIMULATOR_DESCRIPTOR_FIXTURE
+test simulator_settings::form::tests::unsupported_or_unbounded_forms_are_rejected_before_rendering ... ok
+test simulator_settings::tests::description_and_drafts_are_fenced_by_exact_fresh_session_and_generation ... ok
+test simulator_settings::tests::description_error_is_cleared_when_the_selected_session_changes ... ok
+test simulator_settings::tests::explicit_apply_uses_complete_draft_and_polls_durable_job_at_most_once_a_second ... ok
+test property_editor::tests::nested_categories_keep_enumeration_menus_and_keys_independent ... ok
+test simulator_settings::tests::explicit_receipt_refresh_reconciles_known_jobs_without_retrying_rebuilds ... ok
+test simulator_settings::tests::failed_unknown_and_changed_job_identity_are_retained ... ok
+test simulator_settings::tests::owner_rejection_is_distinct_from_an_unknown_mutation ... ok
+test simulator_settings::tests::job_receipt_status_survives_disconnect_and_a_different_session ... ok
+test simulator_settings::tests::replacement_session_loads_settings_while_retaining_terminal_receipt ... ok
+test simulator_settings::tests::simulator_form_requires_explicit_view_opt_in ... ok
+test simulator_settings::form::tests::small_numbers_keep_their_display_precision_without_mutating_settings ... ok
+test property_editor::tests::momentary_commands_require_writability_and_engineering_opt_in ... ok
+test simulator_settings::tests::explicit_reload_discards_draft_and_preserves_terminal_receipt ... ok
+test simulator_settings::form::tests::scaled_numbers_display_and_edit_in_owner_units_without_render_mutation ... ok
+test simulator_settings::tests::uncertain_start_status_survives_disconnect_and_a_different_session ... ok
+test simulator_settings::tests::unknown_start_is_retained_and_never_retried ... ok
+test view_panel::deformable_mirror::clipping::tests::clip_envelope_attacks_and_fades ... ok
+test view_panel::deformable_mirror::clipping::tests::missed_clip_still_pulses ... ok
+test view_panel::deformable_mirror::clipping::tests::clip_attack_hold_and_fade_match_the_declared_durations ... ok
+test property_editor::tests::unchanged_enumeration_choice_emits_no_intent ... ok
+test simulator_settings::form::tests::display_title_labels_scaled_values_while_schema_and_draft_retain_si_units ... ok
+test view_panel::deformable_mirror::clipping::tests::ongoing_clipping_holds_intensity_and_new_events_retrigger_it ... ok
+test simulator_settings::form::tests::parallel_array_table_fills_resized_panes_and_scrolls_below_readable_width ... ok
+test property_editor::tests::shared_property_editor_separates_controls_from_preceding_settings ... ok
+test property_editor::tests::visibility_selector_requires_advertised_visibility_metadata ... ok
+test view_panel::deformable_mirror::editor::tests::automatic_preview_edits_preserve_acceptance_and_other_contributions ... ok
+test view_panel::deformable_mirror::control_panel::tests::collapsing_shape_controls_keeps_queued_edit_delivery_independent ... ok
+test graph_panel::topology::layout::tests::self_loop_clearance_scales_with_fonts_and_many_real_ports ... ok
+test view_panel::deformable_mirror::control_panel::tests::configured_basis_label_and_initial_collapse_are_presentation_only ... ok
+test view_panel::deformable_mirror::control_panel::tests::rendering_adopted_offset_never_submits_and_zero_selected_edits_live ... ok
+test view_panel::deformable_mirror::fixture::tests::clearing_the_engineering_offset_preserves_other_mixer_contributions ... ok
+test view_panel::deformable_mirror::fixture::tests::clip_event_survives_return_to_range ... ok
+test view_panel::deformable_mirror::fixture::tests::demanded_and_applied_remain_distinct_when_the_fixture_limit_is_reached ... ok
+test view_panel::deformable_mirror::control_panel::tests::coarse_range_never_exceeds_owner_limit_or_submits_on_toggle ... ok
+test view_panel::deformable_mirror::fixture::tests::fixture_layout_contains_each_explicit_correction_role_and_health ... ok
+test view_panel::deformable_mirror::fixture::tests::inclusive_limit_does_not_clip ... ok
+test view_panel::deformable_mirror::fixture::tests::rejected_request_does_not_replace_the_active_fixture_engineering_offset ... ok
+test view_panel::deformable_mirror::fixture::tests::fixture_layout_and_basis_are_deterministic ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_preserves_tip_and_tilt ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_preserves_unavailable_actuator_values ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_subtracts_the_finite_mean ... ok
+test view_panel::deformable_mirror::fixture::tests::reset_changes_only_the_local_draft ... ok
+test view_panel::deformable_mirror::fixture::tests::unavailable_applied_values_do_not_erase_demanded_slots ... ok
+test view_panel::deformable_mirror::fixture::tests::vector_statistics_are_quantitative_and_ignore_non_finite_values ... ok
+test view_panel::deformable_mirror::input::tests::inputs_reject_short_and_long_value_vectors ... ok
+test view_panel::deformable_mirror::live_data::tests::live_demand_preserves_source_order_geometry_and_absent_device_metadata ... ok
+test view_panel::deformable_mirror::input::tests::input_preserves_declared_values_and_optional_metadata ... ok
+test view_panel::deformable_mirror::live_data::tests::native_products_reject_other_roles_and_drop_values_on_identity_replacement ... ok
+test view_panel::deformable_mirror::live_data::tests::registered_coordinates_keep_command_identity_and_cartesian_y_points_up ... ok
+test view_panel::deformable_mirror::live_data::tests::separate_owner_sources_remain_independent ... ok
+test view_panel::deformable_mirror::native_feedback::tests::amplitude_consistency_tolerates_float32_rounding_and_rejects_other_constraint_semantics ... ok
+test view_panel::deformable_mirror::native_feedback::tests::feedback_rejects_invalid_codes_types_and_nonfinite_values_and_bounds_cache ... ok
+test view_panel::deformable_mirror::native_feedback::tests::owner_roles_and_signed_amplitude_feedback_require_exact_frame_association ... ok
+test view_panel::deformable_mirror::control_panel::tests::offset_status_tracks_observation_and_pending_edits_without_submitting_on_render ... ok
+test view_panel::deformable_mirror::render::surface::tests::accepted_large_registered_geometry_produces_finite_surface_vertices ... ok
+test property_editor::tests::property_labels_share_settings_left_alignment ... ok
+test view_panel::deformable_mirror::render::surface::tests::dead_actuator_is_interpolated_from_other_fixture_actuators ... ok
+test view_panel::deformable_mirror::control_panel::tests::every_owner_basis_uses_generic_rows_and_collapsing_preserves_all_coefficients ... ok
+test view_panel::configuration_history::tests::distinguishes_unavailable_service_from_an_empty_shared_page ... ok
+test view_panel::deformable_mirror::render::surface::tests::face_on_projection_is_independent_of_surface_height ... ok
+test view_panel::deformable_mirror::live_data::tests::native_products_reject_incompatible_and_stale_samples_and_clear_old_values ... ok
+test view_panel::deformable_mirror::render::surface::tests::fixture_surface_tapers_only_outside_the_actuator_centers ... ok
+test view_panel::deformable_mirror::render::surface::tests::rotation_projects_surface_height_into_the_screen_plane ... ok
+test view_panel::deformable_mirror::render::surface::tests::tiny_surface_viewports_and_projection_remain_finite ... ok
+test view_panel::deformable_mirror::render::surface::tests::registered_surface_has_an_open_obstruction_and_no_invented_edge_constraint ... ok
+test view_panel::deformable_mirror::render::surface::tests::generated_surface_is_filled_with_non_degenerate_triangles ... ok
+test view_panel::deformable_mirror::editor::tests::modal_rows_are_compact_aligned_and_striped ... ok
+test view_panel::deformable_mirror::render::tests::automatic_scale_is_symmetric_and_finite ... ok
+test view_panel::deformable_mirror::render::surface::tests::constraint_preserves_nonuniform_actuator_values_and_source_state ... ok
+test view_panel::deformable_mirror::editor::tests::preview_rendering_does_not_apply_a_draft ... ok
+test view_panel::deformable_mirror::render::tests::csv_retains_actuator_order ... ok
+test view_panel::deformable_mirror::render::surface::tests::zero_values_keep_a_uniform_circular_boundary ... ok
+test view_panel::deformable_mirror::render::surface::tests::mesh_is_a_closed_disk_without_unused_vertices_or_internal_boundaries ... ok
+test view_panel::deformable_mirror::render::tests::map_selection_uses_declared_actuator_positions ... ok
+test view_panel::deformable_mirror::render::tests::selection_and_hover_rings_follow_the_displayed_actuator_size ... ok
+test view_panel::deformable_mirror::render::tests::accepted_large_pupil_radii_produce_finite_map_shapes ... ok
+test view_panel::deformable_mirror::render::tests::clipping_ring_opacity_follows_the_attack_hold_and_fade ... ok
+test view_panel::deformable_mirror::render::tests::tiny_map_viewports_have_finite_nonnegative_extent ... ok
+test view_panel::deformable_mirror::render::tests::owner_pupil_rings_and_hits_use_registered_positions_and_fallback_has_no_ring ... ok
+test view_panel::deformable_mirror::render::tests::scientific_colour_labels_stay_inside_a_narrow_canvas ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_measurement_selection_round_trips_in_workspace_ron ... ok
+test simulator_settings::tests::two_instruments_use_the_same_generic_form_without_submission_on_render ... ok
+test view_panel::deformable_mirror::render::surface::tests::face_on_map_and_surface_share_geometry_and_hit_identity ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_measurements_filter_summaries_and_release_empty_space ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_missing_measurements_select_all_and_empty_selection_round_trips ... ok
+test view_panel::deformable_mirror::editor::tests::coefficient_phase_and_frequency_editors_share_numeric_box_width ... ok
+test view_panel::deformable_mirror::render::surface::tests::triangle_interpolation_does_not_taper_the_actuator_region ... ok
+test view_panel::deformable_mirror::render::tests::legend_words_use_theme_text_color_in_both_themes ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_canvas_follows_width_and_height_and_keeps_footer_visible ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_metadata_does_not_assign_observed_identity_to_drafts_or_missing_samples ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_help_contains_complete_key_and_display_specific_controls ... ok
+test view_panel::deformable_mirror::editor::tests::modal_numeric_entries_fit_narrow_and_wide_settings ... ok
+test property_editor::rtc_controls::tests::graph_settings_routes_declared_graphs_through_matching_rtc_and_preserves_native_boundary ... ok
+test view_panel::configuration_history::tests::shared_transaction_and_unknown_details_survive_narrow_rendering ... ok
+test property_editor::tests::video_and_graph_surfaces_reuse_generic_controls_in_settings_and_combined_views ... ok
+test view_panel::deformable_mirror::surface_panel::tests::presentation_round_trip_preserves_surface_role_and_instance_independence ... ok
+test view_panel::deformable_mirror::surface_panel::tests::generic_draft_rendering_rejects_invalid_data_before_display_state_updates ... ok
+test view_panel::deformable_mirror::surface_panel::tests::rms_squared_is_mean_square_of_the_displayed_finite_vector ... ok
+test view_panel::deformable_mirror::surface_panel::tests::metre_opd_readouts_keep_nonzero_native_values_visible ... ok
+test view_panel::deformable_mirror::tests::face_forward_uses_the_face_on_surface_projection ... ok
+test view_panel::deformable_mirror::surface_panel::tests::live_dm_footer_omits_role_health_and_clipping_text ... ok
+test view_panel::deformable_mirror::tests::hidden_view_control_preserves_readback_until_adoption_or_deadline ... ok
+test view_panel::deformable_mirror::tests::inactive_products_preserve_manual_offset_selection_between_updates ... ok
+test view_panel::deformable_mirror::surface_panel::tests::applied_and_offset_use_existing_renderer_statistics_and_export_with_product_labels ... ok
+test view_panel::deformable_mirror::tests::independent_displays_share_submission_and_preserve_unavailable_applied_values ... ok
+test view_panel::deformable_mirror::tests::live_updates_preserve_existing_presentation_without_creating_preview_data ... ok
+test view_panel::deformable_mirror::tests::missing_or_nonfinite_surface_angles_use_head_on_defaults ... ok
+test view_panel::deformable_mirror::tests::native_source_replacement_and_disconnect_reset_clipping_envelopes ... ok
+test view_panel::deformable_mirror::tests::new_surface_displays_start_at_the_double_click_reset_orientation ... ok
+test view_panel::deformable_mirror::surface_panel::tests::preview_and_native_summaries_have_no_usage_or_status_footer ... ok
+test view_panel::deformable_mirror::tests::panel_preview_does_not_survive_leaving_preview ... ok
+test view_panel::deformable_mirror::tests::presentation_restore_normalizes_surface_and_colour_settings ... ok
+test view_panel::deformable_mirror::tests::rejected_control_replacement_preserves_pending_control_and_fixture ... ok
+test view_panel::deformable_mirror::tests::rejected_draft_remains_visible_without_changing_any_value_panel ... ok
+test view_panel::deformable_mirror::tests::releasing_closed_sibling_products_preserves_manual_offset_selection ... ok
+test view_panel::configuration_history::tests::selected_update_final_field_is_unclipped_when_panel_has_room ... ok
+test view_panel::header::tests::native_dm_details_show_only_the_selected_owner_product ... ok
+test view_panel::deformable_mirror::surface_panel::tests::native_draft_reuses_owner_layout_and_display_export_without_replacing_observed_values ... ok
+test view_panel::hover::tests::numbers_reserve_the_sign_and_preserve_small_values ... ok
+test view_panel::deformable_mirror::surface_panel::tests::shape_control_canvas_stays_fixed_when_offset_data_arrives_or_disappears ... ok
+test view_panel::image_region::tests::adjacent_regions_have_unambiguous_hit_testing ... ok
+test view_panel::image_region::tests::image_coordinate_includes_canvas_edge ... ok
+test view_panel::image_region::tests::normalized_region_maps_to_canvas ... ok
+test view_panel::deformable_mirror::surface_panel::tests::native_draft_rejects_shape_and_nonfinite_values_and_does_not_require_observed_adoption ... ok
+test view_panel::image_region::tests::pixel_region_uses_exact_image_edges ... ok
+test view_panel::deformable_mirror::surface_panel::tests::live_surface_uses_the_existing_mesh_rotation_and_actuator_overlay ... ok
+test view_panel::deformable_mirror::surface_panel::tests::existing_dm_display_controls_and_export_work_on_live_values ... ok
+test view_panel::layout::tests::divider_press_does_not_jump_and_drag_is_bounded_by_both_areas ... ok
+test view_panel::layout::tests::divider_clicks_do_not_collapse_the_shelf ... ok
+test view_panel::layout::tests::divider_drag_resizes_settings_and_preserves_panel_local_width ... ok
+test view_panel::layout::tests::horizontal_shelf_native_resize_is_serialized ... ok
+test view_panel::layout::tests::disabled_boolean_rows_preserve_the_value_column_alignment ... ok
+test view_panel::layout::tests::layout_visits_both_areas ... ok
+test view_panel::layout::tests::native_shelf_resize_cursor_matches_egui_for_both_vertical_sides ... ok
+test view_panel::layout::tests::persisted_width_is_finite_and_bounded ... ok
+test view_panel::deformable_mirror::surface_panel::tests::generic_preview_rendering_supports_all_content_modes ... ok
+test view_panel::layout::tests::readout_columns_are_stable_at_wrap_boundaries ... ok
+test view_panel::deformable_mirror::tests::painting_does_not_reconcile_changed_identity_or_readback ... ok
+test view_panel::layout::tests::immutable_value_context_menu_copies_the_complete_text ... ok
+test view_panel::layout::tests::responsive_layout_preserves_area_identity_and_expansion ... ok
+test view_panel::deformable_mirror::surface_panel::tests::each_native_dm_product_uses_one_shared_awaiting_data_label ... ok
+test view_panel::header::tests::native_shwfs_configuration_is_rendered_under_configured_sources ... ok
+test view_panel::layout::tests::settings_handle_collapses_and_restores_without_losing_width ... ok
+test view_panel::layout::tests::settings_remain_beside_or_below_the_canvas ... ok
+test view_panel::layout::tests::shelf_is_visible_without_hover_in_both_themes ... ok
+test view_panel::layout::tests::readouts_survive_narrow_and_changing_values ... ok
+test view_panel::layout::tests::shelf_and_areas_stay_bounded_when_collapsed_or_expanded ... ok
+test view_panel::layout::tests::shelf_toggle_and_resize_regions_do_not_overlap ... ok
+test view_panel::layout::tests::shelf_layout_instances_keep_independent_resized_and_collapsed_state ... ok
+test view_panel::layout::tests::workspace_width_survives_large_drag_release_stacking_and_round_trip ... ok
+test view_panel::layout::tests::settings_checkbox_toggles_from_either_column_and_respects_disabled_state ... ok
+test view_panel::ndarray::tests::registered_shwfs_discards_restored_override_and_never_falls_back_to_another_detector ... ok
+test view_panel::deformable_mirror::tests::painting_keeps_queued_offset_for_explicit_headless_progress ... ok
+test view_panel::layout::tests::shelf_options_place_each_side_on_the_requested_axis ... ok
+test view_panel::ndarray::tests::typed_presentation_round_trip_is_independent_and_checks_source_before_mutation ... ok
+test view_panel::layout::tests::short_immutable_values_start_at_the_value_column_left_edge ... ok
+test view_panel::ndarray::tests::typed_restore_filters_media_class_and_clears_runtime_identity ... ok
+test view_panel::node_properties::tests::node_properties_raw_params_do_not_depend_on_control_drafts_or_advertisements ... ok
+test view_panel::node_properties::tests::node_properties_schema_is_closed_bounded_and_instance_owned ... ok
+test view_panel::layout::tests::immutable_values_remain_one_row_and_show_the_complete_value_on_hover ... ok
+test view_panel::node_properties::tests::node_properties_settings_fields_are_optional_strict_and_share_the_panel_budget ... ok
+test view_panel::node_properties::tests::numeric_advertised_values_remain_available_without_raw_named_params ... ok
+test view_panel::readout_envelope::tests::duplicate_snapshot_keeps_target_and_same_time_does_not_integrate_twice ... ok
+test view_panel::layout::tests::pupil_readout_cards_fit_and_stack_at_narrow_width ... ok
+test view_panel::readout_envelope::tests::scope_disconnect_nonfinite_and_backwards_time_reset_history ... ok
+test view_panel::readout_envelope::tests::signed_extrema_attack_outward_and_decay_toward_the_new_interior ... ok
+test view_panel::readout_envelope::tests::exponential_envelope_is_invariant_to_repaint_time_partition ... ok
+test view_panel::rtc::tests::hidden_session_panel_revokes_access_after_disconnect ... ok
+test view_panel::ndarray::tests::compiled_panel_renders_each_content_mode_and_help ... ok
+test view_panel::rtc::tests::session_details_render_owned_counts_as_body_rows ... ok
+test view_panel::hover::tests::numeric_tooltips_keep_the_sign_digit_and_following_rows_fixed ... ok
+test view_panel::deformable_mirror::tests::shape_draft_survives_split_rendering_detachment_and_resize ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_canvas_stays_fixed_across_owner_feedback_states ... ok
+test view_panel::deformable_mirror::tests::fixture_panels_survive_window_resize_sequence ... ok
+test view_panel::rtc::tests::session_display_omits_connection_and_group_editors ... ok
+test view_panel::ndarray::tests::registered_shwfs_source_is_read_only_while_same_schema_generic_array_is_selectable ... ok
+test view_panel::rtc::tests::shared_connection_editor_requires_explicit_click_and_trims_endpoint ... ok
+test view_panel::rtc::tests::observation_refresh_does_not_change_operator_drafts ... ok
+test view_panel::rtc_graph_controls::tests::control_errors_are_visible_in_display_content ... ok
+test view_panel::node_properties::tests::node_properties_projects_owned_observed_values_without_any_intents ... ok
+test view_panel::rtc::tests::session_help_keeps_unknown_outcome_guidance_in_the_shared_table ... ok
+test view_panel::rtc_graph_controls::tests::controls_have_no_settings_or_duplicate_query_surface ... ok
+test array_display::tests::settings::image_settings_use_aligned_striped_rows_at_supported_widths_and_fonts ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_metadata_preserves_each_native_product_in_label_value_rows ... ok
+test view_panel::rtc_session_picker::tests::explicit_selection_emits_only_the_selected_record ... ok
+test view_panel::rtc_session_picker::tests::listing_marks_hints_unverified_and_disambiguates_duplicate_labels_by_uuid ... ok
+test view_panel::rtc_session_picker::tests::failed_verification_is_explicit_and_never_shows_cached_lifecycle ... ok
+test view_panel::rtc_session_picker::tests::verified_selection_shows_only_its_fresh_status ... ok
+test view_panel::rtc_session_picker::tests::stale_model_snapshot_hides_selected_lifecycle ... ok
+test view_panel::rtc_graph_controls::tests::import_modal_emits_only_registration_and_cancel_intents ... ok
+test view_panel::rtc_graph_controls::observations::tests::session_history_uses_the_same_table_for_queries_and_retained_unknowns ... ok
+test view_panel::node_properties::tests::node_properties_settings_fields_render_only_beside_status_and_keep_identity_details ... ok
+test view_panel::rtc::tests::disconnected_and_observed_busy_panels_render_without_automatic_actions ... ok
+test view_panel::deformable_mirror::surface_panel::tests::narrow_dm_summary_stays_visible_for_both_displays ... ok
+test view_panel::node_properties::tests::node_properties_rejects_lost_ambiguous_stale_and_replaced_identity ... ok
+test view_panel::rtc_graph_controls::observations::tests::history_table_retains_complete_transaction_and_unknown_session_details_at_both_widths ... ok
+test view_panel::layout::tests::panel_header_height_is_stable_across_statuses_at_narrow_widths ... ok
+test view_panel::settings_tests::painting_never_requests_or_stops_native_observation ... ok
+test view_panel::rtc::tests::update_opt_in_resets_for_new_session_generation_or_unknown_status ... ok
+test view_panel::shack_hartmann::fixture::tests::preview_summary_is_an_explicit_fixture ... ok
+test view_panel::shack_hartmann::render::tests::slope_arrow_uses_the_same_anisotropic_viewport_transform ... ok
+test view_panel::tests::ao_panels_do_not_invent_native_observation_requests ... ok
+test view_panel::tests::choosing_a_different_source_records_a_match_and_resets_source_scoped_presentation ... ok
+test view_panel::shack_hartmann::render::tests::subaperture_hit_test_uses_the_painted_region ... ok
+test view_panel::rtc_graph_controls::tests::render_never_requests ... ok
+test view_panel::tests::configured_status_uses_observation_facts_not_pipewire_node_state ... ok
+test view_panel::tests::deformable_mirror_display_state_round_trips_without_fixture_commands ... ok
+test view_panel::shack_hartmann::render::tests::zoomed_and_panned_regions_keep_hit_testing_registered ... ok
+test view_panel::tests::explicit_source_and_display_presentation_survive_reconnection ... ok
+test view_panel::tests::hiding_a_panel_stops_its_stable_source_binding ... ok
+test view_panel::tests::image_measurement_defaults_apply_and_workspace_choices_are_independent ... ok
+test view_panel::tests::native_dm_presentation_identity_rejects_changed_applied_and_offset_owner_declarations ... ok
+test view_panel::tests::native_dm_products_request_and_release_only_the_selected_panel_observation ... ok
+test view_panel::tests::native_feedback_observations_belong_to_demanded_and_change_presentation_identity ... ok
+test view_panel::shack_hartmann::fixture::tests::fixture_is_deterministic_and_contains_invalid_subapertures ... ok
+test view_panel::tests::ndarray_panel_resolves_only_its_data_source_binding ... ok
+test view_panel::tests::panels_select_sources_independently_and_may_share_one ... ok
+test view_panel::tests::compact_header_keeps_status_and_authority_visible_without_binding_rows ... ok
+test view_panel::tests::configured_pixel_panels_share_preview_data_not_layer_or_viewport_state ... ok
+test view_panel::shack_hartmann::fixture::tests::pixel_products_preserve_raw_pixels_and_mark_illustrative_scalars ... ok
+test view_panel::tests::port_observation_viewer_invalidates_replaced_port_without_rebinding ... ok
+test view_panel::tests::presentation_from_a_different_configured_binding_is_rejected ... ok
+test view_panel::tests::pixel_overlay_presentation_is_independent_and_binding_checked ... ok
+test view_panel::tests::queue_output_and_upstream_controls_are_selected_separately ... ok
+test view_panel::settings_tests::details::source_tree_and_role_labels_toggle_their_contents ... ok
+test view_panel::tests::residual_display_settings_round_trip_and_old_workspace_fields_remain_optional ... ok
+test view_panel::tests::video_panel_honors_open_on_start ... ok
+test view_panel::tests::pyramid_pixel_products_share_fixture_but_keep_independent_layers_and_bindings ... ok
+test view_panel::time_series::tests::bounded_paired_history_deduplicates_owned_revision_and_header_sequence ... ok
+test view_panel::time_series::tests::config_is_bounded_and_rejects_ambiguous_or_nonfinite_declarations ... ok
+test view_panel::time_series::tests::conflicting_duplicate_payload_is_unavailable_and_pause_still_validates_source_boundaries ... ok
+test view_panel::time_series::tests::discontinuous_measurements_retain_history_and_repeated_packet_checks ... ok
+test view_panel::time_series::tests::exploratory_input_contract_rejects_schema_format_layout_rank_and_shape_changes_until_reset ... ok
+test view_panel::time_series::tests::exploratory_rank_one_and_two_inputs_use_raw_values_and_pts_not_configured_model_period ... ok
+test view_panel::time_series::tests::exploratory_replacement_ambiguity_disconnect_and_restore_are_fenced ... ok
+test view_panel::time_series::tests::invalid_frames_are_unavailable_without_partial_channel_pairs ... ok
+test view_panel::time_series::tests::logical_channel_indices_reuse_column_major_scalar_decoder ... ok
+test view_panel::time_series::tests::maintained_example_is_an_admitted_generic_view_and_restoration_is_bounded ... ok
+test view_panel::time_series::tests::model_time_uses_sequence_deltas_and_pts_remains_required ... ok
+test view_panel::settings_tests::pixel_display_and_settings_share_preview_state_without_duplicate_controls ... ok
+test view_panel::tests::pixel_empty_states_render_one_shared_awaiting_data_label ... ok
+test view_panel::time_series::tests::restored_channel_overrides_are_bounded_and_do_not_preserve_latched_contracts ... ok
+test view_panel::time_series::tests::restored_xy_axes_require_both_effective_channel_indices ... ok
+test view_panel::settings_tests::settings_category_state_survives_content_and_parent_changes ... ok
+test view_panel::time_series::tests::source_disconnect_and_clock_regression_start_new_histories ... ok
+test view_panel::tests::video_settings_show_advertised_controls_without_acquisition_commands ... ok
+test view_panel::time_series::tests::source_override_requests_only_the_selected_read_only_observation_and_config_changes_reject_restore ... ok
+test view_panel::time_series::tests::plot_keeps_drag_pan_pinch_zoom_and_double_click_reset ... ok
+test view_panel::tests::native_shwfs_uses_declared_detector_and_complete_groups ... ok
+test view_panel::time_series::tests::standard_plot_bounds_follow_the_trailing_window_and_reset_after_disconnect ... ok
+test view_panel::time_series::tests::waveform_cursor_reports_nearest_real_time_and_all_enabled_channels ... ok
+test view_panel::settings_tests::dm_values_and_shape_control_keep_state_across_split_content ... ok
+test view_panel::time_series::tests::view_ingests_without_paint_requests_ordinary_observation_and_renders_all_content_modes ... ok
+test view_panel::time_series::tests::xy_source_override_uses_raw_pair_and_restores_configured_units_and_period ... ok
+test view_panel::time_series::tests::xy_chart_pairs_owned_values_and_uses_bounded_trail_and_latest_marker ... ok
+test view_panel::wfs_overlay::native::tests::caches_are_bounded_and_stale_or_replaced_sources_clear_values ... ok
+test view_panel::wfs_overlay::native::tests::corruption_missing_timestamp_and_visibility_clear_complete_tuples ... ok
+test view_panel::wfs_overlay::native::tests::discontinuous_complete_groups_preserve_overlays_and_owner_measurements ... ok
+test view_panel::wfs_overlay::native::tests::explicit_groups_keep_owned_pixels_and_products_together_when_individuals_advance ... ok
+test view_panel::time_series::tests::xy_settings_hide_time_chart_channel_visibility_controls ... ok
+test view_panel::wfs_overlay::native::tests::malformed_or_corrupted_native_products_are_rejected ... ok
+test view_panel::wfs_overlay::native::tests::matched_products_preserve_raw_units_and_only_convert_glyphs ... ok
+test view_panel::wfs_overlay::native::tests::mismatched_or_missing_products_never_supply_dynamic_layers ... ok
+test view_panel::wfs_overlay::native::tests::latest_detector_advance_hides_dynamic_layers_until_exact_products_arrive ... ok
+test view_panel::time_series::tests::xy_plot_wheel_zooms_around_cursor_and_drag_pans_real_samples ... ok
+test view_panel::wfs_overlay::native::tests::native_layer_toggles_control_the_shared_renderer ... ok
+test view_panel::wfs_overlay::native::tests::newest_complete_tuple_is_selected_without_sequence_or_timestamp_fusion ... ok
+test view_panel::wfs_overlay::native::tests::retained_tuple_uses_its_own_pixels_and_expires_from_first_gui_receipt ... ok
+test view_panel::wfs_overlay::native::tests::same_identity_reset_cannot_resurrect_a_pre_reset_tuple ... ok
+test view_panel::wfs_overlay::native::tests::summary_contract_accepts_nan_aggregates_and_rejects_invalid_counts_shape_and_values ... ok
+test view_panel::wfs_overlay::native::tests::summary_is_required_and_preserves_owner_rms_without_reducing_vectors ... ok
+test view_panel::time_series::tests::wheel_over_plot_consumes_nested_scroll_and_wheel_outside_still_scrolls ... ok
+test view_panel::time_series::tests::ordinary_wheel_zooms_about_the_pointer_without_panning ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::detector_and_pupil_flux_are_finite ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::regions_are_exact_nonoverlapping_crops ... ok
+test view_panel::wfs_overlay::pyramid::tests::opacity_restoration_is_finite_and_bounded ... ok
+test view_panel::wfs_overlay::pyramid::fixture::tests::fixture_is_deterministic_and_explicitly_four_face ... ok
+test view_panel::time_series::tests::xy_stage_preserves_rank_one_normalized_pupil_opd_coefficients ... ok
+test view_panel::wfs_overlay::native::tests::missing_summary_readouts_are_all_unavailable_including_counts ... ok
+test view_panel::wfs_overlay::pyramid::tests::native_pyramid_registration_rejects_other_sources_and_shapes ... ok
+test view_panel::wfs_overlay::pyramid::tests::pupil_hit_test_tracks_zoom_pan_non_square_canvas_and_clip ... ok
+test view_panel::time_series::tests::source_and_channel_settings_fit_narrow_panes ... ok
+test view_panel::wfs_overlay::tests::native_pixels_never_receive_fixture_layers ... ok
+test view_panel::wfs_overlay::native::tests::missing_frame_products_keep_the_summary_geometry_and_show_no_stale_numbers ... ok
+test view_panel::wfs_overlay::tests::overlay_measurement_selection_round_trips_and_missing_selection_defaults ... ok
+test view_panel::wfs_overlay::tests::overlay_measurement_selection_round_trips_in_workspace_ron ... ok
+test view_panel::layout::tests::readout_height_matches_wrapped_label_rows ... ok
+test view_panel::tests::expanded_array_settings_leave_a_visible_image_in_short_panels ... ok
+test view_panel::wfs_overlay::tests::unresolved_instrument_overlay_cannot_allocate_or_display_preview_geometry ... ok
+test view_panel::wfs_overlay::tests::wrong_overlay_kind_cannot_restore_layers ... ok
+test workspace_navigation::tests::clicking_panel_selects_and_reveals_on_each_click ... ok
+test view_panel::wfs_overlay::tests::native_settings_preserve_all_layer_and_display_controls ... ok
+test view_panel::settings_tests::simultaneous_display_and_settings_have_distinct_containers_and_stable_controls ... ok
+test view_panel::wfs_overlay::pyramid::tests::pyramid_measurements_filter_existing_pupil_fluxes ... ok
+test view_panel::wfs_overlay::tests::aperture_hover_wins_over_pixel_hover_and_pixels_remain_available_outside_apertures ... ok
+test workspace_navigation::tests::hidden_panels_remain_searchable_and_revealable ... ok
+test view_panel::tests::pixel_layers_and_details_are_beside_or_below_the_image ... ok
+test view_panel::wfs_overlay::tests::shared_preview_preserves_independent_panel_layers ... ok
+test workspace_navigation::tests::visibility_button_requests_only_a_visibility_change ... ok
+test view_panel::wfs_overlay::tests::disabled_preview_never_exposes_fixture_frames ... ok
+test view_panel::wfs_overlay::tests::incompatible_pixel_dimensions_do_not_paint_overlays ... ok
+test workspace_navigation::tests::selection_survives_filtering_but_not_registry_removal ... ok
+test workspace_navigation::tests::search_keeps_ancestors_and_matches_bindings_case_insensitively ... ok
+test workspace_navigation::tests::hover_shows_full_title_status_and_binding_metadata ... ok
+test view_panel::tests::science_camera_template_does_not_synthesize_preview_pixels_or_requests ... ok
+test view_panel::wfs_overlay::pyramid::tests::pupil_hover_reports_the_displayed_raw_or_calibrated_pixel ... ok
+test view_panel::wfs_overlay::tests::shack_hartmann_measurements_filter_summaries_and_release_empty_space ... ok
+test view_panel::settings_tests::details::configured_details_separate_field_labels_and_binding_identifiers ... ok
+test view_panel::settings_tests::details::details_fields_use_the_body_font ... ok
+test workspace_navigation::tests::panel_labels_share_a_left_edge_regardless_of_selection_or_width ... ok
+test view_panel::settings_tests::details::plain_pixel_and_status_details ... ok
+test view_panel::settings_tests::details::dm_details_show_only_the_selected_products ... ok
+
+test result: ok. 603 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 3.17s
+
+     Running unittests src/main.rs (target/gpi2-pupil/debug/deps/pipewireao_gui-226296d6698a28f5)
+
+running 297 tests
+test access::tests::direct_writes_require_opt_in_at_submission ... ok
+test access::tests::enabled_direct_access_preserves_exact_property_identity ... ok
+test access::tests::revoking_access_blocks_already_prepared_writes_but_not_observation ... ok
+test access::tests::revocation_rejects_queued_latest_draft_without_sending_or_retrying ... ok
+test artifacts::tests::catalog_requires_exact_declaration_scope_schema_units_shape_type_and_layout ... ok
+test artifacts::tests::changed_selection_discards_late_preparation_and_registration_never_submits ... ok
+test artifacts::tests::declared_catalog_scope_does_not_require_a_live_rtc ... ok
+test connection::tests::blank_connection_does_not_leave_preview ... ok
+test artifacts::tests::mixed_preflight_rejects_a_missing_second_payload_without_sending_the_first ... ok
+
+running 1 test
+test connection::tests::pipewire_status_uses_model_evidence_not_adapter_or_remote_draft ... ok
+test artifact_loader::tests::offset_staging_preserves_native_values_permissions_and_file_lifetime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.00s
+
+
+running 1 test
+test artifact_loader::tests::offset_staging_preserves_native_values_permissions_and_file_lifetime ... ok
+test artifact_loader::tests::catalog_materialization_is_validated_and_survives_client_lease_drop ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.02s
+
+test artifact_loader::tests::catalog_materialization_is_validated_and_survives_client_lease_drop ... ok
+test inspection_tests::native_preview_png_is_written_only_when_requested ... ok
+test connection::tests::connection_status_uses_owner_evidence_independently_of_pipewire ... ok
+test configuration_service::tests::owner_rejection_keeps_the_warmed_helper ... ok
+test native_adapter::client_info_tests::client_info_graph_projection_preserves_metadata_and_removes_disappeared_clients ... ok
+test native_adapter::egrabber_tests::native_egrabber_properties_and_optional_images_use_shared_controls ... ignored, requires an explicitly provided isolated eGrabber camera graph
+test native_adapter::ndarray_tests::five_member_group_conversion_preserves_summary_identity_header_and_owned_bytes ... ok
+test configuration_service::tests::simulator_transport_uses_its_protocol_without_artifact_root ... ok
+test connection::tests::pipewire_dialog_connects_only_the_observer_on_explicit_click ... ok
+test native_adapter::ndarray_tests::ndarray_sample_and_group_conversion_preserve_metadata_and_owned_bytes ... ok
+test configuration_service::tests::timeout_reaps_and_drop_cancels_without_waiting_for_deadline ... ok
+test native_adapter::props_tests::numeric_advertised_control_values_are_merged_from_all_props_records ... ok
+test native_adapter::tests::native_hil_ndarray_offscreen_render_and_reconnect ... ignored, requires an explicit harness-owned native HIL ndarray queue
+test native_adapter::tests::native_observation_lifecycle ... ignored, requires an existing local PipeWireAO daemon and built FITS/queue plugins
+test native_adapter::props_tests::raw_params_updates_and_disappearance_replace_owned_values_without_controls ... ok
+test native_property::props_params_tests::duplicate_names_stay_unavailable_within_or_across_records ... ok
+test native_property::props_params_tests::named_props_accept_only_bounded_observed_scalar_values ... ok
+test connection::tests::pending_non_status_query_does_not_claim_status_refresh ... ok
+test instrument::tests::instrument_controls_require_verified_matching_session_and_drop_on_disconnect_or_replacement ... ok
+test configuration_service::tests::worker_bounds_inflight_and_reuses_child ... ok
+test native_property::tests::command_compatibility_name_maps_only_at_native_boundary ... ok
+test native_property::tests::blank_display_labels_fall_back_without_stripping_arbitrary_prefixes ... ok
+test native_property::tests::display_name_mapping_is_limited_to_native_compatibility_prefixes ... ok
+test native_property::tests::advertised_display_labels_preserve_named_property_identity_and_writes ... ok
+test native_property::tests::genicam_constraints_preserve_range_step_and_storage ... ok
+test native_property::tests::missing_optional_presentation_metadata_stays_missing ... ok
+test native_property::tests::numeric_driver_properties_may_omit_name ... ok
+test native_property::tests::numeric_properties_use_advertised_display_labels_without_changing_id ... ok
+test native_property::tests::genicam_scalars_decode_and_serialize_with_exact_native_keys ... ok
+test native_property::tests::parses_named_props_against_advertised_shape ... ok
+test native_property::tests::serializes_numeric_property_with_advertised_id_and_storage ... ok
+test native_property::tests::unnamed_numeric_properties_keep_id_identity_without_inferred_command_roles ... ok
+test native_property::tests::visibility_metadata_decodes_all_supported_levels ... ok
+test native_property::tests::numeric_property_preserves_id_storage_and_read_only_flag ... ok
+test native_property::tests::read_only_flags_and_named_params_permissions_follow_each_advertisement ... ok
+test native_property::tests::parses_named_enumeration_presentation ... ok
+test native_rtc::connection::tests::socket_is_nonblocking_and_failure_does_not_fall_back ... ok
+test native_rtc::connection::tests::full_unix_backlog_is_failure_without_wait_or_retry ... ok
+test connection::tests::escape_dismisses_without_attaching_and_preserves_pending_request ... ok
+test native_property::props_params_tests::malformed_names_and_bounded_payloads_invalidate_the_projection ... ok
+test native_rtc::control::commands::tests::legacy_property_updates_retain_null_observations_and_adoption_outcomes ... ok
+test native_rtc::control::commands::tests::legacy_session_completions_retain_command_specific_capitalization ... ok
+test native_rtc::control::commands::tests::legacy_shutdown_and_group_snapshots_match_golden_json ... ok
+test native_rtc::control::commands::tests::legacy_status_preserves_lifecycle_names_and_unsigned_counters ... ok
+test native_rtc::control::commands::tests::legacy_generation_queries_preserve_optional_active_and_signed_values ... ok
+test native_rtc::control::commands::tests::legacy_properties_preserve_all_seven_scalar_variants_and_bits ... ok
+test native_rtc::control::commands::tests::legacy_group_requests_preserve_requested_and_optional_observed_state ... ok
+test native_rtc::control::commands::tests::parser_accepts_existing_commands_and_property_transactions ... ok
+test native_rtc::control::commands::tests::parameter_preparation_requires_regular_exact_sized_payload ... ok
+test native_rtc::control::commands::tests::legacy_parameter_submission_is_submitted_with_or_without_observation ... ok
+test native_rtc::control::commands::tests::parser_bounds_argument_count_and_checked_parameter_shapes ... ok
+test native_rtc::control::envelope::tests::all_six_scalar_array_kinds_roundtrip_with_empty_arrays ... ok
+test native_rtc::control::envelope::tests::exact_header_arity_order_and_payload_container ... ok
+test native_rtc::control::envelope::tests::completion_and_rejection_sentinels_are_exact ... ok
+test native_rtc::control::envelope::tests::malformed_lengths_truncation_flags_names_and_scalar_widths ... ok
+test native_rtc::control::envelope::tests::payload_array_and_string_preflight_prevents_decoder_panics ... ok
+test native_rtc::control::envelope::tests::outer_children_and_reply_result_types_are_exact ... ok
+test native_rtc::control::envelope::tests::bounds_include_the_entire_pod_and_require_explicit_calibration ... ok
+test native_rtc::control::envelope::tests::request_and_reply_owned_roundtrip ... ok
+test native_rtc::session::client::tests::session_lifecycle_uses_direct_authority_states ... ok
+test native_rtc::session::discovery::tests::absent_registry_is_not_created_and_diagnostics_are_utf8_bounded ... ok
+test native_rtc::control::envelope::tests::payload_depth_is_checked_before_recursive_decode_or_encode ... ok
+test native_rtc::session::client::tests::exact_identity_including_full_unsigned_serial_and_query_token ... ok
+test native_rtc::control::envelope::tests::serial_bit_patterns_and_required_positive_identity ... ok
+test native_rtc::session::discovery::tests::record_extent_and_closed_fields ... ok
+test native_rtc::session::replies::tests::duplicate_catalogs_and_invalid_scalar_rows_are_rejected ... ok
+test native_rtc::session::replies::tests::every_lifecycle_and_unsigned_counter_boundary_round_trips ... ok
+test native_rtc::session::discovery::tests::listing_is_read_only_and_rejects_special_modes_links_and_capacity ... ok
+test native_rtc::control::commands::tests::payload_replacement_between_inspection_and_open_is_rejected ... ok
+test native_rtc::session::replies::tests::active_property_reply_requires_the_existing_producer_conditions ... ok
+test native_rtc::session::replies::tests::empty_catalog_shapes_round_trip ... ok
+test native_rtc::session::replies::tests::every_successful_operation_round_trips_exact_typed_results ... ok
+test native_rtc::session::replies::tests::optional_generation_shapes_round_trip ... ok
+test native_rtc::session::replies::tests::failed_terminal_completion_and_admission_rejection_remain_distinct ... ok
+test native_rtc::session::replies::tests::header_sentinel_truncation_trailing_bytes_and_wrong_error_shapes_reject ... ok
+test native_rtc::session::replies::tests::partial_generations_and_duplicate_observations_are_rejected ... ok
+
+running 1 test
+test native_rtc::session::replies::tests::oversized_borrowed_data_is_rejected_before_payload_construction ... ok
+test native_rtc::session::replies::tests::snapshots_preserve_all_float_and_double_bits_including_nan ... ok
+test connection::tests::dialog_button_explicitly_connects_without_a_lifecycle_request ... ok
+test native_rtc::session::replies::tests::exact_borrowed_capacity_matches_common_encoder_at_padding_boundary ... ok
+test connection::tests::file_connection_action_is_available_in_preview_and_disconnected_mode ... ok
+test native_rtc::session::requests::tests::nonfinite_and_duplicate_properties_are_rejected ... ok
+test native_rtc::session::requests::tests::every_command_round_trips_exactly_without_artifact_io ... ok
+test native_rtc::session::requests::tests::scalar_pods_preserve_all_seven_types_and_numeric_bits ... ok
+test native_rtc::session::requests::tests::parameter_extent_and_native_envelope_bounds_are_enforced ... ok
+test connection::tests::explicit_connection_leaves_preview_but_waits_for_fresh_verification ... ok
+test native_rtc::session::transport::tests::bound_instrument_missing_malformed_and_replaced_metadata_never_rebinds ... ok
+test native_rtc::session::transport::tests::exact_bound_instrument_bytes_are_immutable_even_when_both_definitions_are_valid ... ok
+test native_rtc::session::requests::tests::property_transactions_are_canonical_and_bounded ... ok
+test native_rtc::session::transport::tests::earlier_retirement_fatal_evidence_and_late_terminal_do_not_complete ... ok
+test native_rtc::session::transport::tests::matching_terminal_precedes_later_retirement ... ok
+test native_rtc::session::transport::tests::malformed_and_conflicting_native_evidence_is_rejected ... ok
+test native_rtc::session::requests::tests::exact_operation_arity_types_and_names_are_required ... ok
+test native_rtc::session::transport::tests::rendering_reports_the_direct_session_only ... ok
+test native_rtc::session::transport::tests::uuid_is_bounded_canonical_and_nonzero ... ok
+test native_rtc::session::transport::tests::saved_locator_is_bounded_hints_only ... ok
+EXPLICIT_SOCKET requested_accepted=true environment_accepted=false
+test native_rtc::connection::tests::explicit_socket_ignores_environment_in_owned_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.01s
+
+test navigation::tests::component_status_search_includes_its_declared_target_component ... ok
+test native_rtc::session::replies::tests::exact_operation_outcome_lifecycle_and_arity_are_required ... ok
+test navigation::tests::differential_study_is_not_synthesized_without_configured_pyramid_pixels ... ok
+test native_rtc::session::requests::tests::oversized_parameter_descriptors_fail_before_variable_input_diagnostics ... ok
+test navigation::tests::navigation_labels_use_group_context_and_preserve_configured_titles ... ok
+test navigation::tests::navigation_choices_follow_configuration_replacement ... ok
+test navigation::tests::pyramid_and_configured_sensor_views_share_scientific_navigation ... ok
+test navigation::tests::hierarchy_preserves_configured_dm_products_and_exact_panel_identities ... ok
+test native_rtc::connection::tests::explicit_socket_ignores_environment_in_owned_child ... ok
+test navigation::tests::search_matches_title_identity_and_declared_bindings ... ok
+test native_adapter::tests::bound_node_info_updates_reach_owned_graph_presentation ... ok
+test panel_lifecycle::tests::automatic_requests_keep_ordinary_boundaries_and_equal_position_order ... ok
+test native_adapter::props_tests::empty_prop_info_four_props_records_reach_read_only_panel_without_intents ... ok
+test panel_lifecycle::tests::frame_completion_then_same_frame_close_discards_prepared_shape_action ... ok
+test panel_lifecycle::tests::headless_completion_requests_only_presented_products ... ok
+test navigation::tests::yaml_can_add_another_sensor_and_mirror_without_rust_panel_definitions ... ok
+test panel_lifecycle::tests::inactive_open_product_retains_its_existing_observation ... ok
+test panel_lifecycle::tests::non_view_and_missing_view_presentations_preserve_ordinary_actions ... ok
+test navigation::tests::retired_layout_is_not_registered_or_revealed_by_navigation ... ok
+test panel_lifecycle::tests::offset_and_shape_presentations_share_one_client_subscription ... ok
+test navigation::tests::workspace_actions_preserve_pending_rtc_and_view_state ... ok
+test panel_lifecycle::tests::settings_and_explicit_host_preview_gate_suppress_observation_requests ... ok
+test panel_routing::tests::registered_tabs_route_to_their_static_kind_and_view_role ... ok
+test native_rtc::session::requests::tests::borrowed_preflight_matches_native_padding_at_the_byte_limit ... ok
+test connection::tests::opening_and_cancelling_either_dialog_preserves_preview_and_models ... ok
+test navigation::tests::refresh_interval_label_describes_the_millisecond_control ... ok
+test pipewire_worker::registry::props_tests::post_write_refresh_drains_an_old_pass_and_preserves_committed_observations ... ok
+test pipewire_worker::registry::props_tests::props_batches_reject_duplicate_indices_and_bound_retained_bytes_and_records ... ok
+test pipewire_worker::registry::props_tests::props_batches_reject_invalidation_identity_revision_and_error_changes ... ok
+test pipewire_worker::registry::props_tests::props_enumerations_retain_all_indices_and_replace_missing_or_empty_records ... ok
+test pipewire_worker::registry::tests::client_info_properties_replace_metadata_and_preserve_owned_previous_snapshots ... ok
+test pipewire_worker::registry::tests::prop_info_barriers_reject_changed_node_identity_metadata_or_error_epoch ... ok
+test pipewire_worker::registry::tests::prop_info_empty_enumeration_commits_only_at_its_barrier ... ok
+test pipewire_worker::registry::tests::prop_info_invalidation_keeps_the_old_barrier_until_its_events_drain ... ok
+test pipewire_worker::registry::tests::prop_info_is_published_only_as_a_complete_ordered_batch ... ok
+test pipewire_worker::registry::tests::queued_property_write_rejects_changed_observation_revisions ... ok
+test pipewire_worker::registry::tests::queued_source_is_rechecked_against_current_incarnation_before_dispatch ... ok
+test pipewire_worker::registry::tests::removed_node_clears_only_its_current_diagnostic ... ok
+test pipewire_worker::registry::tests::state_only_node_info_does_not_replace_cached_properties ... ok
+test pipewire_worker::sample_observation::groups::tests::changing_another_view_preserves_the_existing_group_and_shared_history ... ok
+test pipewire_worker::sample_observation::groups::tests::collection_requires_a_complete_ready_group_and_stops_on_member_removal ... ok
+test pipewire_worker::sample_observation::groups::tests::discontinuous_frames_keep_exact_cohorts_including_a_lagging_summary ... ok
+test pipewire_worker::sample_observation::groups::tests::four_and_five_member_history_never_crosses_schema_reset_or_source_boundaries ... ok
+test pipewire_worker::sample_observation::groups::tests::generic_publication_does_not_require_a_capture_on_the_display_tick ... ok
+test pipewire_worker::sample_observation::groups::tests::independent_decimation_cannot_match_but_collection_between_display_ticks_can ... ok
+test pipewire_worker::sample_observation::groups::tests::malformed_roles_or_duplicate_sources_cannot_configure_a_cohort ... ok
+test pipewire_worker::sample_observation::groups::tests::optional_summary_requires_five_exact_members_and_does_not_retain_capture_leases ... ok
+test pipewire_worker::sample_observation::groups::tests::publication_requires_all_members_and_exact_timestamp_without_borrowing_capture_pool ... ok
+test pipewire_worker::sample_observation::groups::tests::reset_corruption_expiry_and_membership_changes_do_not_fuse_epochs ... ok
+test pipewire_worker::sample_observation::groups::tests::summary_header_timestamp_mismatch_and_stale_history_cannot_publish ... ok
+test pipewire_worker::sample_observation::tests::desired_observations_share_a_source_and_move_one_binding_independently ... ok
+test pipewire_worker::sample_observation::tests::format_generations_keep_recycled_buffers_separate ... ok
+test pipewire_worker::sample_observation::tests::gone_sources_and_reconnect_discovery_retire_prior_placement ... ok
+test pipewire_worker::sample_observation::tests::loop_changes_removal_and_invalid_selection_retire_the_capture ... ok
+test pipewire_worker::sample_observation::tests::ndarray_capture_accepts_plain_and_negotiated_fixed_formats ... ok
+test pipewire_worker::sample_observation::tests::ndarray_capture_checks_known_schema_types_and_accepts_custom_schemas ... ok
+test navigation::tests::navigator_click_opens_without_connecting_or_mutating_models ... ok
+test pipewire_worker::sample_observation::tests::ndarray_capture_rejects_missing_empty_or_duplicate_schema ... ok
+test pipewire_worker::sample_observation::tests::ndarray_capture_rejects_wrong_rank ... ok
+test pipewire_worker::sample_observation::tests::ndarray_capture_rejects_nonfixed_negotiation ... ok
+test pipewire_worker::sample_observation::tests::ndarray_chunk_copy_handles_wrapped_pipewire_storage ... ok
+test pipewire_worker::sample_observation::tests::only_recognized_queue_outputs_inherit_loop_selection ... ok
+test pipewire_worker::sample_observation::tests::packed_video_chunk_accepts_zero_stride_as_row_width ... ok
+test pipewire_worker::sample_observation::tests::queue_capture_properties_inherit_only_the_selected_loop ... ok
+test pipewire_worker::sample_observation::tests::port_observation_native_reconciliation_removes_stale_subscription_only ... ok
+test pipewire_worker::sample_observation::tests::queue_loop_selection_requires_an_exact_bounded_name ... ok
+test pipewire_worker::sample_observation::tests::queues_without_an_advertised_loop_keep_default_placement ... ok
+test pipewire_worker::sample_observation::tests::rejected_video_format_clears_previous_gray8_capture ... ok
+test pipewire_worker::sample_observation::tests::rejected_ndarray_format_discards_prior_capture_and_retires_latest_sample ... ok
+test pipewire_worker::sample_observation::tests::replacement_stream_first_revision_exceeds_retired_frame ... ok
+test pipewire_worker::sample_observation::tests::retired_stream_revisions_continue_until_source_removal ... ok
+test pipewire_worker::sample_observation::tests::retirement_and_recovery_frames_share_one_atomic_poll_snapshot ... ok
+test pipewire_worker::sample_observation::tests::retiring_one_observation_kind_preserves_the_other_latest_frame ... ok
+test pipewire_worker::sample_observation::tests::sample_creation_waits_for_full_node_properties ... ok
+test pipewire_worker::sample_observation::tests::sample_links_require_an_unambiguous_port ... ok
+test pipewire_worker::sample_observation::tests::sample_buffers_advertise_metadata_by_observation_kind ... ok
+test pipewire_worker::sample_observation::tests::sample_pool_discards_a_buffer_with_the_wrong_size ... ok
+test pipewire_worker::sample_observation::tests::sample_pool_rejects_unbounded_storage_requests ... ok
+test pipewire_worker::sample_observation::tests::sample_revision_advances_for_each_capture ... ok
+test pipewire_worker::sample_observation::tests::video_chunk_copy_handles_wrapped_pipewire_storage ... ok
+test pipewire_worker::tests::connects_and_receives_the_initial_registry ... ignored, requires a running PipeWire daemon
+test pipewire_worker::sample_observation::tests::sample_stream_advertises_metadata_by_observation_kind ... ok
+test pipewire_worker::tests::pauses_and_restarts_acquisition_without_losing_negotiation ... ignored, requires a live eGrabber and video queue test graph
+test pipewire_worker::tests::publishing_connection_status_discards_client_info_from_the_previous_graph ... ok
+test pipewire_worker::tests::receives_a_frame_from_a_live_video_source ... ignored, requires a running PipeWire daemon with a live Video/Source
+test pipewire_worker::tests::receives_a_frame_from_the_ndarray_queue_output ... ignored, requires an explicitly selected live bounded ndarray queue output
+test pipewire_worker::tests::receives_a_frame_from_the_video_queue_output ... ignored, requires a live video queue output
+test pipewire_worker::tests::resolves_queue_identity_and_upstream_controls ... ignored, requires a live eGrabber and video queue test graph
+test pipewire_worker::tests::result_reservations_bound_unconsumed_request_outcomes ... ok
+test pipewire_worker::tests::switches_to_the_video_queue_output_without_disconnecting_the_core ... ignored, requires live eGrabber and video queue sources
+test port_observation::tests::port_observation_registers_and_reuses_the_normal_view ... ok
+test rtc_adapter::codec::tests::empty_string_scalar_is_a_valid_owner_value ... ok
+test rtc_adapter::codec::tests::owner_identity_and_unknown_outcome_are_strict ... ok
+test rtc_adapter::codec::tests::owner_shaped_lifecycle_and_submission_results ... ok
+test rtc_adapter::codec::tests::owner_shaped_queries_decode_typed_observations ... ok
+test rtc_adapter::codec::tests::parameter_and_transaction_bounds ... ok
+test rtc_adapter::codec::tests::reset_uses_owner_titlecase_completion_state ... ok
+test rtc_adapter::codec::tests::supervisor_source_rejection_with_native_result_is_unknown_and_actionable ... ok
+test rtc_adapter::live_tests::identity_validation_rejects_replacement - should panic ... ok
+test rtc_adapter::live_tests::identity_validation_rejects_success_without_identity - should panic ... ok
+test rtc_adapter::live_tests::identity_validation_requires_exact_identity_for_success_and_rejection ... ok
+test rtc_adapter::live_tests::isolated_systemd_rtc_lifecycle ... ignored, legacy coordinator fixture manifest; not qualified for WirePlumber
+test rtc_adapter::live_tests::isolated_systemd_rtc_updates_and_reconnect ... ignored, legacy coordinator fixture manifest; not qualified for WirePlumber
+test rtc_adapter::live_tests::native_session_duplicate_labels_and_distinct_states ... ignored, requires two exact harness-owned installed sessions with duplicate labels, one stopped
+test rtc_adapter::live_tests::native_session_selection_and_read_only_status ... ignored, requires explicitly selected harness-owned native session and private XDG session registry
+test rtc_adapter::live_tests::native_session_stall_disconnect_and_reselect ... ignored, requires explicit harness-owned native session UUID and private XDG runtime
+test connection::tests::selected_endpoint_does_not_claim_a_live_rtc_connection ... ok
+test panel_lifecycle::tests::deliberate_shape_edit_waits_for_host_completion_and_keeps_rtc_action_order ... ok
+test navigation::tests::selected_removed_view_is_cleared_even_when_tree_is_hidden ... ok
+test rtc_adapter::tests::typed_commands_keep_names_scalars_shape_and_path_without_argv_or_json ... ok
+test navigation::tests::dock_tab_click_updates_tree_selection_without_rtc_requests ... ok
+test fits::tests::disconnected_file_read_routes_and_persists_display_without_restoring_file ... ok
+test rtc_session::tests::graph_property_edits_require_the_same_verified_session_and_pipewire_remote ... ok
+test rtc_session::tests::observation_disconnect_preserves_independent_selected_rtc_status ... ok
+test rtc_session::tests::admitted_live_offset_preserves_verified_edit_access_while_native_request_is_pending ... ok
+test rtc_updates::tests::admission_requires_a_nonempty_bounded_sequence_and_fresh_session ... ok
+test rtc_updates::tests::mixed_sequence_preserves_order_and_advances_on_acknowledgement_not_adoption ... ok
+test rtc_updates::tests::rejected_or_unknown_step_does_not_release_remaining_updates ... ok
+test rtc_updates::tests::stale_identity_missing_reply_and_unrelated_reply_cannot_advance ... ok
+test simulator::tests::disconnect_or_intervening_selection_cancels_deferred_replacement_reconnect ... ok
+
+running 1 test
+test rtc_adapter::tests::idle_transport_loss_waits_behind_reply_and_detach_cancels_full_event_slot ... ok
+test simulator::tests::replacement_reconnect_requires_exact_native_record_and_receipt_locator ... ok
+test panel_settings::tests::controls_use_the_available_width_without_an_empty_settings_shelf ... ok
+test tests::disconnect_restores_read_only_observation ... ok
+test rtc_adapter::tests::idle_transport_loss_without_request_revokes_admission_and_reports_generation ... ok
+test tests::invalid_standalone_remote_startup_never_auto_selects_an_rtc_session ... ok
+test tests::fresh_preview_focuses_a_configured_view_and_restored_focus_is_preserved ... ok
+test tests::preview_cannot_connect_or_submit_rtc_controls ... ok
+test rtc_adapter::tests::prompt_detach_bounds_retired_workers_discards_queued_work_and_eventually_cleans_up ... ok
+test panel_lifecycle::tests::hidden_issued_shape_keeps_offset_until_adoption_or_deadline ... ok
+test tests::rtc_panel_visibility_does_not_change_pending_requests ... ok
+test rtc_adapter::tests::unknown_retires_connection_without_retry_or_rebind ... ok
+test tests::same_source_views_keep_display_and_workspace_state_independent ... ok
+test tests::tiled_config_reload_preserves_hidden_panels_settings_and_exact_focus ... ok
+test tests::startup_waits_for_the_operator_to_connect ... ok
+test simulator::tests::replacement_reconnect_enters_native_async_selection_without_json_locator_attachment ... ok
+test tests::native_tiles_are_default_and_survive_leaving_preview_without_connecting ... ok
+test tests::wayland_scroll_normalization_preserves_deltas_modifiers_and_end_events ... ok
+test tiles::tests::detached_hide_show_keeps_geometry_location_and_main_placeholder ... ok
+test tiles::tests::hidden_or_inactive_selected_panel_cannot_leave_stale_settings ... ok
+test tiles::tests::every_panel_identity_has_one_generic_host_and_unknown_visibility_is_inert ... ok
+test tiles::tests::detached_maximization_changes_settings_only_after_the_frame_finishes ... ok
+test rtc_session::tests::offset_action_revalidates_binding_session_and_generation_before_staging_or_submission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.06s
+
+test tiles::tests::initial_grid_hosts_existing_pixel_and_dm_renderers_in_separate_tab_groups ... ok
+test tiles::tests::hide_show_keeps_every_tile_and_parent_even_with_all_panels_hidden ... ok
+test rtc_session::tests::offset_action_revalidates_binding_session_and_generation_before_staging_or_submission ... ok
+test tiles::tests::maximization_preserves_tree_window_ownership_and_main_selection ... ok
+test tests::tiled_workspace_restores_navigation_selection_with_its_settings_focus ... ok
+test tiles::tests::invalid_saved_tree_and_nonfinite_window_geometry_keep_safe_defaults ... ok
+test tiles::tests::queued_hide_immediately_gates_native_controls_without_retargeting_settings ... ok
+test tiles::tests::restoring_tiles_prunes_retired_layout_in_all_presentations ... ok
+test tiles::tests::restore_reconciles_removed_and_changed_kinds_without_reusing_old_focus ... ok
+test tiles::tests::pre_upgrade_tiles_015_layout_restores_exact_ids_geometry_and_detached_state ... ok
+test tiles::tests::restoring_tiles_prunes_the_removed_differential_without_resetting_known_panels ... ok
+test tiles::tests::saved_tiles_round_trip_hidden_detached_and_selected_panels ... ok
+test tests::workspace_shelf_migrates_legacy_visibility_and_saves_independently ... ok
+test tiles_interaction_tests::tiles_preview_png_is_written_only_when_requested ... ok
+test tests::wayland_wheel_zoom_does_not_leave_tooltips_suppressed ... ok
+test view_config::tests::accepts_an_explicit_pipewire_remote_and_exposes_it_at_startup ... ok
+test view_config::tests::accepts_one_operator_view_path ... ok
+test view_config::tests::distinct_view_ids_can_share_one_configured_source ... ok
+test view_config::tests::example_uses_the_gui_owned_closed_view_registry ... ok
+test view_config::tests::interactive_load_reports_a_missing_file ... ok
+test view_config::tests::rejects_an_unknown_argument ... ok
+test view_config::tests::rejects_missing_duplicate_empty_and_overlong_remote_names ... ok
+test view_config::tests::rejects_non_utf8_remote_names ... ok
+test view_config::tests::startup_without_a_view_file_uses_an_empty_view_collection ... ok
+test view_config::tests::synthetic_renderer_options_are_not_product_startup_modes ... ok
+test workspace::tests::closing_native_dm_tabs_releases_only_their_unneeded_product ... ok
+test navigation::tests::long_panel_titles_truncate_and_remain_clickable_at_narrow_widths ... ok
+test workspace::tests::file_inspection_title_keeps_the_saved_panel_identity ... ok
+test workspace::tests::live_shape_session_match_requires_configured_label_and_fresh_verified_identity ... ok
+test workspace::tests::native_tile_hiding_releases_the_exact_product_and_cancels_unsent_shape_edits ... ok
+test workspace::tests::current_tiles_restore_hidden_detached_and_selected_panels_with_preferences ... ok
+test workspace::tests::residual_only_tiles_restore_independently_and_release_only_the_closed_product ... ok
+test workspace::tests::schema_seven_without_tiles_resets_only_layout_and_reports_it ... ok
+test workspace::tests::unsupported_workspace_schema_keeps_safe_defaults ... ok
+test panel_settings::tests::tile_tab_click_retargets_settings_in_the_same_frame_but_hover_does_not ... ok
+test panel_settings::tests::settings_geometry_and_exact_focus_restore_without_connection_or_access ... ok
+test tests::both_rtc_panels_are_inert_in_preview ... ok
+test panel_settings::tests::detached_shape_control_keeps_its_local_editor_and_docked_settings_target ... ok
+test tiles_interaction_tests::default_native_tiles_render_the_native_graph_without_connecting_or_preview_data ... ok
+test tiles::tests::restored_split_tab_names_visible_panels_without_changing_layout ... ok
+test inspection_tests::native_workspace_tree_selects_a_real_shwfs_view_and_toggles_its_layer ... ok
+test pipewire_worker::tests::missing_remote_settles_without_automatic_retries ... ok
+test panel_routing::tests::native_view_routes_request_only_their_product_outside_settings ... ok
+test tiles_interaction_tests::tiles_input_toggles_shwfs_layer_visibility_and_main_maximization ... ok
+test tiles_interaction_tests::toolbar_toggles_docking_and_preserves_identity_through_maximization ... ok
+test tiles_interaction_tests::tiles_input_detaches_real_shwfs_controls_and_preserves_main_settings ... ok
+test tiles_interaction_tests::tiles_pointer_resize_and_tab_move_preserve_hidden_panels_and_settings ... ok
+test configuration_service::tests::rejects_malformed_and_oversized_responses ... ok
+
+test result: ok. 282 passed; 0 failed; 15 ignored; 0 measured; 0 filtered out; finished in 5.07s
+
+     Running tests/artifact_import.rs (target/gpi2-pupil/debug/deps/artifact_import-67e2124294014ebe)
+
+running 12 tests
+test parameter_staging_rejects_invalid_extents_and_payloads_before_creating_files ... ok
+test inspection_rejects_oversized_decoded_array_before_allocating_samples ... ok
+test fits_reader_decodes_integer_scaling_once ... ok
+test fits_reader_preserves_axis_order_storage_and_provenance ... ok
+test inspection_preserves_nonfinite_fits_samples_without_weakening_import ... ok
+test fits_reader_rejects_invalid_envelopes_and_undefined_images ... ok
+test asynchronous_inspection_reads_owned_values_without_rtc_staging ... ok
+
+running 1 test
+
+running 1 test
+test artifact_loader::tests::offset_staging_preserves_native_values_permissions_and_file_lifetime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+test artifact_loader::tests::offset_staging_preserves_native_values_permissions_and_file_lifetime ... ok
+test fits_reader_reads_across_chunk_boundary ... ok
+test artifact_loader::tests::catalog_materialization_is_validated_and_survives_client_lease_drop ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.02s
+
+test artifact_loader::tests::catalog_materialization_is_validated_and_survives_client_lease_drop ... ok
+test fits_loader_roundtrip_layout_scaling_validation_and_cleanup ... ok
+test live_reconstructor_fits_roundtrip_preserves_all_float32_bits ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+   Doc-tests pipewireao_gui
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

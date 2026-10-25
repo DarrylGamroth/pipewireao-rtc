@@ -1,0 +1,25 @@
+{
+  "gui_commit": "f8b882f785211eb369785575a87435c68779432c",
+  "binary_sha256": "7be04c41dbecd92f44efe249d75ac9ad0016a9625e346a828dcf77c319a7cd1b",
+  "unit": "pipewireao-gpi2-annular-gui-20261025b.service",
+  "pid": 2568111,
+  "remote": "/run/user/1000/pipewireao-session-39b42bfdc81e/221288c72f054c309b45cd24c6c610aa/rtc-221288c72f05",
+  "display": "wayland-3amgi6PD4F",
+  "software_renderer_overrides_present": false,
+  "visual_inspection_performed": false,
+  "gui_observer_nodes": [
+    {
+      "name": "pipewireao-gui-ndarray-101",
+      "state": "running"
+    },
+    {
+      "name": "pipewireao-gui-ndarray-105",
+      "state": "running"
+    },
+    {
+      "name": "pipewireao-gui-ndarray-57",
+      "state": "running"
+    }
+  ],
+  "scope": "Native GUI process attached to exact replacement remote with running visible-view observers; no claim of manual visual acceptance or renderer acceleration."
+}

@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## GPI annular tweeter and registered GUI pupils — 2026-10-25
+
+The [annular integration record](validation/gpi-closed-loop-20261024/README.md#annular-tweeter-control-and-registered-gui-geometry--2026-10-25)
+records explicit direct/extrapolated/no-correction partitions, existing thin-plate
+completion, reverse clipping feedback, registered optical pupils and independent
+Applied units. CPU contracts and quiet/noisy CUDA checks are separate from native
+deployment evidence and hardware/performance qualification.
+
 ## GPI calibrated multi-corrector integration — 2026-10-24
 
 The [integration record](validation/gpi-closed-loop-20261024/README.md) records

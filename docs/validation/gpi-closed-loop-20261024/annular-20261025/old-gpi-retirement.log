@@ -1,0 +1,66 @@
+ERROR: LoadError: native control outcome unknown: absolute request deadline expired
+Stacktrace:
+  [1] request!(client::PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, check::Function)
+    @ PipeWireAORTC.NativeControlClient ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:568
+  [2] request!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:505 [inlined]
+  [3] request!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/native/native_session_client.jl:82 [inlined]
+  [4] control!(handle::PipeWireAORTC.SessionRuntime.Handle, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, before_request::PipeWireAORTC.SessionRuntime.var"#mark_attempt!#_native_quit!##0"{PipeWireAORTC.SessionRuntime.Handle})
+    @ PipeWireAORTC.SessionRuntime ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:552
+  [5] control!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:537 [inlined]
+  [6] #26
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:672 [inlined]
+  [7] _native_quit!(send::PipeWireAORTC.SessionRuntime.var"#26#27"{Float64, PipeWireAORTC.SessionRuntime.Handle}, handle::PipeWireAORTC.SessionRuntime.Handle)
+    @ PipeWireAORTC.SessionRuntime ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:656
+  [8] #shutdown!#24
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:671 [inlined]
+  [9] top-level scope
+    @ /tmp/gpi2-retire-old-live.jl:7
+ [10] include(mod::Module, _path::String)
+    @ Base ./Base.jl:309
+ [11] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:344
+ [12] _start()
+    @ Base ./client.jl:577
+in expression starting at /tmp/gpi2-retire-old-live.jl:7
+
+caused by: native control outcome unknown: absolute request deadline expired
+Stacktrace:
+  [1] matching_reply(observation::PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}, deadline::Float64)
+    @ PipeWireAORTC.NativeControlClient ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:239
+  [2] #73
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:554 [inlined]
+  [3] _with_thread_loop_lock(f::PipeWireAORTC.NativeControlClient.var"#73#74"{Float64, PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}}, loop::PipeWireAO.ThreadLoop)
+    @ PipeWireAO ~/.julia/packages/PipeWireAO/JBJOC/src/thread_loop.jl:138
+  [4] #with_thread_loop_lock##0
+    @ ~/.julia/packages/PipeWireAO/JBJOC/src/thread_loop.jl:119 [inlined]
+  [5] disable_sigint
+    @ ./c.jl:167 [inlined]
+  [6] with_thread_loop_lock
+    @ ~/.julia/packages/PipeWireAO/JBJOC/src/thread_loop.jl:118 [inlined]
+  [7] request!(client::PipeWireAORTC.NativeControlClient.Client{PipeWireAORTC.NativeControlClient.Observation{PipeWireAORTC.NativeSessionProfile.Profile, PipeWireAORTC.NativeRunnerCodec.Lifecycle, Union{PipeWireAORTC.NativeRunnerCodec.Completion, PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion}, PipeWireAORTC.NativeRunnerCodec.Rejection}}, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, check::Function)
+    @ PipeWireAORTC.NativeControlClient ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:553
+  [8] request!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/native/native_control_client.jl:505 [inlined]
+  [9] request!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/native/native_session_client.jl:82 [inlined]
+ [10] control!(handle::PipeWireAORTC.SessionRuntime.Handle, command::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{:quit, Tuple{}}; deadline::Float64, before_request::PipeWireAORTC.SessionRuntime.var"#mark_attempt!#_native_quit!##0"{PipeWireAORTC.SessionRuntime.Handle})
+    @ PipeWireAORTC.SessionRuntime ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:552
+ [11] control!
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:537 [inlined]
+ [12] #26
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:672 [inlined]
+ [13] _native_quit!(send::PipeWireAORTC.SessionRuntime.var"#26#27"{Float64, PipeWireAORTC.SessionRuntime.Handle}, handle::PipeWireAORTC.SessionRuntime.Handle)
+    @ PipeWireAORTC.SessionRuntime ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:656
+ [14] #shutdown!#24
+    @ ~/workspaces/codex/rtc-gpi2-integration/src/deployment/session_runtime.jl:671 [inlined]
+ [15] top-level scope
+    @ /tmp/gpi2-retire-old-live.jl:7
+ [16] include(mod::Module, _path::String)
+    @ Base ./Base.jl:309
+ [17] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:344
+ [18] _start()
+    @ Base ./client.jl:577

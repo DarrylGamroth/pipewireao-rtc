@@ -1,0 +1,180 @@
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo fix --lib -p smithay-client-toolkit` to apply 5 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src/lib.rs (target/gpi2-pupil/debug/deps/pipewireao_gui-9015aa663cbf03fc)
+
+running 102 tests
+test view_panel::deformable_mirror::clipping::tests::missed_clip_still_pulses ... ok
+test view_panel::deformable_mirror::clipping::tests::clip_attack_hold_and_fade_match_the_declared_durations ... ok
+test view_panel::deformable_mirror::clipping::tests::ongoing_clipping_holds_intensity_and_new_events_retrigger_it ... ok
+test view_panel::deformable_mirror::clipping::tests::clip_envelope_attacks_and_fades ... ok
+test view_panel::deformable_mirror::editor::tests::automatic_preview_edits_preserve_acceptance_and_other_contributions ... ok
+test view_panel::deformable_mirror::fixture::tests::inclusive_limit_does_not_clip ... ok
+test view_panel::deformable_mirror::fixture::tests::clearing_the_engineering_offset_preserves_other_mixer_contributions ... ok
+test view_panel::deformable_mirror::fixture::tests::clip_event_survives_return_to_range ... ok
+test view_panel::deformable_mirror::fixture::tests::demanded_and_applied_remain_distinct_when_the_fixture_limit_is_reached ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_preserves_tip_and_tilt ... ok
+test view_panel::deformable_mirror::fixture::tests::rejected_request_does_not_replace_the_active_fixture_engineering_offset ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_preserves_unavailable_actuator_values ... ok
+test view_panel::deformable_mirror::fixture::tests::reset_changes_only_the_local_draft ... ok
+test view_panel::deformable_mirror::fixture::tests::vector_statistics_are_quantitative_and_ignore_non_finite_values ... ok
+test view_panel::deformable_mirror::fixture::tests::unavailable_applied_values_do_not_erase_demanded_slots ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_subtracts_the_finite_mean ... ok
+test view_panel::deformable_mirror::fixture::tests::fixture_layout_contains_each_explicit_correction_role_and_health ... ok
+test view_panel::deformable_mirror::fixture::tests::fixture_layout_and_basis_are_deterministic ... ok
+test view_panel::deformable_mirror::input::tests::input_preserves_declared_values_and_optional_metadata ... ok
+test view_panel::deformable_mirror::live_data::tests::live_demand_preserves_source_order_geometry_and_absent_device_metadata ... ok
+test view_panel::deformable_mirror::live_data::tests::registered_coordinates_keep_command_identity_and_cartesian_y_points_up ... ok
+test view_panel::deformable_mirror::input::tests::inputs_reject_short_and_long_value_vectors ... ok
+test view_panel::deformable_mirror::live_data::tests::separate_owner_sources_remain_independent ... ok
+test view_panel::deformable_mirror::live_data::tests::native_products_reject_other_roles_and_drop_values_on_identity_replacement ... ok
+test view_panel::deformable_mirror::native_feedback::tests::amplitude_consistency_tolerates_float32_rounding_and_rejects_other_constraint_semantics ... ok
+test view_panel::deformable_mirror::native_feedback::tests::owner_roles_and_signed_amplitude_feedback_require_exact_frame_association ... ok
+test view_panel::deformable_mirror::native_feedback::tests::feedback_rejects_invalid_codes_types_and_nonfinite_values_and_bounds_cache ... ok
+test view_panel::deformable_mirror::render::surface::tests::accepted_large_registered_geometry_produces_finite_surface_vertices ... ok
+test view_panel::deformable_mirror::control_panel::tests::collapsing_shape_controls_keeps_queued_edit_delivery_independent ... ok
+test view_panel::deformable_mirror::render::surface::tests::face_on_projection_is_independent_of_surface_height ... ok
+test view_panel::deformable_mirror::render::surface::tests::dead_actuator_is_interpolated_from_other_fixture_actuators ... ok
+test view_panel::deformable_mirror::live_data::tests::native_products_reject_incompatible_and_stale_samples_and_clear_old_values ... ok
+test view_panel::deformable_mirror::render::surface::tests::registered_surface_has_an_open_obstruction_and_no_invented_edge_constraint ... ok
+test view_panel::deformable_mirror::render::surface::tests::tiny_surface_viewports_and_projection_remain_finite ... ok
+test view_panel::deformable_mirror::render::surface::tests::rotation_projects_surface_height_into_the_screen_plane ... ok
+test view_panel::deformable_mirror::control_panel::tests::configured_basis_label_and_initial_collapse_are_presentation_only ... ok
+test view_panel::deformable_mirror::render::surface::tests::generated_surface_is_filled_with_non_degenerate_triangles ... ok
+test view_panel::deformable_mirror::control_panel::tests::coarse_range_never_exceeds_owner_limit_or_submits_on_toggle ... ok
+test view_panel::deformable_mirror::render::tests::automatic_scale_is_symmetric_and_finite ... ok
+test view_panel::deformable_mirror::render::tests::csv_retains_actuator_order ... ok
+test view_panel::deformable_mirror::render::tests::accepted_large_pupil_radii_produce_finite_map_shapes ... ok
+test view_panel::deformable_mirror::control_panel::tests::offset_status_tracks_observation_and_pending_edits_without_submitting_on_render ... ok
+test view_panel::deformable_mirror::render::tests::map_selection_uses_declared_actuator_positions ... ok
+test view_panel::deformable_mirror::control_panel::tests::every_owner_basis_uses_generic_rows_and_collapsing_preserves_all_coefficients ... ok
+test view_panel::deformable_mirror::render::surface::tests::mesh_is_a_closed_disk_without_unused_vertices_or_internal_boundaries ... ok
+test view_panel::deformable_mirror::render::surface::tests::zero_values_keep_a_uniform_circular_boundary ... ok
+test view_panel::deformable_mirror::control_panel::tests::rendering_adopted_offset_never_submits_and_zero_selected_edits_live ... ok
+test view_panel::deformable_mirror::render::tests::selection_and_hover_rings_follow_the_displayed_actuator_size ... ok
+test view_panel::deformable_mirror::render::surface::tests::constraint_preserves_nonuniform_actuator_values_and_source_state ... ok
+test view_panel::deformable_mirror::render::surface::tests::fixture_surface_tapers_only_outside_the_actuator_centers ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_measurement_selection_round_trips_in_workspace_ron ... ok
+test view_panel::deformable_mirror::render::tests::owner_pupil_rings_and_hits_use_registered_positions_and_fallback_has_no_ring ... ok
+test view_panel::deformable_mirror::render::tests::tiny_map_viewports_have_finite_nonnegative_extent ... ok
+test view_panel::deformable_mirror::editor::tests::modal_rows_are_compact_aligned_and_striped ... ok
+test view_panel::deformable_mirror::render::tests::scientific_colour_labels_stay_inside_a_narrow_canvas ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_missing_measurements_select_all_and_empty_selection_round_trips ... ok
+test view_panel::deformable_mirror::render::tests::clipping_ring_opacity_follows_the_attack_hold_and_fade ... ok
+test view_panel::deformable_mirror::editor::tests::preview_rendering_does_not_apply_a_draft ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_canvas_follows_width_and_height_and_keeps_footer_visible ... ok
+test view_panel::deformable_mirror::render::tests::legend_words_use_theme_text_color_in_both_themes ... ok
+test view_panel::deformable_mirror::render::surface::tests::face_on_map_and_surface_share_geometry_and_hit_identity ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_measurements_filter_summaries_and_release_empty_space ... ok
+test view_panel::deformable_mirror::surface_panel::tests::generic_draft_rendering_rejects_invalid_data_before_display_state_updates ... ok
+test view_panel::deformable_mirror::render::surface::tests::triangle_interpolation_does_not_taper_the_actuator_region ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_metadata_does_not_assign_observed_identity_to_drafts_or_missing_samples ... ok
+test view_panel::deformable_mirror::surface_panel::tests::presentation_round_trip_preserves_surface_role_and_instance_independence ... ok
+test view_panel::deformable_mirror::surface_panel::tests::live_dm_footer_omits_role_health_and_clipping_text ... ok
+test view_panel::deformable_mirror::surface_panel::tests::rms_squared_is_mean_square_of_the_displayed_finite_vector ... ok
+test view_panel::deformable_mirror::editor::tests::coefficient_phase_and_frequency_editors_share_numeric_box_width ... ok
+test view_panel::deformable_mirror::tests::face_forward_uses_the_face_on_surface_projection ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_help_contains_complete_key_and_display_specific_controls ... ok
+test view_panel::deformable_mirror::tests::hidden_view_control_preserves_readback_until_adoption_or_deadline ... ok
+test view_panel::deformable_mirror::tests::inactive_products_preserve_manual_offset_selection_between_updates ... ok
+test view_panel::deformable_mirror::tests::independent_displays_share_submission_and_preserve_unavailable_applied_values ... ok
+test view_panel::deformable_mirror::tests::live_updates_preserve_existing_presentation_without_creating_preview_data ... ok
+test view_panel::deformable_mirror::tests::missing_or_nonfinite_surface_angles_use_head_on_defaults ... ok
+test view_panel::deformable_mirror::tests::native_source_replacement_and_disconnect_reset_clipping_envelopes ... ok
+test view_panel::deformable_mirror::tests::new_surface_displays_start_at_the_double_click_reset_orientation ... ok
+test view_panel::deformable_mirror::surface_panel::tests::existing_dm_display_controls_and_export_work_on_live_values ... ok
+test view_panel::deformable_mirror::surface_panel::tests::preview_and_native_summaries_have_no_usage_or_status_footer ... ok
+test view_panel::deformable_mirror::tests::panel_preview_does_not_survive_leaving_preview ... ok
+test view_panel::deformable_mirror::tests::presentation_restore_normalizes_surface_and_colour_settings ... ok
+test view_panel::deformable_mirror::tests::rejected_control_replacement_preserves_pending_control_and_fixture ... ok
+test view_panel::deformable_mirror::tests::rejected_draft_remains_visible_without_changing_any_value_panel ... ok
+test view_panel::deformable_mirror::surface_panel::tests::generic_preview_rendering_supports_all_content_modes ... ok
+test view_panel::deformable_mirror::tests::releasing_closed_sibling_products_preserves_manual_offset_selection ... ok
+test view_panel::tests::deformable_mirror_display_state_round_trips_without_fixture_commands ... ok
+test view_panel::deformable_mirror::surface_panel::tests::native_draft_rejects_shape_and_nonfinite_values_and_does_not_require_observed_adoption ... ok
+test view_panel::deformable_mirror::surface_panel::tests::shape_control_canvas_stays_fixed_when_offset_data_arrives_or_disappears ... ok
+test view_panel::deformable_mirror::surface_panel::tests::metre_opd_readouts_keep_nonzero_native_values_visible ... ok
+test view_panel::deformable_mirror::surface_panel::tests::live_surface_uses_the_existing_mesh_rotation_and_actuator_overlay ... ok
+test view_panel::deformable_mirror::surface_panel::tests::each_native_dm_product_uses_one_shared_awaiting_data_label ... ok
+test view_panel::deformable_mirror::tests::painting_does_not_reconcile_changed_identity_or_readback ... ok
+test view_panel::deformable_mirror::surface_panel::tests::native_draft_reuses_owner_layout_and_display_export_without_replacing_observed_values ... ok
+test view_panel::deformable_mirror::tests::painting_keeps_queued_offset_for_explicit_headless_progress ... ok
+test view_panel::deformable_mirror::tests::shape_draft_survives_split_rendering_detachment_and_resize ... ok
+test view_panel::deformable_mirror::editor::tests::modal_numeric_entries_fit_narrow_and_wide_settings ... ok
+test view_panel::deformable_mirror::surface_panel::tests::applied_and_offset_use_existing_renderer_statistics_and_export_with_product_labels ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_metadata_preserves_each_native_product_in_label_value_rows ... ok
+test view_panel::deformable_mirror::tests::fixture_panels_survive_window_resize_sequence ... ok
+test view_panel::deformable_mirror::surface_panel::tests::dm_canvas_stays_fixed_across_owner_feedback_states ... ok
+test view_panel::deformable_mirror::surface_panel::tests::narrow_dm_summary_stays_visible_for_both_displays ... ok
+
+test result: ok. 102 passed; 0 failed; 0 ignored; 0 measured; 504 filtered out; finished in 0.60s
+

@@ -1,0 +1,8 @@
+Test Summary:                                                  | Pass  Total   Time
+session contracts come from the typed rectangular JFG boundary |   10     10  19.5s
+Test Summary:                                                       | Pass  Total  Time
+cold SH and Pyramid observation contracts match actual CPU products |   26     26  6.7s
+Test Summary:                                                            | Pass  Total  Time
+pyramid raw camera and named corrector session contracts remain distinct |    5      5  8.8s
+Test Summary:                                            | Pass  Total  Time
+named simulator warmup and diagnostics use every command |   12     12  0.2s

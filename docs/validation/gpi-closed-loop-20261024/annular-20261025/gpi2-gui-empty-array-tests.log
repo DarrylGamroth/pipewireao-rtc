@@ -1,0 +1,144 @@
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo fix --lib -p smithay-client-toolkit` to apply 5 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s
+     Running unittests src/lib.rs (target/gpi2-pupil/debug/deps/pipewireao_gui-9015aa663cbf03fc)
+
+running 66 tests
+test array_display::measurement_tests::cancelled_extreme_sum_preserves_small_remainder ... ok
+test array_display::measurement_tests::broad_range_cancellation_preserves_unscaled_residuals ... ok
+test array_display::measurement_tests::constant_and_nonfinite_regions_have_unambiguous_readouts ... ok
+test array_display::measurement_tests::large_offset_variance_and_extreme_magnitude_rms_remain_finite ... ok
+test array_display::measurement_tests::cropped_regions_only_include_inside_samples ... ok
+test array_display::measurement_tests::overflowing_cancellation_with_normalization_loss_is_unavailable ... ok
+test array_display::measurement_tests::restored_selections_cannot_exceed_the_closed_statistic_set ... ok
+test array_display::measurement_tests::selections_and_display_transforms_reuse_raw_statistics ... ok
+test array_display::scale::tests::logarithmic_decades_are_even_and_nonpositive_values_are_under_range ... ok
+test array_display::measurement_tests::signed_finite_values_use_population_deviation_and_raw_rms ... ok
+test array_display::measurement_tests::saved_measurement_selection_is_ordered_deduplicated_and_legacy_compatible ... ok
+test array_display::scale::tests::symmetric_log_preserves_sign_zero_and_a_linear_core ... ok
+test array_display::tests::binding_a_different_source_resets_source_scoped_display_state ... ok
+test array_display::tests::colorbar_brightness_can_move_a_full_format_range ... ok
+test array_display::tests::colorbar_drag_retains_subpixel_level_changes ... ok
+test array_display::tests::colorbar_horizontal_drag_changes_contrast ... ok
+test array_display::tests::colorbar_vertical_drag_changes_brightness ... ok
+test array_display::tests::contrast_levels_clip_and_scale_raw_values ... ok
+test array_display::tests::display_adjustments_are_owned_by_each_panel ... ok
+test array_display::tests::display_adjustments_survive_source_refresh ... ok
+test array_display::tests::gray16_little_endian_values_use_the_selected_contrast_levels ... ok
+test array_display::tests::initialized_levels_stay_fixed_across_new_frames ... ok
+test array_display::tests::invalid_persisted_presentation_uses_safe_source_defaults ... ok
+test array_display::tests::logarithmic_rendering_keeps_pixels_and_levels_in_source_units ... ok
+test array_display::tests::ndarray_scale_ignores_nonfinite_values_and_retains_negative_range ... ok
+test array_display::tests::ndarray_retains_native_bytes_and_maps_column_major_values ... ok
+test array_display::tests::data_palettes_use_the_existing_scalar_interpolation_for_every_level ... ok
+test array_display::tests::frames_are_fitted_inside_the_existing_canvas ... ok
+test array_display::tests::negotiated_dimension_change_resets_the_viewport ... ok
+test array_display::tests::ordinary_log_handles_a_frame_without_positive_values ... ok
+test array_display::tests::numeric_scale_selects_expected_symmetric_quantiles ... ok
+test array_display::tests::query_region_can_become_the_viewport ... ok
+test array_display::tests::query_region_starts_in_the_image_center ... ok
+test array_display::tests::query_region_uses_raw_pixel_statistics ... ok
+test array_display::tests::resize_never_returns_non_finite_or_non_positive_extents ... ok
+test array_display::tests::invalid_video_byte_count_is_rejected ... ok
+test array_display::tests::reset_levels_restores_the_selected_percentile_range ... ok
+test array_display::tests::image_coordinates_include_the_current_viewport ... ok
+test array_display::scale::tests::normalization_rejects_invalid_levels_and_covers_negative_only_ranges ... ok
+test array_display::tests::presentation_round_trip_preserves_only_panel_owned_display_state ... ok
+test array_display::tests::scale_and_threshold_invalidate_the_texture_and_survive_saved_state ... ok
+test array_display::measurement_tests::empty_selection_reserves_no_footer_for_waiting_or_image ... ok
+test array_display::tests::runtime_palette_menu_selection_and_saved_identity_use_the_current_catalog ... ok
+test array_display::tests::scale_choices_and_threshold_can_be_set_before_data_arrives ... ok
+test array_display::tests::settings::percentile_drag_updates_levels_without_confirmation ... ok
+test array_display::tests::settings::percentile_label_and_entry_share_a_compact_settings_row ... ok
+test array_display::tests::image_context_menu_exposes_colormap_and_viewport_choices ... ok
+test array_display::tests::image_context_menu_updates_levels_on_percentile_edit ... ok
+test array_display::tests::viewport_pan_stays_inside_the_source_frame ... ok
+test array_display::tests::viewport_zoom_keeps_the_pointer_pixel_anchored ... ok
+test array_display::tests::zero_sized_video_frame_is_rejected_before_texture_upload ... ok
+test array_display::tests::settings::image_metadata_contains_sample_fields_without_gui_display_state ... ok
+test array_display::tests::view_and_colour_combo_boxes_change_presentation ... ok
+test array_display::tests::settings::component_measurements_share_the_image_header_and_grid ... ok
+test array_display::tests::pixel_hover_uses_displayed_viewport_and_logical_array_coordinates ... ok
+test array_display::tests::renderer_survives_intermediate_window_resize_extents ... ok
+test array_display::tests::shared_hover_rows_keep_width_columns_and_single_line_values_stable ... ok
+test array_display::tests::image_help_reports_actual_query_and_reset_gestures ... ok
+test array_display::tests::settings::percentile_typing_commits_on_enter_or_focus_loss_and_escape_cancels ... ok
+test array_display::tests::settings_scale_and_query_actions_work_before_first_image_render ... ok
+test array_display::tests::query_statistics_fit_a_narrow_display_with_room_for_wrapped_cards ... ok
+test array_display::tests::settings::measurement_checklist_keeps_all_choices_and_selection_order ... ok
+test array_display::measurement_tests::measurement_cards_keep_their_label_positions_as_values_change ... ok
+test array_display::measurement_tests::all_wrapped_readouts_fit_without_a_hover_scrollbar ... ok
+test array_display::tests::settings_remain_usable_while_waiting_without_resetting_presentation ... ok
+test array_display::tests::settings::image_settings_use_aligned_striped_rows_at_supported_widths_and_fonts ... ok
+
+test result: ok. 66 passed; 0 failed; 0 ignored; 0 measured; 540 filtered out; finished in 1.02s
+

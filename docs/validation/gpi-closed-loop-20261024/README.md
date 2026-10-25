@@ -219,3 +219,123 @@ their byte hashes match each report's `runner_sha256`. The current maintained
 instrument selector includes the final strict UInt16 and bounded weak follow-up
 paths; the archive preserves earlier exact drivers without leaving superseded
 implementations on the active test surface.
+
+## Annular tweeter control and registered GUI geometry — 2026-10-25
+
+RTC science source `aee7264`, observer helper `1e48575`, instrument calibration
+`cbde133` (scope clarification `cd2c962`) and GUI `5267739` replace the earlier
+provisional radial selection. The live runtime uses immutable package trees
+listed in [the new source cohort](annular-20261025/runtime-sources.toml).
+
+HEART's checked-in GPI2 matrices are random/zero placeholders; its 1,713 value is
+not a measured actuator control mask. The explicitly provisional recipe now
+selects centres in the registered annulus: 1,412 independent tweeter coordinates,
+24 central and 280 outer-guard coordinates completed by the existing FGA
+thin-plate algorithm, and 588 farther coordinates with zero correction. Guard
+width is two actuator pitches. No measured health, physical limits, or as-built
+slaving calibration is claimed. System flats and offsets remain independent.
+The controller has 1,509 coordinates and retains 1,445 sensed modes. The
+[calibration receipt](annular-20261025/calibration-receipt.yaml) binds all FITS bytes.
+
+Runtime forward mapping is C followed by identity physical projection. Its
+reverse uses identity physical mapping followed by the cold least-squares
+F = C⁺, so guard-only clipping reaches the active coordinates. The direct rows
+of C are identity, giving full column rank. No solver runs in the frame loop.
+The fitted tip/tilt-coupled mirror excludes this zonal completion policy; review
+found a potential stale-reverse alias in that combination, and an early tested
+rejection now prevents it. The existing fitted woofer path remains unchanged.
+
+[Completion checks](annular-20261025/completion-tests.log) pass 63 assertions,
+including actual forward/clamp/reverse owners. Maximum Float32 affine component
+error is 1.91×10⁻⁶; maximum coefficient is 1.322 and maximum completion row sum is
+7.69. This can amplify peak guard demands. The bounded test produces 70 guard-only
+clips at the existing ±1 µm limits (maximum request 1.098 µm) and 26.24 nm maximum
+active reverse feedback. Physical-space projection identities hold; active-vector
+Euclidean energy need not decrease under this nonorthogonal mapping.
+
+The [quiet CUDA loop](annular-20261025/quiet-cuda.yaml) passes tip/tilt, focus,
+astigmatism and mixed cases, with trailing residuals 0.142–0.174 nm for these
+specific finite disturbances. The [4,096-frame noisy CUDA check](annular-20261025/noisy-cuda.yaml)
+passes 4/4 assertions: trailing paired means 1,010.49 nm → 65.276 nm, ratio 0.06460.
+The earlier selection gave 53.9665 nm for its recorded paired run. This is a
+control-policy tradeoff, not evidence of improved correction quality or a
+hardware-calibrated partition. New throughput and extreme-small-signal
+qualification have not been established; earlier failures remain historical evidence.
+
+[Controller composition](annular-20261025/controller-tests.log) passes 15 native
+boundary plus 59 numerical assertions. [Feedback publication](annular-20261025/feedback-contract-tests.log)
+passes 112 cold assertions; four producer-to-owned-queue links use the existing
+required internal-link contract, while GUI readers remain optional behind
+bounded copy/drop-oldest telemetry queues. [Typed observer checks](annular-20261025/observer-tests.log)
+pass 38 assertions, including U8 role contracts. [CPU session-science checks](annular-20261025/session-science-tests.log)
+pass 53 assertions across rectangular, Shack–Hartmann, pyramid and named-command
+products. Registered-pupil validation is covered by [the instrument checks](annular-20261025/pupil-tests.log).
+
+The generic GUI uses command-indexed Cartesian pupil coordinates and explicit
+inner/outer optical radii, without inventing a circular mirror boundary. An
+unregistered layout retains its grid without a fabricated aperture. Applied is
+an independently declared observed product in µm OPD; demanded, limiter,
+shape-control and constraint-feedback units remain m OPD. Health remains
+unpublished. All nine actual application views hydrate; GUI tests pass 603
+library, 282 native, 12 import and 151 Julia assertions, plus formatting,
+WASM/browser checks and Clippy with existing baseline exemptions. Independent
+review's finite-geometry overflow finding was fixed with ratio-first geometry,
+wider display-interpolation intermediates and finite-shape regressions.
+
+GUI follow-up `f8b882f` uses one centred generic **Data unavailable** label for
+missing DM, ndarray and image data, removing duplicate headers/footers and
+product-specific missing-source messages. Detailed diagnostics remain in
+Settings. Focused missing-data, DM, array, image, status and instrument tests
+pass, as do formatting and the matching native build. Its binary SHA256 is
+`7be04c41dbecd92f44efe249d75ac9ad0016a9625e346a828dcf77c319a7cd1b`.
+
+The [first replacement launch](annular-20261025/failed-start-analysis.json)
+exceeded the existing 900 s startup deadline before Running. Its publication
+error followed termination; it does not establish an earlier publication fault.
+The publisher also crashed during exit. All owned resources were subsequently
+[confirmed removed](annular-20261025/failed-start-cleanup.json), without manually
+removing aliases. The candidate's CPUs 8/9 overlapped a concurrently running
+Classic CPU application; this placement mistake was corrected to CPUs 14/15 for
+the retry. The collision's contribution to preparation time is not independently
+quantified. Neither the existing Classic nor the working GPI application was
+stopped for that failed attempt.
+
+The operator then authorized retiring the old GPI application during replacement
+preparation. Its [Quit request](annular-20261025/old-gpi-retirement.log) had an
+unknown outcome after the 8 s reply deadline; the service recorded a fault and
+exited. Its [final ledger](annular-20261025/old-gpi-final-launch.json) confirms
+emergency cleanup, and the [separate audit](annular-20261025/old-gpi-cleanup-audit.json)
+confirms all owner PIDs/cgroups were absent. This proves process removal, not
+clean native Quit. The stopped manager alias was then removed only after its
+target was checked against this exact old deployment; its LoadState became
+not-found with MainPID 0. Classic was preserved throughout.
+
+The replacement CUDA session is Running as
+`pipewireao-session@39b42bfdc81e.service`, invocation
+`221288c72f054c309b45cd24c6c610aa`, using the same immutable science cohort and
+10 Hz functional pacing. The [GUI process check](annular-20261025/gui-live-verification.json)
+confirms the matching new binary is attached to that exact remote with three
+running visible-view observation nodes. Software-renderer overrides are absent;
+this does not by itself establish hardware rendering or manual visual acceptance.
+The new application and GUI are left running; Classic's unit invocation remained
+`e23f5c8b3e5142ccb11311f4d7c27550`.
+
+[Native stream verification](annular-20261025/native-stream-verification.json)
+passes all ten schemas/types/shapes with 35–37 distinct frames per stream. Eight
+metadata-bearing streams reach a common acquisition domain/generation/sequence;
+the tweeter's per-actuator role bytes match the actual calibrated C/P matrices
+(1,412 direct, 304 extrapolated, 588 no correction). The woofer's mixed projection
+honestly reports 97 unknown roles. Both Applied streams match 32 same-Header-sequence
+demanded samples exactly after Float32 m→µm scaling. Applied has no acquisition
+metadata, so this establishes Header association, not full domain/generation
+identity for that product. Every exact observer incarnation was removed, with
+the same session PID/invocation and source incarnation still Running.
+
+The [initial verifier failure](annular-20261025/native-stream-verification-initial.json)
+is retained: it incorrectly required the source's control/query-completion
+snapshot cursor to track the live frame sequence. Source inspection confirmed
+that this snapshot publishes on control completion while acquisition metadata
+advances each frame. [Read-only postvalidation](annular-20261025/native-stream-postvalidation.log)
+of the same capture passes the stable source/queue/session identities, current
+generation, increasing frame sequences and observer-removal checks. No recapture,
+production change or additional session control was used to obtain that result.

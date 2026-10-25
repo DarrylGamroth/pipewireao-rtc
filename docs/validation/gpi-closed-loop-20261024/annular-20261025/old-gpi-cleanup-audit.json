@@ -1,0 +1,117 @@
+{
+  "unit": "pipewireao-session@bb752eb25b80.service",
+  "invocation": "049316e3dc0941bb9aad29a642529f5f",
+  "clean_native_shutdown_proved": false,
+  "quit_outcome": "unknown: native control request timed out; no repeat Quit issued by audit",
+  "launch_cleanup_complete": true,
+  "launch_unit_files_removed": true,
+  "manual_manager_alias_removals": [],
+  "units": {
+    "pipewireao-session@bb752eb25b80.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "FragmentPath": "/run/user/1000/systemd/user/pipewireao-session@bb752eb25b80.service",
+      "manager_alias_exists": true,
+      "manager_alias_target": "/home/dgamroth/.local/state/pipewireao/gpi2-live-20261025/session/installed/systemd/pipewireao-session@bb752eb25b80.service"
+    },
+    "pipewireao-owner-049316e3dc0941bb9aad29a642529f5f-cohort.target": {
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-049316e3dc0941bb9aad29a642529f5f-core.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-049316e3dc0941bb9aad29a642529f5f-julia.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-049316e3dc0941bb9aad29a642529f5f-parameters.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-owner-049316e3dc0941bb9aad29a642529f5f-simulator.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    },
+    "pipewireao-gpi2-gui-20261025.service": {
+      "MainPID": "0",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "FragmentPath": "",
+      "manager_alias_exists": false,
+      "manager_alias_target": null
+    }
+  },
+  "historical_processes": {
+    "core": {
+      "pid": 2434978,
+      "pid_exists": false,
+      "recorded_start_ticks": 32456661,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "julia": {
+      "pid": 2435012,
+      "pid_exists": false,
+      "recorded_start_ticks": 32456712,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "parameters": {
+      "pid": 2435013,
+      "pid_exists": false,
+      "recorded_start_ticks": 32456712,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    },
+    "simulator": {
+      "pid": 2435014,
+      "pid_exists": false,
+      "recorded_start_ticks": 32456712,
+      "cgroup_exists": false,
+      "cgroup_procs": []
+    }
+  },
+  "main_process": {
+    "pid": 2435332,
+    "pid_exists": false
+  },
+  "recorded_unit_files_remaining": [],
+  "all_owned_processes_absent": true,
+  "all_owner_aliases_absent": true,
+  "main_alias_matches_recorded_unit_file": true
+}

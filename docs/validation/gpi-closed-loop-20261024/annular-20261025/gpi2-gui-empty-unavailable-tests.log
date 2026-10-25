@@ -1,0 +1,93 @@
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/compositor.rs:478:21
+    |
+478 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+478 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+478 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shell/xdg/mod.rs:214:21
+    |
+214 |     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+    |                     ^                                                 ^
+    |
+help: remove these parentheses
+    |
+214 -     ) -> Option<Arc<(dyn wayland_client::backend::ObjectData + 'static)>> {
+214 +     ) -> Option<Arc<dyn wayland_client::backend::ObjectData + 'static>> {
+    |
+
+warning: unnecessary parentheses around type
+   --> vendor/smithay-client-toolkit/src/shm/raw.rs:262:21
+    |
+262 |     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+    |                     ^                        ^
+    |
+help: remove these parentheses
+    |
+262 -     ) -> Option<Arc<(dyn ObjectData + 'static)>> {
+262 +     ) -> Option<Arc<dyn ObjectData + 'static>> {
+    |
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> vendor/smithay-client-toolkit/src/data_device_manager/write_pipe.rs:88:14
+   |
+88 |     fn as_fd(&self) -> BorrowedFd {
+   |              ^^^^^     ^^^^^^^^^^ the same lifetime is hidden here
+   |              |
+   |              the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+88 |     fn as_fd(&self) -> BorrowedFd<'_> {
+   |                                  ++++
+
+warning: eliding a lifetime that's named elsewhere is confusing
+   --> vendor/smithay-client-toolkit/src/registry.rs:195:31
+    |
+193 |         &'a self,
+    |          -- the lifetime is named here
+194 |         interface: &'a str,
+    |                     -- the lifetime is named here
+195 |     ) -> impl Iterator<Item = &Global> + 'a {
+    |                               ^^^^^^^    -- the same lifetime is named here
+    |                               |
+    |                               the same lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: consistently use `'a`
+    |
+195 |     ) -> impl Iterator<Item = &'a Global> + 'a {
+    |                                ++
+
+warning: `smithay-client-toolkit` (lib) generated 5 warnings (run `cargo fix --lib -p smithay-client-toolkit` to apply 5 suggestions)
+   Compiling pipewireao-gui v0.1.0 (/home/dgamroth/workspaces/codex/gui-gpi2-presentation)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.17s
+     Running unittests src/lib.rs (target/gpi2-pupil/debug/deps/pipewireao_gui-9015aa663cbf03fc)
+
+running 14 tests
+test array_display::measurement_tests::overflowing_cancellation_with_normalization_loss_is_unavailable ... ok
+test client::port_observation::tests::reliable_output_without_existing_queue_export_is_unavailable ... ok
+test client::port_observation::tests::ambiguous_exports_and_multiport_outputs_are_unavailable ... ok
+test rtc::tests::unavailable_generation_replaces_old_observation ... ok
+test client::tests::unavailable_replacement_does_not_abandon_an_established_observation ... ok
+test client::tests::complete_props_omissions_settle_submitted_property_requests_as_unavailable ... ok
+test view_panel::deformable_mirror::fixture::tests::unavailable_applied_values_do_not_erase_demanded_slots ... ok
+test view_panel::deformable_mirror::fixture::tests::removing_piston_preserves_unavailable_actuator_values ... ok
+test view_panel::deformable_mirror::tests::independent_displays_share_submission_and_preserve_unavailable_applied_values ... ok
+test view_panel::time_series::tests::conflicting_duplicate_payload_is_unavailable_and_pause_still_validates_source_boundaries ... ok
+test view_panel::time_series::tests::invalid_frames_are_unavailable_without_partial_channel_pairs ... ok
+test view_panel::wfs_overlay::native::tests::missing_summary_readouts_are_all_unavailable_including_counts ... ok
+test view_panel::configuration_history::tests::distinguishes_unavailable_service_from_an_empty_shared_page ... ok
+test view_panel::tests::unavailable_dm_products_and_control_show_one_centered_generic_message ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 592 filtered out; finished in 0.44s
+

@@ -1,0 +1,4 @@
+Test Summary:                                   | Pass  Total  Time
+managed observer reads declared queue contracts |   31     31  8.4s
+Test Summary:                                               | Pass  Total  Time
+managed coherent command observations require full identity |    7      7  0.5s
