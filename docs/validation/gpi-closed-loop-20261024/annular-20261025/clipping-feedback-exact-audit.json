@@ -1,0 +1,49 @@
+{
+  "completed": true,
+  "method": "Independent saved-payload Float32 audit; nonzero feedback must have exact demanded signed bound. No amplitude tolerance.",
+  "mirrors": {
+    "woofer": {
+      "unknown": {
+        "nonzero_feedback_samples": 327,
+        "all_nonzero_feedback_demanded_exact_signed_bound": true,
+        "minimum_nonzero_feedback_nm": 0.06468781066359952,
+        "maximum_nonzero_feedback_nm": 44.68881797947688,
+        "count_feedback_at_most_16_limit_ulps": 0,
+        "limit_ulp_nm": 0.00011368683772161603,
+        "maximum_feedback_in_limit_ulps": 393087.0
+      }
+    },
+    "tweeter": {
+      "inactive": {
+        "nonzero_feedback_samples": 0,
+        "all_nonzero_feedback_demanded_exact_signed_bound": true,
+        "minimum_nonzero_feedback_nm": null,
+        "maximum_nonzero_feedback_nm": null,
+        "count_feedback_at_most_16_limit_ulps": 0,
+        "limit_ulp_nm": 0.00011368683772161603,
+        "maximum_feedback_in_limit_ulps": 0
+      },
+      "controlled": {
+        "nonzero_feedback_samples": 899,
+        "all_nonzero_feedback_demanded_exact_signed_bound": true,
+        "minimum_nonzero_feedback_nm": 0.06104983185650781,
+        "maximum_nonzero_feedback_nm": 95.782183962001,
+        "count_feedback_at_most_16_limit_ulps": 0,
+        "limit_ulp_nm": 0.00011368683772161603,
+        "maximum_feedback_in_limit_ulps": 842509.0
+      },
+      "extrapolated": {
+        "nonzero_feedback_samples": 886,
+        "all_nonzero_feedback_demanded_exact_signed_bound": true,
+        "minimum_nonzero_feedback_nm": 0.0018189894035458565,
+        "maximum_nonzero_feedback_nm": 128.35630514018703,
+        "count_feedback_at_most_16_limit_ulps": 1,
+        "limit_ulp_nm": 0.00011368683772161603,
+        "maximum_feedback_in_limit_ulps": 1129034.0
+      }
+    }
+  },
+  "source": "clipping-native-samples.json",
+  "live_connections_created": 0,
+  "controls_issued": []
+}

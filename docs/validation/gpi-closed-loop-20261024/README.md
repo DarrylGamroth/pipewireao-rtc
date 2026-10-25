@@ -339,3 +339,19 @@ advances each frame. [Read-only postvalidation](annular-20261025/native-stream-p
 of the same capture passes the stable source/queue/session identities, current
 generation, increasing frame sequences and observer-removal checks. No recapture,
 production change or additional session control was used to obtain that result.
+
+A later [read-only clipping capture](annular-20261025/clipping-native-analysis.json)
+checks 32 aligned frames (sequences 7,055–7,093) against the provisional ±1 µm
+OPD limits. Mean current clipping is 10.22/97 woofer actuators (10.53%),
+28.09/1,412 directly controlled tweeter actuators (1.99%) and 27.69/304
+extrapolated actuators (9.11%); none of the 588 no-correction actuators clip.
+Maximum absolute pre-limiter requests reconstructed from demanded plus feedback
+are 1.04469, 1.09578 and 1.12836 µm respectively. An independent
+[exact-bound audit](annular-20261025/clipping-feedback-exact-audit.json) confirms
+every nonzero feedback sample has demanded exactly at its signed Float32 limit.
+These clips are real; the GUI's roughly 1.6 s hold/fade can show more recent clips
+than are present in one frame. Completion reproduces the tweeter requests, with
+maximum error 1.93×10⁻⁶ µm. Sampled wavefront means are 835.48 nm uncorrected and
+63.70 nm corrected. These observations do not establish appropriate hardware
+limits or diagnose the optimal woofer/tweeter allocation. All owned observers
+were removed and the same session remained Running; no controls were changed.
