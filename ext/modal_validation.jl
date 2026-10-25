@@ -8,6 +8,10 @@ function Calibration.validate_modal_system(source, recipe, calibration, report_p
     expected=IC.prescription_identity(declaration,settings)
     expected in (receipt["source_prescription_identity"],get(receipt,"staged_prescription_identity",nothing)) || throw(ArgumentError("calibration belongs to another simulation prescription"))
     Calibration.digest(joinpath(calibration,"graph.conf"))==receipt["graph_sha256"] || throw(ArgumentError("calibration graph changed"))
+    for (name, expected_hash) in receipt["artifact_sha256"]
+        Calibration.digest(joinpath(calibration,"artifacts",name)) == expected_hash ||
+            throw(ArgumentError("calibration artifact changed: $name"))
+    end
     system=IC.prepare_system(declaration.path;settings=IC._instrument_seal(settings),calibration=true,target)
     concrete=PipeWireAORTC.DeploymentConfiguration.decode(joinpath(calibration,"graph.conf"),"/opt/pipewireao")
     results=Dict{String,Any}()
