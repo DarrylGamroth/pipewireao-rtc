@@ -370,7 +370,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test IC.prepare_publication(directory) == target
             # Bound publication using actual FITS-backed sampled modes, not padding text.
             write_samples(repeat(reshape(Float32[1.234567f-20,-2.345678f-20,3.456789f-20],3,1),1,64))
-            basis["definition"]["names"] = ["Mode $i" for i in 1:64]
+            basis["definition"]["names"] = ["Calibrated interaction-matrix reconstruction singular vector $i" for i in 1:64]
             basis["definition"]["artifact"]["shape"] = [3,64]
             oversized = [deepcopy(basis) for _ in 1:16]
             for (index,entry) in enumerate(oversized)
@@ -378,14 +378,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             end
             controls["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
             original_control = controls["deformable_mirrors"]["primary"]
-            controls["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original_control) for i in 1:4)
+            controls["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original_control) for i in 1:8)
             original = declaration["deformable_mirrors"]["primary"]
-            declaration["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original) for i in 1:4)
+            declaration["deformable_mirrors"] = Dict("mirror-$i"=>deepcopy(original) for i in 1:8)
             write_declaration()
             target = joinpath(directory,"publication.json")
             write(target,"existing sealed publication")
             write_simulator(directory)
-            @test_throws r"256 KiB" IC.prepare_publication(directory)
+            @test_throws r"1 MiB" IC.prepare_publication(directory)
             @test read(target,String) == "existing sealed publication"
 
         end

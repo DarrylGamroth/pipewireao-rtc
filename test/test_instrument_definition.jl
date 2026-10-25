@@ -274,8 +274,15 @@ end
     end
     oversized["deformable_mirrors"]["dm"]["shape_control"]["bases"] = expanded
     oversized["deformable_mirrors"] = Dict("dm$i"=>deepcopy(oversized["deformable_mirrors"]["dm"]) for i in 1:4)
+    @test 256 * 1024 < ncodeunits(JSON.json(oversized)) <= Instrument.MAX_BYTES
+    @test Instrument.validate(oversized) === oversized
+    original_mirror = first(values(oversized["deformable_mirrors"]))
+    for basis in original_mirror["shape_control"]["bases"], (i,mode) in enumerate(basis["definition"]["modes"])
+        mode["name"] = "Calibrated reconstruction singular vector $i"
+    end
+    oversized["deformable_mirrors"] = Dict("dm$i"=>deepcopy(original_mirror) for i in 1:8)
     @test Instrument.bounded(oversized) === nothing
-    @test_throws r"256 KiB" Instrument.validate(oversized)
+    @test_throws r"1 MiB" Instrument.validate(oversized)
 end
 
 @testset "AOS instrument selection remains a cold declaration" begin

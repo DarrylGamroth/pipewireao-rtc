@@ -7,7 +7,7 @@ import ..DeploymentConfiguration
 
 const PROPERTY = "pipewireao.rtc.session.instrument"
 const HASH_PROPERTY = PROPERTY * ".sha256"
-const MAX_BYTES = 256 * 1024
+const MAX_BYTES = 1024 * 1024
 const MIRROR_PROPERTY = "device.mirror.description"
 const D = DeploymentConfiguration
 digest(json::AbstractString) = bytes2hex(SHA.sha256(codeunits(json)))
@@ -71,7 +71,7 @@ function validate(document)
         "calibration_identity","scientific_identity","deformable_mirrors","wavefront_sensors")) &&
         get(document,"schema_version",nothing)===2 || throw(ArgumentError("expected instrument definition schema version 2"))
     bounded(document)
-    ncodeunits(JSON.json(document)) <= MAX_BYTES || throw(ArgumentError("instrument definition exceeds 256 KiB"))
+    ncodeunits(JSON.json(document)) <= MAX_BYTES || throw(ArgumentError("instrument definition exceeds 1 MiB"))
     identifier(document["id"]) ||
         throw(ArgumentError("invalid instrument identifier"))
     for field in ("calibration_identity","scientific_identity")
@@ -237,7 +237,7 @@ function validate_shape_control(shape, units, count)
 end
 
 function load(path::AbstractString)
-    isfile(path) && filesize(path)<=MAX_BYTES || throw(ArgumentError("instrument definition exceeds 256 KiB or is absent"))
+    isfile(path) && filesize(path)<=MAX_BYTES || throw(ArgumentError("instrument definition exceeds 1 MiB or is absent"))
     json=read(path,String)
     isvalid(json) && !occursin('\0',json) || throw(ArgumentError("instrument definition is not valid UTF-8 JSON"))
     document=read_object(json)

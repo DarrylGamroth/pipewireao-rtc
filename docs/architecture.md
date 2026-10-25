@@ -733,7 +733,7 @@ carrying copies of instrument or calibration arrays.
 
 The first implementation uses existing read-only properties on the freshly
 verified native public session endpoint. `pipewireao.rtc.session.instrument`
-contains one bounded JSON document (maximum 256 KiB), and the companion
+contains one bounded JSON document (maximum 1 MiB), and the companion
 `pipewireao.rtc.session.instrument.sha256` identifies its exact bytes. These are
 ordinary NodeInfo properties, not mutable Props controls or a new command API.
 The sealed deployment's optional `instrument` field names the contained asset.
@@ -790,7 +790,9 @@ The tagged `definition.kind` is `zernike`, `fourier`, or `sampled`:
 
 Builtin descriptors preserve scientific conventions without adding numerical
 basis evaluation to the RTC. Consumers validate sampled degeneracy when they
-prepare builtin modes. The existing 256 KiB publication limit and structural
+prepare builtin modes. The 1 MiB publication limit accommodates multi-mirror
+instruments with explicit builtin basis coordinates, preserving their precision.
+The publication size and structural
 limits still apply; bounds reject oversized definitions without truncation.
 The schema 1 publication's fixed Zernike/Fourier fields are removed.
 

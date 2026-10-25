@@ -278,7 +278,7 @@ function prepare_publication(application::AbstractString; configuration="rtc/con
     output in protected && throw(ArgumentError("publication must differ from its authoring inputs"))
     body = publication(path)
     ncodeunits(JSON.json(body)) + 1 <= InstrumentDefinition.MAX_BYTES ||
-        throw(ArgumentError("instrument publication exceeds 256 KiB"))
+        throw(ArgumentError("instrument publication exceeds 1 MiB"))
     Common.write_json(output,body;atomic=true)
     return output
 end
