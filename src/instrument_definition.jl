@@ -192,9 +192,18 @@ function basis_positions(positions, count, bound; float32=false)
 end
 
 function validate_shape_control(shape, units, count)
-    exact_fields(shape,("bases",),"shape_control")
+    object_value(shape) && haskey(shape,"bases") &&
+        all(key -> key in ("bases","controlled_actuators"),keys(shape)) ||
+        throw(ArgumentError("invalid shape_control fields"))
+    if haskey(shape,"controlled_actuators")
+        mask = shape["controlled_actuators"]
+        array_value(mask) && length(mask)==count && all(value -> value === true || value === false,mask) ||
+            throw(ArgumentError("controlled_actuators must be a command-sized boolean mask"))
+    end
     bases = shape["bases"]
     array_value(bases) && length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
+    !isempty(bases) && haskey(shape,"controlled_actuators") && !any(shape["controlled_actuators"]) &&
+        throw(ArgumentError("shape bases require at least one controlled actuator"))
     ids = Set{String}()
     for basis in bases
         definition = basis_header(basis,units)

@@ -149,6 +149,19 @@ function central_completion(original, obstruction, mirror; pupil_registration)
     return (; completion, controlled=controlled[retained], obscured=controlled[removed])
 end
 
+"Initialize a shape calibration pair, retaining an unbound shape offset's zero default."
+function initialize_shape_offsets!(parameters::AbstractDict,prefix::AbstractString="")
+    names=map(suffix -> Symbol(prefix*suffix),
+        ("shape-active-to-full","shape-pdm-to-vdm","shape-offset"))
+    present=map(name -> haskey(parameters,name),names)
+    any(present) || return parameters
+    present[1] && present[2] || throw(ArgumentError("shape calibration requires both completion and inverse ports"))
+    parameters[names[1]]=copy(parameters[Symbol(prefix*"active-to-full")])
+    parameters[names[2]]=copy(parameters[Symbol(prefix*"pdm-to-vdm")])
+    present[3] && (parameters[names[3]]=zero(parameters[names[3]]))
+    return parameters
+end
+
 "Prepare controller allocation matrices with explicit measurement dimensions."
 function allocation_parameters(parameters, completion, controlled; measurement_count, feedback=nothing)
     n = length(controlled)
@@ -172,6 +185,7 @@ function allocation_parameters(parameters, completion, controlled; measurement_c
     parameters[Symbol("shape-to-hidden")] = fill(1f0 / n, 1, n)
     parameters[Symbol("hidden-to-shape")] = ones(Float32, n, 1)
     parameters[:reconstructor] = zeros(Float32, n, measurement_count)
+    initialize_shape_offsets!(parameters)
     return parameters
 end
 

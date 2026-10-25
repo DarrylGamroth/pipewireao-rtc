@@ -767,8 +767,16 @@ guard clipping therefore contributes to reverse constraint feedback. Correction
 roles come from the owner's actual projection matrices. The fitted tip/tilt
 coupled mirror basis currently excludes this zonal completion policy.
 
-A mirror's `shape_control` contains only `bases`, an ordered array of at most
-16 instrument-defined bases. Each basis has exactly `id`, `name`, `units`,
+A mirror's `shape_control` contains `bases`, an ordered array of at most
+16 instrument-defined bases, and an optional command-ordered Boolean
+`controlled_actuators` mask. Omission in an existing publication means unrestricted
+editing. New RTC publications always emit an explicit mask; absent an authored
+calibration selector, all commands are editable. Clients normalize analytic
+shapes on the selected samples and preserve the observed baseline exactly on
+excluded commands. The mask describes shape-edit authority, not device health,
+the optical pupil or a live correction-role observation.
+An all-false mask is admitted only when no shape bases are declared.
+Each basis has exactly `id`, `name`, `units`,
 `coefficient_limit`, `normalization`, and `definition`. Basis IDs
 are unique per mirror. Names use at most 128 UTF-8 bytes. Coefficients use the mirror's command units;
 basis samples are dimensionless. Each basis owns its positive coefficient limit.
@@ -818,6 +826,34 @@ Custom basis content hashes contribute to the RTC publication identity.
 Simulation graph/artifact hashes contribute separately to the simulation
 prescription identity. Both are checked before execution; changing a control
 basis does not change the simulated plant prescription.
+
+An authored `shape_control.controlled_actuators` selector names `graph`,
+`bindings`, `active_to_full` and `pdm_to_vdm`: the graph and existing startup
+FITS-binding declaration, followed by its two external parameter names. Cold
+preparation resolves that graph against physical geometry, RTC dimensions and
+calibration context, then reads the selected artifacts through the graph's typed
+Parameter Ports. It does not infer expected dimensions from FITS headers or
+duplicate projection matrices in GUI metadata.
+
+The shared `vdm-shape-offset-f32` Algorithm accepts a physical-command-sized
+`shape-offset` parameter with the unit-neutral requested-PDM schema. Its calibrated
+active-to-full completion C establishes the first unit row for each independent
+coordinate. Those rows form the direct selector S, where S C = I. With the
+calibrated physical-to-VDM map B, cold parameter adoption computes the active
+shape offset S B u. The published editable mask is the nonzero-column support
+of S B. Dense physical projections therefore retain their actual coordinate
+mapping; a radial rule or live role code is never substituted.
+
+Frame processing adds the cached active offset before the existing C and
+VDM-to-PDM projection. Extrapolated channels follow the completed shape, and
+rows outside the correction domain receive zero shape change. Physical command
+limits remain downstream. The `current-offset` readback reports the adopted
+physical shape request, with the requested frame's metadata; it does not report
+the completed or limited applied command. A separate full physical engineering
+offset may remain after completion. GUI offset readback and editing must select
+the same parameter, with explicit matching units. Shape selection S is distinct
+from a least-squares clipping-feedback reverse F: guard clipping continues to
+contribute through F without attenuating the requested direct shape amplitudes.
 
 Classic separates physical, simulation, RTC and mirror-control authoring:
 

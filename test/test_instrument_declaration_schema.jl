@@ -317,6 +317,16 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test IC.validate_declaration(declaration,directory) === nothing
             publication = IC.publication(path)
             @test publication.schema_version == 2
+            @test publication.deformable_mirrors.primary.shape_control.controlled_actuators === (true,true,true)
+            for selector in ([],Dict("graph"=>"production.yaml"),
+                    Dict("graph"=>"production.yaml","bindings"=>"production.yaml",
+                        "active_to_full"=>"missing","pdm_to_vdm"=>"inverse","extra"=>true))
+                invalid_controls=IC.json_value(controls)
+                invalid_controls["deformable_mirrors"]["primary"]["shape_control"]["controlled_actuators"]=selector
+                C.write_yaml(documents.paths.controls,invalid_controls)
+                @test_throws ArgumentError IC.load_rtc(path)
+            end
+            write_declaration()
             definitions = publication.deformable_mirrors.primary.shape_control.bases
             @test map(b -> b.definition.kind,definitions) == ("zernike","fourier","sampled")
             @test definitions[1].normalization == "sampled_peak"

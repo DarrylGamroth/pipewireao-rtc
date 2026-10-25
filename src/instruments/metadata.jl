@@ -199,8 +199,14 @@ function publication(path)
             description = mirror(declaration,NamedTuple(),String(name)).description
             source = source_grid_coordinates(description)
             bases = Tuple(resolve_basis(declaration,basis,description,source) for basis in control["shape_control"]["bases"])
-            shape_control = (;bases)
             n = length(dm.layout.command_positions)
+            controlled = if haskey(control["shape_control"],"controlled_actuators")
+                Base.require(Main,:FilterGraphIsland)
+                Base.invokelatest(controlled_actuators,declaration,control["shape_control"]["controlled_actuators"],n)
+            else
+                ntuple(_ -> true,n)
+            end
+            shape_control = (;bases,controlled_actuators=controlled)
             InstrumentDefinition.validate_shape_control(json_value(shape_control),spec["units"],n)
             pupil = hasproperty(scientific,:telescope) && hasproperty(scientific.telescope,:central_obstruction_ratio) ?
                 (;pupil=(;outer_radius=1.0,inner_radius=scientific.telescope.central_obstruction_ratio)) : NamedTuple()
@@ -271,6 +277,13 @@ function prepare_publication(application::AbstractString; configuration="rtc/con
         end
     end
     haskey(rtc.document, "calibration") && push!(protected, D.relative_asset(application, rtc.document["calibration"]))
+    for control in values(rtc.controls["deformable_mirrors"])
+        shape=control["shape_control"]
+        haskey(shape,"controlled_actuators") || continue
+        for field in ("graph","bindings")
+            push!(protected,D.relative_asset(application,shape["controlled_actuators"][field]))
+        end
+    end
     for control in values(rtc.controls["deformable_mirrors"]), basis in control["shape_control"]["bases"]
         definition = basis["definition"]
         definition["kind"] == "sampled" && push!(protected,D.relative_asset(application,definition["artifact"]["path"]))

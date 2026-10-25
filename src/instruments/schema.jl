@@ -160,7 +160,18 @@ isfinite_real(::Bool) = false
 isfinite_real(value) = false
 
 function _validate_shape_control(value, units, directory)
-    shape = _declaration_fields(value,("bases",),("bases",),"shape_control")
+    shape = _declaration_fields(value,("bases","controlled_actuators"),("bases",),"shape_control")
+    if haskey(shape,"controlled_actuators")
+        selection = _declaration_fields(shape["controlled_actuators"],
+            ("graph","bindings","active_to_full","pdm_to_vdm"),
+            ("graph","bindings","active_to_full","pdm_to_vdm"),"controlled actuator selection")
+        for key in ("graph","bindings")
+            D.relative_asset(directory,_declaration_text(selection[key],"controlled actuator $key"))
+        end
+        for key in ("active_to_full","pdm_to_vdm")
+            _declaration_identifier(selection[key],"controlled actuator parameter")
+        end
+    end
     bases = _declaration_array(shape["bases"],"bases")
     length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
     ids = Set{String}()

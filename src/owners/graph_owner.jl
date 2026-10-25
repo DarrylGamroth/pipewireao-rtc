@@ -58,6 +58,10 @@ end
 
 function bindings(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    return bindings(path,document)
+end
+
+function bindings(path::AbstractString,document)
     document isa AbstractDict && Set(keys(document)) == Set(["parameters"]) ||
         throw(ArgumentError("FITS bindings require only a parameters array"))
     entries = document["parameters"]

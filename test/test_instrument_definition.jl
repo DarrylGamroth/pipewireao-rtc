@@ -285,6 +285,22 @@ end
     @test_throws r"1 MiB" Instrument.validate(oversized)
 end
 
+@testset "shape actuator masks are optional and command ordered" begin
+    original=operational_instrument()
+    shape=original["deformable_mirrors"]["dm"]["shape_control"]
+    @test Instrument.validate(original)===original
+    shape["controlled_actuators"]=[true,false,true]
+    @test Instrument.validate(original)===original
+    for mask in ([true,false], [1,0,1], [true,nothing,true], "all", nothing)
+        shape["controlled_actuators"]=mask
+        @test_throws ArgumentError Instrument.validate(original)
+    end
+    shape["controlled_actuators"]=fill(false,3)
+    @test_throws ArgumentError Instrument.validate(original)
+    empty!(shape["bases"])
+    @test Instrument.validate(original)===original
+end
+
 @testset "AOS instrument selection remains a cold declaration" begin
     mktempdir() do package
         path = joinpath(package, "simulation.conf")

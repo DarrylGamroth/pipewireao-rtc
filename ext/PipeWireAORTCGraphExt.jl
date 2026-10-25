@@ -5,11 +5,56 @@ import FilterGraphIsland
 import FilterGraphPipeWire
 import JuliaFilterGraph
 import PipeWireAO
+import FilterGraphAlgorithms
 
 const Owner = PipeWireAORTC.GraphOwner
 const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
 include("analysis.jl")
+
+function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(declaration::NamedTuple,
+        selection::AbstractDict, count::Int)
+    IC = PipeWireAORTC.InstrumentConfiguration
+    E = PipeWireAORTC.InstrumentExport
+    D = PipeWireAORTC.DeploymentConfiguration
+    prefix = get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao")
+    source = D.relative_asset(declaration.directory,selection["graph"])
+    bindings = D.relative_asset(declaration.directory,selection["bindings"])
+    names = (Symbol(selection["active_to_full"]),Symbol(selection["pdm_to_vdm"]))
+    entries = Owner.bindings(bindings,IC.bounded_yaml(bindings))
+    selected = map(names) do name
+        matches = filter(entry -> entry.port==name,entries)
+        length(matches)==1 || throw(ArgumentError("controlled actuator selection names an absent FITS parameter $name"))
+        entry = only(matches)
+        D.relative_asset(declaration.directory,relpath(entry.source.path,declaration.directory))
+        return entry
+    end
+    context = E.graph_context(IC.json_value(IC.physical_definition(declaration.instrument));
+        dimensions=declaration.document["dimensions"],mirror_controls=declaration.controls["deformable_mirrors"],
+        calibration=declaration.calibration)
+    concrete = E.resolve_graph_configuration(D.decode(source,prefix),context)
+    return mktempdir() do directory
+        path = joinpath(directory,"graph.conf")
+        PipeWireAORTC.ScienceExport.write_spa_config(path,concrete)
+        options = FilterGraphIsland.parse_arguments(["--graph",path,"--check","--execution","complete-frame"])
+        updates = Pair{Symbol,Array}[]
+        graph = FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats -> begin
+            append!(updates,Owner.prepare_bindings(selected,formats))
+            updates
+        end)
+        try
+            values = Dict(updates)
+            completion,inverse = map(name -> values[name],names)
+            ndims(completion)==ndims(inverse)==2 || throw(DimensionMismatch("shape selection requires two matrix parameters"))
+            eltype(completion)===eltype(inverse)===Float32 || throw(ArgumentError("shape selection requires Float32 projections"))
+            size(inverse,2)==count || throw(DimensionMismatch("shape projection physical extent differs from mirror commands"))
+            plan = FilterGraphAlgorithms.VdmShapeOffsetPlan(completion,inverse,zeros(Float32,count))
+            return Tuple(plan.controlled_actuators)
+        finally
+            FilterGraphIsland.close_execution(graph)
+        end
+    end
+end
 
 function PipeWireAORTC.InstrumentExport.graph_port_contracts(path::AbstractString)
     options = FilterGraphIsland.parse_arguments([

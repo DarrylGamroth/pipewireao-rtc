@@ -15,6 +15,7 @@ public load, load_simulation, load_rtc, settings, graph_document, scientific_def
     actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context
 
 function prepare_system end
+function controlled_actuators end
 
 include("instruments/settings.jl")
 include("instruments/geometry.jl")
@@ -105,7 +106,7 @@ function load_rtc(path::AbstractString)
     for (name, control) in mirrors
         fields(control, ("limiter", "shape_control"), ("limiter", "shape_control"), "mirror control $name")
         _validate_limiter(control["limiter"])
-        shape = _declaration_fields(control["shape_control"], ("bases",), ("bases",), "shape_control")
+        shape = _declaration_fields(control["shape_control"], ("bases", "controlled_actuators"), ("bases",), "shape_control")
         bases = _declaration_array(shape["bases"], "bases")
         length(bases) <= 16 || throw(ArgumentError("shape_control requires at most 16 bases"))
         shape["bases"] = [resolve_basis_definition(basis) for basis in bases]

@@ -200,6 +200,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
             parameters[Symbol(name*"-vdm-to-pdm")] .= projection
             parameters[Symbol(name*"-pdm-to-vdm")] .= name==coupled ? LA.pinv(projection) : transpose(projection)
         end
+        Calibration.initialize_shape_offsets!(parameters,name*"-")
         name==coupled && (parameters[Symbol("controller-to-tiptilt")][:,start+1:start+2] .= Matrix{Float32}(LA.I,2,2))
         start+=count
     end
