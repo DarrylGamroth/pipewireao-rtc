@@ -1,5 +1,17 @@
 using Test
 using PipeWireAORTC.Common
+using PipeWireAORTC.Common: finite_json
+
+@testset "finite JSON tuple validation" begin
+    samples = Tuple((;name="Mode $i", values=(0.0f0, 1.0f0, -1.0f0)) for i in 1:8)
+    bases = Tuple((;id="basis-$i", modes=samples) for i in 1:2)
+    instrument = (;mirrors=Tuple((;id="mirror-$i", bases) for i in 1:2))
+    @test finite_json(instrument) === instrument
+    for invalid in (Inf, -Inf, NaN, Inf32, NaN32)
+        tail = (;modes=(samples..., (;name="Invalid", values=(0.0, invalid))))
+        @test_throws ArgumentError finite_json((instrument, tail))
+    end
+end
 
 @testset "Julia operational preparation utilities" begin
     @test parse_json("{\"x\":4611686018427387903}")["x"] === 4611686018427387903

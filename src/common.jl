@@ -81,11 +81,15 @@ function finite_json(value::AbstractDict)
     return value
 end
 function finite_json(value::NamedTuple)
-    foreach(finite_json, values(value))
+    for item in values(value)
+        finite_json(item)
+    end
     return value
 end
 function finite_json(value::Union{AbstractVector,Tuple})
-    foreach(finite_json, value)
+    for item in value
+        finite_json(item)
+    end
     return value
 end
 
