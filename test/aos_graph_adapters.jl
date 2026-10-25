@@ -33,6 +33,30 @@ end
 adapter_graph(type, config, input; kwargs...) =
     prepare_algorithm_graph(adapter_definition(type, config, input; kwargs...); target=AdapterTarget)
 
+@testset "UInt16 camera output before transport" begin
+    input = reshape(Float32[-2, 0.25, 0.75, 1.25, 8191.25, 10000], 2, 3)
+    config = merge(layout_config(), Dict("scale" => 2, "bias" => 0.5,
+        "range" => [0, 16383], "rounding" => "nearest_even",
+        "output_element_type" => "uint16"))
+    graph = adapter_graph("detector_frame_layout_f32", config, input)
+    frame = AdapterAOG.graph_output(graph, :frame)
+    @test eltype(frame) === UInt16
+    expected = zeros(UInt16, 5, 7)
+    expected[2:3, 3:5] .= round.(UInt16, clamp.(2f0 .* input .+ 0.5f0, 0f0, 16383f0))
+    step_graph!(graph)
+    @test frame == expected
+    fill!(frame, typemax(UInt16))
+    step_graph!(graph)
+    @test frame == expected
+    reset_graph!(graph)
+    @test all(iszero, frame)
+    for changes in (Dict("rounding" => "none"), Dict("range" => [-1, 16383]),
+            Dict("range" => [0, 65536]), Dict("output_element_type" => "int16"))
+        @test_throws AdapterAOG.AlgorithmGraphError adapter_definition(
+            "detector_frame_layout_f32", merge(config, changes), input)
+    end
+end
+
 adapter_owner(definition::AlgorithmGraphDefinition, inputs, outputs; target=AdapterTarget) =
     adapter_owner(only(definition.nodes), inputs, outputs; target)
 function adapter_owner(node::AlgorithmNodeDefinition{Name,Node}, inputs, outputs; target=AdapterTarget) where {Name,Node}

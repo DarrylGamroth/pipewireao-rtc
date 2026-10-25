@@ -3,7 +3,7 @@
 # Dimensions are [rows, columns]; the detector origin counts from zero.
 
 struct DetectorFrameLayoutNode end
-struct DetectorFrameLayoutConfig{R,Q}
+struct DetectorFrameLayoutConfig{T,R,Q}
     input_size::Tuple{Int,Int}
     output_size::Tuple{Int,Int}
     origin::Tuple{Int,Int}
@@ -102,9 +102,22 @@ function _adapter_rounding_range(range::Tuple, ::typeof(RoundNearest), context)
 end
 _adapter_rounding_range(range, rounding, context) = nothing
 
+_adapter_output_type(value::AbstractString) = _adapter_output_type(Val(Symbol(value)))
+_adapter_output_type(::Val{:float32}) = Float32
+_adapter_output_type(::Val{:uint16}) = UInt16
+_adapter_output_type(value) = throw(_adapter_error("output_element_type must be 'float32' or 'uint16'"))
+_adapter_output_contract(::Type{Float32}, range, rounding) = nothing
+function _adapter_output_contract(::Type{UInt16}, range::Tuple, ::typeof(RoundNearest))
+    0 <= range[1] <= range[2] <= typemax(UInt16) ||
+        throw(_adapter_error("UInt16 camera output requires range within 0:65535"))
+    return nothing
+end
+_adapter_output_contract(::Type{UInt16}, range, rounding) =
+    throw(_adapter_error("UInt16 camera output requires a bounded range and nearest_even rounding"))
+
 function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props::NamedTuple)
     fields = (:input_size, :output_size, :origin, :scale, :bias, :range, :rounding,
-        :input_schema, :output_schema)
+        :input_schema, :output_schema, :output_element_type)
     required = (:input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema)
     context = "node '$name' config"
     _adapter_fields(config, fields, required, context)
@@ -122,10 +135,12 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
     range = _adapter_range(get(config, :range, nothing), "$context.range")
     rounding = _adapter_rounding(get(config, :rounding, "none"), "$context.rounding")
     _adapter_rounding_range(get(config, :range, nothing), rounding, "$context.range")
+    T = _adapter_output_type(get(config, :output_element_type, "float32"))
+    _adapter_output_contract(T, range, rounding)
     input_schema = _adapter_string(config.input_schema, "$context.input_schema")
     output_schema = _adapter_string(config.output_schema, "$context.output_schema")
     return algorithm_node(name, DetectorFrameLayoutNode,
-        DetectorFrameLayoutConfig(input_size, output_size, origin, scale, bias,
+        DetectorFrameLayoutConfig{T,typeof(range),typeof(rounding)}(input_size, output_size, origin, scale, bias,
             range, rounding, input_schema, output_schema))
 end
 
@@ -138,10 +153,12 @@ Cold factory registry extending AOS with detector layout:
   `range` for `input * scale + bias`; provide `[lower, upper]` to clamp it.
   Optional `rounding` is `"none"` (the default) or `"nearest_even"` to round
   the converted, clipped value to the nearest integer with ties to even while
-  retaining Float32 storage. Rounded ranges require integral bounds.
+  retaining Float32 storage by default. Set `output_element_type: uint16` for
+  a typed ADC output; it requires nearest-even rounding and an integral range
+  within 0:65535. Rounded ranges require integral bounds.
 
 The node resets its output buffer to zero and requires one-based Float32
-arrays on the declared compute device. CUDA and AMDGPU owners support
+input arrays and Float32 or UInt16 output arrays on the declared compute device. CUDA and AMDGPU owners support
 fixed-address command-graph capture; host owners retain stream execution.
 """
 function configured_graph_node_types()
@@ -149,26 +166,26 @@ function configured_graph_node_types()
         detector_frame_layout_f32=_detector_frame_layout_f32_node,))
 end
 
-function AlgorithmGraphs.graph_node_ports(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig)
+function AlgorithmGraphs.graph_node_ports(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T}) where {T}
     return (
         AlgorithmGraphs.graph_port_contract(:detector_frame, :input, :data, Float32,
             config.input_size, config.input_schema, :column_major),
-        AlgorithmGraphs.graph_port_contract(:frame, :output, :data, Float32,
+        AlgorithmGraphs.graph_port_contract(:frame, :output, :data, T,
             config.output_size, config.output_schema, :column_major))
 end
 
-function _adapter_buffer(values::AbstractArray{Float32,N}, shape::NTuple{N,Int}) where {N}
+function _adapter_buffer(values::AbstractArray{T,N}, shape::NTuple{N,Int}, ::Type{T}=Float32) where {T,N}
     Base.require_one_based_indexing(values)
     size(values) == shape || throw(DimensionMismatch("graph adapter buffer shape differs from declaration"))
     return values
 end
-_adapter_buffer(values, shape) = throw(_adapter_error("graph adapter requires Float32 arrays of the declared rank"))
+_adapter_buffer(values, shape, type=Float32) = throw(_adapter_error("graph adapter requires $type arrays of the declared rank"))
 
-function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig,
+function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T},
         ::NamedTuple{()}, inputs::NamedTuple{(:detector_frame,)}, outputs::NamedTuple{(:frame,)},
-        ::NamedTuple{()}, target::Backends.AbstractComputeDevice)
+        ::NamedTuple{()}, target::Backends.AbstractComputeDevice) where {T}
     detector_frame = _adapter_buffer(inputs.detector_frame, config.input_size)
-    frame = _adapter_buffer(outputs.frame, config.output_size)
+    frame = _adapter_buffer(outputs.frame, config.output_size, T)
     Backends.compute_device(detector_frame) == target && Backends.compute_device(frame) == target ||
         throw(_adapter_error("graph adapter buffers must use the declared compute device"))
     Base.mightalias(frame, detector_frame) &&
@@ -196,12 +213,12 @@ _layout_value(value, scale, bias, range, rounding) =
     _layout_round(_layout_value(value, scale, bias, range), rounding)
 
 function AlgorithmGraphs.step_graph_node!(owner::DetectorFrameLayoutOwner)
-    fill!(owner.frame, 0f0)
+    fill!(owner.frame, zero(eltype(owner.frame)))
     owner.science .= _layout_value.(owner.detector_frame, owner.scale, owner.bias,
         Ref(owner.range), Ref(owner.rounding))
     return nothing
 end
 function AlgorithmGraphs.reset_graph_node!(owner::DetectorFrameLayoutOwner)
-    fill!(owner.frame, 0f0)
+    fill!(owner.frame, zero(eltype(owner.frame)))
     return nothing
 end

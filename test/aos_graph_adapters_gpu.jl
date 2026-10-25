@@ -23,10 +23,11 @@ end
 BLAS.set_num_threads(1)
 const GPUAdapterExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 
-function gpu_layout_definition(input; range=nothing, rounding="none")
+function gpu_layout_definition(input; range=nothing, rounding="none", output_element_type="float32")
     config = Dict{String,Any}("input_size" => [2, 3], "output_size" => [5, 7],
         "origin" => [1, 2], "scale" => 2, "bias" => 0.5,
-        "rounding" => rounding, "input_schema" => "test.detector-electrons.f32/1",
+        "rounding" => rounding, "output_element_type" => output_element_type,
+        "input_schema" => "test.detector-electrons.f32/1",
         "output_schema" => "test.detector-adc.f32/1")
     isnothing(range) || (config["range"] = range)
     document = Dict{String,Any}("schema_version" => 1, "name" => "detector_layout",
@@ -40,7 +41,8 @@ end
 @testset "Accelerator detector layout stream and capture" begin
     first = reshape(Float32[0, 0.5, 1, -1, 8191.25, 10000], 2, 3)
     second = reverse(first; dims=2)
-    for options in ((;), (; range=[0, 16383]), (; range=[0, 16383], rounding="nearest_even"))
+    for options in ((;), (; range=[0, 16383]), (; range=[0, 16383], rounding="nearest_even"),
+            (; range=[0, 16383], rounding="nearest_even", output_element_type="uint16"))
         input = AdapterGPUArray(first)
         target = AdaptiveOpticsSim.Backends.compute_device(input)
         definition = gpu_layout_definition(input; options...)
@@ -58,7 +60,9 @@ end
             adapter_gpu_synchronize() # Publish caller input before retained execution contexts read it.
             step_graph!(stream)
             step_graph!(captured)
-            expected = zeros(Float32, 5, 7)
+            T = get(options, :output_element_type, "float32") == "uint16" ? UInt16 : Float32
+            expected = zeros(T, 5, 7)
+            @test eltype(graph_output(captured, Val(:frame))) === T
             values = source .* 2f0 .+ 0.5f0
             haskey(options, :range) && (values = clamp.(values, 0f0, 16383f0))
             get(options, :rounding, "none") == "nearest_even" && (values = round.(values, RoundNearest))
