@@ -693,4 +693,3 @@ test view_panel::tests::unavailable_dm_products_and_control_show_one_centered_ge
 test view_panel::settings_tests::details::dm_details_show_only_the_selected_products ... ok
 
 test result: ok. 617 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 3.49s
-

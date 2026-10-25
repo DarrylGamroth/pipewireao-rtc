@@ -81,4 +81,3 @@ test view_panel::deformable_mirror::native_feedback::tests::feedback_rejects_inv
 test view_panel::tests::native_feedback_observations_belong_to_demanded_and_change_presentation_identity ... ok
 
 test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 609 filtered out; finished in 0.00s
-
