@@ -1,5 +1,16 @@
 # Delivery evidence catalog
 
+## Registered GPI2 package refresh and schema integration — 2026-10-26
+
+The [deployment record](validation/gpi-closed-loop-20261024/refresh-20261026/README.md)
+records registered AOS 0.3.0 / HIL 0.2.5 / RTC 0.2.10, fresh CUDA calibration,
+four finite correction cases, 2,792 HIL checks and the release gaps reproduced
+and repaired for native UInt16 and tip/tilt Applied observations. GPI2 and GUI
+are running; native Open/Close adoption, fourteen coherent observation streams
+and 28 exact catalogued live schemas pass. The previous native Quit timeout is
+retained; supervised cleanup confirmed all old processes absent. No hardware,
+deadline, global stability or new AOS ordering-release qualification is claimed.
+
 ## Dependency ordering and correction-loop control — 2026-10-26
 
 The [software integration record](validation/loop-controls-20261026/README.md)

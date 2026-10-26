@@ -14,13 +14,22 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
+The latest registered refresh is live with AOS 0.3.0, HIL 0.2.5, RTC 0.2.10
+and FGA 0.8.1, a CUDA simulator and ordinary CPU JFG controller. Fresh 1,509-mode
+calibration and four finite correction cases pass. Native Open/Close adoption,
+fourteen observation streams and 28 catalogued live schemas are verified;
+the GUI is reconnected with its saved layout. Missing private-build UInt16 and
+tip/tilt support is now in registered HIL releases. The old native Quit timeout
+still required supervised cleanup; it is not fixed by this refresh. See the
+[deployment record](validation/gpi-closed-loop-20261024/refresh-20261026/README.md).
+
 Generic optional second-order plant response and configurable stage low-pass
 coefficients are implemented. Six matched CUDA replay cases and 99 independent
 saved-data assertions pass. With provisional 250 Hz / 0.7 stage dynamics, the
 25 Hz split reduces stage tracking error; mean long-window sampled WFE remains
 54.094 versus 54.096 nm. Woofer/stage clipping is absent in that window and
-tweeter clipping persists. Historical calibration artifacts and the live RTC
-remain unchanged; revised source requires regeneration and a fresh build.
+tweeter clipping persists. Those comparisons kept historical calibration and
+the live RTC unchanged; the later refresh above regenerates calibration and deploys.
 See the [comparison and independent review](validation/gpi-closed-loop-20261024/temporal-20261026/RUN.md).
 
 AOS now derives stable execution order from direct dependencies during cold
@@ -35,7 +44,8 @@ Independent reviews and focused CPU/CUDA/property/GUI tests pass; strict GUI
 Clippy retains six unrelated existing lint errors. See the
 [ordering and loop-control evidence](validation/loop-controls-20261026/README.md)
 and [semantics](HEADLESS_RTC_DESIGN.md#correction-loop-control--investigation-2026-10-26).
-The live RTC/GUI remain unchanged. Independent corrector closure, explicit
+The source-only checks left the live RTC/GUI unchanged; the refresh above now
+verifies coupled closure on the ordinary CPU owner. Independent corrector closure, explicit
 flat/reset policies and runtime updates to captured JFG owners remain outside
 this implementation.
 
