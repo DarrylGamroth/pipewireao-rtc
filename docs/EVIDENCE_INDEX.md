@@ -5,8 +5,13 @@
 The [source-validation record](validation/yaml-science-20261026/README.md) covers
 shared Pyramid/EMCCD declarations, explicit same-direction science photometry,
 exact guide-source fallback, and model-derived GPI2 chart time. Cold export and
-CPU observer checks preserve scientific defaults; no live, GPU, hardware or
-release qualification is claimed.
+CPU observer checks preserve scientific defaults. The later
+[registered CUDA GPI2 refresh](validation/yaml-science-20261026/README.md#registered-cuda-gpi2-refresh)
+and [machine receipt](validation/yaml-science-20261026/live-gpi2.json) record AOS
+0.3.2 / RTC 0.2.11, a fresh byte-identical FITS bank, fifteen native streams,
+publisher-specific Applied units, GUI reconnection and the corrected model time
+axis. Native Quit and the registered release's tiny-deadline limitation remain
+explicit; no hardware or deadline qualification is claimed.
 The follow-on [node-construction calibration checks](validation/yaml-science-20261026/README.md#node-construction-calibration-bindings)
 cover explicit source metadata, selected FITS loading, native pixel-MTF numerical
 agreement and CPU HIL snapshot/reset behavior.
