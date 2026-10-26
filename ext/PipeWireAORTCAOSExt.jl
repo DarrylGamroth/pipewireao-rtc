@@ -402,6 +402,8 @@ function Owner.run_owner(options)
         end
         OpticalObservation.warm!(observation, pipewire; check=options.owner_check,
             cpu=get(options, :optical_diagnostics_cpu, nothing))
+        precompile(OpticalObservation.close!, (typeof(observation), typeof(pipewire))) ||
+            error("cannot compile prepared optical cleanup before admission")
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
             error("cannot compile prepared frame exchange before admission")
         if phase !== nothing

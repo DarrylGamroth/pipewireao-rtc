@@ -83,9 +83,11 @@ preparation of that entry point passes a fresh private constructor and all 49
 existing bootstrap lifecycle checks without changing deadlines. The original
 Running-to-Quit timeout's original cause is not proven. The isolated patched
 GPI gate passes after 52 frames with clean retirement; compiler tracing identifies
-1.335 s of optical-observer cleanup compilation. Preparing that concrete cleanup
-entry point before admission is the next focused change. The live deployment
-remains unchanged. See the
+1.335 s of optical-observer cleanup compilation. That concrete cleanup entry
+point is now prepared before admission; a fresh private-core CUDA check passes
+41/41 checks for resource preservation, actual cleanup and disabled observation.
+Lower-level HIL cleanup compilation remains, and a full native session has not
+been rerun after this second change. The live deployment remains unchanged. See the
 [shutdown record](validation/gpi-closed-loop-20261024/README.md#native-shutdown-investigation--2026-10-25).
 
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24

@@ -1,0 +1,72 @@
+{
+  "testset_pass": 41,
+  "testset_total": 41,
+  "process_exit": 0,
+  "aggregate_passed": true,
+  "private_core_pid_absent": true,
+  "root_close_entry_not_recompiled_at_actual_close": true,
+  "source_sha256": "4d41ec447592ffd8147947a4a09bd55f31225add2de38fb12fc9fa896320624e",
+  "enabled": {
+    "actual_close": {
+      "bytes": 27369040,
+      "compile_seconds": 0.640138935,
+      "elapsed_seconds": 0.673341951,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "passed": true,
+    "precompile": {
+      "bytes": 28779992,
+      "compile_seconds": 1.547223179,
+      "elapsed_seconds": 1.547244369,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "precompile_preserved_resources": true,
+    "private_core_roundtrip_after_close": true,
+    "repeated_precompile": {
+      "bytes": 112,
+      "compile_seconds": 0.0,
+      "elapsed_seconds": 6.732e-06,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "transport_closed": true,
+    "worker_completed_after": 2,
+    "worker_completed_before": 1,
+    "worker_joined_snapshots_closed": true
+  },
+  "disabled": {
+    "actual_close": {
+      "bytes": 2080,
+      "compile_seconds": 0.0,
+      "elapsed_seconds": 0.010066563,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "passed": true,
+    "precompile": {
+      "bytes": 5007712,
+      "compile_seconds": 0.112795996,
+      "elapsed_seconds": 0.112816243,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "precompile_preserved_resources": true,
+    "private_core_roundtrip_after_close": true,
+    "repeated_precompile": {
+      "bytes": 112,
+      "compile_seconds": 0.0,
+      "elapsed_seconds": 6.161e-06,
+      "gc_seconds": 0.0,
+      "recompile_seconds": 0.0
+    },
+    "transport_closed": true
+  },
+  "first_attempt_overall_failed": true,
+  "limitations": [
+    "source-override private-core diagnostic, no fullsession",
+    "remaining HIL leaf compilation at actual close",
+    "original Quit timeout cause unconfirmed"
+  ]
+}

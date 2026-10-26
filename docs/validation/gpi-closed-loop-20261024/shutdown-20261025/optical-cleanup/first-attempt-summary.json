@@ -1,0 +1,11 @@
+{
+  "overall_passed": false,
+  "process_exit": 1,
+  "testset_pass": 40,
+  "testset_error": 1,
+  "reason": "harness post-close snapshot assertion lacked explicit import of public/unexported try_snapshot_graph_output!",
+  "raw_receipt_passed_field_is_not_aggregate": true,
+  "private_core_pid_absent": true,
+  "original_log": "run.log",
+  "original_receipt": "receipt.json"
+}

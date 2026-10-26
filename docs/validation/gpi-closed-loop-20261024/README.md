@@ -966,6 +966,20 @@ directly records 1334.6 ms compiling the concrete two-argument
 Its 117,082-character signature was reassembled from three journal chunks and
 parsed successfully; no incomplete fragments remain. This identifies avoidable
 first-use work during successful cleanup, without establishing the original
-timeout cause or an equivalent wall-time saving. The next change prepares that
-exact cleanup specialization before admission, without executing cleanup or
-changing its order or deadline. The live deployment has not changed.
+timeout cause or an equivalent wall-time saving.
+
+The runtime now prepares that exact cleanup specialization after optical
+warming and before admission, without executing cleanup or changing its order
+or deadline. The corrected fresh private-core CUDA check passes
+[41/41 checks](shutdown-20261025/optical-cleanup/validation-summary.json):
+compilation preserves the actual worker, snapshots and native resources; the
+worker publishes another observation; actual cleanup joins it and closes
+snapshots and transport. A fresh public core roundtrip succeeds afterward.
+The disabled-observation branch also passes, and the owned private core exits.
+The concrete optical cleanup entry does not compile again during actual close.
+Enabled cleanup still compiles lower-level HIL methods for 0.640 s and takes
+0.673 s overall; this is not a zero-compilation shutdown claim or a measured
+full-session speedup. An initial test-script import error is explicitly retained
+as a failed harness run. See [commands and limits](shutdown-20261025/optical-cleanup/RESULTS.md).
+Independent source review found no blocker. No full native session was rerun
+after this second preparation change, and the live deployment has not changed.
