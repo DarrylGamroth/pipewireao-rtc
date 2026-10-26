@@ -14,6 +14,16 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
+The matched offline woofer-bound replay is complete: changing only ±1 to
+±3.4 µm OPD reduces mean sampled residual WFE from 59.681 to 54.082 nm over
+frames 2049–16384. Woofer clipping disappears; mean tweeter clipping falls from
+54.822 to 27.432 coordinates/frame and stage clipping disappears in that window.
+All per-frame structural checks and 49 independent saved-data assertions pass.
+This isolates a restrictive provisional woofer bound, but does not qualify a
+hardware limit or resolve remaining tweeter clipping. The live RTC and authored
+configuration remain unchanged. See the
+[finite replay record](validation/gpi-closed-loop-20261024/README.md#woofer-stroke-sensitivity--2026-10-26).
+
 The 2026-10-26 source/calibration audit confirms HEART's 97/2,304 command
 dimensions and the tweeter's addressed 48 × 48 subregion of 64 × 64 hardware.
 One hundred offline CPU checks reproduce checked-in conversion endpoints,

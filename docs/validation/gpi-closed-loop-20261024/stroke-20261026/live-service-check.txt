@@ -1,0 +1,9 @@
+MainPID=3232735
+Id=pipewireao-session@b2d0dbc58064.service
+ActiveState=active
+InvocationID=a74fdec4dac745d789f33e76ae2dcb40
+
+MainPID=3768191
+Id=pipewireao-gpi2-registered-gui-20261025.service
+ActiveState=active
+InvocationID=5cd6fd94d6f0430da3b91e2f6af2f88a

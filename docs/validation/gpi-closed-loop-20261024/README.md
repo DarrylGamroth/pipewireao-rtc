@@ -950,6 +950,68 @@ global stability, physical hardware behavior, optimal allocation or 2 kHz timing
 Both failed resource-location setup attempts are retained separately from the
 completed scientific results.
 
+## Woofer stroke sensitivity — 2026-10-26
+
+Selected experiment: compare the unchanged integrator with woofer amplitude
+limits ±1 and ±3.4 µm OPD in private array-only replays. The larger value is a
+HEART-reference sensitivity case derived from checked-in driver coefficients
+and HEART's documented wavefront units, not a qualified deployed hardware limit.
+No live or authored instrument/controller configuration is changed.
+
+Keep the reconstructor, command maps, pupil registration, allocation, gain,
+pole, anti-windup, hidden-mode removal, atmosphere, detector, seeds, tweeter
+and stage limits fixed. Reset each case and require matching full atmospheric
+field hashes; detector settings and RNG reset policy match, but corrected
+camera images and scene-dependent photon noise need not be identical.
+
+First compare 4,096 frames, including late-window frames 2049–4096. Verify the
+baseline against the preceding exact replay observations. Report sampled WFE,
+per-frame clipping and requested command excursions for both DMs and stage,
+finite state, command limits and actual adopted command consistency. If the
+candidate improves mean late-window WFE by at least 2% without a newly failed
+structural/finite check, compare matched 16,384-frame runs before drawing a
+longer-interval conclusion. Finite replays cannot prove global stability,
+physical calibration or deadline performance. Resource bounds separate cold
+preparation from execution; unrelated live GPU workloads remain untouched.
+
+The Gaussian plant's default `LinearStaticActuators` does not impose a second
+device clip. The private graph limiter is therefore the only clipping policy
+changed; the original optical prescription identity remains required.
+
+Both 4,096-frame cases passed. Mean sampled WFE over frames 2049–4096 fell
+from 66.37 to 54.18 nm, triggering the predeclared extension. Both 16,384-frame
+cases then completed (8.192 s of model time each). Over frames 2049–16384:
+
+| Observation | ±1 µm woofer limit | ±3.4 µm woofer limit |
+| --- | ---: | ---: |
+| Mean sampled residual WFE | 59.681 nm | 54.082 nm |
+| Maximum sampled residual WFE | 89.283 nm | 70.323 nm |
+| Mean clipped woofer coordinates/frame | 6.285 | 0 |
+| Mean clipped tweeter coordinates/frame | 54.822 | 27.432 |
+| Frames with stage clipping | 5.818% | 0% |
+| Maximum demanded woofer amplitude | 1.000 µm OPD | 2.378 µm OPD |
+
+The wider bound improves mean sampled WFE by 9.38% in this matched interval.
+WFE is piston-removed pupil OPD RMS, sampled every 64 frames in this window
+(224 observations). Clipping, command bounds, finiteness, exact clamp/feedback
+identities and adoption/application checks cover every frame. The optical
+sample at frame n uses command n−1; the final newly issued command is checked
+but is not adopted until the next frame. All structural error maxima are zero.
+Full atmospheric field hashes match between cases. Both extended runs exactly
+reproduce their short-run command, WFE and sampled camera prefixes after reset;
+independent saved-data verification passes 49/49 assertions.
+
+This confirms that the old provisional woofer bound restricts correction in
+this simulation. Tweeter clipping remains on 99.69% of late-window frames, so
+the change does not resolve the complete multi-corrector allocation problem.
+The candidate remains within 2.378 µm OPD in the comparison window, but missing
+deployed clipping/flat files still prevent treating ±3.4 µm as a qualified
+hardware limit. No gains, calibration, production configuration or live session
+were changed. See the [run record](stroke-20261026/RUN.md),
+[independent summary](stroke-20261026/independent-summary.json) and
+[review](stroke-20261026/REVIEW.md). This is finite simulation evidence, not
+global stability, hardware or deadline qualification.
+
 ## Native shutdown investigation — 2026-10-25
 
 The original Running-to-Quit timeout remains unresolved. Isolated attempts

@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## GPI woofer command-bound sensitivity — 2026-10-26
+
+The [matched replay](validation/gpi-closed-loop-20261024/README.md#woofer-stroke-sensitivity--2026-10-26)
+compares ±1 and ±3.4 µm OPD woofer bounds with all other science settings fixed.
+Both 16,384-frame CUDA runs pass per-frame command/adoption checks and exact
+short-run reset reproduction. Mean sampled residual WFE improves by 9.38%;
+woofer and stage clipping disappear in the comparison window, while tweeter
+clipping remains. The live RTC is unchanged. This does not qualify actual
+hardware bounds, global stability or deadline performance.
+
 ## GPI mirror calibration and registration audit — 2026-10-26
 
 The [read-only audit](validation/gpi-closed-loop-20261024/mirror-calibration-20261026/README.md)
