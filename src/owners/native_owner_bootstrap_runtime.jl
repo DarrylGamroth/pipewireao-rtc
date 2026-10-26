@@ -207,6 +207,8 @@ function Runtime(remote::AbstractString, name::AbstractString, instance::Int64;
         nothing, false, nothing, nothing, Base.Threads.Atomic{Bool}(false),
         Base.Threads.Atomic{Bool}(false), nothing)
     try
+        precompile(serve!, (typeof(runtime),)) ||
+            error("cannot compile native bootstrap monitor before startup")
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime)
         deadline = Client.monotonic() + 5.0
         while !runtime.monitor_ready[]

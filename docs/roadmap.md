@@ -77,6 +77,14 @@ from 59.68 to 106.15 nm in its paired window; it is rejected as a remedy. No liv
 gains, limits, atmosphere, calibration or allocation changed. See
 the [tip/tilt investigation](validation/gpi-closed-loop-20261024/README.md#tiptilt-allocation-investigation--2026-10-25).
 
+The isolated shutdown investigation identified cold monitor compilation inside
+the bootstrap thread-start interval as a separate startup cost. Explicit
+preparation of that entry point passes a fresh private constructor and all 49
+existing bootstrap lifecycle checks without changing deadlines. The original
+Running-to-Quit timeout is not yet resolved; the patched full GPI gate is pending
+and the live deployment remains unchanged. See the
+[shutdown record](validation/gpi-closed-loop-20261024/README.md#native-shutdown-investigation--2026-10-25).
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running

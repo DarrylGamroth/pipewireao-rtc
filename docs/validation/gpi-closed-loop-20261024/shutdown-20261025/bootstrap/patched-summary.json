@@ -1,0 +1,21 @@
+{
+  "source": "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi2-registered-20261025/src/owners/native_owner_bootstrap_runtime.jl",
+  "source_sha256": "f21a760e94c1ea9d27b96ef01dd34b3286ffad62ae83a63f13737b33a3277a0a",
+  "manifest_changed_packages": [
+    "PipeWireAORTC"
+  ],
+  "selector_sha256": "8de7e04c2ff6b7d74246010af04320cc3837bc5d63bc55bcc295e29b8c1dfa99",
+  "selector_pass": 49,
+  "selector_total": 49,
+  "constructor": {
+    "bytes": 258210712,
+    "compile_seconds": 2.923990429,
+    "elapsed_seconds": 2.399305034,
+    "gc_seconds": 0.046136197,
+    "recompile_seconds": 0.0
+  },
+  "constructor_monitor_ready": true,
+  "fixture_cleanup_confirmed": true,
+  "original_quit_cause_confirmed": false,
+  "full_gpi_launch": false
+}

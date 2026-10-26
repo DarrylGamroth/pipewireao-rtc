@@ -930,6 +930,21 @@ by failed-start cleanup warnings and an abort. Its
 [final service identities](shutdown-20261025/trial-004-final-owned-units.json)
 retain the failure and confirmed retirement. It is a separate startup failure,
 not evidence that Quit failed again. Both the native session effect deadline
-and owner initialization deadline remain unchanged. Smaller fresh-process
-private-core compilation probes are the next discriminator before another
-full GPI launch; no speculative shutdown fix has been deployed.
+and owner initialization deadline remain unchanged.
+
+Fresh-process private-core [compilation probes](shutdown-20261025/bootstrap/probe-summary.json)
+show 1.55–1.66 s of first-use compilation for the bootstrap monitor. These
+probes all started successfully; they do not reproduce attempt 004 or establish
+the original Quit cause. The runtime now explicitly compiles the concrete
+monitor entry point before spawning it and starting the unchanged five-second
+thread-start clock. Compilation runs inside the existing cleanup scope and
+does not execute monitor authority or remove the actual thread-start check.
+
+The patched fresh constructor reports `monitor_ready=true` in 2.399 s total,
+including transport setup and preparation outside the monitor clock. The
+unchanged native bootstrap selector passes [49/49 checks](shutdown-20261025/bootstrap/lifecycle.log),
+including blocked-main responsiveness, Quit cleanup, Fault and controller
+loss/expiry. The [validation summary](shutdown-20261025/bootstrap/patched-summary.json)
+records source and selector hashes. These are source-override software checks,
+not production timing qualification. An isolated Running-to-Quit gate remains
+pending; the live deployment has not changed.
