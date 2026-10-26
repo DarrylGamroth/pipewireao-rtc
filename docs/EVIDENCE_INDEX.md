@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Registered GPI JFG deployment and piston analysis — 2026-10-25
+
+The [registered deployment record](validation/gpi-closed-loop-20261024/README.md#registered-jfg-deployment-and-piston-analysis--2026-10-25)
+records exact public package trees, unchanged science inputs, cold FITS checks,
+new live RTC/GUI identities, fourteen-stream validation and genuine clipping.
+CPU saved-frame analysis separates command mean from optical piston. The native
+Quit reply remains unknown despite confirmed old-owner cleanup.
+
 ## Controlled DM shapes and coherent presentation — 2026-10-25
 
 The [shape integration record](validation/gpi-closed-loop-20261024/README.md#controlled-shape-projection-and-coherent-dm-presentation--2026-10-25)

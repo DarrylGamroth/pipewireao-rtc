@@ -601,3 +601,92 @@ exact new remote, binary SHA-256, three running visible-view observers and no
 software-renderer overrides. This is not manual visual acceptance or proof of
 hardware rendering. GPI and its GUI are left running. Classic retains PID
 2432242 and invocation `e23f5c8b3e5142ccb11311f4d7c27550` throughout.
+
+## Registered JFG deployment and piston analysis — 2026-10-25
+
+The user authorized replacing the validation builds with published JFG packages.
+The [installed receipt](registered-20261025/registered-deployment-verification.json)
+checks exact native Running status, GUI remote, package hashes and retired owners.
+The new CUDA/UInt16 session is `pipewireao-session@b2d0dbc58064.service`, invocation
+`a74fdec4dac745d789f33e76ae2dcb40`, manager PID 3232735. GUI PID 3276751 uses the
+unchanged accepted display binary SHA-256
+`7c0152ffdc718315714abf6bcb437c70c8a18426d71c3dec4720b8a3ef24110a`.
+Its Wayland display remains `wayland-sRK0etWWY9`; software-renderer overrides are
+absent. Process/remote checks are not a new manual visual or hardware-rendering
+qualification. The original GUI state was copied to preserve the layout.
+
+| Package | Installed public version | Exact package tree |
+| --- | --- | --- |
+| FilterGraphAlgorithms | 0.8.0 | df13ddb0181f81c0e74667fb964ea0e04aadefec |
+| JuliaFilterGraph | 0.4.2 | a258b9d1b8cf398a653ade4ac44ddb56c53b99d7 |
+| FilterGraphPipeWire | 0.1.7 | 424549653d3ce28e30de84c42be8cc1202edb521 |
+| FilterGraphIsland | 0.1.3 | c9d357b7999b63db61070caddb7fb16ff2fbc8ec |
+
+The existing AOS, HIL, calibration and headless RTC package trees remain frozen.
+The staged instrument definition, controller, parameter bindings, session and
+simulation definition match the preceding application byte for byte; all
+calibration assets match too. Neither gains nor atmosphere nor limits changed.
+Cold checks pass 242 package/retained-science assertions, the existing 54 native
+contract assertions and 3 actual-graph preparation assertions. All 31 startup FITS
+bindings load before execution using the registered providers. The new CPU
+feedback implementation was already numerically qualified in its JFG release.
+
+Initial Pkg attempts retained private build variants visible through secondary
+depot registries; an inherited Project source override also caused a Pkg
+`normpath(nothing)` error. Only the task-owned staging environment was affected.
+A dedicated registry view with public JFG versions and cache-only secondary depots
+resolved the intended four package changes. The final cold checks verify that
+all other package source versions/hashes remain unchanged. Failed preparation
+logs are retained with the successful final log.
+
+The old exact GPI invocation received one native Quit. Its reply was unknown
+again. [Retirement evidence](registered-20261025/previous-retirement.json)
+confirms cleanup and absence of the manager and all four owners before starting
+its replacement. This does not close the native Quit timeout finding. Foreign
+RTC sessions received no lifecycle or configuration requests.
+
+[Read-only fourteen-stream verification](registered-20261025/native-stream-verification.json)
+passes coherent acquisition identities, exact role and offset/shape baselines,
+and same-sequence demanded-metre/Applied-micrometre conversion. All observers
+were retired afterward. In this fresh capture, woofer clips average 4.42/97,
+with maximum reconstructed request 1.03018 µm; tweeter clips average 58.57/2304,
+with maximum request 1.16765 µm. Every nonzero feedback sample accompanies a
+command exactly at its signed Float32 ±1 µm limit. These are finite observations,
+not an optical-performance comparison against the earlier atmosphere trajectory.
+A final script initially called a calibration-specific compatibility getter,
+which rejects this source's `pipewireao.source-control/1` endpoint. Verification
+instead uses the public native session Status command and requires Running.
+The rejected getter log is retained; no production API was changed.
+
+The user also authorized merging JFG's registered release with its source-channel
+work into main, and merging the validated GPI GUI branch into GUI main. JFG main
+merge `8889e22` passes 986 focused composition/declaration/source-channel/schema
+assertions. Both mains are pushed. Public release tags and registry entries stay
+immutable; later source-channel work on main is additional unpublished package
+source, not a replacement of the installed package trees listed above.
+
+### Piston and saturation
+
+A [CPU-only saved-frame analysis](registered-20261025/piston-analysis/result.json)
+reuses the prior 32-frame annular capture and exact Gaussian mirror prescription.
+The [driver](registered-20261025/piston-analysis/measure.jl) records its source,
+input hashes and pupil sampling. Its demanded woofer piston-removed RMS samples
+reproduce the earlier saved optical analysis exactly.
+
+Before clipping, woofer commands span 2.03387–2.08074 µm per frame. Every retained
+frame therefore exceeds the 2 µm interval available between the provisional
+limits: even a uniform shift of actuator coefficients cannot eliminate all these
+clips. Requested command mean averages 148.09 nm, whereas pupil optical piston
+averages 325.47 nm and piston-removed woofer surface RMS averages 1019.67 nm.
+Actuator coefficient mean and optical piston are distinct quantities.
+
+The atmosphere zeros full-screen DC but does not center each moving pupil
+footprint. The wavefront diagnostic subtracts pupil piston for both displayed
+OPD and reported RMS without changing physical commands. Calibration centers
+probe OPD to calculate normalization weights and applies relative TSVD; it is
+not a universal command-mean constraint. Subtracting actuator mean would change
+the finite Gaussian influence-function surface. The measured spans and optical
+structure reject an explanation consisting solely of a removable common command
+offset. Stronger turbulence can require more stroke, but its contribution versus
+allocation remains unresolved without a controlled atmosphere-strength replay.
+No numerical correction is justified solely to remove clipping indications.

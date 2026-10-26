@@ -54,6 +54,16 @@ process cleanup; the shutdown timeout remains unresolved. See the current
 [shape record](validation/gpi-closed-loop-20261024/README.md#controlled-shape-projection-and-coherent-dm-presentation--2026-10-25)
 and preceding [controls record](validation/gpi-closed-loop-20261024/README.md#gpi-offset-controls-and-shared-dm-presentation--2026-10-25).
 
+The live GPI session now uses registered FilterGraphAlgorithms 0.8.0,
+JuliaFilterGraph 0.4.2, FilterGraphPipeWire 0.1.7 and FilterGraphIsland 0.1.3.
+Science inputs and other package trees are unchanged. Actual graph/FITS cold
+checks and fourteen native streams pass; the same GUI is attached to the new
+Running invocation. Saved-frame CPU analysis confirms piston removal in WFE
+diagnostics does not imply zero-mean actuator commands, and a uniform coefficient
+shift cannot fit all retained woofer requests within the provisional limits.
+The scientific cause of the stroke demand remains open. See the
+[registered deployment and piston record](validation/gpi-closed-loop-20261024/README.md#registered-jfg-deployment-and-piston-analysis--2026-10-25).
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running

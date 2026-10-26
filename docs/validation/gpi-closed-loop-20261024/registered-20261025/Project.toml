@@ -1,0 +1,31 @@
+# Generated from application package metadata and the selected simulator backend.
+[compat]
+AMDGPU = "=2.8.0"
+AdaptiveOpticsCalibration = "=0.17.0"
+AdaptiveOpticsSim = "=0.2.3"
+AdaptiveOpticsSimPipeWireHIL = "=0.2.2"
+CUDA = "=6.4.2"
+FilterGraphAlgorithms = "=0.8.0"
+FilterGraphIsland = "=0.1.3"
+FilterGraphPipeWire = "=0.1.7"
+JuliaFilterGraph = "=0.4.2"
+PipeWireAO = "=0.6.19"
+PipeWireAORTC = "=0.2.9"
+PipeWireAO_jll = "=1.7.1"
+julia = "1.13"
+
+[deps]
+AdaptiveOpticsCalibration = "3c8b5851-926e-4ebb-af30-f8544b98d45f"
+AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
+AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
+FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
+FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
+JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+PipeWireAO_jll = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
+
+[weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
