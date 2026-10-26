@@ -1,0 +1,205 @@
+{
+  "short": {
+    "dynamic-identity-4096": {
+      "first_frame": 2049,
+      "last_frame": 4096,
+      "optical_observations": 32,
+      "sampled_wfe_mean_nm": 54.23174832311024,
+      "sampled_wfe_max_nm": 56.567432794087146,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 583.7125058860693,
+          "demanded_peak_nm": 583.7125058860693
+        },
+        "tweeter": {
+          "mean_clipped": 23.37890625,
+          "max_clipped": 63,
+          "clipped_frame_fraction": 1.0,
+          "requested_peak_nm": 1233.9896784396842,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2075.0649127876386,
+          "demanded_peak_nm": 2075.0649127876386
+        }
+      },
+      "stage_tracking_error_peak_nm": 4.875261083725491,
+      "stage_applied_peak_nm": 582.1726745125488,
+      "stage_response_exceeds_command_limit_frames": 0
+    },
+    "dynamic-lowpass25-4096": {
+      "first_frame": 2049,
+      "last_frame": 4096,
+      "optical_observations": 32,
+      "sampled_wfe_mean_nm": 54.19082270969588,
+      "sampled_wfe_max_nm": 56.434608010376174,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 576.8652044935152,
+          "demanded_peak_nm": 576.8652044935152
+        },
+        "tweeter": {
+          "mean_clipped": 23.26904296875,
+          "max_clipped": 63,
+          "clipped_frame_fraction": 1.0,
+          "requested_peak_nm": 1233.5500514382147,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2071.6438484669197,
+          "demanded_peak_nm": 2071.6438484669197
+        }
+      },
+      "stage_tracking_error_peak_nm": 2.587796643638285,
+      "stage_applied_peak_nm": 576.8149549112422,
+      "stage_response_exceeds_command_limit_frames": 0
+    },
+    "ideal-identity-4096": {
+      "first_frame": 2049,
+      "last_frame": 4096,
+      "optical_observations": 32,
+      "sampled_wfe_mean_nm": 54.18078681170712,
+      "sampled_wfe_max_nm": 56.496492841013165,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 580.8930723105732,
+          "demanded_peak_nm": 580.8930723105732
+        },
+        "tweeter": {
+          "mean_clipped": 23.14599609375,
+          "max_clipped": 62,
+          "clipped_frame_fraction": 1.0,
+          "requested_peak_nm": 1233.451939697261,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2065.964054054348,
+          "demanded_peak_nm": 2065.964054054348
+        }
+      },
+      "stage_tracking_error_peak_nm": 0.0,
+      "stage_applied_peak_nm": 580.8930723105732,
+      "stage_response_exceeds_command_limit_frames": 0
+    },
+    "ideal-lowpass25-4096": {
+      "first_frame": 2049,
+      "last_frame": 4096,
+      "optical_observations": 32,
+      "sampled_wfe_mean_nm": 54.19332710062504,
+      "sampled_wfe_max_nm": 56.4995113271362,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 575.7052576882415,
+          "demanded_peak_nm": 575.7052576882415
+        },
+        "tweeter": {
+          "mean_clipped": 23.2666015625,
+          "max_clipped": 63,
+          "clipped_frame_fraction": 1.0,
+          "requested_peak_nm": 1234.0929060883354,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2074.628582704463,
+          "demanded_peak_nm": 2074.628582704463
+        }
+      },
+      "stage_tracking_error_peak_nm": 0.0,
+      "stage_applied_peak_nm": 575.7052576882415,
+      "stage_response_exceeds_command_limit_frames": 0
+    }
+  },
+  "long": {
+    "dynamic-identity-16384": {
+      "first_frame": 2049,
+      "last_frame": 16384,
+      "optical_observations": 224,
+      "sampled_wfe_mean_nm": 54.09386637299208,
+      "sampled_wfe_max_nm": 70.06075120758948,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 651.361403924966,
+          "demanded_peak_nm": 651.361403924966
+        },
+        "tweeter": {
+          "mean_clipped": 27.445242745535715,
+          "max_clipped": 95,
+          "clipped_frame_fraction": 0.9972098214285714,
+          "requested_peak_nm": 1269.810127269011,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2381.7037799744867,
+          "demanded_peak_nm": 2381.7037799744867
+        }
+      },
+      "stage_tracking_error_peak_nm": 5.932491831117659,
+      "stage_applied_peak_nm": 651.1880314974405,
+      "stage_response_exceeds_command_limit_frames": 0
+    },
+    "dynamic-lowpass25-16384": {
+      "first_frame": 2049,
+      "last_frame": 16384,
+      "optical_observations": 224,
+      "sampled_wfe_mean_nm": 54.0956733069808,
+      "sampled_wfe_max_nm": 70.10287478823773,
+      "devices": {
+        "stage": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 646.9114168794476,
+          "demanded_peak_nm": 646.9114168794476
+        },
+        "tweeter": {
+          "mean_clipped": 27.4794921875,
+          "max_clipped": 97,
+          "clipped_frame_fraction": 0.9972098214285714,
+          "requested_peak_nm": 1271.4341437458643,
+          "demanded_peak_nm": 999.9999974752427
+        },
+        "woofer": {
+          "mean_clipped": 0.0,
+          "max_clipped": 0,
+          "clipped_frame_fraction": 0.0,
+          "requested_peak_nm": 2383.987293796963,
+          "demanded_peak_nm": 2383.987293796963
+        }
+      },
+      "stage_tracking_error_peak_nm": 2.961726863759395,
+      "stage_applied_peak_nm": 646.934950054856,
+      "stage_response_exceeds_command_limit_frames": 0
+    }
+  },
+  "scope": "Finite one-seed simulator sensitivity; sampled WFE versus every-frame command/response statistics; not measured stage calibration, global stability or hardware qualification"
+}

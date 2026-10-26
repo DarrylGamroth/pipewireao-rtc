@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## GPI stage response and temporal allocation — 2026-10-26
+
+The [matched comparison](validation/gpi-closed-loop-20261024/temporal-20261026/RUN.md)
+crosses ideal/provisional second-order stage response with identity/25 Hz stage
+filtering. Six CUDA cases and 99 independent saved-data assertions pass,
+including exact retained historical agreement and reset reproduction. The long
+25 Hz case reduces stage tracking error but leaves sampled WFE essentially
+unchanged; tweeter clipping persists. Source supports both configurations;
+the live RTC remains unchanged. This does not qualify a measured stage model,
+hardware limits, stability or deadlines. Setup failures and independent review
+are retained with the evidence.
+
 ## GPI woofer command-bound sensitivity — 2026-10-26
 
 The [matched replay](validation/gpi-closed-loop-20261024/README.md#woofer-stroke-sensitivity--2026-10-26)

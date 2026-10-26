@@ -1,0 +1,4 @@
+Test Summary:               | Pass  Total  Time
+plant response declarations |   16     16  0.9s
+Test Summary:                                                  | Pass  Total  Time
+response compilation preserves boundary and static calibration |   16     16  4.6s

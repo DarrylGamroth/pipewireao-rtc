@@ -1103,3 +1103,16 @@ full-session speedup. An initial test-script import error is explicitly retained
 as a failed harness run. See [commands and limits](shutdown-20261025/optical-cleanup/RESULTS.md).
 Independent source review found no blocker. No full native session was rerun
 after this second preparation change, and the live deployment has not changed.
+
+## Stage response and temporal allocation — 2026-10-26
+
+Generic optional physical stage dynamics and configurable low-pass coefficients
+are implemented. The [six-case matched replay](temporal-20261026/RUN.md) passes
+all structural checks and 99 independent saved-data assertions, with exact
+retained historical agreement and dynamic reset reproduction. A provisional
+250 Hz / 0.7 second-order stage with 25 Hz command filtering reduces tracking
+error but leaves long-window sampled residual WFE essentially unchanged
+(54.094 versus 54.096 nm); tweeter clipping remains. The model, comparison,
+setup failures and independent review are retained together. No live deployment
+or hardware/real-time qualification follows. Separate correction-loop open/close
+control and automatic dependency ordering remain follow-up work.

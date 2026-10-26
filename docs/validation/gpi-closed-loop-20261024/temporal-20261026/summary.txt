@@ -1,0 +1,82 @@
+Completed: true
+Finite provisional-model temporal sensitivity only. Report both dynamic cases and WFE flares; no retuning, measured-model, stability, physical-device or deployment claim.
+
+dynamic-identity-16384 frames=16384 completed=true
+ 2049-16384 WFE_nm=Dict{String, Any}("mean" => 54.09386637299212, "min" => 49.80792588009743, "max" => 70.06075120758948)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 651.1880314974405, "maximum_axis_tracking_error_nm" => 5.932491831117659, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 2.0027118537664017)
+ command clips=Dict("stage" => 0.0, "tweeter" => 27.445242745535715, "woofer" => 0.0)
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.23174832311024, "min" => 50.920052629025925, "max" => 56.567432794087146)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 582.1726745125488, "maximum_axis_tracking_error_nm" => 4.875261083725491, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 2.114937086521468)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.37890625, "woofer" => 0.0)
+ 4097-8192 WFE_nm=Dict{String, Any}("mean" => 54.13093665098439, "min" => 50.548818063815524, "max" => 68.46003997431438)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 641.3493451873364, "maximum_axis_tracking_error_nm" => 5.8826543636314454, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.9463780555593346)
+ command clips=Dict("stage" => 0.0, "tweeter" => 32.4462890625, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.34048975472597, "min" => 50.25920983093804, "max" => 57.141981510560434)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 332.1241877074499, "maximum_axis_tracking_error_nm" => 4.619188587184908, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.8885990946837519)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.238932291666668, "woofer" => 0.0)
+ 8193-16384 WFE_nm=Dict{String, Any}("mean" => 54.04086074646645, "min" => 49.80792588009743, "max" => 70.06075120758948)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 651.1880314974405, "maximum_axis_tracking_error_nm" => 5.932491831117659, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 2.001639917308144)
+ command clips=Dict("stage" => 0.0, "tweeter" => 25.9613037109375, "woofer" => 0.0)
+ response errors: position_nm=6.415491631134442e-5 velocity_nm_per_s=0.014634652105612045
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+dynamic-identity-4096 frames=4096 completed=true
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.23174832311024, "min" => 50.920052629025925, "max" => 56.567432794087146)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 582.1726745125488, "maximum_axis_tracking_error_nm" => 4.875261083725491, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 2.114937086521468)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.37890625, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.34048975472597, "min" => 50.25920983093804, "max" => 57.141981510560434)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 332.1241877074499, "maximum_axis_tracking_error_nm" => 4.619188587184908, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.8885990946837519)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.238932291666668, "woofer" => 0.0)
+ response errors: position_nm=4.9566515929903366e-5 velocity_nm_per_s=0.014634652105612045
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+dynamic-lowpass25-16384 frames=16384 completed=true
+ 2049-16384 WFE_nm=Dict{String, Any}("mean" => 54.09567330698082, "min" => 49.78287228869311, "max" => 70.10287478823773)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 646.934950054856, "maximum_axis_tracking_error_nm" => 2.961726863759395, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.0754700487008106)
+ command clips=Dict("stage" => 0.0, "tweeter" => 27.4794921875, "woofer" => 0.0)
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.19082270969589, "min" => 50.88448898715326, "max" => 56.434608010376174)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 576.8149549112422, "maximum_axis_tracking_error_nm" => 2.587796643638285, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.2616426258441495)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.26904296875, "woofer" => 0.0)
+ 4097-8192 WFE_nm=Dict{String, Any}("mean" => 54.151206532429335, "min" => 50.57659644929728, "max" => 68.61757762220502)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 637.8021453201654, "maximum_axis_tracking_error_nm" => 2.294996193086263, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.9560812298127327)
+ command clips=Dict("stage" => 0.0, "tweeter" => 32.4931640625, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.34745137059562, "min" => 50.17346319564745, "max" => 57.04054001813908)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 341.387448088426, "maximum_axis_tracking_error_nm" => 1.8913546284693439, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.835259668777692)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.227213541666668, "woofer" => 0.0)
+ 8193-16384 WFE_nm=Dict{String, Any}("mean" => 54.044119343577776, "min" => 49.78287228869311, "max" => 70.10287478823773)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 646.934950054856, "maximum_axis_tracking_error_nm" => 2.961726863759395, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.081263847104431)
+ command clips=Dict("stage" => 0.0, "tweeter" => 26.0252685546875, "woofer" => 0.0)
+ response errors: position_nm=6.530847534149612e-5 velocity_nm_per_s=0.014611457551695628
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+dynamic-lowpass25-4096 frames=4096 completed=true
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.19082270969589, "min" => 50.88448898715326, "max" => 56.434608010376174)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 576.8149549112422, "maximum_axis_tracking_error_nm" => 2.587796643638285, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 1.2616426258441495)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.26904296875, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.34745137059562, "min" => 50.17346319564745, "max" => 57.04054001813908)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 341.387448088426, "maximum_axis_tracking_error_nm" => 1.8913546284693439, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.835259668777692)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.227213541666668, "woofer" => 0.0)
+ response errors: position_nm=4.650029128331452e-5 velocity_nm_per_s=0.014611457551695628
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+ideal-identity-4096 frames=4096 completed=true
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.18078681170714, "min" => 50.910846868404555, "max" => 56.496492841013165)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 580.8930723105732, "maximum_axis_tracking_error_nm" => 0.0, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.0)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.14599609375, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.349997833738136, "min" => 50.1879955572355, "max" => 57.08925106194881)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 332.3030455248954, "maximum_axis_tracking_error_nm" => 0.0, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.0)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.216796875, "woofer" => 0.0)
+ response errors: position_nm=0.0 velocity_nm_per_s=0.0
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+ideal-lowpass25-4096 frames=4096 completed=true
+ 2049-4096 WFE_nm=Dict{String, Any}("mean" => 54.19332710062504, "min" => 50.94066510036156, "max" => 56.4995113271362)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 575.7052576882415, "maximum_axis_tracking_error_nm" => 0.0, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.0)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.2666015625, "woofer" => 0.0)
+ 513-2048 WFE_nm=Dict{String, Any}("mean" => 52.34593431475969, "min" => 50.16401877795406, "max" => 57.05860444549762)
+ stage response=Dict{String, Any}("percentage_frames_applied_outside_command_limit" => 0.0, "applied_coordinate_samples_outside_command_limit" => 0.0, "maximum_applied_stage_coefficient_nm" => 341.48843042203225, "maximum_axis_tracking_error_nm" => 0.0, "quantity_boundary" => "Tracking compares actual end-of-hold applied coefficients to held adopted command n-1; coefficient norm is not pupil WFE. Physical response is not clamped.", "two_axis_tracking_error_norm_RMS_nm" => 0.0)
+ command clips=Dict("stage" => 0.0, "tweeter" => 23.190104166666668, "woofer" => 0.0)
+ response errors: position_nm=0.0 velocity_nm_per_s=0.0
+ exact_structural_errors_nm=Dict("maximum_adopted_command_error_nm" => 0.0, "maximum_feedback_identity_error_nm" => 0.0, "maximum_applied_command_error_nm" => 0.0, "maximum_stage_application_error_nm" => 0.0, "maximum_grid_command_error_nm" => 0.0, "maximum_conditioner_clamp_error_nm" => 0.0)
+
+WFE ratios=Dict{String, Any}("ideal_25hz_over_identity_4096" => Dict{String, Any}("ratio" => 1.0002314526911815, "mean_WFE_change_percent" => 0.02314526911815218, "window" => "2049-4096"), "dynamic_identity_over_ideal_identity_4096" => Dict{String, Any}("ratio" => 1.0009405827121007, "mean_WFE_change_percent" => 0.09405827121007349, "window" => "2049-4096"), "dynamic_25hz_over_identity_4096" => Dict{String, Any}("ratio" => 0.9992453569232082, "mean_WFE_change_percent" => -0.075464307679185, "window" => "2049-4096"), "dynamic_25hz_over_identity_16384" => Dict{String, Any}("ratio" => 1.0000334036760516, "mean_WFE_change_percent" => 0.0033403676051646514, "window" => "2049-16384"))

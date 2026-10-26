@@ -14,6 +14,23 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
+Generic optional second-order plant response and configurable stage low-pass
+coefficients are implemented. Six matched CUDA replay cases and 99 independent
+saved-data assertions pass. With provisional 250 Hz / 0.7 stage dynamics, the
+25 Hz split reduces stage tracking error; mean long-window sampled WFE remains
+54.094 versus 54.096 nm. Woofer/stage clipping is absent in that window and
+tweeter clipping persists. Historical calibration artifacts and the live RTC
+remain unchanged; revised source requires regeneration and a fresh build.
+See the [comparison and independent review](validation/gpi-closed-loop-20261024/temporal-20261026/RUN.md).
+
+The next functional gap is acknowledged correction-loop open/close control,
+distinct from application Running/Stopped. HEART/CACAO/MagAO-X findings and the
+proposed generic ownership/reset/hold boundary are in
+[the headless RTC design](HEADLESS_RTC_DESIGN.md#correction-loop-control--investigation-2026-10-26).
+No new loop-control protocol or GUI is implemented. AOS still requires validated
+node declaration order; deriving execution order during cold preparation is a
+separate follow-up, preserving explicit delayed feedback.
+
 The matched offline woofer-bound replay is complete: changing only ±1 to
 ±3.4 µm OPD reduces mean sampled residual WFE from 59.681 to 54.082 nm over
 frames 2049–16384. Woofer clipping disappears; mean tweeter clipping falls from

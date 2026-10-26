@@ -1,0 +1,211 @@
+exit_code=running
+┌ Info: Running test suite
+└   suite = "quality"
+Test Summary:      | Pass  Total  Time
+RNG policy helpers |   18     18  0.6s
+Test Summary:                 | Pass  Total  Time
+Implementation storage policy |    1      1  0.1s
+Test Summary:           | Pass  Total  Time
+Selective test registry |   37     37  2.8s
+Test Summary: | Pass  Total   Time
+Aqua          |   11     11  13.1s
+┌ Info: Running test suite
+└   suite = "algorithm-graphs"
+Test Summary:                                             | Pass  Total  Time
+graph port contracts reject execution-unsafe declarations |    4      4  0.2s
+Test Summary:                                               | Pass  Total  Time
+portable algorithm graph direct links and sparse parameters |   16     16  1.2s
+Test Summary:                                       | Pass  Total  Time
+portable algorithm graph delayed feedback and reset |    8      8  0.5s
+Test Summary:                                              | Pass  Total  Time
+portable algorithm graph asynchronous completion ownership |   13     13  0.3s
+Test Summary:                          | Pass  Total  Time
+bounded grouped stream graph execution |   18     18  1.4s
+Test Summary:                                          | Pass  Total  Time
+portable algorithm graph admits pure sources and sinks |    3      3  0.4s
+
+exit_code=running
+Test Summary:                                              | Pass  Total  Time
+portable algorithm graph binds exact node execution owners |    7      7  0.3s
+Test Summary:               | Pass  Total  Time
+graph HIL lockstep boundary |   42     42  1.4s
+Test Summary:                                 | Pass  Total  Time
+portable algorithm graph failure is fail-stop |    5      5  0.2s
+Test Summary:               | Pass  Total  Time
+native modal OPD graph node |    7      7  1.9s
+Test Summary:                                 | Pass  Total  Time
+measured deformable-mirror surface graph node |   12     12  2.3s
+Test Summary:                                          | Pass  Total  Time
+analytic Gaussian deformable-mirror surface graph node |   10     10  0.9s
+Test Summary:                                        | Pass  Total  Time
+separable grid Gaussian deformable-mirror graph node |    9      9  3.8s
+Test Summary:                               | Pass  Total  Time
+finite multilayer-atmosphere OPD graph node |    9      9  3.0s
+Test Summary:                             | Pass  Total  Time
+additive pupil-OPD composition graph node |    4      4  0.7s
+Test Summary:                                     | Pass  Total  Time
+diffractive Shack-Hartmann photon-rate graph node |    8      8  3.3s
+Test Summary:                              | Pass  Total  Time
+diffractive Pyramid photon-rate graph node |    8      8  6.6s
+Test Summary:                                  | Pass  Total   Time
+fractional Pyramid pupil shifts in graph files |    9      9  13.4s
+Test Summary:                                   | Pass  Total  Time
+single-read CCD detector-acquisition graph node |   12     12  5.2s
+Test Summary:                                       | Pass  Total  Time
+global-shutter CMOS detector-acquisition graph node |   10     10  3.3s
+Test Summary:                                        | Pass  Total  Time
+complete-frame EMCCD detector-acquisition graph node |   11     11  5.1s
+
+exit_code=running
+Test Summary:                                        | Pass  Total  Time
+YAML graph files compile to native graph definitions |   30     30  3.6s
+Test Summary:                                 | Pass  Total  Time
+YAML graph binds a measured deformable mirror |    3      3  1.1s
+Test Summary:                        | Pass  Total   Time
+fully declared HIL reference systems |   76     76  13.7s
+Test Summary:                                     | Pass  Total  Time
+portable algorithm graph rejects invalid topology |    9      9  0.9s
+
+exit_code=running
+Test Summary:                | Pass  Total  Time
+fixed-step model-time driver |   21     21  0.1s
+Test Summary:                       | Pass  Total  Time
+prepared-boundary model-time driver |   13     13  0.1s
+Test Summary:                         | Pass  Total  Time
+periodic prepared-boundary model time |    7      7  0.6s
+Test Summary:              | Pass  Total  Time
+captured model-time replay |   13     13  0.2s
+Test Summary:                              | Pass  Total  Time
+model-time graph stepping commits together |   10     10  0.1s
+Test Summary:                         | Pass  Total  Time
+graph calibration held-probe boundary |   55     55  0.5s
+Test Summary:                          | Pass  Total  Time
+graph calibration model-time exposures |   24     24  0.2s
+Test Summary:                                                   | Pass  Total  Time
+HIL boundary rejects shared Array storage before initialization |   56     56  0.0s
+Test Summary:                             | Pass  Total  Time
+graph calibration ownership and fail-stop |   34     34  0.6s
+Test Summary:                             | Pass  Total  Time
+graph HIL complete multi-command response |   39     39  1.4s
+Test Summary:                                 | Pass  Total  Time
+graph HIL multi-command preparation contracts |   16     16  0.9s
+Test Summary:                             | Pass  Total  Time
+graph HIL multi-command storage ownership |   28     28  0.1s
+Test Summary:                                                   | Pass  Total  Time
+graph HIL multi-command pending frames and partial copy failure |   17     17  0.2s
+Test Summary:                                                     | Pass  Total  Time
+HIL single-command and calibration buffers retain complete shapes |   68     68  0.1s
+Test Summary:                                           | Pass  Total  Time
+HIL multi-command shape checks complete before mutation |   68     68  0.1s
+┌ Info: Running test suite
+└   suite = "second-order-response"
+Test Summary:                          | Pass  Total  Time
+exact held-input second-order response |  710    710  5.1s
+Test Summary:                                      | Pass  Total  Time
+second-order response validation and graph adapter |   33     33  1.9s
+┌ Info: Running test suite
+└   suite = "core-optics"
+Test Summary:        | Pass  Total  Time
+GPU backend registry |   11     11  0.0s
+Test Summary:             | Pass  Total  Time
+CPU FFT provider dispatch |   20     20  1.4s
+Test Summary:       | Pass  Total  Time
+API export curation |  810    810  0.1s
+Test Summary:                                | Pass  Total  Time
+Optical radiometry and combination contracts |  229    229  6.7s
+
+exit_code=1
+Test Summary:                | Pass  Total  Time
+Telescope and direct imaging |  102    102  7.9s
+Test Summary:                         | Pass  Total  Time
+Direct-imaging exact target ownership |   13     13  4.0s
+Test Summary:                          | Pass  Total  Time
+Explicit optical products and surfaces |   11     11  3.7s
+Test Summary:                          | Pass  Total  Time
+Optical-plane compatibility validation |   13     13  0.8s
+Test Summary:  | Pass  Total  Time
+Aperture masks |   14     14  1.3s
+Test Summary:              | Pass  Total  Time
+Public angle-unit keywords |    6      6  0.1s
+Test Summary: | Pass  Total  Time
+Zernike basis |    5      5  0.2s
+Test Summary:                       | Pass  Total  Time
+Deformable-mirror surface formation |    7      7  1.2s
+Test Summary:                                      | Pass  Total  Time
+Independent controllable optics compose additively |    5      5  1.0s
+Test Summary:                        | Pass  Total  Time
+Modal controllable-optic descriptors |   14     14  0.8s
+
+Reviewed supported API allowlists: Test Failed at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371
+  Expression: Set(exported) == Set(filter((name->begin
+                    #= /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371 =#
+                    name !== nameof(mod) && Base.isexported(mod, name)
+                end), names(mod; all = true)))
+   Evaluated: Set([:mechanical_coupling, :propagation_output, :reset_opd!, :surface_opd, :microlens_array, :fill_electric_field!, :DMAdditive, :PhotonRateNormalization, :SpectralBundle, :pupil_reflectivity  …  :InterSampleCentered, :ElectricField, :filter!, :apply_spiders!, :fraunhofer_intensity_from_field!, :pupil_amplitude, :pupil_mask, :AnnularAperture, :BiOEdgeAmplitudeMask, :intensity_values]) == Set([:mechanical_coupling, :propagation_output, :reset_opd!, :surface_opd, :microlens_array, :fill_electric_field!, :DMAdditive, :PhotonRateNormalization, :SpectralBundle, :pupil_reflectivity  …  :InterSampleCentered, :ElectricField, :filter!, :apply_spiders!, :fraunhofer_intensity_from_field!, :pupil_amplitude, :pupil_mask, :AnnularAperture, :BiOEdgeAmplitudeMask, :intensity_values])
+  Stacktrace:
+   [1] top-level scope
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:361
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+Reviewed supported API allowlists: Test Failed at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:374
+  Expression: Set(qualified) == Set(filter((name->begin
+                    #= /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:374 =#
+                    Base.ispublic(mod, name) && !(Base.isexported(mod, name))
+                end), names(mod; all = true)))
+   Evaluated: Set([:prepare_spectral_synthesis, :AbstractPropagationModel, :SpatialFilterPlan, :direct_imaging_batch_capability, :PreparedDirectImaging, :PreparedSpatialFilter, :MicrolensPropagationPlan, :microlens_propagation_plan, :PreparedIncoherentDirectImaging, :FraunhoferPropagationPlan  …  :AbstractPropagationPlan, :spatial_filter_output, :SpectralSynthesisWorkspace, :PreparedSpectralSynthesis, :spatial_filter_plan, :synthesize_spectrum!, :propagation_input_metadata, :SpectralSynthesisPlan, :AbstractSource, :AbstractTelescopeDefinition]) == Set([:SpatialFilterPlan, :PreparedDirectImaging, :PreparedSpatialFilter, :microlens_propagation_plan, :PreparedIncoherentDirectImaging, :FraunhoferPropagationPlan, :validate_telescope_target, :AbstractTelescope, :propagation_plan, :direct_imaging_plan  …  :propagation_output_metadata, :prepare_telescope, :PreparedDirectImagingBatch, :SpectralSynthesisProducts, :direct_imaging_batch_sources, :StackedFraunhoferDirectImagingBatchCapability, :PreparedMicrolensPropagation, :SpectralSynthesisWorkspace, :synthesize_spectrum!, :AbstractTelescopeDefinition])
+  Stacktrace:
+   [1] top-level scope
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:361
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:374 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+Reviewed supported API allowlists: Test Failed at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371
+  Expression: Set(exported) == Set(filter((name->begin
+                    #= /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371 =#
+                    name !== nameof(mod) && Base.isexported(mod, name)
+                end), names(mod; all = true)))
+   Evaluated: Set([:modal_opd_expansion_node, :next_model_time_capture, :step_graph!, :GraphStepTicket, :graph_output, :FixedStepModelTimeDriver, :model_time_sequence, :pyramid_rate_node, :step_hil_exposure_at!, :schedule_timestamp  …  :emccd_detector_acquisition_node, :schedule_phase, :step_hil_frame!, :graph_step_pending, :advance_model_time!, :model_duration_seconds, :pupil_opd_composition_node, :algorithm_node, :step_graph_at!, :gaussian_deformable_mirror_surface_node]) == Set([:modal_opd_expansion_node, :next_model_time_capture, :step_graph!, :GraphStepTicket, :graph_output, :FixedStepModelTimeDriver, :model_time_sequence, :pyramid_rate_node, :step_hil_exposure_at!, :second_order_response_node  …  :emccd_detector_acquisition_node, :schedule_phase, :step_hil_frame!, :graph_step_pending, :advance_model_time!, :model_duration_seconds, :pupil_opd_composition_node, :algorithm_node, :step_graph_at!, :gaussian_deformable_mirror_surface_node])
+  Stacktrace:
+   [1] top-level scope
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:361
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:371 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+Test Summary:                     | Pass  Fail  Total  Time
+Reviewed supported API allowlists |   42     3     45  5.0s
+RNG of the outermost testset: Xoshiro(0x0502d8bc4bccac35, 0x338d12a4f46befc2, 0xd9b067205bf87d8e, 0x46939fa6a5eaaa82, 0xce2571db7e5598cf)
+ERROR: LoadError: Some tests did not pass: 42 passed, 3 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/reviewed_supported_api.jl:360
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/testsets/core_optics.jl:1865
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/aos-stage-response-20261026/test/runtests.jl:4
+
+exit_code=0
+┌ Info: Running test suite
+└   suite = "second-order-response"
+Test Summary:                          | Pass  Total  Time
+exact held-input second-order response |  722    722  8.4s
+Test Summary:                                      | Pass  Total  Time
+second-order response validation and graph adapter |   33     33  4.1s
+
+exit_code=running
+
+exit_code=0
+Test Summary:                                | Pass  Total   Time
+CUDA second-order response capture and reset |  822    822  22.9s
+
+exit_code=0
+Test Summary:                     | Pass  Total  Time
+Reviewed supported API allowlists |   45     45  3.5s
+
