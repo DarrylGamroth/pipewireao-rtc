@@ -52,6 +52,17 @@ function _require_pupil_geometry(description::NamedTuple, registration::NamedTup
     return nothing
 end
 
+"Resolve an optional circular clear aperture in the registered pupil coordinates."
+function clear_aperture(description::NamedTuple, registration::NamedTuple)
+    hasproperty(description,:clear_aperture_diameter_m) || return NamedTuple()
+    pitch = _pupil_registration(registration).actuator_pitch_pupil_radius
+    radius = (Float64(description.clear_aperture_diameter_m) /
+        Float64(description.actuator_pitch_m)) * (pitch / 2)
+    aperture = (;radius)
+    InstrumentDefinition.validate_clear_aperture(json_value(aperture))
+    return (;clear_aperture=aperture)
+end
+
 "Build a command-indexed source-grid map from a physical-order mirror description."
 function actuator_index_map(description::NamedTuple)
     columns, rows = description.layout.grid_shape

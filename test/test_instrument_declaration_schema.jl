@@ -342,6 +342,41 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
     end
 
+    @testset "mirror clear aperture follows physical and published identity" begin
+        mktempdir() do directory
+            documents = declaration_documents(directory)
+            original = IC.publication(documents.paths.rtc)
+            original_scientific = IC.scientific_definition(documents.paths.simulation)
+            @test !hasproperty(original.deformable_mirrors.primary,:clear_aperture)
+            mirror_path = joinpath(directory,"mirror.json")
+            description = JSON.parsefile(mirror_path)
+            description["actuator_pitch_m"] = 0.0015
+            description["clear_aperture_diameter_m"] = 0.0245
+            write(mirror_path,JSON.json(description))
+            physical = IC.physical_definition(IC.load(documents.paths.physical))
+            scientific = IC.scientific_definition(documents.paths.simulation)
+            publication = IC.publication(documents.paths.rtc)
+            @test physical.deformable_mirrors.primary.clear_aperture ==
+                scientific.deformable_mirrors.primary.clear_aperture ==
+                publication.deformable_mirrors.primary.clear_aperture
+            @test publication.deformable_mirrors.primary.clear_aperture.radius ≈ 0.0245 / 0.0015 / 2 * 0.2
+            @test !hasproperty(publication.deformable_mirrors.primary,:pupil)
+            @test publication.deformable_mirrors.primary.pupil_coordinates == original.deformable_mirrors.primary.pupil_coordinates
+            @test publication.deformable_mirrors.primary.layout == original.deformable_mirrors.primary.layout
+            @test publication.deformable_mirrors.primary.shape_control == original.deformable_mirrors.primary.shape_control
+            @test publication.scientific_identity != original.scientific_identity
+            @test scientific.prescription_identity != original_scientific.prescription_identity
+            target = IC.prepare_publication(directory)
+            @test JSON.parsefile(target)["deformable_mirrors"]["primary"]["clear_aperture"]["radius"] ==
+                publication.deformable_mirrors.primary.clear_aperture.radius
+            for diameter in (1e100,1e-100)
+                description["clear_aperture_diameter_m"] = diameter
+                write(mirror_path,JSON.json(description))
+                @test_throws ArgumentError IC.publication(documents.paths.rtc)
+            end
+        end
+    end
+
     @testset "sampled artifact publication preserves scientific values and identity" begin
         mktempdir() do directory
             documents = declaration_documents(directory)

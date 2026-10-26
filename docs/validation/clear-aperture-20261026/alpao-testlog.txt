@@ -1,0 +1,42 @@
+Log of Meson test suite run on 2026-10-26T01:31:32.918702
+
+
+==================================== 1/4 =====================================
+test:         spa-image-frame
+start time:   08:31:32
+duration:     0.07s
+result:       exit status 0
+command:      MALLOC_PERTURB_=240 UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MESON_TEST_ITERATION=1 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 /tmp/pipewireao-alpao-aperture-build-20261026/spa-image-frame-test
+==============================================================================
+
+==================================== 2/4 =====================================
+test:         spa-alpao-fgn-command-normalization
+start time:   08:31:32
+duration:     0.04s
+result:       exit status 0
+command:      UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 LD_LIBRARY_PATH=/tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MESON_TEST_ITERATION=1 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 MALLOC_PERTURB_=211 /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/spa-alpao-fgn-test /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/libalpao-fgn.so
+==============================================================================
+
+==================================== 3/4 =====================================
+test:         spa-alpao-factory
+start time:   08:31:32
+duration:     0.03s
+result:       exit status 0
+command:      UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 LD_LIBRARY_PATH=/tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MESON_TEST_ITERATION=1 MALLOC_PERTURB_=208 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/spa-alpao-test /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/libspa-alpao.so factory
+==============================================================================
+
+==================================== 4/4 =====================================
+test:         spa-alpao-mock
+start time:   08:31:32
+duration:     0.05s
+result:       exit status 0
+command:      UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 LD_LIBRARY_PATH=/tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao MSAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1 MESON_TEST_ITERATION=1 MALLOC_PERTURB_=53 ASAN_OPTIONS=halt_on_error=1:abort_on_error=1:print_summary=1 /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/spa-alpao-test /tmp/pipewireao-alpao-aperture-build-20261026/spa/plugins/alpao/libspa-alpao-mock.so mock /home/dgamroth/workspaces/codex/pipewire/pipewireao-spa-plugin-alpao-aperture/data/mirror-descriptions/revolt-hsdm277.json
+==============================================================================
+
+
+Ok:                 4
+Expected Fail:      0
+Fail:               0
+Unexpected Pass:    0
+Skipped:            0
+Timeout:            0

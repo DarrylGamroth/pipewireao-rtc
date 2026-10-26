@@ -22,6 +22,7 @@ const DEFINITION = (;
         )),
         pupil_coordinates=((-0.75, 0.0), (0.0, 0.0), (0.75, 0.0)),
         pupil=(;outer_radius=1.0,inner_radius=0.25),
+        clear_aperture=(;radius=1.2),
     )),
     wavefront_sensors=(; wfs=(; layout=(; detector_shape=(2, 3),
         subaperture_shape=(2, 3), subaperture_origins=((0, 0),)))),
@@ -231,6 +232,8 @@ end
             d -> (d["deformable_mirrors"]["dm"]["pupil"]["outer_radius"] = 1.5),
             d -> (d["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.0),
             d -> delete!(d["deformable_mirrors"]["dm"],"pupil"),
+            d -> (d["deformable_mirrors"]["dm"]["clear_aperture"]["radius"] = 1.3),
+            d -> delete!(d["deformable_mirrors"]["dm"],"clear_aperture"),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] = [1, 0]),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "pipewireao/detector-frame-f32/1"),
             d -> (d["deformable_mirrors"]["extra"] = deepcopy(d["deformable_mirrors"]["dm"])),
@@ -249,6 +252,7 @@ end
     legacy = deepcopy(document)
     delete!(legacy["deformable_mirrors"]["dm"],"pupil")
     @test Instrument.validate(legacy) === legacy
+    delete!(legacy["deformable_mirrors"]["dm"],"clear_aperture")
     delete!(legacy["deformable_mirrors"]["dm"],"pupil_coordinates")
     @test Instrument.validate(legacy) === legacy
     for pupil in (
@@ -278,6 +282,29 @@ end
     unobstructed = deepcopy(document)
     unobstructed["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.0
     @test Instrument.validate(unobstructed) === unobstructed
+end
+
+@testset "optional mirror clear aperture is distinct from the optical pupil" begin
+    document = operational_instrument()
+    @test Instrument.validate(document) === document
+    mirror = document["deformable_mirrors"]["dm"]
+    # A clear aperture can be described with no optical pupil, and no radius ordering is inferred.
+    delete!(mirror,"pupil")
+    mirror["clear_aperture"]["radius"] = 0.5
+    @test Instrument.validate(document) === document
+    for aperture in (nothing, [], Dict(), Dict("diameter"=>2.0),
+            Dict("radius"=>1.0,"center"=>[0,0]),
+            (Dict("radius"=>radius) for radius in
+                (true,false,0.0,-1.0,Inf,NaN,1e100,1e-100,Float64(floatmax(Float32))/4))...)
+        invalid = deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["clear_aperture"] = aperture
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    invalid = deepcopy(document)
+    delete!(invalid["deformable_mirrors"]["dm"],"pupil_coordinates")
+    @test_throws ArgumentError Instrument.validate(invalid)
+    delete!(mirror,"clear_aperture")
+    @test Instrument.validate(document) === document
 end
 
 @testset "legacy scientific telescope supplies the published optical pupil" begin
@@ -471,7 +498,7 @@ end
         options=(;instrument=instrument_path,mirror_description=mirror_path,command_count=3)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
         @test isempty(Instrument.mirror_properties((;mirror_description=nothing)))
-        mechanical=merge(description,Dict("actuator_pitch_m"=>0.0015))
+        mechanical=merge(description,Dict("actuator_pitch_m"=>0.0015,"clear_aperture_diameter_m"=>0.0245))
         mechanical_json="\n"*JSON.json(mechanical)*"\n"
         write(mirror_path,mechanical_json)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>mechanical_json)

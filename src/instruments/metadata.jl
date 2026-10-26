@@ -151,6 +151,7 @@ function physical_definition(declaration)
         spec = document["deformable_mirrors"][name]
         pupil = haskey(spec,"pupil") ? (;pupil=_instrument_seal(spec["pupil"])) : NamedTuple()
         return (;layout=description.layout,pupil_registration=registration,pupil...,
+            clear_aperture(description,registration)...,
             pupil_coordinates=Tuple(Tuple(column) for column in eachcol(coordinates)))
     end
     sensor_keys = sort!(collect(keys(document["wavefront_sensors"])))
@@ -216,6 +217,7 @@ function publication(path)
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
                 pupil...,
+                (hasproperty(dm,:clear_aperture) ? (;clear_aperture=dm.clear_aperture) : NamedTuple())...,
                 limiter=(;kind=control["limiter"]["kind"],
                     lower=limit_values(control["limiter"]["lower"],n),upper=limit_values(control["limiter"]["upper"],n)),
                 shape_control)

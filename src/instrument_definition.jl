@@ -103,6 +103,11 @@ function validate(document)
                 throw(ArgumentError("instrument optical pupil requires registered pupil coordinates"))
             validate_pupil(mirror["pupil"])
         end
+        if haskey(mirror,"clear_aperture")
+            haskey(mirror,"pupil_coordinates") ||
+                throw(ArgumentError("mirror clear aperture requires registered pupil coordinates"))
+            validate_clear_aperture(mirror["clear_aperture"])
+        end
         units = get(mirror,"units",nothing)
         nonempty_text(units) || throw(ArgumentError("instrument mirror requires command units"))
         validate_shape_control(get(mirror,"shape_control",nothing),units,length(positions))
@@ -133,6 +138,15 @@ function validate_pupil(pupil)
     renderable_pupil_value(outer) && renderable_pupil_value(inner) && 0 <= inner < outer &&
         0 <= Float32(inner) < Float32(outer) ||
         throw(ArgumentError("optical pupil radii must be finite, nonnegative, ordered and distinct in Float32, with a positive outer radius"))
+    return nothing
+end
+
+"Validate a centered circular mirror clear aperture in registered pupil coordinates."
+function validate_clear_aperture(aperture)
+    exact_fields(aperture,("radius",),"mirror clear aperture")
+    radius = aperture["radius"]
+    renderable_pupil_value(radius) && radius > 0 ||
+        throw(ArgumentError("mirror clear aperture radius must be positive and renderable in Float32"))
     return nothing
 end
 
@@ -317,7 +331,7 @@ function validate_mirror_description(description; command_count=nothing)
     object_value(description) || throw(ArgumentError("mirror description requires a JSON object"))
     bounded(description)
     required = Set(("schema_version", "id", "manufacturer", "model", "layout"))
-    optional = Set(("actuator_pitch_m",))
+    optional = Set(("actuator_pitch_m", "clear_aperture_diameter_m"))
     required ⊆ Set(keys(description)) ⊆ union(required, optional) &&
         description["schema_version"] === 1 ||
         throw(ArgumentError("expected mirror description schema version 1"))
@@ -328,6 +342,13 @@ function validate_mirror_description(description; command_count=nothing)
         pitch = description["actuator_pitch_m"]
         positive_scale(pitch) && positive_scale(Float64(pitch)) ||
             throw(ArgumentError("actuator_pitch_m must be finite and positive in metres"))
+    end
+    if haskey(description, "clear_aperture_diameter_m")
+        haskey(description, "actuator_pitch_m") ||
+            throw(ArgumentError("clear_aperture_diameter_m requires actuator_pitch_m"))
+        diameter = description["clear_aperture_diameter_m"]
+        positive_scale(diameter) && positive_scale(Float64(diameter)) ||
+            throw(ArgumentError("clear_aperture_diameter_m must be finite and positive in metres"))
     end
     layout = description["layout"]
     object_value(layout) || throw(ArgumentError("mirror description requires a layout object"))
@@ -434,6 +455,8 @@ function verify_plant(options,plant_module)
         mirror["shape_control"]==get(original,"shape_control",nothing) ||
             throw(ArgumentError("instrument DM basis declaration differs"))
         get(mirror,"pupil_coordinates",nothing)==get(original,"pupil_coordinates",nothing) || throw(ArgumentError("instrument pupil coordinates differ"))
+        get(mirror,"clear_aperture",nothing)==get(original,"clear_aperture",nothing) ||
+            throw(ArgumentError("instrument mirror clear aperture differs"))
         telescope = get(source,"telescope",Dict())
         pupil = haskey(original,"pupil") ? original["pupil"] :
             haskey(telescope,"central_obstruction_ratio") ?
