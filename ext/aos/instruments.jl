@@ -1,22 +1,59 @@
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
+function configuration_binding_names(document, factories)
+    names = Symbol[]
+    for entry in document["nodes"]
+        factory = getproperty(factories, Symbol(entry["type"]))
+        config = AlgorithmGraphs.graph_node_configuration(factory,
+            Instruments._instrument_seal(entry["config"]),
+            Instruments._instrument_seal(get(entry, "bindings", Dict())))
+        append!(names, AlgorithmGraphs.graph_node_bindings(factory, config))
+    end
+    return unique!(names)
+end
+
+function prepare_bindings(declaration, configured, names;
+        target=Backends.HostComputeDevice(), target_names=())
+    specs = declaration.document["bindings"]
+    all(name -> haskey(specs, string(name)), names) ||
+        throw(ArgumentError("instrument graph names an undeclared array binding"))
+    retained = Ref(0)
+    arrays = Tuple(map(names) do name
+        source = Instruments.binding_values(declaration, configured, specs[string(name)])
+        bytes = Base.checked_mul(sizeof(eltype(source)), length(source))
+        bytes <= Owner.MAX_RETAINED_BYTES - retained[] ||
+            throw(ArgumentError("instrument bindings exceed 512 MiB"))
+        retained[] += bytes
+        name in target_names ? copy_to_target(target, source) : source
+    end)
+    return NamedTuple{Tuple(names)}(arrays)
+end
+
 function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractString;
         settings=Dict())
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
     document = Instruments.graph_document(declaration, configured)
-    # Public AOS factories return cold typed declarations. They do not prepare
-    # numerical state or require any input/parameter artifact arrays.
+    # Only construction bindings are needed for cold typed declarations.
+    # Frame inputs, parameters and unselected profiles remain unopened.
     factories = configured_graph_node_types()
+    names = configuration_binding_names(document, factories)
+    bindings = prepare_bindings(declaration, configured, names)
     nodes = Tuple(map(document["nodes"]) do entry
         factory = getproperty(factories, Symbol(entry["type"]))
         name = Symbol(entry["name"])
-        config = Instruments._instrument_seal(entry["config"])
+        config = AlgorithmGraphs.graph_node_configuration(factory,
+            Instruments._instrument_seal(entry["config"]),
+            Instruments._instrument_seal(get(entry, "bindings", Dict())))
         props = Instruments._instrument_seal(get(entry, "props", Dict()))
         keywords = haskey(entry, "detector") ? (; detector=Symbol(entry["detector"])) : (;)
-        isempty(keywords) && !applicable(factory, name, config, props) &&
-            throw(ArgumentError("RTC cold port contracts do not support graph nodes requiring configuration array bindings: $name"))
-        factory(name, config, props; keywords...)
+        if !isempty(keywords)
+            factory(name, config, props; keywords...)
+        elseif applicable(factory, name, config, props, bindings)
+            factory(name, config, props, bindings)
+        else
+            factory(name, config, props)
+        end
     end)
     atmosphere = any(entry -> entry["name"] == "atmosphere_opd", get(document, "outputs", []))
     imaging = OpticalObservation.imaging_configuration(declaration)
@@ -29,24 +66,17 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration,settings)
     document = Instruments.graph_document(declaration,configured;calibration)
-    names = String[]
+    factories = configured_graph_node_types()
+    runtime_names = Symbol[]
     for (section,field) in (("inputs","binding"),("parameters","binding"),("delayed_links","initial"))
         for entry in get(document,section,[])
-            push!(names,entry[field])
+            push!(runtime_names, Symbol(entry[field]))
         end
     end
-    unique!(names)
-    specs = declaration.document["bindings"]
-    all(name->haskey(specs,name),names) || throw(ArgumentError("instrument graph names an undeclared array binding"))
-    retained = Ref(0)
-    arrays = Tuple(map(names) do name
-        source = Instruments.binding_values(declaration,configured,specs[name])
-        retained[] += sizeof(eltype(source))*length(source)
-        retained[] <= Owner.MAX_RETAINED_BYTES || throw(ArgumentError("instrument bindings exceed 512 MiB"))
-        copy_to_target(target,source)
-    end)
-    bindings = NamedTuple{Tuple(Symbol.(names))}(arrays)
-    definition = load_algorithm_graph(document;bindings,node_types=configured_graph_node_types())
+    unique!(runtime_names)
+    names = unique(vcat(runtime_names, configuration_binding_names(document, factories)))
+    bindings = prepare_bindings(declaration, configured, names; target, target_names=runtime_names)
+    definition = load_algorithm_graph(document;bindings,node_types=factories)
     for node in definition.nodes
         validate_sample_period(node.config, declaration.document["frame_period_s"])
     end

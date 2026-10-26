@@ -22,6 +22,17 @@ now derives from the simulation period. Cold export/default comparisons and CPU
 observer tests pass; see the [source-validation record](validation/yaml-science-20261026/README.md).
 Live applications and hardware qualification are unchanged.
 
+Explicit node-construction array `bindings` now participate in cold source
+metadata and calibration identity without importing scientific packages. The
+AOS/HIL extension materializes only selected construction arrays for cold port
+contracts and the runtime union for graph preparation, retaining host ownership
+for configuration-only arrays and the existing aggregate memory bound.
+Pixel-MTF FITS calibration is covered by the focused cold-metadata and CPU HIL
+selectors; the [source-validation record](validation/yaml-science-20261026/README.md#node-construction-calibration-bindings)
+records numerical comparison, rejection, snapshot and reset evidence. Installed
+applications, calibration stores, GUI, GPU and release qualification are outside
+this increment.
+
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
 The latest registered refresh is live with AOS 0.3.0, HIL 0.2.5, RTC 0.2.10

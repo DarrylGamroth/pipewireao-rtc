@@ -7,6 +7,9 @@ shared Pyramid/EMCCD declarations, explicit same-direction science photometry,
 exact guide-source fallback, and model-derived GPI2 chart time. Cold export and
 CPU observer checks preserve scientific defaults; no live, GPU, hardware or
 release qualification is claimed.
+The follow-on [node-construction calibration checks](validation/yaml-science-20261026/README.md#node-construction-calibration-bindings)
+cover explicit source metadata, selected FITS loading, native pixel-MTF numerical
+agreement and CPU HIL snapshot/reset behavior.
 
 ## Registered GPI2 package refresh and schema integration — 2026-10-26
 

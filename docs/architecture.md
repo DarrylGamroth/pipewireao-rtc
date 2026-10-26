@@ -1061,6 +1061,19 @@ factories; AOS does not parse RTC files. Initial zero bindings and simulator
 boundary dimensions use the same context. Selected settings still take precedence
 over node defaults. Generated simulator configuration carries a source notice.
 
+A node's optional `bindings` object maps construction roles to declared array
+binding names, for example `bindings: {transfer: detector_mtf}` on a `pixel_mtf`
+node. These roles are separate from `config` and cannot duplicate its fields.
+The source metadata reader includes these explicit arrays in the selected
+prescription identity without requiring AOS or guessing which config strings
+name arrays. The scientific compiler checks the declarations against each
+factory's `graph_node_bindings` contract. Cold simulator port inspection reads
+only required construction arrays through the existing bounded FITS preparation;
+runtime preparation loads their union with frame inputs, parameters and delayed
+initial values. Construction-only arrays stay on the host until the scientific
+owner prepares its calibration snapshot. Unselected calibration files need not
+exist; selected files retain canonical path, shape, axes and value validation.
+
 Instrument source keeps its controller graph, parameter bindings, session and
 queue fragments under `rtc/`, optional analysis under `analysis/`, GUI views
 under `gui/`, and calibration recipe/inputs/artifacts/records under `calibration/`.

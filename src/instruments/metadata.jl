@@ -9,6 +9,9 @@ function selected_binding_names(declaration,configured)
     names = Set{String}()
     for calibration in (false,true)
         graph = graph_document(declaration,configured;calibration)
+        for entry in graph["nodes"]
+            union!(names, values(node_configuration_bindings(entry, declaration.document["bindings"])))
+        end
         for (section,field) in (("inputs","binding"),("parameters","binding"),("delayed_links","initial"))
             for entry in get(graph,section,[])
                 push!(names,entry[field])

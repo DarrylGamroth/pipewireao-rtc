@@ -26,13 +26,11 @@ authority. Callers can declare a distinct science source when its photometry is
 specified.
 No long-exposure accumulation or Strehl estimate is added.
 
-AOS standalone YAML admits pixel-MTF calibration-array bindings. RTC instrument
-preparation currently materializes declared graph inputs, parameters and delayed
-initial values, not arrays referenced only by node construction config. Its cold
-contract path explicitly rejects factories requiring configuration array bindings
-without reading calibration arrays or guessing shapes. No current Classic/GPI2
-node requires this boundary; standalone AOS support does not imply RTC MTF
-integration.
+At the initial source-validation revision, RTC instrument preparation supported
+graph inputs, parameters and delayed initial values while rejecting factories
+requiring construction calibration arrays. The follow-on
+[node-construction checks](#node-construction-calibration-bindings) below replace
+that limitation with explicit binding declarations and selected FITS loading.
 
 GPI2's wavefront-RMS `sample_period_seconds` now references
 `/simulation/frame_period_s` (0.0005 s). The generic GUI computes elapsed model
@@ -103,9 +101,9 @@ julia --project=/path/to/revised-rtc compare_defaults.jl compare /path/to/revise
 - Instrument cold tests: 23 checks pass. They vary the guide wavelength once and observe it in the
   WFS and camera for both graph modes, retain independent science photometry,
   and verify a changed model period updates the exported time axis.
-- Optional instrument contracts: 13 checks pass. They verify both short detector selectors and
+- Initial optional instrument contracts: 13 checks passed. They verified both short detector selectors and
   explicit science source/padding through the actual cold exporter, plus explicit
-  rejection of factories needing configuration calibration arrays.
+  rejection of factories needing configuration calibration arrays at that revision.
 
 Initial environment setup exposed an absent formatting-environment lock and a
 publication helper's optional JFG dependency. Reusing the existing formatting
@@ -125,3 +123,91 @@ passes the maintained formatter.
 
 This work does not install, launch, command or stop a session. It makes no
 live/GPU, hardware, latency, deadline, stability or release qualification claim.
+
+## Node-construction calibration bindings
+
+Follow-on work starts from RTC `21fcedf82ae1dd135efcdd8079db25a103f1fd0b`
+on `codex/rtc-calibration-bindings-20261026`, with a clean dedicated worktree.
+It uses AOS source `17ceeb38` (based on `151a53f1`), adding the public scientific
+factory contracts `graph_node_bindings` and `graph_node_configuration`.
+These changes require the paired RTC/AOS source revisions. Registered AOS
+0.3.0/0.3.1 and RTC 0.2.10 are not claimed to provide this new contract; a future
+publication must establish matching released dependency bounds.
+
+Nodes declare construction arrays independently of ordinary configuration:
+
+```yaml
+name: response
+type: pixel_mtf
+bindings:
+  transfer: calibrated_transfer
+config:
+  input_shape: [8, 10]
+  padding: 2
+  input_schema: test.padded-rate/1
+  output_schema: test.filtered-rate/1
+```
+
+The existing simulation `bindings.calibrated_transfer` supplies its FITS path,
+HDU, logical shape, element type and axis permutation. Explicit node binding
+roles cannot duplicate config keys or name undeclared arrays. Core metadata
+includes construction calibration in selected artifact paths and prescription
+hashes without loading AOS. AOS checks roles against the selected factory trait;
+the native constructor validates and snapshots the loaded values. No alternate
+array or pixel-MTF execution implementation is added to RTC.
+
+The cold port-contract path loads only construction arrays. Runtime preparation
+loads the deduplicated union with input, parameter and delayed-initial bindings;
+only runtime bindings are copied to the target device. Existing 256 MiB decoded
+artifact and 512 MiB aggregate binding limits remain. Declaration validation
+checks path syntax without requiring files for unselected profiles. Selected
+loads retain the existing canonical path/file and FITS validation.
+
+The focused CPU HIL graph contains modal OPD expansion, a Shack-Hartmann sensor,
+rectangular detector layout, pixel MTF and the ordinary short `detector: ingaas`
+factory. A real FITS image stores a nontrivial 12 × 14 transfer transposed; the
+explicit `[2, 1]` axes restore its logical orientation. The prepared filter is
+compared with native `Detectors.prepare_pixel_mtf`/`apply_pixel_mtf!`; detector
+output is compared with its explicit noiseless exposure/QE/gain scale. File and
+caller-array mutation leave prepared snapshots unchanged, and reset reproduces
+the original frame. Invalid bindings, absent files, unsupported type, wrong
+shape/axes, NaN and nonunit DC reject before stepping. Missing unselected-profile
+FITS and missing runtime-only FITS do not prevent cold port inspection.
+
+Reproduce with Julia 1.13.2 and the compatible CPU scientific environment used
+above, overriding RTC and AOS paths with the reviewed worktrees:
+
+```sh
+julia --project=/path/to/science test/test_instrument_configuration_bindings.jl
+julia --project=/path/to/science test/test_aos_configuration_bindings.jl
+julia --project=/path/to/science test/test_session_configuration_integration.jl
+```
+
+`test_instrument_configuration_bindings.jl` verifies explicit mapping validation,
+path boundaries and construction artifact selection with no scientific/GPU
+modules loaded. A second independent test factory checks generic construction
+binding discovery and deduplication. Identifier changes reuse existing source
+`bindings`, factory configuration and scientific calibration vocabulary; no
+terminology authority, compatibility alias or scientific quantity is added.
+This source-only increment makes no live, GPU, deadline, hardware or release
+qualification claim.
+
+The final focused calibration selector passes 36 assertions and the cold core
+selectors pass 458: construction metadata 17, declaration schema 78, physical
+Pyramid/legacy Shack-Hartmann metadata 73, reusable components 110 and cold
+exporter 180. The core checks load no scientific or GPU modules. A temporary
+test-environment edit initially added `Test` as a direct dependency without a
+matching manifest entry, causing Julia precompilation to fail before the
+scientific checks. Removing that unnecessary entry restored clean focused
+calibration results.
+The existing CPU session-contract/optical-observation integration selector also
+passes all 68 assertions, preserving ordinary SH/Pyramid declarations and the
+other cold factory paths. These 562 passing assertions are functional and
+numerical software evidence, without live transport or GPU execution.
+
+The same positive graph on RTC baseline `21fcedf` rejects cold inspection with
+`configuration array bindings: response` and runtime preparation with
+`no external binding named 'calibrated_transfer' was supplied`. The baseline
+check supplies its otherwise-unused FITS file because that revision requires
+all declared files to exist. The revised selector also checks that missing
+unselected/runtime-only files do not force a cold calibration load.

@@ -77,6 +77,9 @@ function validate_simulation(document, instrument, directory, graphs)
     graph_outputs = Dict{String,Set{String}}()
     for mode in ("production", "calibration")
         graph = _declaration_graph(graphs[mode])
+        for entry in graphs[mode]["nodes"]
+            node_configuration_bindings(entry, bindings)
+        end
         graph_nodes[mode] = graph.nodes
         graph_inputs[mode] = graph.inputs
         graph_outputs[mode] = graph.outputs
@@ -315,8 +318,16 @@ function _validate_artifact(value, directory, label)
     return _validate_artifact_values(artifact, directory, label)
 end
 
-function _validate_artifact_values(artifact, directory, label)
-    D.relative_asset(directory, artifact["path"])
+function _validate_artifact_values(artifact, directory, label; check_file=true)
+    path = artifact["path"]
+    InstrumentDefinition.nonempty_text(path) && !occursin('\0', path) && !isabspath(path) ||
+        throw(ArgumentError("$label path must be a relative filename"))
+    relative = normpath(path)
+    relative != ".." && !startswith(relative, ".." * string(Base.Filesystem.path_separator)) ||
+        throw(ArgumentError("$label path escapes the instrument directory"))
+    # Selected bindings repeat canonical path/file checks when materialized.
+    # Other profiles need not have calibration files available on this host.
+    check_file && D.relative_asset(directory, path)
     ispositive_integer(artifact["hdu"]) || throw(ArgumentError("$label hdu must be a positive integer"))
     _validate_positive_shape(artifact["shape"], "$label shape")
     _validate_axes(artifact["axes"], length(artifact["shape"]), "$label axes")
@@ -354,7 +365,7 @@ function _validate_profiles(profiles, bindings, graph_nodes)
         end
         node_names = Set{String}()
         for node_value in _declaration_array(profile["nodes"], "profile $name nodes")
-            node = _declaration_fields(node_value, ("name", "type", "config", "props"),
+            node = _declaration_fields(node_value, ("name", "type", "config", "props", "bindings"),
                 ("name", "type", "config"), "profile $name node")
             node_name = _declaration_text(node["name"], "profile $name node name")
             node_name in node_names && throw(ArgumentError("profile $name repeats node $node_name"))
@@ -362,6 +373,7 @@ function _validate_profiles(profiles, bindings, graph_nodes)
             push!(node_names, node_name)
             _declaration_text(node["type"], "profile $name node type")
             _declaration_object(node["config"], "profile $name node config")
+            node_configuration_bindings(node, bindings)
             haskey(node, "props") && _declaration_object(node["props"], "profile $name node props")
         end
         for parameter_value in _declaration_array(profile["parameters"], "profile $name parameters")
@@ -445,7 +457,7 @@ function _validate_bindings(bindings, mirrors, defaults, settings_schema, profil
         elseif kind == "fits"
             binding = _declaration_fields(binding_value, ("kind", "path", "hdu", "axes", "type", "shape"),
                 ("kind", "path", "hdu", "axes", "type", "shape"), "FITS binding $name")
-            _validate_artifact_values(binding, directory, "FITS binding $name")
+            _validate_artifact_values(binding, directory, "FITS binding $name"; check_file=false)
         else
             throw(ArgumentError("unknown instrument binding kind for $name"))
         end
@@ -555,6 +567,19 @@ function _validate_hil(value, graph_inputs, graph_outputs)
     all(frame_output in graph_outputs[mode] for mode in keys(graph_outputs)) ||
         throw(ArgumentError("HIL frame_output is absent from a declared graph"))
     return nothing
+end
+
+"Validate explicit construction binding roles without loading science packages or arrays."
+function node_configuration_bindings(entry, specs)
+    bindings = _declaration_object(get(entry, "bindings", Dict()), "node bindings")
+    config = _declaration_object(get(entry, "config", Dict()), "node config")
+    for (role, name) in bindings
+        _declaration_identifier(role, "node binding role")
+        _declaration_identifier(name, "node binding name")
+        haskey(config, role) && throw(ArgumentError("node binding role duplicates a config field: $role"))
+        haskey(specs, name) || throw(ArgumentError("node names an undeclared array binding: $name"))
+    end
+    return bindings
 end
 
 _declaration_graph(path::AbstractString) = _declaration_graph(bounded_yaml(path))
