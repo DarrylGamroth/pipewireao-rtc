@@ -225,3 +225,21 @@ loss retain their existing fault policy. Generation equality proves plan
 adoption, not a transition frame or physical response. Live Classic/GPI2,
 scientific calibration and GPU use remain unchanged. No live Hsm, physical,
 deadline, tail-latency or independent-corrector qualification is claimed.
+
+The final source is merged to main and pushed as RTC `28ebd5b` / `v0.2.13`
+(registered package tree `4e348106888c2d6a724270b2df01cef7e9663fc6`) and adapter
+`29428be` / `FilterGraphPipeWire-v0.1.9`. Registry commit `f23faa9` publishes
+the consumer's updated dependency floors. A fresh environment from the updated
+GPI2 pins resolves those exact releases, PipeWireAO 0.6.19 and Hsm 0.3.2 with
+no source overrides. The installed-release combined selector passes the same
+46 assertions. Classic and GPI2 use identical pins; the instrument repository
+remains local. The instrument offline profile selector passes 49 assertions,
+including CPU/CUDA/AMDGPU authoring/export equivalence without loading GPU
+packages; both changed Project files pass standalone Taplo checks.
+The task's two temporary implementation worktrees were removed
+after merging; unrelated worktrees and user edits were preserved.
+
+Read-only service inspection confirms the live GPI2 RTC PID 806596 / invocation
+`da8c3efa93eb4a65b4a21998468d4455`, GUI PID 812043 / invocation
+`67d5f3c4f2b549eb860b2511ad47153f`, and Classic RTC PID 256761 remain unchanged.
+This is source/package integration, not deployment of the new controls.

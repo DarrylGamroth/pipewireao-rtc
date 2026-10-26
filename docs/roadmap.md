@@ -14,7 +14,8 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### RTC correction-loop adoption tracking — 2026-10-26
 
-The operational extension adds native readiness admission and ordinary read-only
+RTC 0.2.13 and FilterGraphPipeWire 0.1.9 are pushed and registered. The
+operational extension adds native readiness admission and ordinary read-only
 state/fault/requested properties for each explicitly bound coupled loop.
 Stopped, pending, faulted, wrong-incarnation or incomplete status refuses the
 whole mixed scalar transaction before effects. Owner-control observations enforce
@@ -24,7 +25,8 @@ startup, hold/resume, gains and reset semantics remain unchanged. See the
 The live applications remain unchanged; independent corrector closure and
 physical-device policies remain deferred.
 
-RTC 0.2.12 uses Hsm 0.3.2 and the FilterGraphPipeWire 0.1.8 property observer
+The preceding RTC 0.2.12 increment uses Hsm 0.3.2 and the
+FilterGraphPipeWire 0.1.8 property observer
 for explicitly declared Boolean correction loops. Cold admission, accepted
 requests and applied snapshots drive owner-local Open/Closing/Closed/Opening
 tracking; inconsistent facts latch Unknown. Native property transactions,
