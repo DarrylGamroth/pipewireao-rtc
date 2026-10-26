@@ -12,10 +12,19 @@ end
     argv = ["--bootstrap-node", "rtc.bootstrap.graph", "--bootstrap-instance=7",
         "--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control",
         "--fits-bindings", "bindings.conf"]
-    binding, graph, fits = GraphOwner.arguments(argv)
+    binding, graph, fits, correction_properties = GraphOwner.arguments(argv)
+    @test isempty(correction_properties)
     @test binding == (; remote="/tmp/rtc-private", bootstrap_node="rtc.bootstrap.graph", bootstrap_instance=7)
     @test graph == ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
     @test fits == "bindings.conf"
+    with_loop = GraphOwner.arguments([argv; "--correction-property"; "controller:closed"])
+    @test last(with_loop) == ["controller:closed"]
+    @test with_loop[2] == graph
+    for invalid in ("closed", ":closed", "controller:", "a:b:c", "controller:\0closed")
+        @test_throws ArgumentError GraphOwner.arguments([argv; "--correction-property"; invalid])
+    end
+    @test_throws ArgumentError GraphOwner.arguments([argv;
+        "--correction-property"; "controller:closed"; "--correction-property=controller:closed"])
     for extra in (["--check"], ["--remote", "/tmp/other"], ["--bootstrap-instance", "8"], ["--fits-bindings", "other"])
         @test_throws ArgumentError GraphOwner.arguments([argv; extra])
     end

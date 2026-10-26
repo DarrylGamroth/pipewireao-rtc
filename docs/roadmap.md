@@ -12,6 +12,17 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### RTC correction-loop adoption tracking — 2026-10-26
+
+RTC 0.2.12 uses Hsm 0.3.2 and the FilterGraphPipeWire 0.1.8 property observer
+for explicitly declared Boolean correction loops. Cold admission, accepted
+requests and applied snapshots drive owner-local Open/Closing/Closed/Opening
+tracking; inconsistent facts latch Unknown. Native property transactions,
+Start/Stop and scientific state remain authoritative. Independent source review
+and focused CPU tests pass; see the [follow-up evidence](validation/loop-controls-20261026/README.md#hsm-adoption-tracking-follow-up).
+Classic and GPI2 source authoring opt in for their next deployment. The verified
+live GPI2 application remains on RTC 0.2.11; it is not a live Hsm qualification.
+
 ### Named optical components and science imaging — 2026-10-26
 
 Shared `pyramid`/`emccd` component templates and named guide-source reuse now

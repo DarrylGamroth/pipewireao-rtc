@@ -4,6 +4,7 @@ module GraphOwner
 import ..Artifacts
 import ..DeploymentConfiguration
 import ..NativeOwnerBootstrapRuntime
+import ..CorrectionLoops
 
 public main, read_bindings
 
@@ -14,6 +15,7 @@ const MAX_RETAINED_BYTES = 512 * 1024 * 1024
 function arguments(arguments)
     values = Dict{String,String}()
     graph = String[]
+    correction_properties = String[]
     forbidden = ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
         "--control-request", "--control-reply", "--check")
     index = 1
@@ -22,8 +24,8 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings")
-            haskey(values, key) && throw(ArgumentError("duplicate $key"))
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property")
+            key == "--correction-property" || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
             else
@@ -32,8 +34,16 @@ function arguments(arguments)
                 arguments[index]
             end
             isempty(value) && throw(ArgumentError("$key must not be empty"))
-            values[key] = value
-            key == "--remote" && append!(graph, [key, value])
+            if key == "--correction-property"
+                terms = split(value, ':'; keepempty=true)
+                length(terms) == 2 && all(!isempty, terms) && !occursin('\0', value) ||
+                    throw(ArgumentError("correction property requires NODE:PROPERTY"))
+                value in correction_properties && throw(ArgumentError("duplicate correction property $value"))
+                push!(correction_properties, value)
+            else
+                values[key] = value
+                key == "--remote" && append!(graph, [key, value])
+            end
         else
             push!(graph, argument)
         end
@@ -48,7 +58,7 @@ function arguments(arguments)
     instance = tryparse(Int64, values["--bootstrap-instance"])
     instance !== nothing && instance > 0 || throw(ArgumentError("invalid bootstrap instance"))
     bindings = get(values, "--fits-bindings", nothing)
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties
 end
 
 struct FITSBinding
@@ -124,12 +134,12 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
         admitted.owner_check()
-        options = Base.invokelatest(island.parse_arguments, graph_arguments)
+        options = merge(Base.invokelatest(island.parse_arguments, graph_arguments), (; correction_properties))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -148,6 +158,9 @@ containing `port`, `path`, optional one-based `hdu` and FITS `axes`. The graph's
 typed Parameter Ports define element types and shapes. Paths resolve relative to
 the manifest. Multidimensional images require explicit
 axes. FITS startup does not change legacy raw `--parameter` file semantics.
+`--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
+for RTC-owned adoption tracking; repeat it for independent declared loops.
+This does not change startup closure, lifecycle, or the scientific controller.
 """
 main(args) = _main(args)
 

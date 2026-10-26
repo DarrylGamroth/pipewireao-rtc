@@ -113,14 +113,21 @@ end
 
 function run_prepared(options, runtime, graph)
     Bootstrap.preparation_check!(runtime)
+    correction_properties = options.correction_properties
+    !isempty(correction_properties) && !isnothing(options.capture_backend) &&
+        throw(ArgumentError("captured graph owners do not support runtime correction properties"))
+    observer = isempty(correction_properties) ? nothing :
+        PipeWireAORTC.CorrectionLoops.Observer(correction_properties, runtime.transport.endpoint.instance)
+    observation = isnothing(observer) ? (;) : (; property_observer=observer)
     common = (; name=options.name, remote=options.remote, rate=options.rate,
         connect=false, run_control=options.session_run_control,
         acquisition_version=options.acquisition_version)
     node = isnothing(options.capture_backend) ?
-        FilterGraphPipeWire.PipeWireNode(graph; common..., boundary_layout=options.boundary_layout,
+        FilterGraphPipeWire.PipeWireNode(graph; common..., observation..., boundary_layout=options.boundary_layout,
             fifo_inputs=options.fifo_inputs, feedback=options.feedback) :
         FilterGraphPipeWire.PipeWireNode(graph; common...)
     try
+        isnothing(observer) || PipeWireAORTC.CorrectionLoops.check_ready(observer)
         if isnothing(options.capture_backend)
             FilterGraphPipeWire.prepare!(node;
                 execution=options.execution == "row-block" ? :row_block : :complete_frame,

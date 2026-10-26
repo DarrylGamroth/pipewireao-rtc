@@ -46,6 +46,21 @@ generations and query the owner. An unknown outcome is never automatically
 retried. Ordinary CPU JFG owners accept runtime property updates; captured JFG
 owners retain their prepare-a-new-owner requirement for property changes.
 
+For RTC-owned Hsm adoption tracking, add these two arguments to the ordinary
+Julia graph owner's `argv` in `rtc/application.yaml`:
+
+```yaml
+- "--correction-property"
+- "closed-loop-correction:closed"
+```
+
+Repeat for each declared loop. This requires RTC 0.2.12 and
+FilterGraphPipeWire 0.1.8. The owner validates the Boolean and initial applied
+readback before admission. `Open`/`Closed` describe confirmed adoption;
+`Opening`/`Closing` describe accepted changes awaiting it; inconsistent facts
+latch `Unknown`. This owner-local tracking does not add GUI commands or another
+native status property. Start/Stop, reset and controller state remain unchanged.
+
 In `gui/operator-views.yaml`, declare presentation references under the existing
 session binding (the label must match the selected RTC session):
 

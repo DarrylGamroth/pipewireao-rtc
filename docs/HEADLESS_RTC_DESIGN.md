@@ -148,6 +148,34 @@ the coordinated-loop case. Richer participation, explicit flat/reset policies
 and transition-frame reporting remain separate capabilities; they are not
 implied by a property-generation acknowledgement.
 
+### RTC correction-loop adoption tracking
+
+An ordinary Julia graph owner can declare each qualified Boolean with
+`--correction-property NODE:PROPERTY`. The RTC uses Hsm 0.3.2 to track `Open`,
+`Closing`, `Closed` and `Opening`; an uninitialized or inconsistent observation
+is `Unknown`. This is owner-local tracking of the existing native property
+contract, not another lifecycle authority or a new native control operation.
+
+The graph adapter reports a cold initial snapshot before admission, accepted
+desired values after successful staging, and applied snapshots on its existing
+native property notification path. It reconciles a previous adoption before
+reporting the next accepted request. Applied values and native readback use
+the same atomic snapshot. Hsm runs only on the serialized owner control thread,
+never on the scientific processing or parameter worker paths.
+
+Matching owner incarnation, requested/active generations and Boolean readback
+confirm a transition. Submission alone cannot confirm it. Other-property writes
+retain the current closure state; duplicate observations are harmless. Stale or
+other-incarnation observations cannot confirm a change. Inconsistent facts latch
+`Unknown` without retrying a command. A new owner gets new machines.
+
+The native transaction slot continues to reject busy writes. The observer cannot
+veto an already accepted write. An unexpected adapter-observer failure disables
+further notifications and is logged without changing staging or native readback;
+the RTC observer also contains its own failures. Native property readback remains
+authoritative. This increment does not publish another FSM status property,
+add transition-frame reporting, or enable runtime writes to captured graphs.
+
 ## Naming and deployment
 
 | Surface | Meaning and authority |

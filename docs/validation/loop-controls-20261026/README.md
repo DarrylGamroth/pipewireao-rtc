@@ -89,3 +89,57 @@ Authored instrument views containing owner references use the normal RTC cold
 export path before GUI loading. No fresh exported application, native session,
 hardware, AMDGPU execution, deadline or global-stability qualification is
 claimed by these checks.
+
+## Hsm adoption tracking follow-up
+
+RTC 0.2.12 uses registered Hsm 0.3.2 for explicitly declared correction
+properties, with the generic off-processing observer in FilterGraphPipeWire
+0.1.8. The controller's native Boolean and generation contract remains
+authoritative; this does not add another lifecycle authority or native status
+property. See the [owner semantics](../../HEADLESS_RTC_DESIGN.md#rtc-correction-loop-adoption-tracking)
+and [configuration](../../JULIA_DEPLOYMENT_USAGE.md#open-and-close-correction).
+
+On Julia 1.13.2, the focused pure-machine selector passes 147 assertions and
+the graph-owner/argument selector passes 56. The optional combined CPU selector
+passes 25 assertions using real graph/native-filter objects and the actual
+staging/adoption callbacks. It checks initial admission, pending versus applied
+states, the native busy slot, opposite requests before queued readback,
+same-value generation updates and missing/non-Boolean declarations. It does not
+connect to a daemon or the live GPI2 session:
+
+```sh
+julia --project=. test/test_correction_loops.jl
+julia --project=. test/test_graph_owner.jl
+julia --project=/path/to/science-environment test/test_correction_observer.jl
+```
+
+The complete graph-adapter CPU suite passes 1,356 assertions across 62 testsets,
+including default/captured paths, observer ordering and failure containment,
+hold/resume, and zero-allocation processing with an observer configured. The
+native SDK prefix is `pipewireao-classic-headless-20261021`; the source-validation
+environment overrides only the reviewed JFG/RTC packages and uses registered
+Hsm. Adapter source was reviewed at `cef55eb` against `acddfa2`.
+
+The complete RTC workspace passes 4,465 assertions in 160 testsets using
+`Pkg.test(; julia_args=["--threads=1"])` with the same native SDK environment.
+The initial workspace run required adding Hsm as a direct test dependency for
+the test's explicit `import Hsm`; the final run uses the committed workspace
+dependency and compatibility declarations. Classic/GPI2 offline profile checks
+pass 49 assertions, and both authored loop arguments match their GUI property
+references. Changed YAML/TOML files pass their standalone formatters. The full
+instrument formatting check still fails on unchanged
+`gpi2/calibration/context.yaml` and `gpi2/rtc/calibration.yaml`; neither file was
+modified for this increment.
+
+Independent source review found no actionable defect in this observer-only
+increment. A forbidden callback on another thread disables the adapter observer
+before entering the RTC observer, leaving its last local state unchanged;
+recovery from that lifecycle-contract violation is not established. Ordinary
+native callbacks obey constructing-thread ownership. No observer or Hsm work
+was added to frame processing.
+
+The live CUDA GPI2 refresh remains on RTC 0.2.11 and the earlier graph adapter;
+its independently verified [live receipt](../yaml-science-20261026/live-gpi2.json)
+does not qualify the new Hsm path. Classic and GPI2 source declarations opt into
+tracking for their next deployment. No Hsm live, deadline or hardware claim is
+made by these software checks.
