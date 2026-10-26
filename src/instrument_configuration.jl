@@ -24,6 +24,7 @@ include("instruments/schema.jl")
 include("instruments/catalogs.jl")
 include("instruments/dimensions.jl")
 include("instruments/components.jl")
+include("instruments/responses.jl")
 
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value,key),required) ||
@@ -62,7 +63,7 @@ function load_simulation(path::AbstractString)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
-        "frame_period_s", "hil", "sensors", "sources", "components"),
+        "frame_period_s", "hil", "sensors", "sources", "components", "responses"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles",
         "frame_period_s", "hil"), "simulation definition")
@@ -270,7 +271,9 @@ function graph_document(declaration, configured; calibration=false)
         end
     end
     graph["name"] = calibration ? graph["name"] : graph["name"] * "_" * profile_name
-    return Common.configuration_value(graph, configuration_context(declaration, configured))
+    resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
+    calibration || apply_responses!(resolved, declaration, configured)
+    return resolved
 end
 
 function binding_values(declaration, configured, binding::AbstractDict)

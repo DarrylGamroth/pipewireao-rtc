@@ -41,6 +41,9 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
     end)
     bindings = NamedTuple{Tuple(Symbol.(names))}(arrays)
     definition = load_algorithm_graph(document;bindings,node_types=configured_graph_node_types())
+    for node in definition.nodes
+        validate_sample_period(node.config, declaration.document["frame_period_s"])
+    end
     graph = prepare_algorithm_graph(definition;target,execution)
     hil = declaration.document["hil"]
     Instruments.fields(hil,("command_input","frame_output"),("command_input","frame_output"),"instrument HIL boundary")
@@ -90,6 +93,17 @@ configured_command_scales(value::Real) = Float32(value)
 configured_command_scales(values::NamedTuple) = map(Float32,values)
 
 validate_node_timing(config,options) = nothing
+validate_sample_period(config, period) = nothing
+function validate_sample_period(config::AlgorithmGraphs.SecondOrderResponseNodeConfig, period)
+    config.sample_period_s == period ||
+        throw(ArgumentError("response sample period differs from the simulation frame period"))
+    return nothing
+end
+function validate_node_timing(config::AlgorithmGraphs.SecondOrderResponseNodeConfig,options)
+    round(UInt64,config.sample_period_s*1e9)==options.period_ns ||
+        throw(ArgumentError("response sample period differs from configured cadence"))
+    return nothing
+end
 function validate_node_timing(config::AlgorithmGraphs.MultiLayerAtmosphereOPDNodeConfig,options)
     round(UInt64,Float64(config.atmosphere_step)*1e9)==options.period_ns ||
         throw(ArgumentError("atmosphere step differs from configured cadence"))

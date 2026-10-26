@@ -146,6 +146,18 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         @test IC.validate_simulation(declaration, physical, directory, graphs) === nothing
         @test IC.load(documents.paths.physical).document == physical
         @test IC.load_simulation(documents.paths.simulation).document == declaration
+        with_response = deepcopy(declaration)
+        with_response["responses"] = Dict("command"=>Dict("kind"=>"second_order",
+            "natural_frequency_hz"=>20, "damping_ratio"=>0.7,
+            "schema"=>Dict("\$ref"=>"/schemas/tip_tilt_opd_coefficients_m/id")))
+        C.write_yaml(documents.paths.simulation, with_response)
+        loaded_response = IC.load_simulation(documents.paths.simulation)
+        @test loaded_response.document["responses"]["command"]["schema"] ==
+            PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
+        resolved_response = IC.graph_document(loaded_response,IC.settings(loaded_response))
+        @test only(n for n in resolved_response["nodes"] if n["name"]=="command_response")["config"]["schema"] ==
+            PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
+        C.write_yaml(documents.paths.simulation, declaration)
         documents.rtc["dimensions"] = Dict("controller_command_count" => 5, "active_vdm_count" => 3)
         write_documents(documents)
         @test IC.load_rtc(documents.paths.rtc).document["dimensions"] == documents.rtc["dimensions"]

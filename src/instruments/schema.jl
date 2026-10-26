@@ -85,6 +85,7 @@ function validate_simulation(document, instrument, directory, graphs)
     _validate_settings_bindings(document["settings_bindings"], profiles, defaults,
         settings_schema, all_graph_nodes)
     _validate_hil(document["hil"], graph_inputs, graph_outputs)
+    validate_responses(document, graph_inputs["production"])
     for contract in document["wire_contracts"]
         validate_boundary_contract(document["hil"]["command_input"],contract["command_schema"])
     end

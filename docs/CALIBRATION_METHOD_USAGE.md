@@ -44,6 +44,43 @@ the temporal paths sum as H(z) + (1 − H(z)) = 1; clipping spills unmet stage
 correction into the woofer command. This command identity does not establish
 optical equivalence, feedback stability or hardware bandwidth.
 
+## Simulation command response
+
+A simulation declaration may attach a response to an existing named vector
+input. This compiles to an ordinary native AOS node before the original input
+destination; it does not introduce another executor or a slower command loop.
+
+```yaml
+responses:
+  tiptilt:
+    kind: second_order
+    natural_frequency_hz: 250
+    damping_ratio: 0.7
+    schema: {$ref: /schemas/tip_tilt_opd_coefficients_m/id}
+```
+
+The name selects a declared production graph input. Its binding supplies the
+coordinate count; `frame_period_s` supplies the sample period. The vector must
+be Float32 and retain the same scientific schema. Unknown fields, absent input
+names and conflicting generated node names are rejected. Omitting `responses`
+preserves the ideal plant. The example values are provisional assumptions,
+not a measured transfer function or a generic instrument default.
+
+AOS advances y″ + 2ζωₙ y′ + ωₙ²y = ωₙ²u using exact zero-order-hold
+discretization. The output is the position at the end of each hold interval;
+there is no additional pure delay. Position and velocity reset to zero without
+replacing storage. The configured period must match the simulation and native
+application cadence before execution.
+
+The calibration graph deliberately retains its static optical response. This
+reuses a unity-DC spatial calibration and does not measure temporal dynamics.
+Production prescription identity includes the added response node; an old
+calibration receipt must not be silently relabelled as a new measured model.
+Controller command clipping bounds demanded inputs. Inertial overshoot of the
+simulated response is distinct from command clipping and is not implicitly
+clamped. Adopted-command observations also remain distinct from achieved
+mechanical response; offline validation records both separately.
+
 ## Scope
 
 `REVOLTRTC.jl/bin/calibration_method.jl` acquires one declared probe basis through the
