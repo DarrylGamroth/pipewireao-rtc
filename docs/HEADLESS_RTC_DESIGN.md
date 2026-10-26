@@ -59,6 +59,74 @@ operations and journals requests/completions; it does not decode FITS or perform
 database work in scientific callbacks. Artifact-management features remain
 paused. GUI/CLI/Julia retain the same wire protocol and shared history.
 
+## Correction-loop control — investigation, 2026-10-26
+
+This section records source findings and a proposed next capability, not an
+implemented wire protocol or a change to the accepted session state machine.
+The existing RTC `Running` state describes application execution; it does not
+provide a separate, acknowledged open/close-correction operation. The GPI graph
+currently starts its integrator with a configured nonzero gain. Editing gain
+alone does not define integrator retention, filter reset, output hold or flat
+restoration, and is not a substitute for loop control.
+
+The inspected HEART core revision `02c85a6490f33b057f1d0410a6c9db1564ae57b0`
+and GPI source revision `973b20af778949e62bd048c219cb872e8bb09d2b` establish:
+
+- `hrtBlock.c` permits READY → RUNNING → CORRECTING → RUNNING. GPI calls
+  `scaoTemplate_main`, which installs the legacy template command handler.
+- In `hrtTemplateCmds.c`, `CORRECT` selects configured WFS/DM/TT masks;
+  `LOOP_HO` and `LOOP_LO` accept subsets and preserve the other WFS path.
+  Closure requires a WFS and at least one DM or TT output. `LOOP_OPEN` sends RUN.
+- CLWC applies pending PDM and TT enables at frame boundaries and gates their
+  output triggers independently. CORRECTING therefore does not inherently mean
+  every device is enabled. There is no prescribed stage → woofer → tweeter
+  sequence, and selected correctors receive vectors rather than sequential
+  actuator enables.
+- CLWC normally clears its VDM integrator on entry to CORRECTING unless
+  `enableNotClearingIntg` is set. Its exit callback is a no-op; this does not
+  establish automatic flattening on opening. TFC has no enter/exit-CORRECTING
+  callbacks, so automatic temporal-filter reset is not demonstrated.
+- The newer `hrtApi_LOOP.yaml` describes richer RUNNING/CONTROLLING/CORRECTING
+  and reset behavior. Its inspected C handler maps both nonzero states to
+  legacy CORRECT and does not read the reset argument. Those documented
+  semantics must not be copied as if fully implemented.
+
+CACAO's [modal filter implementation](https://github.com/cacao-org/cacao/blob/dev/AOloopControl/modalfilter.c)
+separates `loopON` (opening freezes correction), `loopZERO` (explicitly clears
+and publishes correction), gain and a finite step count. The local comparison
+at `ecfb694cb319c9cfcde3727d35414715d122c482` confirms the separate update paths;
+an open loop does not imply a zero mirror command.
+The [MagAO-X operating procedure](https://magao-x.org/docs/handbook/operating/alignment.html)
+closes the HO loop on a small mode set, increases the controlled mode set and
+adjusts woofer offloading separately. Its [CACAO setup guide](https://magao-x.org/docs/handbook/operating/cacao.html)
+also exposes distinct HO and low-order loop interfaces. These are logical loop
+and mode-group operations, not a universal ordering of individual actuators.
+
+For this RTC, the proposed boundary is:
+
+- Keep acquisition, reconstruction, diagnostics and required command exchange
+  running while correction is open. Do not implement opening by stopping an
+  execution group, disconnecting devices or omitting required command ports.
+- Declare participating sensors, mode groups and correctors in instrument/RTC
+  configuration. Permit coordinated closure and instrument-defined sequences;
+  do not hard-code a GPI-specific order in the GUI or headless RTC.
+- Define open/hold, explicit clear/flat restoration, integrator/filter reset or
+  retention, and bumpless closure as separate semantics. Device bias/flat is not
+  necessarily a vector of zeros. Opening on a fault needs an explicit
+  profile/device policy rather than an assumed safe mechanical state.
+- Keep the headless RTC authoritative, using the existing native control and
+  owner acknowledgement paths. Report requested versus applied loop state and
+  the frame where a transition takes effect. Every GUI, CLI and script uses
+  that same interface.
+- Extend the scientific controller's state transition contract with its owner.
+  The current coupled integrator, stage allocation and clipping feedback must
+  remain consistent when groups are disabled; multiplying a DM output by zero
+  after integration would permit hidden state buildup.
+
+This is the next functional gap after the finite actuator-response validation.
+No open/close commands, new lifecycle states or GUI controls are delivered by
+the response-model work itself.
+
 ## Naming and deployment
 
 | Surface | Meaning and authority |
