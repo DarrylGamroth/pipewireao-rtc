@@ -63,10 +63,12 @@ function validate_simulation(document, instrument, directory, graphs)
         fields(source,names,names,"simulation source")
         _declaration_text(source["source_band"],"source band")
         all(isfinite_real, (source["source_magnitude"],source["source_position_angle_deg"],
-            source["source_separation_arcsec"])) && source["source_separation_arcsec"] >= 0 &&
+            source["source_separation_arcsec"])) &&
             isfinite_positive(source["source_wavelength_m"]) ||
             throw(ArgumentError("simulation source requires finite photometry and positive wavelength"))
     end
+
+    validate_imaging(document)
 
     graph_paths = _declaration_fields(document["graphs"], ("production", "calibration"),
         ("production", "calibration"), "graphs")
@@ -576,4 +578,18 @@ function _unique_names(values, label, key)
         push!(names, name)
     end
     return names
+end
+
+# Imaging reuses the composed pupil OPD; a separate atmospheric line of sight
+# requires a separately rendered graph output, not a new observer setting.
+function validate_imaging(document)
+    haskey(document, "imaging") || return nothing
+    imaging = fields(document["imaging"], ("source", "zero_padding"), ("source",), "simulation imaging")
+    source = _declaration_identifier(imaging["source"], "imaging source")
+    haskey(get(document, "sources", Dict()), source) ||
+        throw(ArgumentError("imaging references absent source $source"))
+    padding = get(imaging, "zero_padding", 2)
+    padding isa Integer && !(padding isa Bool) && 1 <= padding <= 16 ||
+        throw(ArgumentError("imaging zero_padding must be an integer in 1:16"))
+    return nothing
 end

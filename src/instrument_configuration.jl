@@ -63,7 +63,7 @@ function load_simulation(path::AbstractString)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
-        "frame_period_s", "hil", "sensors", "sources", "components", "responses"),
+        "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "profiles",
         "frame_period_s", "hil"), "simulation definition")

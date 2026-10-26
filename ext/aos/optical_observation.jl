@@ -41,7 +41,7 @@ mutable struct Observation{S,U,I,V,M}
     task::Any
 end
 
-prepare(::Nothing, graph) = nothing
+prepare(::Nothing, graph; imaging=default_imaging()) = nothing
 sensor_configuration(config) = nothing
 sensor_configuration(config::ShackHartmannRateNodeConfig) = config
 sensor_configuration(config::PyramidRateNodeConfig) = config
@@ -58,11 +58,43 @@ function guide_sensor(nodes::Tuple)
     return only(sensors)
 end
 
+default_imaging() = (; source=nothing, zero_padding=ZERO_PADDING)
+
+function imaging_configuration(declaration)
+    haskey(declaration.document, "imaging") || return default_imaging()
+    imaging = declaration.document["imaging"]
+    source = declaration.document["sources"][imaging["source"]]
+    return (; source=Optics.Source(band=Symbol(source["source_band"]),
+        magnitude=source["source_magnitude"], wavelength=source["source_wavelength_m"],
+        separation_arcsec=source["source_separation_arcsec"],
+        position_angle_deg=source["source_position_angle_deg"], T=Float32),
+        zero_padding=Int(get(imaging, "zero_padding", ZERO_PADDING)))
+end
+
+function owner_imaging_configuration(options)
+    options.version == 3 || return default_imaging()
+    declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
+    return imaging_configuration(declaration)
+end
+
+imaging_source(::Nothing, config) = config.source
+function imaging_source(source, config)
+    source_xy = Optics.coordinates_xy_arcsec(source)
+    guide_xy = Optics.coordinates_xy_arcsec(config.source)
+    # Source construction converts polar angles in Float32; equivalent signed
+    # and periodic representations may differ by a few rounding units.
+    tolerance = 8eps(Float32) * max(hypot(source_xy...), hypot(guide_xy...))
+    hypot(source_xy[1] - guide_xy[1], source_xy[2] - guide_xy[2]) <= tolerance ||
+        throw(ArgumentError("imaging source direction must match the guide source of the composed pupil OPD"))
+    return source
+end
+
 "Describe the observation boundary from cold typed sensor configuration alone."
-function port_contracts(nodes::Tuple; atmosphere::Bool)
+function port_contracts(nodes::Tuple; atmosphere::Bool, imaging=default_imaging())
     config = guide_sensor(nodes)
+    imaging_source(imaging.source, config)
     resolution = config.telescope.resolution
-    focal_resolution = Base.checked_mul(resolution, ZERO_PADDING)
+    focal_resolution = Base.checked_mul(resolution, imaging.zero_padding)
     contract(shape, name) = Dict("shape" => collect(shape),
         "element-type" => PipeWireAORTC.Schemas.declaration(name)["wire_type"])
     result = Dict("focal-image" => contract((focal_resolution, focal_resolution), "focal_photon_rate"),
@@ -70,8 +102,8 @@ function port_contracts(nodes::Tuple; atmosphere::Bool)
     atmosphere && (result["wavefront-rms"] = contract(RMS_SHAPE, "pupil_opd_rms_nm"))
     return result
 end
-port_contracts(definition::AlgorithmGraphDefinition) =
-    port_contracts(definition.nodes; atmosphere=any(atmosphere_output, definition.outputs))
+port_contracts(definition::AlgorithmGraphDefinition; imaging=default_imaging()) =
+    port_contracts(definition.nodes; atmosphere=any(atmosphere_output, definition.outputs), imaging)
 
 function verify_product(values, contract)
     collect(size(values)) == contract["shape"] && eltype(values) === Float32 ||
@@ -79,13 +111,14 @@ function verify_product(values, contract)
     return nothing
 end
 
-function prepare(definition::AlgorithmGraphDefinition, graph)
+function prepare(definition::AlgorithmGraphDefinition, graph; imaging=default_imaging())
     config = guide_sensor(definition.nodes)
-    contracts = port_contracts(definition)
-    # Use the actual plant aperture and source, with no invented camera noise,
-    # exposure or science wavelength. This product is ideal photon rate.
+    contracts = port_contracts(definition; imaging)
+    # Use the plant aperture and the explicitly selected source photometry.
+    # This product is ideal photon rate, without detector exposure or noise.
     telescope = Optics.prepare_telescope(config.telescope, AdaptiveOpticsSim.Backends.HostComputeDevice())
-    source = config.source
+    source = imaging_source(imaging.source, config)
+    zero_padding = imaging.zero_padding
     snapshot = prepare_graph_output_snapshot(graph, Val(:pupil_opd))
     atmosphere_snapshot = nothing
     try
@@ -95,7 +128,7 @@ function prepare(definition::AlgorithmGraphDefinition, graph)
                 throw(DimensionMismatch("atmosphere and pupil OPD axes must match"))
         end
         pupil = Optics.PupilFunction(telescope, snapshot_values(snapshot))
-        imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding=ZERO_PADDING)
+        imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding)
         Optics.form_direct_image!(imaging)
         focal = Matrix{Float32}(Optics.intensity_values(Optics.direct_imaging_output(imaging)))
         pupil_mask = Matrix{Bool}(Optics.pupil_mask(telescope))

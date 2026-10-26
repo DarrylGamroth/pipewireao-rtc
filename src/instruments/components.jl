@@ -2,7 +2,7 @@
 # references and AOS type/config names; instrument values and topology stay data.
 const COMPONENT_TEMPLATES = ("coordinate_gaussian", "grid_gaussian", "measured",
     "multilayer_atmosphere_opd_f32", "pupil_opd_composition_f32",
-    "shack_hartmann_rate_f32", "cmos")
+    "shack_hartmann_rate_f32", "pyramid", "cmos", "emccd")
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
 
 function component_template_path(name)
@@ -81,6 +81,15 @@ function validate_component(selection, instrument, document)
         haskey(selection, key) || continue
         name = _declaration_text(selection[key], "component $key")
         haskey(collection, name) || throw(ArgumentError("component references absent $key $name"))
+    end
+    if template == "pyramid"
+        haskey(selection, "sensor") || throw(ArgumentError("Pyramid component requires sensor"))
+        sensor = instrument["wavefront_sensors"][selection["sensor"]]
+        get(sensor, "kind", nothing) == "pyramid" || throw(ArgumentError("Pyramid component requires a pyramid sensor"))
+        for key in ("pupil_shape", "pupil_separation_pixels", "pupil_edge_pixels")
+            pair = sensor_pixel_pair(sensor[key], "Pyramid $key"; positive=key == "pupil_shape")
+            pair[1] == pair[2] || throw(ArgumentError("Pyramid optical component requires equal row and column $key"))
+        end
     end
     haskey(selection, "props") && _declaration_object(selection["props"], "component props")
     return nothing

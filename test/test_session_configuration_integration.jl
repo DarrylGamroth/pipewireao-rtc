@@ -194,3 +194,58 @@ end
     @test extension.applied_command_names("command", true) == "simulator-applied-command"
     @test extension.applied_command_names((; woofer="woofer"), false) === nothing
 end
+
+@testset "explicit science imaging keeps guide fallback and composed OPD direction" begin
+    Optics = AdaptiveOpticsSim.Optics
+    source = Dict{String,Any}("source_band" => "R", "source_magnitude" => 2.0,
+        "source_wavelength_m" => 0.8e-6, "source_separation_arcsec" => 0.0, "source_position_angle_deg" => 0.0)
+    document = Dict("sources" => Dict("science" => source), "imaging" => Dict("source" => "science", "zero_padding" => 2))
+    sensor = shack_hartmann_rate_node(:sensor; resolution=16, telescope_diameter_m=8.0,
+        n_lenslets=4, n_pix_subap=4, pixel_scale_arcsec=0.1,
+        source_band=:R, source_magnitude=2.0, source_wavelength_m=0.8e-6,
+        opd_schema="test.observation.pupil-opd/1", photon_rate_schema="test.observation.frame/1")
+    definition = observation_definition(sensor, 16)
+    graph = prepare_algorithm_graph(definition)
+    imaging = Observation.imaging_configuration((; document))
+    @test Observation.imaging_configuration((;document=Dict())).source === nothing
+    @test Observation.owner_imaging_configuration((;version=1)) == Observation.default_imaging()
+    function image(imaging)
+        observation = Observation.prepare(definition, graph; imaging)
+        try
+            fill!(Observation.snapshot_values(observation.snapshot), 0)
+            fill!(Observation.snapshot_values(observation.atmosphere_snapshot), 0)
+            Observation.form_products!(observation)
+            output = Optics.direct_imaging_output(observation.imaging)
+            return copy(observation.values), output.metadata
+        finally
+            Observation.close!(observation)
+        end
+    end
+    fallback, fallback_metadata = image(Observation.default_imaging())
+    source["source_position_angle_deg"] = 123.0 # On-axis position angle does not alter direction.
+    imaging = Observation.imaging_configuration((; document))
+    explicit, metadata = image(imaging)
+    @test explicit == fallback
+    @test metadata == fallback_metadata
+    source["source_wavelength_m"] = 1.65e-6
+    source["source_magnitude"] = 3.0
+    document["imaging"]["zero_padding"] = 3
+    science = Observation.imaging_configuration((; document))
+    values, metadata = image(science)
+    @test size(values) == (48, 48)
+    @test Observation.port_contracts(definition; imaging=science)["focal-image"]["shape"] == [48, 48]
+    @test metadata.spectral.wavelength_m == Float32(1.65e-6)
+    @test metadata.normalization isa Optics.PhotonRateNormalization
+    @test sum(values) / sum(fallback) ≈ 10.0^(-0.4) rtol=2e-6
+    @test metadata.sampling != fallback_metadata.sampling
+    source["source_separation_arcsec"] = 1.0
+    mismatched = Observation.imaging_configuration((; document))
+    @test_throws ArgumentError Observation.port_contracts(definition; imaging=mismatched)
+    @test_throws ArgumentError Observation.prepare(definition, graph; imaging=mismatched)
+    positive = Optics.Source(band=:R, separation_arcsec=2, position_angle_deg=210, T=Float32)
+    signed = Optics.Source(band=:R, separation_arcsec=-2, position_angle_deg=30, T=Float32)
+    periodic = Optics.Source(band=:R, separation_arcsec=-2, position_angle_deg=390, T=Float32)
+    @test Observation.imaging_source(signed, (;source=positive)) === signed
+    @test Observation.imaging_source(periodic, (;source=signed)) === periodic
+    @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
+end

@@ -144,6 +144,15 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         graphs = Dict(mode => C.read_yaml(joinpath(directory, declaration["graphs"][mode])) for mode in ("production", "calibration"))
         @test IC.validate_declaration(physical, directory) === nothing
         @test IC.validate_simulation(declaration, physical, directory, graphs) === nothing
+        signed_source = deepcopy(declaration)
+        signed_source["sources"] = Dict("guide" => Dict("source_band" => "R", "source_magnitude" => 2,
+            "source_wavelength_m" => 0.8e-6, "source_separation_arcsec" => -2.0, "source_position_angle_deg" => 30.0))
+        @test IC.validate_simulation(signed_source, physical, directory, graphs) === nothing
+        for field in ("height", "source_height_m")
+            finite_source = deepcopy(signed_source)
+            finite_source["sources"]["guide"][field] = 90000
+            @test_throws ArgumentError IC.validate_simulation(finite_source, physical, directory, graphs)
+        end
         @test IC.load(documents.paths.physical).document == physical
         @test IC.load_simulation(documents.paths.simulation).document == declaration
         with_response = deepcopy(declaration)

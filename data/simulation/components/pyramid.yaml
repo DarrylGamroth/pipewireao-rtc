@@ -1,0 +1,40 @@
+type: pyramid_rate_f32
+config:
+  central_obstruction_ratio:
+    $ref: /instrument/telescope/central_obstruction_ratio
+  modulation:
+    $ref: /values/modulation
+  telescope_diameter_m:
+    $ref: /instrument/telescope/telescope_diameter_m
+  n_pix_edge:
+    $ref: /sensor/pupil_edge_pixels/0
+  source_wavelength_m:
+    $ref: /source/source_wavelength_m
+  opd_schema:
+    $ref: /schemas/opd_schema
+  source_magnitude:
+    $ref: /source/source_magnitude
+  n_pix_separation:
+    $ref: /sensor/pupil_separation_pixels/0
+  photon_rate_schema:
+    $ref: /schemas/photon_rate_schema
+  modulation_propagation_strategy:
+    $ref: /values/modulation_propagation_strategy
+  resolution:
+    $ref: /settings/pupil_resolution
+  pupil_samples:
+    $ref: /sensor/pupil_shape/0
+  pupil_shift_y_pixels:
+    $ref: /values/pupil_shift_y_pixels
+  modulation_points:
+    $ref: /values/modulation_points
+  pupil_reflectivity:
+    $ref: /instrument/telescope/pupil_reflectivity
+  pupil_shift_x_pixels:
+    $ref: /values/pupil_shift_x_pixels
+  source_band:
+    $ref: /source/source_band
+  source_separation_arcsec:
+    $ref: /source/source_separation_arcsec
+  source_position_angle_deg:
+    $ref: /source/source_position_angle_deg

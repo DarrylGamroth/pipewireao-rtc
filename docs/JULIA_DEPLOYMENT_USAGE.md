@@ -183,6 +183,32 @@ focal photon-rate image, it publishes `simulator-residual-wavefront` with media
 name `residual-wavefront` and schema
 `org.calculon.ao.residual-pupil-opd.nm.f32/1`.
 
+The optional `imaging` section in `simulation/definition.yaml` selects a named
+entry from `sources` for ideal direct imaging. It can set `zero_padding` (integer
+1–16; default 2). For example:
+
+```yaml
+sources:
+  science:
+    source_band: H
+    source_magnitude: 2.0
+    source_wavelength_m: 1.65e-6
+    source_separation_arcsec: 0.0
+    source_position_angle_deg: 0.0
+imaging:
+  source: science
+  zero_padding: 2
+```
+
+Source photometry and wavelength are independent of the guide sensor. Imaging
+uses the same completed pupil OPD, so its source direction must match the guide
+source; a different line of sight requires a separately rendered pupil OPD.
+Finite source height is not admitted by this declaration. With no `imaging`
+section, the observer retains the exact guide source and padding 2. Both modes
+publish cell-integrated focal photon rate, without detector exposure/noise,
+long-exposure accumulation or a Strehl estimate. Cold session contracts use the
+selected padding, so rebuilding updates ordinary focal-image port shapes.
+
 The Float32 image contains pupil OPD in nm after subtracting the mean over
 transmitting pupil samples. Tip/tilt remain included. Obscured and outside-pupil
 pixels contain NaN. The generic ndarray viewer excludes these pixels from

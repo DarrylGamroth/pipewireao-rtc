@@ -1,0 +1,38 @@
+type: detector
+detector: emccd
+config:
+  shutter: global
+  gain:
+    $ref: /values/gain
+  readout_noise:
+    $ref: /values/readout_noise
+  em_gain_max:
+    $ref: /values/em_gain_max
+  photon_noise:
+    $ref: /values/photon_noise
+  quantum_efficiency:
+    $ref: /values/quantum_efficiency
+  columns:
+    $ref: /values/columns
+  rng_seed:
+    $ref: /values/rng_seed
+  excess_noise_factor:
+    $ref: /values/excess_noise_factor
+  normalized_pupil_sampling:
+    $ref: /values/normalized_pupil_sampling
+  clock_induced_charge_e_per_pixel_frame:
+    $ref: /values/clock_induced_charge_e_per_pixel_frame
+  readout_noise_e:
+    $ref: /values/readout_noise_e
+  dark_current_e_per_pixel_s:
+    $ref: /values/dark_current_e_per_pixel_s
+  rows:
+    $ref: /values/rows
+  frame_schema:
+    $ref: /schemas/frame_schema
+  wavelength_m:
+    $ref: /source/source_wavelength_m
+  photon_rate_schema:
+    $ref: /schemas/photon_rate_schema
+  exposure_duration_s:
+    $ref: /sensor/acquisition/exposure_duration_s

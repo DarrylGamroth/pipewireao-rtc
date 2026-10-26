@@ -179,3 +179,67 @@ end
         @test !haskey(node["config"], "influence_width")
     end
 end
+
+@testset "Pyramid and EMCCD components share named source photometry" begin
+    document, instrument = optical_components_document()
+    document["sources"] = Dict("guide" => Dict())
+    sensor = Dict("kind" => "pyramid", "pupil_shape" => [60, 60],
+        "pupil_separation_pixels" => [60, 60], "pupil_edge_pixels" => [30, 30])
+    instrument["wavefront_sensors"]["guide_sensor"] = sensor
+    pyramid = Dict("template" => "pyramid", "sensor" => "guide_sensor", "source" => "guide",
+        "config" => Dict{String,Any}("modulation" => 3, "modulation_points" => 24,
+            "modulation_propagation_strategy" => "pupil_tilt", "pupil_shift_x_pixels" => [0, 0, 0, 0],
+            "pupil_shift_y_pixels" => [0, 0, 0, 0], "opd_schema" => "example.opd/1",
+            "photon_rate_schema" => "example.rate/1"))
+    config = Dict{String,Any}("rows" => 240, "columns" => 240, "gain" => 5000, "em_gain_max" => 5000,
+        "quantum_efficiency" => 0.9, "rng_seed" => 2, "photon_noise" => true, "readout_noise" => true,
+        "readout_noise_e" => 678.3218668753427, "excess_noise_factor" => sqrt(2),
+        "normalized_pupil_sampling" => 1/60, "clock_induced_charge_e_per_pixel_frame" => 0.000828,
+        "dark_current_e_per_pixel_s" => 0, "frame_schema" => "example.electrons/1",
+        "photon_rate_schema" => "example.rate/1")
+    detector = Dict("template" => "emccd", "sensor" => "guide_sensor", "source" => "guide", "config" => config)
+    document["components"]["pyramid"], document["components"]["detector"] = pyramid, detector
+    overrides = Dict("photon_noise" => false, "readout_noise" => false, "readout_noise_e" => 0,
+        "excess_noise_factor" => 1, "clock_induced_charge_e_per_pixel_frame" => 0)
+    push!(document["graphs"]["production"]["nodes"], Dict("name" => "pyramid"), Dict("name" => "detector"))
+    push!(document["graphs"]["calibration"]["nodes"], Dict("name" => "pyramid"),
+        Dict("name" => "detector", "config" => overrides))
+    original = deepcopy(document)
+    expanded = IC.expand_simulation_components!(document, instrument, ".")
+    node(mode, name) = only(node for node in expanded.graphs[mode]["nodes"] if node["name"] == name)
+    @test node("production", "pyramid")["config"]["source_wavelength_m"] ==
+        node("production", "detector")["config"]["wavelength_m"] ==
+        Dict("\$ref" => "/simulation/sources/guide/source_wavelength_m")
+    @test node("production", "pyramid")["config"]["pupil_samples"] ==
+        Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/pupil_shape/0")
+    @test node("production", "detector")["type"] == "detector"
+    @test node("production", "detector")["detector"] == "emccd"
+    @test node("production", "detector")["config"]["shutter"] == "global"
+    @test all(node("calibration", "detector")["config"][key] == value for (key, value) in overrides)
+    @test config["readout_noise_e"] == node("production", "detector")["config"]["readout_noise_e"]
+    for key in ("pupil_shape", "pupil_separation_pixels", "pupil_edge_pixels")
+        physical = deepcopy(instrument)
+        physical["wavefront_sensors"]["guide_sensor"][key][2] += 1
+        @test_throws ArgumentError IC.expand_simulation_components!(deepcopy(original), physical, ".")
+    end
+    for key in ("wavelength_m", "exposure_duration_s", "shutter")
+        invalid = deepcopy(original)
+        invalid["components"]["detector"]["config"][key] = 1
+        @test_throws ArgumentError IC.expand_simulation_components!(invalid, instrument, ".")
+        invalid = deepcopy(original)
+        last(invalid["graphs"]["calibration"]["nodes"])["config"][key] = 1
+        @test_throws ArgumentError IC.expand_simulation_components!(invalid, instrument, ".")
+    end
+end
+
+@testset "imaging declaration names an explicit bounded source and sampling" begin
+    @test isnothing(IC.validate_imaging(Dict()))
+    for imaging in (Dict("source" => "science"), Dict("source" => "science", "zero_padding" => 3))
+        @test isnothing(IC.validate_imaging(Dict("sources" => Dict("science" => Dict()), "imaging" => imaging)))
+    end
+    for imaging in (true, Dict(), Dict("source" => "absent"),
+            Dict("source" => "science", "exposure_duration_s" => 1),
+            (Dict("source" => "science", "zero_padding" => value) for value in (true, 0, -1, 1.5, 17, Inf))...)
+        @test_throws ArgumentError IC.validate_imaging(Dict("sources" => Dict("science" => Dict()), "imaging" => imaging))
+    end
+end

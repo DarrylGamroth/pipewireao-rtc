@@ -99,6 +99,15 @@ function prepare_session_configuration!(application, spec, declarations, instrum
     if "graphs" in roots
         context["graphs"] = graph_contract_context(application, declarations, prefix)
     end
+    if "simulation" in roots
+        # The same cold physical/model context used for graph authoring is also
+        # available to generic application documents, including time axes.
+        simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
+        plant = simulation["plant"]
+        declaration = InstrumentConfiguration.load_simulation(D.relative_asset(application, plant["definition"]))
+        configured = InstrumentConfiguration.settings(declaration, get(plant, "settings", Dict()))
+        context["simulation"] = InstrumentConfiguration.configuration_context(declaration, configured)["simulation"]
+    end
     if "simulator" in roots
         Base.require(Main, :AdaptiveOpticsSim)
         Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)

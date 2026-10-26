@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Named optical components and science imaging — 2026-10-26
+
+Shared `pyramid`/`emccd` component templates and named guide-source reuse now
+cover GPI2 calibration and production. Optional science imaging selects explicit
+source photometry and padding while requiring the composed pupil OPD's guide
+direction; absence retains the exact guide diagnostic. GPI2 chart model time
+now derives from the simulation period. Cold export/default comparisons and CPU
+observer tests pass; see the [source-validation record](validation/yaml-science-20261026/README.md).
+Live applications and hardware qualification are unchanged.
+
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
 The latest registered refresh is live with AOS 0.3.0, HIL 0.2.5, RTC 0.2.10

@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Named optical components and science imaging — 2026-10-26
+
+The [source-validation record](validation/yaml-science-20261026/README.md) covers
+shared Pyramid/EMCCD declarations, explicit same-direction science photometry,
+exact guide-source fallback, and model-derived GPI2 chart time. Cold export and
+CPU observer checks preserve scientific defaults; no live, GPU, hardware or
+release qualification is claimed.
+
 ## Registered GPI2 package refresh and schema integration — 2026-10-26
 
 The [deployment record](validation/gpi-closed-loop-20261024/refresh-20261026/README.md)
