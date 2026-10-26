@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Explicit per-mirror optical pupils — 2026-10-26
+
+The [cold software record](validation/optical-pupil-20261026/README.md) records
+explicit authoring, preserved telescope fallback, missing metadata, numeric
+bounds, scientific identity and real-source export checks. It makes no live,
+hardware or timing qualification claim.
+
 ## GPI genuine hidden-mode removal — 2026-10-25
 
 The [hidden-mode record](validation/gpi-closed-loop-20261024/README.md#heart-style-hidden-mode-removal--2026-10-25)

@@ -131,10 +131,11 @@ end
 
 function _validate_mirror_declaration(spec, directory, name)
     mirror = _declaration_fields(spec,
-        ("description", "pupil_registration", "units", "command_scale_m"),
+        ("description", "pupil_registration", "pupil", "units", "command_scale_m"),
         ("description", "pupil_registration", "units", "command_scale_m"), "mirror $name")
     mirror_description_path(directory, mirror["description"])
     _pupil_registration(_instrument_seal(mirror["pupil_registration"]))
+    haskey(mirror,"pupil") && InstrumentDefinition.validate_pupil(mirror["pupil"])
     _declaration_text(mirror["units"], "mirror units")
     isfinite_positive(mirror["command_scale_m"]) || throw(ArgumentError("mirror command_scale_m must be finite and positive"))
     return nothing

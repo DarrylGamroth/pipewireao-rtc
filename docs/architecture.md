@@ -752,6 +752,21 @@ normalized Cartesian frame, with 0 ≤ inner < outer. It requires command-indexe
 `pupil_coordinates`; coordinates may lie outside the annulus. This optical
 aperture is distinct from the physical mirror boundary. Without it, clients
 must not infer an optical aperture from the actuator-grid extent.
+Physical mirror authoring may supply the same exact `pupil` fields explicitly.
+An explicit per-mirror pupil takes precedence over the existing telescope-derived
+pupil (`outer_radius: 1`, `inner_radius: central_obstruction_ratio`). The telescope
+fallback remains when explicit mirror metadata is absent; publication omits
+`pupil` only when both are unavailable. Explicit values enter the physical and
+scientific definition and its identity unchanged. Plant verification compares
+the published pupil with the selected scientific source, including the telescope
+fallback for older scientific definitions.
+
+Radii and registered coordinates must remain renderable in Float32: their
+magnitudes are strictly below one quarter of the maximum finite Float32 value,
+nonzero values survive conversion, and the inner and outer radii remain distinct
+after conversion. Booleans are rejected. These bounds leave viewport arithmetic
+headroom without converting owned metadata. This optional metadata changes no
+commands, units, actuator coordinates, optical calculations or control protocol.
 WFS `layout` declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
 

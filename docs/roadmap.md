@@ -6,11 +6,21 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-25. This section is the current delivery summary. Later sections
+Updated 2026-10-26. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Explicit per-mirror optical pupils — 2026-10-26
+
+Physical mirror authoring accepts explicit optical `pupil` radii in the existing
+registered normalized-pupil coordinates. Explicit values take precedence over
+the retained telescope fallback; metadata remains absent when neither source is
+available. Cold validation checks renderable radii/coordinates, scientific source
+identity and export preservation while retaining controlled actuator masks and
+the 1 MiB publication contract. The [software record](validation/optical-pupil-20261026/README.md)
+keeps test evidence separate from live, hardware and timing qualification.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 

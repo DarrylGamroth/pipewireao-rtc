@@ -286,6 +286,62 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
     end
 
+    @testset "explicit optical pupil follows physical and published identity" begin
+        mktempdir() do directory
+            documents = declaration_documents(directory)
+            physical = IC.physical_definition(IC.load(documents.paths.physical))
+            publication = IC.publication(documents.paths.rtc)
+            scientific = IC.scientific_definition(documents.paths.simulation)
+            @test !hasproperty(physical.deformable_mirrors.primary,:pupil)
+            @test !hasproperty(publication.deformable_mirrors.primary,:pupil)
+            original_coordinates = publication.deformable_mirrors.primary.pupil_coordinates
+            original_layout = publication.deformable_mirrors.primary.layout
+            mirror = documents.physical["deformable_mirrors"]["primary"]
+            pupil = Dict("outer_radius"=>1.125,"inner_radius"=>0.3)
+            mirror["pupil"] = pupil
+            write_documents(documents)
+            declared = IC.load(documents.paths.physical)
+            with_pupil = IC.publication(documents.paths.rtc)
+            scientific_pupil = IC.scientific_definition(documents.paths.simulation)
+            @test IC.physical_definition(declared).deformable_mirrors.primary.pupil ==
+                scientific_pupil.deformable_mirrors.primary.pupil ==
+                with_pupil.deformable_mirrors.primary.pupil == (;outer_radius=1.125,inner_radius=0.3)
+            @test with_pupil.deformable_mirrors.primary.pupil_coordinates == original_coordinates
+            @test with_pupil.deformable_mirrors.primary.layout == original_layout
+            @test with_pupil.scientific_identity != publication.scientific_identity
+            @test scientific_pupil.prescription_identity != scientific.prescription_identity
+            target = IC.prepare_publication(directory)
+            @test JSON.parsefile(target)["deformable_mirrors"]["primary"]["pupil"] == pupil
+            documents.physical["telescope"] = Dict("telescope_diameter_m"=>8.0,
+                "central_obstruction_ratio"=>0.2,"pupil_reflectivity"=>0.9,"aperture_revision"=>1)
+            write_documents(documents)
+            # An explicit per-mirror pupil takes precedence over the telescope fallback.
+            @test IC.publication(documents.paths.rtc).deformable_mirrors.primary.pupil ==
+                with_pupil.deformable_mirrors.primary.pupil
+            delete!(mirror,"pupil")
+            write_documents(documents)
+            @test IC.publication(documents.paths.rtc).deformable_mirrors.primary.pupil ==
+                (;outer_radius=1.0,inner_radius=0.2)
+            delete!(documents.physical,"telescope")
+            write_documents(documents)
+            @test !hasproperty(IC.publication(documents.paths.rtc).deformable_mirrors.primary,:pupil)
+            for invalid in (Dict("outer_radius"=>1.0), Dict("outer_radius"=>true,"inner_radius"=>0.0),
+                    Dict("outer_radius"=>1.0,"inner_radius"=>1e-100),
+                    Dict("outer_radius"=>1e100,"inner_radius"=>0.0),
+                    Dict("outer_radius"=>nextfloat(1.0),"inner_radius"=>1.0))
+                mirror["pupil"] = invalid
+                @test_throws ArgumentError IC.validate_declaration(documents.physical,directory)
+            end
+            delete!(mirror,"pupil")
+            # The existing required mirror declaration fields remain required.
+            for field in ("description","pupil_registration","units","command_scale_m")
+                invalid = deepcopy(documents.physical)
+                delete!(invalid["deformable_mirrors"]["primary"],field)
+                @test_throws ArgumentError IC.validate_declaration(invalid,directory)
+            end
+        end
+    end
+
     @testset "sampled artifact publication preserves scientific values and identity" begin
         mktempdir() do directory
             documents = declaration_documents(directory)
