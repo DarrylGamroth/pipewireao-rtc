@@ -117,8 +117,10 @@ function run_prepared(options, runtime, graph)
     !isempty(correction_properties) && !isnothing(options.capture_backend) &&
         throw(ArgumentError("captured graph owners do not support runtime correction properties"))
     observer = isempty(correction_properties) ? nothing :
-        PipeWireAORTC.CorrectionLoops.Observer(correction_properties, runtime.transport.endpoint.instance)
-    observation = isnothing(observer) ? (;) : (; property_observer=observer)
+        PipeWireAORTC.CorrectionLoops.Observer(correction_properties, runtime.transport.endpoint.instance;
+            timeout_ms=options.correction_timeout_ms)
+    observation = isnothing(observer) ? (;) : (; property_observer=observer,
+        property_info=PipeWireAORTC.CorrectionLoops.property_info(observer), property_getter=observer)
     common = (; name=options.name, remote=options.remote, rate=options.rate,
         connect=false, run_control=options.session_run_control,
         acquisition_version=options.acquisition_version)

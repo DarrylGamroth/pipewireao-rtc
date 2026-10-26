@@ -3,6 +3,16 @@ using Test, PipeWireAORTC
 const E = PipeWireAORTC.ScienceExport
 const C = PipeWireAORTC.Common
 
+@testset "staged RTC scripts include their application dependencies" begin
+    scripts = joinpath(pkgdir(PipeWireAORTC), "native", "scripts")
+    for relative in E.RTC_SCRIPTS
+        source = read(joinpath(scripts, relative), String)
+        for required in eachmatch(r"require\s*\(\s*\"(ao-[^\"]+)\"\s*\)", source)
+            @test "lib/" * required[1] * ".lua" in E.RTC_SCRIPTS
+        end
+    end
+end
+
 function dependency_prefix(root; library_dir="lib/x86_64-linux-gnu")
     prefix = joinpath(root, "dependency")
     directory = joinpath(prefix, library_dir)

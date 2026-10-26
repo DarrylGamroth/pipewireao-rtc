@@ -54,12 +54,29 @@ Julia graph owner's `argv` in `rtc/application.yaml`:
 - "closed-loop-correction:closed"
 ```
 
-Repeat for each declared loop. This requires RTC 0.2.12 and
-FilterGraphPipeWire 0.1.8. The owner validates the Boolean and initial applied
+Repeat for each declared loop. Operational admission and status require RTC
+0.2.13 and FilterGraphPipeWire 0.1.9. The owner validates the Boolean and initial applied
 readback before admission. `Open`/`Closed` describe confirmed adoption;
 `Opening`/`Closing` describe accepted changes awaiting it; inconsistent facts
-latch `Unknown`. This owner-local tracking does not add GUI commands or another
-native status property. Start/Stop, reset and controller state remain unchanged.
+latch `Unknown`. Ordinary read-only graph properties publish the state, fault
+and requested closure under `pipewireao.correction-control.NODE:PROPERTY`.
+The existing `NODE:PROPERTY` Boolean is the applied value, with existing node
+requested/active generations. These values are available to every client through
+the existing `properties` query, and to generic advertised-property displays.
+Start/Stop, reset and controller state remain unchanged.
+
+The native RTC refuses a loop change unless its session, execution group and
+owner are running and fresh status confirms the expected owner, stable loop
+state and completed previous adoption. A refused row rejects its whole scalar
+transaction before any values change. A refusal does not fault a healthy session.
+
+The default adoption timeout is 5000 ms. An optional owner argument
+`--correction-timeout-ms N` accepts 1–60000 ms. Expiration is checked on owner
+control observations/publication, not by a background timer or each remote
+client query: native queries can read cached Props. Expiration or unavailable
+observation latches `Unknown` for that owner incarnation, without retry, reset,
+opening or flattening. A late readback cannot silently clear it. Generation
+equality proves plan adoption, not the first processed frame or physical motion.
 
 In `gui/operator-views.yaml`, declare presentation references under the existing
 session binding (the label must match the selected RTC session):

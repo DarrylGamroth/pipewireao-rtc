@@ -173,8 +173,93 @@ The native transaction slot continues to reject busy writes. The observer cannot
 veto an already accepted write. An unexpected adapter-observer failure disables
 further notifications and is logged without changing staging or native readback;
 the RTC observer also contains its own failures. Native property readback remains
-authoritative. This increment does not publish another FSM status property,
-add transition-frame reporting, or enable runtime writes to captured graphs.
+authoritative. The initial observer-only increment did not publish FSM status;
+the operational extension below adds read-only status. Neither adds
+transition-frame reporting or enables runtime writes to captured graphs.
+
+### Operational controls for the existing coupled loop
+
+The operational extension adds readiness admission and inspectable loop status
+for the existing coupled correction property. Independent corrector participation,
+instrument-defined closure sequences, flat/clear/reset policies and physical
+device authority remain separate work. The current startup Boolean and scientific
+hold/resume recurrence are preserved. The live application is not replaced as
+part of source validation.
+
+The native session remains the only command admission authority. In particular,
+an expected refusal must occur before `operation.effects_issued` and the owner
+`set_param` call. Throwing from the Julia graph setter is not a normal refusal:
+the current native adapter treats a negative setter result as an owner fault.
+Direct writes that bypass the RTC are outside this admission contract.
+
+This diagram shows the existing command path and the added status feedback:
+
+```mermaid
+flowchart LR
+    Client["GUI / CLI / Julia"]
+    RTC["Native RTC admission"]
+    Graph["Graph property staging"]
+    Processing["Plan adoption"]
+    Hsm["RTC Hsm status"]
+    Client --> RTC
+    RTC -->|accepted command| Graph
+    Graph --> Processing
+    Processing -->|existing property notification| Hsm
+    Hsm -->|read-only Props| RTC
+    RTC -->|outcome and readback| Client
+```
+
+Status uses ordinary read-only `SPA_PARAM_PropInfo`/`SPA_PARAM_Props`, sharing
+the exact graph snapshot used for applied property readback. No additional
+operation, endpoint, polling daemon or session authority is introduced. The
+protocol identifiers follow the existing `pipewireao.run-control` and
+`pipewireao.reset-control` property conventions:
+
+| Identifier | Type and meaning | Authority / scope |
+| --- | --- | --- |
+| `pipewireao.correction-control.version` | Int, version 1 | Native scalar property convention |
+| `pipewireao.correction-control.owner-instance` | Long, bootstrap incarnation | Existing exact owner identity |
+| `pipewireao.correction-control.P.state` | String, existing Hsm state | Explicit qualified Boolean property `P` |
+| `pipewireao.correction-control.P.fault` | String, empty or fault description | Hsm observation/adoption failure |
+| `pipewireao.correction-control.P.requested` | Bool, accepted desired closure | Existing requested/applied distinction |
+| `--correction-timeout-ms` | Integer, 1–60000 ms; default 5000 | Adoption confirmation deadline |
+
+Here `P` is the full declared `node:property` string, not an inferred node type
+or a hard-coded instrument name. The existing `P` value remains the applied
+Boolean; existing node requested/active generations are reused. Duplicating
+those values in a second state record or adding another correction command was
+rejected in favor of the established property interface.
+
+For an RTC-mediated change to a declared correction property, admission requires
+all of the following from fresh readback: a running admitted session, the graph's
+execution group running, the owner's native run-control actual state running,
+the declared bootstrap incarnation, a supported status version, Open or Closed
+Hsm state with no fault, equal requested/active generations and matching desired
+and applied Booleans. A denied row rejects the whole mixed property transaction
+before any write. Other properties retain their existing policy. Legacy owners
+without correction status retain their existing contract; partial or unsupported
+correction status fails closed.
+
+The getter checks observation availability and reconciles the supplied graph
+snapshot before publishing status. A disabled observer cannot publish cached
+healthy status. A closure awaiting confirmation expires on the first control
+observation at or after its deadline and latches Unknown; a late readback does
+not silently recover it. Duplicate callbacks do not extend the deadline.
+Unrelated same-value property generations do not start a closure deadline.
+There is no automatic retry, opening, flattening, reset or gain change on fault.
+Native session timeouts and required-owner loss retain their existing fault
+policy. A replacement owner starts with new state and a new incarnation.
+
+Implementation order and acceptance evidence:
+
+1. Add the generic read-only graph publication seam, validating declarations,
+   types, collisions and write protection; retain processing allocation checks.
+2. Publish Hsm state/fault/requested status and add deterministic timeout tests,
+   including unavailable observation and late/stale readback.
+3. Add native pre-effect admission tests for stopped/unknown/faulted/wrong-owner
+   cases and mixed transactions, then run combined CPU and native/private-core
+   checks. Generation equality proves plan adoption, not a physical response or
+   a transition frame; this increment makes neither claim.
 
 ## Naming and deployment
 

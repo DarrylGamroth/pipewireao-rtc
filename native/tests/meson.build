@@ -30,7 +30,7 @@ configure_file(output: 'rtc-test-build.h', configuration: test_config)
 script_tester = executable('script-tester', 'script-tester.c',
   include_directories: include_directories(wp_source / 'tests/wplua'),
   dependencies: [wp, pw])
-foreach name : ['ao-lua', 'ao-connections', 'ao-owner', 'ao-acquisition', 'ao-session-journal', 'ao-session-hooks']
+foreach name : ['ao-lua', 'ao-connections', 'ao-owner', 'ao-acquisition', 'ao-correction', 'ao-session-journal', 'ao-session-hooks', 'ao-session-correction']
   test(name, script_tester, args: ['lua-api-tests', name + '.lua'], env: test_env, timeout: 30)
 endforeach
 journal = executable('test-ao-journal', 'ao-journal.c', dependencies: [wp, pw, sqlite])

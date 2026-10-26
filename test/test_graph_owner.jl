@@ -12,14 +12,27 @@ end
     argv = ["--bootstrap-node", "rtc.bootstrap.graph", "--bootstrap-instance=7",
         "--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control",
         "--fits-bindings", "bindings.conf"]
-    binding, graph, fits, correction_properties = GraphOwner.arguments(argv)
+    binding, graph, fits, correction_properties, timeout_ms = GraphOwner.arguments(argv)
     @test isempty(correction_properties)
+    @test timeout_ms == 5000
     @test binding == (; remote="/tmp/rtc-private", bootstrap_node="rtc.bootstrap.graph", bootstrap_instance=7)
     @test graph == ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
     @test fits == "bindings.conf"
     with_loop = GraphOwner.arguments([argv; "--correction-property"; "controller:closed"])
-    @test last(with_loop) == ["controller:closed"]
+    @test with_loop[4] == ["controller:closed"]
+    @test with_loop[5] == 5000
     @test with_loop[2] == graph
+    timed = GraphOwner.arguments([argv; "--correction-property=controller:closed";
+        "--correction-timeout-ms"; "2000"])
+    @test timed[5] == 2000
+    @test timed[2] == graph
+    for timeout in ("0", "-1", "60001", "1.5", "true", "999999999999999999999")
+        @test_throws ArgumentError GraphOwner.arguments([argv;
+            "--correction-property=controller:closed"; "--correction-timeout-ms"; timeout])
+    end
+    @test_throws ArgumentError GraphOwner.arguments([argv; "--correction-timeout-ms=2000"])
+    @test_throws ArgumentError GraphOwner.arguments([argv; "--correction-property=controller:closed";
+        "--correction-timeout-ms=2000"; "--correction-timeout-ms=1000"])
     for invalid in ("closed", ":closed", "controller:", "a:b:c", "controller:\0closed")
         @test_throws ArgumentError GraphOwner.arguments([argv; "--correction-property"; invalid])
     end
@@ -46,6 +59,8 @@ end
         run=(island, options, runtime, entries) -> begin
             @test runtime === :runtime
             @test isempty(entries)
+            @test isempty(options.correction_properties)
+            @test options.correction_timeout_ms == 5000
             push!(events, :run)
         end) == 0
     @test events == [:preparing, :check, :load_science, :check, :check, :run, :cleanup]

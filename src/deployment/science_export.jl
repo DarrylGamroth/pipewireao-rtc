@@ -211,7 +211,7 @@ end
 const WIREPLUMBER_MODULES = ("lua-scripting",)
 const RTC_MODULES = ("ao-control-endpoint", "ao-journal", "ao-lua")
 const RTC_SCRIPTS = ("ao/session.lua", "lib/ao-lua.lua", "lib/ao-control.lua", "lib/ao-owner.lua",
-    "lib/ao-acquisition.lua", "lib/ao-session-control.lua", "lib/ao-connections.lua")
+    "lib/ao-acquisition.lua", "lib/ao-session-control.lua", "lib/ao-connections.lua", "lib/ao-correction.lua")
 
 "Copy the generic WirePlumber library, factories and scripts; never its daemon or AO policy."
 function stage_wireplumber!(package; build=nothing, source=nothing, prefix=nothing)

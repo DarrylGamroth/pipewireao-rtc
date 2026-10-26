@@ -5,6 +5,7 @@
 -- admits exact prepared owners, connects declared ports and controls acquisition.
 local lua = require ("ao-lua")
 local control = require ("ao-control")
+local correction = require ("ao-correction")
 local owner = require ("ao-owner")
 local acquisition = require ("ao-acquisition")
 local connections = require ("ao-connections")
@@ -396,6 +397,7 @@ local function property_update (operation, name, transaction)
       end
     end
     named_properties (operation, node, function (before)
+      correction.check (state, args, name, before, updates, declarations)
       local baseline = {}
       local running = state.lifecycle == 4
       if running then

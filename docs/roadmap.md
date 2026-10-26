@@ -14,6 +14,16 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### RTC correction-loop adoption tracking — 2026-10-26
 
+The operational extension adds native readiness admission and ordinary read-only
+state/fault/requested properties for each explicitly bound coupled loop.
+Stopped, pending, faulted, wrong-incarnation or incomplete status refuses the
+whole mixed scalar transaction before effects. Owner-control observations enforce
+a bounded adoption timeout; late confirmation does not clear Unknown. Scientific
+startup, hold/resume, gains and reset semantics remain unchanged. See the
+[operational validation](validation/loop-controls-20261026/README.md#operational-coupled-loop-controls).
+The live applications remain unchanged; independent corrector closure and
+physical-device policies remain deferred.
+
 RTC 0.2.12 uses Hsm 0.3.2 and the FilterGraphPipeWire 0.1.8 property observer
 for explicitly declared Boolean correction loops. Cold admission, accepted
 requests and applied snapshots drive owner-local Open/Closing/Closed/Opening

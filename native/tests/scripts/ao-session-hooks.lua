@@ -2,6 +2,7 @@
 -- Only native control/discovery boundaries are gated; there is no Lua event or
 -- transition substitute. Fake monotonic time makes deadline races deterministic.
 local lua = require ("ao-lua")
+local selector = ...
 Script.async_activation = true
 local control = require ("ao-control")
 local function upvalue (fn, wanted)
@@ -40,8 +41,51 @@ local function session (options)
   local nodes = { source = { name = "source" }, alpha = { name = "alpha" },
     beta = { name = "beta" }, bootstrap = { name = "bootstrap", properties = { ["client.id"] = "7" } },
     parameters = { name = "parameters" } }
+  if options.properties then
+    local declarations = { ["controller:closed"] = Pod.Boolean (false),
+      ["controller:gain"] = Pod.Float (0.2) }
+    local correction_prefix = "pipewireao.correction-control."
+    for name, value in pairs (options.properties) do
+      if name:sub (1, #correction_prefix) == correction_prefix then declarations [name] = value end
+    end
+    test.property_info = declarations
+    local function iterator (rows)
+      return { iterate = function ()
+        local index = 0
+        return function () index = index + 1; return rows [index] end
+      end }
+    end
+    nodes.alpha.enum_params = function (_, kind, callback)
+      local rows = {}
+      if kind == "PropInfo" then
+        for name, value in pairs (declarations) do
+          rows [#rows + 1] = Pod.Object { "Spa:Pod:Object:Param:PropInfo", "PropInfo",
+            -- SPA_PROP_INFO_type is a generic Pod; use its public numeric key
+            -- to bypass the stock Lua constructor's exact-type restriction.
+            name = Pod.String (name), ["id-00000003"] = value }
+        end
+      else
+        assert (kind == "Props")
+        local fields = {}
+        for name, value in pairs (options.properties) do
+          fields [#fields + 1], fields [#fields + 2] = Pod.String (name), value
+        end
+        rows [1] = Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct (fields) }
+      end
+      callback (iterator (rows))
+    end
+    nodes.alpha.set_param = function (_, kind, pod)
+      assert (kind == "Props")
+      test.effects [#test.effects + 1] = "property-write"
+      for name, value in pairs (control.named_params (pod)) do options.properties [name] = value end
+      local generation = control.scalar (options.properties ["controller:requested-generation"], "Long") + 1
+      options.properties ["controller:requested-generation"] = Pod.Long (generation)
+      options.properties ["controller:active-generation"] = Pod.Long (generation)
+    end
+  end
   local catalog = { nodes = { [1] = { name = "controller" } }, clients = { [7] = {} } }
   local mocks = { ["ao-lua"] = lua,
+    ["ao-correction"] = require ("ao-correction"),
     ["ao-control"] = setmetatable ({ identity = function () return { global_id = 1,
       serial = 2, instance = 3, pid = 4 } end }, { __index = control }),
     ["ao-owner"] = {
@@ -144,8 +188,8 @@ local function session (options)
   test.pause = options.pause
   chunk ({ parse = function () return args end })
   test.state, test.api, test.fault = upvalue (fault, "state"), api, fault
-  function test:request (opcode)
-    local ticket = { header = { operation = opcode, instance = 3 }, payload = Pod.Struct {},
+  function test:request (opcode, payload)
+    local ticket = { header = { operation = opcode, instance = 3 }, payload = payload or Pod.Struct {},
       deadline = self.now + 10000000 }
     if not api.pending then api.pending = ticket end
     request (ticket)
@@ -356,7 +400,78 @@ local function errors ()
   end
 end
 
+local function correction_admission ()
+  local prefix = "pipewireao.correction-control."
+  local key = prefix .. "controller:closed"
+  local cases = {
+    { "close", nil, true },
+    { "open", function (_, values)
+        values [key .. ".state"], values [key .. ".requested"] = Pod.String ("Closed"), Pod.Boolean (true)
+        values ["controller:closed"] = Pod.Boolean (true)
+      end, true, false },
+    { "ready", function (state) state.lifecycle = 3 end },
+    { "group stopped", function (state) state.groups.science.running = false end },
+    { "owner stopped", function (_, values)
+        values ["pipewireao.run-control.actual-state"] = Pod.String ("stopped") end },
+    { "unknown", function (_, values) values [key .. ".state"] = Pod.String ("Unknown") end },
+    { "fault", function (_, values) values [key .. ".fault"] = Pod.String ("observation_timeout") end },
+    { "version", function (_, values) values [prefix .. "version"] = Pod.Int (2) end },
+    { "incarnation", function (_, values) values [prefix .. "owner-instance"] = Pod.Long (9) end },
+    { "pending", function (_, values) values ["controller:requested-generation"] = Pod.Long (1) end },
+    { "mismatch", function (_, values) values [key .. ".requested"] = Pod.Boolean (true) end },
+    { "partial state", function (_, values) values [key .. ".state"] = nil end },
+    { "partial version", function (_, values)
+        values [prefix .. "version"], values [key .. ".state"] = nil, nil end },
+    { "missing declared status", function (_, values)
+        for _, suffix in ipairs ({ ".state", ".fault", ".requested" }) do values [key .. suffix] = nil end
+      end },
+    { "legacy", function (_, values, declarations)
+        for name in pairs (values) do
+          if name:sub (1, #prefix) == prefix then values [name], declarations [name] = nil, nil end
+        end
+      end, true },
+    { "ordinary property", nil, true, nil, true },
+    { "future ordinary property", function (_, values) values [prefix .. "version"] = Pod.Int (2) end,
+      false, nil, true },
+  }
+  for _, case in ipairs (cases) do
+    local values = { [prefix .. "version"] = Pod.Int (1), [prefix .. "owner-instance"] = Pod.Long (8),
+      [key .. ".state"] = Pod.String ("Open"), [key .. ".fault"] = Pod.String (""),
+      [key .. ".requested"] = Pod.Boolean (false), ["controller:closed"] = Pod.Boolean (false),
+      ["controller:gain"] = Pod.Float (0.2), ["controller:requested-generation"] = Pod.Long (0),
+      ["controller:active-generation"] = Pod.Long (0),
+      ["pipewireao.run-control.actual-state"] = Pod.String ("running") }
+    local test = session { bootstrap = true, properties = values }
+    prepared (test)
+    test:request (10); done (test)
+    test.effects, test.completions = {}, {}
+    if case [2] then case [2] (test.state, values, test.property_info) end
+    local active = control.scalar (values ["controller:closed"], "Bool")
+    local requested = control.scalar (values ["controller:requested-generation"], "Long")
+    local rows = { Pod.Struct { "controller:gain", Pod.Float (0.4) } }
+    if not case [5] then rows [#rows + 1] = Pod.Struct {
+      "controller:closed", Pod.Boolean (case [4] ~= false) } end
+    test:request (13, Pod.Struct { "alpha", Pod.Struct (rows) }); done (test)
+    assert (#test.completions == 1 and not test.completions [1].unknown, case [1])
+    if case [3] then
+      assert (test.completions [1].outcome == 5, case [1] .. ": " .. tostring (test.completions [1].reason))
+      order (test, "property-write")
+      assert (control.scalar (values ["controller:requested-generation"], "Long") == requested + 1)
+    else
+      order (test, "")
+      assert (test.completions [1].outcome == 0 and test.completions [1].reason, case [1])
+      assert (not test.state.faulted, "Rejected correction faulted the session: " .. case [1])
+      assert (control.scalar (values ["controller:closed"], "Bool") == active)
+      assert (control.scalar (values ["controller:gain"], "Float") == Pod.Float (0.2):parse ())
+      assert (control.scalar (values ["controller:requested-generation"], "Long") == requested)
+      assert (control.scalar (values ["controller:active-generation"], "Long") == 0)
+    end
+    test:close ()
+  end
+end
+
 co = coroutine.create (function ()
+  if selector == "correction" then correction_admission (); return end
   normal ()
   startup_queries ()
   quit_fence_failure ()

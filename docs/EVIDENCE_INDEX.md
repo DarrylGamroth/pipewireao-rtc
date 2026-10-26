@@ -35,6 +35,11 @@ reviews, RTC scalar-command integration and GUI validation. Cold AOS ordering
 and generic controller hold/resume are implemented; GUI commands reuse the
 existing verified RTC property path. The live RTC/GUI are unchanged. No fresh
 native-session, hardware, deadline or AMDGPU qualification is claimed.
+The [operational follow-up](validation/loop-controls-20261026/README.md#operational-coupled-loop-controls)
+adds explicit coupled-loop readiness, read-only requested/applied status and
+bounded observation-based adoption timeout. It records native whole-transaction
+rejection tests, deterministic CPU checks and the independently reviewed
+partial-status fixes, without changing the live sessions.
 
 ## GPI stage response and temporal allocation — 2026-10-26
 

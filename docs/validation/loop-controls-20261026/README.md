@@ -149,3 +149,79 @@ its independently verified [live receipt](../yaml-science-20261026/live-gpi2.jso
 does not qualify the new Hsm path. Classic and GPI2 source declarations opt into
 tracking for their next deployment. No Hsm live, deadline or hardware claim is
 made by these software checks.
+
+## Operational coupled-loop controls
+
+The source extension retains the existing Boolean/plan-generation contract and
+startup/hold/resume semantics. Native session admission checks fresh owner
+readback before issuing any property effect. Read-only scalar Props publish
+Hsm state, fault and accepted desired closure for explicit targets; the existing
+Boolean remains applied truth. The provider is FilterGraphPipeWire 0.1.9
+(`29428be`, package tree `731b4502efab604f8df1b95e67bbf84cabeb609f`); the
+consumer requires PipeWireAO 0.6.19 for public display metadata. Hsm remains
+registered 0.3.2. RTC 0.2.13 requires the new adapter minimum. No
+instrument-specific handler or scientific gain/limit changes
+were introduced. The [design](../../HEADLESS_RTC_DESIGN.md#operational-controls-for-the-existing-coupled-loop)
+and [usage](../../JULIA_DEPLOYMENT_USAGE.md#open-and-close-correction) define
+the contract and timeout boundary.
+
+Observed CPU software checks on Julia 1.13.2:
+
+- Pure Hsm/status/deadline selector: 237 assertions. Exact deadline, unsigned
+  clock wrap, duplicates, gain-only generations, malformed/late observations,
+  unavailable observation and read-only PropInfo are covered.
+- Graph owner/arguments: 70 assertions, including timeout bounds and explicit
+  binding requirements.
+- Complete RTC workspace: 4,647 assertions across 166 testsets pass with
+  `Pkg.test(; julia_args=["--threads=1"])`. The later deployment-only change
+  adding the required helper to the sealed script list passes the affected
+  staging selector (42 assertions) and runtime export selector (58 assertions).
+- Combined real graph/native-filter callbacks: 46 assertions. Initial status,
+  pending/applied distinction, busy rejection, opposite requests, gain updates,
+  read-only mixed-write rejection, late adoption and disabled observation pass.
+  This selector does not connect to a live daemon.
+- Complete graph-adapter CPU coverage: 1,421 assertions across 70 testsets.
+  The full-file run passed 69 testsets/1,418 assertions; its last new progressive
+  test initially omitted the fixture's mandatory deployment rate. Correcting
+  only that test argument yielded the remaining 3 passing assertions in the
+  focused selector. All production source was identical between these runs.
+  Ordinary, join, progressive, captured rejection, type/collision checks,
+  observer failure, thread affinity and processing allocation checks are covered.
+  Twenty cold constructor failures with GC disabled retained 18 file descriptors.
+- Native real-POD helper, production session admission and existing session
+  lifecycle-hook selectors pass using the existing compiled native harness and
+  current Lua sources. Denied mixed writes leave gain, closure and generations
+  unchanged and do not fault the healthy session. The same production selector
+  fails against the original session source because it issues `property-write`.
+
+Independent cross-review found and resolved two partial-publication admission
+defects. OP01: a missing state with remaining target fields initially bypassed
+the guard. OP02: all target values missing while PropInfo still declared them
+also bypassed it. Admission now recognizes target bindings from values or
+declarations and requires complete readback. Missing declared global version
+also refuses admission. Both fixes have fail-before/pass-after helper and
+production-session cases; final review found no remaining actionable finding.
+Final integration also found OP03: the sealed staging list omitted the new
+helper even though Meson installs it. The list now includes it, and a generic
+test scans the actual exported Lua sources for application dependencies. That
+test fails before the fix and passes after it; staging current scripts with
+the existing compiled RTC also passes. Independent packaging review found no
+further omission.
+
+The exact native runner environment is retained in
+`operational-native-tests.sh`; the SDK/harness is the existing
+`classic-shutdown-20261021/rtc-fixed-build` with its `prefix-fixed` runtime.
+The new tests are registered in Meson, but fresh configuration was blocked by
+missing SQLite development pkg-config metadata; no C code changed. Some runs
+of the unchanged lifecycle selector reached its 8-second harness cutoff during
+concurrent CPU work; a separate run passed without changing its wait bounds.
+Those cutoff runs do not establish a production lifecycle regression or fix.
+
+Timeout expiration is checked on owner control observations/publication, not by
+a background timer. Remote native Props queries can read cached parameters;
+polling alone does not force a Julia getter call. No automatic retry/open/reset
+or flatten action is added. Native session effect deadlines and required-owner
+loss retain their existing fault policy. Generation equality proves plan
+adoption, not a transition frame or physical response. Live Classic/GPI2,
+scientific calibration and GPU use remain unchanged. No live Hsm, physical,
+deadline, tail-latency or independent-corrector qualification is claimed.

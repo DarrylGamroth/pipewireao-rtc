@@ -11,7 +11,7 @@ public main, read_bindings
 const Bootstrap = NativeOwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
 
-"""Extract RTC bootstrap and FITS bindings while preserving graph CLI arguments."""
+"""Extract RTC bootstrap, correction and FITS settings; preserve graph arguments."""
 function arguments(arguments)
     values = Dict{String,String}()
     graph = String[]
@@ -24,7 +24,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms")
             key == "--correction-property" || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -58,7 +58,12 @@ function arguments(arguments)
     instance = tryparse(Int64, values["--bootstrap-instance"])
     instance !== nothing && instance > 0 || throw(ArgumentError("invalid bootstrap instance"))
     bindings = get(values, "--fits-bindings", nothing)
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties
+    timeout_ms = tryparse(Int, get(values, "--correction-timeout-ms", "5000"))
+    timeout_ms !== nothing && 1 <= timeout_ms <= 60000 ||
+        throw(ArgumentError("correction timeout must be 1–60000 milliseconds"))
+    haskey(values, "--correction-timeout-ms") && isempty(correction_properties) &&
+        throw(ArgumentError("correction timeout requires a declared correction property"))
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms
 end
 
 struct FITSBinding
@@ -134,12 +139,13 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
         admitted.owner_check()
-        options = merge(Base.invokelatest(island.parse_arguments, graph_arguments), (; correction_properties))
+        options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
+            (; correction_properties, correction_timeout_ms))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -161,6 +167,8 @@ axes. FITS startup does not change legacy raw `--parameter` file semantics.
 `--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
 for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.
+`--correction-timeout-ms N` bounds adoption confirmation for declared loops
+(1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
 """
 main(args) = _main(args)
 
