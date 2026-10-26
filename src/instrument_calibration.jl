@@ -13,7 +13,8 @@ import ..InstrumentExport
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
-    controller_graph, controller_storage, measure!, calibration_frame!, calibrate_modal_system, validate_modal_system
+    controller_graph, controller_storage, measure!, calibration_frame!, calibrate_modal_system,
+    calibrate_hidden_modes, validate_modal_system
 
 "Return the SHA-256 digest of a file's bytes."
 digest(path) = bytes2hex(sha256(read(path)))
@@ -373,6 +374,7 @@ function controller_storage end
 function measure! end
 function calibration_frame! end
 function calibrate_modal_system end
+function calibrate_hidden_modes end
 function validate_modal_system end
 
 end

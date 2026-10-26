@@ -229,13 +229,14 @@ function publication(path)
 end
 
 "Resolve simulator references in a copied application before its existing parser runs."
-function prepare_simulation_configuration!(application::AbstractString; simulation="simulation.conf")
+function prepare_simulation_configuration!(application::AbstractString; simulation="simulation.conf", configuration=nothing)
     path = D.relative_asset(application, simulation)
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     source["version"] == 3 || throw(ArgumentError("declarative instrument publication requires simulator version 3"))
     plant = source["plant"]
     declaration = load_simulation(D.relative_asset(application, plant["definition"]))
     configured = settings(declaration, get(plant, "settings", Dict()))
+    source["rtc_configuration"] = something(configuration, source["rtc_configuration"])
     rtc = load_rtc(D.relative_asset(application, source["rtc_configuration"]))
     rtc.instrument.path == declaration.instrument.path ||
         throw(ArgumentError("simulation and RTC must reference the same physical instrument"))

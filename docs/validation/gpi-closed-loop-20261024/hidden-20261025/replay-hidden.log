@@ -1,0 +1,32 @@
+PROGRESS 5.015s modules loaded; entering selector
+PROGRESS 411.285s zero-gain graph equivalence passed; prepare single CUDA plant
+PROGRESS 411.31s plant: load declared simulation and verify prescription
+PROGRESS 411.543s plant: prepare optical graph (AdaptiveOpticsSim.AlgorithmGraphs.CapturedGraphExecution()), calibration=false
+PROGRESS 460.475s plant: optical graph ready
+PROGRESS 631.514s begin hidden replay gain=0.0 frames=4096
+PROGRESS 638.292s gain=0.0 frame=512 residual_nm=51.840338553070346 elapsed=6.180014267
+PROGRESS 644.354s gain=0.0 frame=1024 residual_nm=54.748430200479056 elapsed=12.840360337
+PROGRESS 650.471s gain=0.0 frame=1536 residual_nm=58.04261174447823 elapsed=18.95654854
+PROGRESS 656.668s gain=0.0 frame=2048 residual_nm=51.41595630897298 elapsed=25.15402843
+PROGRESS 662.788s gain=0.0 frame=2560 residual_nm=89.28269491587925 elapsed=31.273698349
+PROGRESS 668.834s gain=0.0 frame=3072 residual_nm=64.69414163804029 elapsed=37.320311773
+PROGRESS 674.871s gain=0.0 frame=3584 residual_nm=55.4568651451437 elapsed=43.357019463
+PROGRESS 680.92s gain=0.0 frame=4096 residual_nm=61.56437148279265 elapsed=49.405774182
+PROGRESS 846.77s begin hidden replay gain=0.1 frames=4096
+PROGRESS 851.436s gain=0.1 frame=512 residual_nm=53.340669623822535 elapsed=4.664832862
+PROGRESS 855.637s gain=0.1 frame=1024 residual_nm=60.32452652366799 elapsed=8.865457743
+PROGRESS 859.831s gain=0.1 frame=1536 residual_nm=79.5536867084645 elapsed=13.0599143
+PROGRESS 864.013s gain=0.1 frame=2048 residual_nm=69.52966251256541 elapsed=17.242057553
+PROGRESS 868.165s gain=0.1 frame=2560 residual_nm=124.19966199780804 elapsed=21.394104319
+PROGRESS 872.277s gain=0.1 frame=3072 residual_nm=116.83935841351311 elapsed=25.505662282
+PROGRESS 876.399s gain=0.1 frame=3584 residual_nm=58.35099045914996 elapsed=29.627618435
+PROGRESS 880.563s gain=0.1 frame=4096 residual_nm=223.27572904485584 elapsed=33.792350154
+PROGRESS 1039.131s begin hidden replay gain=1.0 frames=4096
+PROGRESS 1043.611s gain=1.0 frame=512 residual_nm=54.708357522738446 elapsed=4.479205914
+PROGRESS 1047.585s gain=1.0 frame=1024 residual_nm=61.67275517254508 elapsed=8.45311125
+PROGRESS 1051.541s gain=1.0 frame=1536 residual_nm=147.08984051283775 elapsed=12.409654685
+PROGRESS 1055.419s gain=1.0 frame=2048 residual_nm=85.12512639979649 elapsed=16.28724814
+PROGRESS 1059.315s gain=1.0 frame=2560 residual_nm=83.21042142961902 elapsed=20.174856877
+PROGRESS 1063.2s gain=1.0 frame=3072 residual_nm=180.552853472494 elapsed=24.05994407
+PROGRESS 1067.073s gain=1.0 frame=3584 residual_nm=123.91990496211027 elapsed=27.941904506
+PROGRESS 1070.949s gain=1.0 frame=4096 residual_nm=366.78846717226804 elapsed=31.817379174

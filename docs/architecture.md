@@ -1073,7 +1073,14 @@ is usable only for offline preparation, not installation. The exporter owns no
 processes, links or live controls.
 
 Authoring `rtc/application.conf` may additionally declare `graph-configurations`,
-an array of `{path}` entries. This field is consumed by the exporter and is not
+an array of `{path}` entries, optionally with a `source` filename inside the
+application. When supplied, the exporter reads `source` and writes the resolved
+graph to `path`; otherwise it resolves `path` in place. This lets an application
+mode select a generated controller graph while keeping native owner paths and
+the shared authored graph unchanged. Sources remain unchanged, destinations
+must be unique, and a distinct source cannot also be a graph destination.
+All graph declarations are checked before any are written.
+This field is consumed by the exporter and is not
 native deployment/runtime configuration. A node's `config` may use an object
 containing only `$ref` with a plain JSON Pointer, for example
 `{ "$ref": "/instrument/wavefront_sensors/shwfs/layout/detector_shape" }`.

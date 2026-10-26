@@ -4,6 +4,39 @@ const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 
+@testset "application modes select graph sources without editing the source" begin
+    mktempdir() do application
+        C.write_json(joinpath(application, "instrument.json"),
+            Dict("deformable_mirrors"=>Dict(), "wavefront_sensors"=>Dict()))
+        original = Dict("filter.graph"=>Dict("nodes"=>[Dict("name"=>"control", "config"=>Dict{String,Any}("count"=>1))]))
+        selected = deepcopy(original)
+        selected["filter.graph"]["nodes"][1]["config"]["count"] = Dict("\$ref"=>"/rtc/dimensions/count")
+        C.write_json(joinpath(application,"graph.conf"),original)
+        C.write_json(joinpath(application,"heart.conf"),selected)
+        bytes = read(joinpath(application,"heart.conf"))
+        declarations = [Dict("path"=>"graph.conf", "source"=>"heart.conf")]
+        E.prepare_graph_configurations!(application,declarations,"instrument.json","/opt/pipewireao";
+            dimensions=Dict("count"=>3))
+        @test only(D.decode(joinpath(application,"graph.conf"),"/opt/pipewireao")["filter.graph"]["nodes"])["config"]["count"] == 3
+        @test read(joinpath(application,"heart.conf")) == bytes
+        @test occursin("heart.conf",read(joinpath(application,"graph.conf"),String))
+        before = read(joinpath(application,"graph.conf"))
+        @test_throws ArgumentError E.prepare_graph_configurations!(application,
+            vcat(declarations,declarations),"instrument.json","/opt/pipewireao")
+        @test read(joinpath(application,"graph.conf")) == before
+        @test_throws ArgumentError E.prepare_graph_configurations!(application,
+            vcat(declarations,[Dict("path"=>"heart.conf")]),"instrument.json","/opt/pipewireao";
+            dimensions=Dict("count"=>3))
+        @test read(joinpath(application,"graph.conf")) == before
+        @test read(joinpath(application,"heart.conf")) == bytes
+        @test_throws D.DeploymentError E.prepare_graph_configurations!(application,
+            [Dict("path"=>"graph.conf","source"=>joinpath(application,"heart.conf"))],"instrument.json","/opt/pipewireao")
+        @test read(joinpath(application,"graph.conf")) == before
+        E.prepare_graph_configurations!(application,[Dict("path"=>"graph.conf")],"instrument.json","/opt/pipewireao")
+        @test only(D.decode(joinpath(application,"graph.conf"),"/opt/pipewireao")["filter.graph"]["nodes"])["config"]["count"] == 3
+    end
+end
+
 @testset "shared GUI palettes become independent application assets" begin
     mktempdir() do repository
         source = joinpath(repository, "instrument-a")

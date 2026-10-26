@@ -1,0 +1,79 @@
+ERROR: LoadError: Some tests did not pass: 8 passed, 1 failed, 1 errored, 0 broken.
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:2
+
+GPI selectable integrator and HEART projection controller: Test Failed at /home/dgamroth/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:38
+  Expression: Set(first.(values)) == Set(keys(formats))
+   Evaluated: Set([:flat, Symbol("woofer-shape-pdm-to-vdm"), Symbol("modal-reference"), Symbol("tweeter-full-to-active"), Symbol("woofer-active-to-full"), Symbol("tweeter-shape-active-to-full"), Symbol("tiptilt-filter-coefficients"), Symbol("tweeter-selection"), Symbol("tweeter-pdm-to-vdm"), Symbol("woofer-full-to-active")  …  Symbol("controller-to-tiptilt"), :background, Symbol("tiptilt-offset"), Symbol("tweeter-vdm-to-pdm"), Symbol("tweeter-offset"), Symbol("woofer-selection"), Symbol("modal-filter-coefficients"), Symbol("tweeter-active-to-full"), Symbol("woofer-system-flat"), Symbol("pupil-origins")]) == Set([:flat, Symbol("woofer-shape-pdm-to-vdm"), Symbol("modal-reference"), Symbol("tweeter-shape-offset"), Symbol("woofer-active-to-full"), Symbol("tweeter-shape-active-to-full"), Symbol("tweeter-full-to-active"), Symbol("tiptilt-filter-coefficients"), Symbol("tweeter-selection"), Symbol("woofer-full-to-active")  …  Symbol("controller-to-tiptilt"), :background, Symbol("tiptilt-offset"), Symbol("tweeter-vdm-to-pdm"), Symbol("tweeter-offset"), Symbol("woofer-selection"), Symbol("modal-filter-coefficients"), Symbol("tweeter-active-to-full"), Symbol("woofer-system-flat"), Symbol("pupil-origins")])
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] (::Main.GPIHiddenModeProfiles.var"#7#8")(directory::String)
+     @ Main.GPIHiddenModeProfiles ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:38
+   [3] mktempdir(fn::Main.GPIHiddenModeProfiles.var"#7#8", parent::String; prefix::String)
+     @ Base.Filesystem ./file.jl:975
+   [4] mktempdir(fn::Function, parent::String)
+     @ Base.Filesystem ./file.jl:971
+   [5] top-level scope
+     @ ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:14
+   [6] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [7] macro expansion
+     @ ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:16 [inlined]
+
+GPI selectable integrator and HEART projection controller: Error During Test at /home/dgamroth/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:13
+  Got exception outside of a @test
+  IOError: sendfile: no space left on device (ENOSPC)
+  Stacktrace:
+    [1] _uv_error(prefix::String, c::Int32)
+      @ Base ./libuv.jl:114
+    [2] uv_error
+      @ ./libuv.jl:113 [inlined]
+    [3] sendfile(dst::Base.Filesystem.File, src::Base.Filesystem.File, src_offset::Int64, bytes::Int64)
+      @ Base.Filesystem ./filesystem.jl:224
+    [4] sendfile(src::String, dst::String)
+      @ Base.Filesystem ./file.jl:1318
+    [5] cp(src::String, dst::String; force::Bool, follow_symlinks::Bool)
+      @ Base.Filesystem ./file.jl:446
+    [6] cp
+      @ ./file.jl:438 [inlined]
+    [7] copy_file(source::String, destination::String)
+      @ PipeWireAORTC.RuntimeExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:8
+    [8] copy_tree(source::String, destination::String; ignored::Set{String})
+      @ PipeWireAORTC.RuntimeExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:25
+    [9] copy_tree
+      @ ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:12 [inlined]
+   [10] copy_tree(source::String, destination::String; ignored::Set{String})
+      @ PipeWireAORTC.RuntimeExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:23
+   [11] copy_tree
+      @ ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:12 [inlined]
+   [12] copy_tree(source::String, destination::String; ignored::Set{String})
+      @ PipeWireAORTC.RuntimeExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:23
+   [13] copy_tree
+      @ ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/runtime_export.jl:12 [inlined]
+   [14] copy_source(source::String, destination::String; runtime_configurations::Bool)
+      @ PipeWireAORTC.InstrumentExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/instrument_export.jl:260
+   [15] copy_source
+      @ ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/instrument_export.jl:243 [inlined]
+   [16] prepare(source::String, destination::String; profile::Dict{String, Any}, julia::String, manifest::Nothing, prefix::String)
+      @ PipeWireAORTC.InstrumentExport ~/workspaces/codex/worktrees/rtc-gpi2-heart-20261025/src/deployment/instrument_export.jl:311
+   [17] (::Main.GPIHiddenModeProfiles.var"#7#8")(directory::String)
+      @ Main.GPIHiddenModeProfiles ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:23
+   [18] mktempdir(fn::Main.GPIHiddenModeProfiles.var"#7#8", parent::String; prefix::String)
+      @ Base.Filesystem ./file.jl:975
+   [19] mktempdir(fn::Function, parent::String)
+      @ Base.Filesystem ./file.jl:971
+   [20] top-level scope
+      @ ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:14
+   [21] macro expansion
+      @ ~/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [22] macro expansion
+      @ ~/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:16 [inlined]
+   [23] include(mod::Module, _path::String)
+      @ Base ./Base.jl:309
+   [24] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:344
+   [25] _start()
+      @ Base ./client.jl:577
+Test Summary:                                             | Pass  Fail  Error  Total     Time
+GPI selectable integrator and HEART projection controller |    8     1      1     10  5m11.0s
+RNG of the outermost testset: Random.Xoshiro(0xef07544b61f5b2b1, 0x0d48c4d87c3466b2, 0x9a9f0890e866a223, 0x78f734d07aeb164b, 0x6abf3f5cbd01ad83)

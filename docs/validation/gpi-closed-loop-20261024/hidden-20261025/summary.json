@@ -1,0 +1,831 @@
+{
+  "completed": true,
+  "scope": "Private arrays only; actual registered plant/controller artifacts; replace only integrator node with genuine JFG ClosedLoopCorrectionF32 and weighted discarded64 projection ports; no native core or live changes",
+  "basis": {
+    "J_shape": [
+      11104,
+      1509
+    ],
+    "R_recomputed_relative_difference": 3.530624654874527e-06,
+    "difference_from_I_RJ_f32_widened": 1.1450940171607952e-05,
+    "discarded": 64,
+    "formulas": "Jw=J*W, W=diag(1/mode_rms); H=Vd'*W^-1, B=W*Vd; N=B*H",
+    "idempotence_relative_f32_widened": 2.832435678756269e-08,
+    "idempotence_relative_f64": 3.2174048851999676e-15,
+    "inverse_error_f32_widened": 2.1378629465095084e-07,
+    "inverse_error_f64": 2.4530635797764554e-14,
+    "largest_singular_value": 2287852732.285265,
+    "policy": "Explicit experimental candidate:64 low singular directions discarded by calibration TSVD; weak nonzero response, not exact optical null modes",
+    "rank": 1445,
+    "relative_difference_from_I_RJ": 1.1450920318041689e-05,
+    "retained_smallest_singular_value": 114803607.365604,
+    "weighted_orthogonality_f64": 1.9586720804819687e-16
+  },
+  "zero_gain_unit_test": {
+    "comparison": "All graph outputs including correction, feedback-corrected state, residual error, requested commands and constraint feedback are Float32 bit-identical for the same deterministic UInt16 inputs; original integrator versus actual JFG ClosedLoopCorrectionF32 with same gain/pole/antiwindup and hidden gain0",
+    "frames": 32,
+    "passed": true
+  },
+  "cases": {
+    "0.0": {
+      "completed": true,
+      "frames_completed": 4096,
+      "recurrence_errors_nm": {
+        "maximum_output_recurrence_error_nm": 0.0,
+        "maximum_state_recurrence_error_nm": 0.0
+      },
+      "windows": {
+        "2049-4096": {
+          "atmosphere_rms_nm": {
+            "max": 1340.834029733457,
+            "mean": 1012.9580359419735
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 7929.218748841189,
+            "mean": 6160.668180137591
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 599.1134086995838,
+            "mean": 451.7297260493842
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 7929.218716163021,
+            "mean": 6160.66816838283
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 7929.218814334001,
+            "mean": 6160.668191503971
+          },
+          "residual_rms_nm": {
+            "max": 89.28269491587925,
+            "mean": 66.37272924321346
+          },
+          "tweeter_clipped_count": {
+            "max": 135.0,
+            "mean": 62.65625
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1189.2240081579075,
+            "mean": 1124.1276922646648
+          },
+          "woofer_clipped_count": {
+            "max": 22.0,
+            "mean": 11.5
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1043.7266837470816,
+            "mean": 1025.4134785725455
+          }
+        },
+        "513-2048": {
+          "atmosphere_rms_nm": {
+            "max": 1022.2273107538764,
+            "mean": 867.8845766910832
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 4144.167611855355,
+            "mean": 3292.979170125773
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 260.9640725620298,
+            "mean": 222.0719312895786
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 4144.167367374717,
+            "mean": 3292.9790912694316
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 4144.16738902513,
+            "mean": 3292.9791269135844
+          },
+          "residual_rms_nm": {
+            "max": 58.79194576114477,
+            "mean": 54.07966627315073
+          },
+          "tweeter_clipped_count": {
+            "max": 65.0,
+            "mean": 30.5
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1139.0829968149774,
+            "mean": 1083.0858485633144
+          },
+          "woofer_clipped_count": {
+            "max": 9.0,
+            "mean": 2.7083333333333335
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1022.9658755633864,
+            "mean": 1006.8112127707233
+          }
+        }
+      },
+      "clip_windows": [
+        {
+          "end_frame": 512,
+          "max_clipped_count": {
+            "tweeter": 73,
+            "woofer": 6
+          },
+          "mean_clipped_count": {
+            "tweeter": 42.84375,
+            "woofer": 1.208984375
+          },
+          "start_frame": 1
+        },
+        {
+          "end_frame": 1024,
+          "max_clipped_count": {
+            "tweeter": 42,
+            "woofer": 5
+          },
+          "mean_clipped_count": {
+            "tweeter": 14.14453125,
+            "woofer": 0.998046875
+          },
+          "start_frame": 513
+        },
+        {
+          "end_frame": 1536,
+          "max_clipped_count": {
+            "tweeter": 77,
+            "woofer": 10
+          },
+          "mean_clipped_count": {
+            "tweeter": 46.7265625,
+            "woofer": 3.71875
+          },
+          "start_frame": 1025
+        },
+        {
+          "end_frame": 2048,
+          "max_clipped_count": {
+            "tweeter": 75,
+            "woofer": 11
+          },
+          "mean_clipped_count": {
+            "tweeter": 38.2578125,
+            "woofer": 4.1953125
+          },
+          "start_frame": 1537
+        },
+        {
+          "end_frame": 2560,
+          "max_clipped_count": {
+            "tweeter": 88,
+            "woofer": 19
+          },
+          "mean_clipped_count": {
+            "tweeter": 24.732421875,
+            "woofer": 8.4296875
+          },
+          "start_frame": 2049
+        },
+        {
+          "end_frame": 3072,
+          "max_clipped_count": {
+            "tweeter": 135,
+            "woofer": 27
+          },
+          "mean_clipped_count": {
+            "tweeter": 102.365234375,
+            "woofer": 16.4609375
+          },
+          "start_frame": 2561
+        },
+        {
+          "end_frame": 3584,
+          "max_clipped_count": {
+            "tweeter": 110,
+            "woofer": 21
+          },
+          "mean_clipped_count": {
+            "tweeter": 66.5859375,
+            "woofer": 9.95703125
+          },
+          "start_frame": 3073
+        },
+        {
+          "end_frame": 4096,
+          "max_clipped_count": {
+            "tweeter": 67,
+            "woofer": 25
+          },
+          "mean_clipped_count": {
+            "tweeter": 49.314453125,
+            "woofer": 10.39453125
+          },
+          "start_frame": 3585
+        }
+      ],
+      "postsettling_mean_residual_ratio": null,
+      "matched_atmosphere_full_field_hashes": null
+    },
+    "0.1": {
+      "completed": true,
+      "frames_completed": 4096,
+      "recurrence_errors_nm": {
+        "maximum_output_recurrence_error_nm": 0.0,
+        "maximum_state_recurrence_error_nm": 0.0
+      },
+      "windows": {
+        "2049-4096": {
+          "atmosphere_rms_nm": {
+            "max": 1340.834029733457,
+            "mean": 1012.9580359419735
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 1725.1448353712772,
+            "mean": 1108.9593357997533
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 134.63769134068693,
+            "mean": 84.79126447951282
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 1916.8276512277926,
+            "mean": 1232.1769535594553
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 1725.14497666799,
+            "mean": 1108.9592997074135
+          },
+          "residual_rms_nm": {
+            "max": 223.27572904485584,
+            "mean": 97.76908110968729
+          },
+          "tweeter_clipped_count": {
+            "max": 85.0,
+            "mean": 39.34375
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1152.569097939704,
+            "mean": 1092.765796073536
+          },
+          "woofer_clipped_count": {
+            "max": 16.0,
+            "mean": 8.71875
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1131.2826018183841,
+            "mean": 1080.1319163533663
+          }
+        },
+        "513-2048": {
+          "atmosphere_rms_nm": {
+            "max": 1022.2273107538764,
+            "mean": 867.8845766910832
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 1528.5369820692558,
+            "mean": 763.6691726378102
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 110.15782261027141,
+            "mean": 56.892473561068236
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 1698.3750597263363,
+            "mean": 848.5213134072982
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 1528.5372532049346,
+            "mean": 763.6691114449033
+          },
+          "residual_rms_nm": {
+            "max": 144.51514294629635,
+            "mean": 81.1419251285386
+          },
+          "tweeter_clipped_count": {
+            "max": 70.0,
+            "mean": 35.458333333333336
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1137.4195310054347,
+            "mean": 1097.5123103662554
+          },
+          "woofer_clipped_count": {
+            "max": 12.0,
+            "mean": 5.458333333333333
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1137.829826802772,
+            "mean": 1065.2227236581286
+          }
+        }
+      },
+      "clip_windows": [
+        {
+          "end_frame": 512,
+          "max_clipped_count": {
+            "tweeter": 76,
+            "woofer": 6
+          },
+          "mean_clipped_count": {
+            "tweeter": 48.384765625,
+            "woofer": 3.4375
+          },
+          "start_frame": 1
+        },
+        {
+          "end_frame": 1024,
+          "max_clipped_count": {
+            "tweeter": 47,
+            "woofer": 3
+          },
+          "mean_clipped_count": {
+            "tweeter": 20.853515625,
+            "woofer": 1.2109375
+          },
+          "start_frame": 513
+        },
+        {
+          "end_frame": 1536,
+          "max_clipped_count": {
+            "tweeter": 65,
+            "woofer": 10
+          },
+          "mean_clipped_count": {
+            "tweeter": 42.294921875,
+            "woofer": 5.517578125
+          },
+          "start_frame": 1025
+        },
+        {
+          "end_frame": 2048,
+          "max_clipped_count": {
+            "tweeter": 82,
+            "woofer": 15
+          },
+          "mean_clipped_count": {
+            "tweeter": 48.724609375,
+            "woofer": 9.517578125
+          },
+          "start_frame": 1537
+        },
+        {
+          "end_frame": 2560,
+          "max_clipped_count": {
+            "tweeter": 42,
+            "woofer": 13
+          },
+          "mean_clipped_count": {
+            "tweeter": 15.33984375,
+            "woofer": 7.71484375
+          },
+          "start_frame": 2049
+        },
+        {
+          "end_frame": 3072,
+          "max_clipped_count": {
+            "tweeter": 98,
+            "woofer": 17
+          },
+          "mean_clipped_count": {
+            "tweeter": 49.02734375,
+            "woofer": 10.8203125
+          },
+          "start_frame": 2561
+        },
+        {
+          "end_frame": 3584,
+          "max_clipped_count": {
+            "tweeter": 100,
+            "woofer": 17
+          },
+          "mean_clipped_count": {
+            "tweeter": 62.115234375,
+            "woofer": 9.818359375
+          },
+          "start_frame": 3073
+        },
+        {
+          "end_frame": 4096,
+          "max_clipped_count": {
+            "tweeter": 86,
+            "woofer": 14
+          },
+          "mean_clipped_count": {
+            "tweeter": 29.330078125,
+            "woofer": 6.779296875
+          },
+          "start_frame": 3585
+        }
+      ],
+      "postsettling_mean_residual_ratio": 1.4730309002576398,
+      "matched_atmosphere_full_field_hashes": true
+    },
+    "1.0": {
+      "completed": true,
+      "frames_completed": 4096,
+      "recurrence_errors_nm": {
+        "maximum_output_recurrence_error_nm": 0.0,
+        "maximum_state_recurrence_error_nm": 0.0
+      },
+      "windows": {
+        "2049-4096": {
+          "atmosphere_rms_nm": {
+            "max": 1340.834029733457,
+            "mean": 1012.9580359419735
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 0.0038378567174396517,
+            "mean": 0.0017295267237740903
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 38.52435489693947,
+            "mean": 13.37018116279418
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 496.8346435904519,
+            "mean": 185.19259057355077
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 0.0011816339924529372,
+            "mean": 0.0006846181559331481
+          },
+          "residual_rms_nm": {
+            "max": 366.78846717226804,
+            "mean": 148.72779982016004
+          },
+          "tweeter_clipped_count": {
+            "max": 106.0,
+            "mean": 43.59375
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1214.0661738158087,
+            "mean": 1114.5994207595322
+          },
+          "woofer_clipped_count": {
+            "max": 12.0,
+            "mean": 5.53125
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1241.9794757079217,
+            "mean": 1111.4126632350008
+          }
+        },
+        "513-2048": {
+          "atmosphere_rms_nm": {
+            "max": 1022.2273107538764,
+            "mean": 867.8845766910832
+          },
+          "hidden_correction_raw_coordinate_norm_nm": {
+            "max": 0.004432807916235381,
+            "mean": 0.001571677682714978
+          },
+          "hidden_realized_column_RMS_scaled_coordinate_norm_nm": {
+            "max": 18.4424431789658,
+            "mean": 10.720284192225675
+          },
+          "hidden_realized_raw_coordinate_norm_nm": {
+            "max": 262.2232320945769,
+            "mean": 154.0157363435548
+          },
+          "hidden_state_raw_coordinate_norm_nm": {
+            "max": 0.00103534378035162,
+            "mean": 0.0006212265627082988
+          },
+          "residual_rms_nm": {
+            "max": 181.82844467574395,
+            "mean": 108.17942725069982
+          },
+          "tweeter_clipped_count": {
+            "max": 80.0,
+            "mean": 45.166666666666664
+          },
+          "tweeter_requested_peak_nm": {
+            "max": 1149.4990985738696,
+            "mean": 1099.719942961504
+          },
+          "woofer_clipped_count": {
+            "max": 9.0,
+            "mean": 4.458333333333333
+          },
+          "woofer_requested_peak_nm": {
+            "max": 1165.6918559310725,
+            "mean": 1099.117274823887
+          }
+        }
+      },
+      "clip_windows": [
+        {
+          "end_frame": 512,
+          "max_clipped_count": {
+            "tweeter": 104,
+            "woofer": 9
+          },
+          "mean_clipped_count": {
+            "tweeter": 55.21484375,
+            "woofer": 4.732421875
+          },
+          "start_frame": 1
+        },
+        {
+          "end_frame": 1024,
+          "max_clipped_count": {
+            "tweeter": 49,
+            "woofer": 3
+          },
+          "mean_clipped_count": {
+            "tweeter": 23.171875,
+            "woofer": 1.78125
+          },
+          "start_frame": 513
+        },
+        {
+          "end_frame": 1536,
+          "max_clipped_count": {
+            "tweeter": 89,
+            "woofer": 11
+          },
+          "mean_clipped_count": {
+            "tweeter": 55.033203125,
+            "woofer": 5.9140625
+          },
+          "start_frame": 1025
+        },
+        {
+          "end_frame": 2048,
+          "max_clipped_count": {
+            "tweeter": 95,
+            "woofer": 9
+          },
+          "mean_clipped_count": {
+            "tweeter": 60.421875,
+            "woofer": 5.8515625
+          },
+          "start_frame": 1537
+        },
+        {
+          "end_frame": 2560,
+          "max_clipped_count": {
+            "tweeter": 46,
+            "woofer": 4
+          },
+          "mean_clipped_count": {
+            "tweeter": 11.203125,
+            "woofer": 1.490234375
+          },
+          "start_frame": 2049
+        },
+        {
+          "end_frame": 3072,
+          "max_clipped_count": {
+            "tweeter": 131,
+            "woofer": 12
+          },
+          "mean_clipped_count": {
+            "tweeter": 54.90625,
+            "woofer": 6.146484375
+          },
+          "start_frame": 2561
+        },
+        {
+          "end_frame": 3584,
+          "max_clipped_count": {
+            "tweeter": 111,
+            "woofer": 15
+          },
+          "mean_clipped_count": {
+            "tweeter": 74.630859375,
+            "woofer": 9.220703125
+          },
+          "start_frame": 3073
+        },
+        {
+          "end_frame": 4096,
+          "max_clipped_count": {
+            "tweeter": 82,
+            "woofer": 13
+          },
+          "mean_clipped_count": {
+            "tweeter": 31.31640625,
+            "woofer": 5.48828125
+          },
+          "start_frame": 3585
+        }
+      ],
+      "postsettling_mean_residual_ratio": 2.240796807905369,
+      "matched_atmosphere_full_field_hashes": true
+    }
+  },
+  "artifacts": {
+    "RUN.md": {
+      "bytes": 8504,
+      "sha256": "d77acc61fb110df10665725cbde8f2bf54a9a2bf2806ddee1f5d571f1f130d6a"
+    },
+    "baseline-observed.conf": {
+      "bytes": 80583,
+      "sha256": "a722a0e0bca5832bd4f4e12daa5d7819f71d07ca6dbe47f09f8cb1a5ea675a83"
+    },
+    "compare-production-basis.jl": {
+      "bytes": 2209,
+      "sha256": "1bf8a8da67d7531b8c8fc54c265ae9e3008283c254dcb753d0da9444d3cdb45e"
+    },
+    "compare-production-basis.log": {
+      "bytes": 84,
+      "sha256": "39249856fbfa6906923622c1feda79acfed48c2f697ae8c8ce5acbd8c0eb35ef"
+    },
+    "hidden-basis.jls": {
+      "bytes": 19001508,
+      "sha256": "6cf68a8518e78f90896c6558f0b14aa5530823c06e5228bb9c5383ee92bf95d5"
+    },
+    "hidden-gain-0.0.conf": {
+      "bytes": 80832,
+      "sha256": "b3d462122bf5b567c2f3412adfda6f7c2f7e879ce7f1d4f18f67aaa91e1fd7b3"
+    },
+    "hidden-gain-0.1.conf": {
+      "bytes": 80832,
+      "sha256": "42ec2a6f7ff363cf00d80e585a161540c0ffee9ba72a433e6a184c351baa4d5b"
+    },
+    "hidden-gain-1.0.conf": {
+      "bytes": 80832,
+      "sha256": "f23e29827d655ef73e073e84aa4482f1c70234643b50c16c97e210efc01c6f64"
+    },
+    "production-basis-comparison.json": {
+      "bytes": 24576,
+      "sha256": "5e10791dbc73216151811eb706e018b992e5c8f2682215f5094f6cf98ac7e6ee"
+    },
+    "production-hidden-basis.jls": {
+      "bytes": 19001508,
+      "sha256": "13a68fc37fda5df7cf9ce52e3bb6cd0699c786bd64273df2eca120d2a58c713a"
+    },
+    "replay-hidden-result.json": {
+      "bytes": 82098,
+      "sha256": "87c05562a090db6a3920f80bd17b1aa546fb0ac1909741fa2d149e1be28a75fe"
+    },
+    "replay-hidden-setup-relocation-failure.jl": {
+      "bytes": 10973,
+      "sha256": "d1d8fab11ea110a4299077d0450cc17ccd2313551b17fb3325d6d98ef8137fd5"
+    },
+    "replay-hidden-setup-relocation-failure.json": {
+      "bytes": 3192,
+      "sha256": "a30286cdc97e8683bffbf472e7b43091273a0d7a6d9583bd45bb8c6a2873dcec"
+    },
+    "replay-hidden-setup-relocation-failure.log": {
+      "bytes": 2274,
+      "sha256": "8bacce411c6879a286d1408e837fa2c4c9d3b59bf400ba86c50f56d873129b2c"
+    },
+    "replay-hidden-world-age-failure.jl": {
+      "bytes": 11688,
+      "sha256": "2affb7ab7b9d278283e4544e288c647f04868764cc6824dcec7e0fc7e9567903"
+    },
+    "replay-hidden-world-age-failure.json": {
+      "bytes": 6449,
+      "sha256": "32a8d4708d5a9b027b678c30d5ca3a7655c8c145f9c40b9a59774d6ce1cde8ec"
+    },
+    "replay-hidden-world-age-failure.log": {
+      "bytes": 2274,
+      "sha256": "f668f8cc28703aeee092eedfd45ea11bf1013b89842867f354753796d5a65ca7"
+    },
+    "replay-hidden.jl": {
+      "bytes": 12031,
+      "sha256": "ebbbfb4fe95892a52258fa2e1a0a710acc7dfd8d9bbe6e514bb0460f10d0a6f3"
+    },
+    "replay-hidden.log": {
+      "bytes": 2685,
+      "sha256": "e4df9c0defe1e2f696167b81c8b39084bc91f75880fb51aa52b754fd6afd409b"
+    },
+    "resource-path-resolver.jl": {
+      "bytes": 1819,
+      "sha256": "2b14e89f4db163a0803521629d1c793f21e7b817128973e1650fa4f2741ccb3c"
+    },
+    "resource-preflight.jl": {
+      "bytes": 1047,
+      "sha256": "50ad74f0b4cc8ad58c86907961096c2d7884e5c1df9e06905f0383adb96f36b5"
+    },
+    "resource-preflight.json": {
+      "bytes": 3482,
+      "sha256": "99c7199d73149781cf40c7b98853488f8ebca2c5a3b68dd527542bb3408d6b3f"
+    },
+    "resource-preflight.log": {
+      "bytes": 144,
+      "sha256": "1da4dd44ac2f434a9dd856078be760dcc5242eb8b60a8ae6ef0dcb3566dc81b1"
+    },
+    "static-basis.jl": {
+      "bytes": 3264,
+      "sha256": "37196cc77876f145985d3736f7bdba8657299263f3ba63addc17aca96c861646"
+    },
+    "static-basis.json": {
+      "bytes": 2999,
+      "sha256": "4b034481d2edc50dcd4567944e30c4a05a528a0d05b4e05f59f441b94167cac9"
+    },
+    "static-basis.log": {
+      "bytes": 146,
+      "sha256": "3dc28a197552033fb0d4d418f88d414c741bcc88b5b8af5fd8df225b1636c4a0"
+    },
+    "static-deployed-basis.jl": {
+      "bytes": 1086,
+      "sha256": "fdae7bb8ac895e0b83847f38838b45bf38dfc25e30c6fe6f496fea0db9f89557"
+    },
+    "static-deployed-basis.json": {
+      "bytes": 490,
+      "sha256": "6b1f6dc7d6c30ff4946d3be82409d3bff26c3f10944fb58f7ac087cf3060eab5"
+    },
+    "static-deployed-basis.log": {
+      "bytes": 506,
+      "sha256": "28607e1c3b6f06910828916ff6bc4ce1bfaaf27484a4b714a8339b57dca9936a"
+    },
+    "summarize.py": {
+      "bytes": 4859,
+      "sha256": "c8d72d8ee285b5926a78fd8b5b262a25ace55ad35ac7fd9a199655a203a98fab"
+    }
+  },
+  "external_inputs": {
+    "/home/dgamroth/.cache/pipewireao/gpi2-tiptilt-20261025/gpi2_closed_loop_helpers.jl": {
+      "bytes": 24540,
+      "sha256": "a6cbb0c3503926a11d852b4c775e2450586744257eafc109351a102b899dd679"
+    },
+    "/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/with-env.sh": {
+      "bytes": 777,
+      "sha256": "aaf40986ac2f9982fe8a3e03f681ca7a0ef539cc12079ed1d034cf49f25bd79d"
+    },
+    "/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/environment/Project.toml": {
+      "bytes": 1601,
+      "sha256": "cad930e1bcbec892ca7cfedb4ee94278912409b0d2911429a1d4ae6bcd0a04c8"
+    },
+    "/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/environment/Manifest.toml": {
+      "bytes": 56353,
+      "sha256": "64ae5303bebd3af8725c85d97a40b000ec883fc5a00376af4af2fa13ae9e0b9b"
+    },
+    "/home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application/rtc/graph.conf": {
+      "bytes": 80387,
+      "sha256": "9d80c3a98d780bd200983e77ce3bf9bd61d7a79aa8b35d83b8e29a6f830b4010"
+    },
+    "/home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application/calibration/result.yaml": {
+      "bytes": 28272,
+      "sha256": "96f09d4c29e21e2f8143d4c326dc7e507309d0cfa47afd20e4cc418d8a89c9d4"
+    }
+  },
+  "original_manifest_hash_still_matches": true,
+  "historical_baseline_comparison": {
+    "path": "/home/dgamroth/.cache/pipewireao/gpi2-tiptilt-20261025/replay-cuda-result.json",
+    "sha256": "5583e884e8b0a99ddf2ff638b09dc4ef20260fe3fe10418e4f0d60799a7ebbe8",
+    "matching_sampled_frames": 96,
+    "checks": {
+      "atmosphere_rms_nm": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      },
+      "residual_rms_nm": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      },
+      "woofer_requested_peak_nm": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      },
+      "tweeter_requested_peak_nm": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      },
+      "woofer_clipped_count": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      },
+      "tweeter_clipped_count": {
+        "all_values_equal": true,
+        "maximum_absolute_difference": 0.0
+      }
+    }
+  },
+  "prior_feedback_projection_comparison": {
+    "path": "/home/dgamroth/.cache/pipewireao/gpi2-tiptilt-20261025/replay-feedback-projected-result.json",
+    "sha256": "72938a5969ff3e7168f1926a0b6a01b890d987aaf17a5e75557e196487dba0ec",
+    "window": "2049-4096",
+    "checks": {
+      "atmosphere_rms_nm": {
+        "genuine_hidden_mean": 1012.9580359419734,
+        "prior_feedback_projection_mean": 1012.9580359419734,
+        "maximum_absolute_trace_difference": 0.0
+      },
+      "residual_rms_nm": {
+        "genuine_hidden_mean": 148.72779982016007,
+        "prior_feedback_projection_mean": 146.0864112908035,
+        "maximum_absolute_trace_difference": 27.35991822906192
+      },
+      "woofer_requested_peak_nm": {
+        "genuine_hidden_mean": 1111.4126632350008,
+        "prior_feedback_projection_mean": 1113.0033943373974,
+        "maximum_absolute_trace_difference": 27.558371584746055
+      },
+      "tweeter_requested_peak_nm": {
+        "genuine_hidden_mean": 1114.5994207595322,
+        "prior_feedback_projection_mean": 1115.0322372088795,
+        "maximum_absolute_trace_difference": 24.310111257364042
+      },
+      "woofer_clipped_count": {
+        "genuine_hidden_mean": 5.53125,
+        "prior_feedback_projection_mean": 5.84375,
+        "maximum_absolute_trace_difference": 4.0
+      },
+      "tweeter_clipped_count": {
+        "genuine_hidden_mean": 43.59375,
+        "prior_feedback_projection_mean": 42.46875,
+        "maximum_absolute_trace_difference": 17.0
+      }
+    },
+    "interpretation": "Conditional analytical from-reset equivalence for full hidden gain: if Nc_prev=0 and Ne=0, P(c_prev-b)+gain*e equals c_prev-Pb+gain*e. Weak directions and rounded bases give approximate numerical agreement; distinct policies for nonzero initial hidden state."
+  }
+}

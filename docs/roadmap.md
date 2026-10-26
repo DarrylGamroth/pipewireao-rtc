@@ -90,6 +90,17 @@ Lower-level HIL cleanup compilation remains, and a full native session has not
 been rerun after this second change. The live deployment remains unchanged. See the
 [shutdown record](validation/gpi-closed-loop-20261024/README.md#native-shutdown-investigation--2026-10-25).
 
+An opt-in HEART-style controller now uses JFG's existing full correction and
+generated TSVD projection FITS, with the original integrator still default.
+Gain-zero replay is bit-identical over 4,096 frames. Genuine removal at gains
+0.1 and 1 reduces clips but worsens paired late-window mean WFE from 66.37 nm
+to 97.77 and 148.73 nm; enabling that policy is rejected. Production FITS have
+static projection checks, while numerical replays used an independently derived
+diagnostic basis. The selectable mode remains at zero removal gain and nothing
+live changed. A more suitable constrained allocation policy remains future work;
+no optimal allocator is claimed. See the
+[hidden-mode record](validation/gpi-closed-loop-20261024/README.md#heart-style-hidden-mode-removal--2026-10-25).
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running

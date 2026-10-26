@@ -892,6 +892,64 @@ current feedback can use weak calibration directions to improve constrained
 correction. This finite comparison does not prove a globally optimal allocator
 or long-term stability. The live science controller remains unchanged.
 
+## HEART-style hidden-mode removal — 2026-10-25
+
+The deployed GPI integrator has no hidden projection ports. Its zero inherited
+`hidden-mode-gain` property does not implement removal. The selected work adds
+an opt-in controller using JFG's existing `closed-loop-correction-f32`, with
+the original integrator retained as the default comparison. Both use the same
+optics, reconstructor, command maps, limits and native endpoints. No live
+controller change is authorized by a build or projection identity check alone.
+
+The first explicit policy derives discarded right singular vectors Vd from the
+parent calibration's RMS-weighted TSVD. With W = diag(1 / mode_rms), the existing
+JFG projection names mean H = VdᵀW⁻¹ (`shape-to-hidden`) and B = WVd
+(`hidden-to-shape`). These identify weak discarded directions, not exact optical
+nulls. Existing HEART and JFG terminology governs the controller gain,
+projection ports and generated mode labels; no new wire vocabulary is needed.
+
+Preparation must verify parent bytes, dimensions, retained rank, reconstructor
+agreement, HB ≈ I and projection identities before writing derived artifacts.
+The replay must first prove gain-zero equivalence, then compare genuine removal
+from the preceding realized shape c−b with matched atmosphere/noise from reset.
+Assess residual WFE, hidden components, command excursions and clipping together.
+Reject a candidate that merely reduces clips while degrading correction. The
+earlier feedback-only projection experiment does not test this algorithm.
+
+Application modes select a generated graph and complete FITS binding set;
+the single handwritten graph remains unchanged. A separate allocation policy
+can be assessed against this baseline later; it is not claimed implemented or
+optimal by adding a profile name.
+
+The [matched replay record](hidden-20261025/RUN.md) now contains three completed
+4,096-frame CUDA cases using the genuine JFG correction algorithm. At gain zero,
+every graph output matches the original integrator bit-for-bit for every frame.
+Recorded full atmospheric-field hashes match after reset across all cases, and
+the state/output recurrence checks have zero Float32 error. The shared cold
+calibration helper passes 65 checks for projections, stale/invalid inputs,
+Float32 tolerance and unchanged parent artifacts.
+The two-mode offline export selector passes 27/27 checks, loading the exact FITS
+bindings and checking selected RTC/simulator/publication identity consistency.
+See [source verification and failed harness attempts](hidden-20261025/VALIDATION.md)
+and the [independent review](hidden-20261025/REVIEW.md).
+
+| Hidden-mode gain | Mean residual WFE, frames 2049–4096 | Mean woofer / tweeter clipped actuators |
+| --- | ---: | ---: |
+| 0 | 66.37 nm | 11.31 / 60.75 |
+| 0.1 | 97.77 nm | 8.78 / 38.95 |
+| 1 | 148.73 nm | 5.59 / 43.01 |
+
+**Reject enabling this discarded-TSVD removal policy.** Fewer clips and smaller
+hidden state do not establish better optical correction. No long extension ran;
+the live integrator and science settings are unchanged. The selectable generated
+`heart` mode has gain zero. The diagnostic replay independently recomputed its
+basis; the exact generated production FITS projector differs by 8.79 × 10⁻⁶
+relative in raw coordinates (5.50 × 10⁻⁶ weighted). Those FITS received static
+comparison, not positive runtime qualification. The result does not establish
+global stability, physical hardware behavior, optimal allocation or 2 kHz timing.
+Both failed resource-location setup attempts are retained separately from the
+completed scientific results.
+
 ## Native shutdown investigation — 2026-10-25
 
 The original Running-to-Quit timeout remains unresolved. Isolated attempts

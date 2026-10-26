@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## GPI genuine hidden-mode removal — 2026-10-25
+
+The [hidden-mode record](validation/gpi-closed-loop-20261024/README.md#heart-style-hidden-mode-removal--2026-10-25)
+retains projection preparation checks and matched genuine JFG replays. Zero gain
+matches the integrator bit-for-bit; gains 0.1 and 1 reduce clipping but worsen
+residual WFE. The tested enabling policy is rejected and the live RTC remains
+unchanged. Production FITS received static comparison; replays used an independent
+diagnostic basis. This does not qualify hardware, deadline performance or a new
+optimal allocator.
+
 ## GPI tip/tilt allocation investigation — 2026-10-25
 
 The [allocation record](validation/gpi-closed-loop-20261024/README.md#tiptilt-allocation-investigation--2026-10-25)

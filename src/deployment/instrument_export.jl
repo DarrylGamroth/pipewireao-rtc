@@ -318,7 +318,7 @@ function prepare(source::AbstractString, destination::AbstractString;
         spec["instrument"] = relpath(instrument, application)
         if isfile(joinpath(application,"simulation.conf"))
             simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
-            get(simulation,"version",nothing) == 3 && InstrumentConfiguration.prepare_simulation_configuration!(application)
+            get(simulation,"version",nothing) == 3 && InstrumentConfiguration.prepare_simulation_configuration!(application; configuration)
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)
             uses_aos && prepare_backend_environment!(application, selected["backend"])

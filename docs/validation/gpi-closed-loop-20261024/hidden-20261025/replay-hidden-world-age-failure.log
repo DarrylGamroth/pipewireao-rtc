@@ -1,0 +1,34 @@
+PROGRESS 5.413s modules loaded; entering selector
+PROGRESS 394.379s zero-gain graph equivalence passed; prepare single CUDA plant
+PROGRESS 394.437s plant: load declared simulation and verify prescription
+ERROR: LoadError: IOError: realpath("/home/dgamroth/.julia/packages/PipeWireAORTC/9vlwL/src/instruments/../../data/simulation/components/grid_gaussian.yaml"): no such file or directory (ENOENT)
+Stacktrace:
+  [1] _uv_error(prefix::String, c::Int32)
+    @ Base ./libuv.jl:114
+  [2] uv_error
+    @ ./libuv.jl:113 [inlined]
+  [3] realpath(path::String)
+    @ Base.Filesystem ./path.jl:506
+  [4] component_template_path(name::String)
+    @ PipeWireAORTC.InstrumentConfiguration ~/.julia/packages/PipeWireAORTC/9vlwL/src/instruments/components.jl:12
+  [5] component_template(name::String, templates::Set{String})
+    @ PipeWireAORTC.InstrumentConfiguration ~/.julia/packages/PipeWireAORTC/9vlwL/src/instruments/components.jl:18
+  [6] component_node(name::String, selection::Dict{String, Any}, model::String, templates::Set{String})
+    @ PipeWireAORTC.InstrumentConfiguration ~/.julia/packages/PipeWireAORTC/9vlwL/src/instruments/components.jl:97
+  [7] expand_simulation_components!(document::Dict{String, Any}, instrument::Dict{String, Any}, directory::String)
+    @ PipeWireAORTC.InstrumentConfiguration ~/.julia/packages/PipeWireAORTC/9vlwL/src/instruments/components.jl:183
+  [8] load_simulation(path::String)
+    @ PipeWireAORTC.InstrumentConfiguration ~/.julia/packages/PipeWireAORTC/9vlwL/src/instrument_configuration.jl:70
+  [9] plant(source::String, receipt::Dict{String, Any}, target::AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend, Int64}; calibration::Bool)
+    @ Main.GPIClosedLoopValidation ~/.cache/pipewireao/gpi2-tiptilt-20261025/gpi2_closed_loop_helpers.jl:62
+ [10] main()
+    @ Main ~/.cache/pipewireao/gpi2-hidden-20261025/replay-hidden.jl:135
+ [11] top-level scope
+    @ ~/.cache/pipewireao/gpi2-hidden-20261025/replay-hidden.jl:163
+ [12] include(mod::Module, _path::String)
+    @ Base ./Base.jl:309
+ [13] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:344
+ [14] _start()
+    @ Base ./client.jl:577
+in expression starting at /home/dgamroth/.cache/pipewireao/gpi2-hidden-20261025/replay-hidden.jl:163

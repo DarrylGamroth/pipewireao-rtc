@@ -1,0 +1,6 @@
+Test Summary:                              | Pass  Total   Time
+Saved RMS-weighted TSVD hidden projections |   25     25  12.3s
+Test Summary:                                                    | Pass  Total  Time
+Reject invalid or stale saved calibration before creating output |   34     34  1.7s
+Test Summary:                                       | Pass  Total  Time
+Explicit Float32 reconstructor comparison tolerance |    6      6  0.2s

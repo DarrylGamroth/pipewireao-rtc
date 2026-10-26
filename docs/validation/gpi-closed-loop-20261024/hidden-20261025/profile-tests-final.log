@@ -1,0 +1,4 @@
+Preparing offline GPI mode: integrator
+Preparing offline GPI mode: heart
+Test Summary:                                             | Pass  Total     Time
+GPI selectable integrator and HEART projection controller |   27     27  9m44.8s

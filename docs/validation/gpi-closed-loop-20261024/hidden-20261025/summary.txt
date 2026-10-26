@@ -1,0 +1,12 @@
+gain 0.0 frames 4096 complete True
+2049-4096 {'residual_rms_nm': 66.372729, 'woofer_requested_peak_nm': 1025.413479, 'tweeter_requested_peak_nm': 1124.127692, 'hidden_state_raw_coordinate_norm_nm': 6160.668192, 'hidden_realized_raw_coordinate_norm_nm': 6160.668168}
+513-2048 {'residual_rms_nm': 54.079666, 'woofer_requested_peak_nm': 1006.811213, 'tweeter_requested_peak_nm': 1083.085849, 'hidden_state_raw_coordinate_norm_nm': 3292.979127, 'hidden_realized_raw_coordinate_norm_nm': 3292.979091}
+ratio None recurrence {'maximum_output_recurrence_error_nm': 0.0, 'maximum_state_recurrence_error_nm': 0.0}
+gain 0.1 frames 4096 complete True
+2049-4096 {'residual_rms_nm': 97.769081, 'woofer_requested_peak_nm': 1080.131916, 'tweeter_requested_peak_nm': 1092.765796, 'hidden_state_raw_coordinate_norm_nm': 1108.9593, 'hidden_realized_raw_coordinate_norm_nm': 1232.176954}
+513-2048 {'residual_rms_nm': 81.141925, 'woofer_requested_peak_nm': 1065.222724, 'tweeter_requested_peak_nm': 1097.51231, 'hidden_state_raw_coordinate_norm_nm': 763.669111, 'hidden_realized_raw_coordinate_norm_nm': 848.521313}
+ratio 1.4730309002576398 recurrence {'maximum_output_recurrence_error_nm': 0.0, 'maximum_state_recurrence_error_nm': 0.0}
+gain 1.0 frames 4096 complete True
+2049-4096 {'residual_rms_nm': 148.7278, 'woofer_requested_peak_nm': 1111.412663, 'tweeter_requested_peak_nm': 1114.599421, 'hidden_state_raw_coordinate_norm_nm': 0.000685, 'hidden_realized_raw_coordinate_norm_nm': 185.192591}
+513-2048 {'residual_rms_nm': 108.179427, 'woofer_requested_peak_nm': 1099.117275, 'tweeter_requested_peak_nm': 1099.719943, 'hidden_state_raw_coordinate_norm_nm': 0.000621, 'hidden_realized_raw_coordinate_norm_nm': 154.015736}
+ratio 2.240796807905369 recurrence {'maximum_output_recurrence_error_nm': 0.0, 'maximum_state_recurrence_error_nm': 0.0}

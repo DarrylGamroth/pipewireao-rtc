@@ -1,0 +1,237 @@
+Preparing offline GPI mode: integrator
+
+[3877775] signal 2: Interrupt
+in expression starting at /home/dgamroth/workspaces/codex/worktrees/instruments-gpi2-heart-20261025/test/gpi2_hidden_modes.jl:16
+int64hash at /cache/build/builder-amdci4-4/julialang/julia-ci/src/support/hashing.c:35
+bitmix at /cache/build/builder-amdci4-4/julialang/julia-ci/src/support/hashing.h:31 [inlined]
+typekeyvalue_hash at /cache/build/builder-amdci4-4/julialang/julia-ci/src/jltypes.c:1839 [inlined]
+lookup_typevalue at /cache/build/builder-amdci4-4/julialang/julia-ci/src/jltypes.c:1143
+lookup_arg_type_tuple at /cache/build/builder-amdci4-4/julialang/julia-ci/src/gf.c:3259 [inlined]
+jl_lookup_generic_ at /cache/build/builder-amdci4-4/julialang/julia-ci/src/gf.c:4324 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci4-4/julialang/julia-ci/src/gf.c:4394
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+jl_f_invokelatest at /cache/build/builder-amdci4-4/julialang/julia-ci/src/builtins.c:889
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+jl_f__apply_iterate at /cache/build/builder-amdci4-4/julialang/julia-ci/src/builtins.c:876
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+mktempdir at ./file.jl:971
+mktempdir at ./file.jl:971
+jfptr_mktempdir_28764.1 at /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+jl_f_invokelatest at /cache/build/builder-amdci4-4/julialang/julia-ci/src/builtins.c:889
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:581
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+jl_fptr_interpret_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:802
+mktempdir at ./file.jl:971
+mktempdir at ./file.jl:971
+jfptr_mktempdir_28764.1 at /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+do_call at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:123
+eval_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:243
+eval_stmt_value at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:194 [inlined]
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:679
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:550
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+eval_body at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:558
+jl_interpret_toplevel_thunk at /cache/build/builder-amdci4-4/julialang/julia-ci/src/interpreter.c:884
+jl_toplevel_eval_flex at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:742
+jl_eval_toplevel_stmts at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:585
+jl_eval_module_expr at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:248 [inlined]
+jl_toplevel_eval_flex at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:650
+jl_eval_toplevel_stmts at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:585
+jl_toplevel_eval_flex at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:683
+ijl_toplevel_eval at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:754
+ijl_toplevel_eval_in at /cache/build/builder-amdci4-4/julialang/julia-ci/src/toplevel.c:799
+eval at ./boot.jl:489
+include_string at ./loading.jl:3045
+_include at ./loading.jl:3105
+include at ./Base.jl:309
+exec_options at ./client.jl:344
+_start at ./client.jl:577
+jfptr__start_60477.1 at /home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci4-4/julialang/julia-ci/src/julia.h:2319 [inlined]
+true_main at /cache/build/builder-amdci4-4/julialang/julia-ci/src/jlapi.c:985
+jl_repl_entrypoint at /cache/build/builder-amdci4-4/julialang/julia-ci/src/jlapi.c:1152
+main at /cache/build/builder-amdci4-4/julialang/julia-ci/cli/loader_exe.c:58
+unknown function (ip: 0x7f650acb3ca7) at /lib/x86_64-linux-gnu/libc.so.6
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8) at /workspace/srcdir/glibc-2.17/csu/../sysdeps/x86_64/start.S
+unknown function (ip: (nil)) at (unknown file)
+Allocations: 1804778494 (Pool: 1804773344; Big: 5150); GC: 1105
