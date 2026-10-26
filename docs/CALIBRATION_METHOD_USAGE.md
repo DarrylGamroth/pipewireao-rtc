@@ -1,5 +1,49 @@
 # Selectable Classic calibration acquisition
 
+## Simulation modal temporal coefficients
+
+The optional `calibrate_modal_system` recipe block selects a first-order low-pass
+filter for the existing tip/tilt temporal cascade:
+
+```yaml
+temporal:
+  tiptilt:
+    kind: lowpass
+    cutoff_frequency_hz: 25
+```
+
+Unknown fields in either temporal object are rejected. Omitting `temporal`
+preserves the identity filter. Modal coefficients retain their identity default.
+The command sample rate is `1 / frame_period_s` from the simulation declaration;
+the stage and woofer execute at that common rate. The calibration receipt records
+the declared period, derived sample rate and selected tip/tilt filter.
+
+`InstrumentCalibration.lowpass_coefficients(Float32; cutoff_frequency_hz,
+sample_rate_hz)` prepares coefficients without recalculating optical matrices.
+`Float64` is also supported. It returns FGA's five normalized coefficients
+`(b0, b1, b2, a1, a2)`, with denominator `1 + a1*z⁻¹ + a2*z⁻²` and `a0 = 1`.
+For cutoff f꜀ and sample rate fₛ, the prewarped bilinear transform is:
+
+```text
+k = tan(π f꜀ / fₛ)
+a1 = (k − 1) / (k + 1)
+b0 = b1 = (1 + a1) / 2
+b2 = a2 = 0
+```
+
+The numerator is normalized after the pole is rounded to the requested
+precision, retaining unity DC gain. Before rounding, the magnitude at f꜀ is
+1/√2 (−3.0103 dB). Both frequencies must be finite and positive, with f꜀ < fₛ/2;
+a pole that rounds onto the unit circle is rejected. A representable pole near
+that boundary can still shift the cutoff through finite precision.
+
+The instrument graph owns command allocation: filtered tip/tilt correction is
+clamped, its actual command minus its offset is projected into woofer coordinates,
+and that projection is subtracted from the woofer demand. Before constraints,
+the temporal paths sum as H(z) + (1 − H(z)) = 1; clipping spills unmet stage
+correction into the woofer command. This command identity does not establish
+optical equivalence, feedback stability or hardware bandwidth.
+
 ## Scope
 
 `REVOLTRTC.jl/bin/calibration_method.jl` acquires one declared probe basis through the

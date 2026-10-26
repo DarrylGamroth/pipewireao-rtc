@@ -14,7 +14,62 @@ public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
     controller_graph, controller_storage, measure!, calibration_frame!, calibrate_modal_system,
-    calibrate_hidden_modes, validate_modal_system
+    calibrate_hidden_modes, validate_modal_system, lowpass_coefficients
+
+"""
+    lowpass_coefficients(T; cutoff_frequency_hz, sample_rate_hz)
+
+Prepare a first-order low-pass section in `Float32` or `Float64`, in FGA's
+normalized `(b0, b1, b2, a1, a2)` order. The denominator is
+`1 + a1*z⁻¹ + a2*z⁻²`. A prewarped bilinear transform gives
+`k = tan(π*cutoff_frequency_hz/sample_rate_hz)` and `a1 = (k-1)/(k+1)`.
+After rounding the pole to `T`, normalize `b0 = b1 = (1+a1)/2` and set
+`b2 = a2 = 0`. This preserves unity DC gain in the prepared precision.
+
+Both frequencies must be finite and positive, and the cutoff must be strictly
+below Nyquist. Reject poles that round onto the unit circle. This cold helper
+does not prepare optical matrices or require FGA or DSP at runtime.
+"""
+function lowpass_coefficients(::Type{T}; cutoff_frequency_hz, sample_rate_hz) where {T<:Union{Float32,Float64}}
+    for value in (cutoff_frequency_hz, sample_rate_hz)
+        InstrumentConfiguration.isfinite_real(value) && value > 0 &&
+            isfinite(Float64(value)) ||
+            throw(ArgumentError("filter frequencies must be finite positive numbers representable in Float64"))
+    end
+    ratio = Float64(cutoff_frequency_hz) / Float64(sample_rate_hz)
+    0 < ratio < 0.5 || throw(ArgumentError("low-pass cutoff must be strictly below Nyquist"))
+    k = tanpi(ratio)
+    a1 = T((k - 1) / (k + 1))
+    abs(a1) < one(T) || throw(ArgumentError("low-pass pole must remain strictly stable in $T"))
+    b0 = T((1 + Float64(a1)) / 2)
+    dc_gain = (2 * Float64(b0)) / (1 + Float64(a1))
+    isfinite(dc_gain) && isapprox(dc_gain, 1; rtol=4eps(T), atol=0) ||
+        throw(ArgumentError("low-pass DC normalization is not representable in $T"))
+    return T[b0, b0, 0, a1, 0]
+end
+
+# Validate before preparing the optical plant. Only the existing tip/tilt cascade
+# is selected here; absent configuration retains its identity coefficients.
+function _tiptilt_temporal(recipe, frame_period_s)
+    InstrumentConfiguration.isfinite_real(frame_period_s) && frame_period_s > 0 ||
+        throw(ArgumentError("simulation frame_period_s must be finite and positive"))
+    period = Float64(frame_period_s)
+    sample_rate_hz = inv(period)
+    isfinite(period) && isfinite(sample_rate_hz) && sample_rate_hz > 0 ||
+        throw(ArgumentError("simulation frame period must give a finite positive sample rate"))
+    description = Dict{String,Any}("frame_period_s"=>period, "sample_rate_hz"=>sample_rate_hz,
+        "tiptilt"=>Dict("kind"=>"identity"))
+    haskey(recipe,"temporal") || return (;coefficients=Float32[1,0,0,0,0],description)
+    temporal = InstrumentConfiguration._declaration_fields(recipe["temporal"],
+        ("tiptilt",), ("tiptilt",), "calibration temporal")
+    tiptilt = InstrumentConfiguration._declaration_fields(temporal["tiptilt"],
+        ("kind","cutoff_frequency_hz"), ("kind","cutoff_frequency_hz"), "calibration temporal.tiptilt")
+    tiptilt["kind"] == "lowpass" || throw(ArgumentError("temporal.tiptilt kind must be lowpass"))
+    coefficients = lowpass_coefficients(Float32;
+        cutoff_frequency_hz=tiptilt["cutoff_frequency_hz"], sample_rate_hz)
+    description["tiptilt"] = Dict("kind"=>"lowpass", "cutoff_frequency_hz"=>Float64(tiptilt["cutoff_frequency_hz"]))
+    return (;coefficients,description)
+end
 
 "Return the SHA-256 digest of a file's bytes."
 digest(path) = bytes2hex(sha256(read(path)))

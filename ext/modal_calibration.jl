@@ -39,6 +39,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     any(entry -> entry["name"]==recipe["tiptilt"]["mirror"] && haskey(entry,"completion"),recipe["mirrors"]) &&
         throw(ArgumentError("annular completion cannot be combined with the fitted tip/tilt-coupled mirror basis"))
     declaration=IC.load_simulation(joinpath(source,recipe["simulation"]))
+    temporal=Calibration._tiptilt_temporal(recipe,declaration.document["frame_period_s"])
     settings=IC.settings(declaration,get(recipe,"settings",Dict()))
     prescription=IC.prescription_identity(declaration,settings)
     source_graph_sha256=Calibration.digest(joinpath(source,recipe["graph"]))
@@ -179,7 +180,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     parameters[:reconstructor] .= reconstructor
     parameters[Symbol("modal-reference")] .= -(reconstructor*reference)
     parameters[Symbol("modal-filter-coefficients")][1,:,:] .= 1f0
-    parameters[Symbol("tiptilt-filter-coefficients")][1,:,:] .= 1f0
+    parameters[Symbol("tiptilt-filter-coefficients")] .= reshape(temporal.coefficients,5,1,1)
     parameters[Symbol(String(stage_name)*"-to-"*coupled)] .= fit
     start=0
     for entry in mirror_specs
@@ -229,6 +230,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         "coupled_projection_condition"=>LA.cond(projections[coupled]),
         "mode_rms"=>mode_rms,"normalization"=>"piston-removed pupil RMS OPD",
         "poke_m"=>poke,"tsvd_rtol"=>recipe["tsvd_rtol"],
+        "temporal"=>temporal.description,
         "relative_inverse_residual"=>LA.norm(interaction*reconstructor*interaction-interaction)/LA.norm(interaction),
         "recipe"=>recipe,"artifact_sha256"=>Dict(name=>Calibration.digest(joinpath(artifacts,name)) for name in readdir(artifacts)))
     PipeWireAORTC.Common.write_yaml(joinpath(output,"result.yaml"),report;header="Generated simulation calibration receipt; do not edit.")
