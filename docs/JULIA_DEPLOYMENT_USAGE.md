@@ -14,6 +14,58 @@ headless RTC and libwireplumber assets and rejects a missing session runtime bef
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
+## Open and close correction
+
+Application Start/Stop controls acquisition. The scientific controller's
+runtime `closed` Boolean independently holds or resumes correction. The native
+RTC property transaction is shared by the GUI, CLI and Julia; there is no
+additional loop-control wire protocol. For an explicitly selected session:
+
+```julia
+using PipeWireAORTC
+session_id = "SELECTED-SESSION-UUID"
+graph = "gpi2-jfg-frame-graph"
+target = "closed-loop-correction:closed"
+opened = PipeWireAORTC.SessionCLI.control_session(session_id,
+    ["property", graph, target, "bool", "false"])
+observed = PipeWireAORTC.SessionCLI.control_session(session_id,
+    ["properties", graph])
+# An explicit operator action can close again with the same target and "true".
+```
+
+Opening retains the committed correction and mathematical integrator state;
+it does not stop acquisition, disconnect command ports, set gain to zero or
+restore a mirror flat. Reclosing resumes the normal feedback recurrence from
+retained state. Downstream filters and physical responses keep evolving.
+Existing startup behavior remains closed unless explicitly configured open.
+Do not use this as a device-safe-state operation.
+
+The owner must publish the writable Boolean capability. A `Submitted` response
+does not prove active adoption; inspect the outcome and requested/active
+generations and query the owner. An unknown outcome is never automatically
+retried. Ordinary CPU JFG owners accept runtime property updates; captured JFG
+owners retain their prepare-a-new-owner requirement for property changes.
+
+In `gui/operator-views.yaml`, declare presentation references under the existing
+session binding (the label must match the selected RTC session):
+
+```yaml
+session:
+  label: gpi2
+  graphs: [gpi2-jfg-frame-graph]
+  correction_loops:
+    - id: correction
+      title: Correction
+      graph: gpi2-jfg-frame-graph
+      property: "closed-loop-correction:closed"
+```
+
+The RTC Session panel provides Open loop, Close loop and Refresh controls;
+published Boolean values supply Open/Closed observations. Missing values or an
+unresolved update show Unknown. The binding does not create authority or infer
+capabilities from instrument names. GPI's coupled controller exposes one
+coordinated loop; independent corrector closure requires an allocation policy.
+
 ## Headless WFS measurements
 
 An optional analysis graph uses the ordinary `shack-hartmann-summary-f32`

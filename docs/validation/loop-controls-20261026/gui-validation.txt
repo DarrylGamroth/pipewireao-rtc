@@ -1,0 +1,42 @@
+GUI correction-loop controls validation
+Worktree: /home/dgamroth/workspaces/codex/worktrees/gui-loop-controls-20261026
+Branch: codex/loop-controls-20261026
+Source base: 30a2133, initially clean
+Rust: 1.99.1 (58cf8f9c3 2026-10-13)
+Julia: 1.13.2
+
+Native environment:
+PKG_CONFIG_PATH=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/meson-uninstalled
+LD_LIBRARY_PATH=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/pipewire
+PIPEWIREAO_SPA_PLUGIN_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/spa/plugins
+PIPEWIREAO_CONFIG_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/daemon
+PIPEWIREAO_MODULE_DIR=/home/dgamroth/workspaces/codex/pipewire/pipewire/build/src/modules
+
+cargo fmt --package pipewireao-gui -- --check: PASS
+cargo test correction_loop: PASS (4 library + 1 native focused tests)
+cargo test: PASS (639 library, 284 native, 12 import; 16 existing opt-in ignored)
+cargo check-wasm: PASS
+cargo check-browser: PASS
+python3 tools/browser-review/check_dependencies.py: PASS (117/142 normal dependencies, native exclusions pass)
+julia --startup-file=no --project=scripts scripts/runtests.jl: PASS (151 fixture checks)
+cargo clippy --all-targets -- -D warnings: FAIL, six pre-existing chunks_exact_to_as_chunks errors in unchanged files, previously documented in README. Native atomic fetch_update deprecations are also existing baseline warnings.
+cargo clippy --all-targets -- -D warnings -A deprecated -A clippy::chunks_exact_to_as_chunks: PASS (existing vendor warnings retained).
+
+Browser release build: PASS (env -u NO_COLOR trunk build --release --dist <task-cache>/browser-dist)
+Playwright interpreter: /home/dgamroth/.cache/gui-shape-genicam-20261013/venv/bin/python
+Chromium: /home/dgamroth/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome
+Fixture server: http://127.0.0.1:18426, task-owned output only
+review.py --url <fixture-server> --chromium <chromium> --output <task-cache>/browser-dpr1: PASS (28 checks, no browser errors)
+review.py --url <fixture-server> --chromium <chromium> --output <task-cache>/browser-dpr2 --dpr 2: PASS (28 checks, no browser errors)
+Inspected DPR1 startup and shape-control screenshots, DPR2 startup screenshot; shared workspace presentation remains intact. Browser fixture is disconnected and does not exercise native loop commands or qualify live RTC behavior.
+
+Setup attempts retained separately:
+- focused.log: initial /opt/pipewireao installed SDK lacks SPA_PROP_INFO_displayName; corrected by the documented absolute current build-tree environment in focused-build-tree.log.
+- system Python lacks playwright; reran the workflow with the existing cached GUI Playwright venv. browser-system-python-setup.log retains this setup issue. Final DPR1/DPR2 logs and exit markers are both successful.
+
+No live GUI, RTC, PipeWire daemon or instrument services were started, stopped or modified. No sibling source or user changes were edited. Existing property transaction, native protocol, history and readback paths are reused.
+
+Authored instrument source files were inspected for exact bindings but not loaded as raw GUI runtime files. Their $ref values require the normal RTC cold export before GUI loading; the GUI parser does not resolve those owner references. No fresh export was produced for this task. New parser tests cover the binding contract; the primary owns authored YAML formatting and graph-target checks.
+
+Commit: 699d00dad16384ef8aaa7f555a39ebb9dde50396
+Both resolved local Cargo target directories were cleaned after validation. No shared/sibling target was cleaned.

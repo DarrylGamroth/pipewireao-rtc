@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Dependency ordering and correction-loop control — 2026-10-26
+
+The [software integration record](validation/loop-controls-20261026/README.md)
+retains fail-before/pass-after ordering and controller tests, independent
+reviews, RTC scalar-command integration and GUI validation. Cold AOS ordering
+and generic controller hold/resume are implemented; GUI commands reuse the
+existing verified RTC property path. The live RTC/GUI are unchanged. No fresh
+native-session, hardware, deadline or AMDGPU qualification is claimed.
+
 ## GPI stage response and temporal allocation — 2026-10-26
 
 The [matched comparison](validation/gpi-closed-loop-20261024/temporal-20261026/RUN.md)

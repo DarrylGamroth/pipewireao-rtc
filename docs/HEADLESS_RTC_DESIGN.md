@@ -61,13 +61,33 @@ paused. GUI/CLI/Julia retain the same wire protocol and shared history.
 
 ## Correction-loop control — investigation, 2026-10-26
 
-This section records source findings and a proposed next capability, not an
-implemented wire protocol or a change to the accepted session state machine.
-The existing RTC `Running` state describes application execution; it does not
-provide a separate, acknowledged open/close-correction operation. The GPI graph
-currently starts its integrator with a configured nonzero gain. Editing gain
-alone does not define integrator retention, filter reset, output hold or flat
-restoration, and is not a substitute for loop control.
+The RTC `Running` state describes application execution. Correction closure is
+an independent runtime Boolean property, `closed`, on the scientific controller.
+It uses the existing RTC-mediated property transaction, owner-generation
+acknowledgement and query paths; no new native operation or lifecycle state is
+introduced. Editing gain is not a substitute for loop control.
+
+Opening holds the committed correction and mathematical integrator state while
+frame processing, acquisition, reconstruction, diagnostics and required command
+exchange continue. Reclosing retains that state and resumes the normal
+constraint-feedback recurrence. Downstream temporal filters and the plant keep
+evolving, so this does not promise an instantaneous hold of mechanical position.
+There is no implicit zero, flat restoration, reset or gain change. Existing
+startup behavior is preserved (`closed=true` unless explicitly configured).
+
+The generic GUI session binding `correction_loops` references an exact graph and
+qualified Boolean property. It supplies presentation only: native owner readback
+is authoritative. Open/Close buttons use the same verified property path as
+Settings, CLI and Julia clients. A submitted write is not active adoption;
+unknown outcomes are retained and never retried automatically. Ordinary CPU JFG
+owners support runtime transitions. Captured JFG owners retain their existing
+prepare-a-new-owner requirement for property changes.
+
+The current GPI coupled integrator provides one coordinated correction loop.
+Independent device/mode-group closure needs an explicit allocation and feedback
+policy; disabling a device after integration would allow hidden state buildup.
+Separate clear/flat operations, bumpless transfer and device fault policies are
+not delivered by the Boolean hold/resume contract.
 
 The inspected HEART core revision `02c85a6490f33b057f1d0410a6c9db1564ae57b0`
 and GPI source revision `973b20af778949e62bd048c219cb872e8bb09d2b` establish:
@@ -102,7 +122,7 @@ adjusts woofer offloading separately. Its [CACAO setup guide](https://magao-x.or
 also exposes distinct HO and low-order loop interfaces. These are logical loop
 and mode-group operations, not a universal ordering of individual actuators.
 
-For this RTC, the proposed boundary is:
+The implementation and remaining design obligations follow these boundaries:
 
 - Keep acquisition, reconstruction, diagnostics and required command exchange
   running while correction is open. Do not implement opening by stopping an
@@ -123,9 +143,10 @@ For this RTC, the proposed boundary is:
   remain consistent when groups are disabled; multiplying a DM output by zero
   after integration would permit hidden state buildup.
 
-This is the next functional gap after the finite actuator-response validation.
-No open/close commands, new lifecycle states or GUI controls are delivered by
-the response-model work itself.
+The scientific `closed` property and generic GUI hold/resume controls implement
+the coordinated-loop case. Richer participation, explicit flat/reset policies
+and transition-frame reporting remain separate capabilities; they are not
+implied by a property-generation acknowledgement.
 
 ## Naming and deployment
 

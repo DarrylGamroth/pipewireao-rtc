@@ -1,0 +1,22 @@
+JFG explicit correction loop open/close validation
+Base: 3e053b7; branch codex/loop-controls-20261026
+Worktree: /home/dgamroth/workspaces/codex/worktrees/jfg-loop-controls-20261026
+Wrapper: /home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/with-env.sh
+Private environment: /home/dgamroth/.cache/jfg-loop-controls-20261026/environment
+The frozen science environment was copied; Pkg.develop points FGA, JFG, FGPW and FGI to this worktree. Frozen environment unchanged.
+Julia 1.13.2; CUDA.jl 6.4.2; NVIDIA GeForce RTX 3080.
+
+Run prefix: with-env.sh julia --startup-file=no --project=/home/dgamroth/.cache/jfg-loop-controls-20261026/environment
+
+Fail-before: test/correction_loop_state.jl failed before source changes on absent closed field/property 4; fail-before.log.
+CPU final: include FGA test/{correction_loop_state,leaky_integrator,leaky_integrator_properties,closed_loop_correction,closed_loop_integrator}.jl; Test.detect_ambiguities(FilterGraphAlgorithms; recursive=true) empty. 403 assertions; cpu-final.log.
+Portable KA CPU: earlier cpu-focused.log includes FGA test/ka_cpu.jl (shared kernels, all passing); 1053 assertions across that run. The subsequent leaky CPU validation change does not change shared kernels.
+Public documentation test: test/public_docs.jl passed 7 assertions during final-docs selector; recorded in tool transcript before cpu-final.log was refreshed.
+Graph: include JFG test/{closed_loop_correction,properties,leaky_controller}.jl; 192 assertions; graph-focused.log.
+CUDA native capture/replay: FGA test/gpu/closed_loop_correction_capture.jl; 1166 assertions; cuda-focused.log. Covers prepared-open held seeded correction and mathematical state, huge finite residual/feedback, reset and numerical rejection, prepared-open leaky recurrence, existing closed recurrence and GPU failure precedence.
+PipeWire: run /home/dgamroth/.cache/jfg-loop-controls-20261026/pipewire-focused.jl; 144 assertions; pipewire-focused.log. Reuses maintained test declarations and selects eight control testsets, including Bool SPA staging, generations and allocation-free adoption. No live service connection.
+git diff --check: passes.
+No full package matrix or AMDGPU hardware qualification performed.
+No terminology checker exists in this repository. Naming audit sources: docs/architecture.md and docs/controller-data-plane.md. Only public term added is the task-approved closed Bool; controller guide updated with its semantics and capture-owner limitation.
+
+Existing captured-owner runtime property replacement remains explicitly rejected. closed is fixed at capture preparation like scalar gains. CPU graphs and portable property bindings retain ordinary runtime staging/adoption.

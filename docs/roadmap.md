@@ -23,13 +23,21 @@ tweeter clipping persists. Historical calibration artifacts and the live RTC
 remain unchanged; revised source requires regeneration and a fresh build.
 See the [comparison and independent review](validation/gpi-closed-loop-20261024/temporal-20261026/RUN.md).
 
-The next functional gap is acknowledged correction-loop open/close control,
-distinct from application Running/Stopped. HEART/CACAO/MagAO-X findings and the
-proposed generic ownership/reset/hold boundary are in
-[the headless RTC design](HEADLESS_RTC_DESIGN.md#correction-loop-control--investigation-2026-10-26).
-No new loop-control protocol or GUI is implemented. AOS still requires validated
-node declaration order; deriving execution order during cold preparation is a
-separate follow-up, preserving explicit delayed feedback.
+AOS now derives stable execution order from direct dependencies during cold
+preparation, rejects direct cycles and preserves explicit delayed feedback.
+Its explicit grouped-stream policy retains its stricter declaration/group-order
+contract. Scientific controllers now expose a runtime `closed` Boolean:
+opening holds correction and integrator state while processing continues;
+closing resumes from retained state. Generic GUI loop bindings use the existing
+verified RTC property transaction/readback path. Classic/GPI presentation
+bindings are authored, without changing startup settings or calibration bytes.
+Independent reviews and focused CPU/CUDA/property/GUI tests pass; strict GUI
+Clippy retains six unrelated existing lint errors. See the
+[ordering and loop-control evidence](validation/loop-controls-20261026/README.md)
+and [semantics](HEADLESS_RTC_DESIGN.md#correction-loop-control--investigation-2026-10-26).
+The live RTC/GUI remain unchanged. Independent corrector closure, explicit
+flat/reset policies and runtime updates to captured JFG owners remain outside
+this implementation.
 
 The matched offline woofer-bound replay is complete: changing only ±1 to
 ±3.4 µm OPD reduces mean sampled residual WFE from 59.681 to 54.082 nm over
