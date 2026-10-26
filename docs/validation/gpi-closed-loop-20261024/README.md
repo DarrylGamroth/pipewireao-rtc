@@ -903,6 +903,7 @@ preserve that distinction:
 | 002 | Same CPU diagnostic, graph optimization disabled only to investigate cold preparation; failed before Ready. No Quit request. |
 | 003 | Original registered CUDA packages, native Lua phase tracing, diagnostic placement on separate physical cores; clean Ready-to-Quit in 3.459886 s. |
 | 004 | Original registered CUDA packages, intended Running-to-Quit; bootstrap monitor initialization expired before Ready. No Start or Quit request. |
+| 005 | Patched bootstrap monitor preparation, original CUDA science/packages, simulator compiler tracing; Ready-to-Running-to-Quit passes after 52 frames, with successful owned cleanup. |
 
 All dedicated processes were retired. The live GPI RTC and GUI received no
 lifecycle or parameter requests. Attempts 001/002 and their limitations are in
@@ -946,5 +947,25 @@ unchanged native bootstrap selector passes [49/49 checks](shutdown-20261025/boot
 including blocked-main responsiveness, Quit cleanup, Fault and controller
 loss/expiry. The [validation summary](shutdown-20261025/bootstrap/patched-summary.json)
 records source and selector hashes. These are source-override software checks,
-not production timing qualification. An isolated Running-to-Quit gate remains
-pending; the live deployment has not changed.
+not production timing qualification.
+
+The [patched Running-to-Quit receipt](shutdown-20261025/trial-005-receipt.json)
+confirms fresh Ready, Start, Running for at least five seconds, one accepted
+Quit and a stopped source report with sequence 52 and no failures. All five
+services are inactive with successful results, no remaining PIDs and empty
+[saved cgroups](shutdown-20261025/trial-005-final-owned-units.json). The 137 frozen
+source/configuration files remained unchanged throughout the test. Original
+science files, calibration, Project and Manifest were preserved; the diagnostic
+RTC source override and separate-core placement limit comparison with the live
+registered deployment.
+
+Native Quit effects took 3.225139 s, including 1.970939 s from source shutdown
+request to the next owner. The [compiler/phase analysis](shutdown-20261025/trial-005-phase-compile-analysis.json.gz)
+directly records 1334.6 ms compiling the concrete two-argument
+`OpticalObservation.close!(observation, pipewire)` call during this interval.
+Its 117,082-character signature was reassembled from three journal chunks and
+parsed successfully; no incomplete fragments remain. This identifies avoidable
+first-use work during successful cleanup, without establishing the original
+timeout cause or an equivalent wall-time saving. The next change prepares that
+exact cleanup specialization before admission, without executing cleanup or
+changing its order or deadline. The live deployment has not changed.

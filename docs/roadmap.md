@@ -81,8 +81,11 @@ The isolated shutdown investigation identified cold monitor compilation inside
 the bootstrap thread-start interval as a separate startup cost. Explicit
 preparation of that entry point passes a fresh private constructor and all 49
 existing bootstrap lifecycle checks without changing deadlines. The original
-Running-to-Quit timeout is not yet resolved; the patched full GPI gate is pending
-and the live deployment remains unchanged. See the
+Running-to-Quit timeout's original cause is not proven. The isolated patched
+GPI gate passes after 52 frames with clean retirement; compiler tracing identifies
+1.335 s of optical-observer cleanup compilation. Preparing that concrete cleanup
+entry point before admission is the next focused change. The live deployment
+remains unchanged. See the
 [shutdown record](validation/gpi-closed-loop-20261024/README.md#native-shutdown-investigation--2026-10-25).
 
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24

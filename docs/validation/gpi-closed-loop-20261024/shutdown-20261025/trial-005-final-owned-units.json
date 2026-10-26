@@ -1,0 +1,62 @@
+{
+  "session": {
+    "MainPID": "0",
+    "ControlPID": "0",
+    "Result": "success",
+    "ControlGroup": "",
+    "Id": "pipewireao-session@5b065a3df2ff.service",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "InvocationID": "",
+    "saved_cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-pipewireao\\x2dsession.slice/pipewireao-session@5b065a3df2ff.service",
+    "remaining_saved_cgroup_processes": []
+  },
+  "core": {
+    "MainPID": "0",
+    "ControlPID": "0",
+    "Result": "success",
+    "ControlGroup": "",
+    "Id": "pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-core.service",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "InvocationID": "",
+    "saved_cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-core.service",
+    "remaining_saved_cgroup_processes": []
+  },
+  "julia": {
+    "MainPID": "0",
+    "ControlPID": "0",
+    "Result": "success",
+    "ControlGroup": "",
+    "Id": "pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-julia.service",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "InvocationID": "",
+    "saved_cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-julia.service",
+    "remaining_saved_cgroup_processes": []
+  },
+  "parameters": {
+    "MainPID": "0",
+    "ControlPID": "0",
+    "Result": "success",
+    "ControlGroup": "",
+    "Id": "pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-parameters.service",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "InvocationID": "",
+    "saved_cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-parameters.service",
+    "remaining_saved_cgroup_processes": []
+  },
+  "simulator": {
+    "MainPID": "0",
+    "ControlPID": "0",
+    "Result": "success",
+    "ControlGroup": "",
+    "Id": "pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-simulator.service",
+    "ActiveState": "inactive",
+    "SubState": "dead",
+    "InvocationID": "",
+    "saved_cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/pipewireao-owner-81aeebc548cb4ff2bdb73bd7d261aad2-simulator.service",
+    "remaining_saved_cgroup_processes": []
+  }
+}
