@@ -2,7 +2,7 @@
 
 julia_version = "1.13.2"
 manifest_format = "2.1"
-project_hash = "7f00136fb8d08226cec78d4c0363d80d19536c9a"
+project_hash = "6181bcf0f76a40bea8ad0397a2c12f4908f413ef"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -284,12 +284,12 @@ version = "0.6.18"
 deps = ["DBInterface", "FITSIO", "Interpolations", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.9"
+version = "0.2.11"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
-    PipeWireAORTCCalibrationExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
-    PipeWireAORTCGraphExt = ["FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
+    PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
+    PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 
     [deps.PipeWireAORTC.weakdeps]
     AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
@@ -297,6 +297,7 @@ version = "0.2.9"
     AdaptiveOpticsSim = "002fb5eb-ad68-44a0-adbe-b299bfc2febc"
     AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
     FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
     FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
     JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"

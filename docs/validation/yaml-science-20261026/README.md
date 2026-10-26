@@ -211,3 +211,20 @@ The same positive graph on RTC baseline `21fcedf` rejects cold inspection with
 check supplies its otherwise-unused FITS file because that revision requires
 all declared files to exist. The revised selector also checks that missing
 unselected/runtime-only files do not force a cold calibration load.
+
+## Registered release checks
+
+AdaptiveOpticsSim 0.3.2 publishes the construction-binding interfaces used by
+PipeWireAORTC 0.2.11; the RTC compatibility floor now names that release.
+The complete RTC workspace tests pass on Julia 1.13.2 with one Julia thread,
+using `PIPEWIREAO_PREFIX` and `LD_LIBRARY_PATH` for the installed
+`pipewireao-classic-headless-20261021` prefix:
+
+```sh
+julia --project=. -e 'using Pkg; Pkg.resolve(); Pkg.test(; julia_args=["--threads=1"])'
+```
+
+The first configured run exposed a missing direct YAML dependency in the test
+workspace. Adding YAML and its compatibility bound to `test/Project.toml`
+restored the same full-suite command. These are package/software checks;
+live deployment and calibration are recorded separately.
