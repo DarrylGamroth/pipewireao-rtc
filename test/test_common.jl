@@ -49,6 +49,8 @@ end
     @test run_checked(["/bin/sh", "-c", "printf '%s' \"\$RTC_MIGRATION_TEST\""];
         env=Dict("RTC_MIGRATION_TEST" => "value")).stdout == "value"
     @test_throws ErrorException run_checked(["/bin/sleep", "5"]; timeout=0.05)
+    # Session cleanup may pass the final milliseconds of its overall deadline.
+    @test_throws ErrorException run_checked(["/bin/sleep", "1"]; timeout=0.001)
     @test_throws Exception run_checked(["/bin/sh", "-c", "head -c 1000 /dev/zero"];
         maximum_output_bytes=100)
 end

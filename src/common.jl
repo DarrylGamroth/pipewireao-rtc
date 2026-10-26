@@ -227,7 +227,7 @@ function run_checked(argv; env=Dict{String,String}(), timeout::Real=30,
             open(err_path, "w") do err
                 process = run(pipeline(ignorestatus(command); stdout=out, stderr=err); wait=false)
                 try
-                    state = timedwait(timeout; pollint=min(0.01, timeout / 10)) do
+                    state = timedwait(timeout; pollint=clamp(timeout / 10, 0.001, 0.01)) do
                         filesize(out_path) <= maximum_output_bytes && filesize(err_path) <= maximum_output_bytes ||
                             throw(ArgumentError("subprocess output exceeds bound"))
                         process_exited(process)
