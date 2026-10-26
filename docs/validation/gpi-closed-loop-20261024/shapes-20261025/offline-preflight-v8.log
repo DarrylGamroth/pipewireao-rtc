@@ -1,0 +1,4 @@
+Test Summary:                                                     | Pass  Total   Time
+Fourteen cold native declarations and restored baseline contracts |   22     22  40.1s
+Test Summary:                                                                 | Pass  Total  Time
+Controlled physical probe, native codecs, aliases and declared/FITS baselines |   32     32  3.1s

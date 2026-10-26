@@ -481,3 +481,123 @@ could select the sole matching GPI session. The new CUDA session and matching
 GUI are left running. Classic retains PID 2432242 and invocation
 `e23f5c8b3e5142ccb11311f4d7c27550`. No manual visual acceptance, hardware
 qualification or real-time deadline claim is made.
+
+## Controlled shape projection and coherent DM presentation — 2026-10-25
+
+This increment supersedes the preceding GUI shape path. Physical engineering
+offsets remain available separately. A shape request now enters independent
+VDM coordinates before the existing calibrated completion and physical limits.
+For completion matrix C and physical-to-VDM projection B, S selects the first
+unit row for each independent coordinate: S·C = I. The adopted shape is S·B·p;
+the existing C then completes the command. The least-squares clipping-feedback
+projection is unchanged and is not substituted for this selector. Projection
+occurs at parameter adoption; frame processing adds a cached vector.
+
+The RTC derives the editable physical mask from that same calibrated projection
+and publishes it with the basis. The GUI normalizes generated Zernike/Fourier
+modes on those channels and preserves all other observed request bits, including
+signed zero. Guard commands follow completion; inactive commands receive no
+shape contribution. The Offset view displays the adopted shape request, not a
+claim of physical device application. Native engineering offsets retain their
+old post-completion parameter path. In the current native application the C/B
+calibration aliases are fixed startup bindings, not independently editable live
+parameters. Other graph owners must replace coupled calibration coherently and
+regenerate publication when its selected coordinates change.
+
+[Actual calibrated checks](shapes-20261025/dm-shape-actual-calibration-final-tests.log)
+pass 36 assertions: woofer 97/97 editable channels, tweeter 1,412/2,304, and
+Classic 212/277. A deliberately amplified guard is completed to 2.7 µm and
+clamped to the unchanged 1 µm downstream limit in the
+[graph check](shapes-20261025/gpi2-projected-shape-graph.log).
+[Algorithm tests](shapes-20261025/gpi2-vdm-shape-unit.log) cover projection,
+failure-atomic adoption, reset, aliases and warmed zero heap allocation.
+The [native contracts](shapes-20261025/gpi2-shape-final-native-contract.log),
+[controller](shapes-20261025/gpi2-shape-controller-tests.log),
+[RTC publication](shapes-20261025/gpi2-shape-final-rtc-tests.log), and
+[declarations](shapes-20261025/gpi2-shape-final-declaration-tests.log) pass.
+The [frozen comparison](shapes-20261025/dm-shape-frozen-artifact-comparison.log)
+confirms all 34 checked numerical calibration inputs/receipts remain identical.
+No gain, stroke limit or calibration measurement changed. Both instruments pass
+[fresh CPU export](shapes-20261025/dm-controlled-shape-final-cold-export.log).
+Classic's source is updated generically; its separate live deployment is not.
+
+Demand and clipping feedback now retain bounded four-frame histories and render
+the newest observed exact matching pair. Frame identity, values, header and
+revision advance together. Stale, invalid, disconnected or reincarnated sources
+invalidate the history; an absent intersection still correctly reports
+Unavailable. This cannot recover samples dropped before GUI observation.
+The same regression [fails before](shapes-20261025/gpi2-gui-feedback-coherence-fail-before.log)
+and [passes after](shapes-20261025/gpi2-gui-feedback-coherence-pass-after.log).
+
+Actuator maps and surfaces use the same registered-coordinate fit with padding
+for markers, hover and clipping rings, including conservative rotated height
+extent. The fit checks cover Classic, GPI, rectangular viewports and pupils
+beyond actuator centres, with [fail-before](shapes-20261025/gpi2-gui-fit-fail-before.log)
+and [pass-after](shapes-20261025/gpi2-gui-fit-pass-after.log) evidence.
+The actuator grid may physically extend beyond the optical pupil; the fit does
+not move actuators or change registration to make those boundaries coincide.
+
+Both instruments reference one authoring `colormaps/default.yaml`. Export copies
+it into each self-contained application. The restored blue–white–red palette
+uses the original muted blue, off-white and orange-red stops, with the same
+built-in fallback. Additional Cividis, Plasma, Inferno, Magma, Turbo, Hot and
+Copper tables carry source and licence notices. YAML definitions take precedence
+over built-ins for maps, surfaces, colour bars and ndarray displays.
+
+[GUI tests](shapes-20261025/gpi2-dm-final-gui-tests.log) pass 629 library tests
+(one ignored), 283 binary tests (15 ignored) and 12 integration tests.
+[Formatting](shapes-20261025/gpi2-dm-final-gui-format.log),
+[native build](shapes-20261025/gpi2-dm-final-gui-build.log),
+[WASM check](shapes-20261025/gpi2-dm-final-gui-wasm.log), and
+[Clippy](shapes-20261025/gpi2-dm-final-gui-clippy.log) pass with the existing
+vendor/deprecation lint allowances. An independent review found an external
+signed-zero change could leave an older queued baseline; the same
+[regression fails before](shapes-20261025/gpi2-shape-zero-bits-fail-before.log)
+and [passes after](shapes-20261025/gpi2-shape-zero-bits-pass-after.log) bitwise
+observation comparison. Independent algorithm review left no unresolved finding.
+These are software checks, not hardware or deadline qualification.
+
+The immutable [runtime cohort](shapes-20261025/runtime-sources.toml) records
+RTC `4cb9b4f`, JFG/FGA `6dd6e84`, AOS `a0c2ee17`, HIL `f5fa45c2`, and
+GPI2Sim `a12a6d5a`. GUI source is `eccefb5`; instrument source is `5ae24c8`.
+
+The [native receipt](shapes-20261025/native-shape-qualification.json) records a
+CUDA plant, CPU JFG controller and UInt16 `[242, 240]` camera. The model declares
+2 kHz while this functional deployment is paced at 10 Hz. The new manager
+`4774985dfca6`, invocation `16d89668f72f4f7a8d944e98f1ebc343`, PID 2990499
+became active after 11 min 22 s of cold startup, within the unchanged deadline;
+the [service timestamps](shapes-20261025/startup-service.txt) are observations,
+not a controlled startup benchmark or a causal attribution.
+
+Before any mutation, eight native streams establish the exact declared zero
+shape defaults and original engineering FITS baselines. The
+[roundtrip](shapes-20261025/native-shape-roundtrip.json) then probes one
+controlled physical coordinate per mirror by 4 nm: zero-based woofer 0 and
+tweeter 162. Each probe and its exact baseline restore is adopted, with requested
+and active generation advancing together. No unknown/rejected outcome or
+compensating submission occurs. Physical engineering readbacks remain unchanged.
+The [fourteen-stream check](shapes-20261025/native-stream-verification.json)
+observes 35–36 distinct sequences per stream. Twelve metadata-bearing streams
+share domain `a0000000000000000000000000000000`, generation 1, sequence 2178;
+Applied carries headers only. Thirty-two paired Applied samples per mirror
+exactly match demanded metres divided by Float32 `1e-6`, with zero error in µm.
+Tweeter roles match 1,412 controlled / 304 extrapolated / 588 inactive; woofer's
+97 correction roles remain unknown. All four shape/engineering readbacks
+match baseline bits, and all owned observers and temporary payloads are removed.
+
+The previous GPI `461ad9bb9189` receives exactly one native Quit. Its
+[retirement receipt](shapes-20261025/previous-retirement.json) preserves the
+unknown reply and retained service failure. Cleanup completes and the
+[process/cgroup audit](shapes-20261025/previous-cleanup-audit.json) confirms
+all owners and the manager are absent. The stopped manager alias is removed only
+after its target and PID are checked; LoadState is now not-found. This does not
+resolve or reclassify the native Quit timeout.
+
+The initial GUI stream check [fails](shapes-20261025/gui-before-waypipe-reconnect.log)
+with no GUI nodes while the old waypipe display is stalled. After the operator
+reports restarting waypipe, only the GUI is restarted on `wayland-sRK0etWWY9`.
+The [final GUI receipt](shapes-20261025/gui-live-verification.json) confirms the
+exact new remote, binary SHA-256, three running visible-view observers and no
+software-renderer overrides. This is not manual visual acceptance or proof of
+hardware rendering. GPI and its GUI are left running. Classic retains PID
+2432242 and invocation `e23f5c8b3e5142ccb11311f4d7c27550` throughout.

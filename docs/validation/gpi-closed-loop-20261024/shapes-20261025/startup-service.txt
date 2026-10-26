@@ -1,0 +1,7 @@
+MainPID=2990499
+Id=pipewireao-session@4774985dfca6.service
+ActiveState=active
+SubState=running
+InactiveExitTimestamp=Sun 2026-10-25 16:52:18 PDT
+ActiveEnterTimestamp=Sun 2026-10-25 17:03:40 PDT
+InvocationID=16d89668f72f4f7a8d944e98f1ebc343

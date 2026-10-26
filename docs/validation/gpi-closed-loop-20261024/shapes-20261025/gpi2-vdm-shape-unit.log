@@ -1,0 +1,18 @@
+Test Summary:                                                  | Pass  Total  Time
+shape requests enter independent coordinates before completion |   24     24  2.4s
+Test Summary:                                        | Pass  Total  Time
+dense physical projection retains the intended shape |    5      5  1.4s
+Test Summary:                                     | Pass  Total  Time
+VDM-to-PDM declaration preserves the FGN contract |   16     16  1.0s
+Test Summary:                                              | Pass  Total  Time
+VDM-to-PDM accepts logical CPU views and in-place commands |    9      9  2.6s
+Test Summary:                                           | Pass  Total  Time
+VDM-to-PDM replacement and rejection are failure-atomic |   11     11  0.0s
+Test Summary:                                         | Pass  Total  Time
+VDM-to-PDM warmed paths allocate no Julia heap memory |    6      6  0.0s
+Test Summary:                                                 | Pass  Total  Time
+Correction provenance follows prepared projection replacement |   10     10  0.2s
+Test Summary:                                                           | Pass  Total  Time
+Correction-role output cannot overwrite prepared calibration or scratch |   12     12  0.1s
+Test Summary:                                                       | Pass  Total  Time
+Correction-role output cannot overwrite prepared execution metadata |   12     12  0.3s

@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Controlled DM shapes and coherent presentation — 2026-10-25
+
+The [shape integration record](validation/gpi-closed-loop-20261024/README.md#controlled-shape-projection-and-coherent-dm-presentation--2026-10-25)
+records calibrated edit masks, shape projection before guard completion,
+exact-frame clipping feedback, shared palettes and padded registered-coordinate
+fits. Classic/GPI CPU checks and GPI native probe/restoration, fourteen-stream
+telemetry and GUI deployment checks pass. The old GPI Quit timeout is retained
+as a failure with confirmed process cleanup; Classic stays unchanged live.
+
 ## GPI offset controls and shared DM presentation — 2026-10-25
 
 The [controls integration record](validation/gpi-closed-loop-20261024/README.md#gpi-offset-controls-and-shared-dm-presentation--2026-10-25)

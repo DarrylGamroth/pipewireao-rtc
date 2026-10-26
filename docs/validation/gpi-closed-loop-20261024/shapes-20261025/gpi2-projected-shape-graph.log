@@ -1,0 +1,4 @@
+Test Summary:                                       | Pass  Total  Time
+offset readback follows successful requested frames |   13     13  5.9s
+Test Summary:                                                                | Pass  Total  Time
+projected shapes complete before physical limits and retain request metadata |    8      8  7.8s

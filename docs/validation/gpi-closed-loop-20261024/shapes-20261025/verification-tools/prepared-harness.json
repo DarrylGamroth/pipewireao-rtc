@@ -1,0 +1,52 @@
+{
+  "status": "offline-prepared; no live connection or controls performed",
+  "prepared_at_utc": "2026-10-25T23:39:30.754627+00:00",
+  "authorized_target_root": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025",
+  "live_execution_gate": "Await parent-supplied Running identity and exact immutable cohort v8 environment",
+  "offline_tests": {
+    "passed": 54,
+    "failed": 0,
+    "log": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-verification-tools-20261025/offline-preflight.log",
+    "application": "/tmp/gpi2-controlled-shape-application",
+    "environment": "/tmp/gpi2-integration-validation"
+  },
+  "driver_sha256": {
+    "offline_preflight.jl": "838f365f29f61396ca00233334b3d722297c32c2e28bd7bebf71721c2550c3b3",
+    "native_stream_verification.jl": "f0e08b9280bb678d6c25fa5e2e61e2dd260bae77343bc873374bcbb85b850c42",
+    "native_observation_helpers.jl": "c0d446ae3c81dc3766d5eebf8eedaf3a6e535adc4d6ad261ef4792dcb43638d6",
+    "native_shape_roundtrip.jl": "cf45d2fd9beac1a4ce856a3e92eacfcf849957e81de2735636bdb98cb1ce067c"
+  },
+  "cold_application_sha256": {
+    "instrument.json": "1f3d2b76e3d1f6c1fe36956c408516d82ec5f7b7725e8856474d989ccc7d86ae",
+    "rtc/graph.conf": "9d80c3a98d780bd200983e77ce3bf9bd61d7a79aa8b35d83b8e29a6f830b4010",
+    "rtc/session.conf.in": "2645f128c8290b9732b96350b9f360ed74075babef203880942e6344edd4d9b5",
+    "rtc/parameters.conf": "4238c4f3bbe98c4a751771b065c582313f414f18d3a2a75f8bf2f808d1c5a359"
+  },
+  "probe_contract": {
+    "woofer_zero_based_physical_index": 0,
+    "tweeter_zero_based_physical_index": 162,
+    "probe_opd_m": 4e-09,
+    "updates": "one probe and one exact baseline restore per mirror; unknown submission never retried",
+    "restoration_flag": "set only by before_request at actual restore submission",
+    "initial_native_gate": "eight full-identity streams; exact shape defaults and old engineering FITS readbacks before any probe"
+  },
+  "shape_baseline": {
+    "origin": "VdmShapeOffsetF32 declared zero initialization",
+    "shape_source": "prepared typed graph parameter contract",
+    "native_readback_verified": false,
+    "startup_FITS_binding_required": false
+  },
+  "engineering_baseline": "actual original FITS arrays, exact bits checked during each probe/restore",
+  "final_gate": {
+    "streams": 14,
+    "acquisition_metadata_streams": 12,
+    "applied_header_only_streams": 2,
+    "current_shape_and_engineering_readbacks": "exact declared/restored baseline bits"
+  },
+  "resources": {
+    "live_observers_created": 0,
+    "control_requests_issued": 0,
+    "offline_process_exit_code": 0,
+    "temporary_fixture_directories_remaining": 0
+  }
+}

@@ -1,0 +1,7 @@
+GUI_PARSE views=10 overlays=1 requires_instrument=true
+GUI_INSTRUMENT resolved_panels=10
+GUI_DM_PALETTE id=blue-white-red name=Blue–white–red
+GUI_CONTROLLED count=212 total=277
+GUI_SHAPE parameter=shape-offset units=µm OPD bases=["zernike", "fourier"] offset_schema=pipewireao/requested-pdm-command-f32/1
+GUI_DM id=dm-command demanded_units=µm OPD coordinates=277 pupil=Some(NativeDeformableMirrorPupil { outer_radius: 1.0, inner_radius: 0.20491803 })
+GUI_APPLIED units=µm OPD schema=pipewireao/applied-dm-command-opd-um-f32/1

@@ -1,0 +1,5 @@
+gpi2/woofer controlled=97 physical=97 max_direct_error=5.939693e-15
+gpi2/tweeter controlled=1412 physical=2304 max_direct_error=0.0
+revolt-classic/hsdm277 controlled=212 physical=277 max_direct_error=0.0
+Test Summary:                                  | Pass  Total     Time
+calibrated shape selection precedes completion |   36     36  3m17.9s

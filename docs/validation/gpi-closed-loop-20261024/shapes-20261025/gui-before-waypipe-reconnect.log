@@ -1,0 +1,13 @@
+ERROR: LoadError: GUI streams not running
+Stacktrace:
+ [1] error(s::String)
+   @ Base ./error.jl:44
+ [2] top-level scope
+   @ ~/.local/state/pipewireao/gpi2-shape-live-20261025/verify-deployment.jl:16
+ [3] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [4] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [5] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025/verify-deployment.jl:16

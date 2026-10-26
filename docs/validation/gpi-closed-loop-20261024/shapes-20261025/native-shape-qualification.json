@@ -1,0 +1,570 @@
+{
+  "completed": true,
+  "completed_at_utc": "2026-10-26T00:09:00.526294+00:00",
+  "scope": "Functional CUDA plant/UInt16 camera plus CPU JFG native parameter/readback integration; no rate, optical-performance, or hardware-qualification claim",
+  "live_identity": {
+    "backend": "cuda",
+    "camera": "UInt16",
+    "pid": 2990499,
+    "remote": "/run/user/1000/pipewireao-session-4774985dfca6/16d89668f72f4f7a8d944e98f1ebc343/rtc-16d89668f72f",
+    "runtime_root": "/run/user/1000/pipewireao-session-4774985dfca6",
+    "stage": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025/session",
+    "unit": "pipewireao-session@4774985dfca6.service"
+  },
+  "unit": {
+    "ActiveState": "active",
+    "InvocationID": "16d89668f72f4f7a8d944e98f1ebc343",
+    "MainPID": "2990499",
+    "SubState": "running"
+  },
+  "source_instance": 1091349380839575029,
+  "offline_preflight": {
+    "passed": 54,
+    "failed": 0,
+    "actual_application_log": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025/offline-preflight-v8.log"
+  },
+  "roundtrip": {
+    "initial_baseline_identity": {
+      "domain": "a0000000000000000000000000000000",
+      "generation": 1,
+      "sequence": 689
+    },
+    "initial_baseline_native_verified": true,
+    "probes": {
+      "tweeter": {
+        "physical_index_zero_based": 162,
+        "probe_opd_m": 4e-09,
+        "parameter_alias": "tweeter-shape-offset",
+        "generation_node": "tweeter-shape",
+        "probe_generation": {
+          "active": 1,
+          "graph": "gpi2-jfg-frame-graph",
+          "node": "tweeter-shape",
+          "outcome": "observed",
+          "requested": 1
+        },
+        "restore_generation": {
+          "active": 2,
+          "graph": "gpi2-jfg-frame-graph",
+          "node": "tweeter-shape",
+          "outcome": "observed",
+          "requested": 2
+        },
+        "probe_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 937
+        },
+        "restore_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 976
+        }
+      },
+      "woofer": {
+        "physical_index_zero_based": 0,
+        "probe_opd_m": 4e-09,
+        "parameter_alias": "woofer-shape-offset",
+        "generation_node": "woofer-shape",
+        "probe_generation": {
+          "active": 1,
+          "graph": "gpi2-jfg-frame-graph",
+          "node": "woofer-shape",
+          "outcome": "observed",
+          "requested": 1
+        },
+        "restore_generation": {
+          "active": 2,
+          "graph": "gpi2-jfg-frame-graph",
+          "node": "woofer-shape",
+          "outcome": "observed",
+          "requested": 2
+        },
+        "probe_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 856
+        },
+        "restore_identity": {
+          "domain": "a0000000000000000000000000000000",
+          "generation": 1,
+          "sequence": 897
+        }
+      }
+    },
+    "baseline_restored": {
+      "tweeter": true,
+      "woofer": true
+    },
+    "engineering_FITS_unchanged_throughout": true,
+    "unknown_or_rejected_outcomes": false
+  },
+  "final_streams": {
+    "count": 14,
+    "full_acquisition_metadata_streams": 12,
+    "header_only_applied_streams": 2,
+    "common_identity": {
+      "domain": "a0000000000000000000000000000000",
+      "generation": 1,
+      "sequence": 2178
+    },
+    "per_stream": {
+      "detector": {
+        "element_type": "U16_LE",
+        "shape": [
+          242,
+          240
+        ],
+        "schema": "pipewireao/raw-detector-pixels-u16/1",
+        "distinct_sequences": 36,
+        "first_sequence": 2146,
+        "last_sequence": 2193
+      },
+      "tiptilt": {
+        "element_type": "F32_LE",
+        "shape": [
+          2
+        ],
+        "schema": "pipewireao/tip-tilt-opd-coefficients-m-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "tweeter": {
+        "element_type": "F32_LE",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/actuator-command-opd-m-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "tweeter-applied": {
+        "element_type": "F32_LE",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/applied-dm-command-opd-um-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2192
+      },
+      "tweeter-constraint-feedback": {
+        "element_type": "F32_LE",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/pdm-constraint-feedback-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "tweeter-correction-role": {
+        "element_type": "U8",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/pdm-correction-role-u8/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "tweeter-offset": {
+        "element_type": "F32_LE",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/requested-pdm-command-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "tweeter-shape-offset": {
+        "element_type": "F32_LE",
+        "shape": [
+          2304
+        ],
+        "schema": "pipewireao/requested-pdm-command-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "woofer": {
+        "element_type": "F32_LE",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/actuator-command-opd-m-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "woofer-applied": {
+        "element_type": "F32_LE",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/applied-dm-command-opd-um-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2192
+      },
+      "woofer-constraint-feedback": {
+        "element_type": "F32_LE",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/pdm-constraint-feedback-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "woofer-correction-role": {
+        "element_type": "U8",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/pdm-correction-role-u8/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "woofer-offset": {
+        "element_type": "F32_LE",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/requested-pdm-command-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      },
+      "woofer-shape-offset": {
+        "element_type": "F32_LE",
+        "shape": [
+          97
+        ],
+        "schema": "pipewireao/requested-pdm-command-f32/1",
+        "distinct_sequences": 35,
+        "first_sequence": 2147,
+        "last_sequence": 2193
+      }
+    },
+    "offset_baseline_bits_match": {
+      "tweeter-offset": true,
+      "tweeter-shape-offset": true,
+      "woofer-offset": true,
+      "woofer-shape-offset": true
+    },
+    "role_counts": {
+      "tweeter": {
+        "0": 588,
+        "1": 1412,
+        "2": 304,
+        "3": 0
+      },
+      "woofer": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 97
+      }
+    },
+    "applied": {
+      "tweeter": {
+        "applied_units": "\u00b5m OPD",
+        "demanded_units": "m OPD",
+        "exact_float32_scaling_match": true,
+        "header_sequence_lag": 0,
+        "maximum_absolute_error_um": 0.0,
+        "paired_sequences": [
+          2147,
+          2148,
+          2149,
+          2150,
+          2151,
+          2152,
+          2153,
+          2154,
+          2155,
+          2156,
+          2157,
+          2158,
+          2159,
+          2160,
+          2161,
+          2162,
+          2163,
+          2164,
+          2165,
+          2166,
+          2167,
+          2168,
+          2169,
+          2170,
+          2171,
+          2172,
+          2173,
+          2174,
+          2175,
+          2176,
+          2177,
+          2178
+        ],
+        "semantics": "Applied publishes command adopted after frame n for next optical frame n+1; no AcquisitionMetadata is published on Applied"
+      },
+      "woofer": {
+        "applied_units": "\u00b5m OPD",
+        "demanded_units": "m OPD",
+        "exact_float32_scaling_match": true,
+        "header_sequence_lag": 0,
+        "maximum_absolute_error_um": 0.0,
+        "paired_sequences": [
+          2147,
+          2148,
+          2149,
+          2150,
+          2151,
+          2152,
+          2153,
+          2154,
+          2155,
+          2156,
+          2157,
+          2158,
+          2159,
+          2160,
+          2161,
+          2162,
+          2163,
+          2164,
+          2165,
+          2166,
+          2167,
+          2168,
+          2169,
+          2170,
+          2171,
+          2172,
+          2173,
+          2174,
+          2175,
+          2176,
+          2177,
+          2178
+        ],
+        "semantics": "Applied publishes command adopted after frame n for next optical frame n+1; no AcquisitionMetadata is published on Applied"
+      }
+    }
+  },
+  "declaration": {
+    "backend": "cuda",
+    "frame_encoding": "uint16",
+    "rate": 2000,
+    "pacing_rate_hz": 10
+  },
+  "application_sha256": {
+    "Manifest.toml": "9cbfe63d45b75ed1d22e86a63739f3faf67f4988067c32e878dd98f6f28fa711",
+    "deployment.conf": "85ebf49c6a0b50933c91636797d9f56d095522d53b4c56977583e304d78611cb",
+    "instrument.json": "1f3d2b76e3d1f6c1fe36956c408516d82ec5f7b7725e8856474d989ccc7d86ae",
+    "rtc/graph.conf": "9d80c3a98d780bd200983e77ce3bf9bd61d7a79aa8b35d83b8e29a6f830b4010",
+    "rtc/parameters.conf": "bfec57a38d7aa990c3172ddb54550fbb8a2a22ba0329b2591ebb7968590a4c6f",
+    "rtc/session.conf.in": "2645f128c8290b9732b96350b9f360ed74075babef203880942e6344edd4d9b5"
+  },
+  "driver_sha256": {
+    "offline_preflight.jl": "838f365f29f61396ca00233334b3d722297c32c2e28bd7bebf71721c2550c3b3",
+    "native_stream_verification.jl": "f0e08b9280bb678d6c25fa5e2e61e2dd260bae77343bc873374bcbb85b850c42",
+    "native_observation_helpers.jl": "c0d446ae3c81dc3766d5eebf8eedaf3a6e535adc4d6ad261ef4792dcb43638d6",
+    "native_shape_roundtrip.jl": "cf45d2fd9beac1a4ce856a3e92eacfcf849957e81de2735636bdb98cb1ce067c"
+  },
+  "source_cohort": {
+    "path": "/home/dgamroth/.cache/pipewireao/gpi2-validation-20261025/source-cohort-v8",
+    "manifest_sha256": "9cbfe63d45b75ed1d22e86a63739f3faf67f4988067c32e878dd98f6f28fa711",
+    "source_snapshots_sha256": "a138a0194d9c367ba0cf74353aa744fe31c748827e3bdb458201c41630bebefc",
+    "packages": {
+      "PipeWireAORTC": {
+        "deps": [
+          "DBInterface",
+          "FITSIO",
+          "Interpolations",
+          "JSON",
+          "LinearAlgebra",
+          "PipeWireAO",
+          "SHA",
+          "SQLite",
+          "Sockets",
+          "TOML",
+          "ThreadPinning",
+          "UUIDs",
+          "YAML"
+        ],
+        "git-tree-sha1": "f51de482f604bed6d0f3c88df32187faecea6a90",
+        "pinned": true,
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+        "version": "0.2.9+gpi2validate.20261025.4cb9b4f1",
+        "extensions": {
+          "PipeWireAORTCAOSExt": [
+            "AdaptiveOpticsSim",
+            "AdaptiveOpticsSimPipeWireHIL"
+          ],
+          "PipeWireAORTCCalibrationExt": [
+            "FilterGraphAlgorithms",
+            "AdaptiveOpticsSim",
+            "AdaptiveOpticsSimPipeWireHIL",
+            "AdaptiveOpticsCalibration",
+            "FilterGraphIsland",
+            "FilterGraphPipeWire",
+            "JuliaFilterGraph"
+          ],
+          "PipeWireAORTCGraphExt": [
+            "FilterGraphAlgorithms",
+            "FilterGraphIsland",
+            "FilterGraphPipeWire",
+            "JuliaFilterGraph"
+          ]
+        },
+        "weakdeps": {
+          "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+          "AdaptiveOpticsCalibration": "3c8b5851-926e-4ebb-af30-f8544b98d45f",
+          "AdaptiveOpticsSim": "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
+          "AdaptiveOpticsSimPipeWireHIL": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "FilterGraphAlgorithms": "8914fa96-dfe6-4d3c-aced-40e6da1f6420",
+          "FilterGraphIsland": "245ec3f5-bd83-45fe-abab-efac21027a22",
+          "FilterGraphPipeWire": "0366a544-13dd-48a3-a3d6-bd2ba4547294",
+          "JuliaFilterGraph": "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+        }
+      },
+      "JuliaFilterGraph": {
+        "deps": [
+          "FilterGraphAlgorithms",
+          "ThreadPinning"
+        ],
+        "git-tree-sha1": "419db6eb03fd508d07eba6d45d2b381c8fd26e75",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "febeb008-6177-4a1b-bafd-f7a6a3435ad8",
+        "version": "0.4.2+gpi2validate.20261025.6dd6e845",
+        "extensions": {
+          "JuliaFilterGraphAMDGPUExt": [
+            "AMDGPU",
+            "KernelAbstractions"
+          ],
+          "JuliaFilterGraphCUDAExt": [
+            "CUDA",
+            "KernelAbstractions"
+          ]
+        },
+        "weakdeps": {
+          "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "KernelAbstractions": "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+        }
+      },
+      "FilterGraphAlgorithms": {
+        "deps": [
+          "AdaptiveOpticsCalibration",
+          "GenericLinearAlgebra",
+          "LinearAlgebra",
+          "SimpleChains",
+          "Statistics"
+        ],
+        "git-tree-sha1": "4ed102cd05d3b8c7b8d29c5dbf0cbb8bdb03ba55",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "8914fa96-dfe6-4d3c-aced-40e6da1f6420",
+        "version": "0.8.0+gpi2validate.20261025.6dd6e845",
+        "extensions": {
+          "FilterGraphAlgorithmsAMDGPUExt": [
+            "AMDGPU",
+            "KernelAbstractions"
+          ],
+          "FilterGraphAlgorithmsCUDAExt": [
+            "CUDA",
+            "KernelAbstractions"
+          ],
+          "FilterGraphAlgorithmsDSPExt": "DSP"
+        },
+        "weakdeps": {
+          "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "DSP": "717857b8-e6f2-59f4-9121-6e50c889abd2",
+          "KernelAbstractions": "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+        }
+      },
+      "AdaptiveOpticsSim": {
+        "deps": [
+          "AbstractFFTs",
+          "AdaptiveOpticsCalibration",
+          "FFTW",
+          "FixedSizeArrays",
+          "ForwardDiff",
+          "KernelAbstractions",
+          "LinearAlgebra",
+          "Logging",
+          "Random",
+          "SparseArrays",
+          "SpecialFunctions",
+          "Statistics"
+        ],
+        "git-tree-sha1": "1ab34d91bb9cda0f36e9d22080d447b5bdcb7ee4",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
+        "version": "0.2.3+gpi2validate.20261025.a0c2ee17",
+        "extensions": {
+          "AdaptiveOpticsSimAMDGPUExt": "AMDGPU",
+          "AdaptiveOpticsSimAcceleratedKernelsExt": "AcceleratedKernels",
+          "AdaptiveOpticsSimAppleAccelerateExt": "AppleAccelerate",
+          "AdaptiveOpticsSimCSVExt": [
+            "CSV",
+            "Tables"
+          ],
+          "AdaptiveOpticsSimCUDAExt": "CUDA",
+          "AdaptiveOpticsSimDaggerExt": "Dagger",
+          "AdaptiveOpticsSimJSON3Ext": "JSON3",
+          "AdaptiveOpticsSimMetalExt": "Metal",
+          "AdaptiveOpticsSimTablesExt": "Tables",
+          "AdaptiveOpticsSimYAMLExt": "YAML"
+        },
+        "weakdeps": {
+          "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+          "AcceleratedKernels": "6a4ca0a5-0e36-4168-a932-d9be78d558f1",
+          "AppleAccelerate": "13e28ba4-7ad8-5781-acae-3021b1ed3924",
+          "CSV": "336ed68f-0bac-5ca0-87d4-7b16caf5d00b",
+          "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+          "Dagger": "d58978e5-989f-55fb-8d15-ea34adc7bf54",
+          "JSON3": "0f8b85d8-7281-11e9-16c2-39a750bddbf1",
+          "Metal": "dde4c033-4e86-420c-a63e-0dd931031962",
+          "Tables": "bd369af6-aec1-5ad0-b16a-f7cc5008161c",
+          "YAML": "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+        }
+      },
+      "AdaptiveOpticsSimPipeWireHIL": {
+        "deps": [
+          "AdaptiveOpticsSim",
+          "PipeWireAO",
+          "UUIDs"
+        ],
+        "git-tree-sha1": "1e87524bd9fa3b59470af209293450628e58aa04",
+        "registries": "DarrylGamrothRegistry",
+        "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "version": "0.2.2+gpi2validate.20261025.f5fa45c2"
+      }
+    }
+  },
+  "cleanup": {
+    "roundtrip_exit_code": 0,
+    "read_only_gate_exit_code": 0,
+    "owned_observer_nodes_remaining": 0,
+    "all_observer_resources_closed": true,
+    "transient_parameter_payloads_remaining": 0,
+    "offline_temporary_fixture_directories_remaining": 0,
+    "new_native_session_identity_unchanged": true,
+    "lifecycle_actions_issued": 0,
+    "old_GPI_or_Classic_actions_issued": 0
+  },
+  "receipts": {
+    "roundtrip": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025/offset-validation/result.json",
+    "fourteen_stream_gate": "/home/dgamroth/.local/state/pipewireao/gpi2-shape-live-20261025/native-stream-verification.json"
+  }
+}

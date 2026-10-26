@@ -1,0 +1,4 @@
+Test Summary:                           | Pass  Total   Time
+GPI native session control and boundary |   15     15  17.2s
+Test Summary:                                     | Pass  Total     Time
+GPI controller composition uses shared algorithms |   63     63  2m09.1s
