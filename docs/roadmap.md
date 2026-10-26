@@ -6,13 +6,24 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-25. This section is the current delivery summary. Later sections
+Updated 2026-10-26. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
+
+The 2026-10-26 source/calibration audit confirms HEART's 97/2,304 command
+dimensions and the tweeter's addressed 48 × 48 subregion of 64 × 64 hardware.
+One hundred offline CPU checks reproduce checked-in conversion endpoints,
+per-actuator exceptions, crop geometry and conditional angular arithmetic.
+HEART's units document establishes DM commands as microns of wavefront, matching
+our OPD interface. Legacy calibration provenance, TT mechanical/sky convention,
+deployed calibration identity and external woofer clipping/flat files remain unresolved. Driver
+endpoint ranges cannot substitute for effective controller constraints. Limits,
+pupil registration, calibration and the live application remain unchanged; see
+the [audit and disposition](validation/gpi-closed-loop-20261024/mirror-calibration-20261026/README.md).
 
 The instrument monorepo now contains data-only GPI woofer/tweeter/tip/tilt and
 pyramid/EMCCD optical declarations. Three distinct command inputs replace the

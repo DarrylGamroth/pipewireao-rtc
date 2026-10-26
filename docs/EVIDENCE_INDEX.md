@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## GPI mirror calibration and registration audit — 2026-10-26
+
+The [read-only audit](validation/gpi-closed-loop-20261024/mirror-calibration-20261026/README.md)
+records HEART's command crop, driver calibration equations, actuator-specific
+limits and missing deployment/unit evidence. One hundred CPU arithmetic/data
+checks pass. This does not establish hardware calibration or justify replacing
+the simulator's provisional limits or pupil registration. Live settings remain
+unchanged.
+
 ## GPI genuine hidden-mode removal — 2026-10-25
 
 The [hidden-mode record](validation/gpi-closed-loop-20261024/README.md#heart-style-hidden-mode-removal--2026-10-25)

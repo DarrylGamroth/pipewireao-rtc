@@ -1,0 +1,123 @@
+{
+  "heart_commit": "973b20af778949e62bd048c219cb872e8bb09d2b",
+  "heart_core_commit": "02c85a6490f33b057f1d0410a6c9db1564ae57b0",
+  "heart_documented_dm_units": "microns of wavefront; logical RTC conversion to metres OPD is 1e-6",
+  "heart_units_sha256": "6e4bd7f4512e523e74847d0d9d3a037535d8633be5bf7a86af848d4c1d4a46f2",
+  "instrument_sha256": {
+    "calibration-recipe.yaml": "f537734b219258e7bce486ceb15ec37a72c4767bdd274df0da2080e242f5375c",
+    "instrument.yaml": "c59eb150aa855a42759bba40c55bab30ad6b33f2750d680e44495ac13ee91be9",
+    "rtc/mirror-controls.yaml": "74caf71fe66a3aca8cfa53c43ce2310f860cb71a9b7802b3bd5f1d1c942d1136"
+  },
+  "pupil_registration": {
+    "tweeter": {
+      "actuator_pitch_pupil_radius": 0.046511627906976744,
+      "pitches_across_pupil_diameter": 43.0
+    },
+    "woofer": {
+      "actuator_pitch_pupil_radius": 0.2,
+      "pitches_across_pupil_diameter": 10.0
+    }
+  },
+  "scope": "Float64 arithmetic on checked-in files, not deployed calibration, C-driver execution or hardware validation",
+  "source_sha256": {
+    "source/devices/config/ttAngleToVoltsCoeff.csv": "dee9f772390c85a619629f05fa425447b9b468ca86adfe36fa575d088914841b",
+    "source/devices/config/ttMinMaxVolts.csv": "ff60d999952339d0bf640cbf3aaf5226c939971f594d683746897a816063169c",
+    "source/devices/config/twtMinMaxVolts.csv": "059b9c79bff3e28040af8bec0d728e6e35bec21d521ba65b8e03c01531506bd5",
+    "source/devices/config/twtPhaseToVoltsCoeff.csv": "e33338c8a348c19944a847992f8086a33c618fd52aba31c412875e604ef747e8",
+    "source/devices/config/wfrMinMaxVolts.csv": "4424e3ef86b19bfbedd2b5ef4802ffe796c8dd24461a967cb0e66a71ca4a209e",
+    "source/devices/config/wfrPhaseToVoltsCoeff.csv": "09a13a3067498cab5481c058b13504e4d9121b1f660de8794182fa29c368e3c3",
+    "source/devices/src/dpioTweeterHandler.c": "9d46241cb47ed89475c2fc952069a2ab9f49ec4900e5d756830602d496130072",
+    "source/devices/src/dpioWooferTTHandler.c": "0ca5e5f94042fcce830f33947d63f698cc46796871942fa76e9d170f7261d93f",
+    "source/template/config/dmActuatorMap_2304.csv": "8d72cf020deb5525f97826fe2e9c4d8314f8cb44d6ef4db36eec3b67266167f3",
+    "source/template/config/dmActuatorMap_97.csv": "828199fac0ae91e8d614ee353a1930ef6ab3aece51d6d66c1169321e25d4bed4",
+    "source/template/config/gpi2config.yaml": "eaa0f3bc4645037abf1b01e53dfa24f898e107b4cda4d71733d78054d8d2d812",
+    "source/template/config/handlers/DPIO_config.yaml": "d0de6824bd268ee3593b11470a7fc1e9fa110f23344f088b10455a9ca54501b8",
+    "source/template/config/handlers/ttAngleToVoltsCoeff.csv": "dee9f772390c85a619629f05fa425447b9b468ca86adfe36fa575d088914841b",
+    "source/template/config/handlers/ttMinMaxVolts.csv": "ff60d999952339d0bf640cbf3aaf5226c939971f594d683746897a816063169c",
+    "source/template/config/handlers/twtMinMaxVolts.csv": "059b9c79bff3e28040af8bec0d728e6e35bec21d521ba65b8e03c01531506bd5",
+    "source/template/config/handlers/twtPhaseToVoltsCoeff.csv": "e33338c8a348c19944a847992f8086a33c618fd52aba31c412875e604ef747e8",
+    "source/template/config/handlers/wfrInitialDisplacement.csv": "4a590421143c558561cb577fb4d82e4550e393f66326e61f8a3d0b61bdf359fa",
+    "source/template/config/handlers/wfrMinMaxVolts.csv": "4424e3ef86b19bfbedd2b5ef4802ffe796c8dd24461a967cb0e66a71ca4a209e",
+    "source/template/config/handlers/wfrPhaseToVoltsCoeff.csv": "09a13a3067498cab5481c058b13504e4d9121b1f660de8794182fa29c368e3c3",
+    "source/template/config/handlers/wfrSlewRateClipping.csv": "08ff37de51231ccabec330284ee3890eb7a485a5bc2e10b3ed77b06a3b802446"
+  },
+  "tiptilt": {
+    "conditional_coefficient_for_1820_sky_mas_opd_m": 3.427972095021196e-5,
+    "current_simulation_coefficient_limit_opd_m": 1.0e-6,
+    "current_simulation_equivalent_sky_mas": 53.09261422061683,
+    "driver_angle_limits_mas": [
+      -1820.0,
+      1820.0
+    ]
+  },
+  "tweeter": {
+    "channels": 2304,
+    "command_grid_shape": [
+      48,
+      48
+    ],
+    "equal_voltage_channels_zero_based": [
+      323,
+      385,
+      1030,
+      1577,
+      1932
+    ],
+    "hardware_crop_centre_one_based": [
+      35.5,
+      32.5
+    ],
+    "hardware_crop_origin_zero_based": [
+      11,
+      8
+    ],
+    "physical_grid_shape": [
+      64,
+      64
+    ],
+    "special_channels": [
+      {
+        "phase_limits_um": [
+          -0.08595041598547525,
+          0.09669421761978479
+        ],
+        "volts": [
+          75.0,
+          95.0
+        ],
+        "zero_based_channel": 879
+      },
+      {
+        "phase_limits_um": [
+          -0.4700000286102295,
+          1.6700001137777705
+        ],
+        "volts": [
+          0.0,
+          200.0
+        ],
+        "zero_based_channel": 1656
+      }
+    ],
+    "typical_channels": 2297,
+    "typical_phase_limits_um": [
+      -1.0700000524520874,
+      1.0700000899359126
+    ]
+  },
+  "unresolved": [
+    "physical provenance of legacy calibration coefficients and compliance with documented wavefront convention",
+    "TT mas mechanical versus sky angle",
+    "actual deployed calibration file identity",
+    "external upstream woofer clipping and flat files",
+    "current GPI2 pupil registration and calibrated controlled/slaved actuator mask"
+  ],
+  "woofer": {
+    "channels": 97,
+    "configured_upstream_slew_per_update": 0.2378,
+    "driver_slew_phase_um_per_call": 0.2377958715316349,
+    "phase_endpoint_at_max_voltage_um": -3.4,
+    "phase_endpoint_at_min_voltage_um": 3.4,
+    "volts_for_positive_one_phase_um": -100
+  }
+}
