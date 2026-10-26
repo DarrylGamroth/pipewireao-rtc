@@ -20,7 +20,10 @@ source photometry and padding while requiring the composed pupil OPD's guide
 direction; absence retains the exact guide diagnostic. GPI2 chart model time
 now derives from the simulation period. Cold export/default comparisons and CPU
 observer tests pass; see the [source-validation record](validation/yaml-science-20261026/README.md).
-Live applications and hardware qualification are unchanged.
+The registered AOS 0.3.2 / RTC 0.2.11 CUDA GPI2 application is now live with a
+fresh calibration, CPU controller and the model-derived chart period; see the
+[live refresh](validation/yaml-science-20261026/README.md#registered-cuda-gpi2-refresh).
+Physical hardware and deadline qualification remain separate.
 
 Explicit node-construction array `bindings` now participate in cold source
 metadata and calibration identity without importing scientific packages. The
@@ -29,20 +32,22 @@ contracts and the runtime union for graph preparation, retaining host ownership
 for configuration-only arrays and the existing aggregate memory bound.
 Pixel-MTF FITS calibration is covered by the focused cold-metadata and CPU HIL
 selectors; the [source-validation record](validation/yaml-science-20261026/README.md#node-construction-calibration-bindings)
-records numerical comparison, rejection, snapshot and reset evidence. Installed
-applications, calibration stores, GUI, GPU and release qualification are outside
-this increment.
+records numerical comparison, rejection, snapshot and reset evidence. Those
+construction-binding selectors remain CPU software checks; the later registered
+GPI2 refresh separately verifies deployment and CUDA execution.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 
-The latest registered refresh is live with AOS 0.3.0, HIL 0.2.5, RTC 0.2.10
+The latest registered refresh is live with AOS 0.3.2, HIL 0.2.5, RTC 0.2.11
 and FGA 0.8.1, a CUDA simulator and ordinary CPU JFG controller. Fresh 1,509-mode
-calibration and four finite correction cases pass. Native Open/Close adoption,
-fourteen observation streams and 28 catalogued live schemas are verified;
-the GUI is reconnected with its saved layout. Missing private-build UInt16 and
-tip/tilt support is now in registered HIL releases. The old native Quit timeout
-still required supervised cleanup; it is not fixed by this refresh. See the
-[deployment record](validation/gpi-closed-loop-20261024/refresh-20261026/README.md).
+calibration retains rank 1,445 and reproduces all 36 previous FITS files exactly.
+Four finite correction cases, native Open/Close adoption, fifteen observation
+streams and 28 catalogued live schemas pass. The unchanged GUI binary retains
+its saved layout and now uses the 0.0005 s model period. Native Quit still
+required supervised cleanup. RTC 0.2.11 also retains the tiny-deadline polling
+defect fixed in later source; neither limitation is claimed resolved by this
+deployment. See the [latest live record](validation/yaml-science-20261026/README.md#registered-cuda-gpi2-refresh)
+and [earlier deployment](validation/gpi-closed-loop-20261024/refresh-20261026/README.md).
 
 Generic optional second-order plant response and configurable stage low-pass
 coefficients are implemented. Six matched CUDA replay cases and 99 independent
