@@ -128,7 +128,7 @@ end
 @testset "detector calibration overrides only explicit scientific values" begin
     document, instrument = optical_components_document()
     document["sources"] = Dict("on_axis" => Dict())
-    document["components"]["detector"] = Dict("template" => "cmos_detector_acquisition_f32",
+    document["components"]["detector"] = Dict("template" => "cmos",
         "sensor" => "guide_sensor", "source" => "on_axis", "config" => Dict(
             "binning" => 1, "bits" => 12, "column_readout_noise_e" => 0.0,
             "dark_current_e_per_pixel_s" => 0.96, "frame_schema" => "example.frame/1",
@@ -142,11 +142,15 @@ end
     original = deepcopy(document)
     expanded = IC.expand_simulation_components!(document, instrument, ".")
     detector(mode) = only(node for node in expanded.graphs[mode]["nodes"] if node["name"] == "detector")["config"]
+    node = only(node for node in expanded.graphs["production"]["nodes"] if node["name"] == "detector")
+    @test node["type"] == "detector"
+    @test node["detector"] == "cmos"
+    @test detector("production")["shutter"] == "global"
     @test detector("production")["photon_noise"]
     @test detector("production")["readout_noise_e"] == 2.33
     @test all(detector("calibration")[key] == value for (key, value) in overrides)
     @test detector("calibration")["rows"] == Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/detector_shape/0")
-    for field in ("rows", "exposure_duration_s", "gain")
+    for field in ("rows", "exposure_duration_s", "gain", "shutter")
         invalid = deepcopy(original)
         invalid["components"]["detector"]["config"][field] = 8
         @test_throws ArgumentError IC.expand_simulation_components!(invalid, instrument, ".")

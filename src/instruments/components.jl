@@ -2,7 +2,7 @@
 # references and AOS type/config names; instrument values and topology stay data.
 const COMPONENT_TEMPLATES = ("coordinate_gaussian", "grid_gaussian", "measured",
     "multilayer_atmosphere_opd_f32", "pupil_opd_composition_f32",
-    "shack_hartmann_rate_f32", "cmos_detector_acquisition_f32")
+    "shack_hartmann_rate_f32", "cmos")
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
 
 function component_template_path(name)
@@ -19,8 +19,9 @@ function component_template(name, templates)
     push!(templates, name)
     result = Common.read_yaml(path; maximum=65536)
     InstrumentDefinition.bounded(result, Ref(16384))
-    fields(result, ("type", "config"), ("type", "config"), "AOS component template")
+    fields(result, ("type", "detector", "config"), ("type", "config"), "AOS component template")
     _declaration_text(result["type"], "AOS component type")
+    haskey(result, "detector") && _declaration_text(result["detector"], "AOS detector model")
     _declaration_object(result["config"], "AOS component config")
     return result
 end
@@ -103,6 +104,7 @@ function component_node(name, selection, model, templates)
         isempty(unknown) || throw(ArgumentError("unknown component config fields: $(join(unknown, ", "))"))
     end
     node = Dict{String,Any}("name" => name, "type" => template["type"], "config" => config)
+    haskey(template, "detector") && (node["detector"] = template["detector"])
     haskey(selection, "props") && (node["props"] = deepcopy(selection["props"]))
     return node
 end

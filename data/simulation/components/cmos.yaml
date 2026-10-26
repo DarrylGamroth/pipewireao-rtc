@@ -1,5 +1,7 @@
-type: cmos_detector_acquisition_f32
+type: detector
+detector: cmos
 config:
+  shutter: global
   columns:
     $ref: /sensor/detector_shape/1
   exposure_duration_s:

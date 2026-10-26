@@ -61,7 +61,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     science_rows=size(HIL.graph_output(system.graph,:detector_frame),1)
     background[science_rows+1:end,:] .= 0
     # Only sampled pupil regions enter normalization; padded rows have no contribution.
-    detector=only(node for node in IC.graph_document(declaration,settings;calibration=true)["nodes"] if node["type"]=="emccd_detector_acquisition_f32")
+    detector=only(node for node in IC.graph_document(declaration,settings;calibration=true)["nodes"] if node["type"]=="detector" && node["detector"]=="emccd")
     adc_scale=Float32(settings["adc"]["electrons_per_adu"])/Float32(detector["config"]["gain"])
     reference=pupil_measurement!(pixels,mean,estimator,calibrated,flat,background,adc_scale)
     mirror_specs=recipe["mirrors"]
