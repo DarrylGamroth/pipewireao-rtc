@@ -28,8 +28,11 @@ function apply_responses!(graph, declaration, configured)
         any(node -> node["name"] == node_name, graph["nodes"]) &&
             throw(ArgumentError("response node name collides with a declared node"))
         destination = input["destination"]
+        destination_node = first(split(destination, '.'))
+        index = findfirst(node -> node["name"] == destination_node, graph["nodes"])
+        index === nothing && throw(ArgumentError("response input destination must name a declared node"))
         input["destination"] = node_name * ".input"
-        push!(graph["nodes"], Dict("name"=>node_name, "type"=>"second_order_response_f32",
+        insert!(graph["nodes"], index, Dict("name"=>node_name, "type"=>"second_order_response_f32",
             "config"=>Dict("count"=>length(values), "schema"=>response["schema"],
                 "natural_frequency_hz"=>response["natural_frequency_hz"],
                 "damping_ratio"=>response["damping_ratio"],

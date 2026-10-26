@@ -36,6 +36,7 @@ end
     @test graph==original
     @test only(compiled["inputs"])["name"]=="stage"
     @test only(compiled["inputs"])["destination"]=="stage_response.input"
+    @test first(compiled["nodes"])["name"]=="stage_response"
     @test only(compiled["links"])==Dict("source"=>"stage_response.output","destination"=>"mirror.command")
     node=only(n for n in compiled["nodes"] if n["name"]=="stage_response")
     @test node["type"]=="second_order_response_f32"
