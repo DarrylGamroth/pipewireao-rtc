@@ -690,3 +690,246 @@ structure reject an explanation consisting solely of a removable common command
 offset. Stronger turbulence can require more stroke, but its contribution versus
 allocation remains unresolved without a controlled atmosphere-strength replay.
 No numerical correction is justified solely to remove clipping indications.
+
+## Tip/tilt allocation investigation — 2026-10-25
+
+A [read-only capture](tiptilt-20261025/capture.jl) observed the registered live
+invocation without reset, parameter changes or lifecycle requests. It received
+554 or more frames per stream over at least 55 seconds and retained the final
+128 same-sequence stage, woofer, tweeter and mirror constraint-feedback samples
+(sequences 52880–53015). The bounded ring contains gaps; this is not a claim of
+lossless recording. [Raw samples](tiptilt-20261025/native-samples.json.gz) retain
+the exact invocation and contracts. The observer helper is preserved in the
+preceding [registered record](registered-20261025/native_observation_helpers.jl).
+
+The [offline optical projection](tiptilt-20261025/inspect-optics.jl) uses the
+actual Gaussian influence functions and the 44,456-pixel annular pupil. Its
+piston and normalized-pupil ramp coefficients agree with direct mirror-surface
+evaluation within 4.4 × 10⁻¹⁷ m for the test commands. These coefficients are
+OPD amplitudes, not mechanical stage angles. The
+[projection report](tiptilt-20261025/optical-maps-report.json.gz) records the
+package paths, zero offsets and identity temporal filters.
+
+The [sample analysis](tiptilt-20261025/analyze-samples.jl) first restores JSON
+values to their Float32 wire representation. Both mirrors then pass exact
+signed-limit feedback checks. [Results](tiptilt-20261025/sample-analysis.json):
+
+| Quantity | Observed result |
+| --- | --- |
+| Stage tip coefficient | +486 to +531 nm OPD |
+| Stage tilt coefficient | −277 to −213 nm OPD |
+| Stage samples at provisional ±1 µm limits | 0 |
+| Woofer mean clipped actuators | 2.625 / 97 |
+| Tweeter mean clipped actuators | 54.891 / 2304 |
+| Woofer requested optical tip/tilt | Mean −270 / −435 nm OPD coefficients |
+| Tweeter requested optical tip/tilt | Mean −1262 / −47 nm OPD coefficients |
+
+The calibrated first two woofer command coordinates are removed to numerical
+precision (largest recovered tip/tilt coordinate norm below 6.6 × 10⁻⁵ nm).
+However, their actuator-space orthogonal complement is not an optical
+tip/tilt-free basis: the other modes have nonzero pupil ramp projections.
+This is observed leakage between the two definitions, not evidence that stage
+subtraction failed. A static counterfactual subtracting the woofer's optical
+tip/tilt through its fitted ramp commands increases mean predicted clipped
+actuators from 2.625 to 4.391 and mean peak request from 1.010 to 1.273 µm.
+It does not establish a closed-loop improvement or justify a production change.
+
+The stage is unsaturated in this window. Optical tip/tilt on the mirrors is
+confirmed, but accumulation from reset remains untested by this running-session
+capture. It contains no atmosphere or residual OPD measurement. A from-reset
+replay with command/adoption alignment and paired atmosphere/residual quantities
+is the next discriminator. No gain, pole, anti-windup, atmosphere, limit,
+calibration or allocation has been changed.
+
+The subsequent [512-frame CPU replay](tiptilt-20261025/replay-cpu-result.json.gz)
+passes with the untouched deployed controller graph, actual startup artifacts
+and zero shape offsets. A decoded graph comparison verifies that the shape
+seams are the only additions to the calibrated science graph. Frozen-source
+and deployed optical graph documents agree after resolution. The
+[driver](tiptilt-20261025/replay.jl) reuses the maintained closed-loop
+[helper definitions](tiptilt-20261025/gpi2_closed_loop_helpers.jl), removing only
+their final selector invocation. Early scratch attempts stopped before stepping
+on an authored-graph hash mismatch and a missing wrapper import; the final
+checks explicitly account for the shape additions instead of ignoring the
+hash difference.
+
+Atmosphere and residual quantities at frame n use command n−1; the command
+series records the newly produced command n. The independent optical
+tip/tilt sum closes within 9 × 10⁻⁶ nm. After settling, frames 385–512 average
+54.94 nm residual RMS against 1112.82 nm uncorrected, with mean clipped counts
+2.93 woofer and 29.33 tweeter. This covers only 0.256 s of model time and cannot
+rule out slow accumulation. The CPU and CUDA replays do not produce
+identical atmospheric realizations from the configured seed; a backend change
+is not a controlled replay of the same atmosphere.
+
+The [CUDA replay](tiptilt-20261025/replay-cuda-result.json.gz) completes 65,536
+frames, or 32.768 s of model time, with the same deployed controller, parameters
+and production optical declaration. Its [driver](tiptilt-20261025/replay-cuda.jl)
+records the first 32 startup frames, then one observation every 64 frames, plus
+512-frame clipping aggregates from every command. All recorded numerical series
+are finite and optical tip/tilt closure remains below 2.1 × 10⁻⁵ nm. Processing
+takes 540 s on the shared host; this is not a fixed-rate or deadline test.
+The final residual is 55.37 nm RMS.
+
+[Uniform-cadence analysis](tiptilt-20261025/replay-cuda-summary.json), generated
+by the [summary script](tiptilt-20261025/summarize-replay.jl), compares equal
+8.192 s windows without overweighting the densely recorded startup:
+
+| Mean quantity, OPD | Model 8.192–16.384 s | Model 24.576–32.768 s |
+| --- | --- | --- |
+| Atmospheric tip coefficient | +626.50 nm | +623.82 nm |
+| Summed correction tip coefficient | −619.77 nm | −613.49 nm |
+| Stage tip coefficient | +304.35 nm | +543.29 nm |
+| Woofer tip coefficient | +6.82 nm | −116.69 nm |
+| Tweeter tip coefficient | −930.94 nm | −1040.09 nm |
+| Residual wavefront RMS | 59.63 nm | 60.75 nm |
+| Mean woofer peak preclip request | 1.01641 µm | 1.01704 µm |
+| Mean tweeter peak preclip request | 1.11673 µm | 1.11778 µm |
+
+There is observed opposing redistribution: stage tip gains 238.94 nm while the
+mirrors gain an opposing contribution despite little change in mean atmospheric
+tip. This is consistent with slow allocation drift, but full latent controller
+state was not retained, so it does not establish a nullspace or windup cause.
+It also is not an exploding-stroke observation: peak requests and residual
+correction remain bounded in this finite run.
+
+Unlike the shorter live window, this trajectory sometimes saturates the stage:
+69 of 992 uniform post-settling samples. Saturated samples have stronger mean
+atmosphere (1205 versus 991 nm RMS). Mean woofer clip counts are 6.72 versus
+6.15 and tweeter counts 53.04 versus 57.65 for saturated versus unsaturated
+samples. These associations do not isolate stage saturation as the cause of
+mirror clipping. No numerical or live-runtime change follows from this evidence
+alone; the projection and anti-windup mapping require separate adjudication.
+
+### Discarded calibration components
+
+The retained full native command/feedback vectors permit an additional
+[reconstruction](tiptilt-20261025/native-discarded-subspace.jl) without another
+live mutation or optical replay. Requested commands are demanded plus feedback.
+With the zero offsets and identity filters, invert the declared woofer basis
+after adding back the stage contribution; invert the tweeter completion using
+its declared feedback maps. This recovers correction output cₙ, not the
+separately named same-frame controller state. Command roundtrip errors are below
+0.00125 nm. Absolute reconstructed components assume unchanged offsets and
+matrices; contemporaneous parameter readbacks were not part of this five-stream
+window. A fixed offset cancels from consecutive differences.
+
+Calibration retains 1445 of 1509 weighted singular directions. If J is its
+interaction matrix, R its reconstructor and W the positive diagonal column
+normalization, then RJ = W VᵣVᵣᵀ W⁻¹. Thus N = I − RJ is oblique in raw
+controller coordinates. Discarded directions have weak nonzero optical
+response; they must not be described as exact optical null modes. Coordinate
+norms, including norms scaled by W⁻¹, are not physical optical RMS.
+
+The deployed pole and anti-windup gain are both one, so consecutive outputs obey
+cₙ − cₙ₋₁ = −bₙ₋₁ − 0.3eₙ, where b is mapped mirror constraint feedback and
+e is reconstructed error. Since Ne is small, test NΔc ≈ −Nbₙ₋₁. The
+[results](tiptilt-20261025/native-discarded-subspace.json) verify this in 126
+consecutive pairs from sequences 52880–53006, excluding the gap to 53015:
+
+- Mean raw-coordinate ‖Nbₙ₋₁‖ is 19.059 nm, versus 0.002574 nm recurrence residual.
+- Relative residual is 1.21 × 10⁻⁴; the W⁻¹-scaled result is 6.03 × 10⁻⁵.
+- Direction agreement is 0.9999999927. Reversing the feedback sign gives relative
+  residual 2.0; using the wrong frame gives 0.867.
+
+This establishes feedback coupling into the discarded calibration subspace
+during the captured interval. It does not establish the origin or indefinite
+growth of its existing component. Its requested optical tip contributions
+average stage +542.7, woofer −369.1 and tweeter −148.5 nm, mostly opposing one
+another. The coordinate norm declines in the short window; first/last summaries
+also span the unobserved final gap and must not be telescoped through it.
+
+An independent source-and-method review found no sign or unit error and accepts
+the local recurrence interpretation. It distinguishes this mechanism from a
+harmful defect: the discarded component could help redistribute stroke under
+clipping. Projecting feedback to RJb is therefore a diagnostic intervention,
+not an automatically justified production correction. With pole one, doing so
+on an already-running controller would retain its existing Nc; prevention from
+reset does not demonstrate removal of existing state.
+
+### Retained-feedback A/B: rejected as a remedy
+
+One [private CUDA diagnostic](tiptilt-20261025/replay-feedback-projected.jl)
+replaces only the next frame's delayed constraint-feedback input by
+Float32(Float64(R) × Float64(J)) × b. No state, error, gain, limit, optical
+declaration or live setting is changed. It starts from reset and completes
+16,384 frames (8.192 s). The original baseline file remains unchanged. The
+[comparison](tiptilt-20261025/compare-feedback-projection.jl) uses matching
+uniform-cadence samples and full 512-frame clipping windows. All recorded
+atmospheric RMS and tip/tilt values are bit-identical at matching observations;
+the baseline did not retain full atmospheric-field checksums, so this is not
+a full-field bit-identity claim.
+
+The [A/B summary](tiptilt-20261025/feedback-projection-ab-summary.json) reports
+the fixed post-settling interval 1.024–8.192 s:
+
+| Quantity | Baseline | Retained feedback |
+| --- | --- | --- |
+| Mean residual RMS | 59.68 nm | 106.15 nm |
+| Maximum sampled residual RMS | 89.28 nm | 351.56 nm |
+| Mean woofer peak preclip request | 1.01751 µm | 1.09178 µm |
+| Maximum sampled woofer peak preclip request | 1.04373 µm | 1.24409 µm |
+| Mean tweeter peak preclip request | 1.11439 µm | 1.10726 µm |
+| Mean woofer clipped actuators | 6.285 | 4.869 |
+| Mean tweeter clipped actuators | 54.822 | 41.040 |
+| Component tip/tilt cancellation metric | 462.60 nm RMS | 82.77 nm RMS |
+| Sampled stage saturation | 5.80% | 0% |
+
+The intervention isolates the coupling route: sent discarded-feedback norm is
+6.31 × 10⁻⁶ of the raw value, and reconstructed Nc ends at 5.229 nm raw
+coordinate norm. Neither is optical RMS; the baseline did not retain matched
+full c/b samples. The approximate Float32 projector has relative idempotence
+error 3.12 × 10⁻⁶. [Recorded output](tiptilt-20261025/replay-feedback-projected-result.json.gz)
+passes optical closure below 1.0 × 10⁻⁵ nm and command reconstruction below
+0.00144 nm. Full projected-run c/b samples remain in the diagnostic cache at
+the path/hash recorded by the summary.
+
+Adjudication: reject this projection as a production remedy. Fewer clipped
+actuators, less opposing allocation and less discarded content coexist with
+77.9% worse mean residual RMS and larger woofer excursions. The measured
+redistribution is real, but eliminating it is not inherently beneficial. The
+current feedback can use weak calibration directions to improve constrained
+correction. This finite comparison does not prove a globally optimal allocator
+or long-term stability. The live science controller remains unchanged.
+
+## Native shutdown investigation — 2026-10-25
+
+The original Running-to-Quit timeout remains unresolved. Isolated attempts
+preserve that distinction:
+
+| Attempt | Configuration and result |
+| --- | --- |
+| 001 | CPU source-trace overlay; expired during graph preparation before Ready. No Quit request. |
+| 002 | Same CPU diagnostic, graph optimization disabled only to investigate cold preparation; failed before Ready. No Quit request. |
+| 003 | Original registered CUDA packages, native Lua phase tracing, diagnostic placement on separate physical cores; clean Ready-to-Quit in 3.459886 s. |
+| 004 | Original registered CUDA packages, intended Running-to-Quit; bootstrap monitor initialization expired before Ready. No Start or Quit request. |
+
+All dedicated processes were retired. The live GPI RTC and GUI received no
+lifecycle or parameter requests. Attempts 001/002 and their limitations are in
+the [initial record](shutdown-20261025/INVESTIGATION.txt) and
+[second record](shutdown-20261025/INVESTIGATION-V2.txt). The
+[Ready-to-Quit receipt](shutdown-20261025/trial-003-receipt.json) confirms
+accepted terminal completion and cleanup. Its original diagnostic driver has
+soft-scope warnings, and the orchestrator was briefly paused during startup;
+neither is a production change or a qualified timing environment.
+
+The [CPU profile summary](shutdown-20261025/trial-003-perf-summary.txt) records
+source shutdown request-to-acknowledgement in 2.325715 s. Of 227 CPU samples in
+that source phase, 123 include LLVM and 48 include Julia compiler frames
+(overlapping counts). The Ready baseline has none. Thus compilation is a
+material observed CPU contributor during shutdown. Sampling cannot apportion
+wall time or prove the cause of the earlier timeout. Missing JIT map symbols
+prevent attribution to a specific cleanup method; the initial assumption that
+Julia necessarily created and deleted a map was incorrect. No environment
+profiling listener was enabled in that process.
+
+The [Running attempt](shutdown-20261025/INVESTIGATION-RUNNING.txt) instead
+reached the bootstrap constructor's five-second monitor-start deadline, followed
+by failed-start cleanup warnings and an abort. Its
+[receipt](shutdown-20261025/trial-004-receipt.json) and
+[final service identities](shutdown-20261025/trial-004-final-owned-units.json)
+retain the failure and confirmed retirement. It is a separate startup failure,
+not evidence that Quit failed again. Both the native session effect deadline
+and owner initialization deadline remain unchanged. Smaller fresh-process
+private-core compilation probes are the next discriminator before another
+full GPI launch; no speculative shutdown fix has been deployed.

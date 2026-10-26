@@ -1,0 +1,76 @@
+Diagnostic-only CPU Ready-to-Quit investigation, 2026-10-25.
+
+Base RTC source: /home/dgamroth/workspaces/codex/worktrees/rtc-gpi2-registered-20261025, HEAD cc7bdd7.
+Git diff 4cb9b4f -- src ext native was empty before copying.
+Original registered application: /home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application.
+SDK: /home/dgamroth/.local/opt/pipewireao-classic-headless-20261021.
+Frozen instrument input: /home/dgamroth/.cache/pipewireao/gpi2-validation-20261025/instrument-source-v8/gpi2.
+
+Only source edits are four files recorded in instrumentation.diff. No production fixes,
+request budgets, phase ordering, gains, algorithms, or installed packages are changed.
+Prefix overlay symlinks SDK bin/lib/include and share entries except RTC scripts,
+which are copied. The original registered Manifest.toml remains in application.
+A separate scratch load-environment changes RTC's manifest entry to path=source;
+JULIA_LOAD_PATH selects it before the application for this diagnostic run only.
+This source override is deliberately outside the registered-release qualification surface.
+
+Preparation commands used the existing with-env.sh and original application environment:
+/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/with-env.sh julia --startup-file=no --project=/home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application /home/dgamroth/.cache/pipewireao/quit-investigation-20261025/setup.jl
+The first setup failed because cp needed its destination parent; failure retained in
+setup-first-failure.log. finish-setup.jl continued and its attempt to re-export the
+already-generated application failed with a non-fresh runtime destination. That
+failure is retained in finish-setup.log. prepare-application.jl instead uses the frozen
+instrument input and succeeded. setup.jl now incorporates these two diagnosed corrections.
+A source-override preflight detected missing unchanged data/ in the partial source copy;
+preflight-missing-data.log is retained. The unchanged data/ was copied before trial startup.
+
+Successful CPU preparation:
+/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/with-env.sh julia --startup-file=no --project=/home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application /home/dgamroth/.cache/pipewireao/quit-investigation-20261025/prepare-application.jl
+Key science/session artifacts and Manifest.toml compare byte-for-byte to registered app.
+
+Trial command:
+/home/dgamroth/.cache/pipewireao/quit-investigation-20261025/run.sh > /home/dgamroth/.cache/pipewireao/quit-investigation-20261025/trial-001.log 2>&1
+A fresh stage is mandatory; this exact command must not be rerun against existing trial-001.
+run-trace.jl records the source override, checks exact dedicated manager identity before
+Quit, audits GPU runtime mappings, preserves failure, and uses existing exact cleanup helpers.
+Trial unit: pipewireao-session@0859ecd165b0.service.
+Invocation: 95161b351d8e4b93abc43caeea5a770f.
+Protected units b2d0dbc58064 and 8797fbd97621 are never connected to or controlled.
+
+The trace routine's String and Float64 logging forms were warmed in prepared! before
+admission; the actual source-diff artifact includes this small extra warmup and omitted
+function-valued snapshot details. Tracing still changes execution environment and is
+not a timing qualification. No GPU execution or hardware correctness is claimed.
+
+Instrumentation limitation discovered during startup: global replacement of
+`local previous = state.operation` inserted the fault trace in both the intended
+fault handler and ordinary controller polling near session.lua:929. Repeated
+`event=fault detail=nil` entries in this trial are polling artifacts, not session
+fault transitions. This trial retains that code exactly; filter those entries when
+interpreting events. Logging may perturb scheduling, so no timing qualification is claimed.
+
+TRIAL-001 RESULT: FAILED BEFORE READY; NO REQUESTED NATIVE QUIT.
+start-failure.json confirms cleanup_confirmed=true and initiating caller error
+"subprocess exceeded 900.0 second deadline" from SessionRuntime.start!'s
+systemctl-start checked call. Both source/client effect budgets remain unchanged.
+The simulator emitted SIMULATOR_PREPARING at359457.382956s and PREPARED at
+359562.028767s. The graph owner did not report Prepared/Ready before the bound.
+Interrupted graph journal contains LLVM compilation frames; that observes
+compilation at interruption, not a measured cause or total compilation duration.
+The manager then reports Session control publication failed at359805.422870s.
+Signal-driven emergency cleanup generated wrong-context stream/filter destruction
+warnings in the simulator. These warnings belong to failed-start cleanup and are
+not evidence about the initiating GPI native Quit timeout.
+
+Final inspection: dedicated manager MainPID=0; all four owned services MainPID=0;
+core/simulator inactive, graph/parameters retain failed status. Exact cleanup
+confirmed by maintained start-failure reconciliation. Failed status and journals
+are preserved; no reset-failed, mutation retry, second launch, or GPU job was run.
+No protected session was attached to or controlled. Original RTC src/ext/native
+remain unchanged.
+
+No shutdown phase-duration conclusion can be drawn from this trial. The next
+integration needs a valid CPU Ready state within unchanged startup bounds before
+using this trace to discriminate the original Quit hypotheses. Remove only the
+second spurious polling trace at native/scripts/ao/session.lua:929 in any future
+instrumentation copy; preserve this trial's exact source and failure evidence.

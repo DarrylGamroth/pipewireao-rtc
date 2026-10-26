@@ -64,6 +64,19 @@ shift cannot fit all retained woofer requests within the provisional limits.
 The scientific cause of the stroke demand remains open. See the
 [registered deployment and piston record](validation/gpi-closed-loop-20261024/README.md#registered-jfg-deployment-and-piston-analysis--2026-10-25).
 
+Matched live samples and exact CPU optical projections now separate designated
+tip/tilt command coordinates from optical tilt in the other mirror modes. A
+512-frame CPU and 65,536-frame CUDA replay from reset pass their structural and
+finite numerical checks. The 32.768 s CUDA run retains about 60 nm late-window
+residual RMS with bounded preclip requests, but also shows opposing stage/mirror
+tip redistribution while mean atmospheric tip changes little. Reconstruction of
+126 native frame pairs confirms constraint-feedback coupling into discarded
+weighted calibration directions. A private retained-feedback intervention
+suppresses that coupling and reduces clipping, but worsens mean residual RMS
+from 59.68 to 106.15 nm in its paired window; it is rejected as a remedy. No live
+gains, limits, atmosphere, calibration or allocation changed. See
+the [tip/tilt investigation](validation/gpi-closed-loop-20261024/README.md#tiptilt-allocation-investigation--2026-10-25).
+
 ### Classic acceptance and GPI 2.0 follow-on — 2026-10-24
 
 Selected order: finish Classic before extending the next instrument. The running

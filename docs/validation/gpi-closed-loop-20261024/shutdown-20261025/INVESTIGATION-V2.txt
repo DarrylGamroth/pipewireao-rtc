@@ -1,0 +1,64 @@
+Diagnostic-only second bounded CPU trial, 2026-10-25.
+
+Prior trial001 and its source/prefix/application/failure remain untouched.
+source-v2 differs from source ONLY by removal of the spurious polling fault trace
+at prior session.lua:929. prefix-v2 contains corrected copied Lua, with identical SDK
+binary/library symlinks. load-environment-v2 maps RTC to source-v2.
+
+Measured reason for startup discriminator: trial001 graph interruption stack reached
+FilterGraphPipeWire._precompile_parameter_preparation! graph_node.jl:783, compiling
+JuliaFilterGraph._prepare_parameter_transaction for concrete graph/pair types. LLVM
+MemCpyOpt and alias analysis frames are retained in trial001 graph journal. This
+observes expensive compilation active at interruption, not its full duration.
+
+Following primary's explicit direction, graph role alone receives --optimize=0.
+Simulator remains at its normal optimization; no scientific source changes.
+Instrument, graph, parameters, session, simulation config/definition, Project and
+Manifest compare byte-for-byte between application and application-v2. Only
+registered deployment control/environment fields and their seal differ. Native
+five-second effect deadline, client budget, startup bound, ordering and science
+configuration are unchanged. No precompile package/infrastructure was added.
+
+Preparation command:
+/home/dgamroth/.cache/pipewireao/gpi2-registered-20261025/with-env.sh julia --startup-file=no --project=/home/dgamroth/.local/state/pipewireao/gpi2-registered-live-20261025/application /home/dgamroth/.cache/pipewireao/quit-investigation-20261025/prepare-v2.jl
+A fresh v2 destination is mandatory; do not rerun against this preserved trial.
+
+Trial command:
+/home/dgamroth/.cache/pipewireao/quit-investigation-20261025/run-v2.sh > /home/dgamroth/.cache/pipewireao/quit-investigation-20261025/trial-002.log 2>&1
+A fresh trial stage is mandatory; do not rerun against preserved trial-002.
+
+Exact unit pipewireao-session@26831347078f.service.
+Invocation c5436f977dda48c5a5ec0bebf1eb4dec.
+Observed manager3498382, graph3498110, simulator3498112.
+Actual owned graph ExecStart confirms --optimize=0; simulator ExecStart has no
+optimization override. Source override is checked before SessionRuntime.start!.
+Protected units b2d0dbc58064,8797fbd97621,13099efced73 are never attached to or controlled.
+
+Scope: lifecycle discriminator, not qualified graph timing or scientific validation.
+Graph optimization differs from production. Simulator keeps its original compiler
+optimization to preserve the suspected source-cleanup path. Both trials are CPU;
+none establishes GPU or hardware behavior.
+
+TRIAL002 RESULT: FAILED BEFORE READY; NO REQUESTED NATIVE QUIT.
+The publication helper's initial NativeControlClient.connect failed at retained
+parameters/controller admission (source-v2/src/native/native_control_client.jl:479,
+SessionCLI.publish!:145), with absolute deadline expired. This is its30s connection
+budget, before900s startup expiration. Owner identity binding had already passed;
+the awaited conjunction was capability + initial completion + initial rejection +
+exact controller identity in capability.controllers. The retained evidence does not
+identify which conjunct failed. Subsequent simulator-bootstrap registry removal
+was failed-start cleanup, not the initiating fault.
+
+start-failure.json records cleanup_confirmed=true and stop_command_error=null.
+Final manager and all four owner MainPID/ControlPID values are0; control groups empty.
+Full owned journals are in trial-002-journals; final checks in final-owned-units-v2.txt.
+All failed statuses and both source trees are preserved. No third trial launched.
+No production source, installed SDK/package, protected live control, or GPU job changed.
+
+Measured placement confound: traced profile pins owners14/15. Actual protected
+simulator3232384 has all measured thread affinities14 or15. Host topology shows14/15
+are SMT siblings on physical core7;2/3,4/5,6/7 are sibling pairs on physical cores1/2/3.
+Thus a future placement diagnostic should select one logical CPU per physical core,
+e.g.2,4,6, rather than assume2/3 are independent cores. Existing unpinned jobs span0-15,
+so no snapshot proves those CPUs exclusively unused. Contention can affect these
+cold trials; it is not established as the original native Quit timeout's cause.

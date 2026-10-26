@@ -1,0 +1,20 @@
+PROGRESS 0.883s modules loaded; entering selector
+PROGRESS 13.762s plant: load declared simulation and verify prescription
+PROGRESS 41.927s plant: prepare optical graph (AdaptiveOpticsSim.AlgorithmGraphs.StreamGraphExecution()), calibration=false
+PROGRESS 58.119s plant: optical graph ready
+PROGRESS 275.277s diagnostic frame=32 residual_nm=53.97857501071242
+PROGRESS 289.615s diagnostic frame=64 residual_nm=52.93560517358701
+PROGRESS 303.483s diagnostic frame=96 residual_nm=51.62077900238903
+PROGRESS 317.317s diagnostic frame=128 residual_nm=51.79166958149728
+PROGRESS 331.288s diagnostic frame=160 residual_nm=50.56031988502727
+PROGRESS 345.265s diagnostic frame=192 residual_nm=51.33401307522438
+PROGRESS 359.122s diagnostic frame=224 residual_nm=52.85740654597752
+PROGRESS 372.868s diagnostic frame=256 residual_nm=52.32509693853647
+PROGRESS 386.977s diagnostic frame=288 residual_nm=51.71997113533015
+PROGRESS 401.504s diagnostic frame=320 residual_nm=52.39987120742518
+PROGRESS 416.96s diagnostic frame=352 residual_nm=52.83236019165224
+PROGRESS 431.41s diagnostic frame=384 residual_nm=57.62280832410626
+PROGRESS 446.136s diagnostic frame=416 residual_nm=55.16277341159325
+PROGRESS 460.73s diagnostic frame=448 residual_nm=54.43908251239103
+PROGRESS 474.95s diagnostic frame=480 residual_nm=53.881316905053204
+PROGRESS 489.239s diagnostic frame=512 residual_nm=55.46713166079712

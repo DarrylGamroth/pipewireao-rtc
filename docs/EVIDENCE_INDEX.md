@@ -1,5 +1,17 @@
 # Delivery evidence catalog
 
+## GPI tip/tilt allocation investigation — 2026-10-25
+
+The [allocation record](validation/gpi-closed-loop-20261024/README.md#tiptilt-allocation-investigation--2026-10-25)
+contains matched live commands/feedback, exact Gaussian optical projections,
+a 512-frame CPU replay and a 65,536-frame CUDA replay from reset. Reconstructed
+native commands verify feedback coupling into discarded calibration directions.
+A 16,384-frame retained-feedback intervention reduces that coupling and clipping
+but worsens residual correction; it is rejected as a remedy. Science settings
+and the live RTC remain unchanged. The [shutdown investigation](validation/gpi-closed-loop-20261024/README.md#native-shutdown-investigation--2026-10-25)
+separates a successful Ready-to-Quit profile from failed-start attempts and the
+still-unresolved original Running-to-Quit timeout.
+
 ## Registered GPI JFG deployment and piston analysis — 2026-10-25
 
 The [registered deployment record](validation/gpi-closed-loop-20261024/README.md#registered-jfg-deployment-and-piston-analysis--2026-10-25)

@@ -1,0 +1,75 @@
+Ready-to-Quit diagnostic; CPU samples are not exact elapsed timings.
+Lua elapsed effects seconds: 3.4598860000260174
+Source shutdown request-to-validated-ack/next-owner seconds: 2.325714999984484
+phase hold-source seconds=0.013358999975025654
+phase hold-graphs seconds=0.007541999977547675
+phase withdraw-links seconds=0.04525999998440966
+phase shutdown-source seconds=4.600000102072954e-5
+phase shutdown-owners seconds=2.941638000018429
+phase remove-controls seconds=0.44978500000433996
+All decoded CPU samples: 511
+
+Window ready_baseline start=363548.856520935 stop=363550.559195 samples=123
+inclusive LLVM frames samples=0; Julia compiler frames samples=0; GC frames samples=0
+samples_by_tid=[3543024 => 122, 3543039 => 1]
+top_leaf_frames:
+  15 7f6c4e50372e [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  11 7f6c4e68ac19 __vdso_clock_gettime+0x59 ([vdso])
+  3 7f6c4daa60d5 _jl_mutex_trylock+0x75 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  3 7f6c4db2f806 uv__queue_empty+0xf (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  3 7f6c4e4a899b __sigsetjmp+0x1b (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  3 7f6c394b0337 [unknown] (/tmp/perf-3543024.map)
+  2 7f6c3bd81bd5 julia_wait_3545.2+0xb5 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so)
+  2 7f6c4e5797a1 epoll_pwait+0x21 (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c3aea9ea6 julia_enq_work_3400+0x6 (inlined)
+  2 7f6c3cf530f0 julia_trypoptask_3615.2+0x20 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so)
+  2 7f6c4da6ffe0 ijl_get_task_tid+0x0 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  2 7f6c394b0844 [unknown] (/tmp/perf-3543024.map)
+  2 7f6c394b06c1 [unknown] (/tmp/perf-3543024.map)
+  2 7f6c394b04e4 [unknown] (/tmp/perf-3543024.map)
+  2 7f6c4dacc6b2 ijl_enter_handler+0x32 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  2 7f6c3a3f8ff0 julia_yield_3649.2+0x90 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so)
+
+Window source_shutdown start=363550.626689 stop=363552.952404 samples=227
+inclusive LLVM frames samples=123; Julia compiler frames samples=48; GC frames samples=0
+samples_by_tid=[3543024 => 199, 3559344 => 12, 3559342 => 11, 3543039 => 5]
+top_leaf_frames:
+  12 7f6c4e50372e [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  10 7f6c4daa5eca _jl_mutex_wait+0xaa (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  8 7f6c4e50a968 [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  7 7f6c476c9e53 llvm::SUnit::addPred(llvm::SDep const&, bool)+0x83 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  3 7f6c3a3f8ff0 julia_yield_3649.2+0x90 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so)
+  3 7f6c4e68ac19 __vdso_clock_gettime+0x59 ([vdso])
+  3 7f6c476c9e59 llvm::SUnit::addPred(llvm::SDep const&, bool)+0x89 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  3 7f6c48cf12fa std::pair<llvm::DenseMapIterator<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry>, false>, bool> llvm::DenseMapBase<llvm::SmallDenseMap<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, 8u, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry> >, std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry> >::try_emplace<llvm::AAQueryInfo::CacheEntry>(std::pair<llvm::AACacheLoc, llvm::AACacheLoc> const&, llvm::AAQueryInfo::CacheEntry&&)+0xba (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  2 7f6c476d4274 llvm::ScheduleDAGInstrs::addChainDependencies(llvm::SUnit*, llvm::ScheduleDAGInstrs::Value2SUsMap&, llvm::PointerUnion<llvm::Value const*, llvm::PseudoSourceValue const*>) [clone .localalias]+0xf4 (inlined)
+  2 7f6c4e4f838e [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c4db51de8 uv__hrtime+0x17 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  2 7f6c470dc45a llvm::Value::getMetadataImpl(unsigned int) const [clone .localalias]+0x1a (inlined)
+  2 7f6c48ce57a1 llvm::AssumptionCache::assumptionsFor(llvm::Value const*)+0x1 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  1 7f6c470dc340 llvm::Instruction::getAAMetadata() const+0xd0 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  1 7f6c4db51e95 uv__hrtime+0xc4 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  1 7f6c4850eca6 (anonymous namespace)::DSEState::eliminateDeadDefs((anonymous namespace)::MemoryLocationWrapper const&)+0x706 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+
+Window all_quit start=363550.559195 stop=363554.019081 samples=302
+inclusive LLVM frames samples=178; Julia compiler frames samples=93; GC frames samples=0
+samples_by_tid=[3543024 => 267, 3559344 => 12, 3559342 => 11, 3543039 => 10, 3544992 => 2]
+top_leaf_frames:
+  17 7f6c476c9e53 llvm::SUnit::addPred(llvm::SDep const&, bool)+0x83 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  13 7f6c4e50372e [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  10 7f6c4e50a968 [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  10 7f6c4daa5eca _jl_mutex_wait+0xaa (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  6 7f6c476c9e59 llvm::SUnit::addPred(llvm::SDep const&, bool)+0x89 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  3 7f6c3a3f8ff0 julia_yield_3649.2+0x90 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/sys.so)
+  3 7f6c4e68ac19 __vdso_clock_gettime+0x59 ([vdso])
+  3 7f6c48cf12fa std::pair<llvm::DenseMapIterator<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry>, false>, bool> llvm::DenseMapBase<llvm::SmallDenseMap<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, 8u, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry> >, std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry, llvm::DenseMapInfo<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, void>, llvm::detail::DenseMapPair<std::pair<llvm::AACacheLoc, llvm::AACacheLoc>, llvm::AAQueryInfo::CacheEntry> >::try_emplace<llvm::AAQueryInfo::CacheEntry>(std::pair<llvm::AACacheLoc, llvm::AACacheLoc> const&, llvm::AAQueryInfo::CacheEntry&&)+0xba (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libLLVM.so.20.1jl)
+  2 7f6c4e50d06d malloc_trim+0xfd (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c476ca4fc llvm::SUnit::ComputeHeight() [clone .localalias]+0x8c (inlined)
+  2 7f6c476d4274 llvm::ScheduleDAGInstrs::addChainDependencies(llvm::SUnit*, llvm::ScheduleDAGInstrs::Value2SUsMap&, llvm::PointerUnion<llvm::Value const*, llvm::PseudoSourceValue const*>) [clone .localalias]+0xf4 (inlined)
+  2 7f6c4e507c26 [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c4e50ad3a [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c4e4f838e [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+  2 7f6c4db51de8 uv__hrtime+0x17 (/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/lib/julia/libjulia-internal.so.1.13.2)
+  2 7f6c4e50a8cc [unknown] (/usr/lib/x86_64-linux-gnu/libc.so.6)
+
+Limitations: JIT map symbols unknown after target exit; addr2line warnings retained. No off-CPU stacks. No proof about earlier Running-to-Quit failure.
