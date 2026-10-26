@@ -131,6 +131,12 @@ instrument formatting check still fails on unchanged
 `gpi2/calibration/context.yaml` and `gpi2/rtc/calibration.yaml`; neither file was
 modified for this increment.
 
+A fresh environment built from GPI2's updated package pins resolves registry
+RTC 0.2.12 (`f20210134f955c85a6c55242e94026cc1081c9df`), graph adapter 0.1.8
+(`c47ce1915333d20e277ce40e1eb1700b644cc033`) and Hsm 0.3.2
+(`1958e3af28cdc2d9a5baf15af376cbddcd85d606`), with no source overrides. The same
+25-assertion combined selector passes against those installed releases.
+
 Independent source review found no actionable defect in this observer-only
 increment. A forbidden callback on another thread disables the adapter observer
 before entering the RTC observer, leaving its last local state unchanged;
