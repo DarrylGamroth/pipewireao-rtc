@@ -68,6 +68,9 @@ local function recovery_check (state, args, name, values, updates, declarations)
     local close = updates [controller .. ":closed"]
     if close and control.scalar (close, "Bool") and
         scalar (values, RECOVERY .. "close-guarded", "Bool") then
+      local count = 0
+      for _ in pairs (updates) do count = count + 1 end
+      assert (count == 1, "Recovery close requires one unmixed control request")
       assert (scalar (values, RECOVERY .. "state", "String") == "released" and
           scalar (values, RECOVERY .. "requested-generation", "Long") ==
           scalar (values, RECOVERY .. "active-generation", "Long") and

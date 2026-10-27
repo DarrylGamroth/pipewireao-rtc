@@ -179,9 +179,10 @@ transition-frame reporting or enables runtime writes to captured graphs.
 
 ### Hold, resume, flat restoration and controller reset
 
-The next increment first deploys and exercises the existing coupled-loop
-controls, then defines the following operations before adding command APIs.
-Only hold/resume are currently available as operational loop controls.
+The ordinary coupled-loop controls retain the following semantics. The
+2026-10-27 protective-recovery increment below implements scoped reference
+restoration for explicitly configured simulated CPU graphs; it does not add a
+general controller-reset command or physical-device authority.
 
 | Operation | Scientific meaning | Completion and continuation |
 | --- | --- | --- |
@@ -263,6 +264,55 @@ Delivery and verification order:
    cancellation, timeout, owner replacement and history re-entry without
    duplicate effects. Independent corrector closure remains a separate
    allocation/feedback design.
+
+### Protective recovery for simulated CPU graphs — 2026-10-27
+
+`CorrectionRecovery` adds a separate hierarchical operation coordinator; it does
+not replace the ordinary `CorrectionLoops` adoption observer. Its operational
+states are Open, Closed, Closing and the composite ProtectiveOpen, containing
+Opening → RestoringReference → Verifying → Holding → Releasing. Only explicit
+resume intent leaves Holding. Fault or an uncertain outcome latches Fault or
+Unverified; history does not restore operations or numerical state. Entry/exit
+behaviors record and clear phase timing, while admitted calls return one-shot
+effects. Commands are never issued by entry or history behaviors.
+
+The optional `--recovery-node` declarations select participating temporal and
+conditioner histories alongside the single declared `NODE:closed` controller.
+JFG validates the supported command topology and complete causal-history scope
+before exposing native recovery controls. Unsupported paths are refused rather
+than assigned an inferred safe reference. Static flat/offset parameters remain
+unchanged; command arrival is proved against their zero-correction composition.
+This is command evidence, not mechanical settling.
+
+The existing SPA Props interface publishes versioned controls under the reserved
+`pipewireao-recovery` Node. Request tokens select one recovery; release tokens
+name its scientific recovery generation. Native property transaction generations
+also advance on release and remain distinct from the scientific generation.
+Read-only state, closure inhibition, successful-frame sequence/time, reference
+freshness and `close-guarded` status describe owner evidence. A guarded first
+close is checked both before staging and at processing adoption. Reset, failed
+frames, stale evidence and intervening updates cannot authorize that close from
+cached proof. Successful first close disarms the guard; later ordinary nonzero
+hold/resume keeps its original behavior.
+
+Headless Julia clients retain their exact native connection:
+
+```julia
+recovery = PipeWireAORTC.CorrectionRecovery.protective_open!(connection, graph;
+    deadline=time_ns() / 1e9 + 5)
+# Recovery has reached Holding; it does not close automatically.
+PipeWireAORTC.CorrectionRecovery.resume!(recovery;
+    deadline=time_ns() / 1e9 + 5)
+```
+
+Every phase is bounded and owner/token/generation fenced. Unknown effects are
+not retried. The optional `CorrectionSupervision` module evaluates explicitly
+configured clipping fractions, persistence, hysteresis and freshness. Its default
+is monitor-only and it emits a recommendation once per latched trip; it owns no
+stream, daemon or actuator write. Automatic application binding and validated
+intervention thresholds remain unselected. See RTC-DEV-032–036 and the current
+roadmap evidence for qualification limits. Existing live applications are not
+opted into recovery merely by updating the library.
 
 ### Operational controls for the existing coupled loop
 
