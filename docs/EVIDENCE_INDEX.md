@@ -1,5 +1,20 @@
 # Delivery evidence catalog
 
+## GPI2 optional pupil-flux and operator validation — 2026-10-27
+
+The [validation record](validation/gpi2-operator-20261027/README.md) records
+registered FGA 0.8.3 / FGPW 0.1.10 / RTC 0.2.20 package trees, 954 exact pairs
+on the earlier session and 905 exact raw/flux pairs on the managed replacement.
+An optional-analysis STOP/CONT/KILL test on the earlier core retained 626 exact
+pairs while raw/control advanced. The record also covers a 1,024-frame private-
+model clipping capture and passing Held → Closed recovery on both sessions. The
+fixed GUI status notice was validated and relaunched with the installed
+replacement configuration and is active on the replacement session. The new
+RTC unit is Running and its analysis reports READY with two links. The older
+unit was retired successfully through native Quit at 11:45:43, with
+inactive/dead `Result=success`, complete cleanup and unit-file removal. No
+physical settling or deadline qualification is claimed.
+
 ## Protective correction recovery — 2026-10-27
 
 The [validation and review record](validation/protective-recovery-20261027/README.md)

@@ -480,13 +480,10 @@ local function parameter_update_admitted (operation, name, fields)
 end
 
 local function parameter_update (operation, name, fields)
-  local node = graph (name)
-  effect (operation, owner.node_params, node, operation.deadline,
-      guarded (operation, function (values, error)
-    assert (values and not error, error or "Property readback missing")
+  named_properties (operation, graph (name), function (values)
     correction.check_parameter (values)
     parameter_update_admitted (operation, name, fields)
-  end))
+  end)
 end
 
 local function finish_shutdown (operation)
