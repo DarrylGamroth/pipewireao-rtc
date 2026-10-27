@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Protective correction recovery — 2026-10-27
+
+The [validation and review record](validation/protective-recovery-20261027/README.md)
+covers scoped scientific recovery, hierarchical sequencing, native admission and
+explicit reclose guards. Full RTC CPU software and native tests pass; final
+graph and private-core qualification remain in progress. Existing live sessions
+are unchanged. Physical authority and automatic intervention remain unselected.
+
 ## Standard instrument calibration bundles — 2026-10-26
 
 The [CPU/source validation](validation/standard-calibration-20261026/README.md)

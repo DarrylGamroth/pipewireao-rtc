@@ -1,0 +1,399 @@
+fatal: git cat-file: could not get object info
+Test Summary:                                         | Pass  Total  Time
+full transport cache reuses existing materializations |    6      6  9.1s
+Test Summary:        | Pass  Total  Time
+headless Git catalog |   29     29  8.3s
+Test Summary:                             | Pass  Total  Time
+shared journal projection survives reopen |   15     15  4.8s
+Test Summary:                                          | Pass  Total  Time
+required scientific file input has no invented default |    3      3  2.2s
+Test Summary:                                                       | Pass  Total  Time
+profile-specific simulator declarations and bounded readonly arrays |    6      6  2.5s
+Test Summary:                                               | Pass  Total  Time
+declared simulator settings and immutable structural fields |   15     15  1.8s
+Test Summary:                                | Pass  Total  Time
+cold replacement ordering and failure fences |   32     32  1.8s
+Test Summary:                           | Pass  Total  Time
+one replacement per managed incarnation |    4      4  0.2s
+Test Summary:                         | Pass  Total  Time
+bounded simulator management protocol |    7      7  0.2s
+Test Summary:                                       | Pass  Total  Time
+record reservation and ambiguous launch observation |   10     10  0.3s
+Test Summary:                                    | Pass  Total  Time
+FITS artifact selection and owned logical arrays |   61     61  3.2s
+Test Summary:                                          | Pass  Total   Time
+FITS artifact cancellation and captured byte ownership |   17     17  11.2s
+Test Summary:                               | Pass  Total  Time
+FITS artifact conversion rules and metadata |   45     45  2.5s
+Test Summary:                                       | Pass  Total  Time
+FITS artifact limits reject before image allocation |   17     17  0.3s
+Test Summary:                                          | Pass  Total  Time
+FITS sparse parameter preload and legacy compatibility |   33     33  3.2s
+Test Summary:                                        | Pass  Total  Time
+parameter owner arguments preserve endpoint contract |   24     24  2.3s
+Test Summary:                                | Pass  Total  Time
+cold owner options and deterministic cleanup |   16     16  0.6s
+Test Summary:                                       | Pass  Total  Time
+cooperative cancellation preserves cleanup failures |    9      9  0.2s
+Test Summary:                                                | Pass  Total  Time
+Correction-control publication reuses exact graph properties |   23     23  3.7s
+Test Summary:                                     | Pass  Total  Time
+Closure adoption expires before late confirmation |   28     28  0.7s
+Test Summary:                                          | Pass  Total  Time
+Pending-state entry and exit own the adoption deadline |   14     14  0.5s
+Test Summary:                                          | Pass  Total  Time
+Timely adoption and same-Boolean updates do not expire |    8      8  0.7s
+Test Summary:                                                  | Pass  Total  Time
+Unavailable or malformed observation publishes a latched fault |   17     17  1.4s
+Test Summary:                                    | Pass  Total  Time
+Adoption timeout and clock contracts are bounded |   14     14  1.1s
+Test Summary:                                      | Pass  Total  Time
+Correction loop starts from applied owner readback |   31     31  0.5s
+Test Summary:                                         | Pass  Total  Time
+Accepted requests remain pending until exact adoption |   30     30  0.0s
+Test Summary:                                         | Pass  Total  Time
+Duplicate requests and unrelated property generations |   13     13  0.0s
+Test Summary:                                                       | Pass  Total  Time
+Impossible accepted requests latch unknown rather than admit writes |   16     16  0.0s
+Test Summary:                                          | Pass  Total  Time
+Contradictory applied snapshots cannot confirm closure |   25     25  0.0s
+Test Summary:                                                    | Pass  Total  Time
+Typed native observer selects exact qualified Boolean properties |   32     32  0.3s
+Test Summary:                                                          | Pass  Total  Time
+Native correction timers wake without changing Hsm from another thread |   11     11  0.6s
+Test Summary:                             | Pass  Total  Time
+Applied adoption cancels the native timer |    9      9  1.3s
+Test Summary:                                              | Pass  Total  Time
+Early native wakes preserve the original adoption deadline |    6      6  0.9s
+Test Summary:                                                    | Pass  Total  Time
+Closing a pending observer cancels and releases its native timer |    4      4  0.6s
+Test Summary:                                           | Pass  Total  Time
+Protective recovery hierarchy and explicit close intent |   29     29  1.6s
+Test Summary:                                         | Pass  Total  Time
+Early, stale and mismatched observations cannot close |   18     18  0.1s
+Test Summary:                                 | Pass  Total  Time
+Release revalidates each closure prerequisite |   21     21  0.0s
+Test Summary:                                            | Pass  Total  Time
+Timeouts latch uncertain outcomes at every pending phase |   40     40  0.0s
+Test Summary:                                                 | Pass  Total  Time
+Failure, replacement and contradictory evidence do not replay |   14     14  0.8s
+Test Summary:                              | Pass  Total  Time
+Qualification and clock inputs are bounded |   12     12  0.2s
+Test Summary:                                              | Pass  Total  Time
+Cancellation and clock failure preserve uncertain outcomes |    9      9  0.8s
+Test Summary:                                      | Pass  Total  Time
+Recovery-open generation and stale release fencing |    9      9  0.0s
+Test Summary:                                             | Pass  Total  Time
+Native recovery driver keeps recovery and resume explicit |   17     17  1.8s
+Test Summary:                                              | Pass  Total  Time
+Missing or expired source evidence never closes or retries |   16     16  0.0s
+Test Summary:                                          | Pass  Total  Time
+Native owner and outcome failures latch without replay |   20     20  0.0s
+Test Summary:                                                  | Pass  Total  Time
+Release refusal, lost readiness and stale source prevent close |   35     35  0.0s
+Test Summary:                              | Pass  Total  Time
+Pending recovery is refused before effects |    2      2  0.0s
+Test Summary:                                          | Pass  Total  Time
+Cancellation after submission does not replay recovery |    5      5  0.1s
+Test Summary:                                                  | Pass  Total  Time
+Slow successful readiness cannot issue an expired phase effect |   11     11  0.0s
+Test Summary:                                                      | Pass  Total  Time
+Clipping supervision requires explicit valid numeric configuration |   35     35  0.3s
+Test Summary:                                | Pass  Total  Time
+Persistence, exact thresholds and hysteresis |   21     21  0.1s
+Test Summary:                              | Pass  Total  Time
+Gaps and sequence loss restart persistence |   14     14  0.0s
+Test Summary:                                                      | Pass  Total  Time
+Invalid feedback is unknown, never zero or evidence of persistence |   95     95  0.2s
+Test Summary:                                        | Pass  Total  Time
+Recommendations latch once and never request closure |   77     77  0.0s
+Test Summary:                                                             | Pass  Total  Time
+Explicit rearm requires exact recent clear evidence and preserves fencing |   26     26  0.1s
+Test Summary:                                        | Pass  Total  Time
+native graph bootstrap arguments and cold load order |   48     48  0.9s
+Test Summary:                                           | Pass  Total  Time
+FITS graph contracts, logical ordering and cancellation |   26     26  2.7s
+Test Summary:                                   | Pass  Total  Time
+FITS values conform to the graph parameter type |    4      4  0.8s
+Test Summary:                                            | Pass  Total  Time
+AOS operational report records a saved cursor atomically |   26     26  1.4s
+Test Summary:                                  | Pass  Total  Time
+AOS cold declarations and bootstrap load order |   99     99  3.9s
+Test Summary:                                      | Pass  Total  Time
+AOS FITS binding ownership, order and cancellation |    7      7  0.9s
+Test Summary:                                                | Pass  Total  Time
+Instrument builders remain cold declarations until Preparing |   61     61  2.4s
+Test Summary:                                                        | Pass  Total  Time
+Default plant loader enforces active application dependency identity |   11     11  7.5s
+Test Summary:                                | Pass  Total  Time
+phase timing capture declarations and bounds |   40     40  1.2s
+Test Summary:                                                   | Pass  Total  Time
+phase timing same-generation save replaces only the report file |    5      5  0.1s
+Test Summary:                            | Pass  Total  Time
+phase timing warmed recording allocation |    1      1  0.1s
+Test Summary:                      | Pass  Total  Time
+registered application environment |   15     15  0.7s
+Test Summary:                               | Pass  Total  Time
+registered launcher selects the application |    4      4  0.0s
+Test Summary:                           | Pass  Total  Time
+native local session discovery contract |   62     62  2.0s
+Test Summary:                  | Pass  Total  Time
+fresh direct session lifecycle |    7      7  0.0s
+Test Summary:                                    | Pass  Total  Time
+invalid listings never initiate native selection |    4      4  0.8s
+Test Summary:                                 | Pass  Total  Time
+operator discovery never creates its registry |    7      7  0.2s
+Test Summary:                                               | Pass  Total  Time
+interaction driver typed completions and all settling rules |   36     36  7.3s
+Test Summary:                                              | Pass  Total   Time
+clipping and invalid causal evidence restore without retry |   90     90  10.8s
+Test Summary:                                            | Pass  Total  Time
+faults retain unconfirmed ownership and stop submissions |   54     54  3.3s
+Test Summary:                                                 | Pass  Total  Time
+boundary cancellation and elapsed completion recover finitely |    8      8  2.8s
+Test Summary:                        | Pass  Total  Time
+plan bounds and snapshot before Hold |   34     34  1.8s
+Test Summary:                               | Pass  Total  Time
+one-shot CLI and bounded exclusive evidence |   12     12  4.2s
+Test Summary:                     | Pass  Total   Time
+Cold calibration bundle integrity |   43     43  12.0s
+Test Summary:                                     | Pass  Total  Time
+Authored inputs and preserved calibration history |    8      8  0.3s
+Test Summary:                                     | Pass  Total  Time
+Fresh calibration publication and failure cleanup |   17     17  0.7s
+Test Summary:                                      | Pass  Total  Time
+online response calculation and exact typed replay |   16     16  2.8s
+Test Summary:                                        | Pass  Total  Time
+event correlation, timer and cancellation boundaries |   17     17  1.8s
+Test Summary:                                             | Pass  Total  Time
+invalid batches and consumer failure restore exactly once |   14     14  0.7s
+Test Summary:                                                              | Pass  Total  Time
+calibration installer validates Julia entrypoint and preserves sealed Rust |   11     11  1.1s
+Test Summary:                      | Pass  Total  Time
+declared core-hosted session nodes |   27     27  2.8s
+Test Summary:               | Pass  Total  Time
+bounded cold startup budget |   11     11  0.1s
+Test Summary:                                           | Pass  Total  Time
+exact headless RTC invocation and protected environment |   23     23  0.6s
+Test Summary:                                          | Pass  Total  Time
+ledger validation verifies the prepared native process |    8      8  0.3s
+Test Summary:                                             | Pass  Total  Time
+registered optical pupil is distinct from the source grid |    8      8  2.7s
+Test Summary:                         | Pass  Total  Time
+bounded sealed instrument publication |   40     40  1.7s
+Test Summary:                                             | Pass  Total  Time
+invalid operational mirror declarations are not published |   24     24  0.3s
+Test Summary:                           | Pass  Total  Time
+selected scientific plant compatibility |   19     19  0.8s
+Test Summary:                                                 | Pass  Total  Time
+basis publication rejects malformed and unbounded definitions |   25     25  1.5s
+Test Summary:                                         | Pass  Total  Time
+shape actuator masks are optional and command ordered |    9      9  0.4s
+Test Summary:                                       | Pass  Total  Time
+AOS instrument selection remains a cold declaration |   11     11  0.6s
+Test Summary:                                               | Pass  Total  Time
+instrument properties belong to the public session endpoint |   11     11  1.0s
+Test Summary:                                         | Pass  Total  Time
+simulated mirror uses the device NodeInfo description |   32     32  1.4s
+Test Summary:                                  | Pass  Total  Time
+mirror input is relocated with its application |    6      6  0.2s
+Test Summary:                                                       | Pass  Total  Time
+measured influence-function input is relocated with its application |    6      6  0.6s
+Test Summary:               | Pass  Total  Time
+shared payload declarations |  343    343  0.5s
+Test Summary:                                                       | Pass  Total  Time
+concrete sessions validate known representations without references |    2      2  1.1s
+Test Summary:                | Pass  Total  Time
+finite JSON tuple validation |    6      6  0.7s
+Test Summary:                           | Pass  Total  Time
+Julia operational preparation utilities |   33     33  1.4s
+Test Summary:                      | Pass  Total  Time
+single-document YAML configuration |   13     13  0.5s
+Test Summary:            | Pass  Total  Time
+explicit runtime entries |   31     31  0.4s
+Test Summary:                          | Pass  Total  Time
+file helpers preserve the exporter API |    5      5  0.2s
+Test Summary:                               | Pass  Total  Time
+SDK export uses the declared source closure |   13     13  0.5s
+Test Summary:                                          | Pass  Total  Time
+installed validation requires declared runtime entries |    9      9  0.3s
+Test Summary:                           | Pass  Total  Time
+standard relaxed SPA-JSON configuration |   54     54  1.2s
+Test Summary:                                              | Pass  Total  Time
+SPA-JSON export validates before replacing a configuration |   36     36  2.2s
+Test Summary:                                       | Pass  Total  Time
+placement identifies the owned native loop by event |   20     20  1.4s
+Test Summary:                                      | Pass  Total  Time
+systemd owner names and exact invocation discovery |    8      8  0.2s
+Test Summary:                                                                | Pass  Total  Time
+owner service rendering quotes arguments and applies isolated service policy |   20     20  0.6s
+Test Summary:                                        | Pass  Total  Time
+cohort service dependencies and target job filtering |    6      6  0.1s
+Test Summary:                                         | Pass  Total  Time
+retained owner identity and recursive cgroup evidence |   12     12  0.3s
+Test Summary:                         | Pass  Total  Time
+manager CPU affinity canonicalization |    3      3  0.1s
+Test Summary:                           | Pass  Total  Time
+bounded optional analysis configuration |   52     52  2.8s
+Test Summary:                                                          | Pass  Total  Time
+optional analysis uses ordinary isolated services and one-way lifetime |   25     25  1.8s
+Test Summary:                                          | Pass  Total  Time
+optional fragment removal retains exact identity proof |   11     11  0.7s
+Test Summary:                                                | Pass  Total  Time
+optional lifecycle lock bounds waits and releases on failure |    5      5  0.4s
+Test Summary:                                             | Pass  Total  Time
+invalid optional receipt cannot strand required consumers |    2      2  0.6s
+Test Summary:                      | Pass  Total  Time
+exact installed graceful stop hook |   12     12  0.0s
+Test Summary:              | Pass  Total  Time
+native control envelope v1 |   66     66  1.0s
+Test Summary:         | Pass  Total  Time
+native runner profile |  146    146  1.2s
+Test Summary:                 | Pass  Total  Time
+native owner profile dispatch |   14     14  1.0s
+Test Summary:                                     | Pass  Total  Time
+native reply envelope limits follow owner profile |    9      9  0.2s
+Test Summary:                   | Pass  Total  Time
+ordinary native bootstrap codec |   67     67  1.0s
+Test Summary:                         | Pass  Total  Time
+native acquisition lifecycle profiles |  174    174  1.2s
+Test Summary:                                     | Pass  Total  Time
+acquisition Connect retains typed failure details |   52     52  0.1s
+Test Summary:                                                                 | Pass  Total  Time
+fresh acquisition readiness preserves Status requirements and failure details |   37     37  0.1s
+Test Summary:                                  | Pass  Total  Time
+native calibration vectors use iteration order |   32     32  2.1s
+Test Summary:                   | Pass  Total  Time
+native calibration action codec |  163    163  1.7s
+Test Summary:                                                             | Pass  Total  Time
+native calibration action client preserves correlation and known outcomes |   20     20  0.7s
+Test Summary:                                    | Pass  Total  Time
+unknown native outcomes retire the action client |   14     14  0.2s
+Test Summary:                                               | Pass  Total  Time
+local validation does not consume or submit native requests |   13     13  0.5s
+Test Summary:                                      | Pass  Total  Time
+legacy command parser maps to typed codec commands |   58     58  0.6s
+Test Summary:                                             | Pass  Total  Time
+typed completion rendering preserves legacy result fields |   86     86  1.7s
+Test Summary:                                             | Pass  Total  Time
+staged RTC scripts include their application dependencies |   18     18  0.0s
+Test Summary:                                        | Pass  Total  Time
+separate generic dependency and headless RTC staging |   15     15  0.7s
+Test Summary:                                  | Pass  Total  Time
+RTC installed prefix and exact stage selection |    8      8  0.2s
+Test Summary:                                                | Pass  Total  Time
+generic dependency rejects daemon and RTC application policy |    2      2  0.1s
+Test Summary:                                    | Pass  Total  Time
+callable package modules and operational scripts |   29     29  0.3s
+Test Summary:                                           | Pass  Total   Time
+named deployment package and operational source closure |  277    277  25.4s
+Test Summary:                                      | Pass  Total  Time
+unsupported SDK rejection preserves sealed sources |    6      6  0.1s
+Test Summary:                                         | Pass  Total  Time
+first-order low-pass temporal coefficient preparation |  238    238  0.8s
+Test Summary:                                         | Pass  Total  Time
+bounded optional temporal recipe and declared cadence |   22     22  1.2s
+Test Summary:                                                   | Pass  Total  Time
+calibration FITS preserves non-square and coefficient-bank axes |    3      3  0.8s
+Test Summary:                                                          | Pass  Total  Time
+shape calibration aliases track completion dimensions and owned values |   21     21  0.4s
+Test Summary:                                 | Pass  Total  Time
+generic mirror descriptions and cold geometry |   33     33  2.4s
+Test Summary:                 | Pass  Total  Time
+mirror description validation |    9      9  0.3s
+Test Summary:                                     | Pass  Total  Time
+YAML mirror authoring preserves physical geometry |    8      8  0.4s
+Test Summary:                                              | Pass  Total  Time
+bounded YAML mirror authoring rejects invalid descriptions |   18     18  0.7s
+Test Summary:                  | Pass  Total  Time
+measured influence preparation |   16     16  1.6s
+Test Summary:                 | Pass  Total     Time
+instrument declaration schema |   78     78  1m20.9s
+Test Summary:                                         | Pass  Total  Time
+node construction bindings are explicit cold metadata |   17     17  1.8s
+Test Summary:                    | Pass  Total  Time
+pyramid physical sensor geometry |   64     64  0.9s
+Test Summary:                                    | Pass  Total  Time
+legacy Shack-Hartmann metadata remains unchanged |    9      9  2.1s
+Test Summary:                 | Pass  Total  Time
+Named HIL authoring contracts |   22     22  0.6s
+Test Summary:                                                                | Pass  Total  Time
+named simulator command declarations seal concrete counts and wire contracts |   31     31  1.3s
+Test Summary:                       | Pass  Total  Time
+shared scientific basis definitions |   26     26  0.5s
+Test Summary:                    | Pass  Total  Time
+shared simulator settings schema |   27     27  0.3s
+Test Summary:                                                   | Pass  Total  Time
+inline profile properties do not collide with catalog selection |    4      4  0.0s
+Test Summary:                                                 | Pass  Total  Time
+reusable AOS components preserve explicit physical references |   27     27  3.1s
+Test Summary:                                       | Pass  Total  Time
+component sensor and source choices remain explicit |    5      5  0.0s
+Test Summary:                                                        | Pass  Total  Time
+bounded component preparation rejects ambiguity and unsupported data |   26     26  0.8s
+Test Summary:                                               | Pass  Total  Time
+catalog identity distinguishes inline schema property names |    1      1  0.2s
+Test Summary:                                                  | Pass  Total  Time
+detector calibration overrides only explicit scientific values |   15     15  0.8s
+Test Summary:                                                                | Pass  Total  Time
+explicit measured profiles retain their AOS nodes without Gaussian inference |    7      7  0.1s
+Test Summary:                                              | Pass  Total  Time
+Pyramid and EMCCD components share named source photometry |   16     16  0.5s
+Test Summary:                                                     | Pass  Total  Time
+imaging declaration names an explicit bounded source and sampling |   13     13  0.4s
+Test Summary:                                              | Pass  Total  Time
+reciprocal settings transform validates Float32 conversion |   15     15  0.1s
+Test Summary:                                                        | Pass  Total  Time
+reciprocal setting binds calibrated conversion into both graph modes |   10     10  0.6s
+Test Summary:                                          | Pass  Total  Time
+portable choices and launcher scheduling stay separate |   19     19  0.7s
+Test Summary:                                                 | Pass  Total  Time
+named loops and workers configure arbitrary process instances |   11     11  0.0s
+Test Summary:                                | Pass  Total  Time
+bounded YAML loading and exact process roles |   10     10  0.5s
+Test Summary:                                         | Pass  Total  Time
+launcher adapters use explicit kinds and worker roles |   18     18  0.6s
+Test Summary:                   | Pass  Total  Time
+named process native scheduling |   25     25  1.5s
+Test Summary:                                        | Pass  Total  Time
+native loop declarations are exact and paths bounded |   14     14  0.6s
+Test Summary:                                     | Pass  Total  Time
+YAML authoring materializes native configurations |   25     25  0.9s
+Test Summary:                                                         | Pass  Total  Time
+controller dimensions follow declared coordinates and mirror geometry |   18     18  0.9s
+Test Summary:                                                     | Pass  Total  Time
+application modes select graph sources without editing the source |   11     11  2.0s
+Test Summary:                                             | Pass  Total  Time
+shared GUI palettes become independent application assets |   11     11  0.4s
+Test Summary:                                                           | Pass  Total  Time
+shared mirror source descriptions become independent application assets |   15     15  0.3s
+Test Summary:                                                | Pass  Total  Time
+cold source staging defers runtime configuration compilation |    3      3  0.2s
+Test Summary:                                                          | Pass  Total  Time
+derived YAML and calibration files share the export reference contract |   12     12  3.4s
+Test Summary:                                                         | Pass  Total  Time
+session references resolve the whole composed document before sealing |   23     23  4.1s
+Test Summary:                                                           | Pass  Total  Time
+session wire element types preserve Boolean and integer representations |   13     13  0.1s
+Test Summary:                        | Pass  Total  Time
+instrument exporter profile bindings |   20     20  2.1s
+Test Summary:                                   | Pass  Total  Time
+instrument application seal and contained paths |   10     10  0.5s
+Test Summary:                                     | Pass  Total  Time
+simulation profile changes only deployment fields |   20     20  0.6s
+Test Summary:               | Pass  Total  Time
+shared instrument templates |   16     16  1.2s
+Test Summary:                                                  | Pass  Total  Time
+offline exports require the complete native placement contract |    3      3  0.1s
+Test Summary:                        | Pass  Total  Time
+generic application mode composition |   11     11  1.4s
+Test Summary:                                                     | Pass  Total  Time
+generated application selects one optional accelerator dependency |   12     12  0.2s
+Test Summary:                                                    | Pass  Total  Time
+typed graph references retain instrument and coordinate meanings |   11     11  1.1s
+Test Summary:                                                               | Pass  Total  Time
+pyramid graph and session references share the declared calibration context |    5      5  2.4s
+Test Summary:                                                  | Pass  Total  Time
+JSON Pointer preserves escaping and rejects invalid references |   18     18  0.1s
+Test Summary:                                                             | Pass  Total  Time
+graph materialization is declared, generated and validated before writing |   11     11  0.7s

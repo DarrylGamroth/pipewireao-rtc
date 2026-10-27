@@ -1,0 +1,80 @@
+Test Summary:                                                | Pass  Total  Time
+Correction-control publication reuses exact graph properties |   23     23  4.8s
+Test Summary:                                     | Pass  Total  Time
+Closure adoption expires before late confirmation |   28     28  0.9s
+Test Summary:                                          | Pass  Total  Time
+Pending-state entry and exit own the adoption deadline |   14     14  0.6s
+Test Summary:                                          | Pass  Total  Time
+Timely adoption and same-Boolean updates do not expire |    8      8  0.8s
+Test Summary:                                                  | Pass  Total  Time
+Unavailable or malformed observation publishes a latched fault |   17     17  1.5s
+Test Summary:                                    | Pass  Total  Time
+Adoption timeout and clock contracts are bounded |   14     14  1.0s
+Test Summary:                                      | Pass  Total  Time
+Correction loop starts from applied owner readback |   31     31  0.4s
+Test Summary:                                         | Pass  Total  Time
+Accepted requests remain pending until exact adoption |   30     30  0.0s
+Test Summary:                                         | Pass  Total  Time
+Duplicate requests and unrelated property generations |   13     13  0.0s
+Test Summary:                                                       | Pass  Total  Time
+Impossible accepted requests latch unknown rather than admit writes |   16     16  0.0s
+Test Summary:                                          | Pass  Total  Time
+Contradictory applied snapshots cannot confirm closure |   25     25  0.0s
+Test Summary:                                                    | Pass  Total  Time
+Typed native observer selects exact qualified Boolean properties |   32     32  0.3s
+Test Summary:                                                          | Pass  Total  Time
+Native correction timers wake without changing Hsm from another thread |   11     11  0.7s
+Test Summary:                             | Pass  Total  Time
+Applied adoption cancels the native timer |    9      9  1.3s
+Test Summary:                                              | Pass  Total  Time
+Early native wakes preserve the original adoption deadline |    6      6  1.0s
+Test Summary:                                                    | Pass  Total  Time
+Closing a pending observer cancels and releases its native timer |    4      4  0.6s
+Test Summary:                                           | Pass  Total  Time
+Protective recovery hierarchy and explicit close intent |   29     29  1.7s
+Test Summary:                                         | Pass  Total  Time
+Early, stale and mismatched observations cannot close |   18     18  0.1s
+Test Summary:                                 | Pass  Total  Time
+Release revalidates each closure prerequisite |   21     21  0.0s
+Test Summary:                                            | Pass  Total  Time
+Timeouts latch uncertain outcomes at every pending phase |   40     40  0.0s
+Test Summary:                                                 | Pass  Total  Time
+Failure, replacement and contradictory evidence do not replay |   14     14  0.8s
+Test Summary:                              | Pass  Total  Time
+Qualification and clock inputs are bounded |   12     12  0.3s
+Test Summary:                                              | Pass  Total  Time
+Cancellation and clock failure preserve uncertain outcomes |    9      9  0.9s
+Test Summary:                                      | Pass  Total  Time
+Recovery-open generation and stale release fencing |    9      9  0.0s
+Test Summary:                                             | Pass  Total  Time
+Native recovery driver keeps recovery and resume explicit |   17     17  2.0s
+Test Summary:                                              | Pass  Total  Time
+Missing or expired source evidence never closes or retries |   16     16  0.1s
+Test Summary:                                          | Pass  Total  Time
+Native owner and outcome failures latch without replay |   20     20  0.0s
+Test Summary:                                                  | Pass  Total  Time
+Release refusal, lost readiness and stale source prevent close |   35     35  0.0s
+Test Summary:                              | Pass  Total  Time
+Pending recovery is refused before effects |    2      2  0.0s
+Test Summary:                                          | Pass  Total  Time
+Cancellation after submission does not replay recovery |    5      5  0.1s
+Test Summary:                                                  | Pass  Total  Time
+Slow successful readiness cannot issue an expired phase effect |   11     11  0.0s
+Test Summary:                                                      | Pass  Total  Time
+Clipping supervision requires explicit valid numeric configuration |   35     35  0.3s
+Test Summary:                                | Pass  Total  Time
+Persistence, exact thresholds and hysteresis |   21     21  0.1s
+Test Summary:                              | Pass  Total  Time
+Gaps and sequence loss restart persistence |   14     14  0.0s
+Test Summary:                                                      | Pass  Total  Time
+Invalid feedback is unknown, never zero or evidence of persistence |   95     95  0.2s
+Test Summary:                                        | Pass  Total  Time
+Recommendations latch once and never request closure |   77     77  0.0s
+Test Summary:                                                             | Pass  Total  Time
+Explicit rearm requires exact recent clear evidence and preserves fencing |   26     26  0.1s
+Test Summary:                                        | Pass  Total  Time
+native graph bootstrap arguments and cold load order |   48     48  1.0s
+Test Summary:                                           | Pass  Total  Time
+FITS graph contracts, logical ordering and cancellation |   26     26  7.7s
+Test Summary:                                   | Pass  Total  Time
+FITS values conform to the graph parameter type |    4      4  1.3s
