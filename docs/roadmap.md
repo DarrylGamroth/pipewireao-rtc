@@ -7,6 +7,7 @@ Initial plan date: 2026-09-04
 ## Current work
 
 Updated 2026-10-26. This section is the current delivery summary. Later sections
+Updated 2026-10-25. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -183,6 +184,29 @@ deployed calibration identity and external woofer clipping/flat files remain unr
 endpoint ranges cannot substitute for effective controller constraints. Limits,
 pupil registration, calibration and the live application remain unchanged; see
 the [audit and disposition](validation/gpi-closed-loop-20261024/mirror-calibration-20261026/README.md).
+### Named RMS source channels — 2026-10-25
+
+The optional RMS source now declares its existing two fields as immutable source
+metadata: uncorrected atmosphere RMS and corrected pupil RMS, both in nm OPD.
+The generic HIL image adapter owns publication; RTC owns the names and meanings.
+CPU optical checks and separate private CPU/browser integration pass without
+GPU modules loaded. RMS fields agree with actual native samples; named Settings,
+hide/restore and reconnect pass. Changes remain in dedicated worktrees pending
+an explicit merge instruction; the existing home deployment is preserved. See the
+[increment evidence](validation/named-channels-20261025/README.md).
+
+### Source-published ndarray channels — 2026-10-25
+
+Optional analysis accepts source-only `channel-units` annotations. The scientific
+schema owner declares channel meanings and FilterGraphPipeWire publishes one
+immutable read-only native catalog; RTC forwards annotations without changing
+Algorithms or required-owner admission. Cold source checks pass, including
+malformed UTF-8 rejection. See the [increment evidence](validation/source-channels-20261025/README.md).
+Private immutable CPU application admission and live source → queue → browser
+acceptance pass. The home read-only browser now uses that CPU cohort; see the
+increment evidence for exact identities and qualification limits.
+
+### GPI 2.0 optical model and named command sets — 2026-10-24
 
 The instrument monorepo now contains data-only GPI woofer/tweeter/tip/tilt and
 pyramid/EMCCD optical declarations. Three distinct command inputs replace the

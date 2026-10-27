@@ -109,12 +109,44 @@ capacity-one copy/drop-oldest observation queue. Numerical work stays in the
 analysis graph; the RTC's required controller has no diagnostic reduction.
 
 The F32 vector has shape `(8,)` and schema
-`org.calculon.ao.shack-hartmann-summary/1`. Zero-based fields are total count,
+`pipewireao/shack-hartmann-summary-f32/1`. Zero-based fields are total count,
 valid count, mean valid flux, X slope RMS, Y slope RMS, combined RMS, mean X
 slope and mean Y slope. RMS is uncentered. Flux and slopes retain their input
 units. Mean slopes do not establish calibrated physical tip/tilt or focus.
 Invalid subapertures are excluded; no valid rows or nonfinite valid inputs
 produce NaN aggregates while retaining the counts.
+
+The scientific schema owner declares named channels. FilterGraphPipeWire
+publishes their catalog once as the read-only native String Props parameter
+`pipewireao.ndarray.channels`. This describes the same complete summary packet;
+no channel metadata is repeated in frames. The source's exact output Port,
+schema, representation and shape bind each catalog entry. Consumers resolve
+the source through current exact links when observing a queue output.
+
+Optional analysis configuration accepts `channel-units`, a bounded mapping from
+public output Port to channel name to units. For example:
+
+```yaml
+channel-units:
+  summary:
+    mean_x_slope: detector pixel
+    mean_y_slope: detector pixel
+    mean_flux: summed calibrated ADC
+```
+
+These are source declarations, independent of GUI profiles. Counts have fixed
+`count` units; inherited flux and slope units remain unknown unless explicitly
+declared. Unknown output/channel names and invalid or conflicting units fail
+before publishing the analysis Node. The annotation does not convert values or
+change Algorithm configuration. Its bounded configuration accepts at most 64
+Ports and 64 channels per Port, with valid UTF-8, nonempty control-free text up to 255
+bytes. The complete published catalog must fit 16384 bytes. Changing these units
+requires a new source Node. Existing analysis configurations remain valid.
+
+Standalone FilterGraphIsland and RTC GraphOwner launches can use repeated
+`--channel-unit PORT CHANNEL UNITS` arguments for the same source annotation.
+The authoritative channel meanings and publication contract remain with
+JuliaFilterGraph's `schemas/catalog.toml` and `docs/source-channels.md`.
 
 The current REVOLT Classic profile computes this packet in a separate optional
 JFG analysis process. The required WFS/controller graph remains unchanged. Its
@@ -198,6 +230,14 @@ run, changed controller gain or second atmosphere simulation is used. The RMS
 calculation runs in the optional headless optical worker, not the GUI or required
 controller callback. Scripts and GUI clients can observe the same measurement
 stream through an ordinary capacity-one copy/drop-oldest queue.
+
+The RTC declares the immutable `pipewireao.ndarray.channels` source metadata for
+this two-value packet. Its zero-based channels are
+`uncorrected_atmosphere_rms` (title “Uncorrected atmosphere RMS”) and
+`corrected_pupil_rms` (title “Corrected pupil RMS”); both declare `nm OPD`.
+These names identify the existing values without changing their calculation or
+frame representation. A graph without an atmospheric reference has no RMS
+source and publishes no channel catalog.
 
 Graphs without an atmospheric output retain their ordinary optical images and
 do not advertise this comparison stream. No uncorrected value is synthesized.

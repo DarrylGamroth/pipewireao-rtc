@@ -1,0 +1,52 @@
+{
+  "unit": "pipewireao-session@b6d78daffbae.service",
+  "invocation": "999c1401029b41829c672ac216dad6de",
+  "attempts": 1,
+  "stop_result": "reported error",
+  "cleanup_complete": true,
+  "phase": "failed",
+  "error": "ArgumentError: RTC stopped with a retained service failure",
+  "native_quit": {
+    "accepted": false,
+    "attempted": true
+  },
+  "observed": {
+    "core": {
+      "recorded_pid": 3191587,
+      "recorded_pid_absent": true,
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-core.service",
+      "status": "MainPID=0\nActiveState=inactive"
+    },
+    "julia": {
+      "recorded_pid": 3191628,
+      "recorded_pid_absent": true,
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-julia.service",
+      "status": "MainPID=0\nActiveState=failed"
+    },
+    "parameters": {
+      "recorded_pid": 3191629,
+      "recorded_pid_absent": true,
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-parameters.service",
+      "status": "MainPID=0\nActiveState=failed"
+    },
+    "simulator": {
+      "recorded_pid": 3191630,
+      "recorded_pid_absent": true,
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-simulator.service",
+      "status": "MainPID=0\nActiveState=failed"
+    },
+    "fixture-server.json": {
+      "pid": 3180018,
+      "absent": true
+    },
+    "private-process.json": {
+      "pid": 3204930,
+      "absent": true
+    },
+    "remote_absent": true,
+    "session_pid_absent": true
+  },
+  "existing_issue": "https://github.com/DarrylGamroth/pipewireao-rtc/issues/12",
+  "interpretation": "Native Quit outcome unknown; bounded ownership cleanup completed. Not a successful native shutdown; no retry or rebind.",
+  "preserved_services": "MainPID=3070029\nId=pipewireao-session@8797fbd97621.service\nActiveState=active\nSubState=running\n\nMainPID=3102953\nId=pipewireao-browser-gui.service\nActiveState=active\nSubState=running\n"
+}

@@ -6,6 +6,18 @@ const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
 const INVOCATION = "0123456789abcdef0123456789abcdef"
 
+@testset "analysis channel units reject malformed UTF-8" begin
+    malformed = String(UInt8[0xff])
+    @test !isvalid(malformed)
+    for units in (
+        Dict("summary" => Dict("mean_flux" => malformed)),
+        Dict(malformed => Dict("mean_flux" => "ADC")),
+        Dict("summary" => Dict(malformed => "ADC")),
+    )
+        @test_throws ArgumentError A.channel_units(units)
+    end
+end
+
 @testset "manager CPU affinity canonicalization" begin
     @test S._unit_cpus("6-7") == [6,7]
     @test S._unit_cpus("6 7") == [6,7]
@@ -31,6 +43,22 @@ end
         @test config.links[1].output == A.Endpoint("detector-observation", "output")
         @test config.links[1].input == A.Endpoint("wfs-analysis", "detector")
         @test fieldtype(A.Config, :links) == Vector{A.LinkSpec}
+        @test isempty(config.channel_units)
+        @test isempty(A.Config(config.graph, config.name, config.rate, config.links).channel_units)
+        declared_units = Dict("summary" => Dict("mean_x_slope" => "detector pixel"))
+        save(merge(original, Dict("channel-units" => declared_units)))
+        @test A.configuration(path, root).channel_units == declared_units
+        for units in ([], Dict("summary" => "pixel"),
+                Dict("summary" => Dict("mean-x" => "pixel")),
+                Dict("summary" => Dict("mean_x_slope" => nothing)),
+                Dict("summary" => Dict("mean_x_slope" => "")),
+                Dict("summary" => Dict("mean_x_slope" => "bad\nunits")),
+                Dict("summary" => Dict("mean_x_slope" => repeat("µ",128))),
+                Dict("summary" => Dict("channel$i" => "pixel" for i in 1:65)),
+                Dict("output$i" => Dict() for i in 1:65))
+            save(merge(original, Dict("channel-units" => units)))
+            @test_throws ArgumentError A.configuration(path, root)
+        end
         for (key, value) in (("rate", "0/1"), ("rate", "1/0"), ("rate", "500"),
                 ("rate", 500), ("name", "bad:node"), ("unknown", true),
                 ("graph", graph), ("links", fill(original["links"][1], 65)),

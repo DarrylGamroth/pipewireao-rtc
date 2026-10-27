@@ -162,7 +162,7 @@ end
 function run_analysis_graph(config, remote, graph, boundary_layout)
     synchronized = JuliaFilterGraph.prepare_synchronized_inputs(graph; match=:acquisition)
     node = FilterGraphPipeWire.PipeWireNode(synchronized; name=config.name, remote,
-        rate=config.rate, boundary_layout, connect=false)
+        rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units)
     finished = Threads.Atomic{Bool}(false)
     monitor = nothing
     try

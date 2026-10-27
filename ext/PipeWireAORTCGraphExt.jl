@@ -123,7 +123,7 @@ function run_prepared(options, runtime, graph)
         property_info=PipeWireAORTC.CorrectionLoops.property_info(observer), property_getter=observer)
     common = (; name=options.name, remote=options.remote, rate=options.rate,
         connect=false, run_control=options.session_run_control,
-        acquisition_version=options.acquisition_version)
+        acquisition_version=options.acquisition_version, channel_units=options.channel_units)
     node = isnothing(options.capture_backend) ?
         FilterGraphPipeWire.PipeWireNode(graph; common..., observation..., boundary_layout=options.boundary_layout,
             fifo_inputs=options.fifo_inputs, feedback=options.feedback) :
