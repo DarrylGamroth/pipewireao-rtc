@@ -83,6 +83,10 @@ function control_check!(channel::RecoveryChannel, deadline::Float64, check)
     return nothing
 end
 
+native_failure(::Nothing) = "native command failed or session is not Running"
+native_failure(error::RecoveryRunner.RunnerError) =
+    "native command failed at " * error.field * ": " * error.message
+
 function native_reply!(channel::RecoveryChannel, command, reply::RecoveryRunner.Completion)
     reply.header.endpoint_instance == channel.instance ||
         throw(NativeControlClient.UnknownOutcome("session owner incarnation changed"))
@@ -91,7 +95,7 @@ function native_reply!(channel::RecoveryChannel, command, reply::RecoveryRunner.
         throw(NativeControlClient.UnknownOutcome("native reply is stale or uncorrelated"))
     channel.reply_token = reply.header.token
     reply.header.result == 0 && reply.result !== nothing && reply.lifecycle == RecoveryRunner.Running ||
-        throw(NativeControlClient.UnknownOutcome("native command failed or session is not Running"))
+        throw(NativeControlClient.UnknownOutcome(native_failure(reply.error)))
     return reply
 end
 native_reply!(::RecoveryChannel, command, reply::RecoveryRunner.Rejection) =

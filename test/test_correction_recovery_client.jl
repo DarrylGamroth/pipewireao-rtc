@@ -67,6 +67,12 @@ function respond!(t, command::Runner.RunnerCommand{:properties_set})
     graph, properties = command.args
     name, value = only(properties)
     push!(t.writes, name => value)
+    if t.mode === :native_error
+        header = Envelope.ReplyHeader(Envelope.ControllerIdentity(UInt32(1), UInt64(2), Int64(3)),
+            t.instance, t.token, Runner.operation_id(command), Int32(-22))
+        return Runner.Completion(header, Runner.Running, nothing,
+            Runner.RunnerError("properties", "owner rejected update"))
+    end
     node, requested, active = if name == "correction:closed"
         t.target_closed = value.value::Bool
         t.requested += 1
@@ -261,4 +267,13 @@ end
     @test only(writes(closing, "correction:closed")).second.value === false
     @test closing.now_ns < 2_000_000_000
 end
+@testset "Native terminal failures retain their reported field and cause" begin
+    transport = ScriptedTransport(; mode=:native_error)
+    failure = failure_of(() -> CR.protective_open!(transport, "science"; deadline=2.0))
+    @test occursin("properties: owner rejected update", sprint(showerror, failure))
+    @test CR.state(failure.operation.coordinator) === :Unverified
+    @test length(transport.writes) == 1
+    @test isempty(writes(transport, "pipewireao-recovery:request-token"))
+end
+
 end
