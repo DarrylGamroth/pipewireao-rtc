@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.26"
+version = "0.2.27"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
