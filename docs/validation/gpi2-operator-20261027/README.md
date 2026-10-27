@@ -112,7 +112,8 @@ evidence; there is no physical settling qualification.
 Evidence: `recovery-live.json` and `recovery-complete-live.json` in the cache
 directory above. `previous-session-shutdown.json` records the old unit
 `pipewireao-session@99eb9e383a6b.service` stopped, successful service result,
-complete cleanup, and removed unit files after native Quit. The GUI status-row
+complete cleanup, and removed unit files after native Quit. At 11:45:43 the
+old systemd unit was inactive/dead with `Result=success`. The GUI status-row
 notice fix is source commit `d24020a0ab52b728018c1e538ce384df23d59f28`, validated
 with fixed workspace-position checks at widths 1000, 240 and 80, with no notice,
 multiline notices, concurrent notices and clearing. Full text remains available

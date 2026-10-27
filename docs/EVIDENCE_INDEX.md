@@ -11,8 +11,9 @@ model clipping capture and passing Held → Closed recovery on both sessions. Th
 fixed GUI status notice was validated and relaunched with the installed
 replacement configuration and is active on the replacement session. The new
 RTC unit is Running and its analysis reports READY with two links. The older
-unit was retired successfully through native Quit, with complete cleanup and
-unit-file removal. No physical settling or deadline qualification is claimed.
+unit was retired successfully through native Quit at 11:45:43, with
+inactive/dead `Result=success`, complete cleanup and unit-file removal. No
+physical settling or deadline qualification is claimed.
 
 ## Protective correction recovery — 2026-10-27
 
