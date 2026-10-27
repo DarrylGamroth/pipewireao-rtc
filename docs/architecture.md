@@ -657,9 +657,19 @@ Absolute figures already include the reference; no additional system-flat stage
 is applied. Preserving a running controller's state during calibration remains
 a separate gate.
 
-The selected automatic Classic campaign uses fresh initial-calibration sessions
+Source and mechanism preparation belongs to an instrument adapter outside frame
+callbacks, using existing instrument-control services or explicit operator
+confirmation. REVOLT preparation is manual. SPIDERS device services and GPI's
+mechanism-control software retain physical device ownership and interlocks.
+The common procedure requires fresh stage-correlated condition evidence before
+collecting exposures; acknowledgment is not readback or settling evidence.
+Manual evidence retains its operator-attested scope. Physical adapters and the
+manual interaction remain unimplemented; see the
+[preparation contract and delivery order](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation).
+
+The selected automatic Classic simulation campaign uses fresh initial-calibration sessions
 for dark acquisition, lamp training, frozen-parameter qualification and zonal
-interaction acquisition. Dark and lamp are startup selections; normal detector
+interaction acquisition. Dark and lamp are simulator startup selections; normal detector
 noise, conversion and ADC behavior remain enabled. Backgrounds and references
 are calculated from actual transported samples using public scientific-package
 operations. Training uses an explicit zero WFS reference and the declared ROI

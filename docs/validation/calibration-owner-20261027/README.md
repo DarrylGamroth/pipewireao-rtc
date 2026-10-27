@@ -252,6 +252,84 @@ software gate, not lamp-training or scientific acceptance.
 
 ## Remaining gates
 
+### Source and mechanism preparation follow-up
+
+Work starts from RTC `1825877` and instruments `516b480` in dedicated
+`codex/calibration-preparation-20261027` worktrees. Canonical instrument README,
+CAL2 and optical-design edits are unrelated and retained. No generated output is
+edited: the authored simulation declaration adds a dark graph, and application
+outputs are rebuilt through `tools/build.jl`.
+
+The user confirms REVOLT preparation is completely manual. The shared
+[preparation contract](../../JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
+therefore includes explicit operator-attested readiness as distinct from measured
+device readback. Existing SPIDERS code inspected read-only under
+`~/spiders-working` supplies concrete future adapter boundaries:
+`device-superk/src/state-machine.jl` writes emission and separately reads
+emission/interlock state; a handled write does not confirm readback.
+`device-thorlabs/src/state-machine.jl` and `src/ThorlabsStage.jl` issue movement
+and later report polled motion/position state. `device-galil/src/state-machine.jl`
+calls blocking `motion_complete` and has no exposed axis-position readback in
+its statevariables. These observations do not qualify any physical service or
+its completion semantics. No service was started or commanded.
+
+The new simulator dark graph retains the normal detector and held command
+endpoint, feeding a declared zero Float32 photon-rate array of detector shape.
+The existing magnitude-2 internal source remains unchanged. The old registered
+RTC rejects the new graph selection; the updated cold selector passes 25 checks,
+including rejection of an optical link or a binding not declared as `zeros`.
+Focused component/schema/export regressions pass 418 assertions, and selected
+bundle checks pass 125. A fresh `tools/build.jl` application passes both native
+Capture selections: three dark exposures and three internal-source exposures,
+171 assertions each. Dark raw samples span 0–7 ADC counts (means
+0.6303–0.6312); illuminated samples span 0–339 (means 5.6605–5.6690). These are
+finite diagnostics, not acceptance limits. Both selections confirm exact detector
+settings, associated raw/WFS receipts, intrinsic validity, mirror restoration,
+release, endpoint/core closure and unchanged source/application files. Independent
+source review found no blocker; the Mermaid sequence renders and formatting and
+whitespace checks pass. No GPU module, hardware or installed service is used.
+
+Evidence logs and immutable captures are under the external
+`standard-calibration-validation` directory with prefix
+`calibration-preparation-20261027` / `calibration-preparation-native-*`.
+The first build rejected a source-override manifest before producing a qualified
+application. The corrected build seals registered dependencies from the frozen
+0.2.27 environment; its compiler/native test driver uses this validation-only RTC
+source worktree. This is source validation, not registered-release qualification:
+0.2.27 does not understand the new dark selection. A compatible RTC release,
+instrument dependency update and fresh registered build are required before
+promoting this instrument declaration to normal application use. Concurrent RTC
+main has also raised FGA/FGPW minimum versions; preserve separate cohort evidence
+when integrating. Existing selected calibration artifacts remain byte-identical.
+
+Integration with RTC main `40d290b` is retained at merge `becf402` (roadmap-only
+conflict resolved by preserving both work summaries). A separate source-validation
+run with registered FGA 0.8.5 / FGPW 0.1.11 passes 25 dark/source, 125 bundle and
+342 actual private-core Capture assertions. All 24 retained raw, slopes, flux and
+validity binary payloads are byte-identical across cohorts (28 parity assertions).
+The integrated environment and captures are frozen under
+`calibration-preparation-integrated-20261027`. A final 26-assertion cold check
+also covers omission of the optional empty graph `links` field; existing explicit-link
+graph behavior is unchanged. This still does not qualify a registered RTC build
+or update the instrument's normal dependency pins. Delivery drafts are
+[RTC PR 14](https://github.com/DarrylGamroth/pipewireao-rtc/pull/14) and
+[instrument PR 1](https://github.com/DarrylGamroth/adaptive-optics-simulations/pull/1).
+
+The earlier intermittent second-exposure timeout did not recur in these six
+exposures. It remains unexplained, with no scheduling workaround or automatic
+retry added. Neither transported images nor a successful software test establishes
+accepted background estimation, reference training or physical readiness.
+
+The original separate-`Collect` sequence was also exercised on the integrated
+cohort, with the existing one-shot passive stall diagnostic and no retry. All
+122 assertions pass; no passive outstanding/fault snapshot was reached. The
+flat exposure rejected active ROI 88 (flux 981), the positive probe rejected
+ROI 70 (flux 960), and the negative probe passed. The threshold remains 1000
+and source magnitude remains 2. This directly preserves scientific rejection
+and lifecycle behavior in the relevant action sequence, but one passing trial
+does not explain the prior timeout or establish reliable acquisition. Logs and
+the action receipt use prefix `calibration-preparation-collect-integrated-20261027`.
+
 A stationary calibration-source/eligibility procedure and an accepted complete
 basis remain prerequisites for AOC estimation and an activatable bundle. This
 increment does not qualify accepted optical acquisition, optical consumer-failure

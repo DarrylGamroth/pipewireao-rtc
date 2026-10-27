@@ -67,7 +67,8 @@ end
 Prepare an ordinary typed AOS graph from an instrument declaration. The default
 selects `production`; `calibration=true` selects its ideal diagnostic graph.
 `simulation_graph="internal-source"` selects that explicitly declared optical
-path with the same typed preparation and execution interfaces.
+path; `"dark"` selects declared zero detector photon rate. Both use the same
+typed preparation and execution interfaces.
 """
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
         simulation_graph=calibration ? "calibration" : "production",

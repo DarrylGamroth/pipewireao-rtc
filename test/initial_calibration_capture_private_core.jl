@@ -1,6 +1,7 @@
 # Optional actual CPU/native Capture selector. Run once with --threads=4 and
 # PIPEWIREAORTC_INTERNAL_SOURCE_APPLICATION / _INSTRUMENT plus a fresh
 # PIPEWIREAORTC_CAPTURE_DIRECTORY. Files remain owned by the explicit campaign.
+# PIPEWIREAORTC_CAPTURE_GRAPH selects internal-source (default) or dark.
 module InitialCalibrationCapturePrivateCoreTests
 
 using Test, SHA
@@ -53,7 +54,9 @@ end
     @test simulation["backend"] == "cpu" && simulation["frame_encoding"] == "uint16"
     @test simulation["rate"] == 500 && simulation["exposure_ns"] == 1_896_000
     reference = zeros(Float32,simulation["command_count"])
-    stage,illumination = "lamp-training","internal-source"
+    illumination = get(ENV,"PIPEWIREAORTC_CAPTURE_GRAPH","internal-source")
+    illumination in ("internal-source","dark") || error("unsupported capture test graph")
+    stage = illumination == "dark" ? "dark" : "lamp-training"
     actions = Any[]
     descriptor = settings = active = full_domain = closed_owner = nothing
     selected_hashes = Dict{String,String}()
@@ -67,9 +70,9 @@ end
                 command = Calibration.calibration_graph(application;inputs=(requested="pdm-command:requested",),
                     outputs=(:demanded,Symbol("constraint-feedback")))
                 name,instance = "test.classic.capture.$(getpid())",Int64(118)
-                progress("preparing one declared internal-source CPU session with capture storage")
+                progress("preparing one declared $illumination CPU session with capture storage")
                 server = Calibration.prepare_initial_calibration(application,remote,frontend,command;
-                    reference,name,instance,deadline=Native.monotonic()+300,simulation_graph="internal-source",
+                    reference,name,instance,deadline=Native.monotonic()+300,simulation_graph=illumination,
                     capture_directory,capture_stage=stage,capture_maximum_bytes=3Calibration.CLASSIC_CAPTURE_BYTES)
                 frontend = command = nothing
                 owner = server.effects
@@ -78,7 +81,7 @@ end
                 @test filemode(stat(capture_directory)) & 0o777 == 0o700
                 settings,active = deepcopy(owner.capture_store.settings),copy(owner.active)
                 full_domain = bytes2hex(collect(owner.acquisition_domain.bytes))
-                @test settings["simulation_graph"] == "internal-source"
+                @test settings["simulation_graph"] == illumination
                 @test settings["exposure_ns"] == 1_896_000 && settings["rate"] == 500
                 @test settings["rtc_graph_sha256"] == app_before[joinpath("rtc","graph.conf")]
                 @test settings["detectors"]["detector"]["config"]["photon_noise"]
@@ -205,7 +208,9 @@ end
         end
         invalid_active = [findall(active .& .!sample.arrays.validity) for sample in result.samples]
         @test any(!isempty,invalid_active)
-        progress("three captured exposures; invalid active ROIs=$invalid_active; validity retained, no interaction acceptance")
+        raw_summary = [Dict("minimum"=>minimum(sample.arrays.raw),"maximum"=>maximum(sample.arrays.raw),
+            "mean_adc"=>sum(Float64,sample.arrays.raw)/length(sample.arrays.raw)) for sample in result.samples]
+        progress("three $illumination exposures; raw ADC summaries=$raw_summary; validity retained, no interaction acceptance")
         # Owned read arrays may change without modifying immutable on-disk evidence.
         original = result.samples[1].arrays.raw[1,1]
         result.samples[1].arrays.raw[1,1] = xor(original,UInt16(1))
@@ -218,6 +223,7 @@ end
             PipeWireAORTC.Common.write_json(ENV["PIPEWIREAORTC_CAPTURE_EVIDENCE"],Dict(
                 "scope"=>"actual native Classic Capture transport/storage; intrinsic invalidity retained; no calibration acceptance",
                 "descriptor"=>Client.document(descriptor),"actions"=>actions,"invalid_active"=>invalid_active,
+                "illumination"=>illumination,"raw_adc_summary"=>raw_summary,
                 "exposures"=>[Dict("sequence"=>sample.exposure.sequence,"start_model_ns"=>sample.exposure.start_model_ns,
                     "duration_ns"=>sample.exposure.duration_ns) for sample in reread.samples],
                 "capture_files"=>evidence_before,"application_files"=>app_before,"source_files"=>source_before))
