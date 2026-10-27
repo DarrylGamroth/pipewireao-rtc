@@ -277,6 +277,13 @@ Unverified; history does not restore operations or numerical state. Entry/exit
 behaviors record and clear phase timing, while admitted calls return one-shot
 effects. Commands are never issued by entry or history behaviors.
 
+The first native mutation is the scoped recovery request. It installs closure
+inhibition and stages opening plus history reconciliation as one owner operation.
+There is no preliminary ordinary hold: that would let another client reclose
+with retained correction before recovery admission. Opening verifies the exact
+forced-open generation from this request; RestoringReference then observes the
+same scientific recovery, without issuing it again.
+
 The optional `--recovery-node` declarations select participating temporal and
 conditioner histories alongside the single declared `NODE:closed` controller.
 JFG validates the supported command topology and complete causal-history scope

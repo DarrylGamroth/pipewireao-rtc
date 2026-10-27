@@ -1,0 +1,218 @@
+{
+  "bootstrap_lifecycle_at_holding": "Connected",
+  "bootstrap_owner_instance": 505,
+  "cleanup_order": [
+    "owned RTC termination with endpoints retained",
+    "graph quit/join",
+    "producer/acquisition join",
+    "native endpoints",
+    "private core"
+  ],
+  "core_pid": 1523497,
+  "file_sha256": {
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/environment/Manifest.toml": "2c2a3b6bd65f7c820695ae63e04558eb1a48d2da984121dc98be1f70619619bc",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/environment/Project.toml": "ab678c4b0f61754a96779e4bc39a91370d5441c4d4408b214d17bd5fda590395",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/graph_definition.jl": "6cfe002a0fed2db83c6c9cdf90cbcdd278f624fcff5abe1a880df9b4b18a4c1e",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/harness.jl": "d8e28b21121cdd8360e81cd0e653737366ae0e987caecf0eb316291812aa3c1b",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/modules/libwireplumber-module-ao-control-endpoint.so": "6204834284114abce5fc48dbe4205c375e0e01e4690448effb1cafef83f30b44",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/modules/libwireplumber-module-ao-lua.so": "2ebabe65a74c1f7745bfe0215471435bae9a864f06534f8853104e142c6ec86b",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/pipewireao-rtc": "75826d3af54014aca91087a5be07fdabbd64c725cab7ed3d77d4f732b9ffd102",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027/native/scripts/ao/session.lua": "de785afd29cb7b2ceefba9b582d6545355a15f368b8f9279e031cf69760b2590",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027/native/scripts/lib/ao-correction.lua": "bf57e16e435a6df7dd445f74363a176d1e7363dfa7266e9010f6796a2da29147",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027/src/owners/correction_recovery.jl": "13925d36083cdc7d1b7ab6476efaeef5326c5b0a54e7efb0f417a0665ade7dc6",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027/src/owners/correction_recovery_client.jl": "df9fa49d630b2dc2936137de6ba2c018ab19beaeacbb8cfe2e93b492dc701a82"
+  },
+  "final_coordinator_state": "Closed",
+  "gpu_work": false,
+  "holding_coordinator_state": "Holding",
+  "holding_sequence": 16,
+  "jfg_commit": "b673c05aad7f65acbe42a3003b76b88a5f34ef98",
+  "jfg_source": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl",
+  "jfg_status": "",
+  "julia": "1.13.3",
+  "last_source_sequence": 41,
+  "live_services_changed": false,
+  "ordinary_close_blocked": true,
+  "owned_core_exited": true,
+  "owned_pid_absent_after_cleanup": {
+    "1523497": true,
+    "1524030": true
+  },
+  "owned_rtc_exited": true,
+  "passed": true,
+  "recovery_generation": 1,
+  "resume_sequence": 35,
+  "rtc_commit": "4c975e1af5e275b79c9d4aa7b671d2101c8cc164",
+  "rtc_pid": 1524030,
+  "rtc_source": "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027",
+  "rtc_status": " M docs/HEADLESS_RTC_DESIGN.md\n M docs/validation/protective-recovery-20261027/README.md\n?? docs/validation/protective-recovery-20261027/admission-gap-after.log\n?? docs/validation/protective-recovery-20261027/admission-gap-before.log\n?? docs/validation/protective-recovery-20261027/graph-publication-full.log\n?? docs/validation/protective-recovery-20261027/native-freshness.log",
+  "runtime": "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/run014/runtime",
+  "samples": [
+    {
+      "demanded": 0.5,
+      "sequence": 1
+    },
+    {
+      "demanded": 0.6,
+      "sequence": 2
+    },
+    {
+      "demanded": 0.70000005,
+      "sequence": 3
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 4
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 5
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 6
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 7
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 8
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 9
+    },
+    {
+      "demanded": 0.8,
+      "sequence": 10
+    },
+    {
+      "demanded": 0.7,
+      "sequence": 11
+    },
+    {
+      "demanded": 0.59999996,
+      "sequence": 12
+    },
+    {
+      "demanded": 0.49999997,
+      "sequence": 13
+    },
+    {
+      "demanded": 0.39999998,
+      "sequence": 14
+    },
+    {
+      "demanded": 0.29999998,
+      "sequence": 15
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 16
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 17
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 18
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 19
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 20
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 21
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 22
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 23
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 24
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 25
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 26
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 27
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 28
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 29
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 30
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 31
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 32
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 33
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 34
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 35
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 36
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 37
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 38
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 39
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 40
+    },
+    {
+      "demanded": 0.2,
+      "sequence": 41
+    }
+  ],
+  "saturated_sequence": 8,
+  "source_is_synthetic": true
+}

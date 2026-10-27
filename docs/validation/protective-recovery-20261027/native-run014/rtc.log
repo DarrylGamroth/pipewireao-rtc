@@ -1,0 +1,4 @@
+W 02:09:23.219657    m-lua-scripting session.lua:248:chunk: AO session fault: Session control publication failed
+E 02:09:23.222620      wp-properties (null):(null):(null): wp_properties_get: assertion 'self != NULL' failed
+E 02:09:23.222629      wp-properties (null):(null):(null): wp_properties_get: assertion 'self != NULL' failed
+W 02:09:23.222639    m-lua-scripting session.lua:262:chunk: AO source hold uncertain; systemd emergency cleanup required: [string "ao-control.lua"]:171: Missing object serial

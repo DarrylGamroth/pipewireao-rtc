@@ -1,0 +1,23 @@
+ninja: Entering directory `/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build'
+ninja: no work to do.
+ 1/12 ao-lua                OK              0.04s
+ 2/12 ao-connections        OK              0.04s
+ 3/12 ao-owner              OK              0.03s
+ 4/12 ao-acquisition        OK              0.03s
+ 5/12 ao-correction         OK              0.03s
+ 6/12 ao-session-journal    OK              0.03s
+ 7/12 ao-lua-native         OK              0.01s
+ 8/12 ao-links              OK              0.06s
+ 9/12 rtc-host              OK              0.06s
+10/12 ao-session-correction OK              0.17s
+11/12 ao-session-hooks      OK              0.40s
+12/12 ao-journal            OK              1.03s
+
+Ok:                 12  
+Expected Fail:      0   
+Fail:               0   
+Unexpected Pass:    0   
+Skipped:            0   
+Timeout:            0   
+
+Full log written to /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/meson-logs/testlog.txt

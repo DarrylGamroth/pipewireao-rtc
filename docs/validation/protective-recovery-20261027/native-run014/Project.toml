@@ -1,0 +1,17 @@
+[deps]
+FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
+FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
+FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
+PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+PipeWireAO_jll = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+FilterGraphAlgorithms = {path = "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/FilterGraphAlgorithms"}
+FilterGraphIsland = {path = "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/FilterGraphIsland"}
+FilterGraphPipeWire = {path = "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/FilterGraphPipeWire"}
+JuliaFilterGraph = {path = "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/JuliaFilterGraph"}
+PipeWireAORTC = {path = "/home/dgamroth/workspaces/codex/worktrees/rtc-protective-recovery-20261027"}

@@ -1,0 +1,36 @@
+Test Summary:                                           | Pass  Total  Time
+Protective recovery hierarchy and explicit close intent |   29     29  2.4s
+Test Summary:                                         | Pass  Total  Time
+Early, stale and mismatched observations cannot close |   18     18  0.1s
+Test Summary:                                 | Pass  Total  Time
+Release revalidates each closure prerequisite |   21     21  0.0s
+Test Summary:                                            | Pass  Total  Time
+Timeouts latch uncertain outcomes at every pending phase |   40     40  0.0s
+Test Summary:                                                 | Pass  Total  Time
+Failure, replacement and contradictory evidence do not replay |   14     14  0.5s
+Test Summary:                              | Pass  Total  Time
+Qualification and clock inputs are bounded |   12     12  0.1s
+Test Summary:                                              | Pass  Total  Time
+Cancellation and clock failure preserve uncertain outcomes |    9      9  0.6s
+Test Summary:                                             | Pass  Total  Time
+Atomic recovery-open generation and stale release fencing |   11     11  0.0s
+Test Summary:                                             | Pass  Total  Time
+Native recovery driver keeps recovery and resume explicit |   16     16  1.4s
+Test Summary:                                              | Pass  Total  Time
+Missing or expired source evidence never closes or retries |   16     16  0.0s
+Test Summary:                                          | Pass  Total  Time
+Native owner and outcome failures latch without replay |   20     20  0.0s
+Test Summary:                                                  | Pass  Total  Time
+Release refusal, lost readiness and stale source prevent close |   35     35  0.0s
+Test Summary:                              | Pass  Total  Time
+Pending recovery is refused before effects |    2      2  0.0s
+Test Summary:                                          | Pass  Total  Time
+Cancellation after submission does not replay recovery |    5      5  0.1s
+Test Summary:                                                  | Pass  Total  Time
+Slow successful readiness cannot issue an expired phase effect |   10     10  0.0s
+Test Summary:                                                  | Pass  Total  Time
+Native terminal failures retain their reported field and cause |    5      5  0.0s
+Test Summary:                                                        | Pass  Total  Time
+First protective mutation inhibits a competing close before adoption |    9      9  0.0s
+Test Summary:                                               | Pass  Total  Time
+First recovery readback may already show atomic application |    5      5  0.0s

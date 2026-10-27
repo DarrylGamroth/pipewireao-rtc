@@ -1,0 +1,107 @@
+ERROR: LoadError: Some tests did not pass: 1 passed, 8 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:1
+in expression starting at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/run.jl:8
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:203
+  Expression: first(first(t.writes)) == "pipewireao-recovery:request-token"
+   Evaluated: "correction:closed" == "pipewireao-recovery:request-token"
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:203 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:205
+  Expression: t.competing_close_accepted == 0
+   Evaluated: 1 == 0
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:205 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:206
+  Expression: !(t.resurrected_correction)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:206 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:207
+  Expression: operation isa CR.Operation
+   Evaluated: Main.BeforeRecovery.CorrectionRecovery.RecoveryError{Main.BeforeRecovery.CorrectionRecovery.Operation{Main.CorrectionRecoveryClientTests.ScriptedTransport, Main.BeforeRecovery.CorrectionRecovery.Coordinator{Main.BeforeRecovery.CorrectionRecovery.var"#28#29"{Main.CorrectionRecoveryClientTests.ScriptedTransport}}}}(Main.BeforeRecovery.CorrectionRecovery.Operation{Main.CorrectionRecoveryClientTests.ScriptedTransport, Main.BeforeRecovery.CorrectionRecovery.Coordinator{Main.BeforeRecovery.CorrectionRecovery.var"#28#29"{Main.CorrectionRecoveryClientTests.ScriptedTransport}}}(Main.BeforeRecovery.CorrectionRecovery.RecoveryChannel{Main.CorrectionRecoveryClientTests.ScriptedTransport}(Main.CorrectionRecoveryClientTests.ScriptedTransport(5, 0x000000003ba26b20, 912, 501, :competing_close, true, 5, 5, true, 7, 0, 8, 8, 2, :idle, false, 40, 1000000000, 1, Pair{String, PipeWireAORTC.NativeRunnerCodec.RunnerScalar}["correction:closed" => PipeWireAORTC.NativeRunnerCodec.RunnerScalar(:bool, false)], 0.8f0, 1, 1, true), 912, 5), Main.BeforeRecovery.CorrectionRecovery.Coordinator{Main.BeforeRecovery.CorrectionRecovery.var"#28#29"{Main.CorrectionRecoveryClientTests.ScriptedTransport}}(501, Main.BeforeRecovery.CorrectionRecovery.var"#28#29"{Main.CorrectionRecoveryClientTests.ScriptedTransport}(Main.CorrectionRecoveryClientTests.ScriptedTransport(5, 0x000000003ba26b20, 912, 501, :competing_close, true, 5, 5, true, 7, 0, 8, 8, 2, :idle, false, 40, 1000000000, 1, Pair{String, PipeWireAORTC.NativeRunnerCodec.RunnerScalar}["correction:closed" => PipeWireAORTC.NativeRunnerCodec.RunnerScalar(:bool, false)], 0.8f0, 1, 1, true)), 0x0000000005f5e100, 0x0000000000000008, 0x0000000000000002, 0x0000000000000003, 0x0000000000000004, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, :operator, :conflicting_loop_generation, nothing, 0x00, 0x00, nothing, :Unverified, :Unverified), "science", "correction", 8, 0x0000000000000008, 0x0000000000000002, 0x0000000000000028, 0x0000000005f5e100, 0x0000000000000028), "native control outcome unknown: conflicting_loop_generation") isa Main.BeforeRecovery.CorrectionRecovery.Operation
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:207 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:208
+  Expression: t.inhibited
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:208 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:209
+  Expression: !(t.closed)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:209 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:210
+  Expression: iszero(t.retained_correction)
+   Evaluated: iszero(0.8f0)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:210 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+First protective mutation inhibits a competing close before adoption: Test Failed at /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:211
+  Expression: isempty(writes(t, "correction:closed"))
+   Evaluated: isempty(Pair{String, PipeWireAORTC.NativeRunnerCodec.RunnerScalar}["correction:closed" => PipeWireAORTC.NativeRunnerCodec.RunnerScalar(:bool, false)])
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:197
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/protective-recovery-20261027/e2e/admission-gap-before/regression.jl:211 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+Test Summary:                                                        | Pass  Fail  Total  Time
+First protective mutation inhibits a competing close before adoption |    1     8      9  4.2s
+RNG of the outermost testset: Random.Xoshiro(0xdf824f66f46d51aa, 0x3f71c8f01cb34b64, 0x7370a241bcd46fbe, 0x7ce335e2a9b2896f, 0x49414eb29e8f2495)

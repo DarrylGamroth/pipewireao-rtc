@@ -4,9 +4,11 @@
 
 The [validation and review record](validation/protective-recovery-20261027/README.md)
 covers scoped scientific recovery, hierarchical sequencing, native admission and
-explicit reclose guards. Full RTC CPU software and native tests pass; final
-graph and private-core qualification remain in progress. Existing live sessions
-are unchanged. Physical authority and automatic intervention remain unselected.
+explicit reclose guards. Scientific CPU, full graph-adapter, native admission and
+isolated native recovery/resume checks pass. The competing-client admission
+regression has fail-before/pass-after evidence. Existing live sessions are
+unchanged. Physical authority and automatic intervention remain unselected;
+forced private SIGTERM teardown warnings remain documented.
 
 ## Standard instrument calibration bundles — 2026-10-26
 

@@ -1,0 +1,23 @@
+PHASE start_private_core at 467700.153752182
+PHASE prepare_scientific_graph at 467700.528163679
+GRAPH_OWNER_THREAD 3
+PHASE prepare_acquisition_endpoint at 467729.407469789
+PHASE start_production_rtc at 467737.178412198
+PHASE connect_admission_controller at 467737.178883248
+ACQUISITION_TICKET PipeWireAORTC.NativeAcquisitionLifecycleCodec.LifecycleCommand{:status} at 467738.312239611
+ACQUISITION_TICKET PipeWireAORTC.NativeAcquisitionLifecycleCodec.LifecycleCommand{:connect} at 467738.546618701
+ACQUISITION_TICKET PipeWireAORTC.NativeAcquisitionLifecycleCodec.LifecycleCommand{:pause} at 467738.553084955
+WARMUP_REPLY PipeWireAORTC.NativeSessionCodec.AdministrativeCompletion(PipeWireAORTC.NativeControlCodec.ReplyHeader(1, 101, PipeWireAORTC.NativeControlCodec.ControllerIdentity(0x00000019, 0x0000000000000019, 303), 1, 0x0000000f, 0), PipeWireAORTC.NativeRunnerCodec.Configuring, true, nothing) source_state=Connected source_pending=nothing source_wake=false
+PHASE admit_ready at 467739.135645321
+PHASE start_session at 467739.233978978
+ACQUISITION_TICKET PipeWireAORTC.NativeAcquisitionLifecycleCodec.LifecycleCommand{:resume} at 467739.339270218
+FIRST_SOURCE_SUBMITTED at 467739.435148247
+FIRST_SOURCE_ACK at 467739.552631872
+FIRST_SINK_ACK at 467739.686711784
+PHASE protective_open at 467739.805384241
+PHASE verified_holding at 467741.490965533
+PHASE explicit_resume at 467743.694780708
+PHASE passed at 467744.155686949
+PHASE cleanup_owned_resources at 467744.516758917
+Test Summary:                       | Pass  Total   Time
+isolated native protective recovery |   17     17  53.8s

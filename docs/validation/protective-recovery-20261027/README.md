@@ -1,6 +1,6 @@
 # Protective correction recovery — 2026-10-27
 
-Status: source and CPU software validation in progress. Existing live GPI2,
+Status: selected CPU software scope validated. Existing live GPI2,
 Classic and GUI services have not been changed by this increment.
 
 ## Scope and source
@@ -49,7 +49,7 @@ Non-expiry behavior tests now use a bounded 60-second budget; deterministic
 expiry tests retain exact injected age boundaries. A final stable-source run is
 required before promotion.
 
-The configured full RTC suite at `17b2250` passed **5,298 assertions in 198
+The configured full RTC suite at `17b2250` passed **5,376 assertions in 199
 testsets** with `PIPEWIREAO_PREFIX` set to that SDK. Exit status was zero; no
 unexpected warnings or test failures were reported. The Git object-missing
 message is exercised by the configuration-store rejection tests. Logs are
@@ -65,7 +65,7 @@ hold/resume after the first validated close. Independent final source review
 found no outstanding actionable issue at that revision.
 
 After merging current RTC main into the recovery branch, RTC `ad9887c` passed
-its full configured suite: **5,446 assertions in 206 testsets**, exit zero. The
+its full configured suite: **5,556 assertions in 207 testsets**, exit zero. The
 unchanged native source at `17b2250` passes all 12 Meson programs. The broad CPU
 commands are:
 
@@ -102,6 +102,9 @@ FITS adoption, physical operation or a live deployment.
 | CG-01 | P1, callback-boundary tests | Reference could change after release and before close adoption. A guarded first close rechecks current proof at adoption; lost proof leaves the controller open and re-inhibits recovery. |
 | CG-02 | P1, source review and focused regression | Control-thread staging read processing-owned scientific arrays. Staging now uses atomic snapshots/seqlock proof only; direct current-state checks are confined to serialized adoption. |
 | CG-03 | P1, source review and focused regression | A mixed first close/reference edit could bypass validation of the new reference. Both RTC admission and graph staging require the guarded first close to be unmixed. |
+| NP-01 | P1, actual private-core failure and deterministic callback/cache reproduction | Cached native reference evidence stopped advancing while successful frames continued. JFG `b673c05` publishes advancing proof at bounded intervals, without restamping old evidence. The same callback/cache regression failed three assertions before the fix and passes afterward. |
+| NF-01 | P1, source review and native regressions | A cached positive reference could outlive its owner timeout. RTC `45913bb` checks the owner monotonic timestamp before release or guarded close. Stale and future witnesses are refused before effects. |
+| CA-01 | P1, source review and scripted fail-before/pass-after | A preliminary ordinary hold admitted a competing close before scoped recovery inhibition. RTC `4c975e1` issues the existing scoped request first, then observes its forced-open and recovery generations. The legal competing-client regression fails 8 of 9 assertions against the previous client and passes all 9 after the fix. |
 
 Reviewers assessed different implementation ownership: the scientific implementer
 reviewed graph/native-client controls, and the graph implementer independently
@@ -116,3 +119,78 @@ thresholds and a monitor-only default. Automatic stream binding, numerical trip
 thresholds and deployment intervention are not selected. The GUI's existing
 Open/Hold operation retains correction; it is not silently changed into
 protective recovery. No live application has been opted into the new operation.
+
+## Native publication and private-core validation
+
+JFG `b673c05` passes the full adapter suite: **1,827 assertions in 84 testsets**,
+exit zero (`graph-publication-full.log`). Recovery proof notifications use the
+existing coalesced Props publication path at intervals bounded by the smaller of
+100 ms and one quarter of the active reference timeout. Callback-side due checks
+retain zero Julia allocation. RTC `45913bb` passes all **12 native test programs**
+including monotonic-age admission (`native-freshness.log`).
+
+Private run013 used a real isolated PipeWire core, production RTC Lua, declared
+bootstrap owner, native client and CPU graph. It passed 17 checks over 42 frames:
+the command saturated at 0.8, recovery reached the nonzero 0.2 reference subject
+to a 0.1/frame slew limit, ordinary close was refused while inhibited, and six
+frames after explicit resume remained at 0.2. Controller/filter/delayed feedback
+histories were zero at Holding. This run precedes CA-01 remediation and therefore
+does not prove safe initial admission against a competing client.
+
+The preceding run012 safely refused resume because cached witness sequence/time
+did not advance, despite continuing reference-valued output. These failed and
+passing receipts, exact harness sources, hashes, configurations and unfiltered
+logs remain at
+`/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/`.
+No existing live services or GPU processes were modified. Owned run013 processes
+were reaped and independently checked absent.
+
+The forced private RTC SIGTERM after the passing phase logged session-control
+publication failure, NULL `wp_properties_get` assertions and uncertain source
+hold. These teardown messages are retained. Full application Quit/terminal
+source-removal qualification is not established by this recovery check. Finite
+cold functional budgets are not latency or real-time evidence.
+
+The atomic-first client revision `4c975e1` passes **154 coordinator and 123 client
+assertions** (`admission-gap-after.log`). The scripted counterexample explicitly
+adopts the old ordinary-open generation before the competing close, so the
+native control slot is free and retained correction can legally return on the
+old path. The new first request installs inhibition while still pending. Tests
+also cover the native scientific generation remaining unchanged until adoption
+and a first readback that already shows application. Independent review found
+no remaining actionable issue in this sequence. This is a scripted concurrency
+regression, separate from the actual private-core functional proof.
+
+Run014 then repeated the actual native sequence on committed RTC `4c975e1` and
+clean canonical JFG main `b673c05`: **17/17 checks passed over 41 frames**. The
+command reached 0.8 saturation, recovered to the 0.2 reference by frame 16,
+refused ordinary close while inhibited, and explicitly resumed by frame 35.
+All six subsequent frames remained at 0.2; no old saturated correction returned.
+The coordinator ended Closed. Native owner/bootstrap and the scientific history
+checks passed. Only documentation/evidence edits were uncommitted during this
+run; production file hashes are in [the receipt](native-run014/receipt.json).
+The exact harness, graph source and unfiltered logs are retained beside it.
+
+Run014 used the same cold functional budgets and synthetic CPU composition as
+run013. The existing SIGTERM teardown limitation remains visible in its RTC log.
+Owned PIDs 1523497 and 1524030 were reaped and independently checked absent.
+These checks establish software recovery behavior, not physical settling,
+automatic supervisor integration or an enabled live GUI operation.
+
+The run014 invocation was:
+
+```sh
+/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/with_environment.sh julia --startup-file=no --threads=4,0 --project=/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/environment /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/harness.jl /home/dgamroth/.cache/pipewireao/protective-recovery-20261027/e2e/run014
+```
+
+Reproduction needs a new output directory, the recorded SDK/native build and
+source revisions. The retained harness has explicit local checkout paths; after
+worktree cleanup, point its RTC path and Julia environment at the canonical
+checkout containing `4c975e1` before running. The four JFG packages already point
+at canonical JFG main. No harness command installs or replaces a live session.
+
+The final full RTC suite at `4c975e1` passed **5,575 assertions in 210 testsets**,
+exit zero (`rtc-final-full.log`). There were no unexpected warnings or failures;
+the Git missing-object message is the existing catalog rejection check. Historical
+RTC totals above were corrected by summing all retained testset summaries; the
+earlier manual counts had omitted testsets. No behavior changed in that recount.

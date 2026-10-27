@@ -12,7 +12,7 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### Protective correction recovery — 2026-10-27 (in progress)
+### Protective correction recovery — 2026-10-27
 
 The approved recovery contract is recorded in RTC-DEV-032–036. Work starts from
 RTC `06fa9ea` and JFG `4e578f4`; existing live sessions remain unchanged.
@@ -22,13 +22,18 @@ recovery are not promoted. No automatic clipping threshold is selected.
 
 | Requirement | Design allocation | Implementation/evidence status |
 | --- | --- | --- |
-| RTC-DEV-032 | Exact native admission and graph owner control slot | Native admission implemented; 12 native programs pass; full private-core qualification in progress |
-| RTC-DEV-033 | FGA recover! + scoped JFG owner boundary + delayed feedback | Implemented for the selected CPU profile; 871 scientific and 1,803 full adapter assertions pass |
-| RTC-DEV-034 | Owner-produced successful-frame reference proof and explicit release | Callback-time close guard, reset/race fencing and actual Classic/GPI2 scope admission pass; private-core qualification pending |
-| RTC-DEV-035 | CorrectionRecovery Hsm hierarchical coordinator and retained native client | Implemented; 152 coordinator / 106 client assertions and full merged RTC suite pass; no history replay |
+| RTC-DEV-032 | Exact native admission and graph owner control slot | Atomic-first admission implemented; 12 native programs and 17 actual private-core checks pass |
+| RTC-DEV-033 | FGA recover! + scoped JFG owner boundary + delayed feedback | Implemented for the selected CPU profile; 871 scientific and 1,827 full adapter assertions pass |
+| RTC-DEV-034 | Owner-produced successful-frame reference proof and explicit release | Callback-time close guard, cached-proof freshness, reset/race fencing and actual Classic/GPI2 scope admission pass; private CPU recovery/resume passes |
+| RTC-DEV-035 | CorrectionRecovery Hsm hierarchical coordinator and retained native client | Implemented; 154 coordinator / 123 client assertions pass; competing-client fail-before/pass-after regression and independent review clear; no history replay |
 | RTC-DEV-036 | CorrectionSupervision recommendations | Library implemented; 268 assertions pass; automatic feedback binding and intervention thresholds remain unselected |
 
 See the [validation and independent review record](validation/protective-recovery-20261027/README.md).
+The operation is available to headless clients, but existing live profiles and GUI
+controls have not been opted in. Forced private SIGTERM teardown warnings remain
+recorded; full Quit, physical settling, GPU recovery and latency qualification
+are outside this software gate.
+The final RTC suite passes 5,575 assertions in 210 testsets at `4c975e1`.
 
 ### Shared built-application calibration bundles — 2026-10-26
 
