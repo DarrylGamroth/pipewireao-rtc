@@ -101,6 +101,31 @@ end
     end
 end
 
+@testset "Pending-state entry and exit own the adoption deadline" begin
+    now = Ref(UInt64(70))
+    for (initial, desired) in ((false, true), (true, false))
+        sm = CL.Loop("correction:closed", OWNER; clock=() -> now[], timeout_ms=5)
+        CL.observed!(sm, OWNER, 0, 0, initial)
+        @test sm.pending_since_ns == 0
+        # Direct machine events, without the Observer callback, must run the
+        # same entry/exit behaviors as RTC property observation.
+        CL.requested!(sm, OWNER, 1, 0, desired)
+        @test sm.pending_since_ns == now[]
+        now[] += UInt64(1)
+        CL.requested!(sm, OWNER, 1, 0, desired)
+        @test sm.pending_since_ns == now[] - 1
+        CL.observed!(sm, OWNER, 1, 1, desired)
+        @test sm.pending_since_ns == 0
+        CL.requested!(sm, OWNER, 2, 1, desired)
+        @test sm.pending_since_ns == 0
+        CL.observed!(sm, OWNER, 2, 2, desired)
+        CL.requested!(sm, OWNER, 3, 2, initial)
+        @test sm.pending_since_ns == now[]
+        CL.unknown!(sm, :observer_error)
+        @test sm.pending_since_ns == 0
+    end
+end
+
 @testset "Timely adoption and same-Boolean updates do not expire" begin
     now = Ref(UInt64(0))
     observer = CL.Observer(["correction:closed"], OWNER;

@@ -5,11 +5,12 @@ readback. They neither stage writes nor execute scientific frame processing.
 """
 module CorrectionLoops
 
-using Hsm: @hsmdef, @statedef, @on_initial, @on_event
+using Hsm: @hsmdef, @statedef, @on_initial, @on_event, @on_entry, @on_exit
 import Hsm
 import PipeWireAO
 
-public Loop, Observer, state, requested!, observed!, unknown!, check_ready, property_info
+public Loop, Observer, state, requested!, observed!, unknown!, check_ready, property_info,
+    attach_timers!
 
 const STATUS_PREFIX = "pipewireao.correction-control."
 
@@ -19,7 +20,7 @@ Constructed in `Unknown`, the loop first needs applied readback with equal
 requested/active generations. Failures remain `Unknown` for this incarnation;
 replacement owners require new machines.
 """
-@hsmdef mutable struct Loop
+@hsmdef mutable struct Loop{C}
     const property::String
     const instance::Int64
     requested_generation::Int64
@@ -27,6 +28,11 @@ replacement owners require new machines.
     requested_closed::Bool
     applied_closed::Bool
     pending_since_ns::UInt64
+    const clock::C
+    const timeout_ns::UInt64
+    # Cold loop sources are attached after the graph's native filter exists.
+    # No timer or Hsm operation runs on the scientific processing path.
+    timer::Union{Nothing,PipeWireAO.TimerSource}
     initialized::Bool
     failure::Union{Nothing,Symbol}
 end
@@ -37,11 +43,11 @@ end
 @statedef Loop :Closed
 @statedef Loop :Opening
 
-@on_initial function(sm::Loop, ::Root)
+@on_initial function(sm::Loop{C}, ::Root) where {C}
     return Hsm.transition!(sm, :Unknown)
 end
 
-@on_event function(sm::Loop, ::Root, ::Applied, closed::Bool)
+@on_event function(sm::Loop{C}, ::Root, ::Applied, closed::Bool) where {C}
     if closed
         return Hsm.transition!(sm, :Closed)
     else
@@ -49,7 +55,7 @@ end
     end
 end
 
-@on_event function(sm::Loop, ::Root, ::Requested, closed::Bool)
+@on_event function(sm::Loop{C}, ::Root, ::Requested, closed::Bool) where {C}
     if closed
         return Hsm.transition!(sm, :Closing)
     else
@@ -57,16 +63,56 @@ end
     end
 end
 
-@on_event function(sm::Loop, ::Root, ::Failure, _)
+@on_event function(sm::Loop{C}, ::Root, ::Failure, _) where {C}
     return Hsm.transition!(sm, :Unknown)
 end
 
-function Loop(property::String, instance::Int64)
+function start_timer!(sm::Loop)
+    sm.pending_since_ns = clock_ns(sm.clock)
+    arm_timer!(sm.timer, sm.timeout_ns)
+    return nothing
+end
+
+function stop_timer!(sm::Loop)
+    disarm_timer!(sm.timer)
+    sm.pending_since_ns = UInt64(0)
+    return nothing
+end
+
+arm_timer!(::Nothing, ::UInt64) = nothing
+arm_timer!(timer::PipeWireAO.TimerSource, remaining_ns::UInt64) =
+    PipeWireAO.update_timer!(timer; delay=max(1, remaining_ns) / 1e9)
+disarm_timer!(::Nothing) = nothing
+disarm_timer!(timer::PipeWireAO.TimerSource) = PipeWireAO.update_timer!(timer; delay=nothing)
+
+@on_entry function(sm::Loop{C}, ::Opening) where {C}
+    start_timer!(sm)
+    return nothing
+end
+
+@on_entry function(sm::Loop{C}, ::Closing) where {C}
+    start_timer!(sm)
+    return nothing
+end
+
+@on_exit function(sm::Loop{C}, ::Opening) where {C}
+    stop_timer!(sm)
+    return nothing
+end
+
+@on_exit function(sm::Loop{C}, ::Closing) where {C}
+    stop_timer!(sm)
+    return nothing
+end
+
+function Loop(property::String, instance::Int64; clock=time_ns, timeout_ms::Integer=5000)
     names = split(property, ':')
     length(names) == 2 && all(!isempty, names) ||
         throw(ArgumentError("correction-loop property must be qualified as node:property"))
     instance > 0 || throw(ArgumentError("owner instance must be positive"))
-    return Loop(property, instance, 0, 0, false, false, UInt64(0), false, nothing)
+    clock_ns(clock)
+    return Loop(property, instance, 0, 0, false, false, UInt64(0), clock,
+        timeout_ns(timeout_ms), nothing, false, nothing)
 end
 
 """Return `Unknown`, `Open`, `Closing`, `Closed`, or `Opening` as a Symbol."""
@@ -159,10 +205,11 @@ The owner invokes `observer(Val(:observed), props)` for applied readback and
 serialized by that owner; this observer is never shared across incarnations.
 `timeout_ms` is 1 to 60000 (default 5000). `clock` must return monotonic integer
 nanoseconds representable by UInt64. Adoption deadlines are checked before
-every callback or available status readback; no background writer is created.
+every callback or available status readback. Attached native timers request
+owner-thread publication at the deadline; no background Hsm writer is created.
 """
 struct Observer{C}
-    loops::Vector{Loop}
+    loops::Vector{Loop{C}}
     instance::Int64
     timeout_ns::UInt64
     clock::C
@@ -196,8 +243,53 @@ function Observer(properties::Vector{String}, instance::Int64;
     instance > 0 || throw(ArgumentError("owner instance must be positive"))
     timeout = timeout_ns(timeout_ms)
     clock_ns(clock)
-    return Observer([Loop(property, instance) for property in properties], instance,
+    return Observer([Loop(property, instance; clock, timeout_ms) for property in properties], instance,
         timeout, clock)
+end
+
+"""Attach disarmed PipeWire timers to an initialized graph owner.
+
+Entry to Opening/Closing arms a one-shot timer; exit cancels it. `wake()` runs
+on the supplied native ThreadLoop and must only request control-loop work, not
+dispatch Hsm events or throw. The graph owner uses `notify_properties!` to publish on its
+own control thread, where expiration is reconciled before applied readback.
+Close the observer before destroying that graph or the supplied loop.
+"""
+function attach_timers!(observer::Observer, loop::PipeWireAO.ThreadLoop, wake)
+    check_ready(observer)
+    all(sm -> sm.timer === nothing, observer.loops) ||
+        throw(ArgumentError("correction-loop timers are already attached"))
+    try
+        for sm in observer.loops
+            sm.timer = PipeWireAO.TimerSource(loop, (_, _) -> wake())
+        end
+    catch
+        close(observer)
+        rethrow()
+    end
+    return observer
+end
+
+"""Cancel native timers and mark observation unavailable before owner teardown.
+
+Call on the serialized control thread, before closing the graph filter or timer
+loop. Repeated closure is harmless; late observations cannot clear the fault.
+"""
+function Base.close(observer::Observer)
+    failures = Exception[]
+    for sm in observer.loops
+        unknown!(sm, :observer_unavailable)
+        timer = sm.timer
+        timer === nothing && continue
+        try
+            close(timer)
+            sm.timer = nothing
+        catch error
+            push!(failures, error)
+        end
+    end
+    isempty(failures) || throw(CompositeException(failures))
+    return nothing
 end
 
 """Require initial authoritative Boolean readback before owner admission."""
@@ -224,23 +316,24 @@ function prop_value(::Type{T}, props::PipeWireAO.SPA.Props, name::String) where 
 end
 
 function observe!(::Val{:requested}, sm::Loop, requested::Int64, active::Int64,
-        closed::Bool, now::UInt64)
-    previous_generation = sm.requested_generation
+        closed::Bool)
     requested!(sm, sm.instance, requested, active, closed)
-    if sm.failure === nothing && sm.requested_generation != previous_generation &&
-       state(sm) in (:Opening, :Closing)
-        sm.pending_since_ns = now
-    end
     return nothing
 end
 
-observe!(::Val{:observed}, sm::Loop, requested::Int64, active::Int64, closed::Bool,
-        ::UInt64) =
+observe!(::Val{:observed}, sm::Loop, requested::Int64, active::Int64, closed::Bool) =
     observed!(sm, sm.instance, requested, active, closed)
 
 function expire!(sm::Loop, now::UInt64, timeout_ns::UInt64)
-    if state(sm) in (:Opening, :Closing) && now - sm.pending_since_ns >= timeout_ns
-        unknown!(sm, :adoption_timeout)
+    if state(sm) in (:Opening, :Closing)
+        elapsed = now - sm.pending_since_ns
+        if elapsed >= timeout_ns
+            unknown!(sm, :adoption_timeout)
+        else
+            # A queued/stale or early timer notification cannot expire a new
+            # transition. Re-arm for its remaining time, without moving the deadline.
+            arm_timer!(sm.timer, timeout_ns - elapsed)
+        end
     end
     return nothing
 end
@@ -264,7 +357,7 @@ function (observer::Observer)(phase::Union{Val{:requested},Val{:observed}},
             requested = prop_value(Int64, props, node * ":requested-generation")
             active = prop_value(Int64, props, node * ":active-generation")
             closed = prop_value(Bool, props, sm.property)
-            observe!(phase, sm, requested, active, closed, now)
+            observe!(phase, sm, requested, active, closed)
         catch
             unknown!(sm, :observer_error)
         end

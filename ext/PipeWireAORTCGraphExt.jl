@@ -130,6 +130,8 @@ function run_prepared(options, runtime, graph)
         FilterGraphPipeWire.PipeWireNode(graph; common...)
     try
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.check_ready(observer)
+        isnothing(observer) || PipeWireAORTC.CorrectionLoops.attach_timers!(
+            observer, runtime.transport.loop, () -> PipeWireAO.notify_properties!(node.filter))
         if isnothing(options.capture_backend)
             FilterGraphPipeWire.prepare!(node;
                 execution=options.execution == "row-block" ? :row_block : :complete_frame,
@@ -152,8 +154,15 @@ function run_prepared(options, runtime, graph)
         Bootstrap.fault!(runtime, error)
         rethrow()
     finally
-        Bootstrap.finishing!(runtime)
-        close(node)
+        try
+            Bootstrap.finishing!(runtime)
+        finally
+            try
+                isnothing(observer) || close(observer)
+            finally
+                close(node)
+            end
+        end
     end
     return nothing
 end

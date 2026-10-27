@@ -250,6 +250,30 @@ There is no automatic retry, opening, flattening, reset or gain change on fault.
 Native session timeouts and required-owner loss retain their existing fault
 policy. A replacement owner starts with new state and a new incarnation.
 
+RTC 0.2.14 places pending-state timing in Hsm `@on_entry`/`@on_exit` Behaviors.
+Entering Opening or Closing records the original deadline and arms a one-shot
+PipeWire `TimerSource`; leaving either state cancels it and clears the pending
+timestamp. Matching readback, a fault and owner teardown all cancel the timer.
+Same-value requests and duplicate observations do not enter a pending state or
+extend its deadline. An early/stale wake only re-arms the remaining duration.
+
+The timer is attached to the existing native bootstrap ThreadLoop after graph
+construction and before admission. Its callback only requests graph property
+publication using the public `notify_properties!` API. Native readback then
+checks expiration and dispatches Hsm on the graph's serialized control thread.
+It does not wait for frames, a Julia task on the blocked graph thread, a GUI or
+another client command. No timer callback writes Hsm/scientific state, sends
+an actuator command or retries a request. Observer timers close before the graph
+filter and bootstrap loop, including exceptional preparation/shutdown paths.
+
+The new identifiers are adopted library/control terms: `@on_entry` and
+`@on_exit` are Hsm State Behaviors; `TimerSource` is the existing PipeWireAO
+owned loop source; `attach_timers!` binds these cold resources to the RTC
+observer. No new scientific schema or native command is added. The root
+`@on_initial` still selects Unknown: Hsm 0.3.2 uses that initial Pseudostate
+for a flat machine too, as shown by its flat LightSwitch example. There are no
+composite operational states in this increment.
+
 Implementation order and acceptance evidence:
 
 1. Add the generic read-only graph publication seam, validating declarations,

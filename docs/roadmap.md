@@ -14,6 +14,12 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### RTC correction-loop adoption tracking — 2026-10-26
 
+The 0.2.14 extension moves adoption timing into Hsm entry/exit Behaviors and
+attaches native PipeWire timers to the existing bootstrap loop. Timer callbacks
+only request owner-thread publication; Hsm still has one control-thread writer.
+An isolated private core verifies idle timeout publication without frames or
+another client command. See the [entry/exit evidence](validation/loop-controls-20261026/README.md#state-entryexit-and-native-adoption-timers).
+
 RTC 0.2.13 and FilterGraphPipeWire 0.1.9 are pushed and registered. The
 operational extension adds native readiness admission and ordinary read-only
 state/fault/requested properties for each explicitly bound coupled loop.

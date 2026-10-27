@@ -40,6 +40,9 @@ adds explicit coupled-loop readiness, read-only requested/applied status and
 bounded observation-based adoption timeout. It records native whole-transaction
 rejection tests, deterministic CPU checks and the independently reviewed
 partial-status fixes, without changing the live sessions.
+The [state entry/exit follow-up](validation/loop-controls-20261026/README.md#state-entryexit-and-native-adoption-timers)
+adds native timer arming/cancellation and isolated idle-publication evidence,
+while keeping Hsm on the serialized graph control thread.
 
 ## GPI stage response and temporal allocation — 2026-10-26
 

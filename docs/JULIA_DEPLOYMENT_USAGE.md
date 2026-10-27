@@ -71,10 +71,12 @@ state and completed previous adoption. A refused row rejects its whole scalar
 transaction before any values change. A refusal does not fault a healthy session.
 
 The default adoption timeout is 5000 ms. An optional owner argument
-`--correction-timeout-ms N` accepts 1–60000 ms. Expiration is checked on owner
-control observations/publication, not by a background timer or each remote
-client query: native queries can read cached Props. Expiration or unavailable
-observation latches `Unknown` for that owner incarnation, without retry, reset,
+`--correction-timeout-ms N` accepts 1–60000 ms. In RTC 0.2.14, state entry arms
+a native PipeWire timer and state exit cancels it. The timer wakes owner-thread
+publication, so expiration does not need frame traffic or another client query.
+Hsm still runs only on the graph control thread; remote native queries may read
+cached Props. Expiration or unavailable observation latches `Unknown` for that
+owner incarnation, without retry, reset,
 opening or flattening. A late readback cannot silently clear it. Generation
 equality proves plan adoption, not the first processed frame or physical motion.
 

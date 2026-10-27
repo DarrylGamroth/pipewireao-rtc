@@ -243,3 +243,59 @@ Read-only service inspection confirms the live GPI2 RTC PID 806596 / invocation
 `da8c3efa93eb4a65b4a21998468d4455`, GUI PID 812043 / invocation
 `67d5f3c4f2b549eb860b2511ad47153f`, and Classic RTC PID 256761 remain unchanged.
 This is source/package integration, not deployment of the new controls.
+
+## State entry/exit and native adoption timers
+
+RTC 0.2.14 uses Hsm `@on_entry` to start the deadline and arm a native one-shot
+timer in Opening/Closing. `@on_exit` cancels it on adoption or fault and clears
+the pending timestamp. Observer teardown also cancels and closes native sources
+before filter destruction, including exceptional shutdown paths. The existing
+root `@on_initial` is retained only for initial selection of Unknown, following
+Hsm 0.3.2's own flat-machine example and initialized-constructor contract.
+Hsm.jl itself is unchanged.
+
+The existing bootstrap ThreadLoop owns the PipeWire `TimerSource` resources.
+Its callback only calls public `notify_properties!`; the graph's main/control
+thread performs expiry checks and Hsm dispatch during native publication.
+There is no Julia Timer on the graph thread, second Hsm writer, new scientific
+command or dependency. Early/stale wakes re-arm the remaining original duration
+without extending the deadline. Same-Boolean updates do not arm a timer.
+
+Focused CPU evidence on Julia 1.13.2:
+
+- The complete package workspace passes 4,708 assertions across 172 testsets
+  through `Pkg.test(; julia_args=["--threads=1"])`, including the new native
+  timer selector registered in `test/runtests.jl`.
+- Pure state/status/deadline checks: 251 assertions, including direct accepted
+  requests proving entry/exit owns the timing independently of Observer callbacks.
+- Native timer checks: 30 assertions covering wake-only callbacks on another
+  thread, adoption/fault cancellation, early-wake rearming, duplicate bindings,
+  pending-owner shutdown, closed handles and idempotent cleanup.
+- The optional `test/test_correction_timer_private_core.jl` selector passes
+  56 assertions: the previous 46 callback checks plus an isolated private-core
+  case that blocks the constructing Julia thread in the native filter loop.
+  No frames, later property command or client polling occurs. Logical time
+  advances only from the real timer callback; timeout status publishes and the
+  actual closed Boolean/active generation remain unchanged. A separate bounded
+  watchdog ends a failing run rather than hiding a missing publication.
+
+On the minimum Julia 1.12.7, a fresh resolved test environment passes 351
+state/timer/owner-argument assertions across 19 testsets without warnings.
+The first 1.12 run used the repository's 1.13-generated manifest: its tests
+passed, but precompilation reported a Zstd_jll failure and loaded-stdlib version
+notes. The fresh 1.12 environment resolves/precompiles successfully and its
+subsequent fresh-process selector is clean; the tracked 1.13 manifest was not
+replaced. Logs preserve both attempts.
+
+Independent source review found no blocking defect in Hsm dispatch, source
+lifetime, ThreadLoop locking or partial cleanup. Its native rearm-coverage gap
+was addressed by the added early-wake test. As with the existing PipeWire timer
+API, callback exceptions are retained until a subsequent source update; the
+binding therefore requires a nonthrowing wake operation. Production supplies
+only native property notification. Native session effect deadlines/owner-loss
+fault handling remain in force; this does not claim recovery after a failed
+native wake or a hard real-time timer deadline.
+
+No live Classic/GPI2, GUI, calibration, mirror limit or control gain changes
+were made. These are CPU software/control-loop integration checks, not physical
+actuator, GPU, cadence or tail-latency qualification. No native C code changed.
