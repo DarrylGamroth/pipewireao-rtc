@@ -30,7 +30,6 @@ function Calibration.stage_calibration(source, application, calibration, destina
         throw(ArgumentError("staging destination must be outside source and calibration directories"))
     bundle = Calibration.read_bundle(calibration)
     resultpath=joinpath(calibration,"result.yaml")
-    contextpath=joinpath(calibration,"context.yaml")
     graphpath=bundle.graph
     report=bundle.report
     Calibration.read_recipe(application)==report["recipe"] ||
@@ -71,7 +70,6 @@ function Calibration.stage_calibration(source, application, calibration, destina
             isdir(origin) ? R.copy_tree(origin,path) : R.copy_file(origin,path)
         end
         rm(joinpath(staged, "rtc", "calibration.yaml"); force=true)
-        R.copy_file(contextpath, joinpath(staged, "rtc", "calibration.yaml"))
         staged_declaration = IC.load_simulation(D.relative_asset(staged, recipe["simulation"]))
         staged_settings = IC.settings(staged_declaration,settings)
         IC.prescription_identity(staged_declaration,staged_settings)==original_identity ||
@@ -83,7 +81,7 @@ function Calibration.stage_calibration(source, application, calibration, destina
             header="Copied simulation calibration receipt with the localized source prescription identity.")
         configurationpath = D.relative_asset(staged, recipe["rtc_configuration"])
         configuration = C.read_yaml(configurationpath)
-        configuration["calibration"] = "rtc/calibration.yaml"
+        configuration["calibration"] = "calibration/context.yaml"
         configuration["calibration_identity"] = "sha256:" * C.sha256_file(copied_resultpath)
         if haskey(report,"dimensions")
             dimensions=deepcopy(report["dimensions"])

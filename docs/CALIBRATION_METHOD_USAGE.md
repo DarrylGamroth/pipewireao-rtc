@@ -17,6 +17,22 @@ The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
 `graph.conf` and typed FITS files in `artifacts/`. The result hashes context,
 graph and artifacts. Git retains earlier selections and provenance; staging
 does not copy archive directories or create `history_sha256` manifests.
+
+Calibration context uses the existing FITS binding terms: a `kind: fits` entry
+declares `path`, `hdu`, `axes`, logical `shape`, `type`, `sha256` and
+`storage_order: row-major`. Paths are relative to `context.yaml`. Cold preparation
+checks one bounded file snapshot and resolves it to a flat typed row-major
+vector. Boolean values must be exactly zero or one. The context remains a small
+declaration; GPI2 construction and runtime use the same `pupil-mask.fits` bytes.
+RTC configuration selects `calibration/context.yaml`, without a duplicate
+`rtc/calibration.yaml`. The regular instrument graph still supplies topology.
+
+An explicit import retains its original source prescription under
+`imported_source_prescription_identity` when adopting a changed model or metadata.
+`source_prescription_identity` associates the selected, replay-verified bundle
+with its current prescription. The receipt's origin and Git source record must
+distinguish adoption/replay from a new acquisition; an identity update alone
+does not establish scientific equivalence.
 `read_bundle` verifies these bytes without loading a sensor or accelerator;
 sensor procedures own array interpretation and optical checks. Authored recipes
 live in the instrument source at `calibration/recipe.yaml`. Its `graph_source`

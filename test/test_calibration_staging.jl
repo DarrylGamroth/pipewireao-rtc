@@ -25,11 +25,13 @@ snapshot(path) = Dict(relpath(joinpath(root, file), path) => bytes2hex(sha256(re
         @test C.stage_calibration(authored, application, calibration, destination) == destination
         selected = C.read_bundle(joinpath(destination, "calibration"))
         @test !ispath(joinpath(destination, "calibration", "history"))
+        @test !ispath(joinpath(destination, "rtc", "calibration.yaml"))
         @test !haskey(selected.report, "history_sha256")
         @test selected.parameter_files == incoming.parameter_files
         @test selected.report["artifact_sha256"] == incoming.report["artifact_sha256"]
         @test C.read_recipe(application) == selected.report["recipe"]
         rtc = Common.read_yaml(joinpath(destination, "rtc", "configuration.yaml"))
+        @test rtc["calibration"] == "calibration/context.yaml"
         @test rtc["calibration_identity"] == "sha256:" * Common.sha256_file(joinpath(destination, "calibration", "result.yaml"))
         @test snapshot(authored) == before
     end

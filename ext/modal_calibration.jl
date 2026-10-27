@@ -225,6 +225,13 @@ function Calibration._calibrate_system(::Val{:pyramid}, source, recipe, output;
         "temporal"=>temporal.description,
         "relative_inverse_residual"=>LA.norm(interaction*reconstructor*interaction-interaction)/LA.norm(interaction),
         "recipe"=>recipe)
+    # The same mask defines construction-time selection and the runtime binding.
+    # Only its typed FITS reference is stored in the context.
+    maskpath=joinpath(temporary,"pupil-mask.fits")
+    Calibration.write_fits(maskpath,parameters[Symbol("pupil-mask")])
+    context["pwfs"]["pupil_mask"]=Dict("kind"=>"fits", "path"=>"artifacts/pupil-mask.fits",
+        "hdu"=>1, "axes"=>[2,1], "shape"=>collect(pupil_size), "type"=>"Bool",
+        "sha256"=>Calibration.digest(maskpath), "storage_order"=>"row-major")
     return Calibration.write_bundle(output,report,context,concrete,parameters;diagnostics)
     end
 end

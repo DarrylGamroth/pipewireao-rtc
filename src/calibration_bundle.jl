@@ -99,6 +99,9 @@ function read_bundle(directory::AbstractString)
             throw(ArgumentError("calibration artifact hash mismatch: $name"))
         artifacts[name] = path
     end
+    # Construction-time values use the same bounded, hash-verified FITS inputs
+    # as cold RTC preparation; the stored context remains a small declaration.
+    InstrumentConfiguration.calibration_context(context, directory)
     parameter_names = report["parameter_names"]
     parameter_names isa AbstractVector && all(name -> name isa AbstractString, parameter_names) ||
         throw(ArgumentError("calibration parameter_names must be a list of names"))
