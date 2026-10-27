@@ -141,7 +141,21 @@ end
             progress("starting acquisition")
             result = Acquisition.acquire!(client, plan; observe, consume)
             progress("acquisition $(result.phase)")
-            result.phase == "complete" || progress("failure=$(result.failure), recovery=$(result.recovery_failure)")
+            if result.phase != "complete"
+                close(client); client = nothing
+                outcome = fetch(serving)
+                close(server)
+                progress("failure=$(result.failure), recovery=$(result.recovery_failure), server=$outcome")
+                # All native work is fenced before reading retained diagnostics.
+                probe = owner.transport
+                progress("probe sequence=$(probe.sequence), published=$(probe.published), received=$(probe.received), closed=$(probe.closed), error=$(probe.error)")
+                progress("HIL $(Wire.pipewire_calibration_status(owner.hil))")
+                for worker in owner.workers
+                    progress("graph done=$(istaskdone(worker.task)), error=$(worker.error[])")
+                end
+                @test result.phase == "complete"
+                error("initial calibration failed: $(result.failure); server outcome: $outcome")
+            end
             @test result.phase == "complete"
             @test result.restoration_confirmed && result.resume_permitted
             @test result.failure === result.recovery_failure === nothing
@@ -162,19 +176,7 @@ end
             # The pilot publishes no calibration bundle or activation request.
             @test Acquisition.document(result)["responses"] !== nothing
             close(client); client = nothing
-            outcome = fetch(serving)
-            if result.phase == "fault"
-                progress("server outcome=$outcome")
-                # The server has fenced the faulted owner. Read only retained
-                # diagnostic fields, never a destroyed native loop.
-                probe = owner.transport
-                progress("probe sequence=$(probe.sequence), published=$(probe.published), received=$(probe.received), closed=$(probe.closed), error=$(probe.error)")
-                progress("HIL $(Wire.pipewire_calibration_status(owner.hil))")
-                for worker in owner.workers
-                    progress("graph done=$(istaskdone(worker.task)), error=$(worker.error[])")
-                end
-            end
-            @test outcome === nothing
+            @test fetch(serving) === nothing
             @test server.phase === :Released
             close(server)
             @test owner.closed && owner.hil.closed
