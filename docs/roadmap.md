@@ -29,6 +29,33 @@ and 342 actual private-core dark/light Capture assertions. The
 [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
 retains the failed source-manifest build and registered-release/cohort limitations.
 
+### GPI2 loop controls and supervision — 2026-10-27
+
+Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
+The live application has been refreshed to registered RTC 0.2.26 and FGA 0.8.4.
+The combined supervision/orientation rollout is being qualified. Preserve the calibration, gains,
+stroke limits and CUDA plant while qualifying changes in isolated applications.
+The operator selected monitor-only supervision for the live deployment;
+automatic intervention is tested only in an isolated simulation until thresholds
+have application validation.
+
+1. Recheck scoped recovery and explicit closure, including nonzero retained
+   history and proof that obsolete correction cannot return. Check both the
+   unchanged live incarnation through the GUI and isolated numerical/native
+   selectors; retain failed or unknown outcomes without automatic retry.
+2. Verify corrector constraint feedback and declared hidden-mode behavior.
+   Bind supervision to successful scientific-frame evidence, never inferred
+   continuity from lossy display observation. Preserve RTC-DEV-032–036, bounded
+   one-shot recovery, explicit rearm and explicit closure. Validate dropped,
+   stale, failed and replaced-owner observations and isolated automatic action.
+3. Add generic owner-described VDM inspection/control before allocation only
+   after its coordinate order, calibrated projection and recovery participation
+   are explicit. Dense woofer modal coordinates must not be displayed as a
+   physical actuator grid. Existing per-mirror controls remain distinct.
+
+Record exact dependency/configuration identities and measured limitations in a
+dated evidence record, then merge only verified changes and clean task worktrees.
+
 ### Optical diagnostic orientation — 2026-10-27
 
 The real isolated-actuator CPU probe confirms that copying AOS `[x,y]` optical

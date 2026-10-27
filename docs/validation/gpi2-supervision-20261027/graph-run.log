@@ -1,0 +1,2 @@
+PASS: 64 matched real Graph frames, byte-identical outputs/state, 0 B both native callbacks, packed biquad SIMD, vector monitor IR
+Evidence: /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/graph-codegen

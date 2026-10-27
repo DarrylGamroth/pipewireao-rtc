@@ -1,0 +1,17 @@
+{
+  "gate": "native003",
+  "assertions_passed": 42,
+  "assertions_total": 42,
+  "exit_code": 0,
+  "julia": "1.13.3",
+  "fga_version": "0.8.3",
+  "fga_resolution": "task-worktree source path",
+  "jfg_commit_at_start": "ccef7547a04f3692fe00d4fa369d2e07f6e6837c",
+  "rtc_head_at_start": "b0f5593108f86b65280899a3bd894bc1ebffb973",
+  "rtc_dirty_source_evidence": "receipt.json:file_sha256 and source-snapshots.json",
+  "observer_sha256": "dca76e78d929037521cd082fa72203c91b96bd9e6482df26d66ad186517ec406",
+  "startup_file": false,
+  "revise": false,
+  "not_claimed": "Later registered FGA 0.8.4 cohort and JFG merge 379a829; parent has separate evidence.",
+  "provenance": "Post-run annotation from captured source commit, locked manifest and run receipt; raw receipt unchanged."
+}

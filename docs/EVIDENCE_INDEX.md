@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## GPI2 correction supervision — 2026-10-27
+
+The [source and validation record](validation/gpi2-supervision-20261027/README.md)
+separates bounded frame observation, native protective admission, reset availability,
+SIMD inspection and indicative timing from live deployment and qualification.
+Live policy remains monitor-only; automatic intervention thresholds are unvalidated.
+
 ## Optical diagnostic orientation — 2026-10-27
 
 The [CPU regression and rollout record](validation/optical-orientation-20261027/README.md)

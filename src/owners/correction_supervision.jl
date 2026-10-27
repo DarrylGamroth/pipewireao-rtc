@@ -197,4 +197,7 @@ function rearm!(supervisor::Supervisor, owner_instance, sequence; now_ns)
     return true
 end
 
+include("correction_supervision_observer.jl")
+include("correction_supervision_client.jl")
+
 end

@@ -1,0 +1,49 @@
+{
+  "baseline": {
+    "max_ns": 11124381,
+    "mean_ns": 3.8326937485351562e6,
+    "p50_ns": 3715424,
+    "p95_ns": 5100339,
+    "p99_ns": 6691902,
+    "samples": 2048
+  },
+  "baseline_allocated_bytes": 0,
+  "bindings_sha256": "3ba668019951f8ef19322dafba68e89983985a90dd5a9ebc6059da2fe9a286d9",
+  "blas_threads": 1,
+  "cpu": "znver3",
+  "fga_source": "/home/dgamroth/.julia/packages/FilterGraphAlgorithms/u76hY/src/FilterGraphAlgorithms.jl",
+  "fga_version": "0.8.4",
+  "graph_sha256": "8da89b31efd652228cafb208b6f2fd13f07674e711406d54a1ab13ceccf17952",
+  "identical_output_bytes": true,
+  "julia": "1.13.3",
+  "monitored": {
+    "max_ns": 10904038,
+    "mean_ns": 3.767266353515625e6,
+    "p50_ns": 3647036,
+    "p95_ns": 5211808,
+    "p99_ns": 6679910,
+    "samples": 2048
+  },
+  "monitored_allocated_bytes": 0,
+  "observer_states": [
+    "Tripped",
+    "Tripped"
+  ],
+  "public_outputs": [
+    "woofer",
+    "tweeter",
+    "tiptilt",
+    "mean-pupil-intensity",
+    "reconstruction-pixels",
+    "woofer-correction-role",
+    "tweeter-correction-role",
+    "woofer-constraint-feedback",
+    "tweeter-constraint-feedback",
+    "woofer-current-offset",
+    "woofer-current-shape-offset",
+    "tweeter-current-offset",
+    "tweeter-current-shape-offset"
+  ],
+  "scope": "disconnected calibrated GPI2 CPU native callbacks; paired closed-loop workload; not fixed-rate or deadline qualification",
+  "threads": 3
+}
