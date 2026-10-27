@@ -312,3 +312,103 @@ Julia correctly rejected that import before tests ran. Removing the unnecessary
 import fixes the invocation without changing package code or dependencies.
 Read-only service inspection confirms the same live RTC/GUI PIDs and invocation
 IDs listed above; no running session was restarted.
+
+## Operational definitions and first live Hsm deployment
+
+This follow-up starts from RTC `3163805` in the dedicated
+`codex/loop-operations-20261026` worktree. Earlier no-deployment statements
+above describe the earlier increments, not this follow-up. The maintained
+[operation design](../../HEADLESS_RTC_DESIGN.md#hold-resume-flat-restoration-and-controller-reset)
+now separates implemented hold/resume from proposed reference restoration and
+controller-only reset. It documents missing scientific rebase/reference
+interfaces and prevents history from restoring in-flight effects or bypassing
+fresh admission. No new reset/flat command or hierarchical coordinator is added.
+
+The optional CPU `test/test_correction_operations.jl` selector passes 36
+assertions on registered FGA 0.8.1: nonzero controller correction and mathematical
+state remain held, resume matches the nonunit-pole/anti-windup recurrence,
+nonfinite held inputs still reject, reset retains configuration but clears
+feedback history, and downstream slew advances under held demand. Independent
+review identified that the first draft held zero mathematical state; the final
+selector establishes nonzero state before hold. Reset's caller-buffer check is
+array-level evidence, not a native actuator-publication claim. Existing
+integrator/allocation selectors pass another 138 assertions. The new selector
+also passes against installed registered RTC 0.2.16.
+
+The native RTC is rebuilt in an isolated copy of the existing SDK prefix. All
+12 native test programs pass. Missing SQLite development metadata was supplied
+by extracting the distribution's development package into task-local build
+storage. The first link attempts selected an unavailable library or the static
+archive; resolving the development symlink to the existing shared SQLite
+library repaired the build without source changes. Initial environment
+resolution also retained old exact RTC/FGPW manifest selections; targeted Pkg
+updates resolve the explicitly pinned releases without editing a Manifest.
+
+Live preparation reuses the existing verified calibration: all 36 FITS files,
+the concrete graph, parameter configuration, simulator configuration,
+instrument publication, calibration receipt and GUI definition are byte-equal
+to the previous live application. The calibration receipt remains
+`7506ef36e89d658c4636fd79c3e75e1e3deef27bd675b13500d041cc0df0a86a`.
+Only RTC/FGPW and Hsm's required dependency additions change in the initial
+registered environment. Classic remains untouched.
+
+The previous GPI2 unit `626bfcad2d04` reproduced its recorded native shutdown
+failure during supervised stop. The service retained failure, then confirmed
+cleanup and empty owned processes/cgroups; this is not a clean Quit pass.
+The first replacement, RTC 0.2.14 unit `09d81ac5861d` / invocation
+`3e23849fb8a745eeb1944fdc575b40cf`, failed admission after scientific preparation.
+The native run/reset parser rejected newly published correction-status fields
+with `Unrecognized reserved node control field`. The later bootstrap-revocation
+error is a consequence of that session fault. Failed startup cleanup is
+confirmed and its application/session are retained separately.
+
+A new real `owner.node_operation` regression fails before the fix and passes
+afterward. Unlike the existing session-hook mock, it exercises mixed scientific,
+run and reset Props records through the production parser. Known correction
+status, including Unknown/faulted status, does not prevent lifecycle controls;
+unknown namespaces and unknown correction fields still reject before writes.
+The test cancels after submission, so acknowledgement completion remains a live
+gate. Exact run/reset record validation and token/result matching are unchanged.
+Independent source review found no blocking issue in that narrow allowlist.
+All 12 native programs pass again after the fix.
+
+The fix is `10d969f`, released from the stable loop-control source cohort as
+RTC 0.2.16, tag commit `425be43`, registered tree
+`1e8e232f2483ae3eec75a0a2e53a8c2c767cc4ad`, registry commit `a355532`.
+Main advanced concurrently with separate calibration work; merge `e42adb3`
+preserves that work and integrates this fix. The deployment uses the stable
+tagged cohort, not those unrelated calibration changes. Local instrument
+commit `6a02142` pins Classic/GPI2 to 0.2.16; both Project files pass Taplo.
+An incorrect `v0.2.15` tag was published at concurrent main `62864e3` after an
+unchecked fast-forward failure. It was not registered and is not a package
+release; published history was preserved and the corrected release uses 0.2.16.
+
+The corrected registered application is running as unit `a2fc621d05b7`,
+invocation `c77c2507674748b9be622f8d1b0db31b`, native RTC PID 1247025.
+The CUDA simulator is PID 1246622 and the ordinary CPU controller PID 1246620.
+Before Start, a correction write is refused with `Correction control requires
+a running session`; complete property snapshots before/after are equal.
+After Start, Open and Close both report active adoption, requested/active
+generations 1/1 and 2/2, and exact Open/Closed status, matching desired/applied
+Booleans and an empty Hsm fault. Correction is left closed.
+
+Fifteen native streams each deliver 36–39 distinct sequences, including the
+242 × 240 UInt16 camera, three demanded and three Applied products, and DM
+role/constraint/offset/shape products. Demand-to-Applied Float32 scaling and
+same-sequence header comparisons are exact for all three correctors. All owned
+temporary observers close. The unchanged GUI binary/layout is relaunched as
+PID 1261394, invocation `87cac261d7f4405c8f13c6dd03a71ee8`. Cold startup takes
+about twelve minutes on this host; this is not a latency qualification.
+Final independent readback confirms Running/Closed, an empty correction fault,
+the registered 0.2.16 tree, GUI clients on the exact new remote and absent
+software-renderer overrides. Classic retains PID 256761 / invocation
+`df8f66d196d54d4c869aa64e6c7f4562`. The installed native policy files match the
+registered package byte-for-byte. A first receipt-only invocation accidentally
+shadowed `Base.values`; renaming that local binding repaired the read-only
+verification script without changing a running process or sending another
+actuator update.
+
+Raw logs, source drivers and byte comparisons are retained under
+`live-operational/`. These are software and simulated control checks, not
+physical-device, settling or deadline qualification. The native shutdown
+failure recorded above remains unresolved by this scope.

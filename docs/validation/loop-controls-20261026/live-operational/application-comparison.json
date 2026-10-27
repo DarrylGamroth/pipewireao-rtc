@@ -1,0 +1,8 @@
+{
+  "rtc/graph.conf": true,
+  "rtc/parameters.conf": true,
+  "simulation.conf": true,
+  "instrument.json": true,
+  "calibration/result.yaml": true,
+  "gui/operator-views.yaml": true
+}
