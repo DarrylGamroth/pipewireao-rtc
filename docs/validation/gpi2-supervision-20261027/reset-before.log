@@ -1,0 +1,31 @@
+ERROR: LoadError: Some tests did not pass: 2 passed, 2 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:28
+
+Reset remains unavailable even after old sequence high-water: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:32
+  Expression: (frame(1001, 1100)).state === :Unknown
+   Evaluated: Clear === Unknown
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:29
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:32 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+Reset remains unavailable even after old sequence high-water: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:33
+  Expression: CS.request_rearm!(observer, 7) == 0
+   Evaluated: 0x0000000000000001 == 0
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:29
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/reset_regression.jl:33 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+Test Summary:                                                | Pass  Fail  Total  Time
+Reset remains unavailable even after old sequence high-water |    2     2      4  1.7s
+RNG of the outermost testset: Random.Xoshiro(0x8f757d6e7204be61, 0xe0b523c0b223f1f0, 0x8dbaae5d96396985, 0xd545257e586c8155, 0xcb1e56f8e2872d1d)

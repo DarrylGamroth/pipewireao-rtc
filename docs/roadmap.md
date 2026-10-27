@@ -12,6 +12,33 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 operational validation and VDM controls — 2026-10-27
+
+Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
+Existing live GPI2 uses RTC 0.2.22; source main has the separately validated
+0.2.24 calibration/readiness changes. Preserve the current calibration, gains,
+stroke limits and CUDA plant while qualifying changes in isolated applications.
+The operator selected monitor-only supervision for the live deployment;
+automatic intervention is tested only in an isolated simulation until thresholds
+have application validation.
+
+1. Recheck scoped recovery and explicit closure, including nonzero retained
+   history and proof that obsolete correction cannot return. Check both the
+   unchanged live incarnation through the GUI and isolated numerical/native
+   selectors; retain failed or unknown outcomes without automatic retry.
+2. Verify corrector constraint feedback and declared hidden-mode behavior.
+   Bind supervision to successful scientific-frame evidence, never inferred
+   continuity from lossy display observation. Preserve RTC-DEV-032–036, bounded
+   one-shot recovery, explicit rearm and explicit closure. Validate dropped,
+   stale, failed and replaced-owner observations and isolated automatic action.
+3. Add generic owner-described VDM inspection/control before allocation only
+   after its coordinate order, calibrated projection and recovery participation
+   are explicit. Dense woofer modal coordinates must not be displayed as a
+   physical actuator grid. Existing per-mirror controls remain distinct.
+
+Record exact dependency/configuration identities and measured limitations in a
+dated evidence record, then merge only verified changes and clean task worktrees.
+
 ### Native initial calibration integration — 2026-10-27
 
 Work starts from RTC `864281b` and instrument `439181b`. Implement the existing

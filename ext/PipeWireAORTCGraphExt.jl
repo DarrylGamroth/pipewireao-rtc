@@ -11,6 +11,7 @@ const Owner = PipeWireAORTC.GraphOwner
 const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 
 include("analysis.jl")
+include("correction_supervision.jl")
 
 function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(declaration::NamedTuple,
         selection::AbstractDict, count::Int)
@@ -119,8 +120,8 @@ function run_prepared(options, runtime, graph)
     observer = isempty(correction_properties) ? nothing :
         PipeWireAORTC.CorrectionLoops.Observer(correction_properties, runtime.transport.endpoint.instance;
             timeout_ms=options.correction_timeout_ms)
-    observation = isnothing(observer) ? (;) : (; property_observer=observer,
-        property_info=PipeWireAORTC.CorrectionLoops.property_info(observer), property_getter=observer)
+    supervision = prepare_supervision(options, runtime.transport.endpoint.instance, graph)
+    observation = correction_observation(observer, supervision)
     recovery = isempty(options.recovery_nodes) ? (;) :
         (; recovery=(controller=Symbol(first(split(only(correction_properties), ':'))),
             participants=Tuple(Symbol.(options.recovery_nodes)),

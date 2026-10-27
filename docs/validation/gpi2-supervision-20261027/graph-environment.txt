@@ -1,0 +1,23 @@
+Julia Version 1.13.3
+Commit 67ac47b9cd8 (2026-10-25 15:28 UTC)
+Build Info:
+  Official https://julialang.org release
+Platform Info:
+  OS: Linux (x86_64-linux-gnu)
+  CPU: 16 × AMD Ryzen 7 6800H with Radeon Graphics
+  WORD_SIZE: 64
+  LLVM: libLLVM-20.1.8 (ORCJIT, znver3)
+  GC: Built with stock GC
+Threads: 1 default, 0 interactive, 1 GC (on 16 virtual cores)
+Environment:
+  JULIA_GLFW_PLATFORM = wayland
+active_project=/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/environment/Project.toml
+JULIA_CPU_TARGET=<unset>
+JLOptions=JLOptions(quiet = 0, banner = -1, julia_bindir = "/home/dgamroth/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/bin", julia_bin = "/home/dgamroth/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/bin/julia", commands = Pair{Char, String}[], image_file = "/home/dgamroth/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/lib/julia/sys.so", cpu_target = "native", nthreadpools = 1, nthreads = 1, nmarkthreads = 0, nsweepthreads = 0, nthreads_per_pool = Ptr{Int16}(0x000000003afbb190), nprocs = 0, machine_file = "", project = "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/environment", program_file = "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/graph-codegen/inspect_graph.jl", isinteractive = 0, color = 0, historyfile = 1, startupfile = 2, compile_enabled = 1, code_coverage = 0, malloc_log = 0, tracked_path = "", opt_level = 2, opt_level_min = 0, debug_level = 1, check_bounds = 0, depwarn = 0, warn_overwrite = 0, can_inline = 1, polly = 1, trace_compile = "", trace_dispatch = "", fast_math = 0, worker = 0, cookie = "", handle_signals = 1, use_experimental_features = 0, use_sysimage_native_code = 1, use_compiled_modules = 1, use_pkgimages = 1, bindto = "", outputbc = "", outputunoptbc = "", outputo = "", outputasm = "", outputji = "", output_code_coverage = "", incremental = 0, image_file_specified = 0, warn_scope = 1, image_codegen = 0, rr_detach = 0, strip_metadata = 0, strip_ir = 0, permalloc_pkgimg = 0, heap_size_hint = 0x0000000000000000, hard_heap_limit = 0x0000000000000000, heap_target_increment = 0x0000000000000000, trace_compile_timing = 0, trim = 0, trace_eval = 0, task_metrics = 0, timeout_for_safepoint_straggler_s = -1, gc_sweep_always_full = 0, compress_sysimage = 0, alert_on_critical_error = 0)
+BLAS=LBTConfig([ILP64] libopenblas64_.so) threads=1
+affinity=pid 2271288's current affinity list: 4
+FilterGraphAlgorithms=/home/dgamroth/.julia/packages/FilterGraphAlgorithms/u76hY/src/FilterGraphAlgorithms.jl version=0.8.4
+FilterGraphPipeWire=/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/FilterGraphPipeWire.jl version=0.1.10
+JuliaFilterGraph=/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/JuliaFilterGraph/src/JuliaFilterGraph.jl version=0.4.2
+PipeWireAO=/home/dgamroth/.julia/packages/PipeWireAO/PRL3A/src/PipeWireAO.jl version=0.6.19
+PipeWireAORTC=/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/PipeWireAORTC.jl version=0.2.24

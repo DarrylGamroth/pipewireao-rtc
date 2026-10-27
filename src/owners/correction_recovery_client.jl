@@ -247,10 +247,15 @@ protective_open!(connection::NativeSessionClient.Connection, graph::AbstractStri
     protective_open!(NativeRecoveryTransport(connection), graph; kwargs...)
 function protective_open!(transport::RecoveryTransport, graph::AbstractString;
         deadline::Float64, timeout_ms::Union{Nothing,Integer}=nothing,
-        reason::Symbol=:operator, check=NativeControlClient.NO_CHECK)
+        reason::Symbol=:operator, check=NativeControlClient.NO_CHECK,
+        expected_owner::Union{Nothing,Int64}=nothing,
+        admission_deadline::Float64=deadline)
     channel = RecoveryChannel(transport, transport_instance(transport), transport_initial_token(transport))
-    running!(channel; deadline, check)
-    initial = native_snapshot!(channel, String(graph); deadline, check)
+    admission_deadline = min(deadline, admission_deadline)
+    running!(channel; deadline=admission_deadline, check)
+    initial = native_snapshot!(channel, String(graph); deadline=admission_deadline, check)
+    expected_owner === nothing || expected_owner == initial.owner_instance ||
+        throw(NativeControlClient.UnknownOutcome("protective recovery owner replaced before admission"))
     initial.recovery_state in (:idle, :released) && !initial.inhibited &&
         initial.requested_generation == initial.active_generation ||
         throw(ArgumentError("another recovery transaction is pending"))
@@ -265,16 +270,17 @@ function protective_open!(transport::RecoveryTransport, graph::AbstractString;
         qualify!(coordinator, LoopObservation(initial.owner_instance, UInt64(0), initial.serial,
             initial.loop_requested, initial.loop_active, initial.closed))
         effect = request_protection!(coordinator, initial.owner_instance, UInt64(operation.request_token); reason)
-        return restore_reference!(operation, effect; deadline, check)
+        return restore_reference!(operation, effect; deadline, check, admission_deadline)
     catch error
         throw(recovery_error(operation, error))
     end
 end
 
-function restore_reference!(operation::Operation, effect::StageRecovery; deadline::Float64, check)
+function restore_reference!(operation::Operation, effect::StageRecovery;
+        deadline::Float64, check, admission_deadline::Float64=deadline)
     coordinator = operation.coordinator
     reply = write_property!(operation, RECOVERY_PREFIX * "request-token",
-        RecoveryRunner.RunnerScalar(:long, operation.request_token); deadline, check)
+        RecoveryRunner.RunnerScalar(:long, operation.request_token); deadline=admission_deadline, check)
     virtual_generation = generation_for(reply, RECOVERY_NODE)
     virtual_generation > operation.virtual_generation || throw(ArgumentError("recovery transaction did not advance"))
     bound = false

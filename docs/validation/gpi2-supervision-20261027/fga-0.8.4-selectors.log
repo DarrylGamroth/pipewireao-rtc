@@ -1,0 +1,76 @@
+Test Summary:                            | Pass  Total  Time
+biquad declaration and identity defaults |   13     13  1.4s
+Test Summary:                                                       | Pass  Total  Time
+biquad preparation copies coefficients and requires stable sections |   59     59  0.7s
+Test Summary:                  | Pass  Total  Time
+biquad mode-region preparation |   15     15  1.5s
+Test Summary:                                              | Pass  Total  Time
+shared and per-mode cascades match direct form I histories | 2052   2052  1.9s
+Test Summary:                                    | Pass  Total  Time
+high-Q section impulse and steady-state response |    6      6  0.3s
+Test Summary:                                                        | Pass  Total  Time
+late-section overflow preserves previously committed cascade history |    5      5  0.4s
+Test Summary:                                                | Pass  Total  Time
+staging, discard, reset, views, and overlapping input/output |   14     14  0.4s
+Test Summary:                                                          | Pass  Total  Time
+nonfinite input, output, and internal state reject without publication |   18     18  0.0s
+Test Summary:                                                        | Pass  Total  Time
+coefficient adoption resets history only after successful validation |    8      8  0.0s
+Test Summary:                                            | Pass  Total  Time
+warmed checked processing and lifecycle allocate no heap |    6      6  0.1s
+Test Summary:                                       | Pass  Total  Time
+mode blocks preserve scalar DF2T bits and lifecycle | 7296   7296  0.6s
+Test Summary:                                                        | Pass  Total  Time
+block tails reject intermediate overflow and support strided overlap |  128    128  0.9s
+Test Summary:                                       | Pass  Total  Time
+dense SIMD preconditions are checked before staging |    6      6  0.0s
+Test Summary:                                     | Pass  Total  Time
+raw pyramid pupil flux declaration and exact sums |    8      8  0.4s
+Test Summary:                                         | Pass  Total  Time
+raw pyramid pupil flux handles strided detector views |    2      2  0.3s
+Test Summary:                                         | Pass  Total  Time
+raw pyramid pupil flux exact traversal and allocation |  164    164  1.3s
+Test Summary:                                                     | Pass  Total  Time
+raw pyramid pupil flux rejects unsafe geometry during preparation |    6      6  0.1s
+Test Summary:                     | Pass  Total  Time
+Cold feedback boundary validation |   20     20  0.5s
+Test Summary:                                               | Pass  Total  Time
+Actual source sequence and owner time determine persistence |    7      7  0.3s
+Test Summary:                                                      | Pass  Total  Time
+Missing, corrupt, repeated and discontinuous data break continuity |   24     24  0.2s
+Test Summary:                                    | Pass  Total  Time
+Bounded atomic snapshot and read-only properties |    4      4  0.5s
+Test Summary:                   | Pass  Total  Time
+Warm callback allocation budget |    2      2  0.0s
+Test Summary:                                             | Pass  Total  Time
+Reset cannot reinterpret old headers as a new acquisition |   13     13  0.1s
+Test Summary:                                             | Pass  Total  Time
+Explicit rearm intent is frame-owned, fenced and one-shot |   16     16  0.0s
+Test Summary:                                                   | Pass  Total  Time
+Multiple-output rearm refuses atomically on any uncleared latch |    6      6  0.3s
+Test Summary:                                    | Pass  Total  Time
+Successful and rearm callback allocation budgets |    2      2  0.0s
+Test Summary:                                         | Pass  Total  Time
+Concurrent snapshots never expose mixed frame records |  161    161  0.0s
+Test Summary:                                                        | Pass  Total  Time
+Finite/count reductions preserve IEEE comparisons and arbitrary axes |   72     72  0.1s
+Test Summary:                                            | Pass  Total  Time
+Concrete presence records preserve absent-header fencing |    8      8  0.1s
+Test Summary:                                                      | Pass  Total  Time
+Properties publish immutable freshness limits even without samples |    2      2  0.1s
+Test Summary:                                     | Pass  Total  Time
+Monitor-only supervision never changes correction |    9      9  3.7s
+Test Summary:                                                          | Pass  Total  Time
+Cached once-fresh status cannot authorize stale or unavailable effects |   18     18  0.1s
+Test Summary:                                                        | Pass  Total  Time
+All declared publications are validated before any protective effect |   72     72  0.0s
+Test Summary:                                                         | Pass  Total  Time
+UInt64 source identities remain lossless and future times are refused |   10     10  0.3s
+Test Summary:                                                         | Pass  Total  Time
+One restore trip enters atomic recovery Holding and never auto-closes |   18     18  0.0s
+Test Summary:                                                       | Pass  Total  Time
+Trigger expiry bounds preflight but not accepted reference adoption |    9      9  0.0s
+Test Summary:                                                  | Pass  Total  Time
+Owner fences reject replacement before the first native effect |    7      7  1.1s
+Test Summary:                                                   | Pass  Total  Time
+Uncertain recovery effects never retry or release automatically |   28     28  0.0s

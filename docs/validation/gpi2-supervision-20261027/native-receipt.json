@@ -1,0 +1,1686 @@
+{
+  "bootstrap_lifecycle_at_holding": "Connected",
+  "bootstrap_owner_instance": 505,
+  "cleanup_order": [
+    "owned RTC termination with endpoints retained",
+    "graph quit/join",
+    "producer/acquisition join",
+    "native endpoints",
+    "private core"
+  ],
+  "client_owner_instance": 505,
+  "client_state": "Holding",
+  "core_pid": 2265480,
+  "expired_deadline_no_effect": true,
+  "file_sha256": {
+    "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/native-supervision/environment/Manifest.toml": "709996451e3df905169a63fe9aedd1bbe62a80c00bc73f8e5081b80c3f6aba91",
+    "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/native-supervision/environment/Project.toml": "a76aa51008ae78a64ed9df72074a06ca86ce31ac584b62f807c74d94e2c92016",
+    "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/native-supervision/graph_definition.jl": "b8844636756352a417673eea8dec5975230726a04499a4b6758d4d14c3161340",
+    "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/native-supervision/harness.jl": "b410c66b6b279cb077d69a48ebfe5d8a0300e7f242d77e13b848252fc92755a0",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/modules/libwireplumber-module-ao-control-endpoint.so": "6204834284114abce5fc48dbe4205c375e0e01e4690448effb1cafef83f30b44",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/modules/libwireplumber-module-ao-lua.so": "2ebabe65a74c1f7745bfe0215471435bae9a864f06534f8853104e142c6ec86b",
+    "/home/dgamroth/.cache/pipewireao/protective-recovery-20261027/native-build/pipewireao-rtc": "75826d3af54014aca91087a5be07fdabbd64c725cab7ed3d77d4f732b9ffd102",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/frame_observer.jl": "117dde9b8492cfe3323285e3a4d3b105bd412532b9e0a6eff1813aa42a8f442a",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/graph_node.jl": "13b791d971a564519739906522209d4b937fcd1ec45bb13a40412770449c7464",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/recovery.jl": "363e4c479edf09c0f439c0fbf4e700631635a791041fb48390792475a546e457",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/ext/correction_supervision.jl": "c6c56bf362e5c39440b7bc43032d553e0153d3dad03f476e8d32c87f53f3cb75",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/native/scripts/ao/session.lua": "9ab93132e2129f2f23588682f90f185389656851976ae05f52a14a4f7829ca61",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/native/scripts/lib/ao-correction.lua": "bf57e16e435a6df7dd445f74363a176d1e7363dfa7266e9010f6796a2da29147",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_recovery.jl": "13925d36083cdc7d1b7ab6476efaeef5326c5b0a54e7efb0f417a0665ade7dc6",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_recovery_client.jl": "1d434070b525d553782dc8627a3c0e5de6d3e944ecb40279bdd4c6a8cc191b85",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision.jl": "88db58b2ee29ebdd24d3b9862fcd5c5ca9bb9f7647b3bec9bc06331b253a5429",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision_client.jl": "2f8b2f5c25dfede0afffe1adf273edced33b0f6277269f8374f8b32e1f7a3ab4",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision_observer.jl": "dca76e78d929037521cd082fa72203c91b96bd9e6482df26d66ad186517ec406"
+  },
+  "final_coordinator_state": "Closed",
+  "gpu_work": false,
+  "holding_coordinator_state": "Holding",
+  "holding_sequence": 18,
+  "jfg_commit": "ccef7547a04f3692fe00d4fa369d2e07f6e6837c",
+  "jfg_source": "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027",
+  "jfg_status": "",
+  "julia": "1.13.3",
+  "last_source_sequence": 46,
+  "live_services_changed": false,
+  "native_after_post_resume_polls": {
+    "authority": "rtc_session",
+    "error": null,
+    "id": "43",
+    "ok": true,
+    "owner_pid": 2266347,
+    "result": {
+      "graph": "recovery-graph",
+      "outcome": "observed",
+      "properties": {
+        "command:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:active-generation": {
+          "type": "long",
+          "value": 2
+        },
+        "correction:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:anti-windup-gain": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:closed": {
+          "type": "bool",
+          "value": true
+        },
+        "correction:gain": {
+          "bits": 1065353216,
+          "type": "float"
+        },
+        "correction:hidden-mode-gain": {
+          "bits": 0,
+          "type": "float"
+        },
+        "correction:pole": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:requested-generation": {
+          "type": "long",
+          "value": 2
+        },
+        "correction:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:active-generation": {
+          "type": "long",
+          "value": 2
+        },
+        "pipewireao-recovery:close-guarded": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:closure-inhibited": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:controller": {
+          "type": "string",
+          "value": "correction"
+        },
+        "pipewireao-recovery:observation-monotonic-nanoseconds": {
+          "type": "long",
+          "value": 513245446358061
+        },
+        "pipewireao-recovery:observation-sequence": {
+          "type": "long",
+          "value": 38
+        },
+        "pipewireao-recovery:recovery-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:reference-reached": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:reference-timeout-ms": {
+          "type": "int",
+          "value": 60000
+        },
+        "pipewireao-recovery:release-token": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:request-token": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:requested-generation": {
+          "type": "long",
+          "value": 2
+        },
+        "pipewireao-recovery:state": {
+          "type": "string",
+          "value": "released"
+        },
+        "pipewireao-recovery:version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-control.correction:closed.fault": {
+          "type": "string",
+          "value": ""
+        },
+        "pipewireao.correction-control.correction:closed.requested": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-control.correction:closed.state": {
+          "type": "string",
+          "value": "Closed"
+        },
+        "pipewireao.correction-control.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-supervision.constraint-feedback.action": {
+          "type": "string",
+          "value": "restore_reference"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fraction": {
+          "bits": 0,
+          "type": "double"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fresh": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-supervision.constraint-feedback.max-gap-ns": {
+          "type": "string",
+          "value": "30000000000"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.observed-ns": {
+          "type": "string",
+          "value": "513245611763179"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-ns": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-sequence": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.reason": {
+          "type": "string",
+          "value": "already_tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.sequence": {
+          "type": "string",
+          "value": "46"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.state": {
+          "type": "string",
+          "value": "Tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-ns": {
+          "type": "string",
+          "value": "513206965912294"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-sequence": {
+          "type": "string",
+          "value": "2"
+        },
+        "pipewireao.correction-supervision.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-supervision.rearm-acknowledged-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-request-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-result": {
+          "type": "string",
+          "value": "none"
+        },
+        "pipewireao.correction-supervision.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.frame-observer.state": {
+          "type": "string",
+          "value": "active"
+        },
+        "pipewireao.reset-control.completed-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao.reset-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.reset-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.run-control.actual-state": {
+          "type": "string",
+          "value": "running"
+        },
+        "pipewireao.run-control.completed-token": {
+          "type": "long",
+          "value": 6
+        },
+        "pipewireao.run-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.run-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "projection:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        }
+      }
+    },
+    "session_id": "c29a1e2f-c443-4837-abbb-7c730caf2919",
+    "state": "Running",
+    "version": 1
+  },
+  "native_holding": {
+    "authority": "rtc_session",
+    "error": null,
+    "id": "23",
+    "ok": true,
+    "owner_pid": 2266347,
+    "result": {
+      "graph": "recovery-graph",
+      "outcome": "observed",
+      "properties": {
+        "command:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:active-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "correction:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:anti-windup-gain": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:closed": {
+          "type": "bool",
+          "value": false
+        },
+        "correction:gain": {
+          "bits": 1065353216,
+          "type": "float"
+        },
+        "correction:hidden-mode-gain": {
+          "bits": 0,
+          "type": "float"
+        },
+        "correction:pole": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:requested-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "correction:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:active-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:close-guarded": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:closure-inhibited": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao-recovery:controller": {
+          "type": "string",
+          "value": "correction"
+        },
+        "pipewireao-recovery:observation-monotonic-nanoseconds": {
+          "type": "long",
+          "value": 513244623141047
+        },
+        "pipewireao-recovery:observation-sequence": {
+          "type": "long",
+          "value": 20
+        },
+        "pipewireao-recovery:recovery-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:reference-reached": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao-recovery:reference-timeout-ms": {
+          "type": "int",
+          "value": 60000
+        },
+        "pipewireao-recovery:release-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:request-token": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:requested-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:state": {
+          "type": "string",
+          "value": "applied"
+        },
+        "pipewireao-recovery:version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-control.correction:closed.fault": {
+          "type": "string",
+          "value": ""
+        },
+        "pipewireao.correction-control.correction:closed.requested": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao.correction-control.correction:closed.state": {
+          "type": "string",
+          "value": "Open"
+        },
+        "pipewireao.correction-control.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-supervision.constraint-feedback.action": {
+          "type": "string",
+          "value": "restore_reference"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fraction": {
+          "bits": 0,
+          "type": "double"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fresh": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-supervision.constraint-feedback.max-gap-ns": {
+          "type": "string",
+          "value": "30000000000"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.observed-ns": {
+          "type": "string",
+          "value": "513244623141598"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-ns": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-sequence": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.reason": {
+          "type": "string",
+          "value": "already_tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.sequence": {
+          "type": "string",
+          "value": "20"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.state": {
+          "type": "string",
+          "value": "Tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-ns": {
+          "type": "string",
+          "value": "513206965912294"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-sequence": {
+          "type": "string",
+          "value": "2"
+        },
+        "pipewireao.correction-supervision.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-supervision.rearm-acknowledged-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-request-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-result": {
+          "type": "string",
+          "value": "none"
+        },
+        "pipewireao.correction-supervision.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.frame-observer.state": {
+          "type": "string",
+          "value": "active"
+        },
+        "pipewireao.reset-control.completed-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao.reset-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.reset-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.run-control.actual-state": {
+          "type": "string",
+          "value": "running"
+        },
+        "pipewireao.run-control.completed-token": {
+          "type": "long",
+          "value": 6
+        },
+        "pipewireao.run-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.run-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "projection:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        }
+      }
+    },
+    "session_id": "c29a1e2f-c443-4837-abbb-7c730caf2919",
+    "state": "Running",
+    "version": 1
+  },
+  "native_still_holding": {
+    "authority": "rtc_session",
+    "error": null,
+    "id": "30",
+    "ok": true,
+    "owner_pid": 2266347,
+    "result": {
+      "graph": "recovery-graph",
+      "outcome": "observed",
+      "properties": {
+        "command:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:active-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "correction:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:anti-windup-gain": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:closed": {
+          "type": "bool",
+          "value": false
+        },
+        "correction:gain": {
+          "bits": 1065353216,
+          "type": "float"
+        },
+        "correction:hidden-mode-gain": {
+          "bits": 0,
+          "type": "float"
+        },
+        "correction:pole": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:requested-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "correction:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:active-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:close-guarded": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:closure-inhibited": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao-recovery:controller": {
+          "type": "string",
+          "value": "correction"
+        },
+        "pipewireao-recovery:observation-monotonic-nanoseconds": {
+          "type": "long",
+          "value": 513244623141047
+        },
+        "pipewireao-recovery:observation-sequence": {
+          "type": "long",
+          "value": 20
+        },
+        "pipewireao-recovery:recovery-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:reference-reached": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao-recovery:reference-timeout-ms": {
+          "type": "int",
+          "value": 60000
+        },
+        "pipewireao-recovery:release-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:request-token": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:requested-generation": {
+          "type": "long",
+          "value": 1
+        },
+        "pipewireao-recovery:state": {
+          "type": "string",
+          "value": "applied"
+        },
+        "pipewireao-recovery:version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-control.correction:closed.fault": {
+          "type": "string",
+          "value": ""
+        },
+        "pipewireao.correction-control.correction:closed.requested": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao.correction-control.correction:closed.state": {
+          "type": "string",
+          "value": "Open"
+        },
+        "pipewireao.correction-control.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-supervision.constraint-feedback.action": {
+          "type": "string",
+          "value": "restore_reference"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fraction": {
+          "bits": 0,
+          "type": "double"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fresh": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-supervision.constraint-feedback.max-gap-ns": {
+          "type": "string",
+          "value": "30000000000"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.observed-ns": {
+          "type": "string",
+          "value": "513244623141598"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-ns": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-sequence": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.reason": {
+          "type": "string",
+          "value": "already_tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.sequence": {
+          "type": "string",
+          "value": "20"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.state": {
+          "type": "string",
+          "value": "Tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-ns": {
+          "type": "string",
+          "value": "513206965912294"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-sequence": {
+          "type": "string",
+          "value": "2"
+        },
+        "pipewireao.correction-supervision.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-supervision.rearm-acknowledged-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-request-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-result": {
+          "type": "string",
+          "value": "none"
+        },
+        "pipewireao.correction-supervision.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.frame-observer.state": {
+          "type": "string",
+          "value": "active"
+        },
+        "pipewireao.reset-control.completed-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao.reset-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.reset-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.run-control.actual-state": {
+          "type": "string",
+          "value": "running"
+        },
+        "pipewireao.run-control.completed-token": {
+          "type": "long",
+          "value": 6
+        },
+        "pipewireao.run-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.run-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "projection:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        }
+      }
+    },
+    "session_id": "c29a1e2f-c443-4837-abbb-7c730caf2919",
+    "state": "Running",
+    "version": 1
+  },
+  "one_shot_poll_count": 3,
+  "ordinary_close_blocked": true,
+  "owned_core_exited": true,
+  "owned_pid_absent_after_cleanup": {
+    "2265480": true,
+    "2266347": true
+  },
+  "owned_rtc_exited": true,
+  "passed": true,
+  "post_resume_poll_count": 2,
+  "recovery_generation": 1,
+  "resume_sequence": 39,
+  "rtc_commit": "b0f5593108f86b65280899a3bd894bc1ebffb973",
+  "rtc_pid": 2266347,
+  "rtc_source": "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027",
+  "rtc_status": " M docs/roadmap.md\n M ext/PipeWireAORTCGraphExt.jl\n M src/owners/correction_recovery_client.jl\n M src/owners/correction_supervision.jl\n M src/owners/correction_supervision_observer.jl\n M src/owners/graph_owner.jl\n M test/runtests.jl\n M test/test_correction_supervision_observer.jl\n?? ext/correction_supervision.jl\n?? src/owners/correction_supervision_client.jl\n?? src/owners/graph_supervision.jl\n?? test/test_graph_supervision.jl",
+  "runtime": "/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/native003/runtime",
+  "samples": [
+    {
+      "constraint_feedback": -0.3,
+      "demanded": 0.5,
+      "sequence": 1
+    },
+    {
+      "constraint_feedback": 1.6,
+      "demanded": 0.6,
+      "sequence": 2
+    },
+    {
+      "constraint_feedback": 3.7740295,
+      "demanded": 0.70000005,
+      "sequence": 3
+    },
+    {
+      "constraint_feedback": 4.063129,
+      "demanded": 0.8,
+      "sequence": 4
+    },
+    {
+      "constraint_feedback": 2.3175716,
+      "demanded": 0.8,
+      "sequence": 5
+    },
+    {
+      "constraint_feedback": 0.3061232,
+      "demanded": 0.8,
+      "sequence": 6
+    },
+    {
+      "constraint_feedback": 0.02560997,
+      "demanded": 0.8,
+      "sequence": 7
+    },
+    {
+      "constraint_feedback": 1.7193227,
+      "demanded": 0.8,
+      "sequence": 8
+    },
+    {
+      "constraint_feedback": 3.6710289,
+      "demanded": 0.8,
+      "sequence": 9
+    },
+    {
+      "constraint_feedback": 3.9432108,
+      "demanded": 0.8,
+      "sequence": 10
+    },
+    {
+      "constraint_feedback": 2.2998035,
+      "demanded": 0.8,
+      "sequence": 11
+    },
+    {
+      "constraint_feedback": -1.4939356,
+      "demanded": 0.7,
+      "sequence": 12
+    },
+    {
+      "constraint_feedback": -3.6380336,
+      "demanded": 0.59999996,
+      "sequence": 13
+    },
+    {
+      "constraint_feedback": -0.29999995,
+      "demanded": 0.49999997,
+      "sequence": 14
+    },
+    {
+      "constraint_feedback": -0.19999997,
+      "demanded": 0.39999998,
+      "sequence": 15
+    },
+    {
+      "constraint_feedback": -0.09999998,
+      "demanded": 0.29999998,
+      "sequence": 16
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 17
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 18
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 19
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 20
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 21
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 22
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 23
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 24
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 25
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 26
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 27
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 28
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 29
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 30
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 31
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 32
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 33
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 34
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 35
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 36
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 37
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 38
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 39
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 40
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 41
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 42
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 43
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 44
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 45
+    },
+    {
+      "constraint_feedback": 0.0,
+      "demanded": 0.2,
+      "sequence": 46
+    }
+  ],
+  "saturated_sequence": 8,
+  "source_is_synthetic": true,
+  "stale_observation": {
+    "observed": [
+      {
+        "action": "restore_reference",
+        "fresh": false,
+        "max_gap_ns": 30000000000,
+        "observed_ns": 513207216599196,
+        "output": "constraint-feedback",
+        "sequence": 9,
+        "state": "Tripped",
+        "trip_ns": 513206965912294,
+        "trip_sequence": 2
+      }
+    ],
+    "owner_instance": 505,
+    "state": "Unknown"
+  },
+  "trip_before_any_action": {
+    "authority": "rtc_session",
+    "error": null,
+    "id": "6",
+    "ok": true,
+    "owner_pid": 2266347,
+    "result": {
+      "graph": "recovery-graph",
+      "outcome": "observed",
+      "properties": {
+        "command:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "command:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:anti-windup-gain": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:closed": {
+          "type": "bool",
+          "value": true
+        },
+        "correction:gain": {
+          "bits": 1065353216,
+          "type": "float"
+        },
+        "correction:hidden-mode-gain": {
+          "bits": 0,
+          "type": "float"
+        },
+        "correction:pole": {
+          "bits": 1065185444,
+          "type": "float"
+        },
+        "correction:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "correction:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-to-controller:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "feedback-vdm:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "flat:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "physical:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:close-guarded": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:closure-inhibited": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:controller": {
+          "type": "string",
+          "value": "correction"
+        },
+        "pipewireao-recovery:observation-monotonic-nanoseconds": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:observation-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:recovery-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:reference-reached": {
+          "type": "bool",
+          "value": false
+        },
+        "pipewireao-recovery:reference-timeout-ms": {
+          "type": "int",
+          "value": 60000
+        },
+        "pipewireao-recovery:release-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:request-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao-recovery:state": {
+          "type": "string",
+          "value": "idle"
+        },
+        "pipewireao-recovery:version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-control.correction:closed.fault": {
+          "type": "string",
+          "value": ""
+        },
+        "pipewireao.correction-control.correction:closed.requested": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-control.correction:closed.state": {
+          "type": "string",
+          "value": "Closed"
+        },
+        "pipewireao.correction-control.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.correction-supervision.constraint-feedback.action": {
+          "type": "string",
+          "value": "restore_reference"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fraction": {
+          "bits": 4607182418800017408,
+          "type": "double"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.fresh": {
+          "type": "bool",
+          "value": true
+        },
+        "pipewireao.correction-supervision.constraint-feedback.max-gap-ns": {
+          "type": "string",
+          "value": "30000000000"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.observed-ns": {
+          "type": "string",
+          "value": "513207216599196"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-ns": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.rearm-sequence": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.reason": {
+          "type": "string",
+          "value": "already_tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.sequence": {
+          "type": "string",
+          "value": "9"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.state": {
+          "type": "string",
+          "value": "Tripped"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-ns": {
+          "type": "string",
+          "value": "513206965912294"
+        },
+        "pipewireao.correction-supervision.constraint-feedback.trip-sequence": {
+          "type": "string",
+          "value": "2"
+        },
+        "pipewireao.correction-supervision.owner-instance": {
+          "type": "long",
+          "value": 505
+        },
+        "pipewireao.correction-supervision.rearm-acknowledged-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-request-token": {
+          "type": "string",
+          "value": "0"
+        },
+        "pipewireao.correction-supervision.rearm-result": {
+          "type": "string",
+          "value": "none"
+        },
+        "pipewireao.correction-supervision.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.frame-observer.state": {
+          "type": "string",
+          "value": "active"
+        },
+        "pipewireao.reset-control.completed-token": {
+          "type": "long",
+          "value": 0
+        },
+        "pipewireao.reset-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.reset-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "pipewireao.run-control.actual-state": {
+          "type": "string",
+          "value": "running"
+        },
+        "pipewireao.run-control.completed-token": {
+          "type": "long",
+          "value": 6
+        },
+        "pipewireao.run-control.result": {
+          "type": "int",
+          "value": 0
+        },
+        "pipewireao.run-control.version": {
+          "type": "int",
+          "value": 1
+        },
+        "projection:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "projection:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:active-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-generation": {
+          "type": "long",
+          "value": 0
+        },
+        "temporal:requested-parameter-sequence": {
+          "type": "long",
+          "value": 0
+        }
+      }
+    },
+    "session_id": "c29a1e2f-c443-4837-abbb-7c730caf2919",
+    "state": "Running",
+    "version": 1
+  },
+  "trip_used_for_action": [
+    {
+      "action": "restore_reference",
+      "fresh": true,
+      "max_gap_ns": 30000000000,
+      "observed_ns": 513241365924535,
+      "output": "constraint-feedback",
+      "sequence": 10,
+      "state": "Tripped",
+      "trip_ns": 513206965912294,
+      "trip_sequence": 2
+    }
+  ]
+}

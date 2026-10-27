@@ -5,11 +5,16 @@ import ..Artifacts
 import ..DeploymentConfiguration
 import ..NativeOwnerBootstrapRuntime
 import ..CorrectionLoops
+import ..CorrectionSupervision
+import ..Common
+import ..Schemas
 
 public main, read_bindings
 
 const Bootstrap = NativeOwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
+
+include("graph_supervision.jl")
 
 """Extract RTC bootstrap, correction and FITS settings; preserve graph arguments."""
 function arguments(arguments)
@@ -25,7 +30,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision")
             key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -75,7 +80,10 @@ function arguments(arguments)
         first(split(only(correction_properties), ':')) in recovery_nodes &&
             throw(ArgumentError("recovery controller is implicit; declare only participant nodes"))
     end
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes
+    supervision = get(values, "--supervision", nothing)
+    supervision === nothing || length(correction_properties) == 1 ||
+        throw(ArgumentError("supervision requires one declared correction property"))
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision
 end
 
 struct FITSBinding
@@ -151,13 +159,14 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
         admitted.owner_check()
         options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
-            (; correction_properties, correction_timeout_ms, recovery_nodes))
+            (; correction_properties, correction_timeout_ms, recovery_nodes,
+                supervision=supervision_path === nothing ? () : read_supervision(supervision_path)))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -184,6 +193,9 @@ recovery; repeat it for every participating temporal filter and conditioner.
 The controller is implicit. Recovery refuses unsupported scopes before effects;
 reference evidence expires using `--correction-timeout-ms`. No supervisor
 threshold or automatic intervention is enabled by these declarations.
+`--supervision PATH` selects bounded YAML command-constraint monitoring. Its
+explicit thresholds apply to successful complete frames; sizes come from the
+typed graph outputs. Monitor-only is the default and never changes closure.
 `--correction-timeout-ms N` bounds adoption confirmation for declared loops
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
 """

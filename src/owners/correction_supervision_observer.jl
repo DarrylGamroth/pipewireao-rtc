@@ -64,6 +64,10 @@ never model PTS. A trip identity/action remains published until explicit rearm
 or owner replacement, including across reset, invalidation, clear samples and
 missed property polls. The injected clock must support concurrent reads from
 the frame writer and property getter.
+After trusted feedback, Reset makes observations unavailable until a new owner
+is constructed. Header alone cannot fence an acquisition-generation restart
+against queued old buffers. Startup preparation before trusted feedback does
+not set this fence. Invalidation alone can resume with new trusted feedback.
 `request_rearm!` stages intent only; it never mutates a Supervisor. At the next
 successful frame, the frame writer accepts it only against new, fresh clear
 feedback for every latched output, or publishes a one-shot refusal. No closure,
@@ -74,6 +78,7 @@ struct Observer{B,C}
     owner_instance::Int64
     clock::C
     rearm::RearmMailbox
+    reset_unverified::Threads.Atomic{Bool}
 end
 
 function observation_clock(clock)
@@ -121,7 +126,8 @@ function Observer(formats::NamedTuple, policies::NamedTuple; owner_instance, clo
         feedback_count(binding) <= remaining || throw(ArgumentError("combined supervision feedback exceeds the decoded-array byte bound"))
         remaining -= feedback_count(binding)
     end
-    observer = Observer(bindings, Int64(owner_instance), clock, RearmMailbox())
+    observer = Observer(bindings, Int64(owner_instance), clock, RearmMailbox(),
+        Threads.Atomic{Bool}(false))
     foreach(binding -> publish!(binding, Recommendation(:none, :none, false)), bindings)
     return observer
 end
@@ -246,13 +252,24 @@ function (observer::Observer)(::Val{:frame}, outputs::NamedTuple, metadata::Name
         foreach(binding -> publish!(binding, reject!(binding.supervisor, :malformed_sample)), observer.bindings)
         return nothing
     end
-    foreach(binding -> observe_frame!(binding, observer, outputs, metadata, UInt64(now)), observer.bindings)
+    if observer.reset_unverified[]
+        invalidate_observations!(observer, :reset)
+    else
+        foreach(binding -> observe_frame!(binding, observer, outputs, metadata, UInt64(now)), observer.bindings)
+    end
     adopt_rearm!(observer, request, UInt64(now))
     return nothing
 end
 
 (observer::Observer)(::Val{:invalidated}) = invalidate_observations!(observer, :invalidated)
-(observer::Observer)(::Val{:reset}) = invalidate_observations!(observer, :reset)
+function (observer::Observer)(::Val{:reset})
+    # Header sequence can restart in a new acquisition generation. A generic
+    # stopped-owner reset does not prove queued old buffers were drained. Keep
+    # evidence unavailable until owner replacement rather than guessing an epoch.
+    any(binding -> binding.supervisor.has_sample, observer.bindings) &&
+        (observer.reset_unverified[] = true)
+    return invalidate_observations!(observer, :reset)
+end
 function invalidate_observations!(observer::Observer, cause::Symbol)
     foreach(binding -> publish!(binding, reject!(binding.supervisor, cause)), observer.bindings)
     return nothing
@@ -266,8 +283,10 @@ frame and publishes `rearm_status`. No polling or automatic retry occurs here.
 All currently latched outputs must supply new fresh clear evidence; otherwise
 none rearms. Unlatched outputs do not need rearm. Only the frame writer calls
 Supervisor `rearm!`; actual owner/sequence/freshness checks are unchanged.
+Reset-unverified observers refuse rearm until owner replacement.
 """
 function request_rearm!(observer::Observer, owner_instance)
+    observer.reset_unverified[] && return UInt64(0)
     owner(owner_instance) && owner_instance == observer.owner_instance || return UInt64(0)
     mailbox = observer.rearm
     claim = @atomicreplace mailbox.request_token UInt64(0) => typemax(UInt64)
@@ -294,7 +313,8 @@ function adopt_rearm!(observer::Observer, token::UInt64, now::UInt64)
     token == 0 || token == typemax(UInt64) || begin
         # Clock and successful-frame observation are shared by every binding.
         # Rejected/replayed observations clear last_fraction, preventing reuse.
-        accepted = any(binding -> binding.supervisor.tripped, observer.bindings) &&
+        accepted = !observer.reset_unverified[] &&
+            any(binding -> binding.supervisor.tripped, observer.bindings) &&
             all(binding -> can_rearm(binding, now), observer.bindings)
         if accepted
             foreach(observer.bindings) do binding

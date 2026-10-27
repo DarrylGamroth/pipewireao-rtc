@@ -91,7 +91,7 @@ end
         observer, clock, _ = observer_inputs()
         @test frame!(observer, clock, 1, 1000, values).state === :Unknown
     end
-    for event in (Val(:reset), Val(:invalidated))
+    for event in (Val(:invalidated),)
         observer, clock, _ = observer_inputs()
         frame!(observer, clock, 1, 1000, fill(0.2f0, 4)); observer(event)
         @test frame!(observer, clock, 2, 1050, fill(0.2f0, 4)).state === :Pending
@@ -139,6 +139,37 @@ function trip_observer!()
     frame!(observer, clock, 2, 1050, fill(0.2f0, 4))
     frame!(observer, clock, 3, 1100, fill(0.2f0, 4))
     return observer, clock, policy
+end
+
+@testset "Reset cannot reinterpret old headers as a new acquisition" begin
+    observer, clock, _ = observer_inputs()
+    observer(Val(:reset)) # Cold preparation has no trusted acquisition to lose.
+    @test frame!(observer, clock, 1000, 1000, zeros(Float32, 4)).state === :Clear
+    observer(Val(:reset))
+    for (sequence, now) in ((1, 1050), (1001, 1100))
+        value = frame!(observer, clock, sequence, now, zeros(Float32, 4))
+        @test value.state === :Unknown && value.reason === :reset
+        @test value.sequence == 1000
+    end
+    @test CSO.request_rearm!(observer, 701) == 0
+    outputs, metadata = (feedback=zeros(Float32, 4),), (feedback=header(1002),)
+    observer_allocation(observer, clock, outputs, metadata)
+    @test observer_allocation(observer, clock, outputs, metadata) == 0
+
+    observer, clock, _ = trip_observer!()
+    trip = only(CSO.snapshot(observer))
+    token = CSO.request_rearm!(observer, 701)
+    observer(Val(:reset))
+    value = frame!(observer, clock, 4, 1150, zeros(Float32, 4))
+    @test value.state === :Tripped && value.reason === :reset
+    @test value.trip_sequence == trip.trip_sequence && value.trip_ns == trip.trip_ns
+    @test value.action === trip.action
+    @test CSO.rearm_status(observer) ==
+        (requested_token=0, acknowledged_token=token, result=:refused)
+    @test CSO.request_rearm!(observer, 701) == 0
+
+    replacement, clock, _ = observer_inputs()
+    @test frame!(replacement, clock, 1, 1000, zeros(Float32, 4)).state === :Clear
 end
 
 @testset "Explicit rearm intent is frame-owned, fenced and one-shot" begin

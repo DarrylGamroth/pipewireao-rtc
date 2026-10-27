@@ -1,0 +1,180 @@
+{
+  "allocation_bytes": {
+    "baseline": 0,
+    "monitored": 0
+  },
+  "captures": {
+    "disabled-biquad-stage": {
+      "signature": "Tuple{BiquadCascadeWorkspace{Float32}, BiquadCascadePlan{Float32}, Val{true}}",
+      "method": "_stage_biquad_cascade!(workspace::BiquadCascadeWorkspace{T}, plan::BiquadCascadePlan{T}, ::Val{Shared}) where {T, Shared} @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/algorithms/control/biquad_cascade.jl:236",
+      "vector_ir": true,
+      "packed_float": true,
+      "packed_compare": true,
+      "fused": false,
+      "llvm_bytes": 11974,
+      "native_bytes": 10823
+    },
+    "disabled-graph-process": {
+      "signature": "Tuple{@NamedTuple{demanded::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, true}, feedback::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, true}}, PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, @NamedTuple{input::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}}",
+      "method": "_process_candidate_admitted!(outputs::NamedTuple, graph::PreparedGraph, inputs::NamedTuple, input_metadata::NamedTuple) @ JuliaFilterGraph ~/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/JuliaFilterGraph/src/graph.jl:1230",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 5356,
+      "native_bytes": 6181
+    },
+    "disabled-monitor-caller": {
+      "signature": "Tuple{FilterGraphPipeWire.PreparedGraphOwner{PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, Nothing, Tuple{Int64, Int64}, @NamedTuple{input::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{}, @NamedTuple{demanded::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}, feedback::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{input::Vector{Float32}}, @NamedTuple{demanded::Vector{Float32}, feedback::Vector{Float32}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}, JuliaFilterGraph.PreparedParameterTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}, Tuple{Nothing, Nothing}}, FilterGraphPipeWire.PreparedPropertyTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}}, FilterGraphPipeWire.GraphControlSnapshot{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{UInt64, UInt64}}, Nothing, Nothing, @NamedTuple{}, Tuple{Bool, Bool}, Nothing}, NdArrayFilterBuffers{true}, @NamedTuple{availability::@NamedTuple{demanded::Bool, feedback::Bool}, terminal::Bool}}",
+      "method": "_finish_graph_candidate!(owner::FilterGraphPipeWire.PreparedGraphOwner, buffers, result::NamedTuple) @ FilterGraphPipeWire ~/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/graph_node.jl:1478",
+      "vector_ir": true,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 87254,
+      "native_bytes": 49497
+    },
+    "disabled-monitor-seam": {
+      "signature": "Tuple{Nothing, FilterGraphPipeWire.PreparedGraphOwner{PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, Nothing, Tuple{Int64, Int64}, @NamedTuple{input::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{}, @NamedTuple{demanded::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}, feedback::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{input::Vector{Float32}}, @NamedTuple{demanded::Vector{Float32}, feedback::Vector{Float32}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}, JuliaFilterGraph.PreparedParameterTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}, Tuple{Nothing, Nothing}}, FilterGraphPipeWire.PreparedPropertyTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}}, FilterGraphPipeWire.GraphControlSnapshot{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{UInt64, UInt64}}, Nothing, Nothing, @NamedTuple{}, Tuple{Bool, Bool}, Nothing}, NdArrayFilterBuffers{true}}",
+      "method": "_observe_frame!(::Nothing, owner, buffers) @ FilterGraphPipeWire ~/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/frame_observer.jl:34",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 4284,
+      "native_bytes": 4673
+    },
+    "disabled-numerical-node": {
+      "signature": "Tuple{Vector{Float32}, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}, FilterGraphAlgorithms.AdmittedSampleMetadata}",
+      "method": "_process_admitted!(output::AbstractArray, prepared::FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32}, input::AbstractArray, input_sample::FilterGraphAlgorithms.AdmittedSampleMetadata) @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/declarations/algorithm_macro.jl:423",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 3641,
+      "native_bytes": 2794
+    },
+    "disabled-numerical-process": {
+      "signature": "Tuple{Vector{Float32}, BiquadCascadeWorkspace{Float32}, BiquadCascadePlan{Float32}, FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}",
+      "method": "_process_biquad_cascade!(output::AbstractVector{T}, workspace::BiquadCascadeWorkspace{T}, plan::BiquadCascadePlan{T}, input::AbstractVector{T}) where T @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/algorithms/control/biquad_cascade.jl:275",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 23629,
+      "native_bytes": 9048
+    },
+    "enabled-biquad-stage": {
+      "signature": "Tuple{BiquadCascadeWorkspace{Float32}, BiquadCascadePlan{Float32}, Val{true}}",
+      "method": "_stage_biquad_cascade!(workspace::BiquadCascadeWorkspace{T}, plan::BiquadCascadePlan{T}, ::Val{Shared}) where {T, Shared} @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/algorithms/control/biquad_cascade.jl:236",
+      "vector_ir": true,
+      "packed_float": true,
+      "packed_compare": true,
+      "fused": false,
+      "llvm_bytes": 11974,
+      "native_bytes": 10823
+    },
+    "enabled-graph-process": {
+      "signature": "Tuple{@NamedTuple{demanded::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, true}, feedback::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, true}}, PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, @NamedTuple{input::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}}",
+      "method": "_process_candidate_admitted!(outputs::NamedTuple, graph::PreparedGraph, inputs::NamedTuple, input_metadata::NamedTuple) @ JuliaFilterGraph ~/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/JuliaFilterGraph/src/graph.jl:1230",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 5356,
+      "native_bytes": 6181
+    },
+    "enabled-monitor-caller": {
+      "signature": "Tuple{FilterGraphPipeWire.PreparedGraphOwner{PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, Nothing, Tuple{Int64, Int64}, @NamedTuple{input::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{}, @NamedTuple{demanded::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}, feedback::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{input::Vector{Float32}}, @NamedTuple{demanded::Vector{Float32}, feedback::Vector{Float32}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}, JuliaFilterGraph.PreparedParameterTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}, Tuple{Nothing, Nothing}}, FilterGraphPipeWire.PreparedPropertyTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}}, FilterGraphPipeWire.GraphControlSnapshot{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{UInt64, UInt64}}, Nothing, Nothing, @NamedTuple{}, Tuple{Bool, Bool}, FilterGraphPipeWire.FrameObserver{PipeWireAORTC.CorrectionSupervision.Observer{Tuple{PipeWireAORTC.CorrectionSupervision.FeedbackObservation{:feedback, (256,)}}, typeof(time_ns)}}}, NdArrayFilterBuffers{true}, @NamedTuple{availability::@NamedTuple{demanded::Bool, feedback::Bool}, terminal::Bool}}",
+      "method": "_finish_graph_candidate!(owner::FilterGraphPipeWire.PreparedGraphOwner, buffers, result::NamedTuple) @ FilterGraphPipeWire ~/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/graph_node.jl:1478",
+      "vector_ir": true,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 116128,
+      "native_bytes": 64631
+    },
+    "enabled-monitor-header": {
+      "signature": "Tuple{PipeWireAORTC.CorrectionSupervision.FeedbackObservation{:feedback, (256,)}, PipeWireAORTC.CorrectionSupervision.Observer{Tuple{PipeWireAORTC.CorrectionSupervision.FeedbackObservation{:feedback, (256,)}}, typeof(time_ns)}, @NamedTuple{demanded::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}, feedback::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}, SampleMetadata, UInt64}",
+      "method": "observe_header!(binding::PipeWireAORTC.CorrectionSupervision.FeedbackObservation{Name, Shape}, observer::PipeWireAORTC.CorrectionSupervision.Observer, outputs::NamedTuple, header, now::UInt64) where {Name, Shape} @ PipeWireAORTC.CorrectionSupervision ~/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision_observer.jl:213",
+      "vector_ir": true,
+      "packed_float": true,
+      "packed_compare": true,
+      "fused": false,
+      "llvm_bytes": 32494,
+      "native_bytes": 21723
+    },
+    "enabled-monitor-policy": {
+      "signature": "Tuple{Val{:frame}, @NamedTuple{demanded::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}, feedback::FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}, @NamedTuple{demanded::FilterGraphAlgorithms.AdmittedSampleMetadata, feedback::FilterGraphAlgorithms.AdmittedSampleMetadata}}",
+      "method": "(observer::PipeWireAORTC.CorrectionSupervision.Observer)(::Val{:frame}, outputs::NamedTuple, metadata::NamedTuple) @ PipeWireAORTC.CorrectionSupervision ~/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision_observer.jl:248",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 6681,
+      "native_bytes": 4716
+    },
+    "enabled-monitor-seam": {
+      "signature": "Tuple{FilterGraphPipeWire.FrameObserver{PipeWireAORTC.CorrectionSupervision.Observer{Tuple{PipeWireAORTC.CorrectionSupervision.FeedbackObservation{:feedback, (256,)}}, typeof(time_ns)}}, FilterGraphPipeWire.PreparedGraphOwner{PreparedGraph{Tuple{JuliaFilterGraph.PreparedNode{BiquadCascadeF32, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, Tuple{Symbol}, Tuple{Symbol}, Tuple{Symbol}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{3}}, Tuple{Bool}, Tuple{Int64}}, JuliaFilterGraph.PreparedNode{VectorConditioningF32, FilterGraphAlgorithms.PreparedAlgorithm{VectorConditioningF32, PdmCommandPlan{Float32}, PdmCommandWorkspace{Float32, Vector{Float32}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{1}}}, Tuple{Symbol}, Tuple{Symbol, Symbol}, Tuple{}, Tuple{AlgorithmFormat{1}}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}}, Tuple{}, Tuple{Bool, Bool}, Tuple{Int64, Int64}}}, Tuple{DataType, DataType}, Tuple{Tuple{Vector{Float32}}, Tuple{Vector{Float32}, Vector{Float32}}}, Tuple{Tuple{Base.RefValue{Bool}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}}, Tuple{Tuple{JuliaFilterGraph.SampleMetadataSlot}, Tuple{JuliaFilterGraph.SampleMetadataSlot, JuliaFilterGraph.SampleMetadataSlot}}, Tuple{Base.RefValue{Bool}, Base.RefValue{Bool}}, Tuple{Tuple{JuliaFilterGraph.ExternalInput{1}}, Tuple{JuliaFilterGraph.NodeOutput{1, 1}}}, @NamedTuple{}, Tuple{JuliaFilterGraph.NodeOutput{2, 1}, JuliaFilterGraph.NodeOutput{2, 2}}, @NamedTuple{input::AlgorithmFormat{1}}, @NamedTuple{}, @NamedTuple{demanded::AlgorithmFormat{1}, feedback::AlgorithmFormat{1}}, @NamedTuple{demanded::Bool, feedback::Bool}, @NamedTuple{demanded::JuliaFilterGraph.SampleMetadataSlot, feedback::JuliaFilterGraph.SampleMetadataSlot}, @NamedTuple{input::Nothing}, JuliaFilterGraph.GraphResultTypes{@NamedTuple{demanded::Bool, feedback::Bool}, Union{BiquadCascadeFailure, PdmCommandFailure}}, JuliaFilterGraph.RejectionState{Union{BiquadCascadeFailure, PdmCommandFailure}, @NamedTuple{input::Union{Nothing, SampleMetadata}}}}, Nothing, Tuple{Int64, Int64}, @NamedTuple{input::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{}, @NamedTuple{demanded::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}, feedback::FilterGraphPipeWire.PortBinding{Float32, 1, RowMajorLayout}}, @NamedTuple{input::Vector{Float32}}, @NamedTuple{demanded::Vector{Float32}, feedback::Vector{Float32}}, @NamedTuple{input::FilterGraphAlgorithms.AdmittedSampleMetadata}, JuliaFilterGraph.PreparedParameterTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}, Tuple{Nothing, Nothing}}, FilterGraphPipeWire.PreparedPropertyTransaction{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{Bool, Bool}}, FilterGraphPipeWire.GraphControlSnapshot{Tuple{BiquadCascadePlan{Float32}, PdmCommandPlan{Float32}}, Tuple{UInt64, UInt64}}, Nothing, Nothing, @NamedTuple{}, Tuple{Bool, Bool}, FilterGraphPipeWire.FrameObserver{PipeWireAORTC.CorrectionSupervision.Observer{Tuple{PipeWireAORTC.CorrectionSupervision.FeedbackObservation{:feedback, (256,)}}, typeof(time_ns)}}}, NdArrayFilterBuffers{true}}",
+      "method": "_observe_frame!(observer::FilterGraphPipeWire.FrameObserver, owner, buffers) @ FilterGraphPipeWire ~/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/frame_observer.jl:35",
+      "vector_ir": true,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 26348,
+      "native_bytes": 16323
+    },
+    "enabled-numerical-node": {
+      "signature": "Tuple{Vector{Float32}, FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32, BiquadCascadePlan{Float32}, BiquadCascadeWorkspace{Float32}, Tuple{AlgorithmFormat{1}, AlgorithmFormat{1}, AlgorithmFormat{3}}}, FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}, FilterGraphAlgorithms.AdmittedSampleMetadata}",
+      "method": "_process_admitted!(output::AbstractArray, prepared::FilterGraphAlgorithms.PreparedAlgorithm{BiquadCascadeF32}, input::AbstractArray, input_sample::FilterGraphAlgorithms.AdmittedSampleMetadata) @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/declarations/algorithm_macro.jl:423",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 3641,
+      "native_bytes": 2794
+    },
+    "enabled-numerical-process": {
+      "signature": "Tuple{Vector{Float32}, BiquadCascadeWorkspace{Float32}, BiquadCascadePlan{Float32}, FilterGraphPipeWire.RowMajorBorrowedArray{Float32, 1, false}}",
+      "method": "_process_biquad_cascade!(output::AbstractVector{T}, workspace::BiquadCascadeWorkspace{T}, plan::BiquadCascadePlan{T}, input::AbstractVector{T}) where T @ FilterGraphAlgorithms ~/.julia/packages/FilterGraphAlgorithms/u76hY/src/algorithms/control/biquad_cascade.jl:275",
+      "vector_ir": false,
+      "packed_float": false,
+      "packed_compare": false,
+      "fused": false,
+      "llvm_bytes": 23629,
+      "native_bytes": 9048
+    }
+  },
+  "extent": 256,
+  "frames": 64,
+  "identical_committed_biquad_state_each_frame": true,
+  "identical_output_bytes_each_frame": true,
+  "observer_snapshot": "((state = :Pending, reason = :pending, fraction = 0.734375, sequence = 0x0000000000000042, observed_ns = 0x0001d30cd1431014, trip_sequence = 0x0000000000000000, trip_ns = 0x0000000000000000, action = :none, rearm_sequence = 0x0000000000000000, rearm_ns = 0x0000000000000000),)",
+  "repositories": [
+    {
+      "root": "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia",
+      "head": "379a829d1f45642c70133896226a765086130242",
+      "status": ""
+    },
+    {
+      "root": "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027",
+      "head": "b0f5593108f86b65280899a3bd894bc1ebffb973",
+      "status": " M docs/EVIDENCE_INDEX.md\n M docs/roadmap.md\n M ext/PipeWireAORTCGraphExt.jl\n M src/owners/correction_recovery_client.jl\n M src/owners/correction_supervision.jl\n M src/owners/correction_supervision_observer.jl\n M src/owners/graph_owner.jl\n M test/runtests.jl\n M test/test_correction_supervision_observer.jl\n?? docs/validation/gpi2-supervision-20261027/\n?? ext/correction_supervision.jl\n?? src/owners/correction_supervision_client.jl\n?? src/owners/graph_supervision.jl\n?? test/test_graph_supervision.jl\n"
+    },
+    {
+      "root": "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia",
+      "head": "a7032711efe831c92410bad467a6506fe8921a9e",
+      "status": ""
+    }
+  ],
+  "scope": "Disconnected real typed two-node Graph; native callback execution and actual routed node/monitor specializations. Code-generation and allocation evidence, not latency qualification.",
+  "source_sha256": {
+    "/home/dgamroth/.julia/packages/FilterGraphAlgorithms/u76hY/src/FilterGraphAlgorithms.jl": "7500d280cd91c1f619865abdf477980ea7d0365a9e64536f08563010af57490c",
+    "/home/dgamroth/.julia/packages/FilterGraphAlgorithms/u76hY/src/algorithms/control/biquad_cascade.jl": "a47d14c849271e521e9899acf878fb010ba10ca6aab3e6cffbd4c3eec3a6cb67",
+    "/home/dgamroth/workspaces/codex/pipewire/JuliaFilterGraph.jl/julia/JuliaFilterGraph/src/graph.jl": "76781fcfc8baa9d2cb7e4892b77f0fec7145acfe1a5db514db7c2c30729d262a",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/frame_observer.jl": "117dde9b8492cfe3323285e3a4d3b105bd412532b9e0a6eff1813aa42a8f442a",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/src/graph_node.jl": "13b791d971a564519739906522209d4b937fcd1ec45bb13a40412770449c7464",
+    "/home/dgamroth/workspaces/codex/worktrees/jfg-frame-observer-20261027/julia/FilterGraphPipeWire/test/runtests.jl": "ab2fcb23bc1b1c4a0ea966f35d783f274c69190296c5e009f003e3e18e5a2490",
+    "/home/dgamroth/workspaces/codex/worktrees/rtc-gpi-operations-20261027/src/owners/correction_supervision_observer.jl": "dca76e78d929037521cd082fa72203c91b96bd9e6482df26d66ad186517ec406"
+  }
+}

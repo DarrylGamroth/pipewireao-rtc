@@ -1,0 +1,1 @@
+taskset -c 4 julia --startup-file=no --threads=1,0 --project=/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/environment /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/graph-codegen/inspect_graph.jl
