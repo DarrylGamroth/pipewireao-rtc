@@ -6,8 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-26. This section is the current delivery summary. Later sections
-Updated 2026-10-25. This section is the current delivery summary. Later sections
+Updated 2026-10-27. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -19,7 +18,7 @@ The shared `InstrumentCalibration` API now dispatches `calibrate_system` and
 `validate_system` from the sensor declared by the built instrument application;
 `stage_calibration` verifies and imports the resulting bundle into a fresh
 instrument source copy. Version-1 bundles bind `result.yaml`, `context.yaml`,
-the concrete graph, typed FITS artifacts and optional preserved history by
+the concrete graph and typed FITS artifacts by
 hash. Recipes remain instrument YAML. Modal-only APIs and CLIs and active
 Classic TOML result loaders have been removed; frozen historical calibration
 records remain retained. Imported bundles support startup and integrity checks

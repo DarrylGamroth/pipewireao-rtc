@@ -181,3 +181,30 @@ and a staged rebuild could no longer identify bundled LibCURL. Those runs are
 not passing evidence. The replacement environment and checks use Julia 1.13.3.
 Development, validation and release tooling now require Julia 1.13 or newer in
 repository guidance. This does not alter historical evidence or live services.
+
+## RTC 0.2.18 integration — 2026-10-27
+
+The integrated source includes the preserved channel/unit work and per-mirror
+pupil/clear-aperture metadata. Calibration selection now keeps prior records in
+Git, rejects archive manifests, and selects `calibration/context.yaml` directly.
+The modal writer stores one typed FITS pupil-mask reference instead of a second
+Boolean array. Context resolution checks a bounded snapshot's hash, type, shape,
+axes, Boolean values, row-major order and aggregate memory budget without loading
+an accelerator. Island 0.1.4 and HIL 0.2.6 publish the corresponding source channels;
+the RTC compatibility floors require those registered releases.
+
+Julia 1.13.3 passed 56 cold context assertions. Independent verification passed
+another 56 context assertions and 11 writer/bundle/relocation/tamper checks.
+The maintained scientific staging selector passed 11 assertions against the
+previous exact Classic acquisition: no archive directory or manifest, no duplicate
+RTC context, matching selected parameter hashes, and unchanged source bytes.
+The same archive assertions failed on registered RTC 0.2.17 before the change.
+
+Two older optional selectors retain baseline limitations. The session selector's
+no-GPUCompiler assertion fails because registered AOS 0.3.2 imports
+KernelAbstractions 0.10.3, which depends on GPUCompiler; this reproduces in the
+untouched RTC 0.2.17 environment. Neither CUDA nor AMDGPU loads. The older optical
+selector assumes `plant.package`, while Classic now declares `plant.definition`;
+that assertion is unchanged from 0.2.17. These are not passing evidence. The cold
+context checks and the instrument-specific finite replay are separate gates.
+No installed RTC, desktop core, accelerator or physical device was contacted.
