@@ -84,8 +84,33 @@ invalidation, passed all 106 optical safety assertions
 (`calibration-owner-registry-final-optical-20261027.log`). Its package/source
 closure selector passed 326 assertions (`calibration-owner-024-package.log`).
 The patch changes cold startup only; the previously passing full RTC and HIL
-suites above remain separate evidence. Fresh registered-only qualification is
-recorded after publication.
+suites above remain separate evidence.
+
+### Registered release qualification
+
+Published RTC 0.2.24 (tree `48106f033af8c55389984cc5f13e83cecaf2c4ac`)
+and HIL 0.2.7 (tree `c7e680c89acbfc284f171589d070282be84a2c6a`)
+passed the combined registered-only run on Julia 1.13.3 with four threads.
+The project has no source overrides; its manifest was checked for absent path
+and repository overrides and exact registered tree identities.
+
+All 237 assertions passed: six package identities, 29 projections, six stale
+bindings, 27 transport/identity, 62 readiness, 106 actual Classic optical safety,
+and one final no-loaded-GPU assertion. Evidence is
+`registered-024-qualification.jl` and
+`calibration-owner-registered-024-qualification.log` in the external evidence
+workspace. The first assembly of this harness imported both Pkg and PipeWireAO
+exports into Main, making `Registry` ambiguous in the optional transport test.
+Using `import Pkg` fixed that harness-only error; its script/log remain preserved
+with the `assembly-error` suffix. No production change was needed.
+
+The instrument repository's selected-bundle check also passed 119 assertions
+using the registered cohort; its formatter check passed. Classic and GPI2 pin
+RTC 0.2.24/HIL 0.2.7 on main, preserving their respective FGA selections. Releases
+and registry entries were pushed. The five completed task worktrees were removed;
+working source-validation environments now reference the main checkouts, with
+their prior project/manifest files retained in the evidence workspace. The
+original registered-0.2.21 environment and frozen calibration inputs are unchanged.
 
 ## What the optical test establishes
 

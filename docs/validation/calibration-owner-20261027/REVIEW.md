@@ -245,6 +245,13 @@ These are attributed results, not additional independent runs. They remediate
 CO-06 at the scoped software integration level; registered release evidence is
 maintained in the adjacent verification record.
 
+The primary subsequently reported all 237 combined registered-only assertions
+passing with published RTC 0.2.24/HIL 0.2.7, plus 119 selected instrument-bundle
+checks and formatting. These are attributed release results; the record
+preserves the first harness's Pkg/PipeWireAO export-name conflict separately
+from the earlier production readiness timeout. No additional runtime change
+followed the final source review.
+
 An in-flight synchronous HIL adoption/step can finish or reach its existing
 finite timeout before the sole owner checks controller loss. The reviewed
 contract does not establish immediate hard cancellation. Cooperative checks

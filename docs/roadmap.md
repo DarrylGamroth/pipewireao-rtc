@@ -30,9 +30,12 @@ The registered 0.2.23 qualification exposed a startup timeout. Isolated trials
 then confirmed a missing-notification defect in client-node-ID readiness.
 Registry node/port discovery and native link events now own startup readiness,
 with exact incarnation checks, fresh graph names and the existing absolute
-deadline. Twenty repaired readiness trials need no diagnostic wake; 27 transport
-and 62 registration assertions pass. The linked verification record preserves
-the failed registered gate and subsequent release qualification.
+deadline. Twenty repaired readiness trials need no diagnostic wake. Published
+RTC 0.2.24/HIL 0.2.7 subsequently passed 237 combined registered-only assertions,
+including 27 transport, 62 registration and 106 actual optical safety checks.
+The linked verification record preserves the failed gate and corrected harness
+assembly separately. Internal-source eligibility and positive full-basis
+acceptance remain the next scientific gates.
 
 ### Protective correction recovery — 2026-10-27
 
