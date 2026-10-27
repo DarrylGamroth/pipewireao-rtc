@@ -126,21 +126,23 @@ change.
 
 A 1 nm defocus update through the GUI reproduced a no-op on managed session
 `4fe8a61f-63a2-4d6c-a3cc-b49c625ad3a6`: `session.lua:50` attempted to call
-missing `owner.node_params`, and RTC returned nil. RTC now uses the existing
+missing `owner.node_params`, raising a Lua nil-action exception. RTC returned a
+structured admitted-operation failure. RTC now uses the existing
 `named_properties` query path (source `3add4f1`). The fix is released as RTC
 0.2.22, source `fe989e6`, tree `ff26bd7751ddc89365cfbfabab226ab158ae769a`; LocalRegistry publication is recorded
-at `4c1d0cb`. Eight native dispatch cases cover the action path, and all 12
-focused tests pass. The same nil-action failure is reproduced before the fix.
+at `4c1d0cb`. All 12 native test programs pass, covering eight dispatch cases.
+The same nil-action exception is reproduced before the fix.
 
 GUI source commit `11c4f90` retains last-verified immutable instrument geometry
 only when it belongs to the exact connected session identity. A failed request
-still requires fresh status. Before the fix, the request failure reduced the
-MCP observer set from 82 entries to 77. After the fix, the same failure retained
-all 82 entries, including three images and pyramid flux. Source fail-before /
+still requires fresh status. Before the fix, five GUI observer nodes were
+withdrawn on request failure, reducing the PipeWire graph-node total from 82 to
+77. After the fix, the same failure retains all 82 graph nodes, including three
+image widgets and pyramid flux. Source fail-before /
 pass-after checks and an independent review passed. GUI verification reports
 815 library, 200 bridge, 307 main, and 12 integration checks passing, with 31
 ignored; Julia checks report 151 passing. The inspection view is at
-`http://127.0.0.1:5719`. The retained-geometry screenshot is
+raw TCP inspection endpoint `127.0.0.1:5719`. The retained-geometry screenshot is
 `gui-shape-retention-pass.png` in the cache directory above.
 
 The final RTC 0.2.22 CUDA session is Running at
@@ -167,11 +169,14 @@ Two unsuccessful shutdown/recovery exercises remain explicit. First, the
 intermediate RTC 0.2.20 cohort (`pipewireao-session@0b3c12c43701.service`)
 failed its normal managed shutdown: the RTC 0.2.22 native Quit helper refused
 before sending because fresh-status verification failed, so there is no
-shutdown-attempt receipt. An exact-incarnation `R.stop!` was then used; all old
-owners/core were gone and cleanup completed, but the launch phase ended failed
-with service result `exit-code`. The journal recorded “Session control
-publication failed” at 12:16:04 and the old unit stopped at 12:16:49. The
-shutdown receipt is `replaced-analysis-session-shutdown.json`; logs are
+shutdown-attempt receipt. The `ExecStop` controller-discovery path at
+`session_cli:272` then timed out and exited 1 at 12:16:04.125. Exact-incarnation
+`R.stop!` was used; all old owners/core were gone and cleanup completed, but the
+launch phase ended failed with service result `exit-code`. The later session-
+control publication warnings at 12:16:04.170 occurred during teardown and are
+not established as the initial cause. The underlying fresh-status/discovery
+failure remains unexplained. The old unit stopped at 12:16:49. The shutdown
+receipt is `replaced-analysis-session-shutdown.json`; logs are
 `gpi2-shape-retire-analysis-session.log` and
 `gpi2-shape-stop-analysis-unit.log`. This differs from the earlier
 `pipewireao-session@99eb9e383a6b.service`, whose native Quit at 11:45:43
