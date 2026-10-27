@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Shared event-driven calibration — 2026-10-26
+
+The [software/private-core validation](validation/event-calibration-20261026/README.md)
+records the shared completion-driven interaction procedure, online numerical
+consumers, callback-driven native requests and preserved recovery/CLI behavior.
+The [independent review](reviews/20261026-event-calibration/REVIEW.md) found no
+remaining blockers. Instrument campaign migrations, physical operation,
+multi-WFS coordination and deadline qualification remain outside this increment.
+
 ## Named optical components and science imaging — 2026-10-26
 
 The [source-validation record](validation/yaml-science-20261026/README.md) covers
