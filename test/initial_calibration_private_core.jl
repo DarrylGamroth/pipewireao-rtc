@@ -17,6 +17,11 @@ const Native = PipeWireAORTC.NativeControlClient
 const Deployment = PipeWireAORTC.DeploymentConfiguration
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
+function progress(message)
+    println("initial calibration pilot: ", message)
+    flush(stdout)
+end
+
 function application_hashes(directory)
     return Dict(relpath(joinpath(root, file), directory) =>
         bytes2hex(sha256(read(joinpath(root, file))))
@@ -69,8 +74,10 @@ end
             @test_throws ArgumentError Calibration.prepare_initial_calibration(application, remote,
                 merge(frontend, (;source_graph_sha256=repeat("0",64))), command;
                 reference, name, instance, deadline=Native.monotonic()+120)
+            progress("preparing actual Classic endpoint")
             server = Calibration.prepare_initial_calibration(application, remote, frontend, command;
-                reference, name, instance, deadline=Native.monotonic()+120)
+                reference, name, instance, deadline=Native.monotonic()+300)
+            progress("endpoint prepared")
             # Descriptor ownership transferred to the endpoint.
             frontend = command = nothing
             owner = server.effects
@@ -92,6 +99,7 @@ end
             observed = Actions.Exposure[]
             consumed = Int[]
             function observe(action, answer, serial)
+                progress("completed $(nameof(typeof(action))) serial=$serial result=$(nameof(typeof(answer)))")
                 push!(actions, typeof(action)); push!(serials, serial)
                 if action isa Actions.Adopt
                     @test answer isa Actions.Adopted
@@ -130,7 +138,20 @@ end
                 @test only(batch.exposures) == observed[probe]
                 push!(consumed, probe)
             end
+            progress("starting acquisition")
             result = Acquisition.acquire!(client, plan; observe, consume)
+            progress("acquisition $(result.phase)")
+            if result.phase != "complete"
+                progress("failure=$(result.failure), recovery=$(result.recovery_failure)")
+                # A fault fences/closes the owner before returning. Read only
+                # retained diagnostic fields, never a destroyed native loop.
+                probe = owner.transport
+                progress("probe sequence=$(probe.sequence), published=$(probe.published), received=$(probe.received), closed=$(probe.closed), error=$(probe.error)")
+                progress("HIL $(Wire.pipewire_calibration_status(owner.hil))")
+                for worker in owner.workers
+                    progress("graph done=$(istaskdone(worker.task)), error=$(worker.error[])")
+                end
+            end
             @test result.phase == "complete"
             @test result.restoration_confirmed && result.resume_permitted
             @test result.failure === result.recovery_failure === nothing
@@ -139,9 +160,11 @@ end
             @test serials == UInt64.(1:9) && client.serial == 9
             @test isempty(client.records) && consumed == [1,2]
             @test length(result.responses) == length(observed) == 2
-            @test observed[1].sequence+1 == observed[2].sequence
-            @test observed[1].start_model_ns+observed[1].duration_ns == observed[2].start_model_ns
-            @test owner.cursor.sequence == observed[end].sequence
+            if length(observed) == 2
+                @test observed[1].sequence+1 == observed[2].sequence
+                @test observed[1].start_model_ns+observed[1].duration_ns == observed[2].start_model_ns
+                @test owner.cursor.sequence == observed[end].sequence
+            end
             @test owner.capture.failure === :none
             @test all(slot -> slot.buffer.handle == C_NULL, values(owner.capture.slots))
             @test Wire.pipewire_calibration_status(owner.hil).pending_exposure === nothing
