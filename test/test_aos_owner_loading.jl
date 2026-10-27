@@ -20,10 +20,10 @@ println("AOS_DEFAULT_LOADING julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) s
     @test !loaded("CUDA")
     @test !loaded("REVOLTClassicSim")
     mktempdir() do directory
-        write(joinpath(directory, "simulation.toml"), "schema_version = 1\nname = \"loading_regression\"\n")
+        write(joinpath(directory, "simulation.yaml"), "schema_version: 1\nname: loading_regression\n")
         config = joinpath(directory, "simulation.conf")
         write(config, """
-            {"version":1,"graph":"simulation.toml","command_input":"command",
+            {"version":1,"graph":"simulation.yaml","command_input":"command",
              "frame_output":"frame","command_count":3,"frame_shape":[2,3],
              "rate":500,"exposure_ns":1896000,"pacing_rate_hz":10,
              "backend":"$LoadingBackend","device":0,"artifacts":[]}

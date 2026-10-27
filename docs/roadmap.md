@@ -12,6 +12,43 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Shared built-application calibration bundles — 2026-10-26
+
+The shared `InstrumentCalibration` API now dispatches `calibrate_system` and
+`validate_system` from the sensor declared by the built instrument application;
+`stage_calibration` verifies and imports the resulting bundle into a fresh
+instrument source copy. Version-1 bundles bind `result.yaml`, `context.yaml`,
+the concrete graph, typed FITS artifacts and optional preserved history by
+hash. Recipes remain instrument YAML. Modal-only APIs and CLIs and active
+Classic TOML result loaders have been removed; frozen historical calibration
+records remain retained. Imported bundles support startup and integrity checks
+without rebinding historical source identity for the new validation/staging
+sequence. The coordinated RTC source is required in source-validation
+environments until a matching registered release is available; application
+environments continue using registered releases. Validation results and limits
+are in the [migration evidence note](validation/standard-calibration-20261026/README.md)
+and [independent review](reviews/20261026-standard-calibration/REVIEW.md).
+
+### Shared event-driven calibration procedures — 2026-10-26
+
+The shared `CalibrationAcquisition.Procedure` now advances interaction
+acquisition from typed completion events and delivers validated candidate
+response batches to online numerical consumers. Existing Julia acquisition
+and CLI entry points use that procedure and preserve the native version-1
+contract. Native client discovery/completion uses callback notifications and
+deadline timers; explicit legacy supervision hooks retain their own periodic
+checks. AOC remains the numerical owner, with no transport or artifact
+activation added to its interface.
+
+The intended scope includes Classic, Copper, GPI and a future PipeWireAO
+SPIDERS RTC. Actual campaign migrations, standard reference procedures,
+multi-WFS completion, bounded numerical workers and recording remain separate
+delivery gates in the [acquisition guide](JULIA_CALIBRATION_ACQUISITION.md#delivery-state-and-next-gates).
+This increment does not change an installed instrument, existing frozen
+calibration, physical actuation authority or deadline qualification.
+See [software/private-core evidence](validation/event-calibration-20261026/README.md)
+and the [independent review](reviews/20261026-event-calibration/REVIEW.md).
+
 ### RTC correction-loop adoption tracking — 2026-10-26
 
 The 0.2.14 extension moves adoption timing into Hsm entry/exit Behaviors and

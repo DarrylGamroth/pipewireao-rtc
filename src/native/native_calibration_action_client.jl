@@ -35,7 +35,7 @@ mutable struct Connection{C}
 end
 function connect(binding::Binding, run::Integer, timeout_ns::Integer;
         command_count::Int=277, deadline::Float64=Client.monotonic()+timeout_ns/1e9,
-        check=()->nothing)
+        check=Client.NO_CHECK)
     0 < run <= typemax(UInt64) && 0 < timeout_ns <= typemax(Int64) ||
         throw(ArgumentError("invalid calibration run or timeout"))
     1 <= command_count <= 4096 || throw(ArgumentError("invalid command contract"))
@@ -148,7 +148,7 @@ _validate_figure(r::Union{Codec.Adopted,Codec.Restored}, count) =
 
 function _complete!(connection::Connection, value;
         deadline::Float64=Client.monotonic()+connection.timeout_ns/1e9,
-        check=()->nothing, record::Bool=true)
+        check=Client.NO_CHECK, record::Bool=true)
     connection.can_restore = false
     command_action = action(value)
     serial = Base.Checked.checked_add(connection.serial, UInt64(1))

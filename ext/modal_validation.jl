@@ -1,10 +1,11 @@
 # Array validation of the same calibrated graph and complete named command set.
-function Calibration.validate_modal_system(source, recipe, calibration, report_path;
+function Calibration._validate_system(::Val{:pyramid}, source, recipe, calibration, report_path;
         target=AdaptiveOpticsSim.Backends.HostComputeDevice(), steps=48)
+    ispath(report_path) && throw(ArgumentError("validation output must be fresh"))
     steps>=16 || throw(ArgumentError("validation needs at least 16 correction steps"))
     declaration=IC.load_simulation(joinpath(source,recipe["simulation"]))
     settings=IC.settings(declaration,get(recipe,"settings",Dict()))
-    receipt=PipeWireAORTC.Common.read_yaml(joinpath(calibration,"result.yaml"))
+    receipt=Calibration.read_bundle(calibration).report
     expected=IC.prescription_identity(declaration,settings)
     expected in (receipt["source_prescription_identity"],get(receipt,"staged_prescription_identity",nothing)) || throw(ArgumentError("calibration belongs to another simulation prescription"))
     Calibration.digest(joinpath(calibration,"graph.conf"))==receipt["graph_sha256"] || throw(ArgumentError("calibration graph changed"))
@@ -15,18 +16,8 @@ function Calibration.validate_modal_system(source, recipe, calibration, report_p
     system=IC.prepare_system(declaration.path;settings=IC._instrument_seal(settings),calibration=true,target)
     concrete=PipeWireAORTC.DeploymentConfiguration.decode(joinpath(calibration,"graph.conf"),"/opt/pipewireao")
     results=Dict{String,Any}()
-    mktempdir() do temporary
-        graph_path=joinpath(temporary,"graph.conf")
-        PipeWireAORTC.ScienceExport.write_spa_config(graph_path,concrete;
-            header="Generated finite simulation validation graph; do not edit.")
-        graph=JuliaFilterGraph.prepare_graph(graph_path;algorithms=FGA.algorithms())
-        formats=JuliaFilterGraph.parameter_formats(graph)
-        parameters=map(collect(pairs(formats))) do (name,format)
-            path=joinpath(calibration,"artifacts",String(name)*".fits")
-            artifact=PipeWireAORTC.Artifacts.FITSArtifact(path;axes=reverse(ntuple(identity,length(format.shape))))
-            name=>PipeWireAORTC.Artifacts.prepare(artifact,format.element_type,format.shape).data
-        end
-        JuliaFilterGraph.replace_parameters!(graph,parameters...)
+    graph=bundle_graph(calibration)
+    try
         inputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.input_formats(graph))
         outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(graph))
         commands=map(zero,HIL.hil_command_buffer(system.boundary))
@@ -71,6 +62,8 @@ function Calibration.validate_modal_system(source, recipe, calibration, report_p
             after<0.8before || throw(ArgumentError("$name did not improve wavefront RMS: $(after/before)"))
         end
 
+    finally
+        FilterGraphIsland.close_execution(graph)
     end
     report=Dict("graph_sha256"=>receipt["graph_sha256"],
         "prescription_identity"=>expected,

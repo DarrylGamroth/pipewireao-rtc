@@ -131,8 +131,8 @@ end
         "tiptilt"=>Dict("mirror"=>"woofer"))
     mktempdir() do temporary
         output = joinpath(temporary,"unwritten")
-        @test_throws ArgumentError Base.invokelatest(PipeWireAORTC.InstrumentCalibration.calibrate_modal_system,
-            "source-must-not-be-read",recipe,output)
+        @test_throws ArgumentError Base.invokelatest(PipeWireAORTC.InstrumentCalibration._calibrate_system,
+            Val(:pyramid),"source-must-not-be-read",recipe,output)
         @test !ispath(output)
     end
 end

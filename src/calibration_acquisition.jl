@@ -12,6 +12,7 @@ const Codec = NativeCalibrationActionCodec
 const Client = NativeControlClient
 
 export Plan, Timeouts, acquire!, acquire, read_plan, document, Cancelled
+export Procedure, complete!, cancel!, expire!, fail!
 const MAX_PLAN_BYTES = 16 * 1024 * 1024
 const MAX_RECORD_BYTES = 512 * 1024 * 1024
 
@@ -177,83 +178,48 @@ function document(result::Result)
         "recovery_failure"=>result.recovery_failure, "responses"=>responses)
 end
 
-"""Acquire one immutable plan with one controller. Cancellation is checked at
-completed action boundaries; an in-flight operation resolves within its deadline.
+include("calibration_procedure.jl")
+
+# Enter the prepared exchange before starting the action's budget. Compiling a
+# consumer/procedure specialization is cold preparation, not endpoint latency.
+@noinline function _exchange!(connection, procedure, action::T, check) where {T<:Codec.Action}
+    budget = _timeout(action, procedure.plan.timeouts)
+    deadline = Float64(procedure.clock()) + budget / 1e9
+    isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
+    procedure.deadline = deadline
+    connection.timeout_ns = budget
+    answer = Native.complete!(connection, action; deadline, check, record=false)
+    return answer, Float64(procedure.clock())
+end
+
+"""Acquire a plan using the event-driven `Procedure` on the caller's task.
+`consume(probe, batch)` processes validated candidate responses during acquisition.
+Native callbacks wake the task; no frame-count sleep advances the procedure.
 Unknown transport outcomes retire the connection without another submission.
-Recovery uses its own restoration/ownership budgets and ignores cancellation.
-`check` monitors external supervision while waiting; its failure retires transport.
 """
 function acquire!(connection::Native.Connection, input::Plan;
-        cancelled=()->false, check=()->nothing, clock=Client.monotonic, observe=(_...)->nothing)
-    # Snapshot and preflight again: the public plan's vectors may have been edited.
-    plan = Plan(input.run, input.reference, input.probes, input.measurements,
-        input.frames_per_probe, input.settling, input.timeouts)
-    connection.run == plan.run && connection.serial == 0 &&
-        connection.command_count == length(plan.reference) ||
+        cancelled=()->false, check=Client.NO_CHECK, clock=Client.monotonic,
+        observe=(_...)->nothing, consume=(_...)->nothing)
+    connection.run == input.run && connection.serial == 0 &&
+        connection.command_count == length(input.reference) ||
         throw(ArgumentError("acquisition requires a fresh connection matching the plan"))
-    responses = Codec.Responses[]
-    phase = "Holding"
-    restoration = false
-    released = false
-    known = true
-    failure = recovery = nothing
-    action_deadline = Inf
-    function request(action; recovering=false)
-        if !recovering && cancelled()
-            throw(Cancelled())
-        end
-        phase = _phase(action)
-        budget = _timeout(action, plan.timeouts)
-        deadline = Float64(clock()) + budget / 1e9
-        isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
-        connection.timeout_ns = budget
-        action_deadline = deadline
-        # An exception during submission/wait does not authorize another action.
+    procedure = Procedure(input; clock, consume, cancelled)
+    while procedure.command !== nothing
+        command = procedure.command
         known = false
-        result = Native.complete!(connection, action; deadline, check, record=false)
-        known = true
-        observe(action, result, connection.serial)
-        clock() < deadline || throw(AcquisitionFailure("TimedOut($phase)"))
-        return _terminal(result)
-    end
-    try
-        held = request(Codec.Hold())
-        _valid(held.cursor) || _invalid()
-        cursor = held.cursor
-        for (index, figure) in enumerate(plan.probes)
-            probe = UInt32(index - 1)
-            adopted = request(Codec.Adopt(probe, figure))
-            cursor = _adopted(adopted, cursor, figure)
-            settled = request(Codec.Settle(probe, cursor, plan.settling))
-            _settled(plan.settling, cursor, settled.cursor) || _invalid()
-            cursor = settled.cursor
-            batch = request(Codec.Collect(probe, cursor, plan.measurements, plan.frames_per_probe))
-            cursor = _batch_cursor(batch, cursor, plan)
-            push!(responses, batch)
-        end
-        restoration = _restored(request(Codec.Restore(plan.reference, plan.settling)), plan.reference)
-        # A cancellation during restoration cannot interrupt recovery halfway.
-        cancelled() && (failure = "Cancelled")
-        request(Codec.Release(); recovering=true)
-        released = true
-    catch error
-        failure = !known && clock() >= action_deadline ? "TimedOut($phase)" : _failure(error)
-        if known && phase != "Restoring" && phase != "Releasing"
-            try
-                restoration = _restored(request(Codec.Restore(plan.reference, plan.settling);
-                    recovering=true), plan.reference)
-                request(Codec.Release(); recovering=true)
-                released = true
-            catch error
-                recovery = _failure(error)
-            end
-        else
-            recovery = known ? failure : "Endpoint"
+        try
+            answer, completed_at = _exchange!(connection, procedure, command.action, check)
+            known = true
+            observe(command.action, answer, connection.serial)
+            cancelled() && cancel!(procedure)
+            complete!(procedure, command.run, command.serial, answer; at=completed_at)
+        catch error
+            reason = !known && clock() >= procedure.deadline ?
+                "TimedOut($(_phase(command.action)))" : _failure(error)
+            fail!(procedure, reason; known)
         end
     end
-    result_phase = released ? (failure === nothing ? "complete" : "aborted") : "fault"
-    return Result(plan.run, result_phase, restoration, restoration && released,
-        failure, recovery, result_phase == "complete" ? responses : Codec.Responses[])
+    return something(procedure.result)
 end
 
 "Prove an explicit native binding, acquire, and always close that controller."

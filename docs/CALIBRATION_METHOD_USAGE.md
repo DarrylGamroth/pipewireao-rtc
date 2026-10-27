@@ -1,8 +1,49 @@
-# Selectable Classic calibration acquisition
+# Instrument calibration
+
+## Built-application calibration bundles — 2026-10-26
+
+`PipeWireAORTC.InstrumentCalibration` provides one shared API for calibration
+procedures selected from a built instrument application:
+
+- `calibrate_system(application, fresh_bundle; target=...)` reads the compiled
+  instrument recipe and dispatches to the declared sensor procedure.
+- `validate_system(application, bundle, fresh_report; target=...)` checks that
+  the selected recipe matches the bundle before finite model validation.
+- `stage_calibration(source, application, bundle, fresh_destination)` verifies bundle and
+  source identities, then copies the authored source and selects the calibrated startup context
+  in a fresh destination.
+
+The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
+`graph.conf`, typed FITS files in `artifacts/`, and optional preserved
+`history/`. The result hashes context, graph, artifacts and retained history.
+`read_bundle` verifies these bytes without loading a sensor or accelerator;
+sensor procedures own array interpretation and optical checks. Authored recipes
+live in the instrument source at `calibration/recipe.yaml`. Its `graph_source`
+selects the retained authored graph template; `graph` selects the compiled
+execution graph for typed contracts. Both are carried in the built application,
+and calibration
+consumes the built application. CLI commands follow the same flow:
+
+```sh
+julia --project=/path/to/environment tools/calibrate.jl APPLICATION FRESH_BUNDLE [cpu|cuda|amdgpu]
+julia --project=/path/to/environment tools/validate-calibration.jl APPLICATION BUNDLE FRESH_REPORT.yaml [cpu|cuda|amdgpu]
+julia --project=/path/to/environment tools/stage-calibration.jl SOURCE APPLICATION BUNDLE FRESH_DESTINATION
+```
+
+The modal-only API names and CLIs and the active Classic TOML result loaders
+have been removed. Imported selected bundles retain historical source identity
+and support startup/integrity checks; import does not rebind them for the new
+validation/staging sequence. Fresh acquisition supplies that sequence's
+matching source and recipe. Staging requires the authored source separately:
+expanded session, GUI and host files in a build are not reversible authoring. Use a source-validation environment containing the
+matching RTC implementation until its coordinated registered release is
+available. Application environments continue to use registered package
+releases. The [2026-10-26 migration evidence](validation/standard-calibration-20261026/README.md)
+records the validation results and limits.
 
 ## Simulation modal temporal coefficients
 
-The optional `calibrate_modal_system` recipe block selects a first-order low-pass
+The optional pyramid recipe `temporal` block selects a first-order low-pass
 filter for the existing tip/tilt temporal cascade:
 
 ```yaml

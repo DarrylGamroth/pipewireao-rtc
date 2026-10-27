@@ -4,7 +4,7 @@
 # CLASSIC_NATIVE_PREFIX selects the reviewed core plus external queue plugins.
 module ClassicFiniteReplay
 
-using Test, SHA, TOML
+using Test, SHA
 using AdaptiveOpticsSim.AlgorithmGraphs, AdaptiveOpticsSim.Backends
 using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
 using PipeWireAO, PipeWireAO_jll, PipeWireAORTC
@@ -498,9 +498,7 @@ function run_replay(arguments)
             "adopted_changed_components"=>sum(index -> sum(result.adopted[:,index].!=result.adopted[:,1]),2:count;init=0),
             "payload_sha256"=>Dict(name=>digest(joinpath(output,name)) for name in keys(payloads)),
             "scope"=>"finite software composition, exact numerical replay and selected detector/demanded copy-queue observation invariance; no cadence, latency, convergence, physical validation, lossless-observer or other-output invariance claim")
-        open(joinpath(output,"result.toml"),"w") do io
-            TOML.print(io,report)
-        end
+        PipeWireAORTC.Common.write_yaml(joinpath(output,"result.yaml"),report)
     end
 end
 

@@ -30,9 +30,9 @@ create a fresh export to select the Julia driver.
 The reusable Julia API uses the same driver:
 
 ```julia
-using PipeWireAODeployment
-const Acquisition = PipeWireAODeployment.CalibrationAcquisition
-const Native = PipeWireAODeployment.NativeCalibrationActionClient
+using PipeWireAORTC
+const Acquisition = PipeWireAORTC.CalibrationAcquisition
+const Native = PipeWireAORTC.NativeCalibrationActionClient
 
 plan = Acquisition.read_plan(plan_path)
 binding = Native.Binding(remote, action_node, owner_pid, owner_instance)
@@ -71,6 +71,107 @@ cannot authorize resume. `acquire` closes its own controller on every exit;
 A successful CLI run exits 0. A completed aborted/fault acquisition exits 1 and
 prints its v1 result. Input, binding or diagnostic-output failure exits 2.
 Scientific acceptance remains the instrument/AOC consumer's responsibility.
+
+## Event-driven procedures and online numerical consumers
+
+`CalibrationAcquisition.Procedure` is the shared, instrument-independent
+interaction-acquisition state machine. One control task owns each procedure.
+It emits one pending typed native `command`, with an absolute monotonic
+`deadline`. A transport submits that command once and delivers a correlated
+terminal result through `complete!`. `cancel!` requests cancellation at a
+completed action boundary; `expire!` handles a deadline event; `fail!` reports
+endpoint failure. A terminal procedure has `command === nothing` and `result`.
+There is no transport, file I/O, sleep, polling loop or device callback inside
+the procedure. The existing `acquire`/`acquire!` functions drive the same state
+machine over the existing version-1 native action protocol.
+
+This is the ownership and data flow for the first shared procedure:
+
+```mermaid
+flowchart LR
+    Procedure["CalibrationAcquisition.Procedure"]
+    Native["Native calibration action client"]
+    Owner["Deployed command and measurement owner"]
+    Consumer["Online numerical consumer"]
+    Evidence["Optional evidence observer"]
+    Procedure -->|one pending command| Native
+    Native --> Owner
+    Owner -->|correlated completion| Native
+    Native --> Procedure
+    Procedure -->|validated candidate batch| Consumer
+    Native -->|completed action| Evidence
+```
+
+The native client now wakes its task on registry, identity, parameter and
+failure callbacks through an `AsyncCondition`; a one-shot deadline timer bounds
+an idle request. Callbacks only publish observations and wake the control task.
+The default calibration path has no periodic completion polling. Explicit
+legacy `check` hooks retain periodic supervision because they can inspect
+external processes; this is separate from probe settling and exposure counts.
+Awaiting a completion suspends the Julia task, so callers may run acquisition
+in a task while keeping their own control/event loop responsive.
+
+An online consumer receives every validated batch before the next probe is
+issued, using either native acquisition or typed replay:
+
+```julia
+responses = zeros(Float32, length(plan.probes), Int(plan.measurements))
+function consume(probe, batch)
+    copyto!(view(responses, probe, :), batch.values)
+    # Update a response estimate or diagnostics as each signed pair completes.
+end
+result = Acquisition.acquire(binding, plan; consume)
+if result.phase == "complete"
+    # Apply the declared AOC estimator, reconstruction and acceptance policy.
+end
+```
+
+The consumer owns its batch snapshot; mutation cannot alter retained receipt
+data. Its outputs remain candidates even after being delivered: a later fault
+or failed restoration invalidates the run as a complete calibration. Consumers
+do not activate parameters. A consumer exception requests restoration and
+release and reports `Processing`. Consumers execute outside PipeWire callbacks
+and do bounded work; an expensive factorization belongs on a numerical worker
+with an explicitly bounded handoff. The procedure does not create an unbounded
+worker queue or asynchronous recorder. Its existing finite response-retention
+bound remains in force.
+
+For an external event loop, prepare `Procedure(plan; consume, clock)` and submit
+its `command`. After owner/controller validation, deliver
+`complete!(procedure, run, serial, result)`. The optional `at` keyword is the
+local monotonic receipt time captured before dispatching the reducer, not a
+remote timestamp or an opportunity to extend a deadline. Arm the current
+deadline after each issued command, cancel obsolete timers, and use `expire!`
+for a deadline notification. A wrong run, serial or operation faults without
+another command. Unknown in-flight outcomes never authorize restoration or
+ordinary-loop resumption. Recording can retain typed events for replay; it is
+not required to calculate a response during acquisition.
+
+### Delivery state and next gates
+
+The procedure and native client are implemented in PipeWireAORTC, rather than
+introducing another acquisition owner or requiring AOS in the numerical API.
+The intended users are Classic, Copper, GPI and a future PipeWireAO SPIDERS RTC.
+Instrument-specific equations remain in scientific packages, with recipe data
+in each instrument. This increment supplies the shared interaction procedure;
+it does not migrate every existing campaign or authorize physical actuation.
+
+| Order | Work | Completion evidence |
+| --- | --- | --- |
+| 1 | Shared completion-driven interaction acquisition and online consumers | Typed linear-sensor live/replay parity; invalid identity/exposure, cancellation, processing failure and restoration tests; private-core native request and retirement checks |
+| 2 | Connect Classic's declared probe basis and AOC estimator to the online consumer | Actual deployed private-core DM/WFS acquisition, incremental and retained-input numerical agreement, restoration and aborted-candidate rejection |
+| 3 | Add standard dark/lamp/reference procedures using existing AOC methods | Independent reference windows, unchanged estimator conventions, typed artifacts and repeatability diagnostics |
+| 4 | Adopt Copper and GPI through declared measurement/command contracts | Same procedure API with their actual coordinates, normalization, correctors and accepted probe association; no guessed mappings |
+| 5 | Add multi-WFS acquisition, bounded numerical workers and optional recording/replay | Per-source adoption/exposure evidence, all-required-source completion, bounded overload policy and missing-source tests |
+| 6 | Add SPIDERS LOWFS, SCC and sharpening procedures | Scientific parity over retained inputs, then the future PipeWireAO RTC path; explicit grouped-probe decoding and optimization state |
+
+The version-1 interaction protocol currently represents one command figure and
+one declared measurement vector per acquisition owner. This is not a generic
+four-WFS barrier, multi-corrector transaction or physical settling witness.
+Those contracts need explicit extension and qualification before claiming them.
+The simulated and physical implementations should share the same procedure;
+neither an adopted setpoint nor a model-time cursor establishes physical
+settling. No new default amplitude, filter, mask or gain is selected here.
 
 ## Bounds and diagnostics
 

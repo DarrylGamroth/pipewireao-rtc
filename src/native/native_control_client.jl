@@ -42,6 +42,7 @@ node_identity(::Profile, properties, previous) = nothing
 const INSTANCE_LOCK = ReentrantLock()
 const NEXT_INSTANCE = Ref(Int64(0))
 monotonic() = time_ns() / 1.0e9
+const NO_CHECK = () -> nothing
 
 function next_instance()
     return lock(INSTANCE_LOCK) do
@@ -262,6 +263,9 @@ mutable struct Client{O<:Observation}
     closed::Bool
     active::Bool
     request_lock::ReentrantLock
+    wakeup::Base.AsyncCondition
+    wakeup_lock::ReentrantLock
+    registry_listener::Union{Nothing,ManagedListener}
 end
 
 
@@ -275,7 +279,7 @@ function Client(loop::ThreadLoop, context, core, registry, marker, marker_node, 
     return Client{O}(loop, context, core, registry, marker, marker_node, node,
         observation, node_name, marker_name, marker_instance, UInt32(global_id),
         UInt64(serial), identity, owner_ready, marker_ready, last_token, closed,
-        active, request_lock)
+        active, request_lock, Base.AsyncCondition(), ReentrantLock(), nothing)
 end
 
 function private_remote(remote::AbstractString)
@@ -342,16 +346,45 @@ function healthy(client::Client)
     return nothing
 end
 
-function poll(predicate, client::Client, deadline::Float64, check)
-    while true
-        deadline_check(deadline, check)
-        value = with_thread_loop_lock(client.loop) do _
-            healthy(client)
-            predicate()
+function wake!(client::Client)
+    # AsyncCondition's documented foreign-thread notification mechanism. Native
+    # callbacks never schedule Julia tasks or execute a calibration consumer.
+    lock(client.wakeup_lock) do
+        isopen(client.wakeup) && ccall(:uv_async_send, Cint, (Ptr{Cvoid},), client.wakeup)
+    end
+    return nothing
+end
+
+function fail!(client::Client, message; kwargs...)
+    fail!(client.observation, message; kwargs...)
+    wake!(client)
+    return nothing
+end
+
+function poll(predicate, client::Client, deadline::Float64, check; verify_health=true)
+    # Completion/discovery wakes this task. A single deadline timer bounds an
+    # otherwise idle connection. Legacy check hooks may supervise external
+    # processes, so retain their periodic invocation only when one is supplied.
+    remaining = deadline - monotonic()
+    timer = Timer(_ -> wake!(client), max(0.0, remaining))
+    supervision = check === NO_CHECK ? nothing : Timer(_ -> wake!(client), 0.005; interval=0.005)
+    try
+        while true
+            verify_health && deadline_check(deadline, check)
+            value = with_thread_loop_lock(client.loop) do _
+                verify_health && healthy(client)
+                predicate()
+            end
+            if value !== nothing && value !== false
+                verify_health && deadline_check(deadline, check)
+                return value
+            end
+            deadline_check(deadline, check)
+            wait(client.wakeup)
         end
-        deadline_check(deadline, check)
-        value === nothing || value === false || return value
-        sleep(min(0.005, max(0.0, deadline - monotonic())))
+    finally
+        close(timer)
+        supervision === nothing || close(supervision)
     end
 end
 
@@ -387,6 +420,8 @@ function node_info!(client::Client, info::NodeInfo; marker::Bool)
         end
     catch error
         fail!(client.observation, sprint(showerror, error))
+    finally
+        wake!(client)
     end
     return nothing
 end
@@ -401,7 +436,7 @@ All discovery/subscription/admission steps share one absolute monotonic deadline
 """
 function connect(profile::Profile, remote::AbstractString, node_name::AbstractString,
         expected_pid::Integer, expected_instance::Integer;
-        deadline::Float64, check=()->nothing, controller_instance::Union{Nothing,Integer}=nothing)
+        deadline::Float64, check=NO_CHECK, controller_instance::Union{Nothing,Integer}=nothing)
     0 < expected_pid <= typemax(UInt32) || throw(ArgumentError("expected owner PID must fit positive Id"))
     0 < expected_instance <= typemax(Int64) || throw(ArgumentError("expected instance must be positive Int64"))
     0 < ncodeunits(node_name) <= 128 && !occursin('\0', node_name) && isvalid(node_name) ||
@@ -427,8 +462,11 @@ function connect(profile::Profile, remote::AbstractString, node_name::AbstractSt
             client.core = CoreConnection(something(client.context);
                 properties=Dict("remote.name" => path),
                 on_error=(core, id, sequence, error) ->
-                    fail!(observation, sprint(showerror, error); retirement=true))
+                    fail!(client, sprint(showerror, error); retirement=true))
             client.registry = Registry(something(client.core))
+            client.registry_listener = add_listener!(client.registry;
+                on_global_added=(_, _) -> wake!(client),
+                on_global_removed=(_, _) -> wake!(client))
             client.marker = Filter(something(client.core), marker_name; properties=Dict(
                 "node.name" => marker_name, "media.class" => "Control",
                 "pipewireao.rtc-control.protocol" => PROTOCOL,
@@ -445,9 +483,9 @@ function connect(profile::Profile, remote::AbstractString, node_name::AbstractSt
             client.identity = Envelope.ControllerIdentity(marker.id, serial(marker.properties, marker_name), instance)
             client.marker_node = bind(something(client.registry), marker, Node;
                 on_info=(proxy, info) -> node_info!(client, info; marker=true),
-                on_removed=proxy -> fail!(observation, "controller proxy was removed"; retirement=true),
+                on_removed=proxy -> fail!(client, "controller proxy was removed"; retirement=true),
                 on_error=(proxy, sequence, error) ->
-                    fail!(observation, sprint(showerror, error); retirement=true))
+                    fail!(client, sprint(showerror, error); retirement=true))
         end
         poll(() -> client.marker_ready, client, deadline, check)
         stage = "owner identity"
@@ -460,11 +498,12 @@ function connect(profile::Profile, remote::AbstractString, node_name::AbstractSt
             client.serial = serial(owner.properties, client.node_name)
             client.node = bind(something(client.registry), owner, Node;
                 on_info=(proxy, info) -> node_info!(client, info; marker=false),
-                on_removed=proxy -> fail!(observation, "owner proxy was removed"; retirement=true),
+                on_removed=proxy -> fail!(client, "owner proxy was removed"; retirement=true),
                 on_error=(proxy, sequence, error) ->
-                    fail!(observation, sprint(showerror, error); retirement=true),
+                    fail!(client, sprint(showerror, error); retirement=true),
                 on_param=(proxy, sequence, id, index, next, pod) -> begin
                     id == SPA.PARAM_PROPS && pod !== nothing && observe!(observation, pod)
+                    wake!(client)
                     nothing
                 end)
         end
@@ -503,7 +542,7 @@ retirement disables future requests. Failure before reply observation is unknown
 disables this client, and is never retried or rebound. Serialize close with use.
 """
 function request!(client::Client, command;
-        deadline::Float64, check=()->nothing)
+        deadline::Float64, check=NO_CHECK)
     client.closed && throw(UnknownOutcome("client is closed"))
     trylock(client.request_lock) || throw(ArgumentError("a native owner request is already pending"))
     if client.active
@@ -549,16 +588,11 @@ function request!(client::Client, command;
             submitted = true
             set_param!(something(client.node), SPA.PARAM_PROPS, pod)
         end
-        while true
-            reply = with_thread_loop_lock(client.loop) do _
-                reply = matching_reply(client.observation, deadline)
-                reply !== nothing && return reply
-                healthy(client)
-                nothing
-            end
-            reply === nothing || return reply
-            deadline_check(deadline, check)
-            sleep(min(0.005, max(0.0, deadline - monotonic())))
+        return poll(client, deadline, check; verify_health=false) do
+            reply = matching_reply(client.observation, deadline)
+            reply !== nothing && return reply
+            healthy(client)
+            nothing
         end
     catch error
         if submitted || error isa UnknownOutcome
@@ -598,7 +632,7 @@ function Base.close(client::Client)
     try
         client.closed = true
         with_thread_loop_lock(client.loop) do _
-            for resource in (client.node, client.marker_node, client.marker,
+            for resource in (client.node, client.marker_node, client.marker, client.registry_listener,
                     client.registry, client.core, client.context)
                 resource === nothing && continue
                 try
@@ -612,6 +646,9 @@ function Base.close(client::Client)
             close(client.loop)
         catch error
             push!(failures, error)
+        end
+        lock(client.wakeup_lock) do
+            close(client.wakeup)
         end
     finally
         client.active = false
