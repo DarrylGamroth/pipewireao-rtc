@@ -570,6 +570,10 @@ pyramid_mean_pupil_intensity:
   id: "pipewireao/pyramid-mean-pupil-intensity-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
+pyramid_pupil_flux_adu_f64:
+  id: "pipewireao/pyramid-pupil-flux-adu-f64/1"
+  element_type: "Float64"
+  wire_type: "F64_LE"
 pyramid_pupil_mask:
   id: "pipewireao/pyramid-pupil-mask-bool/1"
   element_type: "Bool"
