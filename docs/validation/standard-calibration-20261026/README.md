@@ -215,3 +215,39 @@ suite requires `PIPEWIREAO_PREFIX=/opt/pipewireao`; an initial run without that
 setting stopped in the schema selector and is not passing evidence. The known
 Git missing-object diagnostic comes from intentional catalog-corruption testing.
 No unexpected warning or failure remains in the configured core run.
+
+## Generated numeric YAML — 2026-10-27
+
+Starting from RTC `3e8f778` (0.2.19), the shared writer now emits numeric vectors
+of at most eight elements and 80 characters as flow arrays. Nested coordinate
+rows remain separate pairs. Longer arrays, strings and Boolean lists retain the
+existing serializer's representation. Session, mirror-control and GUI metadata
+generation now use that same writer. Multiline generated headers comment every
+line; atomic replacement and finite-value validation are retained.
+
+Seven formatting assertions failed against the original writer before the
+change. The final 15 generated-format assertions pass, including semantic
+round-trip comparison, long/wide arrays, signed zero, integer spelling, strings,
+Booleans, idempotent regeneration and multiline document-marker headers.
+Independent review found no blocking issue and separately verified unchanged
+inputs, finite float boundaries and atomic cleanup. Custom ordered dictionaries
+are normalized to ordinary `Dict`s; presentation key order is not guaranteed.
+
+Julia 1.13.3 passed **5,482 assertions across 210 testsets** in the full package
+workspace with `PIPEWIREAO_PREFIX=/opt/pipewireao`. The first invocation omitted
+that required setting and stopped in the schema selector; the configured run is
+the passing evidence. The intentional missing-Git-object diagnostic is unchanged.
+Instrument selected-bundle checks passed 119/119. Formatting and all 50 instrument
+formatter assertions pass. All 23 Classic and 32 GPI2 selected FITS hashes are
+unchanged; source edits only compact axis arrays, pupil dimensions and command
+limits and refresh the affected context/receipt identities.
+
+Source investigation also confirmed that the existing built-application
+calibrators mutate simulator commands directly. The regular Classic graph's
+command output depends on a detector frame; held HIL calibration requires an
+adopted probe before exposure, and native parameter replies explicitly do not
+claim active adoption. A shared command-only graph probe input and actual
+adoption witness remain prerequisites for a deployed event-driven campaign.
+GPI2 held named-command coherence and multi-WFS association remain separate
+gates. No native campaign, full-basis acquisition, physical-device or deadline
+qualification is claimed here. No GPU, installed RTC or desktop core was used.

@@ -124,12 +124,38 @@ function write_json(path::AbstractString, value; atomic::Bool=false)
     return path
 end
 
-"Write YAML configuration, optionally replacing the file atomically."
+# YAML.jl writes unknown scalar types through `string`. Keep its scalar quoting
+# and numeric spelling, while supplying flow syntax only for validated numbers.
+struct NumericSequence
+    text::String
+end
+Base.print(io::IO, value::NumericSequence) = print(io, value.text)
+
+yaml_value(value) = value
+yaml_value(value::AbstractDict) = Dict(key => yaml_value(item) for (key, item) in value)
+function yaml_value(value::AbstractVector)
+    if 1 <= length(value) <= 8 && all(x -> x isa Union{Integer,AbstractFloat} && !(x isa Bool), value)
+        text = "[" * join((chomp(YAML.write(x)) for x in value), ", ") * "]"
+        length(text) <= 80 && return NumericSequence(text)
+    end
+    return map(yaml_value, value)
+end
+
+"""
+Write YAML configuration, optionally replacing the file atomically.
+
+Numeric vectors of at most eight elements and 80 characters use inline arrays;
+nested coordinate rows are kept as separate pairs. Longer vectors use block lists.
+"""
 function write_yaml(path::AbstractString, value; atomic::Bool=false, header=nothing)
     finite_json(value)
     payload = IOBuffer()
-    header === nothing || println(payload, "# ", header)
-    YAML.write(payload, value)
+    if header !== nothing
+        for line in split(header, '\n')
+            println(payload, "# ", line)
+        end
+    end
+    YAML.write(payload, yaml_value(value))
     bytes = take!(payload)
     mkpath(dirname(path))
     if atomic

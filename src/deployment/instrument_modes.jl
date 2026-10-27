@@ -80,7 +80,7 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix; confi
         ids = Set(view["id"] for view in views["view"])
         Set(omitted) ⊆ ids || throw(ArgumentError("mode omits an unknown GUI view"))
         filter!(view -> !(view["id"] in omitted), views["view"])
-        YAML.write_file(path, views)
+        Common.write_yaml(path, views)
     end
     return nothing
 end

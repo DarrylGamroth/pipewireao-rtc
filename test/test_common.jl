@@ -1,6 +1,45 @@
 using Test
 using PipeWireAORTC.Common
 using PipeWireAORTC.Common: finite_json
+using YAML
+
+@testset "generated numeric YAML sequences" begin
+    mktempdir() do directory
+        path = joinpath(directory, "coordinates.yaml")
+        values = Dict(
+            "pupil_origins" => [[30, 30], [150, 30]],
+            "shape" => [60, 60], "axes" => [2, 1],
+            "command_limits" => [-1.0e-6, 1.0e-6],
+            "position" => [1.0, -0.0, 3.5],
+            "coefficients" => Float32[0.1, 0.1, 0, -0.8, 0],
+            "integers" => [typemax(Int64)],
+            "wide" => fill(typemax(Int64), 8),
+            "long" => collect(1:20), "empty" => Int[],
+            "flags" => [true, false], "mixed" => Any[true, 2],
+            "strings" => ["[1, 2]", "- 1\n- 2\n", "1: 2"],
+        )
+        write_yaml(path, values; atomic=true)
+        emitted = read(path, String)
+        @test occursin("pupil_origins:\n  - [30, 30]\n  - [150, 30]\n", emitted)
+        @test occursin("shape: [60, 60]\n", emitted)
+        @test occursin("axes: [2, 1]\n", emitted)
+        @test occursin("command_limits: [-1.0e-6, 1.0e-6]\n", emitted)
+        @test occursin("position: [1.0, -0.0, 3.5]\n", emitted)
+        @test occursin("coefficients: [", emitted)
+        @test occursin("integers: [9223372036854775807]\n", emitted)
+        @test occursin("wide:\n  - 9223372036854775807\n", emitted)
+        @test occursin("long:\n  - 1\n", emitted)
+        @test occursin("flags:\n  - true\n", emitted)
+        @test occursin("mixed:\n  - true\n", emitted)
+        # Compare with the existing serializer, including Float32 promotion and strings.
+        @test isequal(read_yaml(path), YAML.load(YAML.write(values)))
+        write_yaml(path, read_yaml(path))
+        @test read(path, String) == emitted
+        write_yaml(path, values; header="Generated coordinates.\n---\n...")
+        @test startswith(read(path, String), "# Generated coordinates.\n# ---\n# ...\n")
+        @test isequal(read_yaml(path), YAML.load(YAML.write(values)))
+    end
+end
 
 @testset "finite JSON tuple validation" begin
     samples = Tuple((;name="Mode $i", values=(0.0f0, 1.0f0, -1.0f0)) for i in 1:8)

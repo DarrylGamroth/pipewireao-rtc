@@ -26,6 +26,20 @@ vector. Boolean values must be exactly zero or one. The context remains a small
 declaration; GPI2 construction and runtime use the same `pupil-mask.fits` bytes.
 RTC configuration selects `calibration/context.yaml`, without a duplicate
 `rtc/calibration.yaml`. The regular instrument graph still supplies topology.
+Generated YAML writes short numeric vectors inline, including coordinate pairs,
+shapes, axis orders, limits and filter sections. Vectors exceeding eight elements
+or 80 characters remain block lists. This changes presentation and byte hashes,
+not parsed values; bundle writers calculate hashes after serialization.
+
+The current built-application procedures run simulation calibration in process;
+they are not a deployed, native event-driven calibration campaign. That campaign
+still needs a command-only probe input through the regular graph's existing
+completion and constraint chain, plus confirmation of actual command adoption
+before exposure. Frame-driven offset updates and their submission replies do not
+supply that confirmation. GPI2 additionally needs coherent held probes across
+named correctors; multi-WFS capture needs explicit association across required
+sources. Existing bundle integrity and finite numerical checks do not qualify
+those missing transport capabilities.
 
 An explicit import retains its original source prescription under
 `imported_source_prescription_identity` when adopting a changed model or metadata.

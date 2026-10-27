@@ -139,7 +139,5 @@ end
 function write_configuration(path, format, document; header)
     format == "spa-json" && return ScienceExport.write_spa_config(path, document; header)
     format == "yaml" || throw(ArgumentError("unsupported configuration file format: $format"))
-    payload = YAML.write(document)
-    write(path, join(("# " * line for line in split(header, '\n')), '\n') * "\n" * payload)
-    return path
+    return Common.write_yaml(path, document; header)
 end
