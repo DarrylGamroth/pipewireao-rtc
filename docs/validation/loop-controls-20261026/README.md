@@ -299,3 +299,16 @@ native wake or a hard real-time timer deadline.
 No live Classic/GPI2, GUI, calibration, mirror limit or control gain changes
 were made. These are CPU software/control-loop integration checks, not physical
 actuator, GPU, cadence or tail-latency qualification. No native C code changed.
+
+Publication: RTC commit `a014baf` is merged to main and pushed with tag
+`v0.2.14`. Registry commit `c36a6fd` registers tree
+`2fa3cf5ffcdf4bf1841025be9c952f4dbb39ec23`. Local instrument commit `de7afc0`
+pins Classic and GPI2 to RTC 0.2.14; both Project files pass Taplo checks.
+A fresh environment resolved from GPI2's Project installs that registered tree
+without a source override, alongside FGPW 0.1.9 and Hsm 0.3.2. Its isolated
+private-core selector passes all 56 assertions. The first verification command
+attempted to import transitive Hsm directly from the instrument environment;
+Julia correctly rejected that import before tests ran. Removing the unnecessary
+import fixes the invocation without changing package code or dependencies.
+Read-only service inspection confirms the same live RTC/GUI PIDs and invocation
+IDs listed above; no running session was restarted.
