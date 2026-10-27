@@ -208,3 +208,10 @@ selector assumes `plant.package`, while Classic now declares `plant.definition`;
 that assertion is unchanged from 0.2.17. These are not passing evidence. The cold
 context checks and the instrument-specific finite replay are separate gates.
 No installed RTC, desktop core, accelerator or physical device was contacted.
+
+The configured full root workspace completed on Julia 1.13.3 with **5,016/5,016
+assertions across 186 testsets**. Named-analysis checks passed 114/114. The full
+suite requires `PIPEWIREAO_PREFIX=/opt/pipewireao`; an initial run without that
+setting stopped in the schema selector and is not passing evidence. The known
+Git missing-object diagnostic comes from intentional catalog-corruption testing.
+No unexpected warning or failure remains in the configured core run.
