@@ -15,7 +15,7 @@ chronology. Architecture/requirement decisions remain authoritative.
 ### Optical diagnostic orientation — 2026-10-27
 
 The real isolated-actuator CPU probe confirms that copying AOS `[x,y]` optical
-arrays into row/column images swapped physical axes on screen. The 0.2.27
+arrays into row/column images swapped physical axes on screen. The 0.2.28
 patch maps both optional pupil-wavefront and focal-plane images to +x right,
 +y up. Raw scientific arrays, pupil RMS, camera frames, control/calibration
 ordering, gains and limits are preserved. Focused bounds-checked and actual

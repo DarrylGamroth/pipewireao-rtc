@@ -1,6 +1,6 @@
 # Optical diagnostic orientation — 2026-10-27
 
-The RTC 0.2.27 patch corrects the optional simulator wavefront and focal-plane
+The RTC 0.2.28 patch corrects the optional simulator wavefront and focal-plane
 images. AOS reports increasing physical `[x,y]`; GUI images use `[row,column]`
 with rows increasing down. Direct copying swapped physical axes on screen.
 The publication boundary now transposes and reverses physical y so +x is right
