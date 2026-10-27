@@ -28,7 +28,7 @@ function application_hashes(directory)
         for (root, _, files) in walkdir(directory) for file in files)
 end
 
-@testset "Classic initial calibration uses actual owned streams and native actions" begin
+@testset "Classic rejects under-threshold measurements and restores through native actions" begin
     Threads.nthreads(:default) >= 4 || error("run this optical pilot with --threads=4")
     application = ENV["PIPEWIREAORTC_CALIBRATION_APPLICATION"]
     before = application_hashes(application)
@@ -60,152 +60,175 @@ end
     probes = [reference .+ delta, reference .- delta]
     @test probes[1] == -probes[2] && any(!iszero, probes[1])
 
-    with_control_private_core() do remote, directory, daemon
-        chmod(dirname(remote), 0o700)
-        frontend = Calibration.calibration_graph(application;
-            inputs=(raw="pixel-calibration:raw",), outputs=(:slopes, :flux, :validity))
-        command = nothing
-        server = client = serving = nothing
-        try
-            command = Calibration.calibration_graph(application;
-                inputs=(requested="pdm-command:requested",),
-                outputs=(:demanded, Symbol("constraint-feedback")))
-            name, instance = "test.classic.initial.$(getpid())", Int64(71)
-            @test_throws ArgumentError Calibration.prepare_initial_calibration(application, remote,
-                merge(frontend, (;source_graph_sha256=repeat("0",64))), command;
-                reference, name, instance, deadline=Native.monotonic()+120)
-            progress("preparing actual Classic endpoint")
-            server = Calibration.prepare_initial_calibration(application, remote, frontend, command;
-                reference, name, instance, deadline=Native.monotonic()+300)
-            progress("endpoint prepared")
-            # Descriptor ownership transferred to the endpoint.
-            frontend = command = nothing
-            owner = server.effects
-            progress("coordinator domain=1, wire acquisition domain=$(repr(owner.acquisition_domain))")
-            progress("selected frontend bindings=$([(entry.port, entry.source.path, Calibration.digest(entry.source.path)) for entry in owner.graphs.frontend.bindings])")
-            capture_module = parentmodule(typeof(owner.capture))
-            serving = @async try
-                Server.serve!(server; deadline=Native.monotonic()+120)
-            catch error
-                error
-            end
-            plan = Acquisition.Plan(UInt64(1), reference, probes,
-                recipe["estimator"]["measurement_count"], 1, Actions.Immediate(),
-                Acquisition.Timeouts(ntuple(_ -> 120_000_000_000, 5)...))
-            binding = ActionClient.Binding(remote, name, getpid(), instance)
-            client = ActionClient.connect(binding, plan.run, plan.timeouts.ownership;
-                command_count=length(reference))
-            control_task = current_task()
-            actions = DataType[]
-            serials = UInt64[]
-            observed = Actions.Exposure[]
-            consumed = Int[]
-            function observe(action, answer, serial)
-                progress("completed $(nameof(typeof(action))) serial=$serial result=$(nameof(typeof(answer)))")
-                push!(actions, typeof(action)); push!(serials, serial)
-                if action isa Actions.Adopt
-                    @test answer isa Actions.Adopted
-                    @test answer.figure == probes[Int(action.probe)+1] && !answer.clipped
-                    @test Wire.pipewire_probe_values(owner.hil) == answer.figure
-                    @test length(consumed) == Int(action.probe)
-                elseif action isa Actions.Collect
-                    @test answer isa Actions.Responses
-                    captured = capture_module.snapshot(owner.capture)
-                    invalid = findall(i -> owner.active[i] && !captured.arrays.validity[i], eachindex(owner.active))
-                    thresholds = owner.graphs.frontend.parameters[:thresholds]
-                    progress("collection validity=$(answer.valid), active_count=$(count(owner.active)), invalid_active_indices=$invalid, nonfinite_responses=$(count(!isfinite, answer.values)), raw_extrema=$(extrema(captured.arrays.raw))")
-                    progress("invalid active flux/thresholds=$([(i, captured.arrays.flux[i], thresholds[i,:]) for i in invalid])")
-                    progress("frontend parameter shapes=$([(key, size(value)) for (key,value) in owner.graphs.frontend.parameters])")
-                    @test answer.valid
-                    @test eltype(captured.arrays.raw) === UInt16
-                    @test size(captured.arrays.raw) == (352,352)
-                    @test answer.values == vec(permutedims(captured.arrays.slopes))
-                    exposure = only(answer.exposures)
-                    @test exposure.domain == UInt64(1)
-                    for receipt in values(captured.metadata)
-                        @test receipt.identity.domain == owner.acquisition_domain
-                        @test (receipt.identity.generation, receipt.identity.sequence) ==
-                            (exposure.generation, exposure.sequence)
-                        @test receipt.model_start_ns == exposure.start_model_ns
-                        @test receipt.duration_ns == exposure.duration_ns == simulation["exposure_ns"]
+    try
+        with_control_private_core() do remote, directory, daemon
+            chmod(dirname(remote), 0o700)
+            for (index, scenario) in enumerate((:under_threshold, :cancel_before_hold, :controller_loss))
+                @testset "$scenario" begin
+                    frontend = Calibration.calibration_graph(application;
+                        inputs=(raw="pixel-calibration:raw",), outputs=(:slopes, :flux, :validity))
+                    command = server = client = serving = nothing
+                    try
+                        command = Calibration.calibration_graph(application;
+                            inputs=(requested="pdm-command:requested",),
+                            outputs=(:demanded, Symbol("constraint-feedback")))
+                        name = "test.classic.initial.$(getpid()).$scenario"
+                        instance = Int64(70+index)
+                        if index == 1
+                            @test_throws ArgumentError Calibration.prepare_initial_calibration(application, remote,
+                                merge(frontend, (;source_graph_sha256=repeat("0",64))), command;
+                                reference, name, instance, deadline=Native.monotonic()+120)
+                        end
+                        progress("preparing actual Classic endpoint for $scenario")
+                        server = Calibration.prepare_initial_calibration(application, remote, frontend, command;
+                            reference, name, instance, deadline=Native.monotonic()+300)
+                        # Descriptor ownership transferred to the endpoint.
+                        frontend = command = nothing
+                        owner = server.effects
+                        @test owner.active == parameters[:active]
+                        progress("$scenario coordinator domain=1, wire acquisition domain=$(repr(owner.acquisition_domain))")
+                        if index == 1
+                            progress("selected frontend bindings=$([(entry.port, entry.source.path, Calibration.digest(entry.source.path)) for entry in owner.graphs.frontend.bindings])")
+                        end
+                        capture_module = parentmodule(typeof(owner.capture))
+                        serve_deadline = Native.monotonic()+120
+                        serving = @async try
+                            Server.serve!(server; deadline=serve_deadline)
+                        catch error
+                            error
+                        end
+                        plan = Acquisition.Plan(UInt64(1), reference, probes,
+                            recipe["estimator"]["measurement_count"], 1, Actions.Immediate(),
+                            Acquisition.Timeouts(ntuple(_ -> 120_000_000_000, 5)...))
+                        binding = ActionClient.Binding(remote, name, getpid(), instance)
+                        client = ActionClient.connect(binding, plan.run, plan.timeouts.ownership;
+                            command_count=length(reference))
+                        if scenario === :controller_loss
+                            held = ActionClient.complete!(client, Actions.Hold();
+                                deadline=Native.monotonic()+120, record=false)
+                            @test held isa Actions.Held
+                            @test held.cursor.sequence == 0 && owner.token == 1
+                            close(client); client = nothing
+                            outcome = fetch(serving)
+                            progress("idle controller loss server outcome=$outcome")
+                            @test outcome isa Exception
+                            @test Native.monotonic() < serve_deadline
+                            @test server.phase === :Fault && server.serial == 1
+                            # Hold adopted the reference once. A hidden Restore
+                            # would advance its token; no exposure was admitted.
+                            @test owner.closed && owner.token == 1 && owner.probe === nothing
+                            @test owner.cursor.sequence == 0
+                            @test all(slot -> slot.receipt === nothing, values(owner.capture.slots))
+                            @test Wire.pipewire_calibration_status(owner.hil).pending_exposure === nothing
+                        else
+                            actions = DataType[]
+                            serials = UInt64[]
+                            observed = Actions.Exposure[]
+                            consumed = Int[]
+                            function observe(action, answer, serial)
+                                progress("$scenario completed $(nameof(typeof(action))) serial=$serial result=$(nameof(typeof(answer)))")
+                                push!(actions, typeof(action)); push!(serials, serial)
+                                if action isa Actions.Adopt
+                                    @test answer isa Actions.Adopted
+                                    @test answer.figure == probes[Int(action.probe)+1] && !answer.clipped
+                                    @test Wire.pipewire_probe_values(owner.hil) == answer.figure
+                                elseif action isa Actions.Collect
+                                    @test answer isa Actions.Responses
+                                    captured = capture_module.snapshot(owner.capture)
+                                    invalid = findall(i -> owner.active[i] && !captured.arrays.validity[i], eachindex(owner.active))
+                                    thresholds = owner.graphs.frontend.parameters[:thresholds]
+                                    finite = all(isfinite, answer.values)
+                                    expected = all(i -> !owner.active[i] || captured.arrays.validity[i], eachindex(owner.active)) && finite
+                                    progress("collection validity=$(answer.valid), active_count=$(count(owner.active)), invalid_active_indices=$invalid, nonfinite_responses=$(count(!isfinite, answer.values)), raw_extrema=$(extrema(captured.arrays.raw))")
+                                    progress("invalid active flux/thresholds=$([(i, captured.arrays.flux[i], thresholds[i,:]) for i in invalid])")
+                                    @test answer.valid == expected
+                                    @test finite && !isempty(invalid)
+                                    @test all(i -> isfinite(captured.arrays.flux[i]) &&
+                                        captured.arrays.flux[i] < thresholds[i,2], invalid)
+                                    @test eltype(captured.arrays.raw) === UInt16
+                                    @test size(captured.arrays.raw) == (352,352)
+                                    @test answer.values == vec(permutedims(captured.arrays.slopes))
+                                    exposure = only(answer.exposures)
+                                    @test exposure.domain == UInt64(1)
+                                    for receipt in values(captured.metadata)
+                                        @test receipt.identity.domain == owner.acquisition_domain
+                                        @test (receipt.identity.generation, receipt.identity.sequence) ==
+                                            (exposure.generation, exposure.sequence)
+                                        @test receipt.model_start_ns == exposure.start_model_ns
+                                        @test receipt.duration_ns == exposure.duration_ns == simulation["exposure_ns"]
+                                        @test receipt.header == captured.metadata.raw.header
+                                    end
+                                    push!(observed, exposure)
+                                elseif action isa Actions.Restore
+                                    @test answer isa Actions.Restored && !answer.clipped
+                                    @test answer.figure == reference && owner.restored
+                                    @test Wire.pipewire_probe_values(owner.hil) == reference
+                                elseif action isa Actions.Release
+                                    @test answer isa Actions.Released && !owner.hil.started
+                                end
+                            end
+                            consume(probe, batch) = push!(consumed, probe)
+                            cancelled() = scenario === :cancel_before_hold
+                            progress("starting $scenario acquisition")
+                            result = Acquisition.acquire!(client, plan; observe, consume, cancelled)
+                            expected_failure = scenario === :under_threshold ? "InvalidEvidence" : "Cancelled"
+                            progress("$scenario acquisition $(result.phase), failure=$(result.failure)")
+                            if result.phase == "fault"
+                                close(client); client = nothing
+                                outcome = fetch(serving)
+                                close(server)
+                                progress("unexpected fault server=$outcome, HIL=$(Wire.pipewire_calibration_status(owner.hil))")
+                                progress("capture failure=$(owner.capture.failure), exception=$(owner.capture.exception)")
+                                for (name, slot) in pairs(owner.capture.slots)
+                                    progress("capture $name phase=$(slot.phase), receipt=$(slot.receipt)")
+                                end
+                                @test result.phase == "aborted"
+                                error("initial calibration fault: $(result.failure); server outcome: $outcome")
+                            end
+                            @test result.phase == "aborted" && result.failure == expected_failure
+                            @test result.restoration_confirmed && result.resume_permitted
+                            @test result.recovery_failure === nothing
+                            expected_actions = scenario === :under_threshold ?
+                                [Actions.Hold, Actions.Adopt, Actions.Settle, Actions.Collect, Actions.Restore, Actions.Release] :
+                                [Actions.Restore, Actions.Release]
+                            @test actions == expected_actions
+                            @test serials == UInt64.(1:length(expected_actions)) && client.serial == length(expected_actions)
+                            @test isempty(client.records) && isempty(consumed)
+                            if scenario === :under_threshold
+                                @test length(observed) == 1
+                                @test owner.cursor.sequence == only(observed).sequence == 1
+                            else
+                                @test isempty(observed) && owner.cursor.sequence == 0
+                                @test all(slot -> slot.receipt === nothing, values(owner.capture.slots))
+                            end
+                            @test owner.capture.failure === :none
+                            @test Wire.pipewire_calibration_status(owner.hil).pending_exposure === nothing
+                            # Aborted candidate evidence does not promote responses;
+                            # this test publishes no calibration bundle or activation.
+                            @test Acquisition.document(result)["responses"] === nothing
+                            close(client); client = nothing
+                            @test fetch(serving) === nothing
+                            @test server.phase === :Released
+                        end
+                        close(server)
+                        @test owner.closed && owner.hil.closed && !owner.hil.started
+                        @test all(worker -> istaskdone(worker.task) && worker.error[] === nothing, owner.workers)
+                        @test all(slot -> slot.buffer.handle == C_NULL, values(owner.capture.slots))
+                        @test !isopen(server.wakeup) && !isopen(server.core)
+                        @test all(stream -> !isopen(stream), values(owner.capture.streams))
+                    finally
+                        client === nothing || close(client)
+                        server === nothing || close(server)
+                        frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)
+                        command === nothing || FilterGraphIsland.close_execution(command.graph)
                     end
-                    push!(observed, exposure)
-                elseif action isa Actions.Restore
-                    @test answer isa Actions.Restored && !answer.clipped
-                    @test answer.figure == reference && owner.restored
-                    @test Wire.pipewire_probe_values(owner.hil) == reference
-                elseif action isa Actions.Release
-                    @test answer isa Actions.Released && !owner.hil.started
                 end
             end
-            function consume(probe, batch)
-                @test current_task() === control_task
-                @test probe == length(consumed)+1
-                @test length(observed) == probe
-                @test batch.valid && all(isfinite, batch.values)
-                @test only(batch.exposures) == observed[probe]
-                push!(consumed, probe)
-            end
-            progress("starting acquisition")
-            result = Acquisition.acquire!(client, plan; observe, consume)
-            progress("acquisition $(result.phase)")
-            if result.phase != "complete"
-                close(client); client = nothing
-                outcome = fetch(serving)
-                close(server)
-                progress("failure=$(result.failure), recovery=$(result.recovery_failure), server=$outcome")
-                # All native work is fenced before reading retained diagnostics.
-                probe = owner.transport
-                progress("probe sequence=$(probe.sequence), published=$(probe.published), received=$(probe.received), closed=$(probe.closed), error=$(probe.error)")
-                progress("HIL $(Wire.pipewire_calibration_status(owner.hil))")
-                progress("capture phase=$(owner.capture.phase), failure=$(owner.capture.failure), exception=$(owner.capture.exception)")
-                for (name, slot) in pairs(owner.capture.slots)
-                    progress("capture $name phase=$(slot.phase), receipt=$(slot.receipt)")
-                end
-                for worker in owner.workers
-                    progress("graph done=$(istaskdone(worker.task)), error=$(worker.error[])")
-                end
-                @test result.phase == "complete"
-                error("initial calibration failed: $(result.failure); server outcome: $outcome")
-            end
-            @test result.phase == "complete"
-            @test result.restoration_confirmed && result.resume_permitted
-            @test result.failure === result.recovery_failure === nothing
-            @test actions == [Actions.Hold, Actions.Adopt, Actions.Settle, Actions.Collect,
-                Actions.Adopt, Actions.Settle, Actions.Collect, Actions.Restore, Actions.Release]
-            @test serials == UInt64.(1:9) && client.serial == 9
-            @test isempty(client.records) && consumed == [1,2]
-            @test length(result.responses) == length(observed) == 2
-            if length(observed) == 2
-                @test observed[1].sequence+1 == observed[2].sequence
-                @test observed[1].start_model_ns+observed[1].duration_ns <= observed[2].start_model_ns
-                @test observed[2].start_model_ns-observed[1].start_model_ns ==
-                    round(UInt64, declaration.document["frame_period_s"]*1e9)
-                @test owner.cursor.sequence == observed[end].sequence
-            end
-            @test owner.capture.failure === :none
-            @test all(slot -> slot.buffer.handle == C_NULL, values(owner.capture.slots))
-            @test Wire.pipewire_calibration_status(owner.hil).pending_exposure === nothing
-            # This is candidate acquisition evidence for one completion mode.
-            # The pilot publishes no calibration bundle or activation request.
-            @test Acquisition.document(result)["responses"] !== nothing
-            close(client); client = nothing
-            @test fetch(serving) === nothing
-            @test server.phase === :Released
-            close(server)
-            @test owner.closed && owner.hil.closed
-            @test all(worker -> istaskdone(worker.task), owner.workers)
-            @test !isopen(server.wakeup) && !isopen(server.core)
-            @test all(stream -> !isopen(stream), values(owner.capture.streams))
-        finally
-            client === nothing || close(client)
-            server === nothing || close(server)
-            frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)
-            command === nothing || FilterGraphIsland.close_execution(command.graph)
         end
+    finally
+        @test application_hashes(application) == before
+        @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
     end
-    @test application_hashes(application) == before
-    @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
 
 end # module
