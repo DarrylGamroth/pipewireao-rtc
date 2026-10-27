@@ -83,7 +83,7 @@ include("instrument_calibration.jl")
 include("simulator_configuration.jl")
 
 public Analysis, InstrumentExport, InstrumentCalibration, InstrumentConfiguration, InstrumentDefinition, ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
-    NativeSessionClient, CalibrationAcquisition, CalibrationCLI, SessionCLI,
+    NativeSessionClient, NativeCalibrationEndpoint, CalibrationAcquisition, CalibrationCLI, SessionCLI,
     NativeOwnerBootstrapRuntime, NativeParameterSource, NativeSourceControl, GraphOwner,
     CorrectionRecovery, CorrectionSupervision
 

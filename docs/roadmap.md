@@ -17,9 +17,14 @@ chronology. Architecture/requirement decisions remain authoritative.
 Work starts from RTC `864281b` and instrument `439181b`. Implement the existing
 RTC-ARCH-023 initial session from cold projections of the regular built graph,
 with native action effects, held-probe adoption and correlated online capture.
-The [implementation plan](validation/calibration-owner-20261027/PLAN.md) separates
-protocol, transport-prefix, full-basis and numerical gates. No installed session,
-GPU or active calibration is changed. Current work is not a qualified campaign.
+The CPU integration now passes 106 actual Classic safety assertions: invalid
+under-threshold measurements restore/release, early cancellation exposes no frame,
+and idle controller loss fences without recovery. The frozen estimator correctly
+rejects two active measurements below its existing flux threshold. No mask or
+threshold was relaxed. The [verification and review record](validation/calibration-owner-20261027/README.md)
+separates this software gate from accepted scientific acquisition, a complete
+basis and numerical acceptance. No installed session, GPU or active calibration
+is changed; this is not a qualified campaign.
 
 ### Protective correction recovery — 2026-10-27
 

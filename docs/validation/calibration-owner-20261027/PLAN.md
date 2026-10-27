@@ -38,6 +38,14 @@ monotonic bounds, with one-shot timers used only to wake/check deadlines.
 No arbitrary sleeps establish adoption, settling or completion. The existing HIL
 adapter may retain its transport-progress mechanism; it does not prove WFS success.
 
+Publication has three distinct boundaries: source buffer queueing, the native
+source cycle ending, and correlated completion at every raw/WFS sink. The shared
+HIL adapter exposes `frame_publication_cycle_sequence` in its existing status.
+The owner waits for that witness before one downstream native progress request;
+only captured full identities establish collection success. Direct triggering
+after queueing was rejected by a private-core ordering experiment. This progress
+request adds no model exposure or settling rule.
+
 Implementation order and acceptance:
 
 1. Derive/validate cold graphs from explicit existing endpoints; retain exact

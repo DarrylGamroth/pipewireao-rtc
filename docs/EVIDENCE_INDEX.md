@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Native initial calibration — 2026-10-27
+
+The [verification and review record](validation/calibration-owner-20261027/README.md)
+covers regular-graph projections, native action effects, transported probe
+adoption and correlated owned raw/WFS capture. Actual Classic rejection,
+reference restoration, cancellation and idle controller-loss fencing pass on a
+private CPU core. Accepted scientific acquisition and full-basis qualification
+remain separate gates; no selected calibration or installed session changed.
+
 ## GPI2 optional pupil-flux and operator validation — 2026-10-27
 
 The [validation record](validation/gpi2-operator-20261027/README.md) records

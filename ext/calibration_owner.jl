@@ -15,6 +15,7 @@ mutable struct InitialCalibration{P,D,C,T,W,G}
     graphs::G
     registry::Registry
     listener::ManagedListener
+    frame_listener::ManagedListener
     links::Vector{PipeWireAO.Link}
     reference::Vector{Float32}
     active::Vector{Bool}
@@ -76,8 +77,13 @@ function exposure!(owner::InitialCalibration, deadline)
     exposure = Wire.step_pipewire_exposure!(owner.hil, owner.driver;
         timeout_ns=remaining(owner, deadline),
         before_publish=value -> CalibrationCapture.arm!(owner.capture, value))
-    # Publication acknowledges a queued source buffer. Request one downstream
-    # native cycle; only the correlated raw/WFS receipts below prove completion.
+    # Publication acknowledges a queued source buffer before its native cycle
+    # ends. Await the transport witness before requesting downstream progress;
+    # only the correlated raw/WFS receipts below prove exposure completion.
+    Native.await(owner.wakeup, owner.guard, Float64(deadline)) do
+        check(owner)
+        Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence == exposure.identity.sequence
+    end
     with_thread_loop_lock(owner.hil.loop) do _
         trigger_process!(owner.hil.frame_stream)
     end
@@ -183,7 +189,7 @@ function Base.close(owner::InitialCalibration)
         end
     end
     with_thread_loop_lock(owner.hil.loop) do _
-        for resource in (owner.capture, owner.transport, reverse(owner.links)..., owner.listener, owner.registry)
+        for resource in (owner.capture, owner.transport, reverse(owner.links)..., owner.frame_listener, owner.listener, owner.registry)
             try close(resource) catch error; push!(errors, error) end
         end
     end
@@ -271,7 +277,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
     wakeup, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = Native.wake!(wakeup, guard)
-    hil = capture = probe = registry = listener = owner = nothing
+    hil = capture = probe = registry = listener = frame_listener = owner = nothing
     links = PipeWireAO.Link[]
     workers = CalibrationGraphWorker[]
     try
@@ -302,6 +308,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             registry = Registry(hil.core)
             listener = add_listener!(registry; on_global_added=(_...)->(notify();nothing),
                 on_global_removed=(_...)->(notify();nothing))
+            frame_listener = add_listener!(hil.frame_stream; on_trigger_done=(_...)->(notify();nothing))
         end
         push!(workers, start_calibration_graph(frontend,remote,name*".wfs",rate;notify))
         push!(workers, start_calibration_graph(command,remote,name*".pdm",rate;notify))
@@ -336,7 +343,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         cursor = Actions.AcquisitionCursor(UInt64(1), status.acquisition_generation,
             UInt64(0), UInt64(0))
         owner = InitialCalibration(hil, science.driver, capture, probe, workers,
-            (;frontend,command), registry, listener, links, collect(reference), collect(active),
+            (;frontend,command), registry, listener, frame_listener, links, collect(reference), collect(active),
             UInt64(0), nothing, cursor, status.acquisition_domain, false, wakeup, guard, nothing, false)
         endpoint = Native.Endpoint(remote, name, instance, owner; wakeup, wakeup_lock=guard)
         owner.control = endpoint
@@ -348,7 +355,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         else
             if hil !== nothing
                 with_thread_loop_lock(hil.loop) do _
-                    for resource in (capture,probe,reverse(links)...,listener,registry)
+                    for resource in (capture,probe,reverse(links)...,frame_listener,listener,registry)
                         resource === nothing && continue
                         try close(resource) catch error; push!(errors,error) end
                     end

@@ -12,7 +12,7 @@ tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha
     @test P.SessionCLI.SessionLaunch === P.SessionLaunch
     @test P.SessionCLI.SessionInstall === P.SessionInstall
     for name in (:SessionConfiguration, :SessionInstall, :SessionRuntime,
-                 :NativeSessionClient, :CalibrationAcquisition, :CalibrationCLI,
+                 :NativeSessionClient, :NativeCalibrationEndpoint, :CalibrationAcquisition, :CalibrationCLI,
                  :SessionCLI, :NativeOwnerBootstrapRuntime, :NativeParameterSource,
                  :NativeSourceControl)
         @test Base.ispublic(P, name)

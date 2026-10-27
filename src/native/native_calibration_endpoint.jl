@@ -170,6 +170,8 @@ function apply!(endpoint::Endpoint, ticket::Ingress.Ticket)
 end
 
 """
+    serve!(endpoint::Endpoint; deadline)
+
 Serve one run using callback notifications and one-shot deadlines. Effects execute
 outside the PipeWire callback and loop lock. Wrong run/serial/phase requests have
 no effects. Release remains published until the exact controller disconnects.

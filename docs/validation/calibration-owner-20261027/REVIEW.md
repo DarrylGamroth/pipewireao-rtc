@@ -10,7 +10,9 @@ Scope: `src/native/native_calibration_endpoint.jl`,
 `ext/calibration_capture.jl`, `ext/calibration_owner.jl`,
 `ext/calibration_transport.jl`, `ext/calibration_graphs.jl`, their native/CPU
 tests, and the existing native ingress, action codec and FITS preparation
-contracts. No installed session or physical device was used.
+contracts. The later focused source review also covered HIL commit `d58959a`
+against `4f2f37e` and the RTC publication-cycle wait and teardown order. No
+installed session or physical device was used.
 
 ## Findings and disposition
 
@@ -48,7 +50,8 @@ condition closure. Native/stream producers are fenced before final closure.
 ### CO-03 — Full acquisition domains were passed to UInt64 native fields
 
 Severity: high for functionality. Confidence: high. Classification: confirmed
-source defect. Disposition: remediated in source; actual pilot pending.
+source defect. Disposition: remediated; actual full-identity association
+verified in the implementer's r6 production-path pilot.
 
 HIL exposes a full 16-byte `AcquisitionDomain`, while native
 `AcquisitionCursor.domain` and `Exposure.domain` are `UInt64`. The earlier
@@ -58,6 +61,9 @@ full domain, maps this one initial session to positive coordinator ID `1`,
 and verifies each exposure's full domain and generation before constructing
 the native record. Raw/WFS receipts retain the full identity. Evidence must
 retain that mapping rather than equate full and coordinator domains.
+The r6 pilot verified matching full identity, model start and duration at all
+raw/WFS sinks before the native response was constructed; this is attributed
+integration evidence rather than an independent rerun by this reviewer.
 
 ### CO-04 — Projection authority must bind selected calibration inputs
 
@@ -89,6 +95,47 @@ and prepared content hashes, HDU, axes, target type and shape; the existing
 `Artifacts.prepare` provenance supplies those fields. Hashing only
 `parameters.conf` would miss changed FITS bytes at an unchanged path.
 
+### CO-05 — Source queueing did not establish publication-cycle completion
+
+Severity: high for functionality. Confidence: high. Classification: observed
+integration failure and source-confirmed ordering distinction. Disposition:
+production correction source-reviewed without blockers; r6 transport and known
+abort/recovery verified by the implementer.
+
+Earlier r3/r5 optical trials timed out collecting WFS responses after HIL frame
+publication. HIL's publication flag is written when its source callback queues
+the buffer, before the native source cycle necessarily ends. A test-only r4
+listener used private publication state and public `trigger_done` to request
+one further native cycle. It demonstrated complete raw/WFS receipts and a
+response, but that diagnostic did not establish a production public-API path.
+
+HIL `d58959a` exposes the bounded atomic
+`frame_publication_cycle_sequence` witness. Its `on_trigger_done` callback only
+records the published sequence and signals existing completion state; it
+requests no processing and executes no science. Reset clears the witness;
+failure and the pending-exposure fence remain authoritative. RTC waits for
+the exact public witness under its original deadline and controller checks,
+then requests one public native cycle from the sole control owner. Its listener
+only notifies. All raw/WFS receipts must still match the armed full exposure
+before `complete_pipewire_exposure!`; the witness and kick cannot establish WFS
+success or advance model time.
+
+The r6 trial exercised this pure production path without private HIL access or
+test-driven scheduling. It reached an actual native `Responses` result, whose
+scientific validity was correctly false: frozen active indices 85 and 104 had
+flux approximately 932 and 975, below their unchanged threshold of 1,000. No
+nonfinite values explained the rejection. Acquisition reported known
+`InvalidEvidence`, then actually confirmed Restore and Release. Settings,
+eligibility, thresholds, source data and acceptance policy were not relaxed.
+This is successful transport/identity and rejection/recovery evidence, not an
+accepted positive calibration.
+
+Teardown now stops HIL admission, requests quit for all native graph workers,
+awaits them within a finite deadline, then closes capture/probe/links/core.
+Prepared graph storage remains alive until worker tasks stop. The implementer's
+r5 cleanup check found no worker errors after this ordering change; earlier
+`EPIPE` observations arose only during peer teardown.
+
 ## Verification and limits
 
 Independently ran `julia --startup-file=no --project=.
@@ -102,10 +149,30 @@ fail-before evidence for CO-01. Other reported collector, projection and
 transport test results are implementer evidence, not independent executions
 by this reviewer.
 
-The actual Classic signed-probe pilot remains pending. A source-level closure
-of CO-03/04 does not substitute for that integration check or for the required
-fault/recovery cases. This increment has no full-basis numerical acceptance,
-activatable calibration, GPU, hardware or latency qualification.
+Additional results reported by the primary: HIL's full `Pkg.test`, including
+Aqua and private-core selectors, passed 2,993 assertions; RTC's full root
+selector passed 5,624 assertions. The primary subsequently reported the
+complete RTC `Pkg.test` also passed 5,624 assertions. These suites were not
+independently rerun by this reviewer.
+
+The r7 optical safety run observed all three intended behaviors: the unchanged
+under-threshold response aborted and restored/released, early cancellation
+restored/released, and idle controller loss fenced without another exposure or
+Restore. That run still failed assertions comparing concrete parametric action
+types with `UnionAll`; those test comparisons were corrected. The r8 rerun
+subsequently passed 106 assertions across those three scenarios, including
+application-file preservation and no loaded CUDA/AMDGPU package. This final
+result is implementer evidence, not an independent optical rerun.
+
+Current completion gates remain partial. The actual production path has proven
+full-identity transport and a scientifically correct invalid-response abort.
+There is no positive accepted noisy AOC calibration, full-basis numerical
+acceptance, activatable bundle, actual optical consumer-failure case, or
+in-flight optical controller-loss coverage. Positive procedure and consumer
+failure unit coverage are separate evidence. No GPU, hardware, latency or
+physical-settling qualification is established. The asynchronous execution
+policy question, including stationary-source versus support for both modes,
+remains open; this review selects no default.
 
 An in-flight synchronous HIL adoption/step can finish or reach its existing
 finite timeout before the sole owner checks controller loss. The reviewed

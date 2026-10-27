@@ -94,6 +94,7 @@ end
 
 "Cold projection of an existing built graph for initial calibration (optional science extension)."
 function calibration_graph end
+public calibration_graph
 
 "Prepare a native CPU initial-calibration endpoint from the regular graph projections."
 function prepare_initial_calibration end
