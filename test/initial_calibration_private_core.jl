@@ -178,7 +178,9 @@ end
             @test length(result.responses) == length(observed) == 2
             if length(observed) == 2
                 @test observed[1].sequence+1 == observed[2].sequence
-                @test observed[1].start_model_ns+observed[1].duration_ns == observed[2].start_model_ns
+                @test observed[1].start_model_ns+observed[1].duration_ns <= observed[2].start_model_ns
+                @test observed[2].start_model_ns-observed[1].start_model_ns ==
+                    round(UInt64, declaration.document["frame_period_s"]*1e9)
                 @test owner.cursor.sequence == observed[end].sequence
             end
             @test owner.capture.failure === :none
