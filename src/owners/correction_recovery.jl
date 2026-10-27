@@ -10,17 +10,13 @@ module CorrectionRecovery
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event, @on_entry, @on_exit
 import Hsm
 
-public Coordinator, OpenLoop, StageRecovery, ReleaseRecovery, CloseLoop,
+public Coordinator, StageRecovery, ReleaseRecovery, CloseLoop,
     LoopObservation, RecoveryObservation, ReferenceObservation, ReleaseObservation,
     state, qualify!, request_protection!, staged!, recovery_staged!, observe_loop!,
     observe_recovery!, observe_reference!, request_close!, observe_release!,
     check_timeout!, failed!, cancel!, owner_replaced!
 
 """An explicit command effect bound to one owner incarnation and operation token."""
-struct OpenLoop
-    owner_instance::Int64
-    token::UInt64
-end
 struct StageRecovery
     owner_instance::Int64
     token::UInt64
@@ -279,7 +275,9 @@ function request_protection!(sm::Coordinator, owner_instance::Int64, token::UInt
     sm.recovery_generation = 0
     sm.reference_serial = 0
     Hsm.dispatch!(sm, :Protect, nothing)
-    return OpenLoop(sm.owner_instance, token)
+    # One atomic recovery stage inhibits closure, forces open and resets the
+    # declared scientific scope. An ordinary open must never precede it.
+    return StageRecovery(sm.owner_instance, token)
 end
 
 function bind_loop!(sm::Coordinator, effect, generation::UInt64, expected_state::Symbol)
@@ -293,12 +291,10 @@ function bind_loop!(sm::Coordinator, effect, generation::UInt64, expected_state:
     sm.expected_loop_generation = generation
     return nothing
 end
-staged!(sm::Coordinator, effect::OpenLoop, generation::UInt64) =
-    bind_loop!(sm, effect, generation, :Opening)
 staged!(sm::Coordinator, effect::CloseLoop, generation::UInt64) =
     bind_loop!(sm, effect, generation, :Closing)
 
-"""Observe exact open/close adoption; opening alone emits scoped recovery staging."""
+"""Observe exact forced-open/close adoption without emitting another stage."""
 function observe_loop!(sm::Coordinator, observation::LoopObservation)
     matches(sm, observation) || return nothing
     current = state(sm)
@@ -331,7 +327,7 @@ function observe_loop!(sm::Coordinator, observation::LoopObservation)
     sm.expected_loop_generation = 0
     if current === :Opening
         Hsm.dispatch!(sm, :Opened, nothing)
-        return StageRecovery(sm.owner_instance, sm.token)
+        return nothing
     end
     Hsm.dispatch!(sm, :ClosedApplied, nothing)
     return nothing
@@ -341,7 +337,7 @@ function recovery_staged!(sm::Coordinator, effect::StageRecovery, generation::UI
         loop_generation::UInt64)
     check_timeout!(sm)
     sm.failure === nothing && effect.owner_instance == sm.owner_instance &&
-        effect.token == sm.token && state(sm) === :RestoringReference || return nothing
+        effect.token == sm.token && state(sm) === :Opening || return nothing
     sm.recovery_generation == generation && generation > 0 &&
         sm.expected_loop_generation == loop_generation && return nothing
     loop_generation > sm.loop_generation || return failed!(sm, :invalid_loop_generation)

@@ -29,9 +29,8 @@ end
 function restoring_recovery(; kwargs...)
     sm, now = qualified_recovery(; kwargs...)
     effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason=:saturation)
-    CR.staged!(sm, effect, UInt64(4))
-    recovery = CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
-    CR.recovery_staged!(sm, recovery, UInt64(11); loop_generation=UInt64(5))
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=UInt64(4))
+    CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
     return sm, now
 end
 function holding_recovery(; kwargs...)
@@ -46,21 +45,18 @@ end
     @test CR.state(sm) === :Closed
     @test Hsm.ancestor(sm, :Closed) === :Operational
     effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason=:saturation)
-    @test effect === CR.OpenLoop(RECOVERY_OWNER, RECOVERY_TOKEN)
+    @test effect === CR.StageRecovery(RECOVERY_OWNER, RECOVERY_TOKEN)
     @test CR.state(sm) === :Opening
     @test Hsm.ancestor(sm, CR.state(sm)) === :ProtectiveOpen
     @test sm.reason === :saturation
     @test sm.pending_since_ns == now[]
-    CR.staged!(sm, effect, UInt64(4))
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=UInt64(4))
     now[] += 1
-    CR.staged!(sm, effect, UInt64(4)) # duplicate acknowledgement is not a new effect
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=UInt64(4)) # no new effect
     @test sm.pending_since_ns == now[] - 1
-    stage = CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
-    @test stage === CR.StageRecovery(RECOVERY_OWNER, RECOVERY_TOKEN)
+    @test CR.observe_loop!(sm, loop_observation(2, 4, 4, false)) === nothing
     @test CR.state(sm) === :RestoringReference
     @test sm.pending_since_ns == now[]
-    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
-    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
     @test CR.observe_recovery!(sm, recovery_observation(3)) === nothing
     @test CR.state(sm) === :Verifying
     @test CR.observe_reference!(sm, reference_observation(4)) === nothing
@@ -82,7 +78,7 @@ end
     @test Hsm.ancestor(sm, CR.state(sm)) !== :ProtectiveOpen
     @test sm.pending_since_ns == 0
     @test_throws ArgumentError CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
-    @test CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN + UInt64(1)) isa CR.OpenLoop
+    @test CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN + UInt64(1)) isa CR.StageRecovery
 end
 
 @testset "Early, stale and mismatched observations cannot close" begin
@@ -137,11 +133,10 @@ end
 @testset "Timeouts latch uncertain outcomes at every pending phase" begin
     for phase in (:Opening, :RestoringReference, :Verifying, :Releasing, :Closing)
         sm, now = qualified_recovery()
-        open = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
-        CR.staged!(sm, open, UInt64(4))
+        stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+        CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(4))
         if phase !== :Opening
-            stage = CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
-            CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
+            CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
         end
         if phase in (:Verifying, :Releasing, :Closing)
             CR.observe_recovery!(sm, recovery_observation(3))
@@ -232,13 +227,20 @@ end
     @test sm.pending_since_ns == 0
 end
 
-@testset "Recovery-open generation and stale release fencing" begin
-    sm, _ = restoring_recovery()
-    CR.observe_loop!(sm, loop_observation(3, 5, 4, false))
-    @test CR.state(sm) === :RestoringReference
+@testset "Atomic recovery-open generation and stale release fencing" begin
+    sm, _ = qualified_recovery()
+    stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(4))
+    # The atomic request already inhibits, but the old closed plan may remain
+    # active until its exact forced-open generation adopts at a callback.
+    CR.observe_loop!(sm, loop_observation(2, 4, 3, true))
+    @test CR.state(sm) === :Opening
     @test sm.failure === nothing
-    CR.observe_loop!(sm, loop_observation(4, 5, 5, false))
-    @test sm.loop_generation == 5
+    CR.observe_recovery!(sm, recovery_observation(3))
+    @test CR.state(sm) === :Opening
+    CR.observe_loop!(sm, loop_observation(4, 4, 4, false))
+    @test CR.state(sm) === :RestoringReference
+    @test sm.loop_generation == 4
     @test sm.expected_loop_generation == 0
     CR.observe_recovery!(sm, recovery_observation(5))
     CR.observe_reference!(sm, reference_observation(6))

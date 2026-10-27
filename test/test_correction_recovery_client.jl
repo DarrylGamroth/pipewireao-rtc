@@ -25,10 +25,14 @@ mutable struct ScriptedTransport <: CR.RecoveryTransport
     source_ns::Int64
     phase_polls::Int
     writes::Vector{Pair{String,Runner.RunnerScalar}}
+    retained_correction::Float32
+    competing_close_attempts::Int
+    competing_close_accepted::Int
+    resurrected_correction::Bool
 end
 ScriptedTransport(; mode=:normal) = ScriptedTransport(0, UInt64(1_000_000_000),
     912, 501, mode, true, 3, 3, true, 7, 0, 8, 8, 2, :idle, false,
-    40, 1_000_000_000, 0, Pair{String,Runner.RunnerScalar}[])
+    40, 1_000_000_000, 0, Pair{String,Runner.RunnerScalar}[], 0.8f0, 0, 0, false)
 CR.transport_instance(t::ScriptedTransport) = t.instance
 CR.transport_initial_token(::ScriptedTransport) = Int64(0)
 CR.transport_clock_ns(t::ScriptedTransport) = t.now_ns
@@ -82,6 +86,7 @@ function respond!(t, command::Runner.RunnerCommand{:properties_set})
         t.recovery_token = value.value::Int64
         t.virtual_requested += 1
         t.recovery_generation += 1
+        t.target_closed = false
         t.requested += 1 # same-false recovery-open boundary is a real generation
         t.recovery_state = :pending
         t.inhibited = true
@@ -96,6 +101,24 @@ function respond!(t, command::Runner.RunnerCommand{:properties_set})
     else
         error("unexpected property")
     end
+    if t.mode === :competing_close && length(t.writes) == 1
+        # The old ordinary-open path first adopts at its callback, freeing
+        # the control slot while retaining correction history. A second client
+        # may then close before recovery staging. The atomic recovery path is
+        # tested earlier, before its first callback, with inhibition installed.
+        if name == "correction:closed"
+            t.active = t.requested
+            t.closed = t.target_closed
+        end
+        t.competing_close_attempts += 1
+        if !t.inhibited && t.requested == t.active && t.virtual_requested == t.virtual_active
+            t.competing_close_accepted += 1
+            t.target_closed = t.closed = true
+            t.requested += 1
+            t.active = t.requested
+            t.resurrected_correction |= !iszero(t.retained_correction)
+        end
+    end
     generations = [(; node, requested, active)]
     return result(t, command, (; graph, generations, active_adoption_observed=false);
         outcome=Runner.Submitted)
@@ -106,9 +129,11 @@ scalar(value::Int64) = Runner.RunnerScalar(:long, value)
 scalar(value::String) = Runner.RunnerScalar(:string, value)
 function respond!(t, command::Runner.RunnerCommand{:properties})
     t.phase_polls += 1
-    if t.recovery_state === :pending && t.phase_polls >= 2
+    if t.recovery_state === :pending && t.phase_polls >= (t.mode === :immediate_application ? 1 : 2)
         t.virtual_active = t.virtual_requested
         t.active = t.requested
+        t.closed = false
+        t.retained_correction = 0f0
         t.recovery_state = t.mode === :unknown ? :unknown : :applied
     elseif t.recovery_state === :release_pending && t.phase_polls >= 2
         t.virtual_active = t.virtual_requested
@@ -148,7 +173,9 @@ function respond!(t, command::Runner.RunnerCommand{:properties})
         "pipewireao-recovery:release-token" => scalar(release_token),
         "pipewireao-recovery:requested-generation" => scalar(t.virtual_requested),
         "pipewireao-recovery:active-generation" => scalar(t.virtual_active),
-        "pipewireao-recovery:recovery-generation" => scalar(t.recovery_generation),
+        # Native scientific generation stays previous until scope adoption.
+        "pipewireao-recovery:recovery-generation" => scalar(t.recovery_state === :pending ?
+            t.recovery_generation - 1 : t.recovery_generation),
         "pipewireao-recovery:state" => scalar(string(t.recovery_state)),
         "pipewireao-recovery:closure-inhibited" => scalar(t.inhibited),
         "pipewireao-recovery:reference-reached" => scalar(reference),
@@ -174,20 +201,19 @@ end
     @test CR.state(operation.coordinator) === :Holding
     @test operation.coordinator.reason === :saturation
     @test operation.coordinator.recovery_generation == 3
-    @test operation.coordinator.loop_generation == 5
+    @test operation.coordinator.loop_generation == 4
     @test operation.request_token == 8
-    @test length(writes(t, "correction:closed")) == 1
-    @test only(writes(t, "correction:closed")).second.value === false
+    @test isempty(writes(t, "correction:closed"))
     @test length(writes(t, "pipewireao-recovery:request-token")) == 1
     @test isempty(writes(t, "pipewireao-recovery:release-token"))
     @test CR.resume!(operation; deadline=2.0) === operation
     @test CR.state(operation.coordinator) === :Closed
     @test length(writes(t, "pipewireao-recovery:release-token")) == 1
     @test only(writes(t, "pipewireao-recovery:release-token")).second.value == 3
-    @test length(writes(t, "correction:closed")) == 2
+    @test length(writes(t, "correction:closed")) == 1
     @test last(writes(t, "correction:closed")).second.value === true
     @test_throws ArgumentError CR.resume!(operation; deadline=2.0)
-    @test length(writes(t, "correction:closed")) == 2
+    @test length(writes(t, "correction:closed")) == 1
 end
 
 @testset "Missing or expired source evidence never closes or retries" begin
@@ -198,9 +224,9 @@ end
         @test failure.operation.coordinator.failure === :operation_timeout
         @test length(writes(t, "pipewireao-recovery:request-token")) == 1
         @test isempty(writes(t, "pipewireao-recovery:release-token"))
-        @test length(writes(t, "correction:closed")) == 1
+        @test isempty(writes(t, "correction:closed"))
         @test_throws ArgumentError CR.resume!(failure.operation; deadline=2.0)
-        @test length(writes(t, "correction:closed")) == 1
+        @test isempty(writes(t, "correction:closed"))
     end
 end
 
@@ -210,7 +236,7 @@ end
         failure = failure_of(() -> CR.protective_open!(t, "science"; deadline=2.0))
         @test CR.state(failure.operation.coordinator) === :Unverified
         @test length(writes(t, "pipewireao-recovery:request-token")) == 1
-        @test length(writes(t, "correction:closed")) == 1
+        @test isempty(writes(t, "correction:closed"))
         @test isempty(writes(t, "pipewireao-recovery:release-token"))
     end
 end
@@ -224,10 +250,10 @@ end
         failure = failure_of(() -> CR.resume!(operation; deadline=2.0))
         @test failure.operation === operation
         @test CR.state(operation.coordinator) === :Unverified
-        @test length(writes(t, "correction:closed")) == 1
+        @test isempty(writes(t, "correction:closed"))
         @test length(writes(t, "pipewireao-recovery:release-token")) <= 1
         @test_throws ArgumentError CR.resume!(operation; deadline=2.0)
-        @test length(writes(t, "correction:closed")) == 1
+        @test isempty(writes(t, "correction:closed"))
     end
 end
 
@@ -246,7 +272,7 @@ end
     @test failure.operation.coordinator.failure === :operation_cancelled
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test length(writes(t, "pipewireao-recovery:request-token")) == 1
-    @test length(writes(t, "correction:closed")) == 1
+    @test isempty(writes(t, "correction:closed"))
 end
 
 @testset "Slow successful readiness cannot issue an expired phase effect" begin
@@ -263,8 +289,7 @@ end
     @test failure.operation === operation
     @test CR.state(operation.coordinator) === :Unverified
     @test length(writes(closing, "pipewireao-recovery:release-token")) == 1
-    @test length(writes(closing, "correction:closed")) == 1
-    @test only(writes(closing, "correction:closed")).second.value === false
+    @test isempty(writes(closing, "correction:closed"))
     @test closing.now_ns < 2_000_000_000
 end
 @testset "Native terminal failures retain their reported field and cause" begin
@@ -273,7 +298,35 @@ end
     @test occursin("properties: owner rejected update", sprint(showerror, failure))
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test length(transport.writes) == 1
-    @test isempty(writes(transport, "pipewireao-recovery:request-token"))
+    @test length(writes(transport, "pipewireao-recovery:request-token")) == 1
+end
+
+@testset "First protective mutation inhibits a competing close before adoption" begin
+    t = ScriptedTransport(; mode=:competing_close)
+    operation = try
+        CR.protective_open!(t, "science"; deadline=2.0)
+    catch error
+        error
+    end
+    @test first(first(t.writes)) == "pipewireao-recovery:request-token"
+    @test t.competing_close_attempts == 1
+    @test t.competing_close_accepted == 0
+    @test !t.resurrected_correction
+    @test operation isa CR.Operation
+    @test t.inhibited
+    @test !t.closed
+    @test iszero(t.retained_correction)
+    @test isempty(writes(t, "correction:closed"))
+end
+
+@testset "First recovery readback may already show atomic application" begin
+    t = ScriptedTransport(; mode=:immediate_application)
+    operation = CR.protective_open!(t, "science"; deadline=2.0)
+    @test CR.state(operation.coordinator) === :Holding
+    @test operation.coordinator.loop_generation == 4
+    @test operation.coordinator.recovery_generation == 3
+    @test only(t.writes).first == "pipewireao-recovery:request-token"
+    @test t.inhibited && !t.closed
 end
 
 end

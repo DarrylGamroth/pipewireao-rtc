@@ -234,8 +234,9 @@ function recovery_error(operation::Operation, error)
     return RecoveryError(operation, sprint(showerror, error))
 end
 
-"""Open, restore the declared scoped reference and leave correction in Holding.
+"""Atomically inhibit closure and open/reset the scoped recovery, then leave Holding.
 
+The recovery request is the first native mutation; ordinary open is never sent.
 Every query uses the existing absolute deadline and cancellation check. Native
 request tokens identify requests; scientific generation and owner observation
 sequence independently identify reference evidence. No reply cache is relabeled.
@@ -264,16 +265,7 @@ function protective_open!(transport::RecoveryTransport, graph::AbstractString;
         qualify!(coordinator, LoopObservation(initial.owner_instance, UInt64(0), initial.serial,
             initial.loop_requested, initial.loop_active, initial.closed))
         effect = request_protection!(coordinator, initial.owner_instance, UInt64(operation.request_token); reason)
-        reply = write_property!(operation, operation.controller * ":closed",
-            RecoveryRunner.RunnerScalar(:bool, false); deadline, check)
-        staged!(coordinator, effect, generation_for(reply, operation.controller))
-        while state(coordinator) === :Opening
-            snapshot = snapshot!(operation; deadline, check)
-            stage = observe_loop!(coordinator, loop_readback(operation, snapshot))
-            stage === nothing || return restore_reference!(operation, stage; deadline, check)
-            pause_control!(operation; deadline, check)
-        end
-        throw(NativeControlClient.UnknownOutcome("opening did not establish a recovery stage"))
+        return restore_reference!(operation, effect; deadline, check)
     catch error
         throw(recovery_error(operation, error))
     end
@@ -296,8 +288,10 @@ function restore_reference!(operation::Operation, effect::StageRecovery; deadlin
             recovery_staged!(coordinator, effect, snapshot.recovery_generation;
                 loop_generation=snapshot.loop_requested)
             bound = true
-            # Give the pending recovery-open update to the coordinator, with its
-            # exact native generation, before interpreting scope application.
+            # The same atomic recovery transaction owns forced-open adoption.
+            # Pending evidence may still show the old closed active generation.
+            observe_loop!(coordinator, loop_readback(operation, snapshot))
+        elseif bound && state(coordinator) === :Opening
             observe_loop!(coordinator, loop_readback(operation, snapshot))
         elseif bound && state(coordinator) === :RestoringReference
             observe_loop!(coordinator, loop_readback(operation, snapshot))
