@@ -1,0 +1,56 @@
+{
+  "state": "Running",
+  "remote": "/run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc-999c1401029b",
+  "processes": [
+    {
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-analysis-wfs.service",
+      "pid": 3201808,
+      "active_state": "active",
+      "invocation": "9517185a5a6841c78a1aa988df409da7",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --project=/home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed -e using PipeWireAORTC; exit(PipeWireAORTC.Analysis.main(ARGS)) -- --config /home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed/analysis/analysis.conf --remote /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc-999c1401029b "
+    },
+    {
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-core.service",
+      "pid": 3191587,
+      "active_state": "active",
+      "invocation": "1682210e3bed4cccbe04085125435826",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewire-ao -c daemon.conf "
+    },
+    {
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-julia.service",
+      "pid": 3191628,
+      "active_state": "active",
+      "invocation": "46f9d4bf626a439ca03d9141e2f8d99e",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed -e using PipeWireAORTC; PipeWireAORTC.GraphOwner.main(ARGS) -- --graph /home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed/rtc/graph.conf --name revolt-classic-jfg-frame-graph --remote /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc-999c1401029b --rate 500/1 --boundary-layout row-major --session-run-control --fifo-inputs --execution complete-frame --feedback constraint-feedback controller-constraint-feedback --warmup-output demanded --warmup-output controller-constraint-feedback --bootstrap-node pipewireao.rtc.bootstrap.julia --bootstrap-instance 354020456478745 --warmup-output slopes --warmup-output flux --warmup-output validity --warmup-output current-offset --warmup-output constraint-feedback --warmup-output correction-role --fits-bindings /home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed/rtc/parameters.conf --pin-cpus 9,8 "
+    },
+    {
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-parameters.service",
+      "pid": 3191629,
+      "active_state": "active",
+      "invocation": "d3169cf2d4dc4e6c8bfdc59e4b1e26a2",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed -e using PipeWireAORTC; PipeWireAORTC.NativeParameterSource.main(ARGS) -- --config /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/parameters/sources.json --remote /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc-999c1401029b --bootstrap-node pipewireao.rtc.bootstrap.parameters --bootstrap-instance 354020456478747 --control-node pipewireao.rtc.parameters.revolt-classic --control-instance 354020456478748 "
+    },
+    {
+      "unit": "pipewireao-owner-999c1401029b41829c672ac216dad6de-simulator.service",
+      "pid": 3191630,
+      "active_state": "active",
+      "invocation": "1f49474ce198444d8ab854658b774831",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.julia/juliaup/julia-1.13.2+0.x64.linux.gnu/bin/julia --startup-file=no --threads=2,0 --project=/home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed -e using PipeWireAORTC; PipeWireAORTC.AOSOwner.main(ARGS) -- --config /home/dgamroth/.local/state/pipewireao/named-channels-20261025/session/installed/simulation.conf --remote /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc-999c1401029b --control-node simulator-wfs --bootstrap-node pipewireao.rtc.bootstrap.simulator --bootstrap-instance 354020456478746 --phase-timing-directory /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/phase-timing --phase-timing-frames 32768 --phase-timing-warmup 512 --pipewire-cpu 8 --optical-diagnostics-cpu 9 "
+    },
+    {
+      "unit": "pipewireao-session@b6d78daffbae.service",
+      "pid": 3191984,
+      "active_state": "active",
+      "invocation": "999c1401029b41829c672ac216dad6de",
+      "gpu_library_or_compiled_module_mappings": [],
+      "cmdline": "/home/dgamroth/.local/opt/pipewireao-classic-headless-20261021/bin/pipewireao-rtc -c /run/user/1000/pipewireao-session-b6d78daffbae/999c1401029b41829c672ac216dad6de/rtc/rtc.conf "
+    }
+  ],
+  "no_gpu_library_or_compiled_module_mappings": true,
+  "admission_loaded_gpu_modules": []
+}

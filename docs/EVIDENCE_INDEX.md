@@ -1,5 +1,18 @@
 # Delivery evidence catalog
 
+## Named RMS source channels — 2026-10-25
+
+The [increment record](validation/named-channels-20261025/README.md) records the
+source declarations, CPU optical selector and their numerical/qualification
+boundary. Work remains isolated; private browser/session integration is recorded
+separately from those cold checks.
+
+## Source-published ndarray channels — 2026-10-25
+
+The [increment record](validation/source-channels-20261025/README.md) records the
+source-unit authoring path, cold producer/RTC checks and UTF-8 regression evidence.
+Private CPU and GUI integration evidence remains a separately recorded gate.
+
 ## GPI optical model and multi-command HIL — 2026-10-24
 
 The [validation record](validation/gpi-multiport-20261024/README.md) records

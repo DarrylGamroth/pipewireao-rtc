@@ -19,6 +19,12 @@ const FOCAL_IMAGE_SCHEMA = PipeWireAORTC.Schemas.identifier("focal_photon_rate")
 const WAVEFRONT_SCHEMA = PipeWireAORTC.Schemas.identifier("residual_pupil_opd_nm")
 # One row: uncorrected atmosphere RMS, corrected pupil RMS; both in nm OPD.
 const RMS_SCHEMA = PipeWireAORTC.Schemas.identifier("pupil_opd_rms_nm")
+const RMS_CHANNELS = (
+    (name="uncorrected_atmosphere_rms", index=0,
+        title="Uncorrected atmosphere RMS", units="nm OPD"),
+    (name="corrected_pupil_rms", index=1,
+        title="Corrected pupil RMS", units="nm OPD"),
+)
 const PERIOD_NS = UInt64(50_000_000)
 const ZERO_PADDING = 2
 const RMS_SHAPE = (1, 2)
@@ -136,7 +142,8 @@ rms_source_options(::Nothing, properties) = ()
 rms_source_options(snapshot, properties) =
     (PipeWireImageSourceOptions(node_name="simulator-wavefront-rms",
         media_name="wavefront-rms", schema=RMS_SCHEMA, shape=RMS_SHAPE,
-        rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties),)
+        rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties,
+        channels=RMS_CHANNELS),)
 
 # One producer admits the complete cohort before advancing the graph. Its busy
 # flag stays set until the consumer releases every transfer, so independent
