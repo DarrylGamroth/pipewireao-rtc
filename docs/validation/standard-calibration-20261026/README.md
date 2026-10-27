@@ -251,3 +251,11 @@ adoption witness remain prerequisites for a deployed event-driven campaign.
 GPI2 held named-command coherence and multi-WFS association remain separate
 gates. No native campaign, full-basis acquisition, physical-device or deadline
 qualification is claimed here. No GPU, installed RTC or desktop core was used.
+
+Release 0.2.20 landed independently with the single-input analysis boundary fix
+while this work was validated. Integration preserves that source and publishes
+the YAML change as 0.2.21. The combined source passed all 381 focused Common and
+package/source-closure assertions with the 0.2.21 metadata. The affected optional
+analysis selector passed all 20 assertions with two Julia threads; its initial
+single-thread run skipped the existing two-thread readiness gate. `Pkg.resolve()`
+changed only the package's own frozen Manifest version to 0.2.21.
