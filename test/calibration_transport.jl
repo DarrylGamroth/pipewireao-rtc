@@ -122,9 +122,6 @@ function transport_test(socket, directory, daemon)
             prior_cycles=source_cycles[]
             Transport.stage!(probe,sequence,figure)
             await(() -> source_cycles[]>prior_cycles && Transport.calibration_probe_snapshot(probe).published==sequence)
-            with_thread_loop_lock(loop) do _
-                trigger_process!(probe.source)
-            end
             try
                 await(() -> begin
                     snapshot=Transport.calibration_probe_snapshot(probe)

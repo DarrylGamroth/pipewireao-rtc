@@ -63,6 +63,9 @@ end
 
 include("calibration_graphs.jl")
 include("modal_calibration.jl")
+include("calibration_transport.jl")
+include("calibration_capture.jl")
+include("calibration_owner.jl")
 include("shack_hartmann_calibration.jl")
 include("calibration_staging.jl")
 include("modal_hidden_modes.jl")

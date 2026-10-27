@@ -147,6 +147,38 @@ another command. Unknown in-flight outcomes never authorize restoration or
 ordinary-loop resumption. Recording can retain typed events for replay; it is
 not required to calculate a response during acquisition.
 
+### CPU initial-session endpoint
+
+`InstrumentCalibration.calibration_graph(application; inputs, outputs)` derives
+cold projections from a built regular graph. For the Classic initial session,
+select raw `pixel-calibration:raw` to existing `slopes`, `flux`, `validity` outputs,
+and absolute `pdm-command:requested` to `demanded`, `constraint-feedback`.
+`prepare_initial_calibration(application, remote, frontend, command;
+reference, name, instance, deadline)` owns both prepared projections and returns
+`NativeCalibrationEndpoint.Endpoint`. Serve it with `serve!(endpoint; deadline)`
+on a control task and close it after the native client disconnects. Use at least
+three Julia default threads; the private-core optical selector uses four.
+
+This CPU simulation endpoint uses normal configured detector noise and ADC,
+actual transported command adoption and correlated raw/WFS streams. It rechecks
+the built graph and selected FITS inputs before starting. Reference and probe
+figures are absolute physical commands in the declared wire units, including
+completion and reference; this endpoint adds no flat or offset. Its sole full
+wire acquisition domain is retained as `endpoint.effects.acquisition_domain`
+and mapped to coordinator domain ID `1` for that endpoint lifetime. Preserve
+that association with acquisition evidence. Responses are averaged online;
+raw recording and offline reduction are not prerequisites.
+
+An in-flight synchronous HIL operation resolves or reaches its finite deadline
+before the owner can check revocation. The owner checks the native ticket before
+starting another exposure and during capture notifications. Unknown outcomes
+fence endpoints without restoration or retry. This initial-session API does not
+transfer a running controller's state, actuate devices, publish a calibration
+bundle or implement the optional `Capture` file-export action.
+
+See the [implementation and verification record](validation/calibration-owner-20261027/PLAN.md)
+and [independent review](validation/calibration-owner-20261027/REVIEW.md).
+
 ### Delivery state and next gates
 
 The procedure and native client are implemented in PipeWireAORTC, rather than

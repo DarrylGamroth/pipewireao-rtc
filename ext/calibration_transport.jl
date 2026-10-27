@@ -46,6 +46,15 @@ function start_calibration_graph(descriptor, remote, name, rate; notify)
             notify()
         end
     end
+    # Task completion, rather than its finally block, publishes the error Ref
+    # and wakes deadline-bound teardown after istaskdone becomes observable.
+    @async begin
+        try
+            wait(task)
+        finally
+            notify()
+        end
+    end
     return CalibrationGraphWorker(task, node, failure, ready, stop_requested)
 end
 
@@ -74,6 +83,7 @@ mutable struct CalibrationProbe{L,F}
     sequence::UInt64
     published::UInt64
     received::UInt64
+    drain_pending::Bool
     error::Any
     closed::Bool
     source_buffer::PW.StreamBuffer
@@ -103,10 +113,25 @@ function publish_calibration_probe!(probe, stream)
             PW.queue_buffer!(probe.source_buffer, stream)
             queued = true
             probe.published = probe.sequence
+            probe.drain_pending = true
             probe.notify()
         finally
             queued || PW.return_buffer!(probe.source_buffer, stream)
         end
+    catch error
+        calibration_probe_failure!(probe, error)
+    end
+    return nothing
+end
+
+# A source process queues its buffer for the following native graph cycle.
+# Flush that single publication after trigger_done; do not republish or spin
+# until feedback, and do not use a clock tick as adoption evidence.
+function drain_calibration_probe!(probe, stream)
+    (probe.closed || probe.error !== nothing || !probe.drain_pending) && return nothing
+    try
+        probe.drain_pending = false
+        PW.trigger_process!(stream)
     catch error
         calibration_probe_failure!(probe, error)
     end
@@ -179,7 +204,7 @@ function prepare_calibration_probe(core, format, schema, feedback_format, feedba
     requested.shape == feedback.shape || throw(DimensionMismatch("probe and feedback extents differ"))
     loop = PW.main_loop(core)
     probe = CalibrationProbe(loop, nothing, nothing, zeros(Float32, requested.shape...),
-        zeros(Float32, feedback.shape...), UInt64(0), UInt64(0), UInt64(0), nothing, false,
+        zeros(Float32, feedback.shape...), UInt64(0), UInt64(0), UInt64(0), false, nothing, false,
         PW.StreamBuffer(), PW.StreamBuffer(), notify)
     try
         PW.with_thread_loop_lock(loop) do _
@@ -187,7 +212,8 @@ function prepare_calibration_probe(core, format, schema, feedback_format, feedba
                 properties=Dict("node.name"=>"calibration-requested", "node.want-driver"=>"true",
                     "priority.driver"=>"100", "node.reliable"=>"true"),
                 on_state_changed=(stream, old, current, message) -> calibration_probe_state!(probe, old, current, message),
-                on_process=stream -> publish_calibration_probe!(probe, stream))
+                on_process=stream -> publish_calibration_probe!(probe, stream),
+                on_trigger_done=stream -> drain_calibration_probe!(probe, stream))
             probe.feedback = PW.Stream(core, "calibration-constraint-feedback";
                 properties=Dict("node.name"=>"calibration-constraint-feedback", "node.reliable"=>"true"),
                 on_state_changed=(stream, old, current, message) -> calibration_probe_state!(probe, old, current, message),

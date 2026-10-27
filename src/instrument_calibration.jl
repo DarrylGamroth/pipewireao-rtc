@@ -95,6 +95,10 @@ end
 "Cold projection of an existing built graph for initial calibration (optional science extension)."
 function calibration_graph end
 
+"Prepare a native CPU initial-calibration endpoint from the regular graph projections."
+function prepare_initial_calibration end
+public prepare_initial_calibration
+
 "Reject source instruments before numerical calibration or validation starts."
 function require_prepared_application(application)
     for path in ("deployment.conf", "instrument.json", joinpath("rtc", "parameters.conf"))

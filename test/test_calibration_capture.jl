@@ -43,7 +43,7 @@ function owned_test_capture(f)
     declarations=capture_declarations()
     slots=(;raw=CC._slot(declarations.raw,UInt16,2),slopes=CC._slot(declarations.slopes,Float32,2),
         flux=CC._slot(declarations.flux,Float32,1),validity=CC._slot(declarations.validity,Bool,1))
-    capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false)
+    capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),ReentrantLock(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false)
     try
         f(capture)
     finally

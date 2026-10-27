@@ -41,6 +41,7 @@ mutable struct Capture{Slots}
     slots::Slots
     streams::NamedTuple
     wakeup::Base.AsyncCondition
+    wakeup_lock::ReentrantLock
     own_wakeup::Bool
     phase::UInt8
     failure::Symbol
@@ -54,7 +55,18 @@ mutable struct Capture{Slots}
 end
 
 _locked(f, capture::Capture) = with_thread_loop_lock(_ -> f(), main_loop(capture.core))
-_signal(capture) = (isopen(capture.wakeup) && ccall(:uv_async_send, Cint, (Ptr{Cvoid},), capture.wakeup); nothing)
+function _signal(capture)
+    lock(capture.wakeup_lock) do
+        isopen(capture.wakeup) && ccall(:uv_async_send, Cint, (Ptr{Cvoid},), capture.wakeup)
+    end
+    return nothing
+end
+function _close_wakeup(capture)
+    lock(capture.wakeup_lock) do
+        isopen(capture.wakeup) && close(capture.wakeup)
+    end
+    return nothing
+end
 function _fail!(capture, reason, exception=nothing)
     capture.failure === :none || return nothing
     capture.failure = reason
@@ -216,14 +228,14 @@ control methods acquire that same loop lock. Payload and receipt stores therefor
 happen before the owner observes completion. Close fences stream callbacks before
 releasing an owned wakeup; a live waiter first unwinds its one-shot Timer. No scientific validity, clipping, unit conversion or file policy is applied.
 """
-function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing)
+function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing, wakeup_lock=ReentrantLock())
     main_loop(core) isa ThreadLoop || throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
     keys(declarations) == (:raw,:slopes,:flux,:validity) || throw(ArgumentError("capture requires raw/slopes/flux/validity declarations in that order"))
     slots = (;raw=_slot(declarations.raw,UInt16,2), slopes=_slot(declarations.slopes,Float32,2),
         flux=_slot(declarations.flux,Float32,1), validity=_slot(declarations.validity,Bool,1))
     condition = wakeup === nothing ? Base.AsyncCondition() : wakeup
     condition isa Base.AsyncCondition && isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
-    capture = Capture(core,slots,NamedTuple(),condition,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false)
+    capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false)
     created = Stream[]
     try
         _locked(capture) do
@@ -252,7 +264,7 @@ function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing)
         _locked(capture) do
             foreach(close,reverse(created))
         end
-        capture.own_wakeup && close(condition)
+        capture.own_wakeup && _close_wakeup(capture)
         rethrow()
     end
     return capture
@@ -349,7 +361,7 @@ function await!(capture::Capture; deadline::Real, check=()->nothing)
             capture.waiting = false
             capture.phase == CLOSED && capture.own_wakeup
         end
-        close_wakeup && isopen(capture.wakeup) && close(capture.wakeup)
+        close_wakeup && _close_wakeup(capture)
     end
 end
 
@@ -362,7 +374,7 @@ function Base.close(capture::Capture)
     end
     # A live waiter owns its Timer and closes an owned wakeup after unwinding.
     close_wakeup = _locked(() -> capture.own_wakeup && !capture.waiting,capture)
-    close_wakeup && isopen(capture.wakeup) && close(capture.wakeup)
+    close_wakeup && _close_wakeup(capture)
     return nothing
 end
 
