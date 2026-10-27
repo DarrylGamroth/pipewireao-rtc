@@ -7,10 +7,10 @@ registered FGA 0.8.3 / FGPW 0.1.10 / RTC 0.2.20 and the RTC 0.2.22 nil-action
 correction. It covers 954 exact pairs on the earlier session, 905 on its first
 managed replacement, and 956 on the final CUDA cohort, plus optional-analysis
 fault isolation, GUI geometry retention, operator readbacks, and scoped recovery.
-It distinguishes an intermediate cohort shutdown failure with completed cleanup
-from the earlier successful native Quit, and separately records a headless
-recovery failure and the successful GUI recovery. No physical settling or
-deadline qualification is claimed.
+It distinguishes the intermediate cohort's controller-discovery timeout and
+failed service result with completed cleanup from the earlier successful native
+Quit, and separately records a headless recovery failure and the successful GUI
+recovery. No physical settling or deadline qualification is claimed.
 
 ## Protective correction recovery — 2026-10-27
 
