@@ -6,6 +6,7 @@ end
 include("test_native_session_discovery.jl")
 include("test_native_session_client.jl")
 include("test_calibration_acquisition.jl")
+include("test_calibration_procedure.jl")
 include("test_calibration_install.jl")
 include("test_session_configuration.jl")
 include("test_instrument_definition.jl")

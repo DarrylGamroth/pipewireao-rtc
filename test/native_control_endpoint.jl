@@ -54,7 +54,9 @@ function run_endpoint_proof(socket, directory, daemon)
         end
         connect_client() = Client.connect(TestProfile(), socket, "test.native.owner", getpid(), 23;
             deadline=Client.monotonic() + 10, check=check_owner)
-        first_client = connect_client()
+        # No supervision timer: discovery and completion must wake on native events.
+        first_client = Client.connect(TestProfile(), socket, "test.native.owner", getpid(), 23;
+            deadline=Client.monotonic() + 10)
         push!(clients, first_client)
         second_client = connect_client()
         push!(clients, second_client)
@@ -67,7 +69,7 @@ function run_endpoint_proof(socket, directory, daemon)
 
         ask(client; seconds=10.0) = Client.request!(client, TestCommand();
             deadline=Client.monotonic() + seconds, check=check_owner)
-        reply = ask(first_client)
+        reply = Client.request!(first_client, TestCommand(); deadline=Client.monotonic()+10)
         @test reply.header.result == 0
         @test pod_value(Int32, only(reply.payload.values)) == 1
         @test effects[] == 1
@@ -198,6 +200,10 @@ function run_endpoint_proof(socket, directory, daemon)
             fetch(owner_task)
         end
         foreach(close, reverse(clients))
+        for client in clients
+            @test !isopen(client.wakeup)
+            @test Client.wake!(client) === nothing # A queued timer may notify after close.
+        end
         endpoint === nothing || close(endpoint)
         with_thread_loop_lock(loop) do _
             for resource in (core, context)
