@@ -13,7 +13,7 @@ import ..InstrumentExport
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
-    controller_graph, controller_storage, measure!, calibration_frame!, calibrate_system,
+    controller_graph, calibration_graph, controller_storage, measure!, calibration_frame!, calibrate_system,
     calibrate_hidden_modes, validate_system, lowpass_coefficients, read_recipe,
     read_bundle, write_bundle, stage_calibration
 
@@ -91,6 +91,9 @@ function read_parameters(application)
         joinpath(application, "rtc", "graph.conf"),
         joinpath(application, "rtc", "parameters.conf"))
 end
+
+"Cold projection of an existing built graph for initial calibration (optional science extension)."
+function calibration_graph end
 
 "Reject source instruments before numerical calibration or validation starts."
 function require_prepared_application(application)

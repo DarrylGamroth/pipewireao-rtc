@@ -61,6 +61,7 @@ function Calibration.calibration_frame!(system, physical)
     return HIL.hil_frame_buffer(boundary)
 end
 
+include("calibration_graphs.jl")
 include("modal_calibration.jl")
 include("shack_hartmann_calibration.jl")
 include("calibration_staging.jl")
