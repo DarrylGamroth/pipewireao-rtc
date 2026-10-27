@@ -3,6 +3,55 @@ local lua = require ("ao-lua")
 local control = require ("ao-control")
 local owner = require ("ao-owner")
 
+-- Run/reset records coexist with scientific Props containing correction status.
+-- Exercise the real owner parser, not the session test's node-operation stub.
+local function correction_node_operation (kind, extra, expected_error)
+  local writes, failure = 0, nil
+  local prefix = "pipewireao.correction-control."
+  local fields = { "controller:closed", Pod.Boolean (true),
+    prefix .. "version", Pod.Int (1), prefix .. "owner-instance", Pod.Long (8),
+    prefix .. "controller:closed.state", "Unknown",
+    prefix .. "controller:closed.fault", "adoption_timeout",
+    prefix .. "controller:closed.requested", Pod.Boolean (false) }
+  if extra then fields [#fields + 1], fields [#fields + 2] = extra, Pod.Int (1) end
+  local rows = {
+    Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct {
+      "pipewireao.run-control.version", Pod.Int (1),
+      "pipewireao.run-control.completed-token", Pod.Long (0),
+      "pipewireao.run-control.result", Pod.Int (0),
+      "pipewireao.run-control.actual-state", "stopped" } },
+    Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct {
+      "pipewireao.reset-control.version", Pod.Int (1),
+      "pipewireao.reset-control.completed-token", Pod.Long (0),
+      "pipewireao.reset-control.result", Pod.Int (0) } },
+    Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct (fields) } }
+  local node = { ["bound-id"] = 7, properties = { ["object.serial"] = "22" } }
+  node.enum_params = function (_, param, callback)
+    assert (param == "Props")
+    callback ({ iterate = function ()
+      local index = 0
+      return function () index = index + 1; return rows [index] end
+    end }, nil)
+  end
+  node.set_param = function (_, param, request)
+    assert (param == "Props")
+    local values = control.named_params (request)
+    assert (values ["pipewireao." .. kind .. "-control.request-token"])
+    writes = writes + 1
+  end
+  local cancel = owner.node_operation (node, kind, "stopped",
+      GLib.get_monotonic_time () + 1000000, function (_, error) failure = error end)
+  cancel ()
+  if expected_error then
+    assert (writes == 0 and failure and failure:find (expected_error, 1, true), tostring (failure))
+  else assert (writes == 1 and not failure, tostring (failure)) end
+end
+for _, kind in ipairs ({ "run", "reset" }) do
+  correction_node_operation (kind)
+  correction_node_operation (kind, "pipewireao.unknown-control.version", "Unrecognized reserved")
+  correction_node_operation (kind, "pipewireao.correction-control.controller:closed.bogus", "Unrecognized reserved")
+end
+
 -- Cold compilation can require an explicitly longer, still bounded admission
 -- budget. Exercise validation before identity checking; never issue a query.
 local saved_identity = control.same_identity

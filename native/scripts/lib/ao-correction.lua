@@ -7,6 +7,16 @@ local control = require ("ao-control")
 local correction = {}
 local PREFIX = "pipewireao.correction-control."
 
+-- These read-only fields share the scientific Props record. They are not
+-- run/reset acknowledgements; those retain their separate exact records.
+function correction.is_status_field (name)
+  if name:sub (1, #PREFIX) ~= PREFIX then return false end
+  local suffix = name:sub (#PREFIX + 1)
+  if suffix == "version" or suffix == "owner-instance" then return true end
+  local property, field = suffix:match ("^([^:]+:[^:]+)%.([a-z]+)$")
+  return property ~= nil and (field == "state" or field == "fault" or field == "requested")
+end
+
 local function scalar (values, name, kind)
   return control.scalar (assert (values [name], "Missing correction status: " .. name), kind)
 end
