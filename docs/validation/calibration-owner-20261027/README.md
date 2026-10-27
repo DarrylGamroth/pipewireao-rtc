@@ -354,3 +354,66 @@ outcomes never authorize retry, rebind or ordinary-loop resumption. Bounded
 Capture is a qualified software prerequisite; the automatic dark/lamp/qualification
 campaign, reliable repeated acquisition, accepted complete basis, numerical
 acceptance and physical instrument qualification remain open.
+
+### Registered dark/source release — 2026-10-27
+
+RTC 0.2.30 is published and registered from `e241bc6` (registry tree
+`9f13f6707650f85873551eb038b1f01d1b3ed686`). AOC 0.17.2 is published and
+registered from `7df02f5` (tree `5128a4816ad4dbec4803de21f7c819b859174273`).
+The latter supplies bounded running dark/lamp states with unchanged batch
+equations; 2,450 CPU assertions and an independent 80-case randomized comparison
+against AOC 0.17.1 pass. No raw history is retained by these states.
+
+The full RTC 0.2.30 suite passed 6,239 assertions on Julia 1.13.3. A fresh
+Classic application resolved only registered packages (AOC 0.17.2, FGA 0.8.5,
+FGPW 0.1.11, RTC 0.2.30), built successfully, and passed 151 cold graph/bundle
+assertions plus 342 native dark/light Capture assertions. Each native session
+restored/released and closed its own private CPU core. No GPU package was
+loaded. The instrument source change is merged in
+[PR 2](https://github.com/DarrylGamroth/adaptive-optics-simulations/pull/2).
+PR 1 was superseded to exclude unrelated local GPI supervision commits without
+rewriting its published history; the verified Classic files are identical.
+
+Logs under the shared validation directory use prefixes `registered-030-`,
+`calibration-release-030-` and `reference-aoc-0172-`. Failed harness attempts are
+preserved: the first package run omitted the required PipeWire prefix, the first
+native invocation passed an incorrect selector argument, and the first formatter
+invocation selected an uninstantiated tools environment. Corrected invocations
+passed; these were setup failures before the affected verification ran. This
+release closes the registered-build prerequisite, not online campaign,
+interaction-matrix or physical qualification.
+
+### Online reference campaign implementation and review — 2026-10-27
+
+The pending RTC increment adds `CalibrationPreparation` and
+`InstrumentCalibration.calibrate_references`: declared dark/lamp stages, online
+AOC state updates, typed startup parameter sources and a later exposure window
+using frozen training mask/reference. The full core suite passes 6,441 assertions
+in 243 testsets; the science contract selector passes 30 cold assertions and
+typed stage-source projection passes 56 assertions (29 existing projection
+assertions also pass). An actual private-core consumer selector passes 187
+assertions covering correlation, borrowed-sample mutation, a mid-batch consumer
+exception, truthful remaining exposure counts, latched rejection and confirmed
+Restore/Release/teardown with unchanged source/application bytes. The initial
+consumer test incorrectly equated exposure duration with frame period: Classic
+has 1,896,000 ns exposure in a 2,000,000 ns period. The failed test is retained;
+the corrected cadence/nonoverlap checks pass without changing product behavior.
+
+Independent source/numerical review resolved these confirmed findings:
+
+| ID | Finding and evidence | Disposition |
+| --- | --- | --- |
+| RC-01 | `Collect` read validity/slopes after a reducer borrowed mutable sample arrays. A fail-before reproduction changed invalid NaNs into valid values of 42. | Native response evidence is now frozen before invoking the reducer. Six focused checks and the native mutation regression pass. Borrowing remains explicitly read-only. |
+| RC-02 | A custom preparation confirmation could name another simulator while the receipt named the selected owner. | Reject foreign witnesses before acquisition; the confirmed witness must exactly match the selected simulator incarnation/domain. |
+
+Independent preparation tests pass 175 assertions, and the reference contract
+selector independently passes 30. No unresolved confirmed source finding was
+reported. Actual full campaign qualification failed: the first dark stage
+reached an unknown absolute-request-deadline outcome after 11 minutes 21.8 seconds
+in the native test body. No background or candidate was published. The aggregated
+error also contained a second exception whose detail was not displayed; it is
+not assigned a cause here. Temporary directories were automatically removed.
+This observation does not identify a cause. No wake, retry,
+source-brightness, noise, mask-threshold or scheduling workaround is used to
+claim success. The campaign is not released or an activatable calibration.
+The next instrument after REVOLT is GPI; mechanism authority remains external.

@@ -14,6 +14,10 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Calibration source and mechanism preparation — 2026-10-27
 
+Delivery order is REVOLT Classic first, then GPI. The common preparation and
+online reduction interfaces remain shared; GPI's mechanism authority stays in
+its existing control software and requires its own adapter and qualification.
+
 The user confirms physical REVOLT source preparation is completely manual.
 The [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
 keeps source/mechanism authority in the simulator, existing SPIDERS/GPI services
@@ -22,12 +26,18 @@ readiness; evidence must precede and remain associated with candidate exposures.
 The first implementation adds a declared simulated `dark` selection with zero
 incident photons and unchanged production detector electronics/UInt16 transport.
 It preserves the ordinary RTC graph and selected calibration bytes. Physical
-adapters, manual interaction, automatic training/qualification and reliable
-repeated acquisition remain separate gates; no hardware command is issued.
+adapters and reliable repeated acquisition remain separate gates; no hardware
+command is issued. The pending online campaign adds correlated preparation,
+running AOC reductions and frozen-reference qualification. Its first full
+private-core run timed out during the dark stage, so it is not released or
+qualified; a separate instrumented first-dark experiment is isolating the block.
 Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
 and 342 actual private-core dark/light Capture assertions. The
 [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
-retains the failed source-manifest build and registered-release/cohort limitations.
+retains the failed source-manifest build and subsequent registered RTC 0.2.30
+qualification. The campaign core suite passes 6,441 assertions; the actual
+online-consumer fault/recovery selector passes 187 assertions. Neither substitutes
+for the pending complete campaign gate.
 
 ### GPI2 loop controls and supervision — 2026-10-27
 
