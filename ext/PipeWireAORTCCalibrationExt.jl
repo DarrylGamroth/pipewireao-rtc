@@ -62,7 +62,10 @@ function Calibration.calibration_frame!(system, physical)
 end
 
 include("modal_calibration.jl")
+include("shack_hartmann_calibration.jl")
+include("calibration_staging.jl")
 include("modal_hidden_modes.jl")
 include("modal_validation.jl")
+include("shack_hartmann_validation.jl")
 
 end

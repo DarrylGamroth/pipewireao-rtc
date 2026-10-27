@@ -15,7 +15,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
     ispath(output) && throw(ArgumentError("hidden-mode calibration output must be fresh"))
     receipt_path = joinpath(calibration, "result.yaml")
     receipt_hash = Calibration.digest(receipt_path)
-    receipt = PipeWireAORTC.Common.read_yaml(receipt_path)
+    receipt = Calibration.read_bundle(calibration).report
     graph_hash = Calibration.digest(joinpath(calibration, "graph.conf"))
     graph_hash == receipt["graph_sha256"] || throw(ArgumentError("calibration graph changed"))
     n, m = receipt["mode_count"], receipt["measurement_count"]

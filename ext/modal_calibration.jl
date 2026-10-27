@@ -33,7 +33,7 @@ function pupil_measurement!(pixels, mean, estimator, calibrated, raw, background
 end
 
 "Calibrate declared modal command projections against a deterministic optical plant."
-function Calibration.calibrate_modal_system(source, recipe, output;
+function Calibration._calibrate_system(::Val{:pyramid}, source, recipe, output;
         target=AdaptiveOpticsSim.Backends.HostComputeDevice())
     ispath(output) && throw(ArgumentError("calibration output must be fresh"))
     any(entry -> entry["name"]==recipe["tiptilt"]["mirror"] && haskey(entry,"completion"),recipe["mirrors"]) &&
@@ -42,7 +42,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     temporal=Calibration._tiptilt_temporal(recipe,declaration.document["frame_period_s"])
     settings=IC.settings(declaration,get(recipe,"settings",Dict()))
     prescription=IC.prescription_identity(declaration,settings)
-    source_graph_sha256=Calibration.digest(joinpath(source,recipe["graph"]))
+    source_graph_sha256=Calibration.digest(joinpath(source,recipe["graph_source"]))
     system=IC.prepare_system(declaration.path;settings=IC._instrument_seal(settings),calibration=true,target)
     commands=map(zero,HIL.hil_command_buffer(system.boundary))
     flat=copy(modal_frame!(system,commands))
@@ -147,7 +147,6 @@ function Calibration.calibrate_modal_system(source, recipe, output;
             AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(length(reference),n,Float32)),
         AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(weighted))
     reconstructor=weights .* AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)
-    mkdir(output)
     context=Dict("pwfs"=>Dict("pupil_size"=>collect(pupil_size),"pupil_origins"=>origins,
             "pupil_mask"=>vec(permutedims(mask)),"selected_pixel_count"=>Base.count(mask)),
         "temporal"=>Dict("modal_section_count"=>1,"tiptilt_section_count"=>1),
@@ -168,9 +167,10 @@ function Calibration.calibrate_modal_system(source, recipe, output;
     end
     context["tiptilt-command"]=Dict("command_limits"=>recipe["tiptilt"]["command_limits_m"],"slew_limit"=>nothing)
     context_graph["calibration"]=context
-    graph_source=PipeWireAORTC.DeploymentConfiguration.decode(joinpath(source,recipe["graph"]),"/opt/pipewireao")
+    graph_source=PipeWireAORTC.DeploymentConfiguration.decode(joinpath(source,recipe["graph_source"]),"/opt/pipewireao")
     concrete=PipeWireAORTC.InstrumentExport.resolve_graph_configuration(graph_source,context_graph)
-    graphpath=joinpath(output,"graph.conf")
+    return mktempdir() do temporary
+    graphpath=joinpath(temporary,"graph.conf")
     PipeWireAORTC.ScienceExport.write_spa_config(graphpath,concrete;header="Generated simulation calibration graph; edit source and regenerate.")
     graph=JuliaFilterGraph.prepare_graph(graphpath;algorithms=FGA.algorithms())
     parameters=Dict(name=>zeros(format.element_type,format.shape) for(name,format) in pairs(JuliaFilterGraph.parameter_formats(graph)))
@@ -205,20 +205,12 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         name==coupled && (parameters[Symbol("controller-to-tiptilt")][:,start+1:start+2] .= Matrix{Float32}(LA.I,2,2))
         start+=count
     end
-    artifacts=joinpath(output,"artifacts");mkdir(artifacts)
-    for(name,value) in parameters
-        Calibration.write_fits(joinpath(artifacts,String(name)*".fits"),value)
-    end
-    for(name,value) in (("interaction-matrix",interaction),("singular-values",AdaptiveOpticsCalibration.Reconstructors.singular_values(inverse)),("flat-frame",flat))
-        Calibration.write_fits(joinpath(artifacts,name*".fits"),value)
-    end
-    PipeWireAORTC.Common.write_yaml(joinpath(output,"context.yaml"),context;
-        header="Generated from simulation-local push-pull calibration; edit recipe and regenerate.")
+    diagnostics=Dict("interaction-matrix"=>interaction,
+        "singular-values"=>AdaptiveOpticsCalibration.Reconstructors.singular_values(inverse),"flat-frame"=>flat)
     IC.prescription_identity(IC.load_simulation(declaration.path),settings)==prescription || throw(ArgumentError("simulation prescription changed during calibration"))
-    Calibration.digest(joinpath(source,recipe["graph"]))==source_graph_sha256 || throw(ArgumentError("controller graph changed during calibration"))
+    Calibration.digest(joinpath(source,recipe["graph_source"]))==source_graph_sha256 || throw(ArgumentError("controller graph changed during calibration"))
     report=Dict("source_prescription_identity"=>prescription,
         "source_graph_sha256"=>source_graph_sha256,
-        "graph_sha256"=>Calibration.digest(graphpath),
         "backend"=>string(typeof(target)),
         "scope"=>"simulation-local; provisional Gaussian mirrors and ADC; not hardware calibration",
         "mode_count"=>n,"measurement_count"=>length(reference),"retained_rank"=>AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
@@ -232,7 +224,7 @@ function Calibration.calibrate_modal_system(source, recipe, output;
         "poke_m"=>poke,"tsvd_rtol"=>recipe["tsvd_rtol"],
         "temporal"=>temporal.description,
         "relative_inverse_residual"=>LA.norm(interaction*reconstructor*interaction-interaction)/LA.norm(interaction),
-        "recipe"=>recipe,"artifact_sha256"=>Dict(name=>Calibration.digest(joinpath(artifacts,name)) for name in readdir(artifacts)))
-    PipeWireAORTC.Common.write_yaml(joinpath(output,"result.yaml"),report;header="Generated simulation calibration receipt; do not edit.")
-    return report
+        "recipe"=>recipe)
+    return Calibration.write_bundle(output,report,context,concrete,parameters;diagnostics)
+    end
 end
