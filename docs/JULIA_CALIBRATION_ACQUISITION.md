@@ -188,6 +188,10 @@ illuminated acquisition uses a declared source and optical path. A reference
 additionally binds the nominal mirror figure and mechanism positions. An
 illuminated image is not automatically a detector flat field or a WFS reference;
 these remain separate scientific operations.
+Dark reduction consumes raw ADC images. Capture retains the deployed WFS
+validity flags even when unilluminated ROIs are invalid; interaction-response
+eligibility is not reused as a dark-image acceptance rule. Detector quality and
+background-estimation acceptance need their own declared checks.
 
 | Endpoint | Preparation owner | Evidence needed before acquisition |
 | --- | --- | --- |
@@ -250,6 +254,10 @@ expiry abort the candidate. Unknown command outcomes do not authorize retries.
 Adapters can consume legacy polled telemetry, with explicit polling cadence and
 freshness limits; orchestration does not advance through sleeps. No physical
 settling or latency claim follows from this software contract.
+A coordinator deadline does not stop a motor or interrupt a blocking SDK call.
+Qualify backend timeouts/abort behavior before claiming bounded physical
+completion; an unresolved call retains its resource ownership and cannot be
+replaced by another worker or command to the same mechanism.
 
 Cleanup requests the instrument's declared terminal condition through its
 current authority, without blindly replaying an earlier state. A beam block can

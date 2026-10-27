@@ -303,7 +303,7 @@ function validate_dark_graph(graph, bindings)
     isempty(detectors) && throw(ArgumentError("dark graph requires a detector"))
     for detector in detectors
         destination = detector["name"] * ".photon_rate"
-        any(link -> link["destination"] == destination, graph["links"]) &&
+        any(link -> link["destination"] == destination, get(graph,"links",())) &&
             throw(ArgumentError("dark detector cannot receive an optical photon-rate link"))
         inputs = filter(input -> input["destination"] == destination, graph["inputs"])
         length(inputs) == 1 || throw(ArgumentError("dark detector requires one blocked photon-rate input"))

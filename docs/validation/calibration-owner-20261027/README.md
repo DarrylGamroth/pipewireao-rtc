@@ -302,6 +302,19 @@ promoting this instrument declaration to normal application use. Concurrent RTC
 main has also raised FGA/FGPW minimum versions; preserve separate cohort evidence
 when integrating. Existing selected calibration artifacts remain byte-identical.
 
+Integration with RTC main `40d290b` is retained at merge `becf402` (roadmap-only
+conflict resolved by preserving both work summaries). A separate source-validation
+run with registered FGA 0.8.5 / FGPW 0.1.11 passes 25 dark/source, 125 bundle and
+342 actual private-core Capture assertions. All 24 retained raw, slopes, flux and
+validity binary payloads are byte-identical across cohorts (28 parity assertions).
+The integrated environment and captures are frozen under
+`calibration-preparation-integrated-20261027`. A final 26-assertion cold check
+also covers omission of the optional empty graph `links` field; existing explicit-link
+graph behavior is unchanged. This still does not qualify a registered RTC build
+or update the instrument's normal dependency pins. Delivery drafts are
+[RTC PR 14](https://github.com/DarrylGamroth/pipewireao-rtc/pull/14) and
+[instrument PR 1](https://github.com/DarrylGamroth/adaptive-optics-simulations/pull/1).
+
 The earlier intermittent second-exposure timeout did not recur in these six
 exposures. It remains unexplained, with no scheduling workaround or automatic
 retry added. Neither transported images nor a successful software test establishes

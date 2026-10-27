@@ -24,6 +24,10 @@ private CPU core. The follow-up covers declared stationary-source selection,
 failed frozen-mask eligibility, bounded native Capture and exact FITS provenance.
 Accepted scientific acquisition, reliable repeated collection and full-basis qualification
 remain separate gates; no selected calibration or installed session changed.
+The source/mechanism preparation follow-up adds declared dark capture and
+records manual REVOLT preparation, existing SPIDERS/GPI service ownership,
+two dependency cohorts and exact retained-payload parity. Physical adapters
+and a compatible registered application build remain separate delivery gates.
 
 ## GPI2 optional pupil-flux and operator validation — 2026-10-27
 

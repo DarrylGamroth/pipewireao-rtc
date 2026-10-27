@@ -25,6 +25,9 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     rate = IC.binding_values(declaration,settings,binding)
     @test rate isa Matrix{Float32} && size(rate) == (352,352) && all(iszero,rate)
     @test isempty(dark["links"])
+    unlinked = deepcopy(dark)
+    delete!(unlinked,"links")
+    @test IC.validate_dark_graph(unlinked,declaration.document["bindings"]) === nothing
     @test_throws ArgumentError IC.graph_document(declaration,settings;calibration=true,simulation_graph="dark")
     # A name or receipt label cannot establish blocked light: reject an optical
     # connection and reject any replacement of the zero-photon binding.
