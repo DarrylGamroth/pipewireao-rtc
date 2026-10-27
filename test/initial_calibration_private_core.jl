@@ -151,6 +151,10 @@ end
                 probe = owner.transport
                 progress("probe sequence=$(probe.sequence), published=$(probe.published), received=$(probe.received), closed=$(probe.closed), error=$(probe.error)")
                 progress("HIL $(Wire.pipewire_calibration_status(owner.hil))")
+                progress("capture phase=$(owner.capture.phase), failure=$(owner.capture.failure), exception=$(owner.capture.exception)")
+                for (name, slot) in pairs(owner.capture.slots)
+                    progress("capture $name phase=$(slot.phase), receipt=$(slot.receipt)")
+                end
                 for worker in owner.workers
                     progress("graph done=$(istaskdone(worker.task)), error=$(worker.error[])")
                 end
