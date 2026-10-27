@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Optical diagnostic orientation — 2026-10-27
+
+The [CPU regression and rollout record](validation/optical-orientation-20261027/README.md)
+covers physical-axis mapping for optional wavefront/focal images, preserving
+scientific arrays and controls. Real isolated-actuator fail-before/pass-after
+evidence is separate from managed replay and live deployment.
+
 ## Native initial calibration — 2026-10-27
 
 The [verification and review record](validation/calibration-owner-20261027/README.md)

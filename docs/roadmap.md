@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optical diagnostic orientation — 2026-10-27
+
+The real isolated-actuator CPU probe confirms that copying AOS `[x,y]` optical
+arrays into row/column images swapped physical axes on screen. The 0.2.27
+patch maps both optional pupil-wavefront and focal-plane images to +x right,
++y up. Raw scientific arrays, pupil RMS, camera frames, control/calibration
+ordering, gains and limits are preserved. Focused bounds-checked and actual
+small SH/Pyramid product checks pass; registered-consumer and installed rollout
+evidence is tracked in the [orientation record](validation/optical-orientation-20261027/README.md).
+
 ### Native initial calibration integration — 2026-10-27
 
 Work starts from RTC `864281b` and instrument `439181b`. Implement the existing

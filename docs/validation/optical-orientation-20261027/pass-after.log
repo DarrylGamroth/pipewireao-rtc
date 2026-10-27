@@ -1,0 +1,4 @@
+Test Summary:                                            | Pass  Total  Time
+Physical pupil axes to diagnostic image rows and columns |   25     25  4.2s
+Test Summary:                                                  | Pass  Total  Time
+Focal image presentation preserves intensity and physical axes |   14     14  2.5s
