@@ -190,8 +190,11 @@ request rejected before effects against a three-frame budget, three consecutive
 frames completed, the reference restored/released, all workers/core closed,
 and only then the descriptor and saved samples were verified. Model starts were
 0, 2,000,000 and 4,000,000 ns, each exposure 1,896,000 ns. All three exposures
-retained false active validity (ROIs [88], [71], [70, 101]); these are useful
-training evidence, not accepted interaction responses. Payloads total 750,756
+retained false active validity (ROIs [88], [71], [70, 101]). The storage selector's
+`lamp-training` stage label tests descriptor binding; its frozen WFS reference
+and ROI mask do not meet the zero-reference/candidate-universe training contract.
+These samples qualify transport/storage only, not campaign lamp training or
+interaction responses. Payloads total 750,756
 bytes and the manifest 11,105 bytes. Files and source hashes remained unchanged.
 
 The first Capture harness compared prepared-array hashes to original FITS-file
@@ -229,8 +232,23 @@ their regular graph hashes were identical. The same native Capture selector
 then passed 171 assertions with corrected source against the previously failing
 registered build (`internal-source-capture-format-fix-20261027.log`). No detector,
 transport, schema, command or acceptance policy was changed. Published 0.2.25's
-tag/tree/registry entry are retained; 0.2.26 supersedes it. Registered 0.2.26
-qualification is recorded separately below when complete.
+tag/tree/registry entry are retained; 0.2.26 supersedes it.
+
+The fresh registered-only 0.2.26 environment successfully built a new Classic
+application and passed the same 171 native Capture assertions (66.9 seconds
+for the optical selector). All package dependencies were registry/stdlib entries,
+the regular graph retained its exact `a9e398…` hash, the dependency manifest was
+unchanged, and no GPU package loaded. The reference restored/released and every
+private-core resource closed before saved samples were verified. The final
+0.2.26 package/source-closure selector also passed 328 assertions plus the
+version/public-function/docstring smoke checks.
+
+The frozen external `qualify-capture-026-20261027.jl` reproduces the fresh build
+and native selector; `internal-source-registered-026-qualification-20261027.log`
+and its capture receipt/payload directory preserve the result. The registry
+binds 0.2.26 to tree `ff22af2c3563fa8295719b6707d0b8dd69123632` at source commit
+`9c4f3352aa908b4f0572775e2cde8a4c5b77a167`. This closes CO-10's registered
+software gate, not lamp-training or scientific acceptance.
 
 ## Remaining gates
 

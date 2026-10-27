@@ -420,8 +420,8 @@ or physical device was used by this reviewer.
 
 Severity: high for capture-enabled startup. Confidence: high. Classification:
 confirmed source defect, independently reproduced without a core or optical
-execution. Disposition: remediated in canonical source; fresh integration and
-superseding registered-release qualification remain separate gates.
+execution. Disposition: remediated; cold behavior independently verified, with
+primary source integration and registered 0.2.26 qualification passed below.
 
 Registered RTC 0.2.25 (`4698f7b`, package tree
 `161bccd8c683b64ab0c3d534fdceeddf2ebd5da2`) rejected capture-enabled preparation
@@ -467,3 +467,13 @@ the corrected cold run; it is not product evidence. The earlier source
 qualify the 0.2.25 source. The primary is running a fresh corrected-source
 Capture selector; this reviewer has not performed or attributed an optical
 rerun. No PipeWire core, GPU or physical device was used in this diagnosis.
+
+Closure added by the primary: the corrected source subsequently passed the
+same native Capture selector, 171/171. The final registered-only 0.2.26 package
+then built a fresh application and passed 171/171, with the regular graph and
+dependency manifest unchanged and no GPU loaded. Package/source-closure checks
+passed 328 assertions. See the adjacent verification record for logs, immutable
+tree/commit identities and scope. This integrated result is attributed to the
+primary, separately from the reviewer's 16 cold assertions. CO-10 is closed for
+the selected Classic software profile; the independent earlier Collect timeout
+and scientific campaign gates remain open.

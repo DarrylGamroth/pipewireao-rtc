@@ -40,6 +40,9 @@ transported stationary-source frames met the frozen eligibility policy; no
 threshold or mask was relaxed. Cold graph selection and bounded native Capture
 are implemented as prerequisites for automatic dark/lamp training; the latter
 passed 171 actual private-core assertions, including restoration and shutdown.
+Registered RTC 0.2.26 repeats those 171 checks on a fresh built application.
+It supersedes 0.2.25's capture-preparation scope defect (CO-10), caught before
+any command or exposure; both the failed gate and correction remain recorded.
 An intermittent second-exposure timeout remains under investigation; passing
 retries do not establish reliable acquisition. Internal-source eligibility and
 positive full-basis acceptance remain separate scientific gates.
