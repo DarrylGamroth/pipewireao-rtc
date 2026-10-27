@@ -82,6 +82,7 @@ end
             frontend = command = nothing
             owner = server.effects
             progress("coordinator domain=1, wire acquisition domain=$(repr(owner.acquisition_domain))")
+            progress("selected frontend bindings=$([(entry.port, entry.source.path, Calibration.digest(entry.source.path)) for entry in owner.graphs.frontend.bindings])")
             capture_module = parentmodule(typeof(owner.capture))
             serving = @async try
                 Server.serve!(server; deadline=Native.monotonic()+120)
@@ -108,8 +109,14 @@ end
                     @test Wire.pipewire_probe_values(owner.hil) == answer.figure
                     @test length(consumed) == Int(action.probe)
                 elseif action isa Actions.Collect
-                    @test answer isa Actions.Responses && answer.valid
+                    @test answer isa Actions.Responses
                     captured = capture_module.snapshot(owner.capture)
+                    invalid = findall(i -> owner.active[i] && !captured.arrays.validity[i], eachindex(owner.active))
+                    thresholds = owner.graphs.frontend.parameters[:thresholds]
+                    progress("collection validity=$(answer.valid), active_count=$(count(owner.active)), invalid_active_indices=$invalid, nonfinite_responses=$(count(!isfinite, answer.values)), raw_extrema=$(extrema(captured.arrays.raw))")
+                    progress("invalid active flux/thresholds=$([(i, captured.arrays.flux[i], thresholds[i,:]) for i in invalid])")
+                    progress("frontend parameter shapes=$([(key, size(value)) for (key,value) in owner.graphs.frontend.parameters])")
+                    @test answer.valid
                     @test eltype(captured.arrays.raw) === UInt16
                     @test size(captured.arrays.raw) == (352,352)
                     @test answer.values == vec(permutedims(captured.arrays.slopes))
