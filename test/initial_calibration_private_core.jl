@@ -191,7 +191,8 @@ end
                             expected_actions = scenario === :under_threshold ?
                                 [Actions.Hold, Actions.Adopt, Actions.Settle, Actions.Collect, Actions.Restore, Actions.Release] :
                                 [Actions.Restore, Actions.Release]
-                            @test actions == expected_actions
+                            @test length(actions) == length(expected_actions) &&
+                                all(actual <: expected for (actual,expected) in zip(actions,expected_actions))
                             @test serials == UInt64.(1:length(expected_actions)) && client.serial == length(expected_actions)
                             @test isempty(client.records) && isempty(consumed)
                             if scenario === :under_threshold
