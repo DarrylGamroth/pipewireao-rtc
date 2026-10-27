@@ -110,3 +110,21 @@ use it. These sensor procedures currently execute simulation-local acquisition;
 native event-driven hardware campaigns remain a separate integration. Physical-device
 calibration, GPU numerical equivalence, sustained cadence and deadline qualification were not performed. Existing running services were
 not contacted or modified.
+
+
+## TOML cleanup follow-up
+
+Remaining Copper/SPIDERS scenario authoring in the instrument repository moved
+to YAML without changing parsed values. The obsolete package-backed GPI scenario
+and private-core branches were removed. Scenario checks passed 22 assertions;
+formatter checks passed 50; a minimal YAML-only environment instantiated and
+loaded both files. Julia package/artifact metadata, Taplo configuration, frozen
+records and the external SPIDERS physical15 TOML/FITS contract remain intact.
+
+The optional RTC owner-loading regression now uses a YAML graph (28 CPU
+assertions passed). Finite replay now writes `result.yaml`; managed replay binds
+`calibration/result.yaml`. Both scripts pass syntax checks, the YAML report
+writer passes round-trip verification and the selected receipt hash matches a
+previously rebuilt Classic application's declared calibration identity. The
+full opt-in replay campaigns were not rerun for this format-only change.
+Archived oracle/qualification scripts and dated evidence were not rewritten.

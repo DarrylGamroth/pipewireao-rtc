@@ -1,6 +1,6 @@
 # Opt-in CPU science validation through a fresh, non-actuating headless RTC.
 module ClassicManagedReplay
-using Test, TOML, SHA, Libdl, LinearAlgebra, Statistics
+using Test, SHA, Libdl, LinearAlgebra, Statistics
 using PipeWireAO, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
 using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
@@ -117,7 +117,7 @@ function capture_session(application,stage,prefix,count)
         node,initial=source_snapshot(dump_graph(handle,stage,prefix,"graph-ready"))
         @test node["info"]["props"]["aos.simulation.backend"]=="cpu"
         @test node["info"]["props"]["aos.simulation.calibration-identity"]==
-            "sha256:"*C.sha256_file(joinpath(application,"calibration-result.toml"))
+            "sha256:"*C.sha256_file(joinpath(application,"calibration","result.yaml"))
         @test !initial["running"] && initial["sequence"]==0
         gpu_audit(handle,stage)
         factory=capture -> begin
