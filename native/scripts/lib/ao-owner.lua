@@ -5,6 +5,7 @@
 -- A submitted mutation is never retried; frames and idle owners cause no polls.
 local lua = require ("ao-lua")
 local control = require ("ao-control")
+local correction = require ("ao-correction")
 local owner = {}
 local token = 0
 local REPLY = "pipewireao.rtc.control."
@@ -443,8 +444,9 @@ local function node_records (iterator, source_instance)
     else
       assert (not source_instance, "Unrecognized source control Props")
       for name in pairs (values) do
-        assert (not name:match ("^pipewireao%.[a-z-]+%-control%.") and
-            not name:match ("^pipewireao%.source%-"), "Unrecognized reserved node control field")
+        assert (correction.is_status_field (name) or
+            (not name:match ("^pipewireao%.[a-z-]+%-control%.") and
+             not name:match ("^pipewireao%.source%-")), "Unrecognized reserved node control field")
       end
     end
     if kind then
