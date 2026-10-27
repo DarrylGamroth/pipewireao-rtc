@@ -136,10 +136,12 @@ function prepare(definition::AlgorithmGraphDefinition, graph; imaging=default_im
         pupil = Optics.PupilFunction(telescope, snapshot_values(snapshot))
         imaging = Optics.prepare_direct_imaging(pupil, source; zero_padding)
         Optics.form_direct_image!(imaging)
-        focal = Matrix{Float32}(Optics.intensity_values(Optics.direct_imaging_output(imaging)))
+        intensity = Optics.intensity_values(Optics.direct_imaging_output(imaging))
+        focal = Matrix{Float32}(undef, reverse(size(intensity)))
+        form_focal_image!(focal, intensity)
         pupil_mask = Matrix{Bool}(Optics.pupil_mask(telescope))
         any(pupil_mask) || throw(ArgumentError("optical observation needs a transmitting pupil"))
-        wavefront = Matrix{Float32}(undef, size(pupil_mask))
+        wavefront = Matrix{Float32}(undef, reverse(size(pupil_mask)))
         verify_product(focal, contracts["focal-image"])
         verify_product(wavefront, contracts["residual-wavefront"])
         return Observation(snapshot, atmosphere_snapshot, Atomic{Bool}(false),
@@ -238,7 +240,7 @@ stage_rms!(snapshot, observation, pipewire, metadata) =
 
 function form_products!(observation::Observation)
     Optics.form_direct_image!(observation.imaging)
-    copyto!(observation.values,
+    form_focal_image!(observation.values,
         Optics.intensity_values(Optics.direct_imaging_output(observation.imaging)))
     form_wavefront!(observation.wavefront, snapshot_values(observation.snapshot), observation.pupil)
     form_rms!(observation.atmosphere_snapshot, observation)
@@ -273,12 +275,34 @@ function pupil_rms_nm(opd, pupil)
     return Float32(sqrt(max(0.0, variance_sum / count)) * 1e9)
 end
 
+# AOS optical arrays index increasing physical [x, y]. Image rows increase down,
+# so both optical diagnostics transpose the axes and reverse physical y.
+@inline image_source_index(source, row, column) =
+    CartesianIndex(column, lastindex(source, 2) - (row - firstindex(source, 2)))
+
+function form_focal_image!(destination, intensity)
+    ndims(destination) == ndims(intensity) == 2 &&
+        axes(destination) == reverse(axes(intensity)) ||
+        throw(DimensionMismatch("focal image axes must reverse the rank-two intensity axes"))
+    Base.mightalias(destination, intensity) &&
+        throw(ArgumentError("focal image must not alias the intensity"))
+    for column in axes(destination, 2), row in axes(destination, 1)
+        destination[row, column] = intensity[image_source_index(intensity, row, column)]
+    end
+    return destination
+end
+
 # Presentation of the same owned pupil snapshot used for ideal imaging. Uniform
 # pupil-sample weighting matches the CPU replay metric; tip/tilt remain included.
+# AOS indexes physical [x, y]; image [row, column] places +x right and +y up.
+# The destination has reversed source axes and must not alias either input.
 # No controller state, graph output or physical command is modified.
 function form_wavefront!(destination, opd, pupil)
-    axes(destination) == axes(opd) == axes(pupil) ||
-        throw(DimensionMismatch("wavefront image and pupil axes must match the OPD"))
+    ndims(destination) == ndims(opd) == ndims(pupil) == 2 &&
+        axes(opd) == axes(pupil) && axes(destination) == reverse(axes(opd)) ||
+        throw(DimensionMismatch("wavefront image axes must reverse the matching rank-two OPD and pupil axes"))
+    (Base.mightalias(destination, opd) || Base.mightalias(destination, pupil)) &&
+        throw(ArgumentError("wavefront image must not alias the OPD or pupil"))
     total = 0.0
     count = 0
     for index in eachindex(opd, pupil)
@@ -291,8 +315,10 @@ function form_wavefront!(destination, opd, pupil)
     end
     count > 0 || throw(ArgumentError("wavefront observation needs a transmitting pupil"))
     piston = total / count
-    for index in eachindex(destination, opd, pupil)
-        destination[index] = pupil[index] ? Float32((Float64(opd[index]) - piston) * 1e9) : NaN32
+    for column in axes(destination, 2), row in axes(destination, 1)
+        index = image_source_index(opd, row, column)
+        destination[row, column] = pupil[index] ?
+            Float32((Float64(opd[index]) - piston) * 1e9) : NaN32
     end
     return destination
 end

@@ -57,6 +57,7 @@ function replay(science,application,records,destination,generation)
     config=only(filter(!isnothing,map(n->O.sensor_configuration(n.config),science.definition.nodes)))
     telescope=AdaptiveOpticsSim.Optics.prepare_telescope(config.telescope,science.target)
     pupil=AdaptiveOpticsSim.Optics.pupil_mask(telescope)
+    display_pupil=reverse(permutedims(pupil);dims=1)
     rms=Float64[];sequences=Int[];pixel_errors=Float64[]
     uncorrected=Float64[];corrected=Float64[];meter_sequences=Int[]
     expected_pixels=zeros(UInt16,352,352)
@@ -81,13 +82,14 @@ function replay(science,application,records,destination,generation)
             @test identity==something(detector.identities[index])==something(demanded.identities[index])
             @test wavefront.headers[index].pts==detector.headers[index].pts
             image=permutedims(reshape(wavefront.values[:,index],reverse(WAVEFRONT.shape)))
-            @test all(isnan,image[.!pupil])
-            @test all(isfinite,image[pupil])
+            @test all(isnan,image[.!display_pupil])
+            @test all(isfinite,image[display_pupil])
             opd=Float64.(graph_output(science.graph,:pupil_opd)[pupil])
-            expected=(opd .- mean(opd)) .* 1e9
-            pixel_error=maximum(abs,Float64.(image[pupil]) .- expected)
+            display_opd=reverse(permutedims(Float64.(graph_output(science.graph,:pupil_opd)));dims=1)
+            expected=(display_opd[display_pupil] .- mean(opd)) .* 1e9
+            pixel_error=maximum(abs,Float64.(image[display_pupil]) .- expected)
             @test pixel_error <= 1e-4
-            measured=sqrt(mean(abs2,Float64.(image[pupil])))
+            measured=sqrt(mean(abs2,Float64.(image[display_pupil])))
             @test measured ≈ std(opd;corrected=false)*1e9 atol=1e-4
             push!(rms,measured);push!(sequences,index);push!(pixel_errors,pixel_error)
         end
