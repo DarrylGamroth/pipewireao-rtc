@@ -99,6 +99,21 @@ limits and missing deployment/unit evidence. One hundred CPU arithmetic/data
 checks pass. This does not establish hardware calibration or justify replacing
 the simulator's provisional limits or pupil registration. Live settings remain
 unchanged.
+## Optional circular mirror clear aperture — 2026-10-26
+
+The [cold metadata/export record](validation/clear-aperture-20261026/README.md)
+records intrinsic-to-registered aperture conversion, strict numeric and source
+checks, real Classic/GPI exports and SDK-free ALPAO reader compatibility.
+Optical pupil and mechanical face-sheet edge remain separate; existing RTC
+owners have not adopted the new aperture metadata. No hardware or timing
+qualification is claimed.
+
+## Explicit per-mirror optical pupils — 2026-10-26
+
+The [cold software record](validation/optical-pupil-20261026/README.md) records
+explicit authoring, preserved telescope fallback, missing metadata, numeric
+bounds, scientific identity and real-source export checks. It makes no live,
+hardware or timing qualification claim.
 
 ## GPI genuine hidden-mode removal — 2026-10-25
 

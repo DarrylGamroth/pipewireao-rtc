@@ -114,6 +114,15 @@ selectors; the [source-validation record](validation/yaml-science-20261026/READM
 records numerical comparison, rejection, snapshot and reset evidence. Those
 construction-binding selectors remain CPU software checks; the later registered
 GPI2 refresh separately verifies deployment and CUDA execution.
+### Explicit per-mirror optical pupils — 2026-10-26
+
+Physical mirror authoring accepts explicit optical `pupil` radii in the existing
+registered normalized-pupil coordinates. Explicit values take precedence over
+the retained telescope fallback; metadata remains absent when neither source is
+available. Cold validation checks renderable radii/coordinates, scientific source
+identity and export preservation while retaining controlled actuator masks and
+the 1 MiB publication contract. The [software record](validation/optical-pupil-20261026/README.md)
+keeps test evidence separate from live, hardware and timing qualification.
 
 ### GPI 2.0 calibrated multi-corrector RTC — 2026-10-24
 

@@ -96,18 +96,17 @@ function validate(document)
             throw(ArgumentError("instrument mirror requires a positive command scale"))
         mirror_layout(layout,length(positions))
         if haskey(mirror,"pupil_coordinates")
-            coordinates=mirror["pupil_coordinates"]
-            array_value(coordinates) && length(coordinates)==length(positions) &&
-                all(pair -> array_value(pair) && length(pair)==2 && all(finite_bound,pair),coordinates) ||
-                throw(ArgumentError("pupil coordinates must be finite command-indexed Cartesian pairs"))
+            validate_pupil_coordinates(mirror["pupil_coordinates"],length(positions))
         end
         if haskey(mirror,"pupil")
-            pupil=mirror["pupil"]
-            object_value(pupil) && Set(keys(pupil))==Set(("inner_radius","outer_radius")) &&
-                haskey(mirror,"pupil_coordinates") || throw(ArgumentError("registered pupil requires radii and command-indexed coordinates"))
-            inner,outer=pupil["inner_radius"],pupil["outer_radius"]
-            finite_bound(inner) && finite_bound(outer) && 0<=inner<outer ||
-                throw(ArgumentError("registered pupil radii must be finite and ordered"))
+            haskey(mirror,"pupil_coordinates") ||
+                throw(ArgumentError("instrument optical pupil requires registered pupil coordinates"))
+            validate_pupil(mirror["pupil"])
+        end
+        if haskey(mirror,"clear_aperture")
+            haskey(mirror,"pupil_coordinates") ||
+                throw(ArgumentError("mirror clear aperture requires registered pupil coordinates"))
+            validate_clear_aperture(mirror["clear_aperture"])
         end
         units = get(mirror,"units",nothing)
         nonempty_text(units) || throw(ArgumentError("instrument mirror requires command units"))
@@ -130,6 +129,39 @@ end
 function exact_fields(value, names, label)
     object_value(value) && Set(keys(value)) == Set(names) || throw(ArgumentError("invalid $label fields"))
     return value
+end
+
+"Validate a centered optical pupil in the registered normalized-pupil coordinates."
+function validate_pupil(pupil)
+    exact_fields(pupil,("outer_radius","inner_radius"),"optical pupil")
+    outer,inner = pupil["outer_radius"],pupil["inner_radius"]
+    renderable_pupil_value(outer) && renderable_pupil_value(inner) && 0 <= inner < outer &&
+        0 <= Float32(inner) < Float32(outer) ||
+        throw(ArgumentError("optical pupil radii must be finite, nonnegative, ordered and distinct in Float32, with a positive outer radius"))
+    return nothing
+end
+
+"Validate a centered circular mirror clear aperture in registered pupil coordinates."
+function validate_clear_aperture(aperture)
+    exact_fields(aperture,("radius",),"mirror clear aperture")
+    radius = aperture["radius"]
+    renderable_pupil_value(radius) && radius > 0 ||
+        throw(ArgumentError("mirror clear aperture radius must be positive and renderable in Float32"))
+    return nothing
+end
+
+# Leave headroom for the GUI's Float32 viewport arithmetic, and preserve
+# nonzero values through its conversion without changing the owned metadata.
+renderable_pupil_value(value) = finite_bound(value) &&
+    abs(value) < Float64(floatmax(Float32)) / 4 && (value == 0 || Float32(value) != 0)
+
+function validate_pupil_coordinates(coordinates,count)
+    array_value(coordinates) && length(coordinates) == count &&
+        all(coordinates) do position
+            array_value(position) && length(position) == 2 &&
+                all(renderable_pupil_value,position)
+        end || throw(ArgumentError("pupil coordinates must be finite Float32 x/y pairs in command order"))
+    return nothing
 end
 
 bounded_text(value) = nonempty_text(value) && ncodeunits(value) <= 128
@@ -299,7 +331,7 @@ function validate_mirror_description(description; command_count=nothing)
     object_value(description) || throw(ArgumentError("mirror description requires a JSON object"))
     bounded(description)
     required = Set(("schema_version", "id", "manufacturer", "model", "layout"))
-    optional = Set(("actuator_pitch_m",))
+    optional = Set(("actuator_pitch_m", "clear_aperture_diameter_m"))
     required ⊆ Set(keys(description)) ⊆ union(required, optional) &&
         description["schema_version"] === 1 ||
         throw(ArgumentError("expected mirror description schema version 1"))
@@ -310,6 +342,13 @@ function validate_mirror_description(description; command_count=nothing)
         pitch = description["actuator_pitch_m"]
         positive_scale(pitch) && positive_scale(Float64(pitch)) ||
             throw(ArgumentError("actuator_pitch_m must be finite and positive in metres"))
+    end
+    if haskey(description, "clear_aperture_diameter_m")
+        haskey(description, "actuator_pitch_m") ||
+            throw(ArgumentError("clear_aperture_diameter_m requires actuator_pitch_m"))
+        diameter = description["clear_aperture_diameter_m"]
+        positive_scale(diameter) && positive_scale(Float64(diameter)) ||
+            throw(ArgumentError("clear_aperture_diameter_m must be finite and positive in metres"))
     end
     layout = description["layout"]
     object_value(layout) || throw(ArgumentError("mirror description requires a layout object"))
@@ -416,6 +455,13 @@ function verify_plant(options,plant_module)
         mirror["shape_control"]==get(original,"shape_control",nothing) ||
             throw(ArgumentError("instrument DM basis declaration differs"))
         get(mirror,"pupil_coordinates",nothing)==get(original,"pupil_coordinates",nothing) || throw(ArgumentError("instrument pupil coordinates differ"))
+        get(mirror,"clear_aperture",nothing)==get(original,"clear_aperture",nothing) ||
+            throw(ArgumentError("instrument mirror clear aperture differs"))
+        telescope = get(source,"telescope",Dict())
+        pupil = haskey(original,"pupil") ? original["pupil"] :
+            haskey(telescope,"central_obstruction_ratio") ?
+                Dict("outer_radius"=>1.0,"inner_radius"=>telescope["central_obstruction_ratio"]) : nothing
+        get(mirror,"pupil",nothing)==pupil || throw(ArgumentError("instrument optical pupil differs"))
     end
     for (name,sensor) in sensors
         original=source["wavefront_sensors"][name]["layout"]

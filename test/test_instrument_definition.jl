@@ -21,11 +21,23 @@ const DEFINITION = (;
                     frequencies=((1,0),),axis_units="cycles / source axis")),
         )),
         pupil_coordinates=((-0.75, 0.0), (0.0, 0.0), (0.75, 0.0)),
+        pupil=(;outer_radius=1.0,inner_radius=0.25),
+        clear_aperture=(;radius=1.2),
     )),
     wavefront_sensors=(; wfs=(; layout=(; detector_shape=(2, 3),
         subaperture_shape=(2, 3), subaperture_origins=((0, 0),)))),
 )
 instrument_definition(settings::NamedTuple=NamedTuple()) = merge(DEFINITION,(;selected_settings=settings))
+end
+
+module InstrumentTelescopePlantForTest
+import ..InstrumentPlantForTest
+function instrument_definition(settings::NamedTuple=NamedTuple())
+    source = InstrumentPlantForTest.instrument_definition(settings)
+    mirror = Base.structdiff(source.deformable_mirrors.dm,(;pupil=nothing))
+    return merge(source,(;deformable_mirrors=(;dm=mirror),
+        telescope=(;central_obstruction_ratio=0.2)))
+end
 end
 
 function operational_instrument()
@@ -217,6 +229,11 @@ end
             d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"][1]["definition"]["positions"][1] = [-0.25, 0]),
             d -> (d["deformable_mirrors"]["dm"]["shape_control"]["bases"][2]["definition"]["frequencies"][1] = [2, 0]),
             d -> (d["deformable_mirrors"]["dm"]["pupil_coordinates"][1] = [-0.5, 0]),
+            d -> (d["deformable_mirrors"]["dm"]["pupil"]["outer_radius"] = 1.5),
+            d -> (d["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.0),
+            d -> delete!(d["deformable_mirrors"]["dm"],"pupil"),
+            d -> (d["deformable_mirrors"]["dm"]["clear_aperture"]["radius"] = 1.3),
+            d -> delete!(d["deformable_mirrors"]["dm"],"clear_aperture"),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] = [1, 0]),
             d -> (d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "pipewireao/detector-frame-f32/1"),
             d -> (d["deformable_mirrors"]["extra"] = deepcopy(d["deformable_mirrors"]["dm"])),
@@ -226,6 +243,85 @@ end
             write(path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.verify_plant(options, InstrumentPlantForTest)
         end
+    end
+end
+
+@testset "optional registered optical pupil publication" begin
+    document = operational_instrument()
+    @test Instrument.validate(document) === document
+    legacy = deepcopy(document)
+    delete!(legacy["deformable_mirrors"]["dm"],"pupil")
+    @test Instrument.validate(legacy) === legacy
+    delete!(legacy["deformable_mirrors"]["dm"],"clear_aperture")
+    delete!(legacy["deformable_mirrors"]["dm"],"pupil_coordinates")
+    @test Instrument.validate(legacy) === legacy
+    for pupil in (
+            nothing, [], Dict(), Dict("outer_radius"=>1.0),
+            Dict("outer_radius"=>1.0,"inner_radius"=>0.0,"inferred"=>true),
+            (Dict("outer_radius"=>outer,"inner_radius"=>inner) for (outer,inner) in
+                ((true,0.0),(1.0,false),(0.0,0.0),(-1.0,0.0),(1.0,-0.1),
+                (1.0,1.0),(1.0,2.0),(Inf,0.0),(1.0,NaN),(1e100,0.0),
+                (1e-100,0.0),(1.0,1e-100),(Float64(floatmax(Float32))/4,0.0),
+                (nextfloat(1.0),1.0)))...,
+        )
+        invalid = deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["pupil"] = pupil
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    for coordinates in (nothing, [], [[0,0]], [[0,0],[1,1],[2]],
+            [[0,0],[1,1],[2,3,4]], [Any[false,0],[1,1],[2,2]],
+            [[0,0],[Inf,1],[2,2]], [[0,0],[NaN,1],[2,2]],
+            [[0,0],[1e100,1],[2,2]], [[0,0],[1e-100,1],[2,2]])
+        invalid = deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["pupil_coordinates"] = coordinates
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    invalid = deepcopy(document)
+    delete!(invalid["deformable_mirrors"]["dm"],"pupil_coordinates")
+    @test_throws ArgumentError Instrument.validate(invalid)
+    unobstructed = deepcopy(document)
+    unobstructed["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.0
+    @test Instrument.validate(unobstructed) === unobstructed
+end
+
+@testset "optional mirror clear aperture is distinct from the optical pupil" begin
+    document = operational_instrument()
+    @test Instrument.validate(document) === document
+    mirror = document["deformable_mirrors"]["dm"]
+    # A clear aperture can be described with no optical pupil, and no radius ordering is inferred.
+    delete!(mirror,"pupil")
+    mirror["clear_aperture"]["radius"] = 0.5
+    @test Instrument.validate(document) === document
+    for aperture in (nothing, [], Dict(), Dict("diameter"=>2.0),
+            Dict("radius"=>1.0,"center"=>[0,0]),
+            (Dict("radius"=>radius) for radius in
+                (true,false,0.0,-1.0,Inf,NaN,1e100,1e-100,Float64(floatmax(Float32))/4))...)
+        invalid = deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["clear_aperture"] = aperture
+        @test_throws ArgumentError Instrument.validate(invalid)
+    end
+    invalid = deepcopy(document)
+    delete!(invalid["deformable_mirrors"]["dm"],"pupil_coordinates")
+    @test_throws ArgumentError Instrument.validate(invalid)
+    delete!(mirror,"clear_aperture")
+    @test Instrument.validate(document) === document
+end
+
+@testset "legacy scientific telescope supplies the published optical pupil" begin
+    mktempdir() do root
+        path = joinpath(root,"instrument.json")
+        document = operational_instrument()
+        source = InstrumentTelescopePlantForTest.instrument_definition()
+        document["scientific_identity"] = Instrument.scientific_identity(source)
+        document["deformable_mirrors"]["dm"]["pupil"] = Dict("outer_radius"=>1.0,"inner_radius"=>0.2)
+        write(path,JSON.json(document))
+        options = (;instrument=path,calibration_identity=document["calibration_identity"],
+            command_count=3,frame_shape=(2,3),command_scale=1f-6,
+            frame_schema="pipewireao/raw-detector-pixels-u16/1",plant=(;settings=NamedTuple()))
+        @test Instrument.verify_plant(options,InstrumentTelescopePlantForTest) === nothing
+        document["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.3
+        write(path,JSON.json(document))
+        @test_throws ArgumentError Instrument.verify_plant(options,InstrumentTelescopePlantForTest)
     end
 end
 
@@ -402,7 +498,7 @@ end
         options=(;instrument=instrument_path,mirror_description=mirror_path,command_count=3)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
         @test isempty(Instrument.mirror_properties((;mirror_description=nothing)))
-        mechanical=merge(description,Dict("actuator_pitch_m"=>0.0015))
+        mechanical=merge(description,Dict("actuator_pitch_m"=>0.0015,"clear_aperture_diameter_m"=>0.0245))
         mechanical_json="\n"*JSON.json(mechanical)*"\n"
         write(mirror_path,mechanical_json)
         @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>mechanical_json)
