@@ -238,8 +238,10 @@ transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument set
 
 Resolve profile and scalar settings into a declared AOS graph. The default is
 `production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
-An explicitly declared `internal-source` graph retains its own optical topology
-and normal component settings. Unknown selections reject before preparation.
+Explicitly declared `internal-source` and `dark` graphs retain normal component
+settings. A dark graph must feed each detector's photon-rate input from an
+explicit zero binding, without an optical link to that input. Unknown selections
+reject before preparation.
 """
 function graph_document(declaration, configured; calibration=false,
         simulation_graph=calibration ? "calibration" : "production")
@@ -292,7 +294,24 @@ function graph_document(declaration, configured; calibration=false,
     graph["name"] = mode == "calibration" ? graph["name"] : graph["name"] * "_" * profile_name
     resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
     mode == "calibration" || apply_responses!(resolved, declaration, configured)
+    mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])
     return resolved
+end
+
+function validate_dark_graph(graph, bindings)
+    detectors = filter(node -> node["type"] == "detector", graph["nodes"])
+    isempty(detectors) && throw(ArgumentError("dark graph requires a detector"))
+    for detector in detectors
+        destination = detector["name"] * ".photon_rate"
+        any(link -> link["destination"] == destination, graph["links"]) &&
+            throw(ArgumentError("dark detector cannot receive an optical photon-rate link"))
+        inputs = filter(input -> input["destination"] == destination, graph["inputs"])
+        length(inputs) == 1 || throw(ArgumentError("dark detector requires one blocked photon-rate input"))
+        binding = bindings[only(inputs)["binding"]]
+        binding["kind"] == "zeros" && binding["type"] == "Float32" ||
+            throw(ArgumentError("dark photon rate requires an explicit Float32 zero binding"))
+    end
+    return nothing
 end
 
 function binding_values(declaration, configured, binding::AbstractDict)

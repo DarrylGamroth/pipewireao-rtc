@@ -179,6 +179,95 @@ bundle or implement the optional `Capture` file-export action.
 See the [implementation and verification record](validation/calibration-owner-20261027/PLAN.md)
 and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
+### Source and mechanism preparation
+
+The shared procedure describes the required optical condition, rather than a
+manufacturer's commands. A dark blocks light at the detector while retaining the
+selected exposure, gain, temperature/readout policy and raw ADC contract. An
+illuminated acquisition uses a declared source and optical path. A reference
+additionally binds the nominal mirror figure and mechanism positions. An
+illuminated image is not automatically a detector flat field or a WFS reference;
+these remain separate scientific operations.
+
+| Endpoint | Preparation owner | Evidence needed before acquisition |
+| --- | --- | --- |
+| Classic simulator | Selected built AOS graph | `dark` feeds zero incident photon rate to the unchanged detector; `internal-source` retains the declared source and detector without atmosphere |
+| Physical REVOLT | Operator; user confirms preparation is completely manual | Run/stage-specific confirmation of prescribed beam blocking or illuminated configuration, recorded as manual evidence; detector settings and independent data checks remain required |
+| Physical SPIDERS | Existing SuperK, Thorlabs and Galil services | Service identity, actual emission/interlock and mechanism readbacks, motion completion and declared position tolerance; submission alone is insufficient |
+| Physical GPI | Existing instrument/mechanism-control software | Completed configuration and readbacks from that software, bound to this stage and detector configuration |
+
+This is an integration contract and implementation plan. Physical adapters,
+manual confirmation transport and automatic campaign orchestration are not yet
+implemented. Selecting a simulation graph authorizes no physical device command.
+Preparation conditions belong to the authored calibration recipe; physical
+mechanism identity/geometry remains instrument data, and service connection
+settings belong to the application/host configuration. The ordinary instrument
+and RTC graphs remain the scientific authority. Do not author a second controller
+graph or duplicate mechanism-control software for these stages.
+Adapters use each service's existing protocol; mechanisms need not become
+PipeWire graph nodes. The common interface is the preparation request and its
+verified completion, followed by the existing acquisition actions.
+
+The intended event sequence leaves device authority in the existing owner:
+the initial-calibration session excludes the ordinary correction producer before
+any preparation request. Calibration of a running loop needs separately
+qualified hold/state preservation; source or mechanism movement cannot begin
+merely because a client has requested Hold.
+
+```mermaid
+sequenceDiagram
+    participant C as Calibration procedure
+    participant P as Preparation adapter
+    participant D as Simulator, service or operator
+    participant A as Acquisition endpoint
+    C->>P: Request stage condition with deadline
+    P->>D: Prepare through existing authority
+    D-->>P: Fresh readback or manual confirmation
+    P-->>C: Condition evidence and observation boundary
+    C->>A: Acquire after that boundary
+    A-->>C: Correlated raw and WFS samples
+    P-->>C: Condition change or loss, if observed
+    C->>P: Request declared terminal condition
+    P-->>C: Terminal confirmation or unresolved outcome
+```
+
+Evidence binds the exact run/stage request, service incarnation, detector
+configuration and optical condition. Subscribe before commanding and establish
+readiness from subsequent readbacks. A cached status, acknowledgment, elapsed
+delay or file cannot establish readiness. Exposure starts follow the verified
+preparation boundary; buffered earlier frames are excluded. Cross-process clocks
+need an explicit mapping or a causal acquisition boundary. Monitor required
+conditions during acquisition; state loss or an unobserved gap invalidates
+affected candidates. Manual confirmation retains its weaker operator-attested
+scope and never masquerades as continuous hardware readback.
+
+One control task owns stage progression. Device I/O stays in the existing
+services or a bounded worker, outside RTC frame callbacks. Initially allow one
+preparation request and one acquisition action in flight, a finite declared
+mechanism set, finite event storage and an absolute deadline for each stage.
+Overflow, stale/out-of-order evidence, service restart, motion fault or deadline
+expiry abort the candidate. Unknown command outcomes do not authorize retries.
+Adapters can consume legacy polled telemetry, with explicit polling cadence and
+freshness limits; orchestration does not advance through sleeps. No physical
+settling or latency claim follows from this software contract.
+
+Cleanup requests the instrument's declared terminal condition through its
+current authority, without blindly replaying an earlier state. A beam block can
+leave a warmed source on; no universally available shutter or switch is assumed.
+An unresolved preparation or cleanup outcome fences acquisition and automatic
+loop resumption. Cancellation resolves in-flight actions and records mirror
+restoration and optical cleanup separately. Device interlocks and collision
+policy stay with their existing owners.
+
+Implementation order: diagnose repeated exposure completion; qualify simulated
+dark and illuminated acquisition; implement the bounded preparation adapter and
+manual REVOLT interaction; then automate dark, lamp training and independent
+reference/eligibility stages with existing AOC methods. Add SPIDERS/GPI adapters
+after establishing their completion/readback contracts. Independent qualification
+cannot change a frozen training mask. Optional recording supports diagnosis and
+replay while scientific consumers reduce candidate data online. Source levels,
+masks, thresholds, filters and gains retain their own acceptance requirements.
+
 ### Delivery state and next gates
 
 The procedure and native client are implemented in PipeWireAORTC, rather than

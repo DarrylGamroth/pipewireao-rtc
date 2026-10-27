@@ -12,6 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Calibration source and mechanism preparation — 2026-10-27
+
+The user confirms physical REVOLT source preparation is completely manual.
+The [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
+keeps source/mechanism authority in the simulator, existing SPIDERS/GPI services
+or an explicit operator interaction. Acknowledgments do not establish optical
+readiness; evidence must precede and remain associated with candidate exposures.
+The first implementation adds a declared simulated `dark` selection with zero
+incident photons and unchanged production detector electronics/UInt16 transport.
+It preserves the ordinary RTC graph and selected calibration bytes. Physical
+adapters, manual interaction, automatic training/qualification and reliable
+repeated acquisition remain separate gates; no hardware command is issued.
+Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
+and 342 actual private-core dark/light Capture assertions. The
+[evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
+retains the failed source-manifest build and registered-release/cohort limitations.
+
 ### Optical diagnostic orientation — 2026-10-27
 
 The real isolated-actuator CPU probe confirms that copying AOS `[x,y]` optical

@@ -70,12 +70,12 @@ function validate_simulation(document, instrument, directory, graphs)
 
     validate_imaging(document)
 
-    graph_paths = _declaration_fields(document["graphs"], ("production", "calibration", "internal-source"),
+    graph_paths = _declaration_fields(document["graphs"], ("production", "calibration", "internal-source", "dark"),
         ("production", "calibration"), "graphs")
     graph_nodes = Dict{String,Set{String}}()
     graph_inputs = Dict{String,Set{String}}()
     graph_outputs = Dict{String,Set{String}}()
-    for mode in ("production", "calibration", "internal-source")
+    for mode in ("production", "calibration", "internal-source", "dark")
         haskey(graph_paths, mode) || continue
         graph = _declaration_graph(graphs[mode])
         for entry in graphs[mode]["nodes"]

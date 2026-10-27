@@ -291,6 +291,8 @@ and the control owner. This is an initial SH interface, not running-loop state
 preservation, multi-corrector/multi-WFS support or physical authorization.
 `simulation_graph="internal-source"` selects that explicitly declared AOS graph
 while retaining the regular RTC graph and normal production detector nodes.
+`simulation_graph="dark"` selects declared zero incident photon rate with the
+same detector electronics. This models blocked light, not a noise-free camera.
 The ideal diagnostic `calibration` graph is not an operational selection.
 Classic may enable the native Capture action with a fresh `capture_directory`,
 explicit `capture_stage` and positive cumulative `capture_maximum_bytes`.
@@ -333,7 +335,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
     options.command_input isa Symbol || throw(ArgumentError("held calibration requires one named command"))
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
-    simulation_graph in ("production","internal-source") ||
+    simulation_graph in ("production","internal-source","dark") ||
         throw(ArgumentError("unsupported operational simulation graph"))
     declaration = IC.load_simulation(options.plant.definition)
     configured = IC.settings(declaration,options.plant.settings)
