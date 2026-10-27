@@ -1,0 +1,3 @@
+AOS 0.3.2 /home/dgamroth/.julia/packages/AdaptiveOpticsSim/g0FT5/src/AdaptiveOpticsSim.jl
+Asymmetric phase marker: baseline=(4, 5); +offset_x=(4, 6); +offset_y=(5, 5)
+Atmosphere +x moves array axis 2; atmosphere +y moves array axis 1.

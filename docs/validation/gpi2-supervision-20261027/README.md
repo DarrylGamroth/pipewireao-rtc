@@ -107,7 +107,8 @@ teardown warnings remain; no physical settling or shutdown qualification follows
 Cache evidence is under
 `/home/dgamroth/.cache/pipewireao/gpi-operations-20261027/` and
 `/tmp/correction-supervision-codegen-20261027/`. These paths are evidence only,
-never deployment dependencies. Live services and the GUI remain unchanged.
+never deployment dependencies. These isolated trials did not change live services
+or the GUI; the combined deployment is recorded below.
 
 ## Registered 0.8.4 update
 
@@ -129,6 +130,59 @@ FGPW 0.1.11. FGA 0.8.5 only promotes the existing admitted metadata record to
 the public advanced API; numerical definitions remain identical to 0.8.4.
 The FGPW release passes 1,932 assertions in 92 testsets, including the observer's
 96 assertions. These gates precede the combined installed/live application check.
+
+## Combined deployment checks
+
+The combined registered application uses RTC 0.2.29
+(`c4efa037e8da4d84d49a8ff1b05a33db4b636944`), FGA 0.8.5
+(`442906ad123bb0f68d474ee128ca8e8e58b97849`) and FGPW 0.1.11
+(`5aa920cec0ab3b8ecc24a8ea43b57bcca58eeac0`). Its environment has no
+path overrides. Registered-consumer supervision selectors and all 39 optical
+presentation assertions pass; the CPU instrument export passes 19 assertions.
+Controller graph, parameter bindings and all 32 calibration FITS files are
+byte-identical to the prior installed application. Calibration context values
+are equal; its text gains the 0.2.27 writer's Generated header. A preliminary
+comparison harness used a nonexistent `rtc/calibration/context.yaml` path; the
+corrected verification reads `calibration/context.yaml` and checks both byte and
+parsed equality. Failed preliminary logs remain in the deployment cache.
+
+During replacement, the prior `c0bba364fde4` session's one native Quit request
+expired its reply deadline. No Quit retry was sent. The exact old main process
+and cgroup subsequently disappeared, systemd reported successful inactive state,
+and read-only `reconcile_cleanup!` confirmed `phase=stopped`,
+`cleanup_complete=true`, no cleanup errors and no retained application error.
+Cleanup is confirmed; native Quit acknowledgement remains unknown. This does
+not establish the cause of the reply timeout. The replacement has its own
+incarnation and does not inherit the uncertain request.
+
+The replacement is RUNNING: unit `pipewireao-session@e19fdf39bd12.service`,
+invocation `47a0e5fb29e348ea8402556cdc126914`, session UUID
+`7d98ecb7-1dd1-461a-848a-c3b9775bc0e0`. Its registered application is installed
+under `/home/dgamroth/.local/state/pipewireao/gpi2-supervision-live-20261027/session/installed`.
+The [native snapshot](live-supervision-properties.json) reports fresh Clear
+observations for both physical feedback outputs. Their action is `none`, because
+that field is the trip recommendation, not the configured monitor-only policy.
+The first read-only verifier incorrectly required `monitor_only` while Clear;
+the corrected verifier checks the installed policy and permits `none` or
+`monitor_only` recommendations. It passes. No protective client runs live.
+The [prior cleanup receipt](previous-cleanup-reconciled.json) retains the unknown
+Quit acknowledgement separately from successful cleanup.
+
+GUI commit `ec4e32c`, binary SHA-256
+`90a2360886ea73470438e66cf96c9bc14ac2b8f526328cb1e192599541b85286`, runs in
+`pipewireao-gpi2-supervision-gui-20261027.service`, invocation
+`8e72839fe4894d2f9d67ca31b4bd6316`. MCP verifies RUNNING and 84 nodes.
+Restore reference reaches Observed Open / “Reference reached · close inhibited”;
+Close is disabled. Allow close leaves it Open and enables Close. Only the
+subsequent explicit Close reaches Observed Closed. Scientific displays remain
+available in the retained snapshots and final screenshot. This live cycle
+supplements, rather than replaces, the isolated numerical no-old-command oracle.
+The stage Settings show named X/Y coefficient selectors, Autoscale off and both
+fixed ranges at ±1e-6 m OPD; the zero-centered chart and live displays were
+visually inspected. GUI full tests and disconnected browser DPR1/DPR2 checks pass.
+Commands, failed preliminary checks, MCP snapshots and screenshot are retained in
+`/home/dgamroth/.cache/pipewireao/gpi-supervision-live-20261027/` and the adjacent
+GUI release receipt. Gains, limits and selected calibration are preserved.
 
 ## Prepared-filter-graph inspection
 

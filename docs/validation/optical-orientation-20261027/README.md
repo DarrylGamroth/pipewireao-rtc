@@ -34,5 +34,28 @@ checks, not hardware, fixed-rate latency or complete-system qualification.
 
 ## Deployment
 
-Registered 0.2.26 / FGA 0.8.4 replacement is running on the CUDA plant. The
-orientation patch is pending its registered consumer and installed rollout gate.
+Registered RTC 0.2.29 / FGA 0.8.5 / FGPW 0.1.11 is running on the CUDA plant.
+The registered consumer passes all 39 presentation assertions. Installed and GUI
+checks are recorded in the [combined deployment](../gpi2-supervision-20261027/README.md#combined-deployment-checks).
+
+## Atmosphere wind-axis inconsistency
+
+The operator then observed raw pyramid features moving right while DM and
+residual features moved up. Registered AOS 0.3.2 configures one ground layer at
+10 m/s and 0°. Its atmospheric extraction interprets index 1 as y and index 2 as
+x, on both CPU and CUDA. Gaussian DM coordinates, pyramid mask coordinates and
+the RTC tip/tilt basis instead interpret index 1 as x and index 2 as y. Thus the
+configured positive wind-x motion advances native index 2, physically +y in the
+other optical owners. Raw camera row/column rendering shows it toward the right;
+the physical DM and corrected diagnostic mapping show it upward. No additional
+wire transpose is present. These are the same evolving field, not independently
+rotated atmospheric realizations.
+
+The disconnected [asymmetric marker probe](atmosphere_axes.jl) passes three
+assertions against registered AOS ([output](atmosphere-axis-probe.log)):
+baseline peak `(4,5)`, +offset_x peak `(4,6)`, +offset_y peak `(5,5)`.
+An independent source inspection confirms the same CPU/CUDA convention and the
+existing atmosphere test's column-shift expectation. No scientific source or
+live wind setting was changed. Correcting atmospheric axes requires coordinated
+CPU/CUDA and finite/infinite-screen, source-footprint and directional-regression
+checks; rotating a GUI view would conceal the inconsistent convention.

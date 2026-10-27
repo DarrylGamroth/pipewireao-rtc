@@ -42,8 +42,9 @@ for the pending complete campaign gate.
 ### GPI2 loop controls and supervision — 2026-10-27
 
 Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
-The live application has been refreshed to registered RTC 0.2.26 and FGA 0.8.4.
-The combined supervision/orientation rollout is being qualified. Preserve the calibration, gains,
+The live application now uses registered RTC 0.2.29, FGA 0.8.5 and FGPW 0.1.11.
+The combined supervision/orientation rollout and explicit recovery/reclose pass.
+Both native constraint-feedback monitors are fresh and monitor-only. Preserve the calibration, gains,
 stroke limits and CUDA plant while qualifying changes in isolated applications.
 The operator selected monitor-only supervision for the live deployment;
 automatic intervention is tested only in an isolated simulation until thresholds
@@ -75,6 +76,12 @@ patch maps both optional pupil-wavefront and focal-plane images to +x right,
 ordering, gains and limits are preserved. Focused bounds-checked and actual
 small SH/Pyramid product checks pass; registered-consumer and installed rollout
 evidence is tracked in the [orientation record](validation/optical-orientation-20261027/README.md).
+
+The operator's subsequent pyramid-motion comparison exposed an AOS 0.3.2
+atmosphere wind-axis inconsistency: atmospheric x advances array index 2, while
+DM/PWFS physical x uses index 1. The asymmetric marker probe confirms it; no
+scientific convention or live wind setting has been changed. The same record
+tracks this follow-up independently of the verified image presentation mapping.
 
 ### Generated-file identification — 2026-10-27
 
