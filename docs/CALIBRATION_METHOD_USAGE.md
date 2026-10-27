@@ -14,8 +14,9 @@ procedures selected from a built instrument application:
   in a fresh destination.
 
 The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
-`graph.conf`, typed FITS files in `artifacts/`, and optional preserved
-`history/`. The result hashes context, graph, artifacts and retained history.
+`graph.conf` and typed FITS files in `artifacts/`. The result hashes context,
+graph and artifacts. Git retains earlier selections and provenance; staging
+does not copy archive directories or create `history_sha256` manifests.
 `read_bundle` verifies these bytes without loading a sensor or accelerator;
 sensor procedures own array interpretation and optical checks. Authored recipes
 live in the instrument source at `calibration/recipe.yaml`. Its `graph_source`

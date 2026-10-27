@@ -59,30 +59,16 @@ function Calibration.stage_calibration(source, application, calibration, destina
     try
         E.copy_source(source, staged; runtime_configurations=false)
         # Replace the selection only in this owned staging copy.
-        # Preserve authored recipe, calibration inputs and frozen history.
+        # Preserve authored recipe and calibration inputs. Git retains prior selections.
         selected=joinpath(staged,"calibration")
         mkpath(selected)
         rm(joinpath(selected,"recipe.conf");force=true)
-        history=joinpath(selected,"history")
-        mkpath(history)
-        previous=joinpath(selected,"result.yaml")
-        if isfile(previous)
-            R.copy_file(previous,joinpath(history,"selected-"*C.sha256_file(previous)*".yaml"))
-        end
+        rm(joinpath(selected,"history");recursive=true,force=true)
         for name in ("artifacts","result.yaml","context.yaml","graph.conf")
             path=joinpath(selected,name)
             rm(path;recursive=true,force=true)
             origin=joinpath(calibration,name)
             isdir(origin) ? R.copy_tree(origin,path) : R.copy_file(origin,path)
-        end
-        if isdir(joinpath(calibration,"history"))
-            for (root,_,files) in walkdir(joinpath(calibration,"history")), file in files
-                origin=joinpath(root,file)
-                path=joinpath(history,relpath(origin,joinpath(calibration,"history")))
-                isfile(path) && C.sha256_file(path)!=C.sha256_file(origin) &&
-                    throw(ArgumentError("calibration history collision"))
-                isfile(path) || (mkpath(dirname(path)); R.copy_file(origin,path))
-            end
         end
         rm(joinpath(staged, "rtc", "calibration.yaml"); force=true)
         R.copy_file(contextpath, joinpath(staged, "rtc", "calibration.yaml"))
@@ -91,8 +77,6 @@ function Calibration.stage_calibration(source, application, calibration, destina
         IC.prescription_identity(staged_declaration,staged_settings)==original_identity ||
             throw(ArgumentError("authored source prescription differs from the calibrated application"))
         copied_report = deepcopy(report)
-        copied_report["history_sha256"]=Dict(relpath(joinpath(root,file),selected)=>C.sha256_file(joinpath(root,file))
-            for (root,_,files) in walkdir(history) for file in files)
         copied_report["staged_prescription_identity"] = IC.prescription_identity(staged_declaration, staged_settings)
         copied_resultpath = joinpath(staged, "calibration", "result.yaml")
         C.write_yaml(copied_resultpath, copied_report;
