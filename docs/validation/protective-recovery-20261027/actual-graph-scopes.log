@@ -1,0 +1,2 @@
+Classic accepted nodes=11 participants=(Symbol("pdm-command"),) feedback_zero_required=() reference_supported=true elapsed_s=23.7580988
+GPI2 accepted nodes=30 participants=(Symbol("modal-filter"), Symbol("tiptilt-filter"), Symbol("tiptilt-command"), Symbol("woofer-command"), Symbol("tweeter-command")) feedback_zero_required=(Symbol("tiptilt-command"),) reference_supported=true elapsed_s=61.758831649

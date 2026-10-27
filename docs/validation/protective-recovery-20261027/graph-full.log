@@ -1,0 +1,299 @@
+┌ Warning: The project dependencies or compat requirements have changed since the manifest was last resolved.
+│ It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
+└ @ Pkg.API ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Pkg/src/API.jl:1312
+     Testing FilterGraphPipeWire
+      Status `/tmp/jl_5zGhIx/Project.toml`
+  [8914fa96] FilterGraphAlgorithms v0.8.1 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/FilterGraphAlgorithms`
+  [0366a544] FilterGraphPipeWire v0.1.9 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/FilterGraphPipeWire`
+  [f6369f11] ForwardDiff v1.4.6
+⌃ [682c06a0] JSON v1.10.0
+  [febeb008] JuliaFilterGraph v0.4.2 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/JuliaFilterGraph`
+  [5d815c25] PipeWireAO v0.6.19 `~/workspaces/codex/pipewire/PipeWireAO.jl`
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test v1.11.0
+      Status `/tmp/jl_5zGhIx/Manifest.toml`
+  [621f4979] AbstractFFTs v1.5.0
+  [79e6a3ab] Adapt v4.7.4
+⌃ [3c8b5851] AdaptiveOpticsCalibration v0.17.0
+  [4fba245c] ArrayInterface v7.30.2
+  [62783981] BitTwiddlingConvenienceFunctions v0.1.6
+⌅ [fa961155] CEnum v0.5.0
+  [2a0fbf3d] CPUSummary v0.2.7
+⌃ [d360d2e6] ChainRulesCore v1.26.1
+  [fb6a15b2] CloseOpenIntervals v0.1.13
+  [bbf7d656] CommonSubexpressions v0.3.1
+  [f70d9fcc] CommonWorldInvalidations v1.2.2
+  [34da2185] Compat v4.18.1
+  [adafc99b] CpuId v0.3.3
+  [8bb1440f] DelimitedFiles v1.9.1
+  [163ba53b] DiffResults v1.1.0
+  [b552c78f] DiffRules v1.16.0
+⌅ [ffbed154] DocStringExtensions v0.9.5
+  [7a1cc6ca] FFTW v1.10.0
+  [8914fa96] FilterGraphAlgorithms v0.8.1 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/FilterGraphAlgorithms`
+  [0366a544] FilterGraphPipeWire v0.1.9 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/FilterGraphPipeWire`
+  [f6369f11] ForwardDiff v1.4.6
+⌃ [14197337] GenericLinearAlgebra v0.4.1
+  [3e5b6fbb] HostCPUFeatures v0.1.18
+  [0e44f5e4] Hwloc v3.3.0
+  [615f187c] IfElse v0.1.1
+⌃ [92d709cd] IrrationalConstants v0.2.6
+  [692b3bcd] JLLWrappers v1.8.0
+⌃ [682c06a0] JSON v1.10.0
+  [febeb008] JuliaFilterGraph v0.4.2 `~/workspaces/codex/pipewire/JuliaFilterGraph-recovery-integration-20261027/julia/JuliaFilterGraph`
+  [10f19ff3] LayoutPointers v0.1.17
+⌃ [2ab3a3ac] LogExpFunctions v1.0.2
+  [bdcacae8] LoopVectorization v0.12.175
+  [1914dd2f] MacroTools v0.5.16
+  [d125e4d3] ManualMemory v0.1.8
+⌃ [77ba4419] NaNMath v1.1.4
+  [6fe1bfb0] OffsetArrays v1.17.0
+⌃ [69de0a69] Parsers v3.0.0
+  [5d815c25] PipeWireAO v0.6.19 `~/workspaces/codex/pipewire/PipeWireAO.jl`
+  [f517fe37] Polyester v0.7.19
+  [1d0040c9] PolyesterWeave v0.2.2
+  [aea7be01] PrecompileTools v1.3.4
+⌃ [21216c6a] Preferences v1.6.0
+  [189a3867] Reexport v1.2.2
+  [94e857df] SIMDTypes v0.1.0
+  [476501e8] SLEEFPirates v0.6.46
+  [431bcebd] SciMLPublic v1.3.0
+⌅ [de6bee2f] SimpleChains v0.4.8
+⌃ [276daf66] SpecialFunctions v2.9.0
+  [91464d47] StableTasks v0.1.7
+  [aedffcd0] Static v1.4.6
+  [0d7ed370] StaticArrayInterface v1.10.0
+⌃ [90137ffa] StaticArrays v1.9.23
+  [1e83bf80] StaticArraysCore v1.4.4
+  [10745b16] Statistics v1.11.5
+  [7792a7ef] StrideArraysCore v0.5.9
+⌃ [ec057cc2] StructUtils v2.9.2
+  [90a7ee08] SysInfo v0.3.1
+  [811555cd] ThreadPinning v1.1.1
+  [6f48bc29] ThreadPinningCore v0.4.5
+  [8290d209] ThreadingUtilities v0.5.7
+  [3a884ed6] UnPack v1.0.2
+  [c4a57d5a] UnsafeArrays v1.0.9
+  [3d5dd08c] VectorizationBase v0.21.74
+  [33b4df10] VectorizedRNG v0.2.26
+  [f5851436] FFTW_jll v3.3.12+0
+  [e33a78d0] Hwloc_jll v2.15.0+0
+  [1d5cc7b8] IntelOpenMP_jll v2025.2.0+0
+  [94ce4f54] Libiconv_jll v1.18.0+0
+  [856f044c] MKL_jll v2025.2.0+0
+  [efe28fd5] OpenSpecFun_jll v0.5.6+0
+  [cde84cf6] PipeWireAO_jll v1.7.1+0
+  [02c8fc9c] XML2_jll v2.15.4+0
+  [a65dc6b1] Xorg_libpciaccess_jll v0.19.0+0
+  [1317d2d5] oneTBB_jll v2023.1.0+0
+  [0dad84c5] ArgTools v1.1.2
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [ade2ca70] Dates v1.11.0
+  [8ba89e20] Distributed v1.11.0
+  [f43a241f] Downloads v1.7.0
+  [7b1f6079] FileWatching v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [ac6e5ff7] JuliaSyntaxHighlighting v1.12.0
+  [4af54fe1] LazyArtifacts v1.11.0
+  [b27032c2] LibCURL v1.0.0
+  [76f85450] LibGit2 v1.11.0
+  [8f399da3] Libdl v1.11.0
+  [37e2e46d] LinearAlgebra v1.13.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [a63ad114] Mmap v1.11.0
+  [ca575930] NetworkOptions v1.3.0
+  [44cfe95a] Pkg v1.13.0
+  [de0858da] Printf v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v1.0.0
+  [9e88b42a] Serialization v1.11.0
+  [6462fe0b] Sockets v1.11.0
+  [f489334b] StyledStrings v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test v1.11.0
+  [cf7118a7] UUIDs v1.11.0
+  [4ec0a83e] Unicode v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.5.5+2
+  [deac9b47] LibCURL_jll v8.22.0+0
+  [e37daf67] LibGit2_jll v1.9.7+0
+  [29816b5a] LibSSH2_jll v1.11.104+0
+  [14a3606d] MozillaCACerts_jll v2026.10.20
+  [4536629a] OpenBLAS_jll v0.3.30+0
+  [05823500] OpenLibm_jll v0.8.7+0
+  [458c3c95] OpenSSL_jll v3.5.8+0
+  [efcefdf7] PCRE2_jll v10.47.0+0
+  [83775a58] Zlib_jll v1.3.2+0
+  [3161d3a3] Zstd_jll v1.5.7+1
+  [8e850b90] libblastrampoline_jll v5.15.0+0
+  [8e850ede] nghttp2_jll v1.70.0+0
+  [3f19e933] p7zip_jll v17.8.3+0
+        Info Packages marked with ⌃ and ⌅ have new versions available. Those with ⌃ may be upgradable, but those with ⌅ are restricted by compatibility constraints from upgrading.
+     Testing Running tests...
+Test Summary:                            | Pass  Total  Time
+Borrowed array byte-span alias detection |   75     75  0.5s
+Test Summary:                                    | Pass  Total  Time
+SCC rectangular row-major borrowed camera frames |   13     13  2.2s
+Test Summary:                                                    | Pass  Total  Time
+SCC protects indices and byte-sized storage from output aliasing |   56     56  4.2s
+Test Summary:                                      | Pass  Total  Time
+source channels reject malformed UTF-8 annotations |    4      4  1.3s
+Test Summary:                                              | Pass  Total  Time
+source channels bind exact native formats and source units |   30     30  2.6s
+Test Summary:                                                   | Pass  Total   Time
+external output aliases publish through the native Props getter |   13     13  11.4s
+Test Summary:                                    | Pass  Total  Time
+FGN Header metadata mapping is transport-neutral |    4      4  0.1s
+Test Summary:                                           | Pass  Total  Time
+acquisition projection owns qualified exposure metadata |   45     45  2.3s
+Test Summary:                                                          | Pass  Total  Time
+local optical interpretation does not change acquisition wire versions |   16     16  0.3s
+Test Summary:                                                      | Pass  Total  Time
+joined callbacks retain complete acquisition records after ingress |   10     10  4.7s
+Test Summary:                                                | Pass  Total  Time
+borrowed arrays preserve rank, axes, and direction ownership |    8      8  0.2s
+Test Summary:                                       | Pass  Total  Time
+borrowed-buffer processing matches direct execution |    5      5  0.2s
+Test Summary:                                         | Pass  Total  Time
+native endpoint construction avoids direct C bindings |   16     16  2.4s
+Test Summary:                                                 | Pass  Total  Time
+Graph scalar properties use the FGN-qualified control surface |   74     74  1.4s
+Test Summary:                                                     | Pass  Total  Time
+Boolean closed Property adoption holds correction and generations |   15     15  2.9s
+Test Summary:                       | Pass  Total  Time
+serialized scalar Property observer |   42     42  4.3s
+Test Summary:                                        | Pass  Total  Time
+Graph processing never invokes the Property observer |    6      6  0.5s
+Test Summary:                              | Pass  Total  Time
+read-only application Property publication |   27     27  1.6s
+Test Summary:                                     | Pass  Total  Time
+Property getter declaration and result validation |   19     19  1.8s
+Test Summary:                                                            | Pass  Total  Time
+Property getter observes observer failure and propagates its own failure |    8      8  1.3s
+Test Summary:                                      | Pass  Total  Time
+Graph processing never invokes the Property getter |    2      2  0.4s
+Test Summary:                   | Pass  Total  Time
+Joined Graph status publication |    2      2  1.2s
+Test Summary:                                  | Pass  Total  Time
+Extra Properties retain exact SPA scalar types |    2      2  1.4s
+Test Summary:                                                        | Pass  Total  Time
+Executor property preparation preserves active state and generations |   17     17  0.1s
+Test Summary:                                                               | Pass  Total  Time
+Parameter preparation precompiles both boundary layouts without publication |   30     30  0.6s
+Test Summary:                                                  | Pass  Total  Time
+Callback GC diagnostics retain allocation-free bounded tracing |   25     25  0.2s
+Test Summary:                                       | Pass  Total  Time
+Scalar diagnostics preserve the pending transaction |   12     12  0.4s
+Test Summary:                                                  | Pass  Total  Time
+Property adoption is allocation-free for a heterogeneous Graph |    2      2  0.3s
+Test Summary:                                            | Pass  Total  Time
+Property and Parameter updates share one bounded handoff |   12     12  0.2s
+Test Summary:                                            | Pass  Total  Time
+Reset adopts pending Graph control before clearing state |    5      5  0.0s
+Test Summary:                                               | Pass  Total  Time
+Graph control snapshots publish coherent cross-thread state |    7      7  0.0s
+Test Summary:                                                | Pass  Total  Time
+Parameter adoption notification survives a following request |    5      5  0.0s
+Test Summary:                                          | Pass  Total  Time
+FGN deployment rates project each Algorithm Port ratio |   18     18  3.2s
+Test Summary:                                            | Pass  Total  Time
+prepared Julia Graph processes borrowed PipeWire storage |    5      5  0.1s
+Test Summary:                                                | Pass  Total  Time
+complete Graph callback is allocation-free after preparation |    4      4  0.0s
+Test Summary:                                                      | Pass  Total  Time
+ordinary Graph callback propagates declared acquisition provenance |   13     13  1.4s
+Test Summary:                                       | Pass  Total  Time
+PipeWire callback admits a bounded latest/hold join |   27     27  0.2s
+Test Summary:                                             | Pass  Total  Time
+PipeWire callback admits all-required synchronized inputs |   26     26  0.2s
+Test Summary:                                                | Pass  Total  Time
+synchronized callback retains arrivals after one publication |    7      7  0.0s
+Test Summary:                                                     | Pass  Total  Time
+Graph callback projects FGN metadata and conditional availability |   11     11  1.2s
+Test Summary:                                                         | Pass  Total  Time
+deferred Graph ingress retains two blocks without callback allocation |    8      8  0.1s
+Test Summary:                                        | Pass  Total  Time
+Graph callback contains expected Algorithm rejection |   10     10  1.0s
+Test Summary:                                                         | Pass  Total  Time
+Parameter Ports hand off one prepared transaction at a Graph boundary |   21     21  2.1s
+Test Summary:                                                                   | Pass  Total  Time
+linked production row Graph matches the repository fixture through the callback |   11     11  5.2s
+Test Summary:                                                                    | Pass  Total  Time
+linked row callback discards incomplete work and adopts one Parameter generation |   20     20  0.8s
+Test Summary:                                                 | Pass  Total  Time
+closed-loop callback preserves host feedback across rejection |   17     17  0.4s
+Test Summary:                                              | Pass  Total  Time
+closed-loop publication abort retains committed Node state |    6      6  0.1s
+Test Summary:                                                         | Pass  Total   Time
+253-mode progressive feedback completes row blocks without allocation |   16     16  10.0s
+Test Summary:                                                   | Pass  Total  Time
+PipeWire owner delays clipped feedback by one successful sample |   27     27  7.8s
+Test Summary:                                                           | Pass  Total   Time
+Scoped recovery opens, clears histories and retains constrained current |   92     92  20.2s
+Test Summary:                                     | Pass  Total  Time
+Recovery refuses progressive and joined execution |    3      3  1.0s
+Test Summary:                                                         | Pass  Total  Time
+Optional native recovery controls share admission and expose adoption |   65     65  2.9s
+Test Summary:                                                      | Pass  Total  Time
+Recovery consumes an unexpected application failure without replay |    9      9  0.3s
+Test Summary:                                                  | Pass  Total  Time
+Recovery reference proof expires without new successful frames |   27     27  0.1s
+Test Summary:                                              | Pass  Total  Time
+RESET cannot release a recovery against pre-reset evidence |   15     15  1.4s
+Test Summary:                                                        | Pass  Total  Time
+Released and release-pending frames publish fresh scope observations |   14     14  0.0s
+Test Summary:                                   | Pass  Total  Time
+First close rechecks scope evidence at adoption |   40     40  0.1s
+Test Summary:                                         | Pass  Total  Time
+Recovery admission requires causal temporal histories |   16     16  0.4s
+Test Summary:                                                  | Pass  Total  Time
+RESET after release requires actual post-reset requalification |   27     27  0.0s
+Test Summary:                                                            | Pass  Total   Time
+Scope topology qualifies static references and rejects ambiguous targets |   24     24  31.7s
+Test Summary:                                                            | Pass  Total   Time
+Coupled reference proof admits only zero unquantized constraint feedback |   48     48  20.3s
+Test Summary:                                             | Pass  Total  Time
+Recovery scope owns one exact delayed-feedback controller |    4      4  2.5s
+Test Summary:                                                 | Pass  Total  Time
+captured Graph PipeWire publication is reserved before launch |   23     23  2.1s
+Test Summary:                                                      | Pass  Total  Time
+captured Graph replacement is prepared before an atomic owner swap |   20     20  0.2s
+Test Summary:                                           | Pass  Total  Time
+captured Graph PipeWire capacity misses suppress launch |    9      9  0.0s
+Test Summary:                                                         | Pass  Total  Time
+captured Graph PipeWire failures publish nothing and remain fail-stop |   15     15  0.0s
+Test Summary:                                                | Pass  Total  Time
+public CPU preparation requires selected conditional outputs |   15     15  1.4s
+Test Summary:                                        | Pass  Total  Time
+native CPU start does not execute or reset the graph |    6      6  0.0s
+Test Summary:                                   | Pass  Total  Time
+public CPU preparation resets retained feedback |    6      6  1.4s
+Test Summary:                                              | Pass  Total  Time
+metadata finalization failure retains committed Node state |    3      3  0.0s
+Test Summary:                                                  | Pass  Total  Time
+prepared Graph endpoint admits supported publication contracts |   13     13  2.5s
+Test Summary:                                      | Pass  Total  Time
+acquisition synchronized row-major matrix boundary |    6      6  3.5s
+Test Summary:                                               | Pass  Total  Time
+row-major borrowed arrays preserve multidimensional indices |    3      3  0.1s
+Test Summary:                                                    | Pass  Total  Time
+rank-one boundary layout preserves Graph state across deactivate |    3      3  0.1s
+Test Summary:   | Pass  Total  Time
+package surface |   23     23  0.1s
+Test Summary:                                                  | Pass  Total  Time
+Parameter callback diagnostics are bounded and allocation-free |   23     23  0.6s
+Test Summary:                             | Pass  Total  Time
+C-RED 2 native ingress before calibration |   50     50  3.6s
+Test Summary:                                                   | Pass  Total  Time
+C-RED 2 ingress contract restrictions and electrical annotation |   10     10  1.3s
+Test Summary:                                         | Pass  Total  Time
+ingress callback return and untouched input contracts |    4      4  0.1s
+Test Summary:                                                        | Pass  Total  Time
+C-RED 2 transmitted tag position differs from logical array indexing |    6      6  0.0s
+Test Summary:                                                            | Pass  Total  Time
+adapter adopts prepared CPU bounds and shards at a joined frame boundary |  324    324  5.5s
+Test Summary:                            | Pass  Total  Time
+CPU progressive Graph status publication |    3      3  1.5s
+     Testing FilterGraphPipeWire tests passed 

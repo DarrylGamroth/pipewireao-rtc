@@ -55,6 +55,39 @@ unexpected warnings or test failures were reported. The Git object-missing
 message is exercised by the configuration-store rejection tests. Logs are
 retained alongside this record.
 
+## Final stable-source CPU gates
+
+At JFG `b82f1bd`, the complete FilterGraphPipeWire package suite passed **1,803
+assertions in 82 testsets**. The separate scientific recovery selector passed
+**871 assertions**. This includes rejected/in-flight frames, release expiry,
+reset, mixed close, callback-time reference loss and unchanged ordinary
+hold/resume after the first validated close. Independent final source review
+found no outstanding actionable issue at that revision.
+
+After merging current RTC main into the recovery branch, RTC `ad9887c` passed
+its full configured suite: **5,446 assertions in 206 testsets**, exit zero. The
+unchanged native source at `17b2250` passes all 12 Meson programs. The broad CPU
+commands are:
+
+```sh
+PIPEWIREAO_PREFIX=/home/dgamroth/.local/opt/pipewireao-loop-controls-20261026 julia --startup-file=no --threads=1,0 --project=. test/runtests.jl
+# In the JFG integration checkout, with its task-local resolved test Manifest:
+julia --startup-file=no --threads=1,0 --project=test -e 'using Pkg; Pkg.test("FilterGraphPipeWire"; allow_reresolve=true)'
+julia --startup-file=no --threads=1,0 --project=test julia/FilterGraphAlgorithms/test/recovery.jl
+```
+
+Cold preparation of the actual Classic source graph (11 nodes) and deployed GPI2
+graph (30 nodes) also accepts their declared recovery scopes and exact delayed
+feedback bridge. Classic selects `pdm-command`; GPI2 selects `modal-filter`,
+`tiptilt-filter`, `tiptilt-command`, `woofer-command`, `tweeter-command`. The GPI2
+path requires a zero-feedback witness only from the selected unquantized
+`tiptilt-command` constraint-feedback Port. Demanded output is not substituted
+for feedback even when their schemas match. Quantized feedback cascades and
+filters downstream of feedback/static bias are conservatively refused.
+The retained harness and log establish topology admission with neutral
+calibration builders; they do not establish calibrated closed-loop performance,
+FITS adoption, physical operation or a live deployment.
+
 ## Independent review and disposition
 
 | ID | Severity / evidence | Finding and disposition |

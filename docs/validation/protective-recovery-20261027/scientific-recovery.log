@@ -1,0 +1,6 @@
+Test Summary:                                              | Pass  Total  Time
+Protective recovery clears correction and temporal history |   69     69  1.8s
+Test Summary:                                                      | Pass  Total  Time
+Conditioner recovery retains nonzero current and dither continuity |   40     40  0.9s
+Test Summary:                                                | Pass  Total  Time
+Allocation recovery preserves slew and unequal update phases |  762    762  4.1s
