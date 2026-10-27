@@ -157,3 +157,27 @@ SDK and one Julia thread. A fresh Julia 1.12.7 environment passed all 115 bundle
 and completion-driven procedure assertions across six testsets without warnings.
 `Pkg.resolve()` changed only the package's own Manifest version to 0.2.17;
 dependency versions and compatibility bounds remain unchanged.
+
+## Registered RTC 0.2.17 validation
+
+[Release v0.2.17](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.2.17)
+tags commit `124d964fd7a325cee3b1e96b651a17688b622128`. Private registry commit
+`1846af1` registers tree `e2acf924a4dc58dbada284b315b0e725803297c6`, matching
+the tag. A fresh registered-only environment installed that exact tree without
+path or repository overrides, using the instrument cohort documented above.
+LocalRegistry generated the registry change; its worktree limitation required
+an isolated ordinary clone rather than a linked worktree.
+
+On Julia 1.13.3 the installed package passed the full `Pkg.test("PipeWireAORTC";
+allow_reresolve=false, julia_args=["--threads=1"])` workspace: 4,836 assertions
+across 178 testsets. The installed bundle, modal-I/O and completion selectors
+passed another 415 assertions; the instrument calibration selector passed 161.
+These checks use the configured native SDK and never contact installed RTCs.
+
+Earlier registered runs were interrupted when the host's Julia 1.13.2
+installation was removed during execution: the package selector lost its
+standard-library directory, a calibration selector could not load `libdSFMT`,
+and a staged rebuild could no longer identify bundled LibCURL. Those runs are
+not passing evidence. The replacement environment and checks use Julia 1.13.3.
+Development, validation and release tooling now require Julia 1.13 or newer in
+repository guidance. This does not alter historical evidence or live services.

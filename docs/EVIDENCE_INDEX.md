@@ -6,8 +6,9 @@ The [CPU/source validation](validation/standard-calibration-20261026/README.md)
 records the common built-application recipe, bundle and staging interfaces for
 Classic and GPI2, removed modal-only entry points, and preserved frozen inputs.
 The [independent source review](reviews/20261026-standard-calibration/REVIEW.md)
-records the resolved contract and integration findings. Registered release,
-physical operation, GPU and deadline qualification remain separate gates.
+records the resolved contract and integration findings. The validation record
+also covers registered RTC 0.2.17 installation and its full Julia 1.13.3 package
+suite. Physical operation, GPU and deadline qualification remain separate gates.
 
 ## Shared event-driven calibration — 2026-10-26
 

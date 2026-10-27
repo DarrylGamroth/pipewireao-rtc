@@ -71,6 +71,7 @@
 
 ## Validation and documentation
 
+- Use Julia 1.13 or newer for development, validation and release tooling.
 - Keep commits focused; never rewrite published history without authorization.
 - Choose checks for the changed behavior. Rust code: formatting, focused tests,
   workspace tests and Clippy in proportion to the change. Live/hardware gates
