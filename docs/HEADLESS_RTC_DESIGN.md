@@ -188,13 +188,13 @@ general controller-reset command or physical-device authority.
 | --- | --- | --- |
 | Hold | Adopt `closed=false`; retain committed controller correction and mathematical state. Acquisition, validation, downstream allocation/filtering, command exchange and plant dynamics continue. | Exact Boolean/generation adoption establishes controller hold, not a frozen device command or mechanical position. |
 | Resume | Adopt `closed=true`; continue retained recurrence with the current residual and preceding-frame constraint feedback. | Existing readiness and owner-incarnation checks apply. No reset, gain change or flat restoration is implied. |
-| Restore-flat (proposed) | Hold correction, then drive each declared corrector to its validated reachable reference through ordinary limits, slew and update-rate constraints. Reconcile controller correction, allocation histories and delayed feedback so old correction cannot return on resume. | Leave held. Distinguish reference adoption, command reached and physical settling; only report evidence the owner/device actually supplies. Zero is not a universal flat. |
+| Protective recovery (selected CPU profile below) | Hold correction, then drive each declared corrector to its validated reachable reference through ordinary limits, slew and update-rate constraints. Reconcile controller correction, allocation histories and delayed feedback so old correction cannot return on resume. | Leave held. Distinguish reference adoption, command reached and physical settling; only report evidence the owner/device actually supplies. Zero is not a universal flat. |
 | Controller-reset (proposed) | At a serialized quiescent boundary, initialize the declared controller mathematical state while preserving configuration, calibration and gains. Do not reset simulator acquisition or detector RNG. | Reset completion alone publishes no actuator command. Leave held and deny resume until a defined reference restoration or state-rebase operation makes controller output, allocation state and feedback coherent. |
 
-These names describe operations, not new public protocol identifiers. Hold and
-resume reuse `closed`; the proposed operations require explicit owner-side
-scope and completion interfaces before implementation. There is no alias from
-controller-reset to the existing session Reset command.
+Hold and resume reuse `closed`. Protective recovery uses the explicit scoped
+owner controls described below; a standalone controller-reset operation remains
+proposed. There is no alias from controller-reset to the existing session Reset
+command.
 
 Observed implementation constraints are important here. Scientific
 `ClosedLoopCorrectionF32`/`ClosedLoopIntegratorF32` reset clears both controller
@@ -207,8 +207,8 @@ the acquisition source. None implements the proposed controller-only operation.
 `PdmSystemFlatF32` adds a configured bias on every command; changing that bias is
 not an operation that removes existing correction or restores a mirror.
 
-Before adding reset/flat controls, define authoritative per-corrector reference
-identity and units, exact reset scope, owner-side serialization, coherent
+Physical-device reset/flat controls still require authoritative per-corrector
+reference identity and units, exact scope, owner-side serialization, coherent
 controller/allocation/feedback rebasing, and command-reached observations.
 Refuse incompatible operations before effects. After uncertain effects, retain
 an unknown outcome and require explicit reconciliation; do not automatically
@@ -217,9 +217,9 @@ from a successful property write.
 
 ### Hierarchy and history for later operation sequencing
 
-The current five-state adoption observer stays flat. The owner-local machine
-can use a composite state for shared readiness/fault handling once multi-step
-scientific operations actually exist. The native RTC retains inter-owner
+The ordinary five-state adoption observer stays flat. The protective-recovery
+coordinator below uses a composite state for shared readiness/fault handling
+across the selected multi-step scientific operation. The native RTC retains inter-owner
 admission and sequencing; systemd retains process supervision. This adds no
 daemon and does not recreate session lifecycle or numerical graph execution.
 The intended boundary is:
@@ -249,7 +249,8 @@ explicit admitted operation so a history transition cannot repeat it implicitly.
 Shallow/deep history should be selected only after the composite structure and
 desired restoration scope exist; neither is needed for the current flat observer.
 
-Delivery and verification order:
+The approved delivery and verification order is retained here; current evidence
+and remaining qualification gates are tracked in the roadmap:
 
 1. Deploy RTC 0.2.16's existing coupled-loop controls and verify actual native
    status, readiness refusal and matching-generation Open/Close adoption.
