@@ -11,9 +11,8 @@ Modal-only APIs and CLIs and the active Classic TOML result loaders are removed.
 Frozen calibration records remain historical inputs and are not rewritten.
 Imported bundles preserve their historical source identities and support
 startup/integrity checks; this migration does not rebind them for the new
-validation/staging sequence. Source validation requires the coordinated RTC
-source until a matching registered release is available. Normal application
-environments continue using registered releases.
+validation/staging sequence. RTC 0.2.17 packages these interfaces for registered
+application environments. Source overrides remain validation-only.
 
 ## Source and environment
 
@@ -105,11 +104,11 @@ Imported root bundles are packaging adoptions, not new acquisitions. Their
 historical source identities remain unchanged and cannot be silently rebound
 for replay/staging against a different build. Fresh bundles exercise the common
 workflow. Copper and SPIDERS remain outside this data/tool migration. The new API
-needs a coordinated registered release before ordinary pinned environments can
-use it. These sensor procedures currently execute simulation-local acquisition;
-native event-driven hardware campaigns remain a separate integration. Physical-device
-calibration, GPU numerical equivalence, sustained cadence and deadline qualification were not performed. Existing running services were
-not contacted or modified.
+is included in RTC 0.2.17 for ordinary pinned environments. These sensor procedures
+currently execute simulation-local acquisition; native event-driven hardware
+campaigns remain a separate integration. Physical-device calibration, GPU
+numerical equivalence, sustained cadence and deadline qualification were not
+performed. Existing running services were not contacted or modified.
 
 
 ## TOML cleanup follow-up
@@ -147,3 +146,14 @@ while testing rejection of deliberately deleted catalog content. No test failure
 remains. Project/Manifest files were unchanged by validation. No installed
 services or physical devices were contacted. This merge does not publish a new
 registered release or qualify hardware, GPU equivalence or deadlines.
+
+## RTC 0.2.17 release preparation
+
+The release starts from combined main `c712328`, including the separately
+released 0.2.16 correction-metadata admission fix. Only package metadata and
+release documentation changed during preparation. Julia 1.13.2 passed the full
+workspace with 4,836 assertions across 178 testsets using the configured native
+SDK and one Julia thread. A fresh Julia 1.12.7 environment passed all 115 bundle
+and completion-driven procedure assertions across six testsets without warnings.
+`Pkg.resolve()` changed only the package's own Manifest version to 0.2.17;
+dependency versions and compatibility bounds remain unchanged.

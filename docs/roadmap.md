@@ -23,10 +23,9 @@ hash. Recipes remain instrument YAML. Modal-only APIs and CLIs and active
 Classic TOML result loaders have been removed; frozen historical calibration
 records remain retained. Imported bundles support startup and integrity checks
 without rebinding historical source identity for the new validation/staging
-sequence. The coordinated RTC source is required in source-validation
-environments until a matching registered release is available; application
-environments continue using registered releases. Validation results and limits
-are in the [migration evidence note](validation/standard-calibration-20261026/README.md)
+sequence. Application environments require registered RTC 0.2.17 or later
+for these interfaces; source overrides remain validation-only. Validation results
+and limits are in the [migration evidence note](validation/standard-calibration-20261026/README.md)
 and [independent review](reviews/20261026-standard-calibration/REVIEW.md).
 
 ### Shared event-driven calibration procedures — 2026-10-26
