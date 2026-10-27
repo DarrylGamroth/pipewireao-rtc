@@ -121,3 +121,67 @@ on hover; the installed GUI binary includes this change. This does not establish
 the cause of an earlier ndarray Format rejection. The GUI repository retains the
 user's unrelated dirty `docs/workstation-review.md`; it is outside this RTC
 change.
+
+## GUI parameter-update no-op, shape retention, and final managed cohort
+
+A 1 nm defocus update through the GUI reproduced a no-op on managed session
+`4fe8a61f-63a2-4d6c-a3cc-b49c625ad3a6`: `session.lua:50` attempted to call
+missing `owner.node_params`, and RTC returned nil. RTC now uses the existing
+`named_properties` query path (source `3add4f1`). The fix is released as RTC
+0.2.22, source `fe989e6`, tree `ff26bd7751ddc89365cfbfabab226ab158ae769a`; LocalRegistry publication is recorded
+at `4c1d0cb`. Eight native dispatch cases cover the action path, and all 12
+focused tests pass. The same nil-action failure is reproduced before the fix.
+
+GUI source commit `11c4f90` retains last-verified immutable instrument geometry
+only when it belongs to the exact connected session identity. A failed request
+still requires fresh status. Before the fix, the request failure reduced the
+MCP observer set from 82 entries to 77. After the fix, the same failure retained
+all 82 entries, including three images and pyramid flux. Source fail-before /
+pass-after checks and an independent review passed. GUI verification reports
+815 library, 200 bridge, 307 main, and 12 integration checks passing, with 31
+ignored; Julia checks report 151 passing. The inspection view is at
+`http://127.0.0.1:5719`. The retained-geometry screenshot is
+`gui-shape-retention-pass.png` in the cache directory above.
+
+The final RTC 0.2.22 CUDA session is Running at
+`pipewireao-session@ba48b104e647.service`, session
+`9daa80ef-2664-4f6f-8613-2b8e002d4b27` (invocation
+`0372f99025a04732ada7e10983b04ab5`). Its read-only observer retained **956
+exact raw/flux Header-sequence and PTS pairs, with 0 mismatches**. The GUI fix is
+active on this cohort (invocation `0fd65f983486473283dc615d0e412a8a`). GUI
+Defocus 1 nm was submitted and acknowledged; readback was RMS `3.954e-10 m`,
+minimum `-1e-9 m`, maximum `5.957e-10 m`. Restore to zero was acknowledged.
+Fourier X=1, Y=0, phase=0, amplitude=1 nm was submitted and the current offset
+matched the owner; readback was RMS `7.828e-10 m`, with extrema ±`1.326e-9 m`.
+Restore to zero was acknowledged. These are native simulated operator
+observations, not hardware qualification.
+
+The GUI's explicit Restore Reference → Held → Allow close → Close sequence
+completed. The final snapshot records Closed, zero offset, all 82 connected
+nodes and the retained readouts; see `gui-final-running-closed.json` and
+`gui-final-running-closed.png`. The corresponding receipts are
+`flux-shape-observation.json`, `gui-shape-fixed-completed.json`, and
+`gui-fourier-fixed-completed.json` in the cache directory above.
+
+Two unsuccessful shutdown/recovery exercises remain explicit. First, the
+intermediate RTC 0.2.20 cohort (`pipewireao-session@0b3c12c43701.service`)
+failed its normal managed shutdown: the RTC 0.2.22 native Quit helper refused
+before sending because fresh-status verification failed, so there is no
+shutdown-attempt receipt. An exact-incarnation `R.stop!` was then used; all old
+owners/core were gone and cleanup completed, but the launch phase ended failed
+with service result `exit-code`. The journal recorded “Session control
+publication failed” at 12:16:04 and the old unit stopped at 12:16:49. The
+shutdown receipt is `replaced-analysis-session-shutdown.json`; logs are
+`gpi2-shape-retire-analysis-session.log` and
+`gpi2-shape-stop-analysis-unit.log`. This differs from the earlier
+`pipewireao-session@99eb9e383a6b.service`, whose native Quit at 11:45:43
+completed with inactive/dead `Result=success` and complete cleanup. No cause is
+assigned to the intermediate cohort's exit-code result.
+
+Second, a headless recovery test failed after the release step because of
+expected global-token contention while the GUI was polling. It was not a
+passing test and was not retried; `recovery-shape-live.json` records only the
+pre-release Holding state, and `gpi2-shape-recovery.log` retains the failure.
+The source contract uses global monotonically increasing tokens and rejects
+competing clients. The successful GUI recovery above is a separate observation
+and is not represented as a passing headless test or a normal shutdown result.
