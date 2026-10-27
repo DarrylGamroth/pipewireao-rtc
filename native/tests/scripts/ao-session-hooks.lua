@@ -72,6 +72,9 @@ local function session (options)
         end
         rows [1] = Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct (fields) }
       end
+      if options.parameter then
+        return record ("parameter-readback", callback, iterator (rows), options.parameter_read_error)
+      end
       callback (iterator (rows))
     end
     nodes.alpha.set_param = function (_, kind, pod)
@@ -91,7 +94,16 @@ local function session (options)
     ["ao-owner"] = {
       new = function (node) return { node = node } end,
       wait_prepared = function (_, _, callback) return record ("owner-ready", callback, true) end,
-      request = function (_, opcode, _, _, callback)
+      request = function (client, opcode, payload, _, callback)
+        if opcode == 14 then
+          assert (client.node == nodes.parameters, "Parameter request used another owner")
+          local fields = control.fields (payload, 6)
+          assert (control.scalar (fields [1], "String") == "alpha" and
+              control.scalar (fields [2], "String") == "reference", "Parameter request identity differs")
+          test.parameter_payload = lua.copy (payload)
+          return record ("parameter-submit", callback, true, Pod.Struct {
+            "alpha", "reference", Pod.Long (1), Pod.Boolean (true), Pod.Boolean (false), "" })
+        end
         assert (opcode == 2)
         return record ("connect-owner", callback, true, Pod.Struct { Pod.Id (3), Pod.Struct {} })
       end,
@@ -133,9 +145,9 @@ local function session (options)
       end,
       publish = function () end,
       check_ticket = function () return { global_id = 1, serial = 2, instance = 3, pid = 4 } end,
-      complete = function (_, ticket, outcome, _, reason, unknown)
+      complete = function (_, ticket, outcome, payload, reason, unknown)
         test.completions [#test.completions + 1] = { ticket = ticket, outcome = outcome,
-          reason = reason, unknown = unknown }
+          payload = payload, reason = reason, unknown = unknown }
         if api.pending == ticket then api.pending = nil end
       end,
       complete_admin = function () test.admin = (test.admin or 0) + 1; api.pending = nil end,
@@ -184,6 +196,12 @@ local function session (options)
   if options.publisher then args.owners [#args.owners + 1] = {
     ["control-node"] = "parameters", ["control-instance"] = "9", pid = 1,
     ["control-protocol"] = "pipewireao.rtc.parameter-source/1" } end
+  if options.parameter then
+    args.session.sources [#args.session.sources + 1] = {
+      ["node.name"] = "reference-source", factory = "pipewireao.runtime-parameter" }
+    args.session.links [#args.session.links + 1] = {
+      output = "reference-source:output_1", input = "alpha:reference", passive = true }
+  end
   if options.no_controller then catalog.nodes [1] = nil end
   test.pause = options.pause
   chunk ({ parse = function () return args end })
@@ -470,8 +488,52 @@ local function correction_admission ()
   end
 end
 
+local function parameter_dispatch ()
+  for _, delayed in ipairs ({ false, true }) do
+    for _, case in ipairs ({ "ordinary", "released", "inhibited", "read error" }) do
+      local values = {}
+      if case == "released" or case == "inhibited" then
+        values ["pipewireao-recovery:version"] = Pod.Int (1)
+        values ["pipewireao-recovery:closure-inhibited"] = Pod.Boolean (case == "inhibited")
+      end
+      local test = session { bootstrap = true, publisher = true, parameter = true,
+        delayed = delayed, properties = values,
+        parameter_read_error = case == "read error" and "Injected Props query failure" or nil }
+      prepared (test)
+      test:request (10); done (test)
+      test.effects, test.completions = {}, {}
+      local payload = Pod.Struct { "alpha", "reference", "F32_LE",
+        Pod.Array { "Spa:Id", 2 }, "test/reference-f32/1", "/test/reference.f32le" }
+      test:request (14, payload); done (test)
+      assert (#test.completions == 1, "Parameter dispatch did not complete once")
+      local completion = test.completions [1]
+      assert (test.state.lifecycle == 4 and not test.state.faulted and not completion.unknown,
+          "Parameter preflight changed the Running session")
+      if case == "ordinary" or case == "released" then
+        assert (completion.outcome == 6, "Parameter dispatch failed: " .. tostring (completion.reason))
+        order (test, "parameter-readback,parameter-submit")
+        assert (lua.equals (test.parameter_payload, payload), "Parameter payload changed in dispatch")
+        local result = control.fields (completion.payload, 4)
+        assert (control.scalar (result [1], "String") == "alpha" and
+            control.scalar (result [2], "String") == "reference" and
+            result [3]:get_type_name () == "Spa:None" and not control.scalar (result [4], "Bool"),
+            "Submission was incorrectly promoted to active parameter adoption")
+      else
+        order (test, "parameter-readback")
+        assert (completion.outcome == 0 and completion.reason and not test.parameter_payload,
+            "Failed parameter preflight submitted a mutation")
+        local expected = case == "inhibited" and "Protective recovery inhibits scientific updates" or
+            "Injected Props query failure"
+        assert (completion.reason:find (expected, 1, true), tostring (completion.reason))
+      end
+      test:close ()
+    end
+  end
+end
+
 co = coroutine.create (function ()
   if selector == "correction" then correction_admission (); return end
+  parameter_dispatch ()
   normal ()
   startup_queries ()
   quit_fence_failure ()
