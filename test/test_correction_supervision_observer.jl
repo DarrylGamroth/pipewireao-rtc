@@ -277,3 +277,35 @@ end
         @test isequal(CSO.feedback_fraction(view(storage, 1:2:length(storage)), Val((4,)), tolerance), expected)
     end
 end
+
+@testset "Concrete presence records preserve absent-header fencing" begin
+    observer, clock, _ = observer_inputs()
+    outputs = (feedback=fill(0.2f0, 4), unrelated=zeros(Float32, 1))
+    for (sequence, now, present) in ((1, 1000, true), (2, 1050, false), (3, 1100, true))
+        clock.now = now
+        # The absent value is deliberately a valid stale header: it must never
+        # count as an observation or accidentally repair continuity.
+        metadata = (feedback=(;present, value=header(sequence)),
+            unrelated=(present=false, value=header(0)))
+        observer(Val(:frame), outputs, metadata)
+        value = only(CSO.snapshot(observer))
+        @test value.state === (present ? :Pending : :Unknown)
+        @test value.sequence == (present ? sequence : 1)
+    end
+    metadata = (feedback=(present=true, value=header(4)),
+        unrelated=(present=false, value=header(0)))
+    observer(Val(:frame), outputs, metadata) # Same clock time rejects repetition.
+    @test only(CSO.snapshot(observer)).state === :Unknown
+    observer_allocation(observer, clock, outputs, metadata)
+    @test observer_allocation(observer, clock, outputs, metadata) == 0
+end
+
+@testset "Properties publish immutable freshness limits even without samples" begin
+    observer, clock, _ = observer_inputs()
+    props = observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), false)
+    name = CSO.OBSERVATION_PREFIX * "feedback.max-gap-ns"
+    pod = only(value for (key,value) in props.values if key == name)
+    @test PipeWireAO.pod_value(String, pod) == "60"
+    info = only(info for info in CSO.property_info(observer) if info.name == name)
+    @test !iszero(info.flags & PipeWireAO.SPA.PROPERTY_READONLY)
+end

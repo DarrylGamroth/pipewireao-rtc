@@ -56,6 +56,9 @@ public format before construction. There are at most 64 declared outputs.
 Only one serialized frame/reset/invalidation caller may mutate this object.
 Control threads use `snapshot` or the callable property getter, never its
 Supervisors. The frame callback borrows arrays/metadata only for its duration.
+Its primary metadata boundary uses the scientific owner's concrete `AdmittedSampleMetadata`
+presence record; an absent record never exposes its placeholder value. Direct
+`SampleMetadata`/`nothing` inputs remain supported for array-only callers.
 Header sequence is used verbatim; persistence and freshness use the owner clock,
 never model PTS. A trip identity/action remains published until explicit rearm
 or owner replacement, including across reset, invalidation, clear samples and
@@ -188,7 +191,7 @@ snapshot(observer::Observer) = map(snapshot, observer.bindings)
 end
 @inline feedback_fraction(values, shape, tolerance) = nothing
 
-# Metadata is the public transport-neutral SampleMetadata (or nothing). The
+# Header metadata is transport-neutral SampleMetadata (or nothing). The
 # core stays independent of the optional scientific package; exact field access
 # specializes on that concrete isbits type at the extension boundary.
 @inline metadata_reason(::Nothing) = :missing_feedback
@@ -201,13 +204,8 @@ end
     return :none
 end
 
-function observe_frame!(binding::FeedbackObservation{Name,Shape}, observer::Observer,
-        outputs::NamedTuple, metadata::NamedTuple, now::UInt64) where {Name,Shape}
-    if !hasproperty(outputs, Name) || !hasproperty(metadata, Name)
-        publish!(binding, reject!(binding.supervisor, :missing_feedback))
-        return nothing
-    end
-    header = getproperty(metadata, Name)
+@inline function observe_header!(binding::FeedbackObservation{Name,Shape}, observer::Observer,
+        outputs::NamedTuple, header, now::UInt64) where {Name,Shape}
     cause = metadata_reason(header)
     if cause !== :none
         publish!(binding, reject!(binding.supervisor, cause))
@@ -217,6 +215,27 @@ function observe_frame!(binding::FeedbackObservation{Name,Shape}, observer::Obse
     result = observe!(binding.supervisor, observer.owner_instance, header.sequence, now,
         fraction; now_ns=now)
     publish!(binding, result)
+    return nothing
+end
+
+function observe_frame!(binding::FeedbackObservation{Name}, observer::Observer,
+        outputs::NamedTuple, metadata::NamedTuple, now::UInt64) where {Name}
+    if !hasproperty(outputs, Name) || !hasproperty(metadata, Name)
+        publish!(binding, reject!(binding.supervisor, :missing_feedback))
+        return nothing
+    end
+    record = getproperty(metadata, Name)
+    # Branch before extracting the concrete header. Returning a large header /
+    # nothing union here can box unrelated metadata when output records differ.
+    if hasproperty(record, :present) && hasproperty(record, :value)
+        if record.present === true
+            observe_header!(binding, observer, outputs, record.value, now)
+        else
+            publish!(binding, reject!(binding.supervisor, :missing_feedback))
+        end
+    else
+        observe_header!(binding, observer, outputs, record, now)
+    end
     return nothing
 end
 
@@ -337,11 +356,12 @@ function property_info(observer::Observer)
     for (name, value) in (("rearm-request-token", "0"), ("rearm-acknowledged-token", "0"), ("rearm-result", "none"))
         push!(infos, PipeWireAO.SPA.PropInfo(OBSERVATION_PREFIX * name, PipeWireAO.Pod(value); flags, params=true))
     end
-    for (name, _) in zip(output_names(observer), observer.bindings)
-        prefix = OBSERVATION_PREFIX * string(name) * "."
+    for binding in observer.bindings
+        prefix = OBSERVATION_PREFIX * string(output_name(binding)) * "."
         for (field, value) in (("state", "Unknown"), ("reason", "none"),
                 ("fraction", NaN), ("sequence", "0"), ("observed-ns", "0"),
-                ("trip-sequence", "0"), ("trip-ns", "0"), ("rearm-sequence", "0"), ("rearm-ns", "0"), ("action", "none"), ("fresh", false))
+                ("trip-sequence", "0"), ("trip-ns", "0"), ("rearm-sequence", "0"), ("rearm-ns", "0"), ("action", "none"), ("fresh", false),
+                ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)))
             push!(infos, PipeWireAO.SPA.PropInfo(prefix * field, PipeWireAO.Pod(value); flags, params=true))
         end
     end
@@ -379,7 +399,8 @@ function (observer::Observer)(graphprops::PipeWireAO.SPA.Props, available::Bool)
                 ("trip-ns", value === nothing ? "0" : string(value.trip_ns)),
                 ("rearm-sequence", value === nothing ? "0" : string(value.rearm_sequence)),
                 ("rearm-ns", value === nothing ? "0" : string(value.rearm_ns)),
-                ("action", value === nothing ? "none" : string(value.action)), ("fresh", fresh))
+                ("action", value === nothing ? "none" : string(value.action)), ("fresh", fresh),
+                ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)))
             push!(extras, prefix * field => PipeWireAO.Pod(entry))
         end
     end
