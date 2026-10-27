@@ -1,6 +1,7 @@
 # Initial sessions own their graphs and held-probe endpoints exclusively. All
 # scientific samples arrive over the same transport as deployed measurements.
 using PipeWireAO
+using UUIDs: uuid4
 const Actions = PipeWireAORTC.NativeCalibrationActionCodec
 const Native = PipeWireAORTC.NativeCalibrationEndpoint
 const Control = PipeWireAORTC.NativeControlClient
@@ -204,19 +205,44 @@ function Base.close(owner::InitialCalibration)
     return nothing
 end
 
-function calibration_link(core, registry, output, output_name, input, input_name)
-    function port(node, direction, name)
-        candidates = find_globals(registry; interface="PipeWire:Interface:Port",
-            properties=("node.id"=>string(node_id(node)), "port.direction"=>direction))
-        name === nothing || filter!(entry -> get(entry.properties, "port.name", nothing) == String(name), candidates)
-        length(candidates) == 1 || error("initial calibration link has an absent or ambiguous port")
-        return only(candidates).id
+function calibration_endpoint(registry, node, direction, name)
+    nodes = if node isa AbstractString
+        find_globals(registry; interface="PipeWire:Interface:Node", properties=("node.name"=>node,))
+    else
+        id = node_id(node)
+        entry = id === nothing ? nothing : find_global(registry, id)
+        entry === nothing ? PipeWireAO.Global[] : [entry]
     end
+    length(nodes) <= 1 || error("initial calibration node is ambiguous")
+    isempty(nodes) && return nothing
+    current = only(nodes)
+    current.type == "PipeWire:Interface:Node" || error("initial calibration endpoint is not a node")
+    ports = find_globals(registry; interface="PipeWire:Interface:Port",
+        properties=("node.id"=>string(current.id), "port.direction"=>direction))
+    name === nothing || filter!(entry -> get(entry.properties, "port.name", nothing) == String(name), ports)
+    length(ports) <= 1 || error("initial calibration port is ambiguous")
+    isempty(ports) && return nothing
+    port = only(ports)
+    all(entry -> haskey(entry.properties, "object.serial"), (current, port)) ||
+        error("initial calibration endpoints require object serials")
+    return (; node=current, port)
+end
+
+function calibration_incarnation_present(registry, endpoint)
+    return all((endpoint.node, endpoint.port)) do original
+        current = find_global(registry, original.id)
+        current !== nothing && get(current.properties, "object.serial", nothing) ==
+            original.properties["object.serial"]
+    end
+end
+
+function calibration_link(core, registry, output, input; on_info, on_removed=nothing, on_error=nothing)
     return with_thread_loop_lock(main_loop(core)) do _
-        out, into = port(output, "out", output_name), port(input, "in", input_name)
-        create_object(core, "link-factory", PipeWireAO.Link; properties=Dict(
-            "link.output.node"=>string(node_id(output)), "link.output.port"=>string(out),
-            "link.input.node"=>string(node_id(input)), "link.input.port"=>string(into),
+        all(endpoint -> calibration_incarnation_present(registry, endpoint), (output, input)) ||
+            error("initial calibration endpoint changed before linking")
+        create_object(core, "link-factory", PipeWireAO.Link; on_info, on_removed, on_error, properties=Dict(
+            "link.output.node"=>string(output.node.id), "link.output.port"=>string(output.port.id),
+            "link.input.node"=>string(input.node.id), "link.input.port"=>string(input.port.id),
             "object.linger"=>"false"))
     end
 end
@@ -310,9 +336,11 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
                 on_global_removed=(_...)->(notify();nothing))
             frame_listener = add_listener!(hil.frame_stream; on_trigger_done=(_...)->(notify();nothing))
         end
-        push!(workers, start_calibration_graph(frontend,remote,name*".wfs",rate;notify))
-        push!(workers, start_calibration_graph(command,remote,name*".pdm",rate;notify))
-        Native.await(wakeup, guard, Float64(deadline)) do
+        graph_name = "calibration."*string(uuid4())
+        front_node, command_node = graph_name*".wfs", graph_name*".pdm"
+        push!(workers, start_calibration_graph(frontend,remote,front_node,rate;notify))
+        push!(workers, start_calibration_graph(command,remote,command_node,rate;notify))
+        function check_workers()
             for worker in values(workers)
                 if istaskdone(worker.task)
                     fetch(worker.task)
@@ -320,23 +348,62 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
                     error("calibration graph stopped during preparation")
                 end
             end
-            all(worker -> worker.ready[] && node_id(worker.node[]) !== nothing, workers)
+            return all(worker -> worker.ready[], workers)
         end
-        roundtrip(registry)
-        front_node, command_node = workers[1].node[], workers[2].node[]
-        for arguments in ((hil.frame_stream,nothing,front_node,:raw),
+        # Registry callbacks publish and notify this exact discovery state.
+        # A worker's client-side node_id can become visible after the registry
+        # event without another wake, so it is not a readiness predicate.
+        connections = ((hil.frame_stream,nothing,front_node,:raw),
                 (hil.frame_stream,nothing,capture.streams.raw,nothing),
                 (probe.source,nothing,command_node,:requested),
                 (command_node,:demanded,hil.command_stream,nothing),
                 (command_node,Symbol("constraint-feedback"),probe.feedback,nothing),
                 ((front_node,key,getproperty(capture.streams,key),nothing) for key in (:slopes,:flux,:validity))...)
-            push!(links, calibration_link(hil.core,registry,arguments...))
+        endpoints = Native.await(wakeup, guard, Float64(deadline)) do
+            check_workers() || return nothing
+            with_thread_loop_lock(hil.loop) do _
+                candidates = map(connections) do (output, out_name, input, in_name)
+                    (calibration_endpoint(registry,output,"out",out_name),
+                        calibration_endpoint(registry,input,"in",in_name))
+                end
+                all(pair -> all(!isnothing,pair), candidates) ? candidates : nothing
+            end
         end
-        roundtrip(hil.core)
+        states = Threads.Atomic{Int}[]
+        for (output, input) in endpoints
+            state = Threads.Atomic{Int}(Int(PipeWireAO.LINK_STATE_INIT))
+            push!(states, state)
+            function failed(_...)
+                state[] = Int(PipeWireAO.LINK_STATE_ERROR)
+                notify()
+                return nothing
+            end
+            link = calibration_link(hil.core,registry,output,input;
+                on_removed=failed, on_error=failed, on_info=(_, info) -> begin
+                matches = (info.output_node_id, info.output_port_id, info.input_node_id, info.input_port_id) ==
+                    (output.node.id, output.port.id, input.node.id, input.port.id)
+                if !matches || info.state in (PipeWireAO.LINK_STATE_ERROR,PipeWireAO.LINK_STATE_UNLINKED)
+                    return failed()
+                end
+                state[] == Int(PipeWireAO.LINK_STATE_ERROR) || (state[] = Int(info.state))
+                notify()
+                nothing
+            end)
+            push!(links, link)
+        end
         start!(capture)
         with_thread_loop_lock(hil.loop) do _
             set_active!(probe.feedback, true)
             set_active!(probe.source, true)
+        end
+        Native.await(wakeup, guard, Float64(deadline)) do
+            check_workers() || return false
+            with_thread_loop_lock(hil.loop) do _
+                all(pair -> all(endpoint -> calibration_incarnation_present(registry,endpoint),pair), endpoints) ||
+                    error("initial calibration endpoint changed while linking")
+            end
+            any(state -> state[] == Int(PipeWireAO.LINK_STATE_ERROR), states) && error("initial calibration link failed")
+            all(state -> state[] in (Int(PipeWireAO.LINK_STATE_PAUSED),Int(PipeWireAO.LINK_STATE_ACTIVE)), states)
         end
         start!(hil)
         status = Wire.pipewire_calibration_status(hil)

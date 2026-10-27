@@ -136,6 +136,67 @@ Prepared graph storage remains alive until worker tasks stop. The implementer's
 r5 cleanup check found no worker errors after this ordering change; earlier
 `EPIPE` observations arose only during peer teardown.
 
+### CO-06 — Readiness included client state without a matching notification
+
+Severity: medium. Confidence: high for the notification-contract defect;
+unconfirmed as the cause of the original registered qualification timeout.
+Classification: source-derived defect independently reproduced in an isolated
+transport experiment. Disposition: registry-based correction under final
+integration validation; independent source review found no remaining blockers.
+
+The original worker published `ready=true` and notified before entering its
+native run loop. The constructor also required the worker's client-side
+`node_id` to become non-`nothing`, although its condition had no notification
+for that later binding update. Registry callbacks could wake the constructor
+before the separate client binding became visible and leave it waiting after
+the predicate became true.
+
+The fresh registered qualification passed its first two optical cases, then
+expired the third constructor's 300-second readiness deadline. An independent
+SIGUSR1 snapshot and GDB attachment located the main task in
+`calibration_owner.jl:315`'s readiness `await`, while both graph workers were
+inside idle native run loops. It was not blocked in `roundtrip`; the finite
+deadline did expire. The workers' node IDs were not captured, so this observation
+does not by itself establish the initiating cause.
+
+Two temporary source diagnostic runs passed the combined 29 projection,
+six binding and 106 optical assertions. The first observed both IDs valid at
+a one-shot wake but lacked causal timestamps. In the timed run all readiness
+waits ended before the diagnostic timer fired: 7.236 seconds, 2.37 milliseconds
+and 5.03 milliseconds. Those passes did not reproduce or explain the registered
+failure. The temporary block was removed completely before production edits.
+
+The reviewer then ran a separate 20-cycle private-core experiment with two tiny
+PDM workers and the exact original predicate, warming the first cycle. Five of
+19 measured cycles remained waiting with both workers ready, neither finished,
+and both public node IDs already valid. One diagnostic notification released
+each wait; four exited 0.95–1.10 milliseconds after the snapshot, and the first
+such snapshot exited after 199 milliseconds. All workers and graphs closed;
+no GPU package loaded. This reproduces the missing-notification mechanism
+without optical stepping. Evidence files are
+`readiness-original-predicate-stress-20261027.jl` and its `.log` in the existing
+`standard-calibration-validation` evidence directory; the original registered
+failure and both optical diagnostic logs remain preserved separately.
+
+The production correction moves readiness to the exact server registry node
+and port state published by registry callbacks, retains IDs and object serials,
+and revalidates their incarnations when creating and admitting links. Link-info
+callbacks and the original absolute deadline replace constructor roundtrips;
+there is no periodic readiness polling. Each preparation generates a fresh
+bounded UUID cohort for its private graph names, so a prior same-name graph on
+a reused core cannot satisfy discovery. Link removal/error and `UNLINKED` set
+sticky failure state and notify; later info cannot revive an invalidated link.
+The reviewer checked callback lifetimes and partial-startup resource closure
+without finding another source blocker. The original public control endpoint
+name and controller authority remain unchanged.
+
+The primary's repaired registry-predicate stress completed all 20 cycles without
+a diagnostic wake, and its focused transport selector passed 26 assertions,
+including seven registry identity checks. These are attributed results whose
+logs were inspected by the reviewer. Fresh final-source combined qualification
+remains the implementer's gate; previous optical passes predate this startup
+correction.
+
 ## Verification and limits
 
 Independently ran `julia --startup-file=no --project=.
@@ -172,7 +233,17 @@ in-flight optical controller-loss coverage. Positive procedure and consumer
 failure unit coverage are separate evidence. No GPU, hardware, latency or
 physical-settling qualification is established. The asynchronous execution
 policy question, including stationary-source versus support for both modes,
-remains open; this review selects no default.
+was open during review; this review selected no default. The user subsequently
+described daytime internal-source calibration followed by on-sky adjustment;
+the primary recorded that operating approach in the plan. Its scientific
+settings and positive qualification remain separate work.
+
+After the focused review, the primary reported final-source results of 27
+transport/identity, 62 readiness-regression, 106 optical safety and 326 package
+assertions. The optical source included UUID names and sticky link invalidation.
+These are attributed results, not additional independent runs. They remediate
+CO-06 at the scoped software integration level; registered release evidence is
+maintained in the adjacent verification record.
 
 An in-flight synchronous HIL adoption/step can finish or reach its existing
 finite timeout before the sole owner checks controller loss. The reviewed

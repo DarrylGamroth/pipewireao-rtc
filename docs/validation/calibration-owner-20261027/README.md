@@ -25,7 +25,8 @@ The final optical selector uses public APIs throughout.
 | Cold regular-graph projections | 29 passed | Exact declarations, parameter arrays, typed ports and source immutability |
 | Same-graph stale FITS rejection | 6 passed independently | Reject before plant/transport creation |
 | Four-stream capture | 80 unit + 16 private-core assertions passed | Row-major data, full identities, copied metadata, validity preservation and deadlines |
-| Command transport | 19 passed | Actual conditioner clipping, matching feedback, restoration and worker cancellation |
+| Command transport and registry identity | 27 passed | Actual conditioner clipping, matching feedback, restoration, worker cancellation and incarnation fencing |
+| Registry readiness regression | 62 passed | Twenty fresh pairs of native graph workers; registry notifications, finite deadlines, no diagnostic wake |
 | HIL full package suite | 2,993 passed, including Aqua | Private cores, publication-cycle witness and failure/reset fences |
 | Actual Classic safety integration | 106 passed | Scientific rejection, early cancellation, idle controller loss, closure, unchanged files and no loaded GPU package |
 | Plan diagram | Rendered with repository-prescribed Mermaid container | Documentation structure |
@@ -44,7 +45,47 @@ addressed by resolving the final release metadata through Pkg; no manifest was
 edited by hand. The final release package selector passed 326 assertions, with public API,
 version and docstring smoke checks also passing. The tracked workspace manifest
 changed only its project hash and this package's version; dependencies did not
-change. Registered-package smoke checks are recorded below when complete.
+change.
+
+The first fresh registered-only RTC 0.2.23 / HIL 0.2.7 run passed package
+identity checks, 29 projection checks and 6 stale-binding checks. The optical
+selector passed its rejection/restoration and early-cancellation cases, but
+the third constructor reached its readiness deadline (91 assertions passed,
+one errored). A captured stack showed both graph workers in their native run
+loops and the owner awaiting worker readiness. This failed gate is preserved in
+`calibration-owner-registered-023-qualification.log`; the earlier source run
+does not substitute for registered qualification.
+
+The isolated original readiness predicate reproduced a missing notification in
+five of nineteen warm trials: both workers were ready with valid published IDs
+while their owner still waited; one diagnostic wake resumed it. The repaired
+predicate completed twenty trials with no diagnostic wake. This confirms the
+notification-contract defect; the earlier registered timeout did not capture
+IDs, so its precise cause remains unconfirmed. The original and repaired stress
+logs are `readiness-original-predicate-stress-20261027.log` and
+`readiness-registry-predicate-stress-20261027.log`.
+
+Startup now discovers every required server node and port through the registry
+events that publish them. Fresh UUID graph names prevent a prior session's node
+from matching. Links retain exact IDs and object serials, which are rechecked
+before creation and admission. Link-info events replace synchronous startup
+roundtrips; removal/error/UNLINKED invalidate readiness permanently. The final
+focused selectors passed 27 transport/identity and 62 readiness assertions
+(`calibration-owner-registry-focused-20261027.log`). Run these optional selectors
+with the scientific environment and four Julia threads:
+
+```julia
+include("test/calibration_transport.jl")
+include("test/calibration_readiness.jl")
+```
+
+The final RTC 0.2.24 source, including UUID graph names and sticky link
+invalidation, passed all 106 optical safety assertions
+(`calibration-owner-registry-final-optical-20261027.log`). Its package/source
+closure selector passed 326 assertions (`calibration-owner-024-package.log`).
+The patch changes cold startup only; the previously passing full RTC and HIL
+suites above remain separate evidence. Fresh registered-only qualification is
+recorded after publication.
 
 ## What the optical test establishes
 
@@ -79,6 +120,16 @@ recovery, controller loss during an exposure, multi-WFS/named-corrector coherenc
 physical settling, deadline performance, GPU execution or running-controller
 state preservation. Existing Procedure unit tests cover online consumers and
 known processing failure; they are not substituted for those optical gates.
+
+The user's intended operation is daytime internal-source calibration followed
+by on-sky adjustment, with a bright target as an alternative calibration source.
+The recommended next qualification therefore uses a declared stationary source
+and no atmospheric disturbances, retaining normal detector noise/ADC and the
+existing validity checks and 25 Hz filter. Internal-source path coverage and
+illumination eligibility must be explicit. On-sky registration/response checks,
+controller/optical gain adjustment and acquisition through turbulence need
+their own acceptance rules on the same asynchronous interfaces. No numerical
+source level or gain is selected here.
 
 An in-flight synchronous HIL call resolves or reaches its finite deadline before
 cooperative revocation checks. No immediate hard cancellation is claimed. Unknown

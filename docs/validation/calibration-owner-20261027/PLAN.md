@@ -66,6 +66,17 @@ Implementation order and acceptance:
    publication, fresh staging/rebuild and finite correction validation. Dark/lamp
    eligibility and full-basis numerical acceptance remain explicit separate gates.
 
+The intended operating approach is daytime baseline calibration with an internal
+source, followed by on-sky response/registration checks and controller or optical
+gain adjustment. A bright target is an alternative source with its own
+atmospheric rejection/averaging procedure, not equivalent to a stationary source.
+Both use the same asynchronous interfaces; source conditions, optical-path
+coverage and acceptance belong in procedure configuration. The next positive
+Classic gate needs an explicit stationary-source simulation setting with
+atmospheric disturbances disabled, normal detector noise/ADC retained, and
+illumination eligibility verified. No source level, gain or threshold is chosen
+by this integration increment; the existing 25 Hz filter is unchanged.
+
 Unknown adoption, owner loss or restoration outcome faults and fences the
 non-actuating endpoints; no automatic retry, rebind or ordinary-loop resumption.
 Known aborts restore the declared reference and release exactly once. Bounded

@@ -26,6 +26,14 @@ separates this software gate from accepted scientific acquisition, a complete
 basis and numerical acceptance. No installed session, GPU or active calibration
 is changed; this is not a qualified campaign.
 
+The registered 0.2.23 qualification exposed a startup timeout. Isolated trials
+then confirmed a missing-notification defect in client-node-ID readiness.
+Registry node/port discovery and native link events now own startup readiness,
+with exact incarnation checks, fresh graph names and the existing absolute
+deadline. Twenty repaired readiness trials need no diagnostic wake; 27 transport
+and 62 registration assertions pass. The linked verification record preserves
+the failed registered gate and subsequent release qualification.
+
 ### Protective correction recovery — 2026-10-27
 
 The approved recovery contract is recorded in RTC-DEV-032–036. Work starts from

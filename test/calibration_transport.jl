@@ -67,7 +67,25 @@ function transport_test(socket, directory, daemon)
         worker = Transport.start_calibration_graph((;graph),socket,"test.calibration-pdm",500//1; notify=notify_owner)
         await(() -> worker.ready[] || istaskdone(worker.task))
         @test worker.error[] === nothing
-        await(() -> node_id(worker.node[]) !== nothing)
+        # Registry state has registry wakeups; a client's later bound node ID
+        # has no equivalent notification on this owner's condition.
+        endpoint = Ref{Any}(nothing)
+        await() do
+            endpoint[] = Transport.calibration_endpoint(registry,"test.calibration-pdm","in",:requested)
+            endpoint[] !== nothing
+        end
+        @test endpoint[].node.properties["node.name"] == "test.calibration-pdm"
+        @test endpoint[].port.properties["port.name"] == "requested"
+        @test Transport.calibration_incarnation_present(registry,endpoint[])
+        @test Transport.calibration_endpoint(registry,"test.absent-calibration-pdm","in",:requested) === nothing
+        @test Transport.calibration_endpoint(registry,"test.calibration-pdm","in",:absent) === nothing
+        @test_throws ErrorException Transport.calibration_endpoint(registry,"test.calibration-pdm","out",nothing)
+        original = endpoint[].node
+        properties = merge(original.properties,Dict("object.serial"=>"replaced"))
+        replaced = PipeWireAO.Global(original.id, original.permissions, original.type, original.version, properties)
+        @test !Transport.calibration_incarnation_present(registry,(;node=replaced,port=endpoint[].port))
+        @test_throws ErrorException Transport.calibration_link(core,registry,
+            (;node=replaced,port=endpoint[].port), endpoint[]; on_info=(_, _)->nothing)
         formats = JuliaFilterGraph.output_formats(graph)
         probe = Transport.prepare_calibration_probe(core,JuliaFilterGraph.input_formats(graph).requested,
             "pipewireao/requested-pdm-command-f32/1",formats[Symbol("constraint-feedback")],
@@ -101,7 +119,7 @@ function transport_test(socket, directory, daemon)
             name === nothing || (matches=filter(p -> get(p.properties,"port.name",nothing)==name,matches))
             return only(matches).id
         end
-        owner_id = node_id(worker.node[])
+        owner_id = endpoint[].node.id
         for (output,outport,input,inport) in (
                 (node_id(probe.source),port(node_id(probe.source),"out"),owner_id,port(owner_id,"in","requested")),
                 (owner_id,port(owner_id,"out","constraint-feedback"),node_id(probe.feedback),port(node_id(probe.feedback),"in")),
