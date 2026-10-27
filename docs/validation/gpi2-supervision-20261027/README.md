@@ -118,6 +118,18 @@ monitor-only policy, copied configuration binding and offline source/export test
 All 17 source/export assertions and formatting pass. These are offline source
 checks, not a new installed or live dependency cohort.
 
+## Release integration
+
+The merged RTC software suite at `fdab742` passes **6,292 assertions in 237
+testsets**, exit zero: `julia --startup-file=no --threads=3,0 --project=.
+test/runtests.jl` ([log](rtc-full-suite.log)). The initial `git cat-file` diagnostic
+comes from the deliberately rejected missing artifact; the suite completes.
+RTC 0.2.29 raises its optional graph dependencies to registered FGA 0.8.5 and
+FGPW 0.1.11. FGA 0.8.5 only promotes the existing admitted metadata record to
+the public advanced API; numerical definitions remain identical to 0.8.4.
+The FGPW release passes 1,932 assertions in 92 testsets, including the observer's
+96 assertions. These gates precede the combined installed/live application check.
+
 ## Prepared-filter-graph inspection
 
 The registered-0.8.4 [prepared-graph report](graph-report.json) and
