@@ -51,6 +51,20 @@ and the [independent review](reviews/20261026-event-calibration/REVIEW.md).
 
 ### RTC correction-loop adoption tracking — 2026-10-26
 
+The follow-up defines hold/resume versus explicit reference restoration and
+controller-only reset in the [operation design](HEADLESS_RTC_DESIGN.md#hold-resume-flat-restoration-and-controller-reset).
+Hierarchy/history are reserved for later coordinated operations, with fresh
+admission before restoring remembered intent and no replay of in-flight effects.
+The proposed reset/restore operations are not implemented by session Reset or
+the current Boolean correction control.
+
+RTC 0.2.16 fixes the cold run/reset parser's rejection of the newly published
+correction-status fields. The real parser regression fails before the fix and
+passes afterward; all 12 native programs pass. The registered CUDA GPI2
+replacement now verifies stopped-state refusal, active Open/Close adoption and
+15 native streams with its preserved GUI. Correction is left closed and Classic
+is unchanged. See the [live operational evidence](validation/loop-controls-20261026/README.md#operational-definitions-and-first-live-hsm-deployment).
+
 The 0.2.14 extension moves adoption timing into Hsm entry/exit Behaviors and
 attaches native PipeWire timers to the existing bootstrap loop. Timer callbacks
 only request owner-thread publication; Hsm still has one control-thread writer.

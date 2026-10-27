@@ -1,0 +1,18 @@
+{
+  "changed": {
+    "PipeWireAORTC": {
+      "before": "0.2.11",
+      "after": "0.2.14"
+    },
+    "FilterGraphPipeWire": {
+      "before": "0.1.7",
+      "after": "0.1.9"
+    }
+  },
+  "added": [
+    "Hsm",
+    "Tricks",
+    "ValSplit"
+  ],
+  "removed": []
+}

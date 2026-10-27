@@ -61,6 +61,12 @@ partial-status fixes, without changing the live sessions.
 The [state entry/exit follow-up](validation/loop-controls-20261026/README.md#state-entryexit-and-native-adoption-timers)
 adds native timer arming/cancellation and isolated idle-publication evidence,
 while keeping Hsm on the serialized graph control thread.
+The [live operational follow-up](validation/loop-controls-20261026/README.md#operational-definitions-and-first-live-hsm-deployment)
+defines reset/reference/history boundaries and deploys registered RTC 0.2.16 to
+CUDA GPI2. It records the native reserved-field admission defect and regression,
+stopped-state refusal, active Open/Close readback, fifteen streams and preserved
+GUI/Classic identities. Earlier no-deployment statements describe the preceding
+increments. Native shutdown remains a retained limitation.
 
 ## GPI stage response and temporal allocation — 2026-10-26
 
