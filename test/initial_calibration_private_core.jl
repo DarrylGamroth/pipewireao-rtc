@@ -81,6 +81,7 @@ end
             # Descriptor ownership transferred to the endpoint.
             frontend = command = nothing
             owner = server.effects
+            progress("coordinator domain=1, wire acquisition domain=$(repr(owner.acquisition_domain))")
             capture_module = parentmodule(typeof(owner.capture))
             serving = @async try
                 Server.serve!(server; deadline=Native.monotonic()+120)
