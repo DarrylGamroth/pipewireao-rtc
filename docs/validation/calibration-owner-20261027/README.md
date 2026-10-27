@@ -320,6 +320,16 @@ exposures. It remains unexplained, with no scheduling workaround or automatic
 retry added. Neither transported images nor a successful software test establishes
 accepted background estimation, reference training or physical readiness.
 
+The original separate-`Collect` sequence was also exercised on the integrated
+cohort, with the existing one-shot passive stall diagnostic and no retry. All
+122 assertions pass; no passive outstanding/fault snapshot was reached. The
+flat exposure rejected active ROI 88 (flux 981), the positive probe rejected
+ROI 70 (flux 960), and the negative probe passed. The threshold remains 1000
+and source magnitude remains 2. This directly preserves scientific rejection
+and lifecycle behavior in the relevant action sequence, but one passing trial
+does not explain the prior timeout or establish reliable acquisition. Logs and
+the action receipt use prefix `calibration-preparation-collect-integrated-20261027`.
+
 A stationary calibration-source/eligibility procedure and an accepted complete
 basis remain prerequisites for AOC estimation and an activatable bundle. This
 increment does not qualify accepted optical acquisition, optical consumer-failure
