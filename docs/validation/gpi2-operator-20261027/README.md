@@ -3,9 +3,9 @@
 This record covers the registered analysis and GUI integration, read-only live
 observations, an optional-analysis fault-isolation run, a private-model clipping
 measurement, and scoped protective recovery on both pre-replacement and managed
-replacement sessions. The managed replacement is Running and validated. At the
-time of this update, native Quit retirement of the older session was still in
-progress; its final cleanup receipt is not included here. Machine-side receipts
+replacement sessions. The managed replacement is Running and validated, and the
+older session has since been retired successfully through native Quit.
+Machine-side receipts
 referenced below are in `/home/dgamroth/.cache/pipewireao/gpi2-operator-20261027/`.
 
 ## Registered package closure
@@ -52,7 +52,8 @@ mismatches**. The new RTC systemd unit is
 (PID 2049730, invocation `97a200ad515e471a8ba4a4085e1d6410`) reported READY with
 2 links. The replacement recovery observation also passed, reaching Closed after
 Held. The status-row GUI fix was relaunched with the installed replacement
-configuration (invocation `a0f5bfca6a2e469880e6aac489cffdeb`).
+configuration (invocation `a0f5bfca6a2e469880e6aac489cffdeb`) and is active
+on the replacement session (PID 2052016).
 
 Evidence: `flux-managed-observation.json` and `recovery-complete-live.json` in
 the cache directory above. The managed observer is also read-only, uses 20 ms
@@ -109,7 +110,10 @@ managed replacement reached Closed after Held. Both are native simulated
 evidence; there is no physical settling qualification.
 
 Evidence: `recovery-live.json` and `recovery-complete-live.json` in the cache
-directory above. The GUI status-row notice fix is source commit `d24020a0ab52b728018c1e538ce384df23d59f28`, validated
+directory above. `previous-session-shutdown.json` records the old unit
+`pipewireao-session@99eb9e383a6b.service` stopped, successful service result,
+complete cleanup, and removed unit files after native Quit. The GUI status-row
+notice fix is source commit `d24020a0ab52b728018c1e538ce384df23d59f28`, validated
 with fixed workspace-position checks at widths 1000, 240 and 80, with no notice,
 multiline notices, concurrent notices and clearing. Full text remains available
 on hover; the installed GUI binary includes this change. This does not establish

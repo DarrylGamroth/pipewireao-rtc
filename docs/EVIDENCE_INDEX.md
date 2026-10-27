@@ -9,10 +9,10 @@ An optional-analysis STOP/CONT/KILL test on the earlier core retained 626 exact
 pairs while raw/control advanced. The record also covers a 1,024-frame private-
 model clipping capture and passing Held → Closed recovery on both sessions. The
 fixed GUI status notice was validated and relaunched with the installed
-replacement configuration. The new RTC unit is Running and its analysis reports
-READY with two links. Native Quit retirement of the older unit was still in
-progress when this record was updated. No physical settling or deadline
-qualification is claimed.
+replacement configuration and is active on the replacement session. The new
+RTC unit is Running and its analysis reports READY with two links. The older
+unit was retired successfully through native Quit, with complete cleanup and
+unit-file removal. No physical settling or deadline qualification is claimed.
 
 ## Protective correction recovery — 2026-10-27
 
