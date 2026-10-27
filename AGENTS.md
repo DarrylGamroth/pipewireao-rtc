@@ -56,6 +56,12 @@
   Human-authored instrument, simulation, RTC, process/profile, calibration and
   GUI configuration uses bounded YAML and is compiled to existing native runtime
   contracts at export. Do not create another optical graph language or executor.
+- Generated files must identify themselves as generated. Comment-capable text starts
+  with a `Generated` header, retained by the writer on regeneration; include
+  source/regeneration guidance when known. FITS uses native header cards.
+  Strict JSON and fixed binary payloads must retain their required format;
+  keep their generation/provenance in schema-supported metadata or the owning
+  manifest rather than injecting comments or changing payload bytes.
 - Keep the runner outside frame processing. Scientists declare typed Algorithms,
   ports, properties, parameters, shapes and schemas; they do not write SPA
   callbacks, pointer/errno handling, publication or worker machinery.

@@ -22,6 +22,16 @@ ordering, gains and limits are preserved. Focused bounds-checked and actual
 small SH/Pyramid product checks pass; registered-consumer and installed rollout
 evidence is tracked in the [orientation record](validation/optical-orientation-20261027/README.md).
 
+### Generated-file identification — 2026-10-27
+
+RTC 0.2.27 retains a Generated header in YAML and native SPA-JSON output,
+including when callers supply custom provenance. Newly written calibration and
+configuration-store FITS files carry native ORIGIN and COMMENT cards. Imported
+FITS bytes remain unchanged. Strict JSON and fixed binary payloads retain their
+required format and use their owning manifest for provenance. The software suite
+passed 5,798 assertions; subsequent focused FITS checks passed 68 calibration and
+53 configuration-store assertions. These checks use no GPU or instrument hardware.
+
 ### Native initial calibration integration — 2026-10-27
 
 Work starts from RTC `864281b` and instrument `439181b`. Implement the existing
