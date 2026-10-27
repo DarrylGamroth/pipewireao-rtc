@@ -55,6 +55,17 @@ local function running (state, args, name, values)
       "Correction graph owner is stopped")
 end
 
+-- Native Params may be cached while a producer is quiet. A true flag alone
+-- cannot keep an old witness fresh; use the same host monotonic clock.
+local function reference_fresh (values)
+  local timestamp = scalar (values, RECOVERY .. "observation-monotonic-nanoseconds", "Long")
+  local timeout_ms = scalar (values, RECOVERY .. "reference-timeout-ms", "Int")
+  local observed_us = timestamp // 1000
+  local now_us = GLib.get_monotonic_time ()
+  return timeout_ms >= 1 and timeout_ms <= 60000 and timestamp > 0 and
+      observed_us <= now_us and now_us - observed_us < timeout_ms * 1000
+end
+
 local function recovery_check (state, args, name, values, updates, declarations)
   local request = updates [RECOVERY .. "request-token"]
   local release = updates [RECOVERY .. "release-token"]
@@ -75,7 +86,8 @@ local function recovery_check (state, args, name, values, updates, declarations)
           scalar (values, RECOVERY .. "requested-generation", "Long") ==
           scalar (values, RECOVERY .. "active-generation", "Long") and
           scalar (values, RECOVERY .. "reference-reached", "Bool") and
-          scalar (values, RECOVERY .. "observation-sequence", "Long") > 0,
+          scalar (values, RECOVERY .. "observation-sequence", "Long") > 0 and
+          reference_fresh (values),
           "Recovery command reference is not confirmed")
     end
     return
@@ -112,7 +124,8 @@ local function recovery_check (state, args, name, values, updates, declarations)
     local recovery_state = scalar (values, RECOVERY .. "state", "String")
     assert ((recovery_state == "applied" or recovery_state == "release_refused") and
         scalar (values, RECOVERY .. "reference-reached", "Bool") and
-        scalar (values, RECOVERY .. "observation-sequence", "Long") > 0,
+        scalar (values, RECOVERY .. "observation-sequence", "Long") > 0 and
+          reference_fresh (values),
         "Recovery command reference is not confirmed")
   end
 end

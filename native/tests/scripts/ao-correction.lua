@@ -131,6 +131,8 @@ local function recovery_case (release, mutate, expected)
     values [RECOVERY .. "closure-inhibited"] = Pod.Boolean (release)
     values [RECOVERY .. "reference-reached"] = Pod.Boolean (release)
     values [RECOVERY .. "observation-sequence"] = Pod.Long (release and 4 or 0)
+    values [RECOVERY .. "observation-monotonic-nanoseconds"] = Pod.Long (GLib.get_monotonic_time () * 1000)
+    values [RECOVERY .. "reference-timeout-ms"] = Pod.Int (5000)
     values [RECOVERY .. "state"] = Pod.String (release and "applied" or "released")
     updates [RECOVERY .. (release and "release-token" or "request-token")] = Pod.Long (release and 1 or 10)
     if mutate then mutate (state, args, values, updates, declarations) end
@@ -194,3 +196,16 @@ recovery_case (false, function (...)
   local updates = select (4, ...)
   updates ["controller:gain"] = Pod.Float (0.2)
 end, "Recovery close requires one unmixed control request")
+
+for _, mutate in ipairs ({
+  function (values) values [RECOVERY .. "observation-monotonic-nanoseconds"] = Pod.Long ((GLib.get_monotonic_time () - 6000000) * 1000) end,
+  function (values) values [RECOVERY .. "observation-monotonic-nanoseconds"] = Pod.Long ((GLib.get_monotonic_time () + 1000000) * 1000) end,
+  function (values) values [RECOVERY .. "reference-timeout-ms"] = Pod.Int (0) end,
+}) do
+  recovery_case (true, function (_, _, values) mutate (values) end,
+      "Recovery command reference is not confirmed")
+  recovery_case (false, function (...)
+    guarded_close (...)
+    mutate (select (3, ...))
+  end, "Recovery command reference is not confirmed")
+end
