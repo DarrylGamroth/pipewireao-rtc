@@ -351,8 +351,8 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             throw(ArgumentError("capture storage requires the declared Classic profile"))
         raw = JuliaFilterGraph.input_formats(frontend.graph).raw
         for (role,contract) in pairs(Calibration.CLASSIC_CAPTURE_CONTRACTS)
-            format = role === :raw ? raw : getproperty(outputs,role)
-            format.element_type === contract.type && Tuple(format.shape) == contract.shape ||
+            payload_format = role === :raw ? raw : getproperty(outputs,role)
+            payload_format.element_type === contract.type && Tuple(payload_format.shape) == contract.shape ||
                 throw(ArgumentError("capture graph differs from the fixed Classic payload contract"))
         end
         capture_stage isa AbstractString || throw(ArgumentError("capture stage must be explicit"))

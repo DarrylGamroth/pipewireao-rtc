@@ -415,3 +415,55 @@ descriptor verification, capacity rejection before another exposure, and the
 owner's restoration/release/teardown behavior. These results do not qualify
 Copper, physical devices, cadence or deadline performance. No GPU, live core
 or physical device was used by this reviewer.
+
+### CO-10 — Capture payload validation overwrote the command format
+
+Severity: high for capture-enabled startup. Confidence: high. Classification:
+confirmed source defect, independently reproduced without a core or optical
+execution. Disposition: remediated in canonical source; fresh integration and
+superseding registered-release qualification remain separate gates.
+
+Registered RTC 0.2.25 (`4698f7b`, package tree
+`161bccd8c683b64ab0c3d534fdceeddf2ebd5da2`) rejected capture-enabled preparation
+in `calibration_probe_format`, before any native action. The retained
+`internal-source-registered-025-capture-20261027.log` reports six assertions
+passing and one constructor error. This is a real release failure, rather than
+a dependency-format or stale-precompile explanation. The 0.2.25 tag and
+registry record remain immutable; the fix requires a superseding release.
+
+The fixed Classic payload-contract loop introduced in `calibration_owner.jl`
+assigned its selected payload to the existing function-local `format`. That
+binding already held the requested physical-command format. The final loop
+role is validity, so the later `prepare_calibration_probe` received the
+validity format instead of the requested command format. The Float32 guard
+correctly rejected it. Capture-disabled preparation does not enter this loop.
+
+Independent cold inspection used Julia 1.13.3 and the unchanged registered
+0.2.25 environment. Both the fresh registered application and the earlier
+built application have regular-graph SHA-256
+`a9e39891219b83e5a3327027951395c9fdfe74f2e9b8a1cecd511f3f7eb2a575`.
+Their requested, demanded and constraint-feedback formats are all Float32,
+rank one, shape `(277,)`, with the declared distinct schemas. Each passes
+the registered transport helper directly. The extension's PipeWireAO and
+Float32 identities match their public modules; `F32_LE` is the expected enum
+value 18. Actual frontend validity is Bool, rank one, shape `(188,)`.
+
+The reviewer independently reproduced the original local-variable loop over
+those actual prepared graph formats: all four payload contracts pass, then
+the returned format is the Bool validity format and the transport helper
+rejects it. Repeating the same loop with the primary's `payload_format` local
+preserves the original Float32 requested format and the same helper accepts
+it. All 16 cold assertions passed. The canonical two-line fix changes only
+that loop variable and its validation reference. It retains the payload
+contract, command guard, schema, shape and rate checks, and leaves the separate
+`capture_format` conversion helper unchanged.
+
+The reproducible evidence in the existing `standard-calibration-validation`
+directory is `registered-025-format-inspection-20261027.jl` and its successful
+`-cold.log`, plus `registered-025-format-shadow-20261027.jl` and `.log`.
+The first inspection log preserves a diagnostic-script syntax failure before
+the corrected cold run; it is not product evidence. The earlier source
+171-assertion Capture run predates the added payload-contract loop and cannot
+qualify the 0.2.25 source. The primary is running a fresh corrected-source
+Capture selector; this reviewer has not performed or attributed an optical
+rerun. No PipeWire core, GPU or physical device was used in this diagnosis.

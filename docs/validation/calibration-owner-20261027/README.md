@@ -213,6 +213,25 @@ version/public-function/docstring smoke checks passed. Pkg resolved the tracked
 workspace manifest with only its self-package version changing; dependencies
 were unchanged.
 
+### Registered 0.2.25 failure and format-scope correction
+
+The fresh registered-only 0.2.25 environment built Classic successfully and
+passed all 119 selected-bundle checks. Its native Capture selector then failed
+before any command/acquisition: six assertions passed and construction rejected
+the probe format. CO-10 records the confirmed cause: the final cold payload
+check reused `format`, overwriting the requested Float32 `(277,)` command format
+with the last payload's Bool `(188,)` validity format. The original source
+171-assertion run preceded that late check and did not qualify this change.
+
+The corrected loop uses a separate `payload_format`. Independent cold
+reproduction passed 16 assertions against both applications' actual formats;
+their regular graph hashes were identical. The same native Capture selector
+then passed 171 assertions with corrected source against the previously failing
+registered build (`internal-source-capture-format-fix-20261027.log`). No detector,
+transport, schema, command or acceptance policy was changed. Published 0.2.25's
+tag/tree/registry entry are retained; 0.2.26 supersedes it. Registered 0.2.26
+qualification is recorded separately below when complete.
+
 ## Remaining gates
 
 A stationary calibration-source/eligibility procedure and an accepted complete
