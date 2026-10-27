@@ -3,7 +3,7 @@
 module InitialCalibrationPrivateCoreTests
 
 using Test, SHA, LinearAlgebra
-using PipeWireAO, PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
+using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 include("native_control_private_core.jl")
@@ -40,7 +40,10 @@ end
     @test detector["readout_noise"]
 
     parameters = Calibration.read_parameters(application)
-    completion = parameters[Symbol("vdm-to-pdm")] * parameters[Symbol("controller-to-vdm")]
+    # The deployed VDM path completes active coordinates before its full-VDM
+    # physical projection; neither dimensions nor actuator positions infer it.
+    completion = parameters[Symbol("vdm-to-pdm")] *
+        parameters[Symbol("active-to-full")] * parameters[Symbol("controller-to-vdm")]
     @test size(completion, 1) == 277
     @test size(completion, 2) > 1 # This two-sign pilot covers only a prefix.
     mode = findfirst(column -> any(!iszero, column), eachcol(completion))
@@ -63,6 +66,9 @@ end
                 inputs=(requested="pdm-command:requested",),
                 outputs=(:demanded, Symbol("constraint-feedback")))
             name, instance = "test.classic.initial.$(getpid())", Int64(71)
+            @test_throws ArgumentError Calibration.prepare_initial_calibration(application, remote,
+                merge(frontend, (;source_graph_sha256=repeat("0",64))), command;
+                reference, name, instance, deadline=Native.monotonic()+120)
             server = Calibration.prepare_initial_calibration(application, remote, frontend, command;
                 reference, name, instance, deadline=Native.monotonic()+120)
             # Descriptor ownership transferred to the endpoint.
@@ -99,9 +105,11 @@ end
                     @test size(captured.arrays.raw) == (352,352)
                     @test answer.values == vec(permutedims(captured.arrays.slopes))
                     exposure = only(answer.exposures)
+                    @test exposure.domain == UInt64(1)
                     for receipt in values(captured.metadata)
-                        @test (receipt.identity.domain, receipt.identity.generation, receipt.identity.sequence) ==
-                            (exposure.domain, exposure.generation, exposure.sequence)
+                        @test receipt.identity.domain == owner.acquisition_domain
+                        @test (receipt.identity.generation, receipt.identity.sequence) ==
+                            (exposure.generation, exposure.sequence)
                         @test receipt.model_start_ns == exposure.start_model_ns
                         @test receipt.duration_ns == exposure.duration_ns == simulation["exposure_ns"]
                     end
