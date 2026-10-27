@@ -83,7 +83,8 @@ end
         bytes = "schema_version: 1\nid: retained source\n"
         write(shared, bytes)
         document = Dict("deformable_mirrors" => Dict(name =>
-            Dict("description" => "../mirrors/vendor/mirror.yaml") for name in ("dm1", "dm2")))
+            Dict("description" => "../mirrors/vendor/mirror.yaml",
+                "pupil" => Dict("outer_radius"=>1.0,"inner_radius"=>0.3)) for name in ("dm1", "dm2")))
         path = joinpath(source, "instrument.yaml")
         C.write_yaml(path, document)
         before = read(path)
@@ -92,6 +93,8 @@ end
         @test read(shared, String) == bytes
         copied = C.read_yaml(joinpath(output, "instrument.yaml"))
         @test all(mirror["description"] == "mirrors/vendor/mirror.yaml"
+            for mirror in values(copied["deformable_mirrors"]))
+        @test all(mirror["pupil"] == Dict("outer_radius"=>1.0,"inner_radius"=>0.3)
             for mirror in values(copied["deformable_mirrors"]))
         @test read(D.relative_asset(output, "mirrors/vendor/mirror.yaml"), String) == bytes
         # Removing the source cannot break the exported application's local reference.

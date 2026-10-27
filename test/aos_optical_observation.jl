@@ -57,6 +57,13 @@ end
         @test sources[2].shape == size(graph_output(science.graph, :pupil_opd))
         @test sources[3].schema == Observation.RMS_SCHEMA
         @test sources[3].shape == (1, 2)
+        @test length(sources[3].channels) == 2
+        @test getproperty.(sources[3].channels, :index) == (0, 1)
+        @test getproperty.(sources[3].channels, :name) ==
+            ("uncorrected_atmosphere_rms", "corrected_pupil_rms")
+        @test getproperty.(sources[3].channels, :title) ==
+            ("Uncorrected atmosphere RMS", "Corrected pupil RMS")
+        @test getproperty.(sources[3].channels, :units) == ("nm OPD", "nm OPD")
         @test isempty(Observation.rms_source_options(nothing, Dict{String,String}()))
         for index in 1:4
             stamp = step_hil_frame_at!(science.boundary, science.driver)
@@ -107,7 +114,9 @@ end
         flat_observation = Observation.prepare(flat.definition, flat.graph)
         try
             @test flat_observation.atmosphere_snapshot === nothing
-            @test length(Observation.source_options(flat_observation)) == 2
+            flat_sources = Observation.source_options(flat_observation)
+            @test length(flat_sources) == 2
+            @test all(isempty(source.channels) for source in flat_sources)
             @test Observation.submit!(flat_observation; generation=UInt64(1))
             @test Observation.poll!(flat_observation)
             Observation.form_products!(flat_observation)

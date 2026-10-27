@@ -12,7 +12,7 @@ const D = DeploymentConfiguration
 
 public load, load_simulation, load_rtc, settings, graph_document, scientific_definition, prepare_system,
     prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
-    actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context
+    actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context, calibration_context
 
 function prepare_system end
 function controlled_actuators end
@@ -32,6 +32,8 @@ function fields(value::AbstractDict, allowed, required, label)
     return value
 end
 fields(value, allowed, required, label) = throw(ArgumentError("$label must be an object"))
+
+include("instruments/calibration.jl")
 
 function bounded_yaml(path)
     document = Schemas.resolve(Common.read_yaml(path))
@@ -114,8 +116,14 @@ function load_rtc(path::AbstractString)
         _validate_shape_control(control["shape_control"],
             instrument.document["deformable_mirrors"][name]["units"], instrument.directory)
     end
-    calibration = haskey(document, "calibration") ? bounded_yaml(D.relative_asset(instrument.directory, document["calibration"])) : Dict{String,Any}()
-    _declaration_object(calibration, "RTC calibration context")
+    calibration = if haskey(document, "calibration")
+        calibration_path = D.relative_asset(instrument.directory, document["calibration"])
+        context = bounded_yaml(calibration_path)
+        _declaration_object(context, "RTC calibration context")
+        calibration_context(context, dirname(calibration_path))
+    else
+        Dict{String,Any}()
+    end
     return (;path=abspath(path),directory=instrument.directory,document,instrument,controls,calibration,authoring,control_authoring)
 end
 

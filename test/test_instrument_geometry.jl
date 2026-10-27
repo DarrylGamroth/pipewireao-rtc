@@ -103,6 +103,35 @@ end
     end
 end
 
+@testset "physical clear aperture resolves without rescaling actuator coordinates" begin
+    mktempdir() do directory
+        path = joinpath(directory,"mirror.json")
+        document = mirror_document()
+        registration = (;actuator_pitch_pupil_radius=0.125)
+        original = write_mirror(path,document)
+        @test IC.clear_aperture(original,registration) == NamedTuple()
+        document["actuator_pitch_m"] = 0.0015
+        document["clear_aperture_diameter_m"] = 0.0245
+        description = write_mirror(path,document)
+        @test IC.clear_aperture(description,registration).clear_aperture.radius ≈ 1.0208333333333333
+        @test IC.actuator_coordinates(description;pupil_registration=registration) ==
+            IC.actuator_coordinates(original;pupil_registration=registration)
+        @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(original)
+        for diameter in (true,false,0.0,-0.1,Inf,NaN)
+            invalid = deepcopy(document)
+            invalid["clear_aperture_diameter_m"] = diameter
+            @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(invalid)
+        end
+        missing = deepcopy(document)
+        delete!(missing,"actuator_pitch_m")
+        @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(missing)
+        for (diameter,pitch) in ((1e308,1e-300),(1e-300,1e308),(1e100,0.0015),(1e-100,0.0015))
+            invalid = merge(description,(;clear_aperture_diameter_m=diameter,actuator_pitch_m=pitch))
+            @test_throws ArgumentError IC.clear_aperture(invalid,registration)
+        end
+    end
+end
+
 @testset "mirror description validation" begin
     mktempdir() do directory
         path = joinpath(directory, "mirror.json")
@@ -130,6 +159,7 @@ end
     mktempdir() do directory
         document = mirror_document()
         document["actuator_pitch_m"] = 0.0015
+        document["clear_aperture_diameter_m"] = 0.0245
         json_path = joinpath(directory, "mirror.json")
         baseline = write_mirror(json_path, document)
         registration = (; actuator_pitch_pupil_radius=0.125)
@@ -142,6 +172,7 @@ end
             @test IC.actuator_coordinates(description; pupil_registration=registration) ==
                 IC.actuator_coordinates(baseline; pupil_registration=registration)
             @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(baseline)
+            @test IC.clear_aperture(description,registration) == IC.clear_aperture(baseline,registration)
         end
     end
 end

@@ -752,6 +752,33 @@ normalized Cartesian frame, with 0 ≤ inner < outer. It requires command-indexe
 `pupil_coordinates`; coordinates may lie outside the annulus. This optical
 aperture is distinct from the physical mirror boundary. Without it, clients
 must not infer an optical aperture from the actuator-grid extent.
+Physical mirror authoring may supply the same exact `pupil` fields explicitly.
+An explicit per-mirror pupil takes precedence over the existing telescope-derived
+pupil (`outer_radius: 1`, `inner_radius: central_obstruction_ratio`). The telescope
+fallback remains when explicit mirror metadata is absent; publication omits
+`pupil` only when both are unavailable. Explicit values enter the physical and
+scientific definition and its identity unchanged. Plant verification compares
+the published pupil with the selected scientific source, including the telescope
+fallback for older scientific definitions.
+
+An optional DM `clear_aperture: {radius: ...}` describes a centered circular
+mirror clear aperture in that same registered Cartesian frame. It requires
+`pupil_coordinates` and a positive renderable radius. The clear aperture is the
+mirror's optically usable circular aperture; it is distinct from the instrument's
+illuminated optical `pupil`, the actuator footprint and the full mechanical
+face-sheet edge. No ordering between the clear-aperture radius, optical-pupil
+radii or actuator centres is assumed. Missing clear-aperture metadata remains
+absent; neither the grid nor the optical pupil establishes it. The physical and
+scientific definitions and schema 2 publication carry the resolved aperture,
+and plant verification compares it independently of the scientific fingerprint.
+These are additive optional fields in the existing schema versions.
+
+Radii and registered coordinates must remain renderable in Float32: their
+magnitudes are strictly below one quarter of the maximum finite Float32 value,
+nonzero values survive conversion, and the inner and outer radii remain distinct
+after conversion. Booleans are rejected. These bounds leave viewport arithmetic
+headroom without converting owned metadata. This optional metadata changes no
+commands, units, actuator coordinates, optical calculations or control protocol.
 WFS `layout` declares detector/subaperture extents and zero-based `[row,column]` origins.
 Published source-grid geometry does not imply measured optical registration.
 
@@ -998,8 +1025,20 @@ inconsistent hidden projections/allocation dimensions before writing files.
 spacing in metres. It does not rescale
 optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`
 is dimensionless spacing divided by the registered pupil radius; Classic retains
-0.125. The existing AOS node configuration key `actuator_pitch` is an adopted
-simulator API boundary and receives this normalized value. Source model strings
+0.125. The optional intrinsic `clear_aperture_diameter_m` is a finite positive
+circular clear-aperture diameter in metres and requires `actuator_pitch_m`.
+The cold metadata resolver computes the dimensionless registered radius as
+`(clear_aperture_diameter_m / actuator_pitch_m) × actuator_pitch_pupil_radius / 2`.
+The resolved radius must satisfy the publication's Float32 renderability bounds;
+this conversion does not change actuator coordinates or any scientific model.
+A nominal model specification is an explicit source value, not unit-specific
+metrology. For the legacy ALPAO DM277-15, the 24.5 mm clear aperture and 1.5 mm
+actuator pitch give a radius of approximately 1.0208333 with Classic's registration.
+These values do not establish the full face-sheet diameter or apply to other
+DM277 variants. The terms follow [Conan et al. (2014), §4.2](https://doi.org/10.1117/12.2054471)
+and the nominal dimensions in [ALPAO's revision F datasheet, p. 2](https://img1.17img.cn/17img/files/201705/attachment/a184f2ef-1d5c-40cf-a206-22369bf9bbe4.pdf).
+The existing AOS node configuration key `actuator_pitch` is an adopted simulator
+API boundary and receives this normalized value. Source model strings
 and SDK connection IDs do not establish unit metrology or production sequence.
 
 `load` reads only physical data. `load_simulation` reads simulation YAML plus its
@@ -1197,6 +1236,10 @@ remain normalized, while the selected simulator boundary uses explicitly declare
 OPD units and scale. The existing one-mirror boundary validates the description
 against the selected instrument before admission. The description carries no
 pupil registration, influence functions, conversion factor or stroke claim.
+Its optional clear-aperture diameter remains intrinsic physical metadata; only
+the RTC resolves its radius into instrument registration. Device readers must
+support the optional field before an enriched description is selected for them;
+older strict schema 1 readers can reject it.
 
 `scientific_identity` is the SHA-256 of the deterministic scientific definition
 serialized by the integration adapter. The AOS adapter checks it against the

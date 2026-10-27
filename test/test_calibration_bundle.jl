@@ -112,7 +112,7 @@ end
     end
 end
 
-@testset "Authored inputs and preserved calibration history" begin
+@testset "Authored inputs and Git-only calibration history" begin
     mktempdir() do root
         directory = joinpath(root, "calibration")
         saved = bundle(directory)
@@ -120,27 +120,19 @@ end
         write(joinpath(directory,"recipe.conf"),"{}\n")
         mkdir(joinpath(directory, "inputs"))
         write(joinpath(directory, "README.md"), "Preserved calibration inputs.\n")
-        history = mkpath(joinpath(directory, "history", "original"))
-        path = joinpath(history, "result.toml")
-        write(path, "version = 0\n")
-        saved.result["history_sha256"] = Dict("history/original/result.toml" => Common.sha256_file(path))
-        receipt = joinpath(directory, "result.yaml")
-        Common.write_yaml(receipt, saved.result)
         @test C.read_bundle(directory).report == saved.result
-        write(path, "version = 2\n")
+        history = mkpath(joinpath(directory, "history"))
+        write(joinpath(history, "result.yaml"), "version: 0\n")
         @test_throws ArgumentError C.read_bundle(directory)
-        write(path, "version = 0\n")
-        for name in ("../result.yaml", "history/../result.yaml", "history//result.toml",
-                "/history/result.toml", "history/original/../../result.yaml")
-            report = copy(saved.result)
-            report["history_sha256"] = Dict(name => repeat("a", 64))
+        rm(history; recursive=true)
+        receipt = joinpath(directory, "result.yaml")
+        for value in (Dict(), Dict("history/result.yaml" => repeat("a", 64)))
+            report = merge(saved.result, Dict("history_sha256" => value))
             Common.write_yaml(receipt, report)
             @test_throws ArgumentError C.read_bundle(directory)
         end
         Common.write_yaml(receipt, saved.result)
-        mv(history, joinpath(root, "old-history"))
-        symlink(joinpath(root, "old-history"), history)
-        @test_throws ArgumentError C.read_bundle(directory)
+        @test C.read_bundle(directory).report == saved.result
     end
 end
 

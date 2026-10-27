@@ -151,7 +151,10 @@ function physical_definition(declaration)
         geometry = mirror(declaration,NamedTuple(),name)
         description,registration = geometry.description,geometry.registration
         coordinates = actuator_coordinates(description; pupil_registration=registration)
-        return (;layout=description.layout,pupil_registration=registration,
+        spec = document["deformable_mirrors"][name]
+        pupil = haskey(spec,"pupil") ? (;pupil=_instrument_seal(spec["pupil"])) : NamedTuple()
+        return (;layout=description.layout,pupil_registration=registration,pupil...,
+            clear_aperture(description,registration)...,
             pupil_coordinates=Tuple(Tuple(column) for column in eachcol(coordinates)))
     end
     sensor_keys = sort!(collect(keys(document["wavefront_sensors"])))
@@ -211,11 +214,13 @@ function publication(path)
             end
             shape_control = (;bases,controlled_actuators=controlled)
             InstrumentDefinition.validate_shape_control(json_value(shape_control),spec["units"],n)
-            pupil = hasproperty(scientific,:telescope) && hasproperty(scientific.telescope,:central_obstruction_ratio) ?
+            pupil = hasproperty(dm,:pupil) ? (;pupil=dm.pupil) :
+                hasproperty(scientific,:telescope) && hasproperty(scientific.telescope,:central_obstruction_ratio) ?
                 (;pupil=(;outer_radius=1.0,inner_radius=scientific.telescope.central_obstruction_ratio)) : NamedTuple()
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
                 pupil...,
+                (hasproperty(dm,:clear_aperture) ? (;clear_aperture=dm.clear_aperture) : NamedTuple())...,
                 limiter=(;kind=control["limiter"]["kind"],
                     lower=limit_values(control["limiter"]["lower"],n),upper=limit_values(control["limiter"]["upper"],n)),
                 shape_control)

@@ -22,6 +22,35 @@ struct Config
     name::String
     rate::Rational{Int}
     links::Vector{LinkSpec}
+    channel_units::Dict{String,Dict{String,String}}
+end
+
+Config(graph, name, rate, links) = Config(graph, name, rate, links,
+    Dict{String,Dict{String,String}}())
+
+function channel_units(value)
+    value isa AbstractDict && length(value) <= 64 ||
+        throw(ArgumentError("analysis channel-units must map at most 64 output Ports"))
+    result = Dict{String,Dict{String,String}}()
+    bytes = 0
+    text(value) = value isa String && isvalid(value) && !isempty(strip(value)) &&
+        ncodeunits(value) <= 255 && !any(iscntrl, value)
+    for (port, channels) in value
+        text(port) || throw(ArgumentError("invalid analysis channel-units Port"))
+        channels isa AbstractDict && length(channels) <= 64 ||
+            throw(ArgumentError("analysis channel-units must map at most 64 channel names per Port"))
+        units = Dict{String,String}()
+        bytes += ncodeunits(port)
+        for (name, unit) in channels
+            text(name) && occursin(r"^[a-z][a-z0-9_]*$", name) && text(unit) ||
+                throw(ArgumentError("invalid analysis channel-units channel or units"))
+            units[name] = unit
+            bytes += ncodeunits(name) + ncodeunits(unit)
+        end
+        result[port] = units
+    end
+    bytes <= 16384 || throw(ArgumentError("analysis channel-units exceeds 16384 UTF-8 bytes"))
+    return result
 end
 
 function endpoint(value)
@@ -35,8 +64,10 @@ end
 
 function configuration(path::AbstractString, prefix::AbstractString)
     document = D.decode(path, prefix)
-    document isa AbstractDict && Set(keys(document)) == Set(["graph", "name", "rate", "links"]) ||
-        throw(ArgumentError("analysis configuration requires graph, name, rate and links"))
+    required = Set(["graph", "name", "rate", "links"])
+    document isa AbstractDict && required ⊆ Set(keys(document)) &&
+        Set(keys(document)) ⊆ union(required, Set(["channel-units"])) ||
+        throw(ArgumentError("analysis configuration requires graph, name, rate and links; channel-units is optional"))
     graph = D.relative_asset(dirname(abspath(path)), document["graph"])
     name = document["name"]
     name isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$", name) ||
@@ -61,7 +92,8 @@ function configuration(path::AbstractString, prefix::AbstractString)
         push!(addresses, address)
         push!(links, LinkSpec(output, input))
     end
-    return Config(graph, name, numerator // denominator, links)
+    units = channel_units(get(document, "channel-units", Dict()))
+    return Config(graph, name, numerator // denominator, links, units)
 end
 
 function observation_queues(spec, root, prefix)

@@ -28,6 +28,8 @@ end
 function _bundle_report(report)
     report isa AbstractDict && all(key -> key isa String, keys(report)) ||
         throw(ArgumentError("calibration result must be a mapping with string keys"))
+    haskey(report, "history_sha256") &&
+        throw(ArgumentError("calibration history belongs in Git, not the bundle"))
     for key in ("recipe", "source_prescription_identity", "source_graph_sha256")
         haskey(report, key) || throw(ArgumentError("calibration result is missing $key"))
     end
@@ -52,13 +54,13 @@ function read_bundle(directory::AbstractString)
         throw(ArgumentError("calibration bundle must be a non-symlink directory"))
     entries = Set(readdir(directory))
     required = Set(("result.yaml", "context.yaml", "graph.conf", "artifacts"))
-    allowed = union(required, Set(("recipe.yaml", "recipe.conf", "inputs", "history", "README.md")))
+    allowed = union(required, Set(("recipe.yaml", "recipe.conf", "inputs", "README.md")))
     issubset(required, entries) && issubset(entries, allowed) ||
         throw(ArgumentError("calibration bundle contains missing or unknown files"))
     for name in entries
         path = joinpath(directory, name)
         islink(path) && throw(ArgumentError("calibration bundle contains a symlink: $name"))
-        if name in ("artifacts", "inputs", "history")
+        if name in ("artifacts", "inputs")
             isdir(path) || throw(ArgumentError("calibration bundle $name must be a directory"))
         else
             isfile(path) || throw(ArgumentError("calibration bundle $name must be a regular file"))
@@ -97,25 +99,9 @@ function read_bundle(directory::AbstractString)
             throw(ArgumentError("calibration artifact hash mismatch: $name"))
         artifacts[name] = path
     end
-    if haskey(report, "history_sha256")
-        history = report["history_sha256"]
-        history isa AbstractDict || throw(ArgumentError("calibration history_sha256 must be a mapping"))
-        for (name, expected) in history
-            name isa AbstractString || throw(ArgumentError("calibration history path must be text"))
-            components = split(name, '/'; keepempty=true)
-            length(components) >= 2 && first(components) == "history" ||
-                throw(ArgumentError("calibration history path must be relative to history/"))
-            path = String(directory)
-            for component in components
-                _bundle_name(component)
-                path = joinpath(path, component)
-                islink(path) && throw(ArgumentError("calibration history path contains a symlink"))
-            end
-            path = _bundle_file(directory, String(name))
-            Common.sha256_file(path) == _bundle_hash(expected, "history $name") ||
-                throw(ArgumentError("calibration history hash mismatch: $name"))
-        end
-    end
+    # Construction-time values use the same bounded, hash-verified FITS inputs
+    # as cold RTC preparation; the stored context remains a small declaration.
+    InstrumentConfiguration.calibration_context(context, directory)
     parameter_names = report["parameter_names"]
     parameter_names isa AbstractVector && all(name -> name isa AbstractString, parameter_names) ||
         throw(ArgumentError("calibration parameter_names must be a list of names"))
