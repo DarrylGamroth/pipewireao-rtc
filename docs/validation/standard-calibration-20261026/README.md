@@ -1,0 +1,112 @@
+# Standard calibration bundles — 2026-10-26
+
+This RTC source change unifies calibration entry points across the GPI pyramid
+and Classic Shack–Hartmann procedures. `calibrate_system` generates a
+version-1 bundle from a built application, `validate_system` validates the
+bundle against its declared application, and `stage_calibration` imports a
+verified bundle into a fresh source copy. Bundle integrity covers the result,
+context, concrete graph, typed FITS artifacts, and optional retained history.
+
+Modal-only APIs and CLIs and the active Classic TOML result loaders are removed.
+Frozen calibration records remain historical inputs and are not rewritten.
+Imported bundles preserve their historical source identities and support
+startup/integrity checks; this migration does not rebind them for the new
+validation/staging sequence. Source validation requires the coordinated RTC
+source until a matching registered release is available. Normal application
+environments continue using registered releases.
+
+## Source and environment
+
+Implementation used dedicated `codex/standard-calibration` worktrees from RTC
+`6c9c21e` and instruments `02a50bf`. Implementation checkpoints are RTC
+`bdb81f2` and instruments `559bb9d`. The original instrument checkout remained
+clean. Julia 1.13.2 CPU checks used a separate source-validation environment
+with this RTC source and registered AOS 0.3.2, HIL 0.2.5, AOC 0.17.1, FGA 0.8.1,
+FGI 0.1.3, FGPW 0.1.9, JFG 0.4.2 and PipeWireAO 0.6.19. Built applications used
+a separate registered-only manifest (RTC 0.2.13); a source-override manifest was
+correctly rejected by the ordinary export contract. No manifests are committed.
+
+The final staging interface is
+`stage_calibration(source, application, bundle, fresh_destination)`. Source is
+authored data; application is its verified build. Two retained failed rebuilds
+showed why a built tree cannot be restored by deleting generated files: it
+contains both compiled YAML and rendered native session/host templates. The
+final interface copies authored source and verifies its recipe, retained graph
+template and localized optical prescription against the calibrated build.
+
+## Completed software checks
+
+- Shared bundle integrity/publication: 68 assertions; modal temporal/FITS I/O:
+  284; modal completion: 63. All 415 passed. The reviewer independently repeated
+  the 68 cold bundle assertions.
+- Selected imported bundles: 106 assertions passed, including historical hashes,
+  template resolution, exact parameter aliases, explicit physical-sized neutral
+  offsets and no scientific/accelerator packages loaded by the cold reader.
+- GPI feedback/publication: 230; shape controls: 36; CPU/CUDA/AMDGPU profile
+  authoring: 49; formatting fixtures: 50. All passed. Formatting check passed.
+- Instrument calibration/API selector: all 161 assertions passed, including
+  stale/aliased templates, unsupported recipe fields and built-as-source staging
+  rejection without output creation.
+- Independent source review found no remaining blocker; see the
+  [adjudicated findings](../../reviews/20261026-standard-calibration/REVIEW.md).
+
+Primary and reviewer independently compared all 52 original coefficient FITS,
+the retained source-completion FITS, three historical receipts and the original
+GPI graph against the instrument base: all original bytes remain unchanged.
+Three added Float32 zero-offset vectors make graph defaults explicit (Classic
+277, GPI woofer 97, GPI tweeter 2304). Strict typed startup covers Classic's
+19 parameters / 23 artifacts and GPI's 33 parameters / 32 artifacts.
+
+## Finite CPU workflows
+
+Classic's common acquisition completed 212 coordinates with retained rank 208.
+Common validation ran 512 frames at pupil resolution 480, atmosphere seed 1 and
+r₀ = 0.15 m. Mean residual after discarding 128 frames was 50.51794 nm; no actuator
+or central samples clipped. This is a finite simulation observation, not a
+hardware or stability qualification. Authored-source staging passed all 19 typed
+bindings, and the staged source rebuilt with the registered manifest. The
+rebuilt recipe and retained-template contract matched the input.
+
+GPI completed all 1,509 coordinates, with 11,104 measurements and retained rank
+1,445. The common validator passed tip/tilt, focus, astigmatism and mixed
+48-step correction cases. Final four-input authored-source staging passed all
+33 typed bindings, and its registered rebuild passed the recipe/template check.
+
+| GPI disturbance | Final RMS / uncorrected RMS | Final RMS (nm) |
+| --- | ---: | ---: |
+| Tip/tilt | 0.007311 | 0.17393 |
+| Focus | 0.005302 | 0.15040 |
+| Astigmatism | 0.005858 | 0.14484 |
+| Mixed | 0.007369 | 0.14192 |
+
+These are finite deterministic simulation cases, not measured instrument errors.
+Acquisition/validation and final staging/rebuild used separate processes against
+the same hash-bound bundle. The earlier combined driver was stopped after its
+validation receipt completed, because its already-loaded three-input staging
+implementation had been superseded; no success is claimed for that old stage.
+
+The [portable verification driver](verify-pipeline.jl) records the final
+build → acquire → validate → stage → rebuild sequence. Run it
+from a source-validation environment with `OPENBLAS_NUM_THREADS=1`, passing the
+instrument repository, instrument name, fresh output root and registered-only
+manifest. It does not open a PipeWire core or installed service.
+
+## Existing failures and limits
+
+The graph-reference selector fails identically in the unmodified instrument
+checkout and this worktree: 9 passes, one stale concrete-graph fixture comparison
+failure and one altered-dimension shape-binding error. It is not a passing gate.
+The old exact Float32 completion comparison differed by at most 4.656613 × 10⁻¹⁰;
+the migrated test uses an absolute `eps(Float32)` bound while retaining rank,
+affine reproduction and limit checks. No numerical procedure was changed to
+match a frozen coefficient file.
+
+Imported root bundles are packaging adoptions, not new acquisitions. Their
+historical source identities remain unchanged and cannot be silently rebound
+for replay/staging against a different build. Fresh bundles exercise the common
+workflow. Copper and SPIDERS remain outside this data/tool migration. The new API
+needs a coordinated registered release before ordinary pinned environments can
+use it. These sensor procedures currently execute simulation-local acquisition;
+native event-driven hardware campaigns remain a separate integration. Physical-device
+calibration, GPU numerical equivalence, sustained cadence and deadline qualification were not performed. Existing running services were
+not contacted or modified.

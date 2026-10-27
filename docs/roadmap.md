@@ -12,6 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Shared built-application calibration bundles — 2026-10-26
+
+The shared `InstrumentCalibration` API now dispatches `calibrate_system` and
+`validate_system` from the sensor declared by the built instrument application;
+`stage_calibration` verifies and imports the resulting bundle into a fresh
+instrument source copy. Version-1 bundles bind `result.yaml`, `context.yaml`,
+the concrete graph, typed FITS artifacts and optional preserved history by
+hash. Recipes remain instrument YAML. Modal-only APIs and CLIs and active
+Classic TOML result loaders have been removed; frozen historical calibration
+records remain retained. Imported bundles support startup and integrity checks
+without rebinding historical source identity for the new validation/staging
+sequence. The coordinated RTC source is required in source-validation
+environments until a matching registered release is available; application
+environments continue using registered releases. Validation results and limits
+are in the [migration evidence note](validation/standard-calibration-20261026/README.md)
+and [independent review](reviews/20261026-standard-calibration/REVIEW.md).
+
 ### Shared event-driven calibration procedures — 2026-10-26
 
 The shared `CalibrationAcquisition.Procedure` now advances interaction
