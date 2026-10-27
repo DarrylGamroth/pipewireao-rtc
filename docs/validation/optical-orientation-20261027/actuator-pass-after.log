@@ -1,0 +1,13 @@
+Test Summary:                                                                     | Pass  Total  Time
+isolated actuator physical display orientation through actual diagnostic exporter |   20     20  2.9s
+JULIA 1.13.3
+AdaptiveOpticsSim 0.3.2 /home/dgamroth/.julia/packages/AdaptiveOpticsSim/g0FT5/src/AdaptiveOpticsSim.jl
+AdaptiveOpticsSimPipeWireHIL 0.2.7 /home/dgamroth/.julia/packages/AdaptiveOpticsSimPipeWireHIL/ox5qx/src/AdaptiveOpticsSimPipeWireHIL.jl
+PipeWireAORTC 0.2.26 /home/dgamroth/workspaces/codex/worktrees/rtc-wavefront-orientation-20261027/src/PipeWireAORTC.jl
+PipeWireAO 0.6.19 /home/dgamroth/.julia/packages/PipeWireAO/PRL3A/src/PipeWireAO.jl
+command source_column source_row physical_x physical_y aos_x_index aos_y_index gui_row gui_column dm_screen_x dm_screen_y
+(label = :y_low, command = 1416, source_column = 24, source_row = 30, physical_x = -0.023255814f0, physical_y = -0.25581396f0, aos_x_index = 118, aos_y_index = 90, gui_row = 151, gui_column = 118, dm_screen_x = -0.023255814f0, dm_screen_y = 0.25581396f0)
+(label = :y_high, command = 936, source_column = 24, source_row = 20, physical_x = -0.023255814f0, physical_y = 0.20930232f0, aos_x_index = 118, aos_y_index = 146, gui_row = 95, gui_column = 118, dm_screen_x = -0.023255814f0, dm_screen_y = -0.20930232f0)
+(label = :x_low, command = 1123, source_column = 19, source_row = 24, physical_x = -0.25581396f0, physical_y = 0.023255814f0, aos_x_index = 90, aos_y_index = 123, gui_row = 118, gui_column = 90, dm_screen_x = -0.25581396f0, dm_screen_y = -0.023255814f0)
+(label = :x_high, command = 1133, source_column = 29, source_row = 24, physical_x = 0.20930232f0, physical_y = 0.023255814f0, aos_x_index = 146, aos_y_index = 123, gui_row = 118, gui_column = 146, dm_screen_x = 0.20930232f0, dm_screen_y = -0.023255814f0)
+GUI mappings are source-derived from commit 23de5597636f8fbb4ba10196a2f27ab62cd41ad2: ndarray row down / column right; DM (x,-y).

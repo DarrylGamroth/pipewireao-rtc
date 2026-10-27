@@ -73,7 +73,6 @@ end
 write_spa_value(io::IO, value, depth) =
     throw(ArgumentError("unsupported SPA configuration value: $(typeof(value))"))
 
-write_spa_header(io::IO, ::Nothing) = nothing
 function write_spa_header(io::IO, header::AbstractString)
     isvalid(header) && !occursin('\0', header) ||
         throw(ArgumentError("SPA configuration header must be valid text without NUL"))
@@ -92,7 +91,7 @@ function write_spa_config(path::AbstractString, value;
     isequal(Common.parse_json(json), value) ||
         throw(ArgumentError("SPA configuration changed during JSON serialization"))
     io = IOBuffer()
-    write_spa_header(io, header)
+    write_spa_header(io, Common.generated_header(header))
     write_spa_value(io, value, 0)
     println(io)
     payload = String(take!(io))

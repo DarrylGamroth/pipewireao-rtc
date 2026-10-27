@@ -165,6 +165,33 @@ end
     end
 end
 
+@testset "FITS HDU selection retains distinct prepared identities" begin
+    mktempdir() do directory
+        path = joinpath(directory, "parameters.fits")
+        FITS(path, "w") do fits
+            write(fits, Float32[1, 2])
+            write(fits, Float32[3, 4])
+        end
+        entries = [GraphOwner.FITSBinding(port,
+            PipeWireAORTC.Artifacts.FITSArtifact(path; hdu))
+            for (port, hdu) in ((:first, 1), (:second, 2))]
+        formats = (; first=(; element_type=Float32, shape=(2,)),
+            second=(; element_type=Float32, shape=(2,)))
+        artifacts = GraphOwner.prepare_artifacts(entries, formats)
+        first_hdu, second_hdu = last.(artifacts)
+        @test first_hdu.data == Float32[1, 2]
+        @test second_hdu.data == Float32[3, 4]
+        @test first_hdu.provenance["original_sha256"] == second_hdu.provenance["original_sha256"] ==
+            PipeWireAORTC.InstrumentCalibration.digest(path)
+        @test first_hdu.provenance["sha256"] != second_hdu.provenance["sha256"]
+        @test first_hdu.provenance["hdu"] == 1 && second_hdu.provenance["hdu"] == 2
+        @test first_hdu.provenance["axes"] == second_hdu.provenance["axes"] == [1]
+        updates = GraphOwner.prepare_bindings(entries, formats)
+        @test first.(updates) == first.(artifacts)
+        @test last.(updates) == [first_hdu.data, second_hdu.data]
+    end
+end
+
 @testset "FITS values conform to the graph parameter type" begin
     mktempdir() do directory
         path = joinpath(directory, "values.fits")

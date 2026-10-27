@@ -8,29 +8,9 @@ using AdaptiveOpticsSim.AlgorithmGraphs: try_snapshot_graph_output!,
 
 const Observation = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).OpticalObservation
 
-@testset "Piston-removed pupil OPD presentation" begin
-    mask = Bool[0 1 1; 1 0 1]
-    opd = Float32[Inf 25e-9 75e-9; -25e-9 NaN -75e-9]
-    original = copy(opd)
-    image = zeros(Float32, size(opd))
-    @test Observation.form_wavefront!(image, opd, mask) === image
-    @test image[mask] ≈ Float32[ -25, 25, 75, -75 ] atol=1e-5
-    @test all(isnan, image[.!mask])
-    @test isequal(opd, original)
-    @test sqrt(mean(abs2, image[mask])) ≈ std(Float64.(opd[mask]); corrected=false) * 1e9 rtol=1e-6
-    @test Observation.pupil_rms_nm(opd, mask) ≈ sqrt(mean(abs2, image[mask])) rtol=1e-6
-    @test Observation.pupil_rms_nm(fill(2f-3, size(opd)), mask) == 0
-    @test_throws DimensionMismatch Observation.pupil_rms_nm(zeros(3, 2), mask)
-    @test_throws ArgumentError Observation.pupil_rms_nm(opd, falses(size(mask)))
-    shifted = opd .+ 1f-6
-    shifted_image = similar(image)
-    Observation.form_wavefront!(shifted_image, shifted, mask)
-    @test shifted_image[mask] ≈ image[mask] atol=1e-4
-    @test_throws DimensionMismatch Observation.form_wavefront!(zeros(3, 2), opd, mask)
-    @test_throws ArgumentError Observation.form_wavefront!(image, opd, falses(size(mask)))
-    invalid = copy(opd); invalid[1, 2] = NaN32
-    @test_throws ArgumentError Observation.form_wavefront!(image, invalid, mask)
-    @test_throws ArgumentError Observation.pupil_rms_nm(invalid, mask)
+include("aos_wavefront_presentation.jl")
+
+@testset "Optical snapshot cleanup" begin
     closed = Int[]
     @test_throws ErrorException Observation.finalize_snapshots!((1, 2)) do slot
         push!(closed, slot)
@@ -48,6 +28,7 @@ end
         remote="/tmp/unused-optical-observation", control_node="simulator-wfs"))
     science = owner.prepare_science(options)
     observation = Observation.prepare(science.definition, science.graph)
+    display_pupil = reverse(permutedims(observation.pupil); dims=1)
     try
         sources = Observation.source_options(observation)
         @test length(sources) == 3
@@ -81,16 +62,16 @@ end
                 Observation.form_products!(observation)
                 @test graph_output(science.graph, :pupil_opd) == before
                 @test all(isfinite, observation.values)
-                @test all(isfinite, observation.wavefront[observation.pupil])
-                @test all(isnan, observation.wavefront[.!observation.pupil])
+                @test all(isfinite, observation.wavefront[display_pupil])
+                @test all(isnan, observation.wavefront[.!display_pupil])
                 values = Float64.(before[observation.pupil])
                 expected = std(values; corrected=false) * 1e9
-                actual = sqrt(mean(abs2, Float64.(observation.wavefront[observation.pupil])))
+                actual = sqrt(mean(abs2, Float64.(observation.wavefront[display_pupil])))
                 @test actual ≈ expected atol=1e-4
                 @test observation.rms[1, 2] ≈ actual atol=1e-4
                 @test observation.rms[1, 1] ≈ std(Float64.(graph_output(science.graph,
                     :atmosphere_opd)[observation.pupil]); corrected=false)*1e9 atol=1e-4
-                @test abs(mean(Float64.(observation.wavefront[observation.pupil]))) < 1e-4
+                @test abs(mean(Float64.(observation.wavefront[display_pupil]))) < 1e-4
             finally
                 Observation.release!(observation)
             end

@@ -258,3 +258,222 @@ contract does not establish immediate hard cancellation. Cooperative checks
 must prevent subsequent exposures/work after loss and fence endpoints without
 restoration, retry, rebind or ordinary-loop resumption. Physical settling and
 worst-case timing require separate evidence.
+
+## Internal-source cold selection: independent source review
+
+Reviewed the uncommitted increment on RTC `8977d4d` and instrument `bcbd339`,
+both on `codex/internal-source-calibration-20261027` in their dedicated
+`rtc-internal-source-20261027` and `instruments-internal-source-20261027`
+worktrees. Authority: RTC-ARCH-023, RTC-DEV-029 and the internal-source
+follow-up in [PLAN.md](PLAN.md). No blocking source finding was identified.
+
+The existing production and ideal diagnostic defaults remain compatible.
+The optional declared graph passes the existing graph, binding and HIL
+boundary validation; absent selections and conflicting diagnostic selections
+reject. Common profile/settings expansion and typed AOS preparation still own
+the selected graph. The initial-calibration owner permits only production or
+internal-source and compares the complete resolved detector-node declarations
+with production before allocating the AOS/native endpoint. The normal detector
+noise, ADC, exposure and response settings therefore remain authoritative.
+The regular RTC graph and selected FITS input checks are unchanged.
+
+The Classic graph removes the atmosphere component and supplies its known
+uncompensated-OPD port with the existing typed Float32 zero binding. It retains
+the same DM, OPD composition, WFS and detector components and normal command
+and frame boundaries. The unchanged on-axis guide photometry and this topology
+establish a stationary point-source-equivalent scene by source inspection;
+they do not establish a physical lamp-injection model or illumination
+eligibility. No controller coefficients, frozen calibration bytes, source
+brightness or acceptance threshold change in this increment.
+
+The new selection adds no resource lifecycle or transport owner. Invalid
+selection/detector configuration rejects before AOS/native allocation; later
+failures retain the existing bounded teardown. Source inspection cannot
+establish transported exposure identities or successful worker/core cleanup;
+the maintained private-core selector must supply that evidence separately.
+
+The reviewer independently ran `git diff --check` in both worktrees; both
+passed. The primary reports 17 cold-selector assertions passing. That result
+is attributed, not an independent execution by this reviewer. The reported
+stationary-source experiment rejected all 11 samples against the unchanged
+frozen mask. It remains a failed scientific eligibility gate; this source
+review does not promote accepted interaction measurements, matrix quality,
+full-basis acceptance or an activatable calibration. No GPU, live desktop
+core, installed session, physical device or timing qualification was used.
+
+## Classic capture files: independent review
+
+Scope: `src/calibration_capture_files.jl` and
+`test/test_calibration_capture_files.jl` against RTC-DEV-029's capture clauses,
+the native `Captured` descriptor and the existing acquisition cursor semantics.
+This is the bounded Classic file boundary in a trusted local/private-core
+profile. Owner integration and campaign restoration, shutdown, retention and
+cleanup were pending at this review; they are not established by file tests.
+
+### CO-07 — Capture incorrectly required adjacent exposure intervals
+
+Severity: high for functionality. Confidence: high. Classification: observed
+defect. Disposition: remediated; independently verified.
+
+The original `_capture_exposure` required each model start to equal the previous
+cursor's model time, which is the previous exposure's end. The existing
+acquisition coordinator permits a later start while requiring the next exact
+sequence, domain and generation. Detector exposure duration can be shorter than
+model cadence. An independent synthetic two-frame capture with a 104,000 ns gap
+rejected the second completed exposure as stale/discontinuous after acquiring
+both frames, leaving partial files without a completion manifest.
+
+The corrected comparison permits `start_model_ns >= cursor.model_ns`, preserving
+exact sequence/identity, positive duration and bounded end checks. The focused
+test now writes and reads 1,896,000 ns exposures at a 2,000,000 ns cadence and
+checks the final 3,896,000 ns cursor. Overlapping intervals still reject at both
+writer and reader boundaries. No exposure duration or cadence was changed.
+
+### CO-08 — Final manifest cursor accepted noninteger numeric aliases
+
+Severity: medium. Confidence: high. Classification: observed validation defect.
+Disposition: remediated; independently verified.
+
+The original reader compared the final manifest cursor dictionary directly
+with the verified cursor. Julia dictionary equality treats Boolean/integer
+and exactly equal floating/integer values as equal. An independent rehashed
+one-frame manifest with `cursor.sequence = true` was accepted. Payloads and
+exposure authority remained verified, but the promised strict integer schema
+was not enforced for that final object.
+
+The reader now passes the final cursor through the existing strict cursor
+parser before comparing it. Focused negative cases reject Boolean and floating
+sequence aliases and a floating model-time alias. This reuses the existing
+integer/domain/range rules rather than adding another schema authority.
+
+The reviewer independently ran Julia 1.13.3 with
+`julia +1.13.3 --startup-file=no --project=. test/test_calibration_capture_files.jl`:
+124/124 assertions passed after correction. `git diff --check` passed. Source
+inspection also covered fixed U16/F32/BOOL8 little-endian row-major contracts,
+full acquisition-domain mapping, exact wide integer receipts, cumulative
+reservation before acquisition, bounded settings/exposure metadata, canonical
+paths, symlink rejection, hashes, incomplete publication and caller-selected
+profile/settings verification. No remaining file-boundary blocker was found.
+These are software/file checks; they do not establish integrated owner effects,
+Copper support, physical correctness, fault/restoration behavior or deadline
+performance. No GPU or live core was used.
+
+## Capture owner integration: bounded independent review
+
+Scope: the native Capture method and capture preparation in
+`ext/calibration_owner.jl`, the extracted storage preflight, and
+`GraphOwner.prepare_artifacts`. Authority remains RTC-DEV-029 and RTC-ARCH-023.
+This review covers source behavior and CPU/file checks, not a transported
+capture or a complete campaign.
+
+### CO-09 — Capture identity omitted selected FITS image interpretation
+
+Severity: medium. Confidence: high. Classification: observed identity defect.
+Disposition: remediated; independently verified at the shared FITS boundary.
+
+The initial owner recorded each frontend parameter's source-file hash, target
+type and shape. An unchanged multi-HDU FITS file can contain distinct images
+with the same type and shape; changing the selected HDU therefore changed the
+prepared parameter without changing that capture identity. Axes were likewise
+omitted. An independent CPU example prepared Float32 `[1,2]` and `[3,4]` from
+HDUs 1 and 2 of the same file and confirmed distinct arrays but identical
+original capture identities. Command-projection parameter identities were
+also absent from the capture settings.
+
+The shared preparation now returns `PreparedArtifact` values through
+`prepare_artifacts`, while `prepare_bindings` preserves its existing array
+interface. The owner compares and applies those exact prepared arrays and
+retains provenance from their corresponding source snapshots. Capture settings
+for both frontend and command projections now bind original and prepared
+content hashes, selected HDU, normalized axes, target type and target shape.
+Absolute source paths are excluded. This avoids reopening a source merely to
+compute provenance after preparation.
+
+The reviewer independently ran `test/test_graph_owner.jl` in the RTC root
+environment using Julia 1.13.3: 86/86 assertions passed, including eight durable
+same-file, distinct-HDU regression assertions. They verify equal original file
+hashes, distinct prepared arrays and hashes, selected HDUs, normalized axes and
+compatibility with the existing `prepare_bindings` array interface. The earlier
+independent example also confirmed distinct final capture parameter identities.
+The focused capture-file selector independently
+passed 150/150 assertions after preflight extraction. `git diff --check` passed.
+
+Source inspection found the owner checks current probe and exact cursor before
+storage admission. The preflight does not reserve bytes, create request files
+or acquire exposures; its validation rejection preserves the settled phase.
+Capture repeats admission immediately before reservation. Subsequent
+acquisition/write/publication failures propagate to the existing native fault
+fence rather than being converted to known pre-effect rejection. Storage uses
+the same request deadline and owner checks as exposure acquisition; partial
+files remain owned by the campaign and owner closure does not erase evidence.
+The fresh directory may remain after a preparation failure and requires the
+caller's normal retention/cleanup handling.
+
+No remaining blocker was found in this bounded source review. A private-core
+integration selector must still establish actual native Capture completion,
+descriptor verification, capacity rejection before another exposure, and the
+owner's restoration/release/teardown behavior. These results do not qualify
+Copper, physical devices, cadence or deadline performance. No GPU, live core
+or physical device was used by this reviewer.
+
+### CO-10 — Capture payload validation overwrote the command format
+
+Severity: high for capture-enabled startup. Confidence: high. Classification:
+confirmed source defect, independently reproduced without a core or optical
+execution. Disposition: remediated; cold behavior independently verified, with
+primary source integration and registered 0.2.26 qualification passed below.
+
+Registered RTC 0.2.25 (`4698f7b`, package tree
+`161bccd8c683b64ab0c3d534fdceeddf2ebd5da2`) rejected capture-enabled preparation
+in `calibration_probe_format`, before any native action. The retained
+`internal-source-registered-025-capture-20261027.log` reports six assertions
+passing and one constructor error. This is a real release failure, rather than
+a dependency-format or stale-precompile explanation. The 0.2.25 tag and
+registry record remain immutable; the fix requires a superseding release.
+
+The fixed Classic payload-contract loop introduced in `calibration_owner.jl`
+assigned its selected payload to the existing function-local `format`. That
+binding already held the requested physical-command format. The final loop
+role is validity, so the later `prepare_calibration_probe` received the
+validity format instead of the requested command format. The Float32 guard
+correctly rejected it. Capture-disabled preparation does not enter this loop.
+
+Independent cold inspection used Julia 1.13.3 and the unchanged registered
+0.2.25 environment. Both the fresh registered application and the earlier
+built application have regular-graph SHA-256
+`a9e39891219b83e5a3327027951395c9fdfe74f2e9b8a1cecd511f3f7eb2a575`.
+Their requested, demanded and constraint-feedback formats are all Float32,
+rank one, shape `(277,)`, with the declared distinct schemas. Each passes
+the registered transport helper directly. The extension's PipeWireAO and
+Float32 identities match their public modules; `F32_LE` is the expected enum
+value 18. Actual frontend validity is Bool, rank one, shape `(188,)`.
+
+The reviewer independently reproduced the original local-variable loop over
+those actual prepared graph formats: all four payload contracts pass, then
+the returned format is the Bool validity format and the transport helper
+rejects it. Repeating the same loop with the primary's `payload_format` local
+preserves the original Float32 requested format and the same helper accepts
+it. All 16 cold assertions passed. The canonical two-line fix changes only
+that loop variable and its validation reference. It retains the payload
+contract, command guard, schema, shape and rate checks, and leaves the separate
+`capture_format` conversion helper unchanged.
+
+The reproducible evidence in the existing `standard-calibration-validation`
+directory is `registered-025-format-inspection-20261027.jl` and its successful
+`-cold.log`, plus `registered-025-format-shadow-20261027.jl` and `.log`.
+The first inspection log preserves a diagnostic-script syntax failure before
+the corrected cold run; it is not product evidence. The earlier source
+171-assertion Capture run predates the added payload-contract loop and cannot
+qualify the 0.2.25 source. The primary is running a fresh corrected-source
+Capture selector; this reviewer has not performed or attributed an optical
+rerun. No PipeWire core, GPU or physical device was used in this diagnosis.
+
+Closure added by the primary: the corrected source subsequently passed the
+same native Capture selector, 171/171. The final registered-only 0.2.26 package
+then built a fresh application and passed 171/171, with the regular graph and
+dependency manifest unchanged and no GPU loaded. Package/source-closure checks
+passed 328 assertions. See the adjacent verification record for logs, immutable
+tree/commit identities and scope. This integrated result is attributed to the
+primary, separately from the reviewer's 16 cold assertions. CO-10 is closed for
+the selected Classic software profile; the independent earlier Collect timeout
+and scientific campaign gates remain open.

@@ -119,6 +119,27 @@ end
             end
             @test_throws DimensionMismatch Observation.verify_product(zeros(Float32, resolution, resolution),
                 contracts["focal-image"])
+            graph_input(graph, Val(:uncorrected)) .=
+                reshape(Float32.(1:resolution^2), resolution, resolution) .* 1f-9
+            step_graph!(graph)
+            @test Observation.submit!(observation; generation=UInt64(1))
+            @test Observation.poll!(observation)
+            try
+                opd = copy(graph_output(graph, Val(:pupil_opd)))
+                Observation.form_products!(observation)
+                raw_focal = AdaptiveOpticsSim.Optics.intensity_values(
+                    AdaptiveOpticsSim.Optics.direct_imaging_output(observation.imaging))
+                @test observation.values == reverse(permutedims(raw_focal); dims=1)
+                piston = sum(Float64, opd[observation.pupil]) / count(observation.pupil)
+                raw_wavefront = map(opd, observation.pupil) do value, transmitting
+                    transmitting ? Float32((Float64(value) - piston) * 1e9) : NaN32
+                end
+                @test isequal(observation.wavefront, reverse(permutedims(raw_wavefront); dims=1))
+                @test observation.rms[1, 2] == Observation.pupil_rms_nm(opd, observation.pupil)
+                @test graph_output(graph, Val(:pupil_opd)) == opd
+            finally
+                Observation.release!(observation)
+            end
         finally
             Observation.close!(observation)
         end

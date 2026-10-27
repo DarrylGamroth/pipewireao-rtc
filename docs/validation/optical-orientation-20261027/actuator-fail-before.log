@@ -1,0 +1,109 @@
+ERROR: LoadError: Some tests did not pass: 12 passed, 8 failed, 0 errored, 0 broken.
+in expression starting at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:42
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57
+  Expression: (gui_row, gui_column) == ((n + 1) - aos_peak[2], aos_peak[1])
+   Evaluated: (118, 90) == (151, 118)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57
+  Expression: (gui_row, gui_column) == ((n + 1) - aos_peak[2], aos_peak[1])
+   Evaluated: (118, 146) == (95, 118)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57
+  Expression: (gui_row, gui_column) == ((n + 1) - aos_peak[2], aos_peak[1])
+   Evaluated: (90, 123) == (118, 90)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57
+  Expression: (gui_row, gui_column) == ((n + 1) - aos_peak[2], aos_peak[1])
+   Evaluated: (146, 123) == (118, 146)
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:57 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:66
+  Expression: (rows[1]).gui_row > (rows[2]).gui_row
+   Evaluated: 118 > 118
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:66 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:67
+  Expression: (rows[1]).gui_column == (rows[2]).gui_column
+   Evaluated: 90 == 146
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:67 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:70
+  Expression: (rows[3]).gui_column < (rows[4]).gui_column
+   Evaluated: 123 < 123
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:70 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+
+isolated actuator physical display orientation through actual diagnostic exporter: Test Failed at /home/dgamroth/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:71
+  Expression: (rows[3]).gui_row == (rows[4]).gui_row
+   Evaluated: 90 == 146
+  Stacktrace:
+   [1] top-level scope
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:43
+   [2] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [3] macro expansion
+     @ ~/.cache/pipewireao/gpi-operations-20261027/coordinate-inspection/isolated_actuator_oriented.jl:71 [inlined]
+   [4] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+Test Summary:                                                                     | Pass  Fail  Total  Time
+isolated actuator physical display orientation through actual diagnostic exporter |   12     8     20  3.2s
+RNG of the outermost testset: Random.Xoshiro(0x685f0ff68bf49538, 0x60668d9ab8e25265, 0x4eb7d2a8d1a3019f, 0xc0c9fcbfdb576d9b, 0x58afbf51ce2e93bf)

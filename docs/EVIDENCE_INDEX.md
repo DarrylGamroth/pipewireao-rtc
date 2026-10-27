@@ -7,13 +7,22 @@ separates bounded frame observation, native protective admission, reset availabi
 SIMD inspection and indicative timing from live deployment and qualification.
 Live policy remains monitor-only; automatic intervention thresholds are unvalidated.
 
+## Optical diagnostic orientation — 2026-10-27
+
+The [CPU regression and rollout record](validation/optical-orientation-20261027/README.md)
+covers physical-axis mapping for optional wavefront/focal images, preserving
+scientific arrays and controls. Real isolated-actuator fail-before/pass-after
+evidence is separate from managed replay and live deployment.
+
 ## Native initial calibration — 2026-10-27
 
 The [verification and review record](validation/calibration-owner-20261027/README.md)
 covers regular-graph projections, native action effects, transported probe
 adoption and correlated owned raw/WFS capture. Actual Classic rejection,
 reference restoration, cancellation and idle controller-loss fencing pass on a
-private CPU core. Accepted scientific acquisition and full-basis qualification
+private CPU core. The follow-up covers declared stationary-source selection,
+failed frozen-mask eligibility, bounded native Capture and exact FITS provenance.
+Accepted scientific acquisition, reliable repeated collection and full-basis qualification
 remain separate gates; no selected calibration or installed session changed.
 
 ## GPI2 optional pupil-flux and operator validation — 2026-10-27

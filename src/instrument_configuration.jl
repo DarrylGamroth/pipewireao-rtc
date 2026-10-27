@@ -233,9 +233,20 @@ function transform(::Val{:gaussian_width}, value, entry)
 end
 transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument settings transform $kind"))
 
-"Resolve profile and scalar settings into the existing AOS graph declaration schema."
-function graph_document(declaration, configured; calibration=false)
-    mode = calibration ? "calibration" : "production"
+"""
+    graph_document(declaration, configured; calibration=false, simulation_graph=...)
+
+Resolve profile and scalar settings into a declared AOS graph. The default is
+`production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
+An explicitly declared `internal-source` graph retains its own optical topology
+and normal component settings. Unknown selections reject before preparation.
+"""
+function graph_document(declaration, configured; calibration=false,
+        simulation_graph=calibration ? "calibration" : "production")
+    mode = simulation_graph
+    mode isa AbstractString && haskey(declaration.graphs,mode) ||
+        throw(ArgumentError("simulation graph is not declared"))
+    calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
     graph = deepcopy(declaration.graphs[mode])
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
@@ -278,9 +289,9 @@ function graph_document(declaration, configured; calibration=false)
             end
         end
     end
-    graph["name"] = calibration ? graph["name"] : graph["name"] * "_" * profile_name
+    graph["name"] = mode == "calibration" ? graph["name"] : graph["name"] * "_" * profile_name
     resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
-    calibration || apply_responses!(resolved, declaration, configured)
+    mode == "calibration" || apply_responses!(resolved, declaration, configured)
     return resolved
 end
 

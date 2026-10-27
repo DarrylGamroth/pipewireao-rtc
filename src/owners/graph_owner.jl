@@ -122,8 +122,8 @@ function bindings(path::AbstractString,document)
     return result
 end
 
-"""Validate every declaration before reading FITS, then retain owned logical arrays."""
-function prepare_bindings(entries, formats; check=()->nothing)
+"""Validate every declaration before reading FITS; retain arrays and their snapshot provenance."""
+function prepare_artifacts(entries, formats; check=()->nothing)
     total = 0
     ports = Set{Symbol}()
     for entry in entries
@@ -149,7 +149,11 @@ function prepare_bindings(entries, formats; check=()->nothing)
         push!(prepared, Artifacts.prepare(entry.source, format.element_type, format.shape; check))
     end
     check()
-    return [entry.port => artifact.data for (entry, artifact) in zip(entries, prepared)]
+    return [entry.port => artifact for (entry, artifact) in zip(entries, prepared)]
+end
+
+function prepare_bindings(entries, formats; check=()->nothing)
+    return [port => artifact.data for (port, artifact) in prepare_artifacts(entries, formats; check)]
 end
 
 function run_owner end

@@ -1,0 +1,124 @@
+{
+  "base": "8c6f1f0",
+  "commit": "069da605d22c2e83040e4008b7822677e40dfdb4",
+  "worktree": "/home/dgamroth/workspaces/codex/worktrees/rtc-wavefront-orientation-20261027",
+  "branch": "codex/wavefront-orientation-20261027",
+  "environment": "/home/dgamroth/.cache/pipewireao/gpi-registered-refresh-20261027/environment",
+  "packages": {
+    "AdaptiveOpticsSim": {
+      "deps": [
+        "AbstractFFTs",
+        "AdaptiveOpticsCalibration",
+        "FFTW",
+        "FixedSizeArrays",
+        "ForwardDiff",
+        "KernelAbstractions",
+        "LinearAlgebra",
+        "Logging",
+        "Random",
+        "SparseArrays",
+        "SpecialFunctions",
+        "Statistics"
+      ],
+      "git-tree-sha1": "dbbb910dc0e1dce0644b6101ff9d10ac30f2a43a",
+      "registries": "DarrylGamrothRegistry",
+      "uuid": "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
+      "version": "0.3.2",
+      "extensions": {
+        "AdaptiveOpticsSimAMDGPUExt": "AMDGPU",
+        "AdaptiveOpticsSimAppleAccelerateExt": "AppleAccelerate",
+        "AdaptiveOpticsSimCUDAExt": "CUDA",
+        "AdaptiveOpticsSimJSON3Ext": "JSON3",
+        "AdaptiveOpticsSimMetalExt": "Metal",
+        "AdaptiveOpticsSimYAMLExt": "YAML"
+      },
+      "weakdeps": {
+        "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+        "AppleAccelerate": "13e28ba4-7ad8-5781-acae-3021b1ed3924",
+        "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+        "JSON3": "0f8b85d8-7281-11e9-16c2-39a750bddbf1",
+        "Metal": "dde4c033-4e86-420c-a63e-0dd931031962",
+        "YAML": "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+      }
+    },
+    "AdaptiveOpticsSimPipeWireHIL": {
+      "deps": [
+        "AdaptiveOpticsSim",
+        "PipeWireAO",
+        "UUIDs"
+      ],
+      "git-tree-sha1": "c7e680c89acbfc284f171589d070282be84a2c6a",
+      "registries": "DarrylGamrothRegistry",
+      "uuid": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+      "version": "0.2.7"
+    },
+    "PipeWireAORTC": {
+      "deps": [
+        "DBInterface",
+        "FITSIO",
+        "Hsm",
+        "Interpolations",
+        "JSON",
+        "LinearAlgebra",
+        "PipeWireAO",
+        "SHA",
+        "SQLite",
+        "Sockets",
+        "TOML",
+        "ThreadPinning",
+        "UUIDs",
+        "YAML"
+      ],
+      "git-tree-sha1": "ff22af2c3563fa8295719b6707d0b8dd69123632",
+      "registries": "DarrylGamrothRegistry",
+      "uuid": "a3e2c7da-f73f-4284-8482-36ac422b34e6",
+      "version": "0.2.26",
+      "extensions": {
+        "PipeWireAORTCAOSExt": [
+          "AdaptiveOpticsSim",
+          "AdaptiveOpticsSimPipeWireHIL"
+        ],
+        "PipeWireAORTCCalibrationExt": [
+          "FilterGraphAlgorithms",
+          "AdaptiveOpticsSim",
+          "AdaptiveOpticsSimPipeWireHIL",
+          "AdaptiveOpticsCalibration",
+          "FilterGraphIsland",
+          "FilterGraphPipeWire",
+          "JuliaFilterGraph"
+        ],
+        "PipeWireAORTCGraphExt": [
+          "FilterGraphAlgorithms",
+          "FilterGraphIsland",
+          "FilterGraphPipeWire",
+          "JuliaFilterGraph"
+        ]
+      },
+      "weakdeps": {
+        "AMDGPU": "21141c5a-9bdb-4563-92ae-f87d6854732e",
+        "AdaptiveOpticsCalibration": "3c8b5851-926e-4ebb-af30-f8544b98d45f",
+        "AdaptiveOpticsSim": "002fb5eb-ad68-44a0-adbe-b299bfc2febc",
+        "AdaptiveOpticsSimPipeWireHIL": "355e2bce-7765-4934-ac1c-873e1c98ec3d",
+        "CUDA": "052768ef-5323-5732-b1bb-66c8b64840ba",
+        "FilterGraphAlgorithms": "8914fa96-dfe6-4d3c-aced-40e6da1f6420",
+        "FilterGraphIsland": "245ec3f5-bd83-45fe-abab-efac21027a22",
+        "FilterGraphPipeWire": "0366a544-13dd-48a3-a3d6-bd2ba4547294",
+        "JuliaFilterGraph": "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+      }
+    },
+    "PipeWireAO": {
+      "deps": [
+        "PipeWireAO_jll",
+        "UnsafeArrays"
+      ],
+      "git-tree-sha1": "4e0a7b98d62823cbda0ce98510c41a83dcd21241",
+      "registries": "DarrylGamrothRegistry",
+      "uuid": "5d815c25-fdf3-4508-8205-db8be38ea5d0",
+      "version": "0.6.19"
+    }
+  },
+  "candidate_source_sha256": "211bcf58ee8bd4e195acfbcfdf7cb28fcf49b4ffe7570329b31f133a086ed9c6",
+  "focused_test_sha256": "baa0a7e549220a8cf200399d1332b42507d0e7e61ca656b193c5ba4a01695dec",
+  "actuator_probe_sha256": "b7dedd231e231986387fa4ce9fd6bf688ff4804e8933b35b0ca207fb3869a8c4",
+  "scope": "Disconnected CPU software validation only; no live controls, daemon, dependency or release changes."
+}

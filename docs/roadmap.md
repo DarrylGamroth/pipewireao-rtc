@@ -12,11 +12,11 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### GPI2 operational validation and VDM controls — 2026-10-27
+### GPI2 loop controls and supervision — 2026-10-27
 
 Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
-Existing live GPI2 uses RTC 0.2.22; source main has the separately validated
-0.2.24 calibration/readiness changes. Preserve the current calibration, gains,
+The live application has been refreshed to registered RTC 0.2.26 and FGA 0.8.4.
+The combined supervision/orientation rollout is being qualified. Preserve the calibration, gains,
 stroke limits and CUDA plant while qualifying changes in isolated applications.
 The operator selected monitor-only supervision for the live deployment;
 automatic intervention is tested only in an isolated simulation until thresholds
@@ -38,6 +38,26 @@ have application validation.
 
 Record exact dependency/configuration identities and measured limitations in a
 dated evidence record, then merge only verified changes and clean task worktrees.
+
+### Optical diagnostic orientation — 2026-10-27
+
+The real isolated-actuator CPU probe confirms that copying AOS `[x,y]` optical
+arrays into row/column images swapped physical axes on screen. The 0.2.28
+patch maps both optional pupil-wavefront and focal-plane images to +x right,
++y up. Raw scientific arrays, pupil RMS, camera frames, control/calibration
+ordering, gains and limits are preserved. Focused bounds-checked and actual
+small SH/Pyramid product checks pass; registered-consumer and installed rollout
+evidence is tracked in the [orientation record](validation/optical-orientation-20261027/README.md).
+
+### Generated-file identification — 2026-10-27
+
+RTC 0.2.27 retains a Generated header in YAML and native SPA-JSON output,
+including when callers supply custom provenance. Newly written calibration and
+configuration-store FITS files carry native ORIGIN and COMMENT cards. Imported
+FITS bytes remain unchanged. Strict JSON and fixed binary payloads retain their
+required format and use their owning manifest for provenance. The software suite
+passed 5,798 assertions; subsequent focused FITS checks passed 68 calibration and
+53 configuration-store assertions. These checks use no GPU or instrument hardware.
 
 ### Native initial calibration integration — 2026-10-27
 
@@ -61,8 +81,18 @@ deadline. Twenty repaired readiness trials need no diagnostic wake. Published
 RTC 0.2.24/HIL 0.2.7 subsequently passed 237 combined registered-only assertions,
 including 27 transport, 62 registration and 106 actual optical safety checks.
 The linked verification record preserves the failed gate and corrected harness
-assembly separately. Internal-source eligibility and positive full-basis
-acceptance remain the next scientific gates.
+assembly separately. The subsequent internal-source follow-up retains the
+existing magnitude-2 source and normal detector settings. None of eleven
+transported stationary-source frames met the frozen eligibility policy; no
+threshold or mask was relaxed. Cold graph selection and bounded native Capture
+are implemented as prerequisites for automatic dark/lamp training; the latter
+passed 171 actual private-core assertions, including restoration and shutdown.
+Registered RTC 0.2.26 repeats those 171 checks on a fresh built application.
+It supersedes 0.2.25's capture-preparation scope defect (CO-10), caught before
+any command or exposure; both the failed gate and correction remain recorded.
+An intermittent second-exposure timeout remains under investigation; passing
+retries do not establish reliable acquisition. Internal-source eligibility and
+positive full-basis acceptance remain separate scientific gates.
 
 ### Protective correction recovery — 2026-10-27
 
