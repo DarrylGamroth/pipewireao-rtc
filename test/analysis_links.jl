@@ -1,7 +1,89 @@
 # CPU-only numerical-extension test; no server or services needed.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
 const E=Base.get_extension(PipeWireAORTC,:PipeWireAORTCGraphExt)
+
+function prepared_analysis_flux_graph()
+    mktempdir() do root
+        path = joinpath(root, "flux.conf")
+        write(path, """
+            filter.graph = {
+                nodes = [
+                    { type = ndarray name = flux label = pyramid-pupil-flux-u16-f64
+                      config = { image_size = [ 4 6 ] pupil_size = [ 2 3 ]
+                        pupil_origins = [ [ 0 0 ] [ 0 3 ] [ 2 0 ] [ 2 3 ] ] } }
+                ]
+                links = []
+                inputs = [ "flux:raw" ]
+                outputs = [ "flux:pupil-flux" ]
+            }
+            """)
+        options = FilterGraphIsland.parse_arguments(["--graph", path, "--check"])
+        return FilterGraphIsland.prepare_service_graph(options;
+            declarations=(FilterGraphAlgorithms.PyramidPupilFluxU16F64,))
+    end
+end
+
+function analysis_native_buffer(data; header=nothing, output=false)
+    native = PipeWireAO.LibPipeWire
+    storage = [native.pw_ndarray_filter_buffer(
+        ntuple(_ -> UInt8(0), sizeof(native.pw_ndarray_filter_buffer)),)]
+    header_metadata = native.PW_NDARRAY_FILTER_METADATA_HEADER
+    GC.@preserve storage data begin
+        buffer = pointer(storage)
+        unsafe_store!(buffer.struct_size, UInt32(sizeof(native.pw_ndarray_filter_buffer)))
+        unsafe_store!(buffer.flags, output ?
+            native.PW_NDARRAY_FILTER_BUFFER_FLAG_OUTPUT_UNAVAILABLE : UInt32(0))
+        unsafe_store!(buffer.data, Ptr{Cvoid}(pointer(data)))
+        unsafe_store!(buffer.size, UInt32(sizeof(eltype(data)) * length(data)))
+        unsafe_store!(buffer.capacity, UInt32(sizeof(eltype(data)) * length(data)))
+        unsafe_store!(buffer.metadata_available, header_metadata)
+        unsafe_store!(buffer.metadata_valid, isnothing(header) ? UInt32(0) : header_metadata)
+        if !isnothing(header)
+            unsafe_store!(buffer.header, native.spa_meta_header(
+                header.flags, header.offset, header.pts, header.dts_offset, header.sequence))
+        end
+    end
+    return storage
+end
+
+@testset "single-input analysis keeps the ordinary graph boundary and Header" begin
+    graph = prepared_analysis_flux_graph()
+    try
+        input_owner = E.analysis_input_owner(graph)
+        @test input_owner === graph
+        @test JuliaFilterGraph.output_metadata_source_inputs(input_owner) == (1,)
+        @test !(input_owner isa JuliaFilterGraph.PreparedSynchronizedInputs)
+
+        node = FilterGraphPipeWire.PipeWireNode(input_owner;
+            name="analysis-single-input-test", rate=500//1, connect=false)
+        try
+            FilterGraphPipeWire._prepare_owner(node.owner)
+            @test node.owner.output_metadata_source_inputs == (1,)
+            @test node.owner.deferred_inputs === nothing
+
+            raw = reshape(UInt16.(1:24), 4, 6)
+            pupil_flux = zeros(Float64, 4)
+            header = PipeWireAO.BufferHeader(PipeWireAO.SPA.META_HEADER_FLAG_DISCONT,
+                UInt32(7), Int64(123456), Int64(0), UInt64(42))
+            input_storage = analysis_native_buffer(raw; header)
+            output_storage = analysis_native_buffer(pupil_flux; output=true)
+            GC.@preserve raw pupil_flux input_storage output_storage begin
+                inputs = PipeWireAO.NdArrayFilterBuffers{false}(
+                    Ptr{Cvoid}(pointer(input_storage)), UInt32(1))
+                outputs = PipeWireAO.NdArrayFilterBuffers{true}(
+                    Ptr{Cvoid}(pointer(output_storage)), UInt32(1))
+                FilterGraphPipeWire._process_graph_buffers!(node.owner, nothing, inputs, outputs)
+                @test pupil_flux == Float64[33, 105, 45, 117]
+                @test PipeWireAO.buffer_header(outputs[1]) == header
+            end
+        finally
+            close(node)
+        end
+    finally
+        FilterGraphIsland.close_execution(graph)
+    end
+end
 
 @testset "independent optional link callbacks" begin
     states=[Threads.Atomic{Int}(Int(PipeWireAO.LINK_STATE_INIT)) for _ in 1:4]
