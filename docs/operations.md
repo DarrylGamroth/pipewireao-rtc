@@ -1287,3 +1287,84 @@ Quit uncertainty without retry, GUI exit during an accepted job, and exact
 replacement locator attachment. Demonstrate changed atmosphere values in an
 actual managed simulator on the selected CUDA host. Keep software/lifecycle,
 numerical and wall-time qualification distinct.
+
+## RTC-DEV-032 — Protective correction recovery
+
+For explicitly configured simulated complete-frame CPU graph owners, protective
+recovery MUST remain distinct from ordinary correction hold/resume. The headless
+RTC MUST admit recovery against the exact current session and scientific-owner
+incarnation, with at most one pending operation and finite adoption budgets.
+An invalid, unsupported, busy or stale request MUST be refused before effects.
+The owner MUST stage bounded owned control values and apply scientific recovery
+at its existing serialized processing boundary, without adding a scheduler.
+
+Verification intent (informative): exercise admission while running/stopped,
+competing requests, malformed scope, unsupported execution, replaced owners,
+missing/stale evidence, timeout and unknown outcomes. Existing ordinary nonzero
+hold/resume results must remain unchanged. Physical-device authority and GPU
+controller recovery are outside this selected profile.
+
+## RTC-DEV-033 — Correction-history reconciliation
+
+Protective recovery MUST open the selected controller and invalidate its obsolete
+committed/candidate correction, participating temporal-filter histories and
+delayed constraint-feedback history as one serialized owner operation. It MUST
+preserve calibration, gains, configured reference/offset parameters, acquisition,
+conditioner committed current and its limits, slew, quantization/RNG continuity
+and declared update cadence. Whole-session Reset MUST NOT substitute for this
+operation. A declared unsupported participant MUST be refused before effects.
+
+Verification intent (informative): seed saturated nonzero correction, temporal
+history and delayed clipping feedback; recover toward a nonzero command
+reference; assert every conditioned step respects the unchanged slew/rate
+contract, then close on zero residual and prove no obsolete correction returns.
+Check warmed adoption/processing allocation independently of numerical results.
+
+## RTC-DEV-034 — Recovery reference evidence and closure
+
+Recovery application MUST NOT establish that a command reference has been
+reached or that a physical device has settled. The scientific owner MUST retain
+closure inhibition until fresh, successful, matching-generation command/reference
+and controller-coherence evidence is available. Rejected/partial frames and
+cached pre-recovery observations MUST NOT establish that evidence. Scientific
+updates that could invalidate a recovery reference MUST be refused while its
+inhibition is retained. Releasing inhibition MUST leave correction open.
+Reclosing MUST require explicit intent and fresh readiness; recovery completion,
+history restoration and supervisor rearm MUST NOT close correction automatically.
+
+Verification intent (informative): refuse early, stale, foreign, repeated and
+failed-frame release; verify conditioned reference arrival and explicit release
+while open, followed by a separately confirmed close. Do not infer mechanical
+settling from command readback.
+
+## RTC-DEV-035 — Recovery sequencing and failure
+
+The recovery coordinator MUST serialize opening, scoped recovery, reference
+verification and explicit reclosure, using owner/token/generation-bound
+observations. Hierarchical states MAY share admission and fault handling.
+Entry/exit behaviors MUST NOT issue or replay scientific commands. Timeout,
+cancellation, disappearance, contradictory observations or uncertain effects
+MUST latch a non-success outcome and prevent automatic continuation. History
+MUST NOT restore an in-flight operation, numerical state or a faulted Closed
+state. A replacement owner MUST require fresh qualification.
+
+Verification intent (informative): deterministic-clock tests cover each pending
+phase, cancellation, stale observations, duplicate callbacks, replacement and
+one-shot effects, including no close before successful post-release validation.
+
+## RTC-DEV-036 — Optional clipping supervision
+
+Clipping supervision MUST be optional, bounded and non-gating. It MUST use
+explicit fraction thresholds, persistence, hysteresis and freshness limits;
+missing, malformed, stale or wrong-owner feedback MUST NOT count as zero
+clipping or establish recovery. The default policy MUST be monitor-only.
+Configured protective actions MUST enter the same admitted recovery/hold path
+as operator intent, never write actuators directly. A trip MUST be latched and
+MUST NOT repeatedly issue effects. Rearm MUST require explicit intent and fresh
+clear evidence without replaying a previous observation. No rule may request
+automatic reclosure.
+
+Verification intent (informative): test threshold boundaries, persistence,
+hysteresis, gaps, missing/repeated samples, owner replacement, one-shot trips
+and explicit rearm. Numeric intervention thresholds require separate application
+validation before automatic action is enabled.

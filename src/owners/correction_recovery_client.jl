@@ -174,10 +174,20 @@ function generation_for(reply::RecoveryRunner.Completion, node::String)
 end
 function write_property!(operation::Operation, name::String, value::RecoveryRunner.RunnerScalar;
         deadline::Float64, check)
-    running!(operation.channel; deadline, check)
+    check_timeout!(operation.coordinator)
+    operation.coordinator.failure === nothing ||
+        throw(NativeControlClient.UnknownOutcome(string(operation.coordinator.failure)))
+    phase_deadline = operation.coordinator.pending_since_ns / 1e9 + operation.coordinator.timeout_ns / 1e9
+    effect_deadline = min(deadline, phase_deadline)
+    running!(operation.channel; deadline=effect_deadline, check)
+    # A successful readiness roundtrip can still exhaust the phase budget.
+    # Recheck immediately before handing an effect to the native client.
+    check_timeout!(operation.coordinator)
+    operation.coordinator.failure === nothing ||
+        throw(NativeControlClient.UnknownOutcome(string(operation.coordinator.failure)))
     reply = native_request!(operation.channel,
         RecoveryRunner.RunnerCommand(:properties_set, operation.graph,
-            Dict{String,RecoveryRunner.RunnerScalar}(name => value)); deadline, check)
+            Dict{String,RecoveryRunner.RunnerScalar}(name => value)); deadline=effect_deadline, check)
     reply.result.details.graph == operation.graph || throw(ArgumentError("native staging graph changed"))
     return reply
 end
@@ -236,7 +246,7 @@ function protective_open!(transport::RecoveryTransport, graph::AbstractString;
     channel = RecoveryChannel(transport, transport_instance(transport), transport_initial_token(transport))
     running!(channel; deadline, check)
     initial = native_snapshot!(channel, String(graph); deadline, check)
-    initial.recovery_state in (:idle, :applied, :released) &&
+    initial.recovery_state in (:idle, :released) && !initial.inhibited &&
         initial.requested_generation == initial.active_generation ||
         throw(ArgumentError("another recovery transaction is pending"))
     timeout = timeout_ms === nothing ? Int(initial.reference_timeout_ns ÷ UInt64(1_000_000)) : timeout_ms

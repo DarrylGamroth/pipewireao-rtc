@@ -115,3 +115,76 @@ check (function (_, _, values, updates)
     values [KEY .. suffix] = nil
   end
 end)
+
+-- Protective operations use the same exact owner, running and generation fences.
+local RECOVERY = "pipewireao-recovery:"
+local function recovery_case (release, mutate, expected)
+  check (function (state, args, values, updates, declarations)
+    for key in pairs (updates) do updates [key] = nil end
+    values [RECOVERY .. "version"] = Pod.Int (1)
+    values [RECOVERY .. "controller"] = Pod.String ("controller")
+    values [RECOVERY .. "close-guarded"] = Pod.Boolean (false)
+    values [RECOVERY .. "requested-generation"] = Pod.Long (2)
+    values [RECOVERY .. "active-generation"] = Pod.Long (2)
+    values [RECOVERY .. "recovery-generation"] = Pod.Long (1)
+    values [RECOVERY .. "request-token"] = Pod.Long (9)
+    values [RECOVERY .. "closure-inhibited"] = Pod.Boolean (release)
+    values [RECOVERY .. "reference-reached"] = Pod.Boolean (release)
+    values [RECOVERY .. "observation-sequence"] = Pod.Long (release and 4 or 0)
+    values [RECOVERY .. "state"] = Pod.String (release and "applied" or "released")
+    updates [RECOVERY .. (release and "release-token" or "request-token")] = Pod.Long (release and 1 or 10)
+    if mutate then mutate (state, args, values, updates, declarations) end
+  end, expected)
+end
+recovery_case (false)
+recovery_case (true)
+recovery_case (false, function (state) state.lifecycle = 3 end,
+    "Correction control requires a running session")
+recovery_case (false, function (_, args) args.owners [1] ["bootstrap-instance"] = "9" end,
+    "Correction graph owner incarnation changed")
+recovery_case (false, function (_, _, values) values [RECOVERY .. "active-generation"] = Pod.Long (1) end,
+    "Recovery adoption is pending")
+recovery_case (false, function (_, _, _, updates) updates [RECOVERY .. "request-token"] = Pod.Long (9) end,
+    "Recovery request token must advance")
+recovery_case (false, function (_, _, _, updates) updates ["controller:gain"] = Pod.Float (0.2) end,
+    "Recovery requires one unmixed control request")
+recovery_case (false, function (_, _, values) values [KEY .. ".fault"] = Pod.String ("fault") end,
+    "Correction fault is latched")
+recovery_case (true, function (_, _, values) values [RECOVERY .. "reference-reached"] = Pod.Boolean (false) end,
+    "Recovery command reference is not confirmed")
+recovery_case (true, function (_, _, values) values [RECOVERY .. "observation-sequence"] = Pod.Long (0) end,
+    "Recovery command reference is not confirmed")
+recovery_case (true, function (_, _, _, updates) updates [RECOVERY .. "release-token"] = Pod.Long (2) end,
+    "Recovery release generation mismatch")
+recovery_case (true, function (_, _, values) values [TARGET] = Pod.Boolean (true); values [KEY .. ".state"] = Pod.String ("Closed"); values [KEY .. ".requested"] = Pod.Boolean (true) end,
+    "Recovery release requires an inhibited open controller")
+recovery_case (true, function (_, _, values) values [RECOVERY .. "state"] = Pod.String ("release_refused") end)
+recovery_case (true, function (_, _, _, updates)
+  updates [RECOVERY .. "release-token"] = nil
+  updates ["controller:gain"] = Pod.Float (0.2)
+end, "Protective recovery inhibits scientific updates")
+local inhibited = { [RECOVERY .. "version"] = Pod.Int (1),
+    [RECOVERY .. "closure-inhibited"] = Pod.Boolean (true) }
+assert (not pcall (correction.check_parameter, inhibited))
+inhibited [RECOVERY .. "closure-inhibited"] = Pod.Boolean (false)
+assert (pcall (correction.check_parameter, inhibited))
+assert (pcall (correction.check_parameter, {}))
+
+local function guarded_close (_, _, values, updates)
+  updates [RECOVERY .. "request-token"] = nil
+  updates [TARGET] = Pod.Boolean (true)
+  values [RECOVERY .. "close-guarded"] = Pod.Boolean (true)
+  values [RECOVERY .. "reference-reached"] = Pod.Boolean (true)
+  values [RECOVERY .. "observation-sequence"] = Pod.Long (4)
+end
+recovery_case (false, guarded_close)
+recovery_case (false, function (...)
+  guarded_close (...)
+  local values = select (3, ...)
+  values [RECOVERY .. "reference-reached"] = Pod.Boolean (false)
+end, "Recovery command reference is not confirmed")
+recovery_case (false, function (...)
+  guarded_close (...)
+  local values = select (3, ...)
+  values [RECOVERY .. "active-generation"] = Pod.Long (1)
+end, "Recovery command reference is not confirmed")

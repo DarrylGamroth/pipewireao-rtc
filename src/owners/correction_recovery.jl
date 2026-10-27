@@ -204,9 +204,11 @@ end
     return nothing
 end
 
-function clock_ns(clock)
-    now = clock()
-    now isa Integer && !(now isa Bool) && 0 <= now <= typemax(UInt64) ||
+clock_ns(clock) = clock_value(clock())
+clock_value(_) = throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
+clock_value(::Bool) = throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
+function clock_value(now::Integer)
+    0 <= now <= typemax(UInt64) ||
         throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
     return UInt64(now)
 end
@@ -302,10 +304,16 @@ function observe_loop!(sm::Coordinator, observation::LoopObservation)
     current = state(sm)
     if current in (:RestoringReference, :Verifying, :Holding, :Releasing)
         observation.active_generation < sm.loop_generation && return nothing
-        observation.requested_generation == observation.active_generation &&
-            !observation.closed || return failed!(sm, :unexpected_loop_change)
+        expected = sm.expected_loop_generation
+        allowed_generation = expected == 0 ? sm.loop_generation : expected
+        !observation.closed && observation.requested_generation == allowed_generation &&
+            sm.loop_generation <= observation.active_generation <= allowed_generation ||
+            return failed!(sm, :unexpected_loop_change)
         sm.serial = observation.serial
-        sm.loop_generation = observation.active_generation
+        if observation.active_generation == allowed_generation
+            sm.loop_generation = allowed_generation
+            sm.expected_loop_generation = 0
+        end
         return nothing
     end
     current in (:Opening, :Closing) || return nothing
@@ -329,14 +337,18 @@ function observe_loop!(sm::Coordinator, observation::LoopObservation)
     return nothing
 end
 
-function recovery_staged!(sm::Coordinator, effect::StageRecovery, generation::UInt64)
+function recovery_staged!(sm::Coordinator, effect::StageRecovery, generation::UInt64;
+        loop_generation::UInt64)
     check_timeout!(sm)
     sm.failure === nothing && effect.owner_instance == sm.owner_instance &&
         effect.token == sm.token && state(sm) === :RestoringReference || return nothing
-    sm.recovery_generation == generation && generation > 0 && return nothing
+    sm.recovery_generation == generation && generation > 0 &&
+        sm.expected_loop_generation == loop_generation && return nothing
+    loop_generation > sm.loop_generation || return failed!(sm, :invalid_loop_generation)
     sm.recovery_generation == 0 && generation > 0 ||
         return failed!(sm, :invalid_recovery_generation)
     sm.recovery_generation = generation
+    sm.expected_loop_generation = loop_generation
     return nothing
 end
 
@@ -359,7 +371,7 @@ end
 
 function observe_reference!(sm::Coordinator, observation::ReferenceObservation)
     matches(sm, observation) || return nothing
-    state(sm) in (:Verifying, :Holding) || return nothing
+    state(sm) in (:Verifying, :Holding, :Releasing) || return nothing
     observation.generation == sm.recovery_generation || return nothing
     sm.serial = observation.serial
     if observation.reference_reached && observation.coherent && observation.ready
@@ -368,6 +380,7 @@ function observe_reference!(sm::Coordinator, observation::ReferenceObservation)
         state(sm) === :Verifying && Hsm.dispatch!(sm, :Verified, nothing)
     else
         sm.reference_serial = 0
+        state(sm) === :Releasing && return failed!(sm, :release_prerequisites_changed)
     end
     return nothing
 end
@@ -421,5 +434,7 @@ function owner_replaced!(sm::Coordinator, owner_instance::Int64)
     owner_instance == sm.owner_instance || failed!(sm, :owner_replaced)
     return nothing
 end
+
+include("correction_recovery_client.jl")
 
 end

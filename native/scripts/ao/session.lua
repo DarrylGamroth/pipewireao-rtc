@@ -448,7 +448,7 @@ local function property_update (operation, name, transaction)
   end))
 end
 
-local function parameter_update (operation, name, fields)
+local function parameter_update_admitted (operation, name, fields)
   local inlet = control.scalar (fields [2], "String")
   local declaration
   for _, source in ipairs (spec.sources) do
@@ -476,6 +476,16 @@ local function parameter_update (operation, name, fields)
     control.scalar (result [6], "String")
     -- Transport submission is not proof of graph parameter adoption.
     complete (operation, 6, Pod.Struct { name, inlet, Pod.None (), Pod.Boolean (false) })
+  end))
+end
+
+local function parameter_update (operation, name, fields)
+  local node = graph (name)
+  effect (operation, owner.node_params, node, operation.deadline,
+      guarded (operation, function (values, error)
+    assert (values and not error, error or "Property readback missing")
+    correction.check_parameter (values)
+    parameter_update_admitted (operation, name, fields)
   end))
 end
 

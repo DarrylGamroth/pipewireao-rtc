@@ -3,9 +3,6 @@ using Test, PipeWireAORTC
 const CR = PipeWireAORTC.CorrectionRecovery
 const Runner = PipeWireAORTC.NativeRunnerCodec
 const Envelope = PipeWireAORTC.NativeControlCodec
-if !isdefined(CR, :Operation)
-    Base.include(CR, joinpath(@__DIR__, "../src/owners/correction_recovery_client.jl"))
-end
 
 mutable struct ScriptedTransport <: CR.RecoveryTransport
     token::Int64
@@ -56,7 +53,16 @@ function CR.request_native!(t::ScriptedTransport, command::Runner.RunnerCommand;
     t.token += 1
     return respond!(t, command)
 end
-respond!(t, command::Runner.RunnerCommand{:status}) = result(t, command, (; running=true))
+function respond!(t, command::Runner.RunnerCommand{:status})
+    slow_open = t.mode === :slow_open_status && t.recovery_state === :idle && t.phase_polls > 0
+    slow_close = t.mode === :slow_close_status && t.recovery_state === :released
+    if slow_open || slow_close
+        # Readiness succeeds after the phase's 100 ms budget, while the caller's
+        # absolute deadline still has time. This must not authorize a late write.
+        t.now_ns += UInt64(200_000_000)
+    end
+    return result(t, command, (; running=true))
+end
 function respond!(t, command::Runner.RunnerCommand{:properties_set})
     graph, properties = command.args
     name, value = only(properties)
@@ -235,5 +241,24 @@ end
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test length(writes(t, "pipewireao-recovery:request-token")) == 1
     @test length(writes(t, "correction:closed")) == 1
+end
+
+@testset "Slow successful readiness cannot issue an expired phase effect" begin
+    opening = ScriptedTransport(; mode=:slow_open_status)
+    failure = failure_of(() -> CR.protective_open!(opening, "science"; deadline=2.0))
+    @test CR.state(failure.operation.coordinator) === :Unverified
+    @test isempty(opening.writes)
+    @test opening.now_ns < 2_000_000_000
+
+    closing = ScriptedTransport()
+    operation = CR.protective_open!(closing, "science"; deadline=2.0)
+    closing.mode = :slow_close_status
+    failure = failure_of(() -> CR.resume!(operation; deadline=2.0))
+    @test failure.operation === operation
+    @test CR.state(operation.coordinator) === :Unverified
+    @test length(writes(closing, "pipewireao-recovery:release-token")) == 1
+    @test length(writes(closing, "correction:closed")) == 1
+    @test only(writes(closing, "correction:closed")).second.value === false
+    @test closing.now_ns < 2_000_000_000
 end
 end

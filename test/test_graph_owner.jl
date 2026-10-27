@@ -12,8 +12,9 @@ end
     argv = ["--bootstrap-node", "rtc.bootstrap.graph", "--bootstrap-instance=7",
         "--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control",
         "--fits-bindings", "bindings.conf"]
-    binding, graph, fits, correction_properties, timeout_ms = GraphOwner.arguments(argv)
+    binding, graph, fits, correction_properties, timeout_ms, recovery_nodes = GraphOwner.arguments(argv)
     @test isempty(correction_properties)
+    @test isempty(recovery_nodes)
     @test timeout_ms == 5000
     @test binding == (; remote="/tmp/rtc-private", bootstrap_node="rtc.bootstrap.graph", bootstrap_instance=7)
     @test graph == ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
@@ -22,6 +23,17 @@ end
     @test with_loop[4] == ["controller:closed"]
     @test with_loop[5] == 5000
     @test with_loop[2] == graph
+    recovery = GraphOwner.arguments([argv; "--correction-property=controller:closed";
+        "--recovery-node=temporal"; "--recovery-node"; "command"])
+    @test recovery[6] == ["temporal", "command"]
+    @test recovery[2] == graph
+    for extra in (["--recovery-node=command"],
+            ["--correction-property=controller:closed", "--recovery-node=controller"],
+            ["--correction-property=controller:closed", "--recovery-node=bad/name"],
+            ["--correction-property=controller:closed", "--recovery-node=x", "--recovery-node=x"],
+            ["--correction-property=a:closed", "--correction-property=b:closed", "--recovery-node=x"])
+        @test_throws ArgumentError GraphOwner.arguments([argv; extra])
+    end
     timed = GraphOwner.arguments([argv; "--correction-property=controller:closed";
         "--correction-timeout-ms"; "2000"])
     @test timed[5] == 2000

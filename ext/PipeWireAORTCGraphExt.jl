@@ -121,7 +121,11 @@ function run_prepared(options, runtime, graph)
             timeout_ms=options.correction_timeout_ms)
     observation = isnothing(observer) ? (;) : (; property_observer=observer,
         property_info=PipeWireAORTC.CorrectionLoops.property_info(observer), property_getter=observer)
-    common = (; name=options.name, remote=options.remote, rate=options.rate,
+    recovery = isempty(options.recovery_nodes) ? (;) :
+        (; recovery=(controller=Symbol(first(split(only(correction_properties), ':'))),
+            participants=Tuple(Symbol.(options.recovery_nodes)),
+            reference_timeout_ms=options.correction_timeout_ms))
+    common = (; recovery..., name=options.name, remote=options.remote, rate=options.rate,
         connect=false, run_control=options.session_run_control,
         acquisition_version=options.acquisition_version)
     node = isnothing(options.capture_backend) ?

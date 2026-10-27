@@ -16,6 +16,7 @@ function arguments(arguments)
     values = Dict{String,String}()
     graph = String[]
     correction_properties = String[]
+    recovery_nodes = String[]
     forbidden = ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
         "--control-request", "--control-reply", "--check")
     index = 1
@@ -24,8 +25,8 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms")
-            key == "--correction-property" || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node")
+            key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
             else
@@ -34,7 +35,12 @@ function arguments(arguments)
                 arguments[index]
             end
             isempty(value) && throw(ArgumentError("$key must not be empty"))
-            if key == "--correction-property"
+            if key == "--recovery-node"
+                occursin(r"^[a-zA-Z0-9_.-]{1,128}$", value) ||
+                    throw(ArgumentError("invalid recovery node name"))
+                value in recovery_nodes && throw(ArgumentError("duplicate recovery node $value"))
+                push!(recovery_nodes, value)
+            elseif key == "--correction-property"
                 terms = split(value, ':'; keepempty=true)
                 length(terms) == 2 && all(!isempty, terms) && !occursin('\0', value) ||
                     throw(ArgumentError("correction property requires NODE:PROPERTY"))
@@ -63,7 +69,13 @@ function arguments(arguments)
         throw(ArgumentError("correction timeout must be 1–60000 milliseconds"))
     haskey(values, "--correction-timeout-ms") && isempty(correction_properties) &&
         throw(ArgumentError("correction timeout requires a declared correction property"))
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms
+    if !isempty(recovery_nodes)
+        length(correction_properties) == 1 && endswith(only(correction_properties), ":closed") ||
+            throw(ArgumentError("recovery requires one declared NODE:closed correction property"))
+        first(split(only(correction_properties), ':')) in recovery_nodes &&
+            throw(ArgumentError("recovery controller is implicit; declare only participant nodes"))
+    end
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes
 end
 
 struct FITSBinding
@@ -139,13 +151,13 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
         admitted.owner_check()
         options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
-            (; correction_properties, correction_timeout_ms))
+            (; correction_properties, correction_timeout_ms, recovery_nodes))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -167,6 +179,11 @@ axes. FITS startup does not change legacy raw `--parameter` file semantics.
 `--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
 for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.
+`--recovery-node NODE` opts the single declared coupled loop into scoped CPU
+recovery; repeat it for every participating temporal filter and conditioner.
+The controller is implicit. Recovery refuses unsupported scopes before effects;
+reference evidence expires using `--correction-timeout-ms`. No supervisor
+threshold or automatic intervention is enabled by these declarations.
 `--correction-timeout-ms N` bounds adoption confirmation for declared loops
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
 """

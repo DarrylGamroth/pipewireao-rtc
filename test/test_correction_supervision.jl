@@ -1,8 +1,6 @@
-using Test
+using Test, PipeWireAORTC
 
-# Standalone deterministic selector: no optional science, core or owner process.
-include(joinpath(@__DIR__, "..", "src", "owners", "correction_supervision.jl"))
-const CS = CorrectionSupervision
+const CS = PipeWireAORTC.CorrectionSupervision
 const INSTANCE = Int64(701)
 
 configuration(; kwargs...) = CS.Configuration(; trip_fraction=0.6,

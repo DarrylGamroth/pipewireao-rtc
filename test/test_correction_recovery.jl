@@ -1,10 +1,6 @@
 using Test, PipeWireAORTC
 import Hsm
 
-# The selector also runs before the root module include is integrated.
-if !isdefined(PipeWireAORTC, :CorrectionRecovery)
-    Base.include(PipeWireAORTC, joinpath(@__DIR__, "../src/owners/correction_recovery.jl"))
-end
 const CR = PipeWireAORTC.CorrectionRecovery
 const RECOVERY_OWNER = Int64(801)
 const RECOVERY_TOKEN = UInt64(17)
@@ -35,7 +31,7 @@ function restoring_recovery(; kwargs...)
     effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason=:saturation)
     CR.staged!(sm, effect, UInt64(4))
     recovery = CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
-    CR.recovery_staged!(sm, recovery, UInt64(11))
+    CR.recovery_staged!(sm, recovery, UInt64(11); loop_generation=UInt64(5))
     return sm, now
 end
 function holding_recovery(; kwargs...)
@@ -63,8 +59,8 @@ end
     @test stage === CR.StageRecovery(RECOVERY_OWNER, RECOVERY_TOKEN)
     @test CR.state(sm) === :RestoringReference
     @test sm.pending_since_ns == now[]
-    CR.recovery_staged!(sm, stage, UInt64(11))
-    CR.recovery_staged!(sm, stage, UInt64(11))
+    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
+    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
     @test CR.observe_recovery!(sm, recovery_observation(3)) === nothing
     @test CR.state(sm) === :Verifying
     @test CR.observe_reference!(sm, reference_observation(4)) === nothing
@@ -145,7 +141,7 @@ end
         CR.staged!(sm, open, UInt64(4))
         if phase !== :Opening
             stage = CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
-            CR.recovery_staged!(sm, stage, UInt64(11))
+            CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(5))
         end
         if phase in (:Verifying, :Releasing, :Closing)
             CR.observe_recovery!(sm, recovery_observation(3))
@@ -234,4 +230,25 @@ end
     @test sm.failure === :clock_error
     @test CR.state(sm) === :Unverified
     @test sm.pending_since_ns == 0
+end
+
+@testset "Recovery-open generation and stale release fencing" begin
+    sm, _ = restoring_recovery()
+    CR.observe_loop!(sm, loop_observation(3, 5, 4, false))
+    @test CR.state(sm) === :RestoringReference
+    @test sm.failure === nothing
+    CR.observe_loop!(sm, loop_observation(4, 5, 5, false))
+    @test sm.loop_generation == 5
+    @test sm.expected_loop_generation == 0
+    CR.observe_recovery!(sm, recovery_observation(5))
+    CR.observe_reference!(sm, reference_observation(6))
+    @test CR.state(sm) === :Holding
+    CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.observe_reference!(sm, reference_observation(8; reached=false))
+    @test sm.failure === :release_prerequisites_changed
+    @test CR.observe_release!(sm, release_observation(7)) === nothing
+    @test CR.state(sm) === :Unverified
+    sm, _ = restoring_recovery()
+    CR.observe_loop!(sm, loop_observation(3, 6, 4, false))
+    @test sm.failure === :unexpected_loop_change
 end

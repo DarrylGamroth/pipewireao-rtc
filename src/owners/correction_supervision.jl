@@ -8,20 +8,22 @@ module CorrectionSupervision
 
 public Configuration, Supervisor, Recommendation, observe!, rearm!, state, reason
 
-fraction(value) = value isa Real && !(value isa Bool) && isfinite(value) &&
-    0 <= value <= 1 ? Float64(value) : nothing
-
-unsigned(value) = value isa Integer && !(value isa Bool) &&
-    0 <= value <= typemax(UInt64)
-
-owner(value) = value isa Integer && !(value isa Bool) &&
-    0 < value <= typemax(Int64)
-
-function duration(value, name)
-    value isa Integer && !(value isa Bool) && 0 < value <= typemax(Int64) ||
+fraction(_) = nothing
+fraction(::Bool) = nothing
+fraction(value::Real) = isfinite(value) && 0 <= value <= 1 ? Float64(value) : nothing
+unsigned(_) = false
+unsigned(::Bool) = false
+unsigned(value::Integer) = 0 <= value <= typemax(UInt64)
+owner(_) = false
+owner(::Bool) = false
+owner(value::Integer) = 0 < value <= typemax(Int64)
+function duration(value::Integer, name)
+    0 < value <= typemax(Int64) ||
         throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
     return UInt64(value)
 end
+duration(value, name) = throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
+duration(::Bool, name) = throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
 
 """Explicit clipping thresholds and monotonic-time limits.
 

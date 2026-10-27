@@ -12,6 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Protective correction recovery — 2026-10-27 (in progress)
+
+The approved recovery contract is recorded in RTC-DEV-032–036. Work starts from
+RTC `06fa9ea` and JFG `4e578f4`; existing live sessions remain unchanged.
+Ordinary hold/resume remains distinct. The selected profile is explicitly scoped
+simulated complete-frame CPU owners; physical-device authority and GPU controller
+recovery are not promoted. No automatic clipping threshold is selected.
+
+| Requirement | Design allocation | Implementation/evidence status |
+| --- | --- | --- |
+| RTC-DEV-032 | Exact native admission and graph owner control slot | Planned; native integration and private-core evidence pending |
+| RTC-DEV-033 | FGA recover! + scoped JFG owner boundary + delayed feedback | Partial; scientific CPU tests pass, owner integration pending |
+| RTC-DEV-034 | Owner-produced successful-frame reference proof and explicit release | Partial; scoped owner tests pass, native tests pending |
+| RTC-DEV-035 | CorrectionRecovery Hsm hierarchical coordinator | Partial; focused coordinator tests pass, graph adapter integration pending |
+| RTC-DEV-036 | CorrectionSupervision recommendations | Partial; focused supervisor tests pass, owner observation binding pending |
+
 ### Shared built-application calibration bundles — 2026-10-26
 
 The shared `InstrumentCalibration` API now dispatches `calibrate_system` and
