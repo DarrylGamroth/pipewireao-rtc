@@ -6,11 +6,22 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-24. This section is the current delivery summary. Later sections
+Updated 2026-10-25. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Source-published ndarray channels — 2026-10-25
+
+Optional analysis accepts source-only `channel-units` annotations. The scientific
+schema owner declares channel meanings and FilterGraphPipeWire publishes one
+immutable read-only native catalog; RTC forwards annotations without changing
+Algorithms or required-owner admission. Cold source checks pass, including
+malformed UTF-8 rejection. See the [increment evidence](validation/source-channels-20261025/README.md).
+Private immutable CPU application admission and live source → queue → browser
+acceptance pass. The home read-only browser now uses that CPU cohort; see the
+increment evidence for exact identities and qualification limits.
 
 ### GPI 2.0 optical model and named command sets — 2026-10-24
 
