@@ -34,8 +34,15 @@ deadline. Twenty repaired readiness trials need no diagnostic wake. Published
 RTC 0.2.24/HIL 0.2.7 subsequently passed 237 combined registered-only assertions,
 including 27 transport, 62 registration and 106 actual optical safety checks.
 The linked verification record preserves the failed gate and corrected harness
-assembly separately. Internal-source eligibility and positive full-basis
-acceptance remain the next scientific gates.
+assembly separately. The subsequent internal-source follow-up retains the
+existing magnitude-2 source and normal detector settings. None of eleven
+transported stationary-source frames met the frozen eligibility policy; no
+threshold or mask was relaxed. Cold graph selection and bounded native Capture
+are implemented as prerequisites for automatic dark/lamp training; the latter
+passed 171 actual private-core assertions, including restoration and shutdown.
+An intermittent second-exposure timeout remains under investigation; passing
+retries do not establish reliable acquisition. Internal-source eligibility and
+positive full-basis acceptance remain separate scientific gates.
 
 ### Protective correction recovery — 2026-10-27
 

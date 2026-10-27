@@ -136,6 +136,83 @@ of the exact idle controller after Hold faulted and fenced the endpoint without
 restoration, another probe or any exposure. All graph workers, borrowed buffers,
 streams, listeners, cores, timers and owned notifications were closed.
 
+## Stationary-source and bounded Capture follow-up
+
+The user selected the existing source level initially: R-band magnitude 2,
+on axis at 800 nm. The declared optional `internal-source` simulation graph
+removes atmosphere from the optical path and retains the exact production
+detector configuration, UInt16 transport, normal photon/read noise and ADC.
+This is a stationary point-source equivalent, not a calibrated physical lamp
+model. The regular RTC graph and frozen artifacts remain unchanged. The cold
+graph selector passed 17 assertions; normal CPU build and declaration checks
+passed without loading a GPU package.
+
+A separate eleven-exposure trial completed 326 transport/identity assertions,
+but accepted zero exposures under the frozen mask. Five flat and three of each
+signed-probe frames had fluctuating failures across active ROIs
+70, 71, 85, 88, 101, 104, 118 and 119. The minimum observed flux was 917 against
+the unchanged 1000 threshold. Raw ADC values remained in 0–339. No ROI failed
+every flat exposure. This supports explicit lamp training and independent
+qualification; it does not justify choosing brighter illumination or manually
+editing the mask. The external `internal-source-20261027/RECEIPT.md` retains
+samples, hashes, failed experimental builds and the final copied-source patch.
+
+The actual declared-graph selector subsequently passed 122 assertions twice,
+including native flat/signed commands, truthful validity, restoration, release
+and cleanup. Its first run instead timed out on the second Collect (54 passed,
+one error). No slot snapshot was available before teardown, so the cause is
+unconfirmed. Later timing diagnostics did not reproduce it. A standalone Julia
+1.13.3 AsyncCondition experiment passed 105 assertions and rejected the simple
+single-consumer lost-notification hypothesis. Native stream documentation permits
+a triggered iteration to require another progress request, but this is a relevant
+contract boundary, not an established explanation of the observed timeout.
+No production scheduling change, diagnostic wake or automatic retry was added.
+Three further bounded fresh-core trials with per-action output suppressed each
+passed 122 assertions (366 total); no Collect reached the one-shot 10-second
+passive snapshot. Their receipts, code/dependency cohort hashes and separate logs
+use `internal-source-quiet-20261027-trial-1` through `-3`. This did not reproduce
+or explain the earlier failure and is not a statistical reliability claim.
+
+Classic native Capture now writes bounded owned raw/WFS payloads outside
+callbacks and returns the existing hashed manifest descriptor. The optional
+constructor arguments are `capture_directory`, `capture_stage` and
+`capture_maximum_bytes`; the directory must be fresh and the cumulative payload
+budget is reserved before exposure. Stage, illumination, detector/source settings,
+RTC graph and both projections' exact prepared FITS identities are bound into
+the manifest. `InstrumentCalibration.read_capture` requires the caller's expected
+profile, stage, illumination and settings before returning owned arrays.
+Unsupported payload contracts and Copper reject; interaction validity is not
+relaxed. Failed admitted requests retain charged partial evidence and the native
+unknown-outcome fault fence. The campaign owns retained files.
+
+The corrected native Capture selector passed 171 assertions: a four-frame
+request rejected before effects against a three-frame budget, three consecutive
+frames completed, the reference restored/released, all workers/core closed,
+and only then the descriptor and saved samples were verified. Model starts were
+0, 2,000,000 and 4,000,000 ns, each exposure 1,896,000 ns. All three exposures
+retained false active validity (ROIs [88], [71], [70, 101]); these are useful
+training evidence, not accepted interaction responses. Payloads total 750,756
+bytes and the manifest 11,105 bytes. Files and source hashes remained unchanged.
+
+The first Capture harness compared prepared-array hashes to original FITS-file
+hashes after the provenance correction. It completed the same native operations
+but reported seven harness failures (134 assertions passed). That harness and
+receipt remain separate from the corrected passing run. External evidence uses
+`native-capture-first-20261027` and `native-capture-provenance-20261027` prefixes.
+The file-boundary selector passed 150 assertions and the graph-owner selector
+86, including same-file/distinct-HDU regression coverage. CO-07–09 in the
+[independent review](REVIEW.md) preserve fail-before/pass-after evidence.
+
+The complete RTC source suite passed 5,786 assertions in 215 testsets on Julia
+1.13.3 (`internal-source-root-tests-20261027.log`). Its expected missing-Git-object
+negative test emits `git cat-file: could not get object info` and passed; it is
+not a failed integrity check on the application or source. This software result
+does not close the repeated optical acquisition or scientific gates below.
+The final 0.2.25 package/source-closure selector passed 328 assertions and the
+version/public-function/docstring smoke checks passed. Pkg resolved the tracked
+workspace manifest with only its self-package version changing; dependencies
+were unchanged.
+
 ## Remaining gates
 
 A stationary calibration-source/eligibility procedure and an accepted complete
@@ -154,9 +231,11 @@ existing validity checks and 25 Hz filter. Internal-source path coverage and
 illumination eligibility must be explicit. On-sky registration/response checks,
 controller/optical gain adjustment and acquisition through turbulence need
 their own acceptance rules on the same asynchronous interfaces. No numerical
-source level or gain is selected here.
+gain is selected here; the existing source level is retained.
 
 An in-flight synchronous HIL call resolves or reaches its finite deadline before
 cooperative revocation checks. No immediate hard cancellation is claimed. Unknown
-outcomes never authorize retry, rebind or ordinary-loop resumption. The optional
-native Capture file-export action remains unsupported by this initial endpoint.
+outcomes never authorize retry, rebind or ordinary-loop resumption. Bounded
+Capture is a qualified software prerequisite; the automatic dark/lamp/qualification
+campaign, reliable repeated acquisition, accepted complete basis, numerical
+acceptance and physical instrument qualification remain open.

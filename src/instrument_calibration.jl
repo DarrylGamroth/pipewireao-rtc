@@ -15,7 +15,7 @@ public digest, source_completion, read_parameters, write_fits, heart_completion,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
     controller_graph, calibration_graph, controller_storage, measure!, calibration_frame!, calibrate_system,
     calibrate_hidden_modes, validate_system, lowpass_coefficients, read_recipe,
-    read_bundle, write_bundle, stage_calibration
+    read_bundle, write_bundle, stage_calibration, read_capture
 
 """
     lowpass_coefficients(T; cutoff_frequency_hz, sample_rate_hz)
@@ -438,5 +438,6 @@ function calibration_frame! end
 function calibrate_hidden_modes end
 include("calibration_bundle.jl")
 include("calibration_recipe.jl")
+include("calibration_capture_files.jl")
 
 end

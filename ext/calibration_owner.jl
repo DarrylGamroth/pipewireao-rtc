@@ -7,10 +7,11 @@ const Native = PipeWireAORTC.NativeCalibrationEndpoint
 const Control = PipeWireAORTC.NativeControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
-mutable struct InitialCalibration{P,D,C,T,W,G}
+mutable struct InitialCalibration{P,D,C,T,W,G,S}
     hil::P
     driver::D
     capture::C
+    capture_store::S
     transport::T
     workers::W
     graphs::G
@@ -170,7 +171,25 @@ function (owner::InitialCalibration)(::Actions.Release, deadline)
     stop!(owner.hil)
     return Actions.Released()
 end
-(owner::InitialCalibration)(::Actions.Capture, deadline) = Actions.Failed(Actions.InvalidEvidence)
+function (owner::InitialCalibration)(action::Actions.Capture, deadline)
+    owner.capture_store === nothing && return Actions.Failed(Actions.InvalidEvidence)
+    action.probe == owner.probe && action.after == owner.cursor ||
+        return Actions.Failed(Actions.InvalidEvidence)
+    check(owner)
+    run, serial = owner.control.run, owner.control.serial
+    # Only pre-effect validation becomes a known rejection. A write/acquisition
+    # failure after admission retains the dispatcher's unknown-outcome fence.
+    try
+        Calibration.capture_preflight(owner.capture_store; run,serial,probe=action.probe,
+            cursor=owner.cursor,frames=action.frames,deadline=Float64(deadline),check=()->check(owner))
+    catch error
+        error isa ArgumentError || rethrow()
+        return Actions.Failed(Actions.InvalidEvidence)
+    end
+    return Calibration.capture!(owner.capture_store, () -> exposure!(owner,deadline);
+        run,serial,probe=action.probe,cursor=owner.cursor,frames=action.frames,
+        deadline=Float64(deadline),check=()->check(owner))
+end
 
 function Base.close(owner::InitialCalibration)
     owner.closed && return nothing
@@ -257,7 +276,9 @@ end
 
 """
     prepare_initial_calibration(application, remote, frontend, command;
-        reference, name, instance, deadline, active=frontend.parameters[:active])
+        reference, name, instance, deadline, active=frontend.parameters[:active],
+        simulation_graph="production", capture_directory=nothing,
+        capture_stage=nothing, capture_maximum_bytes=0)
 
 Prepare a non-actuating CPU initial-calibration endpoint from two cold projections
 of the built regular graph. `frontend` exposes raw→slopes/flux/validity; `command`
@@ -268,10 +289,18 @@ run; call `NativeCalibrationEndpoint.serve!` and close it explicitly afterwards.
 Requires at least three Julia default threads for two blocking native graph loops
 and the control owner. This is an initial SH interface, not running-loop state
 preservation, multi-corrector/multi-WFS support or physical authorization.
+`simulation_graph="internal-source"` selects that explicitly declared AOS graph
+while retaining the regular RTC graph and normal production detector nodes.
+The ideal diagnostic `calibration` graph is not an operational selection.
+Classic may enable the native Capture action with a fresh `capture_directory`,
+explicit `capture_stage` and positive cumulative `capture_maximum_bytes`.
+Capture preserves intrinsic invalidity and writes bounded immutable evidence;
+it does not accept interaction responses or replace active calibration.
 """
 function Calibration.prepare_initial_calibration(application, remote, frontend, command;
         reference::AbstractVector{Float32}, name::AbstractString, instance::Int64,
-        deadline::Real, active=frontend.parameters[:active])
+        deadline::Real, active=frontend.parameters[:active], simulation_graph::AbstractString="production",
+        capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0)
     Threads.nthreads(:default) >= 3 || throw(ArgumentError("initial calibration requires at least three Julia threads"))
     remote = Control.private_remote(remote)
     Calibration.require_prepared_application(application)
@@ -284,11 +313,14 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         entries = filter(entry -> haskey(formats, entry.port), selected)
         Set(entry.port for entry in entries) == Set(keys(formats)) == Set(keys(descriptor.parameters)) ||
             throw(ArgumentError("calibration projection parameter ports differ from the selected bindings"))
-        updates = GraphOwner.prepare_bindings(entries, formats)
+        artifacts = GraphOwner.prepare_artifacts(entries, formats)
+        updates = [port => artifact.data for (port, artifact) in artifacts]
         all(pair -> isequal(last(pair), descriptor.parameters[first(pair)]), updates) ||
             throw(ArgumentError("calibration projection parameters differ from the selected FITS inputs"))
         isempty(updates) || JuliaFilterGraph.replace_parameters!(descriptor.graph, updates...)
-        merge(descriptor, (; bindings=entries, parameters=Dict{Symbol,Array}(updates)))
+        provenance = Dict(port => filter(pair -> first(pair) != "source", artifact.provenance)
+            for (port, artifact) in artifacts)
+        merge(descriptor, (; bindings=entries, parameters=Dict{Symbol,Array}(updates), provenance))
     end
     format = JuliaFilterGraph.input_formats(command.graph).requested
     length(format.shape) == 1 && format.element_type === Float32 &&
@@ -301,6 +333,44 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
     options.command_input isa Symbol || throw(ArgumentError("held calibration requires one named command"))
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
+    simulation_graph in ("production","internal-source") ||
+        throw(ArgumentError("unsupported operational simulation graph"))
+    declaration = IC.load_simulation(options.plant.definition)
+    configured = IC.settings(declaration,options.plant.settings)
+    selected = IC.graph_document(declaration,configured;simulation_graph)
+    production = IC.graph_document(declaration,configured)
+    detectors(graph) = Dict(node["name"]=>node for node in graph["nodes"] if node["type"] == "detector")
+    detectors(selected) == detectors(production) ||
+        throw(ArgumentError("operational calibration must retain normal production detector configuration"))
+    capture_store = if capture_directory === nothing
+        capture_stage === nothing && capture_maximum_bytes == 0 ||
+            throw(ArgumentError("capture settings require a fresh capture directory"))
+        nothing
+    else
+        declaration.document["id"] == "revolt-classic" ||
+            throw(ArgumentError("capture storage requires the declared Classic profile"))
+        raw = JuliaFilterGraph.input_formats(frontend.graph).raw
+        for (role,contract) in pairs(Calibration.CLASSIC_CAPTURE_CONTRACTS)
+            format = role === :raw ? raw : getproperty(outputs,role)
+            format.element_type === contract.type && Tuple(format.shape) == contract.shape ||
+                throw(ArgumentError("capture graph differs from the fixed Classic payload contract"))
+        end
+        capture_stage isa AbstractString || throw(ArgumentError("capture stage must be explicit"))
+        identities(projection) = Dict(String(port)=>Dict(key=>identity[key]
+            for key in ("original_sha256","sha256","hdu","axes","target_type","target_shape"))
+            for (port,identity) in projection.provenance)
+        settings = Dict{String,Any}("simulation_graph"=>simulation_graph,
+            "prescription_identity"=>IC.prescription_identity(declaration,configured),
+            "plant_settings"=>IC.json_value(configured),"detectors"=>detectors(production),
+            "rtc_graph_sha256"=>authority,
+            "frontend_parameters"=>identities(frontend),"command_parameters"=>identities(command),
+            "exposure_ns"=>options.exposure_ns,"rate"=>options.rate,
+            "frame_schema"=>options.frame_schema,"command_schema"=>options.command_schema,
+            "command_scale"=>options.command_scale,"reference"=>collect(reference))
+        Calibration.CaptureStore(capture_directory;stage=String(capture_stage),
+            illumination=simulation_graph == "production" ? "on-sky" : simulation_graph,
+            settings,maximum_bytes=capture_maximum_bytes)
+    end
     wakeup, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = Native.wake!(wakeup, guard)
     hil = capture = probe = registry = listener = frame_listener = owner = nothing
@@ -309,7 +379,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     try
         # Use normal configured noise/ADC and graph settings; the noise-free
         # calibration oracle and hidden optical outputs are not read.
-        science = IC.prepare_system(options.plant.definition; settings=options.plant.settings,
+        science = IC.prepare_system(options.plant.definition; settings=options.plant.settings, simulation_graph,
             target=AdaptiveOpticsSim.Backends.HostComputeDevice(), execution=HIL.StreamGraphExecution())
         boundary = HIL.prepare_graph_calibration_boundary(science.graph;
             command_input=options.command_input, frame_output=options.frame_output)
@@ -409,7 +479,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         status = Wire.pipewire_calibration_status(hil)
         cursor = Actions.AcquisitionCursor(UInt64(1), status.acquisition_generation,
             UInt64(0), UInt64(0))
-        owner = InitialCalibration(hil, science.driver, capture, probe, workers,
+        owner = InitialCalibration(hil, science.driver, capture, capture_store, probe, workers,
             (;frontend,command), registry, listener, frame_listener, links, collect(reference), collect(active),
             UInt64(0), nothing, cursor, status.acquisition_domain, false, wakeup, guard, nothing, false)
         endpoint = Native.Endpoint(remote, name, instance, owner; wakeup, wakeup_lock=guard)

@@ -60,12 +60,21 @@ function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractS
     return OpticalObservation.port_contracts(nodes; atmosphere, imaging)
 end
 
-"Prepare an ordinary typed AOS graph from an instrument's SPA-JSON declaration."
+"""
+    prepare_system(path; settings=NamedTuple(), calibration=false, simulation_graph=...,
+        target=HostComputeDevice(), execution=StreamGraphExecution())
+
+Prepare an ordinary typed AOS graph from an instrument declaration. The default
+selects `production`; `calibration=true` selects its ideal diagnostic graph.
+`simulation_graph="internal-source"` selects that explicitly declared optical
+path with the same typed preparation and execution interfaces.
+"""
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
+        simulation_graph=calibration ? "calibration" : "production",
         target=Backends.HostComputeDevice(),execution=StreamGraphExecution())
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration,settings)
-    document = Instruments.graph_document(declaration,configured;calibration)
+    document = Instruments.graph_document(declaration,configured;calibration,simulation_graph)
     factories = configured_graph_node_types()
     runtime_names = Symbol[]
     for (section,field) in (("inputs","binding"),("parameters","binding"),("delayed_links","initial"))

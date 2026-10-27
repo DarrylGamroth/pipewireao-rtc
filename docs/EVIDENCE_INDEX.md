@@ -6,7 +6,9 @@ The [verification and review record](validation/calibration-owner-20261027/READM
 covers regular-graph projections, native action effects, transported probe
 adoption and correlated owned raw/WFS capture. Actual Classic rejection,
 reference restoration, cancellation and idle controller-loss fencing pass on a
-private CPU core. Accepted scientific acquisition and full-basis qualification
+private CPU core. The follow-up covers declared stationary-source selection,
+failed frozen-mask eligibility, bounded native Capture and exact FITS provenance.
+Accepted scientific acquisition, reliable repeated collection and full-basis qualification
 remain separate gates; no selected calibration or installed session changed.
 
 ## GPI2 optional pupil-flux and operator validation — 2026-10-27

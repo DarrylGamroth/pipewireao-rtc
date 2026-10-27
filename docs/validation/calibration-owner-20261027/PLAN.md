@@ -77,6 +77,57 @@ atmospheric disturbances disabled, normal detector noise/ADC retained, and
 illumination eligibility verified. No source level, gain or threshold is chosen
 by this integration increment; the existing 25 Hz filter is unchanged.
 
+### Internal-source follow-up
+
+Start from clean RTC `8977d4d` and instrument `bcbd339`, on dedicated
+`codex/internal-source-calibration-20261027` worktrees. The user selected the
+existing source level initially: R-band magnitude 2, 800 nm, on axis. This is a
+stationary point-source-equivalent simulation, not a calibrated lamp-injection
+model. Detector noise/ADC, exposure, RTC graph, filter and frozen artifacts are
+preserved. No GPU or installed session is used.
+
+1. Measure flat and a short signed-probe prefix on a copied, built CPU
+   application whose optical path excludes atmosphere and retains normal
+   detector configuration. Keep original evidence and authoring unchanged.
+2. Add an explicitly declared `internal-source` optical graph selection to
+   shared cold preparation, using existing component references and explicit
+   zero uncompensated OPD input. The regular RTC graph remains authoritative.
+   Reject absent selections and detector-behavior changes before acquisition.
+3. Check illumination/validity from transported samples before claiming an
+   accepted interaction calibration. If the frozen mask fails, preserve that
+   failure and implement the separately declared training/qualification stages;
+   do not change brightness, thresholds or mask to force a positive result.
+4. Only accepted signed response pairs may feed online interaction reduction.
+   A prefix qualifies integration only; full-basis numerical acceptance and
+   candidate promotion remain separate gates.
+
+Identifier preflight: `internal-source` denotes the user-selected stationary
+illumination path (domain; RTC-ARCH-023 and user operating decision).
+`simulation_graph` selects a declared AOS graph key for cold initial-session
+preparation (configuration boundary; existing simulation `graphs` authority),
+distinct from the regular RTC graph and the ideal `calibration` graph.
+No new source brightness, quality threshold, coordinate mapping or wire term is
+introduced. The existing owner/transport diagram above is unchanged.
+
+The stationary-source experiment completed eleven transported exposures, with
+zero accepted under the frozen mask. Eight edge ROIs failed the existing flux
+threshold in different frames. Bounded Capture is therefore the next prerequisite
+for dark/lamp training: one serialized owner writes owned ADC/WFS samples,
+publishes an immutable manifest only after every payload succeeds, and returns
+the existing native descriptor. Capacity rejection must precede acquisition;
+post-admission failure must retain the existing unknown-outcome fault fence.
+The campaign verifies and reduces each bounded stage after reference restoration,
+release and shutdown. Capture does not authorize interaction acceptance.
+
+Capture settings bind both retained graph projections using the source snapshot's
+original hash, selected HDU, normalized axes, prepared-array hash, type and shape.
+The prepared array and its provenance must come from the same immutable snapshot.
+Stage/illumination and detector/source settings remain explicit. `CaptureStore`
+and `read_capture` implement the RTC-DEV-029 finite evidence boundary; they are
+not a general recording service. Copper and a full automatic campaign remain
+unimplemented until separately qualified. An observed intermittent Collect
+timeout requires passive slot-state evidence before changing transport.
+
 Unknown adoption, owner loss or restoration outcome faults and fences the
 non-actuating endpoints; no automatic retry, rebind or ordinary-loop resumption.
 Known aborts restore the declared reference and release exactly once. Bounded
