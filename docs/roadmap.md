@@ -25,7 +25,12 @@ and source-change rejection are covered; sliding reconstruction remains O(PW).
 See [usage](JULIA_DEPLOYMENT_USAGE.md#streaming-statistics-and-acquired-artifacts).
 The [validation and review record](validation/streaming-statistics-20261028/README.md)
 includes SIMD/FMA inspection and measured Graph service cost.
-No installed packages, live sessions or instrument defaults have changed.
+FGA 0.8.14 is published and verified in a fresh registered consumer. Optional
+analysis now loads the existing typed FITS bindings and retains acquisition
+calibration/graph/binding hashes in catalog manifests. Classic/GPI acquisition
+recipes distinguish absolute replacement references from diagnostic residuals;
+the instrument repository owns those declarations. Native deployment validation
+remains the next gate; physical qualification is not claimed.
 
 ### Optional GPI propagated-field calibration — 2026-10-28
 
