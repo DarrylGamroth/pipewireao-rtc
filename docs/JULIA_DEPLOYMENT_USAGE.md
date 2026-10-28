@@ -726,6 +726,13 @@ Project/Manifest replacement, including a nested runtime project, is prohibited;
 the final registered dependency closure is revalidated before publication.
 This API does not compile a graph variant or launch processes.
 
+Component nodes explicitly owned by their private `core`, including native
+telemetry queue endpoints, retain the shared `core` owner after composition.
+Both input applications and the merged result validate those names against
+their native core declarations. External owners still require an exact `roles`
+mapping. Explicit queue endpoint names must remain unique across merged queues
+and native context objects; identical shared declarations are deduplicated.
+
 `InstrumentExport.prepare_feedback(base, component, fresh_output, recipe;
 prefix, profile=nothing)` performs the scientific preparation before composition.
 Its authored recipe selects the receiving graph template, added FITS bindings,
