@@ -1,4 +1,15 @@
+function PipeWireAORTC.InstrumentExport.localize_optical_preparation!(source::AbstractString, destination::AbstractString)
+    AdaptiveOpticsSim.Optics.Zemax.validate_provenance(source)
+    AdaptiveOpticsSim.Optics.Zemax.prepare(destination; yamlfmt=nothing)
+    return nothing
+end
+
 const Instruments = PipeWireAORTC.InstrumentConfiguration
+
+function Instruments.validate_prepared_optics(declaration::NamedTuple)
+    AdaptiveOpticsSim.Optics.Zemax.validate_provenance(declaration.instrument.directory)
+    return nothing
+end
 
 function Instruments.prepare_optical_components!(graph::AbstractDict, declaration::NamedTuple,
         configured::AbstractDict)
@@ -8,7 +19,8 @@ function Instruments.prepare_optical_components!(graph::AbstractDict, declaratio
         config = Instruments.prepared_component_config(node["config"])
         settings = Dict(key => config[key] for key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c"))
         prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(declaration.instrument.directory,
-            preparation["recipe"], preparation["branch"]; settings, diameter_m=config["diameter_m"])
+            preparation["recipe"], preparation["branch"]; settings, diameter_m=config["diameter_m"],
+            frozen=haskey(declaration.document, "optical_model"))
         concrete = Instruments.json_value(prepared.config)
         for key in Instruments.OPTIONAL_OPTICAL_CONFIG
             haskey(config, key) && (concrete[key] = deepcopy(config[key]))

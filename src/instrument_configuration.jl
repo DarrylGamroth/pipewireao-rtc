@@ -24,6 +24,10 @@ function prepare_optical_components!(graph, declaration, configured)
         throw(ArgumentError("Zemax component preparation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL"))
     return graph
 end
+function validate_prepared_optics(declaration)
+    throw(ArgumentError("generated Zemax component validation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL"))
+end
+
 function controlled_actuators end
 
 include("instruments/settings.jl")
@@ -86,19 +90,25 @@ function simulation_documents(path)
     instrument = referenced_instrument(path, document["instrument"])
     if haskey(document, "optical_model")
         model = fields(document["optical_model"], ("format", "source", "variants"), ("format", "source"), "prepared optical model")
-        model["format"] == "zemax" && haskey(document, "graphs") && !haskey(document, "hil") &&
+        model["format"] == "zemax" && haskey(document, "graphs") &&
             get(get(instrument.document, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
-            throw(ArgumentError("prepared optical model requires standalone Zemax execution graphs"))
+            throw(ArgumentError("prepared optical model requires Zemax execution graphs"))
         source = model["source"]
         source isa AbstractString && !isabspath(source) || throw(ArgumentError("optical model source must be relative"))
         resolved = D.relative_asset(instrument.directory, relpath(normpath(joinpath(dirname(abspath(path)), source)), instrument.directory))
         resolved == D.relative_asset(instrument.directory, "simulation/definition.yaml") ||
             throw(ArgumentError("optical model must identify its authored simulation/definition.yaml"))
         authored = bounded_yaml(resolved)
-        get(get(authored, "preparation", Dict()), "kind", nothing) == "zemax" ||
-            throw(ArgumentError("optical model requires an authored Zemax preparation source"))
+        abspath(path) == joinpath(instrument.directory, "generated", "simulation.yaml") ||
+            throw(ArgumentError("prepared optical model must execute generated/simulation.yaml"))
+        !haskey(authored, "optical_model") || throw(ArgumentError("optical model source must be authored"))
+        standalone = get(get(authored, "preparation", Dict()), "kind", nothing) == "zemax"
+        components = get(authored, "components", Dict())
+        imported = haskey(authored, "graphs") && any(component ->
+            get(get(component, "preparation", Dict()), "kind", nothing) == "zemax", values(components))
+        standalone || imported || throw(ArgumentError("optical model requires an authored Zemax preparation source"))
         variants = _declaration_object(get(model, "variants", Dict()), "prepared optical variants")
-        authored_variants = get(authored["preparation"], "variants", Dict())
+        authored_variants = get(get(authored, "preparation", Dict()), "variants", Dict())
         Set(keys(variants)) == Set(keys(authored_variants)) ||
             throw(ArgumentError("prepared optical variants differ from authored preparation"))
         for (name, entry) in variants
@@ -145,8 +155,10 @@ function load_simulation(path::AbstractString)
     expand_optical_mask_bindings!(document, instrument.document, expanded.graphs)
     resolve_simulation_settings!(document, authoring, instrument)
     validate_simulation(document, instrument.document, instrument.directory, expanded.graphs)
-    return (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,
+    declaration = (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,
         graphs=expanded.graphs,templates=expanded.templates)
+    haskey(document, "optical_model") && haskey(document, "hil") && validate_prepared_optics(declaration)
+    return declaration
 end
 
 """Read authored simulation metadata before any generated optical model exists.

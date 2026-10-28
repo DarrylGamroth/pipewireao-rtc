@@ -84,6 +84,13 @@ function simulation_catalog_identities(authoring)
 end
 
 function prescription_identity(declaration,configured)
+    if haskey(declaration.document, "optical_model") && haskey(declaration.document, "hil")
+        # Generated locations are execution details, not a new prescription.
+        # Validate the complete receipt before using the unchanged authored identity.
+        validate_prepared_optics(declaration)
+        source = joinpath(declaration.directory, "simulation", "definition.yaml")
+        return prescription_identity(load_simulation(source), configured)
+    end
     schema = settings_description(declaration,configured)["schema"]
     structural = Dict(key=>configured[key] for (key,field) in schema["properties"]
         if get(field,"readOnly",false) && haskey(configured, key))

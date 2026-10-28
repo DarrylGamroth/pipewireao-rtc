@@ -85,3 +85,82 @@ end
         end
     end
 end
+
+@testset "generated HIL component graphs preserve authored execution and identity" begin
+    mktempdir() do directory
+        physical, simulation = zemax_component_documents(directory)
+        # HIL declarations require physical mirror metadata even when this
+        # bounded optical test supplies an OPD command directly to the relay.
+        PipeWireAORTC.Common.write_json(joinpath(directory, "mirror.json"), Dict(
+            "schema_version" => 1, "id" => "reference-mirror", "manufacturer" => "Example", "model" => "Synthetic",
+            "layout" => Dict("schema_version" => 1, "name" => "Reference grid", "grid_shape" => [2, 2],
+                "command_positions" => [[1, 1]], "axis_labels" => ["column", "row"], "command_order" => "physical")))
+        physical["deformable_mirrors"] = Dict("reference" => Dict("description" => "mirror.json",
+            "pupil_registration" => Dict("actuator_pitch_pupil_radius" => 0.2), "units" => "m", "command_scale_m" => 1))
+        production = deepcopy(simulation["graphs"]["scc"])
+        PipeWireAORTC.Common.write_yaml(joinpath(directory, "simulation", "production.yaml"), production)
+        simulation["graphs"] = Dict("production" => "simulation/production.yaml",
+            "calibration" => deepcopy(production), "optical-reference" => deepcopy(production))
+        simulation["hil"] = Dict("command" => "optics.pupil_opd", "frame" => "optics.output")
+        simulation["wire_contracts"] = [Dict("frame_encoding" => "uint16", "frame_schema" => "example.raw-adc/1",
+            "command_schema" => "example.command/1", "command_scale" => 1)]
+        source_path = write_external_optical_documents(directory, physical, simulation)
+        authored = Dict(joinpath(root, file) => read(joinpath(root, file))
+            for (root, _, files) in walkdir(directory) for file in files)
+        source = IC.load_simulation(source_path)
+        AdaptiveOpticsSim.Optics.Zemax.prepare(directory; yamlfmt=nothing)
+        generated_path = joinpath(directory, "generated", "simulation.yaml")
+        generated = IC.load_simulation(generated_path)
+        @test all(read(path) == bytes for (path, bytes) in authored)
+        @test generated.document["hil"] == source.document["hil"]
+        @test generated.document["wire_contracts"] == source.document["wire_contracts"]
+        @test generated.document["components"] == source.document["components"]
+        prepared_bytes = Dict(joinpath(root, file) => read(joinpath(root, file))
+            for (root, _, files) in walkdir(directory) for file in files)
+        for overrides in (Dict{String,Any}(), Dict{String,Any}("resolution" => 12,
+                "pupil_resolution" => 6, "wavelength_um" => 1.6, "temperature_c" => 10.0))
+            source_settings = IC.settings(source, overrides)
+            generated_settings = IC.settings(generated, overrides)
+            @test generated_settings == source_settings
+            @test IC.prescription_identity(generated, generated_settings) == IC.prescription_identity(source, source_settings)
+            for mode in ("production", "calibration", "optical-reference")
+                expected = IC.graph_document(source, source_settings; simulation_graph=mode)
+                actual = IC.graph_document(generated, generated_settings; simulation_graph=mode)
+                @test actual == expected
+                config = only(actual["nodes"])["config"]
+                @test config["resolution"] == generated_settings["resolution"]
+                @test config["pupil_resolution"] == generated_settings["pupil_resolution"]
+                @test config["wavelength_um"] == generated_settings["wavelength_um"]
+                @test !haskey(only(actual["nodes"]), "preparation")
+            end
+            source_system = IC.prepare_system(source_path; settings=overrides)
+            generated_system = IC.prepare_system(generated_path; settings=overrides)
+            @test generated_system.boundary !== nothing
+            @test generated_system.driver !== nothing
+            @test size(graph_output(generated_system.graph, :intensity)) ==
+                (generated_settings["resolution"], generated_settings["resolution"])
+            for system in (source_system, generated_system)
+                fill!(graph_input(system.graph, :pupil_amplitude), 1)
+                step_hil_frame!(system.boundary)
+            end
+            @test hil_frame_buffer(generated_system.boundary) ≈ hil_frame_buffer(source_system.boundary)
+            @test sum(hil_frame_buffer(generated_system.boundary)) ≈ generated_settings["pupil_resolution"]^2 rtol=2e-5
+        end
+        @test all(read(path) == bytes for (path, bytes) in prepared_bytes)
+        @test Set(joinpath(root, file) for (root, _, files) in walkdir(directory) for file in files) == Set(keys(prepared_bytes))
+
+        # Reject a changed generated graph during loading, before graph creation.
+        graph_path = joinpath(directory, "generated", "production.yaml")
+        write(graph_path, read(graph_path, String) * "# altered generated graph\n")
+        @test_throws ArgumentError IC.load_simulation(generated_path)
+        @test_throws ArgumentError IC.prepare_system(generated_path)
+        write(graph_path, prepared_bytes[graph_path])
+        # Source-byte changes are stale even when the parsed YAML is equivalent.
+        write(source_path, read(source_path, String) * "# altered authored source\n")
+        @test_throws ArgumentError IC.load_simulation(generated_path)
+        @test_throws ArgumentError IC.prescription_identity(generated, IC.settings(generated))
+        write(source_path, authored[source_path])
+        @test IC.prescription_identity(IC.load_simulation(generated_path), IC.settings(generated)) ==
+            IC.prescription_identity(source, IC.settings(source))
+    end
+end
