@@ -518,7 +518,7 @@ function run_case(selected; progress=_no_session_progress)
     first_stage = joinpath(selected.stage, "faulted")
     try
         handle = W.start!(selected.package, first_stage; prefix=selected.prefix, deadline=clock()+startup_budget(spec))
-        ready = aos_source ? nothing : W.ready(handle; deadline=clock()+30)
+        ready = W.ready(handle; deadline=clock()+30)
         ledger = W.final_record(first_stage)
         receipt["first_ledger"] = ledger
         receipt["ready_status"] = session_phase(handle, "Ready")
