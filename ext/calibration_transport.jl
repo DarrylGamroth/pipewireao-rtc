@@ -22,6 +22,9 @@ function start_calibration_graph(descriptor, remote, name, rate; notify)
             stop_requested[] && return nothing
             owned = FilterGraphPipeWire.PipeWireNode(descriptor.graph;
                 remote, name, rate, connect=false,
+                # Every requested calibration sample must reach the graph.
+                # Latest-input admission can discard it under output starvation.
+                fifo_inputs=true,
                 boundary_layout=FilterGraphAlgorithms.RowMajorLayout())
             stop_requested[] && return nothing
             FilterGraphPipeWire.prepare!(owned; execution=:complete_frame,

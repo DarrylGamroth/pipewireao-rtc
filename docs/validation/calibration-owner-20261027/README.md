@@ -417,3 +417,33 @@ This observation does not identify a cause. No wake, retry,
 source-brightness, noise, mask-threshold or scheduling workaround is used to
 claim success. The campaign is not released or an activatable calibration.
 The next instrument after REVOLT is GPI; mechanism authority remains external.
+
+A separate direct-owner dark `Collect(16)` experiment reproduced the failure
+outside the new coordinator. Hold, Adopt and Settle completed; AOC consumed
+exposure 1. The passive snapshot showed exposure 2's raw receipt complete,
+all WFS slots armed without receipts, HIL publication cycle 2/pending exposure
+2 and no reported HIL failure. Collection reached its 120 s deadline. No
+diagnostic wake or retry was issued, and application hashes were unchanged.
+See `reference-campaign-first-dark-diagnostic-20261027.{jl,log,yaml}`.
+
+Independent review identified a separate admission-contract defect (RC-03):
+initial workers used the native latest-input default. The pinned native source
+(`62a3aff`, JLL 1.7.1) recycles dequeued inputs if output buffers are unavailable.
+Calibration requires every requested command/exposure, so workers now select
+the existing bounded FIFO mode. The exact pinned source's native admission
+target passed all 11 existing C checks, including controlled output starvation:
+zero callbacks/returns while unavailable, then one callback/return when supplied.
+This is fake-queue unit evidence, not a physical or scheduler qualification.
+The generated `native-fifo-admission-receipt-20261027.yaml` binds source, binary
+and log hashes; installed libraries and services were untouched.
+
+FIFO alone did **not** fix the observed stall: the otherwise identical direct
+dark test again stopped after exposure 1, with raw 2 present and WFS 2 absent.
+Its `reference-campaign-first-dark-fifo-20261027` evidence remains failed.
+A separate FIFO-off trace/observer experiment completed 16 input callbacks and
+16 terminal WFS samples, all with identical zero slopes/flux and false validity
+but advancing exact acquisition identities. This contradicts deterministic
+unchanged-payload suppression; instrumentation may affect timing and is not a
+production remedy. That evidence uses prefix `reference-delivery-diagnostic-20261027`.
+The remaining investigation reads existing frontend completion counters after
+teardown without adding a callback or trace to the collection path.
