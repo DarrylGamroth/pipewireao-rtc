@@ -27,6 +27,8 @@ function Calibration.calibration_graph(application::CleanupApplication;
     return (; graph=CleanupGraph(application, name))
 end
 
+JuliaFilterGraph.output_formats(::CleanupGraph) = (;slopes=(;shape=(1,)))
+
 function FilterGraphIsland.close_execution(graph::CleanupGraph)
     push!(graph.application.closed, graph.name)
     graph.name === graph.application.failed_close && error("$(graph.name) projection close failed")

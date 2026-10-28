@@ -340,8 +340,14 @@ calibration recipe; other ports retain their immutable references. Names, physic
 schemas and shapes come from the regular graph and simulator declarations.
 
 For GPI dark acquisition the frontend projects the normal pixel-calibration node,
-while the reducer consumes separately captured raw ADC data. This avoids requiring
-illuminated pyramid processing for a dark. Lamp and qualification project the
+while the reducer consumes separately captured raw ADC data. The cold selection
+`measurements=nothing` requires that synchronous consumer and requests a Collect
+with zero response measurements: the reply carries complete exposure receipts,
+while the full raw arrays go directly to AOC. This additive native v1 value-domain
+extension retains the existing layout and 128 KiB reply bound. Earlier endpoints
+reject zero before acquisition; there is no retry or synthetic scalar fallback.
+Ordinary interaction calibration retains positive measurement dimensions. This
+avoids requiring illuminated pyramid processing or recording raw files for a dark. Lamp and qualification project the
 normal normalized pupil pixels and mean-intensity diagnostic; the first successful
 lamp frame is discarded because normalization uses the previous successful
 frame's full-pupil mean, including masked pixels. AOC averages these already

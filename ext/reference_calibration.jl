@@ -96,7 +96,7 @@ end
 function reference_stage(application,remote,sources,reference,run,serial,stage,condition,
         counts,timeout_s,cancelled,confirm,configuration,check_application,reduce;
         frontend_outputs=(:slopes,:flux,:validity),commands=nothing,
-        probe_command=nothing,measurements::Symbol=:slopes)
+        probe_command=nothing,measurements::Union{Nothing,Symbol}=:slopes)
     cancelled() && throw(InterruptException())
     check_application()
     start = Control.monotonic()
@@ -115,6 +115,9 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
     try
         frontend = Calibration.calibration_graph(application;
             inputs=(raw="pixel-calibration:raw",),outputs=frontend_outputs,parameter_sources=sources)
+        measurement_count = measurements === nothing ? 0 : prod(getproperty(
+            JuliaFilterGraph.output_formats(frontend.graph),measurements).shape)
+        Actions.preflight_collect_reply(measurement_count,counts.samples)
         command = if commands === nothing
             Calibration.calibration_graph(application;
                 inputs=(requested="pdm-command:requested",),outputs=(:demanded,Symbol("constraint-feedback")))
@@ -196,15 +199,14 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
         boundary[] = settled.cursor
         Preparation.check_current!(gate)
         cancelled() && throw(InterruptException())
-        measurement_count = prod(getproperty(JuliaFilterGraph.output_formats(
-            server.effects.graphs.frontend.graph),measurements).shape)
         response = action(Actions.Collect(UInt32(0),settled.cursor,UInt32(measurement_count),UInt32(counts.samples)))
         # Dark/diagnostic lamp data may have false WFS validity. Their scientific
         # eligibility is determined separately by AOC, never by Responses.valid.
         response isa Actions.Responses || error("reference collection was not confirmed")
         consumer_error[] === nothing || throw(consumer_error[])
-        delivered[] == counts.samples && length(response.exposures) == counts.samples ||
-            error("reference collection has an incomplete sample count")
+        delivered[] == counts.samples && length(response.exposures) == counts.samples &&
+            length(response.values) == measurement_count ||
+            error("reference collection differs from its declared sample/measurement counts")
         Preparation.check_current!(gate)
         cancelled() && throw(InterruptException())
         last = something(observed[])
