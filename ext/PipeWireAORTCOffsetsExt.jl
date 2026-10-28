@@ -11,6 +11,7 @@ import ThreadPinning
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Common = PipeWireAORTC.Common
 const Artifacts = PipeWireAORTC.Artifacts
+const matrix = Offsets.matrix
 
 # Single frame writer, bounded seqlock readers, all payload fields atomic.
 # No image/command data is copied by this observer.
@@ -90,43 +91,15 @@ function clock_sample(clock)
     return nothing
 end
 
-function configuration(path)
-    filesize(path)<=65536 || throw(ArgumentError("physical offsets configuration exceeds64KiB"))
-    d=Common.read_yaml(path)
-    required=Set(("version","parameter","algorithm","clock_output","command_limit_m","projection","inverse",
-        "calibration_identity","command_order","branches","reference","reference_sign"))
-    d isa AbstractDict && Set(keys(d))==required && d["version"]===1 ||
-        throw(ArgumentError("invalid physical offsets configuration"))
-    for key in ("parameter","algorithm","clock_output")
-        d[key] isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",d[key]) ||
-            throw(ArgumentError("invalid physical offsets $key"))
-    end
-    rows=d["branches"]
-    rows isa AbstractDict && 1<=length(rows)<=8 && all(name -> name isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",name),keys(rows)) || throw(ArgumentError("physical offsets require1:8branches"))
-    return d
-end
 function Offsets.frame_observer(path::AbstractString,prior,formats::NamedTuple)
-    d=configuration(path)
+    d=Offsets.configuration(path)
     hasproperty(formats,Symbol(d["clock_output"])) || throw(ArgumentError("physical offset clock output is absent"))
     return ClockObserver{Symbol(d["clock_output"]),typeof(prior)}(ModelClock(),prior)
 end
-function matrix(path,selection)
-    selection isa AbstractDict && Set(keys(selection))==Set(("path","sha256","axes","shape")) ||
-        throw(ArgumentError("physical projection requires path,sha256,axes,shape"))
-    file=PipeWireAORTC.DeploymentConfiguration.relative_asset(dirname(abspath(path)),selection["path"])
-    hash=selection["sha256"]
-    hash isa String && occursin(r"^[a-f0-9]{64}$",hash) ||
-        throw(ArgumentError("invalid physical projection content hash"))
-    artifact=Artifacts.FITSArtifact(file;axes=selection["axes"])
-    prepared=Artifacts.prepare(artifact,Float32,selection["shape"])
-    prepared.provenance["original_sha256"]==hash || throw(ArgumentError("physical projection content hash mismatch"))
-    prepared.data isa AbstractMatrix || throw(ArgumentError("physical projection must be a matrix"))
-    return prepared.data
-end
 
 function Offsets.prepare(path::AbstractString,graph)
-    d=configuration(path)
-    P,Q,C=matrix(path,d["projection"]),matrix(path,d["inverse"]),matrix(path,d["reference"])
+    d=Offsets.configuration(path)
+    P,Q,C=Offsets.matrix(path,d["projection"]),Offsets.matrix(path,d["inverse"]),Offsets.matrix(path,d["reference"])
     index=findfirst(n->n.name===Symbol(d["algorithm"]),graph.nodes)
     index===nothing && throw(ArgumentError("physical offset algorithm is absent"))
     plan=graph.nodes[index].prepared.plan
@@ -138,28 +111,14 @@ function Offsets.prepare(path::AbstractString,graph)
     hasproperty(bindings,port) && getproperty(bindings,port) isa JFG.ParameterInput{index,:offset} ||
         throw(ArgumentError("physical offset parameter must bind exactly the declared algorithm offset"))
     all(iszero,plan.offset) || throw(ArgumentError("physical offsets must start at zero"))
-    names=Tuple(Symbol.(sort!(collect(keys(d["branches"])))))
-    calibrations=map(names) do name
-        row=d["branches"][string(name)]
-        required=Set(("node_name","schema","modes","command_limit_m","coefficient_limit_m","max_age_ns","silence_ns"))
-        row isa AbstractDict && required ⊆ Set(keys(row)) ⊆ union(required,Set(("acquisition_version",))) ||
-            throw(ArgumentError("invalid physical offset branch fields"))
-        version=get(row,"acquisition_version",2)
-        version isa Integer && !(version isa Bool) && version in (2,3) ||
-            throw(ArgumentError("physical offset acquisition_version must be 2 or 3"))
-        Offsets.Calibration(;identity=d["calibration_identity"],schema=row["schema"],command_order=d["command_order"],
-            projection=P,inverse=Q,modes=row["modes"],command_limit_m=row["command_limit_m"],
-            coefficient_limit_m=row["coefficient_limit_m"],max_age_ns=row["max_age_ns"],silence_ns=row["silence_ns"])
-    end
-    receiver=Offsets.Receiver(NamedTuple{names}(calibrations);command_limit_m=d["command_limit_m"])
+    inputs=Offsets.receiver_inputs(d,P,Q)
+    (;receiver,names,calibrations,buffers,total)=inputs
     options=map(names) do name
         row=d["branches"][string(name)]
         HIL.PipeWireArrayStreamOptions(;node_name=row["node_name"],media_name=string(name)*" physical offset",
             acquisition_version=get(row,"acquisition_version",2),
             schema=row["schema"],format=NdArrayFormat(NdArray.F32_LE,(size(P,1),);layout=NdArray.ROW_MAJOR))
     end
-    buffers=map(_->zeros(Float32,size(P,1)),names)
-    total=zeros(Float32,size(P,1))
     return (;declaration=d,receiver,names,calibrations,options=Tuple(options),buffers,total)
 end
 

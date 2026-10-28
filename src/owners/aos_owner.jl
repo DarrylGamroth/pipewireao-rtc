@@ -112,7 +112,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu", "--pupil-output-cpu")
+    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu", "--pupil-output-cpu", "--physical-offsets")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -167,7 +167,8 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu, pupil_output_cpu)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu, pupil_output_cpu,
+        physical_offsets=haskey(values,"--physical-offsets") ? abspath(values["--physical-offsets"]) : nothing)
 end
 
 # Version 3 can use the public HIL named-command boundary. All maps are
@@ -223,8 +224,9 @@ end
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
-    version = integer(get(document, "version", nothing), "version", 1, 4)
+    version = integer(get(document, "version", nothing), "version", 1, 5)
     version == 4 && return external_pupil_configuration(path, document)
+    version == 5 && return pupil_source_configuration(path, document)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
@@ -352,8 +354,11 @@ function prepare_science end
 function run_owner end
 function prepare_external_pupil_science end
 function run_external_pupil_owner end
+function prepare_pupil_source_science end
+function run_pupil_source_owner end
 
 include("external_pupil_configuration.jl")
+include("pupil_source_configuration.jl")
 
 "The private invocation directory owns this small operational report."
 report_path(options) = joinpath(dirname(options.remote), options.control_node * "-report.json")
@@ -421,7 +426,7 @@ function load_instrument(package::Symbol)
 end
 
 function requires_proper(options)
-    options.version in (3, 4) || return false
+    options.version in (3, 4, 5) || return false
     declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
     if options.version == 4
@@ -445,8 +450,12 @@ function _main(args; with_owner=Bootstrap.with_owner,
         load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
-    data_nodes = options.version == 4 ? (options.pupil_node,values(options.sensor_nodes)...) :
+    data_nodes = options.version == 5 ? ("simulator-pupil-output",(options.applied_command_observation ? ("simulator-"*options.mirror*"-applied",) : ())...) : options.version == 4 ? (options.pupil_node,values(options.sensor_nodes)...) :
         command_items(options.command_node)
+    (options.version==5)==(invocation.physical_offsets!==nothing) ||
+        throw(ArgumentError("pupil sources require --physical-offsets; other AOS versions do not accept it"))
+    options.version==5 && (invocation.phase_timing_directory!==nothing || invocation.optical_diagnostics_cpu!==nothing) &&
+        throw(ArgumentError("pupil sources have no HIL phase timing or optical diagnostic worker"))
     all(name -> name != invocation.control_node && name != invocation.bootstrap_node, data_nodes) ||
         throw(ArgumentError("bootstrap, frame and command nodes must differ"))
     options.version == 4 && (invocation.phase_timing_directory !== nothing ||
@@ -459,14 +468,14 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.backend === :cuda && load_cuda()
         admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
-        if admitted.version in (3, 4)
+        if admitted.version in (3, 4, 5)
             if requires_proper(admitted)
                 load_proper()
                 admitted.owner_check()
             end
             # Optional science loads add graph preparation methods in a newer
             # world; declaration verification resolves those same graph methods.
-            verify = admitted.version == 4 ? verify_external_pupil_declaration :
+            verify = admitted.version == 5 ? verify_pupil_source_declaration : admitted.version == 4 ? verify_external_pupil_declaration :
                 InstrumentDefinition.verify_declaration
             Base.invokelatest(verify, admitted)
         elseif admitted.plant !== nothing
@@ -475,7 +484,9 @@ function _main(args; with_owner=Bootstrap.with_owner,
             InstrumentDefinition.verify_plant(admitted,plant_module)
             admitted = merge(admitted, (; plant_module))
         end
-        Base.invokelatest(run === run_owner && admitted.version == 4 ? run_external_pupil_owner : run, admitted)
+        selected_run=run===run_owner ? admitted.version==5 ? run_pupil_source_owner :
+            admitted.version==4 ? run_external_pupil_owner : run : run
+        Base.invokelatest(selected_run, admitted)
     end
     return 0
 end
@@ -495,6 +506,10 @@ command_count, command_node, command_schema and command_scale maps. Named
 commands retain independent shapes and wire units; physical mirror commands
 match their declared mirror names. All versions declare command/frame names,
 extents, timing and backend/device. Paths are relative to the configuration. Preparing is published before optional science imports.
+Version 5 selects `mode: pupil-source`: one named non-HIL graph owns the physical
+mirror command and publishes the declared grey scientific pupil. It requires
+`--physical-offsets PATH` selecting a version-2 P/Q-only receiving contract;
+there is no camera frame, receiving WFS reference or graph parameter transaction.
 FITS preparation is cold startup only; RTC retains lifecycle authority.
 
 Version 4 selects `mode="external-pupil"` and declares a mirror-free plant,

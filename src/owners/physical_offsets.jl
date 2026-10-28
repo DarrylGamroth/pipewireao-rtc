@@ -3,6 +3,8 @@ module PhysicalOffsets
 
 using LinearAlgebra
 using PipeWireAO: AcquisitionIdentity
+using ..Common, ..Artifacts
+import ..DeploymentConfiguration
 
 public Calibration, Contribution, Receiver, arm!, disarm!, observe_clock!, accept!, expire!, total!, with_receiver
 
@@ -244,5 +246,7 @@ function prepare end
 
 "Compose a bounded upstream model-clock observer with the existing graph observer."
 function frame_observer end
+
+include("physical_offset_configuration.jl")
 
 end

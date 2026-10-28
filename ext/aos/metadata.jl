@@ -37,12 +37,15 @@ function simulation_properties(options, science)
     properties = Dict{String,String}(
         "aos.simulation.backend" => string(options.backend),
         "aos.simulation.device" => string(options.device),
-        "aos.simulation.model-period-ns" => string(options.period_ns),
-        "aos.simulation.exposure-ns" => string(science.configuration.exposure_duration_ns))
-    if get(options,:version,nothing) == 3
+        "aos.simulation.model-period-ns" => string(options.period_ns))
+    if get(options,:version,nothing)!=5
+        properties["aos.simulation.exposure-ns"]=string(science.configuration.exposure_duration_ns)
+    end
+    if get(options,:version,nothing) in (3,5)
         declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
         properties["aos.simulation.package"] = declaration.document["id"]
-        properties["aos.simulation.profile"] = string(options.plant.settings.profile)
+        profile=get(options.plant.settings,:profile,nothing)
+        profile===nothing || (properties["aos.simulation.profile"]=string(profile))
         properties["aos.simulation.graph"] = get(options.plant, :graph, "production")
     elseif options.plant !== nothing
         instrument = options.plant_module
