@@ -752,3 +752,52 @@ cycle fence. A separate HIL contract weakness remains deferred: reset does not
 own/fence outstanding native cycles, so the mutable publication observation
 cannot authenticate a delayed completion across generations. Source/state review
 establishes that limitation; no native interleaving or campaign cause is claimed.
+
+### Synchronous capture with event-based receipt completion
+
+Production source `a3f927b486e0e17746a3fc1d0720b89d8665d29d` passed the fixed
+three-campaign series using the original registered native products, without
+hooks, tracing, pulses or replacement trials. Every campaign collected 16 dark,
+16 lamp and 16 qualification samples after 16 qualification discards. All nine
+stages restored/released, with distinct acquisition domains, and all private
+cores exited zero and disappeared. Temporary candidates/cores were removed;
+source/application/instrument hashes remained unchanged. All 176 eligible ROIs
+retained eligibility; diagnostic RMS/max differences remained 0.008752788613187231 /
+0.02652870473684743 pixel. Interaction-matrix acceptance remains false. Evidence:
+`reference-campaign-registered-a3f927b-20261027.{jl,log,yaml}`.
+
+Focused selectors on the same source passed:
+
+- Consumer integrity/failure/recovery: 209 assertions, including the formerly
+  blocked reducer-failure Collect, restoration and release. The earlier 112-pass
+  deadline failure remains in `capture-first-cycle-baseline-20261027.log`.
+- Standalone capture: 96 assertions, including 16 actual private-core assertions
+  and shared wakeup ownership.
+- Complete reference selector: 87 assertions (30 cold numerical/contract and 57
+  private-core campaign/preparation fault checks), including cancellation,
+  stale/foreign preparation evidence and cold deadline rejection.
+
+Logs are respectively `capture-synchronous-await-consumer-20261027.log`,
+`capture-synchronous-private-core-20261027.log` and
+`reference-synchronous-await-service-20261027.log`. Julia 1.13.3 was used; GPU
+modules remained unloaded. These results establish scoped functional behavior,
+not physical correctness, a timing bound, universal delivery or the native cause
+of prior failures. The separate HIL strict-ordering limitation above is retained.
+
+Core-suite setup attempts are preserved separately: the optional science
+project did not expose FITSIO to the core tests; the package-environment attempt
+then reached schema checks without the required `PIPEWIREAO_PREFIX` and stopped
+with one failure/one error. Neither was a production calibration failure. The
+complete package-environment command with the explicit registered prefix is
+recorded in `AGENTS.md`; its corrected run is kept separately as
+`reference-synchronous-await-core-prefix-20261027.log`. The expected missing-Git-
+object negative test writes `git cat-file` failure text to stderr.
+
+The corrected core run exited zero: 6,488 passing assertions across 243 test
+sets, with no test failure/error marker. Its assertion count differs from the
+prior 6,441 only because the existing concurrent-snapshot test completed 128
+rather than 81 iterations. The standalone capture, consumer, complete reference
+and three-campaign receipts were independently inspected; no blocker was found
+for the scoped Classic CPU candidate procedure. Fresh stage owners/domains and
+exact four-stream receipts avoid relying on cross-reset witness attribution.
+Registered-package qualification remains the next delivery gate.

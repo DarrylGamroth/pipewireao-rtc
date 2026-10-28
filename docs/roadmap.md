@@ -18,51 +18,37 @@ Delivery order is REVOLT Classic first, then GPI. The common preparation and
 online reduction interfaces remain shared; GPI's mechanism authority stays in
 its existing control software and requires its own adapter and qualification.
 
-The user confirms physical REVOLT source preparation is completely manual.
-The [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
+Physical REVOLT source preparation is manual. The
+[preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
 keeps source/mechanism authority in the simulator, existing SPIDERS/GPI services
 or an explicit operator interaction. Acknowledgments do not establish optical
-readiness; evidence must precede and remain associated with candidate exposures.
-The first implementation adds a declared simulated `dark` selection with zero
-incident photons and unchanged production detector electronics/UInt16 transport.
-It preserves the ordinary RTC graph and selected calibration bytes. Physical
-adapters and reliable repeated acquisition remain separate gates; no hardware
-command is issued. The pending online campaign adds correlated preparation,
-running AOC reductions and frozen-reference qualification. Its first full
-private-core run timed out during the dark stage, so it is not released or
-qualified. Direct-owner tests reproduced the block with raw exposure 2 present
-and its WFS receipts absent. FIFO admission fixes a separate sample-retention
-contract defect, but did not eliminate the block. Later instrumented and
-untraced 16-frame runs passed; neither establishes reliable delivery. A complete
-source-validation run now passes 57 native assertions: all three stages and
-preparation fault cases, with 176 eligible ROIs retaining eligibility in the
-later frozen window. An explicit public driver request now completes one native
-cycle without creating an exposure; the affected reducer-failure regression
-passes 197 assertions including a fail-before/pass-after request regression.
-A fixed repeated campaign failed on trial 2 in qualification, with trial 1
-passing and trial 3 not attempted. The failure persists with both corrections;
-release remains blocked. An isolated build from the pinned native source now
-supports passive ingress/node-cycle tracing. That separate experiment passed
-twice, then failed lamp training with one completed WFS frame and no second
-ingress dequeue. A later registered-library observer run passed twice and
-captured qualification exposure 19: raw receipt present, all three WFS receipts
-absent, publication witness current, capture waiting and no reported transport
-error. This narrows the boundary without establishing a retry defect. Bounded
-native decision tracing passed three campaigns without reproducing the block.
-A subsequent registered-library failure preserved accepted Julia output
-metadata despite missing capture receipts. One controlled extra native cycle
-cleared a later stall, without another scientific exposure. An isolated
-synchronous-sink candidate still failed its explicit completion-fence check,
-so it is not promoted. Native notification cycle association and actual link
-scheduling are the next discriminating observations.
-Reliable delivery and registered-build campaign qualification remain pending.
-Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
-and 342 actual private-core dark/light Capture assertions. The
-[evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
-retains the failed source-manifest build and subsequent registered RTC 0.2.30
-qualification. The campaign core suite passes 6,441 assertions; the actual
-online-consumer fault/recovery selector passes 187 assertions. Neither substitutes
-for the pending complete campaign gate.
+readiness. Simulated dark exposures have zero incident photons with unchanged
+detector electronics and UInt16 transport.
+
+The online procedure collects dark and lamp training frames with bounded AOC
+running states, then qualifies frozen references in a later simulation window.
+Products remain candidates; interaction-matrix acceptance and activation are
+separate. Capture now participates in graph-synchronous delivery on its main
+ThreadLoop, with exact receipts awaited as events. The unconditional additional
+native processing request has been removed. FIFO sample retention and public
+RequestProcess handling remain in place.
+
+At source commit `a3f927b`, three fixed campaigns using the registered native
+libraries passed without diagnostic hooks, tracing, pulses or retries. All nine
+stages restored/released; 176 of 188 ROIs retained eligibility at unchanged
+source, detector and threshold settings. The consumer fault/recovery selector
+passes 209 assertions, standalone capture passes 96, and the complete reference
+selector passes 87 including preparation cancellation, stale/foreign evidence
+and deadline checks. The broader core suite passes 6,488 assertions across 243
+test sets. Registered-package release qualification remains pending.
+
+The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
+retains every earlier delivery failure and the rejected immediate-completion
+assertion. Passing repeats do not prove universal losslessness or the original
+failure's native cause. The HIL publication witness is a historical callback
+observation, not a strict native-cycle fence; explicit cycle ownership across
+reset remains a separate limitation. No GPU, physical-device, deadline or
+interaction-matrix qualification is claimed.
 
 ### GPI2 loop controls and supervision — 2026-10-27
 
