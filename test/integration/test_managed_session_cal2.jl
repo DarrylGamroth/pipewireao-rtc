@@ -101,7 +101,7 @@ end
     domain=AcquisitionDomain(ntuple(i->UInt8(i),16))
     before=Float32[1e-6,1e-8]
     for sequence in 1:2
-        receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(sequence)),pts=10*(sequence-1),duration=10,lost_samples=0)
+        receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(sequence)),pts=10*(sequence-1),duration=10,lost_samples=0,trigger_state=PipeWireAO.ACQUISITION_TRIGGER_ABSENT)
         for (sample,payload) in zip(samples,(Float32[1,2],zeros(Float32,2),before,before))
             CAL2.record!(sample,payload,receipt,10)
         end
@@ -118,7 +118,7 @@ end
     samples[4].records[2]["sequence"]=3
     @test_throws ArgumentError CAL2.zero_reference_proof(products,samples,20)
     @test !CAL2.zero_reference_proof(products[1:2],samples[1:2],20)["available"]
-    receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(3)),pts=20,duration=10,lost_samples=0)
+    receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(3)),pts=20,duration=10,lost_samples=0,trigger_state=PipeWireAO.ACQUISITION_TRIGGER_ABSENT)
     @test_throws ArgumentError CAL2.record!(samples[1],zeros(Float32,2),receipt,10)
     image=CAL2.Samples((;shape=(2,2)),2)
     @test image.history===nothing

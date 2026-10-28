@@ -165,12 +165,14 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     auxiliary_config=asset(application,argument(auxiliary["argv"],"--config"))
     upstream=D.decode(primary_config,prefix)
     optical=D.decode(auxiliary_config,prefix)
-    require(upstream["version"]==3 && get(upstream,"pupil_output",false),"primary source must export its scientific pupil")
+    standalone = upstream["version"]==5 && get(upstream,"mode",nothing)=="pupil-source"
+    require(standalone || (upstream["version"]==3 && get(upstream,"pupil_output",false)),"primary source must export its scientific pupil")
     require(optical["version"]==4 && optical["mode"]=="external-pupil","CAL2 must use the mirror-free external-pupil owner")
     require(Set(keys(optical["sensor_nodes"]))==Set(["llowfs","scc"]),"expected independent SCC and LLOWFS branches")
     component=dirname(auxiliary_config)
     (;calibration,index)=selected_calibration(component,optical)
     require(Set(keys(index["branches"]))==Set(["llowfs","scc"]),"selected branch index differs")
+    reports=Dict{String,Any}()
     for name in ("llowfs","scc")
         entry=index["branches"][name]
         require(entry["path"]==name,"branch index must retain its own bundle directory")
@@ -181,7 +183,8 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
             get(report,"deployable",false)===true && get(report,"diagnostic",true)===false &&
             report["held_out"]["accepted"]===true && report["branches"][name]["accepted"]===true &&
             report["calibration_identity"]==index["calibration_identity"],"bootstrap/diagnostic/rejected calibration is not admitted")
-        E.validate_reference_backend(report["upstream_reference"],upstream)
+        reports[name]=report
+        standalone || E.validate_reference_backend(report["upstream_reference"],upstream)
         for (key,descriptor) in index["physical_projection"]
             require(report["artifact_sha256"][key*".fits"]==descriptor["sha256"],"selected shared physical factors differ")
         end
@@ -191,25 +194,52 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     receiver=C.read_yaml(receiver_path)
     require(receiver["calibration_identity"]==index["calibration_identity"],"receiving calibration differs")
     require(parse(Int,first(split(argument(receiving["argv"],"--threads"),',')))>=3,"receiver requires three default Julia threads")
-    graph_path=asset(application,argument(receiving["argv"],"--graph"))
-    binding_path=asset(application,argument(receiving["argv"],"--fits-bindings"))
-    Base.require(Main,:FilterGraphIsland)
     Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
-    Base.invokelatest(E.validate_feedback,application,relpath(graph_path,application),relpath(binding_path,application),relpath(receiver_path,application))
-    contracts=graph_output_contracts(graph_path)
-    graph=D.decode(graph_path,prefix)
-    graph_node=graph["node.name"]
-    require(mapping[graph_node]==receiving["role"],"receiving graph owner differs")
+    Base.require(Main,:FilterGraphIsland)
+    if standalone
+        require(receiving["role"]==primary["role"] && receiver["version"]==2,
+            "pupil source must own its P/Q-only physical receiver")
+        Base.require(Main,:AdaptiveOpticsCalibration)
+        Base.invokelatest(E.validate_pupil_source,application,relpath(primary_config,application),relpath(receiver_path,application);prefix)
+        selected=C.read_yaml(D.relative_asset(application,"generated/physical-offset-calibration/selection.yaml"))
+        require(selected["calibration_identity"]==index["calibration_identity"] &&
+            selected["source_prescription_identity"]==upstream["prescription_identity"],"pupil source calibration selection differs")
+        require(C.sha256_file(D.relative_asset(application,"generated/physical-offset-calibration/original-deployment.conf"))==selected["original_deployment_sha256"] &&
+            C.sha256_file(D.relative_asset(application,"generated/physical-offset-calibration/original-simulation.conf"))==selected["original_simulation_sha256"],
+            "original pupil source selection provenance differs")
+        options=R.AOSOwner.configuration(primary_config)
+        prepared=R.PhysicalOffsets.prepare(receiver_path;options.command_count,options.command_order,options.calibration_identity)
+        calibrated_report=reports["llowfs"]
+        require(all(report->report["upstream_prescription_identity"]==calibrated_report["upstream_prescription_identity"] &&
+            report["recipe"]==calibrated_report["recipe"] && report["provenance"]==calibrated_report["provenance"],values(reports)),
+            "physical branches do not share their calibrated mirror and recipe")
+        proof=Base.invokelatest(E.validate_pupil_equivalence,application,component,upstream,calibrated_report,first(prepared.inputs.calibrations).P;
+            mirror=upstream["mirror"],prefix)
+        require(proof==selected["physical_equivalence"] && proof["accepted"]===true,
+            "pupil source physical transfer proof differs")
+        reference=nothing
+    else
+        graph_path=asset(application,argument(receiving["argv"],"--graph"))
+        binding_path=asset(application,argument(receiving["argv"],"--fits-bindings"))
+        Base.invokelatest(E.validate_feedback,application,relpath(graph_path,application),relpath(binding_path,application),relpath(receiver_path,application))
+        contracts=graph_output_contracts(graph_path)
+        graph=D.decode(graph_path,prefix)
+        graph_node=graph["node.name"]
+        require(mapping[graph_node]==receiving["role"],"receiving graph owner differs")
+        reference=(graph=graph_node,node=receiver["algorithm"])
+    end
     pupil_link=only(filter(link->link["input"]==optical["pupil_node"]*":input_1",session["links"]))
     pupil_node=first(endpoint(pupil_link["output"]))
     require(mapping[pupil_node]==spec["source-owner"],"pupil producer is not the primary source")
     period=round(Int64,1e9/upstream["rate"])
-    require(upstream["exposure_ns"]==period,"selector requires completely covered primary model intervals")
+    standalone || require(upstream["exposure_ns"]==period,"selector requires completely covered primary model intervals")
     products=Any[product("pupil",pupil_link["output"],declared_port(session,pupil_link["output"],"output"),period,mapping)]
     declaration=R.InstrumentConfiguration.load_simulation(D.relative_asset(component,optical["plant"]["definition"]))
     durations=Dict{String,Int64}()
     controls=Any[]
-    missing=String["Receiver-specific arm/disarm and rejection counters have no declared native observation export; generic parameter generations are captured separately.",
+    missing=String[standalone ?
+        "Receiver-specific arm/disarm and rejection counters have no declared native observation export; this P/Q source has no graph reference parameters." :
+        "Receiver-specific arm/disarm and rejection counters have no declared native observation export; generic parameter generations are captured separately.",
         "Correction-open exact-zero startup cannot establish nonzero contribution acceptance or transaction adoption."]
     for name in ("llowfs","scc")
         sensor=declaration.instrument.document["optical_paths"][name]["sensor"]
@@ -236,9 +266,15 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         push!(products,product(name*"-offset",link["output"],declared,duration,mapping;priming_exposures,acquisition_version))
         modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping;priming_exposures,acquisition_version)
     end
-    physical=receiver["clock_output"]
-    push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping;model_time=false))
-    reference_products!(products,missing,graph,contracts,receiver,period,mapping)
+    if standalone
+        require(get(upstream,"applied_command_observation",false),"standalone capture requires adopted physical command observation")
+        output="simulator-"*upstream["mirror"]*"-applied:output_1"
+        push!(products,product("physical",output,declared_port(session,output,"output"),period,mapping))
+    else
+        physical=receiver["clock_output"]
+        push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping;model_time=false))
+        reference_products!(products,missing,graph,contracts,receiver,period,mapping)
+    end
     require(40<=sample_count<=128 && sample_count*period % durations["scc"]==0,"sample count must be in40:128 and cover whole SCC exposures")
     pacing=upstream["pacing_rate_hz"]
     require(pacing isa Real && !(pacing isa Bool) && isfinite(pacing) && pacing>0,"explicit positive wall pacing is required")
@@ -246,7 +282,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     require(isfinite(timeout) && sample_count/pacing<timeout<=3600,"epoch timeout must exceed paced collection and be at most3600seconds")
     return (;application,spec,session,primary,auxiliary,products=Tuple(products),period,sample_count,timeout,
         pacing,calibration_identity=index["calibration_identity"],controls=Tuple(controls),
-        reference=(graph=graph_node,node=receiver["algorithm"]),missing)
+        reference,missing,standalone)
 end
 
 mutable struct Samples
@@ -372,7 +408,7 @@ function observe_epoch(handle,selected,stage,name)
         generation=M.request(handle,stage,name*"-open-generation-"*string(index),["property-generation",control.graph,control.node])
         require_open_snapshot(control,properties,generation)
     end
-    reference_before=M.request(handle,stage,name*"-reference-before",["parameter-generation",plan.reference.graph,plan.reference.node])
+    reference_before=plan.reference===nothing ? nothing : M.request(handle,stage,name*"-reference-before",["parameter-generation",plan.reference.graph,plan.reference.node])
     HIL=Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     ledger=W._ledger(handle)
     remote=ledger["remote"]
@@ -446,8 +482,8 @@ function observe_epoch(handle,selected,stage,name)
                                 merge(identity_record(receipt.identity),Dict("pts"=>receipt.pts,
                                     "duration"=>receipt.duration,"lost_samples"=>receipt.lost_samples)))
                         end
-                        if endswith(product.name,"-offset")
-                            require(all(iszero,arrays[index]),"startup-only lifecycle observed a nonzero CAL2 offset")
+                        if endswith(product.name,"-offset") || (plan.standalone && product.name=="physical")
+                            require(all(iszero,arrays[index]),"correction-open lifecycle observed a nonzero CAL2 command")
                         elseif product.name in ("llowfs","scc")
                             require(sum(arrays[index])>0,"sensor image has zero optical power")
                         elseif product.name=="pupil"
@@ -462,7 +498,7 @@ function observe_epoch(handle,selected,stage,name)
             end
             statistics=[Dict(string(key)=>value for (key,value) in pairs(HIL.array_stream_status(wire,index))) for index in eachindex(plan.products)]
             require(M.request(handle,stage,name*"-pause",["session-stop"])["state"]=="Ready","Pause did not reach Ready")
-            reference_after=M.request(handle,stage,name*"-reference-after",["parameter-generation",plan.reference.graph,plan.reference.node])
+            reference_after=plan.reference===nothing ? nothing : M.request(handle,stage,name*"-reference-after",["parameter-generation",plan.reference.graph,plan.reference.node])
             records=Dict{String,Any}()
             for (index,product) in enumerate(plan.products)
                 log=samples[index]
@@ -558,6 +594,7 @@ function main(args)
         "products"=>[Dict("name"=>product.name,"node"=>product.node,"port"=>product.port,"schema"=>product.schema,
             "shape"=>collect(product.shape),"duration_ns"=>product.duration) for product in plan.products],
         "calibration_identity"=>plan.calibration_identity,"sample_count"=>plan.sample_count,
+        "primary_source"=>plan.standalone ? "pupil-source" : "gpi-wfs",
         "correction_controls"=>[Dict(string(key)=>value for (key,value) in pairs(control)) for control in plan.controls],
         "pacing_rate_hz"=>plan.pacing,"epoch_timeout_seconds"=>plan.timeout,
         "missing_observability"=>plan.missing,"harness_sha256"=>C.sha256_file(@__FILE__))
