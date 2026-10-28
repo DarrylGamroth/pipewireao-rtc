@@ -1,0 +1,378 @@
+{
+  "nodes": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "id": "da17d5c40efbaea",
+              "label": "Maximize panel",
+              "role": "Button"
+            },
+            {
+              "id": "ac4231cb81a10f7",
+              "label": "Undock",
+              "role": "Button"
+            },
+            {
+              "id": "d0cfb04e93a45599",
+              "label": "Hide panel",
+              "role": "Button"
+            },
+            {
+              "id": "9fd465a212a4bcbb",
+              "label": "Help",
+              "role": "Button"
+            }
+          ],
+          "id": "68fb07521b9c935b",
+          "role": "GenericContainer"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "id": "eddab9ffcd20b927",
+                      "role": "Label",
+                      "value": "RUNNING"
+                    },
+                    {
+                      "id": "45890068dc58e0a5",
+                      "role": "Label",
+                      "value": "Connected"
+                    }
+                  ],
+                  "id": "a9bf4355a1b835b7",
+                  "role": "GenericContainer"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "id": "219a707d0c69e698",
+                          "label": "Start",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "8303e0045d7a6be3",
+                          "label": "Stop",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "749d3ff9d25aeaa",
+                          "label": "Reset",
+                          "role": "Button"
+                        }
+                      ],
+                      "id": "9c4cd43f1d99505d",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "4fcb4987392e825",
+                      "label": "Refresh",
+                      "role": "Button"
+                    }
+                  ],
+                  "id": "b9fbc1e6ebed4b4a",
+                  "role": "GenericContainer"
+                },
+                {
+                  "id": "16c40e87058e85f0",
+                  "role": "Label",
+                  "value": "Correction loops"
+                },
+                {
+                  "id": "36fca145e61dcde1",
+                  "role": "Label",
+                  "value": "Opening holds correction and controller state while processing continues. Closing resumes from retai [\u2026]"
+                },
+                {
+                  "children": [
+                    {
+                      "id": "448687170857d091",
+                      "role": "Label",
+                      "value": "Correction \u00b7 Observed Open"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "efa2e879bd6812ed",
+                          "label": "Open loop",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "167b5b70ea1fd8c4",
+                          "label": "Close loop",
+                          "role": "Button"
+                        },
+                        {
+                          "disabled": true,
+                          "id": "9405f1b8c8ee9953",
+                          "label": "Restore reference",
+                          "role": "Button"
+                        },
+                        {
+                          "disabled": true,
+                          "id": "97ce7720e9e7c692",
+                          "label": "Allow close",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "1eb155dbfad6a152",
+                          "label": "Refresh loop",
+                          "role": "Button"
+                        }
+                      ],
+                      "id": "ea5d47548b3fdcb2",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "1ab7981a6abb7939",
+                      "role": "Label",
+                      "value": "Close permitted \u00b7 loop remains open"
+                    }
+                  ],
+                  "id": "2448401c0a6b621a",
+                  "role": "GenericContainer"
+                },
+                {
+                  "id": "9c50e0034f48cf56",
+                  "role": "Label",
+                  "value": "Property update \u00b7 gpi2-jfg-frame-graph \u00b7 pipewireao-recovery:release-token \u00b7 active"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "id": "7d4c41fa11b4b197",
+                              "role": "Label",
+                              "value": "Session"
+                            },
+                            {
+                              "id": "5aa004e5bcdecfbc",
+                              "role": "Label",
+                              "value": "6dc4e0d2-7c09-4f89-9e6b-271f0771a817"
+                            }
+                          ],
+                          "id": "5c1f7c37dd7e4b1b",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "6f68488ddd18ea73",
+                              "role": "Label",
+                              "value": "Owned nodes"
+                            },
+                            {
+                              "id": "9b2da43fb1ca4e75",
+                              "role": "Label",
+                              "value": "0"
+                            }
+                          ],
+                          "id": "9013f45501713e57",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "e050773da123e4f5",
+                              "role": "Label",
+                              "value": "Owned links"
+                            },
+                            {
+                              "id": "32f3b73c4c964460",
+                              "role": "Label",
+                              "value": "31"
+                            }
+                          ],
+                          "id": "6dc64e28322105fa",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "a400333b0d7dacb1",
+                              "role": "Label",
+                              "value": "Discarded buffers"
+                            },
+                            {
+                              "id": "56029abb79dde5a8",
+                              "role": "Label",
+                              "value": "0"
+                            }
+                          ],
+                          "id": "c667a1d707eb54ca",
+                          "role": "GenericContainer"
+                        }
+                      ],
+                      "id": "e76438ee4512e336",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "3b4491cca8857f02",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "5c56a6de15f37c85",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "1e22e013414573e7",
+                          "role": "Label",
+                          "value": "Status"
+                        },
+                        {
+                          "id": "b371be78251ae3e1",
+                          "role": "Label",
+                          "value": "Value"
+                        }
+                      ],
+                      "id": "5d2106e5976b843d",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "762bec4d2243f409",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "91896019209dcb1f",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "d6369cbd1ae8dc78",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "15dc71ba556dfdad",
+                          "role": "GenericContainer"
+                        }
+                      ],
+                      "id": "e04652afcf8654d8",
+                      "role": "GenericContainer"
+                    }
+                  ],
+                  "id": "9160b8a9b5f08b29",
+                  "role": "GenericContainer"
+                },
+                {
+                  "children": [
+                    {
+                      "id": "618cc127ed101618",
+                      "label": "Local request history",
+                      "role": "DisclosureTriangle"
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "id": "b4fde9577b405507",
+                                      "role": "Label",
+                                      "value": "Property update"
+                                    },
+                                    {
+                                      "id": "36bd587194c9c7d5",
+                                      "role": "Label",
+                                      "value": "gpi2-jfg-frame-graph"
+                                    }
+                                  ],
+                                  "id": "8fc4910ceb006269",
+                                  "role": "GenericContainer"
+                                },
+                                {
+                                  "id": "1e6120a5550413fe",
+                                  "role": "ScrollBar"
+                                },
+                                {
+                                  "id": "f60c615f404b605f",
+                                  "role": "ScrollBar"
+                                }
+                              ],
+                              "id": "372eb154afa616b2",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "bd2e4b8bf1d8719d",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "60fa81c5369e7a8c",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "id": "16bb087b13a1a890",
+                                  "role": "Label",
+                                  "value": "Request"
+                                },
+                                {
+                                  "id": "a31ed586d55a4ae3",
+                                  "role": "Label",
+                                  "value": "Operation"
+                                },
+                                {
+                                  "id": "a8264850daca2f8b",
+                                  "role": "Label",
+                                  "value": "Target"
+                                }
+                              ],
+                              "id": "8075849a35834177",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "2c42a3d71a1231d2",
+                              "label": "gui-1-150",
+                              "role": "Button"
+                            }
+                          ],
+                          "id": "68b383da9410876e",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "9d6d3904930685a9",
+                          "role": "Label",
+                          "value": "Select a request to inspect its complete values and session identity."
+                        }
+                      ],
+                      "id": "49c304c84d79116",
+                      "role": "GenericContainer"
+                    }
+                  ],
+                  "id": "c396435f10b8adcb",
+                  "role": "GenericContainer"
+                }
+              ],
+              "id": "a34c537e786a940b",
+              "role": "GenericContainer"
+            },
+            {
+              "id": "c7a6d55f388bc3a2",
+              "role": "ScrollBar"
+            }
+          ],
+          "id": "c3cfce423921f33",
+          "role": "GenericContainer"
+        }
+      ],
+      "id": "d75cf21a1fb32297",
+      "role": "GenericContainer"
+    }
+  ]
+}
