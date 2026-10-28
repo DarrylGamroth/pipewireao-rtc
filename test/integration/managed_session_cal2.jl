@@ -124,6 +124,23 @@ function modal_product!(products, missing, name, graph, contracts, control, dura
     return nothing
 end
 
+function selected_calibration(component, optical)
+    configuration=get(optical,"rtc_configuration",nothing)
+    require(configuration isa String && normpath(configuration)==configuration &&
+        startswith(configuration,"generated/") && basename(configuration)=="rtc.yaml" &&
+        dirname(configuration)!="generated",
+        "CAL2 capture requires an explicit generated calibration RTC configuration")
+    D.relative_asset(component,configuration)
+    calibration=dirname(configuration)
+    selection=C.read_yaml(D.relative_asset(component,calibration*"/selection.yaml"))
+    indexpath=D.relative_asset(component,calibration*"/calibration.yaml")
+    index=C.read_yaml(indexpath)
+    require(selection["calibration_index_sha256"]==C.sha256_file(indexpath) &&
+        selection["calibration_identity"]==index["calibration_identity"],"selected calibration index differs")
+    E.validate_selected_rtc(component,calibration,selection,index,optical)
+    return (;calibration,selection,index)
+end
+
 "Cold preflight: accepts real deployable selections only, and never starts a core."
 function preflight(application, prefix; sample_count=40, timeout_seconds=nothing)
     application,spec=E.sealed_application(realpath(application),prefix)
@@ -151,17 +168,12 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     require(optical["version"]==4 && optical["mode"]=="external-pupil","CAL2 must use the mirror-free external-pupil owner")
     require(Set(keys(optical["sensor_nodes"]))==Set(["llowfs","scc"]),"expected independent SCC and LLOWFS branches")
     component=dirname(auxiliary_config)
-    selection=C.read_yaml(D.relative_asset(component,"generated/calibration/selection.yaml"))
-    indexpath=D.relative_asset(component,"generated/calibration/calibration.yaml")
-    index=C.read_yaml(indexpath)
-    require(selection["calibration_index_sha256"]==C.sha256_file(indexpath) &&
-        selection["calibration_identity"]==index["calibration_identity"],"selected calibration index differs")
-    E.validate_selected_rtc(component,"generated/calibration",selection,index,optical)
+    (;calibration,index)=selected_calibration(component,optical)
     require(Set(keys(index["branches"]))==Set(["llowfs","scc"]),"selected branch index differs")
     for name in ("llowfs","scc")
         entry=index["branches"][name]
         require(entry["path"]==name,"branch index must retain its own bundle directory")
-        path=D.relative_asset(component,"generated/calibration/"*name*"/result.yaml")
+        path=D.relative_asset(component,calibration*"/"*name*"/result.yaml")
         require(C.sha256_file(path)==entry["result_sha256"],"branch result hash differs")
         report=R.InstrumentCalibration.read_bundle(dirname(path)).report
         require(report["status"]=="accepted" && report["branch"]==name &&

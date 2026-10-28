@@ -1,6 +1,62 @@
 using Test
 Base.include(@__MODULE__,joinpath(@__DIR__,"integration","managed_session_cal2.jl"))
 
+@testset "CAL2 capture follows the executed generated calibration selection" begin
+    M = ManagedSessionCAL2
+    C = M.C
+    mktempdir() do component
+        function selection(name, identity)
+            directory=joinpath(component,name)
+            mkpath(directory)
+            C.write_yaml(joinpath(directory,"rtc.yaml"),Dict("calibration_identity"=>identity,
+                "calibration"=>name*"/context.yaml"))
+            C.write_yaml(joinpath(directory,"calibration.yaml"),Dict("calibration_identity"=>identity))
+            C.write_yaml(joinpath(directory,"selection.yaml"),Dict("calibration_identity"=>identity,
+                "calibration_index_sha256"=>C.sha256_file(joinpath(directory,"calibration.yaml")),
+                "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(joinpath(directory,"rtc.yaml")))))
+            return Dict("rtc_configuration"=>name*"/rtc.yaml","calibration_identity"=>identity)
+        end
+        old=selection("generated/calibration","historical")
+        new=selection("generated/chopped-calibration","selected")
+        historical=Dict(name=>read(joinpath(component,"generated/calibration",name))
+            for name in ("rtc.yaml","selection.yaml","calibration.yaml"))
+        @test M.selected_calibration(component,old).calibration=="generated/calibration"
+        @test M.selected_calibration(component,new).index["calibration_identity"]=="selected"
+        @test M.selected_calibration(component,new).calibration=="generated/chopped-calibration"
+        @test all(read(joinpath(component,"generated/calibration",name))==bytes for (name,bytes) in historical)
+        for path in (nothing,2,"rtc/configuration.yaml","/generated/calibration/rtc.yaml",
+                "generated/../rtc/rtc.yaml","generated/calibration/../chopped-calibration/rtc.yaml",
+                "generated/rtc.yaml","generated/chopped-calibration/configuration.yaml")
+            @test_throws ArgumentError M.selected_calibration(component,merge(new,Dict("rtc_configuration"=>path)))
+        end
+        @test_throws ArgumentError M.selected_calibration(component,Dict("calibration_identity"=>"selected"))
+        @test_throws ArgumentError M.selected_calibration(component,merge(new,Dict("calibration_identity"=>"historical")))
+        directory=joinpath(component,"generated/chopped-calibration")
+        path=joinpath(directory,"selection.yaml")
+        receipt=C.read_yaml(path)
+        for bad in (merge(receipt,Dict("calibration_index_sha256"=>repeat("0",64))),
+                merge(receipt,Dict("calibration_identity"=>"historical")),
+                merge(receipt,Dict("rtc_configuration"=>Dict("path"=>"../calibration/rtc.yaml","sha256"=>repeat("0",64)))),
+                merge(receipt,Dict("rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>repeat("0",64)))))
+            C.write_yaml(path,bad)
+            @test_throws ArgumentError M.selected_calibration(component,new)
+        end
+        C.write_yaml(path,receipt)
+        rtcpath=joinpath(directory,"rtc.yaml")
+        rtc=C.read_yaml(rtcpath)
+        rtc["calibration"]="generated/calibration/context.yaml"
+        C.write_yaml(rtcpath,rtc)
+        receipt["rtc_configuration"]["sha256"]=C.sha256_file(rtcpath)
+        C.write_yaml(path,receipt)
+        @test_throws ArgumentError M.selected_calibration(component,new)
+        mktempdir() do outside
+            C.write_yaml(joinpath(outside,"rtc.yaml"),Dict())
+            symlink(outside,joinpath(component,"generated/outside"))
+            @test_throws M.D.DeploymentError M.selected_calibration(component,merge(new,Dict("rtc_configuration"=>"generated/outside/rtc.yaml")))
+        end
+    end
+end
+
 @testset "CAL2 capture selects a native Node by type and name" begin
     object(kind, id) = Dict("type"=>"PipeWire:Interface:"*kind,"id"=>id,
         "info"=>Dict("props"=>Dict("node.name"=>"controller")))
