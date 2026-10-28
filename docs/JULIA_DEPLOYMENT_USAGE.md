@@ -524,6 +524,17 @@ outputs. Existing ndarray panels can display the published arrays; scalar or
 named-vector reductions can feed existing charts. No instrument-specific renderer
 is needed. Window changes rebuild this optional graph; reset starts a new window.
 
+Analysis configurations may declare `fits-bindings` using the existing graph
+owner's typed FITS binding format. Parameters load before execution. Deployed
+bindings and their FITS files must be sealed with the analysis graph. The
+instrument repository's `tools/acquire-statistics.jl` freezes the selected
+calibration inputs and prepares the Classic/GPI acquisition recipes. Its
+`capture.provenance` retains the acquisition receipt, graph, binding declaration,
+recipe, calibration and parameter hashes in each catalog manifest. Preparation
+checks the actual FITS snapshots and rejects changed HDU/axis declarations.
+These identify the selected calibration snapshot; they do not attest that a
+subsequently modified live controller still uses that calibration.
+
 To register a finite acquisition automatically, add `capture` to the existing
 analysis YAML. The following fragment assumes all outputs retain their names:
 

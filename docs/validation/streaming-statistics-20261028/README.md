@@ -1,13 +1,37 @@
 # Headless streaming statistics — 2026-10-28
 
 Implemented on dedicated `codex/streaming-statistics-20261028` worktrees, based
-on RTC `958fb59` and JuliaFilterGraph `edd39e2`. The instrument definitions,
-installed packages, selected calibration, live RTC and GUI are unchanged. No
-simulation, GPU workload, physical-device or live native-stream test was run.
+on RTC `958fb59` and JuliaFilterGraph `edd39e2`. RTC upstream `e1a1fed`
+(0.2.40) was subsequently merged before acquisition integration. The initial
+numerical campaign below did not change installed applications or run a GPU,
+physical device or live native stream.
 JFG implementation/review commits are `c37c66a`, `f771217` and `7156ec4`;
 the numerical source identity below binds the optimized results independently
-of documentation and packaging commits. These are source changes, not a package
-release or an installed application update.
+of documentation and packaging commits.
+
+## Acquisition integration and publication
+
+FGA 0.8.14 is published from JFG `8bf45ec`; its registered tree is
+`7aa2f3152e8307916199c56fed86f69e08f0fe43`. Full `Pkg.test` passes. The first
+sandboxed run found a missing direct Statistics test dependency; after declaring
+it in the test project, the same full selector passes. A fresh registered
+consumer with no path overrides also passes the statistics and actual Graph
+selectors (`REGISTERED_STATISTICS_PASSED`). Logs are retained under
+`~/.cache/pipewireao/streaming-statistics-20261028`.
+
+RTC 0.2.41 adds typed FITS startup bindings for optional analysis, using the
+existing graph owner's preparation path. Bounded acquisition provenance retains
+the selected graph, binding declaration, recipe, calibration and per-file hashes
+in the artifact manifest. The declaration hash binds HDU/axis selection, while
+file hashes are checked against the actual prepared snapshots. Registration
+rejects an inconsistent graph identity.
+
+Classic/GPI workflows and their numerical evidence are maintained in the
+instrument repository's README. Candidate observation is distinct from dark,
+lamp, eligibility or physical precision qualification. GPI references consume
+the controller's published normalized-pupil samples; a dropped raw stream cannot
+recreate its previous-frame normalization. Its additive modal reference is
+`-R × mean(normalized pixels)`.
 
 ## Delivered scope
 
