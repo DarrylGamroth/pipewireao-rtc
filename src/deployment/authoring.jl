@@ -15,7 +15,7 @@ end
 
 function prepare_runtime_configurations!(application, selected=nothing)
     path = joinpath(application,"rtc/application.yaml")
-    isfile(path) || return nothing
+    selected===nothing && !isfile(path) && return nothing
     authoring = selected === nothing ? source_application(application) : deepcopy(selected)
     entries = get(authoring,"runtime-configurations",[])
     InstrumentDefinition.array_value(entries) || throw(ArgumentError("runtime-configurations must be an array"))

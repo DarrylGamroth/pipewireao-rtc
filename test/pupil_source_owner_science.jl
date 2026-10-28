@@ -19,6 +19,34 @@ function completed(publisher)
     return snapshot_metadata(publisher.snapshot)
 end
 
+@testset "shared command storage cannot masquerade as independent facility residual" begin
+    mktempdir() do directory
+        (;config,path,simulation)=pupil_source_documents(directory)
+        science=Owner.prepare_pupil_source_science(Owner.configuration(config))
+        try
+            command=Float32[1e-9,-2e-9]
+            copyto!(science.command,command)
+            step_graph!(science.graph)
+            expected=Array(graph_output(science.graph,:pupil_opd))
+            C=PipeWireAORTC.Common
+            C.write_yaml(path,aliased_pupil_source(simulation))
+            @test_throws ArgumentError Owner.configuration(config)
+            # Independently prepare the valid AOS graph to prove why the owner
+            # must reject it: aliases are storage dependencies, not link edges.
+            raw=PipeWireAORTC.InstrumentConfiguration.prepare_system(path;simulation_graph="plant")
+            controlled=graph_input(raw.graph,:command)
+            @test Base.mightalias(controlled,graph_input(raw.graph,:duplicate_command))
+            copyto!(controlled,command)
+            step_graph!(raw.graph)
+            actual=Array(graph_output(raw.graph,:pupil_opd))
+            @test actual==2f0.*expected
+            @test actual!=expected
+        finally
+            Pupil.close!(science.publisher)
+        end
+    end
+end
+
 @testset "clocked source warms without publication and owns model command chronology" begin
     mktempdir() do directory
         (;config)=pupil_source_documents(directory)

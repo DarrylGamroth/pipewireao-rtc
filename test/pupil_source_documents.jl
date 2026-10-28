@@ -43,3 +43,18 @@ function pupil_source_documents(directory)
     C.write_json(config,document)
     return (;document,config,path,physical,simulation)
 end
+
+# Both named inputs resolve to the same binding/storage. The second physical
+# mirror therefore feeds the command into the nominally independent residual.
+function aliased_pupil_source(simulation)
+    model=deepcopy(simulation)
+    model["components"]["duplicate"]=deepcopy(model["components"]["primary"])
+    for graph in values(model["graphs"])
+        push!(graph["nodes"],Dict("name"=>"duplicate"))
+        filter!(row->row["name"]!="residual",graph["inputs"])
+        push!(graph["inputs"],Dict("name"=>"duplicate_command","binding"=>"command","destination"=>"duplicate.pdm_command"))
+        graph["nodes"][2]["config"]["uncompensated_opd_schema"]="example.surface/1"
+        push!(graph["links"],Dict("source"=>"duplicate.surface_opd","destination"=>"composition.uncompensated_opd"))
+    end
+    return model
+end

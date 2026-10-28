@@ -72,6 +72,16 @@ end
 # This nominal handoff uses the existing additive pupil operator unchanged.
 # More complex propagation between DM and pupil needs separate calibration.
 function physical_pupil_route(graph,mirror,pupil)
+    # Each named binding is prepared once. Reusing the command binding anywhere
+    # else would make another input/state depend on the source's mutable command
+    # even when no graph link exposes that dependency.
+    command=only(filter(row->row["destination"]==mirror*".pdm_command",graph["inputs"]))
+    binding=command["binding"]
+    count(row->row["binding"]==binding,graph["inputs"])==1 &&
+        all(row->row["binding"]!=binding,get(graph,"parameters",[])) &&
+        all(row->row["initial"]!=binding,get(graph,"delayed_links",[])) &&
+        all(node->all(!=(binding),values(get(node,"bindings",Dict()))),graph["nodes"]) ||
+        throw(ArgumentError("physical command binding must be exclusive to its controlled mirror input"))
     output=only(filter(row->row["name"]==pupil,graph["outputs"]))["source"]
     output==mirror*".surface_opd" && return nothing
     endpoint=split(output,'.')

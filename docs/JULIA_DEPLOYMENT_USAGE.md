@@ -721,7 +721,9 @@ non-HIL AOS graph through `plant: {definition, graph, settings}`. It declares
 `prescription_identity` from the selected source and RTC declarations. The
 command input must bind that existing physical mirror's `pdm_command` in metres
 OPD. Its count and command-order identity come from the physical description;
-they are not inferred from another stream. The declared pupil is either that
+they are not inferred from another stream. Its array binding must be exclusive
+to that input, including graph parameters, delayed initial values and node
+construction bindings. The declared pupil is either that
 mirror's direct surface OPD, or the existing additive pupil composition with a
 direct mirror surface input and an independent residual dependency closure,
 including delayed links. Scaling, transpose or further propagation on that

@@ -63,3 +63,32 @@ const C=PipeWireAORTC.Common
     end
     @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","CUDA","AMDGPU","Proper"),keys(Base.loaded_modules))
 end
+
+@testset "physical command binding is exclusive before either pupil route" begin
+    mktempdir() do directory
+        (;config,path,simulation)=pupil_source_documents(directory)
+        for direct in (false,true)
+            aliased=aliased_pupil_source(simulation)
+            direct && (aliased["graphs"]["plant"]["outputs"][1]["source"]="primary.surface_opd")
+            C.write_yaml(path,aliased)
+            @test_throws ArgumentError Owner.configuration(config)
+            for section in ("parameters","delayed_links","nodes")
+                candidate=deepcopy(simulation)
+                graph=candidate["graphs"]["plant"]
+                direct && (graph["outputs"][1]["source"]="primary.surface_opd")
+                if section=="parameters"
+                    graph[section]=[Dict("destination"=>"composition.uncompensated_opd","binding"=>"command")]
+                elseif section=="delayed_links"
+                    graph[section]=[Dict("source"=>"primary.surface_opd","destination"=>"composition.uncompensated_opd","initial"=>"command")]
+                else
+                    graph["nodes"][2]["bindings"]=Dict("external"=>"command")
+                end
+                C.write_yaml(path,candidate)
+                @test_throws ArgumentError Owner.configuration(config)
+            end
+        end
+        C.write_yaml(path,simulation)
+        @test Owner.configuration(config).command_input===:command
+    end
+    @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","CUDA","AMDGPU"),keys(Base.loaded_modules))
+end

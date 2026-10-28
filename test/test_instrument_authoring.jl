@@ -45,6 +45,16 @@ const D = PipeWireAORTC.DeploymentConfiguration
         @test count(item->item["name"]=="libpipewire-module-queue",core["context.modules"])==1
         @test all(read(joinpath(source,path))==bytes for (path,bytes) in before)
         @test Set(E.application_files(source))==Set(keys(before))
+        standalone_only=E.copy_source(source,joinpath(root,"standalone-only");runtime_configurations=false)
+        rm(joinpath(standalone_only,"rtc/application.yaml"))
+        selected_authoring=E.source_application(standalone_only,profile)
+        E.prepare_runtime_configurations!(standalone_only,selected_authoring)
+        @test isfile(joinpath(standalone_only,"settings.conf"))
+        @test isfile(joinpath(standalone_only,"rtc/application.conf"))
+        if isfile(joinpath(standalone_only,"rtc/application.conf"))
+            @test C.read_json(joinpath(standalone_only,"rtc/application.conf"))==Dict("owners"=>alternate["owners"])
+            @test C.read_json(joinpath(standalone_only,"settings.conf"))==Dict("kind"=>"pupil")
+        end
         @test_throws ArgumentError E.source_application(source,Dict("application"=>"../outside.yaml"))
         @test_throws ArgumentError E.source_application(source,Dict("application"=>"rtc/application.json"))
         mktempdir() do outside
