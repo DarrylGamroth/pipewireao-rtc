@@ -84,6 +84,20 @@ function merge_composition_core(base, component)
             merged[key] = deepcopy(value)
         end
     end
+    queue_nodes = String[]
+    for item in get(merged,"context.modules",Any[])
+        get(item,"name",nothing) == "libpipewire-module-queue" || continue
+        args = get(item,"args",Dict())
+        for key in ("capture.props","playback.props")
+            node = get(get(args,key,Dict()),"node.name",nothing)
+            node isa String && push!(queue_nodes,node)
+        end
+    end
+    object_nodes = Set(get(get(item,"args",Dict()),"node.name",nothing)
+        for item in get(merged,"context.objects",Any[]))
+    length(unique(queue_nodes)) == length(queue_nodes) &&
+        isempty(intersect(Set(queue_nodes),object_nodes)) ||
+        throw(ArgumentError("conflicting native core queue endpoint"))
     return merged
 end
 
@@ -232,8 +246,9 @@ function compose(base::AbstractString, component::AbstractString, destination::A
         mapping = get!(spec, "node-owners", Dict{String,String}())
         for (node, role) in extra["node-owners"]
             haskey(mapping, node) && throw(ArgumentError("component node owner names collide"))
-            haskey(roles, role) || throw(ArgumentError("component nodes must belong to its external owners"))
-            mapping[node] = roles[role]
+            role == "core" || haskey(roles, role) ||
+                throw(ArgumentError("component nodes must belong to its core or external owners"))
+            mapping[node] = role == "core" ? "core" : roles[role]
         end
         for (node,role) in node_owners
             haskey(mapping,node) && throw(ArgumentError("additional sink owner names collide"))
