@@ -52,11 +52,31 @@ properties:
         minItems: 2
         title: Sample pitch (source column, row)
         type: array
+      sha256:
+        maxLength: 64
+        minLength: 64
+        title: Original FITS SHA-256
+        type: string
+      shape:
+        items:
+          minimum: 1
+          type: integer
+        maxItems: 3
+        minItems: 3
+        title: Logical shape (column, row, command)
+        type: array
+      type:
+        enum: [Float32, Float64]
+        title: Decoded sample type
+        type: string
     readOnly: true
     required:
       - path
+      - sha256
       - hdu
       - axes
+      - type
+      - shape
       - command_indices
       - sample_origin
       - sample_pitch

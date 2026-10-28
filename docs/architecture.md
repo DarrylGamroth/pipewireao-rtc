@@ -942,6 +942,21 @@ files cannot be overwritten. Native graphs, queues, session templates and device
 adapter files retain SPA-JSON. Published metadata retains JSON. Strict JSON
 outputs have no comment header; the deployment manifest records their identity.
 
+Selected measured DM influence settings require `path`, `sha256`, `hdu`, `axes`,
+`type` and `shape`, together with `command_indices`, `sample_origin`,
+`sample_pitch`, `opd_scale_m` and `reference_command_m`. The lowercase SHA-256
+identifies the original FITS bytes, verified against the same bounded snapshot
+that the shared artifact reader decodes. `axes` maps native FITS dimensions to
+logical column, row and command dimensions; `shape` declares that logical rank-3
+shape, with one plane per physical command. `type` selects Float32 or Float64
+sample decoding before bilinear interpolation. Float32 permits rounding at that
+boundary; Float64 retains the existing floating-point interpolation precision.
+Sampling remains on the intrinsic mirror source grid, and `command_indices`
+maps planes to physical command order. Resampled responses multiply by
+`opd_scale_m / reference_command_m` and retain Float32 output. No reflection
+factor, normalization or aperture mask is inferred. Preparation records both
+the authored contract and the shared artifact conversion provenance.
+
 Named portable profile YAML declares mode, device owners, calibration and
 endpoint bindings. A separate host YAML declares `scheduling.processes`,
 environment, analysis CPUs and simulator execution overrides. Scheduling process
@@ -1051,9 +1066,83 @@ The existing AOS node configuration key `actuator_pitch` is an adopted simulator
 API boundary and receives this normalized value. Source model strings
 and SDK connection IDs do not establish unit metrology or production sequence.
 
-`load` reads only physical data. `load_simulation` reads simulation YAML plus its
-physical instrument; `load_rtc` reads the RTC configuration, physical instrument
-and control YAML. Each descriptor's `instrument` path is relative to its own
+`load` reads only physical data. `load_simulation_source` reads an authored
+source definition and its physical instrument before generated models exist.
+Prepared optical sources replace `graphs` with exactly
+`preparation: {kind: zemax, recipe: zemax.yaml}`. The authored ZEMAX conversion
+recipe is relative to the source definition file and must resolve to an existing authored file inside
+the instrument, outside `generated/`. The preparation kind must match the physical
+`optical_prescription.format`; physical `optical_paths` provide the mask-routing
+inventory. RTC validation reads metadata, settings and bindings without loading
+AOS, Proper or GPU packages or interpreting the Zemax recipe. These sources permit components only when used by declared post-exposure
+`observations`. Responses, sensors and sources remain empty; imaging and HIL
+execution are unsupported. Without observations, components, profile
+nodes/parameters and settings bindings remain empty. Settings schemas, defaults,
+profile schemas and binding contracts use the existing cold validators.
+
+Physical `optical_filters` maps filter identifiers to `wavelength_m` and
+`transmission` arrays. Each curve has 2:4096 paired samples with strictly
+increasing positive finite wavelengths and finite intensity transmission in
+[0,1]. AOS linearly interpolates within measured support and uses zero
+transmission outside it. Optional `optical_paths.<path>.filters` lists distinct
+installed filter identifiers. It introduces no inferred filter inventory.
+
+Shared `proper_optical_train` settings resolve optional `defaults.spectra` into
+one settings object per physical optical path. Each object contains positive
+`wavelength_um`, `fractional_bandwidth` in [0,2), integer `samples` in 1:64 and
+`filter`. Zero bandwidth requires one sample; a finite band requires at least
+two samples. A path with installed filters must select one of them. Only a path
+without installed filters admits the explicit experimental unfiltered selection
+`none`. Spectra cover every physical path exactly and replace the legacy root
+`wavelength_um`; definitions without spectra retain that legacy setting.
+The generic GUI renders these resolved properties through its existing settings
+form. Source preparation admits cold spectral edits; baked execution definitions
+admit them only with a validated authored model reference and graph
+re-preparation. Physical geometry, calibrated sampling and mask geometry remain
+read-only. Single-wavelength measured masks must match each selected path's
+wavelength and reject finite bands; phase extrapolation or wavelength scaling is
+not inferred. Physical descriptors and cold context retain filter curves and
+selections, and prescription identity hashes the selected spectra and curves.
+
+Optional `observations` map physical `optical_paths` IDs to exactly `graph`,
+`detector` and `normalized_to_photon_rate`. In authored sources, `graph` is an
+instrument-root-relative authored AOS YAML filename outside `generated/`.
+`detector` names an `ingaas` or `hgcdte_linear_avalanche_array` component whose
+sensor matches the physical path. The positive finite scale declares conversion
+from relative optical intensity to cell-integrated photons/s. A response graph
+exposes `photon_rate` and the selected detector's `frame`; its ordinary AOS nodes
+and links may include `pixel_mtf` before acquisition. The MTF component declares
+`bindings: {transfer: <binding>}`, reusing the existing typed, shaped and optionally
+hashed FITS artifact contract. Authored sources with observations require explicit
+SHA-256 hashes on all FITS bindings and validate their decoded shape and hash.
+Optional detector settings stay absent unless
+authored, so scientific noise defaults remain with AOS.
+
+`load_simulation_source` returns the expanded authored response graphs in
+`observation_graphs`, without inventing optical graphs or reading generated
+files. This cold validation checks metadata, component and binding contracts;
+unsupported explicit AOS node types reject during the existing typed compilation.
+Preparation references the same authored response files in execution
+`graphs` under `<optical_path>_response`; execution `observations.<path>.graph`
+is that graph key. `prepare_external_pupil(path; settings)` resolves physical
+optical graphs and optional response graphs through `prepare_system`, checks
+detector identity, shape and exposure against the physical sensor, and passes
+metric sampling, frame schema and scale to AOS. AOS owns exposure accumulation,
+once-per-completed-exposure response execution and discontinuity/generation
+resets. Response grids must match actual optical sampling and shape; no pixel
+mapping or interpolation is inferred. Physical Lyot-mask selection excludes
+only explicitly declared, validated response graph keys.
+
+Scientific preparation emits an ordinary generated execution definition at
+`generated/simulation.yaml`, with no `preparation` field. It references
+`../instrument.yaml`; its graph assets remain instrument-root-relative, such as
+`generated/scc.yaml`. `load_simulation` rejects an authored preparation source with
+an instruction to prepare it and execute the generated definition. Existing
+graph-bearing definitions retain their execution contract, and mixed `graphs`
+and `preparation` declarations reject.
+
+`load_simulation` reads executable simulation YAML plus its physical instrument;
+`load_rtc` reads the RTC configuration, physical instrument and control YAML. Each descriptor's `instrument` path is relative to its own
 file; all remaining graph, calibration, control and output paths are relative to
 the physical instrument directory. Shared cold preparation invokes existing AOS
 factories/compiler; AOS has no RTC configuration reader. The version 3 PipeWire

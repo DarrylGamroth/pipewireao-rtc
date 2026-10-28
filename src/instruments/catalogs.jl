@@ -108,6 +108,18 @@ resolve_settings_schema(selection) = throw(ArgumentError("settings schema must b
 
 function validate_settings_schema(schema)
     _declaration_object(schema, "settings schema")
+    if haskey(schema, "oneOf")
+        fields(schema, ("oneOf", "readOnly", "title", "description"), ("oneOf",), "settings schema alternatives")
+        haskey(schema, "readOnly") && !(schema["readOnly"] isa Bool) &&
+            throw(ArgumentError("settings schema readOnly must be Boolean"))
+        for key in ("title", "description")
+            haskey(schema, key) && _declaration_text(schema[key], "settings schema $key")
+        end
+        alternatives = _declaration_array(schema["oneOf"], "settings schema alternatives"; nonempty=true)
+        length(alternatives) <= 16 || throw(ArgumentError("settings schema allows at most 16 alternatives"))
+        foreach(validate_settings_schema, alternatives)
+        return nothing
+    end
     common = ("\$schema", "type", "title", "description", "readOnly", "enum",
         "x-display-scale", "x-display-title")
     kind = get(schema, "type", nothing)

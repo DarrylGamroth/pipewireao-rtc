@@ -2,7 +2,8 @@
 # references and AOS type/config names; instrument values and topology stay data.
 const COMPONENT_TEMPLATES = ("coordinate_gaussian", "grid_gaussian", "measured",
     "multilayer_atmosphere_opd_f32", "pupil_opd_composition_f32",
-    "shack_hartmann_rate_f32", "pyramid", "cmos", "emccd")
+    "shack_hartmann_rate_f32", "pyramid", "cmos", "emccd", "ingaas", "hgcdte_linear_avalanche_array",
+    "pixel_mtf", "proper_optical_train_f64")
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
 
 function component_template_path(name)
@@ -19,10 +20,11 @@ function component_template(name, templates)
     push!(templates, name)
     result = Common.read_yaml(path; maximum=65536)
     InstrumentDefinition.bounded(result, Ref(16384))
-    fields(result, ("type", "detector", "config"), ("type", "config"), "AOS component template")
+    fields(result, ("type", "detector", "config", "optional_config", "binding_roles"), ("type", "config"), "AOS component template")
     _declaration_text(result["type"], "AOS component type")
     haskey(result, "detector") && _declaration_text(result["detector"], "AOS detector model")
     _declaration_object(result["config"], "AOS component config")
+    _declaration_object(get(result, "optional_config", Dict()), "AOS optional component config")
     return result
 end
 
@@ -73,8 +75,10 @@ function validate_component(selection, instrument, document)
     else
         template in COMPONENT_TEMPLATES && !(template in MIRROR_PROFILES) ||
             throw(ArgumentError("unknown simulation component template $template"))
-        any(key -> haskey(selection, key), ("mirror", "coupling", "bindings", "influence_functions")) &&
+        any(key -> haskey(selection, key), ("mirror", "coupling", "influence_functions")) &&
             throw(ArgumentError("mirror fields require a deformable mirror component"))
+        haskey(selection, "bindings") && template != "pixel_mtf" &&
+            throw(ArgumentError("component bindings require a pixel MTF or deformable mirror component"))
     end
     for (key, collection) in (("mirror", instrument["deformable_mirrors"]),
             ("sensor", instrument["wavefront_sensors"]), ("source", get(document, "sources", Dict())))
@@ -101,11 +105,15 @@ function component_input(value::AbstractDict)
     return startswith(pointer, "/schemas/") || startswith(pointer, "/values/")
 end
 component_input(value) = false
-component_config_fields(template) = Set(key for (key, value) in template["config"] if component_input(value))
+component_config_fields(template) = union(Set(key for (key, value) in template["config"] if component_input(value)),
+    Set(keys(get(template, "optional_config", Dict()))))
 
 function component_node(name, selection, model, templates)
     template = component_template(model, templates)
     config = component_reference(template["config"], selection)
+    for (key, value) in get(template, "optional_config", Dict())
+        haskey(selection["config"], key) && (config[key] = component_reference(value, selection))
+    end
     # Only explicit scientific values and schema inputs belong to application
     # config. Physical geometry and settings references remain template-owned.
     if selection["template"] != "deformable_mirror"
@@ -114,6 +122,12 @@ function component_node(name, selection, model, templates)
     end
     node = Dict{String,Any}("name" => name, "type" => template["type"], "config" => config)
     haskey(template, "detector") && (node["detector"] = template["detector"])
+    if haskey(template, "binding_roles")
+        bindings = _declaration_object(get(selection, "bindings", Dict()), "component bindings")
+        Set(keys(bindings)) == Set(template["binding_roles"]) ||
+            throw(ArgumentError("component requires explicit construction bindings $(template["binding_roles"])"))
+        node["bindings"] = deepcopy(bindings)
+    end
     haskey(selection, "props") && (node["props"] = deepcopy(selection["props"]))
     return node
 end
@@ -177,7 +191,7 @@ function expand_simulation_components!(document, instrument, directory)
     _declaration_object(document["defaults"], "simulation defaults")
     profiles = _declaration_object(document["profiles"], "simulation profiles")
     1 <= length(profiles) <= 16 || throw(ArgumentError("simulation requires 1:16 profiles"))
-    graph_sources = _declaration_fields(document["graphs"], ("production", "calibration", "internal-source", "dark"), ("production", "calibration"), "graphs")
+    graph_sources = simulation_graph_sources(document)
     profile_models = Dict(name => get(_declaration_object(profile, "simulation profile"), "template", nothing)
         for (name, profile) in profiles)
     mirror_components = Dict(name => selection for (name, selection) in components if selection["template"] == "deformable_mirror")
@@ -286,8 +300,9 @@ function expand_simulation_components!(document, instrument, directory)
         graphs[mode] = graph
     end
     all(>(0), values(references)) || throw(ArgumentError("simulation declares an unused component"))
-    document["wire_contracts"] = expand_wire_contracts(document["wire_contracts"])
-    hil = document["hil"]
+    haskey(document, "wire_contracts") &&
+        (document["wire_contracts"] = expand_wire_contracts(document["wire_contracts"]))
+    hil = get(document, "hil", Dict())
     if haskey(hil, "command") || haskey(hil, "frame")
         fields(hil, ("command", "frame"), ("command", "frame"), "HIL endpoints")
         inputs, outputs = Vector{String}[], Set{String}()

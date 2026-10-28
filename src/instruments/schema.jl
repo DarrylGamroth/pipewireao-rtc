@@ -1,33 +1,87 @@
 "Validate physical instrument data without loading a simulation or controller."
 function validate_declaration(document::AbstractDict, directory::AbstractString)
     required = ("schema_version", "id", "deformable_mirrors", "wavefront_sensors")
-    fields(document, (required..., "telescope"), required, "physical instrument")
+    fields(document, (required..., "telescope", "optical_input", "optical_prescription", "optical_paths", "optical_masks", "optical_filters"), required, "physical instrument")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported physical instrument schema"))
     _declaration_identifier(document["id"], "instrument identifier")
     haskey(document, "telescope") && _validate_telescope(document["telescope"])
+    haskey(document, "optical_input") && _validate_optical_input(document["optical_input"])
     for key in ("deformable_mirrors", "wavefront_sensors")
         values = _declaration_object(document[key], key)
-        1 <= length(values) <= 16 || throw(ArgumentError("instrument requires 1:16 $key"))
+        minimum = key == "deformable_mirrors" ? 0 : 1
+        minimum <= length(values) <= 16 || throw(ArgumentError("instrument requires $minimum:16 $key"))
         for (name, value) in values
             _declaration_identifier(name, key)
             key == "deformable_mirrors" ? _validate_mirror_declaration(value, directory, name) :
                 _validate_sensor_declaration(value, directory, name)
         end
     end
+    haskey(document, "optical_prescription") && _validate_optical_prescription(document["optical_prescription"], directory)
+    haskey(document, "optical_filters") && _validate_optical_filters(document["optical_filters"])
+    haskey(document, "optical_paths") && _validate_optical_paths(document["optical_paths"], document["wavefront_sensors"], get(document, "optical_filters", Dict()))
+    haskey(document, "optical_masks") && _validate_optical_masks(document["optical_masks"], directory)
     return nothing
 end
 validate_declaration(document, directory) = throw(ArgumentError("physical instrument must be an object"))
 
-function validate_simulation(document, instrument, directory, graphs)
+function _validate_optical_asset(value, directory, label; prescription=false, check_hash=true)
+    required = prescription ? ("format", "path", "sha256") : ("path", "sha256")
+    allowed = prescription ? (required..., "catalog_archive") : required
+    asset = _declaration_fields(value, allowed, required, label)
+    prescription && asset["format"] != "zemax" && throw(ArgumentError("unsupported optical prescription format"))
+    path = _declaration_text(asset["path"], "$label path")
+    !isabspath(path) && normpath(path) == path && all(part -> !(part in (".", "..")), splitpath(path)) ||
+        throw(ArgumentError("$label path must be a normalized path inside the instrument"))
+    hash = asset["sha256"]
+    hash isa String && occursin(r"^[0-9a-f]{64}$", hash) ||
+        throw(ArgumentError("$label sha256 must be a lowercase SHA-256 hash"))
+    isfile(joinpath(directory, path)) || throw(ArgumentError("$label must reference an existing file"))
+    file = D.relative_asset(directory, path)
+    check_hash && Common.sha256_file(file) != hash && throw(ArgumentError("$label SHA-256 mismatch"))
+    return nothing
+end
+
+function _validate_optical_prescription(value, directory)
+    _validate_optical_asset(value, directory, "optical prescription"; prescription=true)
+    haskey(value, "catalog_archive") &&
+        _validate_optical_asset(value["catalog_archive"], directory, "optical catalog archive")
+    return nothing
+end
+
+function _validate_optical_paths(value, sensors, filters=Dict())
+    paths = _declaration_object(value, "optical paths")
+    1 <= length(paths) <= 16 || throw(ArgumentError("instrument requires 1:16 optical paths"))
+    targets = Set{String}()
+    for (name, value) in paths
+        _declaration_identifier(name, "optical path identifier")
+        path = _declaration_fields(value, ("sensor", "lyot_stop_port", "filters"), ("sensor", "lyot_stop_port"), "optical path $name")
+        sensor = _declaration_identifier(path["sensor"], "optical path sensor")
+        haskey(sensors, sensor) || throw(ArgumentError("optical path $name names an unknown sensor"))
+        sensor in targets && throw(ArgumentError("optical paths must have distinct sensor targets"))
+        push!(targets, sensor)
+        path["lyot_stop_port"] in ("transmitted", "reflected") ||
+            throw(ArgumentError("unsupported optical path Lyot stop port"))
+        if haskey(path, "filters")
+            installed = _declaration_array(path["filters"], "optical path $name filters")
+            length(installed) <= 64 && length(unique(installed)) == length(installed) ||
+                throw(ArgumentError("optical path $name requires at most 64 distinct filters"))
+            for filter in installed
+                _declaration_identifier(filter, "optical path filter")
+                haskey(filters, filter) || throw(ArgumentError("optical path $name names an unknown filter $filter"))
+            end
+        end
+    end
+    return nothing
+end
+
+function validate_simulation_common(document, instrument)
     document["schema_version"] === 1 || throw(ArgumentError("unsupported simulation definition schema"))
     _declaration_identifier(document["id"], "simulation identifier")
-    defaults = document["defaults"]
     settings_schema = document["settings_schema"]
     mirrors = instrument["deformable_mirrors"]
     sensors = instrument["wavefront_sensors"]
-    profiles = document["profiles"]
-    bindings = document["bindings"]
-    1 <= length(mirrors) <= 16 || throw(ArgumentError("instrument requires 1:16 mirrors"))
+    minimum_mirrors = haskey(document, "hil") ? 1 : 0
+    minimum_mirrors <= length(mirrors) <= 16 || throw(ArgumentError("simulation requires $minimum_mirrors:16 mirrors"))
     1 <= length(sensors) <= 16 || throw(ArgumentError("instrument requires 1:16 sensors"))
     isfinite_positive(document["frame_period_s"]) || throw(ArgumentError("frame_period_s must be finite and positive"))
     _declaration_object(settings_schema, "settings_schema")
@@ -35,10 +89,11 @@ function validate_simulation(document, instrument, directory, graphs)
         throw(ArgumentError("settings_schema must declare type and properties"))
     settings_schema["type"] == "object" && InstrumentDefinition.object_value(settings_schema["properties"]) ||
         throw(ArgumentError("settings_schema must declare object properties"))
-    _validate_wire_contracts(document["wire_contracts"])
+    haskey(document, "wire_contracts") && _validate_wire_contracts(document["wire_contracts"])
     for key in ("defaults", "profiles", "bindings", "sensors", "sources")
         _declaration_object(get(document,key,Dict()), "simulation $key")
     end
+    validate_optical_spectra(document["defaults"], instrument)
     for (name, response) in get(document,"sensors",Dict())
         haskey(sensors,name) || throw(ArgumentError("simulation response names an unknown sensor"))
         fields(response,("post_readout_gain", "diffraction_padding", "half_pixel_shift", "shannon_sampling",
@@ -69,14 +124,18 @@ function validate_simulation(document, instrument, directory, graphs)
     end
 
     validate_imaging(document)
+    return nothing
+end
 
-    graph_paths = _declaration_fields(document["graphs"], ("production", "calibration", "internal-source", "dark"),
-        ("production", "calibration"), "graphs")
+function validate_simulation(document, instrument, directory, graphs)
+    validate_simulation_common(document, instrument)
+    defaults, settings_schema = document["defaults"], document["settings_schema"]
+    mirrors, profiles, bindings = instrument["deformable_mirrors"], document["profiles"], document["bindings"]
+    graph_paths = simulation_graph_sources(document)
     graph_nodes = Dict{String,Set{String}}()
     graph_inputs = Dict{String,Set{String}}()
     graph_outputs = Dict{String,Set{String}}()
-    for mode in ("production", "calibration", "internal-source", "dark")
-        haskey(graph_paths, mode) || continue
+    for mode in keys(graph_paths)
         graph = _declaration_graph(graphs[mode])
         for entry in graphs[mode]["nodes"]
             node_configuration_bindings(entry, bindings)
@@ -87,15 +146,38 @@ function validate_simulation(document, instrument, directory, graphs)
     end
     all_graph_nodes = union(values(graph_nodes)...)
     _validate_profiles(profiles, bindings, all_graph_nodes)
+    if !haskey(document, "hil")
+        for (mode, nodes) in graph_nodes, (name, profile) in profiles, replacement in profile["nodes"]
+            replacement["name"] in nodes || throw(ArgumentError(
+                "standalone profile $name replacement $(replacement["name"]) is absent from graph $mode"))
+        end
+    end
     _validate_bindings(bindings, mirrors, defaults, settings_schema, profiles, directory)
     _validate_settings_bindings(document["settings_bindings"], profiles, defaults,
         settings_schema, all_graph_nodes)
-    _validate_hil(document["hil"], graph_inputs, graph_outputs)
-    validate_responses(document, graph_inputs["production"])
-    for contract in document["wire_contracts"]
-        validate_boundary_contract(document["hil"]["command_input"],contract["command_schema"])
+    if haskey(document, "hil")
+        _validate_hil(document["hil"], graph_inputs, graph_outputs)
+        validate_responses(document, graph_inputs["production"])
+        for contract in document["wire_contracts"]
+            validate_boundary_contract(document["hil"]["command_input"],contract["command_schema"])
+        end
+    else
+        for (mode, inputs) in graph_inputs
+            validate_responses(document, inputs; label="standalone graph $mode input")
+        end
     end
     return nothing
+end
+
+function simulation_graph_sources(document)
+    graphs = _declaration_object(document["graphs"], "graphs")
+    if haskey(document, "hil")
+        return _declaration_fields(graphs, ("production", "calibration", "internal-source", "dark"),
+            ("production", "calibration"), "graphs")
+    end
+    1 <= length(graphs) <= 16 || throw(ArgumentError("simulation requires 1:16 graphs"))
+    foreach(name -> _declaration_identifier(name, "simulation graph name"), keys(graphs))
+    return graphs
 end
 
 _declaration_object(value, label) = InstrumentDefinition.object_value(value) ? value :
@@ -206,14 +288,36 @@ function _validate_sensor_declaration(spec, directory, name)
     sensor = _declaration_object(spec, "sensor $name")
     _validate_sensor_declaration(sensor_kind(sensor), sensor, directory, name)
     haskey(sensor, "acquisition") && _validate_acquisition(sensor["acquisition"])
-    _declaration_text(sensor["expected_schema"], "sensor expected_schema")
+    haskey(sensor, "expected_schema") && _declaration_text(sensor["expected_schema"], "sensor expected_schema")
     return nothing
 end
 
 sensor_kind(spec::AbstractDict) = sensor_kind(get(spec, "kind", "shack_hartmann"))
 sensor_kind(kind::AbstractString) = kind == "shack_hartmann" ? Val(:shack_hartmann) :
-    kind == "pyramid" ? Val(:pyramid) : throw(ArgumentError("unsupported sensor kind"))
-sensor_kind(kind) = throw(ArgumentError("sensor kind must be shack_hartmann or pyramid"))
+    kind == "pyramid" ? Val(:pyramid) : kind == "scc" ? Val(:scc) :
+    kind == "llowfs" ? Val(:llowfs) : throw(ArgumentError("unsupported sensor kind"))
+sensor_kind(kind) = throw(ArgumentError("sensor kind must be shack_hartmann, pyramid, scc or llowfs"))
+
+function _validate_sensor_declaration(::Union{Val{:scc},Val{:llowfs}}, spec, directory, name)
+    required = ("kind", "detector")
+    sensor = _declaration_fields(spec, (required..., "acquisition", "expected_schema"), required,
+        "imaging sensor $name")
+    detector = _declaration_fields(sensor["detector"], ("name", "controller"), ("name",), "physical detector")
+    _declaration_text(detector["name"], "detector name")
+    haskey(detector,"controller") && _declaration_text(detector["controller"],"detector controller")
+    return nothing
+end
+
+function _validate_optical_input(value)
+    required = ("plane", "diameter_m", "curvature", "registration")
+    input = _declaration_fields(value, required, required, "optical input")
+    for key in ("plane", "registration")
+        _declaration_text(input[key], "optical input $key")
+    end
+    isfinite_positive(input["diameter_m"]) || throw(ArgumentError("optical input diameter_m must be positive and finite"))
+    input["curvature"] == "collimated" || throw(ArgumentError("unsupported optical input curvature"))
+    return nothing
+end
 
 function _validate_sensor_declaration(::Val{:shack_hartmann}, spec, directory, name)
     sensor = _declaration_fields(spec,
@@ -264,11 +368,13 @@ end
 function _validate_acquisition(value)
     acquisition = _declaration_fields(value,
         ("roi_origin", "exposure_duration_s"),
-        ("roi_origin", "exposure_duration_s"), "sensor acquisition")
-    origin = acquisition["roi_origin"]
-    InstrumentDefinition.array_value(origin) && length(origin) == 2 &&
-        all(x -> isnonnegative_integer(x) && x <= typemax(Int32), origin) ||
-        throw(ArgumentError("ROI origin requires two nonnegative Int32 [row,column] offsets"))
+        ("exposure_duration_s",), "sensor acquisition")
+    if haskey(acquisition, "roi_origin")
+        origin = acquisition["roi_origin"]
+        InstrumentDefinition.array_value(origin) && length(origin) == 2 &&
+            all(x -> isnonnegative_integer(x) && x <= typemax(Int32), origin) ||
+            throw(ArgumentError("ROI origin requires two nonnegative Int32 [row,column] offsets"))
+    end
     for name in ("exposure_duration_s",)
         number = acquisition[name]
         isfinite_positive(number) && isfinite_positive(Float32(number)) ||
@@ -457,9 +563,11 @@ function _validate_bindings(bindings, mirrors, defaults, settings_schema, profil
             _validate_setting_reference(binding["setting"], defaults, settings_schema, profiles,
                 "measured influence setting")
         elseif kind == "fits"
-            binding = _declaration_fields(binding_value, ("kind", "path", "hdu", "axes", "type", "shape"),
+            binding = _declaration_fields(binding_value, ("kind", "path", "hdu", "axes", "type", "shape", "sha256"),
                 ("kind", "path", "hdu", "axes", "type", "shape"), "FITS binding $name")
             _validate_artifact_values(binding, directory, "FITS binding $name"; check_file=false)
+            haskey(binding, "sha256") && !(binding["sha256"] isa String && occursin(r"^[0-9a-f]{64}$", binding["sha256"])) &&
+                throw(ArgumentError("FITS binding sha256 must be a lowercase SHA-256 hash"))
         else
             throw(ArgumentError("unknown instrument binding kind for $name"))
         end

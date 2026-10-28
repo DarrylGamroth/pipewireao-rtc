@@ -1,5 +1,32 @@
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
+function Instruments.optical_graph_document(declaration::NamedTuple, configured::AbstractDict,
+        mode::AbstractString)
+    graphs = AdaptiveOpticsSim.Optics.Zemax.execution_graphs(declaration.instrument.directory;
+        settings=configured)
+    haskey(graphs, mode) || throw(ArgumentError("unknown prepared optical path $mode"))
+    # AOS freezes bounded generator documents. RTC's cold component/profile
+    # expansion uses its ordinary mutable JSON document shape before sealing.
+    document = Instruments.json_value(graphs[mode])
+    observations = get(declaration.document, "observations", Dict())
+    if haskey(observations, mode)
+        selection = observations[mode]
+        response = Instruments.graph_document(declaration, configured;
+            simulation_graph=selection["graph"])
+        detector = only(node for node in response["nodes"] if node["name"] == selection["detector"])
+        sampling = get(detector["config"], "pixel_sampling_m", nothing)
+        sampling isa AbstractVector && length(sampling) == 2 &&
+            all(Instruments.isfinite_positive, sampling) ||
+            throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+        isapprox(sampling[1], sampling[2]; rtol=8eps(Float32), atol=0) ||
+            throw(ArgumentError("PROPER spectral output currently requires square detector pixels"))
+        # The selected central wavelength changes the native diffraction grid;
+        # the physical camera pitch remains fixed across cold replacements.
+        only(document["nodes"])["config"]["output_sampling_m"] = sampling[1]
+    end
+    return document
+end
+
 function configuration_binding_names(document, factories)
     names = Symbol[]
     for entry in document["nodes"]
@@ -69,6 +96,9 @@ selects `production`; `calibration=true` selects its ideal diagnostic graph.
 `simulation_graph="internal-source"` selects that explicitly declared optical
 path; `"dark"` selects declared zero detector photon rate. Both use the same
 typed preparation and execution interfaces.
+Without an HIL declaration, an explicitly named graph uses that same compiler
+and bindings, and returns `boundary=nothing` and `driver=nothing`. No RTC control
+or lifecycle owner is created. The result retains `declaration` and `configured`.
 """
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
         simulation_graph=calibration ? "calibration" : "production",
@@ -91,19 +121,23 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
         validate_sample_period(node.config, declaration.document["frame_period_s"])
     end
     graph = prepare_algorithm_graph(definition;target,execution)
-    hil = declaration.document["hil"]
-    Instruments.fields(hil,("command_input","frame_output"),("command_input","frame_output"),"instrument HIL boundary")
-    boundary = prepare_graph_hil_boundary(graph;
-        command_input=configured_command_inputs(hil["command_input"]),frame_output=Symbol(hil["frame_output"]))
+    boundary = if haskey(declaration.document, "hil")
+        hil = declaration.document["hil"]
+        Instruments.fields(hil,("command_input","frame_output"),("command_input","frame_output"),"instrument HIL boundary")
+        prepare_graph_hil_boundary(graph;
+            command_input=configured_command_inputs(hil["command_input"]),frame_output=Symbol(hil["frame_output"]))
+    else
+        nothing
+    end
     frame_period_s = Float32(declaration.document["frame_period_s"])
     isfinite(frame_period_s) && frame_period_s>0 || throw(ArgumentError("invalid instrument frame period"))
     period_ns = round(UInt64,Float64(frame_period_s)*1e9)
-    driver = FixedStepModelTimeDriver(PeriodicSchedule(;period_ns))
+    driver = boundary === nothing ? nothing : FixedStepModelTimeDriver(PeriodicSchedule(;period_ns))
     mirror_names = Tuple(Symbol.(collect(keys(declaration.instrument.document["deformable_mirrors"]))))
     mirror_descriptions = NamedTuple{mirror_names}(Tuple(
         Instruments.mirror(declaration,configured,name).description
         for name in keys(declaration.instrument.document["deformable_mirrors"])))
-    return (;definition,graph,boundary,target,frame_period_s,driver,mirror_descriptions,
+    return (;definition,graph,boundary,target,frame_period_s,driver,mirror_descriptions,declaration,configured,
         settings=Instruments._instrument_seal(configured))
 end
 
@@ -201,4 +235,71 @@ function Instruments.binding_values(::Val{:pupil_coordinates}, declaration, conf
         basis[i,j,2] = (j-center)/radius
     end
     return basis
+end
+
+"""
+    InstrumentConfiguration.prepare_external_pupil(path; settings=NamedTuple())
+
+Prepare physical optical paths and their optional post-exposure AOS response
+systems. The generated execution declaration names response graphs by graph key;
+the authored source declaration names their instrument-relative YAML files.
+AOS retains exposure accumulation, response execution, and reset ownership.
+"""
+function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple())
+    declaration = Instruments.load_simulation(path)
+    haskey(declaration.document, "hil") &&
+        throw(ArgumentError("external-pupil preparation requires standalone optical graphs"))
+    configured = Instruments.settings(declaration, settings)
+    paths = get(declaration.instrument.document, "optical_paths", Dict())
+    isempty(paths) && throw(ArgumentError("external-pupil preparation requires physical optical_paths"))
+    observations = get(declaration.document, "observations", Dict())
+    optical = Dict{Symbol,Any}()
+    durations = Dict{Symbol,ModelDuration}()
+    selections = Dict{Symbol,Any}()
+    for (name, physical_path) in paths
+        haskey(declaration.graphs, name) || throw(ArgumentError("physical optical path has no execution graph $name"))
+        optical[Symbol(name)] = Instruments.prepare_system(path; settings,
+            simulation_graph=name).graph
+        sensor = declaration.instrument.document["wavefront_sensors"][physical_path["sensor"]]
+        acquisition = get(sensor, "acquisition", Dict())
+        seconds = get(acquisition, "exposure_duration_s", nothing)
+        Instruments.isfinite_positive(seconds) || throw(ArgumentError("physical optical path requires a sensor exposure duration"))
+        durations[Symbol(name)] = ModelDuration(round(UInt64, seconds * 1e9))
+        observation = (; output=:intensity, sampling_node=:optics)
+        if haskey(observations, name)
+            entry = observations[name]
+            key = entry["graph"]
+            document = Instruments.graph_document(declaration, configured; simulation_graph=key)
+            output = only(filter(output -> output["name"] == "frame", document["outputs"]))
+            output["source"] == entry["detector"] * ".frame" ||
+                throw(ArgumentError("resolved observation frame must come from its declared detector"))
+            node = only(filter(node -> node["name"] == entry["detector"], document["nodes"]))
+            node["type"] == "detector" && get(node, "detector", nothing) ==
+                declaration.document["components"][entry["detector"]]["template"] ||
+                throw(ArgumentError("resolved observation detector differs from its component"))
+            config = node["config"]
+            haskey(sensor, "expected_schema") && sensor["expected_schema"] != config["frame_schema"] &&
+                throw(ArgumentError("observation detector frame_schema differs from its physical sensor expected_schema"))
+            sampling = config["pixel_sampling_m"]
+            sampling isa AbstractVector && length(sampling) == 2 && all(Instruments.isfinite_positive, sampling) ||
+                throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+            exposure = config["exposure_duration_s"]
+            Instruments.isfinite_positive(exposure) && isapprox(exposure, seconds; rtol=8eps(Float32), atol=0) ||
+                throw(ArgumentError("observation detector exposure differs from its physical sensor acquisition"))
+            shape = (config["rows"], config["columns"])
+            haskey(sensor, "detector_shape") && Tuple(sensor["detector_shape"]) != shape &&
+                throw(ArgumentError("observation detector shape differs from its physical sensor"))
+            response = (;graph=Instruments.prepare_system(path; settings, simulation_graph=key).graph,
+                input=:photon_rate, output=:frame,
+                normalized_to_photon_rate=entry["normalized_to_photon_rate"],
+                frame_schema=config["frame_schema"],
+                pixel_sampling_m=(sampling[1], sampling[2]), exposure_duration_s=exposure)
+            observation = (;observation..., response)
+        end
+        selections[Symbol(name)] = observation
+    end
+    names = Tuple(Symbol.(sort!(collect(keys(paths)))))
+    named(values) = NamedTuple{names}(Tuple(values[name] for name in names))
+    return AlgorithmGraphs.prepare_external_pupil(named(optical);
+        exposure_durations=named(durations), observations=named(selections))
 end

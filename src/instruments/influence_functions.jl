@@ -1,6 +1,6 @@
 # FITS is an instrument calibration input, decoded only during preparation.
 const _MAX_INFLUENCE_BYTES = 512 * 1024 * 1024
-const _INFLUENCE_FIELDS = (:path, :hdu, :axes, :command_indices, :sample_origin,
+const _INFLUENCE_FIELDS = (:path, :sha256, :hdu, :axes, :type, :shape, :command_indices, :sample_origin,
     :sample_pitch, :opd_scale_m, :reference_command_m)
 
 function _influence_integer(value::Integer, upper, name)
@@ -33,10 +33,24 @@ function _influence_spec(spec::NamedTuple, count)
         Set(keys(spec)) == Set(_INFLUENCE_FIELDS) || throw(ArgumentError(
             "influence_functions requires exactly $(_INFLUENCE_FIELDS)",
         ))
+    spec.path isa AbstractString && isvalid(spec.path) ||
+        throw(ArgumentError("influence path must be a valid file path string"))
     hdu = _influence_integer(spec.hdu, typemax(Int), "influence HDU")
     axes = _influence_tuple(spec.axes, 3,
         v -> _influence_integer(v, 3, "influence axis"), "influence axes")
     Set(axes) == Set((1, 2, 3)) || throw(ArgumentError("influence axes must be a permutation of 1:3"))
+    spec.sha256 isa AbstractString && occursin(r"^[0-9a-f]{64}$", spec.sha256) ||
+        throw(ArgumentError("influence sha256 must be 64 lowercase hexadecimal digits"))
+    spec.type in ("Float32", "Float64") ||
+        throw(ArgumentError("influence type must be Float32 or Float64"))
+    T = spec.type == "Float32" ? Float32 : Float64
+    shape = _influence_tuple(spec.shape, 3,
+        v -> _influence_integer(v, typemax(Int), "influence shape extent"), "influence shape")
+    Artifacts.checked_shape(shape, sizeof(T))
+    shape[1] >= 2 && shape[2] >= 2 || throw(ArgumentError(
+        "influence FITS image requires at least two samples along each spatial axis",
+    ))
+    shape[3] == count || throw(ArgumentError("influence FITS plane count must equal physical command count"))
     command_indices = _influence_tuple(spec.command_indices, count,
         v -> _influence_integer(v, count, "influence command index"), "influence command_indices")
     length(Set(command_indices)) == count || throw(ArgumentError(
@@ -53,7 +67,8 @@ function _influence_spec(spec::NamedTuple, count)
     !iszero(reference_command_m) || throw(ArgumentError("influence reference_command_m must be nonzero"))
     scale = opd_scale_m / reference_command_m
     isfinite(scale) && !iszero(scale) || throw(ArgumentError("influence OPD conversion must be finite and nonzero"))
-    return (; hdu, axes, command_indices, sample_origin, sample_pitch,
+    return (; sha256=String(spec.sha256), hdu, axes, type=spec.type, shape,
+        command_indices, sample_origin, sample_pitch,
         opd_scale_m, reference_command_m)
 end
 
@@ -69,43 +84,6 @@ function _influence_storage_size(shape, element_bytes, name)
     end
     return bytes
 end
-
-function _influence_snapshot(path::AbstractString)
-    isvalid(path) && !isempty(path) && !occursin('\0', path) ||
-        throw(ArgumentError("influence path must be a nonempty valid file path"))
-    isfile(path) || throw(ArgumentError("influence path must be a regular file"))
-    bytes = open(path, "r") do io
-        info = stat(io)
-        isfile(info) && 0 < info.size <= _MAX_INFLUENCE_BYTES ||
-            throw(ArgumentError("influence file must be a regular file of at most 512 MiB"))
-        snapshot = read(io, Int(info.size) + 1)
-        length(snapshot) == info.size || throw(ArgumentError("influence file changed size during read"))
-        snapshot
-    end
-    # Reject gzip and other whole-file compression before CFITSIO can expand it.
-    length(bytes) >= 80 && bytes[1:8] == codeunits("SIMPLE  ") ||
-        throw(ArgumentError("influence file must be an uncompressed FITS file"))
-    return bytes
-end
-
-_influence_snapshot(_) = throw(ArgumentError("influence path must be a file path string"))
-
-function _influence_image_shape(hdu::FITSIO.ImageHDU{T,3}, metadata, count) where {T}
-    T <: Real && T !== Bool || throw(ArgumentError("influence FITS image must contain real numbers"))
-    header = FITSIO.read_header(hdu)
-    any(key -> haskey(header, key), ("BLANK", "ZIMAGE", "ZCMPTYPE", "ZBITPIX", "ZNAXIS")) &&
-        throw(ArgumentError("influence FITS image must not use BLANK or compression"))
-    native_shape = size(hdu)
-    _influence_storage_size(native_shape, sizeof(T), "decoded FITS image")
-    logical_shape = ntuple(i -> native_shape[metadata.axes[i]], 3)
-    logical_shape[1] >= 2 && logical_shape[2] >= 2 || throw(ArgumentError(
-        "influence FITS image requires at least two samples along each spatial axis",
-    ))
-    logical_shape[3] == count || throw(ArgumentError("influence FITS plane count must equal physical command count"))
-    return (logical_shape[1], logical_shape[2])
-end
-
-_influence_image_shape(_, _, _) = throw(ArgumentError("influence HDU must be a three-dimensional real FITS image"))
 
 function _influence_sample_coordinates(metadata, spatial_shape, description, resolution, registration)
     columns, rows = description.layout.grid_shape
@@ -132,6 +110,8 @@ Snapshot a supplied FITS calibration and prepare dimensionless, physical-command
 ordered response columns. FITS logical spatial samples refer to the intrinsic
 mirror source grid. Bilinear interpolation covers the entire square pupil; no
 extrapolation, aperture masking, normalization, or reflection factor is added.
+The required SHA-256 identifies the original snapshot; `type` selects Float32 or
+Float64 decoding before interpolation, and `shape` is in logical axis order.
 """
 function _load_influence_functions(spec::NamedTuple, description, pupil_resolution, pupil_registration)
     count = command_count(description)
@@ -140,32 +120,32 @@ function _load_influence_functions(spec::NamedTuple, description, pupil_resoluti
     _influence_storage_size((resolution, resolution, count), sizeof(Float32), "influence output")
     registration = _pupil_registration(pupil_registration)
     _require_pupil_geometry(description, registration)
-    snapshot = _influence_snapshot(spec.path)
-    digest = bytes2hex(SHA.sha256(snapshot))
-    return FITSIO.FITS(snapshot) do file
-        metadata.hdu <= length(file) || throw(ArgumentError("influence HDU is outside the FITS file"))
-        hdu = file[metadata.hdu]
-        spatial_shape = _influence_image_shape(hdu, metadata, count)
-        column_samples, row_samples = _influence_sample_coordinates(
-            metadata, spatial_shape, description, resolution, registration)
-        native = read(hdu)
-        all(isfinite, native) || throw(ArgumentError("influence FITS samples must all be finite"))
-        logical = PermutedDimsArray(native, metadata.axes)
-        modes = Matrix{Float32}(undef, resolution * resolution, count)
-        scale = metadata.opd_scale_m / metadata.reference_command_m
-        for (plane, command) in pairs(metadata.command_indices)
-            interpolant = Interpolations.interpolate(view(logical, :, :, plane),
-                Interpolations.BSpline(Interpolations.Linear()))
-            for j in 1:resolution, i in 1:resolution
-                value = Float32(interpolant(column_samples[i], row_samples[j]) * scale)
-                isfinite(value) || throw(ArgumentError("resampled influence response must remain finite Float32"))
-                modes[i + (j - 1) * resolution, command] = value
-            end
+    source = Artifacts.FITSArtifact(spec.path; hdu=metadata.hdu, axes=metadata.axes)
+    snapshot = Artifacts.snapshot(source.path; check=()->nothing)
+    bytes2hex(SHA.sha256(snapshot)) == metadata.sha256 ||
+        throw(ArgumentError("influence SHA-256 differs from the file snapshot"))
+    T = metadata.type == "Float32" ? Float32 : Float64
+    prepared = Artifacts.prepare_snapshot(source, T, metadata.shape, snapshot)
+    spatial_shape = (metadata.shape[1], metadata.shape[2])
+    column_samples, row_samples = _influence_sample_coordinates(
+        metadata, spatial_shape, description, resolution, registration)
+    logical = prepared.data
+    modes = Matrix{Float32}(undef, resolution * resolution, count)
+    scale = metadata.opd_scale_m / metadata.reference_command_m
+    for (plane, command) in pairs(metadata.command_indices)
+        interpolant = Interpolations.interpolate(view(logical, :, :, plane),
+            Interpolations.BSpline(Interpolations.Linear()))
+        for j in 1:resolution, i in 1:resolution
+            value = Float32(interpolant(column_samples[i], row_samples[j]) * scale)
+            isfinite(value) || throw(ArgumentError("resampled influence response must remain finite Float32"))
+            modes[i + (j - 1) * resolution, command] = value
         end
-        provenance = (; sha256=digest, metadata..., spatial_shape,
-            pupil_registration=registration, pupil_resolution=resolution, interpolation="bilinear")
-        return (; modes, provenance)
     end
+    # Publication provenance must remain independent of a local build directory.
+    artifact = filter(pair -> first(pair) != "source", prepared.provenance)
+    provenance = (; metadata..., artifact, spatial_shape,
+        pupil_registration=registration, pupil_resolution=resolution, interpolation="bilinear")
+    return (; modes, provenance)
 end
 
 _load_influence_functions(_, _, _, _) = throw(ArgumentError("influence_functions must be a NamedTuple"))

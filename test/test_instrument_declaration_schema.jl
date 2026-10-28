@@ -155,6 +155,10 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
         @test IC.load(documents.paths.physical).document == physical
         @test IC.load_simulation(documents.paths.simulation).document == declaration
+        loaded = IC.load_simulation(documents.paths.simulation)
+        context = IC.configuration_context(loaded, IC.settings(loaded))
+        @test context["simulation"]["frame_period_ns"] == UInt64(10_000_000)
+        @test context["simulation"]["rate"] == 100
         with_response = deepcopy(declaration)
         with_response["responses"] = Dict("command"=>Dict("kind"=>"second_order",
             "natural_frequency_hz"=>20, "damping_ratio"=>0.7,

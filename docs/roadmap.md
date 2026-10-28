@@ -12,6 +12,109 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Shared mirror-free optical declarations — 2026-10-27
+
+The existing `InstrumentConfiguration` loader now admits standalone optical
+plants with an empty physical mirror collection, declared SCC/LLOWFS detector
+identities and an explicit entrance-plane description. Their simulation
+definitions use the existing settings, component, binding, profile and AOS graph
+contracts. Omitting both `hil` and `wire_contracts` admits explicitly selected
+graph names; it creates no controller or RTC lifecycle. HIL and RTC control
+declarations retain their nonempty mirror and production/calibration contracts.
+
+Prepared optical models distinguish the authored source definition from the
+generated execution definition. `load_simulation_source` validates the source's
+`preparation: {kind: zemax, recipe: zemax.yaml}` and shared cold
+settings/bindings before any generated files exist. The contained authored ZEMAX
+conversion recipe path is relative to that source YAML. Physical optical paths validate sampled-mask
+ports. Optional post-exposure `observations` reference authored standard AOS
+graphs and matching InGaAs/HgCdTe detector components; source loading expands and
+validates those graphs before generated optics exist. Components must be used by
+these declared graphs. Responses, sensors and sources remain empty, with no
+imaging or HIL boundary. Execution observations select graph keys instead of
+source YAML paths; the shared `prepare_external_pupil` boundary resolves detector
+sampling, exposure and frame schema before handing execution to AOS.
+Scientific preparation owns
+recipe interpretation and emits ordinary `generated/simulation.yaml` plus graph
+assets; `load_simulation` directs source callers to that execution definition.
+Graph-bearing GPI and REVOLT definitions retain their existing loader contract.
+
+`prepare_system(...; simulation_graph="scc")` uses the same binding allocation
+and typed AOS compiler, returning `boundary=nothing` and `driver=nothing` for a
+standalone graph. Numerical Proper execution remains in AdaptiveOpticsSim.
+Shared `proper_optical_train` settings and `proper_optical_train_f64`/`ingaas`
+component templates contain generic declarations only. Structural optical
+settings require regenerated input/graph provenance; detector geometry and
+acquisition parameters are never inferred from physical camera names. There is
+no HgCdTe acquisition template until AOS provides the complete selectable model.
+Physical SCC/LLOWFS declarations contain `kind` and `detector.name`, with optional
+`expected_schema` and `acquisition`; ZEMAX configuration and surface indices belong
+to the simulation model. An optional root `optical_prescription` binds the physical
+prescription by exact `format`, `path` and lowercase `sha256`; the supported format
+is `zemax`. Its optional `catalog_archive` contains exactly `path` and `sha256`.
+These existing files use normalized paths inside the instrument root, including
+resolved symlinks, and their hashes are checked without scientific packages.
+Optional root `optical_paths` maps 1:16 independent path identifiers to
+`sensor`, `lyot_stop_port` and optional installed `filters`. Each target names an existing wavefront sensor once;
+the supported Lyot stop output ports are `transmitted` and `reflected`. These are
+physical routing declarations; graph names and execution stay in simulation data.
+The sealed physical/scientific descriptors and cold context retain both fields,
+and prescription identity includes current prescription/catalog bytes. Native
+publication v2 retains its existing fields and binds the physical descriptor in
+its scientific identity. Source export already copies these instrument-local
+files with the complete source tree.
+
+Optional physical `optical_filters` contains bounded measured wavelength and
+intensity-transmission curves. `defaults.spectra` selects central wavelength,
+fractional bandwidth, sample count and an allowed installed filter independently
+for every physical path, replacing the legacy root wavelength when present.
+Paths without installed filters admit only explicit `filter: none`. The shared
+settings schema resolves these properties for the generic GUI and preserves
+read-only geometry. Spectral edits require authored preparation or validated
+execution re-preparation; static baked graphs reject them. Physical metadata and
+cold context retain curves/selections, and prescription identity includes both.
+
+Optional physical `optical_masks` maps 1:16 mask identifiers to nonempty response
+maps keyed by `transmitted` and/or `reflected`. Each response requires
+`amplitude`, `sampling_m: [dy, dx]`, `center_pixel: [row, column]`,
+`outside_amplitude` and `outside_phase_rad`. Sampling is positive in metres;
+the finite one-based optical-axis coordinate may lie outside a cropped map.
+Amplitude is field amplitude in [0,1], including its outside value; optional
+`phase` and the outside phase are radians. Responses are independent: no intensity
+square root or complementary reflection is inferred. A phase map requires
+positive `wavelength_m`; any declared response wavelength must match every selected
+path's wavelength and cannot cover a finite band. Measured phase is never scaled
+or extrapolated. An amplitude-only response without `wavelength_m` declares
+an achromatic approximation. Each map contains exactly `path`, lowercase `sha256`,
+one-based `hdu`, explicit `axes`, `type` and logical two-dimensional `shape`.
+The type is the existing decoded FITS binding type (`Float32` or `Float64`),
+including finite conversion and target rounding. Cold loading checks actual
+bounded FITS data, finite samples, declared-precision amplitude bounds, logical
+shape, axes and captured-byte hashes without AOS or GPU packages. Optional phase
+maps may use a separate file or HDU but must share the logical amplitude shape.
+
+Shared optical settings admit `masks.focal_plane` and `masks.lyot` as either their
+existing ideal radius/circle declarations (optional `kind: ideal`) or
+`{kind: fits, mask: <physical identifier>}`. Optional `masks.apodizer` accepts the
+same FITS selection or `{kind: unity}`; omission preserves unity. These shared
+settings are read-only; application-local schema property overrides remain
+supported. Selected FITS responses expand to ordinary configuration bindings
+named `<role>_<port>_amplitude` and, when present, `<role>_<port>_phase`, where roles
+are `apodizer`, `focal_plane` and `lyot`. Apodizer and focal-plane selections use
+transmission; each selected graph's physical `optical_paths` entry chooses its
+Lyot port. Binding preparation rechecks the captured FITS hash. Physical context,
+scientific descriptors and prescription identity retain the mask declarations
+and their referenced bytes.
+
+Acquisition requires `exposure_duration_s` and accepts
+an optional `roi_origin`. The shared cold context derives `exposure_ns` and
+`exposure_us` without supplying an undeclared ROI, and publishes the validated
+simulation transport cadence as `frame_period_ns` alongside `rate`.
+Cold checks include `test/test_optical_spectra.jl`, `test/test_external_optical_instrument.jl` and the existing
+instrument declaration/component selectors; optional CPU preparation is
+`test/external_optical_preparation.jl`. These checks do not qualify instruments,
+devices, acquisition electronics or deadlines.
+
 ### Calibration source and mechanism preparation — 2026-10-27
 
 The user confirms physical REVOLT source preparation is completely manual.
@@ -560,6 +663,12 @@ JSON only at native device publication. Package `data/bases/` supplies standard
 basis definitions, and `data/simulation/` supplies atmosphere and measured-influence
 settings schemas. Applications select definitions without copying their schemas
 or scientific conventions. Custom inline schemas and sampled bases remain valid.
+Selected measured influences also require the original FITS `sha256`, decoded
+`type` (Float32 or Float64), and logical rank-3 `shape` alongside their explicit
+axes, physical command mapping, spatial sampling and OPD conversion. The shared
+bounded artifact reader verifies the captured bytes before interpolation; the
+authored type controls rounding before resampling. These are cold preparation
+checks and do not load AOS or a GPU.
 Profile enums derive from the application's profiles. Raw authoring stays separate
 from resolved values, preserving templates and references during calibration.
 Classic declares its controller command count and ordered hidden-mode labels;

@@ -1,10 +1,10 @@
 # Cold expansion of declared plant response models into native AOS graph nodes.
-function validate_responses(document, inputs)
+function validate_responses(document, inputs; label="production graph input")
     responses = get(document, "responses", Dict())
     _declaration_object(responses, "simulation responses")
     length(responses) <= 16 || throw(ArgumentError("simulation allows at most 16 responses"))
     for (name, response) in responses
-        name in inputs || throw(ArgumentError("response must name a production graph input"))
+        name in inputs || throw(ArgumentError("response must name a $label"))
         fields(response, ("kind", "natural_frequency_hz", "damping_ratio", "schema"),
             ("kind", "natural_frequency_hz", "damping_ratio", "schema"), "plant response")
         response["kind"] == "second_order" || throw(ArgumentError("unknown plant response kind"))
