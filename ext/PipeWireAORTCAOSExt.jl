@@ -458,5 +458,6 @@ function Owner.run_owner(options)
 end
 
 include("aos/external_pupil_owner.jl")
+include("aos/pupil_source_owner.jl")
 
 end

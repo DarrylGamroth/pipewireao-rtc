@@ -148,3 +148,13 @@
   typed reference-difference publication and old-calibration rejection without
   a core or GPU. `test/calibration_optical_publication.jl` retains the ordinary
   intensity publication regression. These tests do not qualify a rolling loop.
+- `test/test_pupil_source_owner.jl` and `test/test_physical_offset_inputs.jl`
+  check the version-5 clocked pupil source and version-2 P/Q-only receiver cold,
+  without optional science packages. The optional CPU selectors
+  `test/pupil_source_owner_science.jl` and `test/pupil_feedback_composition.jl`
+  exercise actual mirror response, model chronology and sealed preparation.
+- The optional `test/physical_offset_inputs_private_core.jl` and
+  `test/pupil_source_control_private_core.jl` require three default Julia threads
+  and explicit `PIPEWIREAO_PREFIX` pointing to a compatible private native SDK.
+  They own and close their private cores, check native receipt admission and
+  Pause/Run continuity, and do not qualify hardware or deadlines.

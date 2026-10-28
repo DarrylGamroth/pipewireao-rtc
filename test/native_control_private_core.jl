@@ -27,8 +27,9 @@ end
 
 function with_control_private_core(f; check_running=true, allow_passive=false,
                                    temporary_prefix="pipewireao-native-envelope-",
-                                   remote_name=nothing, telemetry_loop=false)
-    prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+                                   remote_name=nothing, telemetry_loop=false,
+                                   modules="",
+                                   prefix=String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
     libdir = isdir(joinpath(prefix, "lib", "x86_64-linux-gnu")) ?
         joinpath(prefix, "lib", "x86_64-linux-gnu") : joinpath(prefix, "lib")
     daemon_path = joinpath(prefix, "bin", "pipewire-ao")
@@ -55,6 +56,7 @@ function with_control_private_core(f; check_running=true, allow_passive=false,
             { name = libpipewire-module-link-factory args = { allow.link.passive = $allow_passive } }
             { name = libpipewire-module-metadata }
             { name = libpipewire-module-access }
+            $modules
         ]
         """)
         write(joinpath(config, "client.conf"), """

@@ -50,9 +50,10 @@ function render_templates!(application, spec, profile, prefix)
         throw(ArgumentError("native core requires the shared core template"))
     core = D.decode(native_template(corepath), prefix)
     native_scheduling!(core, processes["core"], "core")
-    modules = D.decode(joinpath(application, "rtc", "core.conf"), prefix)
+    modules = D.decode(D.relative_asset(application,
+        joinpath(dirname(application_file(profile)),"core.conf")), prefix)
     modules isa AbstractDict && Set(keys(modules)) == Set(["context.modules"]) ||
-        throw(ArgumentError("instrument rtc/core.conf must contain only context.modules"))
+        throw(ArgumentError("application core.conf must contain only context.modules"))
     declarations = modules["context.modules"]
     declarations isa AbstractVector || throw(ArgumentError("instrument context.modules must be a list"))
     append!(core["context.modules"], declarations)

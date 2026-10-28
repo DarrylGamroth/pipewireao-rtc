@@ -77,13 +77,17 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     profile_fields = Set(["version","backend","device","pacing_rate_hz","silence_ns"])
     selected_profile isa AbstractDict && profile_fields ⊆ Set(keys(selected_profile)) ⊆ union(profile_fields,Set(["upstream"])) &&
         selected_profile["version"]===1 || throw(ArgumentError("invalid explicit feedback preparation profile"))
-    valid_device(selection) = selection["backend"] in ("cpu","amdgpu") && typeof(selection["device"])===Int &&
-        (selection["backend"]=="cpu" ? selection["device"]==0 : 1<=selection["device"]<=typemax(Int32))
+    valid_device(selection) = selection["backend"] in ("cpu","amdgpu","cuda") && typeof(selection["device"])===Int &&
+        (selection["backend"]=="cpu" ? selection["device"]==0 :
+            (selection["backend"]=="amdgpu" ? 1 : 0)<=selection["device"]<=typemax(Int32))
     valid_device(selected_profile) ||
-        throw(ArgumentError("feedback preparation requires an explicit CPU or AMDGPU device"))
+        throw(ArgumentError("feedback preparation requires an explicit CPU, CUDA or AMDGPU device"))
     upstream_profile = get(selected_profile,"upstream",Dict("backend"=>selected_profile["backend"],"device"=>selected_profile["device"]))
     upstream_profile isa AbstractDict && Set(keys(upstream_profile))==Set(["backend","device"]) && valid_device(upstream_profile) ||
-        throw(ArgumentError("feedback upstream selection requires only an explicit CPU or AMDGPU backend/device"))
+        throw(ArgumentError("feedback upstream selection requires only an explicit CPU, CUDA or AMDGPU backend/device"))
+    if get(get(document,"receiver",Dict()),"kind",nothing)=="pupil-source"
+        return prepare_pupil_feedback(mainroot,main,componentroot,extra,checked_path(destination),recipe,document,profilepath,selected_profile;prefix)
+    end
     component_simulation = D.decode(D.relative_asset(componentroot,"simulation.conf"),prefix)
     component_simulation["backend"]==selected_profile["backend"] && component_simulation["device"]==selected_profile["device"] ||
         throw(ArgumentError("component backend differs from selected feedback preparation profile"))
@@ -269,3 +273,5 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
         return output
     end
 end
+
+include("pupil_feedback_composition.jl")

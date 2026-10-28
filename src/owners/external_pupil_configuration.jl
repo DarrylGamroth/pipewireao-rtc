@@ -27,7 +27,7 @@ end
 function external_pupil_configuration(path, document)
     required = ("version", "mode", "plant", "pupil_node", "sensor_nodes", "backend", "device",
         "instrument", "rtc_configuration", "calibration_identity", "prescription_identity")
-    InstrumentConfiguration.fields(document, required, required, "external-pupil owner")
+    InstrumentConfiguration.fields(document, (required...,"sensor_buffers"), required, "external-pupil owner")
     document["mode"] == "external-pupil" || throw(ArgumentError("version 4 requires mode external-pupil"))
     config_path = abspath(path)
     entry = document["plant"]
@@ -57,12 +57,13 @@ function external_pupil_configuration(path, document)
             throw(ArgumentError("each optical sensor requires a positive exposure duration"))
     end
     backend = Symbol(text(document["backend"], "backend"))
-    backend in (:cpu, :amdgpu) || throw(ArgumentError("external-pupil backend must be cpu or amdgpu"))
+    backend in (:cpu, :cuda, :amdgpu) || throw(ArgumentError("external-pupil backend must be cpu, cuda or amdgpu"))
     device = integer(document["device"], "device", 0, typemax(Int32))
-    (backend === :cpu ? device == 0 : device >= 1) || throw(ArgumentError("invalid external-pupil device ordinal"))
+    (backend === :cpu ? device == 0 : backend !== :amdgpu || device >= 1) || throw(ArgumentError("invalid external-pupil device ordinal"))
     instrument = DeploymentConfiguration.relative_asset(dirname(config_path), document["instrument"])
     rtc_configuration = DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"])
-    return (; version=4, mode=:external_pupil, config_path,
+    sensor_buffers=integer(get(document,"sensor_buffers",2),"sensor_buffers",2,64)
+    return (; version=4, mode=:external_pupil, config_path, sensor_buffers,
         plant=(; definition, settings=plant_settings(configured), chopping), graph=nothing,
         pupil_node, sensor_nodes, backend, device, instrument, rtc_configuration,
         calibration_identity=text(document["calibration_identity"], "calibration identity"),

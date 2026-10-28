@@ -417,14 +417,15 @@ end
 
 "Publish the intrinsic description for a named physical mirror command."
 function mirror_properties(options, name::Symbol)
-    options.version == 3 || return Dict{String,String}()
+    options.version in (3,5) || return Dict{String,String}()
+    options.version==5 && string(name)!=options.mirror && throw(ArgumentError("pupil source observes only its controlled physical mirror"))
     declaration = getproperty(parentmodule(@__MODULE__), :InstrumentConfiguration)
     rtc = declaration.load_rtc(options.rtc_configuration)
     spec = get(rtc.instrument.document["deformable_mirrors"], string(name), nothing)
     spec === nothing && return Dict{String,String}()
     path = declaration.mirror_description_path(rtc.directory, spec["description"])
     (;json, document) = _mirror_description(path)
-    validate_mirror_description(document; command_count=options.command_count[name])
+    validate_mirror_description(document; command_count=options.version==5 ? options.command_count : options.command_count[name])
     instrument = load(options.instrument).document
     document["layout"] == instrument["deformable_mirrors"][string(name)]["layout"] ||
         throw(ArgumentError("mirror and instrument layouts differ for $name"))

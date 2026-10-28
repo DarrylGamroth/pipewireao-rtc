@@ -6,24 +6,11 @@
 include("optical_expectation.jl")
 include("optical_chopped.jl")
 
-"Prepare existing native mirror and optical graph owners without a core or service."
-function optical_callbacks(upstream_simulation::AbstractString, optical_simulation::AbstractString;
-        mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice(), chopping=NamedTuple(), publication_plan=nothing)
-    target isa Union{AdaptiveOpticsSim.Backends.HostComputeDevice,
-        AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend}} ||
-        throw(ArgumentError("optical calibration supports explicit host or AMDGPU targets"))
-    upstream = IC.load_simulation(upstream_simulation)
-    optical = IC.load_simulation(optical_simulation)
-    upstream_configuration = IC.settings(upstream,upstream_settings)
-    output = get(upstream.instrument.document,"optical_output",nothing)
-    input = get(optical.instrument.document,"optical_input",nothing)
-    output isa AbstractDict && input isa AbstractDict &&
-        all(key -> haskey(output,key) && haskey(input,key) && output[key] == input[key],
-            ("plane","diameter_m","curvature","registration")) ||
-        throw(ArgumentError("upstream and optical instrument pupil interfaces must explicitly match"))
+"Prepare only the declared physical mirror response, with its exact bindings."
+function physical_mirror_response(upstream,upstream_configuration,mirror;simulation_graph="calibration",
+        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
     geometry = IC.mirror(upstream,upstream_configuration,mirror)
-    document = IC.graph_document(upstream,upstream_configuration;calibration=true)
+    document = IC.graph_document(upstream,upstream_configuration;simulation_graph)
     nodes = filter(node -> node["name"] == mirror,document["nodes"])
     length(nodes) == 1 || throw(ArgumentError("calibration must select one declared upstream mirror component"))
     node = only(nodes)
@@ -46,6 +33,33 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
     bindings = owner.prepare_bindings(upstream,upstream_configuration,names;target,target_names=names)
     definition = HIL.load_algorithm_graph(response_document;bindings,node_types=factories)
     mirror_graph = HIL.prepare_algorithm_graph(definition;target)
+
+    surface = command -> begin
+        copyto!(HIL.graph_input(mirror_graph,:command),command)
+        HIL.step_graph!(mirror_graph)
+        Array(HIL.graph_output(mirror_graph,:opd))
+    end
+    return (;geometry,node,mirror_graph,surface)
+end
+
+"Prepare existing native mirror and optical graph owners without a core or service."
+function optical_callbacks(upstream_simulation::AbstractString, optical_simulation::AbstractString;
+        mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
+        target=AdaptiveOpticsSim.Backends.HostComputeDevice(), chopping=NamedTuple(), publication_plan=nothing)
+    target isa Union{AdaptiveOpticsSim.Backends.HostComputeDevice,
+        AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend}} ||
+        throw(ArgumentError("optical calibration supports explicit host or AMDGPU targets"))
+    upstream = IC.load_simulation(upstream_simulation)
+    optical = IC.load_simulation(optical_simulation)
+    upstream_configuration = IC.settings(upstream,upstream_settings)
+    output = get(upstream.instrument.document,"optical_output",nothing)
+    input = get(optical.instrument.document,"optical_input",nothing)
+    output isa AbstractDict && input isa AbstractDict &&
+        all(key -> haskey(output,key) && haskey(input,key) && output[key] == input[key],
+            ("plane","diameter_m","curvature","registration")) ||
+        throw(ArgumentError("upstream and optical instrument pupil interfaces must explicitly match"))
+    response=physical_mirror_response(upstream,upstream_configuration,mirror;target)
+    (;geometry,node,mirror_graph,surface)=response
     systems = map(branch -> IC.prepare_system(optical_simulation;settings,
         simulation_graph=String(branch),target),branches)
     unfringed_systems = map(chopping) do selection
@@ -61,11 +75,6 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
             throw(DimensionMismatch("upstream and optical pupil grids differ"))
         optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
             HIL.graph_input(system.graph,:pupil_amplitude),packet,zeros(Float32,size(amplitude)),amplitude)
-    end
-    surface = command -> begin
-        copyto!(HIL.graph_input(mirror_graph,:command),command)
-        HIL.step_graph!(mirror_graph)
-        Array(HIL.graph_output(mirror_graph,:opd))
     end
     observe_system = (system,opd) -> begin
         optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),

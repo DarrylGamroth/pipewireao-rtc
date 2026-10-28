@@ -1,13 +1,21 @@
 # Human-authored YAML is compiled only in a fresh application copy. Runtime
 # interfaces keep their existing native SPA-JSON/JSON paths and consumers.
-function source_application(source)
-    path = D.relative_asset(source, "rtc/application.yaml")
+function application_file(profile)
+    path = get(profile,"application","rtc/application.yaml")
+    path isa String && !isempty(path) && !occursin('\0',path) && !isabspath(path) &&
+        normpath(path)==path && !outside(path) && lowercase(splitext(path)[2]) in (".yaml",".yml") ||
+        throw(ArgumentError("application must select a contained relative YAML file"))
+    return path
+end
+
+function source_application(source, profile=Dict())
+    path = D.relative_asset(source, application_file(profile))
     return InstrumentConfiguration.bounded_yaml(path)
 end
 
 function prepare_runtime_configurations!(application, selected=nothing)
     path = joinpath(application,"rtc/application.yaml")
-    isfile(path) || return nothing
+    selected===nothing && !isfile(path) && return nothing
     authoring = selected === nothing ? source_application(application) : deepcopy(selected)
     entries = get(authoring,"runtime-configurations",[])
     InstrumentDefinition.array_value(entries) || throw(ArgumentError("runtime-configurations must be an array"))

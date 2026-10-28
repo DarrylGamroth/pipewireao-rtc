@@ -9,6 +9,7 @@ using ..ScienceExport
 using ..InstrumentConfiguration
 import PipeWireAO
 import ..Schemas
+import ..Artifacts
 import ..InstrumentDefinition
 import ..AOSOwner
 import ..DeploymentConfiguration as D
@@ -18,7 +19,7 @@ public prepare, load_profile, combine_profile, seal!, prepare_session_configurat
     simulator_port_contracts, compose, materialize_calibration, prepare_feedback
 
 const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
-    "mode", "devices", "calibration", "scheduling", "runtime-backends"])
+    "application", "mode", "devices", "calibration", "scheduling", "runtime-backends"])
 const RUNTIME_BINDINGS = Set(["PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"])
 const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf.in",
     "client-simulator.conf.in", "client-analysis.conf.in")
@@ -313,7 +314,7 @@ function prepare(source::AbstractString, destination::AbstractString;
         throw(ArgumentError("placement must match its authoritative process scheduling"))
     profile = resolved
     bindings = profile_bindings(profile, julia)
-    authoring = source_application(source)
+    authoring = source_application(source,profile)
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
     runtime_authoring = deepcopy(authoring)
@@ -357,7 +358,7 @@ function prepare(source::AbstractString, destination::AbstractString;
                 any(name->InstrumentConfiguration.graph_requires_proper(declaration,configured;simulation_graph=name),
                     keys(declaration.instrument.document["optical_paths"])) && Base.require(Main,:Proper)
             end
-            get(simulation,"version",nothing) in (3,4) && Base.invokelatest(
+            get(simulation,"version",nothing) in (3,4,5) && Base.invokelatest(
                 InstrumentConfiguration.prepare_simulation_configuration!,application;configuration)
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)

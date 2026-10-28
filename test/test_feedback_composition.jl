@@ -146,7 +146,7 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 ("boolean-device",Dict("backend"=>"cpu","device"=>false)),
                 ("cpu-device",Dict("backend"=>"cpu","device"=>1)),
                 ("gpu-device",Dict("backend"=>"amdgpu","device"=>0)),
-                ("unknown-backend",Dict("backend"=>"cuda","device"=>0)))
+                ("unknown-backend",Dict("backend"=>"unsupported","device"=>0)))
             invalid=deepcopy(profile);invalid["upstream"]=selection
             path=joinpath(authoring,name*".yaml");C.write_yaml(path,invalid)
             output=joinpath(temporary,name)
@@ -155,7 +155,7 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         end
         for (name,key,value) in (("root-unknown-key","extra",1),("root-boolean-device","device",true),
                 ("root-string-device","device","1"),("root-overflow-device","device",Int(typemax(Int32))+1),
-                ("root-unknown-backend","backend","cuda"))
+                ("root-unknown-backend","backend","unsupported"))
             invalid=deepcopy(profile);invalid[key]=value
             path=joinpath(authoring,name*".yaml");C.write_yaml(path,invalid)
             output=joinpath(temporary,name)

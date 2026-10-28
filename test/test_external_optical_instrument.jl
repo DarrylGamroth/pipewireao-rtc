@@ -198,6 +198,25 @@ end
     end
 end
 
+@testset "F64 optical output quantity remains optional and explicit" begin
+    for quantity in (nothing, "intensity", "electric_field")
+        mktempdir() do directory
+            physical, simulation = external_optical_documents()
+            config = simulation["components"]["optics"]["config"]
+            quantity === nothing || (config["output_quantity"] = quantity)
+            declaration = IC.load_simulation(write_external_optical_documents(directory, physical, simulation))
+            graph = IC.graph_document(declaration, IC.settings(declaration); simulation_graph="scc")
+            output = only(graph["nodes"])["config"]
+            if quantity === nothing
+                # Omission preserves AOS's intensity default rather than authoring a new value.
+                @test !haskey(output, "output_quantity")
+            else
+                @test output["output_quantity"] == quantity
+            end
+        end
+    end
+end
+
 @testset "mirror-free optical plants use shared instrument declarations" begin
     mktempdir() do directory
         physical, simulation = external_optical_documents()
