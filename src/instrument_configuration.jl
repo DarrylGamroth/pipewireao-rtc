@@ -382,6 +382,12 @@ function configuration_context(declaration, configured)
             throw(ArgumentError("simulation frame period must agree with an integer transport rate"))
         simulation["rate"] = rate
         simulation["frame_period_ns"] = period_ns
+        # Source wavelengths are authored once in metres. PROPER's adopted
+        # boundary uses micrometres; expose that cold unit conversion to refs.
+        for source in values(get(simulation, "sources", Dict()))
+            haskey(source, "source_wavelength_m") || continue
+            source["source_wavelength_um"] = source["source_wavelength_m"] * 1e6
+        end
         context["simulation"] = simulation
         context["settings"] = deepcopy(configured)
     end

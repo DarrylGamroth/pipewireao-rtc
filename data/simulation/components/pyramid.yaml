@@ -38,3 +38,9 @@ config:
     $ref: /source/source_separation_arcsec
   source_position_angle_deg:
     $ref: /source/source_position_angle_deg
+
+optional_config:
+  input_quantity:
+    $ref: /values/input_quantity
+  field_schema:
+    $ref: /schemas/field_schema

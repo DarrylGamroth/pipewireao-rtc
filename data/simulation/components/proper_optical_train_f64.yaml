@@ -16,3 +16,5 @@ config:
     $ref: /schemas/pupil_amplitude_schema
   output_schema:
     $ref: /schemas/output_schema
+  output_quantity:
+    $ref: /values/output_quantity

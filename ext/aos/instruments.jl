@@ -16,6 +16,8 @@ function Instruments.prepare_optical_components!(graph::AbstractDict, declaratio
     for node in graph["nodes"]
         haskey(node, "preparation") || continue
         preparation = node["preparation"]
+        preparation["kind"] == "ideal_pupil_relay" && continue
+        preparation["kind"] == "zemax" || throw(ArgumentError("unsupported optical component preparation"))
         config = Instruments.prepared_component_config(node["config"])
         settings = Dict(key => config[key] for key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c"))
         prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(declaration.instrument.directory,
@@ -30,7 +32,49 @@ function Instruments.prepare_optical_components!(graph::AbstractDict, declaratio
         node["config"] = concrete
         delete!(node, "preparation")
     end
+    for node in graph["nodes"]
+        haskey(node, "preparation") || continue
+        prepare_ideal_pupil_relay!(node, graph)
+    end
     return graph
+end
+
+# A relay's source and receiver declarations own their grids and wavelength.
+# Resolve these once while cold rather than copying geometry into authoring files.
+function prepare_ideal_pupil_relay!(node, graph)
+    preparation = Instruments.fields(node["preparation"], ("kind", "source", "destination"),
+        ("kind", "source", "destination"), "ideal pupil relay preparation")
+    preparation["kind"] == "ideal_pupil_relay" || throw(ArgumentError("unsupported pupil relay preparation"))
+    config = Instruments.fields(node["config"], ("axes",), ("axes",), "derived pupil relay config")
+    source = only(filter(n -> n["name"] == preparation["source"], graph["nodes"]))
+    destination = only(filter(n -> n["name"] == preparation["destination"], graph["nodes"]))
+    source["type"] in ("proper_optical_train_f32", "proper_optical_train_f64") ||
+        throw(ArgumentError("ideal pupil relay source must declare a PROPER field"))
+    expected_type = source["type"] == "proper_optical_train_f32" ? "ideal_pupil_relay_f32" : "ideal_pupil_relay_f64"
+    node["type"] == expected_type && destination["type"] == "pyramid_rate_f32" && expected_type == "ideal_pupil_relay_f32" ||
+        throw(ArgumentError("derived pupil relay requires matching supported field precision"))
+    sc, dc = source["config"], destination["config"]
+    get(sc, "output_quantity", nothing) == "electric_field" &&
+        get(dc, "input_quantity", nothing) == "electric_field" ||
+        throw(ArgumentError("ideal pupil relay requires complex field source and receiver"))
+    wavelength = sc["wavelength_um"] * 1e-6
+    isapprox(wavelength, dc["source_wavelength_m"]; rtol=8eps(Float32), atol=0) ||
+        throw(ArgumentError("ideal pupil relay source and PWFS wavelengths differ"))
+    source_link = Dict("source"=>source["name"] * ".output", "destination"=>node["name"] * ".input")
+    destination_link = Dict("source"=>node["name"] * ".output", "destination"=>destination["name"] * ".electric_field")
+    source_link in graph["links"] && destination_link in graph["links"] ||
+        throw(ArgumentError("ideal pupil relay preparation must match actual graph links"))
+    Owner.load_instrument(:Proper)
+    factory = AlgorithmGraphs.proper_optical_train_node_factory(T=Float32)
+    definition = Base.invokelatest(factory, Symbol(source["name"]), Instruments._instrument_seal(sc), (;), (;))
+    pitch = Base.invokelatest(AlgorithmGraphs.optical_sampling_m, definition.config)
+    receiver_pitch = dc["telescope_diameter_m"] / dc["resolution"]
+    node["config"] = Dict("input_size"=>[sc["resolution"],sc["resolution"]],
+        "output_size"=>[dc["resolution"],dc["resolution"]], "axes"=>config["axes"],
+        "input_sampling_m"=>[pitch,pitch], "output_sampling_m"=>[receiver_pitch,receiver_pitch],
+        "wavelength_m"=>wavelength, "input_schema"=>definition.config.schemas[3], "output_schema"=>dc["field_schema"])
+    delete!(node, "preparation")
+    return node
 end
 
 function Instruments.optical_graph_document(declaration::NamedTuple, configured::AbstractDict,

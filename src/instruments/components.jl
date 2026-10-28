@@ -6,7 +6,7 @@ const COMPONENT_TEMPLATES = ("coordinate_gaussian", "grid_gaussian", "measured",
     "pixel_mtf", "proper_optical_train_f64", "proper_optical_train_f32")
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
 const PREPARED_OPTICAL_CONFIG = ("resolution", "pupil_resolution", "diameter_m", "wavelength_um", "temperature_c")
-const OPTIONAL_OPTICAL_CONFIG = ("pupil_opd_schema", "pupil_amplitude_schema", "output_schema", "output_sampling_m", "phase_screens", "pupil_grid")
+const OPTIONAL_OPTICAL_CONFIG = ("pupil_opd_schema", "pupil_amplitude_schema", "output_schema", "output_sampling_m", "phase_screens", "pupil_grid", "output_quantity")
 
 function component_preparation(selection, instrument, directory)
     haskey(selection, "preparation") || return nothing
