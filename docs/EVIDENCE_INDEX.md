@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## GPI propagated-field calibration — 2026-10-28
+
+The [fresh CUDA calibration and finite array-loop record](validation/gpi-pwfs-calibration-20261028/README.md)
+binds the optional separate-DM sensing model to a new 1,509-coordinate bundle.
+Four deterministic field tests and a paired noisy 256-frame test pass. The
+common-pupil OPD sum remains a diagnostic for this model; preserved failed gates
+explain the measurement correction. Tweeter clipping remains, and live selection,
+physical qualification and native timing are unchanged.
+
 ## CAL2 external pupil and physical offsets — 2026-10-28
 
 The [validation and review record](validation/cal2-feedback-20261028/README.md)

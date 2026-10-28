@@ -61,6 +61,32 @@ julia --project=/path/to/environment tools/validate-calibration.jl APPLICATION B
 julia --project=/path/to/environment tools/stage-calibration.jl SOURCE APPLICATION BUNDLE FRESH_DESTINATION
 ```
 
+Pyramid calibration and validation accept `execution=CapturedGraphExecution()`
+from `AdaptiveOpticsSim.AlgorithmGraphs`; the existing default remains streamed
+execution. The shared CLIs accept a final `capture` after the backend selection
+for these procedures. This uses the same prepared command buffers and graph;
+the receipt records the selected execution policy. CUDA calibration should use
+the captured path explicitly rather than silently falling back to streamed work.
+
+For a propagated-field plant, validation can additionally select
+`pupil_field_output=:pwfs_pupil_field` (the CLI takes the output name after
+`capture`). It compares the receiving field with a separately copied flat
+reference using `|⟨E₀,E⟩|² / (‖E₀‖₂² ‖E‖₂²)`. This normalized coherent overlap
+is invariant to piston and uniform attenuation. It tests phase and relative
+amplitude profile, not total throughput or a phase-unwrapped wavefront.
+Overlap loss must improve by 20% for each deterministic disturbance. When a field
+output is selected, OPD RMS remains a diagnostic rather than an acceptance gate:
+a common-pupil sum cannot represent propagation between distinct DM planes.
+Without a field output, the existing 20% OPD-RMS improvement gate remains in force.
+Failed validation retains the error
+and collected case histories; no failed candidate is activated.
+
+The `calibration` graph role still suppresses dynamic actuator responses. To
+calibrate another sensing model, author its deterministic optical topology as
+that role in a fresh candidate source, regenerate and build it, and bind the
+new bundle to that source's prescription. Selecting a noisy production graph
+does not turn it into a held-probe calibration graph.
+
 The modal-only API names and CLIs and the active Classic TOML result loaders
 have been removed. Imported selected bundles retain historical source identity
 and support startup/integrity checks; import does not rebind them for the new
