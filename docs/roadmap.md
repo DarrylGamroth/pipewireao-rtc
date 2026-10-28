@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optional GPI propagated-field calibration — 2026-10-28
+
+A fresh captured-CUDA calibration of the separate-DM sensing model retains
+1,445 of 1,509 coordinates. Four deterministic propagated-field checks and a
+paired 256-frame noisy loop pass; normalized field-overlap loss in the moving
+case falls by about 80%. The common-pupil OPD sum is reported but cannot be the
+acceptance truth for propagated optics. The candidate is staged separately;
+live/default selection, installed packages and physical qualification are
+unchanged. Tweeter clipping remains. See the [validation and review record](validation/gpi-pwfs-calibration-20261028/README.md).
+
 ### Optional GPI separate-DM relay diagnostic — 2026-10-28
 
 The existing component preparation interface now forwards authored per-graph

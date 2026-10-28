@@ -92,7 +92,10 @@ function calibrate_system(application, output; kwargs...)
     recipe=read_recipe(application)
     declaration=InstrumentConfiguration.load_simulation(joinpath(application,recipe["simulation"]))
     kind=InstrumentConfiguration.sensor_kind(declaration.instrument.document["wavefront_sensors"][recipe["sensor"]])
-    return _calibrate_system(kind, application, recipe, output; kwargs...)
+    load_calibration_optics(declaration,recipe)
+    # Optional optical extensions must be visible throughout the procedure,
+    # including its prepared graph's stepping methods.
+    return Base.invokelatest(_calibrate_system,kind, application, recipe, output; kwargs...)
 end
 function _calibrate_system end
 
@@ -106,9 +109,18 @@ function validate_system(application, calibration, output; kwargs...)
     # Recipes in the receipt describe the acquisition; current authoring cannot
     # silently change settings, normalization or controller policy during replay.
     recipe==bundle.report["recipe"] || throw(ArgumentError("calibration recipe differs from the selected application"))
-    return _validate_system(kind, application, recipe, calibration, output; kwargs...)
+    load_calibration_optics(declaration,recipe)
+    return Base.invokelatest(_validate_system,kind, application, recipe, calibration, output; kwargs...)
 end
 function _validate_system end
+
+function load_calibration_optics(declaration,recipe)
+    configured=InstrumentConfiguration.settings(declaration,get(recipe,"settings",Dict()))
+    if InstrumentConfiguration.graph_requires_proper(declaration,configured;simulation_graph="calibration")
+        AOSOwner.load_instrument(:Proper)
+    end
+    return nothing
+end
 "Stage a bundle verified against its built application into a fresh authored source copy."
 function stage_calibration end
 

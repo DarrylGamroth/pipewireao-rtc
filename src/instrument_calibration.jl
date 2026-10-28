@@ -9,6 +9,7 @@ import ..GraphOwner
 import ..DeploymentConfiguration
 import ..ScienceExport
 import ..InstrumentExport
+import ..AOSOwner
 
 public digest, source_completion, read_parameters, write_fits, heart_completion,
     controlled_rows, central_completion, allocation_parameters, replace_dimensions!,
