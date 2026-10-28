@@ -30,7 +30,16 @@ adapters and reliable repeated acquisition remain separate gates; no hardware
 command is issued. The pending online campaign adds correlated preparation,
 running AOC reductions and frozen-reference qualification. Its first full
 private-core run timed out during the dark stage, so it is not released or
-qualified; a separate instrumented first-dark experiment is isolating the block.
+qualified. Direct-owner tests reproduced the block with raw exposure 2 present
+and its WFS receipts absent. FIFO admission fixes a separate sample-retention
+contract defect, but did not eliminate the block. Later instrumented and
+untraced 16-frame runs passed; neither establishes reliable delivery. A complete
+source-validation run now passes 57 native assertions: all three stages and
+preparation fault cases, with 176 eligible ROIs retaining eligibility in the
+later frozen window. An explicit public driver request now completes one native
+cycle without creating an exposure; the affected reducer-failure regression
+passes 187 assertions. Reliable delivery and registered-build campaign
+qualification remain pending.
 Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
 and 342 actual private-core dark/light Capture assertions. The
 [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)

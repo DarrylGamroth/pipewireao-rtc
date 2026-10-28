@@ -405,6 +405,7 @@ Independent source/numerical review resolved these confirmed findings:
 | --- | --- | --- |
 | RC-01 | `Collect` read validity/slopes after a reducer borrowed mutable sample arrays. A fail-before reproduction changed invalid NaNs into valid values of 42. | Native response evidence is now frozen before invoking the reducer. Six focused checks and the native mutation regression pass. Borrowing remains explicitly read-only. |
 | RC-02 | A custom preparation confirmation could name another simulator while the receipt named the selected owner. | Reject foreign witnesses before acquisition; the confirmed witness must exactly match the selected simulator incarnation/domain. |
+| RC-04 | The source listener omitted the public native `RequestProcess` command. A fresh-idle baseline received one command but completed no cycle. | Service the request only while streaming and driving, without stepping AOS. This is an independent event-service defect; it does not establish the earlier stall's cause. |
 
 Independent preparation tests pass 175 assertions, and the reference contract
 selector independently passes 30. No unresolved confirmed source finding was
@@ -445,5 +446,82 @@ A separate FIFO-off trace/observer experiment completed 16 input callbacks and
 but advancing exact acquisition identities. This contradicts deterministic
 unchanged-payload suppression; instrumentation may affect timing and is not a
 production remedy. That evidence uses prefix `reference-delivery-diagnostic-20261027`.
-The remaining investigation reads existing frontend completion counters after
-teardown without adding a callback or trace to the collection path.
+A FIFO-on run with no trace or frame observer also completed 16 samples. Existing
+frontend counters, read only after worker/core shutdown, showed 16 callbacks;
+the command worker showed three. Both workers closed without errors and the
+application hashes were unchanged. This single pass does not establish reliable
+delivery or explain the earlier failures. Its prefix is
+`reference-campaign-frontend-count-20261027`.
+
+The native public driver contract also forwards downstream `RequestProcess`
+commands to the source stream. A proposed source listener services that demand
+with `trigger_process!` only while the stream is streaming and driving; it does
+not step the plant or stage another exposure. Passive command observers on a
+frozen baseline and the proposed implementation each saw 16 samples complete,
+but neither observed `RequestProcess` after attachment. Startup precedes the
+observation window. These passes therefore do not demonstrate handler exercise
+or a causal fix. Only Pause was observed during teardown, with no parse errors;
+the source reported driving and non-lazy. The evidence prefixes are
+`reference-campaign-driver-command-probe-20261027` and
+`reference-campaign-driver-command-service-20261027`.
+
+The complete selector subsequently passed 30 cold assertions and 57 native
+assertions in one run (`reference-campaign-complete-service-20261027`). Dark,
+lamp training and later-window frozen qualification completed online, with
+Restore/Release recorded for each stage. Training selected 176 of the declared
+188 ROIs using unchanged thresholds; all 176 retained eligibility in
+qualification. Dark/lamp/qualification status was Valid, with reference
+difference RMS 0.008752788613187231 pixels and maximum 0.02652870473684743
+pixels. These are diagnostics, not an independently specified accuracy claim.
+Cancellation, stale confirmation, foreign witness and deadline rejection checks
+also passed without publishing additional candidates. The generated candidate
+receipt retains hashes and full acquisition domains; no raw history was kept.
+This source-validation run does not replace registered-build qualification or
+explain the intermittent earlier failures. Reliable delivery remains open.
+
+A deliberate public `RequestProcess` test now exercises the proposed listener:
+one command caused one observed command and one completed native cycle while
+the AOS sequence, publication sequence, acquisition cursor, pending exposure and
+capture receipts remained unchanged at idle. A subsequent 16-frame Collect,
+Restore/Release and complete shutdown passed; frontend completion count was
+exactly 16. The clean evidence uses prefix
+`reference-campaign-request-process-locked-20261027`. The first harness attempt
+closed its bound diagnostic Node proxy outside the ThreadLoop lock and emitted
+a wrong-context warning. That warning-bearing evidence is retained under
+`reference-campaign-request-process-control-20261027`; the harness was corrected
+and rerun without changing production code. This proves event service without
+extra scientific acquisition, not the cause of the earlier intermittent stall.
+Independent source review found no callback/reentrancy or teardown defect in the
+listener. The affected native consumer regression also passes 187 assertions
+after the FIFO/listener changes (`reference-campaign-consumer-service-20261027`).
+
+The maintained consumer selector now includes the explicit request on a fresh
+idle owner before Hold/Adopt or settling cycles. It verifies streaming/driving,
+zero initial scientific sequence, exact source identity, event service and an
+unchanged locked scientific snapshot. The identical test file
+(`1ed9c8b0e708182c856db7c766e7f436f00caaaa32f22d58f8644c605da7a723`)
+failed on the frozen handler-free baseline: 196 assertions passed and only the
+service assertion failed (one request, zero later cycles). With the listener,
+all 197 assertions passed (one request, one later cycle), including ordinary
+collection, reducer failure/recovery, source/application immutability, no GPU
+and complete teardown. Logs use prefix
+`consumer-request-process-fresh-idle-{baseline,postchange}-20261027`.
+The earlier settling-cycle variant is retained separately; fresh-idle placement
+avoids mistaking an old settling completion for service of the request. An
+initial baseline harness setup referenced a removed source worktree; its setup
+failure is retained and is not counted as fail-before evidence.
+
+If delivery stalls again, the next discriminating measurement is the existing
+bounded passive FIFO ingress trace together with the native node-ready trace,
+dumped after the cutoff/shutdown and correlated with raw/WFS slots and worker
+completion/errors. These native traces are compiled only with
+`PW_ENABLE_DIAGNOSTIC_TRACE`; enabling their environment variables alone is
+insufficient. Establish a separate diagnostic build from the exact pinned
+source, record its compiler flags/binary hashes, and preserve the registered
+libraries and installed services. Ingress D without G distinguishes readiness/backpressure;
+G without E distinguishes callback execution; completed E/O without capture
+distinguishes downstream delivery. No D directs investigation upstream to the
+native cycle/input admission. The trace header sequence must be associated with
+the recorded session domain/generation. A passing traced run only establishes
+its own path; it cannot explain an uninstrumented failure. No further production
+change is justified by the current stall evidence alone.

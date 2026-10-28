@@ -449,7 +449,18 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             registry = Registry(hil.core)
             listener = add_listener!(registry; on_global_added=(_...)->(notify();nothing),
                 on_global_removed=(_...)->(notify();nothing))
-            frame_listener = add_listener!(hil.frame_stream; on_trigger_done=(_...)->(notify();nothing))
+            frame_listener = add_listener!(hil.frame_stream;
+                on_trigger_done=(_...)->(notify();nothing),
+                on_command=(stream,command)->begin
+                    if pod_value(SPA.Command,command).object.id == SPA.NODE_COMMAND_REQUEST_PROCESS &&
+                            stream_state(stream) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
+                            is_driving(stream)
+                        # Service native graph demand without stepping the plant
+                        # or staging another scientific exposure.
+                        trigger_process!(stream)
+                    end
+                    nothing
+                end)
         end
         graph_name = "calibration."*string(uuid4())
         front_node, command_node = graph_name*".wfs", graph_name*".pdm"

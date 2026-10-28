@@ -20,6 +20,78 @@ hashes(directory) = Dict(relpath(joinpath(root,file),directory) =>
     for (root,_,files) in walkdir(directory) for file in files)
 progress(message) = (println("calibration consumer: ",message); flush(stdout))
 
+# An explicit native demand may run a transport cycle, but must not step AOS.
+function test_request_process(owner)
+    condition, guard = Base.AsyncCondition(), ReentrantLock()
+    requests, cycles = Threads.Atomic{UInt64}(0), Threads.Atomic{UInt64}(0)
+    listener = node = nothing
+    snapshot() = with_thread_loop_lock(owner.hil.loop) do _
+        status = Wire.pipewire_calibration_status(owner.hil)
+        (; cursor=owner.cursor, pending=status.pending_exposure,
+            frame=AdaptiveOpticsSim.AlgorithmGraphs.hil_boundary_status(owner.hil.boundary).frame_sequence,
+            published=owner.hil.state.transport.frame_published[], ready=owner.hil.state.transport.frame_ready[],
+            publication_cycle=status.frame_publication_cycle_sequence, phase=owner.capture.phase,
+            last=owner.capture.last, receipts=map(slot -> slot.receipt,owner.capture.slots))
+    end
+    try
+        target = with_thread_loop_lock(owner.hil.loop) do _
+            target = only(find_globals(owner.registry;interface="PipeWire:Interface:Node",
+                properties=("node.name"=>owner.hil.configuration.frame_node_name,)))
+            @test target.id == node_id(owner.hil.frame_stream)
+            @test stream_state(owner.hil.frame_stream) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+            @test is_driving(owner.hil.frame_stream)
+            node = bind(owner.registry,target,Node)
+            listener = add_listener!(owner.hil.frame_stream;
+                on_command=(stream,pod) -> begin
+                    if pod_value(SPA.Command,pod).object.id == SPA.NODE_COMMAND_REQUEST_PROCESS
+                        Threads.atomic_add!(requests,UInt64(1))
+                        Endpoint.wake!(condition,guard) # Only the test task waits here.
+                    end
+                    nothing
+                end,
+                on_trigger_done=stream -> begin
+                    # Earlier cycles cannot satisfy the request witness.
+                    if requests[] > 0
+                        Threads.atomic_add!(cycles,UInt64(1))
+                        Endpoint.wake!(condition,guard)
+                    end
+                    nothing
+                end)
+            target
+        end
+        before = snapshot()
+        @test before.pending === nothing
+        @test before.frame == before.cursor.sequence == before.published == before.ready == 0
+        with_thread_loop_lock(owner.hil.loop) do _
+            @test requests[] == cycles[] == 0
+            @test find_global(owner.registry,target.id).properties["object.serial"] == target.properties["object.serial"]
+            send_command!(node,node_command(SPA.NODE_COMMAND_REQUEST_PROCESS))
+        end
+        serviced = try
+            Endpoint.await(condition,guard,Native.monotonic()+10) do
+                requests[] > 0 && cycles[] > 0
+            end
+            true
+        catch error
+            error isa Native.UnknownOutcome || rethrow()
+            false
+        end
+        progress("explicit RequestProcess requests=$(requests[]), later cycles=$(cycles[]), serviced=$serviced")
+        @test requests[] >= 1
+        @test serviced
+        @test snapshot() == before
+    finally
+        with_thread_loop_lock(owner.hil.loop) do _
+            node === nothing || close(node)
+            listener === nothing || close(listener)
+        end
+        lock(guard) do
+            close(condition)
+        end
+    end
+    return nothing
+end
+
 @testset "correlated Collect consumer, frozen response and latched failure" begin
     Threads.nthreads(:default) >= 4 || error("run this CPU selector with --threads=4")
     application = ENV["PIPEWIREAORTC_INTERNAL_SOURCE_APPLICATION"]
@@ -102,6 +174,9 @@ progress(message) = (println("calibration consumer: ",message); flush(stdout))
                 client = Client.connect(Client.Binding(remote,name,getpid(),instance),UInt64(1),
                     Int64(120_000_000_000);command_count=length(reference))
                 complete(action) = Client.complete!(client,action;deadline=Native.monotonic()+120,record=false)
+                @testset "idle native RequestProcess preserves scientific state" begin
+                    test_request_process(owner)
+                end
                 @test complete(Actions.Hold()) isa Actions.Held
                 adopted = complete(Actions.Adopt(UInt32(0),reference))
                 @test adopted isa Actions.Adopted
