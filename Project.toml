@@ -34,6 +34,7 @@ FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
 JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
 
 [extensions]
+PipeWireAORTCOffsetInputsExt = "AdaptiveOpticsSimPipeWireHIL"
 PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithms", "FilterGraphPipeWire", "JuliaFilterGraph"]
 PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]

@@ -1,0 +1,60 @@
+Base.include(@__MODULE__,joinpath(@__DIR__,"aos_graph_documents.jl"))
+
+function pupil_source_documents(directory)
+    aos_graph_documents(directory)
+    C=PipeWireAORTC.Common
+    IC=PipeWireAORTC.InstrumentConfiguration
+    physical=C.read_yaml(joinpath(directory,"instrument.yaml"))
+    physical["telescope"]=Dict("telescope_diameter_m"=>0.012,"central_obstruction_ratio"=>0.0,
+        "pupil_reflectivity"=>1.0,"aperture_revision"=>1)
+    physical["optical_output"]=deepcopy(physical["optical_input"])
+    simulation=C.read_yaml(joinpath(directory,"simulation/definition.yaml"))
+    delete!(simulation,"hil")
+    delete!(simulation,"wire_contracts")
+    simulation["defaults"]["profile"]="grid_gaussian"
+    simulation["settings_schema"]["properties"]["profile"]["enum"]=["grid_gaussian"]
+    simulation["profiles"]=Dict("grid_gaussian"=>Dict("template"=>"grid_gaussian"))
+    simulation["pupil_output"]=Dict("opd"=>"pupil_opd","amplitude"=>"pupil_amplitude")
+    simulation["bindings"]=Dict("command"=>Dict("kind"=>"zeros","type"=>"Float32","shape"=>[2]),
+        "residual"=>Dict("kind"=>"zeros","type"=>"Float32","shape"=>[4,4]),
+        "pupil_amplitude"=>Dict("kind"=>"pupil_amplitude","type"=>"Float32","resolution"=>"pupil_resolution"))
+    simulation["components"]=Dict("primary"=>Dict("template"=>"deformable_mirror","mirror"=>"primary",
+        "coupling"=>0.15,"config"=>Dict("surface_opd_schema"=>"example.surface/1","pdm_command_schema"=>"example.command/1",
+            "actuator_grid_indices_schema"=>"example.grid/1")))
+    graph=Dict("schema_version"=>1,"name"=>"independent_pupil_source",
+        "nodes"=>[Dict("name"=>"primary"),Dict("name"=>"composition","type"=>"pupil_opd_composition_f32",
+            "config"=>Dict("resolution"=>4,"surface_opd_schema"=>"example.surface/1",
+                "uncompensated_opd_schema"=>"example.pupil/1","pupil_opd_schema"=>"example.pupil/1"))],
+        "inputs"=>[Dict("name"=>"command","binding"=>"command","destination"=>"primary.pdm_command"),
+            Dict("name"=>"residual","binding"=>"residual","destination"=>"composition.uncompensated_opd")],
+        "links"=>[Dict("source"=>"primary.surface_opd","destination"=>"composition.surface_opd")],
+        "outputs"=>[Dict("name"=>"pupil_opd","source"=>"composition.pupil_opd")])
+    simulation["graphs"]=Dict("plant"=>graph,"calibration"=>deepcopy(graph))
+    path=write_external_optical_documents(directory,physical,simulation)
+    C.write_json(joinpath(directory,"instrument.json"),IC.publication(joinpath(directory,"rtc/configuration.yaml")))
+    declaration=IC.load_simulation(path)
+    document=Dict("version"=>5,"mode"=>"pupil-source","plant"=>Dict("definition"=>"simulation/definition.yaml",
+        "graph"=>"plant","settings"=>Dict()),"command_input"=>"command","mirror"=>"primary",
+        "rate"=>500,"pacing_rate_hz"=>1,"backend"=>"cpu","device"=>0,
+        "instrument"=>"instrument.json","rtc_configuration"=>"rtc/configuration.yaml",
+        "calibration_identity"=>"sha256:"*repeat("a",64),
+        "prescription_identity"=>IC.prescription_identity(declaration,IC.settings(declaration)))
+    config=joinpath(directory,"simulation.conf")
+    C.write_json(config,document)
+    return (;document,config,path,physical,simulation)
+end
+
+# Both named inputs resolve to the same binding/storage. The second physical
+# mirror therefore feeds the command into the nominally independent residual.
+function aliased_pupil_source(simulation)
+    model=deepcopy(simulation)
+    model["components"]["duplicate"]=deepcopy(model["components"]["primary"])
+    for graph in values(model["graphs"])
+        push!(graph["nodes"],Dict("name"=>"duplicate"))
+        filter!(row->row["name"]!="residual",graph["inputs"])
+        push!(graph["inputs"],Dict("name"=>"duplicate_command","binding"=>"command","destination"=>"duplicate.pdm_command"))
+        graph["nodes"][2]["config"]["uncompensated_opd_schema"]="example.surface/1"
+        push!(graph["links"],Dict("source"=>"duplicate.surface_opd","destination"=>"composition.uncompensated_opd"))
+    end
+    return model
+end

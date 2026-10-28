@@ -8,6 +8,16 @@ const C = PipeWireAORTC.Common
         (;document,config) = external_pupil_owner_documents(directory)
         options = Owner.configuration(config)
         @test options.version == 4 && options.mode === :external_pupil
+        @test options.sensor_buffers==2
+        for buffers in (3,64)
+            C.write_json(config,merge(document,Dict("sensor_buffers"=>buffers)))
+            @test Owner.configuration(config).sensor_buffers==buffers
+        end
+        for buffers in (1,65,0,-1,true,3.0,"3")
+            C.write_json(config,merge(document,Dict("sensor_buffers"=>buffers)))
+            @test_throws ArgumentError Owner.configuration(config)
+        end
+        C.write_json(config,document)
         @test options.sensor_nodes == (;llowfs="optical-llowfs",scc="optical-scc")
         @test Owner.requires_proper(options)
         @test Owner.verify_external_pupil_declaration(options) === nothing
@@ -18,13 +28,19 @@ const C = PipeWireAORTC.Common
         @test_throws ArgumentError E.simulation_override!(directory,Dict("simulation"=>Dict("pacing_rate_hz"=>0)))
         @test read(config) == before
         C.write_json(config,document)
-        for change in (d->(d["mode"]="other"),d->(d["backend"]="cuda"),
+        for change in (d->(d["mode"]="other"),d->(d["backend"]="unknown"),
                 d->(d["device"]=1),d->(d["command_count"]=1),
                 d->delete!(d["sensor_nodes"],"scc"),
                 d->(d["sensor_nodes"]["scc"]=d["pupil_node"]))
             invalid = deepcopy(document); change(invalid); C.write_json(config,invalid)
             @test_throws ArgumentError Owner.configuration(config)
         end
+        cuda=merge(document,Dict("backend"=>"cuda","device"=>0))
+        C.write_json(config,cuda)
+        @test Owner.configuration(config).backend === :cuda
+        cuda["device"]=-1
+        C.write_json(config,cuda)
+        @test_throws ArgumentError Owner.configuration(config)
         C.write_json(config,document)
         events = Symbol[]
         args = ["--config",config,"--remote","/tmp/external-pupil-test",

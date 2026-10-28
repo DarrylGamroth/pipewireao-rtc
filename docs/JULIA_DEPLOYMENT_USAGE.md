@@ -711,7 +711,78 @@ unavailable; the first live exposure must prime again. Retained last-product
 metadata is inspection history, not evidence of publication. This CPU graph
 preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
+### Managed clocked pupil source
+
+A version-5 `mode: pupil-source` simulation configuration selects a named,
+non-HIL AOS graph through `plant: {definition, graph, settings}`. It declares
+`command_input`, the physical `mirror`, integer model `rate`, independent
+`pacing_rate_hz`, and explicit `backend`/`device`. The ordinary exporter fills
+`instrument`, `rtc_configuration`, `calibration_identity` and
+`prescription_identity` from the selected source and RTC declarations. The
+command input must bind that existing physical mirror's `pdm_command` in metres
+OPD. Its count and command-order identity come from the physical description;
+they are not inferred from another stream. Its array binding must be exclusive
+to that input, including graph parameters, delayed initial values and node
+construction bindings. The declared pupil is either that
+mirror's direct surface OPD, or the existing additive pupil composition with a
+direct mirror surface input and an independent residual dependency closure,
+including delayed links. Scaling, transpose or further propagation on that
+route requires separate calibration. Exact transfer checks concern the physical
+DM operator; residual-plus-surface subtraction is subject to Float32 rounding.
+No camera, full GPI frontend or CAL2 mirror is created.
+
+The existing AOS owner requires `--physical-offsets PATH`, three default Julia
+threads and an explicitly placed pupil-output worker. It owns the named graph,
+model clock and physical command buffer. A version-2 receiver contract contains
+only `version`, `command_limit_m`, `projection`, `inverse`,
+`calibration_identity`, `command_order` and `branches`. P/Q use the existing
+hashed, typed FITS descriptors; branch schema, explicit disjoint modes, command
+and coefficient limits, model age, wall silence and optional acquisition version
+retain their version-1 meanings. No C matrix or receiving graph parameter is
+invented. Loading this adapter needs HIL, without loading FGA, FGP or JFG.
+
+Preparing warms a real graph step and pupil packing without publication, then
+resets the graph, command and model phase. Ready holds zero. Run polls each
+branch without waiting, expires invalid contributions, sums the admitted
+absolute vectors on the source task and advances its own model clock. Missing
+controller output, including chopped priming, does not stall the source.
+Snapshots carry the actual source sequence and model interval; a busy serializer
+may leave a visible publication gap. Pause freezes new steps at its acknowledged
+committed cursor. An already committed snapshot or packet at or below that
+watermark may finish; Run resumes the same generation and clock. Held Reset
+flushes inputs/output, fences old branch cohorts, clears commands and starts a
+new source generation at model time zero. Quit closes the existing owned streams
+and worker. This is a simulation owner, not physical device qualification.
+
+Optional `applied_command_observation: true` reuses the existing
+`simulator-<mirror>-applied` source and
+`pipewireao/applied-dm-command-opd-um-f32/1` schema. After each successful model
+step it publishes the adopted total in micrometres OPD with that tick's actual
+model interval and source identity. A preallocated conversion and owned staging
+copy do not borrow a concurrently changing command. Its fixed three-buffer pool
+supports the existing capacity-one copy queue; absent or slow observers never
+gate the model. This observes model input adoption, not mechanical settling.
+
+The v4 external-pupil owner accepts optional `sensor_buffers: 2` (integer 2:64).
+Omission retains its two-buffer sensor pools. Capacity-one observation queues
+require at least three producer buffers; select `sensor_buffers: 3` explicitly
+for both optical outputs. The pupil input and scientific pupil output pools keep
+their existing allocation contracts.
+
+The v4 external-pupil owner also admits an explicitly selected CUDA device
+(ordinal zero or higher); AMDGPU ordinals start at one and CPU uses zero.
+Metadata parsing and hash checks do not import accelerators. Backend availability
+and the actual optical/DM algorithms remain execution-time checks.
+
 ### Sealed composition and feedback preparation
+
+Portable instrument profiles may select `application: rtc/standalone/application.yaml`.
+The default remains `rtc/application.yaml`. The selected YAML file must remain
+inside the instrument source; its sibling `modes.yaml` and `core.conf` define its
+application modes and native core modules. Asset references remain relative to
+the instrument root. Owner lists start from the selected application, so an
+alternate application need not inherit the default controllers or queues.
+The generated runtime declaration remains `rtc/application.conf`.
 
 `InstrumentExport.compose(base, component, fresh_output; namespace, roles,
 links, overrides, prefix, owner_arguments=Dict(), sinks=[], node_owners=Dict())`
@@ -769,7 +840,8 @@ monotonic silence limits remain separate.
 Version-1 profiles may independently select the already-built primary producer
 with `upstream: {backend: cpu, device: 0}`. Without `upstream`, the root backend
 and device must match both applications, preserving existing profiles. Both
-selections permit only CPU/device 0 or AMDGPU/a positive device ordinal. The
+selections permit CPU/device 0, CUDA/a nonnegative device ordinal, or AMDGPU/a
+positive device ordinal. The
 actual producer must still satisfy the selected reference calibration's backend
 qualification; Host expected-reference calibration requires CPU upstream.
 For example, an AMDGPU optical consumer with a CPU producer selects:
@@ -814,3 +886,23 @@ These tools prepare fresh artifacts; they do not install or start a session. A c
 application is software preparation, not evidence of a running native cohort,
 closed-loop acceptance or deadline performance. See
 [optical calibration selection](CALIBRATION_METHOD_USAGE.md#optical-branch-calibration-and-generated-selection).
+
+A standalone composition selects `receiver.kind: pupil-source` with exactly
+`owner`, `mirror`, `rtc_configuration`, `simulation_configuration`, `template`
+and `configuration`; graph-template, parameter and C fields are absent. The
+shared `prepare_feedback` entry point validates every selected CAL2 branch and
+its P/Q hashes. It reconstructs the original calibrated mirror/settings and
+requires exact Float32 OPD equality at zero and every accepted P column, with
+matching physical description/order, pupil contract, amplitude and support.
+Cross-prescription reuse requires the original definition and recorded executed
+settings; the new source prescription identity remains distinct.
+
+Preparation makes an intermediate sealed base with a generated selection under
+`generated/physical-offset-calibration`, retaining the original deployment,
+simulation, RTC and publication bytes. The selected RTC, publication and source
+configuration explicitly use the accepted P/Q calibration identity. The final
+normal composition binds that selected descriptor plus the original descriptor
+hash, both prescription identities and response comparison in its receipts.
+The generic compositor continues rejecting arbitrary publication overrides.
+This prepares a reviewable application and launches no process. Matched noisy
+loop, accelerator and physical-device qualification remain separate gates.

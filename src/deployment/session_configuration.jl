@@ -15,10 +15,10 @@ function prepare_pupil_output!(application, spec, files, prefix)
     path = joinpath(application, "simulation.conf")
     isfile(path) || return false
     simulation = D.decode(path, prefix)
-    enabled = get(simulation, "pupil_output", false)
+    enabled = get(simulation,"version",nothing)==5 || get(simulation, "pupil_output", false)
     enabled isa Bool || throw(ArgumentError("pupil_output must be Boolean"))
     enabled || return false
-    get(simulation, "version", nothing) == 3 || throw(ArgumentError("pupil_output requires version 3"))
+    get(simulation, "version", nothing) in (3,5) || throw(ArgumentError("pupil_output requires version 3 or 5"))
     role = spec["source-owner"]
     owner = only(filter(owner -> owner["role"] == role, spec["owners"]))
     "--pupil-output-cpu" in owner["argv"] && "--threads=3,0" in owner["argv"] ||
@@ -39,6 +39,16 @@ function prepare_pupil_output!(application, spec, files, prefix)
     owners = spec["node-owners"]
     haskey(owners, name) && throw(ArgumentError("duplicate scientific pupil node ownership"))
     owners[name] = role
+    if get(simulation,"version",nothing)==5 && get(simulation,"applied_command_observation",false)
+        options=AOSOwner.configuration(path)
+        applied="simulator-"*options.mirror*"-applied"
+        any(entry->entry["node.name"]==applied,sources) && throw(ArgumentError("duplicate adopted physical-command source"))
+        haskey(owners,applied) && throw(ArgumentError("duplicate adopted physical-command ownership"))
+        push!(sources,Dict("node.name"=>applied,"ownership"=>"external","ports"=>[Dict("name"=>"output_1","direction"=>"output",
+            "shape"=>[options.command_count],"element-type"=>"F32_LE","layout"=>"ROW_MAJOR",
+            "schema"=>Schemas.identifier("applied_dm_command_opd_um"),"rate"=>string(options.rate)*"/1")]))
+        owners[applied]=role
+    end
     return true
 end
 
@@ -155,6 +165,9 @@ function prepare_session_configuration!(application, spec, declarations, instrum
             AOSOwner.requires_proper(options) && Base.require(Main,:Proper)
             context["simulator"] = Base.invokelatest(external_pupil_port_contracts,definition;
                 settings=get(plant,"settings",Dict()), chopping=options.plant.chopping)
+        elseif get(simulation,"version",nothing) == 5
+            context["simulator"]=Dict("pupil"=>Base.invokelatest(pupil_output_port_contract,definition;
+                settings=get(plant,"settings",Dict()),simulation_graph=plant["graph"]))
         else
             context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
                 settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))

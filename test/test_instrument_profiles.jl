@@ -8,6 +8,17 @@ function host_profile()
             for role in ("core", "rtc"))))
 end
 
+@testset "portable profiles select contained application YAML" begin
+    path="rtc/standalone/application.yaml"
+    @test E.combine_profile(Dict("application"=>path),host_profile())["application"]==path
+    @test !haskey(E.combine_profile(Dict(),host_profile()),"application")
+    @test_throws ArgumentError E.combine_profile(Dict(),merge(host_profile(),Dict("application"=>path)))
+    for path in (nothing,1,"","../application.yaml","/application.yaml","rtc/../application.yaml",
+            "rtc/application.json","rtc/application.yaml\0")
+        @test_throws ArgumentError E.combine_profile(Dict("application"=>path),host_profile())
+    end
+end
+
 @testset "host runtime backends select packages independently of simulation" begin
     portable=Dict{String,Any}("mode"=>"simulation")
     host=host_profile()
