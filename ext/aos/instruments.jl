@@ -20,9 +20,11 @@ function Instruments.prepare_optical_components!(graph::AbstractDict, declaratio
         settings = Dict(key => config[key] for key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c"))
         prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(declaration.instrument.directory,
             preparation["recipe"], preparation["branch"]; settings, diameter_m=config["diameter_m"],
-            frozen=haskey(declaration.document, "optical_model"))
+            frozen=haskey(declaration.document, "optical_model"),
+            phase_screens=get(config, "phase_screens", ()), pupil_grid=get(config, "pupil_grid", nothing))
         concrete = Instruments.json_value(prepared.config)
         for key in Instruments.OPTIONAL_OPTICAL_CONFIG
+            key in ("phase_screens", "pupil_grid") && continue
             haskey(config, key) && (concrete[key] = deepcopy(config[key]))
         end
         node["config"] = concrete

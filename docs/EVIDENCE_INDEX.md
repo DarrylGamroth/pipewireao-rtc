@@ -1044,3 +1044,7 @@ timing, general multiple endpoints and physical actuation retain separate scopes
 - Algorithm counts and FITS startup — 2026-10-23: JuliaFilterGraph
   `docs/naming-review.md` and instrument `MIGRATION.md`/`MIGRATION-REVIEW.md` record
   the full audit, reference-boundary exceptions and first-frame mask regression.
+
+- [Optional runtime-OPD GPI relay reference](validation/dm-plane-reference-20261028/README.md)
+  — 2026-10-28; CPU array/configuration checks, unchanged fast sensor branch,
+  independent registration/traversal review, no live deployment.
