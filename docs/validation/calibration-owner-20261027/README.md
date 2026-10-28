@@ -706,3 +706,49 @@ deliberate reducer-failure Collect, then hit the known request deadline:
 112 assertions passed and one error occurred. The later first-cycle assertions
 were not reached, so that run does not independently establish their failure.
 Its log is `capture-first-cycle-baseline-20261027.log`.
+
+A second, isolated diagnostic build records the cycle at native notification
+scheduling (`T`) and delivery (`D`), effective activation flags and single versus
+double link IO slots. The source remains pinned at `62a3aff`; the metadata-only
+patch is `9b410f741fd3e702e6ac3e2857a97c94a8aa0ae2069ce00d00c841bb011973dd`.
+All 707 build targets and local-prefix installation passed. The same three
+previously classified compiler warnings remain; none occurs in changed code.
+The original native checkout remains clean. Build receipt:
+`native-node-cycle-build-receipt-20261027.yaml` (SHA-256
+`280bae90661c1ba149262bd277919bcc135109fae445ba2e922ea1374fcb79bc`).
+
+The one planned `reference-campaign-sync-fence-trace-d7e4568-20261027` campaign
+passed all three stages with counts 16/16/32 and no capture-fence snapshot.
+All 103 recorded notification deliveries observed the same current cycle as
+the immutable scheduling cycle. This run does not demonstrate stale completion
+attribution and does not resolve the prior registered-library candidate
+failure. The error-only pre-teardown snapshot remains unexercised. No
+production scheduling change or release qualification follows from this pass.
+Effective capture/frontend activation flags were zero (ASYNC clear). The
+scientific detector-to-frontend/raw and frontend-to-WFS capture handoffs used
+shared IO slots. All 204 trace hashes and cleanup checks passed. Thus this run
+observes the candidate's intended synchronous link configuration, rather than
+inferring it solely from NodeInfo properties.
+
+The registered-library error-snapshot series stopped on trial 1, dark exposure
+1. Its immediate locked COMPLETE check was false, but the subsequent locked
+snapshot already held raw/slopes/flux/validity COMPLETE with all four exact
+exposure identities. The owner had not consumed them. Joined frontend output
+metadata also matched exposure 1 with no rejection or error. Cleanup and
+source/application/instrument hashes passed. The earlier precise missing-slot
+set was not recorded. Evidence:
+`reference-campaign-sync-fence-registered-d7e4568-20261027.{yaml,log}`.
+This demonstrates a readiness race in the candidate assertion, not stale native
+notification attribution. The immediate assertion and its first-callback test
+are withdrawn; exact capture receipts must be awaited with the existing event
+primitive and unchanged deadline.
+
+The next production candidate keeps capture graph-synchronous on its main
+ThreadLoop, configures it before links, and removes the unconditional additional
+native trigger. It retains `CalibrationCapture.await!`, full receipt identity
+checks and all existing failure/restore/release behavior. The source publication
+witness is described as a historical callback observation, not a strict native
+cycle fence. A separate HIL contract weakness remains deferred: reset does not
+own/fence outstanding native cycles, so the mutable publication observation
+cannot authenticate a delayed completion across generations. Source/state review
+establishes that limitation; no native interleaving or campaign cause is claimed.

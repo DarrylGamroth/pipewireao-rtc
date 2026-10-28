@@ -257,6 +257,14 @@ function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing,
                 push!(created,stream)
                 connect!(stream,:input; flags=STREAM_MAP_BUFFERS|STREAM_INACTIVE|STREAM_DONT_RECONNECT|STREAM_NO_CONVERT,
                     params=(ndarray_format(slot.format;schema=slot.schema),_buffer_parameters(slot)...))
+                # Keep capture on the main ThreadLoop while participating in
+                # graph-synchronous delivery. Set this before creating links.
+                update_properties!(stream,Dict("node.async"=>"false"))
+                properties = stream_properties(stream)
+                get(properties,"node.async",nothing) == "false" ||
+                    error("calibration capture requires node.async=false")
+                get(properties,"node.loop.class",nothing) == "main" ||
+                    error("calibration capture requires node.loop.class=main")
             end
             capture.streams = NamedTuple{keys(slots)}(Tuple(created))
         end

@@ -112,14 +112,6 @@ end
     last_raw_sum = Ref(UInt64(0))
     # Fixed-size provenance only. Borrowed arrays never escape the callback.
     observed = fill!(Vector{Union{Nothing,Actions.Exposure}}(undef,3),nothing)
-    # Observe the first native publication-cycle witness for each of the eight
-    # scientific exposures below, before a later empty cycle could flush data.
-    publication_sequences = zeros(UInt64,8)
-    publication_captures = fill(false,8)
-    publication_threads = fill(false,8)
-    publication_last = Ref(UInt64(0))
-    publication_overflow = Ref(false)
-    publication_listener = nothing
     owner_ref = Ref{Any}()
     function consume(sample, exposure)
         owner = owner_ref[]
@@ -178,26 +170,16 @@ end
                 @test !owner.consumer_failed
                 @test any(owner.active)
                 capture_module = parentmodule(typeof(owner.capture))
-                publication_listener = with_thread_loop_lock(owner.hil.loop) do _
-                    add_listener!(owner.hil.frame_stream;on_trigger_done=stream -> begin
-                        expected = owner.capture.expected
-                        if expected !== nothing && expected.sequence > publication_last[] &&
-                                owner.hil.state.frame_publication_cycle_sequence[] == expected.sequence
-                            index = expected.sequence
-                            if 1 <= index <= length(publication_sequences)
-                                publication_sequences[index] = index
-                                publication_captures[index] = owner.capture.phase == capture_module.COMPLETE &&
-                                    all(slot -> slot.phase == capture_module.COMPLETE &&
-                                        slot.receipt !== nothing && slot.receipt.identity == expected,
-                                        values(owner.capture.slots))
-                                publication_threads[index] = in_thread(owner.hil.loop)
-                            else
-                                publication_overflow[] = true
-                            end
-                            publication_last[] = expected.sequence
+                with_thread_loop_lock(owner.hil.loop) do _
+                    for stream in values(owner.capture.streams)
+                        properties = stream_properties(stream)
+                        @test properties["node.async"] == "false"
+                        @test properties["node.loop.class"] == "main"
+                        lock(stream.state_lock) do
+                            @test PipeWireAO.LibPipeWire.pw_stream_get_data_loop(stream.handle) ==
+                                PipeWireAO.LibPipeWire.pw_thread_loop_get_loop(owner.hil.loop.handle)
                         end
-                        nothing
-                    end)
+                    end
                 end
                 serving = @async try Endpoint.serve!(server;deadline=Native.monotonic()+300) catch error; error end
                 client = Client.connect(Client.Binding(remote,name,getpid(),instance),UInt64(1),
@@ -284,15 +266,6 @@ end
                 @test owner.cursor.sequence == cursor.sequence + 1
                 @test Wire.pipewire_probe_values(owner.hil) == reference
                 @test callback_count[] == 3 && sample_count[] == 2
-                with_thread_loop_lock(owner.hil.loop) do _
-                    @test !publication_overflow[]
-                    @test owner.cursor.sequence == length(publication_sequences)
-                    @test publication_sequences == UInt64.(1:8)
-                    @test all(publication_captures)
-                    @test all(publication_threads)
-                    close(publication_listener)
-                    publication_listener = nothing
-                end
                 @test complete(Actions.Release()) isa Actions.Released
                 close(client); client = nothing
                 @test fetch(serving) === nothing && server.phase === :Released
@@ -305,16 +278,6 @@ end
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure === nothing
                 @test owner.capture_store === nothing
             finally
-                if publication_listener !== nothing
-                    owner = owner_ref[]
-                    if isopen(owner.hil.loop) && isopen(owner.hil.frame_stream)
-                        with_thread_loop_lock(owner.hil.loop) do _
-                            close(publication_listener)
-                        end
-                    else
-                        close(publication_listener)
-                    end
-                end
                 client === nothing || close(client)
                 server === nothing || close(server)
                 frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)

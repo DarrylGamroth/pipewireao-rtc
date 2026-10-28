@@ -81,15 +81,11 @@ function exposure!(owner::InitialCalibration, deadline)
     exposure = Wire.step_pipewire_exposure!(owner.hil, owner.driver;
         timeout_ns=remaining(owner, deadline),
         before_publish=value -> CalibrationCapture.arm!(owner.capture, value))
-    # Publication acknowledges a queued source buffer before its native cycle
-    # ends. Await the transport witness before requesting downstream progress;
+    # This witness observes publication at a source completion callback;
     # only the correlated raw/WFS receipts below prove exposure completion.
     Native.await(owner.wakeup, owner.guard, Float64(deadline)) do
         check(owner)
         Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence == exposure.identity.sequence
-    end
-    with_thread_loop_lock(owner.hil.loop) do _
-        trigger_process!(owner.hil.frame_stream)
     end
     values = CalibrationCapture.await!(owner.capture; deadline=Float64(deadline), check=() -> check(owner))
     exposure.probe_sequence == owner.token || error("exposure belongs to another probe")
