@@ -223,11 +223,13 @@ function configuration(path::AbstractString)
     graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
     plant = if version == 3
         entry = document["plant"]
-        InstrumentConfiguration.fields(entry,("definition","settings"),("definition","settings"),"declarative plant")
+        InstrumentConfiguration.fields(entry,("definition","settings","graph"),("definition","settings"),"declarative plant")
         definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
         declaration = InstrumentConfiguration.load_simulation(definition)
         configured = InstrumentConfiguration.settings(declaration,entry["settings"])
-        (; definition,settings=plant_settings(configured))
+        selected = InstrumentConfiguration.selected_graph(declaration, get(entry, "graph", "production"))
+        selected == "calibration" && throw(ArgumentError("the numerical calibration graph cannot be selected as a live simulator graph"))
+        (; definition,graph=selected,settings=plant_settings(configured))
     elseif version == 2
         plant_declaration(document["plant"]; directory=dirname(config_path))
     else
@@ -385,6 +387,14 @@ function load_instrument(package::Symbol)
     return instrument
 end
 
+function requires_proper(options)
+    options.version == 3 || return false
+    declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
+    configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
+    return InstrumentConfiguration.graph_requires_proper(declaration, configured;
+        simulation_graph=get(options.plant, :graph, "production"))
+end
+
 # The application declares optional science packages as its direct dependencies.
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> begin
@@ -393,7 +403,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         end,
         load_cuda=() -> Base.require(Main, :CUDA),
         load_amdgpu=() -> Base.require(Main, :AMDGPU),
-        load_plant=load_instrument, run=run_owner)
+        load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
     all(name -> name != invocation.control_node && name != invocation.bootstrap_node, command_items(options.command_node)) ||
@@ -406,6 +416,10 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
         if admitted.version == 3
+            if requires_proper(admitted)
+                load_proper()
+                admitted.owner_check()
+            end
             InstrumentDefinition.verify_declaration(admitted)
         elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
@@ -425,8 +439,10 @@ Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`
 `--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
 SPA-JSON configuration declares the simulation YAML graph and FITS bindings;
 version 2 selects an instrument package and immutable settings. Version 3 selects
-a SPA-JSON instrument declaration and immutable settings without an instrument
-package. Version 3 also accepts an array of command_input names with matching
+a simulation definition and immutable settings without an instrument package.
+Its optional `plant.graph` selects a declared graph and defaults to `production`.
+Only selected native PROPER nodes load the application's direct Proper dependency,
+after bootstrap Preparing publication. Version 3 also accepts an array of command_input names with matching
 command_count, command_node, command_schema and command_scale maps. Named
 commands retain independent shapes and wire units; physical mirror commands
 match their declared mirror names. All versions declare command/frame names,

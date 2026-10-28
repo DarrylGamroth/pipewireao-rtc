@@ -24,11 +24,13 @@ function scientific_worker(config, output; prepare=false)
     result = options.version == 3 ?
         InstrumentConfiguration.settings_description(InstrumentConfiguration.load_simulation(options.plant.definition),configured) :
         declared_settings(instrument, configured)
+    options.version == 3 && (result["graph"] = options.plant.graph)
     if prepare
         Base.require(Main, :AdaptiveOpticsSim)
         Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         options.backend === :cuda && Base.require(Main, :CUDA)
         options.backend === :amdgpu && Base.require(Main, :AMDGPU)
+        AOSOwner.requires_proper(options) && AOSOwner.load_instrument(:Proper)
         invocation = merge(options, (; plant_module=instrument,
             remote=joinpath(dirname(output), "unused-preflight-socket"), control_node="simulator-preflight"))
         Base.invokelatest(AOSOwner.prepare_science, invocation)

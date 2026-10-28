@@ -380,6 +380,25 @@ function transform(::Val{:gaussian_width}, value, entry)
 end
 transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument settings transform $kind"))
 
+function selected_graph(declaration, mode="production")
+    _declaration_identifier(mode, "simulation graph")
+    haskey(declaration.graphs, mode) || throw(ArgumentError("simulation graph is not declared"))
+    return mode
+end
+
+"Inspect the selected native node types without loading optional scientific packages."
+function graph_requires_proper(declaration, configured; simulation_graph="production")
+    mode = selected_graph(declaration, simulation_graph)
+    profile = declaration.document["profiles"][configured["profile"]]
+    replacements = Dict(node["name"] => node for node in profile["nodes"])
+    return any(declaration.graphs[mode]["nodes"]) do node
+        selected = get(replacements, node["name"], node)
+        type = get(selected, "type", nothing)
+        resolved = type isa AbstractDict ? Common.configuration_value(type, configuration_context(declaration, configured)) : type
+        resolved in ("proper_optical_train_f32", "proper_optical_train_f64")
+    end
+end
+
 """
     graph_document(declaration, configured; calibration=false, simulation_graph=...)
 
@@ -392,9 +411,7 @@ reject before preparation.
 """
 function graph_document(declaration, configured; calibration=false,
         simulation_graph=calibration ? "calibration" : "production")
-    mode = simulation_graph
-    mode isa AbstractString && haskey(declaration.graphs,mode) ||
-        throw(ArgumentError("simulation graph is not declared"))
+    mode = selected_graph(declaration, simulation_graph)
     calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
     graph = haskey(declaration.document, "optical_model") &&
         haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ?

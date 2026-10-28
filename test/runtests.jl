@@ -1,6 +1,6 @@
 using Test, PipeWireAORTC
 
-for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "phase_timing", "registered_application")
+for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "aos_graph_selection", "phase_timing", "registered_application")
     Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end
 include("test_native_session_discovery.jl")

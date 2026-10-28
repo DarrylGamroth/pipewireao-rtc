@@ -76,10 +76,18 @@ function prepare_bindings(declaration, configured, names;
 end
 
 function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractString;
-        settings=Dict())
+        settings=Dict(), simulation_graph="production")
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
-    document = Instruments.graph_document(declaration, configured)
+    if Instruments.graph_requires_proper(declaration, configured; simulation_graph)
+        Owner.load_instrument(:Proper)
+    end
+    # Loading Proper extends native node factories in a newer world.
+    return Base.invokelatest(simulator_port_contracts, declaration, configured, simulation_graph)
+end
+
+function simulator_port_contracts(declaration, configured, simulation_graph)
+    document = Instruments.graph_document(declaration, configured; simulation_graph)
     # Only construction bindings are needed for cold typed declarations.
     # Frame inputs, parameters and unselected profiles remain unopened.
     factories = configured_graph_node_types()
@@ -166,7 +174,7 @@ configured_command_inputs(value::AbstractVector) = Tuple(Symbol.(value))
 function prepare_configured_science(options,device;check=()->nothing)
     execution = options.backend===:cpu ? StreamGraphExecution() : CapturedGraphExecution()
     system = Instruments.prepare_system(options.plant.definition;
-        settings=options.plant.settings,target=device,execution)
+        settings=options.plant.settings,simulation_graph=get(options.plant, :graph, "production"),target=device,execution)
     check()
     AdaptiveOpticsSimPipeWireHIL.validate_hil_system(system;
         command_input=options.command_input,frame_output=options.frame_output,

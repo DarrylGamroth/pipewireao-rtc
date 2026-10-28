@@ -115,7 +115,7 @@ function prepare_session_configuration!(application, spec, declarations, instrum
         plant = simulation["plant"]
         definition = D.relative_asset(application, plant["definition"])
         context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
-            settings=get(plant, "settings", Dict()))
+            settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))
     end
     # Resolve every document first so a bad reference cannot partly rewrite it.
     prepared = map(files) do entry

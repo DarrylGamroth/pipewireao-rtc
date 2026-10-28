@@ -57,6 +57,26 @@ other bounded graph names with the same command/frame boundary. An opt-in graph
 such as `optical-reference` uses `prepare_system(...; simulation_graph="optical-reference")`;
 unselected imported components do not prepare during production graph assembly.
 
+Version-3 simulator configuration accepts `plant.graph: optical-reference`; it
+defaults to `production` and must name an existing bounded graph identifier.
+The reserved numerical `calibration` graph is not admitted as a live source:
+its ideal detector response need not retain the normal camera ADC contract.
+The direct numerical calibration API is unchanged.
+The ordinary HIL boundary and typed command/frame validation also apply to the
+selected graph. Runtime preparation, settings preflight and exported observation
+contracts use this same selection. Explicit operational calibration selections
+such as `internal-source` and `dark` retain their existing paths. Native source
+metadata publishes the startup selection as `aos.simulation.graph`; the owner
+report retains it in `plant.graph`, and the configuration SHA-256 binds that
+selection. The prescription identity continues to cover all authored graphs.
+Only a selected native PROPER node requires the application's direct `Proper`
+dependency. The owner loads it through the existing UUID-checked optional package
+loader after publishing Preparing, before numerical preparation. Ordinary PWFS
+graphs load no Proper package. Direct `prepare_system` callers continue to load
+their optional numerical packages explicitly.
+The focused selectors pass 29 cold assertions and 17 fresh-process CPU assertions,
+including actual dependency loading, selected optics and exported session shapes.
+
 Physical `optical_planes` optionally maps named pupil planes to
 `{diameter_m: ...}`. These positive finite values describe illuminated beam
 diameters in metres, separately from clear apertures; prescription surface
