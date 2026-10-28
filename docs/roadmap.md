@@ -38,8 +38,24 @@ source-validation run now passes 57 native assertions: all three stages and
 preparation fault cases, with 176 eligible ROIs retaining eligibility in the
 later frozen window. An explicit public driver request now completes one native
 cycle without creating an exposure; the affected reducer-failure regression
-passes 187 assertions. Reliable delivery and registered-build campaign
-qualification remain pending.
+passes 197 assertions including a fail-before/pass-after request regression.
+A fixed repeated campaign failed on trial 2 in qualification, with trial 1
+passing and trial 3 not attempted. The failure persists with both corrections;
+release remains blocked. An isolated build from the pinned native source now
+supports passive ingress/node-cycle tracing. That separate experiment passed
+twice, then failed lamp training with one completed WFS frame and no second
+ingress dequeue. A later registered-library observer run passed twice and
+captured qualification exposure 19: raw receipt present, all three WFS receipts
+absent, publication witness current, capture waiting and no reported transport
+error. This narrows the boundary without establishing a retry defect. Bounded
+native decision tracing passed three campaigns without reproducing the block.
+A subsequent registered-library failure preserved accepted Julia output
+metadata despite missing capture receipts. One controlled extra native cycle
+cleared a later stall, without another scientific exposure. An isolated
+synchronous-sink candidate still failed its explicit completion-fence check,
+so it is not promoted. Native notification cycle association and actual link
+scheduling are the next discriminating observations.
+Reliable delivery and registered-build campaign qualification remain pending.
 Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
 and 342 actual private-core dark/light Capture assertions. The
 [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)

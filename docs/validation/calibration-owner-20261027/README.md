@@ -525,3 +525,184 @@ native cycle/input admission. The trace header sequence must be associated with
 the recorded session domain/generation. A passing traced run only establishes
 its own path; it cannot explain an uninstrumented failure. No further production
 change is justified by the current stall evidence alone.
+
+The fixed repeated-run gate at committed `d7e4568` **failed**. Trial 1 completed
+all three 16-sample stages with 176 qualifying ROIs, confirmed restoration and
+release. Trial 2 timed out in the qualification-stage call; trial 3 was not
+attempted and no replacement trial was run. Recursive causes are the client's
+`UnknownOutcome("absolute request deadline expired")` and the owner's
+`ErrorException("native owner request deadline expired")`. The stack identifies
+the stage, not the exact blocked action or sample count. Passive filesystem
+observation found staged background/training/active/reference files but no final
+candidate receipt; it does not prove a particular native phase. Both attempted
+trials removed candidates, exited their private cores with code 0 and removed
+the core directories. Code/application/instrument hashes remained unchanged.
+Evidence uses `reference-campaign-repeated-d7e4568-20261027` and its runtime
+supplement. This reproduces the problem with FIFO and the event listener
+present: the event-service correction is independently valid but insufficient.
+The campaign remains unreleased.
+
+An isolated trace build from the same pinned native source `62a3aff` now enables
+`PW_ENABLE_DIAGNOSTIC_TRACE`, with release optimization and the recipe's feature
+selections. Host toolchain/ISA configuration differs from BinaryBuilder, so no
+timing comparison is qualified. A validation-only Project selects all three
+local JLL products through supported path preferences; the private helper's
+prefix selection is adapted in memory, with unchanged lifecycle and generated
+configuration headers. Installed libraries, global overrides and services were
+untouched. A fresh private-core FIFO-filter construction/connection/closure
+smoke emitted both CSV types with zero records/omissions; it proves trace
+capability only, not acquisition progress. The main library hash is
+`c18ad0c27189aedda6b0be02f97726bdf4c8e018526a6046a2ad50f1cac5c659`;
+`native-trace-receipt-20261027.yaml` binds all products/configuration/commands.
+Three existing compiler warnings were retained and classified: nullable INFO
+formatting in `conf.c` (logging gated off here), unused disabled-flatpak helper,
+and audioadapter inlining (not used by this ndarray smoke). Harness-only
+pre-core library-path assertions and a post-smoke receipt-writer syntax error
+remain preserved; the corrected writer regenerated the receipt without
+repeating native execution. A separate fixed three-trial acquisition trace
+experiment uses a recorded 300 s stage budget and stops on its first failure.
+
+That trace series also failed: two complete campaigns passed, then trial 3
+timed out in lamp training. All 208 CSV hashes match the receipt and all report
+zero omitted records. The failed lamp domain contains one WFS frame completing
+D/G/E/O0/O1/O2/R with successful results, but no D for frame 2. Native detector,
+WFS and output nodes finish their last recorded cycles. Earlier target-state
+snapshots precede those completions and do not establish stuck targets.
+Output commits and downstream execution do not prove matching capture receipts;
+the trace cannot establish that the calibration owner advanced to exposure 2.
+Evidence uses `reference-campaign-trace-d7e4568-20261027`, with the failed lamp
+ingress in trial 3's `ndarray-filter-2573392-15.csv` and node-ready files
+`node-ready-2573392-93.csv` (WFS) and `node-ready-2573392-84.csv` (detector).
+All private cores exited with code 0 and candidates/core directories were
+removed. Source, application and instrument hashes remained unchanged.
+
+The next experiment uses the original registered native products and a separate
+source worktree with cold preparation/closure observer hooks only. A single
+passive timer per owner records capture receipts, current action, acquisition
+cursor, publication state and wait condition if the owner remains open after
+30 s. Each protected group uses its own existing lock; the combined snapshot is
+not atomic. Same-control-thread scalar observations are explicitly labeled.
+The observer sends no processing command, condition notification or plant step;
+worker counters are read only after tasks stop and both cores close. Its fixed
+three-trial series stops on the first failure, without replacement trials.
+These diagnostic hooks are not production changes.
+
+The first observer series (`reference-campaign-stall-observer-d7e4568-20261027`)
+stopped on trial 1's dark-stage deadline. Its observer referenced a driver-cycle
+field that the calibration transport type does not have, so no valid capture
+snapshot survived; this is a harness defect and supplies no action-level cause.
+After teardown both workers were done, inactive and error-free, with completion
+counts of 2 each. Core exit, directory removal, observer-reference release and
+unchanged input/source hashes were confirmed. A distinct corrected series uses
+`reference-campaign-stall-snapshot-d7e4568-20261027`, checks loaded field names
+before creating a core and retains completed observation groups if a later
+group fails. Neither series modifies production source.
+
+The corrected series completed trials 1 and 2, then captured trial 3 during
+qualification: the applying command is Collect(16), serial/token 4. Capture is
+ARMED and waiting for generation 1 exposure 19, with exposure 18 last complete.
+The raw slot has the matching exposure-19 receipt; slopes, flux and validity
+remain ARMED without receipts. Capture reports no failure. HIL publication
+ready/published/cycle-witness values are all 19, streams are STREAMING and
+driving, with no HIL/probe error. The separate condition observation is open,
+unset and has one waiter. Same-control-thread scalar observations show cursor
+18 and pending exposure 19. These groups are separately locked, not a single
+atomic snapshot. This establishes a later-exposure raw/WFS delivery boundary,
+not a publication-witness wait or a confirmed native retry defect. The trial
+subsequently reached its original qualification deadline with the same client
+and native-owner deadline causes. No observer error occurred. After teardown,
+frontend completion count was 19 and command count 2, with both workers done,
+inactive and error-free. A frontend count is callback completion, not proof of
+output publication. All three cores exited with code 0, candidates/core
+directories were removed, observer references were released, and source and
+input hashes remained unchanged.
+
+A combined experiment now uses those same observer hooks plus a metadata-only
+native patch in a separate worktree based on `62a3aff`. The existing bounded
+node-ready ring gains explicit guard/retry/return decision records, alongside
+the existing port-handoff trace. Original event meanings and transport policy
+are preserved. The release-mode isolated build completed with the same three
+pre-existing warning locations and no warning in changed diagnostic code.
+`native-row-retry-build-receipt-20261027.yaml` binds source, patch, build inputs,
+logs and all selected products; its main library hash is
+`a25b4fa621d311de65af743db77d72ce57c4d0d8f0d9f5b5f8478cf7ed317e0a`.
+The fixed three-trial `reference-campaign-stall-native-d7e4568-20261027` series
+stops on its first failure, retaining bounded metadata only. Its altered
+diagnostic binary is not a release candidate or timing comparison.
+
+The combined series passed all three campaigns with the same 176 qualifying
+ROIs and reference-difference diagnostics. All 612 trace hashes verify, with
+zero omissions; all nine owners restored/released and cleanup/input hashes
+passed. No passive stall snapshot fired. Trial 1 contains no new decision
+records: the helper targets row-transport drivers, while the HIL stream
+properties do not select that native mode. Thus the successful baseline does
+not exercise the targeted guard telemetry or explain the registered failure.
+The next discriminator retains the registered-native passive observer and
+reads existing JFG rejection diagnostics only after worker join/core closure.
+An expected Algorithm rejection can suppress FGPW outputs while incrementing
+its completion count without a worker exception; that is an alternative to
+native output loss, not a confirmed explanation.
+
+The registered-library rejection series passed trial 1 and failed trial 2's
+dark collection; trial 3 was not attempted. Its passive snapshot shows raw
+exposure 6 present and all three WFS receipts absent. After full teardown the
+frontend has completion count 6, no rejection/error, all pixel-calibration and
+SH outputs available, and all three published output metadata slots matching
+that exact domain/generation/exposure 6. This does not support expected
+Algorithm rejection as the explanation for that run. It places the observed
+boundary after accepted Julia graph processing, without proving native output
+queueing or consumption. Cleanup and unchanged hashes passed. Evidence prefix:
+`reference-campaign-rejection-d7e4568-20261027`.
+
+Source review also excludes an unqualified property-only fix: FIFO cannot
+recover graph cycles lost before helper admission. Native `node.reliable`
+changes output tee semantics to first-eligible-mix transfer; it is not reliable
+broadcast for the current raw/WFS same-port fanout. The qualified HEART row
+transport contract is likewise not a generic full-frame stream contract.
+Independent review recommends establishing exact delivery/lease behavior with
+numbered UInt16 fanout and held-consumer tests before promoting a transport
+change. No reliability property or scientific graph topology has been changed.
+
+The explicitly ACTIVE `reference-campaign-progress-pulse-d7e4568-20261027`
+experiment completed three campaigns. Trial 2 lamp training stalled at exposure
+15, with raw present and WFS receipts absent. After saving and revalidating the
+same Collect ticket/exposure, one public native processing request was issued
+without a plant step, source republish or deadline reset. Immediate scientific
+sequence fields stayed expected 15/last 14; the owner subsequently released
+and closed before the later passive snapshot. Exactly one pulse occurred.
+Frontend counts remained 16/16/32 per campaign, with no graph rejection, and
+cleanup/hash checks passed. This supports missing-quantum flushing for that
+controlled case; it is not a production fix, root-cause proof or qualification.
+
+Independent source review supports a narrower configuration experiment before
+new transport APIs: inactive stream connection selects the main data loop and
+graph-ASYNC scheduling. Public post-connect `node.async=false` updates scheduling
+without moving the data loop or enabling RT_PROCESS. Applying and observing it
+before links are created could make calibration data capture participate in
+the driver's completion fence. Existing links must not be assumed to rebuild
+on that property update. The candidate must verify actual frontend/sink
+scheduling and callback placement, and capture completion at the publication
+cycle witness, without the former unconditional extra native trigger. Other
+asynchronous command/feedback nodes remain outside any universal quiescence
+claim. No candidate implementation or qualification follows from this review.
+
+The isolated synchronous-capture A/B candidate failed trial 1's dark stage at
+its explicit publication-cycle/capture-completion assertion. All four sink
+NodeInfo properties reported `node.async=false`/`node.loop.class=main` before
+links, and all public data-loop comparisons matched the capture ThreadLoop.
+The frontend async property was absent, with native-default interpretation
+recorded rather than an observed false. After teardown the frontend count was
+6, with no rejection/error and all output metadata at exposure 6. No passive
+30 s snapshot fired before the assertion, so the precise incomplete slot set
+at assertion time is unknown. The caller also observed owner removal. Cleanup
+and unchanged hashes passed; no later trials were attempted. Evidence prefix:
+`reference-campaign-sync-capture-d7e4568-20261027`. This configuration is not
+promoted. The next measurement must distinguish actual activation/link IO
+state from the source completion notification's cycle association.
+
+The maintained consumer regression now observes first-cycle receipt completion
+and callback loop placement. Its unchanged-source baseline run reached the
+deliberate reducer-failure Collect, then hit the known request deadline:
+112 assertions passed and one error occurred. The later first-cycle assertions
+were not reached, so that run does not independently establish their failure.
+Its log is `capture-first-cycle-baseline-20261027.log`.
