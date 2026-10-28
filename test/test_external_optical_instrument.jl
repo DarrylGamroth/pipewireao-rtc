@@ -18,6 +18,85 @@ function optical_reference_documents(directory)
     return physical, simulation
 end
 
+function pupil_output_documents()
+    physical, simulation = external_optical_documents()
+    physical["optical_output"] = deepcopy(physical["optical_input"])
+    simulation["pupil_output"] = Dict{String,Any}("opd" => "pupil_opd", "amplitude" => "pupil_amplitude")
+    simulation["components"] = Dict()
+    simulation["bindings"]["pupil_amplitude"] = Dict("kind" => "pupil_amplitude",
+        "resolution" => "pupil_resolution", "type" => "Float32")
+    simulation["bindings"]["pupil_opd"]["type"] = "Float32"
+    config = Dict("resolution" => Dict("\$ref" => "/settings/pupil_resolution"),
+        "pupil_opd_schema" => "example.pupil-opd/1", "uncompensated_opd_schema" => "example.pupil-opd/1",
+        "surface_opd_schema" => "example.pupil-opd/1")
+    graph = Dict("schema_version" => 1, "name" => "pupil_output_test",
+        "nodes" => [Dict("name" => "composition", "type" => "pupil_opd_composition_f32", "config" => config)],
+        "inputs" => [Dict("name" => "upstream", "binding" => "pupil_opd", "destination" => "composition.uncompensated_opd"),
+            Dict("name" => "mirror", "binding" => "pupil_opd", "destination" => "composition.surface_opd")],
+        "outputs" => [Dict("name" => "pupil_opd", "source" => "composition.pupil_opd")])
+    simulation["graphs"] = Dict("production" => graph, "diagnostic" => deepcopy(graph))
+    only(simulation["graphs"]["diagnostic"]["outputs"])["name"] = "diagnostic_opd"
+    return physical, simulation
+end
+
+@testset "nominal pupil publication resolves cold physical and graph declarations" begin
+    mktempdir() do directory
+        physical, simulation = pupil_output_documents()
+        declaration = IC.load_simulation(write_external_optical_documents(directory, physical, simulation))
+        configured = IC.settings(declaration)
+        output = IC.pupil_output(declaration, configured)
+        @test output == (; opd=:pupil_opd, amplitude=:pupil_amplitude,
+            optical=physical["optical_output"], pupil_resolution=4)
+        @test IC.pupil_output(declaration, IC.settings(declaration, (; pupil_resolution=12))).pupil_resolution == 12
+        @test IC.physical_definition(declaration.instrument).optical_output == IC._instrument_seal(physical["optical_output"])
+        output.optical["diameter_m"] = 0.1
+        @test declaration.instrument.document["optical_output"]["diameter_m"] == 0.012
+        @test_throws ArgumentError IC.pupil_output(declaration, configured; simulation_graph="missing")
+        @test_throws ArgumentError IC.pupil_output(declaration, configured; simulation_graph="diagnostic")
+        # Select the authored OPD name exactly; diagnostic synonyms do not match.
+        declaration.document["pupil_output"]["opd"] = "diagnostic_opd"
+        @test IC.pupil_output(declaration, configured; simulation_graph="diagnostic").opd == :diagnostic_opd
+        declaration.document["pupil_output"]["opd"] = "pupil_opd"
+        for binding in (Dict("kind" => "zeros", "shape" => [4,4], "type" => "Float32"),
+                Dict("kind" => "pupil_amplitude", "resolution" => 4, "type" => "Float64"),
+                Dict("kind" => "pupil_amplitude", "resolution" => 5, "type" => "Float32"))
+            declaration.document["bindings"]["pupil_amplitude"] = binding
+            @test_throws ArgumentError IC.pupil_output(declaration, configured)
+        end
+        delete!(declaration.document["bindings"], "pupil_amplitude")
+        @test_throws ArgumentError IC.pupil_output(declaration, configured)
+        delete!(declaration.document, "pupil_output")
+        @test IC.pupil_output(declaration, configured) === nothing
+    end
+    @test all(id -> id.name ∉ ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+end
+
+@testset "pupil output rejects unsupported physical and publication contracts" begin
+    mktempdir() do directory
+        physical, simulation = pupil_output_documents()
+        for mutate! in (
+                spec -> (spec["curvature"] = "converging"),
+                spec -> (spec["diameter_m"] = 0),
+                spec -> (spec["registration"] = ""),
+                spec -> (spec["unknown"] = true),
+                spec -> delete!(spec, "plane"))
+            invalid = deepcopy(physical)
+            mutate!(invalid["optical_output"])
+            @test_throws ArgumentError IC.load_simulation(write_external_optical_documents(directory, invalid, simulation))
+        end
+        for mutate! in (
+                spec -> (spec["opd"] = ""),
+                spec -> (spec["unknown"] = true),
+                spec -> delete!(spec, "amplitude"))
+            invalid = deepcopy(simulation)
+            mutate!(invalid["pupil_output"])
+            @test_throws ArgumentError IC.load_simulation(write_external_optical_documents(directory, physical, invalid))
+        end
+        delete!(physical, "optical_output")
+        @test_throws ArgumentError IC.load_simulation(write_external_optical_documents(directory, physical, simulation))
+    end
+end
+
 @testset "physical prescription references and optical paths are cold shared metadata" begin
     mktempdir() do directory
         physical, simulation = optical_reference_documents(directory)

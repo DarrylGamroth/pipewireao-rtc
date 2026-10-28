@@ -10,6 +10,12 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "aos_graph_documents.jl"))
         config = joinpath(directory, "simulation.conf")
         C.write_json(config, document)
         @test Owner.configuration(config).plant.graph == "production"
+        @test !Owner.configuration(config).pupil_output
+        document["pupil_output"] = true
+        C.write_json(config, document)
+        @test_throws ArgumentError Owner.configuration(config)
+        delete!(document, "pupil_output")
+        C.write_json(config, document)
         @test !Owner.requires_proper(Owner.configuration(config))
         document["plant"]["graph"] = "optical-reference"
         C.write_json(config, document)

@@ -178,12 +178,13 @@ function physical_definition(declaration)
     sensors = Tuple((;layout=sensor_layout(declaration,document["wavefront_sensors"][name])) for name in sensor_keys)
     telescope = haskey(document,"telescope") ? (;telescope=_instrument_seal(document["telescope"])) : NamedTuple()
     optical_input = haskey(document,"optical_input") ? (;optical_input=_instrument_seal(document["optical_input"])) : NamedTuple()
+    optical_output = haskey(document,"optical_output") ? (;optical_output=_instrument_seal(document["optical_output"])) : NamedTuple()
     optical_planes = haskey(document,"optical_planes") ? (;optical_planes=_instrument_seal(document["optical_planes"])) : NamedTuple()
     optical_prescription = haskey(document,"optical_prescription") ? (;optical_prescription=_instrument_seal(document["optical_prescription"])) : NamedTuple()
     optical_paths = haskey(document,"optical_paths") ? (;optical_paths=_instrument_seal(document["optical_paths"])) : NamedTuple()
     optical_masks = haskey(document,"optical_masks") ? (;optical_masks=_instrument_seal(document["optical_masks"])) : NamedTuple()
     optical_filters = haskey(document,"optical_filters") ? (;optical_filters=_instrument_seal(document["optical_filters"])) : NamedTuple()
-    return (;telescope...,optical_input...,optical_planes...,optical_prescription...,optical_paths...,optical_masks...,optical_filters...,schema_version=1,id=document["id"],
+    return (;telescope...,optical_input...,optical_output...,optical_planes...,optical_prescription...,optical_paths...,optical_masks...,optical_filters...,schema_version=1,id=document["id"],
         deformable_mirrors=NamedTuple{Tuple(Symbol.(mirror_keys))}(Tuple(mirrors)),
         wavefront_sensors=NamedTuple{Tuple(Symbol.(sensor_keys))}(sensors))
 end

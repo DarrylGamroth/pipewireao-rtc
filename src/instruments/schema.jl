@@ -1,11 +1,12 @@
 "Validate physical instrument data without loading a simulation or controller."
 function validate_declaration(document::AbstractDict, directory::AbstractString)
     required = ("schema_version", "id", "deformable_mirrors", "wavefront_sensors")
-    fields(document, (required..., "telescope", "optical_input", "optical_planes", "optical_prescription", "optical_paths", "optical_masks", "optical_filters"), required, "physical instrument")
+    fields(document, (required..., "telescope", "optical_input", "optical_output", "optical_planes", "optical_prescription", "optical_paths", "optical_masks", "optical_filters"), required, "physical instrument")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported physical instrument schema"))
     _declaration_identifier(document["id"], "instrument identifier")
     haskey(document, "telescope") && _validate_telescope(document["telescope"])
     haskey(document, "optical_input") && _validate_optical_input(document["optical_input"])
+    haskey(document, "optical_output") && _validate_optical_input(document["optical_output"]; label="optical output")
     haskey(document, "optical_planes") && _validate_optical_planes(document["optical_planes"])
     for key in ("deformable_mirrors", "wavefront_sensors")
         values = _declaration_object(document[key], key)
@@ -102,6 +103,12 @@ function validate_simulation_common(document, instrument)
     settings_schema["type"] == "object" && InstrumentDefinition.object_value(settings_schema["properties"]) ||
         throw(ArgumentError("settings_schema must declare object properties"))
     haskey(document, "wire_contracts") && _validate_wire_contracts(document["wire_contracts"])
+    if haskey(document, "pupil_output")
+        output = _declaration_fields(document["pupil_output"], ("opd", "amplitude"), ("opd", "amplitude"), "pupil output")
+        _declaration_identifier(output["opd"], "pupil OPD output")
+        _declaration_identifier(output["amplitude"], "pupil amplitude binding")
+        haskey(instrument, "optical_output") || throw(ArgumentError("pupil output requires a physical optical_output"))
+    end
     for key in ("defaults", "profiles", "bindings", "sensors", "sources")
         _declaration_object(get(document,key,Dict()), "simulation $key")
     end
@@ -320,14 +327,14 @@ function _validate_sensor_declaration(::Union{Val{:scc},Val{:llowfs}}, spec, dir
     return nothing
 end
 
-function _validate_optical_input(value)
+function _validate_optical_input(value; label="optical input")
     required = ("plane", "diameter_m", "curvature", "registration")
-    input = _declaration_fields(value, required, required, "optical input")
+    input = _declaration_fields(value, required, required, label)
     for key in ("plane", "registration")
-        _declaration_text(input[key], "optical input $key")
+        _declaration_text(input[key], "$label $key")
     end
-    isfinite_positive(input["diameter_m"]) || throw(ArgumentError("optical input diameter_m must be positive and finite"))
-    input["curvature"] == "collimated" || throw(ArgumentError("unsupported optical input curvature"))
+    isfinite_positive(input["diameter_m"]) || throw(ArgumentError("$label diameter_m must be positive and finite"))
+    input["curvature"] == "collimated" || throw(ArgumentError("unsupported $label curvature"))
     return nothing
 end
 

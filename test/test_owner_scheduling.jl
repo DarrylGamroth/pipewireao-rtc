@@ -22,6 +22,15 @@ end
     @test plant["argv"][end-3:end] == ["--pipewire-cpu","3","--optical-diagnostics-cpu","2"]
     @test isempty(plant["environment"])
     @test "--threads=2,0" in plant["argv"]
+    pupil = owner("aos", "plant")
+    E.owner_scheduling!(Val(:aos), pupil,
+        process(Dict("pipewire"=>[3], "optical-diagnostics"=>[2], "pupil-output"=>[4])))
+    @test "--threads=3,0" in pupil["argv"]
+    @test pupil["argv"][end-1:end] == ["--pupil-output-cpu", "4"]
+    for cpu in (2, 3)
+        @test_throws ArgumentError E.owner_scheduling!(Val(:aos), owner("aos", "plant"),
+            process(Dict("pipewire"=>[3], "optical-diagnostics"=>[2], "pupil-output"=>[cpu])))
+    end
     for (kind,workers) in (("jfg",Dict("julia"=>[3])),("jfg",Dict("julia"=>[2,3])), ("jfg",Dict("unknown"=>[3,2])),
             ("aos",Dict("optical-diagnostics"=>[2])),("aos",Dict("pipewire"=>[2,3])),
             ("aos",Dict("pipewire"=>[2],"optical-diagnostics"=>[3])),("unknown",Dict()))

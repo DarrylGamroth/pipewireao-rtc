@@ -17,6 +17,7 @@ include("aos/phase_timing.jl")
 include("aos/metadata.jl")
 include("aos/graph_adapters.jl")
 include("aos/instruments.jl")
+include("aos/pupil_output.jl")
 
 mutable struct OwnerState
     running::Bool
@@ -254,7 +255,7 @@ function consume_control!(options, mailbox, pipewire, state, pacing_period,
     return nothing
 end
 
-function wait_registered!(pipewire, runtime, ticket)
+function wait_registered!(pipewire, runtime, ticket, pupil=nothing)
     while true
         Bootstrap.check_connect!(runtime, ticket)
         registered = with_frame_stream(pipewire) do frame
@@ -264,7 +265,7 @@ function wait_registered!(pipewire, runtime, ticket)
                     PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING), streams)
         end
         Bootstrap.check_connect!(runtime, ticket)
-        registered && return nothing
+        registered && PupilOutput.registered(pupil) && return nothing
         sleep(min(0.005, max(0.0, ticket.deadline - Bootstrap.Client.monotonic())))
     end
 end
@@ -275,18 +276,20 @@ function next_deadline(deadline::UInt64, period::UInt64, now::UInt64)
     return Base.checked_add(candidate, Base.checked_mul(missed, period))
 end
 
-function run_prepared!(options, science, pipewire, observation, mailbox, state, phase=nothing)
+function run_prepared!(options, science, pipewire, observation, mailbox, state, phase=nothing, pupil=nothing)
     runtime = options.bootstrap_runtime
     reset_owner! = () -> begin
         # Drain optional asynchronous snapshots before graph reset. Native
         # source controls are applied only here, after the preceding exchange.
         OpticalObservation.drain!(observation)
+        PupilOutput.drain!(pupil; check=options.owner_check)
         save_phase_timing!(phase)
         reset_pipewire_hil!(pipewire, science.driver)
         # The plant reset has committed this empty cursor even if optional
         # observation rewarming subsequently fails before the control ACK.
         state.generation = Int64(frame_acquisition_generation(pipewire))
         state.sequence = 0
+        PupilOutput.reset!(pupil, UInt64(state.generation); check=options.owner_check)
         state.completed = false
         state.deadline_ns = 0
         reset_phase_timing!(phase, state.generation)
@@ -296,7 +299,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
     ticket = Bootstrap.take_connect!(runtime)
     Bootstrap.check_connect!(runtime, ticket)
     start!(pipewire)
-    wait_registered!(pipewire, runtime, ticket)
+    wait_registered!(pipewire, runtime, ticket, pupil)
     Bootstrap.connected!(runtime, ticket)
     Bootstrap.await_connected!(runtime, ticket)
     println("SIMULATOR_CONNECTED sequence=0 held=true")
@@ -318,6 +321,7 @@ function run_prepared!(options, science, pipewire, observation, mailbox, state, 
         state.sequence = sequence
         model_time_sequence(science.driver) == sequence || error("model-time sequence differs from source")
         frame_timing = completed_frame_timing(frame_command_timing(pipewire))
+        PupilOutput.sample!(pupil; generation=UInt64(state.generation), model_ns)
         OpticalObservation.sample!(observation, frame_timing, model_ns, time_ns())
         optical_finished = timing === nothing ? UInt64(0) : time_ns()
         state.deadline_ns = options.pacing_period_ns == 0 ? UInt64(0) :
@@ -362,6 +366,7 @@ function Owner.run_owner(options)
     state = OwnerState()
     source_instance = Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1)
     observation = nothing
+    pupil = nothing
     phase = nothing
     pipewire = nothing
     failures = Exception[]
@@ -371,6 +376,8 @@ function Owner.run_owner(options)
             configuration_sha256=PipeWireAORTC.Common.sha256_file(options.config_path)))
         phase = prepare_phase_timing(options)
         science = Owner.prepare_science(options; check=options.owner_check)
+        pupil = PupilOutput.prepare(options, science)
+        options = merge(options, (; pupil_output_status=() -> PupilOutput.status(pupil)))
         imaging = options.optical_observation ? OpticalObservation.owner_imaging_configuration(options) : OpticalObservation.default_imaging()
         observation = OpticalObservation.prepare(options.optical_observation ? science.definition : nothing, science.graph; imaging)
         options.owner_check()
@@ -403,6 +410,8 @@ function Owner.run_owner(options)
         end
         OpticalObservation.warm!(observation, pipewire; check=options.owner_check,
             cpu=get(options, :optical_diagnostics_cpu, nothing))
+        PupilOutput.start!(pupil; remote=options.remote, cpu=get(options, :pupil_output_cpu, nothing),
+            check=options.owner_check)
         precompile(OpticalObservation.close!, (typeof(observation), typeof(pipewire))) ||
             error("cannot compile prepared optical cleanup before admission")
         precompile(exchange_frame!, (typeof(pipewire), typeof(science.driver))) ||
@@ -416,7 +425,7 @@ function Owner.run_owner(options)
         Bootstrap.prepared!(runtime)
         println("SIMULATOR_PREPARED command_count=$(options.command_count) frame_shape=$(options.frame_shape)")
         flush(stdout)
-        run_prepared!(options, science, pipewire, observation, mailbox, state, phase)
+        run_prepared!(options, science, pipewire, observation, mailbox, state, phase, pupil)
     catch error
         if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
             push!(failures, error)
@@ -437,6 +446,7 @@ function Owner.run_owner(options)
                 push!(failures, error)
             end
         end
+        try PupilOutput.close!(pupil) catch error; push!(failures, error) end
         try OpticalObservation.close!(observation, pipewire) catch error; push!(failures, error) end
         try save_phase_timing!(phase) catch error; push!(failures, error) end
         state.running = false

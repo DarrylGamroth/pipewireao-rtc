@@ -10,7 +10,7 @@ import ..Schemas
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
-public load, load_simulation, load_simulation_source, load_rtc, settings, graph_document, scientific_definition, prepare_system, prepare_external_pupil,
+public load, load_simulation, load_simulation_source, load_rtc, settings, graph_document, pupil_output, scientific_definition, prepare_system, prepare_external_pupil,
     prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
     actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context, calibration_context
 
@@ -76,7 +76,7 @@ function simulation_documents(path)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "wire_contracts", "graphs", "preparation", "profiles", "bindings", "settings_bindings",
-        "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging", "observations", "optical_model"),
+        "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging", "observations", "optical_model", "pupil_output"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "profiles", "frame_period_s"), "simulation definition")
     haskey(document, "graphs") != haskey(document, "preparation") ||
@@ -384,6 +384,38 @@ function selected_graph(declaration, mode="production")
     _declaration_identifier(mode, "simulation graph")
     haskey(declaration.graphs, mode) || throw(ArgumentError("simulation graph is not declared"))
     return mode
+end
+
+"""
+    pupil_output(declaration, configured; simulation_graph="production")
+
+Return `nothing` when no external pupil is declared, otherwise resolve its
+named OPD graph output, static Float32 amplitude binding, physical optical
+output and selected pupil resolution. This cold inspection does not prepare
+optical components or load an accelerator. The runtime checks the actual OPD
+buffer's type and shape before publishing it.
+"""
+function pupil_output(declaration, configured; simulation_graph="production")
+    output = get(declaration.document, "pupil_output", nothing)
+    output === nothing && return nothing
+    mode = selected_graph(declaration, simulation_graph)
+    outputs = get(declaration.graphs[mode], "outputs", ())
+    count(entry -> entry["name"] == output["opd"], outputs) == 1 ||
+        throw(ArgumentError("selected graph must declare exactly one pupil OPD output $(output["opd"])"))
+    bindings = declaration.document["bindings"]
+    amplitude = output["amplitude"]
+    haskey(bindings, amplitude) || throw(ArgumentError("pupil output names an absent amplitude binding $amplitude"))
+    binding = bindings[amplitude]
+    binding["kind"] == "pupil_amplitude" && binding["type"] == "Float32" ||
+        throw(ArgumentError("pupil output requires a static Float32 pupil_amplitude binding"))
+    p = get(configured, "pupil_resolution", nothing)
+    p isa Integer && !(p isa Bool) && 0 < p <= typemax(Int) ||
+        throw(ArgumentError("pupil output requires a positive selected pupil_resolution"))
+    resolution = dimension(configured, Common.configuration_value(binding["resolution"],
+        configuration_context(declaration, configured)))
+    resolution == p || throw(ArgumentError("pupil output amplitude resolution differs from the selected pupil_resolution"))
+    return (; opd=Symbol(output["opd"]), amplitude=Symbol(amplitude),
+        optical=deepcopy(declaration.instrument.document["optical_output"]), pupil_resolution=Int(p))
 end
 
 "Inspect the selected native node types without loading optional scientific packages."

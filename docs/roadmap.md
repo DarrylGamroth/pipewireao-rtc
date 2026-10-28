@@ -22,6 +22,16 @@ contracts. Omitting both `hil` and `wire_contracts` admits explicitly selected
 graph names; it creates no controller or RTC lifecycle. HIL and RTC control
 declarations retain their nonempty mirror and production/calibration contracts.
 
+An optional physical `optical_output` uses the same plane, diameter, collimated
+curvature and registration fields as `optical_input`. Simulation
+`pupil_output: {opd: pupil_opd, amplitude: pupil_amplitude}` selects an exact
+graph output and a static Float32 `kind: pupil_amplitude` binding.
+`InstrumentConfiguration.pupil_output(declaration, configured;
+simulation_graph="production")` resolves that descriptor using the selected
+pupil resolution without preparing optics or loading an accelerator. The
+publisher checks the prepared OPD buffer's type and shape. This is an optional
+ideal pupil interface; it does not establish a measured physical relay.
+
 Prepared optical models distinguish the authored source definition from the
 generated execution definition. `load_simulation_source` validates the source's
 `preparation: {kind: zemax, recipe: zemax.yaml}` and shared cold
@@ -3553,3 +3563,33 @@ wisdom is development experiment conditioning, not a production planning-policy
 change. These finite cohorts have zero post-prefix timing samples and establish
 no achieved-rate, latency, convergence or physical hardware qualification.
 See [review and validation evidence](LIVE_OBSERVATION_VALIDATION.md).
+
+### Scientific pupil output
+
+A version-3 owner can enable `pupil_output: true` when the physical instrument
+declares `optical_output` and the simulation maps `pupil_output.opd` to a named
+raw graph output and `pupil_output.amplitude` to a static Float32 pupil-amplitude
+binding. AOS owns the shared external-pupil contract; HIL owns complete-array
+transport. GPI's first output is an explicitly ideal, provisionally registered
+12 mm collimated grey pupil, independent of its PROPER intensity diagnostic.
+
+The exchange thread only attempts a bounded raw-output snapshot after a
+completed frame. Dedicated Julia thread 3 polls, transposes native `[x,y]` to
+packet `[quantity,y,x]`, stages and drives the optional source. Scheduling names
+a distinct `pupil-output` CPU. PTS is model-interval start in simulation
+nanoseconds; duration is the model period. The publisher owns a UUID domain and
+retains the completed frame generation/sequence. It neither waits for a
+consumer nor creates a link. Exposure gaps remain gaps.
+
+Cold reset drains the snapshot, advances/flushes transport generation and
+acknowledges both operations before resuming, retaining the native port and
+links. A per-frame fault disables publication while retaining the registered
+source; recovery requires fresh owner preparation. Native properties and the
+owner report expose failure, completed snapshots, snapshot/staging refusals,
+transport overwrite/contention, and skipped source sequences. Source gaps and
+transport drops are counted within a generation; snapshot refusals and completed
+snapshots accumulate after warmup. The receiver counts its own arrival gaps.
+
+Settings preflight prepares the optical graph, while owner startup additionally
+validates the publisher's actual buffers before admission. CPU/private-core and
+CUDA checks establish software behavior, not deadline or physical registration.

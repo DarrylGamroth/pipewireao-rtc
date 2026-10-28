@@ -101,7 +101,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu")
+    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu", "--pupil-output-cpu")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -131,6 +131,14 @@ function arguments(args)
             throw(ArgumentError("optical diagnostics CPU must exclude CPUs 0 and 1"))
     end
     requested_timing = any(key -> haskey(values, key), optional)
+    pupil_output_cpu = nothing
+    if haskey(values, "--pupil-output-cpu")
+        pupil_output_cpu = tryparse(Int, values["--pupil-output-cpu"])
+        pupil_output_cpu !== nothing && pupil_output_cpu >= 2 ||
+            throw(ArgumentError("pupil output CPU must exclude CPUs 0 and 1"))
+        pupil_output_cpu != optical_diagnostics_cpu ||
+            throw(ArgumentError("pupil output and optical diagnostics require distinct CPUs"))
+    end
     timing_directory = nothing
     timing_frames = timing_warmup = 0
     if requested_timing
@@ -148,7 +156,7 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu, pupil_output_cpu)
 end
 
 # Version 3 can use the public HIL named-command boundary. All maps are
@@ -212,7 +220,7 @@ function configuration(path::AbstractString)
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
-    fields = (shared_fields..., route_fields...)
+    fields = version == 3 ? (shared_fields..., route_fields..., "pupil_output") : (shared_fields..., route_fields...)
     required = version == 1 ? (shared_required..., route_fields...) :
         (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
     version == 3 && (required = (required...,"instrument","calibration_identity","rtc_configuration","prescription_identity"))
@@ -264,6 +272,13 @@ function configuration(path::AbstractString)
     total = get(document, "total_exchanges", nothing)
     total_exchanges = total === nothing ? nothing : UInt64(integer(total, "total_exchanges", 1, typemax(Int64)))
     optical_observation = boolean(get(document, "optical_observation", false), "optical_observation")
+    pupil_output = boolean(get(document, "pupil_output", false), "pupil_output")
+    if pupil_output
+        declaration = InstrumentConfiguration.load_simulation(plant.definition)
+        InstrumentConfiguration.pupil_output(declaration,
+            InstrumentConfiguration.settings(declaration, plant.settings); simulation_graph=plant.graph) === nothing &&
+            throw(ArgumentError("pupil_output requires a declared scientific pupil output"))
+    end
     detector_observation = boolean(get(document, "detector_observation", false), "detector_observation")
     command_observation = boolean(get(document, "command_observation", false), "command_observation")
     applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
@@ -306,7 +321,7 @@ function configuration(path::AbstractString)
     end
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, pacing_rate_hz, pacing_period_ns, backend, device, artifacts, command_node,
-        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
+        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation, pupil_output,
         detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description, rtc_configuration, prescription_identity)
 end
 
@@ -349,6 +364,8 @@ function write_report(options, state, generation, source_instance; failures=())
     calibration_identity = get(options, :calibration_identity, nothing)
     calibration_identity === nothing ||
         (record = merge(record, (; startup_calibration_identity=calibration_identity)))
+    pupil_output = get(options, :pupil_output_status, () -> nothing)()
+    pupil_output === nothing || (record = merge(record, (; pupil_output)))
     path = report_path(options)
     mkpath(dirname(path))
     temporary, io = mktemp(dirname(path))
