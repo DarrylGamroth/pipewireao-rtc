@@ -170,6 +170,48 @@ function pyramid_reference_update!(state,plan,sample)
     return nothing
 end
 
+# The EMCCD outputs electrons. The declared frame-layout node applies the ADC
+# scale, bias, rounding and range; only its published UInt16 range defines a rail.
+function pyramid_reference_adc(production,options)
+    outputs = filter(output -> output["name"] == string(options.frame_output),production["outputs"])
+    length(outputs) == 1 || throw(ArgumentError("pyramid ADC requires its declared frame output exactly once"))
+    source = split(only(outputs)["source"],'.';keepempty=true)
+    length(source) == 2 && source[2] == "frame" || throw(ArgumentError(
+        "pyramid frame output must name a frame-layout frame endpoint"))
+    layouts = filter(node -> node["name"] == source[1],production["nodes"])
+    length(layouts) == 1 && only(layouts)["type"] == "detector_frame_layout_f32" ||
+        throw(ArgumentError("pyramid frame output must come from the declared detector frame layout"))
+    frame_layout = only(layouts)
+    config = frame_layout["config"]
+    get(config,"output_element_type",nothing) == "uint16" &&
+        get(config,"rounding",nothing) == "nearest_even" || throw(ArgumentError(
+        "pyramid raw ADC must retain UInt16 output with nearest-even rounding"))
+    output_size = get(config,"output_size",nothing)
+    output_size isa Union{Tuple,AbstractVector} && Tuple(output_size) == options.frame_shape &&
+        get(config,"output_schema",nothing) == options.frame_schema || throw(DimensionMismatch(
+        "pyramid frame layout must retain the declared raw frame shape and schema"))
+    range = get(config,"range",nothing)
+    range isa AbstractVector && length(range) == 2 &&
+        all(value -> value isa Real && !(value isa Bool) && isfinite(value) && isinteger(value),range) &&
+        0 <= range[1] < range[2] <= typemax(UInt16) || throw(ArgumentError(
+        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+    links = filter(link -> link["destination"] == source[1]*".detector_frame",production["links"])
+    length(links) == 1 || throw(ArgumentError("pyramid ADC must have one declared detector-frame source"))
+    detector_source = split(only(links)["source"],'.';keepempty=true)
+    length(detector_source) == 2 && detector_source[2] == "frame" || throw(ArgumentError(
+        "pyramid ADC input must name the declared detector frame"))
+    detectors = filter(node -> node["name"] == detector_source[1],production["nodes"])
+    length(detectors) == 1 && only(detectors)["type"] == "detector" || throw(ArgumentError(
+        "pyramid ADC input must come from the declared detector"))
+    detector = only(detectors)
+    input_size = get(config,"input_size",nothing)
+    get(config,"input_schema",nothing) == detector["config"]["frame_schema"] &&
+        input_size isa Union{Tuple,AbstractVector} && Tuple(input_size) ==
+            (detector["config"]["rows"],detector["config"]["columns"]) || throw(DimensionMismatch(
+        "pyramid frame layout must retain the declared detector shape and electron schema"))
+    return (;rail=UInt32(range[2]),detector,frame_layout)
+end
+
 function pyramid_references(application,output;remote,reference,run,timeout_s,cancelled,confirm)
     application_hashes = reference_application_hashes(application)
     function check_application()
@@ -194,6 +236,13 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
     parameters = Calibration.read_parameters(application)
     geometry = pyramid_reference_geometry(application,parameters,options,recipe,declaration)
     configured = IC.settings(declaration,options.plant.settings)
+    adc = pyramid_reference_adc(IC.graph_document(declaration,configured),options)
+    detector,frame_layout,rail = adc.detector,adc.frame_layout,adc.rail
+    for condition in ("dark","internal-source")
+        acquisition = pyramid_reference_adc(IC.graph_document(declaration,configured;simulation_graph=condition),options)
+        acquisition.detector == detector && acquisition.frame_layout == frame_layout || throw(ArgumentError(
+            "pyramid acquisition must preserve the normal detector and ADC layout in every reference stage"))
+    end
     frozen_ports = (:flat,Symbol("pupil-mask"),Symbol("pupil-origins"),:reconstructor)
     frozen_parameter_hashes = Dict(string(entry.port)=>Calibration.digest(entry.source.path)
         for entry in GraphOwner.bindings(joinpath(application,"rtc","parameters.conf"))
@@ -210,12 +259,6 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
         simulation_sha256=Calibration.digest(joinpath(application,"simulation.conf")),
         reference_figure_sha256=bytes2hex(Calibration.sha256(codeunits(join(
             ["$name:$(figure_hashes[name])" for name in sort!(collect(keys(figure_hashes)))],"\n")))))
-    production = IC.graph_document(declaration,configured)
-    detector = only(filter(node -> node["type"] == "detector",production["nodes"]))
-    bits = detector["config"]["bits"]
-    bits isa Integer && !(bits isa Bool) && 1 <= bits <= 16 || throw(ArgumentError(
-        "pyramid reference ADC rail requires the declared UInt16 bit depth"))
-    rail = (UInt32(1)<<bits)-UInt32(1)
     dark_plan = AdaptiveOpticsCalibration.prepare(ReferenceFrames.DarkFrameMoments(),
         ReferenceFrames.DarkFrameSpecification(geometry.rows,geometry.columns,counts.dark.samples))
     dark_state = ReferenceFrames.DarkFrameState(dark_plan)
@@ -232,8 +275,10 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
         mean_pupil_intensity=Symbol("mean-pupil-intensity"))
     stage_options = (;frontend_outputs,commands=geometry.commands,
         probe_command=geometry.probe_command,measurements=:reconstruction_pixels)
+    # Raw ADC moments use the correlated online consumer. The existing Collect
+    # reply carries exposure metadata with no redundant full-image response mean.
     dark_options = merge(stage_options,(;frontend_outputs=(calibrated="pixel-calibration:calibrated",),
-        measurements=:calibrated))
+        measurements=nothing))
     cancelled() && throw(InterruptException())
     mkpath(dirname(output))
     return mktempdir(dirname(output);prefix=".pyramid-reference-candidate-") do temporary
@@ -292,7 +337,7 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
             "reference_figure_artifacts"=>reference_artifacts,"reference_figure_sha256"=>figure_hashes,
             "probe_command"=>string(geometry.probe_command),
             "command_schemas"=>Dict(string(name)=>getproperty(options.command_schema,name) for name in keys(reference)),
-            "detector"=>detector,"adc_upper_rail"=>rail,
+            "detector"=>detector,"frame_layout"=>frame_layout,"adc_upper_rail"=>rail,
             "dark_status"=>string(dark.status),"lamp_status"=>string(lamp.status),
             "selected_pixel_count_per_pupil"=>geometry.selected,
             "reconstruction_pixel_axes"=>["pupil","selected-mask-pixel"],

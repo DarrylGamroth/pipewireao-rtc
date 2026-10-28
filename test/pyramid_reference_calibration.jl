@@ -100,6 +100,48 @@ end
     end
 end
 
+@testset "pyramid ADC rail follows the declared UInt16 acquisition endpoint" begin
+    options = (frame_output=:published_frame,frame_shape=(4,3),frame_schema="test.raw/1")
+    config = Dict{String,Any}("output_element_type"=>"uint16","rounding"=>"nearest_even",
+        "output_size"=>[4,3],"output_schema"=>"test.raw/1","range"=>[0,16383],
+        "input_size"=>[3,3],"input_schema"=>"test.electrons/1","scale"=>1/64,"bias"=>1024)
+    graph = Dict("nodes"=>[
+        Dict("name"=>"camera","type"=>"detector","config"=>Dict("frame_schema"=>"test.electrons/1","rows"=>3,"columns"=>3)),
+        Dict("name"=>"adc","type"=>"detector_frame_layout_f32","config"=>config)],
+        "outputs"=>[Dict("name"=>"published_frame","source"=>"adc.frame")],
+        "links"=>[Dict("source"=>"camera.frame","destination"=>"adc.detector_frame")])
+    original = deepcopy(graph)
+    adc = Ext.pyramid_reference_adc(graph,options)
+    @test adc.rail === UInt32(16383)
+    @test adc.detector === graph["nodes"][1]
+    @test adc.frame_layout === graph["nodes"][2]
+    @test adc.frame_layout["config"]["scale"] == 1/64
+    @test adc.frame_layout["config"]["bias"] == 1024
+    @test graph == original
+    for range in (nothing,[0],[0,1,2],[-1,16383],[0,65536],[0,1.5],[0,Inf],[0,NaN],[1,1],[2,1],Any[false,1])
+        changed = deepcopy(graph)
+        changed["nodes"][2]["config"]["range"] = range
+        @test_throws ArgumentError Ext.pyramid_reference_adc(changed,options)
+    end
+    for (key,value,error) in (("output_element_type","float32",ArgumentError),
+            ("rounding","none",ArgumentError),("output_size",[3,4],DimensionMismatch),
+            ("output_size",3,DimensionMismatch),
+            ("output_schema","test.wrong/1",DimensionMismatch),
+            ("input_schema","test.wrong/1",DimensionMismatch),("input_size",[4,3],DimensionMismatch))
+        changed = deepcopy(graph)
+        changed["nodes"][2]["config"][key] = value
+        @test_throws error Ext.pyramid_reference_adc(changed,options)
+    end
+    for source in ("camera.frame","missing.frame","adc.other")
+        changed = deepcopy(graph)
+        changed["outputs"][1]["source"] = source
+        @test_throws ArgumentError Ext.pyramid_reference_adc(changed,options)
+    end
+    changed = deepcopy(graph)
+    empty!(changed["links"])
+    @test_throws ArgumentError Ext.pyramid_reference_adc(changed,options)
+end
+
 @testset "borrowed pyramid samples feed the AOC dimensionless reference unchanged" begin
     matrix = Float32[1 10 100 1000 0 0 0 0]
     plan = A.prepare(R.PyramidReference(100),R.PyramidReferenceSpecification(
@@ -134,8 +176,18 @@ if application !== nothing
         before = Ext.reference_application_hashes(application)
         recipe = C.read_recipe(application)
         options = PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
-        parameters = C.read_parameters(application)
         declaration = Ext.IC.load_simulation(options.plant.definition)
+        configured = Ext.IC.settings(declaration,options.plant.settings)
+        adc = Ext.pyramid_reference_adc(Ext.IC.graph_document(declaration,configured),options)
+        @test adc.rail == UInt32(16383)
+        @test adc.frame_layout["config"]["scale"] == 1/64
+        @test adc.frame_layout["config"]["bias"] == 1024
+        for condition in ("dark","internal-source")
+            acquisition = Ext.pyramid_reference_adc(Ext.IC.graph_document(declaration,configured;simulation_graph=condition),options)
+            @test acquisition.detector == adc.detector
+            @test acquisition.frame_layout == adc.frame_layout
+        end
+        parameters = C.read_parameters(application)
         geometry = Ext.pyramid_reference_geometry(application,parameters,options,recipe,declaration)
         @info "GPI geometry checked" selected_pixels=geometry.selected controller_coordinates=geometry.modes
         flush(stdout)
@@ -208,6 +260,10 @@ if application !== nothing && get(ENV,"PIPEWIREAORTC_PYRAMID_REFERENCE_LIVE","fa
                 @test report["modal_reference_units"] == "m OPD"
                 @test report["probe_command"] == "woofer"
                 @test report["overridden_parameter_ports"] == ["background"]
+                @test report["adc_upper_rail"] == 16383
+                @test report["frame_layout"]["config"]["scale"] == 1/64
+                @test report["frame_layout"]["config"]["bias"] == 1024
+                @test report["frame_layout"]["config"]["rounding"] == "nearest_even"
                 @test length(report["stages"]) == length(requests) == 3
                 @test all(request.kind == :simulated for request in requests)
                 @test all(stage["restored"] && stage["released"] for stage in report["stages"])
