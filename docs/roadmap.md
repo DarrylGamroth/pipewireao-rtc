@@ -57,14 +57,17 @@ GPI implementation starts in isolated worktrees from RTC `171ca09`, instrument
    previous-frame normalization, pupil-major reconstructor ordering and OPD units.
 3. Run dark, lamp and later frozen-reference stages with the normal detector,
    source and UInt16 transport, using only CPU and private cores.
-4. Independently review the numerical and multi-command boundary changes; qualify
-   the shared interface and fresh registered application before publication.
+4. Independently review the numerical and multi-command boundary changes and
+   qualify the shared interface before publication; then qualify fresh
+   applications against the registered releases.
 
 Source gates passed: the shared core suite has 6,580 checks, the GPI combined
 selector has 153 and the Classic campaign has 87. All three GPI stages are
 numerically valid and restored/released; precision acceptance remains separate.
-Matching releases and fresh registered application qualification are pending
-([evidence](validation/gpi-reference-20261027/README.md)). GPI source/measurement contracts differ from
+AOC 0.17.3, AOS 0.3.5, HIL 0.2.8 and RTC 0.2.32 are merged, published and
+registered. Fresh registry-only GPI and Classic builds pass, followed by 153
+installed GPI checks, 87 installed Classic checks and 161 instrument calibration
+checks ([evidence](validation/gpi-reference-20261027/README.md)). GPI source/measurement contracts differ from
 Classic; no centroid, ROI eligibility or physical-readiness claim is implied.
 
 The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)

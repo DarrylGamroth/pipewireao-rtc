@@ -1,7 +1,8 @@
 # Delivery evidence catalog
 
 - [GPI online reference calibration](validation/gpi-reference-20261027/README.md):
-  source integration and review; CPU/private-core qualification in progress.
+  source review and fresh registered-release CPU/private-core qualification passed;
+  candidate products only, with precision acceptance separate.
 
 ## GPI2 correction supervision — 2026-10-27
 

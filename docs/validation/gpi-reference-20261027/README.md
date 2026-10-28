@@ -1,7 +1,8 @@
 # GPI online reference calibration — 2026-10-27
 
-Status: source integration qualification passed; registered-release application
-qualification remains pending. No activation claim. The maintained delivery status is in the roadmap's Current work section.
+Status: source and fresh registered-release CPU/private-core qualification
+passed. Products remain candidates; no activation claim. The maintained delivery status
+is in the roadmap's Current work section.
 
 The shared initial-calibration owner holds the explicitly named woofer, tweeter
 and tip/tilt figures coherently. GPI uses projections of its normal built graph.
@@ -103,3 +104,47 @@ The historical publication-cycle witness is not immutable cycle ownership
 across resets. Fresh owners/domains are used per stage. Physical readiness,
 scientific precision/acceptance, interaction-matrix activation, wall cadence
 and resource/deadline qualification are not established by these CPU tests.
+
+
+## Registered release cohort
+
+All four changes are merged to GitHub main, tagged, published and registered:
+
+| Package | Release | Registered tree |
+| --- | --- | --- |
+| AOC | [0.17.3](https://github.com/DarrylGamroth/AdaptiveOpticsCalibration.jl/releases/tag/v0.17.3) | `b3e6fda93f3bd1a1c8a94fd5472dc170aa051e65` |
+| AOS | [0.3.5](https://github.com/DarrylGamroth/AdaptiveOpticsSim.jl/releases/tag/v0.3.5) | `a9eecf2c1b70c5644abca50e226a91d9653271b3` |
+| HIL | [0.2.8](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl/releases/tag/v0.2.8) | `33d1575c5efb076fd9dcf12be0447c5c968001c0` |
+| RTC | [0.2.32](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.2.32) | `9f02db32756d18abd73f791da857000370020b36` |
+
+Fresh registry-only GPI and Classic environments resolve their authored exact
+pins. Every installed package tree above matches its registered hash; neither
+manifest contains path or repository overrides. Classic retains FGA 0.8.5 /
+FGPW 0.1.11; GPI retains FGA 0.8.6 / FGPW 0.1.12. Both CPU builds passed with
+unchanged source and manifest hashes and no GPU modules loaded. Manifest hashes:
+
+- GPI: `bfe244d51aab720f6e4f4e7657bbeca17b1987452a7feb5d200d7bab6a3b77c3`.
+- Classic: `c39a48b925903badc0856cda4662b4c40cb23c9b48c8e4db138020fa3a94ee57`.
+
+The installed Classic selector passes 87 checks; all three stages are Valid,
+restored and released, with 176 eligible ROIs and diagnostic RMS
+0.008752788613187231 pixels. The instrument calibration selector passes 161
+checks in a tools environment whose resolved package entries exactly match the
+Classic release environment, promoting only the same YAML 0.4.17 to a direct
+dependency. The installed-release scalar/named CLI selector passes 7 checks.
+The installed GPI selector passes 153 checks (67 grouped helper checks, two
+standalone extension/no-GPU guards, 18 built-graph checks and 66 campaign/
+cancellation checks). All three stages are Valid, restored and released. Its
+reference-window RMS is 0.3108964362989337 dimensionless pupil pixels, maximum
+1.2179779743310064, with the same source and detector settings. These diagnostics
+match the source cohort but establish no precision acceptance or activation.
+The final conversion barrier is present in this fresh cohort. Both owned
+private-core processes exited, package trees and manifests stayed unchanged,
+and no GPU module loaded. No repeat was needed.
+
+Validation runners `registered-build.jl` and `registered-selector.jl`, build
+receipts, complete logs and candidate receipts remain in the existing separate
+validation directory. The selector loads tests from the installed registered
+RTC package, checks the package tree and manifest before/after execution, and
+uses caller-owned private cores. No diagnostic hooks, stack signals, tracing,
+pulses or automatic retries are used for this registered cohort.
