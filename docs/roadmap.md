@@ -15,8 +15,11 @@ chronology. Architecture/requirement decisions remain authoritative.
 ### Calibration source and mechanism preparation — 2026-10-27
 
 Delivery order is REVOLT Classic first, then GPI. The common preparation and
-online reduction interfaces remain shared; GPI's mechanism authority stays in
-its existing control software and requires its own adapter and qualification.
+online reduction interfaces remain shared. GPI preparation is manual or scripted;
+connecting to its real mechanism software is outside the intended use. A future
+instrument sequencer can coordinate source states, mechanisms and calibration
+through the existing request/confirmation boundary. Mechanism services retain
+their own completion, readback, interlock and collision policies.
 
 Physical REVOLT source preparation is manual. The
 [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
@@ -43,7 +46,22 @@ and deadline checks. The broader core suite passes 6,488 assertions across 243
 test sets. RTC 0.2.31 is merged, tagged, published and registered. A fresh
 registry-only Classic CPU build passes 161 instrument checks and 87 installed-
 package reference/preparation checks; the instrument recipe and exact pin are
-merged. GPI mechanism integration and its own qualification are next.
+merged.
+
+GPI implementation starts in isolated worktrees from RTC `171ca09`, instrument
+`c7d31d3`, AOS `20153648`, HIL `b9804f6` and AOC `7df02f5`. The next gates are:
+
+1. Hold the explicitly named woofer, tweeter and tip/tilt commands coherently;
+   retain scalar Classic behavior and fail closed on missing/duplicate receipts.
+2. Reduce the existing normalized pyramid pupil pixels online, preserving the
+   previous-frame normalization, pupil-major reconstructor ordering and OPD units.
+3. Run dark, lamp and later frozen-reference stages with the normal detector,
+   source and UInt16 transport, using only CPU and private cores.
+4. Independently review the numerical and multi-command boundary changes; qualify
+   the shared interface and fresh registered application before publication.
+
+These gates are in progress. GPI source/measurement contracts differ from
+Classic; no centroid, ROI eligibility or physical-readiness claim is implied.
 
 The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
 retains every earlier delivery failure and the rejected immediate-completion

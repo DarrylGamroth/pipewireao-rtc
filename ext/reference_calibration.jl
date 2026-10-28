@@ -94,13 +94,16 @@ function reference_restoration!(client,reference,deadline)
 end
 
 function reference_stage(application,remote,sources,reference,run,serial,stage,condition,
-        counts,timeout_s,cancelled,confirm,configuration,check_application,reduce)
+        counts,timeout_s,cancelled,confirm,configuration,check_application,reduce;
+        frontend_outputs=(:slopes,:flux,:validity),commands=nothing,
+        probe_command=nothing,measurements::Symbol=:slopes)
     cancelled() && throw(InterruptException())
     check_application()
     start = Control.monotonic()
     deadline = start + timeout_s
     cleanup_deadline = deadline + timeout_s
     frontend = command = server = client = serving = nothing
+    selected_reference = probe_command === nothing ? reference : getproperty(reference,probe_command)
     gate = nothing
     observed = Ref{Union{Nothing,Actions.Exposure}}(nothing)
     boundary = Ref{Union{Nothing,Actions.AcquisitionCursor}}(nothing)
@@ -111,9 +114,32 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
     errors = Exception[]
     try
         frontend = Calibration.calibration_graph(application;
-            inputs=(raw="pixel-calibration:raw",),outputs=(:slopes,:flux,:validity),parameter_sources=sources)
-        command = Calibration.calibration_graph(application;
-            inputs=(requested="pdm-command:requested",),outputs=(:demanded,Symbol("constraint-feedback")))
+            inputs=(raw="pixel-calibration:raw",),outputs=frontend_outputs,parameter_sources=sources)
+        command = if commands === nothing
+            Calibration.calibration_graph(application;
+                inputs=(requested="pdm-command:requested",),outputs=(:demanded,Symbol("constraint-feedback")))
+        else
+            # Names and endpoints come from the declared instrument graph. Each
+            # projection keeps its own conditioner, units and physical shape.
+            built = Any[]
+            try
+                for specification in values(commands)
+                    push!(built,Calibration.calibration_graph(application;
+                        inputs=(requested=specification.requested,),
+                        outputs=(demanded=specification.demanded,
+                            var"constraint-feedback"=specification.feedback)))
+                end
+                NamedTuple{keys(commands)}(Tuple(built))
+            catch primary
+                failures = Exception[primary]
+                for descriptor in reverse(built)
+                    try FilterGraphIsland.close_execution(descriptor.graph)
+                    catch cleanup; push!(failures,cleanup) end
+                end
+                length(failures) == 1 && rethrow()
+                throw(CompositeException(failures))
+            end
+        end
         name = "rtc.reference.$(uuid4())"
         instance = Int64(serial)
         identity = bytes2hex(Calibration.sha256(codeunits(join(vcat(
@@ -144,12 +170,12 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
             end
         end
         server = Calibration.prepare_initial_calibration(application,remote,frontend,command;
-            reference,name,instance,deadline,simulation_graph=condition,consume)
+            reference,name,instance,deadline,simulation_graph=condition,consume,probe_command,measurements)
         hashes = copy(frontend.parameter_sha256)
         frontend = command = nothing # ownership transferred to the native endpoint
         serving = @async try Native.serve!(server;deadline=cleanup_deadline); nothing catch error; error end
         client = ReferenceClient.connect(ReferenceClient.Binding(remote,name,getpid(),instance),run,
-            Int64(round(timeout_s*1e9));command_count=length(reference),deadline)
+            Int64(round(timeout_s*1e9));command_count=length(selected_reference),deadline)
         action(value) = ReferenceClient.complete!(client,value;deadline,record=false)
         held = action(Actions.Hold())
         held isa Actions.Held || error("reference hold was not confirmed")
@@ -161,8 +187,8 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
             throw(ArgumentError("simulator preparation witness differs from the current owner"))
         Preparation.complete!(gate,evidence)
         cancelled() && throw(InterruptException())
-        adopted = action(Actions.Adopt(UInt32(0),reference))
-        adopted isa Actions.Adopted && adopted.figure == reference && !adopted.clipped ||
+        adopted = action(Actions.Adopt(UInt32(0),selected_reference))
+        adopted isa Actions.Adopted && adopted.figure == selected_reference && !adopted.clipped ||
             error("reference figure adoption was not confirmed")
         rule = counts.discard == 0 ? Actions.Immediate() : Actions.DiscardExposures(UInt32(counts.discard))
         settled = action(Actions.Settle(UInt32(0),adopted.cursor,rule))
@@ -170,8 +196,9 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
         boundary[] = settled.cursor
         Preparation.check_current!(gate)
         cancelled() && throw(InterruptException())
-        measurements = prod(JuliaFilterGraph.output_formats(server.effects.graphs.frontend.graph).slopes.shape)
-        response = action(Actions.Collect(UInt32(0),settled.cursor,UInt32(measurements),UInt32(counts.samples)))
+        measurement_count = prod(getproperty(JuliaFilterGraph.output_formats(
+            server.effects.graphs.frontend.graph),measurements).shape)
+        response = action(Actions.Collect(UInt32(0),settled.cursor,UInt32(measurement_count),UInt32(counts.samples)))
         # Dark/diagnostic lamp data may have false WFS validity. Their scientific
         # eligibility is determined separately by AOC, never by Responses.valid.
         response isa Actions.Responses || error("reference collection was not confirmed")
@@ -190,14 +217,14 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
             "last_sequence"=>last.sequence,"first_start_ns"=>first(response.exposures).start_model_ns,
             "last_end_ns"=>last.start_model_ns+last.duration_ns,
             "parameter_sha256"=>Dict(string(port)=>hash for (port,hash) in hashes))
-        reference_restoration!(client,reference,cleanup_deadline)
+        reference_restoration!(client,selected_reference,cleanup_deadline)
         released = true
         report["restored"] = report["released"] = true
     catch error
         push!(errors,error)
         gate === nothing || Preparation.invalidate!(gate,"Reference stage aborted")
         if client !== nothing && client.can_restore && !released
-            try reference_restoration!(client,reference,cleanup_deadline); released = true
+            try reference_restoration!(client,selected_reference,cleanup_deadline); released = true
             catch cleanup; push!(errors,cleanup) end
         end
     finally
@@ -218,7 +245,7 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
         if server !== nothing
             try close(server) catch error; push!(errors,error) end
         end
-        for descriptor in (frontend,command)
+        for descriptor in calibration_descriptors(frontend,command)
             descriptor === nothing && continue
             try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors,error) end
         end
@@ -232,12 +259,16 @@ end
     calibrate_references(application, output; remote, reference, run=1,
         timeout_s=300, cancelled=()->false, confirm=nothing)
 
-Produce a fresh candidate directory from the built Classic CPU application's
-declared `references` recipe: dark moments, full-ROI lamp training, and a later
-reset-simulator exposure window using the frozen eligible mask/reference. `remote`
+Produce a fresh candidate directory from a built Classic or GPI CPU application's
+declared `references` recipe. Classic trains full-ROI centroid references and a
+frozen eligible mask. GPI averages the normal normalized pyramid pupil pixels
+and maps them through the frozen reconstructor. Both compare a later independent
+reset-simulator window against the frozen training result. `remote`
 is an explicit private core path, or `(dark=...,lamp=...,qualification=...)`.
 The caller owns those cores. `reference` is the explicit absolute Float32 mirror
-figure in the existing command port's units. No detector or source setting is
+figure in the existing command port's units, or a NamedTuple of figures for all
+declared GPI command ports. GPI requires one thread per command projection plus
+the frontend and control owner (at least five default threads). No detector or source setting is
 changed. Each stage restores/releases before the next starts; unknown outcomes
 fence the campaign. Cancellation is checked at completed-action/sample boundaries.
 
@@ -247,7 +278,7 @@ simulator only; this seam does not authorize physical devices. No raw recorder i
 required. AOC numerical status and qualification diagnostics do not establish
 precision, physical readiness, deadline performance or interaction-matrix acceptance.
 """
-function Calibration.calibrate_references(application,output;remote,reference::AbstractVector{Float32},
+function Calibration.calibrate_references(application,output;remote,reference,
         run::Integer=1,timeout_s::Real=300,cancelled=()->false,confirm=nothing)
     output = Calibration._calibration_output((application,),output)
     Threads.nthreads(:default) >= 3 || throw(ArgumentError("reference acquisition requires at least three Julia threads"))
@@ -265,7 +296,11 @@ function Calibration.calibrate_references(application,output;remote,reference::A
     options.backend === :cpu && options.frame_encoding === :uint16 ||
         throw(ArgumentError("reference acquisition requires a UInt16 CPU detector"))
     declaration = IC.load_simulation(options.plant.definition)
-    declaration.document["id"] == "revolt-classic" || throw(ArgumentError("reference acquisition currently supports Classic only"))
+    if declaration.document["id"] == "gpi2"
+        return pyramid_references(application,output;remote=remotes,reference,run,timeout_s,cancelled,confirm)
+    end
+    declaration.document["id"] == "revolt-classic" || throw(ArgumentError("unsupported reference instrument"))
+    reference isa AbstractVector{Float32} || throw(ArgumentError("Classic requires one explicit Float32 command figure"))
     parameters = Calibration.read_parameters(application)
     geometry = reference_geometry(application,parameters)
     length(reference) == options.command_count && all(isfinite,reference) ||

@@ -638,9 +638,13 @@ contract; ordinary lockstep sessions and the RTC-DEV-027 offset fixture remain
 unchanged.
 
 The first selected operational session performs initial calibration before the
-ordinary correction graph starts. It contains two ordinary graphs: the exact
-deployed pixel/WFS frontend, and the deployed PDM constraint chain accepting
-prepared absolute probe figures. The correction graph and its command producer
+ordinary correction graph starts. It contains the exact deployed pixel/WFS
+frontend and the deployed constraint-chain projection for each explicitly named
+physical command port, accepting prepared absolute figures. A scalar instrument
+uses one command projection. A named command set is adopted coherently only
+after every port and its conditioner feedback confirm the same token; the
+selected native action-vector port is a cold binding, while the other ports
+retain their declared references. The correction graph and its command producer
 are excluded from this session. This establishes integration hold by topology
 without changing controller coefficients or adding a scientific algorithm.
 
