@@ -195,3 +195,6 @@ end
         @test IC.graph_document(generated,IC.settings(generated);simulation_graph="scc") == document
     end
 end
+
+# Keep derived field-grid and wavelength guards in this optional CPU gate.
+include("ideal_pupil_relay_preparation.jl")

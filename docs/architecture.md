@@ -1093,7 +1093,11 @@ surface ID, named input, source size, axis permutation, physical diameter and OP
 schema. A `pupil_grid` override gives the entrance amplitude and OPD the same
 explicit physical grid. AOS derives native sampling/centers and emits typed
 `add_opd` steps; RTC does not propagate optics or reinterpret command units.
-Runtime sampled screens currently require scalar CPU Proper execution. A graph
+Runtime sampled screens support scalar CPU and captured CUDA Proper execution.
+Monochromatic planar-reference complex fields can feed an analytic PWFS through
+a declared ideal pupil relay. The cold compiler derives its grid from the connected
+optical train and sensor, checks wavelength equality, and applies source radiometry
+once in the PWFS field adapter. This optional path does not establish as-built optics. A graph
 selection can add a relay diagnostic while retaining a separate analytic sensor;
 that selection alone does not establish a higher-fidelity control measurement.
 The generated HIL loader validates all source and execution hashes and parsed
