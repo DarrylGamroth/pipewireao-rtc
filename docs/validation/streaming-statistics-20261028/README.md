@@ -33,6 +33,15 @@ the controller's published normalized-pupil samples; a dropped raw stream cannot
 recreate its previous-frame normalization. Its additive modal reference is
 `-R × mean(normalized pixels)`.
 
+Independent final review of RTC `e2b2a45` and instrument `340bb82` passes 161
+capture/FITS/Graph assertions and 125 instrument numerical assertions. The
+implementer additionally passes 17 full source-export/GUI-metadata assertions.
+Review reproduced an HDU/axis identity defect before repair: the same asymmetric
+square FITS and graph hashes accepted axes `[2,1]` and `[1,2]`, producing
+different means. With binding identity enforced, the original still passes and
+the changed axes reject before execution. Review scripts/logs are retained in
+the campaign's `review/` directory. No confirmed review blocker remains.
+
 ## Delivered scope
 
 - FGA's ordinary CPU `ArrayStatisticsF32` declaration supplies finite,
