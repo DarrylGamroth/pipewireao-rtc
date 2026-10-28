@@ -69,6 +69,29 @@ end
     @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
 end
 
+@testset "CAL2 cleanup observes the nested session receipt" begin
+    M = ManagedSessionCAL2
+    F = M.M.Faults
+    mktempdir() do stage
+        session=joinpath(stage,"session")
+        mkpath(session)
+        unit="pipewireao-session@0123456789ab.service"
+        invocation=repeat("a",32)
+        M.C.write_json(joinpath(session,"session.json"),Dict("unit"=>unit,"invocation"=>invocation,
+            "runtime_root"=>"/run/user/1000/pipewireao-session-0123456789ab"))
+        record=Dict("unit"=>unit,"invocation"=>invocation,"cleanup_complete"=>true)
+        M.C.write_json(joinpath(session,"final-launch.json"),record)
+        # Use the actual default retained-record reader; only live process and
+        # cgroup checks are replaced for this service-free test.
+        checks=record->Dict("receipt_complete"=>record["cleanup_complete"])
+        @test_throws ArgumentError F.observe_cleanup!(nothing,stage;failed=true,seconds=1,read_checks=checks)
+        @test F.observe_cleanup!(nothing,session;failed=true,seconds=1,read_checks=checks)==record
+        evidence=M.C.read_json(joinpath(session,"observed-cleanup.json"))
+        @test evidence["checks"]==Dict("receipt_complete"=>true)
+        @test isempty(evidence["observation_errors"])
+    end
+end
+
 @testset "CAL2 capture retains publication time and derives declared model coverage" begin
     M = ManagedSessionCAL2
     domain = M.PipeWireAO.AcquisitionDomain(ntuple(i->UInt8(i),16))

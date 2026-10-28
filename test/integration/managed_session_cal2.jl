@@ -601,14 +601,14 @@ function main(args)
         end
         result["epochs"]=[first_epoch,second_epoch]
         result["source_snapshots"]=Dict("ready"=>ready,"held"=>held,"reset"=>reset,"final-held"=>final)
-        result["shutdown"]=M.shutdown(handle,stage)
+        result["shutdown"]=M.shutdown(handle,joinpath(stage,"session"))
         result["completed"]=true
     catch error
         result["failure"]=sprint(showerror,error)
         rethrow()
     finally
         if handle!==nothing && !result["completed"]
-            try M.Faults.cleanup!(handle,stage;failed=true)
+            try M.Faults.cleanup!(handle,joinpath(stage,"session");failed=true)
             catch error;result["cleanup_failure"]=sprint(showerror,error) end
         end
         C.write_json(joinpath(stage,"cal2-lifecycle-result.json"),result)
