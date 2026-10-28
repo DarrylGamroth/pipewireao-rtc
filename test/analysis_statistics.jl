@@ -1,5 +1,6 @@
 # Optional scientific selector: actual JFG statistics through the shared artifact interface.
 using Test, PipeWireAORTC, FilterGraphAlgorithms, JuliaFilterGraph, PipeWireAO
+using FilterGraphIsland, FilterGraphPipeWire
 import FilterGraphAlgorithms: process!
 using PipeWireAORTC.Common: JSON
 using PipeWireAORTC.Artifacts: FITS
@@ -102,5 +103,44 @@ end
         header=SampleMetadata(i,0;terminal=true)
         metadata=map(_ -> header,output)
         @test observer_bytes(capture,output,metadata) == 0
+    end
+end
+
+@testset "analysis loads typed FITS calibration before Graph execution" begin
+    # Exercise the exact preparation entrypoint used by Analysis.run_graph.
+    mktempdir() do root
+        graph_path = joinpath(root,"graph.conf")
+        document = graph_document()
+        graph = document["filter.graph"]
+        pushfirst!(graph["nodes"],Dict("type"=>"ndarray","name"=>"pixels",
+            "label"=>"pixel-calibration-u16-f32","config"=>Dict("image_size"=>[2,3],
+                "initial_flat"=>nothing,"initial_background"=>nothing)))
+        graph["nodes"][2]["config"]["input_schema"] = PipeWireAORTC.Schemas.CATALOG["calibrated_pixels"]["id"]
+        graph["inputs"] = ["pixels:raw","pixels:background","pixels:flat"]
+        graph["links"] = [Dict("output"=>"pixels:calibrated","input"=>"statistics:sample")]
+        PipeWireAORTC.ScienceExport.write_spa_config(graph_path,document)
+        background = Float32[1 3 5; 2 4 6]
+        flat = fill(2f0,2,3)
+        for (name,array) in (("background",background),("flat",flat))
+            PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,name*".fits"),array)
+        end
+        C = PipeWireAORTC.Common
+        C.write_json(joinpath(root,"parameters.conf"),Dict("parameters"=>[
+            Dict("port"=>name,"path"=>name*".fits","axes"=>[2,1]) for name in ("background","flat")]))
+        config_path=joinpath(root,"analysis.conf")
+        C.write_json(config_path,Dict("graph"=>"graph.conf","fits-bindings"=>"parameters.conf",
+            "name"=>"calibrated-analysis","rate"=>"500/1","links"=>[]))
+        config=A.configuration(config_path,String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
+        prepared=A.prepare_graph(config,"/tmp/unused-private-socket")
+        try
+            outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(prepared.graph))
+            @test JuliaFilterGraph.input_formats(prepared.graph).raw.element_type === UInt16
+            @test all(values(process!(outputs,prepared.graph,(raw=fill(UInt16(10),2,3),))))
+            @test outputs.mean == 2f0 .* (10f0 .- background)
+        finally
+            FilterGraphIsland.close_execution(prepared.graph)
+        end
+        PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,"flat.fits"),ones(Float32,3,2))
+        @test_throws DimensionMismatch A.prepare_graph(config,"/tmp/unused-private-socket")
     end
 end

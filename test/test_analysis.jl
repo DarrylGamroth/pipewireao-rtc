@@ -98,6 +98,23 @@ end
         spec["artifacts"]["core.conf"]=D.digest(core)
         deployment = joinpath(root,"deployment.conf")
         @test A.validate_deployment(spec, deployment, root) === nothing
+        # Optional calibrated prefixes retain the ordinary sealed FITS authority.
+        bindings = joinpath(root,"parameters.conf")
+        fits = joinpath(root,"background.fits")
+        write(fits,"sealed bytes; numerical typing is checked by the science selector")
+        C.write_json(bindings,Dict("parameters"=>[Dict("port"=>"background","path"=>"background.fits","axes"=>[2,1])]))
+        save(merge(original,Dict("fits-bindings"=>"parameters.conf")))
+        @test A.configuration(path,root).fits_bindings == realpath(bindings)
+        @test_throws D.DeploymentError A.validate_deployment(spec,deployment,root)
+        spec["artifacts"]["parameters.conf"] = D.digest(bindings)
+        @test_throws D.DeploymentError A.validate_deployment(spec,deployment,root)
+        spec["artifacts"]["background.fits"] = D.digest(fits)
+        @test A.validate_deployment(spec,deployment,root) === nothing
+        mktemp() do outside, io
+            C.write_json(bindings,Dict("parameters"=>[Dict("port"=>"background","path"=>outside)]))
+            @test_throws D.DeploymentError A.validate_deployment(spec,deployment,root)
+        end
+        save()
         second=deepcopy(original)
         second["name"]="wfs-other"
         for link in second["links"],key in ("input","output")

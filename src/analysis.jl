@@ -6,6 +6,7 @@ import ..DeploymentConfiguration
 import ..SystemdOwners
 import ..ConfigurationStore
 import ..Artifacts
+import ..PipeWireAORTC
 
 include("analysis_capture.jl")
 
@@ -28,11 +29,13 @@ struct Config
     links::Vector{LinkSpec}
     channel_units::Dict{String,Dict{String,String}}
     capture::Union{Nothing,CaptureConfig}
+    fits_bindings::Union{Nothing,String}
 end
 
 Config(graph, name, rate, links) = Config(graph, name, rate, links,
     Dict{String,Dict{String,String}}(), nothing)
 Config(graph, name, rate, links, units) = Config(graph, name, rate, links, units, nothing)
+Config(graph, name, rate, links, units, capture) = Config(graph, name, rate, links, units, capture, nothing)
 
 function channel_units(value)
     value isa AbstractDict && length(value) <= 64 ||
@@ -72,8 +75,8 @@ function configuration(path::AbstractString, prefix::AbstractString)
     document = D.decode(path, prefix)
     required = Set(["graph", "name", "rate", "links"])
     document isa AbstractDict && required ⊆ Set(keys(document)) &&
-        Set(keys(document)) ⊆ union(required, Set(["channel-units", "capture"])) ||
-        throw(ArgumentError("analysis requires graph, name, rate and links; channel-units and capture are optional"))
+        Set(keys(document)) ⊆ union(required, Set(["channel-units", "capture", "fits-bindings"])) ||
+        throw(ArgumentError("analysis requires graph, name, rate and links; channel-units, capture and fits-bindings are optional"))
     graph = D.relative_asset(dirname(abspath(path)), document["graph"])
     name = document["name"]
     name isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$", name) ||
@@ -101,7 +104,10 @@ function configuration(path::AbstractString, prefix::AbstractString)
     units = channel_units(get(document, "channel-units", Dict()))
     capture = haskey(document, "capture") ? capture_contract(
         capture_configuration(document["capture"]), D.decode(graph, prefix)) : nothing
-    return Config(graph, name, numerator // denominator, links, units, capture)
+    fits = haskey(document, "fits-bindings") ?
+        D.relative_asset(dirname(abspath(path)), document["fits-bindings"]) : nothing
+    fits === nothing || PipeWireAORTC.GraphOwner.bindings(fits) # Validate typed declarations before launch.
+    return Config(graph, name, numerator // denominator, links, units, capture, fits)
 end
 
 function observation_queues(spec, root, prefix)
@@ -186,6 +192,14 @@ function validate_deployment(spec, path, prefix)
         config = configuration(source, prefix)
         relative_graph = relpath(config.graph, root)
         haskey(artifacts, relative_graph) || D.fail("analysis graph must be sealed")
+        if config.fits_bindings !== nothing
+            haskey(artifacts, relpath(config.fits_bindings, root)) || D.fail("analysis FITS bindings must be sealed")
+            for binding in PipeWireAORTC.GraphOwner.bindings(config.fits_bindings)
+                relative = relpath(binding.source.path, root)
+                D.relative_asset(root, relative)
+                haskey(artifacts, relative) || D.fail("analysis FITS artifact must be sealed")
+            end
+        end
         !(config.name in nodes || config.name in application_nodes || config.name in sources || config.name in sinks) ||
             D.fail("analysis graph node name conflicts with another declared node")
         push!(nodes, config.name)
@@ -226,6 +240,7 @@ function arguments(args)
 end
 
 function run_graph end
+function prepare_graph end
 
 function main(args=ARGS)
     path, remote = arguments(args)

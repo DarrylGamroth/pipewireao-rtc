@@ -206,13 +206,21 @@ function run_analysis_graph(config, remote, graph, boundary_layout)
     return nothing
 end
 
-function Analysis.run_graph(config::Analysis.Config, remote::AbstractString)
+function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
     options = FilterGraphIsland.parse_arguments(["--graph", config.graph,
         "--name", config.name, "--remote", remote,
         "--rate", "$(numerator(config.rate))/$(denominator(config.rate))",
         "--boundary-layout", "row-major"])
     declarations = FilterGraphIsland.algorithm_declarations(options)
-    graph = FilterGraphIsland.prepare_service_graph(options; declarations)
+    entries = config.fits_bindings === nothing ? PipeWireAORTC.GraphOwner.FITSBinding[] :
+        PipeWireAORTC.GraphOwner.bindings(config.fits_bindings)
+    graph = FilterGraphIsland.prepare_service_graph(options; declarations,
+        initial_parameters=formats -> PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats))
+    return (; graph, options)
+end
+
+function Analysis.run_graph(config::Analysis.Config, remote::AbstractString)
+    graph, options = Analysis.prepare_graph(config, remote)
     try
         Base.invokelatest(run_analysis_graph, config, remote, graph, options.boundary_layout)
     finally
