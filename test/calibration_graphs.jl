@@ -75,6 +75,33 @@ end
             inputs=(background="pixel-calibration:background",), outputs=frontend_outputs)
         @test_throws ArgumentError Calibration.calibration_graph(application;
             inputs=(requested="pdm-command:requested", duplicate="pdm-command:requested"), outputs=command_outputs)
+        for selection in ((physical=:demanded, residual=Symbol("constraint-feedback")),
+                (physical="pdm-command:demanded", residual="pdm-command:constraint-feedback"))
+            aliased = Calibration.calibration_graph(application; inputs=command_inputs, outputs=selection)
+            try
+                @test only(aliased.document["filter.graph"]["nodes"]) == original_nodes["pdm-command"]
+                @test isempty(aliased.document["filter.graph"]["links"])
+                formats=JuliaFilterGraph.output_formats(aliased.graph)
+                @test keys(formats) == (:physical,:residual)
+                @test formats.physical == demanded
+                @test formats.residual == JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
+                @test [port["endpoint"] for port in aliased.document["filter.graph"]["outputs"]] ==
+                    ["pdm-command:demanded","pdm-command:constraint-feedback"]
+            finally
+                FilterGraphIsland.close_execution(aliased.graph)
+            end
+        end
+        for selection in ((physical=:missing,), (physical="missing:demanded",),
+                (physical=:demanded, duplicate=:demanded),
+                (physical=:demanded, duplicate="pdm-command:demanded"))
+            @test_throws ArgumentError Calibration.calibration_graph(application; inputs=command_inputs, outputs=selection)
+        end
+        for endpoint in ("pdm-command:missing","pdm-command:requested")
+            @test_throws Exception Calibration.calibration_graph(application;
+                inputs=command_inputs, outputs=(physical=endpoint,))
+        end
+        @test_throws Exception Calibration.calibration_graph(application;
+            inputs=frontend_inputs, outputs=(parameter="shack-hartmann:active",))
 
         mktempdir() do directory
             cp(joinpath(application,"rtc"),joinpath(directory,"rtc"))

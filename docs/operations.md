@@ -1101,6 +1101,21 @@ full acquisition domain to the coordinator's domain ID. Transport limits are
 additional to the coordinator's retained-data budget; oversized records reject
 without unbounded allocation or silent truncation.
 
+A calibration owner MAY cold-select consumer-only collection with no response
+measurements and a mandatory synchronous online consumer. Such a Collect request
+MUST declare zero measurements; its Responses MUST carry an empty Float32 vector,
+the complete exact exposure records and consumer validity. The consumer MUST
+receive the full declared sample arrays before the next exposure. Positive-count
+owners MUST reject zero-count requests before exposure effects. Mirror figures
+MUST remain nonempty, and ordinary interaction plans MUST retain positive
+measurement counts. Consumer failures MUST drain the bounded action with false
+validity while preserving explicit Restore and Release; transport failures retain
+the existing unknown-outcome fence. The shared 128 KiB reply bound applies even
+when the measurement vector is empty. This additive value-domain extension keeps
+the version-1 field layout and existing positive request/reply bytes unchanged;
+earlier implementations reject zero counts and empty Responses. Rejection MUST
+NOT authorize retry, fallback or placeholder measurements.
+
 The optional `capture` action is selected for an explicit Classic or Copper owner
 prepared with a fresh local capture directory, explicit stage identity and a
 positive whole-session payload-byte budget. It has the same current-probe,

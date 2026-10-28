@@ -1,5 +1,8 @@
 # Delivery evidence catalog
 
+- [GPI online reference calibration](validation/gpi-reference-20261027/README.md):
+  source integration and review; CPU/private-core qualification in progress.
+
 ## GPI2 correction supervision — 2026-10-27
 
 The [source and validation record](validation/gpi2-supervision-20261027/README.md)

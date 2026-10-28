@@ -90,4 +90,26 @@ end
         @test_throws ArgumentError Native.Binding(values...)
     end
 end
+
+@testset "zero Collect retains known correlated responses for caller validation" begin
+    cursor=Codec.AcquisitionCursor(1,1,0,0)
+    exposure=Codec.Exposure(1,1,1,0,1)
+    client=connection(Codec.Responses(Float32[],[exposure],true);op=4)
+    supplied=Dict("kind"=>"collect","probe"=>0,"after"=>Dict(
+        "domain"=>1,"generation"=>1,"sequence"=>0,"model_ns"=>0),"measurements"=>0,"frames"=>1)
+    result=Native.complete!(client,supplied)
+    @test isempty(result.values) && length(result.exposures)==1 && result.valid
+    @test only(client.client.commands).action.measurements==0
+    @test client.can_restore
+    for (measurements,frames,result) in ((1,1,Codec.Responses(Float32[],[exposure],true)),
+            (0,1,Codec.Responses(Float32[1],[exposure],true)),
+            (0,2,Codec.Responses(Float32[],[exposure],true)))
+        client=connection(result;op=4)
+        action=Codec.Collect(UInt32(0),cursor,UInt32(measurements),UInt32(frames))
+        # The terminal outcome is known. Scientific dimensions are checked by
+        # the caller, which must retain explicit restoration on invalid evidence.
+        @test Native.complete!(client,action) === result
+        @test !client.client.closed && client.can_restore
+    end
+end
 end

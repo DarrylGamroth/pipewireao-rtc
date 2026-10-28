@@ -150,6 +150,13 @@ function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
     bytes = Vector{UInt8}(undef, length(data) * sizeof(T))
     # Iterating reversed logical dimensions gives last-index-contiguous order.
     storage = PermutedDimsArray(data, Tuple(reverse(1:N)))
+    packed_bytes!(bytes, storage, check)
+    check()
+    return bytes
+end
+
+# Specialize iteration on the concrete permutation selected during setup.
+function packed_bytes!(bytes::Vector{UInt8}, storage::AbstractArray{T}, check) where T
     position = 1
     for (index, value) in enumerate(storage)
         (index - 1) % 65536 == 0 && check()
@@ -159,7 +166,6 @@ function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
             position += 1
         end
     end
-    check()
     return bytes
 end
 
@@ -191,6 +197,15 @@ function prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing) wher
     return prepare_snapshot(source, T, shape, original; check)
 end
 
+# Specialize conversion on the decoded array and selected logical permutation.
+function convert_values!(data::Array{T}, logical::AbstractArray, check) where T
+    for (position, index) in enumerate(CartesianIndices(logical))
+        (position - 1) % 65536 == 0 && check()
+        data[index] = convert_value(T, logical[index])
+    end
+    return data
+end
+
 # Internal shared preparation boundary: the catalog retains exactly these bytes.
 function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
         original::Vector{UInt8}; check=()->nothing) where T
@@ -216,10 +231,7 @@ function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
         check()
         logical = PermutedDimsArray(source_data, permutation)
         data = Array{T}(undef, target_shape)
-        for (position, index) in enumerate(CartesianIndices(logical))
-            (position - 1) % 65536 == 0 && check()
-            data[index] = convert_value(T, logical[index])
-        end
+        convert_values!(data, logical, check)
         provenance = Dict{String,Any}(
             "source" => source.path, "original_sha256" => original_hash,
             "sha256" => bytes2hex(SHA.sha256(packed_bytes(data; check))),

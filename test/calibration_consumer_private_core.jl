@@ -196,6 +196,9 @@ end
                 @test settled isa Actions.Settled
                 @test settled.cursor.sequence == adopted.cursor.sequence + 2
                 @test callback_count[] == sample_count[] == 0
+                rejected = complete(Actions.Collect(UInt32(0),settled.cursor,UInt32(0),UInt32(1)))
+                @test rejected isa Actions.Failed && rejected.reason === Actions.InvalidEvidence
+                @test owner.cursor == settled.cursor && callback_count[] == sample_count[] == 0
                 progress("discarded settling exposures; collecting two samples")
                 response = complete(Actions.Collect(UInt32(0),settled.cursor,measurements,UInt32(2)))
                 @test response isa Actions.Responses

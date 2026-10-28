@@ -105,6 +105,24 @@ function _slot(spec, ::Type{T}, rank) where {T}
         StreamBuffer(), IDLE, nothing)
 end
 
+function _slots(declarations::NamedTuple)
+    !isempty(declarations) && first(keys(declarations)) === :raw ||
+        throw(ArgumentError("capture requires raw as its first declaration"))
+    slots = map(keys(declarations), values(declarations)) do name, spec
+        name === :raw && return _slot(spec, UInt16, 2)
+        format = spec.format
+        format isa NdArrayFormat || throw(ArgumentError("capture format must be an NdArrayFormat"))
+        rank = length(format.shape)
+        if format.element_type == NdArray.F32_LE && rank in (1, 2)
+            return _slot(spec, Float32, rank)
+        elseif format.element_type == NdArray.BOOL8 && rank == 1
+            return _slot(spec, Bool, rank)
+        end
+        throw(ArgumentError("capture outputs require Float32 rank one/two or Bool rank one"))
+    end
+    return NamedTuple{keys(declarations)}(slots)
+end
+
 # Negotiated SPA formats can wrap a fixed property in SPA_CHOICE_None. Rebuild
 # that public POD value before using the public NdArrayFormat parser. This path
 # runs on configuration callbacks, never on the payload-copy path.
@@ -218,8 +236,10 @@ end
 """
     Capture(core, declarations; wakeup=nothing)
 
-Prepare inactive raw/slopes/flux/validity streams on a caller-owned ThreadLoop
+Prepare inactive raw and explicitly declared output streams on a caller-owned ThreadLoop
 core. Each declaration has `name`, exact row-major `format`, and `schema`.
+The first declaration is `raw` with UInt16 rank two. Other declarations have
+Float32 rank one/two or Bool rank one; their names retain the graph output names.
 The collector owns its streams and one fixed payload slot per stream. It owns
 only an internally created wakeup; a supplied AsyncCondition remains caller-owned.
 Callbacks only validate/copy one borrowed payload, return it and uv_async_send.
@@ -230,9 +250,7 @@ releasing an owned wakeup; a live waiter first unwinds its one-shot Timer. No sc
 """
 function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing, wakeup_lock=ReentrantLock())
     main_loop(core) isa ThreadLoop || throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
-    keys(declarations) == (:raw,:slopes,:flux,:validity) || throw(ArgumentError("capture requires raw/slopes/flux/validity declarations in that order"))
-    slots = (;raw=_slot(declarations.raw,UInt16,2), slopes=_slot(declarations.slopes,Float32,2),
-        flux=_slot(declarations.flux,Float32,1), validity=_slot(declarations.validity,Bool,1))
+    slots = _slots(declarations)
     condition = wakeup === nothing ? Base.AsyncCondition() : wakeup
     condition isa Base.AsyncCondition && isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
     capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false)
@@ -268,12 +286,16 @@ function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing,
             end
             capture.streams = NamedTuple{keys(slots)}(Tuple(created))
         end
-    catch
+    catch primary
+        errors = Exception[primary]
         _locked(capture) do
-            foreach(close,reverse(created))
+            for stream in reverse(created)
+                try close(stream) catch error; push!(errors,error) end
+            end
         end
         capture.own_wakeup && _close_wakeup(capture)
-        rethrow()
+        length(errors) == 1 && rethrow()
+        throw(CompositeException(errors))
     end
     return capture
 end
@@ -374,15 +396,19 @@ function await!(capture::Capture; deadline::Real, check=()->nothing)
 end
 
 function Base.close(capture::Capture)
+    errors = Exception[]
     _locked(capture) do
         capture.phase == CLOSED && return nothing
         capture.phase = CLOSED
-        foreach(close,reverse(values(capture.streams)))
+        for stream in reverse(values(capture.streams))
+            try close(stream) catch error; push!(errors,error) end
+        end
         _signal(capture)
     end
     # A live waiter owns its Timer and closes an owned wakeup after unwinding.
     close_wakeup = _locked(() -> capture.own_wakeup && !capture.waiting,capture)
     close_wakeup && _close_wakeup(capture)
+    isempty(errors) || throw(CompositeException(errors))
     return nothing
 end
 
