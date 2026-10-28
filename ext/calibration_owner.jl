@@ -7,11 +7,13 @@ const Native = PipeWireAORTC.NativeCalibrationEndpoint
 const Control = PipeWireAORTC.NativeControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
-mutable struct InitialCalibration{P,D,C,T,W,G,S}
+mutable struct InitialCalibration{P,D,C,T,W,G,S,F}
     hil::P
     driver::D
     capture::C
     capture_store::S
+    consume::F
+    consumer_failed::Bool
     transport::T
     workers::W
     graphs::G
@@ -79,15 +81,11 @@ function exposure!(owner::InitialCalibration, deadline)
     exposure = Wire.step_pipewire_exposure!(owner.hil, owner.driver;
         timeout_ns=remaining(owner, deadline),
         before_publish=value -> CalibrationCapture.arm!(owner.capture, value))
-    # Publication acknowledges a queued source buffer before its native cycle
-    # ends. Await the transport witness before requesting downstream progress;
+    # This witness observes publication at a source completion callback;
     # only the correlated raw/WFS receipts below prove exposure completion.
     Native.await(owner.wakeup, owner.guard, Float64(deadline)) do
         check(owner)
         Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence == exposure.identity.sequence
-    end
-    with_thread_loop_lock(owner.hil.loop) do _
-        trigger_process!(owner.hil.frame_stream)
     end
     values = CalibrationCapture.await!(owner.capture; deadline=Float64(deadline), check=() -> check(owner))
     exposure.probe_sequence == owner.token || error("exposure belongs to another probe")
@@ -139,6 +137,7 @@ function (owner::InitialCalibration)(action::Actions.Settle, deadline)
     return Actions.Settled(owner.cursor)
 end
 function (owner::InitialCalibration)(action::Actions.Collect, deadline)
+    owner.consumer_failed && return Actions.Failed(Actions.InvalidEvidence)
     action.probe == owner.probe && action.after == owner.cursor ||
         return Actions.Failed(Actions.InvalidEvidence)
     measurements = prod(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph).slopes.shape)
@@ -151,10 +150,24 @@ function (owner::InitialCalibration)(action::Actions.Collect, deadline)
     for _ in 1:action.frames
         values, exposure = exposure!(owner, deadline)
         push!(exposures, exposure)
+        # Freeze native response evidence before lending sample storage to the
+        # reducer. A consumer cannot clear intrinsic rejection or rewrite the
+        # transported response by mutating its borrowed arrays.
         valid &= all(i -> !owner.active[i] || values.arrays.validity[i], eachindex(owner.active))
         flattened = vec(permutedims(values.arrays.slopes))
         valid &= all(isfinite, flattened)
         mean .+= flattened ./ Float32(action.frames)
+        if owner.consume !== nothing && !owner.consumer_failed
+            try
+                owner.consume(values, exposure)
+            catch
+                # The correlated exposure is already complete. Finish this
+                # bounded action truthfully, then permit explicit restoration;
+                # transport/owner failures still escape and fence the endpoint.
+                owner.consumer_failed = true
+            end
+        end
+        valid &= !owner.consumer_failed
     end
     return Actions.Responses(mean, exposures, valid)
 end
@@ -298,11 +311,24 @@ Classic may enable the native Capture action with a fresh `capture_directory`,
 explicit `capture_stage` and positive cumulative `capture_maximum_bytes`.
 Capture preserves intrinsic invalidity and writes bounded immutable evidence;
 it does not accept interaction responses or replace active calibration.
+`consume(sample, exposure)` optionally reduces each completed Collect exposure
+on the control task, before another exposure. Sample arrays are borrowed read-only until
+the callback returns; retain only owned numerical state or explicit copies.
+Discarded settling, restoration and Capture exposures are not delivered to it.
+The callback must do bounded work. A callback exception latches
+`effects.consumer_failed`, completes the current bounded batch with false
+validity and rejects later Collect requests; explicit Restore/Release remain
+available. Transport/identity failures retain their unknown-outcome fence.
+Explicit typed FITS sources in a frontend projection may replace only background,
+active mask and WFS reference. Their prepared byte hashes and arrays are checked
+again before startup. Original graph topology, coordinates and thresholds remain
+the authority; no live parameter update stands in for startup adoption.
 """
 function Calibration.prepare_initial_calibration(application, remote, frontend, command;
         reference::AbstractVector{Float32}, name::AbstractString, instance::Int64,
         deadline::Real, active=frontend.parameters[:active], simulation_graph::AbstractString="production",
-        capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0)
+        capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0,
+        consume=nothing)
     Threads.nthreads(:default) >= 3 || throw(ArgumentError("initial calibration requires at least three Julia threads"))
     remote = Control.private_remote(remote)
     Calibration.require_prepared_application(application)
@@ -310,12 +336,25 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     frontend.source_graph_sha256 == command.source_graph_sha256 == authority ||
         throw(ArgumentError("calibration projections must share this application's regular graph"))
     selected = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    frontend, command = map((frontend, command)) do descriptor
+    frontend, command = map((frontend, command),(:frontend,:command)) do descriptor,role
         formats = JuliaFilterGraph.parameter_formats(descriptor.graph)
         entries = filter(entry -> haskey(formats, entry.port), selected)
         Set(entry.port for entry in entries) == Set(keys(formats)) == Set(keys(descriptor.parameters)) ||
             throw(ArgumentError("calibration projection parameter ports differ from the selected bindings"))
+        sources = descriptor.parameter_sources
+        allowed = role === :frontend ? Set((:background,:active,Symbol("reference-slopes"))) : Set{Symbol}()
+        Set(keys(sources)) ⊆ allowed ||
+            throw(ArgumentError("initial calibration overrides are restricted to background, mask and reference"))
+        expected = [GraphOwner.FITSBinding(entry.port,get(sources,entry.port,entry.source)) for entry in entries]
+        same_source(a,b) = a.port == b.port && a.source.path == b.source.path &&
+            a.source.hdu == b.source.hdu && a.source.axes == b.source.axes
+        length(expected) == length(descriptor.bindings) &&
+            all(pair -> same_source(pair...),zip(expected,descriptor.bindings)) ||
+            throw(ArgumentError("calibration projection FITS bindings differ from explicit stage sources"))
+        entries = expected
         artifacts = GraphOwner.prepare_artifacts(entries, formats)
+        all(pair -> last(pair).provenance["original_sha256"] == descriptor.parameter_sha256[first(pair)],artifacts) ||
+            throw(ArgumentError("calibration parameter source changed after projection preparation"))
         updates = [port => artifact.data for (port, artifact) in artifacts]
         all(pair -> isequal(last(pair), descriptor.parameters[first(pair)]), updates) ||
             throw(ArgumentError("calibration projection parameters differ from the selected FITS inputs"))
@@ -406,7 +445,18 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             registry = Registry(hil.core)
             listener = add_listener!(registry; on_global_added=(_...)->(notify();nothing),
                 on_global_removed=(_...)->(notify();nothing))
-            frame_listener = add_listener!(hil.frame_stream; on_trigger_done=(_...)->(notify();nothing))
+            frame_listener = add_listener!(hil.frame_stream;
+                on_trigger_done=(_...)->(notify();nothing),
+                on_command=(stream,command)->begin
+                    if pod_value(SPA.Command,command).object.id == SPA.NODE_COMMAND_REQUEST_PROCESS &&
+                            stream_state(stream) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
+                            is_driving(stream)
+                        # Service native graph demand without stepping the plant
+                        # or staging another scientific exposure.
+                        trigger_process!(stream)
+                    end
+                    nothing
+                end)
         end
         graph_name = "calibration."*string(uuid4())
         front_node, command_node = graph_name*".wfs", graph_name*".pdm"
@@ -481,7 +531,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         status = Wire.pipewire_calibration_status(hil)
         cursor = Actions.AcquisitionCursor(UInt64(1), status.acquisition_generation,
             UInt64(0), UInt64(0))
-        owner = InitialCalibration(hil, science.driver, capture, capture_store, probe, workers,
+        owner = InitialCalibration(hil, science.driver, capture, capture_store, consume, false, probe, workers,
             (;frontend,command), registry, listener, frame_listener, links, collect(reference), collect(active),
             UInt64(0), nothing, cursor, status.acquisition_domain, false, wakeup, guard, nothing, false)
         endpoint = Native.Endpoint(remote, name, instance, owner; wakeup, wakeup_lock=guard)

@@ -14,20 +14,41 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Calibration source and mechanism preparation — 2026-10-27
 
-The user confirms physical REVOLT source preparation is completely manual.
-The [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
+Delivery order is REVOLT Classic first, then GPI. The common preparation and
+online reduction interfaces remain shared; GPI's mechanism authority stays in
+its existing control software and requires its own adapter and qualification.
+
+Physical REVOLT source preparation is manual. The
+[preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
 keeps source/mechanism authority in the simulator, existing SPIDERS/GPI services
 or an explicit operator interaction. Acknowledgments do not establish optical
-readiness; evidence must precede and remain associated with candidate exposures.
-The first implementation adds a declared simulated `dark` selection with zero
-incident photons and unchanged production detector electronics/UInt16 transport.
-It preserves the ordinary RTC graph and selected calibration bytes. Physical
-adapters, manual interaction, automatic training/qualification and reliable
-repeated acquisition remain separate gates; no hardware command is issued.
-Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
-and 342 actual private-core dark/light Capture assertions. The
-[evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
-retains the failed source-manifest build and registered-release/cohort limitations.
+readiness. Simulated dark exposures have zero incident photons with unchanged
+detector electronics and UInt16 transport.
+
+The online procedure collects dark and lamp training frames with bounded AOC
+running states, then qualifies frozen references in a later simulation window.
+Products remain candidates; interaction-matrix acceptance and activation are
+separate. Capture now participates in graph-synchronous delivery on its main
+ThreadLoop, with exact receipts awaited as events. The unconditional additional
+native processing request has been removed. FIFO sample retention and public
+RequestProcess handling remain in place.
+
+At source commit `a3f927b`, three fixed campaigns using the registered native
+libraries passed without diagnostic hooks, tracing, pulses or retries. All nine
+stages restored/released; 176 of 188 ROIs retained eligibility at unchanged
+source, detector and threshold settings. The consumer fault/recovery selector
+passes 209 assertions, standalone capture passes 96, and the complete reference
+selector passes 87 including preparation cancellation, stale/foreign evidence
+and deadline checks. The broader core suite passes 6,488 assertions across 243
+test sets. Registered-package release qualification remains pending.
+
+The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
+retains every earlier delivery failure and the rejected immediate-completion
+assertion. Passing repeats do not prove universal losslessness or the original
+failure's native cause. The HIL publication witness is a historical callback
+observation, not a strict native-cycle fence; explicit cycle ownership across
+reset remains a separate limitation. No GPU, physical-device, deadline or
+interaction-matrix qualification is claimed.
 
 ### GPI2 loop controls and supervision — 2026-10-27
 

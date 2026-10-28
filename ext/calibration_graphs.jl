@@ -16,7 +16,7 @@ function calibration_port(value)
 end
 
 """
-    calibration_graph(application; inputs, outputs)
+    calibration_graph(application; inputs, outputs, parameter_sources=Dict())
 
 Derive and prepare one initial-calibration graph from a built regular graph.
 `inputs` maps new external Port names to exact `"NODE:PORT"` data endpoints;
@@ -27,14 +27,23 @@ Every data boundary must be explicitly selected; every retained external
 Parameter Port must have its existing FITS binding. Inputs that do not reach a
 selected output, ambiguous cuts and unknown endpoints reject before preparation.
 
-Returns `(graph, document, bindings, parameters, source_graph_sha256)`. The caller
+`parameter_sources` maps retained external Parameter Port Symbols to typed
+`Artifacts.FITSArtifact` sources. It replaces only those FITS bindings; the full
+original graph and its original sources are prepared as the structural authority.
+Arrays, unknown ports and overrides outside the projection are rejected.
+
+Returns `(graph, document, bindings, parameters, source_graph_sha256,
+parameter_sources, parameter_sha256)`. The caller
 owns the prepared graph and closes it with `FilterGraphIsland.close_execution`.
-`document` is generated configuration, `bindings` retains the original FITS
+`document` is generated configuration, `bindings` retains the resolved FITS
 sources, and `parameters` contains owned logical arrays keyed by external Port.
+`parameter_sources` is an owned override mapping; `parameter_sha256` records each
+resolved source's original byte hash from the same snapshot that supplied values.
 The application and its graph/FITS files are never modified. This does not
 preserve or transfer the state of a running regular controller.
 """
-function Calibration.calibration_graph(application; inputs::NamedTuple, outputs::Tuple)
+function Calibration.calibration_graph(application; inputs::NamedTuple, outputs::Tuple,
+        parameter_sources=Dict())
     Calibration.require_prepared_application(application)
     isempty(inputs) && throw(ArgumentError("calibration projection requires explicit data inputs"))
     isempty(outputs) && throw(ArgumentError("calibration projection requires selected outputs"))
@@ -71,6 +80,18 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
         external_outputs[name] = port
     end
     all(name -> haskey(external_outputs, name), outputs) || throw(ArgumentError("unknown projected output"))
+    entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
+    parameter_sources isa AbstractDict || throw(ArgumentError("parameter_sources must be a mapping"))
+    source_overrides = Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}()
+    bound_names = Set(entry.port for entry in entries)
+    external_names = Set(calibration_port(port).name for port in values(external_inputs))
+    for (name, artifact) in parameter_sources
+        name isa Symbol && name in bound_names && name in external_names ||
+            throw(ArgumentError("unknown external Parameter Port override: $name"))
+        artifact isa PipeWireAORTC.Artifacts.FITSArtifact ||
+            throw(ArgumentError("Parameter Port override must be a FITSArtifact"))
+        source_overrides[name] = artifact
+    end
     cuts = Dict{String,Symbol}()
     for (name, value) in pairs(inputs)
         endpoint, node = calibration_endpoint(value)
@@ -87,6 +108,8 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
     projected = nothing
     try
         parameter_names = Set(keys(JuliaFilterGraph.parameter_formats(authority)))
+        issubset(Set(keys(source_overrides)), parameter_names) ||
+            throw(ArgumentError("override is not an external Parameter Port"))
         parameter_endpoints = Dict(endpoint => calibration_port(port).name
             for (endpoint, port) in external_inputs
             if calibration_port(port).name in parameter_names)
@@ -124,10 +147,13 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
             if calibration_port(port).node in selected &&
                 haskey(parameter_endpoints, calibration_port(port).endpoint)]
         retained_names = Set(calibration_port(port).name for port in retained_parameters)
-        entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
         bindings = filter(entry -> entry.port in retained_names, entries)
         Set(entry.port for entry in bindings) == retained_names ||
             throw(ArgumentError("projected Parameter Port is missing its FITS binding"))
+        issubset(Set(keys(source_overrides)), retained_names) ||
+            throw(ArgumentError("Parameter Port override is outside the projection"))
+        bindings = [GraphOwner.FITSBinding(entry.port,
+            get(source_overrides, entry.port, entry.source)) for entry in bindings]
         projected_document = deepcopy(document)
         projection = projected_document["filter.graph"]
         projection["nodes"] = [deepcopy(node) for node in specification["nodes"] if node["name"] in selected]
@@ -137,20 +163,24 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
             for (name, endpoint) in pairs(inputs)], deepcopy(retained_parameters))
         projection["outputs"] = [deepcopy(external_outputs[name]) for name in outputs]
         parameters = Dict{Symbol,Array}()
+        parameter_sha256 = Dict{Symbol,String}()
         projected = mktempdir() do directory
             path = joinpath(directory, "graph.conf")
             PipeWireAORTC.ScienceExport.write_spa_config(path, projected_document)
             options = FilterGraphIsland.parse_arguments([
                 "--graph", path, "--check", "--execution", "complete-frame"])
             FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats -> begin
-                updates = GraphOwner.prepare_bindings(bindings, formats)
-                foreach(pair -> (parameters[first(pair)] = last(pair)), updates)
-                updates
+                prepared = GraphOwner.prepare_artifacts(bindings, formats)
+                for (port, artifact) in prepared
+                    parameters[port] = artifact.data
+                    parameter_sha256[port] = artifact.provenance["original_sha256"]
+                end
+                [port => artifact.data for (port, artifact) in prepared]
             end)
         end
         Calibration.digest(source) == source_hash || throw(ArgumentError("source graph changed during projection"))
         return (; graph=projected, document=projected_document, bindings, parameters,
-            source_graph_sha256=source_hash)
+            source_graph_sha256=source_hash, parameter_sources=source_overrides, parameter_sha256)
     catch
         projected === nothing || FilterGraphIsland.close_execution(projected)
         rethrow()

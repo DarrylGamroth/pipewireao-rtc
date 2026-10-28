@@ -15,7 +15,7 @@ public digest, source_completion, read_parameters, write_fits, heart_completion,
     require_prepared_application, estimator_dimensions, checked_command_limits, shack_hartmann_configuration,
     controller_graph, calibration_graph, controller_storage, measure!, calibration_frame!, calibrate_system,
     calibrate_hidden_modes, validate_system, lowpass_coefficients, read_recipe,
-    read_bundle, write_bundle, stage_calibration, read_capture
+    read_bundle, write_bundle, stage_calibration, read_capture, calibrate_references
 
 """
     lowpass_coefficients(T; cutoff_frequency_hz, sample_rate_hz)
@@ -98,6 +98,17 @@ public calibration_graph
 
 "Prepare a native CPU initial-calibration endpoint from the regular graph projections."
 function prepare_initial_calibration end
+
+"""
+    calibrate_references(application, output; remote, kwargs...)
+
+Collect declared dark, lamp-training and separate qualification exposures through
+the initial-calibration endpoint and reduce them online with AOC. The optional
+CPU/SH extension implements this procedure. The caller owns the private core;
+no default remote or hardware connection is selected. Output is a candidate
+reference product, not an activatable interaction-matrix bundle.
+"""
+function calibrate_references end
 public prepare_initial_calibration
 
 "Reject source instruments before numerical calibration or validation starts."
