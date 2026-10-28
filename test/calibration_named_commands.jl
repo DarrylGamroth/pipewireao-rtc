@@ -44,6 +44,8 @@ end
         @test outputs[Symbol("reconstruction-pixels")].shape==(4,6)
         @test Ext.calibration_measurements(frontend,outputs,Symbol("reconstruction-pixels"),nothing)===nothing
         @test Ext.calibration_measurements(frontend,outputs,Symbol("mean-pupil-intensity"),nothing)===nothing
+        @test_throws ArgumentError Ext.calibration_measurements(frontend,outputs,nothing,nothing)
+        @test Ext.calibration_measurements(frontend,outputs,nothing,nothing;consume=(sample,exposure)->nothing)===nothing
         @test_throws ArgumentError Ext.calibration_measurements(frontend,outputs,:slopes,nothing)
         @test_throws ArgumentError Ext.calibration_measurements(frontend,outputs,Symbol("reconstruction-pixels"),trues(6))
     finally

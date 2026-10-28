@@ -25,7 +25,7 @@ mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R}
     active::Union{Nothing,Vector{Bool}}
     references::R
     probe_command::Union{Nothing,Symbol}
-    measurements::Symbol
+    measurements::Union{Nothing,Symbol}
     token::UInt64
     probe::Union{Nothing,UInt32}
     cursor::Actions.AcquisitionCursor
@@ -147,8 +147,15 @@ function (owner::InitialCalibration)(action::Actions.Collect, deadline)
     owner.consumer_failed && return Actions.Failed(Actions.InvalidEvidence)
     action.probe == owner.probe && action.after == owner.cursor ||
         return Actions.Failed(Actions.InvalidEvidence)
-    measurements = prod(getproperty(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph), owner.measurements).shape)
+    measurements = owner.measurements === nothing ? 0 :
+        prod(getproperty(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph), owner.measurements).shape)
     action.measurements == measurements || return Actions.Failed(Actions.InvalidEvidence)
+    try
+        Actions.preflight_collect_reply(measurements, action.frames)
+    catch error
+        error isa ArgumentError || rethrow()
+        return Actions.Failed(Actions.InvalidEvidence)
+    end
     # Response order is the deployed estimator's logical row-major order, as in
     # the existing SH AOC reduction. Acquisition averages in Float32 online.
     mean = zeros(Float32, measurements)
@@ -163,10 +170,12 @@ function (owner::InitialCalibration)(action::Actions.Collect, deadline)
         if owner.active !== nothing
             valid &= all(i -> !owner.active[i] || values.arrays.validity[i], eachindex(owner.active))
         end
-        measurement = getproperty(values.arrays, owner.measurements)
-        flattened = ndims(measurement) == 1 ? vec(measurement) : vec(permutedims(measurement))
-        valid &= all(isfinite, flattened)
-        mean .+= flattened ./ Float32(action.frames)
+        if owner.measurements !== nothing
+            measurement = getproperty(values.arrays, owner.measurements)
+            flattened = ndims(measurement) == 1 ? vec(measurement) : vec(permutedims(measurement))
+            valid &= all(isfinite, flattened)
+            mean .+= flattened ./ Float32(action.frames)
+        end
         if owner.consume !== nothing && !owner.consumer_failed
             try
                 owner.consume(values, exposure)
@@ -342,14 +351,18 @@ function calibration_commands(command, reference, probe_command, options)
     return nothing
 end
 
-function calibration_measurements(frontend, outputs, measurements, active)
+function calibration_measurements(frontend, outputs, measurements, active; consume=nothing)
     inputs = JuliaFilterGraph.input_formats(frontend.graph)
     keys(inputs) == (:raw,) && inputs.raw.element_type === UInt16 && length(inputs.raw.shape) == 2 ||
         throw(ArgumentError("calibration frontend requires one UInt16 rank-two raw input"))
-    haskey(outputs, measurements) || throw(ArgumentError("unknown calibration measurements output"))
-    format = getproperty(outputs, measurements)
-    format.element_type === Float32 && length(format.shape) in (1,2) ||
-        throw(ArgumentError("calibration measurements must be Float32 rank one/two"))
+    if measurements === nothing
+        consume === nothing && throw(ArgumentError("consumer-only collection requires a synchronous consumer"))
+    else
+        haskey(outputs, measurements) || throw(ArgumentError("unknown calibration measurements output"))
+        format = getproperty(outputs, measurements)
+        format.element_type === Float32 && length(format.shape) in (1,2) ||
+            throw(ArgumentError("calibration measurements must be Float32 rank one/two"))
+    end
     for output in values(outputs)
         (output.element_type === Float32 && length(output.shape) in (1,2)) ||
             (output.element_type === Bool && length(output.shape) == 1) ||
@@ -395,6 +408,11 @@ command graph's declared physical wire units. No flat/offset is added here.
 `measurements` selects a Float32 rank-one/two output for Responses in logical
 row-major order. An intrinsic validity output requires the frozen active mask;
 otherwise `active=nothing` and scientific quality remains with the consumer.
+`measurements=nothing` requires `consume` and cold-binds consumer-only Collect:
+the request has zero measurements, and Responses contains an empty Float32
+vector, all exact exposure records and consumer validity. Captured sample arrays
+still retain their full declared shapes. No raw files or placeholder measurements
+are produced. Settling and Capture do not deliver samples to this consumer.
 `command` may instead be a NamedTuple keyed by every exact simulator command
 name, with a matching NamedTuple of explicit Float32 reference vectors and an
 explicit `probe_command`. Native v1 probe vectors address that selected Port;
@@ -428,7 +446,7 @@ the authority; no live parameter update stands in for startup adoption.
 """
 function Calibration.prepare_initial_calibration(application, remote, frontend, command;
         reference, name::AbstractString, instance::Int64,
-        deadline::Real, active=get(frontend.parameters, :active, nothing), measurements::Symbol=:slopes,
+        deadline::Real, active=get(frontend.parameters, :active, nothing), measurements::Union{Nothing,Symbol}=:slopes,
         probe_command::Union{Nothing,Symbol}=nothing, simulation_graph::AbstractString="production",
         capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0,
         consume=nothing)
@@ -476,7 +494,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     references = calibration_commands(command, reference, probe_command, options)
     reference = named ? copy(getproperty(references, probe_command)) : copy(reference)
     outputs = JuliaFilterGraph.output_formats(frontend.graph)
-    calibration_measurements(frontend, outputs, measurements, active)
+    calibration_measurements(frontend, outputs, measurements, active; consume)
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
     simulation_graph in ("production","internal-source","dark") ||
         throw(ArgumentError("unsupported operational simulation graph"))

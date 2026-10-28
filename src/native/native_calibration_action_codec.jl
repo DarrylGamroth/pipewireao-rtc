@@ -157,7 +157,7 @@ _check(ok, message) = ok || throw(ArgumentError(message))
 _identity(run, serial) = _check(run > 0 && serial > 0, "run and serial must be positive")
 _probe(value) = _check(value <= 16383, "probe must be in 0:16383")
 _frames(value) = _check(1 <= value <= 4096, "frames must be in 1:4096")
-_measurements(value) = _check(1 <= value <= 131072, "measurements must be in 1:131072")
+_measurements(value) = _check(0 <= value <= 131072, "measurements must be in 0:131072")
 function _cursor(cursor::AcquisitionCursor)
     _check(cursor.domain > 0 && cursor.generation > 0 && cursor.model_ns <= typemax(Int64),
         "invalid action acquisition cursor")
@@ -165,8 +165,8 @@ function _cursor(cursor::AcquisitionCursor)
 end
 _cursor_pod(cursor) = Lifecycle._cursor_pod(_cursor(cursor))
 _decode_cursor(pod) = _cursor(Lifecycle._decode_cursor(pod))
-function _vector(values, maximum)
-    _check(1 <= length(values) <= maximum && all(isfinite, values), "invalid Float32 vector")
+function _vector(values, maximum; minimum=1)
+    _check(minimum <= length(values) <= maximum && all(isfinite, values), "invalid Float32 vector")
     return values
 end
 function _array(pod, T)
@@ -175,9 +175,9 @@ function _array(pod, T)
     _check(eltype(array.values) === T, "wrong Array child type")
     return array.values
 end
-_float_pod(values::Vector{Float32}, maximum) = Pod(SPA.Array(_vector(values, maximum)))
-function _float_pod(values::AbstractVector{Float32}, maximum)
-    _vector(values, maximum)
+_float_pod(values::Vector{Float32}, maximum; minimum=1) = Pod(SPA.Array(_vector(values, maximum; minimum)))
+function _float_pod(values::AbstractVector{Float32}, maximum; minimum=1)
+    _vector(values, maximum; minimum)
     # Wire positions enumerate values; host index labels are not transmitted.
     owned = Vector{Float32}(undef, length(values))
     for (position, value) in enumerate(values)
@@ -185,7 +185,7 @@ function _float_pod(values::AbstractVector{Float32}, maximum)
     end
     return Pod(SPA.Array(owned))
 end
-_decode_float(pod, maximum) = _vector(_array(pod, Float32), maximum)
+_decode_float(pod, maximum; minimum=1) = _vector(_array(pod, Float32), maximum; minimum)
 _validate(::Immediate) = nothing
 _validate(rule::DiscardExposures) = _frames(rule.frames)
 _validate(rule::ModelTime) = _check(0 < rule.duration_ns <= typemax(Int64), "invalid model duration")
@@ -309,7 +309,7 @@ function _capture(result::Captured)
 end
 _result_size(r::Union{Held,Settled}) = (_cursor(r.cursor); 96)
 _result_size(r::Adopted) = (_cursor(r.cursor); _vector(r.figure, 4096); _add(112, _array_size(length(r.figure), 4)))
-_result_size(r::Responses) = (_vector(r.values, 131072); _exposures(r.exposures); _add(40, _add(_array_size(length(r.values), 4), _array_size(length(r.exposures), 40))))
+_result_size(r::Responses) = (_vector(r.values, 131072; minimum=0); _exposures(r.exposures); _add(40, _add(_array_size(length(r.values), 4), _array_size(length(r.exposures), 40))))
 _result_size(r::Captured) = (_capture(r); _add(144, _add(_string_size(ncodeunits(r.manifest)), _string_size(64))))
 _result_size(r::Restored) = (_vector(r.figure, 4096); _add(40, _array_size(length(r.figure), 4)))
 _result_size(::Released) = 24
@@ -332,7 +332,7 @@ end
 _result(r::Held) = _struct(_id(1), Pod(_cursor_pod(r.cursor)))
 _result(r::Adopted) = _struct(_id(2), Pod(_cursor_pod(r.cursor)), _float_pod(r.figure, 4096), Pod(r.clipped))
 _result(r::Settled) = _struct(_id(3), Pod(_cursor_pod(r.cursor)))
-_result(r::Responses) = _struct(_id(4), _float_pod(r.values, 131072), _exposure_pod(r.exposures), Pod(r.valid))
+_result(r::Responses) = _struct(_id(4), _float_pod(r.values, 131072; minimum=0), _exposure_pod(r.exposures), Pod(r.valid))
 _result(r::Captured) = _struct(_id(5), Pod(_cursor_pod(r.cursor)), Pod(r.manifest), Pod(r.sha256), _id(r.frames), _long(r.bytes), _long(r.metadata_bytes))
 _result(r::Restored) = _struct(_id(6), _float_pod(r.figure, 4096), Pod(r.clipped))
 _result(::Released) = _struct(_id(7))
@@ -348,7 +348,7 @@ function _decode_result(pod)
     elseif tag == 3
         _arity(f, 2); return Settled(_decode_cursor(f[2]))
     elseif tag == 4
-        _arity(f, 4); return Responses(_decode_float(f[2], 131072), _decode_exposures(f[3]), _bool(f[4]))
+        _arity(f, 4); return Responses(_decode_float(f[2], 131072; minimum=0), _decode_exposures(f[3]), _bool(f[4]))
     elseif tag == 5
         _arity(f, 7); return Captured(_decode_cursor(f[2]), _string(f[3]; limit=512), _string(f[4]; limit=64), _read_id(f[5]), _read_long(f[6]), _read_long(f[7]))
     elseif tag == 6

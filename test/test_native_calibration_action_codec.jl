@@ -183,4 +183,50 @@ end
     @test_throws ArgumentError Codec.preflight_collect_reply(max_m+1,1)
     @test_throws ArgumentError Client.encode_completion(profile, reply(4), Lifecycle.Connected, UInt64(1), UInt64(1), Codec.Responses(zeros(Float32,max_m+1),[exposure],true), "")
 end
+
+@testset "consumer-only Collect has no measurement vector and retains exact bounded exposures" begin
+    action=Codec.Collect(UInt32(0),cursor,UInt32(0),UInt32(2))
+    command=Codec.Command(UInt64(1),UInt64(1),action)
+    encoded=Client.encode_request(profile,request(4),command)
+    decoded=Client.decode_request(profile,encoded)[2]
+    @test decoded.action.measurements==0 && decoded.action.frames==2
+    @test Client.encode_request(profile,request(4),decoded).data==encoded.data
+    for valid in (true,false)
+        result=Codec.Responses(Float32[],[exposure,exposure],valid)
+        encoded=Client.encode_completion(profile,reply(4),Lifecycle.Connected,
+            UInt64(1),UInt64(1),result,"")
+        decoded=Client.decode_completion(profile,encoded).result
+        @test decoded.values isa Vector{Float32} && isempty(decoded.values)
+        @test length(decoded.exposures)==2 && decoded.exposures[1].domain==exposure.domain
+        @test decoded.exposures[2].start_model_ns==exposure.start_model_ns
+        @test decoded.valid===valid
+        @test sizeof(encoded)==Codec.preflight_collect_reply(0,2)
+    end
+    max_frames=findlast(n->Codec.collect_reply_size(0,n)<=131072,1:4096)
+    result=Codec.Responses(Float32[],fill(exposure,max_frames),true)
+    encoded=Client.encode_completion(profile,reply(4),Lifecycle.Connected,UInt64(1),UInt64(1),result,"")
+    @test sizeof(encoded)==Codec.preflight_collect_reply(0,max_frames)
+    @test sizeof(encoded)<=131072
+    @test_throws ArgumentError Codec.preflight_collect_reply(0,max_frames+1)
+    @test_throws ArgumentError Client.encode_completion(profile,reply(4),Lifecycle.Connected,
+        UInt64(1),UInt64(1),Codec.Responses(Float32[],fill(exposure,max_frames+1),true),"")
+    @test_throws ArgumentError Codec.preflight_collect_reply(0,0)
+    @test_throws ArgumentError Codec.preflight_collect_reply(-1,1)
+    @test_throws ArgumentError Client.encode_completion(profile,reply(4),Lifecycle.Connected,
+        UInt64(1),UInt64(1),Codec.Responses(Float32[],Codec.Exposure[],true),"")
+    for (op,action) in ((2,Codec.Adopt(UInt32(0),Float32[])),
+            (6,Codec.Restore(Float32[],Codec.Immediate())))
+        @test_throws ArgumentError Client.encode_request(profile,request(op),Codec.Command(UInt64(1),UInt64(1),action))
+    end
+    for (op,result) in ((2,Codec.Adopted(cursor,Float32[],false)),(6,Codec.Restored(Float32[],false)))
+        @test_throws ArgumentError Client.encode_completion(profile,reply(op),Lifecycle.Connected,
+            UInt64(1),UInt64(1),result,"")
+    end
+    empty_adopt=Envelope.encode_request(request(2),ps(long(1),long(1),
+        Pod(ps(id(0),Pod(SPA.Array(Float32[]))))))
+    @test_throws ArgumentError Client.decode_request(profile,empty_adopt)
+    empty_figure=Envelope.encode_completion(reply(6),ps(id(3),long(1),long(1),
+        Pod(ps(id(6),Pod(SPA.Array(Float32[])),Pod(false))),Pod(""));endpoint=:calibration)
+    @test_throws ArgumentError Client.decode_completion(profile,empty_figure)
+end
 end

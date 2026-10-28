@@ -51,7 +51,7 @@ bits. The codecs do not enforce owner-specific cursor equality or sequencing.
 | 2 | DiscardExposures: Id(2), frames Id |
 | 3 | ModelTime: Id(3), positive duration Long ≤ Int64 max |
 
-Probe is in 0…16,383; frames in 1…4,096; measurements in 1…131,072. Figures
+Probe is in 0…16,383; frames in 1…4,096; measurements in 0…131,072. Figures
 are nonempty finite Float32 arrays with a logical limit of 4,096 elements.
 The complete 16 KiB wire limit applies additionally, so a logical maximum
 figure can exceed encoded capacity. Encoder preflight inspects borrowed arrays
@@ -97,13 +97,33 @@ transport completion may carry None instead of an action result; a completion
 with envelope result zero requires an action result. Initial sentinel
 completions are not action completions.
 
-Responses have 1…131,072 finite Float32 values. Exposures are a flat Long Array
+Responses have 0…131,072 finite Float32 values. Exposures are a flat Long Array
 with exactly five fields per record: domain, generation, sequence,
 start_model_ns, duration_ns. There are 1…4,096 records. Every field preserves
 all UInt64 bits; domain, generation and duration are positive, and
 start_model_ns + duration_ns must not overflow UInt64. Cursor model-time bounds
 do not constrain exposure start/duration bit patterns. Further causal and
 owner association checks belong to the existing action effects and coordinator.
+
+Zero measurements selects consumer-only collection when the owner was cold
+prepared with `measurements=nothing` and a synchronous online consumer. Its
+Responses vector is empty; every exact exposure record and the consumer validity
+remain present. The consumer receives the full declared sample arrays before the
+next exposure. This does not synthesize a scalar measurement, retain raw files or
+change Capture. A zero request to a positive-measurement owner rejects before
+exposure effects. Ordinary interaction acquisition plans still require positive
+measurement counts. Consumer failure drains the bounded collection, returns false
+validity and preserves explicit restoration and release; transport failures fence
+the owner as before.
+
+This is an additive value-domain extension of version 1, with unchanged field
+layout, operation IDs and wire bounds. Existing positive request/reply bytes are
+unchanged. Earlier implementations reject zero counts/empty Responses; callers
+must not retry or silently substitute measurements on rejection. Figure vectors
+remain nonempty. Callers check Responses dimensions and exposure count against
+the correlated Collect request. A known terminal response with invalid scientific
+dimensions retains the existing InvalidEvidence and explicit-restoration policy;
+it does not itself establish an unknown command-adoption outcome.
 
 Manifest strings are nonempty, relative, at most 512 UTF-8 bytes, and have no
 empty, dot or dot-dot path components or backslashes. SHA256 is exactly 64
