@@ -16,6 +16,24 @@ const MAX_RETAINED_BYTES = 512 * 1024 * 1024
 
 include("graph_supervision.jl")
 
+function read_chopped_warmup(path)
+    filesize(path) <= 16 * 1024 || throw(ArgumentError("chopped warmup exceeds 16 KiB"))
+    value = Common.read_yaml(path)
+    value isa AbstractDict && Set(keys(value)) ==
+        Set(("version", "input", "exposure_duration_ns", "trigger_high_is_fringed")) ||
+        throw(ArgumentError("chopped warmup requires version, input, exposure_duration_ns and trigger_high_is_fringed"))
+    value["version"] === 1 || throw(ArgumentError("unsupported chopped warmup version"))
+    input = value["input"]
+    input isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", input) ||
+        throw(ArgumentError("chopped warmup input must name a Graph Port"))
+    duration = value["exposure_duration_ns"]
+    duration isa Integer && !(duration isa Bool) && 0 < duration <= typemax(Int64) ||
+        throw(ArgumentError("chopped warmup exposure duration must be positive Int64 nanoseconds"))
+    value["trigger_high_is_fringed"] isa Bool || throw(ArgumentError("chopped warmup polarity must be Boolean"))
+    return (; input=Symbol(input), exposure_duration_ns=Int64(duration),
+        trigger_high_is_fringed=value["trigger_high_is_fringed"])
+end
+
 """Extract RTC bootstrap, correction and FITS settings; preserve graph arguments."""
 function arguments(arguments)
     values = Dict{String,String}()
@@ -30,7 +48,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup")
             key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -83,7 +101,7 @@ function arguments(arguments)
     supervision = get(values, "--supervision", nothing)
     supervision === nothing || length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing)
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing), get(values,"--chopped-warmup",nothing)
 end
 
 struct FITSBinding
@@ -163,7 +181,7 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
@@ -171,7 +189,8 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.owner_check()
         options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
             (; correction_properties, correction_timeout_ms, recovery_nodes, physical_offsets=offsets_path,
-                supervision=supervision_path === nothing ? () : read_supervision(supervision_path)))
+                supervision=supervision_path === nothing ? () : read_supervision(supervision_path),
+                chopped_warmup=warmup_path === nothing ? nothing : read_chopped_warmup(warmup_path)))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -203,6 +222,10 @@ explicit thresholds apply to successful complete frames; sizes come from the
 typed graph outputs. Monitor-only is the default and never changes closure.
 `--correction-timeout-ms N` bounds adoption confirmation for declared loops
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
+`--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
+`exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
+synthetic F/U/F samples must prime then complete SCC pixel residuals; finally
+the Graph is reset. The owner must select Acquisition Version 3 explicitly.
 """
 main(args) = _main(args)
 

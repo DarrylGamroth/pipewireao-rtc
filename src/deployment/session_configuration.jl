@@ -154,7 +154,7 @@ function prepare_session_configuration!(application, spec, declarations, instrum
             options = AOSOwner.configuration(joinpath(application,"simulation.conf"))
             AOSOwner.requires_proper(options) && Base.require(Main,:Proper)
             context["simulator"] = Base.invokelatest(external_pupil_port_contracts,definition;
-                settings=get(plant,"settings",Dict()))
+                settings=get(plant,"settings",Dict()), chopping=options.plant.chopping)
         else
             context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
                 settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))

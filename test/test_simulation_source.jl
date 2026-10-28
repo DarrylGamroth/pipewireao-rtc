@@ -107,6 +107,27 @@ end
     end
 end
 
+@testset "prepared source retains explicit static optical variants" begin
+    mktempdir() do directory
+        physical, simulation = authored_optical_source(directory)
+        simulation["preparation"]["variants"] = Dict("scc_unfringed"=>Dict(
+            "branch"=>"science", "settings"=>Dict("masks"=>Dict("lyot"=>Dict("circles"=>[
+                Dict("radius_m"=>0.0012,"x_m"=>0,"y_m"=>0)])))))
+        path = write_external_optical_documents(directory,physical,simulation)
+        @test IC.load_simulation_source(path).document["preparation"]["variants"] ==
+            simulation["preparation"]["variants"]
+        for change in (d->(d["preparation"]["variants"]=[]),
+                d->(d["preparation"]["variants"]["scc_unfringed"]["branch"]="unknown"),
+                d->(d["preparation"]["variants"]["scc_unfringed"]["settings"]=[]),
+                d->(d["preparation"]["variants"]["scc_unfringed"]["extra"]=1),
+                d->(d["preparation"]["variants"]["science"]=pop!(d["preparation"]["variants"],"scc_unfringed")))
+            invalid=deepcopy(simulation);change(invalid)
+            write_external_optical_documents(directory,physical,invalid)
+            @test_throws ArgumentError IC.load_simulation_source(path)
+        end
+    end
+end
+
 @testset "graph-bearing definitions retain existing execution semantics" begin
     mktempdir() do directory
         physical, simulation = external_optical_documents()

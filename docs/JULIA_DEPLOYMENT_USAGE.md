@@ -645,7 +645,7 @@ The saved Git artifact catalog and SQLite journal are not changed by this tool.
 
 `AOSOwner.main` accepts a version-4 `mode: external-pupil` configuration through
 its ordinary native bootstrap. The strict fields are `version`, `mode`,
-`plant: {definition, settings}`, `pupil_node`, `sensor_nodes`, `backend`, `device`,
+`plant: {definition, settings, chopping?}`, `pupil_node`, `sensor_nodes`, `backend`, `device`,
 `instrument`, `rtc_configuration`, `calibration_identity` and
 `prescription_identity`. `sensor_nodes` names every physical optical path.
 The instrument has zero deformable mirrors and empty mirror controls; it does
@@ -672,6 +672,44 @@ prescription/branch/sampling/shape hash before the final `/1`; node properties
 retain wavelength, bandpass, sampling, axes and exposure units. Declared detector
 responses keep their explicit frame schema. Input model time owns exposure
 integration; the external-pupil source has no wall-pacing field.
+
+An optional `plant.chopping` mapping explicitly selects an alternate static graph
+for each chopped physical path:
+
+```yaml
+plant:
+  definition: generated/simulation.yaml
+  settings: {}
+  chopping:
+    scc:
+      unfringed_graph: scc_unfringed
+      initial_phase: fringed
+      trigger_high_is_fringed: true
+```
+
+The ordinary branch graph is fringed. AOS selects the two static graphs at its
+model exposure boundaries and reports the completed exposure's actual optical
+kind. RTC maps that kind through the explicit trigger polarity into Acquisition
+Version 3. It never derives optical kind from received-frame parity. Missing
+whole windows remain visible: for these chopped outputs only, acquisition and
+Header sequence equal `pts / duration + 1`, requiring aligned, nonnegative model
+time and positive duration anchored at zero. AOS's emission counter remains
+internal. Ordinary sensor sequence and Version 2 behavior are unchanged.
+
+Authored `simulation/definition.yaml` may declare `preparation.variants` as
+`{name: {branch, settings}}`. The shared Zemax generator prepares each variant
+through its physical branch and records `optical_model.variants` in generated
+execution data. Settings are reapplied to the base branch before the authored
+variant override. Generated graph/provenance files remain generator-owned.
+
+The SCC graph owner selects `--acquisition-version 3` and
+`--chopped-warmup PATH`. This bounded version-1 YAML declares `input`,
+`exposure_duration_ns` and `trigger_high_is_fringed`. Its unpublished F/U/F
+sequence requires exactly `SccPixelResidualIncompletePair`, then two successful
+physical outputs. Preparation ends with pair history reset and outputs
+unavailable; the first live exposure must prime again. Retained last-product
+metadata is inspection history, not evidence of publication. This CPU graph
+preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
 ### Sealed composition and feedback preparation
 
@@ -704,6 +742,12 @@ It binds physical command order from the declared mirror layout and units.
 The staged final graph is prepared with all typed FITS mappings, then
 `PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
 Only a passing staged application becomes the requested output.
+
+Each receiving branch may explicitly select `acquisition_version: 2` or `3`;
+omission preserves Version 2. This must match its actual native producer. A
+chopped SCC graph forwards Version 3 to its physical-offset output, so its
+receiver selects 3 while ordinary LLOWFS may retain 2. Admission remains exact;
+the receiver does not downgrade or reinterpret metadata versions.
 
 The receiving graph uses three default Julia threads: native graph execution,
 bootstrap monitoring and the offset pump. An explicit preparation profile

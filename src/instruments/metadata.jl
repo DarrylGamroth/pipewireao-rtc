@@ -2,7 +2,9 @@
 # used to prepare the plant; operator views contain only references to it.
 canonical(value::AbstractDict) = NamedTuple{Tuple(Symbol.(sort!(collect(keys(value)))))}(
     Tuple(canonical(value[key]) for key in sort!(collect(keys(value)))))
-canonical(value::AbstractVector) = Tuple(canonical(item) for item in value)
+# Keep array length out of the type: detector masks can contain millions of values.
+# JSON arrays retain the same byte representation as the former tuples.
+canonical(value::AbstractVector) = map(canonical, value)
 canonical(value) = value
 
 function selected_binding_names(declaration,configured)

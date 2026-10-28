@@ -71,6 +71,83 @@ function validate_session_links(session)
     return links
 end
 
+# Mirror native session policy before owners are launched. Ownership and a
+# processing graph's run-control grant are separate declarations (RTC-DEV-016).
+function validate_execution_groups(session)
+    controlled = Dict{String,Bool}()
+    required = Set{String}()
+    processing = Set{String}()
+    graphs = Set{String}()
+    for role in ("sources", "graphs", "sinks")
+        entries = get(session, role, Any[])
+        require(entries isa AbstractVector, "session $role must be a list")
+        for entry in entries
+            require(entry isa AbstractDict, "session $role entry must be a mapping")
+            name = get(entry, "node.name", nothing)
+            require(name isa String && !isempty(name) && !haskey(controlled,name),
+                "session node names must be nonempty and unique: $name")
+            ownership = get(entry, "ownership", nothing)
+            grant = get(entry, "run-control", nothing)
+            require(ownership in (nothing,"runner","external"), "invalid node ownership: $name")
+            managed = if ownership != "external"
+                require(grant === nothing, "runner-owned node has an external run-control grant: $name")
+                true
+            elseif role == "graphs"
+                require(grant in ("session","application"), "external graph requires an explicit run-control grant: $name")
+                grant == "session"
+            else
+                require(grant in (nothing,"application"), "external source or sink remains application controlled: $name")
+                false
+            end
+            controlled[name] = managed
+            if role == "graphs" && managed
+                push!(graphs,name); push!(required,name)
+                get(entry,"factory",nothing) == "api.ndarray.latest-hold" || push!(processing,name)
+            elseif role == "sinks" && ownership != "external"
+                push!(required,name)
+            end
+        end
+    end
+    groups = get(session,"execution-groups",Any[])
+    require(groups isa AbstractVector, "execution-groups must be a list")
+    require(!isempty(graphs) == !isempty(groups),
+        "execution groups require session-controlled graphs and vice versa")
+    names = Set{String}()
+    membership = Dict{String,String}()
+    for group in groups
+        require(group isa AbstractDict, "execution group must be a mapping")
+        name = get(group,"name",nothing)
+        require(name isa String && !isempty(name) && !occursin('\0',name) && !(name in names),
+            "execution group name must be nonempty and unique: $name")
+        push!(names,name)
+        nodes = get(group,"nodes",nothing)
+        require(nodes isa AbstractVector && !isempty(nodes), "execution group has no members: $name")
+        for node in nodes
+            require(node isa String && haskey(controlled,node) && !haskey(membership,node),
+                "unknown or duplicate execution group member: $node")
+            require(controlled[node], "application-controlled external node cannot belong to execution group: $node")
+            membership[node] = name
+        end
+        require(any(node -> node in processing,nodes), "execution group contains no session-controlled processing graph: $name")
+    end
+    if !isempty(graphs)
+        for node in sort!(collect(required))
+            require(haskey(membership,node), "eligible graph or nonexternal sink has no execution group: $node")
+        end
+    end
+    for link in get(session,"links",Any[])
+        output, input = link["output"], link["input"]
+        from = get(membership,first(split(output,':';limit=2)),nothing)
+        to = get(membership,first(split(input,':';limit=2)),nothing)
+        require(from === nothing || to === nothing || from == to,
+            "link crosses execution groups: $output → $input")
+        boundary = from === nothing && to !== nothing
+        require((get(link,"passive",false) === true) == boundary,
+            "invalid execution-group passive boundary: $output → $input (passive must be $boundary)")
+    end
+    return nothing
+end
+
 function validate_environment(value, label)
     require(value isa AbstractDict && all(value) do (key, item)
         key isa String && !isempty(key) && !occursin('=', key) && !occursin('\0', key) &&
@@ -496,6 +573,7 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
     end
     session = decode(relative_asset(dirname(path), value["session"]), prefix)
     validate_session_links(session)
+    validate_execution_groups(session)
     if haskey(value, "node-owners")
         mapping = value["node-owners"]
         require(mapping isa AbstractDict && all(key isa String && role isa String
