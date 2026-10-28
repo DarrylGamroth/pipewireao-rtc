@@ -1,5 +1,51 @@
 # Included in Analysis. The optional graph publishes arrays; this one-shot
 # observer copies completed results, then the control task registers artifacts.
+struct CaptureProvenance
+    acquisition_receipt_sha256::String
+    graph_sha256::String
+    fits_bindings_sha256::Union{Nothing,String}
+    source_graph_sha256::String
+    recipe_sha256::String
+    calibration_identity::String
+    operation::String
+    reference_space::String
+    source_stage::Union{Nothing,String}
+    parameter_sha256::Dict{String,String}
+    source_parameter_sha256::Dict{String,String}
+end
+
+function capture_provenance(value)
+    fields=Set(String.(fieldnames(CaptureProvenance)))
+    value isa AbstractDict && Set(keys(value))==fields ||
+        throw(ArgumentError("capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities"))
+    sha(x)=x isa String && occursin(r"^[0-9a-f]{64}$",x)
+    text(x,limit)=x isa String && isvalid(x) && 0<ncodeunits(x)<=limit && !any(iscntrl,x)
+    for key in ("acquisition_receipt_sha256","graph_sha256","source_graph_sha256","recipe_sha256")
+        sha(value[key]) || throw(ArgumentError("invalid capture provenance SHA-256: $key"))
+    end
+    value["fits_bindings_sha256"]===nothing || sha(value["fits_bindings_sha256"]) ||
+        throw(ArgumentError("invalid capture FITS bindings SHA-256"))
+    identity=value["calibration_identity"]
+    identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) ||
+        throw(ArgumentError("capture provenance requires a SHA-256 calibration identity"))
+    text(value["operation"],64) && text(value["reference_space"],2048) ||
+        throw(ArgumentError("invalid capture reference-space declaration"))
+    value["source_stage"]===nothing || endpoint(value["source_stage"])
+    function hashes(key)
+        mapping=value[key]
+        mapping isa AbstractDict && length(mapping)<=64 &&
+            all(pair -> first(pair) isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$",first(pair)) && sha(last(pair)),pairs(mapping)) ||
+            throw(ArgumentError("invalid capture parameter SHA-256 mapping"))
+        return Dict{String,String}(mapping)
+    end
+    return CaptureProvenance(value["acquisition_receipt_sha256"],value["graph_sha256"],value["fits_bindings_sha256"],
+        value["source_graph_sha256"],value["recipe_sha256"],identity,value["operation"],
+        value["reference_space"],value["source_stage"],hashes("parameter_sha256"),hashes("source_parameter_sha256"))
+end
+
+provenance_metadata(provenance::CaptureProvenance)=Dict(String(name)=>getfield(provenance,name)
+    for name in fieldnames(CaptureProvenance))
+
 struct CaptureConfig
     label::String
     scope::Dict{String,String}
@@ -9,11 +55,12 @@ struct CaptureConfig
     complete::Symbol
     variance_valid::Symbol
     window_samples::UInt64
+    provenance::Union{Nothing,CaptureProvenance}
 end
 
 function capture_configuration(value)
     fields = Set(["label", "scope", "products", "units", "sample-count", "complete", "variance-valid"])
-    value isa AbstractDict && Set(keys(value)) == fields ||
+    value isa AbstractDict && fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields,Set(["provenance"])) ||
         throw(ArgumentError("analysis capture requires label, scope, products, units, sample-count, complete and variance-valid"))
     text(x) = x isa String && isvalid(x) && 0 < ncodeunits(x) <= 255 && !any(iscntrl, x)
     port(x) = text(x) && occursin(r"^[A-Za-z0-9_.-]+$", x)
@@ -38,7 +85,8 @@ function capture_configuration(value)
     return CaptureConfig(value["label"], Dict{String,String}(scope),
         Dict(Symbol(k)=>Symbol(v) for (k,v) in products),
         Dict(Symbol(k)=>v for (k,v) in units), Symbol(value["sample-count"]),
-        Symbol(value["complete"]), Symbol(value["variance-valid"]), 0)
+        Symbol(value["complete"]), Symbol(value["variance-valid"]), 0,
+        haskey(value,"provenance") ? capture_provenance(value["provenance"]) : nothing)
 end
 
 # Qualify all captured products against one directly exported finite statistics
@@ -83,7 +131,7 @@ function capture_contract(config::CaptureConfig, document::AbstractDict)
     window isa Integer && !(window isa Bool) && 1 <= window <= typemax(Int) ||
         throw(ArgumentError("capture requires a positive finite window_samples"))
     return CaptureConfig(config.label, config.scope, config.products, config.units,
-        config.count,config.complete,config.variance_valid,UInt64(window))
+        config.count,config.complete,config.variance_valid,UInt64(window),config.provenance)
 end
 
 # State 0: the single frame writer owns buffers/counters. State 1: immutable
@@ -221,6 +269,9 @@ Each product is an independent existing Git/SQLite registration, not a transacti
 function register_capture!(store::ConfigurationStore.Store, capture::Capture;
         source, graph_sha256, check=()->nothing, records=Dict{String,Any}())
     capture.ready[] == 1 || throw(ArgumentError("analysis capture is not complete"))
+    provenance=capture.configuration.provenance
+    provenance===nothing || provenance.graph_sha256==graph_sha256 ||
+        throw(ArgumentError("registration graph differs from acquisition provenance"))
     for product in keys(capture.buffers)
         check()
         metadata = Dict("statistic"=>String(product), "units"=>capture.configuration.units[product],
@@ -229,6 +280,9 @@ function register_capture!(store::ConfigurationStore.Store, capture::Capture;
             "source"=>source, "graph_sha256"=>graph_sha256,
             "variance_convention"=>"sample (N-1)",
             "acquisition_identity_available"=>capture.has_identity)
+        if capture.configuration.provenance !== nothing
+            metadata["acquisition_provenance"]=provenance_metadata(capture.configuration.provenance)
+        end
         if capture.has_identity
             metadata["acquisition_domain"] = bytes2hex(collect(capture.domain))
             metadata["acquisition_generation"] = capture.generation

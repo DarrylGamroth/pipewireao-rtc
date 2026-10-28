@@ -165,10 +165,9 @@ function analysis_input_owner(graph)
     return JuliaFilterGraph.prepare_synchronized_inputs(graph; match=:acquisition)
 end
 
-function run_analysis_graph(config, remote, graph, boundary_layout)
+function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256)
     input_owner = analysis_input_owner(graph)
     capture = Analysis.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
-    graph_sha256 = capture === nothing ? "" : PipeWireAORTC.DeploymentConfiguration.digest(config.graph)
     node = FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
         rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units,
         frame_observer=capture)
@@ -207,6 +206,13 @@ function run_analysis_graph(config, remote, graph, boundary_layout)
 end
 
 function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
+    graph_sha256=PipeWireAORTC.DeploymentConfiguration.digest(config.graph)
+    provenance=config.capture===nothing ? nothing : config.capture.provenance
+    provenance===nothing || provenance.graph_sha256==graph_sha256 ||
+        throw(ArgumentError("analysis graph differs from acquisition provenance"))
+    bindings_sha256=config.fits_bindings===nothing ? nothing : PipeWireAORTC.DeploymentConfiguration.digest(config.fits_bindings)
+    provenance===nothing || provenance.fits_bindings_sha256==bindings_sha256 ||
+        throw(ArgumentError("analysis FITS bindings differ from acquisition provenance"))
     options = FilterGraphIsland.parse_arguments(["--graph", config.graph,
         "--name", config.name, "--remote", remote,
         "--rate", "$(numerator(config.rate))/$(denominator(config.rate))",
@@ -215,14 +221,34 @@ function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
     entries = config.fits_bindings === nothing ? PipeWireAORTC.GraphOwner.FITSBinding[] :
         PipeWireAORTC.GraphOwner.bindings(config.fits_bindings)
     graph = FilterGraphIsland.prepare_service_graph(options; declarations,
-        initial_parameters=formats -> PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats))
-    return (; graph, options)
+        initial_parameters=formats -> begin
+            artifacts=PipeWireAORTC.GraphOwner.prepare_artifacts(entries,formats)
+            if provenance !== nothing
+                hashes=Dict(String(port)=>artifact.provenance["original_sha256"] for (port,artifact) in artifacts)
+                hashes==provenance.parameter_sha256 ||
+                    throw(ArgumentError("analysis FITS snapshots differ from acquisition provenance"))
+            end
+            [port=>artifact.data for (port,artifact) in artifacts]
+        end)
+    try
+        PipeWireAORTC.DeploymentConfiguration.digest(config.graph)==graph_sha256 ||
+            throw(ArgumentError("analysis graph changed during preparation"))
+        if config.fits_bindings !== nothing
+            PipeWireAORTC.DeploymentConfiguration.digest(config.fits_bindings)==bindings_sha256 ||
+                throw(ArgumentError("analysis FITS bindings changed during preparation"))
+        end
+    catch
+        FilterGraphIsland.close_execution(graph)
+        rethrow()
+    end
+    return (; graph, options, graph_sha256)
 end
 
 function Analysis.run_graph(config::Analysis.Config, remote::AbstractString)
-    graph, options = Analysis.prepare_graph(config, remote)
+    prepared = Analysis.prepare_graph(config, remote)
+    graph, options = prepared.graph, prepared.options
     try
-        Base.invokelatest(run_analysis_graph, config, remote, graph, options.boundary_layout)
+        Base.invokelatest(run_analysis_graph, config, remote, graph, options.boundary_layout,prepared.graph_sha256)
     finally
         FilterGraphIsland.close_execution(graph)
     end

@@ -113,14 +113,15 @@ end
         document = graph_document()
         graph = document["filter.graph"]
         pushfirst!(graph["nodes"],Dict("type"=>"ndarray","name"=>"pixels",
-            "label"=>"pixel-calibration-u16-f32","config"=>Dict("image_size"=>[2,3],
+            "label"=>"pixel-calibration-u16-f32","config"=>Dict("image_size"=>[2,2],
                 "initial_flat"=>nothing,"initial_background"=>nothing)))
+        graph["nodes"][2]["config"]["size"]=[2,2]
         graph["nodes"][2]["config"]["input_schema"] = PipeWireAORTC.Schemas.CATALOG["calibrated_pixels"]["id"]
         graph["inputs"] = ["pixels:raw","pixels:background","pixels:flat"]
         graph["links"] = [Dict("output"=>"pixels:calibrated","input"=>"statistics:sample")]
         PipeWireAORTC.ScienceExport.write_spa_config(graph_path,document)
-        background = Float32[1 3 5; 2 4 6]
-        flat = fill(2f0,2,3)
+        background = Float32[1 3;2 4]
+        flat = fill(2f0,2,2)
         for (name,array) in (("background",background),("flat",flat))
             PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,name*".fits"),array)
         end
@@ -135,11 +136,60 @@ end
         try
             outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(prepared.graph))
             @test JuliaFilterGraph.input_formats(prepared.graph).raw.element_type === UInt16
-            @test all(values(process!(outputs,prepared.graph,(raw=fill(UInt16(10),2,3),))))
+            @test all(values(process!(outputs,prepared.graph,(raw=fill(UInt16(10),2,2),))))
             @test outputs.mean == 2f0 .* (10f0 .- background)
         finally
             FilterGraphIsland.close_execution(prepared.graph)
         end
+        records=Dict{String,Any}[]
+        graph_hash=PipeWireAORTC.InstrumentCalibration.digest(graph_path)
+        for coefficient in (2f0,3f0)
+            PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,"flat.fits"),fill(coefficient,2,2))
+            hashes=Dict(name=>PipeWireAORTC.InstrumentCalibration.digest(joinpath(root,name*".fits")) for name in ("flat","background"))
+            provenance=Dict("acquisition_receipt_sha256"=>repeat(coefficient==2 ? "1" : "2",64),
+                "graph_sha256"=>graph_hash,"fits_bindings_sha256"=>PipeWireAORTC.InstrumentCalibration.digest(joinpath(root,"parameters.conf")),
+                "source_graph_sha256"=>repeat("3",64),
+                "recipe_sha256"=>repeat("4",64),"calibration_identity"=>"sha256:"*repeat("5",64),
+                "operation"=>"preserve","reference_space"=>"selected background subtracted",
+                "source_stage"=>nothing,"parameter_sha256"=>hashes,"source_parameter_sha256"=>hashes)
+            capture_doc=merge(capture_document(),Dict("provenance"=>provenance))
+            C.write_json(config_path,Dict("graph"=>"graph.conf","fits-bindings"=>"parameters.conf",
+                "name"=>"calibrated-analysis","rate"=>"500/1","links"=>[],"capture"=>capture_doc))
+            admitted=A.configuration(config_path,String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
+            execution=A.prepare_graph(admitted,"/tmp/unused-private-socket")
+            try
+                @test execution.graph_sha256==graph_hash
+                outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(execution.graph))
+                capture=A.prepare_capture(admitted.capture,JuliaFilterGraph.output_formats(execution.graph))
+                for n in 1:3
+                    header=SampleMetadata(n,0;terminal=true)
+                    @test all(values(process!(outputs,execution.graph,(raw=fill(UInt16(10),2,2),),(raw=header,))))
+                    capture(Val(:frame),outputs,JuliaFilterGraph.output_metadata(execution.graph))
+                end
+                result=A.register_capture!(CS.Store(joinpath(root,"catalog")),capture;
+                    source="controller:raw",graph_sha256=execution.graph_sha256)
+                push!(records,result["mean"])
+                @test result["mean"]["manifest"]["metadata"]["acquisition_provenance"]["parameter_sha256"]==hashes
+                @test capture.buffers.mean==coefficient.*(10f0.-background)
+            finally
+                FilterGraphIsland.close_execution(execution.graph)
+            end
+            # Square asymmetric data keeps its shape and original byte hash
+            # when axes change; the binding identity must still reject it.
+            bindings_path=joinpath(root,"parameters.conf")
+            original_bindings=read(bindings_path)
+            changed=C.read_json(bindings_path)
+            changed["parameters"][1]["axes"]=[1,2]
+            C.write_json(bindings_path,changed)
+            @test_throws ArgumentError A.prepare_graph(admitted,"/tmp/unused-private-socket")
+            write(bindings_path,original_bindings)
+            # Same shape and graph, different frozen data: stale provenance must reject.
+            PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,"flat.fits"),fill(coefficient+1,2,2))
+            @test_throws ArgumentError A.prepare_graph(admitted,"/tmp/unused-private-socket")
+        end
+        @test records[1]["manifest"]["metadata"]["graph_sha256"]==records[2]["manifest"]["metadata"]["graph_sha256"]
+        @test records[1]["manifest"]["metadata"]["acquisition_provenance"]["parameter_sha256"] != records[2]["manifest"]["metadata"]["acquisition_provenance"]["parameter_sha256"]
+        @test records[1]["id"] != records[2]["id"]
         PipeWireAORTC.InstrumentCalibration.write_fits(joinpath(root,"flat.fits"),ones(Float32,3,2))
         @test_throws DimensionMismatch A.prepare_graph(config,"/tmp/unused-private-socket")
     end

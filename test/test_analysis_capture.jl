@@ -158,3 +158,31 @@ end
         @test isfile(joinpath(root,"capture-capture.json"))
     end
 end
+
+@testset "bounded immutable capture provenance" begin
+    provenance=Dict("acquisition_receipt_sha256"=>repeat("1",64),"graph_sha256"=>repeat("2",64),
+        "fits_bindings_sha256"=>nothing,
+        "source_graph_sha256"=>repeat("3",64),"recipe_sha256"=>repeat("4",64),
+        "calibration_identity"=>"sha256:"*repeat("5",64),"operation"=>"preserve",
+        "reference_space"=>"selected background subtracted","source_stage"=>"controller:pixels",
+        "parameter_sha256"=>Dict("background"=>repeat("6",64)),
+        "source_parameter_sha256"=>Dict("background"=>repeat("7",64)))
+    configured=merge(declaration(),Dict("provenance"=>provenance))
+    config=A.capture_contract(A.capture_configuration(configured),graph_document())
+    @test A.provenance_metadata(config.provenance)==provenance
+    for changed in (merge(provenance,Dict("extra"=>1)),merge(provenance,Dict("graph_sha256"=>"bad")),
+            merge(provenance,Dict("reference_space"=>repeat("x",2049))),
+            merge(provenance,Dict("parameter_sha256"=>Dict("../../bad"=>repeat("a",64)))),
+            merge(provenance,Dict("source_stage"=>"not-an-endpoint")))
+        @test_throws ArgumentError A.capture_configuration(merge(declaration(),Dict("provenance"=>changed)))
+    end
+    capture=A.prepare_capture(config,formats())
+    for n in 1:3
+        capture(Val(:frame),frame(n,10+n)...)
+    end
+    mktempdir() do root
+        records=A.register_capture!(CS.Store(root),capture;source="controller:pixels",graph_sha256=repeat("2",64))
+        @test records["mean"]["manifest"]["metadata"]["acquisition_provenance"]==provenance
+        @test_throws ArgumentError A.register_capture!(CS.Store(root),capture;source="controller:pixels",graph_sha256=repeat("9",64))
+    end
+end
