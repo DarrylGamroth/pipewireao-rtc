@@ -174,22 +174,34 @@ function simulator_port_contracts(declaration, configured, simulation_graph)
     return OpticalObservation.port_contracts(nodes; atmosphere, imaging)
 end
 
+# RTC GPU simulator paths require captured replay. AOS's lower-level reference
+# execution policies remain available independently of this production boundary.
+instrument_execution(::Backends.HostComputeDevice, execution) =
+    execution === nothing ? StreamGraphExecution() : execution
+function instrument_execution(::Backends.AcceleratorComputeDevice, execution)
+    execution === nothing || execution isa CapturedGraphExecution ||
+        throw(ArgumentError("RTC accelerator preparation requires CapturedGraphExecution"))
+    return CapturedGraphExecution()
+end
+
 """
     prepare_system(path; settings=NamedTuple(), calibration=false, simulation_graph=...,
-        target=HostComputeDevice(), execution=StreamGraphExecution())
+        target=HostComputeDevice(), execution=nothing)
 
 Prepare an ordinary typed AOS graph from an instrument declaration. The default
 selects `production`; `calibration=true` selects its ideal diagnostic graph.
 `simulation_graph="internal-source"` selects that explicitly declared optical
 path; `"dark"` selects declared zero detector photon rate. Both use the same
-typed preparation and execution interfaces.
+typed preparation and execution interfaces. CPU defaults to stream execution;
+accelerators require captured execution, including explicit policy requests.
 Without an HIL declaration, an explicitly named graph uses that same compiler
 and bindings, and returns `boundary=nothing` and `driver=nothing`. No RTC control
 or lifecycle owner is created. The result retains `declaration` and `configured`.
 """
 function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
         simulation_graph=calibration ? "calibration" : "production",
-        target=Backends.HostComputeDevice(),execution=StreamGraphExecution())
+        target=Backends.HostComputeDevice(),execution=nothing)
+    execution = instrument_execution(target, execution)
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration,settings)
     document = Instruments.graph_document(declaration,configured;calibration,simulation_graph)
@@ -333,17 +345,20 @@ end
 
 """
     InstrumentConfiguration.prepare_external_pupil(path; settings=NamedTuple(),
-        target=HostComputeDevice(), execution=StreamGraphExecution())
+        target=HostComputeDevice(), execution=nothing)
 
 Prepare physical optical paths and their optional post-exposure AOS response
 systems. The generated execution declaration names response graphs by graph key;
 the authored source declaration names their instrument-relative YAML files.
 AOS retains exposure accumulation, response execution, and reset ownership.
 The selected target and execution policy apply to every optical and response graph.
+CPU defaults to stream execution; accelerators require captured execution. Explicit
+non-captured accelerator policies are rejected, with no stream fallback.
 """
 function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple(),
-        target=Backends.HostComputeDevice(), execution=StreamGraphExecution(), chopping=NamedTuple())
+        target=Backends.HostComputeDevice(), execution=nothing, chopping=NamedTuple())
     declaration = Instruments.load_simulation(path)
+    execution = instrument_execution(target, execution)
     haskey(declaration.document, "hil") &&
         throw(ArgumentError("external-pupil preparation requires standalone optical graphs"))
     configured = Instruments.settings(declaration, settings)
