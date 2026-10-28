@@ -26,6 +26,41 @@ const INVOCATION = "0123456789abcdef0123456789abcdef"
     @test SO.parse_jobs(jobs, INVOCATION) == ["82" => "pipewireao-owner-$(INVOCATION)-core.service"]
 end
 
+@testset "owner runtime preserves inherited ROCr helper affinity" begin
+    owner = SO.Coordinator("pipewireao-rtc@test.service", INVOCATION, "/user.slice/core.service")
+    service = SO.Service(owner, "optics")
+    placement = Dict("cpus" => [2, 3], "leader-cpu" => 2)
+    environment = Dict("OPENBLAS_NUM_THREADS" => "1")
+    before = copy(environment)
+    unit = SO.service_unit(service, ["/usr/bin/julia"], environment, "/tmp", placement)
+    @test "Environment=\"HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0\"" in split(unit, '\n')
+    @test environment == before
+    environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "0"
+    before = copy(environment)
+    unit = SO.service_unit(service, ["/usr/bin/julia"], environment, "/tmp", placement)
+    @test count(==("Environment=\"HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0\""), split(unit, '\n')) == 1
+    @test environment == before
+    environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "1"
+    before = copy(environment)
+    @test_throws SO.OwnerError SO.service_unit(service, ["/usr/bin/julia"], environment, "/tmp", placement)
+    @test environment == before
+    environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = ""
+    @test_throws SO.OwnerError SO.service_unit(service, ["/usr/bin/julia"], environment, "/tmp", placement)
+end
+
+@testset "placement affinity failure identifies process and thread" begin
+    placement = Dict("cpus" => [typemax(Int)], "leader-cpu" => typemax(Int))
+    error = try
+        SO.Placement.snapshot(getpid(), placement)
+    catch exception
+        exception
+    end
+    @test error isa SO.Placement.PlacementError
+    message = sprint(showerror, error)
+    @test occursin("process $(getpid()) thread $(getpid())", message)
+    @test occursin("exceeds deployment envelope", message)
+end
+
 @testset "owner service rendering quotes arguments and applies isolated service policy" begin
     owner = SO.Coordinator("pipewireao-rtc@test.service", INVOCATION, "/user.slice/core.service")
     service = SO.Service(owner, "core")

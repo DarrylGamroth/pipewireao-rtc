@@ -169,7 +169,7 @@ function snapshot(pid::Integer, contract::AbstractDict)
         affinity = cpus_from_list(proc_field(status, "Cpus_allowed_list"))
         policy, priority = scheduler(tid)
         name = strip(read("$task/$tid/comm", String))
-        Set(affinity) ⊆ envelope || fail("thread $tid ($name) affinity $affinity exceeds deployment envelope")
+        Set(affinity) ⊆ envelope || fail("process $pid thread $tid ($name) affinity $affinity exceeds deployment envelope")
         (policy == 0 && priority == 0 || policy == 1 && priority == contract["rt-priority"]) ||
             fail("thread $tid ($name) has unrequested scheduler policy=$policy priority=$priority")
         tid == pid && (policy != 0 || affinity != [contract["leader-cpu"]]) &&

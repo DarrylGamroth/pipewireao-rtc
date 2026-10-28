@@ -25,6 +25,9 @@ endpoint(value) = begin
     require(length(terms)==2 && all(!isempty,terms),"expected exact NODE:PORT endpoint")
     String.(terms)
 end
+capture_node(objects, name) = only(filter(object ->
+    get(object,"type",nothing)=="PipeWire:Interface:Node" &&
+    get(get(get(object,"info",Dict()),"props",Dict()),"node.name",nothing)==name, objects))
 function declared_port(session, name, direction)
     node, port=endpoint(name)
     entries=[entry for section in ("sources","graphs","sinks") for entry in session[section]
@@ -33,7 +36,7 @@ function declared_port(session, name, direction)
     return only(filter(value->value["name"]==port && value["direction"]==direction,entry["ports"]))
 end
 has_schema(contract) = get(contract,"schema",nothing) isa AbstractString && !isempty(strip(contract["schema"]))
-function product(name, output, contract, duration, mapping)
+function product(name, output, contract, duration, mapping; model_time=true, priming_exposures=0, acquisition_version=2, chopping=nothing)
     node, port=endpoint(output)
     require(has_schema(contract),"CAL2 selector requires an explicit native export schema: $name")
     require(contract["element-type"]=="F32_LE" && get(contract,"layout","ROW_MAJOR")=="ROW_MAJOR",
@@ -42,7 +45,8 @@ function product(name, output, contract, duration, mapping)
     require(!isempty(shape) && all(>(0),shape) && prod(shape)<=2*1024^2,"unsupported bounded product shape")
     rate=get(contract,"rate",nothing)
     fraction=rate===nothing ? nothing : SPA.Fraction(parse.(UInt32,split(rate,'/'))...)
-    return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration))
+    require(priming_exposures in (0,1) && (model_time || priming_exposures==0),"unsupported capture priming")
+    return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration),model_time,priming_exposures,acquisition_version,chopping)
 end
 
 # The exporter's graph_port_contracts deliberately retains only shape and type.
@@ -95,7 +99,7 @@ function reference_products!(products, missing, graph, contracts, receiver, peri
         exports = filter(port->port["endpoint"]==endpoint,graph["filter.graph"]["outputs"])
         if length(exports)==1
             port = only(exports)["name"]
-            push!(products,product(name,graph["node.name"]*":"*port,contracts["outputs"][port],period,mapping))
+            push!(products,product(name,graph["node.name"]*":"*port,contracts["outputs"][port],period,mapping;model_time=false))
         else
             push!(missing,"No unique exported $endpoint; receiving-frame $name cannot be observed.")
         end
@@ -103,14 +107,14 @@ function reference_products!(products, missing, graph, contracts, receiver, peri
     return nothing
 end
 
-function modal_product!(products, missing, name, graph, contracts, control, duration, mapping)
+function modal_product!(products, missing, name, graph, contracts, control, duration, mapping; priming_exposures=0, acquisition_version=2)
     input = only(filter(link->link["input"]==control.node*":input",graph["filter.graph"]["links"]))
     exports = filter(port->port["endpoint"]==input["output"],graph["filter.graph"]["outputs"])
     if length(exports)==1
         port = only(exports)["name"]
         contract=contracts["outputs"][port]
         if has_schema(contract)
-            push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contract,duration,mapping))
+            push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contract,duration,mapping;priming_exposures,acquisition_version))
         else
             push!(missing,"No explicit native schema for $(input["output"]); $name modal residual cannot be observed.")
         end
@@ -200,7 +204,9 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         durations[name]=duration
         output=optical["sensor_nodes"][name]*":output_1"
         require(mapping[optical["sensor_nodes"][name]]=="cal2-optics","sensor owner differs")
-        push!(products,product(name,output,declared_port(session,output,"output"),duration,mapping))
+        chopping = get(get(optical["plant"],"chopping",Dict()),name,nothing)
+        acquisition_version = chopping === nothing ? 2 : 3
+        push!(products,product(name,output,declared_port(session,output,"output"),duration,mapping;acquisition_version,chopping))
         branch=receiver["branches"][name]
         link=only(filter(link->link["input"]==branch["node_name"]*":input_1",session["links"]))
         require(mapping[first(endpoint(link["output"]))]=="cal2-"*name,"return stream owner differs")
@@ -212,11 +218,13 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         branch_contracts=graph_output_contracts(controller_path)
         declared=declared_port(session,link["output"],"output")
         require_return_schema(branch_contracts["outputs"][last(endpoint(link["output"]))],declared,branch)
-        push!(products,product(name*"-offset",link["output"],declared,duration,mapping))
-        modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping)
+        # Chopped controllers suppress the first exposure while the pair primes.
+        priming_exposures = haskey(get(optical["plant"],"chopping",Dict()),name) ? 1 : 0
+        push!(products,product(name*"-offset",link["output"],declared,duration,mapping;priming_exposures,acquisition_version))
+        modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping;priming_exposures,acquisition_version)
     end
     physical=receiver["clock_output"]
-    push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping))
+    push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping;model_time=false))
     reference_products!(products,missing,graph,contracts,receiver,period,mapping)
     require(40<=sample_count<=128 && sample_count*period % durations["scc"]==0,"sample count must be in40:128 and cover whole SCC exposures")
     pacing=upstream["pacing_rate_hz"]
@@ -238,21 +246,54 @@ end
 Samples(product,bound)=Samples(Dict{String,Any}[],zeros(Float32,product.shape),zeros(Float32,product.shape),
     length(product.shape)==1 ? Vector{Float32}[] : nothing,bound)
 identity_record(value)=Dict("domain"=>bytes2hex(collect(value.domain.bytes)),"generation"=>value.generation,"sequence"=>value.sequence)
-function record!(samples, values, receipt, duration)
+function covered_count(product, covered)
+    require(covered % product.duration==0,"coverage must end on an exposure boundary")
+    count = div(covered,product.duration)-product.priming_exposures
+    require(count>0,"coverage must include a completed controller measurement")
+    return count
+end
+
+function record!(samples, values, receipt, duration; model_time=true, priming_exposures=0)
     require(length(samples.records)<samples.bound,"bounded capture exhausted before completion")
     require(all(isfinite,values) && receipt.duration==duration && receipt.pts>=0 && receipt.lost_samples==0,"invalid/lost model interval or payload")
     identity=identity_record(receipt.identity)
+    require(identity["sequence"]>=1,"acquisition sequence must be positive")
+    # GPI camera Headers use publication time; its declared complete acquisition
+    # cadence and sequence locate model coverage. Preserve the original Header.
+    model_pts = model_time ? receipt.pts : Base.checked_mul(Int64(identity["sequence"]-1),duration)
     if isempty(samples.records)
-        require(identity["sequence"]==1 && receipt.pts==0,"new acquisition did not start at sequence one/model zero")
+        require(identity["sequence"]==priming_exposures+1 && model_pts==priming_exposures*duration,
+            "new acquisition did not start at its declared first complete measurement")
         copyto!(samples.first,values)
     else
         previous=last(samples.records)
         require(identity["domain"]==previous["domain"] && identity["generation"]==previous["generation"] &&
-            identity["sequence"]==previous["sequence"]+1 && receipt.pts==previous["pts"]+previous["duration"],"acquisition gap or changed cohort")
+            identity["sequence"]==previous["sequence"]+1 && model_pts==previous["model_pts"]+previous["duration"] &&
+            receipt.pts>=previous["pts"],"acquisition gap or changed cohort")
     end
-    push!(samples.records,merge(identity,Dict("pts"=>receipt.pts,"duration"=>receipt.duration)))
+    push!(samples.records,merge(identity,Dict("pts"=>receipt.pts,"model_pts"=>model_pts,"duration"=>receipt.duration,
+        "trigger_state"=>string(receipt.trigger_state))))
     copyto!(samples.last,values)
     samples.history===nothing || push!(samples.history,copy(vec(values)))
+    return nothing
+end
+
+function require_chopped_exposure(product, receipt)
+    selection = product.chopping
+    selection === nothing && return nothing
+    require(receipt.duration==product.duration && receipt.pts>=0 && receipt.pts % product.duration==0,
+        "chopped sensor exposure does not occupy its declared model window")
+    first_fringed = selection["initial_phase"] == "fringed"
+    fringed = iseven(div(receipt.pts,product.duration)) == first_fringed
+    expected = fringed == selection["trigger_high_is_fringed"] ?
+        ACQUISITION_TRIGGER_HIGH : ACQUISITION_TRIGGER_LOW
+    require(receipt.trigger_state==expected,"observed chopped exposure classification differs from its optical phase")
+    return nothing
+end
+
+function require_reset_product(product, previous, current)
+    require((current["domain"]!=previous["domain"] || current["generation"]>previous["generation"]) && current["sequence"]==product.priming_exposures+1,
+        "post-Reset output did not establish a new acquisition generation")
     return nothing
 end
 
@@ -261,7 +302,7 @@ function zero_reference_proof(products, samples, covered)
     names=("physical","adopted-offset","reference-before","reference-after")
     all(name->haskey(byname,name),names) || return Dict("available"=>false,"nonzero_adoption_observed"=>false)
     logs=map(name->byname[name],names)
-    frame_count=count(record->record["pts"]+record["duration"]<=covered,first(logs).records)
+    frame_count=count(record->record["model_pts"]+record["duration"]<=covered,first(logs).records)
     require(frame_count>0,"receiving-frame comparison requires a covered prefix")
     for log in logs
         require(log.history!==nothing && length(log.records)>=frame_count && log.records[1:frame_count]==first(logs).records[1:frame_count],
@@ -318,8 +359,9 @@ function observe_epoch(handle,selected,stage,name)
     remote=ledger["remote"]
     require(isabspath(remote) && dirname(remote)==ledger["runtime"],"observer requires exact private-cohort remote")
     live=M.dump_graph(handle,selected.prefix)
+    C.write_json(joinpath(stage,name*"-graph.json"),live)
     options=Tuple(HIL.PipeWireArrayStreamOptions(node_name="cal2-lifecycle-$(getpid())-$(index)",media_name=product.name,
-        schema=product.schema,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
+        schema=product.schema,acquisition_version=product.acquisition_version,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
         for (index,product) in enumerate(plan.products))
     samples=map(product->Samples(product,plan.sample_count+128),plan.products)
     arrays=map(product->zeros(Float32,product.shape),plan.products)
@@ -332,7 +374,7 @@ function observe_epoch(handle,selected,stage,name)
         try
             deadline=W.monotonic()+30
             for (index,product) in enumerate(plan.products)
-                node=only(filter(object->get(get(get(object,"info",Dict()),"props",Dict()),"node.name",nothing)==product.node,live))
+                node=capture_node(live,product.node)
                 props=node["info"]["props"]
                 client=only(filter(object->get(object,"type",nothing)=="PipeWire:Interface:Client" && object["id"]==parse(Int,string(props["client.id"])),live))
                 require(parse(Int,string(client["info"]["props"]["pipewire.sec.pid"]))==ledger["owners"][product.role]["pid"],"observed producer PID differs from exact cohort")
@@ -371,7 +413,7 @@ function observe_epoch(handle,selected,stage,name)
             require(M.request(handle,stage,name*"-run",["session-start"])["state"]=="Running","Run did not reach Running")
             deadline=W.monotonic()+plan.timeout
             covered=plan.sample_count*plan.period
-            complete()=all(log->!isempty(log.records) && last(log.records)["pts"]+last(log.records)["duration"]>=covered,samples)
+            complete()=all(log->!isempty(log.records) && last(log.records)["model_pts"]+last(log.records)["duration"]>=covered,samples)
             while !complete()
                 W.monotonic()<deadline || error("paced CAL2 model collection timed out")
                 for index in eachindex(plan.products)
@@ -380,6 +422,11 @@ function observe_epoch(handle,selected,stage,name)
                     receipt=HIL.drain_pipewire_array!(arrays[index],wire,index)
                     if receipt!==nothing
                         product=plan.products[index]
+                        if isempty(samples[index].records)
+                            C.write_json(joinpath(stage,name*"-"*product.name*"-first-arrival.json"),
+                                merge(identity_record(receipt.identity),Dict("pts"=>receipt.pts,
+                                    "duration"=>receipt.duration,"lost_samples"=>receipt.lost_samples)))
+                        end
                         if endswith(product.name,"-offset")
                             require(all(iszero,arrays[index]),"startup-only lifecycle observed a nonzero CAL2 offset")
                         elseif product.name in ("llowfs","scc")
@@ -388,7 +435,8 @@ function observe_epoch(handle,selected,stage,name)
                             amplitude=view(arrays[index],2,:,:)
                             require(all(>=(0),amplitude) && any(>(0),amplitude),"invalid pupil amplitude")
                         end
-                        record!(samples[index],arrays[index],receipt,product.duration)
+                        require_chopped_exposure(product,receipt)
+                        record!(samples[index],arrays[index],receipt,product.duration;model_time=product.model_time,priming_exposures=product.priming_exposures)
                     end
                 end
                 sleep(0.005)
@@ -399,10 +447,11 @@ function observe_epoch(handle,selected,stage,name)
             records=Dict{String,Any}()
             for (index,product) in enumerate(plan.products)
                 log=samples[index]
-                prefix=filter(record->record["pts"]+record["duration"]<=covered,log.records)
-                require(length(prefix)*product.duration==covered,"covered prefix has missing exposures: $(product.name)")
+                prefix=filter(record->record["model_pts"]+record["duration"]<=covered,log.records)
+                require(length(prefix)==covered_count(product,covered),"covered prefix has missing exposures: $(product.name)")
                 records[product.name]=Dict("node"=>product.node,"port"=>product.port,"shape"=>collect(product.shape),
-                    "schema"=>product.schema,"samples"=>prefix,"observed_samples"=>length(log.records),"transport"=>statistics[index])
+                    "header_time"=>(product.model_time ? "model nanoseconds" : "publication nanoseconds; model coverage from declared acquisition cadence"),
+                    "acquisition_version"=>product.acquisition_version,"priming_exposures"=>product.priming_exposures,"schema"=>product.schema,"samples"=>prefix,"observed_samples"=>length(log.records),"transport"=>statistics[index])
                 records[product.name]["first_payload_sample"]=first(log.records)
                 records[product.name]["last_payload_sample"]=last(log.records)
                 if log.history!==nothing
@@ -419,12 +468,14 @@ function observe_epoch(handle,selected,stage,name)
                 end
             end
             for branch in ("llowfs","scc")
-                require(records[branch]["samples"]==records[branch*"-offset"]["samples"],"controller output changed sensor acquisition metadata")
+                priming = records[branch*"-offset"]["priming_exposures"]
+                measured = records[branch]["samples"][priming+1:end]
+                require(measured==records[branch*"-offset"]["samples"],"controller output changed sensor acquisition metadata")
                 if haskey(records,branch*"-modal-residual")
-                    require(records[branch]["samples"]==records[branch*"-modal-residual"]["samples"],"modal residual changed sensor acquisition metadata")
+                    require(measured==records[branch*"-modal-residual"]["samples"],"modal residual changed sensor acquisition metadata")
                 end
             end
-            publisher=only(filter(object->get(get(get(object,"info",Dict()),"props",Dict()),"node.name",nothing)==plan.products[1].node,M.dump_graph(handle,selected.prefix)))
+            publisher=capture_node(M.dump_graph(handle,selected.prefix),plan.products[1].node)
             props=publisher["info"]["props"]
             publisher_status=Dict(key=>value for (key,value) in props if startswith(key,"aos.pupil-output."))
             require(get(publisher_status,"aos.pupil-output.failed",nothing)=="false","pupil publisher reported failure")
@@ -528,8 +579,7 @@ function main(args)
         for product in plan.products
             previous=last(first_epoch["streams"][product.name]["samples"])
             current=first(second_epoch["streams"][product.name]["samples"])
-            require((current["domain"]!=previous["domain"] || current["generation"]>previous["generation"]) && current["sequence"]==1,
-                "post-Reset output did not establish a new acquisition generation")
+            require_reset_product(product,previous,current)
         end
         result["epochs"]=[first_epoch,second_epoch]
         result["source_snapshots"]=Dict("ready"=>ready,"held"=>held,"reset"=>reset,"final-held"=>final)

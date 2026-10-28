@@ -4,11 +4,12 @@
 # Reconstructors: D[:,j]=(I(+hP[:,j])-I(-hP[:,j]))/(2h), a=R*(I-I₀).
 
 include("optical_expectation.jl")
+include("optical_chopped.jl")
 
 "Prepare existing native mirror and optical graph owners without a core or service."
 function optical_callbacks(upstream_simulation::AbstractString, optical_simulation::AbstractString;
         mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
+        target=AdaptiveOpticsSim.Backends.HostComputeDevice(), chopping=NamedTuple(), publication_plan=nothing)
     target isa Union{AdaptiveOpticsSim.Backends.HostComputeDevice,
         AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend}} ||
         throw(ArgumentError("optical calibration supports explicit host or AMDGPU targets"))
@@ -47,12 +48,15 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
     mirror_graph = HIL.prepare_algorithm_graph(definition;target)
     systems = map(branch -> IC.prepare_system(optical_simulation;settings,
         simulation_graph=String(branch),target),branches)
+    unfringed_systems = map(chopping) do selection
+        IC.prepare_system(optical_simulation;settings,simulation_graph=selection.unfringed_graph,target)
+    end
     amplitude = Matrix{Float32}(IC.binding_values(upstream,upstream_configuration,
         Dict("kind"=>"pupil_amplitude","resolution"=>"pupil_resolution","type"=>"Float32")))
     support = IC.binding_values(upstream,upstream_configuration,
         Dict("kind"=>"pupil_support","resolution"=>"pupil_resolution")) .!= 0
     packet = zeros(Float32,2,size(amplitude,2),size(amplitude,1))
-    for system in systems
+    for system in (values(systems)...,values(unfringed_systems)...)
         size(HIL.graph_input(system.graph,:pupil_opd)) == size(packet)[2:3] ||
             throw(DimensionMismatch("upstream and optical pupil grids differ"))
         optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
@@ -63,12 +67,39 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
         HIL.step_graph!(mirror_graph)
         Array(HIL.graph_output(mirror_graph,:opd))
     end
-    observe = opd -> map(systems) do system
+    observe_system = (system,opd) -> begin
         optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
             HIL.graph_input(system.graph,:pupil_amplitude),packet,opd,amplitude)
         HIL.step_graph!(system.graph)
         Array(HIL.graph_output(system.graph,:intensity))
     end
+    frontends = NamedTuple()
+    chopped_references = NamedTuple()
+    if !isempty(chopping)
+        publication_plan === nothing && throw(ArgumentError("chopped calibration requires retained authored measurement graphs"))
+        flat_opd = surface(zeros(Float32,length(HIL.graph_input(mirror_graph,:command))))
+        flats = map(keys(chopping)) do name
+            fringed = optical_image(observe_system(getproperty(systems,name),flat_opd))
+            unfringed = optical_image(observe_system(getproperty(unfringed_systems,name),flat_opd))
+            size(fringed) == size(unfringed) || throw(DimensionMismatch("chopped optical variants differ in image shape"))
+            difference = fringed .- unfringed
+            all(isfinite,difference) || throw(ArgumentError("chopped reference difference must remain finite Float32"))
+            (;fringed,unfringed,difference)
+        end
+        chopped_references = NamedTuple{keys(chopping)}(flats)
+        frontends = NamedTuple{keys(chopping)}(map(keys(chopping)) do name
+            physical = optical.instrument.document["optical_paths"][string(name)]["sensor"]
+            duration = round(Int64,optical.instrument.document["wavefront_sensors"][physical]["acquisition"]["exposure_duration_s"]*1e9)
+            document = optical_chopped_template(publication_plan,name)
+            prepare_optical_chopped_frontend(document,name,getproperty(chopped_references,name).difference,
+                duration,getproperty(chopping,name).trigger_high_is_fringed)
+        end)
+    end
+    observe = opd -> NamedTuple{keys(systems)}(map(keys(systems)) do name
+        fringed = observe_system(getproperty(systems,name),opd)
+        hasproperty(frontends,name) ? optical_chopped_measurement!(getproperty(frontends,name),fringed,
+            observe_system(getproperty(unfringed_systems,name),opd)) : fringed
+    end)
     coordinates = permutedims(IC.actuator_coordinates(geometry.description;
         pupil_registration=geometry.registration))
     provenance = Dict("upstream_prescription_identity"=>IC.prescription_identity(upstream,upstream_configuration),
@@ -80,7 +111,16 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
         "mirror_opd_element_type"=>string(eltype(HIL.graph_output(mirror_graph,:opd))),
         "optical_intensity_element_type"=>Dict(string(name)=>string(eltype(HIL.graph_output(system.graph,:intensity)))
             for (name,system) in pairs(systems)))
-    return (;surface,observe,actuator_coordinates=coordinates,pupil_support=support,provenance)
+    if !isempty(chopping)
+        provenance["chopping"] = IC.json_value(chopping)
+        provenance["measurement_frontend_identity"] = Dict(string(name)=>optical_frontend_identity(frontend.document)
+            for (name,frontend) in pairs(frontends))
+        provenance["chopped_reference_identity"] = Dict(string(name)=>
+            PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(reference.difference))
+            for (name,reference) in pairs(chopped_references))
+        provenance["measurement_scope"] = "matched static F/U pairs; no exposure-command feedforward or concurrent-loop qualification"
+    end
+    return (;surface,observe,actuator_coordinates=coordinates,pupil_support=support,provenance,chopped_references)
 end
 
 function optical_pupil_inputs!(opd_destination,amplitude_destination,packet,opd,amplitude)
@@ -109,10 +149,10 @@ function optical_identity(projection, physical_to_modes, branches)
     return "sha256:"*bytes2hex(Calibration.sha256(take!(io)))
 end
 
-function optical_image(image)
+function optical_image(image; signed::Bool=false)
     image isa AbstractMatrix{<:AbstractFloat} && !isempty(image) &&
-        all(isfinite,image) && all(>=(0),image) || throw(ArgumentError(
-        "optical observation must be a finite nonnegative floating intensity image"))
+        all(isfinite,image) && (signed || all(>=(0),image)) || throw(ArgumentError(
+        "optical observation must be finite, and intensity observations must be nonnegative"))
     converted = Matrix{Float32}(image)
     all(isfinite,converted) || throw(ArgumentError("optical intensity must remain finite Float32"))
     return converted
@@ -167,7 +207,8 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
         pupil_support::AbstractMatrix{Bool}, branch_modes::NamedTuple, pixel_masks::NamedTuple,
         poke_m::Real, tsvd_rtol::Real, derivative_tolerance::Real=0.05,
         reconstruction_tolerance::Real=0.05, require_observable::Bool=true,
-        provenance::AbstractDict=Dict{String,Any}(), held_out_coefficients=nothing)
+        provenance::AbstractDict=Dict{String,Any}(), held_out_coefficients=nothing,
+        signed_measurements::Tuple{Vararg{Symbol}}=())
     Base.require_one_based_indexing(command_projection,pupil_support)
     !isempty(command_projection) && all(isfinite,command_projection) && any(pupil_support) ||
         throw(ArgumentError("optical command projection and pupil support must be finite and nonempty"))
@@ -179,13 +220,17 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
     projection = Matrix{Float32}(command_projection)
     n = size(projection,2)
     authority = optical_authority(branch_modes,n)
+    length(unique(signed_measurements)) == length(signed_measurements) &&
+        all(name -> haskey(authority,name),signed_measurements) ||
+        throw(ArgumentError("signed optical measurements must name distinct declared branches"))
     keys(pixel_masks) == keys(authority) || throw(ArgumentError("pixel masks must name every branch in order"))
     command = zeros(Float32,size(projection,1))
     flat_opd = optical_surface(surface,command,pupil_support)
     reference_images = observe(flat_opd)
     reference_images isa NamedTuple && keys(reference_images) == keys(authority) ||
         throw(ArgumentError("optical observation branches differ from branch_modes"))
-    references = map(optical_image,reference_images)
+    signed = NamedTuple{keys(authority)}(map(name -> name in signed_measurements, keys(authority)))
+    references = map((image,allowed)->optical_image(image;signed=allowed),reference_images,signed)
     masks = map(pixel_masks,references) do mask,image
         mask isa AbstractMatrix{Bool} && size(mask) == size(image) && any(mask) ||
             throw(ArgumentError("each branch requires a nonempty explicit image pixel mask"))
@@ -219,8 +264,8 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
             command .= (sign*amplitude) .* view(projection,:,j)
             images = observe(optical_surface(surface,command,pupil_support))
             images isa NamedTuple && keys(images) == keys(authority) || throw(ArgumentError("optical branches changed during calibration"))
-            map(images,masks) do image,mask
-                optical_pixels(optical_image(image),mask)
+            map(images,masks,signed) do image,mask,allowed
+                optical_pixels(optical_image(image;signed=allowed),mask)
             end
         end
         for name in keys(authority)
@@ -272,6 +317,8 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
             for (name,branch) in pairs(branches)))
     for (name,branch) in pairs(branches)
         report["branches"][string(name)]["image_shape"] = collect(size(branch.reference))
+        report["branches"][string(name)]["measurement_kind"] = name in signed_measurements ?
+            "chopped-pixel-residual" : "intensity"
         report["branches"][string(name)]["selected_pixel_count"] = count(branch.mask)
         report["branches"][string(name)]["pixel_order"] = "row-major"
         report["branches"][string(name)]["singular_values"] = branch.singular_values
@@ -353,7 +400,8 @@ function Calibration.validate_optical(surface, observe, calibration;
         keys(images) == keys(calibration.branches) || throw(ArgumentError("held-out optical branches differ"))
         estimate = zeros(Float32,size(P,2))
         for (name,branch) in pairs(calibration.branches)
-            residual = optical_pixels(optical_image(getproperty(images,name)),branch.mask) .-
+            signed = get(calibration.report["branches"][string(name)],"measurement_kind","intensity") == "chopped-pixel-residual"
+            residual = optical_pixels(optical_image(getproperty(images,name);signed),branch.mask) .-
                 optical_pixels(branch.reference,branch.mask)
             estimate .+= branch.reconstructor*residual
         end
@@ -656,6 +704,14 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
         if branch === nothing || name === branch
             parameters[prefix*"reconstructor"] = measurement.reconstructor
             parameters[prefix*"modal-reference"] = -(measurement.reconstructor*optical_pixels(measurement.reference,measurement.mask))
+            if hasproperty(calibration,:chopped_references) && hasproperty(calibration.chopped_references,name)
+                all(iszero,measurement.reference) || throw(ArgumentError("chopped frontend must subtract its exact flat reference before reconstruction"))
+                reference = getproperty(calibration.chopped_references,name)
+                parameters[prefix*"reference-difference"] = optical_pixels(reference.difference,trues(size(reference.difference)))
+                diagnostics[prefix*"flat-fringed"] = reference.fringed
+                diagnostics[prefix*"flat-unfringed"] = reference.unfringed
+                diagnostics[prefix*"flat-difference"] = reference.difference
+            end
         end
         diagnostics[prefix*"reference-image"] = measurement.reference
         diagnostics[prefix*"pixel-mask"] = measurement.mask
@@ -689,7 +745,7 @@ function optical_recipe(application, recipe)
     required = ("version","kind","upstream_simulation","optical_simulation","mirror","branches",
         "spatial_frequencies","branch_modes","controlled_actuators","pixels","poke_m","tsvd_rtol",
         "derivative_tolerance","reconstruction_tolerance")
-    optional = ("upstream_settings","settings","held_out_coefficients","upstream_reference")
+    optional = ("upstream_settings","settings","held_out_coefficients","upstream_reference","measurements")
     IC.fields(document,(required...,optional...),required,"optical calibration recipe")
     document["version"] === 1 && document["kind"] == "relative-intensity-optical" ||
         throw(ArgumentError("optical recipe requires version 1 and kind relative-intensity-optical"))
@@ -704,6 +760,13 @@ function optical_recipe(application, recipe)
         throw(ArgumentError("optical recipe branches must explicitly name at most eight graph selections"))
     names = Tuple(Symbol.(sort!(collect(keys(branches)))))
     branch_selection = NamedTuple{names}(Tuple(branches[string(name)] for name in names))
+    measurements = get(document,"measurements",Dict())
+    measurements isa AbstractDict && Set(keys(measurements)) ⊆ Set(keys(branches)) ||
+        throw(ArgumentError("measurements must name declared optical branches"))
+    for row in values(measurements)
+        IC.fields(row,("kind",),("kind",),"optical measurement")
+        row["kind"] == "chopped-pixel-residual" || throw(ArgumentError("unsupported optical measurement kind"))
+    end
     rows = document["spatial_frequencies"]
     rows isa AbstractVector && 1 <= length(rows) <= 32 &&
         all(row -> row isa AbstractVector && length(row)==2 && all(IC.isfinite_real,row),rows) ||
@@ -786,17 +849,28 @@ Consume two built applications and the bounded version-1 optical recipe in the
 optical application. Return `calibration` (including physical `projection` P,
 `physical_to_modes` Q and every branch's reconstruction data), `report`, and the
 prepared `callbacks`. This preparation result is not a deployable application.
-The recipe selects native graphs and explicit declared-pupil physical commands;
-it supplies no controller, detector, chopped acquisition or session lifecycle.
+The recipe selects native graphs, explicit declared-pupil physical commands and,
+when declared, the retained chopped pixel-residual measurement prefix. Chopped
+calibration evaluates matched static F/U roles, not a live acquisition or session.
 """
 function Calibration.calibrate_optical(upstream_application::AbstractString,
         optical_application_path::AbstractString; recipe="calibration/optical.yaml",
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice(),diagnostic::Bool=false)
+        target=AdaptiveOpticsSim.Backends.HostComputeDevice(),diagnostic::Bool=false,publication_plan=nothing)
     upstream = optical_application(upstream_application)
     optical = optical_application(optical_application_path)
     Calibration.require_prepared_application(upstream)
     selected = optical_recipe(optical,recipe)
     document = selected.document
+    options = PipeWireAORTC.AOSOwner.configuration(joinpath(optical,"simulation.conf"))
+    chopping = options.plant.chopping
+    Set(keys(get(document,"measurements",Dict()))) == Set(string.(keys(chopping))) ||
+        throw(ArgumentError("chopped optical execution requires exactly matching chopped measurement selections"))
+    all(name -> getproperty(selected.branches,name) == string(name),keys(chopping)) ||
+        throw(ArgumentError("chopped measurements must select their declared physical optical path"))
+    if !isempty(chopping) && publication_plan === nothing
+        publication_plan = optical_publication_plan(optical,selected;graphs=nothing,
+            configuration="calibration/materialize.yaml",prefix=get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
+    end
     upstream_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(upstream,document["upstream_simulation"])
     optical_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(optical,document["optical_simulation"])
     recipe_sha256 = Calibration.digest(selected.path)
@@ -804,7 +878,7 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
     execution = optical_upstream_execution(upstream,upstream_simulation,get(document,"upstream_settings",Dict()))
     callbacks = optical_callbacks(upstream_simulation,optical_simulation;
         mirror=document["mirror"],branches=selected.branches,
-        upstream_settings=execution.effective,settings=get(document,"settings",Dict()),target)
+        upstream_settings=execution.effective,settings=get(document,"settings",Dict()),target,chopping,publication_plan)
     declaration = execution.declaration
     mirror = declaration.instrument.document["deformable_mirrors"][document["mirror"]]
     get(mirror,"units",nothing) == "m OPD" || throw(ArgumentError("optical mirror commands must declare m OPD"))
@@ -820,7 +894,9 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
         pupil_support=callbacks.pupil_support,branch_modes=selected.branch_modes,pixel_masks=map(image->trues(size(image)),images),
         poke_m=document["poke_m"],tsvd_rtol=document["tsvd_rtol"],
         derivative_tolerance=document["derivative_tolerance"],reconstruction_tolerance=document["reconstruction_tolerance"],
-        held_out_coefficients=selected.held_out,provenance=callbacks.provenance,require_observable=!diagnostic)
+        held_out_coefficients=selected.held_out,provenance=callbacks.provenance,require_observable=!diagnostic,
+        signed_measurements=keys(chopping))
+    calibration = merge(calibration,(;chopped_references=callbacks.chopped_references))
     if !diagnostic && calibration.report["status"] == "accepted" && haskey(document,"upstream_reference")
         reference = document["upstream_reference"]
         method = get(reference,"method","held-frame")
@@ -900,7 +976,7 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
         optical_publication_plan(optical,selected;graphs,configuration,prefix)
     end
     snapshots = map(path->Calibration.digest(joinpath(path,"deployment.conf")),(upstream,optical))
-    result = Calibration.calibrate_optical(upstream,optical;recipe,target)
+    result = Calibration.calibrate_optical(upstream,optical;recipe,target,publication_plan=plan)
     for (path,snapshot) in zip((upstream,optical),snapshots)
         Export.sealed_application(path,prefix)
         Calibration.digest(joinpath(path,"deployment.conf")) == snapshot ||

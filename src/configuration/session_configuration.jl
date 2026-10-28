@@ -135,6 +135,7 @@ function session_configuration(spec, session, bindings, records;
                                node_owners::Dict{String,String},
                                configuration_store_root::Union{Nothing,AbstractString}=PipeWireAORTC.ConfigurationStore.default_root())
     isempty(D.validate_session_links(session)) && fail("native session requires at least one declared connection")
+    D.validate_execution_groups(session)
     name = get(spec, "name", nothing)
     name isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) ||
         fail("deployment has no validated name")

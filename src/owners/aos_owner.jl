@@ -425,8 +425,10 @@ function requires_proper(options)
     declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
     if options.version == 4
+        names = collect(keys(declaration.instrument.document["optical_paths"]))
+        append!(names, [row.unfringed_graph for row in values(options.plant.chopping)])
         return any(name -> InstrumentConfiguration.graph_requires_proper(declaration, configured;
-            simulation_graph=name), keys(declaration.instrument.document["optical_paths"]))
+            simulation_graph=name), names)
     end
     return InstrumentConfiguration.graph_requires_proper(declaration, configured;
         simulation_graph=get(options.plant, :graph, "production"))

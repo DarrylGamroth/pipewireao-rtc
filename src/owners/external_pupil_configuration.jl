@@ -1,4 +1,29 @@
 # Version 4 is an external optical input, with no mirror-command boundary.
+function external_pupil_chopping(value, declaration)
+    value isa AbstractDict || throw(ArgumentError("external-pupil chopping must be a mapping"))
+    all(key -> key isa String, keys(value)) || throw(ArgumentError("chopping names must be strings"))
+    paths = get(declaration.instrument.document, "optical_paths", Dict())
+    length(value) <= length(paths) || throw(ArgumentError("chopping must name physical optical paths"))
+    names = Tuple(Symbol.(sort!(collect(keys(value)))))
+    rows = map(names) do name
+        key = string(name)
+        haskey(paths, key) || throw(ArgumentError("chopping names an unknown optical path $key"))
+        row = value[key]
+        InstrumentConfiguration.fields(row, ("unfringed_graph", "initial_phase", "trigger_high_is_fringed"),
+            ("unfringed_graph", "initial_phase", "trigger_high_is_fringed"), "chopping $key")
+        graph = text(row["unfringed_graph"], "unfringed graph")
+        haskey(declaration.graphs, graph) && !haskey(paths, graph) ||
+            throw(ArgumentError("unfringed graph must name a distinct auxiliary optical graph"))
+        phase = row["initial_phase"]
+        phase in ("fringed", "unfringed") || throw(ArgumentError("initial_phase must be fringed or unfringed"))
+        (; unfringed_graph=graph, initial_phase=phase,
+            trigger_high_is_fringed=boolean(row["trigger_high_is_fringed"], "trigger_high_is_fringed"))
+    end
+    length(unique(row.unfringed_graph for row in rows)) == length(rows) ||
+        throw(ArgumentError("chopped paths require distinct unfringed graph selections"))
+    return NamedTuple{names}(Tuple(rows))
+end
+
 function external_pupil_configuration(path, document)
     required = ("version", "mode", "plant", "pupil_node", "sensor_nodes", "backend", "device",
         "instrument", "rtc_configuration", "calibration_identity", "prescription_identity")
@@ -6,13 +31,14 @@ function external_pupil_configuration(path, document)
     document["mode"] == "external-pupil" || throw(ArgumentError("version 4 requires mode external-pupil"))
     config_path = abspath(path)
     entry = document["plant"]
-    InstrumentConfiguration.fields(entry, ("definition", "settings"), ("definition", "settings"), "external-pupil plant")
+    InstrumentConfiguration.fields(entry, ("definition", "settings", "chopping"), ("definition", "settings"), "external-pupil plant")
     definition = DeploymentConfiguration.relative_asset(dirname(config_path), entry["definition"])
     declaration = InstrumentConfiguration.load_simulation(definition)
     haskey(declaration.document, "hil") && throw(ArgumentError("external-pupil owner requires standalone optical paths"))
     isempty(declaration.instrument.document["deformable_mirrors"]) ||
         throw(ArgumentError("external-pupil instrument must be mirror-free"))
     configured = InstrumentConfiguration.settings(declaration, entry["settings"])
+    chopping = external_pupil_chopping(get(entry, "chopping", Dict()), declaration)
     paths = get(declaration.instrument.document, "optical_paths", Dict())
     1 <= length(paths) <= 16 || throw(ArgumentError("external-pupil owner requires 1:16 physical optical paths"))
     nodes = document["sensor_nodes"]
@@ -37,7 +63,7 @@ function external_pupil_configuration(path, document)
     instrument = DeploymentConfiguration.relative_asset(dirname(config_path), document["instrument"])
     rtc_configuration = DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"])
     return (; version=4, mode=:external_pupil, config_path,
-        plant=(; definition, settings=plant_settings(configured)), graph=nothing,
+        plant=(; definition, settings=plant_settings(configured), chopping), graph=nothing,
         pupil_node, sensor_nodes, backend, device, instrument, rtc_configuration,
         calibration_identity=text(document["calibration_identity"], "calibration identity"),
         prescription_identity=text(document["prescription_identity"], "prescription identity"))

@@ -52,7 +52,8 @@ function sensor_contract(declaration, configured, plant, name, identity)
             "detector.name"=>sensor["detector"]["name"])))
 end
 
-function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(), check=()->nothing)
+function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(),
+        chopping=NamedTuple(), check=()->nothing)
     declaration = IC.load_simulation(path)
     if get(get(declaration.document,"optical_model",Dict()),"format",nothing) == "zemax"
         AdaptiveOpticsSim.Optics.Zemax.validate_provenance(declaration.directory)
@@ -60,7 +61,7 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
     configured = IC.settings(declaration,settings)
     identity = IC.prescription_identity(declaration,configured)
     check()
-    plant = IC.prepare_external_pupil(path; settings, target, execution=StreamGraphExecution())
+    plant = IC.prepare_external_pupil(path; settings, target, chopping, execution=StreamGraphExecution())
     # Establish immutable optical sampling without consuming detector draws.
     foreach(step_graph!, values(plant.graphs))
     sensors = map(keys(plant.graphs)) do name
@@ -68,7 +69,7 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
     end
     reset_external_pupil!(plant)
     check()
-    return (; plant, declaration, configured, identity, pupil=pupil_contract(declaration,configured),
+    return (; plant, declaration, configured, identity, chopping, pupil=pupil_contract(declaration,configured),
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
@@ -78,7 +79,9 @@ function stream_options(science, pupil_node, sensor_nodes)
         properties=science.pupil.properties)
     sensors = map(keys(science.sensors)) do name
         sensor = getproperty(science.sensors,name)
+        chopped = hasproperty(science.chopping, name)
         PipeWireArrayStreamOptions(; node_name=getproperty(sensor_nodes,name), media_name=string(name),
+            acquisition_version=chopped ? 3 : 2,
             schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR),
             properties=sensor.properties)
     end
@@ -95,17 +98,68 @@ function feed!(emit, plant, packet::Array{Float32,3}, receipt)
         lost_samples=receipt.lost_samples)
 end
 
-function Owner.prepare_external_pupil_science(options; check=()->nothing)
-    check()
-    return prepare(options.plant.definition; settings=options.plant.settings, target=target(options), check)
+# Runtime startup exercises the same feed and emitter as acquisition. Publication
+# remains disabled until all synthetic optical/response history has been reset.
+# Detector graph reset restores its construction RNG seed (Host or counter RNG).
+function warmup!(emit, science, packet, frames, buffers; check=()->nothing)
+    durations = map(exposure->exposure.duration_ns, values(science.plant.exposures))
+    step = reduce(gcd, durations)
+    horizon = Base.checked_mul(maximum(durations), Int64(2))
+    samples = div(horizon, step)
+    0 < samples <= 4096 || throw(ArgumentError("external-pupil warmup exceeds 4096 samples"))
+    try
+        fill!(packet, 0)
+        view(packet, 2, :, :) .= 1f0
+        # Local receipt only, matching live feed specialization. Its isolated
+        # identity never reaches transport or changes the live owner identity.
+        identity_domain = AcquisitionDomain(ntuple(index->UInt8(index), 16))
+        for sequence in 1:samples
+            check()
+            receipt = PipeWireArrayReceipt(Int64((sequence-1)*step), UInt64(step),
+                AcquisitionIdentity(identity_domain, UInt64(1), UInt64(sequence)), UInt64(0))
+            feed!(emit, science.plant, packet, receipt) || error("external-pupil warmup sample rejected")
+        end
+    finally
+        reset_external_pupil!(science.plant)
+        fill!(packet, 0)
+        foreach(frame->fill!(frame, 0), frames)
+        foreach(buffer->fill!(buffer, 0), buffers)
+    end
+    return nothing
 end
 
-function PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(path; settings=NamedTuple())
-    science = prepare(path; settings)
+function Owner.prepare_external_pupil_science(options; check=()->nothing)
+    check()
+    return prepare(options.plant.definition; settings=options.plant.settings,
+        chopping=options.plant.chopping, target=target(options), check)
+end
+
+function PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(path; settings=NamedTuple(), chopping=NamedTuple())
+    science = prepare(path; settings, chopping)
     contract(format, schema) = Dict("shape"=>collect(format), "element-type"=>"F32_LE", "schema"=>schema)
     return Dict("pupil"=>contract(science.pupil.shape,science.pupil.schema),
         "sensors"=>Dict(string(name)=>contract(size(sensor.image),sensor.schema)
             for (name,sensor) in pairs(science.sensors)))
+end
+
+function trigger_state(science, name, metadata)
+    hasproperty(science.chopping, name) || return ACQUISITION_TRIGGER_ABSENT
+    kind = get(metadata, :chopped_image_kind, nothing)
+    kind === :mixed && return ACQUISITION_TRIGGER_MIXED
+    kind in (:fringed, :unfringed) || throw(ArgumentError("chopped exposure lacks its actual optical phase"))
+    high = (kind === :fringed) == getproperty(science.chopping, name).trigger_high_is_fringed
+    return high ? ACQUISITION_TRIGGER_HIGH : ACQUISITION_TRIGGER_LOW
+end
+
+function sensor_sequence(metadata, chopped::Bool)
+    chopped || return metadata.sequence
+    # AOS complete exposures occupy aligned windows of its zero-origin model
+    # clock. The wire identity records the observed window ordinal so missing
+    # whole windows cannot appear adjacent. Optical phase is never inferred here.
+    pts, duration = metadata.pts, metadata.duration
+    pts isa Int64 && pts >= 0 && duration isa UInt64 && 0 < duration <= typemax(Int64) &&
+        UInt64(pts) % duration == 0 || throw(ArgumentError("chopped exposure must occupy an aligned nonnegative model-time window"))
+    return Base.checked_add(div(UInt64(pts), duration), UInt64(1))
 end
 
 function domain()
@@ -146,6 +200,23 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
     frames = map(sensor->zeros(eltype(sensor.image),size(sensor.image)),values(science.sensors))
     buffers = map(sensor->zeros(Float32,size(sensor.image)),values(science.sensors))
     domains = map(_->domain(),names)
+    publication_enabled = Ref(false)
+    emit = function (name,image,metadata)
+        index = findfirst(==(name),names)
+        copyto!(frames[index],image)
+        buffers[index] .= frames[index]
+        all(isfinite,buffers[index]) || throw(ArgumentError("optical product exceeds Float32 transport range"))
+        sequence = sensor_sequence(metadata, hasproperty(science.chopping, name))
+        classification = trigger_state(science, name, metadata)
+        if publication_enabled[]
+            identity = AcquisitionIdentity(domains[index],UInt64(state.generation),sequence)
+            if stage_pipewire_array!(owner,index+1,buffers[index];identity,pts=metadata.pts,
+                    duration=metadata.duration, trigger_state=classification)
+                with_array_stream(trigger_process!,owner,index+1)
+            end
+        end
+        return nothing
+    end
     filter = nothing
     try
         with_thread_loop_lock(transport.loop) do _
@@ -174,6 +245,9 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
             ready && break
             sleep(0.001)
         end
+        warmup!(emit, science, packet, frames, buffers;
+            check=()->Bootstrap.check_connect!(runtime,ticket))
+        publication_enabled[] = true
         Bootstrap.connected!(runtime,ticket)
         Bootstrap.await_connected!(runtime,ticket)
         upstream_generation = UInt64(0)
@@ -199,16 +273,7 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
                 state.generation = Base.checked_add(state.generation,Int64(1))
             end
             upstream_generation = receipt.identity.generation
-            accepted = feed!(science.plant,packet,receipt) do name,image,metadata
-                index = findfirst(==(name),names)
-                copyto!(frames[index],image)
-                buffers[index] .= frames[index]
-                all(isfinite,buffers[index]) || throw(ArgumentError("optical product exceeds Float32 transport range"))
-                identity = AcquisitionIdentity(domains[index],UInt64(state.generation),metadata.sequence)
-                if stage_pipewire_array!(owner,index+1,buffers[index];identity,pts=metadata.pts,duration=metadata.duration)
-                    with_array_stream(trigger_process!,owner,index+1)
-                end
-            end
+            accepted = feed!(emit,science.plant,packet,receipt)
             accepted && (state.sequence = Base.checked_add(state.sequence,UInt64(1)))
         end
     finally

@@ -208,6 +208,28 @@ local function session (options)
     args ["auxiliary-sources"] = { { ["control-node"] = "auxiliary", pid = 1,
       role = "auxiliary", ["control-protocol"] = "pipewireao.source-control/1" } }
   end
+  if options.cal2 then
+    for _, branch in ipairs ({ "llowfs", "scc" }) do
+      local name = "cal2-" .. branch .. "-controller"
+      nodes [name] = { name = name }
+      args ["node.pids"] [name] = 1
+      args.session.graphs [#args.session.graphs + 1] = {
+        ["node.name"] = name, ownership = "external", ["run-control"] = "session" }
+      args.session.sources [#args.session.sources + 1] = {
+        ["node.name"] = "cal2-" .. branch, ownership = "external" }
+      args.session.sinks [#args.session.sinks + 1] = {
+        ["node.name"] = "gpi2-cal2-" .. branch .. "-offset", ownership = "external" }
+      args.session.links [#args.session.links + 1] = {
+        output = "cal2-" .. branch .. ":output_1", input = name .. ":image",
+        passive = options.cal2 ~= "nonpassive" }
+      args.session.links [#args.session.links + 1] = { output = name .. ":physical-offset",
+        input = "gpi2-cal2-" .. branch .. "-offset:input_1" }
+      if options.cal2 ~= "missing" then
+        args.session ["execution-groups"] [#args.session ["execution-groups"] + 1] = {
+          name = name, nodes = { name } }
+      end
+    end
+  end
   if options.no_controller then catalog.nodes [1] = nil end
   test.pause = options.pause
   chunk ({ parse = function () return args end })
@@ -279,6 +301,41 @@ local function normal ()
     assert (test.disconnected and test.quit_complete and test.state.lifecycle == 1 and #test.completions == 5)
     test:close ()
   end
+end
+
+-- Actual CAL2 declaration pattern: external controller graphs grant session
+-- run control; receiver sinks remain external. Cadences live in the owners.
+local function cal2_groups ()
+  for _, mode in ipairs ({ "missing", "nonpassive" }) do
+    local test = session { cal2 = mode }
+    wait_for (function () return test.state.faulted end)
+    local reason = table.concat (test.warnings, ";")
+    local expected = mode == "missing" and "has no execution group: cal2-" or
+        "Invalid execution-group passive boundary: cal2-"
+    assert (reason:find (expected, 1, true), reason)
+    assert (not test.state.warmed and not test.state.groups.science.running)
+    test:close ()
+  end
+  local test = session { cal2 = "valid" }
+  prepared (test)
+  test:request (10); done (test)
+  assert (test.state.lifecycle == 4)
+  local llowfs, scc = "cal2-llowfs-controller", "cal2-scc-controller"
+  assert (test.state.groups [llowfs].running and test.state.groups [scc].running)
+  test.effects = {}
+  test:request (7, Pod.Struct { llowfs }); done (test)
+  order (test, "run:" .. llowfs .. ":1")
+  assert (not test.state.groups [llowfs].running and test.state.groups [scc].running and
+      test.state.groups.science.running)
+  test.effects = {}
+  test:request (8, Pod.Struct { llowfs }); done (test)
+  order (test, "run:" .. llowfs .. ":2")
+  assert (test.state.groups [llowfs].running and test.state.groups [scc].running)
+  test:request (9); done (test)
+  test:request (12); done (test)
+  test:request (1); done (test)
+  assert (test.quit_complete and test.state.lifecycle == 1)
+  test:close ()
 end
 
 local function auxiliary_sources ()
@@ -584,6 +641,7 @@ co = coroutine.create (function ()
   if selector == "correction" then correction_admission (); return end
   parameter_dispatch ()
   normal ()
+  cal2_groups ()
   auxiliary_sources ()
   startup_queries ()
   quit_fence_failure ()

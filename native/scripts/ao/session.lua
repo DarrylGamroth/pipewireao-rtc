@@ -938,15 +938,15 @@ hook ("prepare", {
       end
       if has_controlled_graph then
         for name in pairs (required) do
-          assert (membership [name], "Eligible graph or nonexternal sink has no execution group")
+          assert (membership [name], "Eligible graph or nonexternal sink has no execution group: " .. name)
         end
       end
       for _, declaration in ipairs (spec.links) do
         local output, input = declaration.output:match ("^([^:]+):"), declaration.input:match ("^([^:]+):")
         local from, to = membership [output], membership [input]
-        assert (not from or not to or from == to, "Link crosses execution groups")
+        assert (not from or not to or from == to, "Link crosses execution groups: " .. declaration.output .. " -> " .. declaration.input)
         assert ((not from and to and declaration.passive == true) or
-            ((from or not to) and declaration.passive ~= true), "Invalid execution-group passive boundary")
+            ((from or not to) and declaration.passive ~= true), "Invalid execution-group passive boundary: " .. declaration.output .. " -> " .. declaration.input)
       end
       operation.rows = rows
       done ()

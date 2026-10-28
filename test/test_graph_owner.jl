@@ -4,6 +4,29 @@ using PipeWireAORTC
 
 const GraphOwner = PipeWireAORTC.GraphOwner
 
+@testset "chopped warmup authoring is bounded and explicit" begin
+    mktemp() do path, io
+        close(io)
+        document = Dict{String,Any}("version"=>1,"input"=>"image","exposure_duration_ns"=>10_000_000,
+            "trigger_high_is_fringed"=>true)
+        PipeWireAORTC.Common.write_yaml(path,document)
+        @test GraphOwner.read_chopped_warmup(path) ==
+            (;input=:image,exposure_duration_ns=10_000_000,trigger_high_is_fringed=true)
+        for change in (d->(d["version"]=true),d->(d["input"]="bad input"),
+                d->(d["exposure_duration_ns"]=0),d->(d["trigger_high_is_fringed"]=1),
+                d->(d["period"]=2))
+            invalid=deepcopy(document);change(invalid)
+            PipeWireAORTC.Common.write_yaml(path,invalid)
+            @test_throws ArgumentError GraphOwner.read_chopped_warmup(path)
+        end
+        argv=["--bootstrap-node","rtc.bootstrap.graph","--bootstrap-instance","7",
+            "--remote","/tmp/rtc-private","--chopped-warmup",path]
+        @test GraphOwner.arguments(argv)[9] == path
+        @test GraphOwner.arguments(argv)[2] == ["--remote","/tmp/rtc-private"]
+        @test_throws ArgumentError GraphOwner.arguments([argv;"--chopped-warmup";path])
+    end
+end
+
 module GraphOwnerIsland
 parse_arguments(args) = (; args)
 end

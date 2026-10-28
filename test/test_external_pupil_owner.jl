@@ -39,3 +39,30 @@ const C = PipeWireAORTC.Common
     end
     @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","CUDA","AMDGPU","Proper"),keys(Base.loaded_modules))
 end
+
+@testset "chopped optical configuration selects explicit auxiliary graphs and polarity" begin
+    mktempdir() do directory
+        (;document,config,path,physical,simulation) = external_pupil_owner_documents(directory)
+        @test isempty(Owner.configuration(config).plant.chopping)
+        simulation["graphs"]["scc_unfringed"] = deepcopy(simulation["graphs"]["scc"])
+        write_external_optical_documents(directory, physical, simulation)
+        document["plant"]["chopping"] = Dict("scc"=>Dict("unfringed_graph"=>"scc_unfringed",
+            "initial_phase"=>"fringed", "trigger_high_is_fringed"=>true))
+        C.write_json(config, document)
+        options = Owner.configuration(config)
+        @test keys(options.plant.chopping) == (:scc,)
+        @test options.plant.chopping.scc == (;unfringed_graph="scc_unfringed", initial_phase="fringed",
+            trigger_high_is_fringed=true)
+        for change in (d->(d["plant"]["chopping"]=[]),
+                d->(d["plant"]["chopping"]["scc"]["unfringed_graph"]="missing"),
+                d->(d["plant"]["chopping"]["scc"]["unfringed_graph"]="llowfs"),
+                d->(d["plant"]["chopping"]["scc"]["initial_phase"]="mixed"),
+                d->(d["plant"]["chopping"]["scc"]["trigger_high_is_fringed"]=1),
+                d->(d["plant"]["chopping"]["scc"]["period"]=2),
+                d->(d["plant"]["chopping"]["unknown"]=pop!(d["plant"]["chopping"],"scc")))
+            invalid = deepcopy(document); change(invalid); C.write_json(config, invalid)
+            @test_throws ArgumentError Owner.configuration(config)
+        end
+    end
+    @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","CUDA","AMDGPU","Proper"),keys(Base.loaded_modules))
+end
