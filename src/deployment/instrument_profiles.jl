@@ -1,10 +1,19 @@
 const INSTRUMENT_PROFILE_FIELDS = Set(["mode", "bindings", "devices", "calibration"])
-const HOST_PROFILE_FIELDS = Set(["scheduling", "bindings", "environment", "analysis", "simulation"])
+const HOST_PROFILE_FIELDS = Set(["scheduling", "bindings", "environment", "analysis", "simulation", "runtime-backends"])
+
+function runtime_backends(profile)
+    selected = get(profile,"runtime-backends",String[])
+    selected isa AbstractVector && all(backend->backend isa AbstractString && backend in ("cuda","amdgpu"),selected) &&
+        length(unique(selected))==length(selected) ||
+        throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+    return selected
+end
 
 function profile_fields(document, allowed, label)
     document isa AbstractDict || throw(ArgumentError("$label must be a mapping"))
     InstrumentDefinition.bounded(document, Ref(131072))
     Set(keys(document)) ⊆ allowed || throw(ArgumentError("unknown $label fields"))
+    runtime_backends(document)
     bindings = get(document, "bindings", Dict())
     bindings isa AbstractDict || throw(ArgumentError("$label bindings must be a mapping"))
     for (name, value) in bindings
@@ -36,7 +45,9 @@ end
 
 The instrument profile accepts `mode`, device `bindings`, `devices` and
 `calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
-`analysis` and `simulation`. Named loops and workers let launcher adapters derive native placement,
+`analysis`, `simulation` and optional `runtime-backends`. The latter promotes
+declared accelerator packages into the generated runtime without changing the
+simulation backend or importing those packages. Named loops and workers let launcher adapters derive native placement,
 client configuration and worker arguments from the same process declaration. Host
 configuration cannot replace instrument choices. Mappings
 merge recursively; repeated leaves must be identical, and lists never append.

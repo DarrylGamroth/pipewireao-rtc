@@ -18,7 +18,7 @@ public prepare, load_profile, combine_profile, seal!, prepare_session_configurat
     simulator_port_contracts, compose, materialize_calibration, prepare_feedback
 
 const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
-    "mode", "devices", "calibration", "scheduling"])
+    "mode", "devices", "calibration", "scheduling", "runtime-backends"])
 const RUNTIME_BINDINGS = Set(["PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"])
 const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf.in",
     "client-simulator.conf.in", "client-analysis.conf.in")
@@ -116,6 +116,7 @@ end
 function profile!(spec, profile, bindings)
     Set(keys(profile)) ⊆ PROFILE_FIELDS && haskey(profile, "placement") ||
         throw(ArgumentError("profile requires placement and only documented fields"))
+    runtime_backends(profile)
     roles = Set(["core", "rtc"])
     haskey(spec, "session-runtime") && push!(roles, "session")
     union!(roles, (owner["role"] for owner in spec["owners"]))
@@ -160,12 +161,20 @@ end
 
 # Optional accelerator packages become direct dependencies only in the selected
 # generated application. Package UUIDs and compatibility remain source metadata.
-function prepare_backend_environment!(application, backend)
+function prepare_backend_environment!(application, backend; required::Bool=false)
     path = joinpath(application, "Project.toml")
     project = TOML.parsefile(path)
     optional = get(project, "weakdeps", Dict())
     package = backend == "cuda" ? "CUDA" : backend == "amdgpu" ? "AMDGPU" : nothing
     package === nothing && return nothing
+    if required
+        uuid = backend == "cuda" ? "052768ef-5323-5732-b1bb-66c8b64840ba" : "21141c5a-9bdb-4563-92ae-f87d6854732e"
+        declarations = [section[package] for section in (get(project,"deps",Dict()),optional) if haskey(section,package)]
+        compatibility = get(get(project,"compat",Dict()),package,nothing)
+        !isempty(declarations) && all(==(uuid),declarations) &&
+            compatibility isa AbstractString && !isempty(strip(compatibility)) ||
+            throw(ArgumentError("explicit runtime backend requires matching $package UUID and compatibility metadata"))
+    end
     haskey(optional, package) || return nothing
     dependencies = get!(project, "deps", Dict{String,Any}())
     haskey(dependencies, package) && dependencies[package] != optional[package] &&
@@ -173,7 +182,7 @@ function prepare_backend_environment!(application, backend)
     dependencies[package] = pop!(optional, package)
     isempty(optional) && pop!(project, "weakdeps", nothing)
     open(path, "w") do io
-        println(io, "# Generated from application package metadata and the selected simulator backend.")
+        println(io, "# Generated from source package metadata and selected runtime backends; regenerate with InstrumentExport.prepare.")
         TOML.print(io, project; sorted=true)
     end
     return nothing
@@ -346,6 +355,9 @@ function prepare(source::AbstractString, destination::AbstractString;
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)
             uses_aos && prepare_backend_environment!(application, selected["backend"])
+        end
+        for backend in runtime_backends(profile)
+            prepare_backend_environment!(application,backend;required=true)
         end
         rtc = InstrumentConfiguration.load_rtc(D.relative_asset(application,
             something(configuration, "rtc/configuration.yaml")))

@@ -470,3 +470,37 @@ end
         end
     end
 end
+
+@testset "explicit runtime backend requires declared package metadata" begin
+    mktempdir() do directory
+        source=joinpath(directory,"source");mkpath(source)
+        project=Dict("deps"=>Dict("JSON"=>"682c06a0-de6a-54ab-a142-c8b1cf79cde6"),
+            "weakdeps"=>Dict("AMDGPU"=>"21141c5a-9bdb-4563-92ae-f87d6854732e"),
+            "compat"=>Dict("AMDGPU"=>"=2.9.2"))
+        path=joinpath(source,"Project.toml")
+        open(io->TOML.print(io,project),path,"w")
+        C.write_json(joinpath(source,"simulation.conf"),Dict("backend"=>"cpu","device"=>0,"pacing_rate_hz"=>1,"rate"=>2000))
+        original=Dict(name=>read(joinpath(source,name)) for name in ("Project.toml","simulation.conf"))
+        application=E.copy_source(source,joinpath(directory,"application"))
+        E.prepare_backend_environment!(application,"amdgpu";required=true)
+        generated=TOML.parsefile(joinpath(application,"Project.toml"))
+        @test generated["deps"]["AMDGPU"]==project["weakdeps"]["AMDGPU"]
+        @test generated["compat"]["AMDGPU"]=="=2.9.2"
+        @test startswith(read(joinpath(application,"Project.toml"),String),"# Generated")
+        @test C.read_json(joinpath(application,"simulation.conf"))["backend"]=="cpu"
+        @test all(read(joinpath(source,name))==bytes for (name,bytes) in original)
+        before=read(joinpath(application,"Project.toml"))
+        E.prepare_backend_environment!(application,"amdgpu";required=true) # Already direct.
+        @test read(joinpath(application,"Project.toml"))==before
+        for invalid in (Dict("deps"=>Dict()),
+                merge(project,Dict("weakdeps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba"))),
+                merge(project,Dict("deps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba"))),
+                merge(project,Dict("compat"=>Dict())),merge(project,Dict("compat"=>Dict("AMDGPU"=>""))))
+            open(io->TOML.print(io,invalid),joinpath(application,"Project.toml"),"w")
+            before=read(joinpath(application,"Project.toml"))
+            @test_throws ArgumentError E.prepare_backend_environment!(application,"amdgpu";required=true)
+            @test read(joinpath(application,"Project.toml"))==before
+        end
+        @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+    end
+end

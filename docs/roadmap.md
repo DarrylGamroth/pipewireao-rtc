@@ -24,6 +24,13 @@ The ordinary optical-calibration mode builds without controller FITS; accepted
 materialization preserves authored RTC configuration and selects generated data
 only in controller mode.
 
+RTC 0.2.35 adds explicit independent upstream selection to feedback profiles and
+host-only `runtime-backends` package selection. A CPU GPI producer can share a
+frozen registered AMDGPU-capable runtime with an AMDGPU CAL2 consumer while
+retaining CPU execution. The generated Project promotes only declared packages;
+source metadata, the compositor's exact closure checks and Host-reference
+qualification remain unchanged.
+
 The [validation and review record](validation/cal2-feedback-20261028/README.md)
 records 7,365 core assertions, focused receiver and cold selector evidence, and
 the accepted native-pupil optical / Host expected-reference calibration at the
