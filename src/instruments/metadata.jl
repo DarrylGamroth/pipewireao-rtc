@@ -275,7 +275,7 @@ end
 function prepare_simulation_configuration!(application::AbstractString; simulation="simulation.conf", configuration=nothing)
     path = D.relative_asset(application, simulation)
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    source["version"] in (3,4) || throw(ArgumentError("declarative instrument publication requires simulator version 3 or 4"))
+    source["version"] in (3,4,5) || throw(ArgumentError("declarative instrument publication requires simulator version 3, 4 or 5"))
     plant = source["plant"]
     declaration = load_simulation(D.relative_asset(application, plant["definition"]))
     configured = settings(declaration, get(plant, "settings", Dict()))

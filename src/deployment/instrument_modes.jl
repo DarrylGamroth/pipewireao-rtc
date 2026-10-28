@@ -11,12 +11,13 @@ merge_configuration(base::AbstractVector, fragment::AbstractVector) = vcat(base,
 merge_configuration(base, fragment) = deepcopy(fragment)
 
 function selected_mode(source, profile)
-    path = joinpath(source, "rtc", "modes.yaml")
+    path = joinpath(source, dirname(application_file(profile)), "modes.yaml")
     if !isfile(path)
         isempty(intersect(Set(keys(profile)), Set(["mode", "devices", "calibration"]))) ||
             throw(ArgumentError("instrument has no declared application modes"))
         return Dict("application" => Dict())
     end
+    path = D.relative_asset(source, relpath(path,source))
     document = InstrumentConfiguration.bounded_yaml(path)
     Set(keys(document)) == Set(["default", "modes"]) || throw(ArgumentError("invalid application modes fields"))
     name = get(profile, "mode", document["default"])

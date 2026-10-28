@@ -73,7 +73,7 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
-function stream_options(science, pupil_node, sensor_nodes)
+function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2)
     pupil = PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
         schema=science.pupil.schema, format=NdArrayFormat(NdArray.F32_LE,science.pupil.shape;layout=NdArray.ROW_MAJOR),
         properties=science.pupil.properties)
@@ -81,7 +81,7 @@ function stream_options(science, pupil_node, sensor_nodes)
         sensor = getproperty(science.sensors,name)
         chopped = hasproperty(science.chopping, name)
         PipeWireArrayStreamOptions(; node_name=getproperty(sensor_nodes,name), media_name=string(name),
-            acquisition_version=chopped ? 3 : 2,
+            buffers=sensor_buffers, acquisition_version=chopped ? 3 : 2,
             schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR),
             properties=sensor.properties)
     end
@@ -294,7 +294,7 @@ function Owner.run_external_pupil_owner(options)
     try
         science = Owner.prepare_external_pupil_science(options;check=options.owner_check)
         report!(options,mailbox,state)
-        streams = stream_options(science,options.pupil_node,options.sensor_nodes)
+        streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers)
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.check_connect!(runtime,ticket)

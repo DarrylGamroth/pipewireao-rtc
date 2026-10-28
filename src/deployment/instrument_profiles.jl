@@ -1,4 +1,4 @@
-const INSTRUMENT_PROFILE_FIELDS = Set(["mode", "bindings", "devices", "calibration"])
+const INSTRUMENT_PROFILE_FIELDS = Set(["application", "mode", "bindings", "devices", "calibration"])
 const HOST_PROFILE_FIELDS = Set(["scheduling", "bindings", "environment", "analysis", "simulation", "runtime-backends"])
 
 function runtime_backends(profile)
@@ -14,6 +14,7 @@ function profile_fields(document, allowed, label)
     InstrumentDefinition.bounded(document, Ref(131072))
     Set(keys(document)) ⊆ allowed || throw(ArgumentError("unknown $label fields"))
     runtime_backends(document)
+    application_file(document)
     bindings = get(document, "bindings", Dict())
     bindings isa AbstractDict || throw(ArgumentError("$label bindings must be a mapping"))
     for (name, value) in bindings
@@ -43,7 +44,7 @@ end
 
 """Combine portable instrument choices and host configuration without overriding values.
 
-The instrument profile accepts `mode`, device `bindings`, `devices` and
+The instrument profile accepts `application`, `mode`, device `bindings`, `devices` and
 `calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
 `analysis`, `simulation` and optional `runtime-backends`. The latter promotes
 declared accelerator packages into the generated runtime without changing the
