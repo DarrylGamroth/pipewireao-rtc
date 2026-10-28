@@ -15,13 +15,22 @@ function calibration_port(value)
     return (; endpoint, node, name=Symbol(name))
 end
 
+function calibration_output(value, name)
+    declaration = value isa AbstractString ? Dict{String,Any}("endpoint"=>String(value)) : deepcopy(value)
+    declaration["name"] = String(name)
+    return declaration
+end
+
 """
     calibration_graph(application; inputs, outputs, parameter_sources=Dict())
 
 Derive and prepare one initial-calibration graph from a built regular graph.
 `inputs` maps new external Port names to exact `"NODE:PORT"` data endpoints;
 each endpoint either cuts one existing Link or retains one existing external
-data input. `outputs` selects existing external output names. The cold backward
+data input. `outputs` selects existing external output names as a Tuple, or maps
+new external names to distinct existing output names or exact internal
+`"NODE:PORT"` output endpoints as a NamedTuple. These
+aliases change only external Port names, never scientific endpoints. The cold backward
 closure retains complete Node declarations, their Links and parameter bindings.
 Every data boundary must be explicitly selected; every retained external
 Parameter Port must have its existing FITS binding. Inputs that do not reach a
@@ -42,12 +51,18 @@ resolved source's original byte hash from the same snapshot that supplied values
 The application and its graph/FITS files are never modified. This does not
 preserve or transfer the state of a running regular controller.
 """
-function Calibration.calibration_graph(application; inputs::NamedTuple, outputs::Tuple,
+function Calibration.calibration_graph(application; inputs::NamedTuple, outputs::Union{Tuple,NamedTuple},
         parameter_sources=Dict())
     Calibration.require_prepared_application(application)
     isempty(inputs) && throw(ArgumentError("calibration projection requires explicit data inputs"))
     isempty(outputs) && throw(ArgumentError("calibration projection requires selected outputs"))
-    length(unique(outputs)) == length(outputs) || throw(ArgumentError("duplicate projected output"))
+    output_sources = outputs isa NamedTuple ? values(outputs) : outputs
+    output_names = outputs isa NamedTuple ? keys(outputs) : outputs
+    all(name -> name isa Symbol && !isempty(String(name)), output_names) &&
+        all(name -> name isa Symbol || (outputs isa NamedTuple && name isa AbstractString), output_sources) ||
+        throw(ArgumentError("projected output names must be Symbols and sources must be output names or endpoints"))
+    length(unique(output_sources)) == length(output_sources) || throw(ArgumentError("duplicate projected output source"))
+    length(unique(output_names)) == length(output_names) || throw(ArgumentError("duplicate projected output name"))
     source = joinpath(application, "rtc", "graph.conf")
     source_hash = Calibration.digest(source)
     document = PipeWireAORTC.DeploymentConfiguration.decode(source,
@@ -79,7 +94,19 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
         haskey(external_outputs, name) && throw(ArgumentError("duplicate external graph output $name"))
         external_outputs[name] = port
     end
-    all(name -> haskey(external_outputs, name), outputs) || throw(ArgumentError("unknown projected output"))
+    selected_outputs = map(output_sources) do name
+        if name isa Symbol
+            haskey(external_outputs, name) || throw(ArgumentError("unknown projected output"))
+            calibration_port(external_outputs[name])
+        else
+            endpoint, node = calibration_endpoint(name)
+            haskey(nodes, node) || throw(ArgumentError("unknown projected output Node $node"))
+            (; endpoint, node, name=Symbol(last(split(endpoint, ':'))))
+        end
+    end
+    endpoints = map(port -> port.endpoint, selected_outputs)
+    outputs isa NamedTuple && length(unique(endpoints)) != length(endpoints) &&
+        throw(ArgumentError("duplicate projected output endpoint"))
     entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
     parameter_sources isa AbstractDict || throw(ArgumentError("parameter_sources must be a mapping"))
     source_overrides = Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}()
@@ -140,7 +167,7 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
             delete!(visiting, name)
             push!(selected, name)
         end
-        foreach(name -> visit(calibration_port(external_outputs[name]).node), outputs)
+        foreach(port -> visit(port.node), selected_outputs)
         used_cuts == Set(keys(cuts)) || throw(ArgumentError("projected input does not reach a selected output"))
 
         retained_parameters = [port for port in specification["inputs"]
@@ -161,7 +188,10 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
             if calibration_endpoint(link["input"])[2] in selected && !haskey(cuts, link["input"])]
         projection["inputs"] = vcat(Any[Dict("name"=>String(name), "endpoint"=>String(endpoint))
             for (name, endpoint) in pairs(inputs)], deepcopy(retained_parameters))
-        projection["outputs"] = [deepcopy(external_outputs[name]) for name in outputs]
+        projection["outputs"] = outputs isa NamedTuple ?
+            [calibration_output(name isa Symbol ? external_outputs[name] : port.endpoint, alias)
+                for (alias, name, port) in zip(output_names, output_sources, selected_outputs)] :
+            [deepcopy(external_outputs[name]) for name in outputs]
         parameters = Dict{Symbol,Array}()
         parameter_sha256 = Dict{Symbol,String}()
         projected = mktempdir() do directory

@@ -34,15 +34,13 @@ identity(sequence=1,generation=1) = AcquisitionIdentity(DOMAIN,UInt64(generation
 exposure(sequence=1,generation=1) = (;identity=identity(sequence,generation),
     timestamp=AG.ModelTimestamp(100),exposure_duration_nanoseconds=UInt64(10))
 
-function owned_test_capture(f)
+function owned_test_capture(f; declarations=capture_declarations())
     loop = ThreadLoop("test.capture.owned")
     context,core = with_thread_loop_lock(loop) do _
         context=Context(loop)
         context,CoreConnection(context;self=true)
     end
-    declarations=capture_declarations()
-    slots=(;raw=CC._slot(declarations.raw,UInt16,2),slopes=CC._slot(declarations.slopes,Float32,2),
-        flux=CC._slot(declarations.flux,Float32,1),validity=CC._slot(declarations.validity,Bool,1))
+    slots=CC._slots(declarations)
     capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),ReentrantLock(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false)
     try
         f(capture)
@@ -54,6 +52,7 @@ function owned_test_capture(f)
         close(loop)
     end
 end
+
 
 function initialize_payload!(fixture, id=identity();duration=10)
     set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),id.sequence))
@@ -183,4 +182,39 @@ end
         end
     end
 end
+@testset "typed sensor outputs retain exact names, layout and receipts" begin
+    descriptor(name,T,shape) = (;name,format=NdArrayFormat(T,shape;
+        layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(1000,1)),schema="test.$name/1")
+    raw = capture_declarations().raw
+    declarations = (;raw, Symbol("reconstruction-pixels")=>descriptor("pixels",NdArray.F32_LE,(4,3)),
+        Symbol("mean-pupil-intensity")=>descriptor("intensity",NdArray.F32_LE,(1,)))
+    slots=CC._slots(declarations)
+    @test keys(slots) == keys(declarations)
+    @test slots[Symbol("reconstruction-pixels")].array isa Matrix{Float32}
+    @test slots[Symbol("mean-pupil-intensity")].array isa Vector{Float32}
+    @test_throws ArgumentError CC._slots((pixels=declarations[Symbol("reconstruction-pixels")],))
+    @test_throws ArgumentError CC._slots((pixels=declarations[Symbol("reconstruction-pixels")],raw=raw))
+    @test_throws ArgumentError CC._slots((;raw=descriptor("raw",NdArray.F32_LE,(2,3))))
+    for (T,shape) in ((NdArray.U16_LE,(2,)),(NdArray.F64_LE,(2,)),(NdArray.F32_LE,(2,2,2)),(NdArray.BOOL8,(2,2)))
+        @test_throws ArgumentError CC._slots((;raw,output=descriptor("bad",T,shape)))
+    end
+    owned_test_capture(;declarations) do capture
+        CC.arm!(capture,exposure())
+        for slot in values(capture.slots)
+            T=eltype(slot.wire)
+            payload=capture_payload(T,length(slot.wire))
+            GC.@preserve payload begin
+                initialize_payload!(payload)
+                payload.memory .= reinterpret(UInt8,T.(1:length(slot.wire)))
+                CC._read!(capture,slot,payload.buffer)
+            end
+        end
+        result=CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+1)
+        @test keys(result.arrays) == keys(declarations)
+        @test result.arrays[Symbol("reconstruction-pixels")] == Float32[1 2 3;4 5 6;7 8 9;10 11 12]
+        @test result.arrays[Symbol("mean-pupil-intensity")] == Float32[1]
+        @test all(receipt->receipt.identity==identity(),values(result.metadata))
+    end
+end
+
 @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
