@@ -60,7 +60,11 @@ GPI implementation starts in isolated worktrees from RTC `171ca09`, instrument
 4. Independently review the numerical and multi-command boundary changes; qualify
    the shared interface and fresh registered application before publication.
 
-These gates are in progress. GPI source/measurement contracts differ from
+Source gates passed: the shared core suite has 6,580 checks, the GPI combined
+selector has 153 and the Classic campaign has 87. All three GPI stages are
+numerically valid and restored/released; precision acceptance remains separate.
+Matching releases and fresh registered application qualification are pending
+([evidence](validation/gpi-reference-20261027/README.md)). GPI source/measurement contracts differ from
 Classic; no centroid, ROI eligibility or physical-readiness claim is implied.
 
 The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
