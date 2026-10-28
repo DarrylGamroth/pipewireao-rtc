@@ -1,0 +1,16 @@
+Test Summary:                                  | Pass  Total  Time
+array statistics declaration and configuration |   24     24  1.3s
+Test Summary:                                         | Pass  Total  Time
+finite and sliding match independent batch statistics | 2120   2120  2.7s
+Test Summary:                                      | Pass  Total  Time
+long sliding history rejects large-DC cancellation |  335    335  0.7s
+Test Summary:                                                                    | Pass  Total  Time
+exponential mean and population variance match independent weighted batch oracle |  284    284  0.8s
+Test Summary:                                             | Pass  Total  Time
+candidate discard, atomic rejection, completion and reset |   68     68  0.1s
+Test Summary:                                        | Pass  Total  Time
+array shapes, views, aliases and allocation contract |   54     54  1.8s
+Test Summary:                                            | Pass  Total  Time
+statistics retain small signals after large level shifts |   76     76  0.1s
+Test Summary:                                           | Pass  Total  Time
+SIMD elements and tails preserve compensated statistics |   81     81  0.7s

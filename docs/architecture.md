@@ -230,6 +230,14 @@ exact retrieval and paginated history. It does not introduce another live-contro
 protocol, execute calibration acquisition or expose a browser gateway. The native
 GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
 
+Optional analysis graphs may compute finite/sliding statistics or exponentially
+weighted moments using ordinary scientific Algorithm declarations. A configured
+finite capture copies its completed products once to private bounded storage,
+then registers candidates through this same store outside frame processing.
+It does not apply a reference or establish a device/calibration authority. Source
+identity changes invalidate acquisition; observation sequence gaps remain explicit.
+The GUI reuses the existing catalog and parameter transaction interface.
+
 ## System boundary
 
 ### WirePlumber and application tooling

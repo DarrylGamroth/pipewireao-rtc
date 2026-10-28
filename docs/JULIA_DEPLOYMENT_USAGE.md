@@ -471,6 +471,129 @@ selection in an HIL export does not establish CUDA or AMDGPU cadence.
 Migration qualification is recorded separately from interaction-matrix
 precision, physical suitability and correction acceptance.
 
+## Streaming statistics and acquired artifacts
+
+`array-statistics-f32` is an ordinary FilterGraphAlgorithms declaration for an
+optional headless analysis graph. It accepts a complete Float32 array and
+publishes equally shaped `mean`, `variance` and `stddev`, plus `(1,)` outputs
+`sample-count` (UInt64), `complete` and `variance-valid` (Bool). Use the existing
+pixel-calibration node to convert UInt16 camera data before statistics. Declare
+the quantity at that boundary: calibrated pixels and raw camera codes are not
+interchangeable. No calculation depends on GUI visibility.
+
+The graph node has three modes:
+
+| Configuration | Meaning | Cost for P elements and W frames |
+|---|---|---|
+| `mode = finite`, `window_samples = W` | Accumulate W accepted frames, freeze until reset | O(P) per frame; O(P) storage |
+| `mode = sliding`, `window_samples = W` | Reconstruct statistics of the latest W accepted frames, including warmup | O(PW) per frame and storage |
+| `mode = exponential`, `time_constant_s`, `sample_period_s` | EWMA and central exponentially weighted population variance | O(P) per frame and storage |
+
+Finite/sliding variance uses N−1; `variance-valid` is false before two samples.
+Exponential variance initializes to zero with the first sample and is a weighted
+population variance, with no unbiased correction. Its fixed accepted-sample
+weight is `α = −expm1(−sample_period_s / time_constant_s)`; this is not a
+timestamp-aware estimator for irregular arrivals. Configure the nominal accepted
+cadence explicitly. Nonfinite inputs or unrepresentable outputs reject before
+adopting history. The current implementation is CPU-only. Storage is preallocated
+and bounded by `max_state_bytes` (default 256 MiB). Sliding reconstruction avoids
+cancellation after large level changes; prefer finite acquisition or exponential
+tracking for large images when retaining/revisiting W images is too expensive.
+
+For example, place this node in a native SPA-JSON analysis graph, deriving
+`size` from the instrument as for the existing WFS analysis declarations:
+
+```text
+{ type = ndarray name = statistics label = array-statistics-f32
+  config = {
+    size = { "$ref" = "/instrument/wavefront_sensors/shwfs/layout/detector_shape" }
+    mode = finite
+    window_samples = 512
+    input_schema = "site/calibrated-detector-f32/1"
+    mean_schema = "site/detector-mean-f32/1"
+    variance_schema = "site/detector-variance-f32/1"
+    stddev_schema = "site/detector-stddev-f32/1"
+  }
+}
+```
+
+The `site/` identifiers are illustrative quantity contracts, not new built-in
+schemas. Use the source/target declarations' actual identifiers. Mean/stddev
+retain the input units; variance has squared units. Explicitly export the six
+outputs. Existing ndarray panels can display the published arrays; scalar or
+named-vector reductions can feed existing charts. No instrument-specific renderer
+is needed. Window changes rebuild this optional graph; reset starts a new window.
+
+To register a finite acquisition automatically, add `capture` to the existing
+analysis YAML. The following fragment assumes all outputs retain their names:
+
+```yaml
+capture:
+  label: Detector mean candidate
+  scope:
+    session_label: selected-instrument
+    graph: selected-controller
+    parameter: background
+  products:
+    mean: mean
+    variance: variance
+    stddev: stddev
+  units:
+    mean: adu
+    variance: adu^2
+    stddev: adu
+  sample-count: sample-count
+  complete: complete
+  variance-valid: variance-valid
+```
+
+Set scope, schema and units to match the declared parameter exactly. Mean is
+required; variance/stddev registrations are optional. A finite graph's outputs
+must come directly from the same statistics node, including named export aliases.
+Sliding/EW outputs cannot masquerade as a completed finite acquisition. `complete`
+must arrive at exactly the declared count. Snapshots are limited to 64 MiB total.
+The observer copies once and releases an immutable snapshot to a control task;
+FITS creation, Git and SQLite run outside frame processing. There is no automatic
+application, sign change, unit conversion or startup selection. Each product is
+a separate registration; partial failures preserve successful IDs in the receipt
+and are not automatically retried.
+
+Registered results appear through the existing catalog, including its GUI helper.
+Reload the catalog, select a compatible artifact for a transaction target, and
+submit through the normal RTC path. Variance/stddev use their own schemas and
+units and are not compatible reference vectors. FITS BUNIT is preserved so GUI
+unit checks use the same preparation contract as file imports. Mean gradients
+that already have a reference subtracted are residuals; they are not an absolute
+replacement reference without the existing calibration procedure's baseline and
+sign treatment. Registration alone does not establish scientific acceptance.
+
+Acquisition counts accepted analysis frames, not guaranteed contiguous camera
+exposures: observation queues deliberately copy/drop-oldest rather than block
+the controller. The artifact records source endpoints, graph hash, first/last
+source sequence, sequence gaps, count and available acquisition domain/generation.
+Missing/mismatched headers, reset/invalidation during collection, nonmonotonic
+sequences, or changed identity reject capture. No invalid/missing samples are
+silently counted as zero. General per-element validity masks are not implemented;
+select/qualify the intended finite input upstream.
+
+After completion, the graph republishes its frozen result with the current
+input's header; that header does not describe the whole aggregation window.
+Use the captured artifact metadata for window provenance. One capture is allowed
+per analysis owner incarnation. The ordinary Julia entrypoint remains:
+
+```julia
+using PipeWireAORTC
+PipeWireAORTC.Analysis.main(["--config", analysis_configuration,
+    "--remote", private_pipewire_socket])
+```
+
+Use existing optional-service configuration to launch it with separate CPU
+placement and copy/drop-oldest observation queues. There is no new calibration
+protocol or GUI acquisition wizard. A configured capture writes
+`NAME-capture.json` under `PIPEWIREAO_RUNTIME_DIR` with `registered`, `rejected`,
+`incomplete` or `registration_failed`, plus any retained artifact IDs. Existing
+analysis configurations without `capture` retain their behavior.
+
 ## Headless artifact registration and shared update history
 
 `PipeWireAORTC.ConfigurationStore` owns a local bare Git repository and SQLite
@@ -491,6 +614,7 @@ record = ConfigurationStore.register!(store, reconstructor;
     scope=Dict("session_label" => session_label,
         "graph" => graph_name, "parameter" => "reconstructor"),
     schema=reconstructor_schema,
+    units=reconstructor_units,
     metadata=Dict("generator_revision" => generator_revision))
 artifact_id = record["id"]
 ```

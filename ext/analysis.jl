@@ -167,10 +167,14 @@ end
 
 function run_analysis_graph(config, remote, graph, boundary_layout)
     input_owner = analysis_input_owner(graph)
+    capture = Analysis.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
+    graph_sha256 = capture === nothing ? "" : PipeWireAORTC.DeploymentConfiguration.digest(config.graph)
     node = FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
-        rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units)
+        rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units,
+        frame_observer=capture)
     finished = Threads.Atomic{Bool}(false)
     monitor = nothing
+    acquisition = nothing
     try
         FilterGraphPipeWire.connect!(node)
         monitor = FilterGraphIsland.spawn_monitor() do
@@ -180,13 +184,23 @@ function run_analysis_graph(config, remote, graph, boundary_layout)
                 FilterGraphPipeWire.quit!(node)
             end
         end
+        if capture !== nothing
+            acquisition = FilterGraphIsland.spawn_monitor() do
+                Analysis.capture_artifacts(config, capture, finished;
+                    pause=FilterGraphIsland.deployment_sleep, graph_sha256)
+            end
+        end
         FilterGraphPipeWire.run!(node)
     finally
         finished[] = true
         try
             isnothing(monitor) || fetch(monitor)
         finally
-            close(node)
+            try
+                isnothing(acquisition) || fetch(acquisition)
+            finally
+                close(node)
+            end
         end
     end
     return nothing

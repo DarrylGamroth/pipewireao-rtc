@@ -21,6 +21,7 @@ Base.include(Module(:NativeCalibrationOwnerTests), joinpath(@__DIR__, "native_ca
 include("test_calibration_install.jl")
 include("test_session_configuration.jl")
 include("test_instrument_definition.jl")
+Base.include(Module(:AnalysisCaptureTests), joinpath(@__DIR__, "test_analysis_capture.jl"))
 
 for name in ("schemas", "common", "runtime_export", "spa_config", "loop_placement", "systemd_owners", "analysis", "session_runtime", "session_stop", "native_control_codec", "native_runner_codec", "native_control_client", "native_owner_bootstrap_codec", "native_acquisition_lifecycle_codec", "native_acquisition_lifecycle_client", "native_calibration_action_codec", "native_calibration_action_client", "runner_commands", "installed_wireplumber", "package")
     suite = Module(Symbol("Suite_", name))

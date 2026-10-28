@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Streaming statistics and acquired artifacts — 2026-10-28
+
+The [validation and independent review](validation/streaming-statistics-20261028/README.md)
+covers finite/sliding/EW statistics, same-node finite capture, source-identity
+rejection, existing catalog/GUI compatibility, FITS units, SIMD/FMA code generation,
+and measured warmed Graph cost. Level-shift fail-before/pass-after evidence is
+retained. No live deployment, hardware or deadline qualification is claimed.
+
 ## GPI propagated-field calibration — 2026-10-28
 
 The [fresh CUDA calibration and finite array-loop record](validation/gpi-pwfs-calibration-20261028/README.md)

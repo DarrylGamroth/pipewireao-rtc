@@ -1,0 +1,244 @@
+   Resolving package versions...
+    Updating `/tmp/fga-statistics-before-env-20261028/Project.toml`
+  [8914fa96] ~ FilterGraphAlgorithms v0.8.13 `~/workspaces/codex/worktrees/jfg-streaming-statistics-20261028/julia/FilterGraphAlgorithms` ⇒ v0.8.13 `/tmp/fga-statistics-before-20261028`
+    Updating `/tmp/fga-statistics-before-env-20261028/Manifest.toml`
+  [8914fa96] ~ FilterGraphAlgorithms v0.8.13 `~/workspaces/codex/worktrees/jfg-streaming-statistics-20261028/julia/FilterGraphAlgorithms` ⇒ v0.8.13 `/tmp/fga-statistics-before-20261028`
+ERROR: LoadError: Some tests did not pass: 58 passed, 18 failed, 0 errored, 0 broken.
+in expression starting at /tmp/array_stats_regression.jl:1
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:32
+  Expression: ≈((out[1])[1], Float32(mean(batch)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 1.0f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:32 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:32
+  Expression: ≈((out[1])[1], Float32(mean(batch)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 1.5f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:32 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:33
+  Expression: ≈((out[2])[1], Float32(expected_variance), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.5f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:33 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:34
+  Expression: ≈((out[3])[1], Float32(sqrt(expected_variance)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.70710677f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:34 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:32
+  Expression: ≈((out[1])[1], Float32(mean(batch)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 2.0f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:32 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:33
+  Expression: ≈((out[2])[1], Float32(expected_variance), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.5f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:33 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:34
+  Expression: ≈((out[3])[1], Float32(sqrt(expected_variance)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.70710677f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:34 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:33
+  Expression: ≈((out[2])[1], Float32(expected_variance), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.5f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:33 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:34
+  Expression: ≈((out[3])[1], Float32(sqrt(expected_variance)), rtol = 2.0e-6)
+   Evaluated: 0.0f0 ≈ 0.70710677f0 (rtol=2.0e-6)
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:34 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:45
+  Expression: out[1] == Float32[1.5]
+   Evaluated: Float32[0.0] == Float32[1.5]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:45 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:46
+  Expression: out[2] == Float32[0.5]
+   Evaluated: Float32[0.0] == Float32[0.5]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:46 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:51
+  Expression: out[1] == Float32[2]
+   Evaluated: Float32[0.0] == Float32[2.0]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:51 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:52
+  Expression: out[2] == Float32[2]
+   Evaluated: Float32[0.0] == Float32[2.0]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:52 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:60
+  Expression: out[1] == Float32[1 / 3]
+   Evaluated: Float32[0.0] == Float32[0.33333334]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:60 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:70
+  Expression: out[1] == Float32[frame]
+   Evaluated: Float32[0.0] == Float32[1.0]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:70 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:70
+  Expression: out[1] == Float32[frame]
+   Evaluated: Float32[0.0] == Float32[2.0]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:70 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:70
+  Expression: out[1] == Float32[frame]
+   Evaluated: Float32[0.0] == Float32[3.0]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:70 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+
+statistics retain small signals after large level shifts: Test Failed at /tmp/array_stats_regression.jl:87
+  Expression: out[1] == Float32[0.25]
+   Evaluated: Float32[0.0] == Float32[0.25]
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:758 [inlined]
+   [2] macro expansion
+     @ /tmp/array_stats_regression.jl:87 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.13.3+0.x64.linux.gnu/share/julia/stdlib/v1.13/Test/src/Test.jl:1967 [inlined]
+   [4] top-level scope
+     @ /tmp/array_stats_regression.jl:25
+Test Summary:                                            | Pass  Fail  Total  Time
+statistics retain small signals after large level shifts |   58    18     76  2.2s
+RNG of the outermost testset: Random.Xoshiro(0x11c523d0aaa9adf7, 0xe884833b3d073a38, 0x2cf2cca32cab5eab, 0x968ccc22ec6fdecd, 0xc9ea41a6b8274d91)

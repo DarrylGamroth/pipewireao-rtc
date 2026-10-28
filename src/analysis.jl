@@ -4,6 +4,10 @@ module Analysis
 import ..Common
 import ..DeploymentConfiguration
 import ..SystemdOwners
+import ..ConfigurationStore
+import ..Artifacts
+
+include("analysis_capture.jl")
 
 public Config, Endpoint, LinkSpec, configuration, main
 const D = DeploymentConfiguration
@@ -23,10 +27,12 @@ struct Config
     rate::Rational{Int}
     links::Vector{LinkSpec}
     channel_units::Dict{String,Dict{String,String}}
+    capture::Union{Nothing,CaptureConfig}
 end
 
 Config(graph, name, rate, links) = Config(graph, name, rate, links,
-    Dict{String,Dict{String,String}}())
+    Dict{String,Dict{String,String}}(), nothing)
+Config(graph, name, rate, links, units) = Config(graph, name, rate, links, units, nothing)
 
 function channel_units(value)
     value isa AbstractDict && length(value) <= 64 ||
@@ -66,8 +72,8 @@ function configuration(path::AbstractString, prefix::AbstractString)
     document = D.decode(path, prefix)
     required = Set(["graph", "name", "rate", "links"])
     document isa AbstractDict && required ⊆ Set(keys(document)) &&
-        Set(keys(document)) ⊆ union(required, Set(["channel-units"])) ||
-        throw(ArgumentError("analysis configuration requires graph, name, rate and links; channel-units is optional"))
+        Set(keys(document)) ⊆ union(required, Set(["channel-units", "capture"])) ||
+        throw(ArgumentError("analysis requires graph, name, rate and links; channel-units and capture are optional"))
     graph = D.relative_asset(dirname(abspath(path)), document["graph"])
     name = document["name"]
     name isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$", name) ||
@@ -93,7 +99,9 @@ function configuration(path::AbstractString, prefix::AbstractString)
         push!(links, LinkSpec(output, input))
     end
     units = channel_units(get(document, "channel-units", Dict()))
-    return Config(graph, name, numerator // denominator, links, units)
+    capture = haskey(document, "capture") ? capture_contract(
+        capture_configuration(document["capture"]), D.decode(graph, prefix)) : nothing
+    return Config(graph, name, numerator // denominator, links, units, capture)
 end
 
 function observation_queues(spec, root, prefix)

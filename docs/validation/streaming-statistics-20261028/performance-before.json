@@ -1,0 +1,136 @@
+{
+  "environment": {
+    "active_project": "/tmp/fga-statistics-simd-before-env-20261028/Project.toml",
+    "blas_threads": 1,
+    "cpu": "znver3",
+    "cpu_target": "default",
+    "fga_source": "/tmp/fga-statistics-simd-before-20261028/src/FilterGraphAlgorithms.jl",
+    "gc": "enabled; GC.gc outside each repetition",
+    "julia": "1.13.3",
+    "kernel": "Linux",
+    "llvm": "20.1.8",
+    "measurement": "closed-loop checked Graph process!; 500 warmups then 5x1024 samples; per-sample time_ns clock; deterministic four-frame cycle; no fixed-rate or queue latency claim",
+    "shape_description": "1024 vector and 64x96 rectangular array",
+    "statistics_source_sha256": "4c109fe03766ccce87dab47c08a21404dbc0b4c23a2ae0696a69e95366d23c66",
+    "threads": 1
+  },
+  "results": [
+    {
+      "allocation_bytes": 0,
+      "checksum": 1.0270349422423244e6,
+      "max_ns": 38071,
+      "mode": "finite",
+      "p50_ns": 18925.0,
+      "p90_ns": 20679.0,
+      "p99_ns": 25175.910000000007,
+      "repetition_medians_ns": [
+        20108.0,
+        20539.0,
+        18745.0,
+        18776.0,
+        18665.0
+      ],
+      "shape": [
+        1024
+      ]
+    },
+    {
+      "allocation_bytes": 0,
+      "checksum": 1.0271091489109397e6,
+      "max_ns": 369442,
+      "mode": "sliding",
+      "p50_ns": 119994.5,
+      "p90_ns": 132910.0,
+      "p99_ns": 146626.59000000003,
+      "repetition_medians_ns": [
+        130509.0,
+        119404.0,
+        120150.0,
+        119910.0,
+        119088.0
+      ],
+      "shape": [
+        1024
+      ]
+    },
+    {
+      "allocation_bytes": 0,
+      "checksum": 1.0267616541159153e6,
+      "max_ns": 48311,
+      "mode": "exponential",
+      "p50_ns": 18655.0,
+      "p90_ns": 19377.0,
+      "p99_ns": 23742.100000000006,
+      "repetition_medians_ns": [
+        19086.0,
+        19216.0,
+        18996.0,
+        17653.0,
+        17403.0
+      ],
+      "shape": [
+        1024
+      ]
+    },
+    {
+      "allocation_bytes": 0,
+      "checksum": 6.162203927126646e6,
+      "max_ns": 186830,
+      "mode": "finite",
+      "p50_ns": 124543.0,
+      "p90_ns": 128230.0,
+      "p99_ns": 138991.81000000006,
+      "repetition_medians_ns": [
+        125986.0,
+        124863.5,
+        123997.5,
+        123766.5,
+        124829.0
+      ],
+      "shape": [
+        64,
+        96
+      ]
+    },
+    {
+      "allocation_bytes": 0,
+      "checksum": 6.16264911638236e6,
+      "max_ns": 932075,
+      "mode": "sliding",
+      "p50_ns": 473757.0,
+      "p90_ns": 723738.0,
+      "p99_ns": 744297.3,
+      "repetition_medians_ns": [
+        713150.5,
+        712989.5,
+        467755.5,
+        465601.0,
+        464359.5
+      ],
+      "shape": [
+        64,
+        96
+      ]
+    },
+    {
+      "allocation_bytes": 0,
+      "checksum": 6.160562504655361e6,
+      "max_ns": 110527,
+      "mode": "exponential",
+      "p50_ns": 77845.0,
+      "p90_ns": 79449.0,
+      "p99_ns": 89391.40000000008,
+      "repetition_medians_ns": [
+        77866.0,
+        78111.5,
+        77705.5,
+        77575.0,
+        77986.0
+      ],
+      "shape": [
+        64,
+        96
+      ]
+    }
+  ]
+}

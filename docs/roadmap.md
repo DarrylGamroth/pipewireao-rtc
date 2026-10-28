@@ -12,6 +12,21 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Headless statistics and finite acquisition artifacts — 2026-10-28
+
+An ordinary CPU `array-statistics-f32` Algorithm supplies per-element finite,
+sliding-window and exponentially weighted mean/variance/stddev. Finite optional
+analysis captures qualify one statistics node's outputs, freeze one bounded
+snapshot, and register it through the existing Git/SQLite catalog outside frame
+processing. GUI catalog/transaction interfaces are reused; no acquisition wizard
+or automatic application is added. Exact source gaps, units and available
+generation identity accompany artifacts. Large-level-shift numerical regressions
+and source-change rejection are covered; sliding reconstruction remains O(PW).
+See [usage](JULIA_DEPLOYMENT_USAGE.md#streaming-statistics-and-acquired-artifacts).
+The [validation and review record](validation/streaming-statistics-20261028/README.md)
+includes SIMD/FMA inspection and measured Graph service cost.
+No installed packages, live sessions or instrument defaults have changed.
+
 ### Optional GPI propagated-field calibration — 2026-10-28
 
 A fresh captured-CUDA calibration of the separate-DM sensing model retains
