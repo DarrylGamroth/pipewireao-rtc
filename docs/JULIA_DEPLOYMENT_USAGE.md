@@ -697,6 +697,9 @@ an exact-zero startup command. Preparation checks every branch's identity,
 acceptance, diagnostic/deployable flags and shared P/Q/C hashes. It matches C's
 upstream effective settings, ADC configuration, simulator graph identities,
 frontend dependency closure and original FITS hashes to the actual base.
+The component's generated RTC descriptor binds its file hash, calibration context
+and identity to the source owner's actual `simulation.conf` selection and the
+accepted index. The lifecycle selector uses the same cold validation.
 It binds physical command order from the declared mirror layout and units.
 The staged final graph is prepared with all typed FITS mappings, then
 `PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
@@ -712,9 +715,13 @@ wall pacing. Integer-rate rounding is retained. Model sample rate, PTS and
 exposure duration remain independent of wall pacing. Model-age limits and
 monotonic silence limits remain separate.
 
-The instrument repository's `tools/compose.jl`, `tools/prepare-feedback.jl` and
-`tools/materialize-calibration.jl` are thin clients of these shared APIs. They
-prepare fresh artifacts; they do not install or start a session. A composed
+The instrument repository's `tools/calibrate-optical.jl`, `tools/compose.jl`,
+`tools/prepare-feedback.jl` and `tools/materialize-calibration.jl` are thin clients
+of these shared APIs. An optical-calibration mode can first seal the model and
+authored branch templates without selecting controller graphs or FITS bindings.
+The calibration publisher resolves those templates using its measured masks and
+real matrices; accepted materialization then enables the ordinary controller build.
+These tools prepare fresh artifacts; they do not install or start a session. A composed
 application is software preparation, not evidence of a running native cohort,
 closed-loop acceptance or deadline performance. See
 [optical calibration selection](CALIBRATION_METHOD_USAGE.md#optical-branch-calibration-and-generated-selection).

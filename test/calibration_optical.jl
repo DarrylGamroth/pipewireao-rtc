@@ -15,6 +15,7 @@ if Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt) === nothing
         const Calibration = Main.OpticalCalibration
         const AdaptiveOpticsCalibration = Main.OpticalCalibrationAOC
         const LA = Main.LinearAlgebra
+        const FGA = Base.require(Base.PkgId(Main.UUID("8914fa96-dfe6-4d3c-aced-40e6da1f6420"),"FilterGraphAlgorithms"))
         include(joinpath(@__DIR__,"..","ext","optical_calibration.jl"))
     end
 end
@@ -151,6 +152,18 @@ end
         parsed = implementation.optical_recipe(directory,"calibration/optical.yaml")
         @test parsed.frequencies == Float64[.5 0;0 .5;1 0;0 1]
         @test parsed.branch_modes == (llowfs=[1,2,3,4],scc=[5,6,7,8])
+        reference = Dict("raw_endpoint"=>"pixel-calibration:raw",
+            "residual_endpoint"=>"reconstruction:reconstructed","poke_amplitudes_m"=>[5e-9],
+            "derivative_tolerance"=>.05,"method"=>"host-expectation","samples"=>512,
+            "rounding_samples"=>128,"training_seed"=>200002,"validation_seed"=>400002)
+        PipeWireAORTC.Common.write_yaml(path,merge(recipe,Dict("upstream_reference"=>reference)))
+        @test implementation.optical_recipe(directory,"calibration/optical.yaml").document["upstream_reference"]["method"] == "host-expectation"
+        for (key,value) in (("method","guessed"),("samples",127),("rounding_samples",513),
+                ("validation_seed",200002),("poke_amplitudes_m",[5e-9,1e-8]),("method","held-frame"))
+            invalid = merge(recipe,Dict("upstream_reference"=>merge(reference,Dict(key=>value))))
+            PipeWireAORTC.Common.write_yaml(path,invalid)
+            @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
+        end
         @test_throws ArgumentError OpticalCalibration.calibrate_optical(directory,directory;target=nothing)
         for (key,value) in (("unknown",1),("version",true),("pixels",Dict("kind"=>"guessed")),
                 ("branch_modes",Dict("llowfs"=>[1,2,3,4],"scc"=>[4,5,6,7,8])),("poke_m",0))
@@ -160,6 +173,61 @@ end
         end
         @test_throws ArgumentError implementation.optical_recipe(directory,"../outside.yaml")
     end
+end
+
+@testset "Host expected-response uncertainty and qualified cold envelope" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation=OpticalCalibrationTestImplementation)
+    document = Dict("filter.graph"=>Dict("nodes"=>[
+        Dict("name"=>"raw","label"=>"pixel-calibration-u16-f32"),
+        Dict("name"=>"pupils","label"=>"pyramid-pupil-image-f32"),
+        Dict("name"=>"residual","label"=>"pwfs-pupil-reconstructor-f32")]))
+    @test implementation.optical_expectation_nodes(document) ==
+        (raw="raw",pyramid="pupils",reconstruction="residual")
+    chain = Dict("nodes"=>[
+        Dict("name"=>"detector","type"=>"detector","config"=>Dict("photon_noise"=>true)),
+        Dict("name"=>"adc","type"=>"detector_frame_layout_f32","config"=>Dict("bias"=>1024))],
+        "links"=>[Dict("source"=>"pyramid.photon_rate","destination"=>"detector.photon_rate"),
+            Dict("source"=>"detector.frame","destination"=>"adc.detector_frame")],
+        "outputs"=>[Dict("name"=>"frame","source"=>"adc.frame"),
+            Dict("name"=>"photon_rate","source"=>"pyramid.photon_rate")])
+    @test implementation.optical_expectation_chain(chain,deepcopy(chain),"frame")["photon_source"] == "pyramid.photon_rate"
+    for (section,index,key,value) in (("links",2,"source","pyramid.photon_rate"),
+            ("outputs",1,"source","detector.frame"),("outputs",2,"source","another.photon_rate"))
+        invalid = deepcopy(chain)
+        invalid[section][index][key] = value
+        # All admitted detector/ADC cold settings are unchanged by this rewire.
+        @test invalid["nodes"] == chain["nodes"]
+        @test_throws ArgumentError implementation.optical_expectation_chain(invalid,chain,"frame")
+        @test_throws ArgumentError implementation.optical_expectation_chain(chain,invalid,"frame")
+    end
+    for section in ("inputs","delayed_links")
+        invalid = deepcopy(chain)
+        invalid[section] = [Dict("destination"=>"detector.photon_rate","binding"=>"competing",
+            "source"=>"another.photon_rate")]
+        @test_throws ArgumentError implementation.optical_expectation_chain(invalid,chain,"frame")
+        @test_throws ArgumentError implementation.optical_expectation_chain(chain,invalid,"frame")
+    end
+    invalid = deepcopy(chain)
+    invalid["nodes"][2]["config"]["bias"] = 1025
+    @test_throws ArgumentError implementation.optical_expectation_chain(chain,invalid,"frame")
+    @test implementation.optical_standard_error([1.0,3.0]) ≈ 1
+    @test implementation.optical_standard_error([1e-10,3e-10]) ≈ 1e-10
+    @test implementation.optical_vector_standard_error([[1.0,0.0],[0.0,1.0]],[.5,.5]) ≈ inv(sqrt(2))
+    @test_throws ArgumentError implementation.optical_standard_error([1.0])
+    @test isnothing(implementation.optical_expectation_options(512,128,200002,400002))
+    @test_throws ArgumentError implementation.optical_expectation_options(512,128,400003,400002)
+    @test_throws ArgumentError implementation.optical_conditional_envelopes(
+        gain=5000,factor=1,scale=1/64,bias=1024,readnoise_e=0)
+    envelopes = implementation.optical_conditional_envelopes(
+        gain=5000,factor=Float64(sqrt(2f0)^2-1f0)^.5,scale=1/64,bias=1024,readnoise_e=678.3218668753427)
+    @test all(>(0),envelopes.adc)
+    @test issorted(envelopes.adc)
+    @test envelopes.calibrated_input_lipschitz > envelopes.adc_lipschitz > envelopes.adc[9]
+    # Exact Host threshold mapping is distinct from the configured input mean.
+    cic = Float32(.000828)
+    @test implementation.optical_host_poisson_mean(cic) == -log(Float64(exp(-cic)))
+    @test implementation.optical_host_poisson_mean(0) == 0
 end
 
 @testset "effective upstream execution settings" begin

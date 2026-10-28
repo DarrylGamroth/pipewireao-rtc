@@ -298,9 +298,10 @@ function prepare(source::AbstractString, destination::AbstractString;
     profile = resolved
     bindings = profile_bindings(profile, julia)
     authoring = source_application(source)
-    pop!(authoring, "runtime-configurations", nothing)
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
+    runtime_authoring = deepcopy(authoring)
+    pop!(authoring, "runtime-configurations", nothing)
     graph_configurations = pop!(authoring, "graph-configurations", [])
     configurations = pop!(authoring, "configuration-files", [])
     configuration = pop!(authoring, "configuration", nothing)
@@ -318,7 +319,8 @@ function prepare(source::AbstractString, destination::AbstractString;
     # copy_tree requires a new destination; only this function owns staging.
     application = joinpath(staging, "application")
     try
-        copy_source(source, application)
+        copy_source(source, application; runtime_configurations=false)
+        prepare_runtime_configurations!(application, runtime_authoring)
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
         render_templates!(application, spec, profile, prefix)
         prepare_mode!(application, spec, mode, profile, bindings, prefix;

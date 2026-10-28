@@ -1,5 +1,16 @@
 function validate_feedback end
 
+"Check the detector producer against its reference calibration's qualified backend."
+function validate_reference_backend(reference, upstream)
+    if get(reference,"method","held-frame")=="host-expectation"
+        get(reference,"reference_backend",nothing)==get(reference,"source_backend_qualification",nothing)=="host" ||
+            throw(ArgumentError("Host expectation requires an explicit Host detector qualification"))
+        upstream["backend"]=="cpu" ||
+            throw(ArgumentError("Host expected-response calibration does not qualify an accelerator detector producer"))
+    end
+    return nothing
+end
+
 function composition_source(configuration, path)
     path isa String && !isabspath(path) || throw(ArgumentError("composition authoring paths must be relative"))
     return D.relative_asset(dirname(configuration),path)
@@ -82,6 +93,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
         throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))
     selection["calibration_index_sha256"]==Common.sha256_file(selected) &&
         selection["calibration_identity"]==index["calibration_identity"] || throw(ArgumentError("component calibration selection mismatch"))
+    validate_selected_rtc(componentroot,document["calibration"],selection,index,component_simulation)
     firstbranch = first(sort!(collect(keys(index["branches"]))))
     Calibration = getfield(parentmodule(@__MODULE__),:InstrumentCalibration)
     first_result = D.relative_asset(componentroot,document["calibration"]*"/"*firstbranch*"/result.yaml")
@@ -123,6 +135,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
             throw(ArgumentError("selected branches do not share the same calibrated frontend"))
     end
     reference = bundle.report["upstream_reference"]
+    validate_reference_backend(reference,upstream)
     executed = InstrumentConfiguration.load_simulation(D.relative_asset(mainroot,upstream["plant"]["definition"]))
     effective = InstrumentConfiguration.settings(executed,get(upstream["plant"],"settings",Dict()))
     InstrumentDefinition.scientific_identity(InstrumentConfiguration.canonical(effective))==reference["effective_settings_identity"] ||

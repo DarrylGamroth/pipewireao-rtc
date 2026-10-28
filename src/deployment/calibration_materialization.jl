@@ -3,9 +3,11 @@
 
 Select accepted, simulation-local optical branch bundles in an authored source.
 The standard bundles remain byte-for-byte intact under `generated/calibration`;
-a generated shared context and selection receipt bind the selected RTC identity.
+a generated shared context, `rtc.yaml` and selection receipt bind the selected
+RTC identity. The authored RTC configuration is preserved byte-for-byte; the
+controller application mode selects the generated RTC configuration explicitly.
 This validates numerical acceptance, not application or hardware qualification.
-All validation precedes writes. An existing generated selection is preserved;
+All validation precedes publication. An existing generated selection is preserved;
 choose a fresh generated destination to select a subsequent calibration.
 """
 function materialize_calibration(source::AbstractString, application::AbstractString,
@@ -142,19 +144,42 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
                 throw(ArgumentError("accepted context does not reproduce authored branch graph $name"))
         end
         updated = deepcopy(authored_rtc)
+        physical = InstrumentConfiguration.referenced_instrument(rtcpath,authored_rtc["instrument"]).path
+        D.relative_asset(root,relpath(physical,root))
+        updated["instrument"] = relpath(physical,selected)
         updated["calibration"] = destination*"/context.yaml"
         updated["calibration_identity"] = identity
+        Common.write_yaml(joinpath(staged,"rtc.yaml"),updated;
+            header="Selected accepted simulation calibration; regenerate with InstrumentExport.materialize_calibration from $rtc_configuration.")
         Common.write_yaml(joinpath(staged,"selection.yaml"),Dict("version"=>1,
             "calibration_identity"=>identity,"calibration_index_sha256"=>Common.sha256_file(indexpath),
             "source_application_deployment_sha256"=>Common.sha256_file(joinpath(built,"deployment.conf")),
             "recipe_sha256"=>Common.sha256_file(recipepath),"graphs"=>Dict(graphs),
+            "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>Common.sha256_file(joinpath(staged,"rtc.yaml"))),
             "zero_command"=>Dict("path"=>zero_command,"sha256"=>Common.sha256_file(joinpath(staged,zero_command)),
                 "shape"=>[command_count],"type"=>"Float32"),
             "application_accepted"=>false);
             header="Generated accepted simulation calibration selection; application and hardware qualification remain separate.")
         mv(staged,selected)
-        Common.write_yaml(rtcpath,updated;atomic=true,
-            header="Selected accepted simulation calibration; regenerate selection with InstrumentExport.materialize_calibration.")
     end
     return selected
+end
+
+"Bind the generated RTC selection to the configuration actually executed by its source owner."
+function validate_selected_rtc(application, calibration, selection, index, simulation)
+    descriptor = get(selection,"rtc_configuration",nothing)
+    descriptor isa AbstractDict && Set(keys(descriptor)) == Set(["path","sha256"]) &&
+        descriptor["path"] == "rtc.yaml" || throw(ArgumentError("selected calibration requires its generated RTC descriptor"))
+    name = normpath(joinpath(calibration,descriptor["path"]))
+    path = D.relative_asset(application,name)
+    Common.sha256_file(path) == descriptor["sha256"] ||
+        throw(ArgumentError("selected RTC configuration hash differs from calibration receipt"))
+    get(simulation,"rtc_configuration",nothing) == name ||
+        throw(ArgumentError("source execution is disconnected from selected RTC configuration"))
+    rtc = Common.read_yaml(path)
+    get(rtc,"calibration_identity",nothing) == get(simulation,"calibration_identity",nothing) == index["calibration_identity"] ||
+        throw(ArgumentError("selected RTC and source execution identities differ from calibration index"))
+    get(rtc,"calibration",nothing) == normpath(joinpath(calibration,"context.yaml")) ||
+        throw(ArgumentError("selected RTC configuration must use its generated calibration context"))
+    return name
 end

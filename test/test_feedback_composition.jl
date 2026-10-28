@@ -24,9 +24,12 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         C.write_json(joinpath(base,"graph.conf"),baseline)
         E.seal!(base)
         component=composition_fixture(joinpath(temporary,"component"),"component","simulator","sensor")
-        C.write_json(joinpath(component,"simulation.conf"),Dict("backend"=>"cpu","device"=>0))
         directory=joinpath(component,"generated/calibration");mkpath(directory)
         identity="sha256:"*repeat("b",64)
+        C.write_json(joinpath(component,"simulation.conf"),Dict("backend"=>"cpu","device"=>0,
+            "rtc_configuration"=>"generated/calibration/rtc.yaml","calibration_identity"=>identity))
+        C.write_yaml(joinpath(directory,"rtc.yaml"),Dict("calibration_identity"=>identity,
+            "calibration"=>"generated/calibration/context.yaml"))
         recipe=Dict("branch_modes"=>Dict("llowfs"=>[1],"scc"=>[2]))
         for name in ("llowfs","scc")
             report=Dict("recipe"=>recipe,"source_graph_sha256"=>repeat("c",64),
@@ -35,6 +38,7 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 "branch"=>name,"branches"=>Dict(name=>Dict("accepted"=>true)),"held_out"=>Dict("accepted"=>true),
                 "upstream_prescription_identity"=>fixture.document["prescription_identity"],
                 "upstream_reference"=>Dict("source_graph_sha256"=>C.sha256_file(joinpath(base,"graph.conf")),
+                    "method"=>"host-expectation","reference_backend"=>"host","source_backend_qualification"=>"host",
                     "parameter_sha256"=>Dict("existing"=>C.sha256_file(joinpath(base,"existing.fits"))),
                     "baseline_parameter_sha256"=>Dict(),"reference_sign"=>-1,"raw_endpoint"=>"raw:requested","residual_endpoint"=>"reconstruction:output",
                     "effective_settings_identity"=>PipeWireAORTC.InstrumentDefinition.scientific_identity(
@@ -57,6 +61,7 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         Calibration.write_fits(joinpath(directory,"zero.fits"),zeros(Float32,2))
         C.write_yaml(joinpath(directory,"selection.yaml"),Dict("calibration_identity"=>identity,
             "calibration_index_sha256"=>C.sha256_file(joinpath(directory,"calibration.yaml")),
+            "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(joinpath(directory,"rtc.yaml"))),
             "zero_command"=>Dict("path"=>"zero.fits","sha256"=>C.sha256_file(joinpath(directory,"zero.fits")),"shape"=>[2])))
         E.seal!(component)
         authoring=joinpath(temporary,"authoring");mkpath(authoring)
@@ -108,6 +113,53 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test C.read_json(joinpath(output,"simulation.conf"))["pacing_rate_hz"]==0.1
         @test C.read_json(joinpath(output,"simulation.conf"))["rate"]==fixture.document["rate"]
         @test C.read_yaml(joinpath(output,"offsets.yaml"))["branches"]["scc"]["silence_ns"]==300_000_000_000
+        # The optical consumer and producer use an explicitly matched profile,
+        # but a Host expectation does not qualify the accelerator detector RNG.
+        gpu_base=joinpath(temporary,"gpu-base");cp(base,gpu_base)
+        gpu_component=joinpath(temporary,"gpu-component");cp(component,gpu_component)
+        for path in (gpu_base,gpu_component)
+            simulation=C.read_json(joinpath(path,"simulation.conf"))
+            simulation["backend"]="amdgpu";simulation["device"]=1
+            C.write_json(joinpath(path,"simulation.conf"),simulation);E.seal!(path)
+        end
+        gpu_profile=joinpath(authoring,"gpu.yaml")
+        profile=C.read_yaml(joinpath(authoring,"profile.yaml"))
+        profile["backend"]="amdgpu";profile["device"]=1
+        C.write_yaml(gpu_profile,profile)
+        @test_throws ArgumentError E.prepare_feedback(gpu_base,gpu_component,joinpath(temporary,"unqualified-gpu"),recipepath;
+            prefix=PREFIX,profile=gpu_profile)
+        @test !ispath(joinpath(temporary,"unqualified-gpu"))
+        for name in ("changed-selected-rtc","disconnected-selected-rtc","changed-selected-identity",
+                "changed-selected-document-identity","changed-selected-context","escaped-selected-rtc")
+            altered=joinpath(temporary,name);cp(component,altered)
+            if name=="changed-selected-rtc"
+                open(joinpath(altered,"generated/calibration/rtc.yaml"),"a") do file;write(file,"# changed\n");end
+            elseif name=="disconnected-selected-rtc"
+                execution=C.read_json(joinpath(altered,"simulation.conf"))
+                execution["rtc_configuration"]="rtc/configuration.yaml"
+                C.write_json(joinpath(altered,"simulation.conf"),execution)
+            elseif name=="changed-selected-identity"
+                execution=C.read_json(joinpath(altered,"simulation.conf"))
+                execution["calibration_identity"]="sha256:"*repeat("e",64)
+                C.write_json(joinpath(altered,"simulation.conf"),execution)
+            elseif name in ("changed-selected-document-identity","changed-selected-context")
+                path=joinpath(altered,"generated/calibration/rtc.yaml")
+                rtc=C.read_yaml(path)
+                rtc[name=="changed-selected-context" ? "calibration" : "calibration_identity"]=
+                    name=="changed-selected-context" ? "other/context.yaml" : "sha256:"*repeat("e",64)
+                C.write_yaml(path,rtc)
+                selectionpath=joinpath(altered,"generated/calibration/selection.yaml")
+                selection=C.read_yaml(selectionpath);selection["rtc_configuration"]["sha256"]=C.sha256_file(path)
+                C.write_yaml(selectionpath,selection)
+            else
+                selectionpath=joinpath(altered,"generated/calibration/selection.yaml")
+                selection=C.read_yaml(selectionpath);selection["rtc_configuration"]["path"]="../rtc.yaml"
+                C.write_yaml(selectionpath,selection)
+            end
+            E.seal!(altered)
+            @test_throws ArgumentError E.prepare_feedback(base,altered,joinpath(temporary,name*"-output"),recipepath;prefix=PREFIX)
+            @test !ispath(joinpath(temporary,name*"-output"))
+        end
         changed_frontend=deepcopy(variant)
         changed_frontend["filter.graph"]["nodes"][1]["config"]["extent"]=2
         C.write_json(joinpath(authoring,"graph.conf"),changed_frontend)

@@ -43,6 +43,53 @@ function product(name, output, contract, duration, mapping)
     return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration))
 end
 
+function correction_control(graph, property)
+    node, key = endpoint(property)
+    integrator = only(filter(entry->entry["name"]==node,graph["filter.graph"]["nodes"]))
+    require(key=="closed" && get(get(integrator,"props",Dict()),key,nothing)===false,
+        "lifecycle selector requires CAL2 correction initially open; closed-loop evidence is separate")
+    return (;graph=String(graph["node.name"]),node,property=String(property))
+end
+
+function require_open_snapshot(control, properties, generation)
+    result = properties["result"]
+    value = get(result["properties"],control.property,Dict())
+    require(result["graph"]==control.graph && get(value,"type",nothing)=="bool" && get(value,"value",nothing)===false,
+        "native CAL2 correction is not confirmed open")
+    result = generation["result"]
+    require(result["graph"]==control.graph && result["node"]==control.node && result["requested"]==result["active"],
+        "CAL2 correction has an unadopted property transaction")
+    return nothing
+end
+
+function reference_products!(products, missing, graph, contracts, receiver, period, mapping)
+    algorithm = receiver["algorithm"]
+    input = only(filter(link->link["input"]==algorithm*":reconstructed-residual",graph["filter.graph"]["links"]))
+    for (name,endpoint) in (("adopted-offset",algorithm*":physical-offset"),
+            ("reference-before",input["output"]),("reference-after",algorithm*":compensated-residual"))
+        exports = filter(port->port["endpoint"]==endpoint,graph["filter.graph"]["outputs"])
+        if length(exports)==1
+            port = only(exports)["name"]
+            push!(products,product(name,graph["node.name"]*":"*port,contracts["outputs"][port],period,mapping))
+        else
+            push!(missing,"No unique exported $endpoint; receiving-frame $name cannot be observed.")
+        end
+    end
+    return nothing
+end
+
+function modal_product!(products, missing, name, graph, contracts, control, duration, mapping)
+    input = only(filter(link->link["input"]==control.node*":input",graph["filter.graph"]["links"]))
+    exports = filter(port->port["endpoint"]==input["output"],graph["filter.graph"]["outputs"])
+    if length(exports)==1
+        port = only(exports)["name"]
+        push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contracts["outputs"][port],duration,mapping))
+    else
+        push!(missing,"No unique exported $(input["output"]); $name modal residual cannot be observed.")
+    end
+    return nothing
+end
+
 "Cold preflight: accepts real deployable selections only, and never starts a core."
 function preflight(application, prefix; sample_count=40, timeout_seconds=nothing)
     application,spec=E.sealed_application(realpath(application),prefix)
@@ -75,6 +122,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     index=C.read_yaml(indexpath)
     require(selection["calibration_index_sha256"]==C.sha256_file(indexpath) &&
         selection["calibration_identity"]==index["calibration_identity"],"selected calibration index differs")
+    E.validate_selected_rtc(component,"generated/calibration",selection,index,optical)
     require(Set(keys(index["branches"]))==Set(["llowfs","scc"]),"selected branch index differs")
     for name in ("llowfs","scc")
         entry=index["branches"][name]
@@ -86,6 +134,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
             get(report,"deployable",false)===true && get(report,"diagnostic",true)===false &&
             report["held_out"]["accepted"]===true && report["branches"][name]["accepted"]===true &&
             report["calibration_identity"]==index["calibration_identity"],"bootstrap/diagnostic/rejected calibration is not admitted")
+        E.validate_reference_backend(report["upstream_reference"],upstream)
         for (key,descriptor) in index["physical_projection"]
             require(report["artifact_sha256"][key*".fits"]==descriptor["sha256"],"selected shared physical factors differ")
         end
@@ -112,6 +161,9 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     products=Any[product("pupil",pupil_link["output"],declared_port(session,pupil_link["output"],"output"),period,mapping)]
     declaration=R.InstrumentConfiguration.load_simulation(D.relative_asset(component,optical["plant"]["definition"]))
     durations=Dict{String,Int64}()
+    controls=Any[]
+    missing=String["Receiver-specific arm/disarm and rejection counters have no declared native observation export; generic parameter generations are captured separately.",
+        "Correction-open exact-zero startup cannot establish nonzero contribution acceptance or transaction adoption."]
     for name in ("llowfs","scc")
         sensor=declaration.instrument.document["optical_paths"][name]["sensor"]
         duration=round(Int64,1e9*declaration.instrument.document["wavefront_sensors"][sensor]["acquisition"]["exposure_duration_s"])
@@ -123,40 +175,36 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         link=only(filter(link->link["input"]==branch["node_name"]*":input_1",session["links"]))
         require(mapping[first(endpoint(link["output"]))]=="cal2-"*name,"return stream owner differs")
         controller=only(filter(owner->owner["role"]=="cal2-"*name,spec["owners"]))
-        controller_graph=D.decode(asset(application,argument(controller["argv"],"--graph")),prefix)
-        correction=endpoint(argument(controller["argv"],"--correction-property"))
-        integrator=only(filter(node->node["name"]==correction[1],controller_graph["filter.graph"]["nodes"]))
-        require(correction[2]=="closed" && integrator["config"]["closed"]===false,
-            "lifecycle selector requires CAL2 correction initially open; closed-loop evidence is separate")
+        controller_path=asset(application,argument(controller["argv"],"--graph"))
+        controller_graph=D.decode(controller_path,prefix)
+        control=correction_control(controller_graph,argument(controller["argv"],"--correction-property"))
+        push!(controls,control)
         push!(products,product(name*"-offset",link["output"],declared_port(session,link["output"],"output"),duration,mapping))
+        branch_contracts=Base.invokelatest(E.graph_port_contracts,controller_path)
+        modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping)
     end
     physical=receiver["clock_output"]
     push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping))
-    adoption=filter(port->port["endpoint"]==receiver["algorithm"]*":physical-offset",graph["filter.graph"]["outputs"])
-    missing=String["Receiver arm/disarm, rejection and submitted/active transaction counters have no declared native observation export.",
-        "Correction-open exact-zero startup cannot establish nonzero contribution acceptance or transaction adoption."]
-    if length(adoption)==1
-        name=only(adoption)["name"]
-        push!(products,product("adopted-offset",graph_node*":"*name,contracts["outputs"][name],period,mapping))
-    else
-        push!(missing,"No unique exported physical-offset readback; adoption cannot be observed by this selector.")
-    end
+    reference_products!(products,missing,graph,contracts,receiver,period,mapping)
     require(40<=sample_count<=128 && sample_count*period % durations["scc"]==0,"sample count must be in40:128 and cover whole SCC exposures")
     pacing=upstream["pacing_rate_hz"]
     require(pacing isa Real && !(pacing isa Bool) && isfinite(pacing) && pacing>0,"explicit positive wall pacing is required")
     timeout=timeout_seconds===nothing ? 90+2*sample_count/pacing : Float64(timeout_seconds)
     require(isfinite(timeout) && sample_count/pacing<timeout<=3600,"epoch timeout must exceed paced collection and be at most3600seconds")
     return (;application,spec,session,primary,auxiliary,products=Tuple(products),period,sample_count,timeout,
-        pacing,calibration_identity=index["calibration_identity"],missing)
+        pacing,calibration_identity=index["calibration_identity"],controls=Tuple(controls),
+        reference=(graph=graph_node,node=receiver["algorithm"]),missing)
 end
 
 mutable struct Samples
     records::Vector{Dict{String,Any}}
     first::Array{Float32}
     last::Array{Float32}
+    history::Union{Nothing,Vector{Vector{Float32}}}
     bound::Int
 end
-Samples(product,bound)=Samples(Dict{String,Any}[],zeros(Float32,product.shape),zeros(Float32,product.shape),bound)
+Samples(product,bound)=Samples(Dict{String,Any}[],zeros(Float32,product.shape),zeros(Float32,product.shape),
+    length(product.shape)==1 ? Vector{Float32}[] : nothing,bound)
 identity_record(value)=Dict("domain"=>bytes2hex(collect(value.domain.bytes)),"generation"=>value.generation,"sequence"=>value.sequence)
 function record!(samples, values, receipt, duration)
     require(length(samples.records)<samples.bound,"bounded capture exhausted before completion")
@@ -172,7 +220,31 @@ function record!(samples, values, receipt, duration)
     end
     push!(samples.records,merge(identity,Dict("pts"=>receipt.pts,"duration"=>receipt.duration)))
     copyto!(samples.last,values)
+    samples.history===nothing || push!(samples.history,copy(vec(values)))
     return nothing
+end
+
+function zero_reference_proof(products, samples, covered)
+    byname=Dict(product.name=>sample for (product,sample) in zip(products,samples))
+    names=("physical","adopted-offset","reference-before","reference-after")
+    all(name->haskey(byname,name),names) || return Dict("available"=>false,"nonzero_adoption_observed"=>false)
+    logs=map(name->byname[name],names)
+    frame_count=count(record->record["pts"]+record["duration"]<=covered,first(logs).records)
+    require(frame_count>0,"receiving-frame comparison requires a covered prefix")
+    for log in logs
+        require(log.history!==nothing && length(log.records)>=frame_count && log.records[1:frame_count]==first(logs).records[1:frame_count],
+            "reference/offset observations do not share the receiving physical-output frames")
+    end
+    offset,before,after=logs[2:4]
+    require(all(values->all(iszero,values),offset.history[1:frame_count]),"startup reference comparison requires exact-zero offset")
+    difference=0.0
+    for index in 1:frame_count
+        require(before.history[index]==after.history[index],"zero offset changed the reconstructed reference")
+        difference=max(difference,maximum(abs,Float64.(before.history[index]).-Float64.(after.history[index])))
+    end
+    return Dict("available"=>true,"receiving_frames"=>frame_count,"maximum_absolute_reference_difference"=>difference,
+        "frame_reference"=>"GPI physical-output frame; CAL2 exposure/input latency is separate",
+        "nonzero_adoption_observed"=>false,"scope"=>"Exact-zero reference equality only; no finite-signal or nonzero CQu proof")
 end
 
 function sources(handle,selected,stage,name)
@@ -203,6 +275,12 @@ end
 
 function observe_epoch(handle,selected,stage,name)
     plan=selected.plan
+    for (index,control) in enumerate(plan.controls)
+        properties=M.request(handle,stage,name*"-open-properties-"*string(index),["properties",control.graph])
+        generation=M.request(handle,stage,name*"-open-generation-"*string(index),["property-generation",control.graph,control.node])
+        require_open_snapshot(control,properties,generation)
+    end
+    reference_before=M.request(handle,stage,name*"-reference-before",["parameter-generation",plan.reference.graph,plan.reference.node])
     HIL=Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     ledger=W._ledger(handle)
     remote=ledger["remote"]
@@ -285,6 +363,7 @@ function observe_epoch(handle,selected,stage,name)
             end
             statistics=[Dict(string(key)=>value for (key,value) in pairs(HIL.array_stream_status(wire,index))) for index in eachindex(plan.products)]
             require(M.request(handle,stage,name*"-pause",["session-stop"])["state"]=="Ready","Pause did not reach Ready")
+            reference_after=M.request(handle,stage,name*"-reference-after",["parameter-generation",plan.reference.graph,plan.reference.node])
             records=Dict{String,Any}()
             for (index,product) in enumerate(plan.products)
                 log=samples[index]
@@ -294,6 +373,13 @@ function observe_epoch(handle,selected,stage,name)
                     "schema"=>product.schema,"samples"=>prefix,"observed_samples"=>length(log.records),"transport"=>statistics[index])
                 records[product.name]["first_payload_sample"]=first(log.records)
                 records[product.name]["last_payload_sample"]=last(log.records)
+                if log.history!==nothing
+                    path=joinpath(stage,name*"-"*product.name*"-covered.fits")
+                    values=hcat(log.history[1:length(prefix)]...)
+                    R.InstrumentCalibration.write_fits(path,values)
+                    records[product.name]["covered_payloads_fits"]=Dict("path"=>basename(path),"sha256"=>C.sha256_file(path),
+                        "shape"=>collect(size(values)),"axes"=>[2,1],"sample_axis"=>2)
+                end
                 for (suffix,data) in (("first",log.first),("last",log.last))
                     path=joinpath(stage,name*"-"*product.name*"-"*suffix*".fits")
                     R.InstrumentCalibration.write_fits(path,data)
@@ -302,6 +388,9 @@ function observe_epoch(handle,selected,stage,name)
             end
             for branch in ("llowfs","scc")
                 require(records[branch]["samples"]==records[branch*"-offset"]["samples"],"controller output changed sensor acquisition metadata")
+                if haskey(records,branch*"-modal-residual")
+                    require(records[branch]["samples"]==records[branch*"-modal-residual"]["samples"],"modal residual changed sensor acquisition metadata")
+                end
             end
             publisher=only(filter(object->get(get(get(object,"info",Dict()),"props",Dict()),"node.name",nothing)==plan.products[1].node,M.dump_graph(handle,selected.prefix)))
             props=publisher["info"]["props"]
@@ -315,6 +404,8 @@ function observe_epoch(handle,selected,stage,name)
                 "pacing_rate_hz"=>plan.pacing,"epoch_timeout_seconds"=>plan.timeout,
                 "scope"=>"Covered startup/lifecycle prefix; direct test-owned taps, no closed-loop or deadline claim",
                 "offset_readback_observed"=>haskey(records,"adopted-offset"),"transaction_adoption_observed"=>false,
+                "native_correction_open_confirmed"=>true,"reference_comparison"=>zero_reference_proof(plan.products,samples,covered),
+                "reference_parameter_generations"=>Dict("before_run"=>reference_before,"after_pause"=>reference_after),
                 "missing_observability"=>plan.missing)
             C.write_json(joinpath(stage,name*"-capture.json"),result)
             return result
@@ -364,6 +455,7 @@ function main(args)
         "products"=>[Dict("name"=>product.name,"node"=>product.node,"port"=>product.port,"schema"=>product.schema,
             "shape"=>collect(product.shape),"duration_ns"=>product.duration) for product in plan.products],
         "calibration_identity"=>plan.calibration_identity,"sample_count"=>plan.sample_count,
+        "correction_controls"=>[Dict(string(key)=>value for (key,value) in pairs(control)) for control in plan.controls],
         "pacing_rate_hz"=>plan.pacing,"epoch_timeout_seconds"=>plan.timeout,
         "missing_observability"=>plan.missing,"harness_sha256"=>C.sha256_file(@__FILE__))
     cold && return summary # No stage, systemd operation, native connection or GPU import.

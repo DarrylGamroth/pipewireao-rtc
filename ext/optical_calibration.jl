@@ -3,6 +3,8 @@
 # Mathematical names follow ext/modal_calibration.jl and AOC ProbeBases and
 # Reconstructors: D[:,j]=(I(+hP[:,j])-I(-hP[:,j]))/(2h), a=R*(I-I₀).
 
+include("optical_expectation.jl")
+
 "Prepare existing native mirror and optical graph owners without a core or service."
 function optical_callbacks(upstream_simulation::AbstractString, optical_simulation::AbstractString;
         mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
@@ -417,7 +419,7 @@ function optical_upstream_execution(application,simulation,overrides)
     identity(value) = PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(value))
     graph = String(plant["graph"])
     document = IC.graph_document(declaration,effective;simulation_graph=graph)
-    return (;declaration,effective,graph,configuration_sha256=Calibration.digest(path),
+    return (;declaration,effective,graph,execution_graph=document,configuration_sha256=Calibration.digest(path),
         effective_settings_identity=identity(effective),execution_graph_identity=identity(document))
 end
 
@@ -513,16 +515,35 @@ candidate needs both h/h2 agreement and held-out residual prediction agreement.
 The returned `fast_reference` retains C and sign −1 for the observed additive
 upstream OPD/mirror composition. This is reference-response evidence with the
 upstream controller held, not a simultaneous closed-loop qualification.
+
+`method="host-expectation"` requires an explicit Host target and one probe
+amplitude. It combines `Detectors.emccd_mean` with the executed native UInt16
+detector/frontend and an exact linear-flux control variate for independent
+previous-frame normalization. Distinct fixed training/validation seeds,
+conditional arithmetic bounds, and actual complete-frontend rounding samples
+contribute to the unchanged gate. The reported three-vector-standard-error
+bounds are statistical estimates under the declared ideal independent
+Poisson/Gaussian simulation law, not finite-PRNG or hardware certificates.
 """
 function Calibration.calibrate_optical_reference(upstream_application::AbstractString, calibration;
         simulation="simulation/definition.yaml",settings=Dict(),mirror="tweeter",
         raw_endpoint="pixel-calibration:raw",residual_endpoint="reconstruction:reconstructed",
         poke_amplitudes_m=[5e-9,1e-8,2e-8],derivative_tolerance=0.05,
+        method="held-frame",samples=512,rounding_samples=128,
+        training_seed=200002,validation_seed=400002,
         target=AdaptiveOpticsSim.Backends.HostComputeDevice())
     calibration.report["status"] == "accepted" || throw(ArgumentError("upstream reference requires an accepted optical calibration"))
     target isa Union{AdaptiveOpticsSim.Backends.HostComputeDevice,
         AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend}} ||
         throw(ArgumentError("upstream optical reference supports explicit host or AMDGPU targets"))
+    method in ("held-frame","host-expectation") || throw(ArgumentError("unsupported upstream reference method"))
+    if method == "host-expectation"
+        optical_expectation_options(samples,rounding_samples,training_seed,validation_seed)
+        target isa AdaptiveOpticsSim.Backends.HostComputeDevice ||
+            throw(ArgumentError("host expectation reference acquisition requires explicit Host target"))
+        length(poke_amplitudes_m)==1 ||
+            throw(ArgumentError("host expectation requires one explicit probe amplitude and independent validation"))
+    end
     application = optical_application(upstream_application)
     Calibration.require_prepared_application(application)
     baseline_hashes = optical_flat_parameters(application)
@@ -536,13 +557,15 @@ function Calibration.calibrate_optical_reference(upstream_application::AbstractS
     declaration = execution.declaration
     configured = execution.effective
     prescription = IC.prescription_identity(declaration,configured)
+    graph = IC.graph_document(declaration,configured;calibration=true)
+    chain = method == "host-expectation" ? optical_expectation_chain(execution.execution_graph,graph,
+        declaration.document["hil"]["frame_output"]) : nothing
     system = IC.prepare_system(path;settings=configured,calibration=true,target)
     commands = map(command -> zeros(eltype(command),size(command)),HIL.hil_command_buffer(system.boundary))
     name = Symbol(mirror)
     hasproperty(commands,name) && length(getproperty(commands,name)) == size(calibration.projection,1) ||
         throw(DimensionMismatch("upstream mirror commands differ from the optical physical projection"))
     # Establish sign from the declared composition, not from an assumed DM convention.
-    graph = IC.graph_document(declaration,configured;calibration=true)
     linked = any(get(graph,"links",[])) do link
         link["source"] == mirror*".surface_opd" && endswith(link["destination"],".surface_opd") || return false
         destination = first(split(link["destination"],'.'))
@@ -553,7 +576,11 @@ function Calibration.calibrate_optical_reference(upstream_application::AbstractS
     frontend = Calibration.calibration_graph(application;
         inputs=(raw=String(raw_endpoint),),outputs=(residual=String(residual_endpoint),))
     try
-        acquired = optical_reference_response(system,frontend,calibration,commands,name,amplitudes,derivative_tolerance)
+        acquired = method == "held-frame" ?
+            optical_reference_response(system,frontend,calibration,commands,name,amplitudes,derivative_tolerance) :
+            optical_expected_reference((;plant=system,application),frontend,calibration,commands,name,
+                only(amplitudes),execution.execution_graph;samples,rounding_samples,
+                training_seed,validation_seed,tolerance=derivative_tolerance)
         chosen,trials = acquired.chosen,acquired.trials
         chosen === nothing && throw(ArgumentError("upstream optical reference rejected every explicit amplitude: "*repr(trials)))
         current_execution = optical_upstream_execution(application,path,settings)
@@ -581,10 +608,18 @@ function Calibration.calibrate_optical_reference(upstream_application::AbstractS
             "modes_to_reference"=>"artifacts/modes-to-reference.fits","shape"=>collect(size(chosen.interaction)),
             "axes"=>[2,1],"type"=>"Float32","storage_order"=>"row-major",
             "trials"=>trials,"scope"=>"finite upstream reference response; upstream controller held")
+        if method == "host-expectation"
+            merge!(provenance,acquired.report)
+            provenance["native_sensor_configuration"] = optical_sensor_configuration(execution.execution_graph)
+            provenance["sensor_chain"] = chain
+        else
+            provenance["method"] = method
+        end
         io = IOBuffer()
         write(io,calibration.report["calibration_identity"],"\n",prescription,"\n",frontend.source_graph_sha256,"\n")
         write(io,execution.effective_settings_identity,"\n",execution.execution_graph_identity,"\n",
             provenance["calibration_graph_identity"],"\n")
+        write(io,PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(provenance)),"\n")
         for name in sort!(collect(keys(parameter_hashes)))
             write(io,name,":",parameter_hashes[name],"\n")
         end
@@ -709,7 +744,8 @@ function optical_recipe(application, recipe)
     end
     if haskey(document,"upstream_reference")
         reference = document["upstream_reference"]
-        IC.fields(reference,("raw_endpoint","residual_endpoint","poke_amplitudes_m","derivative_tolerance"),
+        IC.fields(reference,("raw_endpoint","residual_endpoint","poke_amplitudes_m","derivative_tolerance",
+                "method","samples","rounding_samples","training_seed","validation_seed"),
             ("raw_endpoint","residual_endpoint","poke_amplitudes_m","derivative_tolerance"),"upstream optical reference")
         all(key -> reference[key] isa String && !isempty(strip(reference[key])),
             ("raw_endpoint","residual_endpoint")) || throw(ArgumentError("upstream reference requires exact frontend endpoints"))
@@ -719,6 +755,16 @@ function optical_recipe(application, recipe)
             throw(ArgumentError("upstream reference requires 1:8 positive finite poke amplitudes"))
         tolerance = reference["derivative_tolerance"]
         IC.isfinite_real(tolerance) && 0 < tolerance < 1 || throw(ArgumentError("invalid upstream derivative tolerance"))
+        method = get(reference,"method","held-frame")
+        method in ("held-frame","host-expectation") || throw(ArgumentError("unsupported upstream reference method"))
+        if method == "host-expectation"
+            length(amplitudes)==1 || throw(ArgumentError("host expectation requires one explicit probe amplitude"))
+            optical_expectation_options(get(reference,"samples",512),get(reference,"rounding_samples",128),
+                get(reference,"training_seed",200002),get(reference,"validation_seed",400002))
+        else
+            any(key->haskey(reference,key),("samples","rounding_samples","training_seed","validation_seed")) &&
+                throw(ArgumentError("sampling controls require the host-expectation reference method"))
+        end
     end
     return (;path,document,branches=branch_selection,branch_modes=authority,frequencies,held_out)
 end
@@ -777,11 +823,15 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
         held_out_coefficients=selected.held_out,provenance=callbacks.provenance,require_observable=!diagnostic)
     if !diagnostic && calibration.report["status"] == "accepted" && haskey(document,"upstream_reference")
         reference = document["upstream_reference"]
+        method = get(reference,"method","held-frame")
         calibration = Calibration.calibrate_optical_reference(upstream,calibration;
             simulation=document["upstream_simulation"],settings=execution.effective,
             mirror=document["mirror"],raw_endpoint=reference["raw_endpoint"],
             residual_endpoint=reference["residual_endpoint"],poke_amplitudes_m=reference["poke_amplitudes_m"],
-            derivative_tolerance=reference["derivative_tolerance"],target)
+            derivative_tolerance=reference["derivative_tolerance"],method,
+            samples=get(reference,"samples",512),rounding_samples=get(reference,"rounding_samples",128),
+            training_seed=get(reference,"training_seed",200002),validation_seed=get(reference,"validation_seed",400002),
+            target=method=="host-expectation" ? AdaptiveOpticsSim.Backends.HostComputeDevice() : target)
     end
     if diagnostic
         calibration.report["deployable"] = false
@@ -818,53 +868,47 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
     return (;calibration,report,callbacks)
 end
 
-"Publish one ordinary, independently runnable calibration bundle per branch graph."
+"""
+    calibrate_optical(upstream, optical, output; recipe="calibration/optical.yaml", kwargs...)
+
+Calibrate two sealed built applications and publish an ordinary bundle per branch.
+By default, `configuration="calibration/materialize.yaml"` selects the retained
+branch graph templates. Their contexts are resolved from the actual measured
+masks, native sensor contracts and cold RTC dimensions, without bootstrap matrices.
+`graphs` may instead supply an explicit branch-to-template path mapping. Existing
+callers may still supply both `concrete_graphs` and `contexts` NamedTuples.
+Neither preparation nor publication starts a service. Numerical acceptance remains
+separate from application and physical-loop qualification.
+"""
 function Calibration.calibrate_optical(upstream_application::AbstractString,
         optical_application_path::AbstractString, output::AbstractString;
-        concrete_graphs::NamedTuple, contexts::NamedTuple,
-        recipe="calibration/optical.yaml",target=AdaptiveOpticsSim.Backends.HostComputeDevice())
+        concrete_graphs=nothing, contexts=nothing, graphs=nothing,
+        configuration="calibration/materialize.yaml", recipe="calibration/optical.yaml",
+        prefix=get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"),
+        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
     destination = Calibration._calibration_output((upstream_application,optical_application_path),output)
-    # Require concrete branch graphs before any numerical acquisition.
-    selected = optical_recipe(optical_application(optical_application_path),recipe)
-    keys(concrete_graphs) == keys(contexts) == keys(selected.branches) ||
-        throw(ArgumentError("concrete graphs and contexts must name every recipe branch in order"))
-    all(context -> context isa AbstractDict,contexts) || throw(ArgumentError("optical branch contexts must be mappings"))
-    for graph in concrete_graphs
-        graph isa AbstractDict && haskey(graph,"filter.graph") &&
-            !isempty(get(graph["filter.graph"],"nodes",[])) ||
-            throw(ArgumentError("publishing optical calibration requires concrete nonempty branch graphs"))
+    Export = PipeWireAORTC.InstrumentExport
+    upstream, _ = Export.sealed_application(upstream_application,prefix)
+    optical, _ = Export.sealed_application(optical_application_path,prefix)
+    selected = optical_recipe(optical,recipe)
+    explicit = concrete_graphs !== nothing || contexts !== nothing
+    plan = if explicit
+        graphs === nothing || throw(ArgumentError("choose concrete graphs or authored templates"))
+        validate_optical_graphs(concrete_graphs,contexts,keys(selected.branches))
+        nothing
+    else
+        optical_publication_plan(optical,selected;graphs,configuration,prefix)
     end
-    result = Calibration.calibrate_optical(upstream_application,optical_application_path;recipe,target)
-    mkpath(dirname(destination))
-    temporary = mktempdir(dirname(destination);prefix=".optical-calibration-")
-    try
-        reports = map(keys(concrete_graphs)) do name
-            Calibration.calibrate_optical(result.calibration,joinpath(temporary,string(name));
-                report=merge(result.report,Dict("branch"=>string(name))),context=getproperty(contexts,name),
-                concrete_graph=getproperty(concrete_graphs,name),branch=name)
-        end
-        reports = NamedTuple{keys(concrete_graphs)}(reports)
-        first_branch = first(keys(reports))
-        shared_names = hasproperty(result.calibration,:fast_reference) ?
-            ("command-projection","physical-to-modes","modes-to-reference") :
-            ("command-projection","physical-to-modes")
-        shared = Dict(name=>Dict("path"=>string(first_branch)*"/artifacts/"*name*".fits",
-            "sha256"=>getproperty(reports,first_branch)["artifact_sha256"][name*".fits"])
-            for name in shared_names)
-        for report in reports, name in keys(shared)
-            report["artifact_sha256"][name*".fits"] == shared[name]["sha256"] ||
-                throw(ArgumentError("branch bundles did not preserve identical physical projection artifacts"))
-        end
-        index = Dict("version"=>1,"kind"=>"optical-calibration-index",
-            "calibration_identity"=>result.report["calibration_identity"],
-            "physical_projection"=>shared,
-            "branches"=>Dict(string(name)=>Dict("path"=>string(name),
-                "result_sha256"=>Calibration.digest(joinpath(temporary,string(name),"result.yaml"))) for name in keys(reports)))
-        PipeWireAORTC.Common.write_yaml(joinpath(temporary,"calibration.yaml"),index;
-            header="Generated by PipeWireAORTC optical calibration; regenerate from built applications and the retained optical recipe.")
-        mv(temporary,destination;force=false)
-        return merge(result,(;reports,index,directory=destination))
-    finally
-        isdir(temporary) && rm(temporary;recursive=true)
+    snapshots = map(path->Calibration.digest(joinpath(path,"deployment.conf")),(upstream,optical))
+    result = Calibration.calibrate_optical(upstream,optical;recipe,target)
+    for (path,snapshot) in zip((upstream,optical),snapshots)
+        Export.sealed_application(path,prefix)
+        Calibration.digest(joinpath(path,"deployment.conf")) == snapshot ||
+            throw(ArgumentError("built application changed during optical calibration"))
     end
+    if !explicit
+        prepared = optical_publication_graphs(plan,result.calibration)
+        concrete_graphs, contexts = prepared.graphs, prepared.contexts
+    end
+    return publish_optical_bundles(result,destination,concrete_graphs,contexts)
 end

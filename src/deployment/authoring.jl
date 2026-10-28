@@ -5,10 +5,10 @@ function source_application(source)
     return InstrumentConfiguration.bounded_yaml(path)
 end
 
-function prepare_runtime_configurations!(application)
+function prepare_runtime_configurations!(application, selected=nothing)
     path = joinpath(application,"rtc/application.yaml")
     isfile(path) || return nothing
-    authoring = source_application(application)
+    authoring = selected === nothing ? source_application(application) : deepcopy(selected)
     entries = get(authoring,"runtime-configurations",[])
     InstrumentDefinition.array_value(entries) || throw(ArgumentError("runtime-configurations must be an array"))
     length(entries) <= 64 || throw(ArgumentError("too many runtime configurations"))

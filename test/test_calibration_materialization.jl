@@ -2,6 +2,7 @@ using Test, PipeWireAORTC, PipeWireAO
 Base.include(@__MODULE__,joinpath(@__DIR__,"external_pupil_owner_documents.jl"))
 const E=PipeWireAORTC.InstrumentExport
 const C=PipeWireAORTC.Common
+const D=PipeWireAORTC.DeploymentConfiguration
 const Calibration=PipeWireAORTC.InstrumentCalibration
 const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
@@ -67,17 +68,33 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         C.write_yaml(joinpath(rejected,"calibration.yaml"),rejected_index)
         @test_throws ArgumentError E.materialize_calibration(source,built,rejected;options...)
         @test !ispath(joinpath(source,"generated/calibration"))
+        authored_bytes=read(joinpath(source,"rtc/configuration.yaml"))
         output=E.materialize_calibration(source,built,results;options...)
         @test C.sha256_file(joinpath(source,"calibration/optical.yaml"))==recipehash
-        @test C.read_yaml(joinpath(source,"rtc/configuration.yaml"))["calibration_identity"]==identity
-        @test C.read_yaml(joinpath(source,"rtc/configuration.yaml"))["calibration"]=="generated/calibration/context.yaml"
+        @test read(joinpath(source,"rtc/configuration.yaml"))==authored_bytes
+        selected_rtc=joinpath(output,"rtc.yaml")
+        @test C.read_yaml(selected_rtc)["calibration_identity"]==identity
+        @test C.read_yaml(selected_rtc)["calibration"]=="generated/calibration/context.yaml"
+        @test C.read_yaml(selected_rtc)["instrument"]=="../../instrument.yaml"
         @test C.read_yaml(joinpath(output,"context.yaml"))["pixel_selection_mask"]["path"]=="llowfs/artifacts/selection-mask.fits"
         @test C.sha256_file(joinpath(output,"scc/result.yaml"))==C.sha256_file(joinpath(results,"scc/result.yaml"))
         @test C.read_yaml(joinpath(output,"selection.yaml"))["application_accepted"]===false
         zero=C.read_yaml(joinpath(output,"selection.yaml"))["zero_command"]
         @test zero["shape"]==[2] && zero["sha256"]==C.sha256_file(joinpath(output,zero["path"]))
         @test PipeWireAORTC.Artifacts.prepare(PipeWireAORTC.Artifacts.FITSArtifact(joinpath(output,zero["path"])),Float32,(2,)).data==zeros(Float32,2)
-        @test PipeWireAORTC.InstrumentConfiguration.load_rtc(joinpath(source,"rtc/configuration.yaml")).calibration["pixel_selection_mask"]==trues(4)
+        @test PipeWireAORTC.InstrumentConfiguration.load_rtc(selected_rtc).calibration["pixel_selection_mask"]==trues(4)
+        selected_configuration=C.read_yaml(joinpath(output,"selection.yaml"))["rtc_configuration"]
+        @test selected_configuration==Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(selected_rtc))
+        # The existing exporter selects this generated configuration without
+        # changing the authored optical-calibration configuration.
+        rebuilt=joinpath(temporary,"rebuilt");cp(source,rebuilt)
+        selected_path="generated/calibration/rtc.yaml"
+        IC=PipeWireAORTC.InstrumentConfiguration
+        @test C.read_json(IC.prepare_publication(rebuilt;configuration=selected_path))["calibration_identity"]==identity
+        IC.prepare_simulation_configuration!(rebuilt;configuration=selected_path)
+        execution=D.decode(joinpath(rebuilt,"simulation.conf"),PREFIX)
+        @test execution["rtc_configuration"]==selected_path && execution["calibration_identity"]==identity
+        @test read(joinpath(rebuilt,"rtc/configuration.yaml"))==authored_bytes
         @test_throws ArgumentError E.materialize_calibration(source,built,results;options...)
     end
 end
