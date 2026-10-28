@@ -56,6 +56,21 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 Dict(), configured, schema, Dict(), @__DIR__)
         end
     end
+    for (datatype, T) in (("Float32", Float32), ("Float64", Float64)), resolution in (8, "pupil_resolution", reference)
+        binding = Dict("kind" => "pupil_amplitude", "resolution" => resolution, "type" => datatype)
+        @test IC._validate_bindings(Dict("amplitude" => binding), Dict(), configured,
+            schema, Dict(), @__DIR__) === nothing
+        amplitude = IC.binding_values(declaration, configured, binding)
+        @test eltype(amplitude) === T
+        @test amplitude == T.(expected_support)
+        @test sum(abs2, amplitude) == count(expected_support)
+    end
+    for binding in (Dict("kind" => "pupil_amplitude", "resolution" => 8),
+            (Dict("kind" => "pupil_amplitude", "resolution" => 8, "type" => T)
+                for T in ("Bool", "UInt16", "Float16", true))...)
+        @test_throws ArgumentError IC._validate_bindings(Dict("amplitude" => binding),
+            Dict(), configured, schema, Dict(), @__DIR__)
+    end
     @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
 

@@ -1,5 +1,24 @@
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
+function Instruments.prepare_optical_components!(graph::AbstractDict, declaration::NamedTuple,
+        configured::AbstractDict)
+    for node in graph["nodes"]
+        haskey(node, "preparation") || continue
+        preparation = node["preparation"]
+        config = Instruments.prepared_component_config(node["config"])
+        settings = Dict(key => config[key] for key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c"))
+        prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(declaration.instrument.directory,
+            preparation["recipe"], preparation["branch"]; settings, diameter_m=config["diameter_m"])
+        concrete = Instruments.json_value(prepared.config)
+        for key in Instruments.OPTIONAL_OPTICAL_CONFIG
+            haskey(config, key) && (concrete[key] = deepcopy(config[key]))
+        end
+        node["config"] = concrete
+        delete!(node, "preparation")
+    end
+    return graph
+end
+
 function Instruments.optical_graph_document(declaration::NamedTuple, configured::AbstractDict,
         mode::AbstractString)
     graphs = AdaptiveOpticsSim.Optics.Zemax.execution_graphs(declaration.instrument.directory;
@@ -224,6 +243,13 @@ end
 function Instruments.binding_values(::Val{:pupil_support}, declaration, configured, binding)
     telescope = configured_telescope(declaration, configured, binding)
     return copy(AdaptiveOpticsSim.Optics.pupil_mask(telescope))
+end
+
+function Instruments.binding_values(::Val{:pupil_amplitude}, declaration, configured, binding)
+    T = get(Dict("Float32" => Float32, "Float64" => Float64), binding["type"], nothing)
+    T === nothing && throw(ArgumentError("pupil amplitude binding type must be Float32 or Float64"))
+    support = Instruments.binding_values(Val(:pupil_support), declaration, configured, binding)
+    return T.(support)
 end
 
 function Instruments.binding_values(::Val{:pupil_coordinates}, declaration, configured, binding)

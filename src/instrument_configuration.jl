@@ -19,6 +19,11 @@ function prepare_external_pupil end
 function optical_graph_document(declaration, configured, mode)
     throw(ArgumentError("Zemax graph replanning requires AdaptiveOpticsSim, Proper and YAML"))
 end
+function prepare_optical_components!(graph, declaration, configured)
+    any(node -> haskey(node, "preparation"), graph["nodes"]) &&
+        throw(ArgumentError("Zemax component preparation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL"))
+    return graph
+end
 function controlled_actuators end
 
 include("instruments/settings.jl")
@@ -439,6 +444,7 @@ function graph_document(declaration, configured; calibration=false,
     ideal = hil && mode == "calibration"
     graph["name"] = ideal ? graph["name"] : graph["name"] * "_" * profile_name
     resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
+    prepare_optical_components!(resolved, declaration, configured)
     ideal || apply_responses!(resolved, declaration, configured)
     hil && mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])
     return resolved

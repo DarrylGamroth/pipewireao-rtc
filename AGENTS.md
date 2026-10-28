@@ -105,6 +105,12 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- `julia --project=. test/test_zemax_components.jl` checks composable imported
+  optics, physical pupil-plane metadata and named HIL graph selection without
+  scientific packages. `julia --project=/path/to/science-environment
+  test/zemax_component_preparation.jl` checks ordinary linked CPU graphs with
+  AOS/HIL and explicit Proper. These selectors create no PipeWire core or files
+  in the instrument source.
 - `julia --project=/path/to/science-environment test/test_session_configuration_integration.jl`
   checks session metadata against the optional JFG and AOS/HIL packages. It
   prepares small CPU Shack-Hartmann and Pyramid products without a live session

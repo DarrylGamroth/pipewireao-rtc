@@ -39,6 +39,45 @@ recipe interpretation and emits ordinary `generated/simulation.yaml` plus graph
 assets; `load_simulation` directs source callers to that execution definition.
 Graph-bearing GPI and REVOLT definitions retain their existing loader contract.
 
+An ordinary graph component can also select
+`preparation: {kind: zemax, recipe: simulation/zemax.yaml, branch: science_relay}`
+with `proper_optical_train_f32` or `proper_optical_train_f64`. This version-2
+subsystem recipe is relative to the physical instrument directory. Core loading
+validates its authored path and bounded selection without loading scientific
+packages or requiring generated files. Only a selected `graph_document` resolves
+its settings and calls AOS `Zemax.prepare_component`; the resulting node contains
+native PROPER configuration. Component config requires `resolution`,
+`pupil_resolution`, `diameter_m`, `wavelength_um` and `temperature_c`; the three
+native port schemas and `output_sampling_m` are optional, and authored `steps`
+are rejected when preparation supplies them. No files are written. Explicit
+`using Proper` enables the optional numerical implementation; target and capture
+support follow the installed AOS/Proper execution contract.
+HIL definitions retain required production/calibration graphs and may declare
+other bounded graph names with the same command/frame boundary. An opt-in graph
+such as `optical-reference` uses `prepare_system(...; simulation_graph="optical-reference")`;
+unselected imported components do not prepare during production graph assembly.
+
+Physical `optical_planes` optionally maps named pupil planes to
+`{diameter_m: ...}`. These positive finite values describe illuminated beam
+diameters in metres, separately from clear apertures; prescription surface
+selection stays in the recipe. Ordinary references such as
+`/instrument/optical_planes/woofer_pupil/diameter_m` bind a component entrance.
+The shared binding `{kind: pupil_amplitude, resolution: pupil_resolution,
+type: Float32}` supplies dimensionless unit amplitude within the configured
+telescope pupil support and zero outside. `Float32` or `Float64` is required
+explicitly; resolution accepts the same literal, setting and pointer forms as
+`pupil_support`. The existing Boolean support binding is unchanged. Amplitude
+does not include throughput or reflectivity, leaving the source photon budget
+with the physical normalization.
+
+The focused import selectors pass 47 cold assertions and 24 optional CPU
+assertions, including linked MTF composition, native default schemas, both
+floating-point types and unchanged source bytes. The pupil-binding selector
+checks the same support geometry with both explicit real types and verifies
+that reflectivity does not change the unit-amplitude field. These are software
+checks without a PipeWire core or device
+qualification.
+
 `prepare_system(...; simulation_graph="scc")` uses the same binding allocation
 and typed AOS compiler, returning `boundary=nothing` and `driver=nothing` for a
 standalone graph. Numerical Proper execution remains in AdaptiveOpticsSim.

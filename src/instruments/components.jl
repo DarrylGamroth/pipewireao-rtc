@@ -3,8 +3,38 @@
 const COMPONENT_TEMPLATES = ("coordinate_gaussian", "grid_gaussian", "measured",
     "multilayer_atmosphere_opd_f32", "pupil_opd_composition_f32",
     "shack_hartmann_rate_f32", "pyramid", "cmos", "emccd", "ingaas", "hgcdte_linear_avalanche_array",
-    "pixel_mtf", "proper_optical_train_f64")
+    "pixel_mtf", "proper_optical_train_f64", "proper_optical_train_f32")
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
+const PREPARED_OPTICAL_CONFIG = ("resolution", "pupil_resolution", "diameter_m", "wavelength_um", "temperature_c")
+const OPTIONAL_OPTICAL_CONFIG = ("pupil_opd_schema", "pupil_amplitude_schema", "output_schema", "output_sampling_m")
+
+function component_preparation(selection, instrument, directory)
+    haskey(selection, "preparation") || return nothing
+    selection["template"] in ("proper_optical_train_f32", "proper_optical_train_f64") ||
+        throw(ArgumentError("Zemax component preparation requires a PROPER optical train template"))
+    preparation = fields(selection["preparation"], ("kind", "recipe", "branch"),
+        ("kind", "recipe", "branch"), "component preparation")
+    preparation["kind"] == "zemax" || throw(ArgumentError("unsupported component preparation kind"))
+    get(get(instrument, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
+        throw(ArgumentError("Zemax component requires a physical Zemax optical prescription"))
+    _declaration_identifier(preparation["branch"], "Zemax component branch")
+    recipe = _declaration_text(preparation["recipe"], "component preparation recipe")
+    !isabspath(recipe) && normpath(recipe) == recipe && !occursin('\0', recipe) &&
+        all(part -> !(part in (".", "..", "generated")), splitpath(recipe)) ||
+        throw(ArgumentError("component preparation recipe must be a normalized authored path inside the instrument"))
+    isfile(joinpath(directory, recipe)) || throw(ArgumentError("component preparation recipe must be an existing file"))
+    resolved = D.relative_asset(directory, recipe)
+    "generated" in splitpath(relpath(resolved, realpath(directory))) &&
+        throw(ArgumentError("component preparation recipe must be authored outside generated"))
+    prepared_component_config(selection["config"])
+    return preparation
+end
+
+function prepared_component_config(config)
+    fields(config, (PREPARED_OPTICAL_CONFIG..., OPTIONAL_OPTICAL_CONFIG...), PREPARED_OPTICAL_CONFIG,
+        "prepared optical component config")
+    return config
+end
 
 function component_template_path(name)
     name in COMPONENT_TEMPLATES || throw(ArgumentError("unknown simulation component template $name"))
@@ -56,7 +86,7 @@ component_reference(value::AbstractVector, selection) = [component_reference(ite
 component_reference(value, selection) = deepcopy(value)
 
 function validate_component(selection, instrument, document)
-    fields(selection, ("template", "mirror", "sensor", "source", "coupling", "bindings", "influence_functions", "config", "props"),
+    fields(selection, ("template", "mirror", "sensor", "source", "coupling", "bindings", "influence_functions", "config", "props", "preparation"),
         ("template", "config"), "simulation component selection")
     _declaration_object(selection["config"], "component config")
     template = selection["template"]
@@ -110,17 +140,24 @@ component_config_fields(template) = union(Set(key for (key, value) in template["
 
 function component_node(name, selection, model, templates)
     template = component_template(model, templates)
-    config = component_reference(template["config"], selection)
-    for (key, value) in get(template, "optional_config", Dict())
-        haskey(selection["config"], key) && (config[key] = component_reference(value, selection))
+    prepared = haskey(selection, "preparation")
+    config = if prepared
+        deepcopy(prepared_component_config(selection["config"]))
+    else
+        result = component_reference(template["config"], selection)
+        for (key, value) in get(template, "optional_config", Dict())
+            haskey(selection["config"], key) && (result[key] = component_reference(value, selection))
+        end
+        result
     end
     # Only explicit scientific values and schema inputs belong to application
     # config. Physical geometry and settings references remain template-owned.
-    if selection["template"] != "deformable_mirror"
+    if !prepared && selection["template"] != "deformable_mirror"
         unknown = setdiff(keys(selection["config"]), component_config_fields(template))
         isempty(unknown) || throw(ArgumentError("unknown component config fields: $(join(unknown, ", "))"))
     end
     node = Dict{String,Any}("name" => name, "type" => template["type"], "config" => config)
+    prepared && (node["preparation"] = deepcopy(selection["preparation"]))
     haskey(template, "detector") && (node["detector"] = template["detector"])
     if haskey(template, "binding_roles")
         bindings = _declaration_object(get(selection, "bindings", Dict()), "component bindings")
@@ -185,6 +222,7 @@ function expand_simulation_components!(document, instrument, directory)
     for (name, selection) in components
         _declaration_identifier(name, "component name")
         validate_component(selection, instrument, document)
+        component_preparation(selection, instrument, directory)
     end
     bindings = _declaration_object(get!(document, "bindings", Dict{String,Any}()), "simulation bindings")
     settings_bindings = _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
@@ -271,7 +309,9 @@ function expand_simulation_components!(document, instrument, directory)
                 end
                 if haskey(node, "config")
                     overrides = _declaration_object(node["config"], "component node config overrides")
-                    isempty(setdiff(keys(overrides), component_config_fields(component_template(model, templates)))) ||
+                    allowed = haskey(selection, "preparation") ? Set((PREPARED_OPTICAL_CONFIG..., OPTIONAL_OPTICAL_CONFIG...)) :
+                        component_config_fields(component_template(model, templates))
+                    isempty(setdiff(keys(overrides), allowed)) ||
                         throw(ArgumentError("unknown component node config override"))
                     merge!(expanded["config"], deepcopy(overrides))
                 end

@@ -1,11 +1,12 @@
 "Validate physical instrument data without loading a simulation or controller."
 function validate_declaration(document::AbstractDict, directory::AbstractString)
     required = ("schema_version", "id", "deformable_mirrors", "wavefront_sensors")
-    fields(document, (required..., "telescope", "optical_input", "optical_prescription", "optical_paths", "optical_masks", "optical_filters"), required, "physical instrument")
+    fields(document, (required..., "telescope", "optical_input", "optical_planes", "optical_prescription", "optical_paths", "optical_masks", "optical_filters"), required, "physical instrument")
     document["schema_version"] === 1 || throw(ArgumentError("unsupported physical instrument schema"))
     _declaration_identifier(document["id"], "instrument identifier")
     haskey(document, "telescope") && _validate_telescope(document["telescope"])
     haskey(document, "optical_input") && _validate_optical_input(document["optical_input"])
+    haskey(document, "optical_planes") && _validate_optical_planes(document["optical_planes"])
     for key in ("deformable_mirrors", "wavefront_sensors")
         values = _declaration_object(document[key], key)
         minimum = key == "deformable_mirrors" ? 0 : 1
@@ -23,6 +24,17 @@ function validate_declaration(document::AbstractDict, directory::AbstractString)
     return nothing
 end
 validate_declaration(document, directory) = throw(ArgumentError("physical instrument must be an object"))
+
+function _validate_optical_planes(value)
+    planes = _declaration_object(value, "optical planes")
+    1 <= length(planes) <= 64 || throw(ArgumentError("instrument requires 1:64 optical planes"))
+    for (name, plane) in planes
+        _declaration_identifier(name, "optical plane")
+        fields(plane, ("diameter_m",), ("diameter_m",), "optical plane")
+        isfinite_positive(plane["diameter_m"]) || throw(ArgumentError("optical plane requires a finite positive beam diameter_m"))
+    end
+    return nothing
+end
 
 function _validate_optical_asset(value, directory, label; prescription=false, check_hash=true)
     required = prescription ? ("format", "path", "sha256") : ("path", "sha256")
@@ -171,12 +183,12 @@ end
 
 function simulation_graph_sources(document)
     graphs = _declaration_object(document["graphs"], "graphs")
-    if haskey(document, "hil")
-        return _declaration_fields(graphs, ("production", "calibration", "internal-source", "dark"),
-            ("production", "calibration"), "graphs")
-    end
     1 <= length(graphs) <= 16 || throw(ArgumentError("simulation requires 1:16 graphs"))
     foreach(name -> _declaration_identifier(name, "simulation graph name"), keys(graphs))
+    if haskey(document, "hil")
+        all(name -> haskey(graphs, name), ("production", "calibration")) ||
+            throw(ArgumentError("HIL simulation requires production and calibration graphs"))
+    end
     return graphs
 end
 
@@ -547,11 +559,13 @@ function _validate_bindings(bindings, mirrors, defaults, settings_schema, profil
             all(extent -> _valid_zero_extent(extent, defaults, settings_schema, profiles), shape) ||
                 throw(ArgumentError("zero binding shape must use positive extents or existing setting names"))
             _validate_element_type(binding["type"], "zero binding")
-        elseif kind in ("pupil_coordinates", "pupil_support")
-            binding = _declaration_fields(binding_value, ("kind", "resolution"),
-                ("kind", "resolution"), "pupil binding $name")
+        elseif kind in ("pupil_coordinates", "pupil_support", "pupil_amplitude")
+            required = kind == "pupil_amplitude" ? ("kind", "resolution", "type") : ("kind", "resolution")
+            binding = _declaration_fields(binding_value, required, required, "pupil binding $name")
             _valid_zero_extent(binding["resolution"], defaults, settings_schema, profiles) ||
                 throw(ArgumentError("pupil binding resolution must be a positive extent or existing setting"))
+            kind == "pupil_amplitude" && !(binding["type"] in ("Float32", "Float64")) &&
+                throw(ArgumentError("pupil amplitude binding type must be Float32 or Float64"))
         elseif kind in ("mirror_coordinates", "mirror_grid_indices")
             binding = _declaration_fields(binding_value, ("kind", "mirror"),
                 ("kind", "mirror"), "mirror geometry binding $name")
