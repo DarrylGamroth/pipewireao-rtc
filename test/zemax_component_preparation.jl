@@ -164,3 +164,34 @@ end
             IC.prescription_identity(source, IC.settings(source))
     end
 end
+
+@testset "runtime OPD inputs and entrance grids survive component preparation" begin
+    mktempdir() do directory
+        physical, simulation = zemax_component_documents(directory)
+        graph = simulation["graphs"]["scc"]
+        screen = Dict("surface"=>1,"input"=>"mirror_opd","size"=>[4,4],
+            "axes"=>[2,1],"diameter_m"=>0.012,"schema"=>"example.opd-metres/1","outside_opd_m"=>0)
+        only(graph["nodes"])["config"] = Dict("phase_screens"=>[screen],
+            "pupil_grid"=>Dict("size"=>[4,4],"axes"=>[2,1],"diameter_m"=>0.012))
+        simulation["bindings"]["mirror_opd"] = deepcopy(simulation["bindings"]["pupil_opd"])
+        push!(graph["inputs"], Dict("name"=>"mirror_opd","binding"=>"mirror_opd","destination"=>"optics.mirror_opd"))
+        path = write_external_optical_documents(directory, physical, simulation)
+        source = IC.load_simulation(path)
+        document = IC.graph_document(source, IC.settings(source); simulation_graph="scc")
+        config = only(document["nodes"])["config"]
+        @test !haskey(config,"phase_screens")
+        @test config["pupil_grid"]["center_pixel"] == [2.5,2.5]
+        @test config["pupil_grid"]["sampling_m"] == [0.003,0.003]
+        @test only(filter(s->s["op"]=="add_opd",config["steps"]))["input"] == "mirror_opd"
+        system = IC.prepare_system(path;simulation_graph="scc")
+        fill!(graph_input(system.graph,:pupil_opd),0)
+        fill!(graph_input(system.graph,:pupil_amplitude),1)
+        fill!(graph_input(system.graph,:mirror_opd),1e-7)
+        step_graph!(system.graph)
+        image = copy(graph_output(system.graph,:intensity))
+        @test all(isfinite,image) && sum(image)>0
+        AdaptiveOpticsSim.Optics.Zemax.prepare(directory;yamlfmt=nothing)
+        generated = IC.load_simulation(joinpath(directory,"generated/simulation.yaml"))
+        @test IC.graph_document(generated,IC.settings(generated);simulation_graph="scc") == document
+    end
+end

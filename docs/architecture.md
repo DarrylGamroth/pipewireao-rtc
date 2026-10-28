@@ -1088,6 +1088,14 @@ Graph-bearing authored definitions can instead select imported Zemax components
 alongside their ordinary atmosphere, mirrors and sensors. Shared AOS preparation
 retains their symbolic mode graphs under `generated/` and publishes an
 `optical_model` reference to the canonical authored `simulation/definition.yaml`.
+Per-graph component overrides can declare runtime `phase_screens` by active
+surface ID, named input, source size, axis permutation, physical diameter and OPD
+schema. A `pupil_grid` override gives the entrance amplitude and OPD the same
+explicit physical grid. AOS derives native sampling/centers and emits typed
+`add_opd` steps; RTC does not propagate optics or reinterpret command units.
+Runtime sampled screens currently require scalar CPU Proper execution. A graph
+selection can add a relay diagnostic while retaining a separate analytic sensor;
+that selection alone does not establish a higher-fidelity control measurement.
 The generated HIL loader validates all source and execution hashes and parsed
 content before returning a declaration. Cold settings replan components from the
 verified extraction. Calibration prescription identity remains the authored

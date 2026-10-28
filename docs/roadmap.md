@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optional GPI separate-DM relay diagnostic — 2026-10-28
+
+The existing component preparation interface now forwards authored per-graph
+`phase_screens` and `pupil_grid` to AOS. GPI can retain the fast common-pupil
+sensor path and select a separate-DM-plane scalar CPU relay diagnostic through
+an ordinary graph name. RTC does not acquire another optical executor. Live
+configuration, frozen calibrations and the existing model selections are unchanged.
+CPU validation and remaining physical/model limits are recorded in the
+[validation record](validation/dm-plane-reference-20261028/README.md).
+
 ### CAL2 external pupil and physical offsets — 2026-10-28
 
 RTC 0.2.34 implements a mirror-free external-pupil owner with independent SCC and
