@@ -32,4 +32,3 @@ function physical_offset_fixture(directory;P,Q,C)
     Common.write_yaml(path,config)
     return graph,path
 end
-
