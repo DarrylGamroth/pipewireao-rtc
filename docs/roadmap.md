@@ -99,7 +99,14 @@ its settings and calls AOS `Zemax.prepare_component`; the resulting node contain
 native PROPER configuration. Component config requires `resolution`,
 `pupil_resolution`, `diameter_m`, `wavelength_um` and `temperature_c`; the three
 native port schemas and `output_sampling_m` are optional, and authored `steps`
-are rejected when preparation supplies them. No files are written. Explicit
+are rejected when preparation supplies them. Authored source compilation writes no files.
+`Zemax.prepare` also retains the extraction, per-recipe glasses, raw mode graphs and
+execution definition under `generated/`, matching standalone optical preparation.
+Generated HIL loading verifies provenance before compilation or identity; cold
+settings still resolve through the same component compiler. Its prescription
+identity comes from the validated authored definition, so generating copies does
+not invalidate calibration. Export validates the original receipt then regenerates
+the copied application after localizing shared mirror descriptions. Explicit
 `using Proper` enables the optional numerical implementation; target and capture
 support follow the installed AOS/Proper execution contract.
 HIL definitions retain required production/calibration graphs and may declare

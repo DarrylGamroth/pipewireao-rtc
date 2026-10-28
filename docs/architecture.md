@@ -1084,6 +1084,17 @@ execution are unsupported. Without observations, components, profile
 nodes/parameters and settings bindings remain empty. Settings schemas, defaults,
 profile schemas and binding contracts use the existing cold validators.
 
+Graph-bearing authored definitions can instead select imported Zemax components
+alongside their ordinary atmosphere, mirrors and sensors. Shared AOS preparation
+retains their symbolic mode graphs under `generated/` and publishes an
+`optical_model` reference to the canonical authored `simulation/definition.yaml`.
+The generated HIL loader validates all source and execution hashes and parsed
+content before returning a declaration. Cold settings replan components from the
+verified extraction. Calibration prescription identity remains the authored
+identity; generated execution integrity is checked separately. Export validates
+the source receipt and regenerates in the owned destination when shared mirror
+references are localized. It never edits provenance hashes to bless stale output.
+
 Physical `optical_filters` maps filter identifiers to `wavelength_m` and
 `transmission` arrays. Each curve has 2:4096 paired samples with strictly
 increasing positive finite wavelengths and finite intensity transmission in
