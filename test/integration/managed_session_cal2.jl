@@ -284,7 +284,7 @@ function record!(samples, values, receipt, duration; model_time=true, priming_ex
             receipt.pts>=previous["pts"]) || throw(ArgumentError(
             "acquisition gap or changed cohort for $name: "*
             "previous=(domain=$(previous["domain"]), generation=$(previous["generation"]), "*
-            "sequence=$(previous["sequence"]), model_pts=$(previous["model_pts"]), duration=$(previous["duration"])); "*
+            "sequence=$(previous["sequence"]), pts=$(previous["pts"]), model_pts=$(previous["model_pts"]), duration=$(previous["duration"])); "*
             "rejected=(domain=$(identity["domain"]), generation=$(identity["generation"]), sequence=$(identity["sequence"]), "*
             "pts=$(receipt.pts), duration=$(receipt.duration), lost_samples=$(receipt.lost_samples), "*
             "trigger_state=$(receipt.trigger_state), model_pts=$model_pts)"))

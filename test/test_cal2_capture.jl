@@ -155,12 +155,25 @@ end
     @test error isa ArgumentError
     message = sprint(showerror,error)
     @test occursin("acquisition gap or changed cohort for scc-offset",message)
-    @test occursin("previous=(domain=0102030405060708090a0b0c0d0e0f10, generation=1, sequence=1, model_pts=0, duration=10000000)",message)
+    @test occursin("previous=(domain=0102030405060708090a0b0c0d0e0f10, generation=1, sequence=1, pts=100000000, model_pts=0, duration=10000000)",message)
     @test occursin("rejected=(domain=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, generation=9, sequence=4, pts=987654321, duration=10000000, lost_samples=0, trigger_state=$(P.ACQUISITION_TRIGGER_HIGH), model_pts=30000000)",message)
     @test samples.records==before.records
     @test samples.first==before.first
     @test samples.last==before.last
     @test samples.history==before.history
+    error = try
+        M.record!(samples,Float32[3,4],receipt(domain,1,2,99_000_000),duration;model_time=false,name="physical")
+        nothing
+    catch caught
+        caught
+    end
+    @test error isa ArgumentError
+    message = sprint(showerror,error)
+    @test occursin("acquisition gap or changed cohort for physical",message)
+    @test occursin("sequence=1, pts=100000000, model_pts=0",message)
+    @test occursin("sequence=2, pts=99000000, duration=10000000",message)
+    @test occursin("model_pts=10000000)",message)
+    @test samples.records==before.records && samples.last==before.last && samples.history==before.history
 end
 
 @testset "CAL2 observer preserves explicit metadata negotiation" begin
