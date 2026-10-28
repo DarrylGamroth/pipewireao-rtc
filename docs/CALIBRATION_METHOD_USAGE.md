@@ -315,6 +315,32 @@ brightness, readout settings, frontend nodes or their FITS bindings requires
 matching calibration. Neither a relaxed gate nor a diagnostic dither is an
 implicit production selection.
 
+For a chopped branch, the bounded recipe selects
+`measurements: {scc: {kind: chopped-pixel-residual}}`; its branch names must
+exactly match the built source's `plant.chopping`. The initial supported frontend
+is the retained authored pixel selection, finite-pixel validity, strict-identity
+F/U pair and `scc-pixel-residual-f32` prefix with a full-image mask. Calibration
+passes each static fringed/unfringed image pair through that exact prefix for
+push/pull probes and held-out mixtures. Signed residuals are admitted only for
+explicitly selected branches; ordinary intensity observations stay nonnegative.
+
+The new bundle contains a real `scc-reference-difference.fits` parameter from
+the flat fringed-minus-unfringed images, both flat images and their difference as
+diagnostics, and a freshly measured SCC reconstructor. The frontend subtracts
+that difference before reconstruction, so its modal reference is zero. Exact
+frontend, source chopping and flat-difference identities enter calibration
+provenance; typed FITS byte hashes remain in the standard result. Publication
+rejects a different measurement prefix. Materialization and feedback preparation
+reject an ordinary intensity bundle for chopped execution, including a changed
+alternate graph or trigger polarity. The prior SCC calibration cannot transfer.
+
+These probes qualify static matched F/U measurements. Rolling acquisition uses
+adjacent alternating complete exposures after priming, preserving the declared
+10 ms camera exposure; it does not assume that an exposure used the last issued
+remote command. No phase-command feedforward, carrier/FIR/ROI choice, pipelined
+closed-loop stability or noisy simultaneous-loop acceptance follows from the
+static calibration tests.
+
 The optional upstream reference method `host-expectation` estimates the mean
 residual of the executed stochastic detector and frozen frontend. For example:
 

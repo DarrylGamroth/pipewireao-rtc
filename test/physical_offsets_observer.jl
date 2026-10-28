@@ -61,8 +61,22 @@ include("physical_offsets_documents.jl")
         Q=Float32.(pinv(Float64.(P)))
         C=Float32[1 .2;.3 1]
         graph,path=physical_offset_fixture(directory;P,Q,C)
-        @test Offsets.prepare(path,graph).receiver isa Offsets.Receiver
+        prepared=Offsets.prepare(path,graph)
+        @test prepared.receiver isa Offsets.Receiver
+        @test all(option->option.acquisition_version==2,prepared.options)
         document=Common.read_yaml(path)
+        versioned=deepcopy(document)
+        versioned["branches"]["llowfs"]["acquisition_version"]=2
+        versioned["branches"]["scc"]["acquisition_version"]=3
+        Common.write_yaml(path,versioned)
+        @test getproperty(Offsets.prepare(path,graph),:options)[2].acquisition_version==3
+        for invalid in (1,4,true,"3")
+            changed=deepcopy(versioned)
+            changed["branches"]["scc"]["acquisition_version"]=invalid
+            Common.write_yaml(path,changed)
+            @test_throws ArgumentError Offsets.prepare(path,graph)
+        end
+        Common.write_yaml(path,document)
         for update in (Dict("parameter"=>"q"),Dict("algorithm"=>"absent"),Dict("reference_sign"=>1))
             Common.write_yaml(path,merge(document,update))
             @test_throws ArgumentError Offsets.prepare(path,graph)

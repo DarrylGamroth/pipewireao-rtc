@@ -89,7 +89,7 @@ function simulation_documents(path)
         throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
     instrument = referenced_instrument(path, document["instrument"])
     if haskey(document, "optical_model")
-        model = fields(document["optical_model"], ("format", "source"), ("format", "source"), "prepared optical model")
+        model = fields(document["optical_model"], ("format", "source", "variants"), ("format", "source"), "prepared optical model")
         model["format"] == "zemax" && haskey(document, "graphs") &&
             get(get(instrument.document, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
             throw(ArgumentError("prepared optical model requires Zemax execution graphs"))
@@ -107,6 +107,16 @@ function simulation_documents(path)
         imported = haskey(authored, "graphs") && any(component ->
             get(get(component, "preparation", Dict()), "kind", nothing) == "zemax", values(components))
         standalone || imported || throw(ArgumentError("optical model requires an authored Zemax preparation source"))
+        variants = _declaration_object(get(model, "variants", Dict()), "prepared optical variants")
+        authored_variants = get(get(authored, "preparation", Dict()), "variants", Dict())
+        Set(keys(variants)) == Set(keys(authored_variants)) ||
+            throw(ArgumentError("prepared optical variants differ from authored preparation"))
+        for (name, entry) in variants
+            fields(entry, ("branch",), ("branch",), "prepared optical variant")
+            entry["branch"] == authored_variants[name]["branch"] && haskey(document["graphs"], name) &&
+                haskey(get(instrument.document, "optical_paths", Dict()), entry["branch"]) ||
+                throw(ArgumentError("prepared optical variant differs from its authored physical branch"))
+        end
     end
     return (; authoring, document, instrument)
 end
@@ -164,7 +174,7 @@ Graph-bearing authored definitions retain the ordinary executable loader contrac
 function load_simulation_source(path::AbstractString)
     (; authoring, document, instrument) = simulation_documents(path)
     haskey(document, "preparation") || return load_simulation(path)
-    preparation = _declaration_fields(document["preparation"], ("kind", "recipe"),
+    preparation = _declaration_fields(document["preparation"], ("kind", "recipe", "variants"),
         ("kind", "recipe"), "simulation preparation")
     preparation["kind"] == "zemax" || throw(ArgumentError("unsupported simulation preparation kind"))
     prescription = get(instrument.document, "optical_prescription", Dict())
@@ -172,6 +182,16 @@ function load_simulation_source(path::AbstractString)
         throw(ArgumentError("simulation preparation must match the physical optical prescription format"))
     paths = _declaration_object(get(instrument.document, "optical_paths", Dict()), "physical optical paths")
     isempty(paths) && throw(ArgumentError("prepared optical source requires physical optical_paths"))
+    variants = _declaration_object(get(preparation, "variants", Dict()), "optical graph variants")
+    length(variants) <= 16 || throw(ArgumentError("optical graph variants exceed 16 entries"))
+    for (name, selection) in variants
+        _declaration_identifier(name, "optical variant name")
+        haskey(paths, name) && throw(ArgumentError("optical variant cannot replace a physical path"))
+        fields(selection, ("branch", "settings"), ("branch", "settings"), "optical variant")
+        selection["branch"] isa String && haskey(paths, selection["branch"]) ||
+            throw(ArgumentError("optical variant must select a physical branch"))
+        _declaration_object(selection["settings"], "optical variant settings")
+    end
     recipe = _declaration_text(preparation["recipe"], "simulation preparation recipe")
     !isabspath(recipe) && !occursin('\0', recipe) ||
         throw(ArgumentError("simulation preparation recipe must be a relative filename"))
@@ -455,8 +475,10 @@ function graph_document(declaration, configured; calibration=false,
         simulation_graph=calibration ? "calibration" : "production")
     mode = selected_graph(declaration, simulation_graph)
     calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
+    model = get(declaration.document, "optical_model", Dict())
     graph = haskey(declaration.document, "optical_model") &&
-        haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ?
+        (haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ||
+         haskey(get(model, "variants", Dict()), mode)) ?
         optical_graph_document(declaration, configured, mode) : deepcopy(declaration.graphs[mode])
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]

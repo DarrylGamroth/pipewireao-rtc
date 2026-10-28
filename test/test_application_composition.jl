@@ -170,3 +170,53 @@ end
         end
     end
 end
+
+@testset "composition preserves disjoint groups and passive CAL2 inputs" begin
+    mktempdir() do directory
+        base=composition_fixture(joinpath(directory,"base"),"base","simulator","simulator-wfs")
+        component=composition_fixture(joinpath(directory,"component"),"component","simulator","cal2-llowfs")
+        for (root,names) in ((base,["gpi2-jfg-frame-graph"]),(component,["cal2-llowfs-controller","cal2-scc-controller"]))
+            session=C.read_json(joinpath(root,"session.conf"))
+            session["sources"][1]["ownership"]="external"
+            session["graphs"]=[Dict("node.name"=>name,"ownership"=>"external","run-control"=>"session",
+                "ports"=>[Dict("name"=>"image","direction"=>"input","rate"=>endswith(name,"scc-controller") ? "100/1" : "500/1")]) for name in names]
+            session["execution-groups"]=[Dict("name"=>name,"nodes"=>[name]) for name in names]
+            spec=C.read_json(joinpath(root,"deployment.conf"))
+            for name in names;spec["node-owners"][name]="simulator";end
+            if root==base
+                session["links"]=[Dict("output"=>"simulator-wfs:out_$i","input"=>"gpi2-jfg-frame-graph:in_$i","passive"=>true) for i in 1:31]
+            else
+                push!(session["sources"],Dict("node.name"=>"cal2-scc","ownership"=>"external"))
+                push!(session["sinks"],Dict("node.name"=>"cal2-pupil-input","ownership"=>"external"))
+                for name in ("cal2-scc","cal2-pupil-input");spec["node-owners"][name]="simulator";end
+                session["links"]=[Dict("output"=>"cal2-$branch:output_1","input"=>"cal2-$branch-controller:image","passive"=>true) for branch in ("llowfs","scc")]
+            end
+            C.write_json(joinpath(root,"session.conf"),session)
+            C.write_json(joinpath(root,"deployment.conf"),spec);E.seal!(root)
+        end
+        sinks=[Dict("node.name"=>"gpi2-cal2-$branch-offset","ownership"=>"external") for branch in ("llowfs","scc")]
+        links=[Dict("output"=>"simulator-wfs:pupil","input"=>"cal2-pupil-input:input_1"),
+            [Dict("output"=>"cal2-$branch-controller:physical-offset","input"=>"gpi2-cal2-$branch-offset:input_1") for branch in ("llowfs","scc")]...]
+        replacement=joinpath(directory,"prepared-graph.conf");write(replacement,"{}")
+        options=(;namespace="cal2",roles=Dict("simulator"=>"cal2-optics"),links,sinks,
+            node_owners=Dict(sink["node.name"]=>"simulator" for sink in sinks),
+            overrides=Dict("graph.conf"=>replacement),prefix=PREFIX)
+        selected=C.read_json(joinpath(component,"session.conf"))
+        # The observed application omitted both groups. Reject before copying/publishing.
+        invalid=deepcopy(selected);delete!(invalid,"execution-groups")
+        C.write_json(joinpath(component,"session.conf"),invalid);E.seal!(component)
+        rejected=joinpath(directory,"ungrouped")
+        @test_throws D.DeploymentError E.compose(base,component,rejected;options...)
+        @test !ispath(rejected)
+        C.write_json(joinpath(component,"session.conf"),selected);E.seal!(component)
+        output=E.compose(base,component,joinpath(directory,"grouped");options...)
+        merged=D.decode(joinpath(output,"session.conf"),PREFIX)
+        @test length(merged["execution-groups"])==3 && length(merged["links"])==36
+        @test Set(group["name"] for group in merged["execution-groups"])==
+            Set(["gpi2-jfg-frame-graph","cal2-llowfs-controller","cal2-scc-controller"])
+        @test merged["graphs"][2:3]==selected["graphs"]
+        @test merged["execution-groups"][2:3]==selected["execution-groups"]
+        @test read(joinpath(output,"components/cal2/session.conf"))==read(joinpath(component,"session.conf"))
+        @test D.validate_execution_groups(merged) === nothing
+    end
+end

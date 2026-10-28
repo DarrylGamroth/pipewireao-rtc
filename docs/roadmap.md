@@ -36,21 +36,55 @@ schemas before composition publication, aligns cold/native admission at 64
 connections (the normal application declares 36), and rejects inconsistent
 explicit owner thread pins before startup. Declaration verification also enters
 the latest Julia world after optional science packages load, so Zemax graph
-methods are available without an instrument preload workaround. Failed normal
-startup attempts have confirmed cleanup and remain pre-Run evidence; the next
-normal lifecycle and nonzero coupled-loop checks remain separate. Final source
+methods are available without an instrument preload workaround. Initial normal
+startup failures have confirmed cleanup; later candidate cohorts reach Running
+but have not passed the complete lifecycle selector. Nonzero coupled-loop checks
+remain separate. Final source
 QA passes 7,473 assertions with no GPU imports; fresh actual CPU optical owner
 preparation passes 11 checks, and all 12 native selectors pass.
+
+The RTC 0.2.38 candidate merges explicitly declared execution groups and checks the
+native group/passive-link rules before startup. An earlier corrected normal application
+passes native group admission, then stops before Run because an owner thread
+escapes its CPU envelope. An isolated actual AMDGPU preparation attributes that
+behavior to ROCr helper-thread affinity. Shared owner services now select
+inherited helper affinity before process launch and reject conflicting runtime
+settings; the per-thread placement audit remains strict. The paired preparation
+passes with that setting. Final source QA passes 7,517 assertions with no GPU
+imports, and independent review passes the 56 placement checks. With explicit
+inherited affinity, later cohorts reach Running and produce genuine pupil,
+LLOWFS, physical-command and reference packets. The latest attempt rejects first
+LLOWFS coverage: sequence 1 starts at 2 ms, leaving the initial 0–2 ms window
+absent. Full-feed startup warmup passes 29 CPU checks and independent review.
+Isolated AMDGPU preparation on the old sealed application then restores first
+LLOWFS/SCC coverage at PTS zero, with first live feed 0.395 s; managed native
+coverage and lifecycle validation remain pending.
+
+The candidate also wires explicitly alternating SCC exposures through actual
+Acquisition Version 3 trigger classifications and a strict-identity chopped
+pixel-residual frontend. Model-window ordinals preserve missing exposures;
+optical kind comes from AOS, independently of sequence parity. Labelled CPU graph
+preparation remains unpublished and resets pair history. Matched static F/U
+calibration uses the exact authored prefix, publishes a real flat-difference
+parameter and requires a fresh SCC reconstructor. The prior ordinary-intensity
+SCC bundle is not valid for this selection. Focused CPU tests cover transport
+identity, priming/reset, native callback publication and typed bundle generation;
+merged RTC and FGP source suites pass 7,604 and 2,238 assertions respectively
+without GPU imports. The mixed-version private offset receiver passes 147
+assertions. Full-sampling static chopped calibration is accepted at the unchanged
+5% optical and Host-reference gates. Rolling delivery and simultaneous noisy-loop
+qualification remain pending. The release requires AOS 0.3.12, HIL 0.2.11,
+FGA 0.8.13 and FGP 0.1.16; merged checks retain JFG 0.4.3.
 
 The [validation and review record](validation/cal2-feedback-20261028/README.md)
 records full core and focused regression evidence, receiver and cold selector
 checks, and the accepted native-pupil optical / Host expected-reference
 calibration at the unchanged 5% gates. Host reference qualification is bound to a
 CPU GPI producer; CAL2 optical propagation can independently select CPU or AMDGPU. CPU and AMDGPU
-wall pacing is explicit and preserves model timesteps. No combined native cohort,
+wall pacing is explicit and preserves model timesteps. No completed combined native cohort,
 nonzero simultaneous noisy-loop, physical-device or deadline qualification is
-claimed. The normal-cohort selector remains open/zero; its current evidence is
-cold checks and failed startup attempts before Run.
+claimed. The normal-cohort selector remains open/zero; observed Running and
+real products have not yet satisfied its strict coverage and lifecycle gates.
 
 ### Shared mirror-free optical declarations — 2026-10-27
 

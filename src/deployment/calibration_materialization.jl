@@ -1,3 +1,28 @@
+function validate_chopped_calibration(report, simulation)
+    chopping = get(get(simulation,"plant",Dict()),"chopping",Dict())
+    measurements = get(report["recipe"],"measurements",Dict())
+    Set(keys(measurements)) == Set(keys(chopping)) ||
+        throw(ArgumentError("calibrated measurement kinds differ from selected optical chopping"))
+    provenance = get(report,"provenance",Dict())
+    get(provenance,"chopping",Dict()) == chopping ||
+        throw(ArgumentError("calibrated optical chopping differs from selected execution"))
+    for name in keys(chopping)
+        measurements[name] == Dict("kind"=>"chopped-pixel-residual") &&
+            get(report["branches"][name],"measurement_kind",nothing) == "chopped-pixel-residual" ||
+            throw(ArgumentError("chopped execution requires newly calibrated signed pixel residuals"))
+        identity = get(get(provenance,"measurement_frontend_identity",Dict()),name,nothing)
+        identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) ||
+            throw(ArgumentError("chopped calibration must bind its executed measurement prefix"))
+        if get(report,"branch",nothing) == name
+            filename = name*"-reference-difference.fits"
+            get(report["parameter_files"],name*"-reference-difference",nothing) == filename &&
+                haskey(report["artifact_sha256"],filename) ||
+                throw(ArgumentError("chopped calibration requires its real reference-difference FITS parameter"))
+        end
+    end
+    return nothing
+end
+
 """
     materialize_calibration(source, built, calibration; graphs, prefix, ...)
 
@@ -79,6 +104,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         branch_root = dirname(branch_path)
         bundle = Calibration.read_bundle(branch_root)
         report = bundle.report
+        validate_chopped_calibration(report,simulation)
         get(report,"status",nothing)=="accepted" && get(report,"built_application_calibration",false)===true &&
             get(report,"deployable",false)===true && get(report,"diagnostic",true)===false &&
             get(get(report,"held_out",Dict()),"accepted",false)===true &&

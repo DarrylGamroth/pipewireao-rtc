@@ -89,7 +89,7 @@ end
 
 function merge_composition_session(base, component, links)
     merged = deepcopy(base)
-    sections = ("sources", "graphs", "sinks", "links", "observations")
+    sections = ("sources", "graphs", "sinks", "links", "observations", "execution-groups")
     for (key, value) in component
         if key in sections
             append!(get!(merged, key, Any[]), deepcopy(value))

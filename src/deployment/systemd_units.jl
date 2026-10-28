@@ -67,6 +67,10 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
         delete!(environment, key)
     end
+    # ROCr otherwise gives helper threads all CPUs, escaping the owner contract.
+    get(environment, "HSA_OVERRIDE_CPU_AFFINITY_DEBUG", "0") == "0" ||
+        fail("owner runtime requires HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 to preserve inherited CPU affinity")
+    environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "0"
     dependencies = _after_units(after)
 
     lines = String["[Unit]", "Description=PipeWireAO owner $(service.role)"]

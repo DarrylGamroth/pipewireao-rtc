@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.37"
+version = "0.2.38"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -41,20 +41,20 @@ PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphIsland", "FilterGr
 
 [compat]
 Hsm = "0.3.2"
-FilterGraphAlgorithms = "0.8.11"
+FilterGraphAlgorithms = "0.8.13"
 AMDGPU = "2.7"
 LinearAlgebra = "1"
 AdaptiveOpticsCalibration = "0.17.3"
 Interpolations = "0.16"
-AdaptiveOpticsSim = "0.3.11"
-AdaptiveOpticsSimPipeWireHIL = "0.2.10"
+AdaptiveOpticsSim = "0.3.12"
+AdaptiveOpticsSimPipeWireHIL = "0.2.11"
 CUDA = "6.4.2"
 DBInterface = "2.7.0"
 FITSIO = "0.17"
 FilterGraphIsland = "0.1.4"
-FilterGraphPipeWire = "0.1.15"
+FilterGraphPipeWire = "0.1.16"
 JSON = "1.12"
-JuliaFilterGraph = "0.4.2"
+JuliaFilterGraph = "0.4.3"
 PipeWireAO = "0.6.19"
 SHA = "0.7, 1"
 SQLite = "1.9.0"

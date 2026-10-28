@@ -152,6 +152,14 @@ end
         parsed = implementation.optical_recipe(directory,"calibration/optical.yaml")
         @test parsed.frequencies == Float64[.5 0;0 .5;1 0;0 1]
         @test parsed.branch_modes == (llowfs=[1,2,3,4],scc=[5,6,7,8])
+        measurements=Dict("scc"=>Dict("kind"=>"chopped-pixel-residual"))
+        PipeWireAORTC.Common.write_yaml(path,merge(recipe,Dict("measurements"=>measurements)))
+        @test implementation.optical_recipe(directory,"calibration/optical.yaml").document["measurements"]==measurements
+        for invalid in (Dict("other"=>Dict("kind"=>"chopped-pixel-residual")),
+                Dict("scc"=>Dict("kind"=>"guessed")),Dict("scc"=>Dict("kind"=>"chopped-pixel-residual","gain"=>1)),[])
+            PipeWireAORTC.Common.write_yaml(path,merge(recipe,Dict("measurements"=>invalid)))
+            @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
+        end
         reference = Dict("raw_endpoint"=>"pixel-calibration:raw",
             "residual_endpoint"=>"reconstruction:reconstructed","poke_amplitudes_m"=>[5e-9],
             "derivative_tolerance"=>.05,"method"=>"host-expectation","samples"=>512,

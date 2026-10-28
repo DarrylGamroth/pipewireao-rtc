@@ -125,6 +125,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
         Common.sha256_file(reportpath)==entry["result_sha256"] || throw(ArgumentError("indexed branch result hash mismatch"))
         branch = Calibration.read_bundle(dirname(reportpath))
         report = branch.report
+        validate_chopped_calibration(report,component_simulation)
         report["status"]=="accepted" && get(report,"built_application_calibration",false)===true &&
             get(report,"diagnostic",true)===false && get(report,"deployable",false)===true &&
             get(get(report,"held_out",Dict()),"accepted",false)===true &&

@@ -141,8 +141,12 @@ function Offsets.prepare(path::AbstractString,graph)
     names=Tuple(Symbol.(sort!(collect(keys(d["branches"])))))
     calibrations=map(names) do name
         row=d["branches"][string(name)]
-        Set(keys(row))==Set(("node_name","schema","modes","command_limit_m","coefficient_limit_m","max_age_ns","silence_ns")) ||
+        required=Set(("node_name","schema","modes","command_limit_m","coefficient_limit_m","max_age_ns","silence_ns"))
+        row isa AbstractDict && required ⊆ Set(keys(row)) ⊆ union(required,Set(("acquisition_version",))) ||
             throw(ArgumentError("invalid physical offset branch fields"))
+        version=get(row,"acquisition_version",2)
+        version isa Integer && !(version isa Bool) && version in (2,3) ||
+            throw(ArgumentError("physical offset acquisition_version must be 2 or 3"))
         Offsets.Calibration(;identity=d["calibration_identity"],schema=row["schema"],command_order=d["command_order"],
             projection=P,inverse=Q,modes=row["modes"],command_limit_m=row["command_limit_m"],
             coefficient_limit_m=row["coefficient_limit_m"],max_age_ns=row["max_age_ns"],silence_ns=row["silence_ns"])
@@ -151,6 +155,7 @@ function Offsets.prepare(path::AbstractString,graph)
     options=map(names) do name
         row=d["branches"][string(name)]
         HIL.PipeWireArrayStreamOptions(;node_name=row["node_name"],media_name=string(name)*" physical offset",
+            acquisition_version=get(row,"acquisition_version",2),
             schema=row["schema"],format=NdArrayFormat(NdArray.F32_LE,(size(P,1),);layout=NdArray.ROW_MAJOR))
     end
     buffers=map(_->zeros(Float32,size(P,1)),names)

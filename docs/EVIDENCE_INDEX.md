@@ -8,6 +8,11 @@ composition, receiver/reference compensation and scoped Host expected-response
 acceptance. The 0.2.35 follow-up covers explicit mixed backend profiles and shared
 runtime package selection without GPU imports or source mutation. Core and focused software/private-receiver checks pass. The normal
 combined native cohort and nonzero simultaneous noisy loop remain unqualified.
+The 0.2.38 candidate adds model-window continuity, unpublished labelled
+preparation and exact-prefix static F/U calibration. A fresh full-sampling chopped
+bundle passes its static optical and Host-reference gates; merged core QA passes
+7,604 assertions. Earlier intensity acceptance does not qualify that frontend,
+and a completed native cohort or simultaneous noisy loop remains unqualified.
 
 - [GPI online reference calibration](validation/gpi-reference-20261027/README.md):
   source review and fresh registered-release CPU/private-core qualification passed;

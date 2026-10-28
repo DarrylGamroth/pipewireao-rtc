@@ -40,8 +40,10 @@ function Instruments.optical_graph_document(declaration::NamedTuple, configured:
     # expansion uses its ordinary mutable JSON document shape before sealing.
     document = Instruments.json_value(graphs[mode])
     observations = get(declaration.document, "observations", Dict())
-    if haskey(observations, mode)
-        selection = observations[mode]
+    variants = get(declaration.document["optical_model"], "variants", Dict())
+    branch = haskey(variants, mode) ? variants[mode]["branch"] : mode
+    if haskey(observations, branch)
+        selection = observations[branch]
         response = Instruments.graph_document(declaration, configured;
             simulation_graph=selection["graph"])
         detector = only(node for node in response["nodes"] if node["name"] == selection["detector"])
@@ -294,7 +296,7 @@ AOS retains exposure accumulation, response execution, and reset ownership.
 The selected target and execution policy apply to every optical and response graph.
 """
 function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple(),
-        target=Backends.HostComputeDevice(), execution=StreamGraphExecution())
+        target=Backends.HostComputeDevice(), execution=StreamGraphExecution(), chopping=NamedTuple())
     declaration = Instruments.load_simulation(path)
     haskey(declaration.document, "hil") &&
         throw(ArgumentError("external-pupil preparation requires standalone optical graphs"))
@@ -345,6 +347,13 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
                 frame_schema=config["frame_schema"],
                 pixel_sampling_m=(sampling[1], sampling[2]), exposure_duration_s=exposure)
             observation = (;observation..., response)
+        end
+        if hasproperty(chopping, Symbol(name))
+            selected = getproperty(chopping, Symbol(name))
+            unfringed = Instruments.prepare_system(path; settings,
+                simulation_graph=selected.unfringed_graph, target, execution).graph
+            observation = (; observation..., chopping=(; unfringed,
+                initial_phase=Symbol(selected.initial_phase)))
         end
         selections[Symbol(name)] = observation
     end

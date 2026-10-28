@@ -161,9 +161,11 @@ function run_prepared(options, runtime, graph)
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.attach_timers!(
             observer, runtime.transport.loop, () -> PipeWireAO.notify_properties!(node.filter))
         if isnothing(options.capture_backend)
+            warmup = get(options, :chopped_warmup, nothing)
+            samples = warmup === nothing ? nothing : chopped_warmup_samples(graph, options, warmup)
             FilterGraphPipeWire.prepare!(node;
                 execution=options.execution == "row-block" ? :row_block : :complete_frame,
-                required_outputs=options.warmup_outputs)
+                required_outputs=options.warmup_outputs, samples)
         end
         Bootstrap.preparation_check!(runtime)
         Bootstrap.prepared!(runtime)
@@ -199,6 +201,29 @@ function run_prepared(options, runtime, graph)
         end
     end
     return nothing
+end
+
+function chopped_warmup_samples(graph, options, warmup)
+    options.acquisition_version == 3 && options.execution == "complete-frame" &&
+        options.feedback === nothing && options.capture_backend === nothing ||
+        throw(ArgumentError("chopped warmup requires ordinary complete-frame Acquisition Version 3"))
+    formats = JuliaFilterGraph.input_formats(graph)
+    keys(formats) == (warmup.input,) || throw(ArgumentError("chopped warmup requires its sole image input"))
+    format = getproperty(formats, warmup.input)
+    format.element_type === Float32 && length(format.shape) == 2 ||
+        throw(ArgumentError("chopped warmup requires a Float32 image"))
+    identity = sequence -> FilterGraphAlgorithms.SampleAcquisitionIdentity(
+        ntuple(_ -> UInt8(0xa5), 16), UInt64(1), UInt64(sequence))
+    return ntuple(3) do index
+        fringed = isodd(index)
+        metadata = FilterGraphAlgorithms.SampleMetadata(index; terminal=true,acquisition_version=3,
+            trigger_high=fringed == warmup.trigger_high_is_fringed,
+            chopped_image_kind=fringed ? FilterGraphAlgorithms.ChoppedImageFringed : FilterGraphAlgorithms.ChoppedImageUnfringed,
+            acquisition_identity=identity(index), exposure_duration_nanoseconds=warmup.exposure_duration_ns)
+        (; inputs=NamedTuple{(warmup.input,)}((ones(Float32, format.shape),)),
+            metadata=NamedTuple{(warmup.input,)}((metadata,)),
+            expected=index == 1 ? FilterGraphAlgorithms.SccPixelResidualIncompletePair : nothing)
+    end
 end
 
 end

@@ -286,3 +286,274 @@ PIPEWIREAO_PREFIX=/path/to/isolated-sdk OPENBLAS_NUM_THREADS=1 \
   julia --threads=4 --project=/path/to/full-qa-environment --startup-file=no \
   -e 'include("test/runtests.jl"); @assert !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))'
 ```
+
+## Controlled graphs and execution-group composition
+
+The first registered 0.2.36 normal cohort prepared every owner, then faulted
+before Run at native execution-group admission. The offending declarations were
+`cal2-llowfs-controller` and `cal2-scc-controller`: both granted session run
+control, but neither had an execution group. All 27 sinks were external and
+were correctly excluded from that requirement. The CAL2 controller mode also
+marked its sensor-to-controller inputs nonpassive. These declarations did not
+satisfy the existing RTC-DEV-011/016 contract at baseline `7c2e862`.
+
+The next patch preserves native authority rules. Cold application validation
+and actual native configuration compilation now check ownership/run-control
+compatibility, explicit group membership, unique nonempty groups with processing
+graphs, and standard passive boundaries. Errors identify the offending node or
+link. Composition appends disjoint declared group lists rather than requiring
+the two applications' lists to be identical; it does not infer groups. The
+CAL2 authored controller mode explicitly declares its two independent groups
+using the controller node names and marks both sensor inputs passive. Graphs,
+calibration artifacts, 500/100 Hz declared branch rates and model settings are
+unchanged.
+
+The same regression against registered 0.2.36 publishes the ungrouped component
+(two failed assertions), then rejects disjoint group-list composition. The
+candidate passes 191 focused cold assertions, including a three-group/36-link
+composition with both branch rate rows preserved and immutable component bytes.
+The actual old application is rejected cold with its first missing CAL2 graph
+name before owner launch. Logs are `/tmp/cal2-group-cold-before.log`,
+`/tmp/cal2-group-cold-after.log` and `/tmp/cal2-group-actual-before.log`.
+
+All 12 native Meson selectors pass. The private-core native hook fixture rejects
+missing CAL2 groups and nonpassive grouped inputs, admits corrected declarations,
+and proves LLOWFS group stop/restart preserves running SCC and GPI group state;
+global stop/reset/quit also completes. Native discovery/control I/O is gated in
+that fixture. This is policy/lifecycle software evidence, not observed scientific
+branch delivery or a completed normal cohort. Logs are
+`/tmp/cal2-group-native-hooks.log` and `/tmp/cal2-group-native-full.log`.
+The final full-source suite passes 7,470 assertions across 306 testsets, exit 0,
+with an explicit no-GPU-import assertion (`/tmp/cal2-group-core.log`). The
+concurrent snapshot test made 87 assertions in this run versus 120 in the prior
+run; no old testset was omitted and the two new testsets add 30 assertions.
+The actual candidate export is recorded separately; normal cohort Run,
+simultaneous noisy-loop and deadline qualification remain pending.
+
+## ROCr helper-thread placement
+
+The corrected normal application passes native execution-group admission with
+all owners prepared. It then fails the pre-Run placement audit: Julia-named
+thread 3548647 has affinity 0–15 outside its owner's deployment envelope. The
+historical owning PID is not recoverable: the process exited, no thread census
+was retained, and the launch ledger writes placement snapshots only after every
+owner passes. The error stack identifies an external-owner snapshot, not the
+native session process. Subsequent link-loss messages are cleanup observations.
+
+A paired, isolated preparation uses the actual registered AMDGPU CAL2 owner,
+configuration, runtime and `taskset` mask 10–11. With the ROCr setting absent,
+two Julia-named helper threads acquire affinity 0–15 during AMDGPU import and
+retain it through full optical preparation and an additional propagation.
+`strace -f -k` attributes the explicit full-mask thread creation to
+`AMDGPU.__init__` through the system ROCr library
+`/opt/rocm-7.2.1/lib/libhsa-runtime64.so.1.18.70201`. With only
+`HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0` changed, all 25 final threads remain on 10–11
+at every checkpoint. The library SHA-256 is
+`6a05f324199ef5a8f4f66258e1263f203e7c72929dda4aec137e7eeade6ec8c2`;
+the comparison and evidence hashes are in
+`/tmp/cal2-amdgpu-affinity-receipt.json`. This establishes the reproduced ROCr
+cause without assigning the vanished historical thread to a particular owner.
+The [ROCr environment-variable contract](https://rocm.docs.amd.com/projects/ROCR-Runtime/en/docs-7.1.0/api-reference/environment_variables.html)
+defines zero as inheriting the parent's CPU affinity.
+
+The shared `SystemdOwners.service_unit` environment boundary now defaults that
+setting to zero after inherited and authored environment merges, before any
+Julia or accelerator initialization. Explicit conflicting values are rejected;
+the caller's environment is unchanged. CPU-only preparation does not import a
+GPU package. The existing per-thread audit is unchanged, and its affinity error
+now includes the owning PID so future failures can be matched to the retained
+launch ledger. No instrument-specific preload or affinity correction is added.
+
+The same focused selector produces four failures against registered 0.2.36 and
+passes all 56 assertions against the candidate, with an explicit no-GPU-import
+assertion (`/tmp/cal2-rocr-placement-before-all.log` and
+`/tmp/cal2-rocr-placement-after.log`). The isolated preparation comparison does
+not qualify normal cohort Run, nonzero simultaneous correction, deadline
+behavior or physical devices; those gates remain separate.
+
+The final source suite exits 0 with 7,517 assertions across 308 testsets and an
+explicit no-GPU-import assertion (`/tmp/cal2-rocr-placement-core.log`). The two
+new testsets add 10 assertions; the concurrent snapshot loop makes 124 rather
+than 87 assertions in this run, accounting for the remaining count difference
+from the preceding group suite. No previous testset is omitted. Independent
+review passes all 56 focused checks and cold import validation with no findings
+(`/tmp/cal2-rocr-launch-independent-review.json`). Native policy is unchanged
+from the preceding 12-selector pass. Release and normal native qualification
+remain held; subsequent Running observations are recorded below.
+
+## Running observations and initial exposure coverage
+
+With explicit inherited ROCr affinity, later cohorts pass placement, reach
+Running and produce genuine GPI pupil, CAL2 LLOWFS, physical-command and
+reference packets. The latest strict capture rejects the first LLOWFS product:
+sequence 1 has model PTS 2 ms, so the initial 0–2 ms exposure is absent. These
+observations establish real delivery, not a completed normal cohort or noisy
+simultaneous-loop acceptance.
+
+An isolated actual AMDGPU full-feed probe takes 3.272 s on its first call,
+including 2.594 s compilation, versus 0.390–0.540 s on the next 20 calls. This
+supports a startup-stall hypothesis; it does not establish the historical cause
+of the missing exposure. Runtime full-feed/emitter warmup passes 29 CPU checks
+and independent review, with publication disabled and owner state reset before
+Ready. No deadline or complete lifecycle qualification is inferred.
+
+The isolated AMDGPU follow-up uses the exact old sealed application,
+`taskset` 10–11 and inherited ROCr affinity, with no core, publication or CUDA.
+Warmup takes 8.962 s including 4.590 s compilation; reset leaves pristine source
+state. First live feed takes 0.394619 s with 1.642 µs compilation. Across 21
+accepted feeds, minimum/median/maximum are 0.390651/0.395054/0.412044 s. The first
+LLOWFS and SCC products both have sequence 1 and PTS zero, and LLOWFS PTS is
+contiguous at 0/2/4/6/8 ms. Output domain/source state is restored after warmup.
+The timing receipt is `/tmp/cal2-owner-warmup-validation.toml`; raw evidence is
+`/tmp/cal2-amdgpu-warmed-first-feed-probe.{json,log,jl}`. CPU coverage is 16
+chopped, five cancellation/bound and eight seeded detector draw/reset assertions
+in `/tmp/cal2-owner-warmup-after-r4.log`, with no GPU imports. The reviewed owner
+source SHA is `319558c2b2fc2bc1d4da2c213f19e4bf9ab072b63f4dd7b746eacdedc33811a4`;
+test SHA is `be855b08850ba6702a8d23b4fab541e0cc17996c95095611bbded5b67964b6da`.
+This is bounded software/functional timing evidence on the old application,
+not a managed cohort pass, the confirmed historical cause, deadline acceptance
+or physical-device qualification.
+
+## Alternating SCC acquisition and matched pixel residuals
+
+The chopped candidate uses two generated static optical variants, with explicit
+initial phase and trigger polarity in `plant.chopping`. AOS owns the completed
+exposure's fringed/unfringed classification. RTC publishes that classification
+as Acquisition Version 3 and uses the aligned model-window ordinal for chopped
+Header/acquisition sequence. A source-and-adapter CPU test emits AOS counters
+1/2 at model PTS 0/30 ms for 10 ms exposures and proves wire identities 1/4.
+Missing complete exposures therefore cannot form an adjacent pair. Optical kind
+is never inferred from those counters. Ordinary LLOWFS Version 2 and sequence
+behavior are preserved.
+
+The retained SCC measurement prefix is full-image PixelSelection, finite-only
+PixelValidity, strict-identity ChoppedImageDifference and SccPixelResidual.
+Calibration executes that same prefix for static F/U push/pull and held-out
+pairs. A newly measured SCC reconstructor and real flat F−U FITS parameter are
+published with flat-image diagnostics; frontend subtraction makes the modal
+reference zero. Prefix identity and source chopping enter provenance. Old
+ordinary-intensity bundles, changed polarity/variant choices and changed
+publication prefixes are rejected. No carrier/FIR/ROI or remote phase-command
+feedforward is selected. Static calibration does not establish rolling-loop
+stability or simultaneous noisy-loop acceptance.
+
+The FGP opt-in preparation API executes an explicitly labelled unpublished
+F/U/F sequence: exact `SccPixelResidualIncompletePair`, then two successes with
+required outputs. Its `finally` reset clears pair history and availability.
+JFG's documented retained last-product metadata remains inspectable; it is not
+publication evidence. The native callback regression proves the first real F
+cannot use warmup history, real U completes with Version 3 acquisition identity
+and Header PTS, a missing window re-primes, and reset re-primes again. This uses
+native buffer callbacks without connecting a node or starting a core.
+
+The complete FGP source suite also exits 0 with 2,238 assertions across 103
+testsets and `FGP_NO_GPU_IMPORTS_PASS` in `/tmp/cal2-chopped-fgp-full.log`.
+Its validation-only environment copies the existing source QA environment and
+adds direct access to the already installed ForwardDiff 1.4.6 test dependency;
+the manifest's package closure and frozen application environments are unchanged.
+
+Focused CPU evidence, all with no CUDA/AMDGPU imports:
+
+- RTC cold owner/warmup authoring: 123 assertions;
+  `/tmp/cal2-chopped-rtc-cold.log`.
+- Authored/generated variant parsing: 75 assertions;
+  `/tmp/cal2-chopped-source-variants.log`.
+- Actual AOS owner preparation and model-window adapter: 40 assertions;
+  `/tmp/cal2-chopped-owner-preparation.log`.
+- FGP ordinary/labelled preparation and native callback: 73 assertions;
+  `/tmp/cal2-chopped-fgp-native-callback-r3.log`.
+- Exact-prefix signed calibration, typed flat-difference publication, prefix
+  tamper and old-selection rejection: 51 assertions;
+  `/tmp/cal2-chopped-calibration-final.log`.
+- Ordinary optical publication: 18 assertions; bounded optical/numerical
+  regressions: 95 assertions; ordinary materialization: 20 assertions; feedback
+  preparation: 70 assertions. Logs are
+  `/tmp/cal2-chopped-publication-existing.log`,
+  `/tmp/cal2-chopped-optical-regressions.log`,
+  `/tmp/cal2-chopped-materialization-feedback.log` and
+  `/tmp/cal2-chopped-feedback-r2.log`.
+
+The first metadata-reset assertion was rejected as stricter than JFG's public
+contract; no JFG implementation change or release is required. A native callback
+test also stopped decoding unavailable output metadata and now checks the
+publication flag first. The first feedback regression exposed an assumed
+`plant` field in legacy ordinary test data; absent chopping remains the ordinary
+case and the existing 70 assertions pass. Instrument formatting and whitespace
+checks pass. Independent review of this candidate is recorded when complete.
+The initial software checks precede the full-sampling chopped acceptance below;
+no completed live chopped cohort is claimed.
+
+The first full-sampling calibration attempt was interrupted before publication
+after about 18 minutes compiling frontend-identity serialization. The retained
+stack identifies JSON/StructUtils generated-field compilation after
+`canonical(AbstractVector)` converted the million-pixel mask to a tuple. The
+shared canonicalizer now maps arrays without encoding their length in the type,
+preserving the prior serialized JSON identity bytes. Nine focused checks cover
+ordinary JSON hash parity, a full million-pixel mask, last-pixel sensitivity and
+snapshot ownership; they complete in 0.7 s. This was a software scaling failure,
+not a failed numerical gate. Final post-fix QA is recorded separately below.
+
+The metadata-version audit also found that both offset receivers still selected
+HIL's default Version 2, while the chopped SCC controller forwards Version 3.
+The receiver now accepts an explicit per-branch `acquisition_version` of 2 or 3,
+defaulting to 2; unsupported values and types are rejected. The authored SCC
+receiver selects 3 and LLOWFS selects 2. The same cold selector fails before the
+change and passes 29 assertions afterward. The existing four-scenario native
+private receiver test passes 147 assertions, including 20 new checks of actual
+Version 3 trigger receipts, identity/model time and SCC adoption alongside
+Version 2 GPI/LLOWFS streams. This tests real metadata transport without starting
+an instrument session. Logs are `/tmp/cal2-chopped-offset-v3-before.log`,
+`/tmp/cal2-chopped-offset-v3-cold.log` and
+`/tmp/cal2-chopped-offset-v3-private.log`; the last asserts no GPU imports.
+
+Pre-canonical-fix RTC source QA exits 0 with 7,675 assertions across 317 testsets and
+`FULL_CORE_NO_GPU_IMPORTS_PASS` in `/tmp/cal2-chopped-rtc-core-final.log`.
+Relative to the preceding 7,517-assertion run, nine new testsets add 81 assertions,
+the concurrent snapshot loop increases from 124 to 199, and the named deployment
+source-closure checks add two. No previous testset is omitted. This includes the
+runtime warmup owner source at SHA-256
+`319558c2b2fc2bc1d4da2c213f19e4bf9ab072b63f4dd7b746eacdedc33811a4`.
+The first full-suite attempt stopped on an unqualified `include` in the isolated
+capture-test module; the owning test now uses `Base.include` and the final run
+passes. The initial Git missing-object stderr is the unchanged negative test in
+`test_configuration_store.jl`, which deliberately removes a loose object and
+expects retrieval to fail.
+
+The final post-canonical-fix RTC source run passes 7,687 assertions across 319
+testsets, exit 0 with `FULL_CORE_NO_GPU_IMPORTS_PASS` in
+`/tmp/cal2-chopped-rtc-core-canonical.log`. The two canonical testsets add nine
+assertions, and concurrent snapshots increase from 199 to 202. No prior testset
+is omitted. This validates the frozen feature snapshot before upstream integration.
+
+## RTC 0.2.38 merged release checks
+
+The isolated release integrates feature commit `db87604` with registered RTC
+0.2.37 (`cbb5704`) in merge `cca60893643db326a9d9a28b12c558448cef04b2`, tree
+`61db0e4574b9b63f3d080e465d2ba7613128799e`. The resolution preserves upstream
+generated HIL optics, contained authored sources, receipt validation and authored
+prescription identity, alongside strict standalone variant descriptors and the
+array canonicalizer. Independent review of the three overlapping source files
+finds no confirmed defect.
+
+The isolated source environment uses AOS 0.3.12, HIL 0.2.11, FGA 0.8.13 and FGP
+0.1.16, with JFG 0.4.3 retained. Focused checks pass 680 assertions: cold metadata,
+canonicalization, variant and export checks 452; generated-component output,
+settings, identity and source/graph-byte tamper checks 79; chopped calibration
+51; owner preparation 40; owner warmup 29; receiver validation 29. Logs are
+`/tmp/cal2-rtc-0238-{cold,components,chopped,owner,warmup,receiver}.log`.
+
+Final merged core QA passes 7,604 assertions across the same 319 testsets, exit
+0 with `MERGED_FULL_CORE_NO_GPU_IMPORTS_PASS` in `/tmp/cal2-rtc-0238-core.log`.
+No testset is omitted: the count difference from 7,687 comes entirely from the
+concurrent snapshot loop changing from 202 to 119. These selectors import no
+GPU module and start no instrument service. Frozen calibration worktrees and
+application environments remain unchanged.
+
+The fresh full-sampling chopped calibration at
+`/tmp/cal2-chopped-optical-calibration-20261028-r2` publishes identity
+`sha256:65f31bb7f44b94f6241dd9d144037cfce1d7f4b876a1bce2bd1415a2aa83a7f9`.
+Both branch reports are accepted and deployable at the unchanged 5% gates,
+using AMDGPU optical propagation and Host expected-reference acquisition.
+`application_accepted` remains false. This establishes matched static calibration
+on the frozen feature source; normal managed coverage, simultaneous noisy-loop,
+physical-device and deadline qualification remain separate.

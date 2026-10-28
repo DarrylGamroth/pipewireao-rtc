@@ -55,3 +55,44 @@ const Owner = PipeWireAORTC.AOSOwner
     end
     @test all(id->id.name ∉ ("CUDA","AMDGPU"),keys(Base.loaded_modules))
 end
+
+@testset "actual chopped exposures retain missing model windows at transport" begin
+    mktempdir() do directory
+        (;document,config,path,physical,simulation) = external_pupil_owner_documents(directory)
+        physical["wavefront_sensors"]["scc"]["acquisition"]["exposure_duration_s"] = 0.01
+        simulation["graphs"]["scc_unfringed"] = deepcopy(simulation["graphs"]["scc"])
+        write_external_optical_documents(directory,physical,simulation)
+        document["plant"]["chopping"] = Dict("scc"=>Dict("unfringed_graph"=>"scc_unfringed",
+            "initial_phase"=>"fringed","trigger_high_is_fringed"=>true))
+        PipeWireAORTC.Common.write_json(config,document)
+        options = Owner.configuration(config)
+        science = Owner.prepare_external_pupil_science(options)
+        streams = ExternalOwner.stream_options(science,options.pupil_node,options.sensor_nodes)
+        @test streams[2].acquisition_version==2
+        @test streams[3].acquisition_version==3
+        packet=zeros(Float32,2,4,4);packet[2,:,:].=1
+        domain=AcquisitionDomain(ntuple(i->UInt8(i),16))
+        emitted=NamedTuple[]
+        for index in (1:5...,16:20...)
+            receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(index)),
+                pts=Int64((index-1)*2_000_000),duration=UInt64(2_000_000),lost_samples=UInt64(0))
+            @test ExternalOwner.feed!(science.plant,packet,receipt) do name,image,metadata
+                push!(emitted,(;name,metadata))
+            end
+        end
+        scc=filter(item->item.name===:scc,emitted)
+        @test getproperty.(getproperty.(scc,:metadata),:sequence)==[1,2]
+        @test getproperty.(getproperty.(scc,:metadata),:pts)==[0,30_000_000]
+        @test getproperty.(getproperty.(scc,:metadata),:duration)==[10_000_000,10_000_000]
+        @test getproperty.(getproperty.(scc,:metadata),:chopped_image_kind)==[:fringed,:unfringed]
+        @test [ExternalOwner.sensor_sequence(item.metadata,true) for item in scc]==[1,4]
+        @test [ExternalOwner.trigger_state(science,:scc,item.metadata) for item in scc]==
+            [ACQUISITION_TRIGGER_HIGH,ACQUISITION_TRIGGER_LOW]
+        llowfs=filter(item->item.name===:llowfs,emitted)
+        @test [ExternalOwner.sensor_sequence(item.metadata,false) for item in llowfs]==collect(1:10)
+        reset_external_pupil!(science.plant)
+        @test science.plant.state.domain===nothing
+        @test all(exposure->exposure.sequence==0,values(science.plant.exposures))
+    end
+    @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+end

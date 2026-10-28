@@ -143,3 +143,8 @@
   instrument repository. Its README owns environment prerequisites and commands.
   Builds do not install or launch sessions. Keep source files and live RTCs
   unchanged while validating a fresh output.
+- `julia --project=/path/to/science-environment test/calibration_chopped.jl`
+  checks the actual CPU chopped measurement prefix, signed numerical calibration,
+  typed reference-difference publication and old-calibration rejection without
+  a core or GPU. `test/calibration_optical_publication.jl` retains the ordinary
+  intensity publication regression. These tests do not qualify a rolling loop.

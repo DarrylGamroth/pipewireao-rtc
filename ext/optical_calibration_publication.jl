@@ -28,6 +28,8 @@ function optical_publication_plan(application, selected; graphs, configuration, 
         throw(ArgumentError("optical publication requires a built external-pupil application"))
     rtc = IC.load_rtc(D.relative_asset(application,simulation["rtc_configuration"]))
     plant = simulation["plant"]
+    options = PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
+    chopping = options.plant.chopping
     definition = D.relative_asset(application,plant["definition"])
     Calibration.digest(definition) == Calibration.digest(D.relative_asset(application,selected.document["optical_simulation"])) ||
         throw(ArgumentError("optical recipe differs from the built external-pupil definition"))
@@ -36,13 +38,13 @@ function optical_publication_plan(application, selected; graphs, configuration, 
         IC.canonical(IC.settings(declaration,get(selected.document,"settings",Dict()))) ||
         throw(ArgumentError("optical recipe effective settings differ from built execution"))
     contracts = Export.external_pupil_port_contracts(definition;
-        settings=get(plant,"settings",Dict()))
+        settings=get(plant,"settings",Dict()),chopping)
     frames = Dict(string(name)=>Dict("frame_schema"=>contracts["sensors"][getproperty(selected.branches,name)]["schema"])
         for name in names)
     templates = NamedTuple{names}(Tuple(D.decode(D.relative_asset(application,graphs[string(name)]),prefix) for name in names))
     validate_optical_graphs(templates,NamedTuple{names}(Tuple(Dict() for _ in names)),names)
     instrument = PipeWireAORTC.Common.read_json(D.relative_asset(application,"instrument.json"))
-    return (;rtc,frames,templates,instrument)
+    return (;rtc,frames,templates,instrument,chopping)
 end
 
 function optical_publication_graphs(plan, calibration)
@@ -72,11 +74,21 @@ function optical_publication_graphs(plan, calibration)
             dimensions,mirror_controls=plan.rtc.controls["deformable_mirrors"],calibration=calibration_context)
         PipeWireAORTC.InstrumentExport.resolve_graph_configuration(template,context)
     end
+    for (name,graph) in pairs(graphs)
+        hasproperty(get(plan,:chopping,NamedTuple()),name) || continue
+        actual = optical_frontend_identity(optical_chopped_document(graph,name))
+        expected = calibration.report["provenance"]["measurement_frontend_identity"][string(name)]
+        actual == expected || throw(ArgumentError("published chopped measurement prefix differs from its calibrated execution"))
+    end
     return (;graphs,contexts)
 end
 
 function publish_optical_bundles(result, destination, graphs, contexts)
     validate_optical_graphs(graphs,contexts,keys(result.calibration.branches))
+    for (name,identity) in get(result.calibration.report["provenance"],"measurement_frontend_identity",Dict())
+        actual = optical_frontend_identity(optical_chopped_document(getproperty(graphs,Symbol(name)),Symbol(name)))
+        actual == identity || throw(ArgumentError("published chopped graph differs from its calibrated measurement prefix"))
+    end
     result.calibration.report["status"] == "accepted" ||
         throw(ArgumentError("cannot publish a rejected optical calibration"))
     mkpath(dirname(destination))
@@ -91,7 +103,7 @@ function publish_optical_bundles(result, destination, graphs, contexts)
             # before making the bundle index visible. This owns no live graph.
             mktempdir() do directory
                 entries = [Dict("port"=>parameter,"path"=>joinpath(branch,"artifacts",filename),
-                    "hdu"=>1,"axes"=>parameter == string(name)*"-modal-reference" ? [1] : [2,1])
+                    "hdu"=>1,"axes"=>parameter in (string(name)*"-modal-reference",string(name)*"-reference-difference") ? [1] : [2,1])
                     for (parameter,filename) in report["parameter_files"]]
                 bindings = joinpath(directory,"parameters.conf")
                 PipeWireAORTC.Common.write_json(bindings,Dict("parameters"=>entries))
