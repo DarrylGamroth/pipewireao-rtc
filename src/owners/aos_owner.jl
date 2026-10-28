@@ -462,8 +462,11 @@ function _main(args; with_owner=Bootstrap.with_owner,
                 load_proper()
                 admitted.owner_check()
             end
-            admitted.version == 4 ? verify_external_pupil_declaration(admitted) :
-                InstrumentDefinition.verify_declaration(admitted)
+            # Optional science loads add graph preparation methods in a newer
+            # world; declaration verification resolves those same graph methods.
+            verify = admitted.version == 4 ? verify_external_pupil_declaration :
+                InstrumentDefinition.verify_declaration
+            Base.invokelatest(verify, admitted)
         elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
             admitted.owner_check()

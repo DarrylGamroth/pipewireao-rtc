@@ -115,6 +115,15 @@
   `julia --project=/path/to/science-environment test/aos_selected_graph_loading.jl`
   checks the real optional loaders and selected CPU optics/observation contracts
   in a fresh process, without a PipeWire core.
+- `julia --project=/path/to/science-environment test/aos_owner_science_loading.jl
+  /path/to/built-application/simulation.conf` checks the version-4 owner's real
+  optional science/Proper loaders in a fresh process. Supply a real built
+  external-pupil configuration and direct AOS/HIL/Proper dependencies; do not
+  preload those packages. The selector explicitly chooses CPU preparation,
+  injects only the bootstrap boundary and prepares the declared optics without
+  a PipeWire core, service, GPU import or instrument/configuration mutation.
+  This catches extension world-age failures; it does not qualify native owner
+  lifecycle or the application's selected accelerator execution.
 - `julia --project=. test/test_zemax_components.jl` checks composable imported
   optics, physical pupil-plane metadata and named HIL graph selection without
   scientific packages. `julia --project=/path/to/science-environment

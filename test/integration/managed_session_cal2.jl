@@ -32,8 +32,10 @@ function declared_port(session, name, direction)
     entry=only(entries)
     return only(filter(value->value["name"]==port && value["direction"]==direction,entry["ports"]))
 end
+has_schema(contract) = get(contract,"schema",nothing) isa AbstractString && !isempty(strip(contract["schema"]))
 function product(name, output, contract, duration, mapping)
     node, port=endpoint(output)
+    require(has_schema(contract),"CAL2 selector requires an explicit native export schema: $name")
     require(contract["element-type"]=="F32_LE" && get(contract,"layout","ROW_MAJOR")=="ROW_MAJOR",
         "CAL2 selector requires an explicit row-major Float32 export: $name")
     shape=Tuple(Int.(contract["shape"]))
@@ -41,6 +43,29 @@ function product(name, output, contract, duration, mapping)
     rate=get(contract,"rate",nothing)
     fraction=rate===nothing ? nothing : SPA.Fraction(parse.(UInt32,split(rate,'/'))...)
     return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration))
+end
+
+# The exporter's graph_port_contracts deliberately retains only shape and type.
+# Capture must use the same prepared AlgorithmFormat.schema published by FGPW.
+function graph_output_contracts(path)
+    FGI=Base.require(Main,:FilterGraphIsland)
+    JFG=Base.require(Main,:JuliaFilterGraph)
+    options=Base.invokelatest(FGI.parse_arguments,["--graph",String(path),"--check","--execution","complete-frame"])
+    graph=Base.invokelatest(FGI.prepare_service_graph,options)
+    try
+        formats=Base.invokelatest(JFG.output_formats,graph)
+        return Dict("outputs"=>Dict(string(name)=>merge(E.port_contract(format),
+            Dict("schema"=>format.schema)) for (name,format) in pairs(formats)))
+    finally
+        Base.invokelatest(FGI.close_execution,graph)
+    end
+end
+
+function require_return_schema(native, declared, receiver)
+    require(has_schema(native) && has_schema(declared) && has_schema(receiver) &&
+        native["schema"]==declared["schema"]==receiver["schema"],
+        "CAL2 native output, session declaration and receiver branch schemas differ")
+    return nothing
 end
 
 function correction_control(graph, property)
@@ -83,7 +108,12 @@ function modal_product!(products, missing, name, graph, contracts, control, dura
     exports = filter(port->port["endpoint"]==input["output"],graph["filter.graph"]["outputs"])
     if length(exports)==1
         port = only(exports)["name"]
-        push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contracts["outputs"][port],duration,mapping))
+        contract=contracts["outputs"][port]
+        if has_schema(contract)
+            push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contract,duration,mapping))
+        else
+            push!(missing,"No explicit native schema for $(input["output"]); $name modal residual cannot be observed.")
+        end
     else
         push!(missing,"No unique exported $(input["output"]); $name modal residual cannot be observed.")
     end
@@ -149,7 +179,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     Base.require(Main,:FilterGraphIsland)
     Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     Base.invokelatest(E.validate_feedback,application,relpath(graph_path,application),relpath(binding_path,application),relpath(receiver_path,application))
-    contracts=Base.invokelatest(E.graph_port_contracts,graph_path)
+    contracts=graph_output_contracts(graph_path)
     graph=D.decode(graph_path,prefix)
     graph_node=graph["node.name"]
     require(mapping[graph_node]==receiving["role"],"receiving graph owner differs")
@@ -179,8 +209,10 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         controller_graph=D.decode(controller_path,prefix)
         control=correction_control(controller_graph,argument(controller["argv"],"--correction-property"))
         push!(controls,control)
-        push!(products,product(name*"-offset",link["output"],declared_port(session,link["output"],"output"),duration,mapping))
-        branch_contracts=Base.invokelatest(E.graph_port_contracts,controller_path)
+        branch_contracts=graph_output_contracts(controller_path)
+        declared=declared_port(session,link["output"],"output")
+        require_return_schema(branch_contracts["outputs"][last(endpoint(link["output"]))],declared,branch)
+        push!(products,product(name*"-offset",link["output"],declared,duration,mapping))
         modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping)
     end
     physical=receiver["clock_output"]

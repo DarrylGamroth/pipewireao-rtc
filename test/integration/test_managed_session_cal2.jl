@@ -21,6 +21,19 @@ const CAL2=ManagedSessionCAL2
     @test_throws ArgumentError CAL2.require_open_snapshot(control,properties,generation)
 end
 
+@testset "return admission binds native, session and receiving schemas" begin
+    native=Dict("schema"=>PipeWireAORTC.Schemas.identifier("requested_pdm_command"))
+    declared=deepcopy(native)
+    receiver=Dict("schema"=>"pipewireao/requested-pdm-command-opd-m-f32/1")
+    @test_throws ArgumentError CAL2.require_return_schema(native,declared,receiver)
+    receiver["schema"]=native["schema"]
+    @test CAL2.require_return_schema(native,declared,receiver)===nothing
+    declared["schema"]="pipewireao/requested-pdm-command-opd-m-f32/1"
+    @test_throws ArgumentError CAL2.require_return_schema(native,declared,receiver)
+    delete!(native,"schema")
+    @test_throws ArgumentError CAL2.require_return_schema(native,receiver,receiver)
+end
+
 @testset "reference captures follow prepared endpoints and keep source latency separate" begin
     graph=Dict("node.name"=>"gpi","filter.graph"=>Dict("links"=>[
         Dict("input"=>"reference:reconstructed-residual","output"=>"reconstruction:reconstructed")],
@@ -48,9 +61,37 @@ end
     @test only(products).name=="llowfs-modal-residual" && only(products).shape==(8,)
     @test only(products).port=="modal-residual" && only(products).duration==20
     @test isempty(missing)
+    delete!(contracts["outputs"]["modal-residual"],"schema")
+    unschematized=Any[]
+    CAL2.modal_product!(unschematized,missing,"llowfs",graph,contracts,control,20,Dict("ll-controller"=>"cal2-llowfs"))
+    @test isempty(unschematized) && length(missing)==1 && occursin("schema",only(missing))
+    @test_throws ArgumentError CAL2.product("required","ll-controller:modal-residual",contracts["outputs"]["modal-residual"],20,Dict("ll-controller"=>"cal2-llowfs"))
+    empty!(missing)
     empty!(graph["filter.graph"]["outputs"])
     CAL2.modal_product!(Any[],missing,"llowfs",graph,contracts,control,20,Dict("ll-controller"=>"cal2-llowfs"))
     @test length(missing)==1 && occursin("modal-reference:output",only(missing))
+end
+
+@testset "capture schema comes from the prepared native graph output" begin
+    mktempdir() do directory
+        schema=PipeWireAORTC.Schemas.identifier("controller_residual_error")
+        graph=Dict("node.name"=>"controller","filter.graph"=>Dict("nodes"=>[
+            Dict("type"=>"ndarray","name"=>"reference","label"=>"vector-offset-f32",
+                "config"=>Dict("extent"=>8,"schema"=>schema))],
+            "inputs"=>[Dict("name"=>"residual","endpoint"=>"reference:requested"),
+                Dict("name"=>"flat","endpoint"=>"reference:offset")],
+            "outputs"=>[Dict("name"=>"modal-residual","endpoint"=>"reference:output")]))
+        path=joinpath(directory,"graph.conf")
+        PipeWireAORTC.ScienceExport.write_spa_config(path,graph)
+        contracts=CAL2.graph_output_contracts(path)
+        contract=contracts["outputs"]["modal-residual"]
+        @test contract["schema"]==schema && contract["shape"]==[8]
+        prepared=CAL2.product("modal","controller:modal-residual",contract,20,Dict("controller"=>"owner"))
+        @test prepared.schema==schema
+        shape_only=Base.invokelatest(CAL2.E.graph_port_contracts,path)["outputs"]["modal-residual"]
+        @test !haskey(shape_only,"schema")
+        @test_throws ArgumentError CAL2.product("required","controller:modal-residual",shape_only,20,Dict("controller"=>"owner"))
+    end
 end
 
 @testset "covered vector payloads share receiving frames without claiming nonzero adoption" begin

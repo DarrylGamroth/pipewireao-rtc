@@ -47,3 +47,26 @@ end
     @test_throws ArgumentError E.prepare_owner_scheduling!(Dict("owners"=>[missing]),
         Dict("scheduling"=>Dict("processes"=>Dict("instance"=>process(Dict("julia"=>[3,2]))))))
 end
+
+@testset "explicit Julia pins match cold owner arguments and placement" begin
+    D=PipeWireAORTC.DeploymentConfiguration
+    placement=Dict("cpus"=>[2,3,4],"leader-cpu"=>3)
+    declaration=Dict("role"=>"controller","argv"=>["julia","--threads=3,0","--pin-cpus","3,2,4"])
+    @test D.validate_owner_pins(declaration,placement) === nothing
+    for argv in (["julia","--threads=3,1","--pin-cpus=3,2,4"],
+            ["julia","--threads","3,auto","--pin-cpus=3,2,4"],
+            ["julia","--threads=1","--pin-cpus=3"],
+            ["julia","--threads=3,0","--pin-cpus=3,3,2"], ["unmanaged"])
+        @test D.validate_owner_pins(merge(declaration,Dict("argv"=>argv)),placement) === nothing
+    end
+    for argv in (["julia","--threads=3,0","--pin-cpus","3,2"],
+            ["julia","--threads=3,0","--pin-cpus=3,2,5"],
+            ["julia","--threads=3,0","--pin-cpus=2,3,4"],
+            ["julia","--threads=auto","--pin-cpus=3,2,4"],
+            ["julia","--threads=3,0","--pin-cpus=3,2,"],
+            ["julia","--threads=3,0","--pin-cpus=3,2,1"],
+            ["julia","--threads=3,0","--pin-cpus=3,2,4","--pin-cpus=3,2,4"],
+            ["julia","--threads=3,0","--pin-cpus"], ["julia","--pin-cpus=3,2,4"])
+        @test_throws D.DeploymentError D.validate_owner_pins(merge(declaration,Dict("argv"=>argv)),placement)
+    end
+end

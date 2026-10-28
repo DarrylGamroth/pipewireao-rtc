@@ -17,6 +17,7 @@ export DeploymentError, fail, require, digest, atomic_record, installed_paths, d
     application_environment
 
 const MAX_EXTERNAL_OWNERS = 8
+const MAX_SESSION_LINKS = 64
 const MAX_CONFIG_BYTES = 16 * 1024 * 1024
 const REQUIRED_KEYS = Set(["version", "name", "session", "core", "client", "placement",
     "owners", "environment", "artifacts", "cpu-latency-us"])
@@ -59,6 +60,15 @@ function decode(path::AbstractString, prefix::AbstractString)
         ncodeunits(out) <= MAX_CONFIG_BYTES || fail("decoded deployment configuration exceeds 16 MiB")
         return Common.parse_json(out)
     end
+end
+
+# Offline optical-calibration exports may have no operational connections.
+# An actual native session additionally requires at least one connection.
+function validate_session_links(session)
+    links = get(session, "links", Any[])
+    require(links isa AbstractVector && length(links) <= MAX_SESSION_LINKS,
+        "session links must be a list of at most $MAX_SESSION_LINKS declared connections")
+    return links
 end
 
 function validate_environment(value, label)
@@ -263,6 +273,37 @@ function application_environment(spec::AbstractDict, package::AbstractString)
     return environment
 end
 
+# Explicit FGI pins must remain consistent when complete owner argv is replaced.
+# This is cold metadata validation; it neither imports FGI nor changes affinity.
+function validate_owner_pins(owner, placement)
+    argv = owner["argv"]
+    option_key(arg) = first(split(arg, '='; limit=2))
+    any(arg -> option_key(arg) == "--pin-cpus", argv) || return nothing
+    function option_value(flag)
+        positions = findall(arg -> option_key(arg) == flag, argv)
+        require(length(positions) == 1, "explicit CPU pins require exactly one $flag argument")
+        index = only(positions)
+        terms = split(argv[index], '='; limit=2)
+        length(terms) == 2 && return last(terms)
+        require(index < length(argv), "$flag requires a value")
+        return argv[index+1]
+    end
+    raw_pins = tryparse.(Int, split(option_value("--pin-cpus"), ','; keepempty=true))
+    require(!isempty(raw_pins) && all(cpu -> cpu !== nothing && cpu >= 2, raw_pins),
+        "--pin-cpus requires CPU IDs >= 2 separated by commas")
+    pins = Int[cpu for cpu in raw_pins]
+    count = tryparse(Int, first(split(option_value("--threads"), ','; keepempty=true)))
+    require(count !== nothing && count > 0,
+        "explicit CPU pins require an explicit positive default Julia thread count")
+    require(length(pins) == count,
+        "owner $(owner["role"]) --pin-cpus must list one CPU per default Julia thread")
+    require(Set(pins) ⊆ valid_cpu_list(placement["cpus"]),
+        "owner $(owner["role"]) CPU pins exceed its declared process envelope")
+    require(first(pins) == placement["leader-cpu"],
+        "owner $(owner["role"]) thread one CPU must equal its declared process leader")
+    return nothing
+end
+
 "Validate the existing process and thread placement contracts without reading an application."
 function validate_placements(placements, roles)
     require(placements isa AbstractDict && Set(keys(placements)) == roles,
@@ -433,6 +474,9 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
         require(!(staging in markers || staging in reserved), "source request staging path conflicts with runtime paths")
     end
     validate_placements(value["placement"], roles)
+    for owner in owners
+        native_bootstrap(owner) && validate_owner_pins(owner, value["placement"][owner["role"]])
+    end
     latency = value["cpu-latency-us"]
     require(latency === nothing || typeof(latency) === Int && 0 <= latency <= typemax(Int32),
         "cpu-latency-us must be null or a nonnegative Int32")
@@ -450,11 +494,12 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
         require(sha isa String && occursin(r"^[0-9a-f]{64}$", sha) && digest(asset) == sha,
             "deployment artifact hash mismatch: $name")
     end
+    session = decode(relative_asset(dirname(path), value["session"]), prefix)
+    validate_session_links(session)
     if haskey(value, "node-owners")
         mapping = value["node-owners"]
         require(mapping isa AbstractDict && all(key isa String && role isa String
             for (key, role) in mapping), "node-owners must map exact node names to owner roles")
-        session = decode(relative_asset(dirname(path), value["session"]), prefix)
         nodes = String[]
         fgn = false
         parameters = false

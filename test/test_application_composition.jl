@@ -6,6 +6,40 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
 Base.include(@__MODULE__,joinpath(@__DIR__,"composition_documents.jl"))
 
+@testset "declared cross-link contracts agree before composition publication" begin
+    mktempdir() do directory
+        base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
+        component=composition_fixture(joinpath(directory,"component"),"component","simulator","sensor")
+        schema=PipeWireAORTC.Schemas.identifier("requested_pdm_command")
+        format=Dict("shape"=>[2],"element-type"=>"F32_LE","layout"=>"ROW_MAJOR","schema"=>schema)
+        for (root,name,direction) in ((base,"output_1","output"),(component,"input_1","input"))
+            session=C.read_json(joinpath(root,"session.conf"))
+            session["sources"][1]["ports"]=[merge(format,Dict("name"=>name,"direction"=>direction))]
+            C.write_json(joinpath(root,"session.conf"),session);E.seal!(root)
+        end
+        replacement=joinpath(directory,"prepared-graph.conf");write(replacement,"{}")
+        options=(;namespace="cal2",roles=Dict("simulator"=>"cal2-optics"),
+            links=[Dict("output"=>"pupil:output_1","input"=>"sensor:input_1")],
+            overrides=Dict("graph.conf"=>replacement),prefix=PREFIX)
+        @test isdir(E.compose(base,component,joinpath(directory,"matching");options...))
+        for (field,value) in (("schema","pipewireao/requested-pdm-command-opd-m-f32/1"),
+                ("shape",[3]),("element-type","F64_LE"),("layout","COLUMN_MAJOR"))
+            session=C.read_json(joinpath(component,"session.conf"))
+            session["sources"][1]["ports"][1]=merge(format,Dict("name"=>"input_1","direction"=>"input",field=>value))
+            C.write_json(joinpath(component,"session.conf"),session);E.seal!(component)
+            output=joinpath(directory,"mismatched-"*field)
+            @test_throws ArgumentError E.compose(base,component,output;options...)
+            @test !ispath(output)
+        end
+        # Only explicitly shared fields are proved; omission retains legacy admission.
+        session=C.read_json(joinpath(component,"session.conf"))
+        session["sources"][1]["ports"][1]=Dict("name"=>"input_1","direction"=>"input")
+        C.write_json(joinpath(component,"session.conf"),session);E.seal!(component)
+        @test isdir(E.compose(base,component,joinpath(directory,"undeclared");options...))
+        @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+    end
+end
+
 @testset "sealed applications share one authority and preserve component bytes" begin
     mktempdir() do directory
         base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
@@ -87,5 +121,52 @@ end
         output=E.compose(base,component,joinpath(temporary,"valid");options...,overrides=Dict("graph.conf"=>replacement))
         @test D.application_environment(C.read_json(joinpath(output,"deployment.conf")),output)==joinpath(output,"env")
         @test "--project=@PACKAGE@/env" in last(C.read_json(joinpath(output,"deployment.conf"))["owners"])["argv"]
+    end
+end
+
+@testset "composition admits the native link capacity before publication" begin
+    mktempdir() do directory
+        base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
+        component=composition_fixture(joinpath(directory,"component"),"component","simulator","sensor")
+        replacement=joinpath(directory,"prepared-graph.conf");write(replacement,"{}")
+        options=(;namespace="cal2",roles=Dict("simulator"=>"cal2-optics"),
+            overrides=Dict("graph.conf"=>replacement),prefix=PREFIX)
+        for count in (36,64)
+            links=[Dict("output"=>"pupil:out_$i","input"=>"sensor:in_$i") for i in 1:count]
+            output=E.compose(base,component,joinpath(directory,"links-$count");links,options...)
+            @test length(D.decode(joinpath(output,"session.conf"),PREFIX)["links"]) == count
+        end
+        output=joinpath(directory,"links-65")
+        links=[Dict("output"=>"pupil:out_$i","input"=>"sensor:in_$i") for i in 1:65]
+        @test_throws D.DeploymentError E.compose(base,component,output;links,options...)
+        @test !ispath(output)
+    end
+end
+
+@testset "composition rejects stale owner CPU pins before publication" begin
+    mktempdir() do directory
+        base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
+        component=composition_fixture(joinpath(directory,"component"),"component","simulator","sensor")
+        spec=C.read_json(joinpath(base,"deployment.conf"))
+        spec["placement"]["simulator"]["cpus"]=[2,3,4]
+        spec["placement"]["simulator"]["leader-cpu"]=3
+        owner=only(spec["owners"]);append!(owner["argv"],["--pin-cpus","3,2"])
+        C.write_json(joinpath(base,"deployment.conf"),spec);E.seal!(base)
+        argv=copy(owner["argv"])
+        argv[only(findall(arg->startswith(arg,"--threads="),argv))]="--threads=3,0"
+        replacement=joinpath(directory,"prepared-graph.conf");write(replacement,"{}")
+        options=(;namespace="cal2",roles=Dict("simulator"=>"cal2-optics"),links=Any[],
+            overrides=Dict("graph.conf"=>replacement),prefix=PREFIX)
+        output=joinpath(directory,"stale-pins")
+        @test_throws D.DeploymentError E.compose(base,component,output;
+            owner_arguments=Dict("simulator"=>argv),options...)
+        @test !ispath(output)
+        for (pins,name) in (("3,2,4","matching-pins"),("3,3,2","repeated-pins"))
+            selected=copy(argv);selected[end]=pins
+            accepted=E.compose(base,component,joinpath(directory,name);
+                owner_arguments=Dict("simulator"=>selected),options...)
+            @test only(filter(owner->owner["role"]=="simulator",
+                C.read_json(joinpath(accepted,"deployment.conf"))["owners"]))["argv"] == selected
+        end
     end
 end

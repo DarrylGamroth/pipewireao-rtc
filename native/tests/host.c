@@ -148,7 +148,7 @@ replace (const gchar *text, const gchar *key, const gchar *value)
 }
 
 static void
-public_session_status (void)
+public_session_status (gconstpointer data)
 {
   WpTestServer server = {0};
   wp_test_server_setup (&server);
@@ -165,10 +165,23 @@ public_session_status (void)
   g_autofree gchar *remote = replace (template, "@REMOTE@", server.name);
   g_autofree gchar *policy_path = g_build_filename (g_getenv ("RTC_TEST_SOURCE"),
       "../scripts/ao/session.lua", NULL);
-  g_autofree gchar *config = replace (remote, "@POLICY@", policy_path);
+  g_autofree gchar *policy = replace (remote, "@POLICY@", policy_path);
+  guint count = GPOINTER_TO_UINT (data);
+  g_autoptr (GString) links = g_string_new (NULL);
+  for (guint i = 0; i < count; i++)
+    g_string_append_printf (links,
+        "{ output = \"absent-source:out_%u\" input = \"absent-graph:in_%u\" } ", i, i);
+  g_autofree gchar *config = replace (policy, "@LINKS@", links->str);
   g_assert_true (g_file_set_contents (path, config, -1, &error));
   g_assert_no_error (error);
   g_autoptr (GSubprocess) process = start (path);
+  if (count == 0 || count > 64) {
+    wait_status (process, 78);
+    wp_test_server_teardown (&server);
+    g_remove (path);
+    g_rmdir (directory);
+    return;
+  }
   const gchar *pid = g_subprocess_get_identifier (process);
   g_assert_nonnull (pid);
   g_autofree gchar *client_script = g_build_filename (g_getenv ("RTC_TEST_SOURCE"),
@@ -212,7 +225,11 @@ main (int argc, char **argv)
   g_test_init (&argc, &argv, NULL);
   wp_init (WP_INIT_ALL);
   g_test_add_func ("/rtc-host/missing-configuration", missing_configuration);
-  g_test_add_func ("/rtc-host/public-session-status", public_session_status);
+  g_test_add_data_func ("/rtc-host/public-session-status", GUINT_TO_POINTER (1), public_session_status);
+  g_test_add_data_func ("/rtc-host/session-links/normal-36", GUINT_TO_POINTER (36), public_session_status);
+  g_test_add_data_func ("/rtc-host/session-links/boundary-64", GUINT_TO_POINTER (64), public_session_status);
+  g_test_add_data_func ("/rtc-host/session-links/excess-65", GUINT_TO_POINTER (65), public_session_status);
+  g_test_add_data_func ("/rtc-host/session-links/empty", GUINT_TO_POINTER (0), public_session_status);
   g_test_add_data_func ("/rtc-host/termination", GINT_TO_POINTER (1), host_connection);
   g_test_add_data_func ("/rtc-host/connection-lost", GINT_TO_POINTER (0), host_connection);
   return g_test_run ();

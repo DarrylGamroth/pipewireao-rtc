@@ -111,6 +111,34 @@ function merge_composition_session(base, component, links)
     return merged
 end
 
+# Opaque/undeclared ports retain existing admission. Compare only fields both
+# endpoints explicitly declare; matching data does not prove native negotiation.
+function validate_composition_links(session, links)
+    nodes=Dict(node["node.name"]=>node for section in ("sources","graphs","sinks") for node in get(session,section,[]))
+    function declared(endpoint, direction)
+        endpoint isa AbstractString || return nothing
+        parts=split(endpoint,':';keepempty=true)
+        length(parts)==2 || return nothing
+        node=get(nodes,first(parts),nothing)
+        node===nothing && return nothing
+        matches=filter(port->get(port,"name",nothing)==last(parts) && get(port,"direction",nothing)==direction,
+            get(node,"ports",[]))
+        return isempty(matches) ? nothing : only(matches)
+    end
+    for link in links
+        output=declared(link["output"],"output")
+        input=declared(link["input"],"input")
+        (output===nothing || input===nothing) && continue
+        for field in ("shape","element-type","layout","schema")
+            if haskey(output,field) && haskey(input,field)
+                output[field]==input[field] || throw(ArgumentError(
+                    "composition link $field mismatch: $(link["output"]) → $(link["input"])"))
+            end
+        end
+    end
+    return nothing
+end
+
 """
     compose(base, component, fresh_output; namespace, roles, links, overrides, owner_arguments, prefix)
 
@@ -216,6 +244,7 @@ function compose(base::AbstractString, component::AbstractString, destination::A
         existing_nodes = Set(item["node.name"] for section in ("sources","graphs","sinks") for item in get(session,section,[]))
         isempty(intersect(existing_nodes,Set(keys(node_owners)))) || throw(ArgumentError("additional sink names collide"))
         append!(get!(session,"sinks",Any[]),deepcopy(sinks))
+        validate_composition_links(session,links)
         core = merge_composition_core(D.decode(joinpath(base_root, main["core"]), prefix),
             composition_rebase(D.decode(joinpath(component_root, extra["core"]), prefix), component_prefix))
         for (relative, source) in selected

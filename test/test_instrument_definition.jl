@@ -460,7 +460,8 @@ end
             "owners" => [Dict("role" => "simulator", "control-protocol" => "pipewireao.source-control/1",
                 "control-node" => "simulator-wfs")])
         session = Dict("sources" => [Dict("node.name" => "simulator-wfs")],
-            "sinks" => [Dict("node.name" => "core-sink")], "graphs" => [])
+            "sinks" => [Dict("node.name" => "core-sink")], "graphs" => [],
+            "links" => [Dict("output" => "simulator-wfs:output_1", "input" => "core-sink:input_1")])
         bindings = Dict("PACKAGE" => package, "RUNTIME" => "/tmp/instrument-test",
             "REMOTE" => "instrument-test", "SESSION_UUID" => "00000000-0000-0000-0000-000000000001",
             "SESSION_SCRIPT" => "/sealed/rtc/scripts/ao/session.lua", "SESSION_CONTROL_INSTANCE" => "21",
