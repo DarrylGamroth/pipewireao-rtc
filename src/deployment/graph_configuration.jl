@@ -17,6 +17,7 @@ function graph_context(instrument::AbstractDict; dimensions::AbstractDict=Dict()
 end
 
 function sensor_context(layout)
+    haskey(layout,"detector_shape") || return Dict{String,Any}()
     fields = Dict{String,Any}("pixel_to_image" => pixel_to_image(layout["detector_shape"]))
     if get(layout, "kind", "shack_hartmann") == "shack_hartmann"
         fields["subaperture_count"] = length(layout["subaperture_origins"])

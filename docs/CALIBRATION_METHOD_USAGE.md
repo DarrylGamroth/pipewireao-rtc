@@ -275,3 +275,46 @@ runs also completed through this entry point. Their finite prediction, energy
 and timing results are in [method measurements](CALIBRATION_METHOD_VALIDATION.md).
 Candidate completion does not select a new method or inverse; fresh common
 validation and a locked test remain necessary for that decision.
+
+## Optical branch calibration and generated selection
+
+`InstrumentCalibration.calibrate_optical(upstream_built, optical_built,
+fresh_bundle; concrete_graphs, contexts, recipe="calibration/optical.yaml",
+target=...)` consumes sealed built applications and explicit concrete branch
+graphs/contexts. The shared optional calibration extension owns numerical
+acquisition and AOC inversion. The callback path uses the actual native
+`PupilOutput.pack!` orientation, then packet `[quantity,y,x]` planes, for the
+external optical input. A direct GPI `[x,y]` copy is not equivalent.
+
+Publication emits one standard bundle per branch and a `calibration.yaml` index.
+The index hashes each branch result and the common command projection P, physical
+to modal inverse Q, and optional upstream reconstructed-reference response C.
+Each branch measures the full shared mode response before applying its authority.
+A deployable result passes rank, derivative, reconstruction and held-out gates,
+plus the native UInt16 upstream reference checks when selected. Diagnostic
+results retain `diagnostic: true`, `deployable: false`; optical acceptance alone
+does not produce a deployable matched-feedback calibration. Camera, ADC and
+simulator effective settings are part of the selected C provenance. Changing
+brightness, readout settings, frontend nodes or their FITS bindings requires
+matching calibration. Neither a relaxed gate nor a diagnostic dither is an
+implicit production selection.
+
+`InstrumentExport.materialize_calibration(source, built, accepted_bundle;
+graphs, provenance, prefix, destination="generated/calibration",
+rtc_configuration="rtc/configuration.yaml",
+simulation_configuration="simulation.conf", recipe="calibration/optical.yaml",
+zero_command="physical-offset-zero.fits")` selects those accepted bundles in
+an authored instrument source. All validation precedes writes. It checks the
+sealed built input, recipe/source/provenance hashes, branch acceptance and shared
+identities, then verifies that the context reproduces each authored graph.
+The generated destination must be fresh. Standard branch bundles are copied
+unchanged; a shared context, exact-zero Float32 physical command and selection
+receipt are generated there. The supported writer updates the authored RTC's
+selected calibration path and identity. The optical recipe stays authored and
+unchanged. Generated bundles, contexts, FITS headers and recorded hashes are
+never edited by hand.
+
+A selected numerical result still has `application_accepted: false`. Rebuild the
+application from that source with a named profile and explicit host declaration,
+then use [feedback preparation](JULIA_DEPLOYMENT_USAGE.md#sealed-composition-and-feedback-preparation).
+Native cohort, simultaneous-loop and failure acceptance follow separately.

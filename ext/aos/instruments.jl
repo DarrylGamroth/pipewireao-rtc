@@ -272,14 +272,17 @@ function Instruments.binding_values(::Val{:pupil_coordinates}, declaration, conf
 end
 
 """
-    InstrumentConfiguration.prepare_external_pupil(path; settings=NamedTuple())
+    InstrumentConfiguration.prepare_external_pupil(path; settings=NamedTuple(),
+        target=HostComputeDevice(), execution=StreamGraphExecution())
 
 Prepare physical optical paths and their optional post-exposure AOS response
 systems. The generated execution declaration names response graphs by graph key;
 the authored source declaration names their instrument-relative YAML files.
 AOS retains exposure accumulation, response execution, and reset ownership.
+The selected target and execution policy apply to every optical and response graph.
 """
-function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple())
+function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple(),
+        target=Backends.HostComputeDevice(), execution=StreamGraphExecution())
     declaration = Instruments.load_simulation(path)
     haskey(declaration.document, "hil") &&
         throw(ArgumentError("external-pupil preparation requires standalone optical graphs"))
@@ -293,7 +296,7 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
     for (name, physical_path) in paths
         haskey(declaration.graphs, name) || throw(ArgumentError("physical optical path has no execution graph $name"))
         optical[Symbol(name)] = Instruments.prepare_system(path; settings,
-            simulation_graph=name).graph
+            simulation_graph=name, target, execution).graph
         sensor = declaration.instrument.document["wavefront_sensors"][physical_path["sensor"]]
         acquisition = get(sensor, "acquisition", Dict())
         seconds = get(acquisition, "exposure_duration_s", nothing)
@@ -323,7 +326,8 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
             shape = (config["rows"], config["columns"])
             haskey(sensor, "detector_shape") && Tuple(sensor["detector_shape"]) != shape &&
                 throw(ArgumentError("observation detector shape differs from its physical sensor"))
-            response = (;graph=Instruments.prepare_system(path; settings, simulation_graph=key).graph,
+            response = (;graph=Instruments.prepare_system(path; settings, simulation_graph=key,
+                    target, execution).graph,
                 input=:photon_rate, output=:frame,
                 normalized_to_photon_rate=entry["normalized_to_photon_rate"],
                 frame_schema=config["frame_schema"],

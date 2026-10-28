@@ -36,6 +36,17 @@ function integer(value, label, lower, upper)
         throw(ArgumentError("$label must be an integer in $lower:$upper"))
     return Int(value)
 end
+
+function pacing_period(value, rate)
+    value isa Real && !(value isa Bool) && isfinite(value) && 0 <= value <= rate ||
+        throw(ArgumentError("pacing_rate_hz must be finite between zero and the model rate"))
+    value == 0 && return UInt64(0)
+    value isa Int && return UInt64(div(1_000_000_000 + div(value,2),value))
+    period = 1e9 / Float64(value)
+    isfinite(period) && 1 <= period < Float64(typemax(UInt64)) ||
+        throw(ArgumentError("pacing period must fit UInt64 nanoseconds"))
+    return round(UInt64,period)
+end
 function identifier(value, label)
     name = text(value, label)
     occursin(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name) ||
@@ -212,7 +223,8 @@ end
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
-    version = integer(get(document, "version", nothing), "version", 1, 3)
+    version = integer(get(document, "version", nothing), "version", 1, 4)
+    version == 4 && return external_pupil_configuration(path, document)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
@@ -254,8 +266,8 @@ function configuration(path::AbstractString)
     rate = integer(document["rate"], "rate", 1, 1_000_000_000)
     period_ns = UInt64(div(1_000_000_000 + div(rate, 2), rate))
     exposure_ns = UInt64(integer(document["exposure_ns"], "exposure_ns", 1, period_ns))
-    pacing_rate_hz = integer(document["pacing_rate_hz"], "pacing_rate_hz", 0, rate)
-    pacing_period_ns = pacing_rate_hz == 0 ? UInt64(0) : UInt64(div(1_000_000_000 + div(pacing_rate_hz, 2), pacing_rate_hz))
+    pacing_rate_hz = document["pacing_rate_hz"]
+    pacing_period_ns = pacing_period(pacing_rate_hz,rate)
     backend = Symbol(text(document["backend"], "backend"))
     backend in (:cpu, :cuda, :amdgpu) || throw(ArgumentError("AOS backend must be cpu, cuda or amdgpu"))
     device = integer(document["device"], "device", 0, typemax(Int32))
@@ -338,6 +350,10 @@ end
 
 function prepare_science end
 function run_owner end
+function prepare_external_pupil_science end
+function run_external_pupil_owner end
+
+include("external_pupil_configuration.jl")
 
 "The private invocation directory owns this small operational report."
 report_path(options) = joinpath(dirname(options.remote), options.control_node * "-report.json")
@@ -405,9 +421,13 @@ function load_instrument(package::Symbol)
 end
 
 function requires_proper(options)
-    options.version == 3 || return false
+    options.version in (3, 4) || return false
     declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
+    if options.version == 4
+        return any(name -> InstrumentConfiguration.graph_requires_proper(declaration, configured;
+            simulation_graph=name), keys(declaration.instrument.document["optical_paths"]))
+    end
     return InstrumentConfiguration.graph_requires_proper(declaration, configured;
         simulation_graph=get(options.plant, :graph, "production"))
 end
@@ -423,8 +443,13 @@ function _main(args; with_owner=Bootstrap.with_owner,
         load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
-    all(name -> name != invocation.control_node && name != invocation.bootstrap_node, command_items(options.command_node)) ||
+    data_nodes = options.version == 4 ? (options.pupil_node,values(options.sensor_nodes)...) :
+        command_items(options.command_node)
+    all(name -> name != invocation.control_node && name != invocation.bootstrap_node, data_nodes) ||
         throw(ArgumentError("bootstrap, frame and command nodes must differ"))
+    options.version == 4 && (invocation.phase_timing_directory !== nothing ||
+        invocation.optical_diagnostics_cpu !== nothing || invocation.pupil_output_cpu !== nothing) &&
+        throw(ArgumentError("external-pupil owners use their input clock and do not support HIL diagnostic workers"))
     with_owner(merge(options, invocation)) do admitted
         admitted.owner_check()
         load_science()
@@ -432,19 +457,20 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.backend === :cuda && load_cuda()
         admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
-        if admitted.version == 3
+        if admitted.version in (3, 4)
             if requires_proper(admitted)
                 load_proper()
                 admitted.owner_check()
             end
-            InstrumentDefinition.verify_declaration(admitted)
+            admitted.version == 4 ? verify_external_pupil_declaration(admitted) :
+                InstrumentDefinition.verify_declaration(admitted)
         elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
             admitted.owner_check()
             InstrumentDefinition.verify_plant(admitted,plant_module)
             admitted = merge(admitted, (; plant_module))
         end
-        Base.invokelatest(run, admitted)
+        Base.invokelatest(run === run_owner && admitted.version == 4 ? run_external_pupil_owner : run, admitted)
     end
     return 0
 end
@@ -465,6 +491,13 @@ commands retain independent shapes and wire units; physical mirror commands
 match their declared mirror names. All versions declare command/frame names,
 extents, timing and backend/device. Paths are relative to the configuration. Preparing is published before optional science imports.
 FITS preparation is cold startup only; RTC retains lifecycle authority.
+
+Version 4 selects `mode="external-pupil"` and declares a mirror-free plant,
+one `pupil_node`, and a `sensor_nodes` map naming every physical optical path.
+It consumes coherent external OPD/amplitude packets and publishes independent
+Float32 sensor streams at their declared exposure durations. Its timing comes
+from the input model timestamps; supported backends are CPU and AMDGPU. The
+ordinary native bootstrap and source run/pause/reset controls remain authoritative.
 """
 main(args) = _main(args)
 

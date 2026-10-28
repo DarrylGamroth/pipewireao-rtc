@@ -76,6 +76,22 @@ the host supplies the corresponding build-selected installed directories.
 The generated policy component uses an absolute installed script path to avoid
 the Lua loader's ordinary-client working-directory lookup.
 
+## Coupled source lifecycle
+
+A deployment permits at most eight external owners. Keep one primary
+`source-owner`; the optional `auxiliary-source-owners` list names up to seven
+additional declared AOS owners with native SourceControl and owner bootstrap.
+The authoring adapter requires `kind: aos`. Retained process identities and
+control node names are validated before native configuration is written.
+
+List auxiliary sources in upstream-to-downstream order after the primary.
+RUN starts graph consumers, then auxiliary sources in reverse order, then the
+primary. PAUSE, RESET, QUIT and fault cleanup hold the primary and then auxiliary
+sources before holding graph consumers. RESET checks every source generation
+and cursor before clearing graph histories. QUIT uses existing SourceControl
+and owner bootstrap shutdown. Primary source-end reporting remains tied to the
+primary cursor. No additional session authority or source protocol is created.
+
 ## Provenance and validation scope
 
 The relocated policy, plugins and tests originated in the WirePlumberAO

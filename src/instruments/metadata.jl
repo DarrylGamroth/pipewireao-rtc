@@ -252,7 +252,8 @@ function publication(path)
         end))
     sensors = NamedTuple{keys(scientific.wavefront_sensors)}(Tuple(
         (;layout=merge(getproperty(scientific.wavefront_sensors,name).layout,
-            (;expected_schema=declaration.instrument.document["wavefront_sensors"][String(name)]["expected_schema"])))
+            haskey(declaration.instrument.document["wavefront_sensors"][String(name)],"expected_schema") ?
+                (;expected_schema=declaration.instrument.document["wavefront_sensors"][String(name)]["expected_schema"]) : (;)))
         for name in keys(scientific.wavefront_sensors)))
     identity = InstrumentDefinition.scientific_identity((;physical=scientific,mirrors))
     result = (;schema_version=2,id=scientific.id,calibration_identity,
@@ -265,7 +266,7 @@ end
 function prepare_simulation_configuration!(application::AbstractString; simulation="simulation.conf", configuration=nothing)
     path = D.relative_asset(application, simulation)
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    source["version"] == 3 || throw(ArgumentError("declarative instrument publication requires simulator version 3"))
+    source["version"] in (3,4) || throw(ArgumentError("declarative instrument publication requires simulator version 3 or 4"))
     plant = source["plant"]
     declaration = load_simulation(D.relative_asset(application, plant["definition"]))
     configured = settings(declaration, get(plant, "settings", Dict()))

@@ -640,3 +640,81 @@ and final result. A failed/unknown effect is never retried or rolled back
 automatically. Use the retained original application for explicit recovery.
 Archive completed records explicitly before reaching the 256-record limit.
 The saved Git artifact catalog and SQLite journal are not changed by this tool.
+
+## Managed external-pupil applications
+
+`AOSOwner.main` accepts a version-4 `mode: external-pupil` configuration through
+its ordinary native bootstrap. The strict fields are `version`, `mode`,
+`plant: {definition, settings}`, `pupil_node`, `sensor_nodes`, `backend`, `device`,
+`instrument`, `rtc_configuration`, `calibration_identity` and
+`prescription_identity`. `sensor_nodes` names every physical optical path.
+The instrument has zero deformable mirrors and empty mirror controls; it does
+not acquire a synthetic DM or controller command boundary. CPU uses device 0;
+AMDGPU uses an explicit positive device ordinal. Export prepares port contracts
+on the CPU, without importing a GPU package.
+
+The source publishes Preparing before optional scientific imports, then Prepared
+and Connected through the existing bootstrap. Connected starts held. Native
+SourceControl run/pause/reset and bootstrap Quit retain their existing meanings.
+Reset requires a held source and serialized input processing; it clears pending
+transport admission, partial exposures and detector history, increments output
+generation and permits a new input domain. No second session supervisor is used.
+For a composed session the native authority holds all sources before reset,
+starts consumers, then auxiliary sources, and starts the primary source last.
+
+`InstrumentExport.external_pupil_port_contracts(definition; settings)` supplies
+cold pupil/sensor shape, element type and schema declarations. The pupil is one
+row-major Float32 `(quantity,y,x)` packet: OPD in metres, then relative amplitude.
+GPI's `PupilOutput.pack!` converts its native `[x,y]` arrays into this packet;
+a direct copy of those arrays changes orientation. Sensors use their own exposure
+cadences and acquisition metadata. Relative-intensity schemas include a
+prescription/branch/sampling/shape hash before the final `/1`; node properties
+retain wavelength, bandpass, sampling, axes and exposure units. Declared detector
+responses keep their explicit frame schema. Input model time owns exposure
+integration; the external-pupil source has no wall-pacing field.
+
+### Sealed composition and feedback preparation
+
+`InstrumentExport.compose(base, component, fresh_output; namespace, roles,
+links, overrides, prefix, owner_arguments=Dict(), sinks=[], node_owners=Dict())`
+combines fully sealed built applications. The base retains its core, session,
+primary source and instrument definition. Component files remain byte-for-byte
+under `components/<namespace>`; mapped component owners join the base session,
+with its source declared as an auxiliary source. Owner asset arguments and
+bootstrap identities are rebased; the selected registered runtime remains
+shared. Nonempty explicit asset overrides and optional complete base-owner
+argument replacements are recorded in the final seal and composition receipt.
+Project/Manifest replacement, including a nested runtime project, is prohibited;
+the final registered dependency closure is revalidated before publication.
+This API does not compile a graph variant or launch processes.
+
+`InstrumentExport.prepare_feedback(base, component, fresh_output, recipe;
+prefix, profile=nothing)` performs the scientific preparation before composition.
+Its authored recipe selects the receiving graph template, added FITS bindings,
+physical-offset contract, owner/thread arguments, component roles and exact links.
+The component already contains an accepted generated calibration selection and
+an exact-zero startup command. Preparation checks every branch's identity,
+acceptance, diagnostic/deployable flags and shared P/Q/C hashes. It matches C's
+upstream effective settings, ADC configuration, simulator graph identities,
+frontend dependency closure and original FITS hashes to the actual base.
+It binds physical command order from the declared mirror layout and units.
+The staged final graph is prepared with all typed FITS mappings, then
+`PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
+Only a passing staged application becomes the requested output.
+
+The receiving graph uses three default Julia threads: native graph execution,
+bootstrap monitoring and the offset pump. An explicit preparation profile
+selects the already-built CPU or AMDGPU backend/device, primary-source wall
+pacing and each receiver branch's monotonic silence limit. It does not select
+controller gains or accept a rejected calibration. Source `pacing_rate_hz` accepts
+finite rates from zero to model rate, including fractional rates; zero disables
+wall pacing. Integer-rate rounding is retained. Model sample rate, PTS and
+exposure duration remain independent of wall pacing. Model-age limits and
+monotonic silence limits remain separate.
+
+The instrument repository's `tools/compose.jl`, `tools/prepare-feedback.jl` and
+`tools/materialize-calibration.jl` are thin clients of these shared APIs. They
+prepare fresh artifacts; they do not install or start a session. A composed
+application is software preparation, not evidence of a running native cohort,
+closed-loop acceptance or deadline performance. See
+[optical calibration selection](CALIBRATION_METHOD_USAGE.md#optical-branch-calibration-and-generated-selection).

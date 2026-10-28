@@ -114,17 +114,18 @@ local function session (options)
       shutdown = function (_, _, callback) return record ("shutdown-owner", callback, true) end,
     },
     ["ao-acquisition"] = {
-      new = function () return {} end,
-      prepare = function (_, _, callback) return record ("prepare-source", callback, true) end,
-      operation = function (_, operation, value, _, callback)
+      new = function (node) return { name = node.name } end,
+      prepare = function (source, _, callback) return record ("prepare-" .. source.name, callback, true) end,
+      operation = function (source, operation, value, _, callback)
         local snapshot = { running = operation == "run" and value == 2,
           completed = operation == "query" and options.source_completed or false,
           sequence = 0, generation = operation == "reset" and 2 or 1 }
         if options.bad_reset and operation == "reset" then snapshot.generation = 1 end
-        if options.bad_initial then snapshot.sequence = 1 end
-        return record (operation .. ":source:" .. tostring (value), callback, snapshot)
+        if options.bad_initial or (options.bad_auxiliary_initial and source.name == "auxiliary") then snapshot.sequence = 1 end
+        if options.bad_auxiliary_reset and source.name == "auxiliary" and operation == "reset" then snapshot.generation = 1 end
+        return record (operation .. ":" .. source.name .. ":" .. tostring (value), callback, snapshot)
       end,
-      shutdown = function (_, _, callback) return record ("shutdown-source", callback, true) end,
+      shutdown = function (source, _, callback) return record ("shutdown-" .. source.name, callback, true) end,
     },
     ["ao-connections"] = {
       new = function (_, _, callback) fault = callback; return catalog end,
@@ -202,6 +203,11 @@ local function session (options)
     args.session.links [#args.session.links + 1] = {
       output = "reference-source:output_1", input = "alpha:reference", passive = true }
   end
+  if options.auxiliary then
+    nodes.auxiliary = { name = "auxiliary" }
+    args ["auxiliary-sources"] = { { ["control-node"] = "auxiliary", pid = 1,
+      role = "auxiliary", ["control-protocol"] = "pipewireao.source-control/1" } }
+  end
   if options.no_controller then catalog.nodes [1] = nil end
   test.pause = options.pause
   chunk ({ parse = function () return args end })
@@ -273,6 +279,49 @@ local function normal ()
     assert (test.disconnected and test.quit_complete and test.state.lifecycle == 1 and #test.completions == 5)
     test:close ()
   end
+end
+
+local function auxiliary_sources ()
+  for _, delayed in ipairs ({ false, true }) do
+    local test = session { auxiliary = true, bootstrap = true, delayed = delayed }
+    prepared (test)
+    assert (#test.state.sources == 2 and test.state.source == test.state.sources [1])
+    test:request (10); done (test)
+    order (test, "run:beta:2,run:alpha:2,run:auxiliary:2,run:source:2")
+    test.effects = {}
+    test:request (9); done (test)
+    order (test, "run:source:1,run:auxiliary:1,run:alpha:1,run:beta:1")
+    test.effects = {}
+    test:request (12); done (test)
+    order (test, "run:source:1,run:auxiliary:1,run:alpha:1,run:beta:1,reset:source:nil,reset:auxiliary:nil,reset:alpha:nil,reset:beta:nil")
+    assert (test.state.sources [1].snapshot.generation == 2 and test.state.sources [2].snapshot.generation == 2)
+    test.effects = {}
+    test:request (1); done (test)
+    order (test, "run:source:1,run:auxiliary:1,run:alpha:1,run:beta:1,withdraw-links,shutdown-source,shutdown-auxiliary,shutdown-owner,remove-controls,clients-absent")
+    test:close ()
+  end
+  for _, bad_reset in ipairs ({ false, true }) do
+    local test = session { auxiliary = true, bad_auxiliary_reset = bad_reset,
+      bad_auxiliary_initial = not bad_reset }
+    if bad_reset then prepared (test); test:request (12) end
+    wait_for (function () return test.state.faulted end)
+    assert (test.state.lifecycle == 5)
+    test:close ()
+  end
+  -- Loss during auxiliary release fences the old acknowledgement, then holds
+  -- every captured producer before consumers and link withdrawal.
+  local test = session { auxiliary = true }
+  prepared (test)
+  test.pause = "run:auxiliary:2"
+  test:request (10)
+  wait_for (function () return test.pending ["run:auxiliary:2"] end)
+  test.effects = {}
+  test.fault ("Auxiliary source lost")
+  order (test, "run:source:1,run:auxiliary:1,run:alpha:1,run:beta:1,withdraw-links")
+  local before = #test.effects
+  test:release ("run:auxiliary:2")
+  assert (#test.effects == before and test.state.faulted and #test.completions == 1)
+  test:close ()
 end
 
 local function startup_queries ()
@@ -535,6 +584,7 @@ co = coroutine.create (function ()
   if selector == "correction" then correction_admission (); return end
   parameter_dispatch ()
   normal ()
+  auxiliary_sources ()
   startup_queries ()
   quit_fence_failure ()
   deadline (false, false)

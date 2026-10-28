@@ -137,9 +137,10 @@ end
 struct ParameterChanged{M}
     mailbox::M
 end
-function (callback::ParameterChanged)(::Stream, id::UInt32, pod::Union{Nothing,Pod})
+function (callback::ParameterChanged)(::Union{Stream,Filter}, id::UInt32, pod::Union{Nothing,Pod})
     id == SPA.PARAM_PROPS && pod !== nothing || return nothing
     mailbox = callback.mailbox
+    sizeof(pod) <= 4096 || return reject!(mailbox, INVALID, Int64(0), Int32(-Base.Libc.E2BIG))
     if parse_run_control_request!(mailbox.run_request, pod) == 0
         request = mailbox.run_request[]
         stage!(mailbox, RUN, request.token,
@@ -166,6 +167,10 @@ function (callback::ParameterChanged)(::Stream, id::UInt32, pod::Union{Nothing,P
     end
     return nothing
 end
+function (callback::ParameterChanged)(filter::Filter, port, id::UInt32, pod::Union{Nothing,Pod})
+    port === nothing && callback(filter, id, pod)
+    return nothing
+end
 struct ParameterOverflow{M}
     mailbox::M
 end
@@ -178,13 +183,16 @@ end
 """Read the pending scalar request while holding the source loop lock."""
 pending(mailbox::Mailbox) = (mailbox.kind, mailbox.token, mailbox.requested_running)
 
+publish_parameters!(stream::Stream, parameters::PreparedParams) = update_params!(stream, parameters)
+publish_parameters!(filter::Filter, parameters::PreparedParams) = update_params!(filter, parameters.params)
+
 """Publish an owner-committed snapshot and native completion under the loop lock.
 
 Publication failure leaves the pending identity intact and propagates to owner
 failure cleanup. Historical run/reset statuses are retained across queries;
 subscribers join only the kind/token named by the latest source snapshot.
 """
-function publish!(mailbox::Mailbox, stream::Stream, kind::Int32, token::Int64,
+function publish!(mailbox::Mailbox, stream::Union{Stream,Filter}, kind::Int32, token::Int64,
                   result::Int32, state, generation::Int64)
     state.sequence <= typemax(Int64) || error("source sequence exceeds native Long range")
     generation >= 1 || error("source generation must be positive")
@@ -196,7 +204,7 @@ function publish!(mailbox::Mailbox, stream::Stream, kind::Int32, token::Int64,
         mailbox.report_generation, mailbox.report_sequence)
     props!(mailbox.snapshot, values)
     mailbox.snapshot_destination[] = values
-    update_params!(stream, mailbox.parameters)
+    publish_parameters!(stream, mailbox.parameters)
     if mailbox.kind == kind && mailbox.token == token
         mailbox.last_token = token
         mailbox.last_kind = kind
@@ -208,14 +216,14 @@ function publish!(mailbox::Mailbox, stream::Stream, kind::Int32, token::Int64,
 end
 
 "Publish one staged rejection without changing the retained committed ACK."
-function publish_rejection!(mailbox::Mailbox, stream::Stream, state, generation::Int64)
+function publish_rejection!(mailbox::Mailbox, stream::Union{Stream,Filter}, state, generation::Int64)
     mailbox.rejected_kind == INITIAL && return nothing
     state.sequence <= typemax(Int64) || error("source sequence exceeds native Long range")
     props!(mailbox.rejection, snapshot_values(mailbox.instance, mailbox.rejected_kind,
         mailbox.rejected_token, mailbox.rejected_result, generation,
         Int64(state.sequence), state.running, state.completed,
         mailbox.report_generation, mailbox.report_sequence))
-    update_params!(stream, mailbox.parameters)
+    publish_parameters!(stream, mailbox.parameters)
     mailbox.rejected_kind = INITIAL
     mailbox.ready[] = mailbox.kind != INITIAL
     return nothing

@@ -89,6 +89,22 @@ function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractS
     end
 end
 
+function PipeWireAORTC.InstrumentExport.validate_feedback(application, graph_path, binding_path, receiver_path)
+    graphfile=joinpath(application,graph_path)
+    entries=Owner.bindings(joinpath(application,binding_path))
+    options=FilterGraphIsland.parse_arguments(["--graph",graphfile,"--check","--execution","complete-frame"])
+    graph=FilterGraphIsland.prepare_service_graph(options;
+        initial_parameters=formats->Owner.prepare_bindings(entries,formats))
+    try
+        path=joinpath(application,receiver_path)
+        PipeWireAORTC.PhysicalOffsets.prepare(path,graph)
+        PipeWireAORTC.PhysicalOffsets.frame_observer(path,nothing,JuliaFilterGraph.output_formats(graph))
+    finally
+        FilterGraphIsland.close_execution(graph)
+    end
+    return nothing
+end
+
 function Owner.run_owner(island::Module, options, runtime, entries)
     Bootstrap.preparation_check!(runtime)
     options.check && throw(ArgumentError("native graph owner cannot run --check"))
@@ -122,6 +138,13 @@ function run_prepared(options, runtime, graph)
             timeout_ms=options.correction_timeout_ms)
     supervision = prepare_supervision(options, runtime.transport.endpoint.instance, graph)
     observation = correction_observation(observer, supervision)
+    offsets_path = get(options,:physical_offsets,nothing)
+    offsets_path === nothing || (options.capture_backend === nothing && options.execution == "complete-frame" &&
+        Threads.nthreads(:default)>=3) || throw(ArgumentError("physical offsets require complete-frame CPU execution and three default threads"))
+    offset_receiver = offsets_path === nothing ? nothing : PipeWireAORTC.PhysicalOffsets.prepare(offsets_path,graph)
+    offset_clock = offsets_path === nothing ? nothing : PipeWireAORTC.PhysicalOffsets.frame_observer(
+        offsets_path,get(observation,:frame_observer,nothing),JuliaFilterGraph.output_formats(graph))
+    offsets_path === nothing || (observation=merge(observation,(;frame_observer=offset_clock)))
     recovery = isempty(options.recovery_nodes) ? (;) :
         (; recovery=(controller=Symbol(first(split(only(correction_properties), ':'))),
             participants=Tuple(Symbol.(options.recovery_nodes)),
@@ -153,7 +176,13 @@ function run_prepared(options, runtime, graph)
         Bootstrap.check_connect!(runtime, ticket)
         FilterGraphPipeWire.connect!(node)
         Bootstrap.check_connect!(runtime, ticket)
-        FilterGraphPipeWire.run!(node)
+        if offsets_path === nothing
+            FilterGraphPipeWire.run!(node)
+        else
+            PipeWireAORTC.PhysicalOffsets.with_receiver(offset_receiver;node,remote=options.remote,frame_clock=offset_clock) do
+                FilterGraphPipeWire.run!(node)
+            end
+        end
     catch error
         error isa InterruptException && Bootstrap.clean_cancel(runtime) && return nothing
         Bootstrap.fault!(runtime, error)

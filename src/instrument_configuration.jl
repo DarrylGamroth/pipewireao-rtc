@@ -232,8 +232,6 @@ function load_rtc(path::AbstractString)
     _declaration_text(document["publication"], "RTC publication")
     _declaration_text(document["calibration_identity"], "RTC calibration identity")
     instrument = referenced_instrument(path, document["instrument"])
-    isempty(instrument.document["deformable_mirrors"]) &&
-        throw(ArgumentError("RTC configuration requires at least one deformable mirror"))
     document["dimensions"] = controller_dimensions(authoring, instrument)
     control_authoring = bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
     controls = deepcopy(control_authoring)

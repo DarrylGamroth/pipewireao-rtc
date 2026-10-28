@@ -130,7 +130,7 @@ end
         @test options.exposure_ns == 1_896_000
         @test options.pacing_period_ns == 100_000_000
         @test options.pacing_rate_hz == 10
-        for (pacing, period) in ((0, 0), (3, 333_333_333), (6, 166_666_667), (500, 2_000_000))
+        for (pacing, period) in ((0, 0), (3, 333_333_333), (6, 166_666_667), (500, 2_000_000), (0.1,10_000_000_000), (1.5,666_666_667))
             paced = deepcopy(document)
             paced["pacing_rate_hz"] = pacing
             write(path, JSON.json(paced))
@@ -206,7 +206,7 @@ end
         @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "AMDGPU", "REVOLTClassicSim"), keys(Base.loaded_modules))
         for (key, value) in (("version", true), ("command_count", false), ("frame_shape", [2, 0]),
             ("backend", "automatic"), ("device", -1), ("pacing_rate_hz", 501), ("pacing_rate_hz", -1),
-            ("pacing_rate_hz", true), ("pacing_rate_hz", 1.5), ("rate", 0),
+            ("pacing_rate_hz", true), ("pacing_rate_hz", 1e-100), ("rate", 0),
             ("exposure_ns", 2_000_001), ("command_scale", 1e-100), ("total_exchanges", 0),
             ("optical_observation", "true"), ("unexpected", 1))
             invalid = deepcopy(document)

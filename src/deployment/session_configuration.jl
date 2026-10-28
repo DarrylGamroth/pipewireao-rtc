@@ -6,6 +6,8 @@ function graph_port_contracts end
 
 "Return the simulator observation owner's cold port contracts for selected settings."
 function simulator_port_contracts end
+"Return the external-pupil input and independent sensor contracts on the CPU."
+function external_pupil_port_contracts end
 "Return the optional scientific pupil source contract without preparing execution."
 function pupil_output_port_contract end
 
@@ -148,8 +150,15 @@ function prepare_session_configuration!(application, spec, declarations, instrum
         simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
         plant = simulation["plant"]
         definition = D.relative_asset(application, plant["definition"])
-        context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
-            settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))
+        if get(simulation,"version",nothing) == 4
+            options = AOSOwner.configuration(joinpath(application,"simulation.conf"))
+            AOSOwner.requires_proper(options) && Base.require(Main,:Proper)
+            context["simulator"] = Base.invokelatest(external_pupil_port_contracts,definition;
+                settings=get(plant,"settings",Dict()))
+        else
+            context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
+                settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))
+        end
     end
     # Resolve every document first so a bad reference cannot partly rewrite it.
     prepared = map(files) do entry

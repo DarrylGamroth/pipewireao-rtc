@@ -457,4 +457,6 @@ function Owner.run_owner(options)
     return nothing
 end
 
+include("aos/external_pupil_owner.jl")
+
 end

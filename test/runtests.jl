@@ -1,9 +1,13 @@
 using Test, PipeWireAORTC
 
-for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "aos_graph_selection", "phase_timing", "registered_application")
+for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "physical_offsets", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "aos_graph_selection", "phase_timing", "registered_application")
     Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end
+Base.include(Module(:AuxiliarySourceTests), joinpath(@__DIR__, "test_auxiliary_sources.jl"))
 include("test_native_session_discovery.jl")
+Base.include(Module(:ExternalPupilOwnerTests), joinpath(@__DIR__, "test_external_pupil_owner.jl"))
+Base.include(Module(:ApplicationCompositionTests), joinpath(@__DIR__, "test_application_composition.jl"))
+Base.include(Module(:CalibrationMaterializationTests), joinpath(@__DIR__, "test_calibration_materialization.jl"))
 include("test_native_session_client.jl")
 include("test_calibration_acquisition.jl")
 include("test_calibration_bundle.jl")
