@@ -480,7 +480,8 @@ publication flag first. The first feedback regression exposed an assumed
 `plant` field in legacy ordinary test data; absent chopping remains the ordinary
 case and the existing 70 assertions pass. Instrument formatting and whitespace
 checks pass. Independent review of this candidate is recorded when complete.
-No actual chopped bundle or live chopped cohort is claimed here.
+The initial software checks precede the full-sampling chopped acceptance below;
+no completed live chopped cohort is claimed.
 
 The first full-sampling calibration attempt was interrupted before publication
 after about 18 minutes compiling frontend-identity serialization. The retained
@@ -522,5 +523,37 @@ The final post-canonical-fix RTC source run passes 7,687 assertions across 319
 testsets, exit 0 with `FULL_CORE_NO_GPU_IMPORTS_PASS` in
 `/tmp/cal2-chopped-rtc-core-canonical.log`. The two canonical testsets add nine
 assertions, and concurrent snapshots increase from 199 to 202. No prior testset
-is omitted. This validates the frozen feature snapshot; integration with the
-concurrently published RTC 0.2.37 and release 0.2.38 remains a separate check.
+is omitted. This validates the frozen feature snapshot before upstream integration.
+
+## RTC 0.2.38 merged release checks
+
+The isolated release integrates feature commit `db87604` with registered RTC
+0.2.37 (`cbb5704`) in merge `cca60893643db326a9d9a28b12c558448cef04b2`, tree
+`61db0e4574b9b63f3d080e465d2ba7613128799e`. The resolution preserves upstream
+generated HIL optics, contained authored sources, receipt validation and authored
+prescription identity, alongside strict standalone variant descriptors and the
+array canonicalizer. Independent review of the three overlapping source files
+finds no confirmed defect.
+
+The isolated source environment uses AOS 0.3.12, HIL 0.2.11, FGA 0.8.13 and FGP
+0.1.16, with JFG 0.4.3 retained. Focused checks pass 680 assertions: cold metadata,
+canonicalization, variant and export checks 452; generated-component output,
+settings, identity and source/graph-byte tamper checks 79; chopped calibration
+51; owner preparation 40; owner warmup 29; receiver validation 29. Logs are
+`/tmp/cal2-rtc-0238-{cold,components,chopped,owner,warmup,receiver}.log`.
+
+Final merged core QA passes 7,604 assertions across the same 319 testsets, exit
+0 with `MERGED_FULL_CORE_NO_GPU_IMPORTS_PASS` in `/tmp/cal2-rtc-0238-core.log`.
+No testset is omitted: the count difference from 7,687 comes entirely from the
+concurrent snapshot loop changing from 202 to 119. These selectors import no
+GPU module and start no instrument service. Frozen calibration worktrees and
+application environments remain unchanged.
+
+The fresh full-sampling chopped calibration at
+`/tmp/cal2-chopped-optical-calibration-20261028-r2` publishes identity
+`sha256:65f31bb7f44b94f6241dd9d144037cfce1d7f4b876a1bce2bd1415a2aa83a7f9`.
+Both branch reports are accepted and deployable at the unchanged 5% gates,
+using AMDGPU optical propagation and Host expected-reference acquisition.
+`application_accepted` remains false. This establishes matched static calibration
+on the frozen feature source; normal managed coverage, simultaneous noisy-loop,
+physical-device and deadline qualification remain separate.

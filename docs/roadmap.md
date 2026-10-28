@@ -43,7 +43,7 @@ remain separate. Final source
 QA passes 7,473 assertions with no GPU imports; fresh actual CPU optical owner
 preparation passes 11 checks, and all 12 native selectors pass.
 
-The held next patch merges explicitly declared execution groups and checks the
+The RTC 0.2.38 candidate merges explicitly declared execution groups and checks the
 native group/passive-link rules before startup. An earlier corrected normal application
 passes native group admission, then stops before Run because an owner thread
 escapes its CPU envelope. An isolated actual AMDGPU preparation attributes that
@@ -69,10 +69,12 @@ calibration uses the exact authored prefix, publishes a real flat-difference
 parameter and requires a fresh SCC reconstructor. The prior ordinary-intensity
 SCC bundle is not valid for this selection. Focused CPU tests cover transport
 identity, priming/reset, native callback publication and typed bundle generation;
-final RTC and FGP source suites pass 7,687 and 2,238 assertions respectively
+merged RTC and FGP source suites pass 7,604 and 2,238 assertions respectively
 without GPU imports. The mixed-version private offset receiver passes 147
-assertions. Actual chopped calibration, rolling delivery and simultaneous
-noisy-loop qualification remain pending.
+assertions. Full-sampling static chopped calibration is accepted at the unchanged
+5% optical and Host-reference gates. Rolling delivery and simultaneous noisy-loop
+qualification remain pending. The release requires AOS 0.3.12, HIL 0.2.11,
+FGA 0.8.13 and FGP 0.1.16; merged checks retain JFG 0.4.3.
 
 The [validation and review record](validation/cal2-feedback-20261028/README.md)
 records full core and focused regression evidence, receiver and cold selector
