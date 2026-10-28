@@ -150,6 +150,13 @@ function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
     bytes = Vector{UInt8}(undef, length(data) * sizeof(T))
     # Iterating reversed logical dimensions gives last-index-contiguous order.
     storage = PermutedDimsArray(data, Tuple(reverse(1:N)))
+    packed_bytes!(bytes, storage, check)
+    check()
+    return bytes
+end
+
+# Specialize iteration on the concrete permutation selected during setup.
+function packed_bytes!(bytes::Vector{UInt8}, storage::AbstractArray{T}, check) where T
     position = 1
     for (index, value) in enumerate(storage)
         (index - 1) % 65536 == 0 && check()
@@ -159,7 +166,6 @@ function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
             position += 1
         end
     end
-    check()
     return bytes
 end
 

@@ -3,6 +3,50 @@ using FITSIO
 using SHA
 using PipeWireAORTC.Artifacts
 
+@testset "Artifact packing order, types and cancellation checkpoints" begin
+    for (T, W) in ((Float32, UInt32), (Float64, UInt64), (UInt8, UInt8),
+            (UInt16, UInt16), (UInt32, UInt32), (Int32, UInt32), (Bool, UInt8))
+        for shape in ((5,), (2, 3), (2, 3, 4), (2, 1, 3, 2))
+            values = T === Bool ? Bool[isodd(i) for i in 1:prod(shape)] : T.(1:prod(shape))
+            data = reshape(values, shape)
+            original = copy(data)
+            # Lexicographic logical coordinates put the last index contiguous.
+            # Native writes of little-endian words are independent of the packer.
+            expected = IOBuffer()
+            for index in sort!(vec(collect(CartesianIndices(data))); by=Tuple)
+                write(expected, htol(reinterpret(W, data[index])))
+            end
+            artifact = PreparedArtifact(data, Dict{String,Any}())
+            @test pack(artifact) == take!(expected)
+            @test data == original
+        end
+    end
+    for count in (65536, 65537, 131073)
+        artifact = PreparedArtifact(fill(1.0f0, count), Dict{String,Any}())
+        calls = Ref(0)
+        @test length(pack(artifact; check=()->(calls[] += 1))) == 4count
+        # Initial check, chunk starts (including the first), and final check.
+        @test calls[] == 2 + cld(count, 65536)
+        for phase in 1:calls[]
+            attempts = Ref(0)
+            cancellation = ErrorException("cancel artifact packing")
+            published = Ref{Any}(nothing)
+            caught = try
+                published[] = pack(artifact; check=()->begin
+                    attempts[] += 1
+                    attempts[] == phase && throw(cancellation)
+                end)
+                nothing
+            catch exception
+                exception
+            end
+            @test caught === cancellation
+            @test attempts[] == phase
+            @test published[] === nothing
+        end
+    end
+end
+
 @testset "FITS artifact selection and owned logical arrays" begin
     @test_throws ArgumentError FITSArtifact("")
     @test_throws ArgumentError FITSArtifact("bad\0path")
