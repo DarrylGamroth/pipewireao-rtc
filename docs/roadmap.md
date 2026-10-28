@@ -57,8 +57,9 @@ GPI implementation starts in isolated worktrees from RTC `171ca09`, instrument
    previous-frame normalization, pupil-major reconstructor ordering and OPD units.
 3. Run dark, lamp and later frozen-reference stages with the normal detector,
    source and UInt16 transport, using only CPU and private cores.
-4. Independently review the numerical and multi-command boundary changes; qualify
-   the shared interface and fresh registered application before publication.
+4. Independently review the numerical and multi-command boundary changes and
+   qualify the shared interface before publication; then qualify fresh
+   applications against the registered releases.
 
 Source gates passed: the shared core suite has 6,580 checks, the GPI combined
 selector has 153 and the Classic campaign has 87. All three GPI stages are
