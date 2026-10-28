@@ -18,7 +18,9 @@ local spec = assert (args.session, "Session declaration missing")
 local instance = assert (tonumber (args.instance), "Session incarnation missing")
 assert (math.type (instance) == "integer" and instance > 0, "Invalid session incarnation")
 assert (spec.authority == "none" and spec.profile == "development", "Unsupported physical authority")
-assert (#spec.links > 0 and #spec.links <= 32, "Invalid declared connection count")
+-- Keep this finite admission bound aligned with DeploymentConfiguration.MAX_SESSION_LINKS.
+local MAX_SESSION_LINKS = 64
+assert (#spec.links > 0 and #spec.links <= MAX_SESSION_LINKS, "Invalid declared connection count")
 local endpoint = assert (Plugin.find (args ["endpoint.plugin"] or "ao-session-control"))
 local controller_endpoint = assert (Plugin.find (args ["controller.plugin"] or "ao-session-controller"))
 local state = { lifecycle = 2, epoch = 0, operation = nil, graphs = {}, groups = {},

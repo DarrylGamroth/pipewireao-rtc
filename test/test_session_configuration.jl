@@ -7,7 +7,8 @@ using PipeWireAORTC: SessionConfiguration
             "control-protocol" => "pipewireao.source-control/1",
             "control-node" => "simulator-wfs")])
     session = Dict("sources" => [Dict("node.name" => "simulator-wfs")],
-        "sinks" => [Dict("node.name" => "core-sink")], "graphs" => [])
+        "sinks" => [Dict("node.name" => "core-sink")], "graphs" => [],
+        "links" => [Dict("output" => "simulator-wfs:output_1", "input" => "core-sink:input_1")])
     bindings = Dict("RUNTIME" => "/tmp/core-session", "REMOTE" => "rtc-core-session",
         "SESSION_UUID" => "00000000-0000-0000-0000-000000000001",
         "SESSION_SCRIPT" => "/sealed/rtc/scripts/ao/session.lua",
@@ -75,6 +76,16 @@ using PipeWireAORTC: SessionConfiguration
             spec, session, merge(bindings, Dict("SESSION_SCRIPT" => path)), records;
             node_owners=mapping)
     end
+    for count in (1, 36, 64)
+        selected = merge(session, Dict("links" => fill(only(session["links"]), count)))
+        compiled = SessionConfiguration.session_configuration(
+            spec, selected, bindings, records; node_owners=mapping)
+        @test length(last(compiled["wireplumber.components"])["arguments"]["session"]["links"]) == count
+    end
+    @test_throws SessionConfiguration.ConfigurationError SessionConfiguration.session_configuration(
+        spec, merge(session, Dict("links" => [])), bindings, records; node_owners=mapping)
+    @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError SessionConfiguration.session_configuration(
+        spec, merge(session, Dict("links" => fill(only(session["links"]), 65))), bindings, records; node_owners=mapping)
     records["core"]["pid"] = 0
     @test_throws SessionConfiguration.ConfigurationError SessionConfiguration.session_configuration(
         spec, session, bindings, records; node_owners=mapping)
@@ -150,4 +161,18 @@ end
         C.write_json(path, retained)
         @test_throws D.DeploymentError R._ledger(handle)
     end
+end
+
+@testset "native session link admission agrees with cold exports" begin
+    D = PipeWireAORTC.DeploymentConfiguration
+    @test D.MAX_SESSION_LINKS == 64
+    @test isempty(D.validate_session_links(Dict("links" => [])))
+    for count in (36, 64)
+        @test length(D.validate_session_links(Dict("links" => fill(Dict(), count)))) == count
+    end
+    for links in (fill(Dict(), 65), "not a list")
+        @test_throws D.DeploymentError D.validate_session_links(Dict("links" => links))
+    end
+    policy = read(joinpath(@__DIR__, "../native/scripts/ao/session.lua"), String)
+    @test occursin("local MAX_SESSION_LINKS = $(D.MAX_SESSION_LINKS)\n", policy)
 end

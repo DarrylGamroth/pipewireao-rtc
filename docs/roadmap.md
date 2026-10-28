@@ -31,14 +31,26 @@ retaining CPU execution. The generated Project promotes only declared packages;
 source metadata, the compositor's exact closure checks and Host-reference
 qualification remain unchanged.
 
+RTC 0.2.36 checks explicitly declared cross-link formats and
+schemas before composition publication, aligns cold/native admission at 64
+connections (the normal application declares 36), and rejects inconsistent
+explicit owner thread pins before startup. Declaration verification also enters
+the latest Julia world after optional science packages load, so Zemax graph
+methods are available without an instrument preload workaround. Failed normal
+startup attempts have confirmed cleanup and remain pre-Run evidence; the next
+normal lifecycle and nonzero coupled-loop checks remain separate. Final source
+QA passes 7,473 assertions with no GPU imports; fresh actual CPU optical owner
+preparation passes 11 checks, and all 12 native selectors pass.
+
 The [validation and review record](validation/cal2-feedback-20261028/README.md)
-records 7,365 core assertions, focused receiver and cold selector evidence, and
-the accepted native-pupil optical / Host expected-reference calibration at the
-unchanged 5% gates. Host reference qualification is bound to a CPU GPI producer;
-CAL2 optical propagation can independently select CPU or AMDGPU. CPU and AMDGPU
+records full core and focused regression evidence, receiver and cold selector
+checks, and the accepted native-pupil optical / Host expected-reference
+calibration at the unchanged 5% gates. Host reference qualification is bound to a
+CPU GPI producer; CAL2 optical propagation can independently select CPU or AMDGPU. CPU and AMDGPU
 wall pacing is explicit and preserves model timesteps. No combined native cohort,
 nonzero simultaneous noisy-loop, physical-device or deadline qualification is
-claimed. The normal-cohort selector remains open/zero and has cold evidence only.
+claimed. The normal-cohort selector remains open/zero; its current evidence is
+cold checks and failed startup attempts before Run.
 
 ### Shared mirror-free optical declarations — 2026-10-27
 

@@ -53,7 +53,7 @@ wireplumber.components = [
         sources = [ { node.name = absent-source } ]
         graphs = [ { node.name = absent-graph } ]
         sinks = []
-        links = [ { output = "absent-source:out" input = "absent-graph:in" } ]
+        links = [ @LINKS@ ]
         execution-groups = [ { name = science nodes = [ absent-graph ] } ]
       }
     }

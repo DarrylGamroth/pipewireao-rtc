@@ -54,7 +54,7 @@ end
     spec=Dict("name"=>"coupled-session","source-owner"=>"primary",
         "auxiliary-source-owners"=>["optical"],"owners"=>declarations)
     session=Dict("sources"=>[Dict("node.name"=>"primary-source"),Dict("node.name"=>"optical-sensor")],
-        "graphs"=>[],"sinks"=>[])
+        "graphs"=>[],"sinks"=>[],"links"=>[Dict("output"=>"primary-source:output_1","input"=>"optical-sensor:input_1")])
     bindings=Dict("RUNTIME"=>"/tmp/coupled-session","REMOTE"=>"rtc-coupled-session",
         "SESSION_UUID"=>"00000000-0000-0000-0000-000000000001","SESSION_SCRIPT"=>"/sealed/rtc/scripts/ao/session.lua",
         "SESSION_CONTROL_INSTANCE"=>"21","SESSION_CONTROLLER_INSTANCE"=>"22","ADMISSION_CONTROLLER_INSTANCE"=>"23",
