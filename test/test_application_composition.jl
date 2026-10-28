@@ -6,6 +6,100 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
 Base.include(@__MODULE__,joinpath(@__DIR__,"composition_documents.jl"))
 
+@testset "composition rejects colliding native queue endpoints" begin
+    queue(name, capture, playback)=Dict("name"=>"libpipewire-module-queue","args"=>Dict(
+        "node.name"=>name,"queue.max-buffers"=>1,"queue.storage"=>"copy","queue.overflow"=>"drop-oldest",
+        "capture.props"=>Dict("node.name"=>capture),"playback.props"=>Dict("node.name"=>playback)))
+    base=Dict("context.modules"=>[queue("first","first-input","shared-output")])
+    component=Dict("context.modules"=>[queue("second","second-input","shared-output")])
+    @test_throws ArgumentError E.merge_composition_core(base,component)
+    @test E.merge_composition_core(base,deepcopy(base))==base
+    component["context.modules"]=[queue("second","second-input","second-output")]
+    @test length(E.merge_composition_core(base,component)["context.modules"])==2
+    component["context.modules"]=[queue("second","shared-output","second-output")]
+    @test_throws ArgumentError E.merge_composition_core(base,component)
+    object=Dict("context.objects"=>[Dict("factory"=>"spa-node-factory",
+        "args"=>Dict("node.name"=>"shared-output"))])
+    @test_throws ArgumentError E.merge_composition_core(base,object)
+    @test_throws ArgumentError E.merge_composition_core(object,base)
+end
+
+@testset "component telemetry queues retain the shared core owner" begin
+    mktempdir() do directory
+        base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
+        component=composition_fixture(joinpath(directory,"component"),"component","simulator","sensor")
+        capture="sensor-diagnostic-queue-input"
+        playback="sensor-diagnostic-queue-output"
+        queue=Dict("name"=>"libpipewire-module-queue","args"=>Dict(
+            "node.name"=>"sensor-diagnostic-queue","queue.max-buffers"=>1,"queue.storage"=>"copy",
+            "queue.overflow"=>"drop-oldest","queue.media"=>"application/ndarray",
+            "capture.props"=>Dict("node.name"=>capture,"node.loop.name"=>"rtc-data-loop"),
+            "playback.props"=>Dict("node.name"=>playback,"node.loop.name"=>"telemetry-loop")))
+        core=Dict("context.modules"=>[queue],"context.objects"=>[Dict("factory"=>"spa-node-factory",
+            "args"=>Dict("factory.name"=>"support.node.driver","node.name"=>"telemetry-driver",
+                "node.group"=>"pipewireao-telemetry"))])
+        E.telemetry_queues!(core)
+        @test E.validate_telemetry_groups(core)===nothing
+        C.write_json(joinpath(component,"core.conf"),core)
+        format=Dict("shape"=>[2],"element-type"=>"F32_LE","layout"=>"ROW_MAJOR","schema"=>"test/diagnostic/1")
+        session=C.read_json(joinpath(component,"session.conf"))
+        session["sources"][1]["ownership"]="external"
+        session["sources"][1]["ports"]=[merge(format,Dict("name"=>"output_1","direction"=>"output"))]
+        push!(session["sinks"],Dict("node.name"=>capture,"ownership"=>"external",
+            "ports"=>[merge(format,Dict("name"=>"playback_1","direction"=>"input"))]))
+        push!(session["links"],Dict("output"=>"sensor:output_1","input"=>capture*":playback_1","passive"=>false))
+        C.write_json(joinpath(component,"session.conf"),session)
+        spec=C.read_json(joinpath(component,"deployment.conf"))
+        spec["node-owners"][capture]="core"
+        C.write_json(joinpath(component,"deployment.conf"),spec);E.seal!(component)
+        @test E.sealed_application(component,PREFIX)[2]==C.read_json(joinpath(component,"deployment.conf"))
+        before=read(joinpath(component,"deployment.conf"))
+        replacement=joinpath(directory,"prepared-graph.conf");write(replacement,"{}")
+        options=(;namespace="cal2",roles=Dict("simulator"=>"cal2-optics"),links=Any[],
+            overrides=Dict("graph.conf"=>replacement),prefix=PREFIX)
+        output=E.compose(base,component,joinpath(directory,"accepted");options...)
+        merged=E.sealed_application(output,PREFIX)[2]
+        @test merged["node-owners"][capture]=="core"
+        @test merged["node-owners"]["sensor"]=="cal2-optics"
+        @test length(merged["owners"])==2 && merged["auxiliary-source-owners"]==["cal2-optics"]
+        @test D.decode(joinpath(output,"core.conf"),PREFIX)["context.modules"]==[queue]
+        @test D.decode(joinpath(output,"session.conf"),PREFIX)["links"]==session["links"]
+        @test read(joinpath(component,"deployment.conf"))==before
+        @test read(joinpath(output,"components/cal2/deployment.conf"))==before
+        @test_throws ArgumentError E.compose(base,component,joinpath(directory,"core-role");options...,
+            roles=Dict("simulator"=>"cal2-optics","core"=>"core"))
+        for (name,owner) in (("forged-core","core"),("unknown-owner","unknown"))
+            altered=deepcopy(spec);altered["node-owners"]["sensor"]=owner
+            C.write_json(joinpath(component,"deployment.conf"),altered);E.seal!(component)
+            rejected=joinpath(directory,name)
+            @test_throws D.DeploymentError E.compose(base,component,rejected;options...)
+            @test !ispath(rejected)
+        end
+        C.write_json(joinpath(component,"deployment.conf"),spec)
+        C.write_json(joinpath(component,"core.conf"),Dict("context.modules"=>[],"context.objects"=>core["context.objects"]))
+        E.seal!(component)
+        rejected=joinpath(directory,"missing-queue")
+        @test_throws D.DeploymentError E.compose(base,component,rejected;options...)
+        @test !ispath(rejected)
+        C.write_json(joinpath(component,"core.conf"),core);E.seal!(component)
+        other=deepcopy(queue)
+        other["args"]["node.name"]="upstream-diagnostic-queue"
+        other["args"]["capture.props"]["node.name"]="upstream-diagnostic-queue-input"
+        C.write_json(joinpath(base,"core.conf"),Dict("context.modules"=>[other],"context.objects"=>core["context.objects"]))
+        E.seal!(base)
+        @test E.sealed_application(base,PREFIX)[2]==C.read_json(joinpath(base,"deployment.conf"))
+        rejected=joinpath(directory,"playback-collision")
+        @test_throws ArgumentError E.compose(base,component,rejected;options...)
+        @test !ispath(rejected)
+        # A base-owned node cannot be replaced by a component queue endpoint.
+        collision=composition_fixture(joinpath(directory,"collision-base"),"base","simulator",capture)
+        rejected=joinpath(directory,"collision")
+        @test_throws ArgumentError E.compose(collision,component,rejected;options...)
+        @test !ispath(rejected)
+        @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+    end
+end
+
 @testset "declared cross-link contracts agree before composition publication" begin
     mktempdir() do directory
         base=composition_fixture(joinpath(directory,"base"),"base","simulator","pupil")
