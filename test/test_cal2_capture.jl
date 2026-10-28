@@ -112,6 +112,34 @@ end
     end
 end
 
+@testset "CAL2 capture identifies a rejected receipt without appending it" begin
+    M = ManagedSessionCAL2
+    P = M.PipeWireAO
+    domain = P.AcquisitionDomain(ntuple(i->UInt8(i),16))
+    other = P.AcquisitionDomain(ntuple(_->UInt8(0xaa),16))
+    duration = Int64(10_000_000)
+    receipt(domain,generation,sequence,pts) = (;identity=P.AcquisitionIdentity(domain,UInt64(generation),UInt64(sequence)),
+        pts=Int64(pts),duration=UInt64(duration),lost_samples=UInt64(0),trigger_state=P.ACQUISITION_TRIGGER_HIGH)
+    samples = M.Samples((;shape=(2,)),4)
+    M.record!(samples,Float32[1,2],receipt(domain,1,1,100_000_000),duration;model_time=false)
+    before = deepcopy(samples)
+    error = try
+        M.record!(samples,Float32[3,4],receipt(other,9,4,987_654_321),duration;model_time=false,name="scc-offset")
+        nothing
+    catch caught
+        caught
+    end
+    @test error isa ArgumentError
+    message = sprint(showerror,error)
+    @test occursin("acquisition gap or changed cohort for scc-offset",message)
+    @test occursin("previous=(domain=0102030405060708090a0b0c0d0e0f10, generation=1, sequence=1, model_pts=0, duration=10000000)",message)
+    @test occursin("rejected=(domain=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, generation=9, sequence=4, pts=987654321, duration=10000000, lost_samples=0, trigger_state=$(P.ACQUISITION_TRIGGER_HIGH), model_pts=30000000)",message)
+    @test samples.records==before.records
+    @test samples.first==before.first
+    @test samples.last==before.last
+    @test samples.history==before.history
+end
+
 @testset "CAL2 observer preserves explicit metadata negotiation" begin
     M = ManagedSessionCAL2
     contract = Dict("schema"=>"test/image/1","element-type"=>"F32_LE","shape"=>[2,2])

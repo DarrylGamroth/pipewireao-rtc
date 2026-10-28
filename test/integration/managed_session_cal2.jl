@@ -265,7 +265,7 @@ function covered_count(product, covered)
     return count
 end
 
-function record!(samples, values, receipt, duration; model_time=true, priming_exposures=0)
+function record!(samples, values, receipt, duration; model_time=true, priming_exposures=0, name="unnamed")
     require(length(samples.records)<samples.bound,"bounded capture exhausted before completion")
     require(all(isfinite,values) && receipt.duration==duration && receipt.pts>=0 && receipt.lost_samples==0,"invalid/lost model interval or payload")
     identity=identity_record(receipt.identity)
@@ -279,9 +279,15 @@ function record!(samples, values, receipt, duration; model_time=true, priming_ex
         copyto!(samples.first,values)
     else
         previous=last(samples.records)
-        require(identity["domain"]==previous["domain"] && identity["generation"]==previous["generation"] &&
+        (identity["domain"]==previous["domain"] && identity["generation"]==previous["generation"] &&
             identity["sequence"]==previous["sequence"]+1 && model_pts==previous["model_pts"]+previous["duration"] &&
-            receipt.pts>=previous["pts"],"acquisition gap or changed cohort")
+            receipt.pts>=previous["pts"]) || throw(ArgumentError(
+            "acquisition gap or changed cohort for $name: "*
+            "previous=(domain=$(previous["domain"]), generation=$(previous["generation"]), "*
+            "sequence=$(previous["sequence"]), model_pts=$(previous["model_pts"]), duration=$(previous["duration"])); "*
+            "rejected=(domain=$(identity["domain"]), generation=$(identity["generation"]), sequence=$(identity["sequence"]), "*
+            "pts=$(receipt.pts), duration=$(receipt.duration), lost_samples=$(receipt.lost_samples), "*
+            "trigger_state=$(receipt.trigger_state), model_pts=$model_pts)"))
     end
     push!(samples.records,merge(identity,Dict("pts"=>receipt.pts,"model_pts"=>model_pts,"duration"=>receipt.duration,
         "trigger_state"=>string(receipt.trigger_state))))
@@ -448,7 +454,7 @@ function observe_epoch(handle,selected,stage,name)
                             require(all(>=(0),amplitude) && any(>(0),amplitude),"invalid pupil amplitude")
                         end
                         require_chopped_exposure(product,receipt)
-                        record!(samples[index],arrays[index],receipt,product.duration;model_time=product.model_time,priming_exposures=product.priming_exposures)
+                        record!(samples[index],arrays[index],receipt,product.duration;model_time=product.model_time,priming_exposures=product.priming_exposures,name=product.name)
                     end
                 end
                 sleep(0.005)
