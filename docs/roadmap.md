@@ -156,25 +156,77 @@ devices, acquisition electronics or deadlines.
 
 ### Calibration source and mechanism preparation — 2026-10-27
 
-The user confirms physical REVOLT source preparation is completely manual.
-The [preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
+Delivery order is REVOLT Classic first, then GPI. The common preparation and
+online reduction interfaces remain shared. GPI preparation is manual or scripted;
+connecting to its real mechanism software is outside the intended use. A future
+instrument sequencer can coordinate source states, mechanisms and calibration
+through the existing request/confirmation boundary. Mechanism services retain
+their own completion, readback, interlock and collision policies.
+
+Physical REVOLT source preparation is manual. The
+[preparation contract](JULIA_CALIBRATION_ACQUISITION.md#source-and-mechanism-preparation)
 keeps source/mechanism authority in the simulator, existing SPIDERS/GPI services
 or an explicit operator interaction. Acknowledgments do not establish optical
-readiness; evidence must precede and remain associated with candidate exposures.
-The first implementation adds a declared simulated `dark` selection with zero
-incident photons and unchanged production detector electronics/UInt16 transport.
-It preserves the ordinary RTC graph and selected calibration bytes. Physical
-adapters, manual interaction, automatic training/qualification and reliable
-repeated acquisition remain separate gates; no hardware command is issued.
-Source validation passes 25 dark/source, 418 component/schema/export, 125 bundle
-and 342 actual private-core dark/light Capture assertions. The
-[evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
-retains the failed source-manifest build and registered-release/cohort limitations.
+readiness. Simulated dark exposures have zero incident photons with unchanged
+detector electronics and UInt16 transport.
+
+The online procedure collects dark and lamp training frames with bounded AOC
+running states, then qualifies frozen references in a later simulation window.
+Products remain candidates; interaction-matrix acceptance and activation are
+separate. Capture now participates in graph-synchronous delivery on its main
+ThreadLoop, with exact receipts awaited as events. The unconditional additional
+native processing request has been removed. FIFO sample retention and public
+RequestProcess handling remain in place.
+
+At source commit `a3f927b`, three fixed campaigns using the registered native
+libraries passed without diagnostic hooks, tracing, pulses or retries. All nine
+stages restored/released; 176 of 188 ROIs retained eligibility at unchanged
+source, detector and threshold settings. The consumer fault/recovery selector
+passes 209 assertions, standalone capture passes 96, and the complete reference
+selector passes 87 including preparation cancellation, stale/foreign evidence
+and deadline checks. The broader core suite passes 6,488 assertions across 243
+test sets. RTC 0.2.31 is merged, tagged, published and registered. A fresh
+registry-only Classic CPU build passes 161 instrument checks and 87 installed-
+package reference/preparation checks; the instrument recipe and exact pin are
+merged.
+
+GPI implementation starts in isolated worktrees from RTC `171ca09`, instrument
+`c7d31d3`, AOS `20153648`, HIL `b9804f6` and AOC `7df02f5`. The next gates are:
+
+1. Hold the explicitly named woofer, tweeter and tip/tilt commands coherently;
+   retain scalar Classic behavior and fail closed on missing/duplicate receipts.
+2. Reduce the existing normalized pyramid pupil pixels online, preserving the
+   previous-frame normalization, pupil-major reconstructor ordering and OPD units.
+3. Run dark, lamp and later frozen-reference stages with the normal detector,
+   source and UInt16 transport, using only CPU and private cores.
+4. Independently review the numerical and multi-command boundary changes and
+   qualify the shared interface before publication; then qualify fresh
+   applications against the registered releases.
+
+Source gates passed: the shared core suite has 6,580 checks, the GPI combined
+selector has 153 and the Classic campaign has 87. All three GPI stages are
+numerically valid and restored/released; precision acceptance remains separate.
+AOC 0.17.3, AOS 0.3.5, HIL 0.2.8 and RTC 0.2.32 are merged, published and
+registered. Fresh registry-only GPI and Classic builds pass, followed by 153
+installed GPI checks, 87 installed Classic checks and 161 instrument calibration
+checks ([evidence](validation/gpi-reference-20261027/README.md)). GPI source/measurement contracts differ from
+Classic; no centroid, ROI eligibility or physical-readiness claim is implied.
+
+The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
+retains every earlier delivery failure and the rejected immediate-completion
+assertion. Passing repeats do not prove universal losslessness or the original
+failure's native cause. The HIL publication witness is a historical callback
+observation, not a strict native-cycle fence; explicit cycle ownership across
+reset remains a separate limitation. No GPU, physical-device, deadline or
+interaction-matrix qualification is claimed.
 
 ### GPI2 loop controls and supervision — 2026-10-27
 
 Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
-The live application now uses registered RTC 0.2.29, FGA 0.8.5 and FGPW 0.1.11.
+The live application now uses registered RTC 0.2.29, AOS 0.3.3, FGA 0.8.6 and FGPW 0.1.12.
+GUI `178075c` passes the live restore → Stop/Refresh/Start/Refresh → explicit
+release/close sequence; stopped-owner readback no longer latches a false recovery
+fault ([evidence](validation/gpi2-supervision-20261027/README.md#live-pass-after)).
 The combined supervision/orientation rollout and explicit recovery/reclose pass.
 Both native constraint-feedback monitors are fresh and monitor-only. Preserve the calibration, gains,
 stroke limits and CUDA plant while qualifying changes in isolated applications.

@@ -223,3 +223,68 @@ Two preliminary harness issues were corrected before this reported run: an old
 helper-extraction marker included unrelated tests, and captured mutable sequence
 state erased the timed cursor type. The final run uses concrete measurement
 functions. Earlier interrupted runs are not timing evidence.
+
+## GUI recovery across Stop/Start
+
+GUI `178075c` fixes a client-side readiness defect: valid stopped-owner recovery
+properties previously latched a permanent “Recovery readback is missing or
+incompatible” error. Running observations could not clear that error for the
+same owner. This was reproduced through MCP during replacement-session startup,
+independently of a recovery operation. A source regression fails before the fix.
+
+Known stopped observations now suspend recovery readiness and preserve the
+operation. A resumed held/released recovery requires a newer successful-frame
+observation. Genuine faults, changed owner identity, unknown outcomes and
+expired operation deadlines remain faults; no request is retried. Restore
+reference still inhibits closure until explicit Allow close and Close loop.
+Stop/Start does not release that inhibition.
+
+All 16 recovery tests pass, including five new Stop/Start cases; full Rust tests
+pass (827 library, 200 bridge, 307 native GUI, 12 integration; existing ignored
+tests retained). WASM, formatting and 151 Julia script assertions pass. Strict
+Clippy remains failed on six pre-existing findings in untouched modules; a
+supplemental pass allowing only those existing lint categories and deprecations
+passes. The inspection-enabled release binary SHA-256 is
+`7d01980a7c1d8580af918cb69ec0085cc0854019df031a6f758b1f8c145b4811`.
+
+The failed old-GUI MCP snapshot and subsequent live checks are retained with the
+package/deployment receipts in
+`/home/dgamroth/.cache/pipewireao/atmosphere-axes-20261027/`.
+
+### Live pass-after
+
+MCP inspection of GUI `178075c` on the new registered cohort passes:
+
+1. Open loop is observed Open; Restore reference reaches reference with Close
+   disabled and Allow close enabled.
+2. Stop completes, then explicit Refresh observes READY and “Correction
+   processing stopped.” Recovery/release are disabled while stopped.
+3. Start completes, then explicit Refresh observes RUNNING. The same owner and
+   recovery operation remain Open/inhibited; fresh frame evidence re-enables
+   Allow close without latching a fault or replaying Restore.
+4. Allow close produces “Close permitted · loop remains open.” Only explicit
+   Close loop then yields Observed Closed / “Reference recovery complete.”
+
+The GUI deliberately marks lifecycle status stale after a Start/Stop reply;
+Refresh is required before the next mutation. This existing interaction was
+observed and preserved, not bypassed by trusting a mutation acknowledgment.
+The [before snapshot](gui-baseline.json) and
+[restored](fixed-restored.json), [stopped](fixed-ready.json),
+[resumed/inhibited](fixed-running-held.json), [released](fixed-released.json) and
+[closed](fixed-closed.json) snapshots retain the button states and owner identity.
+
+A final native [status](final-status.json) and [properties](final-properties.json)
+check, made with the GUI stopped to avoid overlapping client queries, confirms
+Running/Closed, no correction fault, recovery released and no remaining closure
+inhibition or close guard. Both native clipping monitor observations are fresh
+([assertion output](verify-final.log)). The GUI was then relaunched and attached
+for operator use, with the prior layout and hardware rendering preserved.
+
+The final session is
+`pipewireao-session@c6b4bd92c462.service`, invocation
+`d6374d08a47540ee958c7a65d0366843`, UUID
+`6dc4e0d2-7c09-4f89-9e6b-271f0771a817`. Discovery contains only its live record.
+The installed policy remains monitor-only. Both replaced RTC incarnations
+acknowledged native Quit and completed cleanup; no shutdown retry was sent.
+This validates the bounded simulated GUI interaction, not hardware-safe settling,
+latency or all fault conditions.

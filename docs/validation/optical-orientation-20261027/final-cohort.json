@@ -1,0 +1,46 @@
+{
+  "AdaptiveOpticsSim": {
+    "git-tree-sha1": "4c22c7e8005a8782bdf511a5cd25f8e4bd24b7a0",
+    "version": "0.3.3"
+  },
+  "AdaptiveOpticsSimPipeWireHIL": {
+    "git-tree-sha1": "c7e680c89acbfc284f171589d070282be84a2c6a",
+    "version": "0.2.7"
+  },
+  "FilterGraphAlgorithms": {
+    "git-tree-sha1": "19fc4773d788ad7942d3af90e08879511a5c985a",
+    "version": "0.8.6"
+  },
+  "FilterGraphPipeWire": {
+    "git-tree-sha1": "12862cb6375e262b5d3e1e6051cc941d73bf623c",
+    "version": "0.1.12"
+  },
+  "FilterGraphIsland": {
+    "git-tree-sha1": "e25d2676d0ff1c705522b0013a67331bf3f81611",
+    "version": "0.1.4"
+  },
+  "JuliaFilterGraph": {
+    "git-tree-sha1": "a258b9d1b8cf398a653ade4ac44ddb56c53b99d7",
+    "version": "0.4.2"
+  },
+  "PipeWireAO": {
+    "git-tree-sha1": "4e0a7b98d62823cbda0ce98510c41a83dcd21241",
+    "version": "0.6.19"
+  },
+  "PipeWireAORTC": {
+    "git-tree-sha1": "c4efa037e8da4d84d49a8ff1b05a33db4b636944",
+    "version": "0.2.29"
+  },
+  "PipeWireAO_jll": {
+    "git-tree-sha1": "17e508fb0310a12153384dca1fc88c860955d2d2",
+    "version": "1.7.1+0"
+  },
+  "CUDA": {
+    "git-tree-sha1": "3da65a61794b3a5c01ef1eb1eb4879da4a594ac3",
+    "version": "6.4.2"
+  },
+  "gui": {
+    "commit": "178075c6dabebddcc9ebb7a4ff9dab1f583086d9",
+    "sha256": "7d01980a7c1d8580af918cb69ec0085cc0854019df031a6f758b1f8c145b4811"
+  }
+}

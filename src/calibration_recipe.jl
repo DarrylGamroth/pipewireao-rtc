@@ -24,8 +24,8 @@ function read_recipe(application)
     sensor === nothing && throw(ArgumentError("calibration sensor is not declared"))
     kind = InstrumentConfiguration.sensor_kind(sensor)
     extra = kind isa Val{:shack_hartmann} ?
-        ("settings", "mirror", "source_completion", "estimator") :
-        ("settings", "mirrors", "tiptilt", "temporal")
+        ("settings", "mirror", "source_completion", "estimator", "references") :
+        ("settings", "mirrors", "tiptilt", "temporal", "references")
     Set(keys(recipe)) ⊆ Set((common...,extra...)) || throw(ArgumentError("unknown calibration recipe fields"))
     for key in ("poke_m", "tsvd_rtol")
         value=recipe[key]

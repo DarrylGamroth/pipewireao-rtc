@@ -110,7 +110,7 @@ function action(value::AbstractDict)
     elseif kind == "settle"
         _fields(value,("kind","probe","after","rule")); return Codec.Settle(UInt32(_integer(value["probe"],0,16383)),_cursor(value["after"]),_rule(value["rule"]))
     elseif kind == "collect"
-        _fields(value,("kind","probe","after","measurements","frames")); return Codec.Collect(UInt32(_integer(value["probe"],0,16383)),_cursor(value["after"]),UInt32(_integer(value["measurements"],1,131072)),UInt32(_integer(value["frames"],1,4096)))
+        _fields(value,("kind","probe","after","measurements","frames")); return Codec.Collect(UInt32(_integer(value["probe"],0,16383)),_cursor(value["after"]),UInt32(_integer(value["measurements"],0,131072)),UInt32(_integer(value["frames"],1,4096)))
     elseif kind == "capture"
         _fields(value,("kind","probe","after","frames")); return Codec.Capture(UInt32(_integer(value["probe"],0,16383)),_cursor(value["after"]),UInt32(_integer(value["frames"],1,4096)))
     elseif kind == "restore"

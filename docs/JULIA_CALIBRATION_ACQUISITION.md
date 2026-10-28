@@ -181,6 +181,19 @@ and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
 ### Source and mechanism preparation
 
+The shared Julia boundary is `CalibrationPreparation`. Its `Request` identifies
+one run, serial, stage, named condition, configuration identity, evidence kind
+and finite monotonic time window. `Confirmation` binds that exact request to a
+fresh observation and a named witness (operator or exact simulator/service
+incarnation). `Procedure` owns one pending request and its confirmation;
+`complete!`, `cancel!`, `expire!`, `invalidate!` and `check_current!` are events
+and admission checks on its single owning control task. These names describe
+preparation evidence, not hardware commands or physical settling. A manual
+confirmation is operator attestation; a simulator/service adapter must verify
+its configured authority before emitting confirmation and invalidate the gate
+on observed condition/authority loss. No message format or device protocol is
+introduced by this Julia interface.
+
 The shared procedure describes the required optical condition, rather than a
 manufacturer's commands. A dark blocks light at the detector while retaining the
 selected exposure, gain, temperature/readout policy and raw ADC contract. An
@@ -198,11 +211,18 @@ background-estimation acceptance need their own declared checks.
 | Classic simulator | Selected built AOS graph | `dark` feeds zero incident photon rate to the unchanged detector; `internal-source` retains the declared source and detector without atmosphere |
 | Physical REVOLT | Operator; user confirms preparation is completely manual | Run/stage-specific confirmation of prescribed beam blocking or illuminated configuration, recorded as manual evidence; detector settings and independent data checks remain required |
 | Physical SPIDERS | Existing SuperK, Thorlabs and Galil services | Service identity, actual emission/interlock and mechanism readbacks, motion completion and declared position tolerance; submission alone is insufficient |
-| Physical GPI | Existing instrument/mechanism-control software | Completed configuration and readbacks from that software, bound to this stage and detector configuration |
+| GPI simulator | Selected built AOS graph, selected manually or by script | Declared dark/internal-source condition and correlated simulator ownership; no real-instrument software connection is planned |
+| Hypothetical physical GPI | Operator or existing instrument software | Stage-specific manual attestation or completed configuration/readbacks; a separate adapter and hardware qualification would be required |
 
 This is an integration contract and implementation plan. Physical adapters,
 manual confirmation transport and automatic campaign orchestration are not yet
 implemented. Selecting a simulation graph authorizes no physical device command.
+A future instrument sequencer may coordinate preparation requests, mechanism
+completion and calibration procedures through this same boundary. It must retain
+the authority and result of each step; it does not replace mechanism service
+interlocks, optical readiness checks or calibration algorithms. The current work
+does not introduce a sequencer runtime.
+
 Preparation conditions belong to the authored calibration recipe; physical
 mechanism identity/geometry remains instrument data, and service connection
 settings belong to the application/host configuration. The ordinary instrument
@@ -270,11 +290,89 @@ policy stay with their existing owners.
 Implementation order: diagnose repeated exposure completion; qualify simulated
 dark and illuminated acquisition; implement the bounded preparation adapter and
 manual REVOLT interaction; then automate dark, lamp training and independent
-reference/eligibility stages with existing AOC methods. Add SPIDERS/GPI adapters
-after establishing their completion/readback contracts. Independent qualification
+reference/eligibility stages with existing AOC methods. REVOLT is the first
+campaign, followed by GPI after establishing its completion/readback contracts;
+Copper and SPIDERS follow later. Independent qualification
 cannot change a frozen training mask. Optional recording supports diagnosis and
 replay while scientific consumers reduce candidate data online. Source levels,
 masks, thresholds, filters and gains retain their own acceptance requirements.
+
+### CPU simulator reference candidates
+
+`InstrumentCalibration.calibrate_references(application, output; remote,
+reference, run=1, timeout_s=300, cancelled=()->false)` consumes the built Classic
+recipe's `references` section. `remote` is a caller-owned private core path or
+`(dark=..., lamp=..., qualification=...)`; no default core is selected.
+`reference` explicitly supplies the absolute Float32 physical mirror figure in
+the existing command units. Every stage has a fresh native owner and simulator
+acquisition domain, a correlated `CalibrationPreparation` gate and known
+Restore/Release completion before the next stage. The stage deadline includes
+preparation and acquisition; one additional equal timeout bounds cleanup and the
+server lifetime. Unknown native outcomes fence the candidate without retry.
+Cancellation is observed at completed-action and sample boundaries, followed by
+restoration only when the native outcome permits it.
+
+Dark samples reduce raw UInt16 ADC images online through AOC 0.17.2
+`DarkFrameState`; WFS validity does not decide dark acceptance. Lamp training
+uses the new Float32 background, the full declared ROI universe, zero subtraction
+reference and the original per-ROI thresholds. The procedure checks that the
+production coordinates are centered pixel axes with scale one, then supplies
+interleaved absolute x/y centroids to AOC `LampReferenceState`. The resulting
+eligible mask and Float32 reference are frozen as typed FITS inputs to a fresh
+qualification stage. Qualification reconstructs absolute centroids from measured
+residuals plus that frozen reference and processes explicit active ROI indices.
+Its data never retune the training mask or reference.
+
+The detector's normal photon/readout noise, ADC bit depth, seed and source level
+are retained. Because each simulator stage resets with the same seed, the
+qualification discard count must cover the entire lamp discard-plus-training
+window. The authored 16 dark, 16 lamp and 16 later qualification exposures are a
+bounded pilot, with no precision claim. AOC eligibility and reference-difference
+diagnostics are reported separately from interaction-matrix acceptance. An
+ineligible lamp product can be retained as a rejected candidate; if no ROI is
+eligible, qualification is explicitly skipped.
+
+GPI uses the same entry point with a NamedTuple of explicit Float32 figures for
+all declared woofer, tweeter and tip/tilt ports. Every command adoption and
+restoration verifies that complete set under one token, including conditioner
+feedback. Native v1 action vectors address the first mirror in the declared
+calibration recipe; other ports retain their immutable references. Names, physical
+schemas and shapes come from the regular graph and simulator declarations.
+
+For GPI dark acquisition the frontend projects the normal pixel-calibration node,
+while the reducer consumes separately captured raw ADC data. The cold selection
+`measurements=nothing` requires that synchronous consumer and requests a Collect
+with zero response measurements: the reply carries complete exposure receipts,
+while the full raw arrays go directly to AOC. This additive native v1 value-domain
+extension retains the existing layout and 128 KiB reply bound. Earlier endpoints
+reject zero before acquisition; there is no retry or synthetic scalar fallback.
+Ordinary interaction calibration retains positive measurement dimensions. This
+avoids requiring illuminated pyramid processing or recording raw files for a dark. Lamp and qualification project the
+normal normalized pupil pixels and mean-intensity diagnostic; the first successful
+lamp frame is discarded because normalization uses the previous successful
+frame's full-pupil mean, including masked pixels. AOC averages these already
+normalized pixels without renormalization and computes the candidate modal
+reference as the negative frozen reconstructor times the pupil-major mean.
+Explicit selection matrices, mirror OPD units and the retained calibration
+normalization establish row units. The original flat, pupil mask, pupil origins
+and reconstructor remain frozen; only background is overridden. Comparison
+errors are dimensionless pupil-pixel differences, with no invented ROI eligibility
+or acceptance threshold. Modal-reference candidates are not activated in the
+upstream sensor projection. GPI requires at least five default Julia threads;
+`test/pyramid_reference_calibration.jl` supplies the cold and optional private-core
+selectors. This extension is still under qualification.
+
+The fresh output directory is published atomically after all successful native
+cleanup. Generated FITS and YAML record types, shapes, axis order, byte hashes,
+stage sample boundaries, simulator identities and input provenance. Built
+application hashes are checked across the campaign. No raw recorder is required,
+and nothing activates or stages these products into the application. This CPU
+simulator procedure does not qualify physical preparation, timing or hardware.
+The optional `confirm(request,witness)` seam supplies correlated simulator
+preparation evidence after the owner exists; it does not add a physical adapter.
+The focused selector is `test/reference_calibration.jl`; set
+`PIPEWIREAORTC_REFERENCE_APPLICATION` and run with at least four Julia threads to
+include the caller-owned private-core campaign.
 
 ### Delivery state and next gates
 
@@ -290,7 +388,7 @@ it does not migrate every existing campaign or authorize physical actuation.
 | 1 | Shared completion-driven interaction acquisition and online consumers | Typed linear-sensor live/replay parity; invalid identity/exposure, cancellation, processing failure and restoration tests; private-core native request and retirement checks |
 | 2 | Connect Classic's declared probe basis and AOC estimator to the online consumer | Actual deployed private-core DM/WFS acquisition, incremental and retained-input numerical agreement, restoration and aborted-candidate rejection |
 | 3 | Add standard dark/lamp/reference procedures using existing AOC methods | Independent reference windows, unchanged estimator conventions, typed artifacts and repeatability diagnostics |
-| 4 | Adopt Copper and GPI through declared measurement/command contracts | Same procedure API with their actual coordinates, normalization, correctors and accepted probe association; no guessed mappings |
+| 4 | Adopt GPI after REVOLT, then Copper through declared measurement/command contracts | Same procedure API with their actual coordinates, normalization, correctors and accepted probe association; no guessed mappings |
 | 5 | Add multi-WFS acquisition, bounded numerical workers and optional recording/replay | Per-source adoption/exposure evidence, all-required-source completion, bounded overload policy and missing-source tests |
 | 6 | Add SPIDERS LOWFS, SCC and sharpening procedures | Scientific parity over retained inputs, then the future PipeWireAO RTC path; explicit grouped-probe decoding and optimization state |
 

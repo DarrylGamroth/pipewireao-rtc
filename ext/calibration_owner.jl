@@ -7,11 +7,13 @@ const Native = PipeWireAORTC.NativeCalibrationEndpoint
 const Control = PipeWireAORTC.NativeControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
-mutable struct InitialCalibration{P,D,C,T,W,G,S}
+mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R}
     hil::P
     driver::D
     capture::C
     capture_store::S
+    consume::F
+    consumer_failed::Bool
     transport::T
     workers::W
     graphs::G
@@ -20,7 +22,10 @@ mutable struct InitialCalibration{P,D,C,T,W,G,S}
     frame_listener::ManagedListener
     links::Vector{PipeWireAO.Link}
     reference::Vector{Float32}
-    active::Vector{Bool}
+    active::Union{Nothing,Vector{Bool}}
+    references::R
+    probe_command::Union{Nothing,Symbol}
+    measurements::Union{Nothing,Symbol}
     token::UInt64
     probe::Union{Nothing,UInt32}
     cursor::Actions.AcquisitionCursor
@@ -50,6 +55,7 @@ function check(owner::InitialCalibration)
     end
     status = calibration_probe_snapshot(owner.transport)
     status.error === nothing || throw(status.error)
+    status.closed && error("initial calibration probe is closed")
     return status
 end
 
@@ -57,21 +63,24 @@ function adopt!(owner::InitialCalibration, figure, deadline)
     check(owner)
     length(figure) == length(owner.reference) && all(isfinite, figure) ||
         throw(ArgumentError("initial calibration figure differs from the declared command contract"))
+    figures = owner.references === nothing ? figure :
+        merge(owner.references, NamedTuple{(owner.probe_command,)}((figure,)))
     owner.token = Base.Checked.checked_add(owner.token, UInt64(1))
     token = owner.token
     Wire.adopt_pipewire_probe!(owner.hil, token;
         timeout_ns=remaining(owner, deadline),
-        submit=() -> stage!(owner.transport, token, figure))
+        submit=() -> stage!(owner.transport, token, figures))
     check(owner)
     # This is a received-and-adopted snapshot, not a parameter submission ACK.
-    actual = copy(Wire.pipewire_probe_values(owner.hil))
+    borrowed = Wire.pipewire_probe_values(owner.hil)
+    actual = borrowed isa NamedTuple ? map(copy, borrowed) : copy(borrowed)
     feedback = Native.await(owner.wakeup, owner.guard, Float64(deadline)) do
         status = check(owner)
         status.received == token ? status.values : nothing
     end
-    feedback == figure .- actual || error("conditioner feedback disagrees with the adopted figure")
+    clipped = calibration_feedback(figures, actual, feedback)
     owner.restored = false
-    return actual, any(!iszero, feedback) || actual != figure
+    return owner.probe_command === nothing ? actual : getproperty(actual, owner.probe_command), clipped
 end
 
 function exposure!(owner::InitialCalibration, deadline)
@@ -79,15 +88,11 @@ function exposure!(owner::InitialCalibration, deadline)
     exposure = Wire.step_pipewire_exposure!(owner.hil, owner.driver;
         timeout_ns=remaining(owner, deadline),
         before_publish=value -> CalibrationCapture.arm!(owner.capture, value))
-    # Publication acknowledges a queued source buffer before its native cycle
-    # ends. Await the transport witness before requesting downstream progress;
+    # This witness observes publication at a source completion callback;
     # only the correlated raw/WFS receipts below prove exposure completion.
     Native.await(owner.wakeup, owner.guard, Float64(deadline)) do
         check(owner)
         Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence == exposure.identity.sequence
-    end
-    with_thread_loop_lock(owner.hil.loop) do _
-        trigger_process!(owner.hil.frame_stream)
     end
     values = CalibrationCapture.await!(owner.capture; deadline=Float64(deadline), check=() -> check(owner))
     exposure.probe_sequence == owner.token || error("exposure belongs to another probe")
@@ -139,10 +144,18 @@ function (owner::InitialCalibration)(action::Actions.Settle, deadline)
     return Actions.Settled(owner.cursor)
 end
 function (owner::InitialCalibration)(action::Actions.Collect, deadline)
+    owner.consumer_failed && return Actions.Failed(Actions.InvalidEvidence)
     action.probe == owner.probe && action.after == owner.cursor ||
         return Actions.Failed(Actions.InvalidEvidence)
-    measurements = prod(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph).slopes.shape)
+    measurements = owner.measurements === nothing ? 0 :
+        prod(getproperty(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph), owner.measurements).shape)
     action.measurements == measurements || return Actions.Failed(Actions.InvalidEvidence)
+    try
+        Actions.preflight_collect_reply(measurements, action.frames)
+    catch error
+        error isa ArgumentError || rethrow()
+        return Actions.Failed(Actions.InvalidEvidence)
+    end
     # Response order is the deployed estimator's logical row-major order, as in
     # the existing SH AOC reduction. Acquisition averages in Float32 online.
     mean = zeros(Float32, measurements)
@@ -151,10 +164,29 @@ function (owner::InitialCalibration)(action::Actions.Collect, deadline)
     for _ in 1:action.frames
         values, exposure = exposure!(owner, deadline)
         push!(exposures, exposure)
-        valid &= all(i -> !owner.active[i] || values.arrays.validity[i], eachindex(owner.active))
-        flattened = vec(permutedims(values.arrays.slopes))
-        valid &= all(isfinite, flattened)
-        mean .+= flattened ./ Float32(action.frames)
+        # Freeze native response evidence before lending sample storage to the
+        # reducer. A consumer cannot clear intrinsic rejection or rewrite the
+        # transported response by mutating its borrowed arrays.
+        if owner.active !== nothing
+            valid &= all(i -> !owner.active[i] || values.arrays.validity[i], eachindex(owner.active))
+        end
+        if owner.measurements !== nothing
+            measurement = getproperty(values.arrays, owner.measurements)
+            flattened = ndims(measurement) == 1 ? vec(measurement) : vec(permutedims(measurement))
+            valid &= all(isfinite, flattened)
+            mean .+= flattened ./ Float32(action.frames)
+        end
+        if owner.consume !== nothing && !owner.consumer_failed
+            try
+                owner.consume(values, exposure)
+            catch
+                # The correlated exposure is already complete. Finish this
+                # bounded action truthfully, then permit explicit restoration;
+                # transport/owner failures still escape and fence the endpoint.
+                owner.consumer_failed = true
+            end
+        end
+        valid &= !owner.consumer_failed
     end
     return Actions.Responses(mean, exposures, valid)
 end
@@ -208,15 +240,18 @@ function Base.close(owner::InitialCalibration)
             push!(errors, error)
         end
     end
+    for resource in (owner.capture, owner.transport)
+        try close(resource) catch error; push!(errors, error) end
+    end
     with_thread_loop_lock(owner.hil.loop) do _
-        for resource in (owner.capture, owner.transport, reverse(owner.links)..., owner.frame_listener, owner.listener, owner.registry)
+        for resource in (reverse(owner.links)..., owner.frame_listener, owner.listener, owner.registry)
             try close(resource) catch error; push!(errors, error) end
         end
     end
     try close(owner.hil) catch error; push!(errors, error) end
     # Prepared storage cannot be destroyed while a native graph owner still runs.
     if all(worker -> istaskdone(worker.task), values(owner.workers))
-        for descriptor in values(owner.graphs)
+        for descriptor in calibration_descriptors(owner.graphs.frontend, owner.graphs.command)
             try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors, error) end
         end
     end
@@ -274,21 +309,119 @@ function capture_format(format, rate)
         rate, layout=NdArray.ROW_MAJOR)
 end
 
+calibration_named_commands(command) = command isa NamedTuple &&
+    !(hasproperty(command, :graph) && hasproperty(command, :source_graph_sha256) &&
+        command.source_graph_sha256 isa AbstractString)
+
+calibration_descriptors(frontend, command) = calibration_named_commands(command) ?
+    (frontend, values(command)...) : (frontend, command)
+
+function calibration_command(descriptor, reference, count, schema)
+    inputs = JuliaFilterGraph.input_formats(descriptor.graph)
+    outputs = JuliaFilterGraph.output_formats(descriptor.graph)
+    keys(inputs) == (:requested,) && Set(keys(outputs)) == Set((:demanded, Symbol("constraint-feedback"))) ||
+        throw(ArgumentError("command projection requires requested, demanded and constraint-feedback Ports"))
+    format = inputs.requested
+    reference isa AbstractVector{Float32} && length(format.shape) == 1 &&
+        format.element_type === Float32 && length(reference) == only(format.shape) == count &&
+        all(isfinite, reference) || throw(ArgumentError("reference must match the absolute physical command port"))
+    for output in values(outputs)
+        output.element_type === Float32 && output.shape == format.shape ||
+            throw(ArgumentError("conditioner outputs must match the requested Float32 command shape"))
+    end
+    outputs.demanded.schema == schema || throw(ArgumentError("command projection schema differs from the simulator command"))
+    return copy(reference)
+end
+
+function calibration_commands(command, reference, probe_command, options)
+    if calibration_named_commands(command)
+        names = options.command_input
+        names isa Tuple && !isempty(names) && Set(keys(command)) == Set(names) &&
+            reference isa NamedTuple && Set(keys(reference)) == Set(names) ||
+            throw(ArgumentError("named projections and references must match every simulator command name"))
+        probe_command isa Symbol && probe_command in names ||
+            throw(ArgumentError("named calibration requires an explicit probe_command"))
+        return NamedTuple{keys(command)}(Tuple(calibration_command(descriptor,
+            getproperty(reference,name), getproperty(options.command_count,name),
+            getproperty(options.command_schema,name)) for (name,descriptor) in pairs(command)))
+    end
+    options.command_input isa Symbol && probe_command === nothing ||
+        throw(ArgumentError("scalar calibration requires one simulator command and no probe_command"))
+    calibration_command(command, reference, options.command_count, options.command_schema)
+    return nothing
+end
+
+function calibration_measurements(frontend, outputs, measurements, active; consume=nothing)
+    inputs = JuliaFilterGraph.input_formats(frontend.graph)
+    keys(inputs) == (:raw,) && inputs.raw.element_type === UInt16 && length(inputs.raw.shape) == 2 ||
+        throw(ArgumentError("calibration frontend requires one UInt16 rank-two raw input"))
+    if measurements === nothing
+        consume === nothing && throw(ArgumentError("consumer-only collection requires a synchronous consumer"))
+    else
+        haskey(outputs, measurements) || throw(ArgumentError("unknown calibration measurements output"))
+        format = getproperty(outputs, measurements)
+        format.element_type === Float32 && length(format.shape) in (1,2) ||
+            throw(ArgumentError("calibration measurements must be Float32 rank one/two"))
+    end
+    for output in values(outputs)
+        (output.element_type === Float32 && length(output.shape) in (1,2)) ||
+            (output.element_type === Bool && length(output.shape) == 1) ||
+            throw(ArgumentError("capture outputs require Float32 rank one/two or Bool rank one"))
+    end
+    if haskey(outputs, :validity)
+        outputs.validity.element_type === Bool && length(outputs.validity.shape) == 1 &&
+            active isa AbstractVector{Bool} && length(active) == prod(outputs.validity.shape) &&
+            active == get(frontend.parameters, :active, nothing) ||
+            throw(ArgumentError("frozen active mask must match estimator validity"))
+    else
+        active === nothing || throw(ArgumentError("active must be nothing when the frontend has no intrinsic validity"))
+    end
+    return nothing
+end
+
+function calibration_feedback(figure::AbstractVector, actual::AbstractVector, feedback::AbstractVector)
+    feedback == figure .- actual || error("conditioner feedback disagrees with the adopted figure")
+    return any(!iszero, feedback) || actual != figure
+end
+
+function calibration_feedback(figures::NamedTuple, actual::NamedTuple, feedback::NamedTuple)
+    Set(keys(figures)) == Set(keys(actual)) == Set(keys(feedback)) ||
+        error("conditioner feedback does not cover the complete command set")
+    clipped = false
+    for (name, figure) in pairs(figures)
+        clipped |= calibration_feedback(figure, getproperty(actual,name), getproperty(feedback,name))
+    end
+    return clipped
+end
+
 """
     prepare_initial_calibration(application, remote, frontend, command;
-        reference, name, instance, deadline, active=frontend.parameters[:active],
+        reference, name, instance, deadline, active=get(frontend.parameters,:active,nothing),
+        measurements=:slopes, probe_command=nothing,
         simulation_graph="production", capture_directory=nothing,
         capture_stage=nothing, capture_maximum_bytes=0)
 
-Prepare a non-actuating CPU initial-calibration endpoint from two cold projections
-of the built regular graph. `frontend` exposes raw→slopes/flux/validity; `command`
+Prepare a non-actuating CPU initial-calibration endpoint from cold projections
+of the built regular graph. `frontend` exposes raw and typed sensor outputs; `command`
 exposes absolute requested→demanded/constraint-feedback. Reference/probes use the
 command graph's declared physical wire units. No flat/offset is added here.
-Both descriptors transfer ownership to this endpoint. Its lifetime is one native
+`measurements` selects a Float32 rank-one/two output for Responses in logical
+row-major order. An intrinsic validity output requires the frozen active mask;
+otherwise `active=nothing` and scientific quality remains with the consumer.
+`measurements=nothing` requires `consume` and cold-binds consumer-only Collect:
+the request has zero measurements, and Responses contains an empty Float32
+vector, all exact exposure records and consumer validity. Captured sample arrays
+still retain their full declared shapes. No raw files or placeholder measurements
+are produced. Settling and Capture do not deliver samples to this consumer.
+`command` may instead be a NamedTuple keyed by every exact simulator command
+name, with a matching NamedTuple of explicit Float32 reference vectors and an
+explicit `probe_command`. Native v1 probe vectors address that selected Port;
+all other Ports retain their references. Every adoption and restoration verifies
+the complete command set and all conditioner feedback under one token.
+All descriptors transfer ownership to this endpoint. Its lifetime is one native
 run; call `NativeCalibrationEndpoint.serve!` and close it explicitly afterwards.
-Requires at least three Julia default threads for two blocking native graph loops
-and the control owner. This is an initial SH interface, not running-loop state
-preservation, multi-corrector/multi-WFS support or physical authorization.
+Requires one Julia default thread per graph plus the control owner. This is an
+initial-calibration interface without running-loop state preservation or physical authorization.
 `simulation_graph="internal-source"` selects that explicitly declared AOS graph
 while retaining the regular RTC graph and normal production detector nodes.
 `simulation_graph="dark"` selects declared zero incident photon rate with the
@@ -298,24 +431,55 @@ Classic may enable the native Capture action with a fresh `capture_directory`,
 explicit `capture_stage` and positive cumulative `capture_maximum_bytes`.
 Capture preserves intrinsic invalidity and writes bounded immutable evidence;
 it does not accept interaction responses or replace active calibration.
+`consume(sample, exposure)` optionally reduces each completed Collect exposure
+on the control task, before another exposure. Sample arrays are borrowed read-only until
+the callback returns; retain only owned numerical state or explicit copies.
+Discarded settling, restoration and Capture exposures are not delivered to it.
+The callback must do bounded work. A callback exception latches
+`effects.consumer_failed`, completes the current bounded batch with false
+validity and rejects later Collect requests; explicit Restore/Release remain
+available. Transport/identity failures retain their unknown-outcome fence.
+Explicit typed FITS sources in a frontend projection may replace only background,
+active mask and WFS reference. Their prepared byte hashes and arrays are checked
+again before startup. Original graph topology, coordinates and thresholds remain
+the authority; no live parameter update stands in for startup adoption.
 """
 function Calibration.prepare_initial_calibration(application, remote, frontend, command;
-        reference::AbstractVector{Float32}, name::AbstractString, instance::Int64,
-        deadline::Real, active=frontend.parameters[:active], simulation_graph::AbstractString="production",
-        capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0)
-    Threads.nthreads(:default) >= 3 || throw(ArgumentError("initial calibration requires at least three Julia threads"))
+        reference, name::AbstractString, instance::Int64,
+        deadline::Real, active=get(frontend.parameters, :active, nothing), measurements::Union{Nothing,Symbol}=:slopes,
+        probe_command::Union{Nothing,Symbol}=nothing, simulation_graph::AbstractString="production",
+        capture_directory=nothing, capture_stage=nothing,capture_maximum_bytes::Integer=0,
+        consume=nothing)
+    named = calibration_named_commands(command)
+    command isa NamedTuple || hasproperty(command, :graph) || throw(ArgumentError("command must be a graph projection or named projections"))
+    descriptors = calibration_descriptors(frontend, command)
+    Threads.nthreads(:default) >= length(descriptors)+1 ||
+        throw(ArgumentError("initial calibration requires one default thread per graph plus the control owner"))
     remote = Control.private_remote(remote)
     Calibration.require_prepared_application(application)
     authority = Calibration.digest(joinpath(application, "rtc", "graph.conf"))
-    frontend.source_graph_sha256 == command.source_graph_sha256 == authority ||
+    all(descriptor -> descriptor.source_graph_sha256 == authority, descriptors) ||
         throw(ArgumentError("calibration projections must share this application's regular graph"))
     selected = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    frontend, command = map((frontend, command)) do descriptor
+    prepared = map(descriptors, Tuple(eachindex(descriptors))) do descriptor,index
         formats = JuliaFilterGraph.parameter_formats(descriptor.graph)
         entries = filter(entry -> haskey(formats, entry.port), selected)
         Set(entry.port for entry in entries) == Set(keys(formats)) == Set(keys(descriptor.parameters)) ||
             throw(ArgumentError("calibration projection parameter ports differ from the selected bindings"))
+        sources = descriptor.parameter_sources
+        allowed = index == 1 ? Set((:background,:active,Symbol("reference-slopes"))) : Set{Symbol}()
+        Set(keys(sources)) ⊆ allowed ||
+            throw(ArgumentError("initial calibration overrides are restricted to background, mask and reference"))
+        expected = [GraphOwner.FITSBinding(entry.port,get(sources,entry.port,entry.source)) for entry in entries]
+        same_source(a,b) = a.port == b.port && a.source.path == b.source.path &&
+            a.source.hdu == b.source.hdu && a.source.axes == b.source.axes
+        length(expected) == length(descriptor.bindings) &&
+            all(pair -> same_source(pair...),zip(expected,descriptor.bindings)) ||
+            throw(ArgumentError("calibration projection FITS bindings differ from explicit stage sources"))
+        entries = expected
         artifacts = GraphOwner.prepare_artifacts(entries, formats)
+        all(pair -> last(pair).provenance["original_sha256"] == descriptor.parameter_sha256[first(pair)],artifacts) ||
+            throw(ArgumentError("calibration parameter source changed after projection preparation"))
         updates = [port => artifact.data for (port, artifact) in artifacts]
         all(pair -> isequal(last(pair), descriptor.parameters[first(pair)]), updates) ||
             throw(ArgumentError("calibration projection parameters differ from the selected FITS inputs"))
@@ -324,16 +488,13 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             for (port, artifact) in artifacts)
         merge(descriptor, (; bindings=entries, parameters=Dict{Symbol,Array}(updates), provenance))
     end
-    format = JuliaFilterGraph.input_formats(command.graph).requested
-    length(format.shape) == 1 && format.element_type === Float32 &&
-        length(reference) == only(format.shape) && all(isfinite, reference) ||
-        throw(ArgumentError("reference must match the absolute physical command port"))
-    outputs = JuliaFilterGraph.output_formats(frontend.graph)
-    active isa AbstractVector{Bool} && length(active) == prod(outputs.validity.shape) &&
-        active == frontend.parameters[:active] ||
-        throw(ArgumentError("frozen active mask must match estimator validity"))
+    frontend = first(prepared)
+    command = named ? NamedTuple{keys(command)}(Base.tail(prepared)) : prepared[2]
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
-    options.command_input isa Symbol || throw(ArgumentError("held calibration requires one named command"))
+    references = calibration_commands(command, reference, probe_command, options)
+    reference = named ? copy(getproperty(references, probe_command)) : copy(reference)
+    outputs = JuliaFilterGraph.output_formats(frontend.graph)
+    calibration_measurements(frontend, outputs, measurements, active; consume)
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
     simulation_graph in ("production","internal-source","dark") ||
         throw(ArgumentError("unsupported operational simulation graph"))
@@ -349,7 +510,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             throw(ArgumentError("capture settings require a fresh capture directory"))
         nothing
     else
-        declaration.document["id"] == "revolt-classic" ||
+        !named && declaration.document["id"] == "revolt-classic" ||
             throw(ArgumentError("capture storage requires the declared Classic profile"))
         raw = JuliaFilterGraph.input_formats(frontend.graph).raw
         for (role,contract) in pairs(Calibration.CLASSIC_CAPTURE_CONTRACTS)
@@ -386,7 +547,8 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         boundary = HIL.prepare_graph_calibration_boundary(science.graph;
             command_input=options.command_input, frame_output=options.frame_output)
         configuration = Wire.PipeWireHILConfiguration(remote=remote,
-            frame_node_name=name*".detector", command_node_name=name*".command",
+            frame_node_name=name*".detector", command_node_name=named ?
+                NamedTuple{keys(command)}(Tuple(name*".command."*String(key) for key in keys(command))) : name*".command",
             frame_schema=options.frame_schema, command_schema=options.command_schema,
             rate=SPA.Fraction(UInt32(options.rate), UInt32(1)),
             exposure_duration_ns=options.exposure_ns, frame_encoding=options.frame_encoding,
@@ -397,21 +559,45 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         frame_format = JuliaFilterGraph.input_formats(frontend.graph).raw
         declarations = (; raw=(name=name*".raw",format=capture_format(frame_format, configuration.rate),schema=frame_format.schema),
             (key => (name=name*"."*String(key), format=capture_format(getproperty(outputs,key),configuration.rate),
-                schema=getproperty(outputs,key).schema) for key in (:slopes,:flux,:validity))...)
+                schema=getproperty(outputs,key).schema) for key in keys(outputs))...)
         capture = CalibrationCapture.Capture(hil.core, declarations; wakeup, wakeup_lock=guard)
-        feedback = JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
-        probe = prepare_calibration_probe(hil.core, format, format.schema, feedback, feedback.schema,
-            configuration.rate; notify)
+        probe = if named
+            prepare_calibration_probes(hil.core, command, configuration.rate; notify, prefix=name*".calibration")
+        else
+            format = JuliaFilterGraph.input_formats(command.graph).requested
+            feedback = JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
+            prepare_calibration_probe(hil.core, format, format.schema, feedback, feedback.schema,
+                configuration.rate; notify)
+        end
         with_thread_loop_lock(hil.loop) do _
             registry = Registry(hil.core)
             listener = add_listener!(registry; on_global_added=(_...)->(notify();nothing),
                 on_global_removed=(_...)->(notify();nothing))
-            frame_listener = add_listener!(hil.frame_stream; on_trigger_done=(_...)->(notify();nothing))
+            frame_listener = add_listener!(hil.frame_stream;
+                on_trigger_done=(_...)->(notify();nothing),
+                on_command=(stream,command)->begin
+                    if pod_value(SPA.Command,command).object.id == SPA.NODE_COMMAND_REQUEST_PROCESS &&
+                            stream_state(stream) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
+                            is_driving(stream)
+                        # Service native graph demand without stepping the plant
+                        # or staging another scientific exposure.
+                        trigger_process!(stream)
+                    end
+                    nothing
+                end)
         end
         graph_name = "calibration."*string(uuid4())
-        front_node, command_node = graph_name*".wfs", graph_name*".pdm"
+        front_node = graph_name*".wfs"
+        command_nodes = named ? NamedTuple{keys(command)}(Tuple(graph_name*"."*String(key) for key in keys(command))) : nothing
+        command_node = named ? nothing : graph_name*".pdm"
         push!(workers, start_calibration_graph(frontend,remote,front_node,rate;notify))
-        push!(workers, start_calibration_graph(command,remote,command_node,rate;notify))
+        if named
+            for (key, descriptor) in pairs(command)
+                push!(workers, start_calibration_graph(descriptor,remote,getproperty(command_nodes,key),rate;notify))
+            end
+        else
+            push!(workers, start_calibration_graph(command,remote,command_node,rate;notify))
+        end
         function check_workers()
             for worker in values(workers)
                 if istaskdone(worker.task)
@@ -425,12 +611,19 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         # Registry callbacks publish and notify this exact discovery state.
         # A worker's client-side node_id can become visible after the registry
         # event without another wake, so it is not a readiness predicate.
-        connections = ((hil.frame_stream,nothing,front_node,:raw),
-                (hil.frame_stream,nothing,capture.streams.raw,nothing),
-                (probe.source,nothing,command_node,:requested),
+        command_connections = if named
+            Tuple(connection for key in keys(command) for connection in (
+                (getproperty(probe.probes,key).source,nothing,getproperty(command_nodes,key),:requested),
+                (getproperty(command_nodes,key),:demanded,getproperty(hil.command_stream,key),nothing),
+                (getproperty(command_nodes,key),Symbol("constraint-feedback"),getproperty(probe.probes,key).feedback,nothing)))
+        else
+            ((probe.source,nothing,command_node,:requested),
                 (command_node,:demanded,hil.command_stream,nothing),
-                (command_node,Symbol("constraint-feedback"),probe.feedback,nothing),
-                ((front_node,key,getproperty(capture.streams,key),nothing) for key in (:slopes,:flux,:validity))...)
+                (command_node,Symbol("constraint-feedback"),probe.feedback,nothing))
+        end
+        connections = ((hil.frame_stream,nothing,front_node,:raw),
+            (hil.frame_stream,nothing,capture.streams.raw,nothing), command_connections...,
+            ((front_node,key,getproperty(capture.streams,key),nothing) for key in keys(outputs))...)
         endpoints = Native.await(wakeup, guard, Float64(deadline)) do
             check_workers() || return nothing
             with_thread_loop_lock(hil.loop) do _
@@ -465,8 +658,10 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         end
         start!(capture)
         with_thread_loop_lock(hil.loop) do _
-            set_active!(probe.feedback, true)
-            set_active!(probe.source, true)
+            for member in calibration_probe_members(probe)
+                set_active!(member.feedback, true)
+                set_active!(member.source, true)
+            end
         end
         Native.await(wakeup, guard, Float64(deadline)) do
             check_workers() || return false
@@ -478,11 +673,27 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             all(state -> state[] in (Int(PipeWireAO.LINK_STATE_PAUSED),Int(PipeWireAO.LINK_STATE_ACTIVE)), states)
         end
         start!(hil)
+        # A discovered/bound Link does not prove every requested-command
+        # Stream has finished activation. Admit the first token only after
+        # every source and feedback Stream reports native readiness.
+        Native.await(wakeup, guard, Float64(deadline)) do
+            check_workers() || return false
+            Wire.pipewire_calibration_status(hil).failed && error("held-probe transport failed during preparation")
+            snapshot = calibration_probe_snapshot(probe)
+            snapshot.error === nothing || throw(snapshot.error)
+            with_thread_loop_lock(hil.loop) do _
+                all(calibration_probe_members(probe)) do member
+                    stream_state(member.source) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
+                        stream_state(member.feedback) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+                end
+            end
+        end
         status = Wire.pipewire_calibration_status(hil)
         cursor = Actions.AcquisitionCursor(UInt64(1), status.acquisition_generation,
             UInt64(0), UInt64(0))
-        owner = InitialCalibration(hil, science.driver, capture, capture_store, probe, workers,
-            (;frontend,command), registry, listener, frame_listener, links, collect(reference), collect(active),
+        owner = InitialCalibration(hil, science.driver, capture, capture_store, consume, false, probe, workers,
+            (;frontend,command), registry, listener, frame_listener, links, collect(reference),
+            active === nothing ? nothing : collect(active), references, probe_command, measurements,
             UInt64(0), nothing, cursor, status.acquisition_domain, false, wakeup, guard, nothing, false)
         endpoint = Native.Endpoint(remote, name, instance, owner; wakeup, wakeup_lock=guard)
         owner.control = endpoint
@@ -493,8 +704,12 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             try close(owner) catch error; push!(errors,error) end
         else
             if hil !== nothing
+                for resource in (capture, probe)
+                    resource === nothing && continue
+                    try close(resource) catch error; push!(errors,error) end
+                end
                 with_thread_loop_lock(hil.loop) do _
-                    for resource in (capture,probe,reverse(links)...,frame_listener,listener,registry)
+                    for resource in (reverse(links)...,frame_listener,listener,registry)
                         resource === nothing && continue
                         try close(resource) catch error; push!(errors,error) end
                     end
@@ -515,7 +730,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             end
             hil === nothing || try close(hil) catch error; push!(errors,error) end
             if all(worker -> istaskdone(worker.task), workers)
-                for descriptor in (frontend,command)
+                for descriptor in calibration_descriptors(frontend,command)
                     try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors,error) end
                 end
             end

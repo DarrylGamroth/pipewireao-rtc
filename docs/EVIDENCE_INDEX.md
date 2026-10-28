@@ -1,5 +1,9 @@
 # Delivery evidence catalog
 
+- [GPI online reference calibration](validation/gpi-reference-20261027/README.md):
+  source review and fresh registered-release CPU/private-core qualification passed;
+  candidate products only, with precision acceptance separate.
+
 ## GPI2 correction supervision — 2026-10-27
 
 The [source and validation record](validation/gpi2-supervision-20261027/README.md)
@@ -27,7 +31,9 @@ remain separate gates; no selected calibration or installed session changed.
 The source/mechanism preparation follow-up adds declared dark capture and
 records manual REVOLT preparation, existing SPIDERS/GPI service ownership,
 two dependency cohorts and exact retained-payload parity. Physical adapters
-and a compatible registered application build remain separate delivery gates.
+remain separate delivery gates. The registered RTC 0.2.30/AOC 0.17.2 follow-up
+passes 151 cold checks and 342 native dark/light Capture assertions in a fresh
+registry-only Classic application; it closes the registered-build prerequisite.
 
 ## GPI2 optional pupil-flux and operator validation — 2026-10-27
 

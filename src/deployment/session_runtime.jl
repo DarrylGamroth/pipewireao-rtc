@@ -472,6 +472,23 @@ function _verify_owners(handle::Handle, record, deadline)
     return nothing
 end
 
+function _source_endpoint(source)
+    native_source = DeploymentConfiguration.native_source(source)
+    native_source || DeploymentConfiguration.native_acquisition(source) ||
+        throw(ArgumentError("readiness requires a native source control profile"))
+    node = get(source, "control-node", nothing)
+    node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node) ||
+        throw(ArgumentError("source requires a bounded exact control node"))
+    retained = get(source, "control-instance", nothing)
+    instance = tryparse(Int64, string(retained))
+    # Native source mailboxes publish their own incarnation; acquisition
+    # endpoints instead use the positive instance reserved by SessionLaunch.
+    (native_source && retained === nothing) || (instance !== nothing && instance > 0) ||
+        throw(ArgumentError("source requires a valid retained control incarnation"))
+    return Dict("node" => node, "instance" => instance,
+        "profile" => source["control-protocol"])
+end
+
 "Return a compatibility view built from a live direct Status and exact launch ledger."
 function ready(handle::Handle; deadline=monotonic()+30)
     live = _identity(handle.unit, handle.runtime_root; deadline)
@@ -498,10 +515,7 @@ function ready(handle::Handle; deadline=monotonic()+30)
     _verify_owners(handle, record, deadline)
     source_role = String(record["source_role"])
     source = record["owners"][source_role]
-    instance = tryparse(Int64, string(source["control-instance"]))
-    instance !== nothing && instance > 0 &&
-        source["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1" ||
-        throw(ArgumentError("calibration requires a retained native source endpoint"))
+    endpoint = _source_endpoint(source)
     processes = Dict{String,Any}(role => Dict("pid" => item["pid"],
         "invocation" => item["invocation"], "start-ticks" => item["start-ticks"],
         "cgroup" => item["cgroup"]) for (role, item) in record["owners"])
@@ -510,8 +524,7 @@ function ready(handle::Handle; deadline=monotonic()+30)
         "wireplumber_start_ticks" => handle.start_ticks,
         "instance" => handle.invocation, "private_runtime" => record["runtime"],
         "observation_remote" => record["remote"], "source-owner" => source_role,
-        "source_endpoint" => Dict("node" => source["control-node"],
-            "instance" => instance, "profile" => source["control-protocol"]),
+        "source_endpoint" => endpoint,
         "processes" => processes, "ready" => Dict("session_id" => record["session_uuid"]),
         "phase" => String(lifecycle), "admitted" => true)
 end
@@ -562,6 +575,8 @@ function source_status(ready_record, instrument::AbstractString; deadline=monoto
         instrument == "copper" ? AcquisitionCodec.Copper :
         throw(ArgumentError("unsupported calibration instrument"))
     source = ready_record["source_endpoint"]
+    get(source, "profile", nothing) == "pipewireao.rtc.calibration-lifecycle/1" ||
+        throw(ArgumentError("source Status requires a calibration lifecycle endpoint"))
     role = ready_record["source-owner"]
     connection = Acquisition.connect(AcquisitionCodec.CALIBRATION_PROFILE,
         ready_record["observation_remote"], source["node"],

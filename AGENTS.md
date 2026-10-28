@@ -84,6 +84,11 @@
 ## Validation and documentation
 
 - Use Julia 1.13 or newer for development, validation and release tooling.
+- Run the core Julia suite from the package environment, with the native prefix
+  selected explicitly: `julia --project=. -e 'using PipeWireAO;
+  ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir);
+  include("test/runtests.jl")'`. The optional science environment alone does not
+  expose all core-test dependencies. This selector does not qualify hardware.
 - Keep commits focused; never rewrite published history without authorization.
 - Choose checks for the changed behavior. Rust code: formatting, focused tests,
   workspace tests and Clippy in proportion to the change. Live/hardware gates
