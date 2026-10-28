@@ -35,7 +35,7 @@ end
 "Calibrate declared modal command projections against a deterministic optical plant."
 function Calibration._calibrate_system(::Val{:pyramid}, source, recipe, output;
         target=AdaptiveOpticsSim.Backends.HostComputeDevice(),
-        execution=HIL.StreamGraphExecution())
+        execution=nothing)
     ispath(output) && throw(ArgumentError("calibration output must be fresh"))
     any(entry -> entry["name"]==recipe["tiptilt"]["mirror"] && haskey(entry,"completion"),recipe["mirrors"]) &&
         throw(ArgumentError("annular completion cannot be combined with the fitted tip/tilt-coupled mirror basis"))
@@ -213,7 +213,7 @@ function Calibration._calibrate_system(::Val{:pyramid}, source, recipe, output;
     report=Dict("source_prescription_identity"=>prescription,
         "source_graph_sha256"=>source_graph_sha256,
         "backend"=>string(typeof(target)),
-        "execution"=>string(typeof(execution)),
+        "execution"=>string(typeof(AdaptiveOpticsSim.AlgorithmGraphs.graph_execution_policy(system.graph))),
         "scope"=>"simulation-local; provisional Gaussian mirrors and ADC; not hardware calibration",
         "mode_count"=>n,"measurement_count"=>length(reference),"retained_rank"=>AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
         "dimensions"=>dimensions,

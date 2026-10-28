@@ -55,7 +55,7 @@ function Calibration._calibrate_system(::Val{:shack_hartmann}, source, specifica
     mirror_name === nothing && (mirror_name = only(keys(declaration.instrument.document["deformable_mirrors"])))
     mirror = Instruments.mirror(declaration, configured, mirror_name)
     system = Instruments.prepare_system(declaration_path; settings=configured, calibration=true,
-        target, execution=HIL.StreamGraphExecution())
+        target)
     config = K.shack_hartmann_configuration(system)
     obstruction = config.telescope.central_obstruction
     original_spec = specification["source_completion"]

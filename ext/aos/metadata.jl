@@ -12,6 +12,12 @@ function single_seed(definition::AlgorithmGraphDefinition, select)
     return length(seeds) == 1 ? only(seeds) : nothing
 end
 
+# Read the prepared execution, never infer capture from a backend label.
+function execution_properties(graph; prefix="aos.simulation.")
+    return Dict(prefix * "execution" => string(nameof(typeof(graph_execution_policy(graph)))),
+        prefix * "captured-node-count" => string(captured_graph_node_count(graph)))
+end
+
 """
     simulation_properties(options, science)
 
@@ -24,6 +30,7 @@ writable Props and do not describe live calibration adoption or RNG state.
 | `profile` | Explicitly declared startup profile, when present |
 | `graph` | Selected declarative startup simulation graph (version 3) |
 | `backend`, `device` | Validated compute selection and device ordinal |
+| `execution`, `captured-node-count` | Actual prepared AOS execution policy and captured node count |
 | `model-period-ns`, `exposure-ns` | Validated model period and actual detector exposure in ns |
 | `configuration-sha256` | SHA-256 of the startup owner configuration |
 | `atmosphere-rng-seed`, `detector-rng-seed` | Initial seed of exactly one recognized owner |
@@ -65,5 +72,6 @@ function simulation_properties(options, science)
             ("detector-rng-seed", single_seed(science.definition, detector_seed)))
         seed === nothing || (properties["aos.simulation." * name] = string(seed))
     end
+    hasproperty(science, :graph) && merge!(properties, execution_properties(science.graph))
     return properties
 end
