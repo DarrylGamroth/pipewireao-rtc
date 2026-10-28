@@ -93,3 +93,30 @@ with longer branch silence limits; AMDGPU examples use 1 Hz. Neither setting
 establishes a deadline. Normal combined lifecycle, nonzero physical/reference
 adoption above Float32 quantization uncertainty, sustained simultaneous-loop
 science and physical hardware qualification remain pending.
+
+## Explicit mixed runtime follow-up — RTC 0.2.35
+
+Feedback profile version 1 optionally selects `upstream: {backend: cpu, device:
+0}` independently of the component's root backend/device. Omission preserves the
+previous requirement that both match. The actual upstream still passes the Host
+reference backend guard. Both selections reject unknown fields, invalid device
+types and unsupported backends.
+
+The ordinary host profile's optional `runtime-backends: [amdgpu]` promotes the
+source's declared accelerator package in the generated Project only. Explicit
+selection requires canonical UUID and compatibility metadata; it never changes
+simulation selection, imports GPU code or relaxes composition's exact registered
+runtime closure. A Manifest entry alone does not make a weak root dependency
+loadable from `Main`; the negative cold probe confirms this distinction.
+
+Focused source checks pass 53 profile, 198 export, 70 feedback and 31 existing
+composition assertions. The explicit mixed feedback regression fails against
+registered RTC 0.2.34 and passes with this follow-up. The actual ordinary GPI cold
+build with `host.cpu-cal2.example.yaml` retains CPU/device 0, generates direct
+AMDGPU 2.9.2 metadata, leaves all source file hashes unchanged and loads neither
+CUDA nor AMDGPU. Its fresh final-header output is recorded separately in
+`/tmp/cal2-runtime-backend-gpi-build-r3.log`; no generated file is edited by hand.
+The retained r2 source-hash failure coincided with the parent's GPI Project pin
+and README edits during the build; it does not establish generator mutation.
+These are cold preparation checks. Normal combined native and simultaneous
+noisy-loop qualification remain pending.

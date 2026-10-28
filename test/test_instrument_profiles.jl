@@ -8,6 +8,26 @@ function host_profile()
             for role in ("core", "rtc"))))
 end
 
+@testset "host runtime backends select packages independently of simulation" begin
+    portable=Dict{String,Any}("mode"=>"simulation")
+    host=host_profile()
+    host["simulation"]=Dict("backend"=>"cpu","device"=>0)
+    host["runtime-backends"]=["amdgpu"]
+    original=deepcopy(host)
+    selected=E.combine_profile(portable,host)
+    @test selected["runtime-backends"]==["amdgpu"]
+    @test selected["simulation"]==Dict("backend"=>"cpu","device"=>0)
+    @test host==original
+    @test !haskey(E.combine_profile(portable,host_profile()),"runtime-backends")
+    for backends in ("amdgpu",nothing,["cpu"],["unknown"],[1],["amdgpu","amdgpu"])
+        invalid=merge(host,Dict("runtime-backends"=>backends))
+        @test_throws ArgumentError E.combine_profile(portable,invalid)
+    end
+    @test E.combine_profile(portable,merge(host,Dict("runtime-backends"=>["cuda","amdgpu"])))["runtime-backends"]==["cuda","amdgpu"]
+    @test_throws ArgumentError E.combine_profile(Dict("runtime-backends"=>["amdgpu"]),host_profile())
+    @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+end
+
 @testset "portable choices and launcher scheduling stay separate" begin
     portable = Dict{String,Any}("mode"=>"hardware", "devices"=>[], "calibration"=>nothing,
         "bindings"=>Dict{String,Any}("WFS_NODE"=>"camera"))

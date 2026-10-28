@@ -74,11 +74,16 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     namespace = document["namespace"]
     profilepath = profile===nothing ? composition_source(recipe,document["profile"]) : checked_path(profile)
     selected_profile = Common.read_yaml(profilepath)
-    selected_profile isa AbstractDict && Set(keys(selected_profile))==Set(["version","backend","device","pacing_rate_hz","silence_ns"]) &&
+    profile_fields = Set(["version","backend","device","pacing_rate_hz","silence_ns"])
+    selected_profile isa AbstractDict && profile_fields ⊆ Set(keys(selected_profile)) ⊆ union(profile_fields,Set(["upstream"])) &&
         selected_profile["version"]===1 || throw(ArgumentError("invalid explicit feedback preparation profile"))
-    selected_profile["backend"] in ("cpu","amdgpu") && typeof(selected_profile["device"])===Int &&
-        (selected_profile["backend"]=="cpu" ? selected_profile["device"]==0 : selected_profile["device"]>=1) ||
+    valid_device(selection) = selection["backend"] in ("cpu","amdgpu") && typeof(selection["device"])===Int &&
+        (selection["backend"]=="cpu" ? selection["device"]==0 : 1<=selection["device"]<=typemax(Int32))
+    valid_device(selected_profile) ||
         throw(ArgumentError("feedback preparation requires an explicit CPU or AMDGPU device"))
+    upstream_profile = get(selected_profile,"upstream",Dict("backend"=>selected_profile["backend"],"device"=>selected_profile["device"]))
+    upstream_profile isa AbstractDict && Set(keys(upstream_profile))==Set(["backend","device"]) && valid_device(upstream_profile) ||
+        throw(ArgumentError("feedback upstream selection requires only an explicit CPU or AMDGPU backend/device"))
     component_simulation = D.decode(D.relative_asset(componentroot,"simulation.conf"),prefix)
     component_simulation["backend"]==selected_profile["backend"] && component_simulation["device"]==selected_profile["device"] ||
         throw(ArgumentError("component backend differs from selected feedback preparation profile"))
@@ -108,7 +113,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     owner = only(filter(owner->owner["role"]==role,main["owners"]))
     rtc = InstrumentConfiguration.load_rtc(D.relative_asset(mainroot,receiver["rtc_configuration"]))
     upstream = D.decode(D.relative_asset(mainroot,receiver["simulation_configuration"]),prefix)
-    upstream["backend"]==selected_profile["backend"] && upstream["device"]==selected_profile["device"] ||
+    upstream["backend"]==upstream_profile["backend"] && upstream["device"]==upstream_profile["device"] ||
         throw(ArgumentError("receiving source backend differs from selected feedback preparation profile"))
     paced = deepcopy(upstream)
     AOSOwner.pacing_period(selected_profile["pacing_rate_hz"],upstream["rate"])

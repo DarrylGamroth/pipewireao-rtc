@@ -707,13 +707,51 @@ Only a passing staged application becomes the requested output.
 
 The receiving graph uses three default Julia threads: native graph execution,
 bootstrap monitoring and the offset pump. An explicit preparation profile
-selects the already-built CPU or AMDGPU backend/device, primary-source wall
+selects the already-built component CPU or AMDGPU backend/device, primary-source wall
 pacing and each receiver branch's monotonic silence limit. It does not select
 controller gains or accept a rejected calibration. Source `pacing_rate_hz` accepts
 finite rates from zero to model rate, including fractional rates; zero disables
 wall pacing. Integer-rate rounding is retained. Model sample rate, PTS and
 exposure duration remain independent of wall pacing. Model-age limits and
 monotonic silence limits remain separate.
+
+Version-1 profiles may independently select the already-built primary producer
+with `upstream: {backend: cpu, device: 0}`. Without `upstream`, the root backend
+and device must match both applications, preserving existing profiles. Both
+selections permit only CPU/device 0 or AMDGPU/a positive device ordinal. The
+actual producer must still satisfy the selected reference calibration's backend
+qualification; Host expected-reference calibration requires CPU upstream.
+For example, an AMDGPU optical consumer with a CPU producer selects:
+
+```yaml
+version: 1
+backend: amdgpu
+device: 1
+upstream: {backend: cpu, device: 0}
+pacing_rate_hz: 1
+silence_ns:
+  llowfs: 10000000000
+  scc: 30000000000
+```
+
+This selects existing sealed execution configurations; it does not change either
+backend or import GPU packages during validation. The shared registered runtime
+must already supply every component direct dependency with identical compatibility
+bounds and frozen Manifest records. An AMDGPU consumer therefore needs AMDGPU in
+the shared runtime Project and Manifest, even though its CPU producer does not
+load that package.
+
+The ordinary build host profile can explicitly request `runtime-backends:
+[amdgpu]` alongside `simulation: {backend: cpu, device: 0}`. This uses the existing
+generated-Project writer to promote the source's declared optional AMDGPU package
+without changing the simulation selection. The list admits distinct `cuda` and
+`amdgpu` names only. Every explicitly requested package must already have its
+canonical UUID and nonempty compatibility declaration in source metadata; missing
+or conflicting declarations reject. Omitting the list retains ordinary backend
+selection. The supplied registered Manifest must resolve the promoted dependency;
+the build neither resolves missing packages nor imports an accelerator merely to
+prepare this environment. Use the same frozen registered GPU dependency closure
+for the CPU producer and AMDGPU component before feedback composition.
 
 The instrument repository's `tools/calibrate-optical.jl`, `tools/compose.jl`,
 `tools/prepare-feedback.jl` and `tools/materialize-calibration.jl` are thin clients

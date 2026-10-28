@@ -129,6 +129,40 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test_throws ArgumentError E.prepare_feedback(gpu_base,gpu_component,joinpath(temporary,"unqualified-gpu"),recipepath;
             prefix=PREFIX,profile=gpu_profile)
         @test !ispath(joinpath(temporary,"unqualified-gpu"))
+        # Selecting the consumer independently must not change the calibrated
+        # Host producer. Omitting upstream preserves the legacy matched choice.
+        @test_throws ArgumentError E.prepare_feedback(base,gpu_component,joinpath(temporary,"implicit-mixed"),recipepath;
+            prefix=PREFIX,profile=gpu_profile)
+        profile["upstream"]=Dict("backend"=>"cpu","device"=>0)
+        C.write_yaml(gpu_profile,profile)
+        mixed=E.prepare_feedback(base,gpu_component,joinpath(temporary,"explicit-mixed"),recipepath;prefix=PREFIX,profile=gpu_profile)
+        @test C.read_json(joinpath(mixed,"simulation.conf"))["backend"]=="cpu"
+        @test C.read_json(joinpath(mixed,"components/cal2/simulation.conf"))["backend"]=="amdgpu"
+        @test C.read_yaml(joinpath(mixed,"rtc/feedback-profile.yaml"))["upstream"]==Dict("backend"=>"cpu","device"=>0)
+        @test_throws ArgumentError E.prepare_feedback(gpu_base,gpu_component,joinpath(temporary,"wrong-upstream"),recipepath;
+            prefix=PREFIX,profile=gpu_profile)
+        for (name,selection) in (("unknown-key",Dict("backend"=>"cpu","device"=>0,"extra"=>1)),
+                ("missing-device",Dict("backend"=>"cpu")),("invalid-type",["cpu",0]),
+                ("boolean-device",Dict("backend"=>"cpu","device"=>false)),
+                ("cpu-device",Dict("backend"=>"cpu","device"=>1)),
+                ("gpu-device",Dict("backend"=>"amdgpu","device"=>0)),
+                ("unknown-backend",Dict("backend"=>"cuda","device"=>0)))
+            invalid=deepcopy(profile);invalid["upstream"]=selection
+            path=joinpath(authoring,name*".yaml");C.write_yaml(path,invalid)
+            output=joinpath(temporary,name)
+            @test_throws ArgumentError E.prepare_feedback(base,gpu_component,output,recipepath;prefix=PREFIX,profile=path)
+            @test !ispath(output)
+        end
+        for (name,key,value) in (("root-unknown-key","extra",1),("root-boolean-device","device",true),
+                ("root-string-device","device","1"),("root-overflow-device","device",Int(typemax(Int32))+1),
+                ("root-unknown-backend","backend","cuda"))
+            invalid=deepcopy(profile);invalid[key]=value
+            path=joinpath(authoring,name*".yaml");C.write_yaml(path,invalid)
+            output=joinpath(temporary,name)
+            @test_throws ArgumentError E.prepare_feedback(base,gpu_component,output,recipepath;prefix=PREFIX,profile=path)
+            @test !ispath(output)
+        end
+        @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
         for name in ("changed-selected-rtc","disconnected-selected-rtc","changed-selected-identity",
                 "changed-selected-document-identity","changed-selected-context","escaped-selected-rtc")
             altered=joinpath(temporary,name);cp(component,altered)
