@@ -86,9 +86,12 @@ end
     @test IC.resolve_settings_schema(inline) == inline
     measured = IC.resolve_settings_schema("measured_influences")["properties"]["influence_functions"]
     @test measured["readOnly"]
-    @test Set(measured["required"]) == Set(("path", "hdu", "axes", "command_indices",
+    @test Set(measured["required"]) == Set(("path", "sha256", "hdu", "axes", "type", "shape", "command_indices",
         "sample_origin", "sample_pitch", "opd_scale_m", "reference_command_m"))
     @test measured["properties"]["axes"]["uniqueItems"]
+    @test measured["properties"]["shape"]["minItems"] == measured["properties"]["shape"]["maxItems"] == 3
+    @test measured["properties"]["type"]["enum"] == ["Float32", "Float64"]
+    @test measured["properties"]["sha256"]["minLength"] == measured["properties"]["sha256"]["maxLength"] == 64
     @test measured["properties"]["command_indices"]["maxItems"] == 4096
     @test measured["properties"]["sample_pitch"]["items"]["exclusiveMinimum"] == 0
     measured["properties"]["axes"]["title"] = "Changed"

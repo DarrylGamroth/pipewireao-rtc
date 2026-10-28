@@ -7,8 +7,9 @@ canonical(value) = value
 
 function selected_binding_names(declaration,configured)
     names = Set{String}()
-    for calibration in (false,true)
-        graph = graph_document(declaration,configured;calibration)
+    modes = haskey(declaration.document, "hil") ? ("production", "calibration") : keys(declaration.graphs)
+    for mode in modes
+        graph = graph_document(declaration,configured;calibration=mode == "calibration",simulation_graph=mode)
         for entry in graph["nodes"]
             union!(names, values(node_configuration_bindings(entry, declaration.document["bindings"])))
         end
@@ -23,6 +24,17 @@ end
 
 function artifact_paths(declaration,configured)
     paths = Set{String}()
+    for selection in values(get(declaration.document, "components", Dict()))
+        haskey(selection, "preparation") && push!(paths, selection["preparation"]["recipe"])
+    end
+    for mask in values(get(declaration.instrument.document, "optical_masks", Dict())), response in values(mask), field in ("amplitude", "phase")
+        haskey(response, field) && push!(paths, response[field]["path"])
+    end
+    if haskey(declaration.instrument.document, "optical_prescription")
+        prescription = declaration.instrument.document["optical_prescription"]
+        push!(paths, prescription["path"])
+        haskey(prescription, "catalog_archive") && push!(paths, prescription["catalog_archive"]["path"])
+    end
     for spec in values(declaration.instrument.document["deformable_mirrors"])
         push!(paths,spec["description"])
     end
@@ -40,6 +52,7 @@ end
 
 sensor_artifact_paths(::Val{:shack_hartmann},spec) = (spec["subaperture_origins"]["path"],)
 sensor_artifact_paths(::Val{:pyramid},spec) = ()
+sensor_artifact_paths(::Union{Val{:scc},Val{:llowfs}},spec) = ()
 
 graph_source_identity(directory, source::AbstractString) = Common.sha256_file(D.relative_asset(directory, source))
 graph_source_identity(directory, source::AbstractDict) = InstrumentDefinition.scientific_identity(canonical(source))
@@ -71,7 +84,10 @@ end
 function prescription_identity(declaration,configured)
     schema = settings_description(declaration,configured)["schema"]
     structural = Dict(key=>configured[key] for (key,field) in schema["properties"]
-        if get(field,"readOnly",false))
+        if get(field,"readOnly",false) && haskey(configured, key))
+    # Spectra alter propagation coefficients even when cold replacement permits
+    # editing them; their selected values remain part of prescription identity.
+    haskey(configured, "spectra") && (structural["spectra"] = configured["spectra"])
     graph_hashes = Dict(name=>graph_source_identity(declaration.directory, source)
         for (name,source) in declaration.document["graphs"])
     templates = Dict(name=>Common.sha256_file(component_template_path(name)) for name in declaration.templates)
@@ -91,6 +107,7 @@ end
 
 sensor_layout(declaration,spec) = sensor_layout(sensor_kind(spec),declaration,spec)
 sensor_layout(::Val{:pyramid},declaration,spec) = merge((;kind="pyramid"),pyramid_geometry(spec))
+sensor_layout(::Union{Val{:scc},Val{:llowfs}},declaration,spec) = _instrument_seal(spec)
 
 function sensor_layout(::Val{:shack_hartmann},declaration,spec)
     source = spec["subaperture_origins"]
@@ -160,7 +177,14 @@ function physical_definition(declaration)
     sensor_keys = sort!(collect(keys(document["wavefront_sensors"])))
     sensors = Tuple((;layout=sensor_layout(declaration,document["wavefront_sensors"][name])) for name in sensor_keys)
     telescope = haskey(document,"telescope") ? (;telescope=_instrument_seal(document["telescope"])) : NamedTuple()
-    return (;telescope...,schema_version=1,id=document["id"],
+    optical_input = haskey(document,"optical_input") ? (;optical_input=_instrument_seal(document["optical_input"])) : NamedTuple()
+    optical_output = haskey(document,"optical_output") ? (;optical_output=_instrument_seal(document["optical_output"])) : NamedTuple()
+    optical_planes = haskey(document,"optical_planes") ? (;optical_planes=_instrument_seal(document["optical_planes"])) : NamedTuple()
+    optical_prescription = haskey(document,"optical_prescription") ? (;optical_prescription=_instrument_seal(document["optical_prescription"])) : NamedTuple()
+    optical_paths = haskey(document,"optical_paths") ? (;optical_paths=_instrument_seal(document["optical_paths"])) : NamedTuple()
+    optical_masks = haskey(document,"optical_masks") ? (;optical_masks=_instrument_seal(document["optical_masks"])) : NamedTuple()
+    optical_filters = haskey(document,"optical_filters") ? (;optical_filters=_instrument_seal(document["optical_filters"])) : NamedTuple()
+    return (;telescope...,optical_input...,optical_output...,optical_planes...,optical_prescription...,optical_paths...,optical_masks...,optical_filters...,schema_version=1,id=document["id"],
         deformable_mirrors=NamedTuple{Tuple(Symbol.(mirror_keys))}(Tuple(mirrors)),
         wavefront_sensors=NamedTuple{Tuple(Symbol.(sensor_keys))}(sensors))
 end
@@ -184,6 +208,7 @@ function scientific_definition(path::AbstractString,overrides=NamedTuple())
     if hasproperty(result,:telescope)
         result = merge(result,(;telescope=merge(result.telescope,(;resolution=configured["pupil_resolution"]))))
     end
+    haskey(configured, "spectra") && (result = merge(result, (;spectra=_instrument_seal(configured["spectra"]))))
     return merge(result,(;prescription_identity=prescription_identity(declaration,configured)))
 end
 

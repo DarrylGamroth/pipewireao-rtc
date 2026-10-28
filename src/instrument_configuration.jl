@@ -1,6 +1,6 @@
 """Declarative instrument preparation shared by independent RTC applications.
 
-SPA-JSON selects settings and artifacts for existing AOS YAML graphs. Only cold
+YAML selects settings and artifacts for existing AOS YAML graphs. Only cold
 preparation runs here; numerical execution remains in the prepared AOS graph.
 """
 module InstrumentConfiguration
@@ -10,11 +10,20 @@ import ..Schemas
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration
 
-public load, load_simulation, load_rtc, settings, graph_document, scientific_definition, prepare_system,
+public load, load_simulation, load_simulation_source, load_rtc, settings, graph_document, pupil_output, scientific_definition, prepare_system, prepare_external_pupil,
     prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
     actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context, calibration_context
 
 function prepare_system end
+function prepare_external_pupil end
+function optical_graph_document(declaration, configured, mode)
+    throw(ArgumentError("Zemax graph replanning requires AdaptiveOpticsSim, Proper and YAML"))
+end
+function prepare_optical_components!(graph, declaration, configured)
+    any(node -> haskey(node, "preparation"), graph["nodes"]) &&
+        throw(ArgumentError("Zemax component preparation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL"))
+    return graph
+end
 function controlled_actuators end
 
 include("instruments/settings.jl")
@@ -22,9 +31,12 @@ include("instruments/geometry.jl")
 include("instruments/influence_functions.jl")
 include("instruments/schema.jl")
 include("instruments/catalogs.jl")
+include("instruments/spectra.jl")
 include("instruments/dimensions.jl")
 include("instruments/components.jl")
 include("instruments/responses.jl")
+include("instruments/masks.jl")
+include("instruments/observations.jl")
 
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value,key),required) ||
@@ -59,32 +71,155 @@ function referenced_instrument(path, reference)
     return instrument
 end
 
-"Read an independent simulation definition and its shared physical instrument."
-function load_simulation(path::AbstractString)
+function simulation_documents(path)
     authoring = bounded_yaml(path)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
-        "wire_contracts", "graphs", "profiles", "bindings", "settings_bindings",
-        "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging"),
+        "wire_contracts", "graphs", "preparation", "profiles", "bindings", "settings_bindings",
+        "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging", "observations", "optical_model", "pupil_output"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
-        "wire_contracts", "graphs", "profiles",
-        "frame_period_s", "hil"), "simulation definition")
+        "profiles", "frame_period_s"), "simulation definition")
+    haskey(document, "graphs") != haskey(document, "preparation") ||
+        throw(ArgumentError("simulation definition must declare exactly one of graphs or preparation"))
+    haskey(document, "hil") == haskey(document, "wire_contracts") ||
+        throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
     instrument = referenced_instrument(path, document["instrument"])
-    expanded = expand_simulation_components!(document, instrument.document, instrument.directory)
-    document["settings_schema"] = resolve_settings_schema(document["settings_schema"])
-    if shared_settings_schema(authoring["settings_schema"]) && haskey(document["settings_schema"]["properties"], "profile")
-        document["settings_schema"]["properties"]["profile"]["enum"] = sort!(collect(keys(document["profiles"])))
+    if haskey(document, "optical_model")
+        model = fields(document["optical_model"], ("format", "source"), ("format", "source"), "prepared optical model")
+        model["format"] == "zemax" && haskey(document, "graphs") && !haskey(document, "hil") &&
+            get(get(instrument.document, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
+            throw(ArgumentError("prepared optical model requires standalone Zemax execution graphs"))
+        source = model["source"]
+        source isa AbstractString && !isabspath(source) || throw(ArgumentError("optical model source must be relative"))
+        resolved = D.relative_asset(instrument.directory, relpath(normpath(joinpath(dirname(abspath(path)), source)), instrument.directory))
+        resolved == D.relative_asset(instrument.directory, "simulation/definition.yaml") ||
+            throw(ArgumentError("optical model must identify its authored simulation/definition.yaml"))
+        authored = bounded_yaml(resolved)
+        get(get(authored, "preparation", Dict()), "kind", nothing) == "zemax" ||
+            throw(ArgumentError("optical model requires an authored Zemax preparation source"))
     end
+    return (; authoring, document, instrument)
+end
+
+function resolve_simulation_settings!(document, authoring, instrument)
+    document["settings_schema"] = resolve_settings_schema(document["settings_schema"])
     profiles = _declaration_object(document["profiles"], "simulation profiles")
+    1 <= length(profiles) <= 16 || throw(ArgumentError("simulation requires 1:16 profiles"))
+    if shared_settings_schema(authoring["settings_schema"]) && haskey(document["settings_schema"]["properties"], "profile")
+        document["settings_schema"]["properties"]["profile"]["enum"] = sort!(collect(keys(profiles)))
+    end
     for profile in values(profiles)
         _declaration_object(profile, "simulation profile")
         if haskey(profile,"settings_schema")
             profile["settings_schema"] = resolve_profile_settings_schema(profile["settings_schema"])
         end
     end
+    selection = authoring["settings_schema"]
+    template = selection isa AbstractString ? selection : get(selection, "template", nothing)
+    if template == "proper_optical_train"
+        resolve_optical_settings_schema!(document, instrument.document;
+            editable=haskey(document, "preparation") || haskey(document, "optical_model"))
+    end
+    return nothing
+end
+
+"Read an executable simulation definition and its shared physical instrument."
+function load_simulation(path::AbstractString)
+    (; authoring, document, instrument) = simulation_documents(path)
+    if haskey(document, "preparation")
+        load_simulation_source(path)
+        throw(ArgumentError("authored simulation source requires preparation first; execute generated/simulation.yaml"))
+    end
+    expanded = expand_simulation_components!(document, instrument.document, instrument.directory)
+    validate_observations(document, instrument.document, instrument.directory, expanded.graphs)
+    expand_optical_mask_bindings!(document, instrument.document, expanded.graphs)
+    resolve_simulation_settings!(document, authoring, instrument)
     validate_simulation(document, instrument.document, instrument.directory, expanded.graphs)
     return (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,
         graphs=expanded.graphs,templates=expanded.templates)
+end
+
+"""Read authored simulation metadata before any generated optical model exists.
+
+Prepared optical sources support settings profiles and bindings. Components,
+profile nodes/parameters and settings bindings require declared authored response
+graphs in `observations`; responses, sensors and sources remain empty. Imaging is
+unsupported. Zemax conversion and execution belong to the scientific preparation
+tool and generated/simulation.yaml. Expanded authored responses are returned as
+`observation_graphs`, independently of the generated optical graphs.
+Graph-bearing authored definitions retain the ordinary executable loader contract.
+"""
+function load_simulation_source(path::AbstractString)
+    (; authoring, document, instrument) = simulation_documents(path)
+    haskey(document, "preparation") || return load_simulation(path)
+    preparation = _declaration_fields(document["preparation"], ("kind", "recipe"),
+        ("kind", "recipe"), "simulation preparation")
+    preparation["kind"] == "zemax" || throw(ArgumentError("unsupported simulation preparation kind"))
+    prescription = get(instrument.document, "optical_prescription", Dict())
+    get(prescription, "format", nothing) == preparation["kind"] ||
+        throw(ArgumentError("simulation preparation must match the physical optical prescription format"))
+    paths = _declaration_object(get(instrument.document, "optical_paths", Dict()), "physical optical paths")
+    isempty(paths) && throw(ArgumentError("prepared optical source requires physical optical_paths"))
+    recipe = _declaration_text(preparation["recipe"], "simulation preparation recipe")
+    !isabspath(recipe) && !occursin('\0', recipe) ||
+        throw(ArgumentError("simulation preparation recipe must be a relative filename"))
+    recipe_candidate = joinpath(dirname(abspath(path)), recipe)
+    isfile(recipe_candidate) || throw(ArgumentError("simulation preparation recipe must be an existing file"))
+    preparation_path = D.relative_asset(instrument.directory,
+        relpath(recipe_candidate, instrument.directory))
+    relative_recipe = relpath(preparation_path, realpath(instrument.directory))
+    "generated" in splitpath(relative_recipe) &&
+        throw(ArgumentError("simulation preparation recipe must be an authored asset outside generated"))
+    haskey(document, "hil") && throw(ArgumentError("prepared optical source does not support HIL execution"))
+    for key in ("responses", "sensors", "sources")
+        isempty(_declaration_object(get(document, key, Dict()), "simulation $key")) ||
+            throw(ArgumentError("prepared optical source requires empty $key; declare execution graphs after preparation"))
+    end
+    haskey(document, "imaging") && throw(ArgumentError("prepared optical source does not support imaging"))
+    bindings = _declaration_object(get!(document, "bindings", Dict{String,Any}()), "simulation bindings")
+    entries = _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
+    resolve_simulation_settings!(document, authoring, instrument)
+    validate_simulation_common(document, instrument.document)
+    response_sources = observation_sources(document, instrument.document, instrument.directory)
+    observation_graphs, templates = Dict{String,Any}(), ()
+    if isempty(response_sources)
+        isempty(_declaration_object(get(document, "components", Dict()), "simulation components")) ||
+            throw(ArgumentError("prepared optical source components require declared observations"))
+        isempty(entries) || throw(ArgumentError("prepared optical source requires empty settings_bindings without observations"))
+        for (name, profile) in document["profiles"]
+            _declaration_object(profile, "simulation profile")
+            for key in ("nodes", "parameters")
+                isempty(_declaration_array(get(profile, key, nothing), "profile $name $key")) ||
+                    throw(ArgumentError("prepared optical source requires empty profile $key without observations"))
+            end
+        end
+        _validate_profiles(document["profiles"], bindings, Set{String}())
+        _validate_bindings(bindings, instrument.document["deformable_mirrors"], document["defaults"],
+            document["settings_schema"], document["profiles"], instrument.directory)
+    else
+        response_document = deepcopy(document)
+        response_document["graphs"] = response_sources
+        expanded = expand_simulation_components!(response_document, instrument.document, instrument.directory)
+        validate_simulation(response_document, instrument.document, instrument.directory, expanded.graphs)
+        validate_observations(response_document, instrument.document, instrument.directory, expanded.graphs; source=true)
+        for binding in values(response_document["bindings"])
+            binding["kind"] == "fits" || continue
+            haskey(binding, "sha256") || throw(ArgumentError("authored observations require SHA-256 for each FITS binding"))
+        end
+        for key in ("bindings", "settings_bindings", "profiles")
+            document[key] = response_document[key]
+        end
+        observation_graphs, templates = expanded.graphs, expanded.templates
+    end
+    declaration = (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,preparation_path,
+        observation_graphs,templates)
+    configured = settings(declaration)
+    if !isempty(response_sources)
+        for binding in values(document["bindings"])
+            binding["kind"] == "fits" && binding_values(declaration, configured, binding)
+        end
+    end
+    return declaration
 end
 
 "Read RTC dimensions and mirror-control definitions independently of the simulator."
@@ -97,6 +232,8 @@ function load_rtc(path::AbstractString)
     _declaration_text(document["publication"], "RTC publication")
     _declaration_text(document["calibration_identity"], "RTC calibration identity")
     instrument = referenced_instrument(path, document["instrument"])
+    isempty(instrument.document["deformable_mirrors"]) &&
+        throw(ArgumentError("RTC configuration requires at least one deformable mirror"))
     document["dimensions"] = controller_dimensions(authoring, instrument)
     control_authoring = bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
     controls = deepcopy(control_authoring)
@@ -135,7 +272,14 @@ function settings(declaration::NamedTuple, overrides::AbstractDict=Dict{String,A
     schema = deepcopy(document["settings_schema"])
     merge!(schema["properties"],get(document["profiles"][profile],"settings_schema",Dict()))
     result = merge_settings(document["defaults"],overrides,schema)
-    validate_settings(schema,result,result)
+    # Standalone optical prescriptions may contain generated coefficients.
+    # Read-only settings must remain tied to the authored defaults and graphs.
+    current = haskey(document, "hil") ? result : document["defaults"]
+    validate_settings(schema,result,current)
+    validate_optical_spectra(result, physical(declaration).document)
+    paths = haskey(document, "preparation") ? keys(physical(declaration).document["optical_paths"]) :
+        optical_graph_names(document, physical(declaration).document, keys(declaration.graphs))
+    selected_optical_mask_responses(document, physical(declaration).document, paths, result)
     return result
 end
 settings(declaration::NamedTuple, overrides::NamedTuple) = settings(declaration,json_value(overrides))
@@ -185,9 +329,11 @@ function configuration_context(declaration, configured)
             mirror_description_path(declaration.directory, spec["description"]))
     end
     for sensor in values(instrument["wavefront_sensors"])
-        rows, columns = sensor["detector_shape"]
-        # SPA's packed-video construction property is width x height.
-        sensor["video_frame_size"] = string(columns, 'x', rows)
+        if haskey(sensor, "detector_shape")
+            rows, columns = sensor["detector_shape"]
+            # SPA's packed-video construction property is width x height.
+            sensor["video_frame_size"] = string(columns, 'x', rows)
+        end
         if haskey(sensor, "acquisition")
             acquisition = sensor["acquisition"]
             seconds = acquisition["exposure_duration_s"]
@@ -205,6 +351,7 @@ function configuration_context(declaration, configured)
             UInt64(div(1_000_000_000 + div(rate, 2), rate)) == period_ns ||
             throw(ArgumentError("simulation frame period must agree with an integer transport rate"))
         simulation["rate"] = rate
+        simulation["frame_period_ns"] = period_ns
         context["simulation"] = simulation
         context["settings"] = deepcopy(configured)
     end
@@ -233,6 +380,57 @@ function transform(::Val{:gaussian_width}, value, entry)
 end
 transform(kind::Val, value, entry) = throw(ArgumentError("unknown instrument settings transform $kind"))
 
+function selected_graph(declaration, mode="production")
+    _declaration_identifier(mode, "simulation graph")
+    haskey(declaration.graphs, mode) || throw(ArgumentError("simulation graph is not declared"))
+    return mode
+end
+
+"""
+    pupil_output(declaration, configured; simulation_graph="production")
+
+Return `nothing` when no external pupil is declared, otherwise resolve its
+named OPD graph output, static Float32 amplitude binding, physical optical
+output and selected pupil resolution. This cold inspection does not prepare
+optical components or load an accelerator. The runtime checks the actual OPD
+buffer's type and shape before publishing it.
+"""
+function pupil_output(declaration, configured; simulation_graph="production")
+    output = get(declaration.document, "pupil_output", nothing)
+    output === nothing && return nothing
+    mode = selected_graph(declaration, simulation_graph)
+    outputs = get(declaration.graphs[mode], "outputs", ())
+    count(entry -> entry["name"] == output["opd"], outputs) == 1 ||
+        throw(ArgumentError("selected graph must declare exactly one pupil OPD output $(output["opd"])"))
+    bindings = declaration.document["bindings"]
+    amplitude = output["amplitude"]
+    haskey(bindings, amplitude) || throw(ArgumentError("pupil output names an absent amplitude binding $amplitude"))
+    binding = bindings[amplitude]
+    binding["kind"] == "pupil_amplitude" && binding["type"] == "Float32" ||
+        throw(ArgumentError("pupil output requires a static Float32 pupil_amplitude binding"))
+    p = get(configured, "pupil_resolution", nothing)
+    p isa Integer && !(p isa Bool) && 0 < p <= typemax(Int) ||
+        throw(ArgumentError("pupil output requires a positive selected pupil_resolution"))
+    resolution = dimension(configured, Common.configuration_value(binding["resolution"],
+        configuration_context(declaration, configured)))
+    resolution == p || throw(ArgumentError("pupil output amplitude resolution differs from the selected pupil_resolution"))
+    return (; opd=Symbol(output["opd"]), amplitude=Symbol(amplitude),
+        optical=deepcopy(declaration.instrument.document["optical_output"]), pupil_resolution=Int(p))
+end
+
+"Inspect the selected native node types without loading optional scientific packages."
+function graph_requires_proper(declaration, configured; simulation_graph="production")
+    mode = selected_graph(declaration, simulation_graph)
+    profile = declaration.document["profiles"][configured["profile"]]
+    replacements = Dict(node["name"] => node for node in profile["nodes"])
+    return any(declaration.graphs[mode]["nodes"]) do node
+        selected = get(replacements, node["name"], node)
+        type = get(selected, "type", nothing)
+        resolved = type isa AbstractDict ? Common.configuration_value(type, configuration_context(declaration, configured)) : type
+        resolved in ("proper_optical_train_f32", "proper_optical_train_f64")
+    end
+end
+
 """
     graph_document(declaration, configured; calibration=false, simulation_graph=...)
 
@@ -245,11 +443,11 @@ reject before preparation.
 """
 function graph_document(declaration, configured; calibration=false,
         simulation_graph=calibration ? "calibration" : "production")
-    mode = simulation_graph
-    mode isa AbstractString && haskey(declaration.graphs,mode) ||
-        throw(ArgumentError("simulation graph is not declared"))
+    mode = selected_graph(declaration, simulation_graph)
     calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
-    graph = deepcopy(declaration.graphs[mode])
+    graph = haskey(declaration.document, "optical_model") &&
+        haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ?
+        optical_graph_document(declaration, configured, mode) : deepcopy(declaration.graphs[mode])
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
     nodes = graph["nodes"]
@@ -291,10 +489,13 @@ function graph_document(declaration, configured; calibration=false,
             end
         end
     end
-    graph["name"] = mode == "calibration" ? graph["name"] : graph["name"] * "_" * profile_name
+    hil = haskey(declaration.document, "hil")
+    ideal = hil && mode == "calibration"
+    graph["name"] = ideal ? graph["name"] : graph["name"] * "_" * profile_name
     resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
-    mode == "calibration" || apply_responses!(resolved, declaration, configured)
-    mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])
+    prepare_optical_components!(resolved, declaration, configured)
+    ideal || apply_responses!(resolved, declaration, configured)
+    hil && mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])
     return resolved
 end
 
@@ -353,7 +554,10 @@ function binding_values(::Val{:fits},declaration,configured,binding)
     T === nothing && throw(ArgumentError("unsupported FITS binding element type"))
     source = Artifacts.FITSArtifact(D.relative_asset(declaration.directory,binding["path"]);
         hdu=binding["hdu"],axes=binding["axes"])
-    return Artifacts.prepare(source,T,Tuple(binding["shape"])).data
+    prepared = Artifacts.prepare(source,T,Tuple(binding["shape"]))
+    haskey(binding, "sha256") && prepared.provenance["original_sha256"] != binding["sha256"] &&
+        throw(ArgumentError("FITS binding SHA-256 mismatch"))
+    return prepared.data
 end
 binding_values(kind::Val,declaration,configured,binding) = throw(ArgumentError("unknown instrument binding kind $kind"))
 

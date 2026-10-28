@@ -1,0 +1,18 @@
+type: proper_optical_train_f64
+config:
+  resolution:
+    $ref: /values/resolution
+  pupil_resolution:
+    $ref: /values/pupil_resolution
+  diameter_m:
+    $ref: /values/diameter_m
+  wavelength_um:
+    $ref: /values/wavelength_um
+  steps:
+    $ref: /values/steps
+  pupil_opd_schema:
+    $ref: /schemas/pupil_opd_schema
+  pupil_amplitude_schema:
+    $ref: /schemas/pupil_amplitude_schema
+  output_schema:
+    $ref: /schemas/output_schema

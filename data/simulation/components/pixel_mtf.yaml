@@ -1,0 +1,11 @@
+type: pixel_mtf
+binding_roles: [transfer]
+config:
+  input_shape:
+    $ref: /values/input_shape
+  padding:
+    $ref: /values/padding
+  input_schema:
+    $ref: /values/input_schema
+  output_schema:
+    $ref: /values/output_schema

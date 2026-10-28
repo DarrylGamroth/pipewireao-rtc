@@ -22,6 +22,7 @@ writable Props and do not describe live calibration adoption or RNG state.
 | --- | --- |
 | `package`, `package-version` | Actual instrument module and package version, when known |
 | `profile` | Explicitly declared startup profile, when present |
+| `graph` | Selected declarative startup simulation graph (version 3) |
 | `backend`, `device` | Validated compute selection and device ordinal |
 | `model-period-ns`, `exposure-ns` | Validated model period and actual detector exposure in ns |
 | `configuration-sha256` | SHA-256 of the startup owner configuration |
@@ -42,6 +43,7 @@ function simulation_properties(options, science)
         declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
         properties["aos.simulation.package"] = declaration.document["id"]
         properties["aos.simulation.profile"] = string(options.plant.settings.profile)
+        properties["aos.simulation.graph"] = get(options.plant, :graph, "production")
     elseif options.plant !== nothing
         instrument = options.plant_module
         properties["aos.simulation.package"] = string(nameof(instrument))

@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.2.32"
+version = "0.2.33"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -45,8 +45,8 @@ AMDGPU = "2.7"
 LinearAlgebra = "1"
 AdaptiveOpticsCalibration = "0.17.3"
 Interpolations = "0.16"
-AdaptiveOpticsSim = "0.3.5"
-AdaptiveOpticsSimPipeWireHIL = "0.2.8"
+AdaptiveOpticsSim = "0.3.7"
+AdaptiveOpticsSimPipeWireHIL = "0.2.9"
 CUDA = "6.4.2"
 DBInterface = "2.7.0"
 FITSIO = "0.17"

@@ -27,7 +27,7 @@ end
 
 function with_control_private_core(f; check_running=true, allow_passive=false,
                                    temporary_prefix="pipewireao-native-envelope-",
-                                   remote_name=nothing)
+                                   remote_name=nothing, telemetry_loop=false)
     prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
     libdir = isdir(joinpath(prefix, "lib", "x86_64-linux-gnu")) ?
         joinpath(prefix, "lib", "x86_64-linux-gnu") : joinpath(prefix, "lib")
@@ -39,8 +39,14 @@ function with_control_private_core(f; check_running=true, allow_passive=false,
         mkpath(config)
         remote = remote_name === nothing ? "native-envelope-$(getpid())-$(time_ns())" : String(remote_name)
         socket = joinpath(runtime, remote)
+        loops = telemetry_loop ? """
+            context.data-loops = [
+                { loop.name = data-loop loop.class = data.rt loop.rt-prio = 0 }
+                { loop.name = telemetry-loop loop.class = [] loop.rt-prio = 0 }
+            ]
+            """ : ""
         write(joinpath(config, "private-core.conf"), """
-        context.properties = { core.daemon = true core.name = $remote support.dbus = false library.use-fallback = false }
+        context.properties = { core.daemon = true core.name = $remote support.dbus = false library.use-fallback = false $loops }
         context.spa-libs = { support.* = support/libspa-support }
         context.modules = [
             { name = libpipewire-module-scheduler-v1 }

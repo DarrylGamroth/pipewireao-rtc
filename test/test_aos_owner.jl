@@ -77,8 +77,18 @@ end
         argv = ["--config", path, "--remote", "/tmp/aos-private", "--control-node", "simulator-wfs",
             "--bootstrap-node", "rtc.bootstrap.aos", "--bootstrap-instance", "7"]
         default_timing = Owner.arguments(argv)
+        @test !Owner.configuration(path).pupil_output
+        document["pupil_output"] = false
+        write(path, JSON.json(document))
+        @test_throws ArgumentError Owner.configuration(path) # Version 1 has no scientific pupil interface.
+        delete!(document, "pupil_output")
+        write(path, JSON.json(document))
         @test default_timing.pipewire_cpu === nothing
         @test default_timing.optical_diagnostics_cpu === nothing
+        @test default_timing.pupil_output_cpu === nothing
+        @test Owner.arguments([argv; ["--pupil-output-cpu", "9"]]).pupil_output_cpu == 9
+        @test_throws ArgumentError Owner.arguments([argv; ["--pupil-output-cpu", "1"]])
+        @test_throws ArgumentError Owner.arguments([argv; ["--pupil-output-cpu", "8", "--optical-diagnostics-cpu", "8"]])
         @test Owner.arguments([argv; ["--optical-diagnostics-cpu", "8"]]).optical_diagnostics_cpu == 8
         @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", "7"]])
         @test Owner.arguments([argv; ["--pipewire-cpu", "7"]]).pipewire_cpu == 7

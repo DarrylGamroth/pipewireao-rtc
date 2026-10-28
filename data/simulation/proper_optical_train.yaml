@@ -1,0 +1,127 @@
+title: Scalar optical train
+type: object
+additionalProperties: false
+required:
+  - profile
+  - resolution
+  - pupil_resolution
+  - wavelength_um
+  - temperature_c
+properties:
+  profile:
+    readOnly: true
+    type: string
+    title: Optical profile
+  resolution:
+    readOnly: true
+    type: integer
+    title: Optical grid resolution
+    minimum: 1
+  pupil_resolution:
+    readOnly: true
+    type: integer
+    title: Entrance pupil resolution
+    minimum: 1
+  wavelength_um:
+    readOnly: true
+    type: number
+    title: Wavelength (micrometres)
+    exclusiveMinimum: 0
+  temperature_c:
+    readOnly: true
+    type: number
+    title: Temperature (degrees Celsius)
+    exclusiveMinimum: -273.15
+  masks:
+    readOnly: true
+    type: object
+    additionalProperties: false
+    required:
+      - focal_plane
+      - lyot
+    properties:
+      apodizer:
+        oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+              - kind
+            properties:
+              kind:
+                type: string
+                enum: [unity]
+          - type: object
+            additionalProperties: false
+            required:
+              - kind
+              - mask
+            properties:
+              kind:
+                type: string
+                enum: [fits]
+              mask:
+                type: string
+      focal_plane:
+        oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+              - radius_m
+            properties:
+              kind:
+                type: string
+                enum: [ideal]
+              radius_m:
+                type: number
+                exclusiveMinimum: 0
+          - type: object
+            additionalProperties: false
+            required:
+              - kind
+              - mask
+            properties:
+              kind:
+                type: string
+                enum: [fits]
+              mask:
+                type: string
+      lyot:
+        oneOf:
+          - type: object
+            additionalProperties: false
+            required:
+              - circles
+            properties:
+              kind:
+                type: string
+                enum: [ideal]
+              circles:
+                type: array
+                minItems: 1
+                maxItems: 16
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - radius_m
+                    - x_m
+                    - y_m
+                  properties:
+                    radius_m:
+                      type: number
+                      exclusiveMinimum: 0
+                    x_m:
+                      type: number
+                    y_m:
+                      type: number
+          - type: object
+            additionalProperties: false
+            required:
+              - kind
+              - mask
+            properties:
+              kind:
+                type: string
+                enum: [fits]
+              mask:
+                type: string

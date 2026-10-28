@@ -1,6 +1,6 @@
 using Test, PipeWireAORTC
 
-for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "phase_timing", "registered_application")
+for name in ("configuration_store", "simulator_configuration", "artifacts", "parameter_fits", "owner_entrypoints", "correction_loops", "correction_timers", "correction_recovery", "correction_recovery_client", "correction_supervision", "correction_supervision_observer", "correction_supervision_client", "graph_supervision", "graph_owner", "aos_owner", "aos_graph_selection", "phase_timing", "registered_application")
     Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end
 include("test_native_session_discovery.jl")
@@ -20,6 +20,6 @@ for name in ("schemas", "common", "runtime_export", "spa_config", "loop_placemen
     Base.include(suite, joinpath(@__DIR__, "test_" * name * ".jl"))
 end
 
-for name in ("modal_calibration_io", "calibration_context", "instrument_geometry", "instrument_influences", "instrument_declaration_schema", "instrument_configuration_bindings", "pyramid_instrument", "hil_declaration", "instrument_catalogs", "instrument_components", "instrument_settings_transforms", "instrument_profiles", "owner_scheduling", "native_configuration", "instrument_authoring", "instrument_dimensions", "instrument_export", "graph_configuration")
+for name in ("modal_calibration_io", "calibration_context", "instrument_geometry", "instrument_influences", "instrument_declaration_schema", "external_optical_instrument", "zemax_components", "simulation_source", "optical_masks", "optical_spectra", "instrument_configuration_bindings", "pyramid_instrument", "hil_declaration", "instrument_catalogs", "instrument_components", "instrument_settings_transforms", "instrument_profiles", "owner_scheduling", "native_configuration", "instrument_authoring", "instrument_dimensions", "instrument_export", "graph_configuration")
     Base.include(Module(gensym(:InstrumentSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end

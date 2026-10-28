@@ -10,21 +10,86 @@ function merge_settings(defaults::AbstractDict, overrides::AbstractDict, schema:
 end
 
 merge_setting(default, value, schema) = deepcopy(value)
-merge_setting(default::AbstractDict, value::AbstractDict, schema) = merge_settings(default,value,schema)
+merge_setting(default::AbstractDict, value::AbstractDict, schema) =
+    haskey(schema, "oneOf") ? deepcopy(value) : merge_settings(default,value,schema)
+
+function matching_settings_branches(alternatives, value)
+    return findall(alternatives) do branch
+        try
+            validate_settings(branch, value, value)
+            true
+        catch error
+            error isa ArgumentError || rethrow()
+            false
+        end
+    end
+end
+
+function contains_readonly_setting(schema, value)
+    get(schema, "readOnly", false) && return true
+    if haskey(schema, "oneOf")
+        return any(schema["oneOf"]) do branch
+            matches = try
+                validate_settings(branch, value, value)
+                true
+            catch error
+                error isa ArgumentError || rethrow()
+                false
+            end
+            matches && contains_readonly_setting(branch, value)
+        end
+    elseif get(schema, "type", nothing) == "object" && value isa AbstractDict
+        return any(get(schema, "properties", Dict())) do (key, property)
+            haskey(value, key) && contains_readonly_setting(property, value[key])
+        end
+    elseif get(schema, "type", nothing) == "array" && value isa AbstractVector
+        return any(item -> contains_readonly_setting(schema["items"], item), value)
+    end
+    return false
+end
 
 "Enforce the declared editable shape; physical validation remains with the plant."
 function validate_settings(schema, proposed, current; path="settings", readonly=false)
     schema isa AbstractDict || throw(ArgumentError("invalid settings schema"))
     readonly |= get(schema, "readOnly", false) === true
     readonly && proposed != current && throw(ArgumentError("$path requires a separate calibration/deployment change"))
+    if haskey(schema, "oneOf")
+        alternatives = schema["oneOf"]
+        before = matching_settings_branches(alternatives, current)
+        after = matching_settings_branches(alternatives, proposed)
+        if length(before) == length(after) == 1 && only(before) != only(after)
+            (contains_readonly_setting(alternatives[only(before)], current) ||
+                contains_readonly_setting(alternatives[only(after)], proposed)) &&
+                throw(ArgumentError("$path requires a separate calibration/deployment change"))
+        end
+        matches = count(schema["oneOf"]) do branch
+            try
+                validate_settings(branch, proposed, current; path, readonly)
+                true
+            catch error
+                error isa ArgumentError || rethrow()
+                false
+            end
+        end
+        matches == 1 || throw(ArgumentError("$path must match exactly one settings schema alternative"))
+        return nothing
+    end
     kind = get(schema, "type", nothing)
     if kind == "object"
         proposed isa AbstractDict && current isa AbstractDict || throw(ArgumentError("$path must be an object"))
         properties = get(schema, "properties", Dict())
-        Set(keys(proposed)) == Set(keys(current)) == Set(keys(properties)) ||
-            throw(ArgumentError("$path must contain exactly the declared settings"))
-        for key in keys(properties)
-            validate_settings(properties[key], proposed[key], current[key]; path="$path.$key", readonly)
+        required = get(schema, "required", collect(keys(properties)))
+        all(key -> haskey(properties, key), keys(proposed)) && all(key -> haskey(proposed, key), required) ||
+            throw(ArgumentError("$path must contain the required declared settings"))
+        for (key, property) in properties
+            if haskey(proposed,key) != haskey(current,key)
+                value = haskey(proposed,key) ? proposed[key] : current[key]
+                contains_readonly_setting(property,value) &&
+                    throw(ArgumentError("$path.$key requires a separate calibration/deployment change"))
+            end
+        end
+        for key in keys(proposed)
+            validate_settings(properties[key], proposed[key], get(current,key,proposed[key]); path="$path.$key", readonly)
         end
     elseif kind == "array"
         proposed isa AbstractVector && current isa AbstractVector || throw(ArgumentError("$path must be an array"))

@@ -101,7 +101,7 @@ function arguments(args)
     values = Dict{String,String}()
     required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
     optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
-    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu")
+    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu", "--pupil-output-cpu")
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
     for index in 1:2:length(args)
         key, value = args[index], args[index + 1]
@@ -131,6 +131,14 @@ function arguments(args)
             throw(ArgumentError("optical diagnostics CPU must exclude CPUs 0 and 1"))
     end
     requested_timing = any(key -> haskey(values, key), optional)
+    pupil_output_cpu = nothing
+    if haskey(values, "--pupil-output-cpu")
+        pupil_output_cpu = tryparse(Int, values["--pupil-output-cpu"])
+        pupil_output_cpu !== nothing && pupil_output_cpu >= 2 ||
+            throw(ArgumentError("pupil output CPU must exclude CPUs 0 and 1"))
+        pupil_output_cpu != optical_diagnostics_cpu ||
+            throw(ArgumentError("pupil output and optical diagnostics require distinct CPUs"))
+    end
     timing_directory = nothing
     timing_frames = timing_warmup = 0
     if requested_timing
@@ -148,7 +156,7 @@ function arguments(args)
     end
     return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
         config=abspath(values["--config"]), phase_timing_directory=timing_directory,
-        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu)
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu, pupil_output_cpu)
 end
 
 # Version 3 can use the public HIL named-command boundary. All maps are
@@ -212,7 +220,7 @@ function configuration(path::AbstractString)
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
-    fields = (shared_fields..., route_fields...)
+    fields = version == 3 ? (shared_fields..., route_fields..., "pupil_output") : (shared_fields..., route_fields...)
     required = version == 1 ? (shared_required..., route_fields...) :
         (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
     version == 3 && (required = (required...,"instrument","calibration_identity","rtc_configuration","prescription_identity"))
@@ -223,11 +231,13 @@ function configuration(path::AbstractString)
     graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
     plant = if version == 3
         entry = document["plant"]
-        InstrumentConfiguration.fields(entry,("definition","settings"),("definition","settings"),"declarative plant")
+        InstrumentConfiguration.fields(entry,("definition","settings","graph"),("definition","settings"),"declarative plant")
         definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
         declaration = InstrumentConfiguration.load_simulation(definition)
         configured = InstrumentConfiguration.settings(declaration,entry["settings"])
-        (; definition,settings=plant_settings(configured))
+        selected = InstrumentConfiguration.selected_graph(declaration, get(entry, "graph", "production"))
+        selected == "calibration" && throw(ArgumentError("the numerical calibration graph cannot be selected as a live simulator graph"))
+        (; definition,graph=selected,settings=plant_settings(configured))
     elseif version == 2
         plant_declaration(document["plant"]; directory=dirname(config_path))
     else
@@ -262,6 +272,13 @@ function configuration(path::AbstractString)
     total = get(document, "total_exchanges", nothing)
     total_exchanges = total === nothing ? nothing : UInt64(integer(total, "total_exchanges", 1, typemax(Int64)))
     optical_observation = boolean(get(document, "optical_observation", false), "optical_observation")
+    pupil_output = boolean(get(document, "pupil_output", false), "pupil_output")
+    if pupil_output
+        declaration = InstrumentConfiguration.load_simulation(plant.definition)
+        InstrumentConfiguration.pupil_output(declaration,
+            InstrumentConfiguration.settings(declaration, plant.settings); simulation_graph=plant.graph) === nothing &&
+            throw(ArgumentError("pupil_output requires a declared scientific pupil output"))
+    end
     detector_observation = boolean(get(document, "detector_observation", false), "detector_observation")
     command_observation = boolean(get(document, "command_observation", false), "command_observation")
     applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
@@ -304,7 +321,7 @@ function configuration(path::AbstractString)
     end
     return (; version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, pacing_rate_hz, pacing_period_ns, backend, device, artifacts, command_node,
-        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation,
+        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation, pupil_output,
         detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description, rtc_configuration, prescription_identity)
 end
 
@@ -347,6 +364,8 @@ function write_report(options, state, generation, source_instance; failures=())
     calibration_identity = get(options, :calibration_identity, nothing)
     calibration_identity === nothing ||
         (record = merge(record, (; startup_calibration_identity=calibration_identity)))
+    pupil_output = get(options, :pupil_output_status, () -> nothing)()
+    pupil_output === nothing || (record = merge(record, (; pupil_output)))
     path = report_path(options)
     mkpath(dirname(path))
     temporary, io = mktemp(dirname(path))
@@ -385,6 +404,14 @@ function load_instrument(package::Symbol)
     return instrument
 end
 
+function requires_proper(options)
+    options.version == 3 || return false
+    declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
+    configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
+    return InstrumentConfiguration.graph_requires_proper(declaration, configured;
+        simulation_graph=get(options.plant, :graph, "production"))
+end
+
 # The application declares optional science packages as its direct dependencies.
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> begin
@@ -393,7 +420,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         end,
         load_cuda=() -> Base.require(Main, :CUDA),
         load_amdgpu=() -> Base.require(Main, :AMDGPU),
-        load_plant=load_instrument, run=run_owner)
+        load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
     all(name -> name != invocation.control_node && name != invocation.bootstrap_node, command_items(options.command_node)) ||
@@ -406,6 +433,10 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
         if admitted.version == 3
+            if requires_proper(admitted)
+                load_proper()
+                admitted.owner_check()
+            end
             InstrumentDefinition.verify_declaration(admitted)
         elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
@@ -425,8 +456,10 @@ Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`
 `--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
 SPA-JSON configuration declares the simulation YAML graph and FITS bindings;
 version 2 selects an instrument package and immutable settings. Version 3 selects
-a SPA-JSON instrument declaration and immutable settings without an instrument
-package. Version 3 also accepts an array of command_input names with matching
+a simulation definition and immutable settings without an instrument package.
+Its optional `plant.graph` selects a declared graph and defaults to `production`.
+Only selected native PROPER nodes load the application's direct Proper dependency,
+after bootstrap Preparing publication. Version 3 also accepts an array of command_input names with matching
 command_count, command_node, command_schema and command_scale maps. Named
 commands retain independent shapes and wire units; physical mirror commands
 match their declared mirror names. All versions declare command/frame names,

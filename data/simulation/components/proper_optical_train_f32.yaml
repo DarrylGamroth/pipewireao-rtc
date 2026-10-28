@@ -1,0 +1,21 @@
+type: proper_optical_train_f32
+config:
+  resolution:
+    $ref: /values/resolution
+  pupil_resolution:
+    $ref: /values/pupil_resolution
+  diameter_m:
+    $ref: /values/diameter_m
+  wavelength_um:
+    $ref: /values/wavelength_um
+  steps:
+    $ref: /values/steps
+optional_config:
+  pupil_opd_schema:
+    $ref: /schemas/pupil_opd_schema
+  pupil_amplitude_schema:
+    $ref: /schemas/pupil_amplitude_schema
+  output_schema:
+    $ref: /schemas/output_schema
+  output_sampling_m:
+    $ref: /values/output_sampling_m

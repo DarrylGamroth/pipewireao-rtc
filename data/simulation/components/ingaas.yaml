@@ -1,0 +1,42 @@
+type: detector
+detector: ingaas
+config:
+  rows:
+    $ref: /values/rows
+  columns:
+    $ref: /values/columns
+  pixel_sampling_m:
+    $ref: /values/pixel_sampling_m
+  spectral_channel:
+    $ref: /values/spectral_channel
+  exposure_duration_s:
+    $ref: /values/exposure_duration_s
+  quantum_efficiency:
+    $ref: /values/quantum_efficiency
+  rng_seed:
+    $ref: /values/rng_seed
+  photon_rate_schema:
+    $ref: /schemas/photon_rate_schema
+  frame_schema:
+    $ref: /schemas/frame_schema
+optional_config:
+  gain:
+    $ref: /values/gain
+  photon_noise:
+    $ref: /values/photon_noise
+  readout_noise:
+    $ref: /values/readout_noise
+  readout_noise_e:
+    $ref: /values/readout_noise_e
+  dark_current_e_per_pixel_s:
+    $ref: /values/dark_current_e_per_pixel_s
+  glow_e_per_pixel_s:
+    $ref: /values/glow_e_per_pixel_s
+  bits:
+    $ref: /values/bits
+  full_well_e:
+    $ref: /values/full_well_e
+  persistence_model:
+    $ref: /values/persistence_model
+  nonlinearity_model:
+    $ref: /values/nonlinearity_model
