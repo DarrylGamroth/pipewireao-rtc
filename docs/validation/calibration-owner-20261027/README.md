@@ -801,3 +801,38 @@ and three-campaign receipts were independently inspected; no blocker was found
 for the scoped Classic CPU candidate procedure. Fresh stage owners/domains and
 exact four-stream receipts avoid relying on cross-reset witness attribution.
 Registered-package qualification remains the next delivery gate.
+
+### Published RTC 0.2.31 and fresh registered build
+
+RTC PR 15 merged at `61b52d4a699b32e0f875c7223ed8a32e278bb598`; tag/release
+`v0.2.31` is published and registry commit `b580163` records tree
+`4aaa7e93db1b249e5e037a655297b61ec0c6e4d2`. A fresh registry-only environment
+retains all exact scientific/native pins, contains no path/repository overrides
+or preferences, and verifies the actual installed RTC tree before and after
+execution. Fresh Classic build, source hashes and no-GPU guards passed.
+
+The installed package passes the complete reference selector: 87 assertions
+(30 cold and 57 private-core campaign/preparation-fault assertions). All three
+stages were Valid and restored/released, with 176 eligible ROIs. Its diagnostic
+RMS is 0.0087526875551957 pixel, recorded separately from the earlier source
+cohort; no exact cross-run equality or physical precision claim is made. The
+main release Manifest remained unchanged, with SHA-256
+`774a0d87fa1876d73ce927f1ed953609daa8195a57b7216b9e4b02daf70c81ac`.
+A separate test environment promotes the same YAML 0.4.17 to a direct dependency
+and retains identical resolved package entries; the instrument calibration
+selector passes 161 assertions. The initial missing-direct-YAML import failure
+is preserved and occurred before assertions.
+
+Evidence stems are `reference-campaign-registered-release-build-20261027`,
+`reference-campaign-registered-release-selector-20261027` and
+`reference-campaign-registered-release-tools-yaml-cold-20261027` in the existing
+validation directory. Instrument PR 3 merged at
+`8673dec6dffc3c94305f401f2e9d5a275de42a67`, adding the shared command, recipe and
+exact RTC pin. Formatting passes. Physical REVOLT preparation remains manual;
+GPI's adapter and qualification are next.
+
+Six completed diagnostic worktrees were removed after their source commits,
+exact patches and untracked note were preserved and hash-verified in
+`completed-diagnostics-20261027/manifest.json`. Original native source,
+unrelated worktrees and local GPI edits were preserved. This cleanup removes no
+failed evidence or unmerged investigative bytes.

@@ -40,7 +40,10 @@ source, detector and threshold settings. The consumer fault/recovery selector
 passes 209 assertions, standalone capture passes 96, and the complete reference
 selector passes 87 including preparation cancellation, stale/foreign evidence
 and deadline checks. The broader core suite passes 6,488 assertions across 243
-test sets. Registered-package release qualification remains pending.
+test sets. RTC 0.2.31 is merged, tagged, published and registered. A fresh
+registry-only Classic CPU build passes 161 instrument checks and 87 installed-
+package reference/preparation checks; the instrument recipe and exact pin are
+merged. GPI mechanism integration and its own qualification are next.
 
 The [evidence record](validation/calibration-owner-20261027/README.md#source-and-mechanism-preparation-follow-up)
 retains every earlier delivery failure and the rejected immediate-completion
