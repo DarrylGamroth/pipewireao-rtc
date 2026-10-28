@@ -12,4 +12,3 @@ function physical_inputs_document(directory;P=Float32[1 0;0 1;1 1;1 -1])
     return merge(artifacts,Dict("version"=>2,"command_limit_m"=>1e-6,"calibration_identity"=>"accepted-calibration",
         "command_order"=>"actual-physical-order","branches"=>branches))
 end
-
