@@ -1,0 +1,368 @@
+{
+  "nodes": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "id": "da17d5c40efbaea",
+              "label": "Maximize panel",
+              "role": "Button"
+            },
+            {
+              "id": "ac4231cb81a10f7",
+              "label": "Undock",
+              "role": "Button"
+            },
+            {
+              "id": "d0cfb04e93a45599",
+              "label": "Hide panel",
+              "role": "Button"
+            },
+            {
+              "id": "9fd465a212a4bcbb",
+              "label": "Help",
+              "role": "Button"
+            }
+          ],
+          "id": "68fb07521b9c935b",
+          "role": "GenericContainer"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "id": "eddab9ffcd20b927",
+                      "role": "Label",
+                      "value": "RUNNING"
+                    },
+                    {
+                      "id": "45890068dc58e0a5",
+                      "role": "Label",
+                      "value": "Connected"
+                    }
+                  ],
+                  "id": "a9bf4355a1b835b7",
+                  "role": "GenericContainer"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "id": "219a707d0c69e698",
+                          "label": "Start",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "8303e0045d7a6be3",
+                          "label": "Stop",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "749d3ff9d25aeaa",
+                          "label": "Reset",
+                          "role": "Button"
+                        }
+                      ],
+                      "id": "9c4cd43f1d99505d",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "4fcb4987392e825",
+                      "label": "Refresh",
+                      "role": "Button"
+                    }
+                  ],
+                  "id": "b9fbc1e6ebed4b4a",
+                  "role": "GenericContainer"
+                },
+                {
+                  "id": "16c40e87058e85f0",
+                  "role": "Label",
+                  "value": "Correction loops"
+                },
+                {
+                  "id": "36fca145e61dcde1",
+                  "role": "Label",
+                  "value": "Opening holds correction and controller state while processing continues. Closing resumes from retai [\u2026]"
+                },
+                {
+                  "children": [
+                    {
+                      "id": "448687170857d091",
+                      "role": "Label",
+                      "value": "Correction \u00b7 Observed Closed"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "efa2e879bd6812ed",
+                          "label": "Open loop",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "167b5b70ea1fd8c4",
+                          "label": "Close loop",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "9405f1b8c8ee9953",
+                          "label": "Restore reference",
+                          "role": "Button"
+                        },
+                        {
+                          "disabled": true,
+                          "id": "97ce7720e9e7c692",
+                          "label": "Allow close",
+                          "role": "Button"
+                        },
+                        {
+                          "id": "1eb155dbfad6a152",
+                          "label": "Refresh loop",
+                          "role": "Button"
+                        }
+                      ],
+                      "id": "ea5d47548b3fdcb2",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "1ab7981a6abb7939",
+                      "role": "Label",
+                      "value": "Reference recovery available"
+                    }
+                  ],
+                  "id": "2448401c0a6b621a",
+                  "role": "GenericContainer"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "id": "cebc5ff606d6b4d1",
+                              "role": "Label",
+                              "value": "Session"
+                            },
+                            {
+                              "id": "7a151ddc6785e177",
+                              "role": "Label",
+                              "value": "6dc4e0d2-7c09-4f89-9e6b-271f0771a817"
+                            }
+                          ],
+                          "id": "3eaab3e18d2a5ed9",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "4e81e4f12406ca3d",
+                              "role": "Label",
+                              "value": "Owned nodes"
+                            },
+                            {
+                              "id": "fb45e555f2ccbbee",
+                              "role": "Label",
+                              "value": "0"
+                            }
+                          ],
+                          "id": "fbddc783a58144a0",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "395db6cdbc3914fa",
+                              "role": "Label",
+                              "value": "Owned links"
+                            },
+                            {
+                              "id": "99a35540c1a2451b",
+                              "role": "Label",
+                              "value": "31"
+                            }
+                          ],
+                          "id": "15b6b3dd26b55f33",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "children": [
+                            {
+                              "id": "4d1c444b667df6c1",
+                              "role": "Label",
+                              "value": "Discarded buffers"
+                            },
+                            {
+                              "id": "65a7b4efa37ac29c",
+                              "role": "Label",
+                              "value": "0"
+                            }
+                          ],
+                          "id": "435868b1c074623a",
+                          "role": "GenericContainer"
+                        }
+                      ],
+                      "id": "826538885b8a609e",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "9c65f0272eefea78",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "id": "d9bc02b27a3d7459",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "1116edee7f6144e6",
+                          "role": "Label",
+                          "value": "Status"
+                        },
+                        {
+                          "id": "a0382fff5253bf6",
+                          "role": "Label",
+                          "value": "Value"
+                        }
+                      ],
+                      "id": "c8054352b46b4a87",
+                      "role": "GenericContainer"
+                    },
+                    {
+                      "children": [
+                        {
+                          "id": "1a302ac470ff008f",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "d55571ca8043d298",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "9c229eac0442d09d",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "c108f2f8fb65eff6",
+                          "role": "GenericContainer"
+                        }
+                      ],
+                      "id": "c5b0af58ebdd85e",
+                      "role": "GenericContainer"
+                    }
+                  ],
+                  "id": "abfa2b44835bd510",
+                  "role": "GenericContainer"
+                },
+                {
+                  "children": [
+                    {
+                      "id": "618cc127ed101618",
+                      "label": "Local request history",
+                      "role": "DisclosureTriangle"
+                    },
+                    {
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "children": [
+                                    {
+                                      "id": "eb1b877cdfb007b2",
+                                      "role": "Label",
+                                      "value": "Status"
+                                    },
+                                    {
+                                      "id": "b69e2bdf063c1311",
+                                      "role": "Label",
+                                      "value": "Session"
+                                    }
+                                  ],
+                                  "id": "dc9a3167801158e9",
+                                  "role": "GenericContainer"
+                                },
+                                {
+                                  "id": "1e6120a5550413fe",
+                                  "role": "ScrollBar"
+                                }
+                              ],
+                              "id": "36b158dfbb130b93",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "2176e65f881c4d4b",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "4b4ff06b29bcbe90",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "id": "ce11b3909215bdc4",
+                                  "role": "Label",
+                                  "value": "Request"
+                                },
+                                {
+                                  "id": "2465d76bd40c3af7",
+                                  "role": "Label",
+                                  "value": "Operation"
+                                },
+                                {
+                                  "id": "d64cc030ebe9157f",
+                                  "role": "Label",
+                                  "value": "Target"
+                                }
+                              ],
+                              "id": "f013f74171acc16",
+                              "role": "GenericContainer"
+                            },
+                            {
+                              "id": "2d3a1bf12acc9679",
+                              "label": "gui-1-1 \u00b7 earlier",
+                              "role": "Button"
+                            }
+                          ],
+                          "id": "36ab0ab40f66b43f",
+                          "role": "GenericContainer"
+                        },
+                        {
+                          "id": "2aef990cab7d89f7",
+                          "role": "Label",
+                          "value": "Select a request to inspect its complete values and session identity."
+                        }
+                      ],
+                      "id": "80398fa62c1e729a",
+                      "role": "GenericContainer"
+                    }
+                  ],
+                  "id": "9160b8a9b5f08b29",
+                  "role": "GenericContainer"
+                }
+              ],
+              "id": "a34c537e786a940b",
+              "role": "GenericContainer"
+            },
+            {
+              "id": "c7a6d55f388bc3a2",
+              "role": "ScrollBar"
+            }
+          ],
+          "id": "c3cfce423921f33",
+          "role": "GenericContainer"
+        }
+      ],
+      "id": "d75cf21a1fb32297",
+      "role": "GenericContainer"
+    }
+  ]
+}

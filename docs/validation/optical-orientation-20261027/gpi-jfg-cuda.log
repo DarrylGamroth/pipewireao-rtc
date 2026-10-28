@@ -1,0 +1,13 @@
+PROGRESS 5.428s modules loaded; entering selector
+PROGRESS 22.844s preparing production noisy plant
+PROGRESS 22.844s plant: load declared simulation and verify prescription
+PROGRESS 43.795s plant: prepare optical graph (AdaptiveOpticsSim.AlgorithmGraphs.CapturedGraphExecution()), calibration=false
+PROGRESS 106.608s plant: optical graph ready
+PROGRESS 106.811s controller: decode calibrated graph
+PROGRESS 112.115s controller: prepare JFG graph
+PROGRESS 146.064s controller: load parameter FITS
+PROGRESS 421.66s controller: parameters bound
+PROGRESS 422.227s production: 128 noisy moving-atmosphere steps
+NOISY residual_ratio=0.04373620164566871 initial=1.3294836274904265e-6 final=5.687437205503973e-8
+Test Summary:                                | Pass  Total     Time
+GPI calibrated quantized optical loop (cuda) |    4      4  6m45.9s

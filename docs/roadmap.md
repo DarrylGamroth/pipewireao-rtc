@@ -53,7 +53,10 @@ interaction-matrix qualification is claimed.
 ### GPI2 loop controls and supervision — 2026-10-27
 
 Work starts from RTC `8977d4d`, instrument `bcbd339` and GUI `23de559`.
-The live application now uses registered RTC 0.2.29, FGA 0.8.5 and FGPW 0.1.11.
+The live application now uses registered RTC 0.2.29, AOS 0.3.3, FGA 0.8.6 and FGPW 0.1.12.
+GUI `178075c` passes the live restore → Stop/Refresh/Start/Refresh → explicit
+release/close sequence; stopped-owner readback no longer latches a false recovery
+fault ([evidence](validation/gpi2-supervision-20261027/README.md#live-pass-after)).
 The combined supervision/orientation rollout and explicit recovery/reclose pass.
 Both native constraint-feedback monitors are fresh and monitor-only. Preserve the calibration, gains,
 stroke limits and CUDA plant while qualifying changes in isolated applications.

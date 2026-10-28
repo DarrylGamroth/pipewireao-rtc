@@ -34,7 +34,7 @@ checks, not hardware, fixed-rate latency or complete-system qualification.
 
 ## Deployment
 
-Registered RTC 0.2.29 / FGA 0.8.5 / FGPW 0.1.11 is running on the CUDA plant.
+The initial rollout ran registered RTC 0.2.29 / FGA 0.8.5 / FGPW 0.1.11 on the CUDA plant.
 The registered consumer passes all 39 presentation assertions. Installed and GUI
 checks are recorded in the [combined deployment](../gpi2-supervision-20261027/README.md#combined-deployment-checks).
 
@@ -59,3 +59,36 @@ existing atmosphere test's column-shift expectation. No scientific source or
 live wind setting was changed. Correcting atmospheric axes requires coordinated
 CPU/CUDA and finite/infinite-screen, source-footprint and directional-regression
 checks; rotating a GUI view would conceal the inconsistent convention.
+
+## AOS atmosphere correction and package update
+
+AOS 0.3.3 (`7c710381`, registered tree
+`4c22c7e8005a8782bdf511a5cd25f8e4bd24b7a0`) corrects finite/infinite
+atmospheric sampling and source footprints to the native physical `[x,y]`
+convention. It does not rotate raw camera frames or command vectors. The AOS
+repository records the CPU scalar/KernelAbstractions, CUDA and AMDGPU axis
+checks, regression evidence and reference-snapshot disposition in
+`benchmarks/results/platform/2026-10-27-atmosphere-axes.toml`.
+
+The registered consumer passes 51 CUDA axis assertions with scalar indexing
+disabled. The calibrated 128-frame noisy GPI CUDA test passes all four assertions
+with AOS 0.3.3, FGA 0.8.6 and FGPW 0.1.12. It uses UInt16 detector frames and the
+existing calibration. Initial residual RMS is 1.32948e-6 m OPD; final RMS is
+5.68744e-8 m OPD and trailing corrected/uncorrected RMS ratio is 0.0437362.
+This exactly matches the AOS 0.3.3 check with FGA 0.8.5 / FGPW 0.1.11. The new
+FGPW row-major calibration optimization remains opt-in and was not enabled.
+
+Both the GPI export and Classic CPU export succeed. All 36 selected GPI graph,
+parameter, view, supervision and calibration files remain byte-identical to the
+previous deployment; the calibration context is semantically unchanged.
+Instrument main `c4bf801` updates the GPI package pins; Classic's AOS pin was
+updated in `9e6dde5` without otherwise changing its older package cohort.
+The instrument repository remains local as requested.
+
+The [cohort](final-cohort.json), [numerical report](gpi-jfg-cuda.yaml),
+[run log](gpi-jfg-cuda.log), [export results](build-jfg.log) and
+[unchanged-file comparison](scientific-file-comparison-jfg.json) are retained here.
+Full logs, manifests and additional comparison receipts are retained in
+`/home/dgamroth/.cache/pipewireao/atmosphere-axes-20261027/`. The finite numerical
+check and cold exports do not establish connected latency, long-duration
+stability or physical-hardware behavior.

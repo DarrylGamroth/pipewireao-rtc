@@ -1,0 +1,1 @@
+{"authority":"rtc_session","error":null,"id":"3560","ok":true,"owner_pid":2486983,"result":{"discarded_buffers":0,"discarded_by_sink":{},"lifecycle_state":"Running","outcome":"observed","owned_links":31,"owned_nodes":0,"running":true},"session_id":"6dc4e0d2-7c09-4f89-9e6b-271f0771a817","state":"Running","version":1}
