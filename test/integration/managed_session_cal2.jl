@@ -28,6 +28,7 @@ end
 capture_node(objects, name) = only(filter(object ->
     get(object,"type",nothing)=="PipeWire:Interface:Node" &&
     get(get(get(object,"info",Dict()),"props",Dict()),"node.name",nothing)==name, objects))
+publisher_healthy(value) = value === false || (value isa AbstractString && value == "false")
 function declared_port(session, name, direction)
     node, port=endpoint(name)
     entries=[entry for section in ("sources","graphs","sinks") for entry in session[section]
@@ -496,7 +497,8 @@ function observe_epoch(handle,selected,stage,name)
             publisher=capture_node(M.dump_graph(handle,selected.prefix),plan.products[1].node)
             props=publisher["info"]["props"]
             publisher_status=Dict(key=>value for (key,value) in props if startswith(key,"aos.pupil-output."))
-            require(get(publisher_status,"aos.pupil-output.failed",nothing)=="false","pupil publisher reported failure")
+            C.write_json(joinpath(stage,name*"-pupil-output-status.json"),publisher_status)
+            require(publisher_healthy(get(publisher_status,"aos.pupil-output.failed",nothing)),"pupil publisher reported failure")
             for key in ("dropped","transport-dropped","gaps")
                 require(parse(UInt64,string(publisher_status["aos.pupil-output."*key]))==0,"pupil publisher reported loss")
             end

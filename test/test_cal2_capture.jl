@@ -1,6 +1,14 @@
 using Test
 Base.include(@__MODULE__,joinpath(@__DIR__,"integration","managed_session_cal2.jl"))
 
+@testset "pupil publisher status accepts native JSON boolean and string properties" begin
+    @test ManagedSessionCAL2.publisher_healthy(false)
+    @test ManagedSessionCAL2.publisher_healthy("false")
+    for value in (true, "true", nothing, 0, "", "False")
+        @test !ManagedSessionCAL2.publisher_healthy(value)
+    end
+end
+
 @testset "CAL2 capture follows the executed generated calibration selection" begin
     M = ManagedSessionCAL2
     C = M.C
