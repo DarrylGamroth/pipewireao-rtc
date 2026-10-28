@@ -16,6 +16,7 @@ export DeploymentError, fail, require, digest, atomic_record, installed_paths, d
     selected_julia_executable, shell_quote, installed_wrappers, registered_application,
     application_environment
 
+const MAX_EXTERNAL_OWNERS = 8
 const MAX_CONFIG_BYTES = 16 * 1024 * 1024
 const REQUIRED_KEYS = Set(["version", "name", "session", "core", "client", "placement",
     "owners", "environment", "artifacts", "cpu-latency-us"])
@@ -309,14 +310,14 @@ end
 # dependency environment; installation always goes through profile above.
 function validate_application(value, path, prefix; legacy_export_input::Bool=false)
     require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
-        union(REQUIRED_KEYS, Set(["source-owner","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis","instrument"])) && get(value, "version", nothing) === 1,
+        union(REQUIRED_KEYS, Set(["source-owner","auxiliary-source-owners","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis","instrument"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     startup_timeout_ms(value)
     require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
         "deployment name must use 1..40 lowercase letters, digits or hyphens")
     owners = value["owners"]
-    require(owners isa AbstractVector && length(owners) <= 4,
-        "deployment permits at most four external owners")
+    require(owners isa AbstractVector && length(owners) <= MAX_EXTERNAL_OWNERS,
+        "deployment permits at most eight external owners")
     require(!haskey(value,"analysis") || value["analysis"] isa AbstractVector && length(value["analysis"]) <= 8,
         "deployment analysis must be a list of at most eight entries")
     validate_environment(value["environment"], "deployment")
@@ -328,6 +329,12 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
     source_role = get(value, "source-owner", nothing)
     require(source_role === nothing || source_role isa String && !isempty(source_role),
         "source-owner must name an existing external owner")
+    auxiliary = get(value, "auxiliary-source-owners", String[])
+    require(auxiliary isa AbstractVector && length(auxiliary) <= MAX_EXTERNAL_OWNERS-1 &&
+        all(role -> role isa String && !isempty(role), auxiliary) &&
+        length(unique(auxiliary)) == length(auxiliary) && !(source_role in auxiliary) &&
+        (isempty(auxiliary) || source_role !== nothing),
+        "auxiliary-source-owners must uniquely name at most seven owners distinct from the primary source")
     markers = Set{String}()
     for owner in owners
         require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
@@ -358,7 +365,11 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
             require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node),
                 "native HEART requires a bounded exact node name")
         end
-        if source_role !== nothing && get(owner, "role", nothing) == source_role
+        if source_role !== nothing && (get(owner, "role", nothing) == source_role || get(owner, "role", nothing) in auxiliary)
+            if get(owner, "role", nothing) in auxiliary
+                require(native_source(owner) && native_bootstrap(owner),
+                    "auxiliary source requires native SourceControl and owner bootstrap")
+            end
             require(native_acquisition(owner) || native_source(owner) || legacy_export_input,
                 "source owner requires a native source control profile")
             native_acquisition(owner) || union!(fields, native_source(owner) ?
@@ -399,6 +410,16 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
     end
     require(source_role === nothing || source_role in (owner["role"] for owner in owners),
         "source-owner must name an existing external owner")
+    require(all(role -> role in (owner["role"] for owner in owners), auxiliary),
+        "auxiliary-source-owners must name declared external owners")
+    if !isempty(auxiliary)
+        primary = only(filter(owner -> owner["role"] == source_role, owners))
+        require(native_source(primary) || native_acquisition(primary),
+            "auxiliary sources require a native primary source control")
+        source_controls = [owner["control-node"] for owner in owners if owner["role"] in auxiliary || owner["role"] == source_role]
+        require(length(unique(source_controls)) == length(source_controls),
+            "primary and auxiliary sources require distinct control node names")
+    end
     require(!haskey(value,"detector-observation") || value["detector-observation"] isa Bool,
         "detector-observation must be a Boolean")
     require(!get(value,"detector-observation",false) || source_role !== nothing &&

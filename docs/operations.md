@@ -1383,3 +1383,63 @@ Verification intent (informative): test threshold boundaries, persistence,
 hysteresis, gaps, missing/repeated samples, owner replacement, one-shot trips
 and explicit rearm. Numeric intervention thresholds require separate application
 validation before automatic action is enabled.
+
+
+## RTC-DEV-037 — Calibrated physical offsets
+
+A **physical offset** is a held absolute physical-mirror command contribution,
+in the receiving instrument's declared units and complete command order. The
+receiving RTC remains the sole owner of final conditioning and mirror transport.
+A **mode projection** P maps the sending instrument's calibrated coefficients to
+that physical order. Q is its checked left inverse; C maps those coefficients to
+the receiving sensor's reconstructed residual. These names refer to scientific
+mappings, not to a conversion into the receiving RTC's virtual mirror basis.
+
+The receiving RTC MUST bind each contribution to a calibration identity, exact
+schema, physical command order, P, Q, explicit disjoint mode authority, finite
+command/coefficient limits, model-age limit and monotonic silence timeout. It
+MUST reject an offset outside the calibrated physical span or branch authority.
+Missing mappings MUST NOT be inferred from array lengths. Acceptance requires
+finite Float32 complete vectors and a fresh, increasing acquisition sequence in
+an explicitly armed domain and generation. Sequence gaps are allowed for these
+absolute latest-value contributions; malformed transport is a fault.
+
+Startup, stale data, disconnect, malformed data, changed source cohort and
+protective recovery MUST clear the affected held contribution and disarm it.
+A new source domain or generation MUST require explicit rearming. Monotonic
+silence and upstream model-age checks MUST remain separate, including under
+slow wall-clock simulation pacing. Disconnected CAL2 MUST NOT stall GPI2 frames.
+Withdrawal MUST recheck the remaining Float32 total against the physical command
+limit and every branch coefficient limit. If removing cancellation violates a
+limit, the receiver MUST clear and disarm all remaining contributions before
+submitting another total.
+
+The receiving graph MUST adopt the physical offset and its calibrated sensor
+reference correction in one parameter transaction. For reconstructed residual r,
+its declared sign s defines r′ = r + s C Q u. This changes the sensor reference;
+it does not inject a receiving-VDM command. Final physical addition follows
+VDM-to-PDM completion and precedes existing final command conditioning. Ordinary
+engineering offsets retain their separate identity. A staged transaction MUST
+NOT be reported as observed active adoption. Protective recovery MAY admit one
+exact-zero offset update while retaining the same calibration factors; it MUST
+invalidate previous settled-reference evidence and require fresh evidence before
+release.
+
+Pending updates to the same physical offset support supersession before frame
+adoption. A concurrent unrelated or mixed pending parameter transaction is
+incompatible with this operation: if an offset must change or clear, the receiver
+protectively stops its graph owner instead of resuming with stale values. Hold
+and reset the offset source and receiver before applying cold configuration
+changes; do not retry this incompatibility as an ordinary busy condition.
+
+Acceptance requires deterministic contract/fault tests, a private-core return
+path with independent branch cadences, and simultaneous-loop evidence that
+omitting compensation cancels the slow offset while matched compensation retains
+it. This is a simulation claim. It does not qualify hardware command order,
+measured optical masks, actuator stroke or deadline performance.
+
+Identifier authority: `PhysicalOffsets` owns `Calibration`, `Contribution`,
+`Receiver`, `arm!`, `accept!`, `observe_clock!`, `expire!` and `disarm!` for this
+contract. `AcquisitionIdentity`, `pts` and `duration` retain PipeWireAO's existing
+metadata meanings. P/Q/C retain the equations above. “Bias manager”, alternate
+wire envelopes, and receiving-VDM projection are not additional concepts here.

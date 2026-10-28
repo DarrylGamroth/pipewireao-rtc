@@ -94,7 +94,8 @@ end
 
 function owner_specs(spec)
     entries = get(spec, "owners", Any[])
-    entries isa AbstractVector || fail("deployment owners must be a list")
+    entries isa AbstractVector && length(entries) <= D.MAX_EXTERNAL_OWNERS ||
+        fail("deployment owners must be a list of at most eight external owners")
     by_role = Dict{String,Any}()
     for entry in entries
         entry isa AbstractDict || fail("deployment owner must be a mapping")
@@ -167,6 +168,20 @@ function session_configuration(spec, session, bindings, records;
     for field in ("control-protocol", "control-node")
         haskey(source, field) || fail("source owner is missing $field")
     end
+    auxiliary_roles = get(spec, "auxiliary-source-owners", String[])
+    auxiliary_roles isa AbstractVector && length(auxiliary_roles) <= D.MAX_EXTERNAL_OWNERS-1 &&
+        all(role -> role isa String && haskey(declarations, role) && role != source_role, auxiliary_roles) &&
+        length(unique(auxiliary_roles)) == length(auxiliary_roles) ||
+        fail("auxiliary source roles must uniquely name declared external owners distinct from the primary")
+    auxiliary = map(auxiliary_roles) do role
+        declaration = declarations[role]
+        D.native_source(declaration) && D.native_bootstrap(declaration) ||
+            fail("auxiliary source requires native SourceControl and owner bootstrap")
+        lua_owner_record(role, declaration, records, bindings)
+    end
+    source_nodes = [source["control-node"], [entry["control-node"] for entry in auxiliary]...]
+    length(unique(source_nodes)) == length(source_nodes) ||
+        fail("primary and auxiliary sources require distinct control node names")
     script_path = get(bindings, "SESSION_SCRIPT", nothing)
     script_path isa String && isabspath(script_path) && !occursin('\0', script_path) ||
         fail("session script must be bound to its absolute trusted RTC asset")
@@ -195,6 +210,7 @@ function session_configuration(spec, session, bindings, records;
         "requires" => ["support.lua-scripting", "ao.lua", "ao.session-control", "ao.session-controller"],
             "arguments" => Dict{String,Any}(
             "session" => deepcopy(session), "owners" => owners, "source" => source,
+            "auxiliary-sources" => auxiliary,
             "node.pids" => pids, "core.owner" => core_owner,
             "instance" => string(public_instance),
             "controller.instance" => string(controller_instance), "session.uuid" => uuid,

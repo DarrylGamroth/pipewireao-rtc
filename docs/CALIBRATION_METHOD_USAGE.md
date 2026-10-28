@@ -275,3 +275,117 @@ runs also completed through this entry point. Their finite prediction, energy
 and timing results are in [method measurements](CALIBRATION_METHOD_VALIDATION.md).
 Candidate completion does not select a new method or inverse; fresh common
 validation and a locked test remain necessary for that decision.
+
+## Optical branch calibration and generated selection
+
+`InstrumentCalibration.calibrate_optical(upstream_built, optical_built,
+fresh_bundle; recipe="calibration/optical.yaml", target=..., prefix=...)`
+consumes sealed built applications. By default,
+`configuration="calibration/materialize.yaml"` selects its `graphs` mapping of
+branch names to retained authored templates; `graphs=...` can select that mapping
+explicitly. After acquisition, the shared extension resolves those templates
+using actual measured masks, native sensor schemas and cold RTC dimensions. It
+checks R/P shapes and prepares each published graph with its real typed FITS
+parameters before publishing the index. Existing callers may still supply both
+`concrete_graphs` and `contexts` NamedTuples. The shared optional extension owns numerical
+acquisition and AOC inversion. The callback path uses the actual native
+`PupilOutput.pack!` orientation, then packet `[quantity,y,x]` planes, for the
+external optical input. A direct GPI `[x,y]` copy is not equivalent.
+
+The first optical build needs no controller calibration. Use an ordinary
+`optical-calibration` application mode containing only the external-pupil source
+owner and sensor contracts, with no controller graphs or FITS bindings. Its RTC
+configuration retains the future controller dimensions and omits `calibration`
+until selection. The default controller mode adds the controller declarations;
+it rejects missing calibration rather than substituting zero R/P arrays.
+Mode-selected runtime YAML is compiled after application composition. The
+instrument repository's thin `tools/calibrate-optical.jl` client selects an
+explicit CPU or AMDGPU target and never installs or starts a session.
+
+Publication emits one standard bundle per branch and a `calibration.yaml` index.
+The index hashes each branch result and the common command projection P, physical
+to modal inverse Q, and optional upstream reconstructed-reference response C.
+Each branch measures the full shared mode response before applying its authority.
+A deployable result passes rank, derivative, reconstruction and held-out gates,
+plus the native UInt16 upstream reference checks when selected. Diagnostic
+results retain `diagnostic: true`, `deployable: false`; optical acceptance alone
+does not produce a deployable matched-feedback calibration. Camera, ADC and
+simulator effective settings are part of the selected C provenance. Changing
+brightness, readout settings, frontend nodes or their FITS bindings requires
+matching calibration. Neither a relaxed gate nor a diagnostic dither is an
+implicit production selection.
+
+The optional upstream reference method `host-expectation` estimates the mean
+residual of the executed stochastic detector and frozen frontend. For example:
+
+```yaml
+upstream_reference:
+  method: host-expectation
+  raw_endpoint: pixel-calibration:raw
+  residual_endpoint: reconstruction:reconstructed
+  poke_amplitudes_m: [5.0e-9]
+  derivative_tolerance: 0.05
+  samples: 512
+  rounding_samples: 128
+  training_seed: 200002
+  validation_seed: 400002
+```
+
+This method requires one explicit probe amplitude and a Host reference plant;
+the optical consumer may use a separate CPU or AMDGPU target. Feedback
+preparation rejects a non-CPU upstream producer for this calibration. The
+default `held-frame` method retains its deterministic, twice-settled exposure
+measurement and does not accept these sampling controls.
+
+AOS `Detectors.emccd_mean` supplies expected output charge, including the
+clipped-Gaussian multiplication model's positive mean shift. Actual native
+UInt16 exposures supply the previous-frame normalization gain `g(S)`. An exact
+linear affine raw flux `T` gives the control variate
+`E[g(S)] = E[g(S) + (T − E[T]) / E[T]²]`. Independent temporal exposures imply
+`E[z_current * g(S_previous)] = E[z_current] * E[g(S_previous)]`; a ratio of
+means would change that expectation. Frozen R follows this linear expectation.
+Expected arrays are internal statistics; camera and frontend transport remain
+UInt16 with the original cold background, ADC and noise law.
+
+The current arithmetic envelope admits only Float32, unsaturated linear EMCCD
+acquisition with clipped-Gaussian multiplication, gain 5000, conditional factor
+in `(0,1]`, read noise 678–679 electrons, nearest-even ADC scale 1/64 and bias
+1024 with rails 0:16383, and per-pixel effective Poisson mean at most eight.
+Actual sensor, ADC, direct photon/detector/ADC links, HIL frame output, and
+constant pupil-rectangle flat/background assumptions are checked; unsupported
+configurations reject rather than changing camera settings.
+
+The gate combines independent training/held-out batch uncertainty, conditional
+detector and pixel-calibration arithmetic envelopes, and paired native Float32
+frontend versus Float64 linear-reference measurements. Every positive and
+negative h/h2 training probe participates in the frontend check. The reported
+three-vector-standard-error bounds are estimates under the declared ideal
+independent Poisson/Gaussian simulation law represented by the Host PRNG. They
+are neither deterministic support bounds nor finite-PRNG or hardware
+certificates. Reports retain seeds, sample counts, observed flux/clipping,
+individual error terms and positive-denominator checks. Acceptance covers the
+listed finite mixtures with the upstream controller held; application,
+simultaneous-loop and timing acceptance remain separate.
+
+`InstrumentExport.materialize_calibration(source, built, accepted_bundle;
+graphs, provenance, prefix, destination="generated/calibration",
+rtc_configuration="rtc/configuration.yaml",
+simulation_configuration="simulation.conf", recipe="calibration/optical.yaml",
+zero_command="physical-offset-zero.fits")` selects those accepted bundles in
+an authored instrument source. All validation precedes publication. It checks the
+sealed built input, recipe/source/provenance hashes, branch acceptance and shared
+identities, then verifies that the context reproduces each authored graph.
+The generated destination must be fresh. Standard branch bundles are copied
+unchanged; a shared context, exact-zero Float32 physical command and selection
+receipt are generated there. A generated `rtc.yaml` selects the context and
+accepted identity, rebasing its physical-instrument reference to that directory;
+the receipt binds this configuration's path and hash. The controller mode selects
+it through its ordinary `application.configuration` override. The authored RTC
+configuration and optical recipe remain byte-for-byte unchanged. Generated
+bundles, configurations, contexts, FITS headers and recorded hashes are
+never edited by hand.
+
+A selected numerical result still has `application_accepted: false`. Rebuild the
+application from that source with a named profile and explicit host declaration,
+then use [feedback preparation](JULIA_DEPLOYMENT_USAGE.md#sealed-composition-and-feedback-preparation).
+Native cohort, simultaneous-loop and failure acceptance follow separately.

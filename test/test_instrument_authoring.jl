@@ -37,3 +37,26 @@ const D = PipeWireAORTC.DeploymentConfiguration
         end
     end
 end
+
+@testset "selected application modes compile their own runtime configurations" begin
+    mktempdir() do root
+        source = joinpath(root,"source")
+        mkpath(joinpath(source,"rtc"))
+        base = Dict("runtime-configurations"=>[Dict("source"=>"model.yaml","path"=>"model.conf","format"=>"json")])
+        C.write_yaml(joinpath(source,"rtc/application.yaml"),base)
+        C.write_yaml(joinpath(source,"model.yaml"),Dict("kind"=>"optical"))
+        C.write_yaml(joinpath(source,"parameters.yaml"),Dict("parameters"=>[]))
+        mode = Dict("runtime-configurations"=>[Dict("source"=>"parameters.yaml","path"=>"parameters.conf","format"=>"json")])
+        selected = E.merge_configuration(base,mode)
+        application = E.copy_source(source,joinpath(root,"controller");runtime_configurations=false)
+        E.prepare_runtime_configurations!(application,selected)
+        @test C.read_json(joinpath(application,"parameters.conf")) == Dict("parameters"=>[])
+        @test C.read_json(joinpath(application,"model.conf")) == Dict("kind"=>"optical")
+        @test !haskey(C.read_json(joinpath(application,"rtc/application.conf")),"runtime-configurations")
+        @test length(selected["runtime-configurations"]) == 2
+        optical = E.copy_source(source,joinpath(root,"optical"))
+        @test isfile(joinpath(optical,"model.conf"))
+        @test !ispath(joinpath(optical,"parameters.conf"))
+        @test C.read_yaml(joinpath(source,"rtc/application.yaml")) == base
+    end
+end

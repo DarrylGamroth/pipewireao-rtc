@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## CAL2 external pupil and physical offsets — 2026-10-28
+
+The [validation and review record](validation/cal2-feedback-20261028/README.md)
+covers shared source-only calibration builds, generated RTC selections, sealed
+composition, receiver/reference compensation and scoped Host expected-response
+acceptance. Core and focused software/private-receiver checks pass. The normal
+combined native cohort and nonzero simultaneous noisy loop remain unqualified.
+
 - [GPI online reference calibration](validation/gpi-reference-20261027/README.md):
   source review and fresh registered-release CPU/private-core qualification passed;
   candidate products only, with precision acceptance separate.

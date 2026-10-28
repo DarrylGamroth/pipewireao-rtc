@@ -17,11 +17,11 @@ end
 function scientific_worker(config, output; prepare=false)
     options = AOSOwner.configuration(config)
     options.plant !== nothing || throw(ArgumentError("editable settings require a declared instrument plant"))
-    instrument = options.version == 3 ? nothing : AOSOwner.load_instrument(options.plant.package)
+    instrument = options.version in (3,4) ? nothing : AOSOwner.load_instrument(options.plant.package)
     # Return configured relative filenames; scientific preparation uses the
     # independently resolved application-local file inputs in options.
     configured = D.decode(config,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))["plant"]["settings"]
-    result = options.version == 3 ?
+    result = options.version in (3,4) ?
         InstrumentConfiguration.settings_description(InstrumentConfiguration.load_simulation(options.plant.definition),configured) :
         declared_settings(instrument, configured)
     options.version == 3 && (result["graph"] = options.plant.graph)
@@ -33,7 +33,7 @@ function scientific_worker(config, output; prepare=false)
         AOSOwner.requires_proper(options) && AOSOwner.load_instrument(:Proper)
         invocation = merge(options, (; plant_module=instrument,
             remote=joinpath(dirname(output), "unused-preflight-socket"), control_node="simulator-preflight"))
-        Base.invokelatest(AOSOwner.prepare_science, invocation)
+        Base.invokelatest(options.version == 4 ? AOSOwner.prepare_external_pupil_science : AOSOwner.prepare_science, invocation)
         result["prepared"] = true
     end
     C.write_json(output, result; atomic=true)

@@ -22,7 +22,7 @@ assert (#spec.links > 0 and #spec.links <= 32, "Invalid declared connection coun
 local endpoint = assert (Plugin.find (args ["endpoint.plugin"] or "ao-session-control"))
 local controller_endpoint = assert (Plugin.find (args ["controller.plugin"] or "ao-session-controller"))
 local state = { lifecycle = 2, epoch = 0, operation = nil, graphs = {}, groups = {},
-  owners = {}, generation = 0, faulted = false, source = nil, controller = nil, warmed = false }
+  owners = {}, generation = 0, faulted = false, source = nil, sources = {}, controller = nil, warmed = false }
 local api, catalog
 local fault, dispatch, operation_error
 
@@ -224,15 +224,39 @@ local function source_query (operation, callback)
   end))
 end
 
-local function hold_source (operation, callback)
+-- Sources are declared upstream-to-downstream. Start downstream consumers
+-- first; hold/reset/shutdown upstream producers before their consumers.
+local function each_source (operation, reverse, action, callback)
+  local index, step = reverse and #state.sources or 1, reverse and -1 or 1
+  local next_source
+  next_source = guarded (operation, function (_, error)
+    assert (not error, error)
+    local source = state.sources [index]
+    if not source then callback (); return end
+    index = index + step
+    action (source, next_source)
+  end)
+  next_source ()
+end
+
+local function source_operation (operation, command, value, reverse, validate, callback)
   operation.effects_issued = true
-  effect (operation, acquisition.operation, state.source, "run", 1, operation.deadline,
-      guarded (operation, function (snapshot, error)
-    if error then fault (error); return end
+  each_source (operation, reverse, function (source, next_source)
+    local before = source.snapshot
+    effect (operation, acquisition.operation, source, command, value, operation.deadline,
+        guarded (operation, function (snapshot, error)
+      assert (not error, error)
+      validate (snapshot, before)
+      source.snapshot = snapshot
+      next_source ()
+    end))
+  end, callback)
+end
+
+local function hold_source (operation, callback)
+  source_operation (operation, "run", 1, false, function (snapshot)
     assert (not snapshot.running, "Source remained running after hold")
-    state.source.snapshot = snapshot
-    callback (snapshot)
-  end))
+  end, function () callback (state.source.snapshot) end)
 end
 
 fault = function (reason)
@@ -256,27 +280,37 @@ fault = function (reason)
       end
     end)
   end
-  if not state.source then withdraw (); return end
-  acquisition.operation (state.source, "run", 1, deadline, function (_, error)
-    if error then
-      Log.warning ("AO source hold uncertain; systemd emergency cleanup required: " .. tostring (error))
-      endpoint:call ("disconnect")
+  local source_index = 1
+  local hold_next_source
+  hold_next_source = function ()
+    local source = state.sources [source_index]
+    if not source then
+      -- Only stop consumers after every captured source hold acknowledgement.
+      local names, index = graph_list (), 1
+      local next_graph
+      next_graph = function ()
+        local name = names [index]
+        if not name then withdraw (); return end
+        index = index + 1
+        owner.node_operation (state.graphs [name], "run", 1, deadline, function (_, error)
+          if error then Log.warning ("AO graph hold uncertain: " .. tostring (error)) end
+          next_graph ()
+        end)
+      end
+      next_graph ()
       return
     end
-    -- Only stop consumers after source hold acknowledgement.
-    local names, index = graph_list (), 1
-    local next_graph
-    next_graph = function ()
-      local name = names [index]
-      if not name then withdraw (); return end
-      index = index + 1
-      owner.node_operation (state.graphs [name], "run", 1, deadline, function (_, error)
-        if error then Log.warning ("AO graph hold uncertain: " .. tostring (error)) end
-        next_graph ()
-      end)
-    end
-    next_graph ()
-  end)
+    source_index = source_index + 1
+    acquisition.operation (source, "run", 1, deadline, function (_, error)
+      if error then
+        Log.warning ("AO source hold uncertain; systemd emergency cleanup required: " .. tostring (error))
+        endpoint:call ("disconnect")
+        return
+      end
+      hold_next_source ()
+    end)
+  end
+  hold_next_source ()
 end
 
 -- HEART owns its child; Connect only acknowledges the declared native wrapper.
@@ -633,14 +667,9 @@ hook ("start", {
     run_graphs (operation, true, nil, done)
   end) },
   ["release-source"] = { next = "complete", execute = phase (function (operation, done)
-    operation.effects_issued = true
-    effect (operation, acquisition.operation, state.source, "run", 2, operation.deadline,
-        guarded (operation, function (snapshot, error)
-      assert (not error, error)
+    source_operation (operation, "run", 2, true, function (snapshot)
       assert (snapshot.running and not snapshot.completed, "Source release was not observed")
-      state.source.snapshot, state.lifecycle = snapshot, 4
-      done ()
-    end))
+    end, function () state.lifecycle = 4; done () end)
   end) },
   complete = { next = "none", execute = phase (lifecycle_complete) },
 })
@@ -663,21 +692,17 @@ hook ("stop", {
 
 hook ("reset", {
   start = { next = "hold-graphs", execute = phase (function (operation, done)
-    hold_source (operation, function (before) operation.before_reset = before; done () end)
+    hold_source (operation, done)
   end) },
   ["hold-graphs"] = { next = "reset-source", execute = phase (function (operation, done)
     state.lifecycle = 3
     run_graphs (operation, false, nil, done)
   end) },
   ["reset-source"] = { next = "reset-graphs", execute = phase (function (operation, done)
-    effect (operation, acquisition.operation, state.source, "reset", nil, operation.deadline,
-        guarded (operation, function (after, error)
-      assert (not error, error)
+    source_operation (operation, "reset", nil, false, function (after, before)
       assert (not after.running and not after.completed and after.sequence == 0 and
-          after.generation ~= operation.before_reset.generation, "Reset cursor was not adopted")
-      state.source.snapshot = after
-      done ()
-    end))
+          after.generation ~= before.generation, "Reset cursor was not adopted")
+    end, done)
   end) },
   ["reset-graphs"] = { next = "complete", execute = phase (function (operation, done)
     local names, index = graph_list (), 1
@@ -705,7 +730,9 @@ hook ("quit", {
           control.identity (assert (catalog.clients [id], "Owner control client is absent"))
     end
     for _, record in ipairs (operation.owners) do retain_client (record.client) end
-    if state.source.client then retain_client (state.source.client) end
+    for _, source in ipairs (state.sources) do
+      if source.client then retain_client (source.client) end
+    end
     done ()
   end) },
   ["hold-source"] = { next = "hold-graphs", execute = phase (hold_source) },
@@ -718,8 +745,9 @@ hook ("quit", {
     end))
   end) },
   ["shutdown-source"] = { next = "shutdown-owners", execute = phase (function (operation, done)
-    effect (operation, acquisition.shutdown, state.source, operation.deadline,
-        guarded (operation, function (_, error) assert (not error, error); done () end))
+    each_source (operation, false, function (source, next_source)
+      effect (operation, acquisition.shutdown, source, operation.deadline, next_source)
+    end, done)
   end) },
   ["shutdown-owners"] = { next = "remove-controls", execute = phase (function (operation, done)
     local index = 1
@@ -832,18 +860,40 @@ hook ("prepare", {
     end))
   end) },
   ["capture-source"] = { next = "prepare-source", execute = phase (function (operation, done)
-    local source = assert (args.source, "Source declaration missing")
-    connections.await_node (catalog, source ["control-node"], source.pid,
-        operation.deadline, guarded (operation, function (node, error)
-      assert (not error, error)
-      connections.capture_control (catalog, node)
-      state.source = acquisition.new (node, source, state.controller, source.pid)
-      done ()
-    end))
+    local primary = assert (args.source, "Source declaration missing")
+    local declarations = { primary }
+    local roles, names = { [args.source.role] = true }, { [args.source ["control-node"]] = true }
+    local auxiliary = args ["auxiliary-sources"] or {}
+    assert (#auxiliary <= 7, "Too many auxiliary source controls")
+    for _, source in ipairs (auxiliary) do
+      assert (source ["control-protocol"] == "pipewireao.source-control/1" and
+          not roles [source.role] and not names [source ["control-node"]],
+          "Invalid or duplicate auxiliary source control")
+      roles [source.role], names [source ["control-node"]] = true, true
+      declarations [#declarations + 1] = source
+    end
+    local index = 1
+    local next_source
+    next_source = guarded (operation, function ()
+      local source = declarations [index]
+      if not source then done (); return end
+      index = index + 1
+      connections.await_node (catalog, source ["control-node"], source.pid,
+          operation.deadline, guarded (operation, function (node, error)
+        assert (not error, error)
+        connections.capture_control (catalog, node)
+        local captured = acquisition.new (node, source, state.controller, source.pid)
+        state.sources [#state.sources + 1] = captured
+        state.source = state.sources [1]
+        next_source ()
+      end))
+    end)
+    next_source ()
   end) },
   ["prepare-source"] = { next = "discover-graphs", execute = phase (function (operation, done)
-    effect (operation, acquisition.prepare, state.source, operation.deadline,
-        guarded (operation, function (_, error) assert (not error, error); done () end))
+    each_source (operation, false, function (source, next_source)
+      effect (operation, acquisition.prepare, source, operation.deadline, next_source)
+    end, done)
   end) },
   ["discover-graphs"] = { next = "hold-source", execute = phase (function (operation, done)
     connections.discover (catalog, operation.deadline, guarded (operation, function (rows, error)
@@ -901,8 +951,11 @@ hook ("prepare", {
     end))
   end) },
   ["hold-source"] = { next = "connect-links", execute = phase (function (operation, done)
-    hold_source (operation, function (snapshot)
-      assert (snapshot.sequence == 0 and not snapshot.completed, "Initial source was not held before acquisition")
+    hold_source (operation, function ()
+      for _, source in ipairs (state.sources) do
+        local snapshot = source.snapshot
+        assert (snapshot.sequence == 0 and not snapshot.completed, "Initial source was not held before acquisition")
+      end
       done ()
     end)
   end) },

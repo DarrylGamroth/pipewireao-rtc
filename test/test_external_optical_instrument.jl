@@ -245,7 +245,7 @@ end
     end
 end
 
-@testset "HIL and RTC control retain mirror and graph requirements" begin
+@testset "HIL retains mirror requirements and optical RTC publication is mirror-free" begin
     mktempdir() do directory
         physical, simulation = external_optical_documents()
         wire = Dict("frame_encoding" => "float32", "frame_schema" => "example.frame/1",
@@ -265,9 +265,9 @@ end
             "mirror_controls" => "rtc/mirror-controls.yaml", "publication" => "instrument.json", "calibration_identity" => "example")
         rtc_path = joinpath(directory, "rtc", "configuration.yaml")
         PipeWireAORTC.Common.write_yaml(rtc_path, rtc)
-        exception = try IC.load_rtc(rtc_path); nothing catch error; error end
-        @test exception isa ArgumentError
-        @test occursin("at least one deformable mirror", sprint(showerror, exception))
+        PipeWireAORTC.Common.write_yaml(joinpath(directory,"rtc/mirror-controls.yaml"),
+            Dict("schema_version"=>1,"deformable_mirrors"=>Dict()))
+        @test isempty(IC.load_rtc(rtc_path).instrument.document["deformable_mirrors"])
     end
 end
 

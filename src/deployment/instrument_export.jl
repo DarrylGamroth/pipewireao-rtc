@@ -10,11 +10,12 @@ using ..InstrumentConfiguration
 import PipeWireAO
 import ..Schemas
 import ..InstrumentDefinition
+import ..AOSOwner
 import ..DeploymentConfiguration as D
 import ..resource_root
 
 public prepare, load_profile, combine_profile, seal!, prepare_session_configuration!, graph_port_contracts,
-    simulator_port_contracts
+    simulator_port_contracts, compose, materialize_calibration, prepare_feedback
 
 const PROFILE_FIELDS = Set(["placement", "bindings", "environment", "analysis", "simulation",
     "mode", "devices", "calibration", "scheduling"])
@@ -30,6 +31,9 @@ include("instrument_profiles.jl")
 include("instrument_modes.jl")
 include("graph_configuration.jl")
 include("session_configuration.jl")
+include("application_composition.jl")
+include("calibration_materialization.jl")
+include("feedback_composition.jl")
 
 outside(path) = path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 
@@ -181,6 +185,13 @@ function simulation_override!(application, profile)
         throw(ArgumentError("profile simulation permits only backend, device and pacing_rate_hz"))
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
+    if get(simulation,"version",nothing) == 4
+        haskey(overrides,"pacing_rate_hz") && throw(ArgumentError("external-pupil timing is owned by the input source"))
+        merge!(simulation,overrides)
+        AOSOwner.external_pupil_configuration(path,simulation)
+        Common.write_json(path,simulation;atomic=true)
+        return path
+    end
     backend = get(overrides, "backend", simulation["backend"])
     backend in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("unsupported simulation backend"))
     device = get(overrides, "device", simulation["device"])
@@ -188,8 +199,7 @@ function simulation_override!(application, profile)
     backend == "cpu" && device != 0 && throw(ArgumentError("CPU simulation backend requires device 0"))
     backend == "amdgpu" && device == 0 && throw(ArgumentError("AMDGPU device identifiers start at 1"))
     pacing_rate_hz = get(overrides, "pacing_rate_hz", simulation["pacing_rate_hz"])
-    typeof(pacing_rate_hz) === Int && 0 <= pacing_rate_hz <= simulation["rate"] ||
-        throw(ArgumentError("simulation pacing_rate_hz must be an integer between zero and the model rate"))
+    AOSOwner.pacing_period(pacing_rate_hz,simulation["rate"])
     merge!(simulation, overrides)
     Common.write_json(path, simulation; atomic=true)
     return path
@@ -288,9 +298,10 @@ function prepare(source::AbstractString, destination::AbstractString;
     profile = resolved
     bindings = profile_bindings(profile, julia)
     authoring = source_application(source)
-    pop!(authoring, "runtime-configurations", nothing)
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
+    runtime_authoring = deepcopy(authoring)
+    pop!(authoring, "runtime-configurations", nothing)
     graph_configurations = pop!(authoring, "graph-configurations", [])
     configurations = pop!(authoring, "configuration-files", [])
     configuration = pop!(authoring, "configuration", nothing)
@@ -308,7 +319,8 @@ function prepare(source::AbstractString, destination::AbstractString;
     # copy_tree requires a new destination; only this function owns staging.
     application = joinpath(staging, "application")
     try
-        copy_source(source, application)
+        copy_source(source, application; runtime_configurations=false)
+        prepare_runtime_configurations!(application, runtime_authoring)
         manifest === nothing || RuntimeExport.copy_file(checked_path(manifest), joinpath(application, "Manifest.toml"))
         render_templates!(application, spec, profile, prefix)
         prepare_mode!(application, spec, mode, profile, bindings, prefix;
@@ -318,7 +330,19 @@ function prepare(source::AbstractString, destination::AbstractString;
         spec["instrument"] = relpath(instrument, application)
         if isfile(joinpath(application,"simulation.conf"))
             simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
-            get(simulation,"version",nothing) == 3 && InstrumentConfiguration.prepare_simulation_configuration!(application; configuration)
+            if get(simulation,"version",nothing) == 4
+                # Optical prescription identity needs the selected compiler,
+                # while export always prepares contracts on the CPU.
+                Base.require(Main,:AdaptiveOpticsSim)
+                Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
+                plant = simulation["plant"]
+                declaration = InstrumentConfiguration.load_simulation(D.relative_asset(application,plant["definition"]))
+                configured = InstrumentConfiguration.settings(declaration,get(plant,"settings",Dict()))
+                any(name->InstrumentConfiguration.graph_requires_proper(declaration,configured;simulation_graph=name),
+                    keys(declaration.instrument.document["optical_paths"])) && Base.require(Main,:Proper)
+            end
+            get(simulation,"version",nothing) in (3,4) && Base.invokelatest(
+                InstrumentConfiguration.prepare_simulation_configuration!,application;configuration)
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)
             uses_aos && prepare_backend_environment!(application, selected["backend"])

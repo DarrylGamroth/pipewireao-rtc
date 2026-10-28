@@ -61,6 +61,16 @@ function write_spa_value(io::IO, value::AbstractDict, depth)
 end
 
 function write_spa_value(io::IO, value::AbstractVector, depth)
+    # Full-image selection masks must fit the ordinary 16 MiB graph limit.
+    # Whitespace per pixel otherwise dominates a megapixel Boolean mask.
+    if eltype(value) === Bool && length(value) >= 64
+        print(io, "[ ")
+        for item in value
+            print(io, item ? "true " : "false ")
+        end
+        print(io, ']')
+        return nothing
+    end
     println(io, '[')
     for item in value
         print(io, "  " ^ (depth + 1))

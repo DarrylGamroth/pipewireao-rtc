@@ -137,7 +137,6 @@ end
             d -> (d["id"] = "Invalid instrument"),
             d -> (d["calibration_identity"] = "unqualified"),
             d -> (d["scientific_identity"] = "sha256:" * repeat("A", 64)),
-            d -> (d["deformable_mirrors"] = Dict()),
             d -> (d["deformable_mirrors"]["dm"] = nothing),
             d -> (d["wavefront_sensors"] = Dict("bad name" => Dict())),
         )
@@ -146,6 +145,10 @@ end
             write(path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.load(path)
         end
+        optical = deepcopy(document)
+        optical["deformable_mirrors"] = Dict()
+        write(path, JSON.json(optical))
+        @test isempty(Instrument.load(path).document["deformable_mirrors"])
         @test_throws ArgumentError Instrument.bounded(Dict("value" => Inf))
         @test_throws ArgumentError Instrument.bounded(Dict("value" => :symbol))
         @test_throws ArgumentError Instrument.bounded(Dict("value" => "bad\0text"))

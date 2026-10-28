@@ -90,3 +90,14 @@ end
         end
     end
 end
+
+@testset "megapixel selection masks fit the ordinary graph size bound" begin
+    mktempdir() do directory
+        path = joinpath(directory,"selection.conf")
+        mask = trues(1024^2)
+        document = Dict("filter.graph"=>Dict("nodes"=>[Dict("config"=>Dict("mask"=>mask))]))
+        E.write_spa_config(path,document)
+        @test filesize(path) < 16 * 1024^2
+        @test parse_spa_config(path) == document
+    end
+end

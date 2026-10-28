@@ -449,6 +449,13 @@ function controller_storage end
 function measure! end
 function calibration_frame! end
 function calibrate_hidden_modes end
+"Cold model-derived optical interaction calibration; extended by the science environment."
+function calibrate_optical end
+"Validate a model-derived optical calibration against held-out physical commands."
+function validate_optical end
+"Calibrate the deployed upstream sensor residual response to optical physical modes."
+function calibrate_optical_reference end
+public calibrate_optical, validate_optical, calibrate_optical_reference
 include("calibration_bundle.jl")
 include("calibration_recipe.jl")
 include("calibration_capture_files.jl")

@@ -30,7 +30,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets")
             key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -83,7 +83,7 @@ function arguments(arguments)
     supervision = get(values, "--supervision", nothing)
     supervision === nothing || length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing)
 end
 
 struct FITSBinding
@@ -163,13 +163,14 @@ function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
         load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
+        offsets_path === nothing || Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
         admitted.owner_check()
         options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
-            (; correction_properties, correction_timeout_ms, recovery_nodes,
+            (; correction_properties, correction_timeout_ms, recovery_nodes, physical_offsets=offsets_path,
                 supervision=supervision_path === nothing ? () : read_supervision(supervision_path)))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()

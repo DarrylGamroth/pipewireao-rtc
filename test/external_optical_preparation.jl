@@ -1,6 +1,7 @@
 # Optional CPU selector: shared RTC configuration plus AOS/Proper/HIL packages.
 using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper
 using AdaptiveOpticsSim.AlgorithmGraphs
+using AdaptiveOpticsSim.Backends: HostComputeDevice
 const IC = PipeWireAORTC.InstrumentConfiguration
 Base.include(@__MODULE__, joinpath(@__DIR__, "external_optical_documents.jl"))
 
@@ -54,8 +55,11 @@ end
         for detector in ("ingaas","hgcdte_linear_avalanche_array")
             simulation["components"]["low_order_detector"]["template"] = detector
             write_external_optical_documents(directory,physical,simulation)
-            prepared=IC.prepare_external_pupil(path)
+            target = HostComputeDevice()
+            prepared=IC.prepare_external_pupil(path; target, execution=StreamGraphExecution())
             @test keys(prepared.graphs) == (:llowfs,:scc)
+            @test all(graph -> graph.target === target, prepared.graphs)
+            @test prepared.observations.llowfs.response.graph.target === target
             @test hasproperty(prepared.observations.llowfs,:response)
             @test !hasproperty(prepared.observations.scc,:response)
             @test prepared.observations.llowfs.response.frame_schema == config["frame_schema"]
@@ -66,6 +70,8 @@ end
             @test length(emissions)==2
             response=only(filter(item->get(item[2],:quantity,:intensity)==:detector_frame,emissions))
             @test response[1] ≈ Float32.(prepared.exposures.llowfs.image .* 100 .* 0.002 .* 0.8)
+            @test_throws AlgorithmGraphs.AlgorithmGraphError IC.prepare_external_pupil(path;
+                target, execution=GroupedStreamGraphExecution((:unknown_node,)))
             config["pixel_sampling_m"]=[0.001,0.001]
             write_external_optical_documents(directory,physical,simulation)
             @test_throws AlgorithmGraphs.AlgorithmGraphError IC.prepare_external_pupil(path)

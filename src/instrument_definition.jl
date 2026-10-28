@@ -80,7 +80,8 @@ function validate(document)
     end
     for family in ("deformable_mirrors","wavefront_sensors")
         components=document[family]
-        object_value(components) && 1<=length(components)<=16 &&
+        minimum = family == "deformable_mirrors" ? 0 : 1
+        object_value(components) && minimum<=length(components)<=16 &&
             all(name -> occursin(r"^[a-z][a-z0-9_.-]{0,127}$",name),keys(components)) ||
             throw(ArgumentError("instrument requires bounded named components"))
     end

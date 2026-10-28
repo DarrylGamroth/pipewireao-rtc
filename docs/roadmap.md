@@ -6,11 +6,32 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-27. This section is the current delivery summary. Later sections
+Updated 2026-10-28. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### CAL2 external pupil and physical offsets — 2026-10-28
+
+RTC 0.2.34 implements a mirror-free external-pupil owner with independent SCC and
+LLOWFS streams, sealed application composition, generated accepted-calibration
+selection, and a GPI-owned physical-offset receiver. The receiver applies one
+adopted physical offset after VDM completion and before conditioning, using the
+same snapshot for matched reference compensation. Existing native owner
+bootstrap, session controls and systemd process ownership remain authoritative.
+The ordinary optical-calibration mode builds without controller FITS; accepted
+materialization preserves authored RTC configuration and selects generated data
+only in controller mode.
+
+The [validation and review record](validation/cal2-feedback-20261028/README.md)
+records 7,365 core assertions, focused receiver and cold selector evidence, and
+the accepted native-pupil optical / Host expected-reference calibration at the
+unchanged 5% gates. Host reference qualification is bound to a CPU GPI producer;
+CAL2 optical propagation can independently select CPU or AMDGPU. CPU and AMDGPU
+wall pacing is explicit and preserves model timesteps. No combined native cohort,
+nonzero simultaneous noisy-loop, physical-device or deadline qualification is
+claimed. The normal-cohort selector remains open/zero and has cold evidence only.
 
 ### Shared mirror-free optical declarations — 2026-10-27
 
