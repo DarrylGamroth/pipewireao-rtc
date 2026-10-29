@@ -1,7 +1,7 @@
 # Array validation of the same calibrated graph and complete named command set.
 function Calibration._validate_system(::Val{:pyramid}, source, recipe, calibration, report_path;
         target=AdaptiveOpticsSim.Backends.HostComputeDevice(), steps=48,
-        execution=HIL.StreamGraphExecution(), pupil_field_output=nothing)
+        execution=nothing, pupil_field_output=nothing)
     ispath(report_path) && throw(ArgumentError("validation output must be fresh"))
     steps>=16 || throw(ArgumentError("validation needs at least 16 correction steps"))
     declaration=IC.load_simulation(joinpath(source,recipe["simulation"]))
@@ -23,7 +23,7 @@ function Calibration._validate_system(::Val{:pyramid}, source, recipe, calibrati
         "controller_properties"=>only(n for n in concrete["filter.graph"]["nodes"] if n["name"]=="closed-loop-correction")["props"],
         "scope"=>"finite simulation-local calibrated array loop; no native timing or hardware claim",
         "steps"=>steps,"cases"=>results,"backend"=>string(typeof(target)),
-        "execution"=>string(typeof(execution)), "pupil_field_output"=>isnothing(pupil_field_output) ? nothing : String(pupil_field_output),
+        "execution"=>string(typeof(AdaptiveOpticsSim.AlgorithmGraphs.graph_execution_policy(system.graph))), "pupil_field_output"=>isnothing(pupil_field_output) ? nothing : String(pupil_field_output),
         "pupil_opd_rms_gate"=>isnothing(pupil_field_output),
         "calibration_sha256"=>Calibration.digest(joinpath(calibration,"result.yaml")),
         "passed"=>false)

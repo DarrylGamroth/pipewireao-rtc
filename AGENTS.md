@@ -158,3 +158,9 @@
   and explicit `PIPEWIREAO_PREFIX` pointing to a compatible private native SDK.
   They own and close their private cores, check native receipt admission and
   Pause/Run continuity, and do not qualify hardware or deadlines.
+- Optional `test/captured_optical_preparation.jl` exercises the shared RTC device
+  execution policy, monochromatic/finite-channel/chopped optics, detector response,
+  changed inputs, seeded draws and reset without a core. Set
+  `PIPEWIREAORTC_TEST_BACKEND=cpu`, `cuda` or `amdgpu` in separate matching package
+  environments. Accelerator runs disable scalar indexing. GPU simulator production
+  preparation requires captured execution; unsupported nodes fail closed.

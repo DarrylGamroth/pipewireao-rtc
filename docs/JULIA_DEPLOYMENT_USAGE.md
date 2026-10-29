@@ -918,6 +918,20 @@ The v4 external-pupil owner also admits an explicitly selected CUDA device
 Metadata parsing and hash checks do not import accelerators. Backend availability
 and the actual optical/DM algorithms remain execution-time checks.
 
+Shared `InstrumentConfiguration.prepare_system` and `prepare_external_pupil`
+select stream execution on CPU and captured execution on accelerators. Every
+optical variant and post-exposure response uses that policy. An explicit
+non-captured accelerator policy or unsupported capture node fails preparation;
+there is no stream fallback. CPU reference policies and AOS's lower-level API
+remain available independently.
+
+Read-only `aos.simulation.execution` and `aos.simulation.captured-node-count`
+source properties report the actual prepared policy and captured node count.
+External sensor nodes report these as `optics.execution` and
+`optics.captured-node-count`; chopped variants use `optics.unfringed.*`, and
+post-exposure response graphs use `detector.*`. These properties come from AOS's
+public prepared-graph queries, not the backend label, and are not writable controls.
+
 ### Sealed composition and feedback preparation
 
 Portable instrument profiles may select `application: rtc/standalone/application.yaml`.
