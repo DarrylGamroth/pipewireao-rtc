@@ -13,6 +13,11 @@ procedures selected from a built instrument application:
   source identities, then copies the authored source and selects the calibrated startup context
   in a fresh destination.
 
+Since RTC 0.2.51, optical interaction calibration accepts an explicit CUDA target.
+The mirror and optical graphs use captured execution, with uploads and readback
+in each prepared graph's device context. The chopped measurement frontend and
+the separately qualified upstream expected-reference acquisition remain on Host.
+
 The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
 `graph.conf` and typed FITS files in `artifacts/`. The result hashes context,
 graph and artifacts. Git retains earlier selections and provenance; staging

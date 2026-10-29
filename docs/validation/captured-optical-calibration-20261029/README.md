@@ -80,3 +80,12 @@ reference acquisition, detector/mask fidelity, hardware and deadlines remain
 unqualified. The Host expected-reference law and its target restrictions are
 unchanged. No sampling, exposure, optical mask, gain or production threshold
 changed.
+
+## Independent review and release
+
+The frozen implementation `8da4bba85dc83838a3454772c6989d64ce256fb0` was
+reviewed independently against the captured execution and context contracts.
+A separate fresh CUDA invocation passed all 49 summarized assertions plus both
+import guards; all three mirror/F/U graphs retained one capture in each
+precision. RTC 0.2.51 changes release metadata and documentation after that run;
+the tested production and test code is unchanged.

@@ -32,7 +32,7 @@ remains separate.
 
 ### Captured optical calibration — 2026-10-29
 
-The optical calibration callbacks admit explicit CUDA alongside Host and AMDGPU.
+RTC 0.2.51 adds explicit CUDA to the optical calibration callbacks alongside Host and AMDGPU.
 The physical mirror now uses the existing RTC capture policy, matching the F/U
 optical preparation. Uploads and readback enter each prepared graph's device
 context. The authored chopped measurement frontend remains on CPU. The separate
