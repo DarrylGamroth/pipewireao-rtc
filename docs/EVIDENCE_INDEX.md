@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Cold physical metadata serialization — 2026-10-28
+
+The [source and CPU validation record](validation/cold-metadata-20261028/README.md)
+covers bounded serialization of sealed physical declarations, preserved JSON
+bytes/scientific hashes, and fresh-process compilation measurements. Native
+readiness, optical preparation, hardware and deadline qualification are separate.
+
 ## Streaming statistics and acquired artifacts — 2026-10-28
 
 The [validation and independent review](validation/streaming-statistics-20261028/README.md)

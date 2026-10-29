@@ -1,4 +1,4 @@
-json_value(value) = Common.parse_json(String(JSON.json(value)))
+json_value(@nospecialize(value)) = Common.parse_json(String(Common.metadata_json(value)))
 
 function merge_settings(defaults::AbstractDict, overrides::AbstractDict, schema::AbstractDict)
     result = deepcopy(defaults)

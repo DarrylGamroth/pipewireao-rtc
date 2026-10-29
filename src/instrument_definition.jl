@@ -11,7 +11,7 @@ const MAX_BYTES = 1024 * 1024
 const MIRROR_PROPERTY = "device.mirror.description"
 const D = DeploymentConfiguration
 digest(json::AbstractString) = bytes2hex(SHA.sha256(codeunits(json)))
-scientific_identity(value) = "sha256:" * digest(JSON.json(value))
+scientific_identity(@nospecialize(value)) = "sha256:" * digest(Common.metadata_json(value))
 
 function read_object(json)
     document=Common.parse_json(json)
