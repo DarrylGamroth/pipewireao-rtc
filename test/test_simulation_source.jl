@@ -21,6 +21,36 @@ function authored_optical_source(directory)
     return physical, simulation
 end
 
+@testset "authored optical precision remains an explicit cold setting" begin
+    mktempdir() do directory
+        physical, simulation = authored_optical_source(directory)
+        path = write_external_optical_documents(directory, physical, simulation)
+        @test !haskey(IC.settings(IC.load_simulation_source(path)), "precision")
+        for precision in ("Float32", "Float64")
+            selected = deepcopy(simulation)
+            selected["defaults"]["precision"] = precision
+            for binding in ("pupil_opd", "pupil_amplitude")
+                selected["bindings"][binding]["type"] = precision
+            end
+            write_external_optical_documents(directory, physical, selected)
+            source = IC.load_simulation_source(path)
+            @test IC.settings(source)["precision"] == precision
+            schema = source.document["settings_schema"]["properties"]["precision"]
+            @test schema["enum"] == ["Float32", "Float64"]
+            @test schema["readOnly"] === true
+            other = precision == "Float32" ? "Float64" : "Float32"
+            @test_throws ArgumentError IC.settings(source, Dict("precision" => other))
+        end
+        for precision in ("Float16", "float32", 32, true, nothing)
+            selected = deepcopy(simulation)
+            selected["defaults"]["precision"] = precision
+            write_external_optical_documents(directory, physical, selected)
+            @test_throws ArgumentError IC.load_simulation_source(path)
+        end
+    end
+    @test all(id -> id.name ∉ ("AdaptiveOpticsSim", "Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+end
+
 @testset "authored source loads before generated execution exists" begin
     mktempdir() do directory
         physical, simulation = authored_optical_source(directory)

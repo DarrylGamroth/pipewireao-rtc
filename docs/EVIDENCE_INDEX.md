@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Explicit optical arithmetic precision — 2026-10-29
+
+The [focused validation record](validation/optical-precision-20261029/README.md)
+covers optional cold precision admission and actual CPU/captured-CUDA replay,
+including chopping and response. Calibration selection, noisy-loop acceptance,
+physical detector sampling and whole-pipeline throughput remain separate gates.
+
 ## Cold physical metadata serialization — 2026-10-28
 
 The [source and CPU validation record](validation/cold-metadata-20261028/README.md)

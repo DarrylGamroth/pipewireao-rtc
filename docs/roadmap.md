@@ -12,6 +12,24 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Explicit optical arithmetic precision — 2026-10-29
+
+The CAL2 performance candidate admits authored `defaults.precision` as a read-only
+cold setting (`Float32` or `Float64`) in the existing optical settings catalog.
+Omission retains AOS Float64 optical arithmetic. Authored pupil bindings must
+match the selected precision; AOS owns generation and propagation, while RTC
+continues to use the existing target execution policy and external-pupil owner.
+Captured execution remains required for GPU production preparation.
+
+The [focused validation record](validation/optical-precision-20261029/README.md)
+covers cold admission and actual CPU/CUDA optical, chopping and response paths.
+This enables a candidate; it does not select Float32 in CAL2, qualify a new
+calibration or establish 50 Hz whole-pipeline throughput. Selected catalog bytes
+participate in prescription identity, so existing calibration admission remains
+strict even when optical precision is omitted. Standalone CAL2 with an idealized
+corrected GPI pupil is the primary application; full external GPI integration
+remains separate.
+
 ### Headless statistics and finite acquisition artifacts — 2026-10-28
 
 An ordinary CPU `array-statistics-f32` Algorithm supplies per-element finite,

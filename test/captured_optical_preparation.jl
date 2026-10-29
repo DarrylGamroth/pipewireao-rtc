@@ -23,7 +23,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 const Extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 Base.include(@__MODULE__, joinpath(@__DIR__, "external_optical_documents.jl"))
 
-function capture_documents(directory; spectral=false)
+function capture_documents(directory; spectral=false, precision=Float64)
     physical, simulation = external_optical_documents()
     physical["optical_paths"] = Dict(name=>Dict("sensor"=>name,
         "lyot_stop_port"=>name=="scc" ? "transmitted" : "reflected") for name in ("scc","llowfs"))
@@ -31,6 +31,9 @@ function capture_documents(directory; spectral=false)
         sensor["acquisition"] = Dict("exposure_duration_s"=>0.002)
     end
     config = simulation["components"]["optics"]["config"]
+    for name in ("pupil_opd", "pupil_amplitude")
+        simulation["bindings"][name]["type"] = string(precision)
+    end
     config["steps"] = [Dict("op"=>"multiply", "amplitude"=>0.5),
         Dict("op"=>"propagate", "distance_m"=>0.01)]
     config["output_sampling_m"] = 0.003
@@ -40,7 +43,7 @@ function capture_documents(directory; spectral=false)
             "steps"=>deepcopy(config["steps"])) for wavelength in (1.5,1.6)]
     end
     for graph in values(simulation["graphs"])
-        graph["nodes"] = [Dict("name"=>"optics", "type"=>"proper_optical_train_f64", "config"=>deepcopy(config))]
+        graph["nodes"] = [Dict("name"=>"optics", "type"=>precision===Float32 ? "proper_optical_train_f32" : "proper_optical_train_f64", "config"=>deepcopy(config))]
     end
     unfringed = deepcopy(simulation["graphs"]["scc"])
     unfringed["name"] = "unfringed"
@@ -67,9 +70,9 @@ function capture_documents(directory; spectral=false)
 end
 
 @testset "RTC target execution policy and actual external optical replay" begin
-    for spectral in (false,true)
+    for precision in (Float32,Float64), spectral in (false,true)
         mktempdir() do directory
-            path=capture_documents(directory;spectral)
+            path=capture_documents(directory;spectral,precision)
             chopping=(scc=(unfringed_graph="unfringed",initial_phase="fringed",trigger_high_is_fringed=true),)
             reference=IC.prepare_external_pupil(path;chopping)
             actual=IC.prepare_external_pupil(path;target,chopping)
