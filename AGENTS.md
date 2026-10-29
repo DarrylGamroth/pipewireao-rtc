@@ -170,3 +170,9 @@
   `PIPEWIREAORTC_TEST_BACKEND=cpu`, `cuda` or `amdgpu` in separate matching package
   environments. Accelerator runs disable scalar indexing. GPU simulator production
   preparation requires captured execution; unsupported nodes fail closed.
+- `julia --project=/path/to/science-environment test/external_pupil_stream_formats.jl`
+  checks exact sensor exposure rates and native POD formats without Proper,
+  GPU imports or a core. The optional CPU selector
+  `test/external_pupil_owner_preparation.jl` checks actual monochromatic,
+  finite-channel and chopped preparation with AOS/HIL/Proper. Keep both selectors
+  outside the core suite, which must not load optional science packages.
