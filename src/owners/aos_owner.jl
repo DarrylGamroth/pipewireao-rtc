@@ -247,7 +247,7 @@ function configuration(path::AbstractString)
         entry = document["plant"]
         InstrumentConfiguration.fields(entry,("definition","settings","graph"),("definition","settings"),"declarative plant")
         definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
-        declaration = InstrumentConfiguration.load_simulation(definition)
+        declaration = InstrumentConfiguration.load_simulation(definition; validate_optics=false)
         configured = InstrumentConfiguration.settings(declaration,entry["settings"])
         selected = InstrumentConfiguration.selected_graph(declaration, get(entry, "graph", "production"))
         selected == "calibration" && throw(ArgumentError("the numerical calibration graph cannot be selected as a live simulator graph"))
@@ -288,7 +288,7 @@ function configuration(path::AbstractString)
     optical_observation = boolean(get(document, "optical_observation", false), "optical_observation")
     pupil_output = boolean(get(document, "pupil_output", false), "pupil_output")
     if pupil_output
-        declaration = InstrumentConfiguration.load_simulation(plant.definition)
+        declaration = InstrumentConfiguration.load_simulation(plant.definition; validate_optics=false)
         InstrumentConfiguration.pupil_output(declaration,
             InstrumentConfiguration.settings(declaration, plant.settings); simulation_graph=plant.graph) === nothing &&
             throw(ArgumentError("pupil_output requires a declared scientific pupil output"))
@@ -306,7 +306,7 @@ function configuration(path::AbstractString)
     prescription_identity = version == 3 ? text(document["prescription_identity"], "prescription identity") : nothing
     mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
     if version == 3
-        declaration = InstrumentConfiguration.load_simulation(plant.definition)
+        declaration = InstrumentConfiguration.load_simulation(plant.definition; validate_optics=false)
         mirror_description = AOSOwner.mirror_description(declaration, command_input)
     end
     entries = version == 1 ? document["artifacts"] : ()
@@ -427,7 +427,9 @@ end
 
 function requires_proper(options)
     options.version in (3, 4, 5) || return false
-    declaration = InstrumentConfiguration.load_simulation(options.plant.definition)
+    # Node types decide whether Proper must load; generated optical provenance
+    # is verified afterwards by the ordinary declaration/execution preparation.
+    declaration = InstrumentConfiguration.load_simulation(options.plant.definition; validate_optics=false)
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
     if options.version == 4
         names = collect(keys(declaration.instrument.document["optical_paths"]))

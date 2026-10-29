@@ -83,8 +83,72 @@ recorded a failed request with exact artifact ID
 `498dde70b9973ddb6406d300495b394c191a95d5`: Classic lacked its declared runtime
 publisher. Instrument `1bf27c8` adds Classic background/reference-slopes and GPI
 background publishers and parameter-owner mappings, retaining cold FITS
-references until an explicit update. A fresh native application check is the
-remaining deployment gate for this source correction.
+references until an explicit update.
+
+RTC 0.2.43 is registered at tree
+`5f8698df105de1c93473a9f0d80385ce50e23a65` (registry `32215ab`), retaining
+upstream 0.2.42's captured-optics changes. A registered consumer without path
+overrides passes 192 capture, actual-Graph/FITS and links checks after the merge.
+Instrument `fcba674` pins that release; it remains committed locally.
+
+### Classic application validation
+
+Fresh Classic and GPI CPU applications built successfully from the registered
+closure. Classic's private 0.2.43 session was
+`bf6008ea-e05b-48d8-8e73-0516f52dc390`, unit
+`pipewireao-session@a8c107f738ea.service`, invocation
+`093b3c9b725949be9b9c90feed3aa6d3`. With SHWFS hidden, its ordinary finite CLI
+registered eight absolute-reference samples with zero sequence gaps and exited
+successfully. The GUI selected, prepared, staged and submitted the exact mean
+`df3c1c8258b03a378c71ece8568f146115693e6a`. Shared history records that ID at
+sequences 1367–1368, outcome `Submitted`, no error. Independent native Props
+subsequently show Shack-Hartmann requested and active parameter sequence 1
+(both were 0 before submission). That is separate adoption evidence; it does
+not rewrite the journal's owner-reported outcome to `Active`.
+
+Two full 352×352 captures also completed and exited successfully: raw ADC and
+calibrated pixels, each 512 accepted samples with zero source gaps. Both remained
+candidates; neither background was applied. During calibrated capture a native
+snapshot shows the analysis node and all six consumers running, with every
+consumer on `telemetry-loop`. The CLI was restricted to the host example's
+analysis CPUs 4–5. The RTC remained running and its source continued publishing.
+This demonstrates functional coexistence, not a latency or interference bound.
+
+Native `SessionRuntime.shutdown!` completed Offline with an accepted shutdown
+receipt and confirmed owner cleanup. The tested runtime update did not change
+startup calibration. An earlier 0.2.41 test used emergency `stop!` (systemd stop),
+which reported a retained service failure although cleanup completed; its failed
+receipt/journal remain in the campaign cache. That emergency-stop result is not
+claimed as a successful graceful shutdown.
+
+Logs, original capture receipts, GUI history response and active native snapshot
+are retained under `~/.cache/pipewireao/streaming-statistics-20261028`, including
+`classic-gui-history-0.2.43.json`,
+`classic-calibrated-active-native-0.2.43.json` and
+`classic-shutdown-0.2.43.log`. These CPU simulation checks do not qualify a dark,
+reference calibration, physical device, control deadline or GPU execution.
+
+### GPI cold startup repair
+
+The first registered 0.2.43 GPI launch failed before bootstrap: the version-3
+owner read its generated optical declaration with full validation before AOS/HIL
+were loaded. The same fresh-process selector fails on that registered release.
+Its failed start and cleanup timeout remain recorded; a later exact-invocation
+reconciliation confirmed all owners stopped and retained `final-launch.json`.
+
+The repair allows structural metadata reads before optional scientific loading;
+full generated optical validation remains the default and still runs through
+`verify_declaration` and actual preparation before execution. Only the cold
+owner metadata and Proper-selection reads opt out. Independent source review
+found no blocker. Cold graph selection passes 33 checks. The fresh real GPI
+version-3 selector passes 22 checks in 2m11.2s, using actual registered AOS/HIL/
+Proper and CPU preparation, with only RTC source changed. An isolated corrupted
+generated optical graph rejects before execution. CUDA/AMDGPU were not loaded;
+GPUCompiler's ordinary CPU-support import is not accelerator execution.
+
+Logs: `aos-generated-owner-before.log`, `aos-generated-owner-after.log` and
+`aos-graph-selection-after.log` in the campaign cache. This repair is released
+as RTC 0.2.45 on top of upstream 0.2.44's cold metadata writer.
 
 The historical Classic migration receipt's source hash already mismatched
 before these additions. Projecting the new declarations back to the old scope

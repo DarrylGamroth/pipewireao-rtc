@@ -124,6 +124,12 @@
   a PipeWire core, service, GPU import or instrument/configuration mutation.
   This catches extension world-age failures; it does not qualify native owner
   lifecycle or the application's selected accelerator execution.
+- `julia --project=/path/to/science-environment test/aos_generated_owner_loading.jl
+  /path/to/built-application/simulation.conf` checks a real version-3 generated
+  HIL application cold, including metadata before bootstrap/science loading,
+  actual CPU preparation and rejection of stale generated optical provenance.
+  It injects only bootstrap, owns no core/service and mutates only a temporary
+  copy for rejection testing. Direct AOS/HIL/Proper dependencies are required.
 - `julia --project=. test/test_zemax_components.jl` checks composable imported
   optics, physical pupil-plane metadata and named HIL graph selection without
   scientific packages. `julia --project=/path/to/science-environment

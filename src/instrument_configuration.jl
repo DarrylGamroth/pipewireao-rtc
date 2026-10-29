@@ -143,8 +143,13 @@ function resolve_simulation_settings!(document, authoring, instrument)
     return nothing
 end
 
-"Read an executable simulation definition and its shared physical instrument."
-function load_simulation(path::AbstractString)
+"""Read an executable simulation definition and its shared physical instrument.
+
+`validate_optics=false` reads metadata before optional science packages load.
+It retains structural validation; execution must use the default full validation
+of generated optical provenance after loading the scientific owner.
+"""
+function load_simulation(path::AbstractString; validate_optics::Bool=true)
     (; authoring, document, instrument) = simulation_documents(path)
     if haskey(document, "preparation")
         load_simulation_source(path)
@@ -157,7 +162,8 @@ function load_simulation(path::AbstractString)
     validate_simulation(document, instrument.document, instrument.directory, expanded.graphs)
     declaration = (;path=abspath(path),directory=instrument.directory,document,instrument,authoring,
         graphs=expanded.graphs,templates=expanded.templates)
-    haskey(document, "optical_model") && haskey(document, "hil") && validate_prepared_optics(declaration)
+    validate_optics && haskey(document, "optical_model") && haskey(document, "hil") &&
+        validate_prepared_optics(declaration)
     return declaration
 end
 

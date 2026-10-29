@@ -6,7 +6,10 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "aos_graph_documents.jl"))
 
 @testset "version 3 selects a bounded declared graph without scientific imports" begin
     mktempdir() do directory
-        (; document, declaration) = aos_graph_documents(directory)
+        (; document, declaration, path) = aos_graph_documents(directory)
+        metadata = IC.load_simulation(path; validate_optics=false)
+        @test metadata.document == declaration.document
+        @test IC.graph_requires_proper(metadata, IC.settings(metadata); simulation_graph="optical-reference")
         config = joinpath(directory, "simulation.conf")
         C.write_json(config, document)
         @test Owner.configuration(config).plant.graph == "production"
