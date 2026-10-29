@@ -1,7 +1,7 @@
 # Managed external-pupil optics use the ordinary AOS exposure owner and native
 # bootstrap/source controls. No controller or mirror lives in this owner.
 module ExternalPupilOwner
-using ..PipeWireAORTCAOSExt: Owner, Bootstrap, SourceControl, Backends, target, OwnerState
+using ..PipeWireAORTCAOSExt: Owner, Bootstrap, SourceControl, Backends, target, OwnerState, execution_properties
 using PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
@@ -43,7 +43,12 @@ function sensor_contract(declaration, configured, plant, name, identity)
     haskey(sensor,"detector_shape") && Tuple(sensor["detector_shape"]) != size(image) &&
         throw(DimensionMismatch("sensor detector_shape differs from its optical product"))
     get(sensor,"expected_schema",schema) == schema || throw(ArgumentError("sensor expected_schema differs from its optical product"))
-    return (; image, schema, properties=merge(spectral_properties(configured,name),
+    execution = execution_properties(graph; prefix="optics.")
+    response === nothing || merge!(execution, execution_properties(response.graph; prefix="detector."))
+    if hasproperty(observation, :chopping)
+        merge!(execution, execution_properties(observation.chopping.unfringed; prefix="optics.unfringed."))
+    end
+    return (; image, schema, properties=merge(spectral_properties(configured,name), execution,
         Dict("optics.model-sha256"=>String(chopprefix(identity,"sha256:")),
             "optics.branch"=>string(name), "optics.sampling-m"=>string(sampling),
             "optics.axis-order"=>"y,x", "optics.pts-units"=>"simulation_nanoseconds",
@@ -61,7 +66,7 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
     configured = IC.settings(declaration,settings)
     identity = IC.prescription_identity(declaration,configured)
     check()
-    plant = IC.prepare_external_pupil(path; settings, target, chopping, execution=StreamGraphExecution())
+    plant = IC.prepare_external_pupil(path; settings, target, chopping)
     # Establish immutable optical sampling without consuming detector draws.
     foreach(step_graph!, values(plant.graphs))
     sensors = map(keys(plant.graphs)) do name
@@ -221,7 +226,8 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
     try
         with_thread_loop_lock(transport.loop) do _
             filter = Filter(transport.core,options.control_node;
-                properties=merge(SourceControl.source_properties(mailbox),Dict(
+                properties=merge(SourceControl.source_properties(mailbox),
+                    execution_properties(first(values(science.plant.graphs))),Dict(
                     "node.name"=>options.control_node,"media.class"=>"Control",
                     "aos.simulation.mode"=>"external-pupil", "aos.simulation.backend"=>string(options.backend),
                     "aos.simulation.device"=>string(options.device),

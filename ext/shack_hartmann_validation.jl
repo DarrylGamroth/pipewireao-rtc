@@ -29,7 +29,7 @@ function Calibration._validate_system(::Val{:shack_hartmann}, application, speci
     startup["atmosphere"] = atmosphere
     declaration_path = joinpath(application, simulation["plant"]["definition"])
     science = Instruments.prepare_system(declaration_path; settings=startup,
-        target, execution=HIL.StreamGraphExecution())
+        target)
     config = K.shack_hartmann_configuration(science)
     telescope = AdaptiveOpticsSim.Optics.prepare_telescope(config.telescope, science.target)
     mask = Array(AdaptiveOpticsSim.Optics.pupil_mask(telescope))
