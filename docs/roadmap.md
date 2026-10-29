@@ -30,6 +30,17 @@ strict even when optical precision is omitted. Standalone CAL2 with an idealized
 corrected GPI pupil is the primary application; full external GPI integration
 remains separate.
 
+### Captured optical calibration — 2026-10-29
+
+The optical calibration callbacks admit explicit CUDA alongside Host and AMDGPU.
+The physical mirror now uses the existing RTC capture policy, matching the F/U
+optical preparation. Uploads and readback enter each prepared graph's device
+context. The authored chopped measurement frontend remains on CPU. The separate
+Host expected-reference contract is unchanged. Focused source validation is
+recorded [here](validation/captured-optical-calibration-20261029/README.md);
+full CAL2 calibration, external CUDA reference acquisition and deadline
+qualification remain separate gates.
+
 ### Headless statistics and finite acquisition artifacts — 2026-10-28
 
 An ordinary CPU `array-statistics-f32` Algorithm supplies per-element finite,

@@ -170,6 +170,11 @@
   `PIPEWIREAORTC_TEST_BACKEND=cpu`, `cuda` or `amdgpu` in separate matching package
   environments. Accelerator runs disable scalar indexing. GPU simulator production
   preparation requires captured execution; unsupported nodes fail closed.
+- Optional `test/captured_optical_calibration.jl` uses the same backend selector
+  for a small real mirror, matched F/U optical propagation and the authored CPU
+  chopped measurement frontend. It checks capture counts, changed-command replay,
+  CPU equivalence and full/half-poke plus held-out calibration gates. It does not
+  acquire a full-instrument calibration or broaden upstream reference targets.
 - `julia --project=/path/to/science-environment test/external_pupil_stream_formats.jl`
   checks exact sensor exposure rates and native POD formats without Proper,
   GPU imports or a core. The optional CPU selector

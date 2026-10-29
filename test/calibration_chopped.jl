@@ -25,26 +25,7 @@ const E = PipeWireAORTC.InstrumentExport
     @test result.validation.accepted
 end
 
-function chopped_calibration_document()
-    nodes = [
-        Dict("name"=>"pixels","type"=>"ndarray","label"=>"pixel-selection-f32","config"=>Dict(
-            "image_size"=>[2,3],"mask"=>fill(true,6),"input_schema"=>"test.relative-image/1","output_schema"=>"test.relative-pixels/1")),
-        Dict("name"=>"validity","type"=>"ndarray","label"=>"pixel-validity-f32","config"=>Dict(
-            "extent"=>6,"input_schema"=>"test.relative-pixels/1")),
-        Dict("name"=>"pair","type"=>"ndarray","label"=>"chopped-image-difference-f32","config"=>Dict(
-            "pixel_count"=>6,"input_schema"=>"test.relative-pixels/1","trigger_high_is_fringed"=>true,"require_acquisition_identity"=>true)),
-        Dict("name"=>"residual","type"=>"ndarray","label"=>"scc-pixel-residual-f32","config"=>Dict(
-            "pixel_count"=>6,"mask"=>fill(true,6),"initial_reference_image"=>nothing,"minimum_valid_fraction"=>1)),
-    ]
-    links = [Dict("output"=>output,"input"=>input) for (output,input) in (
-        ("pixels:selected-pixels","validity:input"),("pixels:selected-pixels","pair:image"),
-        ("validity:validity","pair:input-validity"),("pair:difference","residual:difference"),
-        ("pair:output-validity","residual:difference-validity"),("pair:pair-status","residual:pair-status"))]
-    return Dict("node.name"=>"test.chopped-calibration","filter.graph"=>Dict("nodes"=>nodes,"links"=>links,
-        "inputs"=>[Dict("name"=>"image","endpoint"=>"pixels:image"),
-            Dict("name"=>"scc-reference-difference","endpoint"=>"residual:reference-image")],
-        "outputs"=>[Dict("name"=>"measurements","endpoint"=>"residual:selected-residuals")]))
-end
+Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
 
 @testset "chopped calibration executes the authored signed pixel prefix" begin
     document = chopped_calibration_document()
