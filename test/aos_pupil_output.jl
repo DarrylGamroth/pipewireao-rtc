@@ -33,12 +33,22 @@ end
         simulation = C.read_yaml(path)
         simulation["pupil_output"] = Dict("opd"=>"pupil_opd", "amplitude"=>"pupil_amplitude")
         simulation["bindings"]["pupil_amplitude"] = Dict("kind"=>"pupil_amplitude", "resolution"=>"pupil_resolution", "type"=>"Float32")
+        delete!(simulation,"components")
         for graph in values(simulation["graphs"])
+            graph["nodes"][1] = Dict("name"=>"optics", "type"=>"shack_hartmann_rate_f32",
+                "config"=>Dict("resolution"=>4, "telescope_diameter_m"=>0.012,
+                    "n_lenslets"=>2, "n_pix_subap"=>4, "pixel_scale_arcsec"=>0.1,
+                    "source_wavelength_m"=>0.75e-6, "source_photon_irradiance_m2_s"=>1.0,
+                    "opd_schema"=>"example.pupil-opd/1", "photon_rate_schema"=>"example.frame/1"))
+            graph["inputs"] = [Dict("name"=>"pupil_opd", "binding"=>"pupil_opd", "destination"=>"optics.opd")]
+            graph["outputs"][1]["source"] = "optics.photon_rate"
             push!(graph["nodes"],Dict("name"=>"pupil", "type"=>"pupil_opd_composition_f32",
                 "config"=>Dict("resolution"=>4,"uncompensated_opd_schema"=>"example.pupil-opd/1",
                     "surface_opd_schema"=>"example.pupil-opd/1","pupil_opd_schema"=>"example.pupil-opd/1")))
             push!(graph["outputs"],Dict("name"=>"pupil_opd","source"=>"pupil.pupil_opd"))
         end
+        simulation["hil"]["command"] = "optics.opd"
+        simulation["hil"]["frame"] = "optics.photon_rate"
         C.write_yaml(path,simulation)
         document["pupil_output"] = true
         C.write_json(joinpath(directory,"simulation.conf"),document)
@@ -52,7 +62,16 @@ end
         prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
         @test_throws ArgumentError E.prepare_session_configuration!(directory,spec,[],"instrument.json",prefix)
         owner["argv"] = ["julia","--threads=3,0","--pupil-output-cpu","4"]
-        E.prepare_session_configuration!(directory,spec,[],"instrument.json",prefix)
+        reference(pointer) = Dict("\$ref"=>pointer)
+        mkpath(joinpath(directory,"gui"))
+        views_path = joinpath(directory,"gui","operator-views.yaml")
+        C.write_yaml(views_path,Dict("image"=>[Dict("source"=>Dict(
+            "node"=>"simulator-pupil-output", "port"=>"output_1",
+            "expected_schema"=>reference("/simulator/pupil/schema")))],
+            "focal_shape"=>reference("/simulator/focal-image/shape"),
+            "residual_shape"=>reference("/simulator/residual-wavefront/shape")))
+        E.prepare_session_configuration!(directory,spec,[],"instrument.json",prefix;
+            configurations=[Dict("path"=>"gui/operator-views.yaml","format"=>"yaml")])
         session = PipeWireAORTC.DeploymentConfiguration.decode(joinpath(directory,"session.conf"),prefix)
         source = only(session["sources"])
         @test source["node.name"] == "simulator-pupil-output"
@@ -62,6 +81,11 @@ end
         @test port["layout"] == "ROW_MAJOR"
         @test port["schema"] == boundary().schema
         @test isempty(session["links"])
+        views = C.read_yaml(views_path)
+        @test only(views["image"])["source"]["expected_schema"] == port["schema"] == boundary().schema
+        @test views["focal_shape"] == [8,8]
+        @test views["residual_shape"] == [4,4]
+        @test !occursin("\$ref",read(views_path,String))
     end
 end
 

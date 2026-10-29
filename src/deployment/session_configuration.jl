@@ -171,6 +171,10 @@ function prepare_session_configuration!(application, spec, declarations, instrum
         else
             context["simulator"] = Base.invokelatest(simulator_port_contracts, definition;
                 settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))
+            if get(simulation, "version", nothing) == 3 && pupil_output
+                context["simulator"]["pupil"] = Base.invokelatest(pupil_output_port_contract, definition;
+                    settings=get(plant, "settings", Dict()), simulation_graph=get(plant, "graph", "production"))
+            end
         end
     end
     # Resolve every document first so a bad reference cannot partly rewrite it.
