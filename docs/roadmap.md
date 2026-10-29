@@ -54,6 +54,12 @@ CPU validation and remaining physical/model limits are recorded in the
 
 ### CAL2 external pupil and physical offsets — 2026-10-28
 
+A cold metadata candidate lowers sealed tuple arrays before JSON serialization
+and publication without changing scientific declarations or their byte identities.
+The [CPU source and validation record](validation/cold-metadata-20261028/README.md)
+separates serializer compilation evidence from native startup and optical
+preparation. Independent review and native integration remain required.
+
 RTC 0.2.34 implements a mirror-free external-pupil owner with independent SCC and
 LLOWFS streams, sealed application composition, generated accepted-calibration
 selection, and a GPI-owned physical-offset receiver. The receiver applies one

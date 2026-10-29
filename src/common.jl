@@ -68,6 +68,23 @@ function parse_json(payload::AbstractString)
     return json_number(value)
 end
 
+# Sealed instrument arrays are tuples, sometimes with thousands of entries.
+# JSON's generated tuple writer compiles one operation per entry. Lower only
+# this immutable tree before writing; retain named-field order and let JSON
+# handle all other values (including scalar lowering and multidimensional arrays).
+Base.@nospecializeinfer function metadata_json_value(@nospecialize(value))
+    if value isa Union{Tuple,NamedTuple}
+        items = Vector{Any}(undef, length(value))
+        for index in eachindex(items)
+            items[index] = metadata_json_value(getfield(value, index))
+        end
+        return value isa NamedTuple ? NamedTuple{keys(value)}(Tuple(items)) : items
+    end
+    return value
+end
+
+metadata_json(@nospecialize(value)) = JSON.json(metadata_json_value(value))
+
 finite_json(value) = value
 function finite_json(value::AbstractFloat)
     isfinite(value) || throw(ArgumentError("JSON contains a nonfinite number"))

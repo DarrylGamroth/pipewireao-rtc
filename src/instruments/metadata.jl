@@ -333,7 +333,7 @@ function prepare_publication(application::AbstractString; configuration="rtc/con
         definition["kind"] == "sampled" && push!(protected,D.relative_asset(application,definition["artifact"]["path"]))
     end
     output in protected && throw(ArgumentError("publication must differ from its authoring inputs"))
-    body = publication(path)
+    body = Common.metadata_json_value(publication(path))
     ncodeunits(JSON.json(body)) + 1 <= InstrumentDefinition.MAX_BYTES ||
         throw(ArgumentError("instrument publication exceeds 1 MiB"))
     Common.write_json(output,body;atomic=true)
