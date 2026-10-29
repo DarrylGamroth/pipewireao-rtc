@@ -54,6 +54,13 @@ function analysis_discard_outputs(config, output_names)
     return Tuple(String(name) for name in output_names if !(String(name) in linked))
 end
 
+function analysis_source_loop(nodes)
+    names = Set(String(get(node.properties, "node.loop.name", "")) for node in nodes)
+    delete!(names, "")
+    length(names) <= 1 || error("Analysis capture sources declare conflicting node.loop.name values")
+    return isempty(names) ? nothing : only(names)
+end
+
 function analysis_connections(node, config, remote, finished; output_names=())
     deadline = time_ns() + UInt64(120_000_000_000)
     # Wait for this filter's loop to register it before a monitor can request
@@ -70,6 +77,7 @@ function analysis_connections(node, config, remote, finished; output_names=())
     registry = nothing
     links = PipeWireAO.Link[]
     sinks = Dict{String,PipeWireAO.Node}()
+    source_nodes = PipeWireAO.Node[]
     states = Threads.Atomic{Int}[]
     failure = Ref{Union{Nothing,PipeWireAO.PipeWireError}}(nothing)
     failed = Threads.Atomic{Bool}(false)
@@ -94,17 +102,74 @@ function analysis_connections(node, config, remote, finished; output_names=())
         end
         PipeWireAO.start!(loop)
         specifications = copy(config.links)
-        for (index, port) in enumerate(analysis_discard_outputs(config, output_names))
+        discard_outputs = analysis_discard_outputs(config, output_names)
+        sources = ()
+        source_loop = nothing
+        if !isempty(discard_outputs)
+            source_specs = Tuple(link.output for link in config.links if link.input.node == config.name)
+            while !finished[]
+                check_native_error()
+                candidates = map(endpoint -> analysis_endpoint(registry, endpoint, "out"), source_specs)
+                if all(!isnothing, candidates)
+                    sources = candidates
+                    break
+                end
+                time_ns() < deadline || error("Analysis source discovery timed out")
+                FilterGraphIsland.deployment_sleep(0.02)
+            end
+            finished[] && return nothing
+            source_info = Dict{UInt32,PipeWireAO.NodeInfo}()
+            PipeWireAO.with_thread_loop_lock(loop) do _
+                for (original, _) in sources
+                    # Full properties arrive on Node info, not registry globals.
+                    # Capture the first copied snapshot under this loop's lock.
+                    id = original.id
+                    push!(source_nodes, bind(registry, original, PipeWireAO.Node;
+                        on_error=(_, _, error) -> native_error(error),
+                        on_info=(_, info) -> begin
+                            if !haskey(source_info, id) &&
+                                    (info.change_mask & PipeWireAO.NODE_CHANGE_PROPERTIES) != 0
+                                source_info[id] = info
+                            end
+                            nothing
+                        end))
+                end
+            end
+            while !finished[]
+                check_native_error()
+                discovered = PipeWireAO.with_thread_loop_lock(loop) do _
+                    all(endpoint -> haskey(source_info, endpoint[1].id), sources) || return false
+                    for (original, _) in sources
+                        info = source_info[original.id]
+                        info.id == original.id &&
+                            get(info.properties, "object.serial", nothing) == original.properties["object.serial"] ||
+                            error("Analysis source info belongs to a different node")
+                        info.error === nothing || error("Analysis source failed: $(info.error)")
+                    end
+                    source_loop = analysis_source_loop(values(source_info))
+                    true
+                end
+                discovered && break
+                time_ns() < deadline || error("Analysis source info discovery timed out")
+                FilterGraphIsland.deployment_sleep(0.02)
+            end
+            finished[] && return nothing
+        end
+        for (index, port) in enumerate(discard_outputs)
             # Every native ndarray output needs a consumer-provided buffer pool.
             # Finite capture observes the complete Graph locally; these ordinary
             # sinks only keep its otherwise unconnected outputs progressing.
+            # Keep their payload work on the source's declared observation loop.
+            # Sources without that property retain the native default.
             name = "$(config.name).discard.$(FilterGraphPipeWire.node_id(node)).$index"
+            properties = Dict("factory.name"=>"api.pipewireao.discard",
+                "node.name"=>name, "node.virtual"=>"true",
+                "node.want-driver"=>"true", "object.linger"=>"false")
+            source_loop === nothing || (properties["node.loop.name"] = source_loop)
             sinks[name] = PipeWireAO.with_thread_loop_lock(loop) do _
                 PipeWireAO.create_object(core, "spa-node-factory", PipeWireAO.Node;
                     on_error=(_, _, error) -> native_error(error),
-                    properties=Dict("factory.name"=>"api.pipewireao.discard",
-                        "node.name"=>name, "node.virtual"=>"true",
-                        "node.want-driver"=>"true", "object.linger"=>"false"))
+                    properties)
             end
             push!(specifications, Analysis.LinkSpec(Analysis.Endpoint(config.name, port),
                 Analysis.Endpoint(name, "in")))
@@ -126,6 +191,9 @@ function analysis_connections(node, config, remote, finished; output_names=())
             FilterGraphIsland.deployment_sleep(0.02)
         end
         finished[] && return nothing
+        all(original -> analysis_incarnation_present(registry, original),
+            (original for endpoint in sources for original in endpoint)) ||
+            error("Analysis source changed after loop discovery")
         for pair in endpoints, endpoint in pair
             global_node, global_port = endpoint
             if global_node.properties["node.name"] == config.name
@@ -142,6 +210,9 @@ function analysis_connections(node, config, remote, finished; output_names=())
         for (output, input) in endpoints
             link_state = Threads.Atomic{Int}(Int(PipeWireAO.LINK_STATE_INIT))
             link = PipeWireAO.with_thread_loop_lock(loop) do _
+                all(original -> analysis_incarnation_present(registry, original),
+                    (original for endpoint in sources for original in endpoint)) ||
+                    error("Analysis source changed before linking")
                 all(original -> analysis_incarnation_present(registry, original),
                     (output..., input...)) || error("Analysis endpoint changed before linking")
                 PipeWireAO.create_object(core, "link-factory", PipeWireAO.Link;
@@ -200,9 +271,13 @@ function analysis_connections(node, config, remote, finished; output_names=())
                     try
                         foreach(close, values(sinks))
                     finally
-                        isnothing(registry) || close(registry)
-                        isnothing(core) || close(core)
-                        isnothing(context) || close(context)
+                        try
+                            foreach(close, source_nodes)
+                        finally
+                            isnothing(registry) || close(registry)
+                            isnothing(core) || close(core)
+                            isnothing(context) || close(context)
+                        end
                     end
                 end
             end

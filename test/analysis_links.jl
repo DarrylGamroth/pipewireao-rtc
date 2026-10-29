@@ -24,6 +24,16 @@ function prepared_analysis_flux_graph()
     end
 end
 
+@testset "finite capture consumers inherit one declared source loop" begin
+    endpoint(loop) = (properties=loop === nothing ? Dict{String,String}() :
+        Dict("node.loop.name"=>loop),)
+    @test E.analysis_source_loop(()) === nothing
+    @test E.analysis_source_loop((endpoint(nothing), endpoint(""))) === nothing
+    @test E.analysis_source_loop((endpoint("observation"), endpoint("observation"))) == "observation"
+    @test E.analysis_source_loop((endpoint(nothing), endpoint("observation"))) == "observation"
+    @test_throws ErrorException E.analysis_source_loop((endpoint("observation"), endpoint("control")))
+end
+
 function analysis_native_buffer(data; header=nothing, output=false)
     native = PipeWireAO.LibPipeWire
     storage = [native.pw_ndarray_filter_buffer(

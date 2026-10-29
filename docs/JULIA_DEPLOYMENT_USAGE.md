@@ -566,7 +566,11 @@ must arrive at exactly the declared count. Snapshots are limited to 64 MiB total
 The observer copies once and releases an immutable snapshot. A finite capture
 owns native discard sinks for graph outputs without explicit output links, so
 every output has a negotiated buffer pool even with no external viewer. These
-consumers are optional and leave configured output peers in place. Completion
+consumers are optional and leave configured output peers in place. Their
+`node.loop.name` follows the declared input sources' common nonempty loop name;
+conflicting source loop names reject startup. If no source declares a loop name,
+the consumers retain the native default, as with generic isolated test sources.
+Source node/port identities remain checked through link creation. Completion
 or rejection stops native processing and removes the owned consumers; FITS
 creation, Git and SQLite then run on the returning task. There is no automatic
 application, sign change, unit conversion or startup selection. Each product is

@@ -36,6 +36,29 @@ function nodes(registry,name; prefix=false)
     end
 end
 
+function node_properties(loop,registry,original)
+    snapshot=Ref{Union{Nothing,NodeInfo}}(nothing)
+    node=with_thread_loop_lock(loop) do _
+        bind(registry,original,Node;on_info=(_,info)->begin
+            (info.change_mask & NODE_CHANGE_PROPERTIES)==0 || (snapshot[]=info)
+            nothing
+        end)
+    end
+    try
+        wait_proof(10,"copied node properties") do
+            with_thread_loop_lock(_ -> snapshot[]!==nothing,loop)
+        end
+        return with_thread_loop_lock(loop) do _
+            info=something(snapshot[])
+            info.id==original.id && info.properties["object.serial"]==original.properties["object.serial"] ||
+                error("test node identity changed")
+            copy(info.properties)
+        end
+    finally
+        with_thread_loop_lock(_ -> close(node),loop)
+    end
+end
+
 function acquire(core,registry,loop,source,remote,directory,name;explicit_mean=false,reject=false)
     stage=joinpath(directory,name);mkpath(stage)
     path=configuration(stage,name;explicit_mean)
@@ -60,7 +83,10 @@ function acquire(core,registry,loop,source,remote,directory,name;explicit_mean=f
             occursin("PIPEWIREAO_ANALYSIS_READY",read(log_path,String))
         end
         roundtrip(registry)
-        @test length(nodes(registry,name*".discard.";prefix=true))==(explicit_mean ? 5 : 6)
+        consumers=nodes(registry,name*".discard.";prefix=true)
+        @test length(consumers)==(explicit_mean ? 5 : 6)
+        @test node_properties(loop,registry,only(nodes(registry,"analysis-test-source")))["node.loop.name"]=="telemetry-loop"
+        @test all(item->get(node_properties(loop,registry,item),"node.loop.name",nothing)=="telemetry-loop",consumers)
         @test length(nodes(registry,name))==1
         # Constant input makes the accepted-frame mean known even if ordinary
         # native scheduling drops input exposures. Deliberately invalid Header
@@ -92,6 +118,7 @@ function acquire(core,registry,loop,source,remote,directory,name;explicit_mean=f
         @test isempty(nodes(registry,name))
         if explicit_mean
             @test length(nodes(registry,"analysis-explicit-mean"))==1
+            @test get(node_properties(loop,registry,only(nodes(registry,"analysis-explicit-mean"))),"node.loop.name",nothing)!="telemetry-loop"
         end
         if reject
             @test receipt["reason"]=="invalid_metadata"
@@ -124,7 +151,7 @@ end
     libdir=isdir(joinpath(prefix,"lib/x86_64-linux-gnu")) ? joinpath(prefix,"lib/x86_64-linux-gnu") : joinpath(prefix,"lib")
     isdir(joinpath(libdir,"spa-ao-0.2/discard")) ||
         error("native capture selector requires the discard plugin; set PIPEWIREAO_PREFIX to a compatible SDK")
-    with_control_private_core(;prefix,modules="{ name = libpipewire-module-spa-node-factory }",
+    with_control_private_core(;prefix,telemetry_loop=true,modules="{ name = libpipewire-module-spa-node-factory }",
             spa_libraries="api.pipewireao.discard = discard/libspa-pipewireao-discard") do remote,directory,_
         loop=ThreadLoop("analysis.capture.test")
         context,core,registry=with_thread_loop_lock(loop) do _
@@ -138,7 +165,8 @@ end
             format=NdArrayFormat(NdArray.F32_LE,(2,2);layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(1000,1))
             for (name,explicit_mean,reject) in (("capture-unused",false,false),
                     ("capture-explicit",true,false),("capture-rejected",false,true))
-                source=NdArraySource(core,"analysis-test-source",zeros(Float32,4),format;schema="test/analysis-samples-f32/1")
+                source=NdArraySource(core,"analysis-test-source",zeros(Float32,4),format;
+                    schema="test/analysis-samples-f32/1",properties=Dict("node.loop.name"=>"telemetry-loop"))
                 start!(source)
                 try
                     acquire(core,registry,loop,source,remote,directory,name;explicit_mean,reject)
@@ -160,6 +188,15 @@ end
     # native creation failure, automatic quit and the incomplete receipt path,
     # rather than waiting 120s for nodes that cannot be constructed.
     with_control_private_core(;prefix,modules="{ name = libpipewire-module-spa-node-factory }") do remote,directory,_
+        loop=ThreadLoop("analysis.capture.missing-factory")
+        context,core=with_thread_loop_lock(loop) do _
+            context=Context(loop)
+            context,CoreConnection(context;properties=Dict("remote.name"=>remote))
+        end
+        start!(loop)
+        format=NdArrayFormat(NdArray.F32_LE,(2,2);layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(1000,1))
+        source=NdArraySource(core,"analysis-test-source",zeros(Float32,4),format;schema="test/analysis-samples-f32/1")
+        start!(source)
         name="capture-missing-factory"
         path=configuration(directory,name)
         log_path=joinpath(directory,"analysis.log")
@@ -182,6 +219,11 @@ end
         finally
             child===nothing || stop_proof_child!(child,"missing-factory analysis child")
             close(log)
+            close(source)
+            with_thread_loop_lock(loop) do _
+                close(core);close(context)
+            end
+            close(loop)
         end
     end
     @test !any(id->id.name in ("CUDA","AMDGPU","GPUCompiler"),keys(Base.loaded_modules))
