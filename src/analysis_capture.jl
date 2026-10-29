@@ -296,9 +296,9 @@ function register_capture!(store::ConfigurationStore.Store, capture::Capture;
     return records
 end
 
-# One control task per optional capture. There are no file, Git, database, lock
-# or sleep operations in the frame observer. A failed registration is recorded
-# once; neither registration nor any scientific update is automatically retried.
+# Registration follows native processing and consumer cleanup. There are no
+# file, Git, database, lock or sleep operations in the frame observer. A failed
+# registration is recorded once; neither registration nor any scientific update is automatically retried.
 function capture_artifacts(config, capture::Capture, finished;
         root=ConfigurationStore.default_root(),
         runtime=get(ENV, "PIPEWIREAO_RUNTIME_DIR", ""), pause=sleep,

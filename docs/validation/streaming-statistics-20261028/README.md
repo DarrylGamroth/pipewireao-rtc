@@ -44,6 +44,54 @@ the campaign's `review/` directory. No confirmed review blocker remains.
 
 ## Delivered scope
 
+### Finite native acquisition completion
+
+Registered 0.2.41 prepared the correct statistics graph but did not progress
+when its six outputs had no consumers. On the same private Classic CPU core,
+the bounded probe recorded zero callbacks; connecting all six outputs to
+existing native discard sinks produced nine callbacks, an eight-sample capture
+and successful catalog registration. This is an output-buffer readiness issue,
+not an observed statistics or database failure.
+
+RTC commits `92914fc` and `8ddc956` supply ordinary owned discard consumers for
+otherwise unlinked finite-capture outputs. Explicit consumers and continuous
+analysis are unchanged. Capture completion or rejection ends the native run;
+links, nodes and source proxies close before Git/SQLite registration. Native
+factory errors fail promptly and retain an incomplete receipt. The selected
+native prefix must include `api.pipewireao.discard`; the tested SDK includes
+that module, while the tested default jll prefix did not. There is no fallback.
+
+Discard computes an O(P) payload digest. Its consumers inherit the unique
+declared source `node.loop.name` through copied public Node info, protected by
+node/port identity checks. Conflicting declarations reject; absent declarations
+retain the native default. This is placement evidence, not a deadline or
+interference bound. The actual Classic observation source declares
+`telemetry-loop`, separate from `rtc-data-loop`.
+
+The independent review found no blocker. The private-core selector
+`test/analysis_capture_private_core.jl` passes 47 checks on the selected 1.7.1
+SDK, including unlinked outputs, explicit-consumer preservation, exact sample
+count and known mean, metadata rejection, prompt missing-factory failure,
+receipt/catalog behavior and node cleanup. It checks full Node info for source
+and consumer loop placement. Focused links pass 28 checks and capture/receipt
+tests pass 115. Instrument `1bf27c8` passes 125 scientific and 37 source-export
+checks, including actual background/reference publisher mappings. Registration
+alone creates no activation event.
+
+The first GUI submission of captured Classic reference slopes correctly
+recorded a failed request with exact artifact ID
+`498dde70b9973ddb6406d300495b394c191a95d5`: Classic lacked its declared runtime
+publisher. Instrument `1bf27c8` adds Classic background/reference-slopes and GPI
+background publishers and parameter-owner mappings, retaining cold FITS
+references until an explicit update. A fresh native application check is the
+remaining deployment gate for this source correction.
+
+The historical Classic migration receipt's source hash already mismatched
+before these additions. Projecting the new declarations back to the old scope
+preserves the same `9cbbebee…` hash before and after, while that old receipt
+expects `ef7e3399…`. The frozen receipt was not rewritten and the historical
+full mode gate is not claimed. Current export and numerical checks above pass.
+
 - FGA's ordinary CPU `ArrayStatisticsF32` declaration supplies finite,
   sliding-window and exponentially weighted per-element mean, variance and
   standard deviation, with explicit schemas and bounded preallocation.

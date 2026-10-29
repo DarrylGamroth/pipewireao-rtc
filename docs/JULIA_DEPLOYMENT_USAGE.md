@@ -563,8 +563,16 @@ required; variance/stddev registrations are optional. A finite graph's outputs
 must come directly from the same statistics node, including named export aliases.
 Sliding/EW outputs cannot masquerade as a completed finite acquisition. `complete`
 must arrive at exactly the declared count. Snapshots are limited to 64 MiB total.
-The observer copies once and releases an immutable snapshot to a control task;
-FITS creation, Git and SQLite run outside frame processing. There is no automatic
+The observer copies once and releases an immutable snapshot. A finite capture
+owns native discard sinks for graph outputs without explicit output links, so
+every output has a negotiated buffer pool even with no external viewer. These
+consumers are optional and leave configured output peers in place. Their
+`node.loop.name` follows the declared input sources' common nonempty loop name;
+conflicting source loop names reject startup. If no source declares a loop name,
+the consumers retain the native default, as with generic isolated test sources.
+Source node/port identities remain checked through link creation. Completion
+or rejection stops native processing and removes the owned consumers; FITS
+creation, Git and SQLite then run on the returning task. There is no automatic
 application, sign change, unit conversion or startup selection. Each product is
 a separate registration; partial failures preserve successful IDs in the receipt
 and are not automatically retried.
@@ -587,9 +595,10 @@ sequences, or changed identity reject capture. No invalid/missing samples are
 silently counted as zero. General per-element validity masks are not implemented;
 select/qualify the intended finite input upstream.
 
-After completion, the graph republishes its frozen result with the current
-input's header; that header does not describe the whole aggregation window.
-Use the captured artifact metadata for window provenance. One capture is allowed
+The finite algorithm can republish its frozen result with the current input's
+header while shutdown is pending; that header does not describe the whole
+aggregation window. Use the captured artifact metadata for window provenance.
+The finite acquisition returns after registration. One capture is allowed
 per analysis owner incarnation. The ordinary Julia entrypoint remains:
 
 ```julia
