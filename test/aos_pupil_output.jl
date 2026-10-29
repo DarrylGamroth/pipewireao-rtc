@@ -1,6 +1,7 @@
 # Optional scientific publisher selector, isolated from desktop PipeWire cores.
 # julia --threads=3,0 --project=/path/to/science-env test/aos_pupil_output.jl [cuda]
 using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, PipeWireAO
+using PipeWireAORTC.Common: JSON
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, snapshot_values,
     poll_graph_output_snapshot!, release_graph_output_snapshot!
@@ -97,6 +98,26 @@ pack_bytes(p,values) = @allocated Pupil.pack!(p.packet,values,p.amplitude)
     amplitude = Float32[0 0.1 0.2 0; 0.3 0.4 0.5 0.6; 0.7 0.8 0.9 1; 0 0.2 0.4 0]
     publisher = Pupil.prepare(graph, :pupil_opd, amplitude, boundary(); period_ns=UInt64(500_000))
     try
+        properties = Dict(publisher.options.properties)
+        descriptor = JSON.parse(properties["pipewireao.ndarray.channels"])
+        @test descriptor["version"] == 2
+        @test ncodeunits(properties["pipewireao.ndarray.channels"]) <= 16384
+        output = only(descriptor["outputs"])
+        @test output["port"] == "output_1"
+        @test output["schema"] == boundary().schema == publisher.options.schema
+        @test output["shape"] == [2,4,4]
+        @test output["element_type"] == UInt32(publisher.options.format.element_type) == 18
+        @test output["layout"] == UInt32(publisher.options.format.layout) == 1
+        @test !haskey(output, "channels")
+        @test output["planes"] == [
+            Dict("name"=>"opd_m", "index"=>0, "title"=>"Pupil OPD", "units"=>"m OPD"),
+            Dict("name"=>"amplitude", "index"=>1, "title"=>"Pupil amplitude", "units"=>"relative field amplitude")]
+        @test properties["optics.quantities"] == "opd_m,amplitude"
+        @test properties["optics.axis-order"] == "quantity,y,x"
+        @test_throws ArgumentError Pupil.source_planes(boundary(),
+            NdArrayFormat(NdArray.F32_LE,(4,4);layout=NdArray.ROW_MAJOR))
+        @test_throws ArgumentError Pupil.source_planes(boundary(),
+            NdArrayFormat(NdArray.F32_LE,(3,4,4);layout=NdArray.ROW_MAJOR))
         copyto!(graph_input(graph, :upstream), opd)
         step_graph!(graph)
         @test Pupil.sample!(publisher; generation=UInt64(1), model_ns=Int64(123))
@@ -179,6 +200,14 @@ end
                     end
                     output = only(find_globals(registry;interface="PipeWire:Interface:Port",
                         properties=("node.id"=>string(sourceid),"port.direction"=>"out")))
+                    catalog = Dict(publisher.options.properties)["pipewireao.ndarray.channels"]
+                    wait_proof(10,"scientific source plane descriptor") do
+                        roundtrip(registry)
+                        has_current_info(sourceinfo) || return false
+                        info = current_info(sourceinfo)
+                        get(info.properties,"pipewireao.ndarray.channels",nothing) == catalog
+                    end
+                    @test output.properties["port.name"] == only(JSON.parse(catalog)["outputs"])["port"]
                     input = only(find_globals(registry;interface="PipeWire:Interface:Port",
                         properties=("node.id"=>string(node_id(sink)),"port.direction"=>"in")))
                     link = with_array_stream(sinkowner,1) do _

@@ -8,6 +8,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs: prepare_graph_output_snapshot, snapshot
     try_snapshot_graph_output!, reset_graph_output_snapshot!, external_pupil_contract
 using AdaptiveOpticsSimPipeWireHIL
 using PipeWireAO
+using JSON
 using ThreadPinning
 using UUIDs
 using Base.Threads: Atomic, atomic_add!
@@ -15,6 +16,21 @@ using Base.Threads: Atomic, atomic_add!
 const Extension = parentmodule(@__MODULE__)
 const IC = PipeWireAORTC.InstrumentConfiguration
 const NODE_NAME = "simulator-pupil-output"
+
+# Names and units follow AOS external_pupil_contract; the Stream exposes output_1.
+# This is cold Node information, not part of the scientific packet or its hash.
+function source_planes(boundary, format)
+    length(format.shape) == 3 && first(format.shape) == 2 ||
+        throw(ArgumentError("scientific pupil output requires two quantity planes"))
+    descriptor = JSON.json((; version=2, outputs=((;
+        port="output_1", schema=boundary.schema,
+        element_type=UInt32(format.element_type), layout=UInt32(format.layout), shape=format.shape,
+        planes=((; name="opd_m", index=0, title="Pupil OPD", units="m OPD"),
+            (; name="amplitude", index=1, title="Pupil amplitude", units="relative field amplitude"))),)))
+    ncodeunits(descriptor) <= 16384 ||
+        throw(ArgumentError("scientific pupil planes exceed 16384 UTF-8 bytes"))
+    return descriptor
+end
 
 function PipeWireAORTC.InstrumentExport.pupil_output_port_contract(path::AbstractString;
         settings=Dict(), simulation_graph="production")
@@ -71,12 +87,13 @@ function prepare(graph, opd::Symbol, amplitude::AbstractMatrix{Float32}, boundar
         values = snapshot_values(snapshot)
         eltype(values) === Float32 && size(values) == size(amplitude) ||
             throw(DimensionMismatch("scientific pupil output requires matching Float32 OPD and amplitude"))
+        format = NdArrayFormat(NdArray.F32_LE, boundary.shape; layout=NdArray.ROW_MAJOR)
         extra = merge(Dict(boundary.properties), Dict(properties),
             Dict("node.loop.name" => "telemetry-loop", "aos.pupil-output.failed" => "false",
-                "aos.pupil-output.completed" => "0", "aos.pupil-output.dropped" => "0"))
+                "aos.pupil-output.completed" => "0", "aos.pupil-output.dropped" => "0",
+                "pipewireao.ndarray.channels" => source_planes(boundary, format)))
         option = PipeWireArrayStreamOptions(node_name=NODE_NAME, media_name="scientific pupil",
-            schema=boundary.schema, format=NdArrayFormat(NdArray.F32_LE, boundary.shape;
-                layout=NdArray.ROW_MAJOR), properties=extra)
+            schema=boundary.schema, format=format, properties=extra)
         bits = uuid4().value
         domain = AcquisitionDomain(ntuple(i -> UInt8((bits >> (8 * (i - 1))) & 0xff), Val(16)))
         return Publisher(snapshot, Matrix(amplitude), Array{Float32}(undef, boundary.shape), option,
