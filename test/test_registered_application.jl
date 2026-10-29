@@ -67,3 +67,23 @@ end
     @test !occursin("session_cli.jl", launcher)
     @test occursin("session_cli.jl", I.installed_launcher("/julia/bin/julia"))
 end
+
+@testset "session unit pins its leader within the placement envelope" begin
+    template = read(joinpath(PipeWireAORTC.package_root(),
+        "assets/deployment/pipewireao-session@.service.in"), String)
+    placement = Dict("cpus" => [2, 3], "leader-cpu" => 3,
+        "threads" => [Dict("name" => "data-loop", "cpus" => [2])])
+    spec = Dict("placement" => Dict("session" => placement),
+        "source-owner" => "simulator", "startup-timeout-ms" => 120000)
+    original = deepcopy(spec)
+    unit = I.installed_unit(template, spec; launcher="/a space/session",
+        package="/application/100%", prefix="/sdk", executable="/sdk/bin/rtc")
+    @test filter(line -> startswith(line, "CPUAffinity="), split(unit, '\n')) ==
+        ["CPUAffinity=3"]
+    @test spec == original
+    @test "TimeoutStartSec=120.0" in split(unit, '\n')
+    @test occursin("ExecStart=\"/sdk/bin/rtc\" -c \${RTC_CONFIG}", unit)
+    @test occursin("--package \"/application/100%%\"", unit)
+    @test occursin("--source-role simulator", unit)
+    @test !occursin(r"@[A-Z_]+@", unit)
+end

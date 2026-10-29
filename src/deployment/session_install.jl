@@ -91,6 +91,22 @@ function validate_sealed_wrappers(source, source_spec, wrappers)
     return nothing
 end
 
+function installed_unit(template, spec; launcher, package, prefix, executable)
+    quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
+    leader = spec["placement"]["session"]["leader-cpu"]
+    unit = replace(template,
+        "@LAUNCHER@" => quote_unit(launcher),
+        "@PACKAGE@" => quote_unit(package),
+        "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
+        "@RTC_EXECUTABLE@" => quote_unit(executable),
+        "@SOURCE_ROLE@" => spec["source-owner"],
+        "@CPUS@" => string(leader),
+        "TimeoutStartSec=300" => "TimeoutStartSec=" * string(D.startup_timeout_ms(spec) / 1000))
+    occursin(r"@[A-Z_]+@", unit) &&
+        throw(ArgumentError("unresolved RTC unit template binding"))
+    return unit
+end
+
 """
     install(options)
 
@@ -144,19 +160,8 @@ function install(options)
         write(launcher, script)
     end
     chmod(launcher, 0o755)
-    quote_unit(value) = String(JSON.json(replace(String(value), "%" => "%%")))
     template = read(joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String)
-    cpus = sort!(collect(installed_spec["placement"]["session"]["cpus"]))
-    unit = replace(template,
-        "@LAUNCHER@" => quote_unit(launcher),
-        "@PACKAGE@" => quote_unit(destination),
-        "@PIPEWIRE_PREFIX@" => quote_unit(prefix),
-        "@RTC_EXECUTABLE@" => quote_unit(executable),
-        "@SOURCE_ROLE@" => installed_spec["source-owner"],
-        "@CPUS@" => join(cpus, " "),
-        "TimeoutStartSec=300" => "TimeoutStartSec=" * string(D.startup_timeout_ms(installed_spec) / 1000))
-    occursin(r"@[A-Z_]+@", unit) &&
-        throw(ArgumentError("unresolved RTC unit template binding"))
+    unit = installed_unit(template, installed_spec; launcher, package=destination, prefix, executable)
     systemd = joinpath(destination, "systemd")
     mkpath(systemd)
     write(joinpath(systemd, "pipewireao-session@.service"), unit)
