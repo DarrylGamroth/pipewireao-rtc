@@ -1,6 +1,70 @@
 using Test
 Base.include(@__MODULE__,joinpath(@__DIR__,"integration","managed_session_cal2.jl"))
 
+@testset "pupil publisher status accepts native JSON boolean and string properties" begin
+    @test ManagedSessionCAL2.publisher_healthy(false)
+    @test ManagedSessionCAL2.publisher_healthy("false")
+    for value in (true, "true", nothing, 0, "", "False")
+        @test !ManagedSessionCAL2.publisher_healthy(value)
+    end
+end
+
+@testset "CAL2 capture follows the executed generated calibration selection" begin
+    M = ManagedSessionCAL2
+    C = M.C
+    mktempdir() do component
+        function selection(name, identity)
+            directory=joinpath(component,name)
+            mkpath(directory)
+            C.write_yaml(joinpath(directory,"rtc.yaml"),Dict("calibration_identity"=>identity,
+                "calibration"=>name*"/context.yaml"))
+            C.write_yaml(joinpath(directory,"calibration.yaml"),Dict("calibration_identity"=>identity))
+            C.write_yaml(joinpath(directory,"selection.yaml"),Dict("calibration_identity"=>identity,
+                "calibration_index_sha256"=>C.sha256_file(joinpath(directory,"calibration.yaml")),
+                "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(joinpath(directory,"rtc.yaml")))))
+            return Dict("rtc_configuration"=>name*"/rtc.yaml","calibration_identity"=>identity)
+        end
+        old=selection("generated/calibration","historical")
+        new=selection("generated/chopped-calibration","selected")
+        historical=Dict(name=>read(joinpath(component,"generated/calibration",name))
+            for name in ("rtc.yaml","selection.yaml","calibration.yaml"))
+        @test M.selected_calibration(component,old).calibration=="generated/calibration"
+        @test M.selected_calibration(component,new).index["calibration_identity"]=="selected"
+        @test M.selected_calibration(component,new).calibration=="generated/chopped-calibration"
+        @test all(read(joinpath(component,"generated/calibration",name))==bytes for (name,bytes) in historical)
+        for path in (nothing,2,"rtc/configuration.yaml","/generated/calibration/rtc.yaml",
+                "generated/../rtc/rtc.yaml","generated/calibration/../chopped-calibration/rtc.yaml",
+                "generated/rtc.yaml","generated/chopped-calibration/configuration.yaml")
+            @test_throws ArgumentError M.selected_calibration(component,merge(new,Dict("rtc_configuration"=>path)))
+        end
+        @test_throws ArgumentError M.selected_calibration(component,Dict("calibration_identity"=>"selected"))
+        @test_throws ArgumentError M.selected_calibration(component,merge(new,Dict("calibration_identity"=>"historical")))
+        directory=joinpath(component,"generated/chopped-calibration")
+        path=joinpath(directory,"selection.yaml")
+        receipt=C.read_yaml(path)
+        for bad in (merge(receipt,Dict("calibration_index_sha256"=>repeat("0",64))),
+                merge(receipt,Dict("calibration_identity"=>"historical")),
+                merge(receipt,Dict("rtc_configuration"=>Dict("path"=>"../calibration/rtc.yaml","sha256"=>repeat("0",64)))),
+                merge(receipt,Dict("rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>repeat("0",64)))))
+            C.write_yaml(path,bad)
+            @test_throws ArgumentError M.selected_calibration(component,new)
+        end
+        C.write_yaml(path,receipt)
+        rtcpath=joinpath(directory,"rtc.yaml")
+        rtc=C.read_yaml(rtcpath)
+        rtc["calibration"]="generated/calibration/context.yaml"
+        C.write_yaml(rtcpath,rtc)
+        receipt["rtc_configuration"]["sha256"]=C.sha256_file(rtcpath)
+        C.write_yaml(path,receipt)
+        @test_throws ArgumentError M.selected_calibration(component,new)
+        mktempdir() do outside
+            C.write_yaml(joinpath(outside,"rtc.yaml"),Dict())
+            symlink(outside,joinpath(component,"generated/outside"))
+            @test_throws M.D.DeploymentError M.selected_calibration(component,merge(new,Dict("rtc_configuration"=>"generated/outside/rtc.yaml")))
+        end
+    end
+end
+
 @testset "CAL2 capture selects a native Node by type and name" begin
     object(kind, id) = Dict("type"=>"PipeWire:Interface:"*kind,"id"=>id,
         "info"=>Dict("props"=>Dict("node.name"=>"controller")))
@@ -11,6 +75,29 @@ Base.include(@__MODULE__,joinpath(@__DIR__,"integration","managed_session_cal2.j
     push!(objects,object("Node",13))
     @test_throws ArgumentError ManagedSessionCAL2.capture_node(objects,"controller")
     @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+end
+
+@testset "CAL2 cleanup observes the nested session receipt" begin
+    M = ManagedSessionCAL2
+    F = M.M.Faults
+    mktempdir() do stage
+        session=joinpath(stage,"session")
+        mkpath(session)
+        unit="pipewireao-session@0123456789ab.service"
+        invocation=repeat("a",32)
+        M.C.write_json(joinpath(session,"session.json"),Dict("unit"=>unit,"invocation"=>invocation,
+            "runtime_root"=>"/run/user/1000/pipewireao-session-0123456789ab"))
+        record=Dict("unit"=>unit,"invocation"=>invocation,"cleanup_complete"=>true)
+        M.C.write_json(joinpath(session,"final-launch.json"),record)
+        # Use the actual default retained-record reader; only live process and
+        # cgroup checks are replaced for this service-free test.
+        checks=record->Dict("receipt_complete"=>record["cleanup_complete"])
+        @test_throws ArgumentError F.observe_cleanup!(nothing,stage;failed=true,seconds=1,read_checks=checks)
+        @test F.observe_cleanup!(nothing,session;failed=true,seconds=1,read_checks=checks)==record
+        evidence=M.C.read_json(joinpath(session,"observed-cleanup.json"))
+        @test evidence["checks"]==Dict("receipt_complete"=>true)
+        @test isempty(evidence["observation_errors"])
+    end
 end
 
 @testset "CAL2 capture retains publication time and derives declared model coverage" begin
@@ -54,6 +141,47 @@ end
         @test_throws ArgumentError M.record!(empty,values,receipt(sequence,pts),duration;priming_exposures=1)
         @test isempty(empty.records)
     end
+end
+
+@testset "CAL2 capture identifies a rejected receipt without appending it" begin
+    M = ManagedSessionCAL2
+    P = M.PipeWireAO
+    domain = P.AcquisitionDomain(ntuple(i->UInt8(i),16))
+    other = P.AcquisitionDomain(ntuple(_->UInt8(0xaa),16))
+    duration = Int64(10_000_000)
+    receipt(domain,generation,sequence,pts) = (;identity=P.AcquisitionIdentity(domain,UInt64(generation),UInt64(sequence)),
+        pts=Int64(pts),duration=UInt64(duration),lost_samples=UInt64(0),trigger_state=P.ACQUISITION_TRIGGER_HIGH)
+    samples = M.Samples((;shape=(2,)),4)
+    M.record!(samples,Float32[1,2],receipt(domain,1,1,100_000_000),duration;model_time=false)
+    before = deepcopy(samples)
+    error = try
+        M.record!(samples,Float32[3,4],receipt(other,9,4,987_654_321),duration;model_time=false,name="scc-offset")
+        nothing
+    catch caught
+        caught
+    end
+    @test error isa ArgumentError
+    message = sprint(showerror,error)
+    @test occursin("acquisition gap or changed cohort for scc-offset",message)
+    @test occursin("previous=(domain=0102030405060708090a0b0c0d0e0f10, generation=1, sequence=1, pts=100000000, model_pts=0, duration=10000000)",message)
+    @test occursin("rejected=(domain=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, generation=9, sequence=4, pts=987654321, duration=10000000, lost_samples=0, trigger_state=$(P.ACQUISITION_TRIGGER_HIGH), model_pts=30000000)",message)
+    @test samples.records==before.records
+    @test samples.first==before.first
+    @test samples.last==before.last
+    @test samples.history==before.history
+    error = try
+        M.record!(samples,Float32[3,4],receipt(domain,1,2,99_000_000),duration;model_time=false,name="physical")
+        nothing
+    catch caught
+        caught
+    end
+    @test error isa ArgumentError
+    message = sprint(showerror,error)
+    @test occursin("acquisition gap or changed cohort for physical",message)
+    @test occursin("sequence=1, pts=100000000, model_pts=0",message)
+    @test occursin("sequence=2, pts=99000000, duration=10000000",message)
+    @test occursin("model_pts=10000000)",message)
+    @test samples.records==before.records && samples.last==before.last && samples.history==before.history
 end
 
 @testset "CAL2 observer preserves explicit metadata negotiation" begin
