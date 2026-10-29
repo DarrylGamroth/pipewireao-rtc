@@ -85,9 +85,13 @@ function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2)
     sensors = map(keys(science.sensors)) do name
         sensor = getproperty(science.sensors,name)
         chopped = hasproperty(science.chopping, name)
+        duration = getproperty(science.plant.exposures,name).duration_ns
+        duration > 0 || throw(ArgumentError("sensor exposure duration must be positive"))
+        rate = 1_000_000_000 // duration
         PipeWireArrayStreamOptions(; node_name=getproperty(sensor_nodes,name), media_name=string(name),
             buffers=sensor_buffers, acquisition_version=chopped ? 3 : 2,
-            schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR),
+            schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR,
+                rate=SPA.Fraction(numerator(rate),denominator(rate))),
             properties=sensor.properties)
     end
     return (pupil,sensors...)

@@ -15,6 +15,9 @@ const Owner = PipeWireAORTC.AOSOwner
         @test contracts["sensors"]["scc"]["schema"] != contracts["sensors"]["llowfs"]["schema"]
         streams = ExternalOwner.stream_options(science,options.pupil_node,options.sensor_nodes)
         @test length(streams) == 3
+        @test streams[1].format.rate === nothing
+        @test streams[2].format.rate == SPA.Fraction(500,1)
+        @test streams[3].format.rate == SPA.Fraction(250,1)
         @test Dict(streams[2].properties)["optics.central-wavelength-m"] == string(1.55e-6)
         @test streams[1].schema == contracts["pupil"]["schema"]
         C = PipeWireAORTC.Common
@@ -56,6 +59,26 @@ const Owner = PipeWireAORTC.AOSOwner
     @test all(id->id.name ∉ ("CUDA","AMDGPU"),keys(Base.loaded_modules))
 end
 
+@testset "finite-channel optics publish the exposure cadence" begin
+    mktempdir() do directory
+        (;path,physical,simulation) = external_pupil_owner_documents(directory)
+        config = simulation["components"]["optics"]["config"]
+        config["channels"] = [Dict("wavelength_um"=>wavelength,"weight"=>1.0,
+            "steps"=>deepcopy(config["steps"])) for wavelength in (1.5,1.6)]
+        for graph in values(simulation["graphs"])
+            graph["nodes"] = [Dict("name"=>"optics","type"=>"proper_optical_train_f64","config"=>deepcopy(config))]
+        end
+        empty!(simulation["components"])
+        write_external_optical_documents(directory,physical,simulation)
+        science = ExternalOwner.prepare(path)
+        streams = ExternalOwner.stream_options(science,"finite.pupil",(;llowfs="finite.llowfs",scc="finite.scc"))
+        @test streams[1].format.rate === nothing
+        @test streams[2].format.rate == SPA.Fraction(500,1)
+        @test streams[3].format.rate == SPA.Fraction(250,1)
+        @test all(exposure->exposure.sequence==0, values(science.plant.exposures))
+    end
+end
+
 @testset "actual chopped exposures retain missing model windows at transport" begin
     mktempdir() do directory
         (;document,config,path,physical,simulation) = external_pupil_owner_documents(directory)
@@ -70,6 +93,8 @@ end
         streams = ExternalOwner.stream_options(science,options.pupil_node,options.sensor_nodes)
         @test streams[2].acquisition_version==2
         @test streams[3].acquisition_version==3
+        @test streams[2].format.rate == SPA.Fraction(500,1)
+        @test streams[3].format.rate == SPA.Fraction(100,1)
         packet=zeros(Float32,2,4,4);packet[2,:,:].=1
         domain=AcquisitionDomain(ntuple(i->UInt8(i),16))
         emitted=NamedTuple[]
