@@ -194,6 +194,67 @@ Retained campaign files include `gpi-modal-reference-capture-0.2.45.json`,
 cleanup reconciliation remain separately recorded, not counted as a passing
 startup.
 
+### Later CUDA deployment and pyramid readout repair
+
+The user subsequently requested CUDA. The CPU session above shut down through
+native `SessionRuntime.shutdown!`, with an accepted shutdown and confirmed
+cleanup. A fresh GPI application from instrument `b7e0e93` uses the existing
+CUDA host example, optical-reference graph and unchanged calibration identity
+`sha256:cd455d8bbc76c2b7dae47b56951a938ead80d13d491c7b4ca15b8292166bc273`.
+Its native session is `d76b187d-2457-42ee-9c1a-559c1d53ec51`, unit
+`pipewireao-session@cdd7463ca30d.service`, invocation
+`2dc8de41293b4c278a3ef29d613c6a2a`. GUI/native status is Running and correction
+is Closed. Native metadata attests backend `cuda`, `CapturedGraphExecution`
+and 12 captured nodes; no uncaptured fallback was enabled.
+
+All direct application packages remain at the registered CPU versions, with
+CUDA 6.4.2 added. Resolving CUDA against the newer CPU-only transitive closure
+failed: its KernelAbstractions 0.10.4, Atomix 1.7 and GPUArraysCore 0.2.2 were
+incompatible. The fresh CUDA environment retains direct packages and uses the
+previously benchmarked KernelAbstractions 0.9.45/Atomix 1.5 CUDA cohort, allowing
+Pkg to resolve compatible GPU transitive dependencies. No source overrides or
+manual Manifest edits were used. Its exact generated Project/Manifest and
+sealed application remain in the campaign cache below.
+
+A short CPU observation recorded seven completed pupil snapshots in 3.054 s
+(approximately 2.3/s). After CUDA startup, a five-second observation recorded
+255 in 5.052 s (approximately 50.5/s). CAL2's independent CUDA session was also
+running during the latter sample; CPU/CUDA pacing targets were 10 and 2000 Hz.
+These are application snapshot counters under different conditions, not an
+isolated capacity comparison, claimed speedup, configured-rate attainment or
+latency qualification. The observed NVIDIA allocation was about 1.4 GiB total
+of 10 GiB across GPI and the separate CAL2 processes. AMDGPU placement was not
+tested and the two private sessions were not newly interconnected by this work.
+
+GUI `4451691` repairs the reported pyramid-card blinking. Previously a coherent
+image/flux pair expired 66 ms after receipt, even at a 100 ms frame interval.
+An exact pair now persists between acquisitions. The first unmatched detector
+advancement starts the existing bounded grace; repainting/further unmatched
+frames cannot renew it. Source/reset/corruption invalidation remains enforced.
+Three new regressions fail before repair in the worker task transcript; all
+nine pyramid-native tests pass afterwards. The full native-SDK `cargo test`,
+WASM check and Julia fixtures pass. An initial full test without all SDK config
+paths failed an existing explicit-socket child test; the corrected environment
+passes. Strict Clippy remains blocked by six pre-existing chunks_exact style
+lints outside the diff. The inspection-enabled GUI was rebuilt and restarted.
+Live MCP sampling then found all four readouts populated in 20/20 observations,
+with 20 distinct value tuples. No measurement computation moved into the GUI.
+
+The misleading GPI title `CAL2 pupil output` is now `IFS pupil handoff status`.
+This remains status for GPI's outgoing OPD/amplitude pupil packet, not an IFS
+image or a CAL2 science product. A true IFS focal-plane view remains separate
+optical-model work; the existing ideal focal diagnostic was not relabelled as
+that physical output. CAL2 remains a separate system and GUI.
+
+CUDA evidence is retained under `~/.cache/pipewireao/gpi-cuda-live-20261028`:
+`prepared-native.json`, `running-first-native.json`, `running-last-native.json`,
+`live-cadence.json`, `pyramid-readouts-live.json`, `start.log` and
+`cpu-shutdown.log`. GUI validation logs are in
+`~/.cache/pipewireao/pyramid-readout-20261028`; fail-before worker evidence is
+in the task transcript, not a claimed standalone log. GPI and its GUI were
+left running on CUDA. Task worktrees were removed after integration; unrelated
+GUI documentation edits and the shared Rust target were preserved.
+
 The historical Classic migration receipt's source hash already mismatched
 before these additions. Projecting the new declarations back to the old scope
 preserves the same `9cbbebee…` hash before and after, while that old receipt
