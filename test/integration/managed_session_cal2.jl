@@ -586,7 +586,8 @@ function main(args)
         "manifest_sha256"=>C.sha256_file(joinpath(application,plan.spec["runtime"]["project"],"Manifest.toml")),
         "prefix"=>prefix,"julia_version"=>string(VERSION),"selector_rtc_version"=>string(pkgversion(R)),
         "native_sha256"=>Dict(relative=>C.sha256_file(joinpath(prefix,relative)) for relative in
-            ("bin/pipewireao-rtc","lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so",
+            ("bin/pipewireao-rtc","lib/pipewire-ao-0.3/libpipewire-module-queue.so",
+                "lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so",
                 "share/pipewireao-rtc/scripts/ao/session.lua")),
         "roles"=>[owner["role"] for owner in plan.spec["owners"]],"analysis"=>get(plan.spec,"analysis",[]),
         "expected_runtime_roles"=>sort!(collect(union(Set(["core"]),Set(owner["role"] for owner in plan.spec["owners"]),
