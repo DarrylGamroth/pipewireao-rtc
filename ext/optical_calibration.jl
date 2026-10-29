@@ -32,12 +32,17 @@ function physical_mirror_response(upstream,upstream_configuration,mirror;simulat
         owner.configuration_binding_names(response_document,factories)))
     bindings = owner.prepare_bindings(upstream,upstream_configuration,names;target,target_names=names)
     definition = HIL.load_algorithm_graph(response_document;bindings,node_types=factories)
-    mirror_graph = HIL.prepare_algorithm_graph(definition;target)
+    execution = owner.instrument_execution(target,nothing)
+    mirror_graph = HIL.prepare_algorithm_graph(definition;target,execution)
 
     surface = command -> begin
-        copyto!(HIL.graph_input(mirror_graph,:command),command)
+        HIL._with_prepared_device_execution_context(mirror_graph.context) do
+            copyto!(HIL.graph_input(mirror_graph,:command),command)
+        end
         HIL.step_graph!(mirror_graph)
-        Array(HIL.graph_output(mirror_graph,:opd))
+        HIL._with_prepared_device_execution_context(mirror_graph.context) do
+            Array(HIL.graph_output(mirror_graph,:opd))
+        end
     end
     return (;geometry,node,mirror_graph,surface)
 end
@@ -47,8 +52,9 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
         mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
         target=AdaptiveOpticsSim.Backends.HostComputeDevice(), chopping=NamedTuple(), publication_plan=nothing)
     target isa Union{AdaptiveOpticsSim.Backends.HostComputeDevice,
-        AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend}} ||
-        throw(ArgumentError("optical calibration supports explicit host or AMDGPU targets"))
+        AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.AMDGPUBackend},
+        AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{AdaptiveOpticsSim.Backends.CUDABackend}} ||
+        throw(ArgumentError("optical calibration supports explicit host, AMDGPU or CUDA targets"))
     upstream = IC.load_simulation(upstream_simulation)
     optical = IC.load_simulation(optical_simulation)
     upstream_configuration = IC.settings(upstream,upstream_settings)
@@ -73,14 +79,20 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
     for system in (values(systems)...,values(unfringed_systems)...)
         size(HIL.graph_input(system.graph,:pupil_opd)) == size(packet)[2:3] ||
             throw(DimensionMismatch("upstream and optical pupil grids differ"))
-        optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
-            HIL.graph_input(system.graph,:pupil_amplitude),packet,zeros(Float32,size(amplitude)),amplitude)
+        HIL._with_prepared_device_execution_context(system.graph.context) do
+            optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
+                HIL.graph_input(system.graph,:pupil_amplitude),packet,zeros(Float32,size(amplitude)),amplitude)
+        end
     end
     observe_system = (system,opd) -> begin
-        optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
-            HIL.graph_input(system.graph,:pupil_amplitude),packet,opd,amplitude)
+        HIL._with_prepared_device_execution_context(system.graph.context) do
+            optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
+                HIL.graph_input(system.graph,:pupil_amplitude),packet,opd,amplitude)
+        end
         HIL.step_graph!(system.graph)
-        Array(HIL.graph_output(system.graph,:intensity))
+        HIL._with_prepared_device_execution_context(system.graph.context) do
+            Array(HIL.graph_output(system.graph,:intensity))
+        end
     end
     frontends = NamedTuple()
     chopped_references = NamedTuple()
@@ -129,7 +141,8 @@ function optical_callbacks(upstream_simulation::AbstractString, optical_simulati
             for (name,reference) in pairs(chopped_references))
         provenance["measurement_scope"] = "matched static F/U pairs; no exposure-command feedforward or concurrent-loop qualification"
     end
-    return (;surface,observe,actuator_coordinates=coordinates,pupil_support=support,provenance,chopped_references)
+    return (;surface,observe,mirror_graph,systems,unfringed_systems,
+        actuator_coordinates=coordinates,pupil_support=support,provenance,chopped_references)
 end
 
 function optical_pupil_inputs!(opd_destination,amplitude_destination,packet,opd,amplitude)

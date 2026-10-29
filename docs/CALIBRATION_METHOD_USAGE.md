@@ -13,6 +13,11 @@ procedures selected from a built instrument application:
   source identities, then copies the authored source and selects the calibrated startup context
   in a fresh destination.
 
+Since RTC 0.2.51, optical interaction calibration accepts an explicit CUDA target.
+The mirror and optical graphs use captured execution, with uploads and readback
+in each prepared graph's device context. The chopped measurement frontend and
+the separately qualified upstream expected-reference acquisition remain on Host.
+
 The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
 `graph.conf` and typed FITS files in `artifacts/`. The result hashes context,
 graph and artifacts. Git retains earlier selections and provenance; staging
@@ -325,8 +330,14 @@ configuration retains the future controller dimensions and omits `calibration`
 until selection. The default controller mode adds the controller declarations;
 it rejects missing calibration rather than substituting zero R/P arrays.
 Mode-selected runtime YAML is compiled after application composition. The
-instrument repository's thin `tools/calibrate-optical.jl` client selects an
-explicit CPU or AMDGPU target and never installs or starts a session.
+shared API accepts an explicit Host, AMDGPU or CUDA target. Acquisition never
+installs or starts a session.
+Optical calibration uses the existing RTC execution policy: CPU graphs stream;
+accelerator mirror and optical F/U graphs require captured execution. Command
+and pupil uploads and output readback use each graph's retained device context.
+The chopped measurement frontend remains the authored CPU graph. The separate
+upstream reference acquisition retains its existing target restrictions;
+`host-expectation` still requires an explicit Host target.
 
 Publication emits one standard bundle per branch and a `calibration.yaml` index.
 The index hashes each branch result and the common command projection P, physical

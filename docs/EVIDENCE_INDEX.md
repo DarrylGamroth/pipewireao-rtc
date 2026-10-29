@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Captured optical calibration — 2026-10-29
+
+The [focused source validation](validation/captured-optical-calibration-20261029/README.md)
+uses a real typed mirror, matched optical F/U propagation and the authored chopped
+measurement frontend. It separates capture and small-model calibration evidence
+from full-instrument calibration, external upstream reference and deadline gates.
+
 ## Explicit optical arithmetic precision — 2026-10-29
 
 The [focused validation record](validation/optical-precision-20261029/README.md)
