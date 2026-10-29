@@ -29,8 +29,14 @@ FGA 0.8.14 is published and verified in a fresh registered consumer. Optional
 analysis now loads the existing typed FITS bindings and retains acquisition
 calibration/graph/binding hashes in catalog manifests. Classic/GPI acquisition
 recipes distinguish absolute replacement references from diagnostic residuals;
-the instrument repository owns those declarations. Native deployment validation
-remains the next gate; physical qualification is not claimed.
+the instrument repository owns those declarations. Native CPU validation now
+covers Classic reference capture, GUI application and exact shared-history ID,
+512-frame raw/calibrated image captures, and GPI absolute modal-reference capture
+with the detector panel hidden. GPI's exact candidate prepares in the GUI but
+remains unapplied; selected startup calibration is unchanged. RTC 0.2.45 repairs
+GPI's generated-optics cold load order while retaining full provenance validation
+before execution. Both instrument projects pin the registered release locally.
+Physical calibration quality, deadlines and interference bounds are not claimed.
 
 ### Optional GPI propagated-field calibration — 2026-10-28
 

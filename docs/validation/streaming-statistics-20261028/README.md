@@ -148,7 +148,51 @@ GPUCompiler's ordinary CPU-support import is not accelerator execution.
 
 Logs: `aos-generated-owner-before.log`, `aos-generated-owner-after.log` and
 `aos-graph-selection-after.log` in the campaign cache. This repair is released
-as RTC 0.2.45 on top of upstream 0.2.44's cold metadata writer.
+as RTC 0.2.45 on top of upstream 0.2.44's cold metadata writer. Registered
+tree: `0db51d25095ee4affaed03f45831e5041c39ae4a`; registry commit `23921a7`.
+The fresh registered runtime changed only RTC from 0.2.43 to 0.2.45; both
+Classic and GPI CPU applications rebuilt successfully. Instrument `86ef653`
+pins the release locally; the instrument repository is not pushed.
+
+### GPI application validation
+
+The fresh registered 0.2.45 GPI CPU application reached Ready on unit
+`pipewireao-session@584493d30ba6.service`, invocation
+`9438401bfcd2486587b5bac94978ee66`, session
+`272c054e-ed50-4d06-a820-22a2d04efecb`. First cold startup took approximately
+11 minutes on the declared development placement. The simulator reported 97
+woofer, 2304 tweeter and two tip/tilt commands, with UInt16 frame shape 242×240.
+The GUI connected and started the session; native/GUI status remained Running.
+
+With the pyramid panel hidden, the optional CLI on analysis CPUs 5–6 captured
+eight controller-published normalized-pupil samples, sequences 129–136, with
+zero gaps. It formed the absolute modal reference `mean(-R*p)` using the frozen
+selected reconstructor and registered all three products, then exited 0. The
+mean ID is `0c3bc1cc563c88634b142bec2aca29d0692767fd`, shape `[1509]`, Float32,
+`m OPD`, schema `pipewireao/controller-residual-error-f32/1`. Its manifest retains
+the exact calibration, recipe, graph and original/prepared reconstructor hashes.
+The GUI catalog selected that exact ID and reported Prepared. It was not added
+or submitted; native requested/active modal-reference sequences remain zero.
+The selected startup calibration is unchanged.
+
+A post-capture native snapshot contains the running control graph and normalized
+observation source, with no temporary statistics nodes left. Existing pupil-flux
+analysis remains optional. The pyramid display was restored afterwards; this GPI
+CPU session and GUI were left running for inspection. This is functional CPU
+simulation evidence, not a calibration-quality or latency qualification.
+
+The registered 0.2.45 consumer also passes capture/FITS/link selectors; the
+single-thread run intentionally skips the threaded readiness check, which then
+passes in a separate three-thread run. Instrument numerical/export checks pass
+125 + 37 assertions against this release. No GPU was used.
+
+Retained campaign files include `gpi-modal-reference-capture-0.2.45.json`,
+`gpi-gui-candidate-0.2.45.json`, `gpi-after-capture-native-0.2.45.json`,
+`gpi-reference-run-0.2.45.log`, `registered-acquisition-tests-0.2.45.log`,
+`registered-analysis-links-threads3-0.2.45.log` and
+`instrument-acquisitions-0.2.45.log`. The earlier failed GPI launch and its
+cleanup reconciliation remain separately recorded, not counted as a passing
+startup.
 
 The historical Classic migration receipt's source hash already mismatched
 before these additions. Projecting the new declarations back to the old scope
