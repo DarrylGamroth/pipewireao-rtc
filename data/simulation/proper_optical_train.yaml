@@ -12,6 +12,11 @@ properties:
     readOnly: true
     type: string
     title: Optical profile
+  precision:
+    readOnly: true
+    type: string
+    title: Optical arithmetic precision
+    enum: [Float32, Float64]
   resolution:
     readOnly: true
     type: integer
