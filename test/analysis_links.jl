@@ -133,3 +133,16 @@ end
         end
     end
 end
+
+@testset "only finite capture supplies consumers for unlinked outputs" begin
+    A=PipeWireAORTC.Analysis
+    names=(:mean,:variance,:stddev,Symbol("sample-count"),:complete,Symbol("variance-valid"))
+    # An explicit mean link keeps its existing peer; unrelated input links must
+    # not hide an unconnected statistics output with the same port name.
+    links=[A.LinkSpec(A.Endpoint("capture","mean"),A.Endpoint("selected-observation","in")),
+        A.LinkSpec(A.Endpoint("source","variance"),A.Endpoint("capture","sample"))]
+    config=(name="capture",links=links,capture=true)
+    @test E.analysis_discard_outputs(config,names)==("variance","stddev","sample-count","complete","variance-valid")
+    @test E.analysis_discard_outputs(merge(config,(capture=nothing,)),names)==()
+    @test E.analysis_discard_outputs(merge(config,(links=A.LinkSpec[],)),names)==String.(names)
+end

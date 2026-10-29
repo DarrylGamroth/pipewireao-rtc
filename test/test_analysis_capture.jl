@@ -186,3 +186,15 @@ end
         @test_throws ArgumentError A.register_capture!(CS.Store(root),capture;source="controller:pixels",graph_sha256=repeat("9",64))
     end
 end
+
+@testset "finished incomplete acquisition retains its receipt without opening a store" begin
+    mktempdir() do root
+        capture=A.prepare_capture(configuration(),formats())
+        config=(name="incomplete-capture",graph="unused",links=A.LinkSpec[])
+        store_path=joinpath(root,"store")
+        record=A.capture_artifacts(config,capture,Ref(true);root=store_path,runtime=root,graph_sha256="unused")
+        @test record["state"]=="incomplete"
+        @test isfile(joinpath(root,"incomplete-capture-capture.json"))
+        @test !ispath(store_path)
+    end
+end

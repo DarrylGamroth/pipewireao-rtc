@@ -48,7 +48,13 @@ function analysis_incarnation_present(registry, original)
         get(current.properties, "object.serial", nothing) == original.properties["object.serial"]
 end
 
-function analysis_connections(node, config, remote, finished)
+function analysis_discard_outputs(config, output_names)
+    config.capture === nothing && return ()
+    linked = Set(link.output.port for link in config.links if link.output.node == config.name)
+    return Tuple(String(name) for name in output_names if !(String(name) in linked))
+end
+
+function analysis_connections(node, config, remote, finished; output_names=())
     deadline = time_ns() + UInt64(120_000_000_000)
     # Wait for this filter's loop to register it before a monitor can request
     # Quit. No monitor failure may race ahead of the owner's native Run call.
@@ -63,19 +69,52 @@ function analysis_connections(node, config, remote, finished)
     core = nothing
     registry = nothing
     links = PipeWireAO.Link[]
+    sinks = Dict{String,PipeWireAO.Node}()
     states = Threads.Atomic{Int}[]
+    failure = Ref{Union{Nothing,PipeWireAO.PipeWireError}}(nothing)
+    failed = Threads.Atomic{Bool}(false)
+    # The connection loop is the single writer; publish its owned error before
+    # the control task reads it. Missing native factories must not look like
+    # absent endpoints and spend the whole discovery deadline waiting.
+    native_error = error -> begin
+        if !failed[]
+            failure[] = error
+            failed[] = true
+        end
+        nothing
+    end
+    check_native_error() = failed[] ? throw(something(failure[])) : nothing
     try
         context, core, registry = PipeWireAO.with_thread_loop_lock(loop) do _
             context = PipeWireAO.Context(loop)
-            core = PipeWireAO.CoreConnection(context; properties=Dict("remote.name" => remote))
+            core = PipeWireAO.CoreConnection(context; properties=Dict("remote.name" => remote),
+                on_error=config.capture === nothing ? nothing :
+                    ((_, _, _, error) -> native_error(error)))
             return context, core, PipeWireAO.Registry(core)
         end
         PipeWireAO.start!(loop)
-        endpoints = map(_ -> nothing, config.links)
+        specifications = copy(config.links)
+        for (index, port) in enumerate(analysis_discard_outputs(config, output_names))
+            # Every native ndarray output needs a consumer-provided buffer pool.
+            # Finite capture observes the complete Graph locally; these ordinary
+            # sinks only keep its otherwise unconnected outputs progressing.
+            name = "$(config.name).discard.$(FilterGraphPipeWire.node_id(node)).$index"
+            sinks[name] = PipeWireAO.with_thread_loop_lock(loop) do _
+                PipeWireAO.create_object(core, "spa-node-factory", PipeWireAO.Node;
+                    on_error=(_, _, error) -> native_error(error),
+                    properties=Dict("factory.name"=>"api.pipewireao.discard",
+                        "node.name"=>name, "node.virtual"=>"true",
+                        "node.want-driver"=>"true", "object.linger"=>"false"))
+            end
+            push!(specifications, Analysis.LinkSpec(Analysis.Endpoint(config.name, port),
+                Analysis.Endpoint(name, "in")))
+        end
+        endpoints = map(_ -> nothing, specifications)
         # Discovery is asynchronous: a dead server cannot strand this task in
         # a synchronous core roundtrip. Startup and teardown remain bounded.
         while !finished[]
-            candidates = map(config.links) do link
+            check_native_error()
+            candidates = map(specifications) do link
                 (analysis_endpoint(registry, link.output, "out"),
                     analysis_endpoint(registry, link.input, "in"))
             end
@@ -93,6 +132,9 @@ function analysis_connections(node, config, remote, finished)
                 global_node.id == FilterGraphPipeWire.node_id(node) ||
                     error("Analysis name belongs to a different node")
             end
+            sink = get(sinks, global_node.properties["node.name"], nothing)
+            sink === nothing || global_node.id == PipeWireAO.bound_id(sink) ||
+                error("Analysis discard name belongs to a different node")
             analysis_incarnation_present(registry, global_node) &&
                 analysis_incarnation_present(registry, global_port) ||
                 error("Analysis endpoint changed during discovery")
@@ -119,6 +161,7 @@ function analysis_connections(node, config, remote, finished)
         end
         while !finished[] && (!all(published, links) ||
                 !all(state -> state[] >= Int(PipeWireAO.LINK_STATE_PAUSED), states))
+            check_native_error()
             any(state -> state[] == Int(PipeWireAO.LINK_STATE_ERROR), states) &&
                 error("Analysis link negotiation failed")
             time_ns() < deadline || error("Analysis link publication timed out")
@@ -130,6 +173,7 @@ function analysis_connections(node, config, remote, finished)
             error("Analysis endpoint changed during link negotiation")
         analysis_ready_notice(config, length(links))
         while !finished[]
+            check_native_error()
             any(state -> state[] == Int(PipeWireAO.LINK_STATE_ERROR), states) &&
                 error("Analysis link failed")
             for pair in endpoints, endpoint in pair, original in endpoint
@@ -148,13 +192,23 @@ function analysis_connections(node, config, remote, finished)
         end
     finally
         FilterGraphPipeWire.quit!(node)
-        PipeWireAO.with_thread_loop_lock(loop) do _
-            foreach(close, links)
-            isnothing(registry) || close(registry)
-            isnothing(core) || close(core)
-            isnothing(context) || close(context)
+        try
+            PipeWireAO.with_thread_loop_lock(loop) do _
+                try
+                    foreach(close, links)
+                finally
+                    try
+                        foreach(close, values(sinks))
+                    finally
+                        isnothing(registry) || close(registry)
+                        isnothing(core) || close(core)
+                        isnothing(context) || close(context)
+                    end
+                end
+            end
+        finally
+            close(loop)
         end
-        close(loop)
     end
     return nothing
 end
@@ -178,15 +232,18 @@ function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256
         FilterGraphPipeWire.connect!(node)
         monitor = FilterGraphIsland.spawn_monitor() do
             try
-                analysis_connections(node, config, remote, finished)
+                analysis_connections(node, config, remote, finished;
+                    output_names=keys(JuliaFilterGraph.output_formats(graph)))
             finally
                 FilterGraphPipeWire.quit!(node)
             end
         end
         if capture !== nothing
             acquisition = FilterGraphIsland.spawn_monitor() do
-                Analysis.capture_artifacts(config, capture, finished;
-                    pause=FilterGraphIsland.deployment_sleep, graph_sha256)
+                while capture.ready[] == 0 && !finished[] && !node.owner.frame_observer.failed[]
+                    FilterGraphIsland.deployment_sleep(0.01)
+                end
+                FilterGraphPipeWire.quit!(node)
             end
         end
         FilterGraphPipeWire.run!(node)
@@ -198,7 +255,18 @@ function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256
             try
                 isnothing(acquisition) || fetch(acquisition)
             finally
-                close(node)
+                try
+                    close(node)
+                finally
+                    if capture !== nothing
+                        # Native processing and owned output consumers are gone
+                        # before filesystem, Git or SQLite work reaches this task.
+                        if capture.ready[] == 0 && node.owner.frame_observer.failed[]
+                            Analysis.fail_capture!(capture, :observer_failed)
+                        end
+                        Analysis.capture_artifacts(config, capture, finished; graph_sha256)
+                    end
+                end
             end
         end
     end
