@@ -3,8 +3,9 @@
 ## Optical owner cold compilation — 2026-10-30
 
 The [source validation](validation/optical-owner-compilation-20261030/README.md)
-records compilation observed during Connect and moves control-loop precompile
-to Preparing. A managed-session startup pass and warmed timing remain separate.
+records compilation and numerical warmup observed during Connect, then moves
+those steps to Preparing with quiet seeded-detector/reset checks. A managed-session
+startup pass and warmed timing remain separate.
 
 ## Captured optical calibration — 2026-10-29
 

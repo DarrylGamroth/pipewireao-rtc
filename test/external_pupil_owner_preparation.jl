@@ -9,17 +9,18 @@ const Owner = PipeWireAORTC.AOSOwner
         (;config,path) = external_pupil_owner_documents(directory)
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
-        # Cold control-loop compilation cannot require a live core, advance an
-        # exposure, or consume a detector draw. Cancellation brackets compilation.
+        # Preparing warms the actual quiet emitter and resets before admission.
         checks=Ref(0)
-        @test ExternalOwner.prepare_stream_execution!(
-            (;owner_check=()->(checks[]+=1)),science,
-            ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState()) === nothing
-        @test checks[]==2
+        execution=ExternalOwner.prepare_stream_execution!(
+            (;version=4,owner_check=()->(checks[]+=1)),science,
+            ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState())
+        @test checks[]>=4
+        @test !execution.publication_enabled[] && execution.transport_owner[]===nothing
+        @test all(iszero,execution.packet) && all(frame->all(iszero,frame),execution.buffers)
         @test science.plant.state.domain === nothing
         @test all(e->e.sequence==0 && e.covered_ns==0,values(science.plant.exposures))
         @test_throws InterruptException ExternalOwner.prepare_stream_execution!(
-            (;owner_check=()->throw(InterruptException())),science,
+            (;version=4,owner_check=()->throw(InterruptException())),science,
             ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState())
         contracts = PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(path)
         @test contracts["pupil"]["shape"] == [2,4,4]
@@ -132,4 +133,48 @@ end
         @test all(exposure->exposure.sequence==0,values(science.plant.exposures))
     end
     @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+end
+
+@testset "quiet preparation preserves seeded detector and cancellation state" begin
+    mktempdir() do directory
+        (;path,physical,simulation)=external_pupil_owner_documents(directory)
+        authored_response!(directory,physical,simulation)
+        observation=pop!(simulation["observations"],"low_order")
+        observation["graph"]="response"
+        observation["normalized_to_photon_rate"]=1e8
+        simulation["observations"]["llowfs"]=observation
+        simulation["graphs"]=Dict{String,Any}(simulation["graphs"])
+        simulation["graphs"]["response"]="simulation/low_order_response.yaml"
+        detector=simulation["components"]["low_order_detector"]["config"]
+        detector["pixel_sampling_m"]=[0.003,0.003]
+        detector["photon_noise"]=true
+        write_external_optical_documents(directory,physical,simulation)
+        science=ExternalOwner.prepare(path)
+        packet=zeros(Float32,2,4,4);packet[2,:,:].=1
+        function first_frame()
+            frames=Matrix{Float32}[]
+            receipt=PipeWireArrayReceipt(Int64(0),UInt64(2_000_000),
+                AcquisitionIdentity(AcquisitionDomain(ntuple(i->UInt8(i),16)),UInt64(1),UInt64(1)),UInt64(0))
+            ExternalOwner.feed!(science.plant,packet,receipt) do name,image,metadata
+                name===:llowfs && push!(frames,copy(image))
+            end
+            return only(frames)
+        end
+        expected=first_frame()
+        reset_external_pupil!(science.plant)
+        mailbox=ExternalOwner.SourceControl.Mailbox(Int64(1));state=ExternalOwner.OwnerState()
+        execution=ExternalOwner.prepare_stream_execution!((;version=4,owner_check=()->nothing),science,mailbox,state)
+        @test first_frame()==expected
+        reset_external_pupil!(science.plant)
+        @test !execution.publication_enabled[] && execution.transport_owner[]===nothing
+        @test_throws ArgumentError execution.emit(:llowfs,fill(floatmax(Float64),8,8),
+            (;sequence=UInt64(1)))
+        checks=Ref(0)
+        @test_throws InterruptException ExternalOwner.prepare_stream_execution!(
+            (;version=4,owner_check=()->((checks[]+=1)==3 && throw(InterruptException()))),science,mailbox,state)
+        @test checks[]==3
+        @test science.plant.state.domain===nothing
+        @test all(e->e.sequence==0 && e.covered_ns==0,values(science.plant.exposures))
+        @test first_frame()==expected
+    end
 end

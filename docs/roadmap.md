@@ -14,11 +14,12 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Optical owner cold compilation — 2026-10-30
 
-The external-pupil/clocked optical owner precompiles its control-loop entry during
-Preparing without specializing on cold runtime/transport handles. Science types,
-Connect deadlines and lifecycle semantics remain unchanged. The
+The external-pupil/clocked optical owner warms its unpublished numerical path
+and precompiles its control-loop entry during Preparing, without specializing
+on cold runtime/transport handles. Science types, Connect deadlines and lifecycle
+semantics remain unchanged. The
 [source evidence](validation/optical-owner-compilation-20261030/README.md)
-records the compilation failure and no-core checks; fresh managed startup and
+records the compilation/warmup failures and no-core reset checks; fresh managed startup and
 warmed-loop cost still require validation.
 
 ### Explicit optical arithmetic precision — 2026-10-29

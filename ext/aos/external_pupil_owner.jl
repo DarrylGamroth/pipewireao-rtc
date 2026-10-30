@@ -204,10 +204,14 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
     return nothing
 end
 
-Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, mailbox, state,
-        @nospecialize(owner), @nospecialize(ticket))
-    runtime = options.bootstrap_runtime
-    transport = runtime.transport
+function publish_sensor!(owner,index,buffer,identity,pts,duration,classification)
+    if stage_pipewire_array!(owner,index,buffer;identity,pts,duration,trigger_state=classification)
+        with_array_stream(trigger_process!,owner,index)
+    end
+    return nothing
+end
+
+function stream_execution(options,science,state)
     names = keys(science.sensors)
     clocked = options.version == 6
     packet = zeros(Float32,science.pupil.shape)
@@ -217,22 +221,47 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
     buffers = map(sensor->zeros(Float32,size(sensor.image)),values(science.sensors))
     domains = map(_->domain(),names)
     publication_enabled = Ref(false)
+    transport_owner = Ref{Any}(nothing)
+    chopping = science.chopping
     emit = function (name,image,metadata)
         index = findfirst(==(name),names)
         copyto!(frames[index],image)
         buffers[index] .= frames[index]
         all(isfinite,buffers[index]) || throw(ArgumentError("optical product exceeds Float32 transport range"))
-        sequence = sensor_sequence(metadata, hasproperty(science.chopping, name))
-        classification = trigger_state(science, name, metadata)
+        sequence = sensor_sequence(metadata, hasproperty(chopping, name))
+        classification = trigger_state((;chopping), name, metadata)
         if publication_enabled[]
             identity = AcquisitionIdentity(domains[index],UInt64(state.generation),sequence)
-            if stage_pipewire_array!(owner,index+1,buffers[index];identity,pts=metadata.pts,
-                    duration=metadata.duration, trigger_state=classification)
-                with_array_stream(trigger_process!,owner,index+1)
-            end
+            publish_sensor!(transport_owner[],index+1,buffers[index],identity,
+                metadata.pts,metadata.duration,classification)
         end
         return nothing
     end
+    return (;packet,command,incoming_command,frames,buffers,domains,publication_enabled,
+        transport_owner,emit)
+end
+
+# Compile the concrete transport calls without staging synthetic camera frames.
+function warmup_stream_transport!(owner,execution,clocked)
+    input = clocked ? execution.incoming_command : execution.packet
+    precompile(drain_pipewire_array!, (typeof(input),typeof(owner),Int)) ||
+        error("external-pupil input transport preparation failed")
+    for buffer in execution.buffers
+        precompile(publish_sensor!, (typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
+            Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
+            error("external-pupil output transport preparation failed")
+    end
+    return nothing
+end
+
+Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, mailbox, state,
+        execution, @nospecialize(owner), @nospecialize(ticket))
+    @info "Optical owner startup" phase=:streams_entry at_ns=time_ns()
+    runtime = options.bootstrap_runtime
+    transport = runtime.transport
+    clocked = options.version == 6
+    (;packet,command,incoming_command,emit,publication_enabled,transport_owner) = execution
+    transport_owner[] = owner
     filter = nothing
     try
         with_thread_loop_lock(transport.loop) do _
@@ -262,12 +291,11 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
             ready && break
             sleep(0.001)
         end
-        if clocked
-            warmup_clocked_source!(emit,science,command;check=()->Bootstrap.check_connect!(runtime,ticket))
-        else
-            warmup!(emit, science, packet, frames, buffers;
-                check=()->Bootstrap.check_connect!(runtime,ticket))
-        end
+        @info "Optical owner startup" phase=:streams_ready at_ns=time_ns()
+        @info "Optical owner startup" phase=:transport_warmup_begin at_ns=time_ns()
+        warmup_stream_transport!(owner,execution,clocked)
+        Bootstrap.check_connect!(runtime,ticket)
+        @info "Optical owner startup" phase=:transport_warmup_end at_ns=time_ns()
         publication_enabled[] = true
         Bootstrap.connected!(runtime,ticket)
         Bootstrap.await_connected!(runtime,ticket)
@@ -328,16 +356,36 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
     return nothing
 end
 
-# The live transport owner and its ticket exist only after Connect. Compile the
-# control loop during Preparing without specializing on those cold resources.
-# Science graph types remain specialized; this performs no I/O or model steps.
+# Model warming belongs to Preparing. The same quiet emitter checks conversion,
+# sequence and chopping contracts here and later publishes real camera frames.
+# Its transport reference remains empty until Connect; no warmup frame escapes.
 function prepare_stream_execution!(options,science,mailbox,state)
     options.owner_check()
+    execution = stream_execution(options,science,state)
+    @info "Optical owner startup" phase=:warmup_begin at_ns=time_ns()
+    try
+        if options.version == 6
+            warmup_clocked_source!(execution.emit,science,execution.command;check=options.owner_check)
+        else
+            warmup!(execution.emit,science,execution.packet,execution.frames,execution.buffers;
+                check=options.owner_check)
+        end
+    finally
+        fill!(execution.packet,0)
+        fill!(execution.command,0)
+        fill!(execution.incoming_command,0)
+        foreach(frame->fill!(frame,0),execution.frames)
+        foreach(buffer->fill!(buffer,0),execution.buffers)
+    end
+    @info "Optical owner startup" phase=:warmup_end at_ns=time_ns()
+    options.owner_check()
+    @info "Optical owner startup" phase=:precompile_begin at_ns=time_ns()
     ready = precompile(run_streams!, (Any,typeof(science),typeof(mailbox),
-        typeof(state),Any,Any))
+        typeof(state),typeof(execution),Any,Any))
+    @info "Optical owner startup" phase=:precompile_end at_ns=time_ns()
     options.owner_check()
     ready || error("external-pupil control-loop preparation failed")
-    return nothing
+    return execution
 end
 
 function Owner.run_external_pupil_owner(options)
@@ -351,17 +399,21 @@ function Owner.run_external_pupil_owner(options)
         report!(options,mailbox,state)
         streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers,
             input_option=options.version == 6 ? clocked_command_option(options) : nothing)
-        prepare_stream_execution!(options,science,mailbox,state)
+        execution = prepare_stream_execution!(options,science,mailbox,state)
+        @info "Optical owner startup" phase=:prepared at_ns=time_ns()
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
+        @info "Optical owner startup" phase=:connect_received at_ns=time_ns()
         Bootstrap.check_connect!(runtime,ticket)
         with_array_streams(streams;remote=options.remote,input=(true,map(_->false,keys(science.sensors))...)) do owner
+            @info "Optical owner startup" phase=:streams_constructed at_ns=time_ns()
             cpu = get(options,:pipewire_cpu,nothing)
             cpu === nothing || PipeWireAORTC.Placement.pin_loop!(owner.loop,cpu;check=options.owner_check)
-            run_streams!(options,science,mailbox,state,owner,ticket)
+            run_streams!(options,science,mailbox,state,execution,owner,ticket)
         end
     catch error
         if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
+            @error "Optical owner failed" exception=(error,catch_backtrace())
             push!(failures,error)
             Bootstrap.fault!(runtime,error)
         end
