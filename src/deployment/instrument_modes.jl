@@ -1,14 +1,40 @@
 # Cold composition of ordinary application/session/core configuration fragments.
 # There is no instrument identity or device plugin selection in this code.
-function merge_configuration(base::AbstractDict, fragment::AbstractDict)
+function merge_configuration(base::AbstractDict, fragment::AbstractDict; replace_arrays=false)
     result = deepcopy(base)
     for (key, value) in fragment
-        result[key] = haskey(result, key) ? merge_configuration(result[key], value) : deepcopy(value)
+        result[key] = haskey(result, key) ? merge_configuration(result[key], value; replace_arrays) : deepcopy(value)
     end
     return result
 end
-merge_configuration(base::AbstractVector, fragment::AbstractVector) = vcat(base, fragment)
-merge_configuration(base, fragment) = deepcopy(fragment)
+merge_configuration(base::AbstractVector, fragment::AbstractVector; replace_arrays=false) =
+    replace_arrays ? deepcopy(fragment) : vcat(base, fragment)
+merge_configuration(base, fragment; replace_arrays=false) = deepcopy(fragment)
+
+function resolve_mode(modes, name, ancestors=String[])
+    InstrumentDefinition.nonempty_text(name) && haskey(modes, name) || throw(ArgumentError("unknown instrument application mode"))
+    name in ancestors && throw(ArgumentError("application mode inheritance cycle"))
+    length(ancestors) < 16 || throw(ArgumentError("application mode inheritance exceeds 16 levels"))
+    mode = deepcopy(modes[name])
+    mode isa AbstractDict && Set(keys(mode)) ⊆ Set(["extends", "application", "session", "core", "omit-views", "requires"]) ||
+        throw(ArgumentError("invalid application mode fields"))
+    if haskey(mode, "extends")
+        parent = pop!(mode, "extends")
+        parent isa AbstractString || throw(ArgumentError("mode extends must name a declared mode"))
+        mode = merge_configuration(resolve_mode(modes, parent, [ancestors; name]), mode; replace_arrays=true)
+    end
+    for key in ("application", "session", "core")
+        haskey(mode, key) && !(mode[key] isa AbstractDict) && throw(ArgumentError("mode $key must be an object"))
+    end
+    for key in ("omit-views", "requires")
+        values = InstrumentConfiguration._declaration_array(get(mode, key, []), "mode $key")
+        all(InstrumentDefinition.nonempty_text, values) || throw(ArgumentError("mode $key must contain names"))
+        key == "requires" && !all(value -> value in ("devices", "calibration"), values) &&
+            throw(ArgumentError("unknown application mode requirement"))
+    end
+    get!(mode, "application", Dict{String,Any}())
+    return mode
+end
 
 function selected_mode(source, profile)
     path = joinpath(source, dirname(application_file(profile)), "modes.yaml")
@@ -20,12 +46,14 @@ function selected_mode(source, profile)
     path = D.relative_asset(source, relpath(path,source))
     document = InstrumentConfiguration.bounded_yaml(path)
     Set(keys(document)) == Set(["default", "modes"]) || throw(ArgumentError("invalid application modes fields"))
+    modes = InstrumentConfiguration._declaration_object(document["modes"], "application modes")
+    1 <= length(modes) <= 64 || throw(ArgumentError("application requires 1:64 modes"))
+    for name in keys(modes)
+        resolve_mode(modes, name)
+    end
+    haskey(modes, document["default"]) || throw(ArgumentError("unknown default application mode"))
     name = get(profile, "mode", document["default"])
-    name isa AbstractString && haskey(document["modes"], name) ||
-        throw(ArgumentError("unknown instrument application mode"))
-    mode = document["modes"][name]
-    mode isa AbstractDict && Set(keys(mode)) ⊆ Set(["application", "session", "core", "omit-views", "requires"]) &&
-        haskey(mode, "application") || throw(ArgumentError("invalid application mode fields"))
+    mode = resolve_mode(modes, name)
     for field in get(mode, "requires", [])
         field in ("devices", "calibration") || throw(ArgumentError("unknown application mode requirement"))
         haskey(profile, field) || throw(ArgumentError("selected mode requires explicit $field configuration"))
@@ -46,6 +74,7 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix; confi
         combined = merge_configuration(original, get(mode, field, Dict()))
         combined = substitute(combined, bindings)
         if field == "core"
+            queue_templates!(combined)
             telemetry_queues!(combined)
             validate_telemetry_groups(combined)
         end

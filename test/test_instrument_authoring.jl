@@ -123,3 +123,34 @@ end
         @test C.read_yaml(joinpath(source,"rtc/application.yaml")) == base
     end
 end
+
+@testset "omitted routine application fields expand before native validation" begin
+    abbreviated=Dict{String,Any}("owners"=>[Dict{String,Any}("role"=>"science")],
+        "session-runtime"=>Dict{String,Any}("argv"=>["session"]))
+    explicit=deepcopy(abbreviated)
+    explicit["cpu-latency-us"]=nothing
+    explicit["environment"]=Dict{String,Any}()
+    only(explicit["owners"])["environment"]=Dict{String,Any}()
+    explicit["session-runtime"]["environment"]=Dict{String,Any}()
+    @test E.application_defaults!(deepcopy(abbreviated))==explicit
+    overrides=deepcopy(explicit)
+    overrides["cpu-latency-us"]=12
+    only(overrides["owners"])["environment"]=Dict("OPENBLAS_NUM_THREADS"=>"2")
+    overrides["session-runtime"]["environment"]=Dict("SITE"=>"test")
+    @test E.application_defaults!(deepcopy(overrides))==overrides
+    for target in ("owner","session","application"), value in (nothing,[],Dict("BAD=NAME"=>"value"),Dict("COUNT"=>1))
+        invalid=deepcopy(abbreviated)
+        destination=target=="owner" ? only(invalid["owners"]) : target=="session" ? invalid["session-runtime"] : invalid
+        destination["environment"]=value
+        @test_throws D.DeploymentError E.application_defaults!(invalid)
+    end
+    mktempdir() do source
+        path=joinpath(source,"rtc/modes.yaml")
+        C.write_yaml(path,Dict("default"=>"source","modes"=>Dict("source"=>Dict())))
+        @test E.selected_mode(source,Dict())==Dict("application"=>Dict())
+        for mode in (Dict("application"=>nothing),Dict("unknown"=>true))
+            C.write_yaml(path,Dict("default"=>"source","modes"=>Dict("source"=>mode)))
+            @test_throws ArgumentError E.selected_mode(source,Dict())
+        end
+    end
+end

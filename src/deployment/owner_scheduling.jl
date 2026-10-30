@@ -7,8 +7,16 @@ end
 
 function julia_threads!(argv, count)
     positions = findall(arg -> startswith(arg, "--threads="), argv)
-    length(positions) == 1 || throw(ArgumentError("Julia owner requires exactly one --threads argument"))
-    argv[only(positions)] = "--threads=$count,0"
+    length(positions) <= 1 && !("--threads" in argv) && !("-t" in argv) ||
+        throw(ArgumentError("Julia owner permits at most one --threads= argument"))
+    if isempty(positions)
+        # Keep the launcher-derived option before the project/entrypoint, matching
+        # the ordinary --startup-file, --threads, --project authoring order.
+        position = findfirst(arg -> startswith(arg, "--project") || arg in ("-e", "--eval", "-E", "--print", "-L", "--load", "--"), argv)
+        insert!(argv, something(position, 2), "--threads=$count,0")
+    else
+        argv[only(positions)] = "--threads=$count,0"
+    end
     return nothing
 end
 

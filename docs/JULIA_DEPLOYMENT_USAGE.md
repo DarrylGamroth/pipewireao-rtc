@@ -974,6 +974,17 @@ the instrument root. Owner lists start from the selected application, so an
 alternate application need not inherit the default controllers or queues.
 The generated runtime declaration remains `rtc/application.conf`.
 
+Authoring may omit `cpu-latency-us` (null), owner and session-runtime
+`environment` (empty mappings), and a mode's `application` (empty mapping).
+The exporter writes explicit native deployment fields. For `jfg` and `aos`
+owners, omit the Julia `--threads=` placeholder to derive it from host worker
+placement; explicit placeholders are still replaced by that placement. Prepared
+JFG ports also supply omitted session graph `shape`, `element-type` and `schema`.
+Explicit metadata must agree with the prepared port. External source/sink
+contracts and physical schema choices remain explicit. Declared version-11 GUI
+configuration files may omit `session.label`; the exporter uses the deployment
+name. An explicit label continues to select its declared session.
+
 `InstrumentExport.compose(base, component, fresh_output; namespace, roles,
 links, overrides, prefix, owner_arguments=Dict(), sinks=[], node_owners=Dict())`
 combines fully sealed built applications. The base retains its core, session,
@@ -1096,3 +1107,32 @@ hash, both prescription identities and response comparison in its receipts.
 The generic compositor continues rejecting arbitrary publication overrides.
 This prepares a reviewable application and launches no process. Matched noisy
 loop, accelerator and physical-device qualification remain separate gates.
+
+## Application mode inheritance and telemetry queues
+
+An authored mode can set `extends` to another mode in the same `modes.yaml`.
+Mappings merge recursively; child arrays replace inherited arrays, including
+owners and configuration-file selections. Missing parents, cycles, unknown
+fields and inheritance deeper than 16 modes are rejected. Ordinary application
+and native session/core composition still appends arrays as before.
+
+Mode core fragments can explicitly select a bounded telemetry queue template:
+
+```yaml
+core:
+  context.modules:
+    - template: telemetry
+      args:
+        node.name: residual-queue
+        playback.props:
+          media.name: residual
+```
+
+Export expands this to `libpipewire-module-queue`: `application/ndarray`, one
+buffer, copy storage and drop-oldest overflow. Capture runs on `rtc-data-loop`
+with the `-input` node suffix; playback runs on `telemetry-loop` with `-output`,
+`device.api: pipewireao.queue` and `media.class: Data/Source`. Playback repeats
+queue policy as string properties. Explicit supported arguments and capture or
+playback properties override these values; an explicit playback policy remains
+independent. Unknown template names and fields are rejected. Native module
+entries without `template` retain their existing values.

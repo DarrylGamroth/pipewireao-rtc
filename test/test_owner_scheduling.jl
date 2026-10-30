@@ -70,3 +70,23 @@ end
         @test_throws D.DeploymentError D.validate_owner_pins(merge(declaration,Dict("argv"=>argv)),placement)
     end
 end
+
+@testset "launcher derives omitted Julia thread options" begin
+    for (kind, workers) in ((:jfg, Dict("julia"=>[3,2])),
+            (:jfg, Dict("julia"=>[3,2,4])),
+            (:aos, Dict("pipewire"=>[2])),
+            (:aos, Dict("pipewire"=>[2],"pupil-output"=>[4])))
+        explicit=owner(string(kind),"science")
+        explicit["argv"]=["/julia","--startup-file=no","--threads=99,0","--project=@PACKAGE@","-e","opaque-entrypoint","--"]
+        omitted=deepcopy(explicit)
+        deleteat!(omitted["argv"],3)
+        E.owner_scheduling!(Val(kind),explicit,process(workers))
+        E.owner_scheduling!(Val(kind),omitted,process(workers))
+        @test omitted==explicit
+    end
+    for arguments in (["--threads=2,0","--threads=3,0"], ["--threads","2"], ["-t","2"])
+        declared=owner("jfg","science")
+        declared["argv"]=vcat(["/julia"],arguments,["-e","opaque-entrypoint","--"])
+        @test_throws ArgumentError E.owner_scheduling!(Val(:jfg),declared,process(Dict("julia"=>[3,2])))
+    end
+end

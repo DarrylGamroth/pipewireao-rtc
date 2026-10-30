@@ -87,6 +87,20 @@ function simulation_documents(path)
         throw(ArgumentError("simulation definition must declare exactly one of graphs or preparation"))
     haskey(document, "hil") == haskey(document, "wire_contracts") ||
         throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
+    _declaration_object(get!(document, "components", Dict{String,Any}()), "simulation components")
+    _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
+    for profile in values(_declaration_object(document["profiles"], "simulation profiles"))
+        _declaration_object(profile, "simulation profile")
+        haskey(profile, "template") && continue
+        for key in ("nodes", "parameters")
+            _declaration_array(get!(profile, key, Any[]), "profile $key")
+        end
+    end
+    for source in values(_declaration_object(get(document, "sources", Dict()), "simulation sources"))
+        _declaration_object(source, "simulation source")
+        get!(source, "source_separation_arcsec", 0.0)
+        get!(source, "source_position_angle_deg", 0.0)
+    end
     instrument = referenced_instrument(path, document["instrument"])
     # Generated binding descriptors stay separate from authored model settings.
     # Each referenced artifact retains its own type, axes, shape and SHA-256.

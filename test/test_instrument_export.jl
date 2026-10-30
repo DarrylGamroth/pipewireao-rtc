@@ -504,3 +504,53 @@ end
         @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
     end
 end
+
+@testset "prepared graph defaults retain port identity and external schemas" begin
+    contract=Dict("shape"=>[3],"element-type"=>"F32_LE","schema"=>"test.parameter/1")
+    contracts=Dict("science"=>Dict("parameters"=>Dict("bias"=>contract),
+        "inputs"=>Dict("raw"=>merge(contract,Dict("schema"=>"test.raw/1"))),
+        "outputs"=>Dict("result"=>merge(contract,Dict("schema"=>"test.result/1")))))
+    ports=[Dict{String,Any}("name"=>"bias","direction"=>"output","parameter"=>true),
+        Dict{String,Any}("name"=>"raw","direction"=>"input"),
+        Dict{String,Any}("name"=>"result","direction"=>"output")]
+    external=Dict("node.name"=>"external","ports"=>[Dict("schema"=>"test.physical/1")])
+    session=Dict("graphs"=>[Dict("node.name"=>"science","ports"=>ports),external])
+    E.validate_session_graph_contracts(session,contracts)
+    @test ports[1]==merge(Dict("name"=>"bias","direction"=>"output","parameter"=>true),contract)
+    @test ports[2]["schema"]=="test.raw/1"
+    @test ports[3]["schema"]=="test.result/1"
+    @test external==Dict("node.name"=>"external","ports"=>[Dict("schema"=>"test.physical/1")])
+    for (field,value) in (("shape",nothing),("element-type","U16_LE"),("schema","test.other/1"))
+        invalid=deepcopy(session)
+        invalid["graphs"][1]["ports"][1][field]=value
+        @test_throws ArgumentError E.validate_session_graph_contracts(invalid,contracts)
+    end
+end
+
+@testset "declared GUI session labels default to the deployment name" begin
+    mktempdir() do application
+        C.write_json(joinpath(application,"session.conf"),Dict("sources"=>[]))
+        C.write_json(joinpath(application,"core.conf"),Dict())
+        path=joinpath(application,"gui/views.yaml")
+        gui=Dict{String,Any}("schema_version"=>11,"view"=>[],
+            "session"=>Dict{String,Any}("instrument"=>"science","graphs"=>[]))
+        spec=Dict("name"=>"science-application","session"=>"session.conf","core"=>"core.conf")
+        configuration=[Dict("path"=>"gui/views.yaml","format"=>"yaml")]
+        C.write_yaml(path,gui)
+        E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+        resolved=C.read_yaml(path)
+        @test resolved==merge(gui,Dict("session"=>merge(gui["session"],Dict("label"=>spec["name"]))))
+        for label in (spec["name"],"external-application")
+            explicit=deepcopy(gui);explicit["session"]["label"]=label
+            C.write_yaml(path,explicit)
+            E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+            @test C.read_yaml(path)==explicit
+        end
+        for label in (nothing,"",7)
+            invalid=deepcopy(gui);invalid["session"]["label"]=label
+            C.write_yaml(path,invalid);before=read(path)
+            @test_throws ArgumentError E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+            @test read(path)==before
+        end
+    end
+end

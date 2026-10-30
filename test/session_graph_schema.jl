@@ -36,6 +36,20 @@ const OPD_COMMAND="pipewireao/dm-command-opd-um-f32/1"
         C.write_json(path,session)
         E.prepare_session_configuration!(directory,spec,declarations,"instrument.json",PREFIX)
         @test only(only(D.decode(path,PREFIX)["graphs"])["ports"])["schema"]==OPD_COMMAND
+        resolved=deepcopy(D.decode(path,PREFIX))
+        for fields in (("shape",), ("element-type",), ("schema",), ("shape","element-type","schema"))
+            abbreviated=deepcopy(resolved)
+            abbreviated_port=only(only(abbreviated["graphs"])["ports"])
+            foreach(field -> delete!(abbreviated_port,field),fields)
+            C.write_json(path,abbreviated)
+            E.prepare_session_configuration!(directory,spec,declarations,"instrument.json",PREFIX)
+            @test D.decode(path,PREFIX)==resolved
+        end
+        unknown=deepcopy(resolved)
+        only(only(unknown["graphs"])["ports"])["name"]="missing"
+        C.write_json(path,unknown);before=read(path)
+        @test_throws ArgumentError E.prepare_session_configuration!(directory,spec,declarations,"instrument.json",PREFIX)
+        @test read(path)==before
         # The existing generic conditioner uses the same numerical kernel with explicit units.
         node["label"]="vector-conditioning-f32"
         delete!(config,"actuator_count")

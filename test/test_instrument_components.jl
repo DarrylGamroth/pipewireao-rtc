@@ -243,3 +243,97 @@ end
         @test_throws ArgumentError IC.validate_imaging(Dict("sources" => Dict("science" => Dict()), "imaging" => imaging))
     end
 end
+
+@testset "selected InGaAs sensor supplies missing geometry and exposure" begin
+    sensor = Dict{String,Any}("detector" => Dict("rows" => 256, "columns" => 320,
+        "pixel_sampling_m" => [3e-5, 3e-5]), "acquisition" => Dict("exposure_duration_s" => 0.01))
+    instrument = Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict("llowfs" => sensor))
+    config = Dict{String,Any}("spectral_channel" => "h", "quantum_efficiency" => 0.8,
+        "rng_seed" => 17, "photon_rate_schema" => "example.rate/1", "frame_schema" => "example.electrons/1")
+    selection = Dict("template" => "ingaas", "sensor" => "llowfs", "config" => config)
+    graph = Dict("schema_version" => 1, "name" => "camera",
+        "nodes" => Any[Dict("name" => "camera")], "inputs" => [],
+        "outputs" => [Dict("name" => "frame", "source" => "camera.frame")])
+    document = Dict{String,Any}("components" => Dict("camera" => selection),
+        "profiles" => Dict("reference" => Dict("nodes" => [], "parameters" => [])),
+        "defaults" => Dict("profile" => "reference"), "graphs" => Dict("camera" => graph))
+    function resolve_camera(document, instrument)
+        expanded = IC.expand_simulation_components!(deepcopy(document), instrument, ".")
+        node = only(expanded.graphs["camera"]["nodes"])
+        return PipeWireAORTC.Common.configuration_value(node["config"], Dict("instrument" => instrument))
+    end
+    explicit = deepcopy(document)
+    merge!(explicit["components"]["camera"]["config"], sensor["detector"], sensor["acquisition"])
+    @test resolve_camera(document, instrument) == resolve_camera(explicit, instrument)
+    @test !haskey(config, "rows")
+    changed = deepcopy(instrument)
+    changed_sensor = changed["wavefront_sensors"]["llowfs"]
+    changed_sensor["detector"]["rows"] = 128
+    changed_sensor["detector"]["columns"] = 160
+    changed_sensor["detector"]["pixel_sampling_m"] = [6e-5, 5e-5]
+    changed_sensor["acquisition"]["exposure_duration_s"] = 0.02
+    resolved = resolve_camera(document, changed)
+    @test all(resolved[key] == value for (key, value) in merge(changed_sensor["detector"], changed_sensor["acquisition"]))
+    @test resolve_camera(explicit, changed) == resolve_camera(explicit, instrument)
+    for key in ("rows", "columns", "pixel_sampling_m", "exposure_duration_s")
+        invalid = deepcopy(document)
+        invalid["components"]["camera"]["config"][key] = nothing
+        @test_throws ArgumentError resolve_camera(invalid, instrument)
+        missing = deepcopy(instrument)
+        delete!(missing["wavefront_sensors"]["llowfs"][key == "exposure_duration_s" ? "acquisition" : "detector"], key)
+        @test_throws ArgumentError resolve_camera(document, missing)
+    end
+    invalid = deepcopy(document)
+    invalid["components"]["camera"]["config"]["row_count"] = 256
+    @test_throws ArgumentError resolve_camera(invalid, instrument)
+end
+
+@testset "AOS node defaults metadata binds its source" begin
+    C = PipeWireAORTC.Common
+    mktempdir() do directory
+        source = "src/algorithm_graphs/node_defaults.jl"
+        mkpath(dirname(joinpath(directory, source)))
+        write(joinpath(directory, source), "source-owned defaults\n")
+        output = joinpath(directory, "data", "generated", "node-defaults.json")
+        mkpath(dirname(output))
+        document = Dict("schema_version" => 1, "generated" => "Generated test metadata",
+            "source" => Dict("path" => source, "sha256" => C.sha256_file(joinpath(directory, source))),
+            "regeneration" => "test generator", "defaults" => Dict("cmos" => Dict("photon_noise" => true)))
+        C.write_json(output, document)
+        @test IC.aos_node_defaults(directory) == document["defaults"]
+        write(joinpath(directory, source), "changed defaults\n")
+        @test_throws ArgumentError IC.aos_node_defaults(directory)
+        rm(output)
+        @test_throws ArgumentError IC.aos_node_defaults(directory)
+    end
+end
+
+if "science" in ARGS
+@testset "routine component values use AOS defaults without changing catalog expansion" begin
+    for (template, defaults) in (
+            ("cmos", Dict("binning" => 1, "column_readout_noise_e" => 0,
+                "row_readout_noise_e" => 0, "photon_noise" => true)),
+            ("emccd", Dict("photon_noise" => true, "dark_current_e_per_pixel_s" => 0)),
+            ("pyramid", Dict("modulation_propagation_strategy" => "pupil_tilt",
+                "pupil_shift_x_pixels" => [0, 0, 0, 0], "pupil_shift_y_pixels" => [0, 0, 0, 0])))
+        catalog = IC.component_template(template, Set{String}())
+        config = Dict{String,Any}(key => startswith(value["\$ref"], "/schemas/") ? "example.schema/1" : 1
+            for (key, value) in catalog["config"] if IC.component_input(value))
+        for key in keys(defaults)
+            delete!(config, key)
+        end
+        selection = Dict("template" => template, "sensor" => "guide", "source" => "guide", "config" => config)
+        omitted = IC.component_node("node", selection, template, Set{String}())["config"]
+        @test all(omitted[key] == value for (key, value) in defaults)
+        merge!(config, defaults)
+        explicit = IC.component_node("node", selection, template, Set{String}())["config"]
+        @test all(explicit[key] == value for (key, value) in defaults)
+        @test explicit == omitted
+        for key in keys(defaults)
+            invalid = deepcopy(selection)
+            invalid["config"][key] = nothing
+            @test_throws ArgumentError IC.component_node("node", invalid, template, Set{String}())
+        end
+    end
+end
+end
