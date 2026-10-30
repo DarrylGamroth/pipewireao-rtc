@@ -166,6 +166,12 @@ end
         )
             @test_throws ArgumentError IC.actuator_coordinates(description;pupil_registration=registration)
         end
+        # Finite coordinates on a small grid must not hide a pitch outside
+        # the published registration's shared Float32 viewport headroom.
+        small = merge(description,(;layout=merge(description.layout,
+            (;grid_shape=(2,2),command_positions=((1,1),(1,2),(2,1))))))
+        @test_throws ArgumentError IC.actuator_coordinates(small;
+            pupil_registration=(;actuator_pitch_pupil_radius=1e38,rotation_deg=90.0))
         @test isfinite(IC._pupil_registration(merge(original,(;rotation_deg=1e308))).rotation_deg)
     end
 end

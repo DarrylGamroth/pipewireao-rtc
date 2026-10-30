@@ -73,7 +73,7 @@ function _require_pupil_geometry(description::NamedTuple, registration::NamedTup
         sine,cosine = sincosd(registration.rotation_deg)
         reflected_dy = registration.flip_y ? -dy : dy
         half_width = (abs(sine) + abs(cosine)) * extent64
-        bounds = (extent64,dx,dy,
+        bounds = (registration.actuator_pitch_pupil_radius,extent64,dx,dy,
             half_width + abs(cosine*dx - sine*reflected_dy),
             half_width + abs(sine*dx + cosine*reflected_dy))
         all(InstrumentDefinition.renderable_pupil_value,bounds) || throw(ArgumentError(

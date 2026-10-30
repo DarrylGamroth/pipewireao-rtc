@@ -1086,9 +1086,9 @@ is dimensionless spacing divided by the registered pupil radius; Classic retains
 with the transform defined in the instrument publication contract above. Pitch
 is finite and positive; rotation and offsets are finite real numbers and the
 reflection flag is Boolean. Equivalent whole turns are removed from the angle.
-Scaled offsets and transformed grid coordinates must remain renderable in
-Float32. The generic measured-influence FITS resampler supports only identity
-registration: it uses separable source-grid interpolation and rejects rotation,
+For nonidentity registration, pitch, scaled offsets and transformed grid
+coordinates must remain renderable in Float32. The generic measured-influence
+FITS resampler supports only identity registration: it uses separable source-grid interpolation and rejects rotation,
 reflection or offset before reading the artifact. Already registered influence
 arrays and coordinates may remain explicit scientific graph inputs; this
 metadata extension does not transform their samples. Explicit identity defaults
