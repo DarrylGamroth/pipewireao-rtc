@@ -161,9 +161,10 @@ The node resets its output buffer to zero and requires one-based Float32
 input arrays and Float32 or UInt16 output arrays on the declared compute device. CUDA and AMDGPU owners support
 fixed-address command-graph capture; host owners retain stream execution.
 """
-function configured_graph_node_types()
-    return merge(builtin_graph_node_types(), (
+function configured_graph_node_types(directory=nothing)
+    factories = merge(builtin_graph_node_types(), (
         detector_frame_layout_f32=_detector_frame_layout_f32_node,))
+    return instrument_optical_factories(factories,directory)
 end
 
 function AlgorithmGraphs.graph_node_ports(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T}) where {T}

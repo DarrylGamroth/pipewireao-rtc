@@ -855,6 +855,35 @@ unavailable; the first live exposure must prime again. Retained last-product
 metadata is inspection history, not evidence of publication. This CPU graph
 preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
+### Clocked optical applications
+
+Version 6, `mode: clocked-optical`, advances a source graph on model time and
+feeds its entrance-pupil OPD and physical mirror OPD to separate optical planes.
+It accepts a native Float32 mirror command and publishes completed optical
+exposures. The static pupil amplitude is an explicitly typed, hashed FITS
+binding; `source_pupil_axes` declares the entrance OPD transform and
+`source_dm_axes` declares the mirror raster axes. The owner checks the mirror
+port schema, units and command limit against the source graph and RTC mirror
+controls, and checks each optical mirror plane's schema, shape and sampling.
+The current clocked owner supports CPU only. A successful offline build or
+calibration does not qualify physical devices or deadline performance.
+
+A simulation definition may list `binding_files` relative to the instrument
+root. Each YAML file contributes named bindings; duplicate names are rejected.
+Compiled optical model paths remain package-relative and are verified against
+the declared content hash before preparation. Choose a new cold configuration
+and matching calibration when changing a model or its bindings.
+
+The focused offline checks use an environment containing the optional science
+packages, with no PipeWire service or accelerator required:
+
+```sh
+julia --project=/path/to/science-env test/test_clocked_plane_contract.jl
+julia --project=/path/to/science-env test/calibration_optical.jl
+julia --project=/path/to/science-env test/calibration_chopped.jl
+julia --project=/path/to/science-env test/calibration_command_domain.jl
+```
+
 ### Managed clocked pupil source
 
 A version-5 `mode: pupil-source` simulation configuration selects a named,

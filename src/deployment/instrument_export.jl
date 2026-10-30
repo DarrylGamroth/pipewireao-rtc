@@ -347,7 +347,7 @@ function prepare(source::AbstractString, destination::AbstractString;
         spec["instrument"] = relpath(instrument, application)
         if isfile(joinpath(application,"simulation.conf"))
             simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
-            if get(simulation,"version",nothing) == 4
+            if get(simulation,"version",nothing) in (4,6)
                 # Optical prescription identity needs the selected compiler,
                 # while export always prepares contracts on the CPU.
                 Base.require(Main,:AdaptiveOpticsSim)
@@ -358,7 +358,7 @@ function prepare(source::AbstractString, destination::AbstractString;
                 any(name->InstrumentConfiguration.graph_requires_proper(declaration,configured;simulation_graph=name),
                     keys(declaration.instrument.document["optical_paths"])) && Base.require(Main,:Proper)
             end
-            get(simulation,"version",nothing) in (3,4,5) && Base.invokelatest(
+            get(simulation,"version",nothing) in (3,4,5,6) && Base.invokelatest(
                 InstrumentConfiguration.prepare_simulation_configuration!,application;configuration)
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)

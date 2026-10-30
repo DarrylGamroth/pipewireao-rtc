@@ -4,6 +4,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 const FGA = FilterGraphAlgorithms
 const LA = LinearAlgebra
 const GraphOwner = PipeWireAORTC.GraphOwner
+const Calibration = PipeWireAORTC.InstrumentCalibration
 include(joinpath(@__DIR__,"../ext/modal_completion.jl"))
 
 grid_mirror(n) = (;layout=(;grid_shape=(n,n),
@@ -34,6 +35,21 @@ const POLICY = Dict("kind"=>"thin_plate_annulus","guard_width_pitches"=>2)
     @test all(iszero,result.selector[:,extrapolated])
     projection = FGA.VdmToPdmPlan(result.completion,Matrix{Float32}(I,length(result.roles),length(result.roles)))
     @test projection.correction_roles == result.roles
+    health = trues(length(result.roles))
+    health[first(result.controlled)] = false
+    health[first(extrapolated)] = false
+    health_result = modal_completion(mirror,registration,POLICY;obstruction=0.2,healthy=health)
+    @test all(iszero,health_result.roles[.!health])
+    @test all(iszero,health_result.completion[.!health,:])
+    @test all(health[health_result.controlled])
+    @test health_result.selector * health_result.completion == Matrix{Float32}(I,length(health_result.controlled),length(health_result.controlled))
+    @test_throws ArgumentError modal_completion(mirror,registration,POLICY;obstruction=0.2,healthy=trues(3))
+    shifted = copy(positions); shifted[1,:] .+= 0.17
+    shifted_result = modal_completion(mirror,registration,POLICY;obstruction=0.2,healthy=health,coordinates=shifted,outer_radius=0.9)
+    expected = findall(i -> health[i] && 0.18 <= hypot(shifted[1,i],shifted[2,i]) <= 0.9,eachindex(health))
+    @test shifted_result.controlled == expected
+    @test all(iszero,shifted_result.completion[.!health,:])
+    @test_throws ArgumentError modal_completion(mirror,registration,POLICY;obstruction=0.2,coordinates=zeros(2,3))
     no_guard = modal_completion(mirror,registration,merge(POLICY,Dict("guard_width_pitches"=>0));obstruction=0.2)
     @test count(!iszero,no_guard.roles) < count(!iszero,result.roles)
 end

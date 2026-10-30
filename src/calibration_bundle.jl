@@ -129,7 +129,7 @@ only parameters are listed in parameter_names. Generated integrity fields cannot
 be supplied in report. Return the generated report.
 """
 function write_bundle(directory::AbstractString, report, context, concrete_graph, parameters;
-        diagnostics=Dict())
+        diagnostics=Dict(), artifact_units=Dict())
     _bundle_report(report)
     any(key -> haskey(report, key), _BUNDLE_INTEGRITY_FIELDS) &&
         throw(ArgumentError("calibration report must not supply generated integrity fields"))
@@ -159,7 +159,7 @@ function write_bundle(directory::AbstractString, report, context, concrete_graph
         hashes = Dict{String,String}()
         for name in sort!(collect(keys(arrays)))
             path = joinpath(temporary, "artifacts", name * ".fits")
-            write_fits(path, arrays[name])
+            write_fits(path, arrays[name]; units=get(artifact_units,name,nothing))
             hashes[name * ".fits"] = Common.sha256_file(path)
         end
         result = Dict{String,Any}(report)

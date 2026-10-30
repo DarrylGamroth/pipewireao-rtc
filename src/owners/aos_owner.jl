@@ -224,8 +224,8 @@ end
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     document isa AbstractDict || throw(ArgumentError("AOS configuration must be an object"))
-    version = integer(get(document, "version", nothing), "version", 1, 5)
-    version == 4 && return external_pupil_configuration(path, document)
+    version = integer(get(document, "version", nothing), "version", 1, 6)
+    version in (4,6) && return external_pupil_configuration(path, document)
     version == 5 && return pupil_source_configuration(path, document)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
@@ -431,9 +431,10 @@ function requires_proper(options)
     # is verified afterwards by the ordinary declaration/execution preparation.
     declaration = InstrumentConfiguration.load_simulation(options.plant.definition; validate_optics=false)
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
-    if options.version == 4
+    if options.version in (4,6)
         names = collect(keys(declaration.instrument.document["optical_paths"]))
         append!(names, [row.unfringed_graph for row in values(options.plant.chopping)])
+        options.version == 6 && push!(names,options.source_graph)
         return any(name -> InstrumentConfiguration.graph_requires_proper(declaration, configured;
             simulation_graph=name), names)
     end
@@ -452,7 +453,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
     invocation = arguments(args)
     options = configuration(invocation.config)
-    data_nodes = options.version == 5 ? ("simulator-pupil-output",(options.applied_command_observation ? ("simulator-"*options.mirror*"-applied",) : ())...) : options.version == 4 ? (options.pupil_node,values(options.sensor_nodes)...) :
+    data_nodes = options.version == 5 ? ("simulator-pupil-output",(options.applied_command_observation ? ("simulator-"*options.mirror*"-applied",) : ())...) : options.version in (4,6) ? (options.version == 6 ? options.command_node : options.pupil_node,values(options.sensor_nodes)...) :
         command_items(options.command_node)
     (options.version==5)==(invocation.physical_offsets!==nothing) ||
         throw(ArgumentError("pupil sources require --physical-offsets; other AOS versions do not accept it"))
@@ -460,7 +461,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
         throw(ArgumentError("pupil sources have no HIL phase timing or optical diagnostic worker"))
     all(name -> name != invocation.control_node && name != invocation.bootstrap_node, data_nodes) ||
         throw(ArgumentError("bootstrap, frame and command nodes must differ"))
-    options.version == 4 && (invocation.phase_timing_directory !== nothing ||
+    options.version in (4,6) && (invocation.phase_timing_directory !== nothing ||
         invocation.optical_diagnostics_cpu !== nothing || invocation.pupil_output_cpu !== nothing) &&
         throw(ArgumentError("external-pupil owners use their input clock and do not support HIL diagnostic workers"))
     with_owner(merge(options, invocation)) do admitted
@@ -470,14 +471,14 @@ function _main(args; with_owner=Bootstrap.with_owner,
         admitted.backend === :cuda && load_cuda()
         admitted.backend === :amdgpu && load_amdgpu()
         admitted.owner_check()
-        if admitted.version in (3, 4, 5)
+        if admitted.version in (3, 4, 5, 6)
             if requires_proper(admitted)
                 load_proper()
                 admitted.owner_check()
             end
             # Optional science loads add graph preparation methods in a newer
             # world; declaration verification resolves those same graph methods.
-            verify = admitted.version == 5 ? verify_pupil_source_declaration : admitted.version == 4 ? verify_external_pupil_declaration :
+            verify = admitted.version == 5 ? verify_pupil_source_declaration : admitted.version in (4,6) ? verify_external_pupil_declaration :
                 InstrumentDefinition.verify_declaration
             Base.invokelatest(verify, admitted)
         elseif admitted.plant !== nothing
@@ -487,7 +488,7 @@ function _main(args; with_owner=Bootstrap.with_owner,
             admitted = merge(admitted, (; plant_module))
         end
         selected_run=run===run_owner ? admitted.version==5 ? run_pupil_source_owner :
-            admitted.version==4 ? run_external_pupil_owner : run : run
+            admitted.version in (4,6) ? run_external_pupil_owner : run : run
         Base.invokelatest(selected_run, admitted)
     end
     return 0

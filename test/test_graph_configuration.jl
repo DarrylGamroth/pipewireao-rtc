@@ -48,6 +48,12 @@ end
 
 end
 
+@testset "selected-pixel validity uses the selected extent" begin
+    context = E.graph_context(instrument(); dimensions=Dict("selected_pixel_count"=>3))
+    @test E.graph_pointer(context,"/rtc/selected_pixel_mask") == trues(3)
+    @test_throws ArgumentError E.graph_context(instrument(); dimensions=Dict("selected_pixel_count"=>0))
+end
+
 @testset "pyramid graph and session references share the declared calibration context" begin
     scientific = Dict("deformable_mirrors" => instrument()["deformable_mirrors"],
         "wavefront_sensors" => Dict("sensor-one" => Dict("layout" => Dict(

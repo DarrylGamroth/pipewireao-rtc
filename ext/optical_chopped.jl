@@ -43,10 +43,12 @@ end
 
 optical_frontend_identity(document) = PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(document))
 
-function optical_chopped_template(plan, name)
+function optical_chopped_template(plan, name; mask=nothing)
     dimensions = plan.rtc.document["dimensions"]
-    calibration = merge(deepcopy(plan.frames), Dict("pixel_selection_mask"=>
-        fill(true,dimensions["image_rows"]*dimensions["image_columns"])))
+    mask === nothing && (mask = trues(dimensions["image_rows"],dimensions["image_columns"]))
+    size(mask) == (dimensions["image_rows"],dimensions["image_columns"]) && count(mask) == dimensions["selected_pixel_count"] ||
+        throw(DimensionMismatch("chopped selection differs from declared RTC dimensions"))
+    calibration = merge(deepcopy(plan.frames), Dict("pixel_selection_mask"=>vec(permutedims(mask,(2,1)))))
     context = PipeWireAORTC.InstrumentExport.graph_context(plan.instrument;
         dimensions,mirror_controls=plan.rtc.controls["deformable_mirrors"],calibration)
     graph = PipeWireAORTC.InstrumentExport.resolve_graph_configuration(getproperty(plan.templates,name),context)
@@ -57,9 +59,11 @@ function optical_chopped_template(plan, name)
     return document
 end
 
-function prepare_optical_chopped_frontend(document, name, reference, duration, polarity)
+function prepare_optical_chopped_frontend(document, name, reference, duration, polarity; mask=nothing)
     parameter = Symbol(string(name)*"-reference-difference")
-    reference_pixels = optical_pixels(reference,trues(size(reference)))
+    mask === nothing && (mask = trues(size(reference)))
+    size(mask) == size(reference) && any(mask) || throw(DimensionMismatch("chopped mask differs from reference image"))
+    reference_pixels = optical_pixels(reference,mask)
     graph = mktempdir() do directory
         path = joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,document)
@@ -75,10 +79,10 @@ function prepare_optical_chopped_frontend(document, name, reference, duration, p
         keys(formats) == (:image,) && formats.image.element_type === Float32 && formats.image.shape == size(reference) ||
             throw(ArgumentError("chopped frontend must consume the actual Float32 detector image"))
         output = JuliaFilterGraph.output_formats(graph).measurements
-        output.shape == (length(reference),) && output.schema == FGA.SCC_SELECTED_PIXEL_RESIDUALS_V1 ||
-            throw(ArgumentError("initial chopped calibration requires the declared full-image pixel profile"))
-        return (; graph,document,duration,polarity,reference=copy(reference),
-            inputs=(image=zeros(Float32,size(reference)),),outputs=(measurements=zeros(Float32,length(reference)),))
+        output.shape == (count(mask),) && output.schema == FGA.SCC_SELECTED_PIXEL_RESIDUALS_V1 ||
+            throw(ArgumentError("chopped measurement output differs from selected pixels"))
+        return (; graph,document,duration,polarity,reference=copy(reference),mask=copy(mask),
+            inputs=(image=zeros(Float32,size(reference)),),outputs=(measurements=zeros(Float32,count(mask)),))
     catch
         FilterGraphIsland.close_execution(graph)
         rethrow()
@@ -104,6 +108,10 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
             result isa NamedTuple && all(values(result)) || throw(ArgumentError("chopped frontend rejected its complete pair: $result"))
         end
     end
+    # Preserve the image-shaped calibration interface; unselected pixels are not
+    # measurements and remain zero. Scatter in the declared row-major order.
     rows,columns = size(frontend.reference)
-    return permutedims(reshape(copy(frontend.outputs.measurements),columns,rows),(2,1))
+    ordered = zeros(Float32,columns,rows)
+    ordered[permutedims(frontend.mask,(2,1))] .= frontend.outputs.measurements
+    return permutedims(ordered,(2,1))
 end

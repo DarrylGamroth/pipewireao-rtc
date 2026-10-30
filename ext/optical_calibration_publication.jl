@@ -24,7 +24,7 @@ function optical_publication_plan(application, selected; graphs, configuration, 
     graphs isa AbstractDict && Set(keys(graphs)) == Set(string.(names)) ||
         throw(ArgumentError("authored graphs must name every optical recipe branch exactly once"))
     simulation = D.decode(D.relative_asset(application,"simulation.conf"),prefix)
-    get(simulation,"version",nothing) === 4 && get(simulation,"mode",nothing) == "external-pupil" ||
+    get(simulation,"version",nothing) in (4,6) && get(simulation,"mode",nothing) in ("external-pupil","clocked-optical") ||
         throw(ArgumentError("optical publication requires a built external-pupil application"))
     rtc = IC.load_rtc(D.relative_asset(application,simulation["rtc_configuration"]))
     plant = simulation["plant"]
@@ -51,7 +51,8 @@ function optical_publication_graphs(plan, calibration)
     names = keys(calibration.branches)
     keys(plan.templates) == names || throw(ArgumentError("measured optical branches differ from authored templates"))
     dimensions = plan.rtc.document["dimensions"]
-    size(calibration.projection) == (dimensions["physical_command_count"],dimensions["controller_command_count"]) ||
+    command_count = hasproperty(calibration,:completion) ? dimensions["active_vdm_count"] : dimensions["physical_command_count"]
+    size(calibration.projection) == (command_count,dimensions["controller_command_count"]) ||
         throw(DimensionMismatch("measured physical projection differs from cold RTC dimensions"))
     contexts = map(names) do name
         measured = getproperty(calibration.branches,name)
@@ -113,9 +114,11 @@ function publish_optical_bundles(result, destination, graphs, contexts)
         end
         reports = NamedTuple{keys(graphs)}(reports)
         first_branch = first(keys(reports))
-        shared_names = hasproperty(result.calibration,:fast_reference) ?
-            ("command-projection","physical-to-modes","modes-to-reference") :
-            ("command-projection","physical-to-modes")
+        inverse_name = hasproperty(result.calibration,:completion) ? "vdm-to-modes" : "physical-to-modes"
+        shared_names = hasproperty(result.calibration,:completion) ?
+            ("command-projection",inverse_name,"active-to-full","vdm-to-pdm") :
+            ("command-projection",inverse_name)
+        hasproperty(result.calibration,:fast_reference) && (shared_names = (shared_names...,"modes-to-reference"))
         shared = Dict(name=>Dict("path"=>string(first_branch)*"/artifacts/"*name*".fits",
             "sha256"=>getproperty(reports,first_branch)["artifact_sha256"][name*".fits"])
             for name in shared_names)

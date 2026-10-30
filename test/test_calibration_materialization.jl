@@ -81,6 +81,10 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test C.read_yaml(joinpath(output,"selection.yaml"))["application_accepted"]===false
         zero=C.read_yaml(joinpath(output,"selection.yaml"))["zero_command"]
         @test zero["shape"]==[2] && zero["sha256"]==C.sha256_file(joinpath(output,zero["path"]))
+        @test zero["units"] == "m OPD"
+        PipeWireAORTC.Artifacts.FITSIO.FITS(joinpath(output,zero["path"]),"r") do fits
+            @test PipeWireAORTC.Artifacts.FITSIO.read_header(fits[1])["BUNIT"] == "m OPD"
+        end
         @test PipeWireAORTC.Artifacts.prepare(PipeWireAORTC.Artifacts.FITSArtifact(joinpath(output,zero["path"])),Float32,(2,)).data==zeros(Float32,2)
         @test PipeWireAORTC.InstrumentConfiguration.load_rtc(selected_rtc).calibration["pixel_selection_mask"]==trues(4)
         selected_configuration=C.read_yaml(joinpath(output,"selection.yaml"))["rtc_configuration"]
@@ -96,5 +100,21 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test execution["rtc_configuration"]==selected_path && execution["calibration_identity"]==identity
         @test read(joinpath(rebuilt,"rtc/configuration.yaml"))==authored_bytes
         @test_throws ArgumentError E.materialize_calibration(source,built,results;options...)
+    end
+end
+
+@testset "localized mirror identity preserves exact physical data" begin
+    mktempdir() do root
+        source = joinpath(root,"source"); built = joinpath(root,"built")
+        mkpath(source); mkpath(joinpath(root,"mirrors")); mkpath(joinpath(built,"mirrors"))
+        write(joinpath(root,"mirrors","dm.yaml"),"model: measured\n")
+        cp(joinpath(root,"mirrors","dm.yaml"),joinpath(built,"mirrors","dm.yaml"))
+        instrument = Dict("id"=>"test","deformable_mirrors"=>Dict("dm"=>Dict("description"=>"../mirrors/dm.yaml","units"=>"native")))
+        C.write_yaml(joinpath(source,"instrument.yaml"),instrument)
+        localized = deepcopy(instrument); localized["deformable_mirrors"]["dm"]["description"] = "mirrors/dm.yaml"
+        C.write_yaml(joinpath(built,"instrument.yaml"),localized)
+        @test E.calibration_physical_instrument(source) == E.calibration_physical_instrument(built)
+        write(joinpath(built,"mirrors","dm.yaml"),"model: changed\n")
+        @test E.calibration_physical_instrument(source) != E.calibration_physical_instrument(built)
     end
 end

@@ -150,7 +150,7 @@ function simulator_port_contracts(declaration, configured, simulation_graph)
     document = Instruments.graph_document(declaration, configured; simulation_graph)
     # Only construction bindings are needed for cold typed declarations.
     # Frame inputs, parameters and unselected profiles remain unopened.
-    factories = configured_graph_node_types()
+    factories = configured_graph_node_types(declaration.directory)
     names = configuration_binding_names(document, factories)
     bindings = prepare_bindings(declaration, configured, names)
     nodes = Tuple(map(document["nodes"]) do entry
@@ -205,7 +205,7 @@ function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),c
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration,settings)
     document = Instruments.graph_document(declaration,configured;calibration,simulation_graph)
-    factories = configured_graph_node_types()
+    factories = configured_graph_node_types(declaration.directory)
     runtime_names = Symbol[]
     for (section,field) in (("inputs","binding"),("parameters","binding"),("delayed_links","initial"))
         for entry in get(document,section,[])
@@ -377,7 +377,11 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
         seconds = get(acquisition, "exposure_duration_s", nothing)
         Instruments.isfinite_positive(seconds) || throw(ArgumentError("physical optical path requires a sensor exposure duration"))
         durations[Symbol(name)] = ModelDuration(round(UInt64, seconds * 1e9))
-        observation = (; output=:intensity, sampling_node=:optics)
+        graph_document = Instruments.graph_document(declaration,configured;simulation_graph=name)
+        intensity_outputs = filter(output -> output["name"] == "intensity",graph_document["outputs"])
+        length(intensity_outputs) == 1 || throw(ArgumentError("optical branch requires one intensity output"))
+        sampling_node = Symbol(first(split(only(intensity_outputs)["source"],'.')))
+        observation = (; output=:intensity, sampling_node)
         if haskey(observations, name)
             entry = observations[name]
             key = entry["graph"]

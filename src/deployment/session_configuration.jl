@@ -160,7 +160,7 @@ function prepare_session_configuration!(application, spec, declarations, instrum
         simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
         plant = simulation["plant"]
         definition = D.relative_asset(application, plant["definition"])
-        if get(simulation,"version",nothing) == 4
+        if get(simulation,"version",nothing) in (4,6)
             options = AOSOwner.configuration(joinpath(application,"simulation.conf"))
             AOSOwner.requires_proper(options) && Base.require(Main,:Proper)
             context["simulator"] = Base.invokelatest(external_pupil_port_contracts,definition;

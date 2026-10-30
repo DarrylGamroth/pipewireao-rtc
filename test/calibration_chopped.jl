@@ -27,6 +27,30 @@ end
 
 Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
 
+@testset "chopped calibration retains the authored row-major ROI" begin
+    document = chopped_calibration_document()
+    mask = Bool[1 0 1;0 1 0]
+    for node in document["filter.graph"]["nodes"]
+        config = node["config"]
+        haskey(config,"mask") && (config["mask"] = node["label"] == "pixel-selection-f32" ? vec(permutedims(mask)) : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key]=count(mask))
+        end
+    end
+    prefix = ChoppedCalibration.optical_chopped_document(document,:scc)
+    reference = Float32[1 2 3;4 5 6]
+    frontend = ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true;mask)
+    try
+        unfringed = ones(Float32,2,3)
+        fringed = unfringed + reference + Float32[2 9 3;8 4 7]
+        expected = Float32[2 0 3;0 4 0]
+        @test ChoppedCalibration.optical_chopped_measurement!(frontend,fringed,unfringed) == expected
+        @test length(frontend.outputs.measurements) == count(mask)
+    finally
+        FilterGraphIsland.close_execution(frontend.graph)
+    end
+end
+
 @testset "chopped calibration executes the authored signed pixel prefix" begin
     document = chopped_calibration_document()
     prefix = ChoppedCalibration.optical_chopped_document(document,:scc)
@@ -82,13 +106,21 @@ end
 @testset "matched chopped calibration publishes its real flat difference" begin
     document=chopped_calibration_document()
     specification=document["filter.graph"]
+    mask = Bool[1 1 1; 1 1 0]
+    for item in specification["nodes"]
+        config = item["config"]
+        haskey(config,"mask") && (config["mask"] = item["label"] == "pixel-selection-f32" ? vec(permutedims(mask)) : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key]=count(mask))
+        end
+    end
     node(name,label,config)=Dict("name"=>name,"type"=>"ndarray","label"=>label,"config"=>config)
     modes="test/chopped-modes/1"
     dense(input_schema,output_schema,input_count)=Dict("input_count"=>input_count,"output_count"=>4,
         "initial_reconstructor"=>nothing,"input_schema"=>input_schema,"output_schema"=>output_schema,
         "reconstructor_schema"=>"test/chopped-matrix/1")
     append!(specification["nodes"],[
-        node("reconstruction","dense-vector-reconstructor-f32",dense(SCC_SELECTED_PIXEL_RESIDUALS_V1,modes,6)),
+        node("reconstruction","dense-vector-reconstructor-f32",dense(SCC_SELECTED_PIXEL_RESIDUALS_V1,modes,count(mask))),
         node("reference","vector-offset-f32",Dict("extent"=>4,"schema"=>modes)),
         node("projection","dense-vector-reconstructor-f32",dense(modes,"test/physical/1",4))])
     append!(specification["links"],[Dict("output"=>output,"input"=>input) for (output,input) in (
@@ -102,14 +134,14 @@ end
     flat_f=Float32[12 13 14;15 16 17]
     flat_u=fill(10f0,2,3)
     reference=flat_f-flat_u
-    frontend=ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true)
+    frontend=ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true;mask)
     try
         surface=command->reshape(Float32[command[1],command[2],command[3],command[4],
             -command[1]-command[2],-command[3]-command[4]],2,3)
         observe=opd->(;scc=ChoppedCalibration.optical_chopped_measurement!(frontend,flat_f+opd,flat_u))
         provenance=Dict("measurement_frontend_identity"=>Dict("scc"=>ChoppedCalibration.optical_frontend_identity(prefix)))
         calibration=PipeWireAORTC.InstrumentCalibration.calibrate_optical(surface,observe,Matrix{Float32}(I,4,4);
-            pupil_support=trues(2,3),branch_modes=(scc=1:4,),pixel_masks=(scc=trues(2,3),),
+            pupil_support=trues(2,3),branch_modes=(scc=1:4,),pixel_masks=(scc=mask,),
             poke_m=0.02f0,tsvd_rtol=1f-5,derivative_tolerance=0.001,reconstruction_tolerance=0.001,
             signed_measurements=(:scc,),provenance)
         @test calibration.report["status"]=="accepted"

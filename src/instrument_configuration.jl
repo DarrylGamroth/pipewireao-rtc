@@ -79,7 +79,7 @@ function simulation_documents(path)
     authoring = bounded_yaml(path)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
-        "wire_contracts", "graphs", "preparation", "profiles", "bindings", "settings_bindings",
+        "wire_contracts", "graphs", "preparation", "profiles", "bindings", "binding_files", "settings_bindings",
         "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging", "observations", "optical_model", "pupil_output"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "profiles", "frame_period_s"), "simulation definition")
@@ -88,6 +88,24 @@ function simulation_documents(path)
     haskey(document, "hil") == haskey(document, "wire_contracts") ||
         throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
     instrument = referenced_instrument(path, document["instrument"])
+    # Generated binding descriptors stay separate from authored model settings.
+    # Each referenced artifact retains its own type, axes, shape and SHA-256.
+    files = get(document, "binding_files", String[])
+    files isa AbstractVector && length(files) <= 8 ||
+        throw(ArgumentError("simulation binding_files requires at most eight relative filenames"))
+    length(unique(files)) == length(files) || throw(ArgumentError("duplicate simulation binding file"))
+    bindings = get!(document, "bindings", Dict{String,Any}())
+    bindings isa AbstractDict || throw(ArgumentError("simulation bindings must be a mapping"))
+    for file in files
+        file isa AbstractString && !isabspath(file) && !occursin('\0',file) &&
+            all(part -> part != "..",splitpath(file)) ||
+            throw(ArgumentError("simulation binding file must be relative"))
+        entries = bounded_yaml(D.relative_asset(instrument.directory, file))
+        for (name, entry) in entries
+            haskey(bindings, name) && throw(ArgumentError("duplicate simulation binding: $name"))
+            bindings[name] = entry
+        end
+    end
     if haskey(document, "optical_model")
         model = fields(document["optical_model"], ("format", "source", "variants"), ("format", "source"), "prepared optical model")
         model["format"] == "zemax" && haskey(document, "graphs") &&
@@ -469,7 +487,8 @@ function graph_requires_proper(declaration, configured; simulation_graph="produc
         selected = get(replacements, node["name"], node)
         type = get(selected, "type", nothing)
         resolved = type isa AbstractDict ? Common.configuration_value(type, configuration_context(declaration, configured)) : type
-        resolved in ("proper_optical_train_f32", "proper_optical_train_f64")
+        resolved in ("proper_optical_train_f32", "proper_optical_train_f64",
+            "compiled_optical_paths_f32", "compiled_optical_paths_f64")
     end
 end
 

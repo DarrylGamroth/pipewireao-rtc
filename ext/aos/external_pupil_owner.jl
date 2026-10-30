@@ -78,10 +78,10 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
-function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2)
-    pupil = PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
+function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2, input_option=nothing)
+    pupil = input_option === nothing ? PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
         schema=science.pupil.schema, format=NdArrayFormat(NdArray.F32_LE,science.pupil.shape;layout=NdArray.ROW_MAJOR),
-        properties=science.pupil.properties)
+        properties=science.pupil.properties) : input_option
     sensors = map(keys(science.sensors)) do name
         sensor = getproperty(science.sensors,name)
         chopped = hasproperty(science.chopping, name)
@@ -137,10 +137,13 @@ function warmup!(emit, science, packet, frames, buffers; check=()->nothing)
     return nothing
 end
 
+include("clocked_optical_source.jl")
+
 function Owner.prepare_external_pupil_science(options; check=()->nothing)
     check()
-    return prepare(options.plant.definition; settings=options.plant.settings,
+    science = prepare(options.plant.definition; settings=options.plant.settings,
         chopping=options.plant.chopping, target=target(options), check)
+    return options.version == 6 ? prepare_clocked_source(options,science;check) : science
 end
 
 function PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(path; settings=NamedTuple(), chopping=NamedTuple())
@@ -205,7 +208,10 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     names = keys(science.sensors)
+    clocked = options.version == 6
     packet = zeros(Float32,science.pupil.shape)
+    command = clocked ? zeros(Float32,options.command_count) : Float32[]
+    incoming_command = similar(command)
     frames = map(sensor->zeros(eltype(sensor.image),size(sensor.image)),values(science.sensors))
     buffers = map(sensor->zeros(Float32,size(sensor.image)),values(science.sensors))
     domains = map(_->domain(),names)
@@ -233,7 +239,7 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
                 properties=merge(SourceControl.source_properties(mailbox),
                     execution_properties(first(values(science.plant.graphs))),Dict(
                     "node.name"=>options.control_node,"media.class"=>"Control",
-                    "aos.simulation.mode"=>"external-pupil", "aos.simulation.backend"=>string(options.backend),
+                    "aos.simulation.mode"=>clocked ? "clocked-optical" : "external-pupil", "aos.simulation.backend"=>string(options.backend),
                     "aos.simulation.device"=>string(options.device),
                     "aos.simulation.calibration-identity"=>options.calibration_identity,
                     "aos.simulation.configuration-sha256"=>options.configuration_sha256,
@@ -255,8 +261,12 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
             ready && break
             sleep(0.001)
         end
-        warmup!(emit, science, packet, frames, buffers;
-            check=()->Bootstrap.check_connect!(runtime,ticket))
+        if clocked
+            warmup_clocked_source!(emit,science,command;check=()->Bootstrap.check_connect!(runtime,ticket))
+        else
+            warmup!(emit, science, packet, frames, buffers;
+                check=()->Bootstrap.check_connect!(runtime,ticket))
+        end
         publication_enabled[] = true
         Bootstrap.connected!(runtime,ticket)
         Bootstrap.await_connected!(runtime,ticket)
@@ -264,6 +274,13 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
         reset_owner! = () -> begin
             state.generation = Base.checked_add(state.generation,Int64(1))
             reset_external_pupil!(science.plant)
+            if clocked
+                reset_clocked_source!(science)
+                fill!(command,0)
+                fill!(incoming_command,0)
+                state.sequence = 0
+                state.deadline_ns = 0
+            end
             for index in eachindex(owner.streams)
                 reset_pipewire_array!(owner,index)
             end
@@ -274,6 +291,21 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
             Bootstrap.cancelled(runtime) && break
             all(index->!array_stream_status(owner,index).failed,eachindex(owner.streams)) ||
                 error("external-pupil array transport failed")
+            if clocked
+                receipt = drain_pipewire_array!(incoming_command,owner,1)
+                if receipt !== nothing
+                    all(isfinite,incoming_command) && maximum(abs,incoming_command) <= options.command_limit ||
+                        throw(ArgumentError("native optical command exceeds its declared finite amplitude domain"))
+                    copyto!(command,incoming_command)
+                end
+                if !state.running || time_ns() < state.deadline_ns
+                    sleep(0.001)
+                    continue
+                end
+                state.sequence = step_clocked_source!(emit,science,command;generation=UInt64(state.generation))
+                state.deadline_ns = options.pacing_period_ns == 0 ? UInt64(0) : time_ns()+options.pacing_period_ns
+                continue
+            end
             receipt = drain_pipewire_array!(packet,owner,1)
             if receipt === nothing || !state.running
                 sleep(0.001)
@@ -304,7 +336,8 @@ function Owner.run_external_pupil_owner(options)
     try
         science = Owner.prepare_external_pupil_science(options;check=options.owner_check)
         report!(options,mailbox,state)
-        streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers)
+        streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers,
+            input_option=options.version == 6 ? clocked_command_option(options) : nothing)
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.check_connect!(runtime,ticket)

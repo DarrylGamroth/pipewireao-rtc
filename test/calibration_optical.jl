@@ -20,6 +20,39 @@ if Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt) === nothing
     end
 end
 
+@testset "native mirror units normalize through the measured OPD response" begin
+    # A 1 µm/native-unit response used to fail a dimensionful null-mode test.
+    surface = command -> reshape(Float32[command[1],-command[1],command[2],-command[2]],2,2) .* 1f-6
+    observe = opd -> (;scc=1f0 .+ opd .* 1f6)
+    projection = Float32[1 1;1 -1]
+    result = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=1f-8,normalization_probe=0.01f0,tsvd_rtol=1f-5,
+        derivative_tolerance=0.001,reconstruction_tolerance=0.001,
+        provenance=Dict("mirror_response"=>Dict("command_units"=>"native command")))
+    @test result.report["physical_projection"]["command_projection_units"] == "native command / m OPD"
+    @test result.report["physical_projection"]["physical_to_modes_units"] == "m OPD / native command"
+    mktempdir() do directory
+        output = joinpath(directory,"bundle")
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test", "source_graph_sha256"=>repeat("a",64))
+        OpticalCalibration.calibrate_optical(result,output;report,context=Dict(),concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[],"links"=>[])))
+        FITSIO = PipeWireAORTC.Artifacts.FITSIO
+        for (file,units) in (("command-projection.fits","native command / m OPD"),("physical-to-modes.fits","m OPD / native command"))
+            FITSIO.FITS(joinpath(output,"artifacts",file),"r") do fits
+                @test FITSIO.read_header(fits[1])["BUNIT"] == units
+            end
+        end
+    end
+    @test result.report["status"] == "accepted"
+    @test result.normalization ≈ fill(1f-6,2)
+    @test result.projection ≈ projection .* 1f6
+    @test result.physical_to_modes * result.projection ≈ Matrix{Float32}(I,2,2) atol=1e-5
+    @test result.validation.accepted
+    @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,observe,projection;
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=1f-8,normalization_probe=0,tsvd_rtol=1f-5)
+end
+
 @testset "physical optical calibration, row-major pixels and disjoint authority" begin
     # Physical commands produce different, non-unit pupil-RMS responses. Image
     # rows deliberately differ so a column-major pixel gather fails this oracle.
@@ -263,4 +296,60 @@ end
         @test changed.effective_settings_identity != selected.effective_settings_identity
         @test changed.execution_graph_identity != selected.execution_graph_identity
     end
+end
+
+@testset "calibration mirror matches the executed physical model" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    contract = Dict("nodes"=>[Dict("name"=>"dm","type"=>"measured","config"=>Dict("schema"=>"opd"))],
+        "parameters"=>[Dict("destination"=>"dm.influences","binding"=>"measured")],
+        "inputs"=>[Dict("name"=>"command","destination"=>"dm.pdm_command","binding"=>"zero")])
+    copy = deepcopy(contract)
+    @test implementation.verify_optical_mirror_identity(contract,copy,"dm") === nothing
+    copy["parameters"][1]["binding"] = "other"
+    @test_throws ArgumentError implementation.verify_optical_mirror_identity(contract,copy,"dm")
+    copy = deepcopy(contract)
+    copy["nodes"][1]["config"]["schema"] = "other"
+    @test_throws ArgumentError implementation.verify_optical_mirror_identity(contract,copy,"dm")
+end
+
+@testset "clocked calibration uses the owner physical inputs and settings" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    verify = implementation.verify_clocked_calibration_inputs
+    options = (;source_amplitude_binding="pupil",plant=(;definition="model.yaml"))
+    response = Dict("input"=>"dm_opd","pupil_amplitude"=>"pupil")
+    settings = Dict("wavelength"=>1.55)
+    branches = (;scc="scc")
+    paths = Dict("scc"=>Dict(),"llowfs"=>Dict())
+    @test verify(response,options,"model.yaml",settings,settings,branches,paths) === nothing
+    @test_throws ArgumentError verify(merge(response,Dict("input"=>"pupil_opd")),options,"model.yaml",settings,settings,branches,paths)
+    @test_throws ArgumentError verify(merge(response,Dict("pupil_amplitude"=>"other")),options,"model.yaml",settings,settings,branches,paths)
+    @test_throws ArgumentError verify(response,options,"model.yaml",Dict("wavelength"=>1.6),settings,branches,paths)
+    @test_throws ArgumentError verify(response,options,"other.yaml",settings,settings,branches,paths)
+end
+
+@testset "virtual mirror completion is measured and limited in physical coordinates" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    completion = Float32[1 0; 0 1; 0.5 0.5; 0 0]
+    direct = Bool[1,1,0,0]; healthy = Bool[1,1,1,0]
+    @test implementation.validate_optical_completion(completion,direct,healthy) == [1,2]
+    bad = copy(completion); bad[4,1] = 0.1
+    @test_throws ArgumentError implementation.validate_optical_completion(bad,direct,healthy)
+    bad = copy(completion); bad[1,1] = 0.9
+    @test_throws ArgumentError implementation.validate_optical_completion(bad,direct,healthy)
+    physical = command -> reshape(Float32[command[1],command[2],command[3],-sum(command)],2,2)
+    domain = implementation.bounded_optical_surface(physical,fill(-0.2,4),fill(0.2,4))
+    virtual = command -> domain.surface(completion*command)
+    @test virtual(Float32[0.1,0.1]) == physical(Float32[0.1,0.1,0.1,0])
+    @test_throws ArgumentError virtual(Float32[0.3,0])
+    @test domain.record["tested_maximum_absolute_command"] ≈ 0.1
+    result = OpticalCalibration.calibrate_optical(virtual,opd -> (;scc=1f0 .+ opd),Matrix{Float32}(I,2,2);
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=0.01f0,normalization_probe=0.02f0,tsvd_rtol=1f-5,
+        derivative_tolerance=0.001,reconstruction_tolerance=0.001)
+    @test result.report["status"] == "accepted"
+    @test size(result.projection) == (2,2) && size(result.physical_to_modes) == (2,2)
+    @test result.physical_to_modes * result.projection ≈ Matrix{Float32}(I,2,2) atol=1e-5
 end

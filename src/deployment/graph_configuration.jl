@@ -10,8 +10,13 @@ function graph_context(instrument::AbstractDict; dimensions::AbstractDict=Dict()
     resolved["wavefront_sensors"] = Dict(name => merge(Dict{String,Any}(sensor),
         sensor_context(sensor["layout"]))
         for (name, sensor) in resolved["wavefront_sensors"])
-    context = Dict{String,Any}("schemas" => Schemas.CATALOG, "instrument" => resolved, "rtc" => Dict("dimensions" => deepcopy(dimensions),
+    context = Dict{String,Any}("schemas" => Schemas.CATALOG, "instrument" => resolved, "rtc" => Dict{String,Any}("dimensions" => deepcopy(dimensions),
         "deformable_mirrors" => deepcopy(mirror_controls)))
+    if haskey(dimensions,"selected_pixel_count")
+        count = dimensions["selected_pixel_count"]
+        InstrumentConfiguration.ispositive_integer(count) || throw(ArgumentError("selected pixel count must be positive"))
+        context["rtc"]["selected_pixel_mask"] = trues(count)
+    end
     context["calibration"] = graph_configuration_value(calibration, context)
     return context
 end
