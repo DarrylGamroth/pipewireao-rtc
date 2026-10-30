@@ -43,10 +43,10 @@ reference(pointer) = Dict("\$ref" => pointer)
         C.write_json(joinpath(directory, "parameters.conf"), Dict("parameters" =>
             [Dict("port" => "mask", "path" => "mask.fits", "axes" => [2, 1])]))
         contracts = E.graph_port_contracts(graph_path)
-        @test contracts["inputs"]["raw"] == Dict("shape" => [3, 7], "element-type" => "U16_LE")
-        @test contracts["parameters"]["background"] == Dict("shape" => [3, 7], "element-type" => "F32_LE")
-        @test contracts["parameters"]["mask"] == Dict("shape" => [3, 7], "element-type" => "BOOL8")
-        @test contracts["outputs"]["calibrated"] == Dict("shape" => [3, 7], "element-type" => "F32_LE")
+        @test contracts["inputs"]["raw"] == Dict("shape" => [3, 7], "element-type" => "U16_LE", "schema"=>"pipewireao/raw-detector-pixels-u16/1")
+        @test contracts["parameters"]["background"] == Dict("shape" => [3, 7], "element-type" => "F32_LE", "schema"=>"pipewireao/background-calibration-f32/1")
+        @test contracts["parameters"]["mask"] == Dict("shape" => [3, 7], "element-type" => "BOOL8", "schema"=>"pipewireao/pixel-selection-mask-bool/1")
+        @test contracts["outputs"]["calibrated"] == Dict("shape" => [3, 7], "element-type" => "F32_LE", "schema"=>"pipewireao/calibrated-pixels-f32/1")
         @test contracts["outputs"]["selected-pixels"]["shape"] == [14]
         spec = Dict("session" => "session.conf", "core" => "core.conf")
         port = Dict("name" => "applied", "shape" => reference("/graphs/arbitrary-rectangular-science/outputs/selected-pixels/shape"),
@@ -174,7 +174,7 @@ end
         graph = joinpath(directory, "graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(graph, declaration)
         contracts = E.graph_port_contracts(graph)
-        @test contracts["inputs"]["raw"] == Dict("shape" => shape, "element-type" => "U16_LE")
+        @test contracts["inputs"]["raw"] == Dict("shape" => shape, "element-type" => "U16_LE", "schema"=>"pipewireao/raw-detector-pixels-u16/1")
         @test contracts["outputs"]["mean-pupil-intensity"]["element-type"] == "F32_LE"
         queues = [Dict("name" => string(name), "shape" => reference("/graphs/named-pyramid-science/outputs/$name/shape"),
             "element-type" => reference("/graphs/named-pyramid-science/outputs/$name/element-type")) for name in keys(counts)]

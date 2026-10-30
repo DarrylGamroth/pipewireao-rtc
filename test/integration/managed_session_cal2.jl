@@ -49,22 +49,6 @@ function product(name, output, contract, duration, mapping; model_time=true, pri
     return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration),model_time,priming_exposures,acquisition_version,chopping)
 end
 
-# The exporter's graph_port_contracts deliberately retains only shape and type.
-# Capture must use the same prepared AlgorithmFormat.schema published by FGPW.
-function graph_output_contracts(path)
-    FGI=Base.require(Main,:FilterGraphIsland)
-    JFG=Base.require(Main,:JuliaFilterGraph)
-    options=Base.invokelatest(FGI.parse_arguments,["--graph",String(path),"--check","--execution","complete-frame"])
-    graph=Base.invokelatest(FGI.prepare_service_graph,options)
-    try
-        formats=Base.invokelatest(JFG.output_formats,graph)
-        return Dict("outputs"=>Dict(string(name)=>merge(E.port_contract(format),
-            Dict("schema"=>format.schema)) for (name,format) in pairs(formats)))
-    finally
-        Base.invokelatest(FGI.close_execution,graph)
-    end
-end
-
 function require_return_schema(native, declared, receiver)
     require(has_schema(native) && has_schema(declared) && has_schema(receiver) &&
         native["schema"]==declared["schema"]==receiver["schema"],
@@ -183,7 +167,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     Base.require(Main,:FilterGraphIsland)
     Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     Base.invokelatest(E.validate_feedback,application,relpath(graph_path,application),relpath(binding_path,application),relpath(receiver_path,application))
-    contracts=graph_output_contracts(graph_path)
+    contracts=Base.invokelatest(E.graph_port_contracts,graph_path)
     graph=D.decode(graph_path,prefix)
     graph_node=graph["node.name"]
     require(mapping[graph_node]==receiving["role"],"receiving graph owner differs")
@@ -215,7 +199,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         controller_graph=D.decode(controller_path,prefix)
         control=correction_control(controller_graph,argument(controller["argv"],"--correction-property"))
         push!(controls,control)
-        branch_contracts=graph_output_contracts(controller_path)
+        branch_contracts=Base.invokelatest(E.graph_port_contracts,controller_path)
         declared=declared_port(session,link["output"],"output")
         require_return_schema(branch_contracts["outputs"][last(endpoint(link["output"]))],declared,branch)
         # Chopped controllers suppress the first exposure while the pair primes.

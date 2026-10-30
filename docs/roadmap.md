@@ -20,7 +20,9 @@ on cold runtime/transport handles. Science types, Connect deadlines and lifecycl
 semantics remain unchanged. The
 [source evidence](validation/optical-owner-compilation-20261030/README.md)
 records the compilation/warmup failures and no-core reset checks; fresh managed startup and
-warmed-loop cost still require validation.
+warmed-loop cost still require validation. Prepared JFG schemas now join shape
+and element type in cold session checks; literal native-command/OPD mismatches
+are rejected before sealing. CAL2 capture uses that shared schema reader too.
 
 ### Explicit optical arithmetic precision — 2026-10-29
 

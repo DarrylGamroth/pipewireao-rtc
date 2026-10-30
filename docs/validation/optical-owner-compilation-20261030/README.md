@@ -56,3 +56,38 @@ phase times include compilation and are not warmed throughput measurements.
 The probe confirms publication disabled, no transport owner, source graph
 sequence zero, reset exposures, zero source command and cleared transport buffers.
 A fresh managed-session trial remains pending.
+
+## Managed trial r6 — Connect passes, command schema mismatch
+
+The optical owner completed connection/transport warming within about 7 s of
+Connect. Session link negotiation then failed for a distinct reason: the SCC
+physical-command output advertised the fixed legacy µm-OPD schema while its
+native-actuator receiver declared `pipewireao/demanded-pdm-command-f32/1`.
+LLOWFS producer/queue contracts both correctly declare 256×320 pixels.
+
+The existing FGA `vector-conditioning-f32` declaration exposes caller schemas
+and uses exactly the same `PdmCommandPlan`, `PdmCommandWorkspace` and numerical
+kernel as `pdm-command-f32`. No global legacy-schema rename or wire alias is
+needed. A small test confirms unchanged ±0.5 bounds, demanded commands and
+constraint feedback for in-range, saturated and zero inputs.
+
+The shared graph-contract reader now includes the prepared schema. Session
+preparation validates each declared JFG graph port's shape, element type and
+schema, including literal declarations without references, before writing any
+resolved file. Schema references can therefore use the same prepared source as
+shape/type references. Undeclared outputs and non-JFG external owners are not
+expanded into session contracts. The obsolete CAL2 capture-only schema reader
+is removed in favor of this shared reader.
+
+Fail-before: the literal native-command/OPD schema mismatch was accepted with
+matching shape/type. Pass-after: `test/session_graph_schema.jl` passes 23/23,
+including rejection before writes, schema references, caller-unit conditioner
+admission and numerical equivalence. Existing metadata sections pass 15/15;
+`test/test_instrument_export.jl` passes 198/198 in the RTC project environment.
+The CAL2 cold managed-selector tests pass 33/33 after removing their duplicate
+schema reader and updating an old mocked receipt with its explicit absent trigger
+state, matching the current receipt contract.
+The broad science integration selector's unchanged no-GPUCompiler assertion
+fails because its dependency imports alone already load GPUCompiler in this
+source environment; neither CUDA nor AMDGPU is loaded by that import probe.
+This remains separate from the passing cold schema checks and a fresh live trial.

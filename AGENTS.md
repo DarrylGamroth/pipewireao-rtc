@@ -110,6 +110,9 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- `test/session_graph_schema.jl` uses the optional JFG environment to check actual
+  prepared port schemas against session declarations and native-command limiter
+  equivalence. It opens no core, service or device.
 - `julia --project=. test/test_aos_graph_selection.jl` checks version-3 graph
   selection and Preparing-before-Proper load order without science packages.
   `julia --project=/path/to/science-environment test/aos_selected_graph_loading.jl`
