@@ -19,10 +19,12 @@ offset independently of command ordering. Shared cold geometry computes the
 registered pupil coordinates and publishes the nonidentity transform for clients
 that display native mirror axes. Pitch-only/default instruments retain their
 existing coordinates and metadata. The generic separable measured-influence
-resampler rejects nonidentity registration before reading FITS data; already
-registered scientific arrays remain explicit graph inputs. Focused geometry,
-publication and influence tests check these contracts without GPU imports or a
-live session. Instrument calibration adoption remains a separate gate.
+resampler and `grid_gaussian` binding reject nonidentity registration before
+reading FITS data or preparing grid indices. `coordinate_gaussian` profiles consume
+registered coordinates; already registered scientific arrays remain explicit
+graph inputs. Focused geometry, publication, binding and influence tests check
+these contracts without GPU imports or a live session. Instrument calibration
+adoption remains a separate gate.
 
 ### Optical owner cold compilation — 2026-10-30
 

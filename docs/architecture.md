@@ -1088,10 +1088,13 @@ is finite and positive; rotation and offsets are finite real numbers and the
 reflection flag is Boolean. Equivalent whole turns are removed from the angle.
 For nonidentity registration, pitch, scaled offsets and transformed grid
 coordinates must remain renderable in Float32. The generic measured-influence
-FITS resampler supports only identity registration: it uses separable source-grid interpolation and rejects rotation,
-reflection or offset before reading the artifact. Already registered influence
-arrays and coordinates may remain explicit scientific graph inputs; this
-metadata extension does not transform their samples. Explicit identity defaults
+FITS resampler and `grid_gaussian` grid-index binding support only identity
+registration. Their source-grid paths do not apply rotation, reflection or
+offset; they reject those registrations before FITS access or grid-index
+preparation. `coordinate_gaussian` consumes the registered pupil coordinates.
+Already registered influence arrays and coordinates may remain explicit
+scientific graph inputs; this metadata extension does not transform their
+samples or select a different profile. Explicit identity defaults
 resolve to the original pitch-only value, preserving existing coordinates,
 metadata and physical/publication identities. Intrinsic mirror geometry and
 command order remain independent of this registration. The optional intrinsic

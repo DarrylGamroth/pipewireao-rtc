@@ -615,6 +615,8 @@ function binding_values(::Val{:mirror_coordinates}, declaration, configured, bin
 end
 function binding_values(::Val{:mirror_grid_indices}, declaration, configured, binding)
     values = mirror(declaration,configured,binding["mirror"])
+    haskey(values.registration,:rotation_deg) && throw(ArgumentError(
+        "nonidentity pupil registration is unsupported by grid_gaussian grid-index bindings"))
     return actuator_grid_indices(values.description)
 end
 function measured_influences(declaration,configured,binding)
