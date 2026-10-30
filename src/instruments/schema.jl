@@ -321,9 +321,19 @@ function _validate_sensor_declaration(::Union{Val{:scc},Val{:llowfs}}, spec, dir
     required = ("kind", "detector")
     sensor = _declaration_fields(spec, (required..., "acquisition", "expected_schema"), required,
         "imaging sensor $name")
-    detector = _declaration_fields(sensor["detector"], ("name", "controller"), ("name",), "physical detector")
+    detector = _declaration_fields(sensor["detector"], ("name", "controller", "rows", "columns", "pixel_sampling_m"), ("name",), "physical detector")
     _declaration_text(detector["name"], "detector name")
     haskey(detector,"controller") && _declaration_text(detector["controller"],"detector controller")
+    geometry = ("rows", "columns", "pixel_sampling_m")
+    present = count(key -> haskey(detector,key), geometry)
+    present in (0,3) || throw(ArgumentError("physical detector geometry requires rows, columns and pixel_sampling_m together"))
+    if present == 3
+        all(key -> ispositive_integer(detector[key]) && detector[key] <= 16384, ("rows","columns")) ||
+            throw(ArgumentError("physical detector rows and columns must be in 1:16384"))
+        pitch = detector["pixel_sampling_m"]
+        pitch isa AbstractVector && length(pitch) == 2 && all(isfinite_positive,pitch) ||
+            throw(ArgumentError("physical detector pixel_sampling_m requires two positive pitches"))
+    end
     return nothing
 end
 

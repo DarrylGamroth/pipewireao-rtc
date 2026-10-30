@@ -403,6 +403,12 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
             Instruments.isfinite_positive(exposure) && isapprox(exposure, seconds; rtol=8eps(Float32), atol=0) ||
                 throw(ArgumentError("observation detector exposure differs from its physical sensor acquisition"))
             shape = (config["rows"], config["columns"])
+            physical_detector = sensor["detector"]
+            if haskey(physical_detector,"rows")
+                shape == (physical_detector["rows"],physical_detector["columns"]) &&
+                    all(isapprox.(sampling,physical_detector["pixel_sampling_m"];rtol=8eps(Float32),atol=0)) ||
+                    throw(ArgumentError("observation detector geometry differs from its physical camera"))
+            end
             haskey(sensor, "detector_shape") && Tuple(sensor["detector_shape"]) != shape &&
                 throw(ArgumentError("observation detector shape differs from its physical sensor"))
             response = (;graph=Instruments.prepare_system(path; settings, simulation_graph=key,
