@@ -15,3 +15,17 @@ const Owner = PipeWireAORTC.AOSOwner
     invalid=deepcopy(compiled); invalid["config"]["dm_opd_schema"]="wrong"
     @test_throws ArgumentError Owner.verify_clocked_mirror_plane(invalid,geometry,schema,128)
 end
+
+Base.include(@__MODULE__,joinpath(@__DIR__,"external_optical_documents.jl"))
+@testset "clocked optics admit the ordinary optional PROPER loader" begin
+    mktempdir() do directory
+        physical,simulation=external_optical_documents()
+        physical["optical_paths"]=Dict(name=>Dict("sensor"=>name,"lyot_stop_port"=>port)
+            for (name,port) in (("scc","transmitted"),("llowfs","reflected")))
+        simulation["graphs"]["source"]=deepcopy(simulation["graphs"]["scc"])
+        path=write_external_optical_documents(directory,physical,simulation)
+        options=(;version=6,plant=(;definition=path,settings=NamedTuple(),chopping=NamedTuple()),source_graph="source")
+        @test Owner.requires_proper(options)
+        @test !any(id->id.name in ("Proper","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    end
+end

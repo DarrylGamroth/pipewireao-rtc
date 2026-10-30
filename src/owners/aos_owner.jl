@@ -426,7 +426,7 @@ function load_instrument(package::Symbol)
 end
 
 function requires_proper(options)
-    options.version in (3, 4, 5) || return false
+    options.version in (3, 4, 5, 6) || return false
     # Node types decide whether Proper must load; generated optical provenance
     # is verified afterwards by the ordinary declaration/execution preparation.
     declaration = InstrumentConfiguration.load_simulation(options.plant.definition; validate_optics=false)
