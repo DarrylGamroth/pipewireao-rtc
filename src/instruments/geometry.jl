@@ -25,8 +25,9 @@ function _mirror_axis_count(description::NamedTuple)
 end
 
 function _pupil_registration(registration::NamedTuple)
-    keys(registration) == (:actuator_pitch_pupil_radius,) || throw(ArgumentError(
-        "pupil registration requires exactly :actuator_pitch_pupil_radius",
+    haskey(registration,:actuator_pitch_pupil_radius) &&
+        all(key -> key in (:actuator_pitch_pupil_radius,:rotation_deg,:flip_y,:offset_actuators),keys(registration)) || throw(ArgumentError(
+        "pupil registration requires actuator_pitch_pupil_radius and optional rotation_deg, flip_y and offset_actuators",
     ))
     pitch = registration.actuator_pitch_pupil_radius
     _valid_pitch(pitch) ||
@@ -35,7 +36,21 @@ function _pupil_registration(registration::NamedTuple)
     pitch32 = Float32(owned_pitch)
     isfinite(owned_pitch) && owned_pitch > 0 && isfinite(pitch32) && pitch32 > 0 ||
         throw(ArgumentError("pupil registration actuator_pitch_pupil_radius must preserve finite positive Float64 and Float32 values"))
-    return (; actuator_pitch_pupil_radius=owned_pitch)
+    rotation = get(registration,:rotation_deg,0.0)
+    InstrumentDefinition.finite_bound(rotation) && isfinite(Float64(rotation)) ||
+        throw(ArgumentError("pupil registration rotation_deg must be a finite Float64 real number"))
+    rotation_deg = rem(Float64(rotation),360.0)
+    flip_y = get(registration,:flip_y,false)
+    flip_y isa Bool || throw(ArgumentError("pupil registration flip_y must be Boolean"))
+    offsets = get(registration,:offset_actuators,(0.0,0.0))
+    (offsets isa Tuple || offsets isa AbstractVector) && length(offsets) == 2 &&
+        all(value -> InstrumentDefinition.finite_bound(value) && isfinite(Float64(value)),offsets) ||
+        throw(ArgumentError("pupil registration offset_actuators must contain two finite Float64 real numbers"))
+    offset_actuators = map(Float64,Tuple(offsets))
+    # Preserve the original value and fingerprint for omitted or explicit defaults.
+    iszero(rotation_deg) && !flip_y && all(iszero,offset_actuators) &&
+        return (;actuator_pitch_pupil_radius=owned_pitch)
+    return (;actuator_pitch_pupil_radius=owned_pitch,rotation_deg,flip_y,offset_actuators)
 end
 
 _pupil_registration(registration) = throw(ArgumentError("pupil registration must be a NamedTuple"))
@@ -46,9 +61,24 @@ _valid_pitch(pitch) = false
 
 function _require_pupil_geometry(description::NamedTuple, registration::NamedTuple)
     axis_count = _mirror_axis_count(description)
-    pitch = Float32(_pupil_registration(registration).actuator_pitch_pupil_radius)
+    registration = _pupil_registration(registration)
+    pitch = Float32(registration.actuator_pitch_pupil_radius)
     extent = Float32(axis_count - 1) / 2f0 * pitch
     isfinite(extent) || throw(ArgumentError("pupil registration must preserve finite Float32 coordinates"))
+    if haskey(registration,:rotation_deg)
+        # Bound the whole source grid and both frame origins before coordinate
+        # conversion. This also leaves headroom for native-axis GUI arithmetic.
+        extent64 = (axis_count - 1) / 2 * registration.actuator_pitch_pupil_radius
+        dx,dy = registration.actuator_pitch_pupil_radius .* registration.offset_actuators
+        sine,cosine = sincosd(registration.rotation_deg)
+        reflected_dy = registration.flip_y ? -dy : dy
+        half_width = (abs(sine) + abs(cosine)) * extent64
+        bounds = (extent64,dx,dy,
+            half_width + abs(cosine*dx - sine*reflected_dy),
+            half_width + abs(sine*dx + cosine*reflected_dy))
+        all(InstrumentDefinition.renderable_pupil_value,bounds) || throw(ArgumentError(
+            "pupil registration must preserve Float32-renderable native and pupil coordinates"))
+    end
     return nothing
 end
 
@@ -73,6 +103,11 @@ function actuator_index_map(description::NamedTuple)
     return index_map
 end
 
+"""
+Return command-indexed normalized pupil x/y coordinates. Native mirror x points
+right and y upward; registration subtracts the pupil-center offset, reflects y
+when requested, then rotates counterclockwise. Command order is unchanged.
+"""
 function actuator_coordinates(
     description::NamedTuple, ::Type{T}=Float32;
     pupil_registration,
@@ -81,6 +116,23 @@ function actuator_coordinates(
     _require_pupil_geometry(description, registration)
     index_map = actuator_index_map(description)
     coordinates = Matrix{T}(undef, 2, command_count(description))
+    if haskey(registration,:rotation_deg)
+        pitch = registration.actuator_pitch_pupil_radius
+        centre = (_mirror_axis_count(description) + 1) / 2
+        dx,dy = pitch .* registration.offset_actuators
+        sine,cosine = sincosd(registration.rotation_deg)
+        for source_row in axes(index_map, 1), column in axes(index_map, 2)
+            command_index = Int(index_map[source_row, column])
+            iszero(command_index) && continue
+            x = (column - centre) * pitch - dx
+            y = (centre - source_row) * pitch - dy
+            registration.flip_y && (y = -y)
+            coordinates[1,command_index] = T(cosine*x - sine*y)
+            coordinates[2,command_index] = T(sine*x + cosine*y)
+        end
+        return coordinates
+    end
+    # Keep the established pitch-only arithmetic unchanged, including rounding.
     pitch = T(registration.actuator_pitch_pupil_radius)
     centre = T(_mirror_axis_count(description) + 1) / T(2)
     for source_row in axes(index_map, 1), column in axes(index_map, 2)

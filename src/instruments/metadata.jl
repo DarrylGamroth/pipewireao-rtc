@@ -262,6 +262,8 @@ function publication(path)
                 (;pupil=(;outer_radius=1.0,inner_radius=scientific.telescope.central_obstruction_ratio)) : NamedTuple()
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
+                (hasproperty(dm.pupil_registration,:rotation_deg) ?
+                    (;pupil_registration=dm.pupil_registration) : NamedTuple())...,
                 pupil...,
                 (hasproperty(dm,:clear_aperture) ? (;clear_aperture=dm.clear_aperture) : NamedTuple())...,
                 limiter=(;kind=control["limiter"]["kind"],

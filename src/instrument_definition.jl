@@ -99,6 +99,17 @@ function validate(document)
         if haskey(mirror,"pupil_coordinates")
             validate_pupil_coordinates(mirror["pupil_coordinates"],length(positions))
         end
+        if haskey(mirror,"pupil_registration")
+            haskey(mirror,"pupil_coordinates") || throw(ArgumentError(
+                "mirror pupil registration requires pupil coordinates"))
+            exact_fields(mirror["pupil_registration"],
+                ("actuator_pitch_pupil_radius","rotation_deg","flip_y","offset_actuators"),
+                "published pupil registration")
+            declaration = getproperty(parentmodule(@__MODULE__),:InstrumentConfiguration)
+            registration = declaration._pupil_registration(
+                declaration._instrument_seal(mirror["pupil_registration"]))
+            declaration._require_pupil_geometry((;layout=declaration._instrument_seal(layout)),registration)
+        end
         if haskey(mirror,"pupil")
             haskey(mirror,"pupil_coordinates") ||
                 throw(ArgumentError("instrument optical pupil requires registered pupil coordinates"))
@@ -457,6 +468,10 @@ function verify_plant(options,plant_module)
         mirror["shape_control"]==get(original,"shape_control",nothing) ||
             throw(ArgumentError("instrument DM basis declaration differs"))
         get(mirror,"pupil_coordinates",nothing)==get(original,"pupil_coordinates",nothing) || throw(ArgumentError("instrument pupil coordinates differ"))
+        registration = get(original,"pupil_registration",nothing)
+        published_registration = registration isa AbstractDict && haskey(registration,"rotation_deg") ? registration : nothing
+        get(mirror,"pupil_registration",nothing)==published_registration ||
+            throw(ArgumentError("instrument pupil registration differs"))
         get(mirror,"clear_aperture",nothing)==get(original,"clear_aperture",nothing) ||
             throw(ArgumentError("instrument mirror clear aperture differs"))
         telescope = get(source,"telescope",Dict())

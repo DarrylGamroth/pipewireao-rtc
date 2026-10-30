@@ -12,6 +12,18 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Native mirror and pupil registration — 2026-10-30
+
+Physical mirror declarations can select rotation, y reflection and a pupil-center
+offset independently of command ordering. Shared cold geometry computes the
+registered pupil coordinates and publishes the nonidentity transform for clients
+that display native mirror axes. Pitch-only/default instruments retain their
+existing coordinates and metadata. The generic separable measured-influence
+resampler rejects nonidentity registration before reading FITS data; already
+registered scientific arrays remain explicit graph inputs. Focused geometry,
+publication and influence tests check these contracts without GPU imports or a
+live session. Instrument calibration adoption remains a separate gate.
+
 ### Optical owner cold compilation — 2026-10-30
 
 The external-pupil/clocked optical owner warms its unpublished numerical path

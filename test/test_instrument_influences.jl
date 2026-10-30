@@ -41,6 +41,10 @@ end
         @test result.provenance.artifact["target_type"] == "Float64"
         @test result.provenance.artifact["target_shape"] == [3, 3, 2]
         @test !haskey(result.provenance.artifact, "source")
+        identity = IC._load_influence_functions(spec,description,2,
+            (;actuator_pitch_pupil_radius=1.0,rotation_deg=360.0,
+                flip_y=false,offset_actuators=(0.0,0.0)))
+        @test identity == result
         old_spec = (; (key => value for (key, value) in pairs(spec)
             if key ∉ (:sha256, :type, :shape))...)
         @test_throws ArgumentError IC._load_influence_functions(
@@ -81,6 +85,22 @@ end
         end
         @test_throws r"SHA-256" IC._load_influence_functions(
             spec, description, 2, (; actuator_pitch_pupil_radius=1.0))
+    end
+end
+
+@testset "separable influence sampling rejects nonidentity registration before FITS access" begin
+    mktempdir() do directory
+        spec = (;path=joinpath(directory,"missing.fits"),sha256=repeat("0",64),
+            hdu=1,axes=(2,1,3),type="Float32",shape=(3,3,2),command_indices=(1,2),
+            sample_origin=(1.0,1.0),sample_pitch=(1.0,1.0),opd_scale_m=1e-6,reference_command_m=1e-6)
+        for registration in (
+            (;actuator_pitch_pupil_radius=1.0,rotation_deg=31.2),
+            (;actuator_pitch_pupil_radius=1.0,flip_y=true),
+            (;actuator_pitch_pupil_radius=1.0,offset_actuators=(0.73,0.37)),
+        )
+            @test_throws r"nonidentity pupil registration" IC._load_influence_functions(
+                spec,two_command_description(),2,registration)
+        end
     end
 end
 

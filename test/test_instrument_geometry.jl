@@ -103,6 +103,73 @@ end
     end
 end
 
+@testset "pupil registration maps native mirror coordinates without reordering commands" begin
+    mktempdir() do directory
+        description = write_mirror(joinpath(directory,"mirror.json"),mirror_document())
+        pitch = 0.125
+        original = (;actuator_pitch_pupil_radius=pitch)
+        defaults = (;actuator_pitch_pupil_radius=pitch,rotation_deg=0.0,
+            flip_y=false,offset_actuators=(0.0,0.0))
+        for rotation_deg in (0.0,-0.0,360.0,-720.0)
+            registration = merge(defaults,(;rotation_deg))
+            @test IC._pupil_registration(registration) === original
+            for T in (Float32,Float64)
+                baseline = IC.actuator_coordinates(description,T;pupil_registration=original)
+                @test isequal(IC.actuator_coordinates(description,T;pupil_registration=registration),baseline)
+            end
+        end
+        native = IC.actuator_coordinates(description,Float64;pupil_registration=original)
+        @test IC.actuator_coordinates(description,Float64;
+            pupil_registration=merge(original,(;rotation_deg=90.0))) == [-native[2,:]'; native[1,:]']
+        @test IC.actuator_coordinates(description,Float64;
+            pupil_registration=merge(original,(;flip_y=true))) == [native[1,:]'; -native[2,:]']
+        @test IC.actuator_coordinates(description,Float64;
+            pupil_registration=merge(original,(;offset_actuators=(1.0,-2.0)))) ==
+            native .- pitch .* [1.0,-2.0]
+        offsets = [0.73,0.37]
+        registered = IC._pupil_registration(merge(original,(;rotation_deg=31.2,flip_y=true,
+            offset_actuators=offsets)))
+        offsets .= 9
+        @test registered.offset_actuators === (0.73,0.37)
+        @test registered.rotation_deg === 31.2
+        sine,cosine = sincosd(registered.rotation_deg)
+        rotation = [cosine -sine; sine cosine]
+        reflection = [1.0 0.0; 0.0 -1.0]
+        offset = pitch .* collect(registered.offset_actuators)
+        expected = rotation * reflection * (native .- offset)
+        for T in (Float32,Float64)
+            coordinates = IC.actuator_coordinates(description,T;pupil_registration=registered)
+            @test coordinates ≈ expected atol=5e-8
+            @test reflection * rotation' * coordinates .+ offset ≈ native atol=5e-8
+        end
+        @test IC.actuator_index_map(description) == UInt16[0 0 0 3; 0 2 0 0; 0 0 0 0; 0 0 1 0]
+        for invalid in (
+            (;rotation_deg=0.0),
+            merge(original,(;rotation_deg=true)), merge(original,(;rotation_deg="31.2")),
+            merge(original,(;rotation_deg=Inf)), merge(original,(;rotation_deg=NaN)),
+            merge(original,(;rotation_deg=big"1e1000")),
+            merge(original,(;flip_y=1)), merge(original,(;flip_y="false")),
+            merge(original,(;offset_actuators=1.0)), merge(original,(;offset_actuators=(0.0,))),
+            merge(original,(;offset_actuators=(0.0,0.0,0.0))),
+            merge(original,(;offset_actuators=(true,0.0))),
+            merge(original,(;offset_actuators=("0",0.0))),
+            merge(original,(;offset_actuators=(NaN,0.0))),
+            merge(original,(;offset_actuators=(0.0,Inf))),
+            merge(original,(;offset_actuators=(big"1e1000",0.0))),
+            merge(original,(;unknown=0)),
+        )
+            @test_throws ArgumentError IC._pupil_registration(invalid)
+        end
+        for registration in (
+            merge(original,(;offset_actuators=(1e308,0.0))),
+            (;actuator_pitch_pupil_radius=1e38,rotation_deg=45.0),
+        )
+            @test_throws ArgumentError IC.actuator_coordinates(description;pupil_registration=registration)
+        end
+        @test isfinite(IC._pupil_registration(merge(original,(;rotation_deg=1e308))).rotation_deg)
+    end
+end
+
 @testset "physical clear aperture resolves without rescaling actuator coordinates" begin
     mktempdir() do directory
         path = joinpath(directory,"mirror.json")
