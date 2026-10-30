@@ -111,7 +111,12 @@ local function session (options)
         return record (operation .. ":" .. node.name .. ":" .. tostring (value), callback, true)
       end,
       shutdown_order = function (owners) return owners end,
-      shutdown = function (_, _, callback) return record ("shutdown-owner", callback, true) end,
+      shutdown = function (_, _, callback)
+        if options.owner_removed then
+          return record ("shutdown-owner", callback, false, "Owner incarnation changed")
+        end
+        return record ("shutdown-owner", callback, true)
+      end,
     },
     ["ao-acquisition"] = {
       new = function (node) return { name = node.name } end,
@@ -505,6 +510,21 @@ local function quit_fence_failure ()
   test:close ()
 end
 
+local function quit_owner_removed ()
+  local test = session { bootstrap = true, owner_removed = true }
+  prepared (test)
+  test:request (1); done (test)
+  assert (test.state.faulted and test.state.lifecycle == 5 and not test.quit_complete,
+      "Disappeared owner was accepted as a successful Quit")
+  assert (#test.completions == 1 and test.completions [1].unknown and
+      test.completions [1].reason:find ("Owner incarnation changed", 1, true))
+  for _, name in ipairs (test.effects) do
+    assert (name ~= "remove-controls" and name ~= "clients-absent",
+        "Failed owner shutdown advanced to successful Quit fences")
+  end
+  test:close ()
+end
+
 local function errors ()
   for _, options in ipairs ({ { native_throw = true }, { throw = "run:beta:2" },
       { bad_reset = true }, { bad_initial = true } }) do
@@ -645,6 +665,7 @@ co = coroutine.create (function ()
   auxiliary_sources ()
   startup_queries ()
   quit_fence_failure ()
+  quit_owner_removed ()
   deadline (false, false)
   deadline (true, false)
   deadline (false, true)

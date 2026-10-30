@@ -69,7 +69,8 @@ local function setup (journal_enabled)
     ["pipewireao.rtc-control.owner-pid"] = "1234",
     ["pipewireao.rtc-control.protocol"] = "pipewireao.rtc-control/1",
     ["pipewireao.rtc-control.profile"] = "pipewireao.rtc.controller/1",
-  }, get_n_input_ports = function () return 0 end,
+  }, get_active_features = function () return Feature.Proxy.BOUND end,
+  get_n_input_ports = function () return 0 end,
   get_n_output_ports = function () return 0 end, connect = function () end }
   api.manager.callbacks ["object-added"] (api.manager, node)
   local function request (token, operation, payload)
