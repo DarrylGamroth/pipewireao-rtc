@@ -3,6 +3,95 @@ local lua = require ("ao-lua")
 local control = require ("ao-control")
 local owner = require ("ao-owner")
 
+-- A retained Lua proxy can outlive its bound PipeWire incarnation. Its live
+-- metadata must never be consulted after BOUND disappears.
+local reads, requests = 0, 0
+local removed = setmetatable ({
+  get_active_features = function () return 0 end,
+  enum_params = function () requests = requests + 1 end,
+  set_param = function () requests = requests + 1 end,
+}, { __index = function (_, key)
+  reads = reads + 1
+  error ("Removed proxy metadata read: " .. key)
+end })
+local ok, matches = pcall (control.same_identity, removed, { global_id = 7, serial = 22 })
+assert (ok and matches == false and reads == 0, "Removed proxy identity read live metadata")
+local captured, failure = pcall (control.identity, removed)
+assert (not captured and failure:find ("not bound", 1, true) and reads == 0)
+for _, operation in ipairs ({ "node", "shutdown" }) do
+  local completions, result, failure = 0, nil, nil
+  local function completed (value, error)
+    completions = completions + 1
+    result, failure = value, error
+  end
+  local deadline = GLib.get_monotonic_time () + 1000000
+  local cancel
+  if operation == "node" then
+    cancel = owner.node_operation (removed, "run", 1, deadline, completed)
+  else
+    cancel = owner.shutdown ({ node = removed, identity = { global_id = 7, serial = 22 },
+      profile = "pipewireao.rtc.owner-bootstrap/1" }, deadline, completed)
+  end
+  cancel ()
+  assert (result == nil and type (failure) == "string" and #failure > 0,
+      "Removed owner operation succeeded")
+  assert (completions == 1 and reads == 0 and requests == 0,
+      "Removed owner was read, queried, retried or completed more than once")
+end
+local malformed = { properties = {}, ["global-properties"] = {},
+  get_active_features = function () return Feature.Proxy.BOUND end }
+local valid, error = pcall (control.identity, malformed)
+assert (not valid and error:find ("Missing object serial", 1, true),
+    "Bound proxy with malformed identity was accepted")
+local bound = { ["bound-id"] = 7, properties = { ["object.serial"] = "18446744073709551615" },
+  get_active_features = function () return Feature.Proxy.BOUND end }
+assert (control.same_identity (bound, { global_id = 7, serial = -1 }), "Full-width serial changed")
+assert (not control.same_identity (bound, { global_id = 8, serial = -1 }))
+
+-- Removal can also race an outstanding read. The completion callback must
+-- reject the stale proxy before parsing its response or issuing a mutation.
+for _, operation in ipairs ({ "node", "shutdown" }) do
+  local alive, reads, queries, writes, completions = true, 0, 0, 0, 0
+  local result, failure
+  local properties = { ["object.serial"] = "22",
+    ["pipewireao.rtc-control.protocol"] = "pipewireao.rtc-control/1",
+    ["pipewireao.rtc-control.profile"] = "pipewireao.rtc.owner-bootstrap/1",
+    ["pipewireao.rtc-control.instance"] = "8", ["pipewireao.rtc-control.owner-pid"] = "1234" }
+  local node = setmetatable ({
+    get_active_features = function () return alive and Feature.Proxy.BOUND or 0 end,
+    enum_params = function (_, _, callback)
+      queries = queries + 1
+      alive = false
+      callback (nil, nil)
+      callback (nil, nil) -- A late duplicate must not publish another completion.
+    end,
+    set_param = function () writes = writes + 1 end,
+  }, { __index = function (_, key)
+    if not alive then reads = reads + 1; error ("Removed proxy metadata read") end
+    if key == "properties" then return properties end
+    if key == "bound-id" then return 7 end
+  end })
+  local function completed (value, error)
+    completions = completions + 1
+    result, failure = value, error
+  end
+  local deadline = GLib.get_monotonic_time () + 1000000
+  local cancel
+  if operation == "node" then
+    cancel = owner.node_operation (node, "run", 1, deadline, completed)
+  else
+    local client = owner.new (node, "pipewireao.rtc.owner-bootstrap", 8,
+        { global_id = 9, serial = 33, instance = 10 }, 1234)
+    cancel = owner.shutdown (client, deadline, completed)
+    assert (not client.pending, "Removed owner retained a pending shutdown")
+  end
+  cancel ()
+  assert (result == nil and type (failure) == "string" and
+      failure:find ("incarnation changed", 1, true), tostring (failure))
+  assert (reads == 0 and queries == 1 and writes == 0 and completions == 1,
+      "Removal during query read metadata, mutated, retried or completed twice")
+end
+
 -- Run/reset records coexist with scientific Props containing correction status.
 -- Exercise the real owner parser, not the session test's node-operation stub.
 local function correction_node_operation (kind, extra, expected_error)
@@ -25,7 +114,8 @@ local function correction_node_operation (kind, extra, expected_error)
       "pipewireao.reset-control.completed-token", Pod.Long (0),
       "pipewireao.reset-control.result", Pod.Int (0) } },
     Pod.Object { "Spa:Pod:Object:Param:Props", "Props", params = Pod.Struct (fields) } }
-  local node = { ["bound-id"] = 7, properties = { ["object.serial"] = "22" } }
+  local node = { ["bound-id"] = 7, properties = { ["object.serial"] = "22" },
+    get_active_features = function () return Feature.Proxy.BOUND end }
   node.enum_params = function (_, param, callback)
     assert (param == "Props")
     callback ({ iterate = function ()

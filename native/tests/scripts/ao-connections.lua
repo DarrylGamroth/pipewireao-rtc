@@ -73,6 +73,7 @@ end
 local function object (id, serial, properties, direction)
   local value = {
     ["bound-id"] = id,
+    get_active_features = function (self) return self ["bound-id"] and Feature.Proxy.BOUND or 0 end,
     properties = properties,
     _signals = {},
     _direction = direction,

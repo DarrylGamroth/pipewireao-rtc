@@ -23,6 +23,13 @@ errors 64, and other initialization errors return nonzero. systemd remains the
 process-lifetime owner. Signal and activation callbacks retain or remove their
 owners during shutdown; queued completions receive a bounded drain.
 
+Retained Lua proxies do not retain a removed PipeWire incarnation. Native
+identity checks reject unbound proxies before reading their live metadata;
+owner disappearance remains a failed operation, never a successful Quit.
+This guard prevents invalid metadata reads during cleanup. It does not explain
+or repair premature owner disappearance or establish the cause of GUI
+Stop/Refresh failures.
+
 ## Build and install
 
 Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO (including Unix
