@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optical owner cold compilation — 2026-10-30
+
+The external-pupil/clocked optical owner precompiles its control-loop entry during
+Preparing without specializing on cold runtime/transport handles. Science types,
+Connect deadlines and lifecycle semantics remain unchanged. The
+[source evidence](validation/optical-owner-compilation-20261030/README.md)
+records the compilation failure and no-core checks; fresh managed startup and
+warmed-loop cost still require validation.
+
 ### Explicit optical arithmetic precision — 2026-10-29
 
 The CAL2 performance candidate admits authored `defaults.precision` as a read-only

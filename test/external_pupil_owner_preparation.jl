@@ -9,6 +9,18 @@ const Owner = PipeWireAORTC.AOSOwner
         (;config,path) = external_pupil_owner_documents(directory)
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
+        # Cold control-loop compilation cannot require a live core, advance an
+        # exposure, or consume a detector draw. Cancellation brackets compilation.
+        checks=Ref(0)
+        @test ExternalOwner.prepare_stream_execution!(
+            (;owner_check=()->(checks[]+=1)),science,
+            ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState()) === nothing
+        @test checks[]==2
+        @test science.plant.state.domain === nothing
+        @test all(e->e.sequence==0 && e.covered_ns==0,values(science.plant.exposures))
+        @test_throws InterruptException ExternalOwner.prepare_stream_execution!(
+            (;owner_check=()->throw(InterruptException())),science,
+            ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState())
         contracts = PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(path)
         @test contracts["pupil"]["shape"] == [2,4,4]
         @test contracts["sensors"]["scc"]["shape"] == [8,8]

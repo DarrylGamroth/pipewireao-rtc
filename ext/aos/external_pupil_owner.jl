@@ -204,7 +204,8 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
     return nothing
 end
 
-function run_streams!(options, science, mailbox, state, owner, ticket)
+Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, mailbox, state,
+        @nospecialize(owner), @nospecialize(ticket))
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     names = keys(science.sensors)
@@ -327,6 +328,18 @@ function run_streams!(options, science, mailbox, state, owner, ticket)
     return nothing
 end
 
+# The live transport owner and its ticket exist only after Connect. Compile the
+# control loop during Preparing without specializing on those cold resources.
+# Science graph types remain specialized; this performs no I/O or model steps.
+function prepare_stream_execution!(options,science,mailbox,state)
+    options.owner_check()
+    ready = precompile(run_streams!, (Any,typeof(science),typeof(mailbox),
+        typeof(state),Any,Any))
+    options.owner_check()
+    ready || error("external-pupil control-loop preparation failed")
+    return nothing
+end
+
 function Owner.run_external_pupil_owner(options)
     runtime = options.bootstrap_runtime
     options = merge(options,(;configuration_sha256=PipeWireAORTC.Common.sha256_file(options.config_path)))
@@ -338,6 +351,7 @@ function Owner.run_external_pupil_owner(options)
         report!(options,mailbox,state)
         streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers,
             input_option=options.version == 6 ? clocked_command_option(options) : nothing)
+        prepare_stream_execution!(options,science,mailbox,state)
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.check_connect!(runtime,ticket)
