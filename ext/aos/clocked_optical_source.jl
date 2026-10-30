@@ -1,7 +1,8 @@
 # CPU optical source: measured DM and independent facility residual keep their
 # physical planes. The ordinary optical exposure owner retains F/U integration.
 function prepare_clocked_source(options,science;check=()->nothing)
-    options.backend === :cpu || throw(ArgumentError("clocked optics currently requires CPU"))
+    # The facility/DM source stays on the host; optical and response graphs use
+    # the selected target with the shared captured-only accelerator policy.
     source = IC.prepare_system(options.plant.definition;settings=options.plant.settings,
         simulation_graph=options.source_graph,target=Backends.HostComputeDevice())
     command = graph_input(source.graph,options.command_input)
@@ -43,7 +44,9 @@ function step_clocked_source!(emit,science,command;generation::UInt64)
     timestamp = step_graph_at!(science.source.graph,science.source_driver)
     for graph in (values(science.plant.graphs)...,
             (row.chopping.unfringed for row in values(science.plant.observations) if hasproperty(row,:chopping))...)
-        copyto!(graph_input(graph,:dm_opd),science.source_dm_opd)
+        Backends._with_prepared_device_execution_context(graph.context) do
+            copyto!(graph_input(graph,:dm_opd),science.source_dm_opd)
+        end
     end
     sequence = model_time_sequence(science.source_driver)
     permutedims!(science.source_pupil_opd,science.source_opd,science.source_pupil_axes)

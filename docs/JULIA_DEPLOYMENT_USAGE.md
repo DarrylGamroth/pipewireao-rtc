@@ -865,8 +865,11 @@ binding; `source_pupil_axes` declares the entrance OPD transform and
 `source_dm_axes` declares the mirror raster axes. The owner checks the mirror
 port schema, units and command limit against the source graph and RTC mirror
 controls, and checks each optical mirror plane's schema, shape and sampling.
-The current clocked owner supports CPU only. A successful offline build or
-calibration does not qualify physical devices or deadline performance.
+The clocked owner keeps the facility and mirror source graph on CPU. Optical
+and detector-response graphs can use captured AMDGPU execution; every node must
+pass capture admission. Mirror OPD copies use each optical graph's execution
+context before its captured step. A successful offline build or calibration
+does not qualify physical devices or deadline performance.
 
 A simulation definition may list `binding_files` relative to the instrument
 root. Each YAML file contributes named bindings; duplicate names are rejected.
