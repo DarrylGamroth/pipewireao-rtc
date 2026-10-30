@@ -89,7 +89,7 @@ function external_pupil_configuration(path, document)
     rtc_configuration = DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"])
     sensor_buffers=integer(get(document,"sensor_buffers",2),"sensor_buffers",2,64)
     source = if clocked
-        backend === :cpu || throw(ArgumentError("clocked optical owner requires CPU until accelerator source publication is validated"))
+        backend in (:cpu, :amdgpu) || throw(ArgumentError("clocked optical owner supports CPU and AMDGPU only"))
         source_graph = text(document["source_graph"],"optical source graph")
         haskey(declaration.graphs,source_graph) && source_graph != "calibration" || throw(ArgumentError("unknown optical source graph"))
         mirror = text(document["mirror"],"optical mirror")
