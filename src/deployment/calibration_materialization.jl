@@ -179,10 +179,14 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         resolved = InstrumentConfiguration.calibration_context(context,staged)
         graphcontext = graph_context(InstrumentConfiguration.json_value(InstrumentConfiguration.physical_definition(builtin_rtc.instrument));
             dimensions=builtin_rtc.document["dimensions"],mirror_controls=builtin_rtc.controls["deformable_mirrors"],calibration=resolved)
+        exports = Dict{String,Any}()
         for (name,graph) in graphs
-            resolve_graph_configuration(D.decode(D.relative_asset(root,graph),prefix),graphcontext)==
-                D.decode(joinpath(branch_paths[name],"graph.conf"),prefix) ||
-                throw(ArgumentError("accepted context does not reproduce authored branch graph $name"))
+            sourcegraph = D.relative_asset(root,graph)
+            calibrated = joinpath(branch_paths[name],"graph.conf")
+            added = calibrated_graph_exports(resolve_graph_configuration(D.decode(sourcegraph,prefix),graphcontext),
+                D.decode(calibrated,prefix))
+            exports[name] = Dict("calibrated_graph_sha256"=>Common.sha256_file(calibrated),
+                "authored_graph_sha256"=>Common.sha256_file(sourcegraph),"added_outputs"=>added)
         end
         updated = deepcopy(authored_rtc)
         physical = InstrumentConfiguration.referenced_instrument(rtcpath,authored_rtc["instrument"]).path
@@ -196,6 +200,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
             "calibration_identity"=>identity,"calibration_index_sha256"=>Common.sha256_file(indexpath),
             "source_application_deployment_sha256"=>Common.sha256_file(joinpath(built,"deployment.conf")),
             "recipe_sha256"=>Common.sha256_file(recipepath),"graphs"=>Dict(graphs),
+            "graph_exports"=>exports,
             "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>Common.sha256_file(joinpath(staged,"rtc.yaml"))),
             "zero_command"=>Dict("path"=>zero_command,"sha256"=>Common.sha256_file(joinpath(staged,zero_command)),
                 "shape"=>[command_count],"type"=>"Float32","units"=>mirror_units),

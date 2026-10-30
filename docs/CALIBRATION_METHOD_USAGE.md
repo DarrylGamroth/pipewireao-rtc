@@ -438,6 +438,27 @@ zero_command="physical-offset-zero.fits")` selects those accepted bundles in
 an authored instrument source. All validation precedes publication. It checks the
 sealed built input, recipe/source/provenance hashes, branch acceptance and shared
 identities, then verifies that the context reproduces each authored graph.
+The only permitted graph difference is appended named exports of existing
+`node:port` outputs. Original exports remain an exact ordered prefix; all other
+decoded fields and scalar types remain exact. The existing owner compiler checks
+added names, endpoints and formats. Nodes, links, inputs, parameters, execution
+settings and optical/recipe/provenance hash checks retain their strict checks.
+
+The generated selection records `graph_exports` with the frozen
+`calibrated_graph_sha256`, `authored_graph_sha256` and `added_outputs`. Ordinary
+builds using that optical selection recheck the frozen bundle hashes and the
+same graph rule, including selections written before this metadata existed.
+They generate a separate `graph-exports.yaml` receipt with the calibrated and
+`executed_graph_sha256` hashes and added exports. Frozen bundle files and the
+authored selection remain untouched. The declared graph paths must exactly match
+the selected branches; missing or extra graphs reject.
+
+These checks preserve calibration provenance, not application or timing
+qualification. Added native outputs require real consumers and can change
+buffer admission, copying cost and accelerator layouts. `application_accepted`
+remains false; validate command equality and delivery separately. The cold
+compiler/numerical check is `test/calibrated_graph_exports.jl` in an environment
+with FilterGraphIsland, FilterGraphAlgorithms, FilterGraphPipeWire and JuliaFilterGraph.
 The generated destination must be fresh. Standard branch bundles are copied
 unchanged; a shared context, exact-zero Float32 physical command and selection
 receipt are generated there. A generated `rtc.yaml` selects the context and

@@ -99,6 +99,51 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         execution=D.decode(joinpath(rebuilt,"simulation.conf"),PREFIX)
         @test execution["rtc_configuration"]==selected_path && execution["calibration_identity"]==identity
         @test read(joinpath(rebuilt,"rtc/configuration.yaml"))==authored_bytes
+        # The ordinary build stage checks frozen bundles again, even when the
+        # original selection predates output-export receipts.
+        declarations = [Dict("path"=>path) for path in values(graphs)]
+        frozen_bytes = Dict(name=>read(joinpath(output,name,"graph.conf")) for name in keys(graphs))
+        E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
+        proof = C.read_yaml(joinpath(output,"graph-exports.yaml"))
+        @test proof["application_accepted"] === false
+        for (name,path) in graphs
+            @test proof["graphs"][name]["executed_graph_sha256"] == C.sha256_file(joinpath(source,path))
+            @test proof["graphs"][name]["calibrated_graph_sha256"] == C.sha256_file(joinpath(output,name,"graph.conf"))
+            @test isempty(proof["graphs"][name]["added_outputs"])
+            @test read(joinpath(output,name,"graph.conf")) == frozen_bytes[name]
+        end
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations[1:1],"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
+        C.write_json(joinpath(source,"extra.conf"),graph)
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,vcat(declarations,[Dict("path"=>"extra.conf")]),
+            "instrument.json",PREFIX;configuration="generated/calibration/rtc.yaml")
+        firstpath = joinpath(source,first(values(graphs)))
+        before = read(firstpath)
+        changed = deepcopy(graph); changed["filter.graph"]["nodes"] = [Dict("name"=>"changed")]
+        C.write_json(firstpath,changed)
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
+        @test D.decode(firstpath,PREFIX) == changed
+        write(firstpath,before)
+        selectionpath = joinpath(output,"selection.yaml")
+        selectionbytes = read(selectionpath)
+        selection = C.read_yaml(selectionpath)
+        firstbranch = first(keys(graphs))
+        selection["graphs"][firstbranch] = "generated/calibration/"*firstbranch*"/graph.conf"
+        C.write_yaml(selectionpath,selection)
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
+        @test read(joinpath(output,firstbranch,"graph.conf")) == frozen_bytes[firstbranch]
+        write(selectionpath,selectionbytes)
+        rm(selectionpath)
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
+        write(selectionpath,selectionbytes)
+        bundlegraph = joinpath(output,first(keys(graphs)),"graph.conf")
+        write(bundlegraph,"tampered\n")
+        @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml")
         @test_throws ArgumentError E.materialize_calibration(source,built,results;options...)
     end
 end

@@ -373,7 +373,8 @@ function prepare(source::AbstractString, destination::AbstractString;
             something(configuration, "rtc/configuration.yaml")))
         prepare_graph_configurations!(application, graph_configurations,
             relpath(instrument, application), prefix; dimensions=rtc.document["dimensions"],
-            mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration)
+            mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration,
+            configuration=something(configuration, "rtc/configuration.yaml"))
         prepare_session_configuration!(application, spec, graph_configurations,
             relpath(instrument, application), prefix;
             dimensions=rtc.document["dimensions"], mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration, configurations)

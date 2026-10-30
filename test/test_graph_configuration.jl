@@ -15,6 +15,7 @@ function instrument()
             Dict("detector_shape" => [3, 7], "subaperture_shape" => [1, 2],
                 "subaperture_origins" => [[0, 0], [1, 2]]))))
 end
+
 dimensions(n=5) = Dict("controller_command_count" => n)
 
 function graph()
@@ -133,6 +134,47 @@ end
         @test_throws ArgumentError E.prepare_graph_configurations!(directory,
             Dict(), "instrument.json", PREFIX; dimensions=dimensions(11))
     end
+end
+
+@testset "calibrated graph exports preserve exact scientific fields and output order" begin
+    frozen = E.resolve_graph_configuration(graph(),E.graph_context(instrument();dimensions=dimensions()))
+    frozen["filter.graph"] = Dict{String,Any}(frozen["filter.graph"])
+    frozen["filter.graph"]["outputs"] = Any[Dict("name"=>"command","endpoint"=>"arbitrary-node:output"),
+        Dict("name"=>"status","endpoint"=>"arbitrary-node:status")]
+    @test isempty(E.calibrated_graph_exports(deepcopy(frozen),frozen))
+    for change in (
+        row -> row["filter.graph"]["nodes"][1]["props"]["gain"] = -0.31,
+        row -> row["filter.graph"]["nodes"][1]["config"]["actuator_count"] = 3.0,
+        row -> row["filter.graph"]["nodes"][1]["config"]["actuator_count"] = true,
+        row -> pop!(row["filter.graph"]["nodes"]),
+        row -> push!(row["filter.graph"]["links"],Dict("output"=>"arbitrary-node:output","input"=>"other:input")),
+        row -> push!(row["filter.graph"]["inputs"],"arbitrary-node:other"),
+        row -> pop!(row["filter.graph"]["outputs"]),
+        row -> reverse!(row["filter.graph"]["outputs"]),
+        row -> row["filter.graph"]["outputs"][1]["name"] = "renamed",
+        row -> row["filter.graph"]["outputs"][1]["endpoint"] = "arbitrary-node:other",
+        row -> row["node.name"] = "another-graph",
+        row -> row["unknown"] = nothing,
+    )
+        changed = deepcopy(frozen); change(changed)
+        @test_throws ArgumentError E.calibrated_graph_exports(changed,frozen)
+    end
+    for output in (Dict("name"=>"command","endpoint"=>"arbitrary-node:extra"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node:output"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node:extra","unknown"=>true))
+        changed = deepcopy(frozen); push!(changed["filter.graph"]["outputs"],output)
+        @test_throws ArgumentError E.calibrated_graph_exports(changed,frozen)
+    end
+    @test !E.exact_graph_value(Dict("value"=>true),Dict("value"=>1))
+    @test !E.exact_graph_value(Dict("value"=>1),Dict("value"=>1.0))
+    absent = deepcopy(frozen); delete!(absent["filter.graph"],"outputs")
+    @test isempty(E.calibrated_graph_exports(absent,absent))
+    empty = deepcopy(absent); empty["filter.graph"]["outputs"] = Any[]
+    @test_throws ArgumentError E.calibrated_graph_exports(empty,absent)
+    null = deepcopy(absent); null["filter.graph"]["outputs"] = nothing
+    @test_throws ArgumentError E.calibrated_graph_exports(null,null)
+    @test frozen["filter.graph"]["outputs"][1]["name"] == "command"
 end
 
 end
