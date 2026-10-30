@@ -868,6 +868,13 @@ controls, and checks each optical mirror plane's schema, shape and sampling.
 `command_acquisition_version` selects the command input's native Acquisition
 metadata version (2 by default; 2 or 3 only). Match the controller output's
 declared version; a controller using `--acquisition-version 3` requires 3 here.
+`command_buffers` defaults to 3 (integer 2:64). A capacity-one copy telemetry
+queue needs at least three capture buffers. When a command input is linked
+before that queue, its buffer request can determine their shared producer pool;
+requesting two can leave the queue's playback format unavailable. An explicit
+two-buffer override remains available for callers without this fanout. This
+default does not repair general SDK buffer renegotiation or change the optical
+model, command values or calibration identity.
 The clocked owner keeps the facility and mirror source graph on CPU. Optical
 and detector-response graphs can use captured AMDGPU execution; every node must
 pass capture admission. Mirror OPD copies use each optical graph's execution

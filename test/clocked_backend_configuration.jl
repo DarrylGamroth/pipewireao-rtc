@@ -13,8 +13,25 @@ using Test, PipeWireAORTC
         @test document["version"] == 6
         document["backend"] = "cpu"
         document["device"] = 0
+        delete!(document, "command_acquisition_version")
+        delete!(document, "command_buffers")
         PipeWireAORTC.Common.write_json(path, document)
         cpu = PipeWireAORTC.AOSOwner.configuration(path)
+        @test cpu.command_buffers == 3
+        document["command_buffers"] = 3
+        PipeWireAORTC.Common.write_json(path, document)
+        @test PipeWireAORTC.AOSOwner.configuration(path) == cpu
+        for buffers in (2, 64)
+            document["command_buffers"] = buffers
+            PipeWireAORTC.Common.write_json(path, document)
+            @test PipeWireAORTC.AOSOwner.configuration(path) == merge(cpu, (; command_buffers=buffers))
+        end
+        for buffers in (1, 65, nothing, true, "3", 3.0)
+            document["command_buffers"] = buffers
+            PipeWireAORTC.Common.write_json(path, document)
+            @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
+        end
+        delete!(document, "command_buffers")
         @test cpu.command_acquisition_version == 2
         document["command_acquisition_version"] = 2
         PipeWireAORTC.Common.write_json(path, document)
@@ -43,4 +60,20 @@ using Test, PipeWireAORTC
         end
         @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
     end
+end
+
+# Transport construction remains cold: no graph preparation, GPU import or core.
+using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+@testset "clocked command transport uses the resolved buffer contract" begin
+    options = PipeWireAORTC.AOSOwner.configuration(abspath(only(ARGS)))
+    owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+    @test options.command_buffers == 3
+    @test owner.clocked_command_option(options).buffers == 3
+    for buffers in (2, 64)
+        selected = merge(options, (; command_buffers=buffers))
+        transport = owner.clocked_command_option(selected)
+        @test transport.buffers == buffers
+        @test transport.acquisition_version == selected.command_acquisition_version
+    end
+    @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
