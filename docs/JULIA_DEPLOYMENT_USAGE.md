@@ -865,6 +865,9 @@ binding; `source_pupil_axes` declares the entrance OPD transform and
 `source_dm_axes` declares the mirror raster axes. The owner checks the mirror
 port schema, units and command limit against the source graph and RTC mirror
 controls, and checks each optical mirror plane's schema, shape and sampling.
+`command_acquisition_version` selects the command input's native Acquisition
+metadata version (2 by default; 2 or 3 only). Match the controller output's
+declared version; a controller using `--acquisition-version 3` requires 3 here.
 The clocked owner keeps the facility and mirror source graph on CPU. Optical
 and detector-response graphs can use captured AMDGPU execution; every node must
 pass capture admission. Mirror OPD copies use each optical graph's execution

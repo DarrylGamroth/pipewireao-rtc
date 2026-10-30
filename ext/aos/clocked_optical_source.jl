@@ -74,7 +74,7 @@ function warmup_clocked_source!(emit,science,command;check=()->nothing)
 end
 
 function clocked_command_option(options)
-    return PipeWireArrayStreamOptions(;node_name=options.command_node,media_name=options.mirror*" native command",
+    return PipeWireArrayStreamOptions(;node_name=options.command_node,media_name=options.mirror*" native command",acquisition_version=options.command_acquisition_version,
         schema=options.command_schema,format=NdArrayFormat(NdArray.F32_LE,(options.command_count,);layout=NdArray.ROW_MAJOR),
         properties=Dict("optics.command-units"=>options.command_units,"optics.calibration-identity"=>options.calibration_identity))
 end

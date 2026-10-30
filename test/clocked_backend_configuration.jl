@@ -15,6 +15,19 @@ using Test, PipeWireAORTC
         document["device"] = 0
         PipeWireAORTC.Common.write_json(path, document)
         cpu = PipeWireAORTC.AOSOwner.configuration(path)
+        @test cpu.command_acquisition_version == 2
+        document["command_acquisition_version"] = 2
+        PipeWireAORTC.Common.write_json(path, document)
+        @test PipeWireAORTC.AOSOwner.configuration(path) == cpu
+        document["command_acquisition_version"] = 3
+        PipeWireAORTC.Common.write_json(path, document)
+        @test PipeWireAORTC.AOSOwner.configuration(path) == merge(cpu, (; command_acquisition_version=3))
+        for version in (1, 4, nothing, true, "3", 3.0)
+            document["command_acquisition_version"] = version
+            PipeWireAORTC.Common.write_json(path, document)
+            @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
+        end
+        delete!(document, "command_acquisition_version")
         document["backend"] = "amdgpu"
         document["device"] = 1
         PipeWireAORTC.Common.write_json(path, document)

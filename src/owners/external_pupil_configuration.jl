@@ -52,7 +52,8 @@ function external_pupil_configuration(path, document)
         "instrument", "rtc_configuration", "calibration_identity", "prescription_identity")
     clocked = document["version"] === 6
     additional = clocked ? ("source_graph","source_amplitude_binding","source_pupil_axes","source_dm_axes","command_input","command_node","command_schema","command_units","command_limit","mirror","rate","pacing_rate_hz") : ("pupil_node",)
-    InstrumentConfiguration.fields(document, (required...,"sensor_buffers",additional...), (required...,additional...), "optical owner")
+    optional = clocked ? ("command_acquisition_version",) : ()
+    InstrumentConfiguration.fields(document, (required...,"sensor_buffers",additional...,optional...), (required...,additional...), "optical owner")
     document["mode"] == (clocked ? "clocked-optical" : "external-pupil") || throw(ArgumentError("optical owner mode differs from version"))
     config_path = abspath(path)
     entry = document["plant"]
@@ -90,6 +91,7 @@ function external_pupil_configuration(path, document)
     sensor_buffers=integer(get(document,"sensor_buffers",2),"sensor_buffers",2,64)
     source = if clocked
         backend in (:cpu, :amdgpu) || throw(ArgumentError("clocked optical owner supports CPU and AMDGPU only"))
+        command_acquisition_version = integer(get(document,"command_acquisition_version",2),"command_acquisition_version",2,3)
         source_graph = text(document["source_graph"],"optical source graph")
         haskey(declaration.graphs,source_graph) && source_graph != "calibration" || throw(ArgumentError("unknown optical source graph"))
         mirror = text(document["mirror"],"optical mirror")
@@ -163,7 +165,7 @@ function external_pupil_configuration(path, document)
         length(pupil_nodes) == 1 && only(pupil_nodes)["type"] == "spatial_ao_residual_f32" &&
             source_pupil_axes == [2,1] || throw(ArgumentError("clocked source requires native [x,y] spatial AO OPD transformed to [y,x]"))
         (;source_graph,source_amplitude_binding,source_pupil_axes=Tuple(source_pupil_axes),command_input,command_count,command_node=node_name(document["command_node"],"optical command node"),
-            command_schema=text(document["command_schema"],"optical command schema"),command_units=text(document["command_units"],"optical command units"),
+            command_schema=text(document["command_schema"],"optical command schema"),command_units=text(document["command_units"],"optical command units"),command_acquisition_version,
             command_limit=Float32(limit),mirror,rate,period_ns,pacing_rate_hz=document["pacing_rate_hz"],
             pacing_period_ns=pacing_period(document["pacing_rate_hz"],rate))
     else
