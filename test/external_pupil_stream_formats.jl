@@ -13,6 +13,44 @@ function sensor_stream_science(; durations=(llowfs=2_000_000, scc=10_000_000), s
         chopping=chopped ? (;scc=(;initial_phase="fringed")) : NamedTuple())
 end
 
+@testset "sensor emitter owns host storage and preserves transport conversion" begin
+    for T in (Float32, Float64)
+        science = sensor_stream_science()
+        sensors = map(sensor -> merge(sensor, (;image=T.(sensor.image))), science.sensors)
+        science = merge(science, (;sensors))
+        execution = StreamOwner.stream_execution((;version=4), science, StreamOwner.OwnerState())
+        metadata = (;sequence=UInt64(1))
+        image = T[11 12 13; 21 22 23]
+        expected = Float32.(image)
+        for index in eachindex(execution.frames)
+            @test eltype(execution.frames[index]) === T
+            @test eltype(execution.buffers[index]) === Float32
+            @test (execution.frames[index] === execution.buffers[index]) == (T === Float32)
+            @test execution.frames[index] !== values(science.sensors)[index].image
+            @test execution.buffers[index] !== image
+        end
+        @test execution.buffers[1] !== execution.buffers[2]
+        @test execution.frames[1] !== execution.frames[2]
+        execution.emit(:llowfs, image, metadata)
+        @test execution.buffers[1] == expected
+        @test size(execution.buffers[1]) == (2,3)
+        @test all(iszero, execution.buffers[2])
+        fill!(image, 0)
+        @test execution.buffers[1] == expected
+        execution.emit(:scc, fill(T(7),2,3), metadata)
+        @test execution.buffers[1] == expected
+        @test execution.buffers[2] == fill(7f0,2,3)
+        execution.emit(:llowfs, fill(T(floatmax(Float32)),2,3), metadata)
+        @test execution.buffers[1] == fill(floatmax(Float32),2,3)
+        @test_throws ArgumentError execution.emit(:llowfs, fill(T(NaN),2,3), metadata)
+        @test_throws ArgumentError execution.emit(:llowfs, fill(T(Inf),2,3), metadata)
+        if T === Float64
+            @test_throws ArgumentError execution.emit(:llowfs, fill(floatmax(Float64),2,3), metadata)
+        end
+    end
+    @test all(id->id.name ∉ ("CUDA","AMDGPU","Proper"), keys(Base.loaded_modules))
+end
+
 function stream_formats(science)
     return StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
 end

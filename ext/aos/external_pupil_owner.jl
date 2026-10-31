@@ -240,7 +240,9 @@ function stream_execution(options,science,state)
     command = clocked ? zeros(Float32,options.command_count) : Float32[]
     incoming_command = similar(command)
     frames = map(sensor->zeros(eltype(sensor.image),size(sensor.image)),values(science.sensors))
-    buffers = map(sensor->zeros(Float32,size(sensor.image)),values(science.sensors))
+    # Always own the host copy of borrowed optical products. Float32 frames
+    # already satisfy the transport type and need no conversion storage.
+    buffers = map(frame->eltype(frame) === Float32 ? frame : zeros(Float32,size(frame)),frames)
     domains = map(_->domain(),names)
     publication_enabled = Ref(false)
     transport_owner = Ref{Any}(nothing)
@@ -248,7 +250,9 @@ function stream_execution(options,science,state)
     emit = function (name,image,metadata)
         index = findfirst(==(name),names)
         copyto!(frames[index],image)
-        buffers[index] .= frames[index]
+        if buffers[index] !== frames[index]
+            buffers[index] .= frames[index]
+        end
         all(isfinite,buffers[index]) || throw(ArgumentError("optical product exceeds Float32 transport range"))
         sequence = sensor_sequence(metadata, hasproperty(chopping, name))
         classification = trigger_state((;chopping), name, metadata)
