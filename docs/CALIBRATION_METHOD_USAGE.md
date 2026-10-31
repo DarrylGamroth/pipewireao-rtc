@@ -352,6 +352,18 @@ brightness, readout settings, frontend nodes or their FITS bindings requires
 matching calibration. Neither a relaxed gate nor a diagnostic dither is an
 implicit production selection.
 
+When the optical source declares detector `observations`, optical calibration uses
+that same external-pupil exposure owner and response graph. Held probes reset the
+owner, integrate complete exposures and collect the actual F/U detector frames
+before the authored measurement prefix. Detector photon/readout noise must be
+disabled, with zero dark/glow rates; calibration does not silently change the
+selected response. The scale, exposure, quantum efficiency and other deterministic
+response settings remain part of the optical prescription identity. The retained
+`relative-intensity-optical` recipe kind names this calibration method; declared
+camera observations supply detector frames to it. Branch reports retain the
+measurement units and frame schema, and the existing FITS writer records those
+units on reference images, F/U differences and measured matrices.
+
 For a chopped branch, the bounded recipe selects
 `measurements: {scc: {kind: chopped-pixel-residual}}`; its branch names must
 exactly match the built source's `plant.chopping`. The initial supported frontend

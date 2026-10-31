@@ -45,6 +45,14 @@ function sensor_contract(declaration, configured, plant, name, identity)
     get(sensor,"expected_schema",schema) == schema || throw(ArgumentError("sensor expected_schema differs from its optical product"))
     execution = execution_properties(graph; prefix="optics.")
     response === nothing || merge!(execution, execution_properties(response.graph; prefix="detector."))
+    if response !== nothing
+        acquisition = get(sensor, "acquisition", Dict())
+        execution["detector.roi-origin-known"] = string(haskey(acquisition, "roi_origin"))
+        execution["detector.roi-shape"] = join(size(image), ",")
+        if haskey(acquisition, "roi_origin")
+            execution["detector.roi-origin"] = join(acquisition["roi_origin"], ",")
+        end
+    end
     if hasproperty(observation, :chopping)
         merge!(execution, execution_properties(observation.chopping.unfringed; prefix="optics.unfringed."))
     end

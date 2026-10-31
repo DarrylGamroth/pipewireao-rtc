@@ -405,9 +405,15 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
             shape = (config["rows"], config["columns"])
             physical_detector = sensor["detector"]
             if haskey(physical_detector,"rows")
-                shape == (physical_detector["rows"],physical_detector["columns"]) &&
+                physical_shape = (physical_detector["rows"],physical_detector["columns"])
+                all(axis -> 0 < shape[axis] <= physical_shape[axis], 1:2) &&
                     all(isapprox.(sampling,physical_detector["pixel_sampling_m"];rtol=8eps(Float32),atol=0)) ||
-                    throw(ArgumentError("observation detector geometry differs from its physical camera"))
+                    throw(ArgumentError("observation ROI or pixel pitch differs from its physical camera"))
+                if haskey(acquisition, "roi_origin")
+                    origin = acquisition["roi_origin"]
+                    all(axis -> origin[axis] <= physical_shape[axis] - shape[axis], 1:2) ||
+                        throw(ArgumentError("observation ROI origin and shape exceed its physical camera"))
+                end
             end
             haskey(sensor, "detector_shape") && Tuple(sensor["detector_shape"]) != shape &&
                 throw(ArgumentError("observation detector shape differs from its physical sensor"))

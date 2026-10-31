@@ -86,3 +86,49 @@ end
         @test_throws ArgumentError IC.prepare_external_pupil(path)
     end
 end
+
+@testset "physical camera permits an explicit ROI with an unknown sensor origin" begin
+    mktempdir() do directory
+        physical, simulation = external_optical_documents()
+        physical["optical_paths"] = Dict("llowfs"=>Dict("sensor"=>"llowfs","lyot_stop_port"=>"reflected"))
+        path = write_external_optical_documents(directory,physical,simulation)
+        authored_response!(directory,physical,simulation)
+        simulation["observations"]["llowfs"] = pop!(simulation["observations"],"low_order")
+        simulation["observations"]["llowfs"]["graph"] = "llowfs_response"
+        simulation["graphs"] = Dict{String,Any}(simulation["graphs"])
+        simulation["graphs"]["llowfs_response"] = "simulation/low_order_response.yaml"
+        config = simulation["components"]["low_order_detector"]["config"]
+        config["pixel_sampling_m"] = [0.003,0.003]
+        camera = physical["wavefront_sensors"]["llowfs"]
+        camera["detector"] = Dict("name"=>"CRED2","rows"=>12,"columns"=>14,"pixel_sampling_m"=>[0.003,0.003])
+        write_external_optical_documents(directory,physical,simulation)
+        plant = IC.prepare_external_pupil(path)
+        @test size(graph_output(plant.observations.llowfs.response.graph,:frame)) == (8,8)
+        declaration = IC.load_simulation(path)
+        owner = Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt).ExternalPupilOwner
+        contract = owner.sensor_contract(declaration,IC.settings(declaration),plant,:llowfs,"sha256:"*repeat("a",64))
+        @test contract.properties["detector.roi-origin-known"] == "false"
+        @test contract.properties["detector.roi-shape"] == "8,8"
+        @test !haskey(contract.properties,"detector.roi-origin")
+        @test !haskey(IC.load_simulation(path).instrument.document["wavefront_sensors"]["llowfs"]["acquisition"],"roi_origin")
+        camera["acquisition"] = Dict{String,Any}(camera["acquisition"])
+        camera["acquisition"]["roi_origin"] = [4,6]
+        write_external_optical_documents(directory,physical,simulation)
+        known = IC.prepare_external_pupil(path)
+        declaration = IC.load_simulation(path)
+        contract = owner.sensor_contract(declaration,IC.settings(declaration),known,:llowfs,"sha256:"*repeat("a",64))
+        @test contract.properties["detector.roi-origin-known"] == "true"
+        @test contract.properties["detector.roi-origin"] == "4,6"
+        camera["acquisition"]["roi_origin"] = [5,6]
+        write_external_optical_documents(directory,physical,simulation)
+        @test_throws ArgumentError IC.prepare_external_pupil(path)
+        delete!(camera["acquisition"],"roi_origin")
+        camera["detector"]["rows"] = 7
+        write_external_optical_documents(directory,physical,simulation)
+        @test_throws ArgumentError IC.prepare_external_pupil(path)
+        camera["detector"]["rows"] = 12
+        camera["detector"]["pixel_sampling_m"] = [0.004,0.003]
+        write_external_optical_documents(directory,physical,simulation)
+        @test_throws ArgumentError IC.prepare_external_pupil(path)
+    end
+end

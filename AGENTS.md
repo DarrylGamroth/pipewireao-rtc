@@ -156,7 +156,11 @@
   checks the actual CPU chopped measurement prefix, signed numerical calibration,
   typed reference-difference publication and old-calibration rejection without
   a core or GPU. `test/calibration_optical_publication.jl` retains the ordinary
-  intensity publication regression. These tests do not qualify a rolling loop.
+  intensity publication regression. `test/calibration_detector_observation.jl`
+  checks the shared detector exposure scale, deterministic F/U calibration,
+  unselected camera independence and detector units in published FITS artifacts.
+  `test/external_optical_preparation.jl` checks ROI bounds and unknown-origin
+  metadata against physical sensor dimensions. These tests do not qualify a rolling loop.
 - `test/test_pupil_source_owner.jl` and `test/test_physical_offset_inputs.jl`
   check the version-5 clocked pupil source and version-2 P/Q-only receiver cold,
   without optional science packages. The optional CPU selectors

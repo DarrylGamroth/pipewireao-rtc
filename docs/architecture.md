@@ -1188,6 +1188,12 @@ hashed FITS artifact contract. Authored sources with observations require explic
 SHA-256 hashes on all FITS bindings and validate their decoded shape and hash.
 Optional detector settings stay absent unless
 authored, so scientific noise defaults remain with AOS.
+Detector component `rows` and `columns` explicitly define its ROI-local output
+shape. When physical camera dimensions are declared, the ROI must fit those
+dimensions and retain their pixel pitch. An optional acquisition `roi_origin`
+additionally constrains the ROI within the full sensor. An omitted origin remains
+unknown; it does not imply a crop at `[0,0]`. Published detector properties report
+whether that origin is known and retain the local output shape.
 
 `load_simulation_source` returns the expanded authored response graphs in
 `observation_graphs`, without inventing optical graphs or reading generated
