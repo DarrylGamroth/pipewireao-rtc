@@ -26,6 +26,18 @@ graph inputs. Focused geometry, publication, binding and influence tests check
 these contracts without GPU imports or a live session. Instrument calibration
 adoption remains a separate gate.
 
+### Shared optical propagation metadata — 2026-10-30
+
+The external-pupil owner reports AOS's selected optical execution graph. When
+compatible scalar Proper paths share a prefix, cold native properties mark
+`execution-scope=prepared` and include an `independent.*` descriptor for retained
+fallback execution. These node counts describe prepared coverage, not per-frame
+selection. Optical propagation and reuse remain in AOS; no instrument YAML or
+camera timing changes are required. CPU replay, seeded detector reset and
+metadata checks passed; the full SPIDERS captured AMDGPU check matched the
+independent model exactly for flat and changed-DM frames. CUDA and performance
+qualification await the RTX 3080.
+
 ### Optical owner cold compilation — 2026-10-30
 
 The external-pupil/clocked optical owner warms its unpublished numerical path

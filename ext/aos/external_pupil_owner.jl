@@ -4,7 +4,7 @@ module ExternalPupilOwner
 using ..PipeWireAORTCAOSExt: Owner, Bootstrap, SourceControl, Backends, target, OwnerState, execution_properties
 using PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
-using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
+using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
 using UUIDs, SHA
 import PipeWireAORTC
 const IC = PipeWireAORTC.InstrumentConfiguration
@@ -29,6 +29,20 @@ function spectral_properties(configured, name)
     return properties
 end
 
+function optical_execution_properties(plant,name;prefix="optics.",unfringed=false)
+    graph=optical_execution_graph(plant,name;unfringed)
+    independent=unfringed ? getproperty(plant.observations,name).chopping.unfringed :
+        getproperty(plant.graphs,name)
+    properties=execution_properties(graph;prefix)
+    if graph !== independent
+        # Native properties are fixed at preparation. Describe both admitted
+        # executions; their node counts are not a per-frame selection report.
+        properties[prefix*"execution-scope"]="prepared"
+        merge!(properties,execution_properties(independent;prefix=prefix*"independent."))
+    end
+    return properties
+end
+
 function sensor_contract(declaration, configured, plant, name, identity)
     graph = getproperty(plant.graphs, name)
     observation = getproperty(plant.observations, name)
@@ -43,7 +57,7 @@ function sensor_contract(declaration, configured, plant, name, identity)
     haskey(sensor,"detector_shape") && Tuple(sensor["detector_shape"]) != size(image) &&
         throw(DimensionMismatch("sensor detector_shape differs from its optical product"))
     get(sensor,"expected_schema",schema) == schema || throw(ArgumentError("sensor expected_schema differs from its optical product"))
-    execution = execution_properties(graph; prefix="optics.")
+    execution = optical_execution_properties(plant,name)
     response === nothing || merge!(execution, execution_properties(response.graph; prefix="detector."))
     if response !== nothing
         acquisition = get(sensor, "acquisition", Dict())
@@ -54,7 +68,7 @@ function sensor_contract(declaration, configured, plant, name, identity)
         end
     end
     if hasproperty(observation, :chopping)
-        merge!(execution, execution_properties(observation.chopping.unfringed; prefix="optics.unfringed."))
+        merge!(execution, optical_execution_properties(plant,name;unfringed=true,prefix="optics.unfringed."))
     end
     return (; image, schema, properties=merge(spectral_properties(configured,name), execution,
         Dict("optics.model-sha256"=>String(chopprefix(identity,"sha256:")),
@@ -275,7 +289,7 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
         with_thread_loop_lock(transport.loop) do _
             filter = Filter(transport.core,options.control_node;
                 properties=merge(SourceControl.source_properties(mailbox),
-                    execution_properties(first(values(science.plant.graphs))),Dict(
+                    optical_execution_properties(science.plant,first(keys(science.plant.graphs));prefix="aos.simulation."),Dict(
                     "node.name"=>options.control_node,"media.class"=>"Control",
                     "aos.simulation.mode"=>clocked ? "clocked-optical" : "external-pupil", "aos.simulation.backend"=>string(options.backend),
                     "aos.simulation.device"=>string(options.device),
