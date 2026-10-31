@@ -105,5 +105,20 @@ include(joinpath(@__DIR__,"chopped_calibration_documents.jl"))
         @test mixed.provenance["observation_quantity"]["scc"] == "relative_intensity"
         @test mixed.chopped_references.scc.fringed ≈ Array(graph_output(mixed.systems.scc.graph,:intensity))
         @test all(iszero,mixed.observe(zeros(Float32,4,4)).scc)
+        # The 2 ms pupil interval crosses the selected camera's 3 ms phase
+        # boundary. AOS executes both variants and integrates each segment.
+        physical["wavefront_sensors"]["scc"]["acquisition"]["exposure_duration_s"] = 0.003
+        simulation["observations"]["scc"] = pop!(simulation["observations"],"llowfs")
+        selection["sensor"] = "scc"
+        detector["photon_noise"] = false
+        detector["exposure_duration_s"] = 0.003
+        write_external_optical_documents(dirname(dirname(path)),physical,simulation)
+        asymmetric = Calibration.optical_callbacks(upstream_path,path;options...)
+        @test asymmetric.chopped_references.scc.fringed ≈ 1.5 .* callbacks.chopped_references.scc.fringed
+        @test asymmetric.chopped_references.scc.unfringed ≈ 1.5 .* callbacks.chopped_references.scc.unfringed
+        allowance = 4eps(Float32)*norm(asymmetric.chopped_references.scc.difference)
+        @test asymmetric.observe(opd).scc ≈ 1.5 .* first rtol=2e-3 atol=allowance
+        @test asymmetric.exposure_plant.state.last_end_ns == 6_000_000
+        @test asymmetric.exposure_plant.exposures.scc.sequence == 2
     end
 end
