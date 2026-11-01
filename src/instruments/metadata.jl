@@ -28,7 +28,7 @@ function artifact_paths(declaration,configured)
     paths = Set{String}()
     union!(paths, get(declaration.document, "binding_files", String[]))
     for graph_name in keys(declaration.graphs)
-        graph = graph_document(declaration,configured;simulation_graph=graph_name)
+        graph = resolve_graph_document(declaration.graphs[graph_name],declaration,configured,graph_name)
         for node in graph["nodes"]
             if get(node,"type",nothing) in ("compiled_optical_paths_f32","compiled_optical_paths_f64")
                 push!(paths,node["config"]["model_path"])

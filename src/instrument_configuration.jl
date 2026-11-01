@@ -506,25 +506,9 @@ function graph_requires_proper(declaration, configured; simulation_graph="produc
     end
 end
 
-"""
-    graph_document(declaration, configured; calibration=false, simulation_graph=...)
-
-Resolve profile and scalar settings into a declared AOS graph. The default is
-`production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
-Explicitly declared `internal-source` and `dark` graphs retain normal component
-settings. A dark graph must feed each detector's photon-rate input from an
-explicit zero binding, without an optical link to that input. Unknown selections
-reject before preparation.
-"""
-function graph_document(declaration, configured; calibration=false,
-        simulation_graph=calibration ? "calibration" : "production")
-    mode = selected_graph(declaration, simulation_graph)
-    calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
-    model = get(declaration.document, "optical_model", Dict())
-    graph = haskey(declaration.document, "optical_model") &&
-        (haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ||
-         haskey(get(model, "variants", Dict()), mode)) ?
-        optical_graph_document(declaration, configured, mode) : deepcopy(declaration.graphs[mode])
+"Resolve an existing graph's profiles and settings without scientific preparation."
+function resolve_graph_document(graph, declaration, configured, mode)
+    graph = deepcopy(graph)
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
     nodes = graph["nodes"]
@@ -569,7 +553,31 @@ function graph_document(declaration, configured; calibration=false,
     hil = haskey(declaration.document, "hil")
     ideal = hil && mode == "calibration"
     graph["name"] = ideal ? graph["name"] : graph["name"] * "_" * profile_name
-    resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
+    return Common.configuration_value(graph, configuration_context(declaration, configured))
+end
+
+"""
+    graph_document(declaration, configured; calibration=false, simulation_graph=...)
+
+Resolve profile and scalar settings into a declared AOS graph. The default is
+`production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
+Explicitly declared `internal-source` and `dark` graphs retain normal component
+settings. A dark graph must feed each detector's photon-rate input from an
+explicit zero binding, without an optical link to that input. Unknown selections
+reject before preparation.
+"""
+function graph_document(declaration, configured; calibration=false,
+        simulation_graph=calibration ? "calibration" : "production")
+    mode = selected_graph(declaration, simulation_graph)
+    calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
+    model = get(declaration.document, "optical_model", Dict())
+    graph = haskey(declaration.document, "optical_model") &&
+        (haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ||
+         haskey(get(model, "variants", Dict()), mode)) ?
+        optical_graph_document(declaration, configured, mode) : declaration.graphs[mode]
+    resolved = resolve_graph_document(graph, declaration, configured, mode)
+    hil = haskey(declaration.document, "hil")
+    ideal = hil && mode == "calibration"
     prepare_optical_components!(resolved, declaration, configured)
     ideal || apply_responses!(resolved, declaration, configured)
     hil && mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])

@@ -189,6 +189,12 @@ end
         save(document) = PipeWireAORTC.Common.write_yaml(path,document)
         save(execution)
         declaration = IC.load_simulation(path)
+        configured = IC.settings(declaration)
+        resolved = IC.resolve_graph_document(declaration.graphs["scc"],declaration,configured,"scc")
+        @test only(resolved["nodes"])["config"]["resolution"] == 8
+        @test only(resolved["nodes"])["config"]["wavelength_um"] == 1.55
+        @test_throws ArgumentError IC.graph_document(declaration,configured;simulation_graph="scc")
+        @test !any(id->id.name in ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","Proper","CUDA","AMDGPU"),keys(Base.loaded_modules))
         @test !declaration.document["settings_schema"]["properties"]["spectra"]["readOnly"]
         @test IC.settings(declaration,Dict("spectra"=>Dict("scc"=>Dict("wavelength_um"=>1.6))))["spectra"]["scc"]["wavelength_um"]==1.6
         for model in (Dict("format"=>"other","source"=>"../simulation/definition.yaml"),
