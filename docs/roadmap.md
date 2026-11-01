@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-28. This section is the current delivery summary. Later sections
+Updated 2026-10-31. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -18,8 +18,11 @@ RTC issues 36 and 12 block rendered-browser cold replacement acceptance. Work
 is isolated on `codex/simulator-settings-and-shutdown`: selected-operation
 compilation and read-only child optimization reduce cold Describe cost while
 preserving backend preparation, sealed assets and native identity checks.
-Focused software checks pass; phase-instrumented private CPU Quit diagnosis
-and actual browser settings/rebuild/reconnect acceptance remain in progress.
+Core and focused software checks pass. Timing-report compilation is moved before
+admission without invoking cleanup. Actual nonempty-capture CPU Quits complete
+within the unchanged native bound, and the rendered browser passes settings,
+rebuild, durable polling across RTC loss, explicit reconnect, fresh native proof
+and advancing samples. All test-owned sessions are stopped after acceptance.
 See the [validation record](validation/simulator-settings-20261031/README.md).
 
 ### Explicit optical arithmetic precision — 2026-10-29

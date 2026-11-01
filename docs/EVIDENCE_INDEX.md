@@ -2,9 +2,9 @@
 
 ## Simulator management and shutdown — 2026-10-31
 
-The [in-progress validation record](validation/simulator-settings-20261031/README.md)
-separates cold description measurements and software checks from the remaining
-native shutdown and rendered-browser rebuild/reconnect gates.
+The [validation record](validation/simulator-settings-20261031/README.md)
+separates cold description measurements and software checks from passing private
+CPU shutdown and rendered-browser settings/rebuild/reconnect acceptance.
 
 ## Captured optical calibration — 2026-10-29
 

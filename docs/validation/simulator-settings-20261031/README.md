@@ -3,7 +3,8 @@
 Work is isolated from RTC `4604ce8` on
 `codex/simulator-settings-and-shutdown`. GUI acceptance is isolated on
 `codex/browser-simulator-acceptance`, rebased on local GUI main `320534f`.
-The source fixes and live acceptance remain in progress.
+The source fixes and selected private CPU/browser acceptance pass. This is
+functional software evidence, not latency or hardware qualification.
 
 ## Cold settings description (RTC issue 36)
 
@@ -65,7 +66,33 @@ phase-timing selector passes all 21 assertions, including no files or consumed
 samples during preparation. Independent review found no blocking correctness
 issue in this change or the bounded native diagnostics.
 
-Rendered-browser settings/rebuild/reconnect acceptance remains in progress.
+Actual rendered-browser cold replacement passes using private registered RTC
+`0.2.51+simfix.20261031.1`, tree
+`43f9dedf9d21b45e6e0a20e23835d1ae5e8d004a`, with original calibration unchanged.
+The first rebuild changes outer scale 30 → 31, accepts native Quit in 3.227
+seconds, writes 2,563 timing rows and completes cleanup/startup. It exposed a
+separate GUI JSON-only locator reader, corrected using the existing native POD
+decoder rather than changing the RTC record format.
+
+A second deliberate change 31 → 32 passes the complete corrected browser flow
+at configured 30 Hz: two Describes, one Rebuild, 630 read-only receipt polls,
+one explicit Reconnect and no native control mutations. Fresh native identity
+and graph/session checks pass, engineering permission stays disabled, detector
+sequence advances 72 → 75, and the complete persisted owner settings match the
+expected change. Read-only Describe completes in 64.59 and 71.11 seconds under
+the scoped 120-second GUI service bound; the scientific child's 50-second bound
+remains unchanged. That run accepts Quit in 3.449 seconds while observing live
+DM/detector data and saves 9,121 timing rows. No unknown mutation is retried.
+
+The GUI fixes are `1f970a9` (native POD locator) and `e2a641b` (typed initial
+acquisition boundaries) on its isolated branch from GUI main `320534f`.
+The original intermittent expiry remains distinct from the measured compilation
+contributor; these successful runs do not prove that it was the sole cause.
+
+After testing, the last private RTC accepts native Quit, reaches stopped with
+cleanup complete and service result success. Its four owners and main unit are
+independently inactive with MainPID zero, and its remote socket is absent. Both
+test bridge processes are stopped. Unrelated sessions remain untouched.
 
 ## Local evidence
 
