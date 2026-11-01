@@ -36,6 +36,11 @@ gates. It records the response, coefficients, units and ordering; it does not
 silently redefine pupil-orthogonal modes as sensor-orthogonal modes. SPIDERS
 instrument data selects the prototype basis and both loops start open.
 
+Compiled-model artifact discovery resolves the same profiles and settings
+without preparing unselected optical graphs. The cold regression checks retain
+the exact SPIDERS prescription identity and all eleven asset hashes; actual
+execution keeps its optical preparation, detector response and dark validation.
+
 RTC 0.2.53 requires FGA 0.8.15, JFG 0.4.5, FGPW 0.1.20 and FI 0.1.5 for
 these contracts. Source checks cover independent arrivals, clipping/feedback,
 invalid CoG holds, reset/failure, graph/FITS publication, calibration leakage
