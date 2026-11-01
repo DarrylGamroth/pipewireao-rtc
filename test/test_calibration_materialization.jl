@@ -115,6 +115,19 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test only(frozen_centroid["filter.graph"]["nodes"])["props"] ==
             Dict("reference-centroid-x"=>1.25,"reference-centroid-y"=>1.5)
         @test read(joinpath(centroid_source,graphs["llowfs"])) == centroid_authored
+        centroid_rebuilt = joinpath(temporary,"centroid-rebuilt"); cp(centroid_source,centroid_rebuilt)
+        centroid_selected = joinpath(centroid_rebuilt,"generated/calibration")
+        centroid_frozen = read(joinpath(centroid_selected,"llowfs/graph.conf"))
+        centroid_context = PipeWireAORTC.InstrumentConfiguration.calibration_context(
+            C.read_yaml(joinpath(centroid_selected,"context.yaml")),centroid_selected)
+        @test E.prepare_graph_configurations!(centroid_rebuilt,
+            [Dict("path"=>path) for path in values(graphs)],"instrument.json",PREFIX;
+            configuration="generated/calibration/rtc.yaml",calibration=centroid_context) === nothing
+        executed_centroid = D.decode(joinpath(centroid_rebuilt,graphs["llowfs"]),PREFIX)
+        @test only(executed_centroid["filter.graph"]["nodes"])["props"] ==
+            only(frozen_centroid["filter.graph"]["nodes"])["props"]
+        @test read(joinpath(centroid_selected,"llowfs/graph.conf")) == centroid_frozen
+        @test read(joinpath(centroid_source,graphs["llowfs"])) == centroid_authored
         # Re-sign an otherwise valid bundle through the standard writer. Its
         # branch selection must still agree with its measured root FITS mask.
         inconsistent = joinpath(temporary,"inconsistent")
