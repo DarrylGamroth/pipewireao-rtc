@@ -454,6 +454,48 @@ function optical_authority(branch_modes, mode_count)
     return selections
 end
 
+"Subtract measured owned-mode components, then bound each native probe column."
+function optical_nulling_projection(calibration, name::Symbol; tsvd_rtol::Real)
+    hasproperty(calibration.branches,name) || throw(ArgumentError("unknown measurement nulling branch"))
+    branch = getproperty(calibration.branches,name)
+    hasproperty(branch,:coordinates) || throw(ArgumentError("measurement nulling requires a centroid branch"))
+    isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 || throw(ArgumentError("invalid measurement nulling TSVD cutoff"))
+    P = Matrix{Float32}(calibration.projection)
+    D = branch.interaction
+    owned = branch.modes
+    unowned = setdiff(1:size(P,2),owned)
+    isempty(unowned) && throw(ArgumentError("measurement nulling requires unowned command modes"))
+    inverse = AdaptiveOpticsCalibration.process(AdaptiveOpticsCalibration.prepare(
+        AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol=Float32(tsvd_rtol)),
+        AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(size(D,1),length(owned),Float32)),
+        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:,owned]))
+    AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) == size(D,1) ||
+        throw(ArgumentError("owned centroid response must retain full row rank for measurement nulling"))
+    coefficients = Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)) * D[:,unowned]
+    P[:,unowned] .-= P[:,owned] * coefficients
+    scales = [maximum(abs,column) for column in eachcol(P)]
+    all(scale -> isfinite(scale) && scale > 0,scales) && all(isfinite,P) ||
+        throw(ArgumentError("measurement nulling produced null or nonfinite command columns"))
+    P ./= permutedims(scales)
+    residual = LA.norm(D[:,unowned]-D[:,owned]*coefficients)
+    response_norm = LA.norm(D[:,unowned])
+    relative_null_residual = iszero(response_norm) ? (iszero(residual) ? 0.0 : Inf) : residual/response_norm
+    record = Dict{String,Any}("branch"=>string(name),"owned_modes"=>collect(owned),"unowned_modes"=>unowned,
+        "source_calibration_identity"=>calibration.report["calibration_identity"],
+        "source_status"=>calibration.report["status"],"source_cross_talk"=>branch.cross_talk,
+        "source_held_out"=>deepcopy(calibration.report["held_out"]),"tsvd_rtol"=>tsvd_rtol,
+        "retained_rank"=>AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
+        "response_units"=>calibration.report["branches"][string(name)]["measurement_units"]*" / m OPD",
+        "owned_response"=>[collect(row) for row in eachrow(D[:,owned])],
+        "unowned_response"=>[collect(row) for row in eachrow(D[:,unowned])],
+        "coefficients"=>[collect(row) for row in eachrow(coefficients)],"coefficient_units"=>"1",
+        "relative_null_residual"=>relative_null_residual,
+        "column_scales"=>scales,"column_scale_units"=>calibration.report["physical_projection"]["command_projection_units"],
+        "construction_order"=>"source basis, measurement nulling, unit-maximum command columns, remeasured pupil RMS normalization",
+        "final_basis"=>"unowned modes include compensating owned components; pupil tip/tilt orthogonality is not imposed after measurement nulling")
+    return (;projection=P,record)
+end
+
 """
     InstrumentCalibration.calibrate_optical(surface, observe, command_projection;
         pupil_support, branch_modes, pixel_masks, poke_m, tsvd_rtol, ...)
@@ -470,7 +512,11 @@ are normalized using the actual mirror's piston-removed RMS over `pupil_support`
 so reconstructed coefficients have metre-OPD pupil-RMS units. Every branch is
 measured against every mode. Intensity inverses fit all modes before unowned
 reconstructor rows are zeroed; a centroid inverse fits only its owned columns and
-reports the measured cross-talk from the remaining modes.
+reports the measured cross-talk from the remaining modes. The explicit
+`measurement_nulling=(:branch,)` option subtracts measured owned-mode components
+from that centroid branch's unowned command columns, then remeasures the basis
+and every gate. It supports one centroid branch and does not preserve pupil
+TT orthogonality of the corrected columns.
 `require_observable=false` returns a rejected candidate with diagnostics for
 exploration; rejected candidates cannot be written as accepted bundles.
 """
@@ -480,7 +526,7 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
         reconstruction_tolerance::Real=0.05, require_observable::Bool=true,
         provenance::AbstractDict=Dict{String,Any}(), held_out_coefficients=nothing,
         signed_measurements::Tuple{Vararg{Symbol}}=(), centroid_measurements::Tuple{Vararg{Symbol}}=(),
-        normalization_probe::Real=poke_m)
+        measurement_nulling::Tuple{Vararg{Symbol}}=(), normalization_probe::Real=poke_m)
     Base.require_one_based_indexing(command_projection,pupil_support)
     !isempty(command_projection) && all(isfinite,command_projection) && any(pupil_support) ||
         throw(ArgumentError("optical command projection and pupil support must be finite and nonempty"))
@@ -499,6 +545,24 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
         all(name -> haskey(authority,name) && !(name in signed_measurements),centroid_measurements) ||
         throw(ArgumentError("centroid measurements must name distinct unsigned optical branches"))
     keys(pixel_masks) == keys(authority) || throw(ArgumentError("pixel masks must name every branch in order"))
+    length(measurement_nulling) <= 1 && all(name -> name in centroid_measurements,measurement_nulling) ||
+        throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
+    if !isempty(measurement_nulling)
+        options = (;pupil_support,branch_modes,pixel_masks,poke_m,tsvd_rtol,derivative_tolerance,
+            reconstruction_tolerance,held_out_coefficients,signed_measurements,centroid_measurements,normalization_probe)
+        candidate = Calibration.calibrate_optical(surface,observe,command_projection;
+            options...,provenance,require_observable=false)
+        proposed = optical_nulling_projection(candidate,only(measurement_nulling);tsvd_rtol)
+        provenance = deepcopy(Dict{String,Any}(provenance))
+        provenance["measurement_nulling"] = proposed.record
+        basis = get(provenance,"basis",nothing)
+        if basis isa AbstractDict && haskey(basis,"mode_order")
+            basis["source_mode_order"] = basis["mode_order"]
+            basis["mode_order"] = "owned modes retain their order; unowned modes include measured owned-mode compensation"
+        end
+        return Calibration.calibrate_optical(surface,observe,proposed.projection;
+            options...,provenance,require_observable)
+    end
     command = zeros(Float32,size(projection,1))
     flat_opd = optical_surface(surface,command,pupil_support)
     reference_images = observe(flat_opd)
@@ -1141,7 +1205,7 @@ function optical_recipe(application, recipe)
     required = ("version","kind","upstream_simulation","optical_simulation","mirror","branches",
         "spatial_frequencies","branch_modes","controlled_actuators","pixels","poke_m","tsvd_rtol",
         "derivative_tolerance","reconstruction_tolerance")
-    optional = ("upstream_settings","settings","held_out_coefficients","upstream_reference","measurements","mirror_response","command_completion","tip_tilt")
+    optional = ("upstream_settings","settings","held_out_coefficients","upstream_reference","measurements","mirror_response","command_completion","tip_tilt","measurement_nulling")
     IC.fields(document,(required...,optional...),required,"optical calibration recipe")
     document["version"] === 1 && document["kind"] == "relative-intensity-optical" ||
         throw(ArgumentError("optical recipe requires version 1 and kind relative-intensity-optical"))
@@ -1163,6 +1227,11 @@ function optical_recipe(application, recipe)
         IC.fields(row,("kind",),("kind",),"optical measurement")
         row["kind"] in ("chopped-pixel-residual","center-of-gravity") || throw(ArgumentError("unsupported optical measurement kind"))
     end
+    nulling = get(document,"measurement_nulling",[])
+    nulling isa AbstractVector && length(nulling) <= 1 &&
+        all(name -> name isa String && haskey(branches,name) &&
+            get(get(measurements,name,Dict()),"kind",nothing) == "center-of-gravity",nulling) ||
+        throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
     rows = document["spatial_frequencies"]
     rows isa AbstractVector && 1 <= length(rows) <= 32 &&
         all(row -> row isa AbstractVector && length(row)==2 && all(IC.isfinite_real,row),rows) ||
@@ -1395,6 +1464,7 @@ function Calibration.calibrate_optical(upstream_application::AbstractString,
     calibration = Calibration.calibrate_optical(surface,callbacks.observe;
         actuator_coordinates=coordinates,controlled_actuators=active,spatial_frequencies=selected.frequencies,
         tip_tilt=get(document,"tip_tilt",false),
+        measurement_nulling=Tuple(Symbol.(get(document,"measurement_nulling",[]))),
         pupil_support=callbacks.pupil_support,branch_modes=selected.branch_modes,
         pixel_masks=map((mask,image)->mask === nothing ? trues(size(image)) : mask,callbacks.pixel_masks,images),
         normalization_probe=response === nothing ? document["poke_m"] : response["normalization_probe"],

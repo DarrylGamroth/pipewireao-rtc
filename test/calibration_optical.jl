@@ -238,6 +238,94 @@ end
     @test calibration.report["provenance"]["basis"]["kind"] == "tip-tilt-and-sinusoidal"
     @test maximum(abs,calibration.pupil_modes[:,1:2]'*calibration.pupil_modes[:,3:10])/37 < 1e-6
     @test calibration.validation.accepted
+    # The detector responds to a higher pupil mode as well as tip/tilt.
+    # Nulling that response must retain the original pupil-removal provenance
+    # while admitting the compensating pupil tip/tilt in the final basis.
+    modal_inverse = pinv(calibration.pupil_modes)
+    measured = opd -> begin
+        coefficients = modal_inverse*vec(opd)
+        x,y = 10coefficients[1]+6coefficients[3],10coefficients[2]
+        (;llowfs=Float32[1-x-y 100 1+x;1+y 1 200],scc=observe(opd).scc)
+    end
+    nulled = OpticalCalibration.calibrate_optical(surface,measured;
+        actuator_coordinates=coordinates,controlled_actuators=trues(36),tip_tilt=true,
+        spatial_frequencies=Float64[.5 0;0 .5;1 0;0 1],pupil_support=trues(1,37),
+        branch_modes=(llowfs=1:2,scc=3:10),pixel_masks=(llowfs=Bool[1 0 1;1 1 0],scc=trues(1,37)),
+        centroid_measurements=(:llowfs,),measurement_nulling=(:llowfs,),poke_m=.01f0,tsvd_rtol=1f-5)
+    basis = nulled.report["provenance"]["basis"]
+    @test basis["tip_tilt_removal"] == calibration.report["provenance"]["basis"]["tip_tilt_removal"]
+    @test basis["source_mode_order"] == calibration.report["provenance"]["basis"]["mode_order"]
+    @test occursin("compensation",basis["mode_order"])
+    @test maximum(abs,nulled.pupil_modes[:,1:2]'*nulled.pupil_modes[:,3:10])/37 > .1
+    @test nulled.validation.accepted
+end
+
+@testset "explicit centroid measurement nulling removes higher-mode leakage" begin
+    largest_command = Ref(0f0)
+    surface = command -> begin
+        largest_command[] = max(largest_command[],maximum(abs,command))
+        maximum(abs,command) < .1f0 || throw(ArgumentError("native normalization probe exceeded its declared scale"))
+        reshape(1f-6 .* vcat(command,-sum(command),0f0),2,3)
+    end
+    observe = opd -> begin
+        x,y,higher = 1f6 .* opd[1:3]
+        (;llowfs=Float32[1-x-.6higher-y 100 1+x+.6higher;1+y 1 200],scc=10f0 .+ 1f6 .* opd)
+    end
+    options = (;pupil_support=trues(2,3),branch_modes=(llowfs=1:2,scc=3:4),
+        pixel_masks=(llowfs=Bool[1 0 1;1 1 0],scc=trues(2,3)),centroid_measurements=(:llowfs,),
+        poke_m=1f-9,normalization_probe=.005f0,tsvd_rtol=1f-5,
+        provenance=Dict("mirror_response"=>Dict("command_units"=>"native command")))
+    projection = Matrix{Float32}(I,4,4)
+    leaking = OpticalCalibration.calibrate_optical(surface,observe,projection;options...,require_observable=false)
+    @test leaking.report["status"] == "rejected"
+    @test maximum(leaking.validation.reconstruction_errors) > .2
+    @test leaking.branches.llowfs.cross_talk > .3
+    corrected = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        options...,measurement_nulling=(:llowfs,))
+    @test corrected.report["status"] == "accepted"
+    @test corrected.validation.accepted
+    @test corrected.branches.llowfs.cross_talk < .01
+    @test corrected.report["derivative_tolerance"] == corrected.report["reconstruction_tolerance"] == .05
+    @test largest_command[] < .1f0
+    record = corrected.report["provenance"]["measurement_nulling"]
+    @test record["branch"] == "llowfs"
+    @test record["owned_modes"] == [1,2]
+    @test record["unowned_modes"] == [3,4]
+    @test record["response_units"] == "px / m OPD"
+    @test record["coefficient_units"] == "1"
+    @test record["source_calibration_identity"] == leaking.report["calibration_identity"]
+    @test maximum(record["column_scales"]) > 1f6
+    @test !haskey(leaking.report["provenance"],"measurement_nulling")
+    metadata = merge(options.provenance,Dict("basis"=>Dict("kind"=>"authored")))
+    authored = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        options...,provenance=metadata,measurement_nulling=(:llowfs,))
+    @test authored.report["provenance"]["basis"] == metadata["basis"] == Dict("kind"=>"authored")
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation=OpticalCalibrationTestImplementation)
+    zero_response = deepcopy(leaking)
+    zero_response.branches.llowfs.interaction[:,3:4] .= 0
+    proposed = implementation.optical_nulling_projection(zero_response,:llowfs;tsvd_rtol=options.tsvd_rtol)
+    @test proposed.record["relative_null_residual"] == 0
+    mktempdir() do directory
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64))
+        OpticalCalibration.calibrate_optical(corrected,joinpath(directory,"nulled");report,context=Dict(),
+            concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[])))
+        retained = OpticalCalibration.read_bundle(joinpath(directory,"nulled")).report["provenance"]["measurement_nulling"]
+        @test retained["source_calibration_identity"] == leaking.report["calibration_identity"]
+        @test retained["source_status"] == "rejected"
+        @test retained["retained_rank"] == 2
+    end
+    for invalid in ((:scc,),(:missing,),(:llowfs,:llowfs),(:llowfs,:scc))
+        @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,observe,projection;
+            options...,measurement_nulling=invalid)
+    end
+    blind = opd -> begin
+        x,higher = 1f6*opd[1],1f6*opd[3]
+        (;llowfs=Float32[1-x-.6higher 100 1+x+.6higher;1 1 200],scc=observe(opd).scc)
+    end
+    @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,blind,projection;
+        options...,measurement_nulling=(:llowfs,))
 end
 
 @testset "bounded optical recipe and built-application boundary" begin
@@ -264,6 +352,12 @@ end
         PipeWireAORTC.Common.write_yaml(path,ten_mode)
         @test implementation.optical_recipe(directory,"calibration/optical.yaml").branch_modes ==
             (llowfs=[1,2],scc=collect(3:10))
+        PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("measurement_nulling"=>["llowfs"])))
+        @test implementation.optical_recipe(directory,"calibration/optical.yaml").document["measurement_nulling"] == ["llowfs"]
+        for invalid in ("llowfs",["missing"],["scc"],["llowfs","llowfs"],["llowfs","scc"],[1])
+            PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("measurement_nulling"=>invalid)))
+            @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
+        end
         PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("tip_tilt"=>1)))
         @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
         measurements=Dict("scc"=>Dict("kind"=>"chopped-pixel-residual"))

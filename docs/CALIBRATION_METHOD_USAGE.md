@@ -364,6 +364,35 @@ camera observations supply detector frames to it. Branch reports retain the
 measurement units and frame schema, and the existing FITS writer records those
 units on reference images, F/U differences and measured matrices.
 
+A centroid branch selects `measurements: {llowfs: {kind: center-of-gravity}}`.
+Its two measurements fit only its owned modes; every other mode is still probed
+to measure cross-talk. Pupil tip/tilt orthogonality does not imply zero centroid
+response to those other modes.
+
+The explicit recipe option `measurement_nulling: [llowfs]` removes that branch's
+measured linear response from unowned command modes. The initial implementation
+supports one declared centroid branch. With normalized command projection P,
+owned columns O and unowned columns U, it constructs:
+
+```text
+C = D_O⁺ D_U
+P′_U = P_U − P_O C
+```
+
+Here D has units px/m OPD, C is dimensionless, and ⁺ is the AOC TSVD inverse
+using the recipe cutoff. D_O must retain full row rank. Each proposed command
+column is rescaled to unit maximum absolute value before the native-command
+normalization probe is applied again. Calibration then remeasures pupil RMS,
+full/half push-pull responses and held-out mixtures with the unchanged gates.
+A rejected initial candidate supplies measurements, never accepted evidence.
+
+When `tip_tilt: true` is also selected, measured pupil tip/tilt removal occurs
+first and measurement nulling occurs second. The final unowned modes include
+compensating owned components; they are not claimed to remain pure pupil
+TT-orthogonal Fourier modes. Provenance retains the original basis order and
+pupil removal, the candidate identity, D, C, units, column scales and final
+normalization order. Omitting `measurement_nulling` preserves the original basis.
+
 For a chopped branch, the bounded recipe selects
 `measurements: {scc: {kind: chopped-pixel-residual}}`; its branch names must
 exactly match the built source's `plant.chopping`. The initial supported frontend
