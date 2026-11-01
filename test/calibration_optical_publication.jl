@@ -94,3 +94,128 @@ end
     end
     @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
 end
+
+@testset "CoG and pixel branches publish independent graphs with distinct masks" begin
+    surface = command -> reshape(vcat(command,-sum(command),0f0),3,4)
+    mask = Bool[1 0 1;1 1 0]
+    observe = opd -> begin
+        x,y = opd[1],opd[2]
+        (;llowfs=Float32[1-x-y 100 1+x;1+y 1 200],scc=10f0 .+ opd)
+    end
+    calibration = Calibration.calibrate_optical(surface,observe,Matrix{Float32}(I,10,10);
+        pupil_support=trues(3,4),branch_modes=(llowfs=1:2,scc=3:10),
+        pixel_masks=(llowfs=mask,scc=trues(3,4)),centroid_measurements=(:llowfs,),
+        poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.001,reconstruction_tolerance=.001)
+    # Identity completion is sufficient to exercise shared physical mappings:
+    # they belong in the suffix bundle artifacts, not every branch's inputs.
+    calibration = merge(calibration,(completion=Matrix{Float32}(I,10,10),
+        physical_feedback_to_modes=calibration.physical_to_modes))
+    node(name,label,config) = Dict("name"=>name,"type"=>"ndarray","label"=>label,"config"=>config)
+    link(output,input) = Dict("output"=>output,"input"=>input)
+    port(name,endpoint) = Dict("name"=>name,"endpoint"=>endpoint)
+    reference(path) = Dict("\$ref"=>path)
+    templates = map(("llowfs","scc")) do name
+        centroid = name == "llowfs"
+        schema = centroid ? FilterGraphAlgorithms.CENTER_OF_GRAVITY_PIXELS_V1 : "test/pixels/1"
+        nodes = Dict{String,Any}[node("pixels","pixel-selection-f32",Dict("image_size"=>centroid ? [2,3] : [3,4],
+            "mask"=>reference("/calibration/"*name*"/pixel_selection_mask"),
+            "input_schema"=>"test/image/1","output_schema"=>schema))]
+        links = Dict{String,String}[]
+        inputs = [port("image","pixels:image")]
+        measured_endpoint = "pixels:selected-pixels"
+        if centroid
+            push!(nodes,node("centroid","center-of-gravity-f32",Dict("pixel_count"=>4,
+                "initial_coordinates"=>[Float32[0,0] for _ in 1:4])))
+            push!(links,link(measured_endpoint,"centroid:pixels"))
+            measured_endpoint = "centroid:centroid-offset"
+            push!(inputs,port("llowfs-coordinates","centroid:coordinates"))
+        end
+        measured_schema = centroid ? FilterGraphAlgorithms.CENTER_OF_GRAVITY_OFFSET_V1 : schema
+        push!(nodes,node("reconstruction","dense-vector-reconstructor-f32",Dict(
+            "input_count"=>centroid ? 2 : 12,"output_count"=>10,"initial_reconstructor"=>nothing,
+            "input_schema"=>measured_schema,"output_schema"=>"test/modes/1","reconstructor_schema"=>"test/matrix/1")))
+        push!(nodes,node("reference","vector-offset-f32",Dict("extent"=>10,"schema"=>"test/modes/1")))
+        push!(nodes,node("projection","dense-vector-reconstructor-f32",Dict(
+            "input_count"=>10,"output_count"=>10,"initial_reconstructor"=>nothing,
+            "input_schema"=>"test/modes/1","output_schema"=>"test/physical/1","reconstructor_schema"=>"test/matrix/1")))
+        append!(links,[link(measured_endpoint,"reconstruction:ordered-input"),
+            link("reconstruction:output","reference:requested"),link("reference:output","projection:ordered-input")])
+        append!(inputs,[port(name*"-reconstructor","reconstruction:reconstructor"),
+            port(name*"-modal-reference","reference:offset"),port(centroid ? "llowfs-command-projection" : "command-projection","projection:reconstructor")])
+        Dict("filter.graph"=>Dict("nodes"=>nodes,"links"=>links,"inputs"=>inputs,
+            "outputs"=>[port("modes","reference:output"),port("physical-command","projection:output")]))
+    end
+    dimensions = Dict("image_rows"=>3,"image_columns"=>4,"selected_pixel_count"=>12,
+        "controller_command_count"=>10,"physical_command_count"=>10,"active_vdm_count"=>10)
+    plan = (;rtc=(document=Dict("dimensions"=>dimensions),controls=Dict("deformable_mirrors"=>Dict())),
+        frames=Dict("llowfs"=>Dict("frame_schema"=>"test/image/1","image_shape"=>[2,3]),
+            "scc"=>Dict("frame_schema"=>"test/image/1","image_shape"=>[3,4])),
+        templates=(llowfs=templates[1],scc=templates[2]),instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()))
+    prepared = Implementation.optical_publication_graphs(plan,calibration)
+    @test prepared.contexts.scc["llowfs"]["selected_pixel_count"] == 4
+    @test prepared.contexts.llowfs["scc"]["selected_pixel_count"] == 12
+    @test prepared.graphs.llowfs != prepared.graphs.scc
+    invalid = deepcopy(prepared.graphs.llowfs)
+    only(node for node in invalid["filter.graph"]["nodes"] if node["name"] == "centroid")["props"] = Dict("reference-centroid-x"=>1)
+    @test_throws ArgumentError Implementation.validate_optical_centroid_graph(invalid,:llowfs,calibration.branches.llowfs)
+    for (input,output) in (("reconstruction:ordered-input","pixels:selected-pixels"),
+            ("reference:requested","centroid:centroid-offset"))
+        invalid = deepcopy(prepared.graphs.llowfs)
+        only(link for link in invalid["filter.graph"]["links"] if link["input"] == input)["output"] = output
+        @test_throws ArgumentError Implementation.validate_optical_centroid_graph(invalid,:llowfs,calibration.branches.llowfs)
+    end
+    mktempdir() do directory
+        report = merge(Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64)),calibration.report)
+        output = Implementation.publish_optical_bundles((;calibration,report),joinpath(directory,"accepted"),prepared.graphs,prepared.contexts)
+        @test Set(keys(output.index["physical_projection"])) ==
+            Set(["command-projection","vdm-to-modes","active-to-full","vdm-to-pdm","physical-to-modes"])
+        for name in (:llowfs,:scc)
+            bundle_path = joinpath(output.directory,string(name))
+            bundle = Calibration.read_bundle(bundle_path)
+            expected = Set([name == :llowfs ? "llowfs-command-projection" : "command-projection",
+                string(name)*"-reconstructor",string(name)*"-modal-reference"])
+            name == :llowfs && push!(expected,"llowfs-coordinates")
+            @test Set(bundle.parameter_names) == expected
+            @test haskey(bundle.artifacts,string(name)*"-feedback-selection.fits")
+            @test haskey(bundle.artifacts,"active-to-full.fits")
+            if name == :llowfs
+                centroid = only(node for node in prepared.graphs.llowfs["filter.graph"]["nodes"] if node["name"] == "centroid")
+                @test centroid["props"]["reference-centroid-x"] == calibration.branches.llowfs.reference_centroid[1]
+                @test centroid["props"]["reference-centroid-y"] == calibration.branches.llowfs.reference_centroid[2]
+                source = PipeWireAORTC.Artifacts.FITSArtifact(bundle.artifacts["llowfs-modal-reference.fits"])
+                @test all(iszero,PipeWireAORTC.Artifacts.prepare(source,Float32,(10,)).data)
+            end
+            # Exercise the exact published graph and FITS bindings. Its modes
+            # must equal measured-minus-reference, with X=column and Y=row.
+            GraphOwner = PipeWireAORTC.GraphOwner
+            entries = [Dict("port"=>parameter,"path"=>joinpath(bundle_path,"artifacts",file),
+                "hdu"=>1,"axes"=>endswith(parameter,"-modal-reference") ? [1] : [2,1])
+                for (parameter,file) in bundle.report["parameter_files"]]
+            bindings = joinpath(directory,string(name)*"-parameters.conf")
+            C.write_json(bindings,Dict("parameters"=>entries))
+            formats = GraphOwner.read_bindings(joinpath(bundle_path,"graph.conf"),bindings)
+            options = FilterGraphIsland.parse_arguments(["--graph",joinpath(bundle_path,"graph.conf"),"--check","--execution","complete-frame"])
+            graph = FilterGraphIsland.prepare_service_graph(options;initial_parameters=_ -> collect(formats))
+            try
+                branch = getproperty(calibration.branches,name)
+                outputs = (modes=zeros(Float32,10),var"physical-command"=zeros(Float32,10))
+                @test all(values(JuliaFilterGraph.process!(outputs,graph,(image=branch.reference,))))
+                @test all(iszero,outputs.modes)
+                coefficients = Float32[.001,-.002,zeros(8)...]
+                image = getproperty(observe(surface(calibration.projection*coefficients)),name)
+                @test all(values(JuliaFilterGraph.process!(outputs,graph,(image=image,))))
+                expected_modes = branch.reconstructor*(Implementation.optical_measurement(image,branch)-Implementation.optical_measurement(branch.reference,branch))
+                if name == :llowfs
+                    @test outputs.modes ≈ expected_modes rtol=10eps(Float32) atol=1e-9
+                else
+                    @test outputs.modes ≈ expected_modes atol=1e-6
+                end
+                @test outputs.var"physical-command" ≈ calibration.projection*expected_modes atol=1e-6
+                name == :llowfs && @test outputs.modes[1:2] ≈ coefficients[1:2] atol=1e-6
+            finally
+                FilterGraphIsland.close_execution(graph)
+            end
+        end
+    end
+end

@@ -30,11 +30,21 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         results=joinpath(temporary,"results");mkpath(results)
         identity="sha256:"*repeat("c",64)
         reports=Dict{String,Any}()
+        centroid_results = joinpath(temporary,"centroid-results")
+        centroid_graph = Dict("filter.graph"=>Dict("nodes"=>[Dict("name"=>"centroid","type"=>"ndarray",
+            "label"=>"center-of-gravity-f32","config"=>Dict("pixel_count"=>4,
+                "initial_coordinates"=>[[1.0,1.0],[2.0,1.0],[1.0,2.0],[2.0,2.0]]))],
+            "inputs"=>[Dict("name"=>"pixels","endpoint"=>"centroid:pixels"),
+                Dict("name"=>"llowfs-coordinates","endpoint"=>"centroid:coordinates")],
+            "outputs"=>[Dict("name"=>"centroid","endpoint"=>"centroid:centroid-offset")]))
         for name in keys(graphs)
-            diagnostics=Dict("selection-mask"=>trues(2,2),"physical-to-modes"=>ones(Float32,2,2))
-            maskpath=joinpath(temporary,name*"-mask.fits");Calibration.write_fits(maskpath,trues(2,2))
+            mask = name == "scc" ? Bool[1 1; 1 0] : trues(2,2)
+            diagnostics=Dict("selection-mask"=>mask,"physical-to-modes"=>ones(Float32,2,2))
+            maskpath=joinpath(temporary,name*"-mask.fits");Calibration.write_fits(maskpath,mask)
             context=Dict("pixel_selection_mask"=>Dict("kind"=>"fits","path"=>"artifacts/selection-mask.fits",
                 "sha256"=>C.sha256_file(maskpath),"hdu"=>1,"axes"=>[2,1],"shape"=>[2,2],"type"=>"Bool","storage_order"=>"row-major"))
+            context["llowfs"] = Dict("pixel_selection_mask"=>trues(4),"selected_pixel_count"=>4)
+            context["scc"] = Dict("pixel_selection_mask"=>Bool[1,1,1,0],"selected_pixel_count"=>3)
             report=Dict("recipe"=>recipe,"recipe_sha256"=>C.sha256_file(joinpath(built,"calibration/optical.yaml")),
                 "source_prescription_identity"=>fixture.document["prescription_identity"],
                 "source_graph_sha256"=>C.sha256_file(joinpath(built,"simulation/definition.yaml")),
@@ -45,6 +55,17 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 "branches"=>Dict(name=>Dict("accepted"=>true)))
             reports[name]=Calibration.write_bundle(joinpath(results,name),report,context,graph,
                 Dict("command-projection"=>ones(Float32,2,2));diagnostics)
+            centroid_context = deepcopy(context)
+            centroid_context["llowfs"]["reference_centroid"] = [1.25,1.5]
+            calibrated_graph = name == "llowfs" ? E.calibrated_centroid_references(centroid_graph,centroid_context) : graph
+            Calibration.write_bundle(joinpath(centroid_results,name),report,centroid_context,calibrated_graph,
+                Dict("command-projection"=>ones(Float32,2,2));diagnostics)
+            if name == "scc"
+                inconsistent = deepcopy(context)
+                inconsistent["scc"]["selected_pixel_count"] = 4
+                Calibration.write_bundle(joinpath(temporary,"inconsistent",name),report,inconsistent,graph,
+                    Dict("command-projection"=>ones(Float32,2,2));diagnostics)
+            end
         end
         shared=Dict(name=>Dict("path"=>"llowfs/artifacts/"*name*".fits",
             "sha256"=>reports["llowfs"]["artifact_sha256"][name*".fits"])
@@ -54,6 +75,27 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 "result_sha256"=>C.sha256_file(joinpath(results,name,"result.yaml"))) for name in keys(graphs))))
         recipehash=C.sha256_file(joinpath(source,"calibration/optical.yaml"))
         options=(;graphs,prefix=PREFIX,provenance="provenance.yaml")
+        centroid_source = joinpath(temporary,"centroid-source"); cp(source,centroid_source)
+        C.write_json(joinpath(centroid_source,graphs["llowfs"]),centroid_graph)
+        centroid_authored = read(joinpath(centroid_source,graphs["llowfs"]))
+        centroid_index = C.read_yaml(joinpath(results,"calibration.yaml"))
+        for name in keys(graphs)
+            centroid_index["branches"][name]["result_sha256"] = C.sha256_file(joinpath(centroid_results,name,"result.yaml"))
+        end
+        C.write_yaml(joinpath(centroid_results,"calibration.yaml"),centroid_index)
+        centroid_output = E.materialize_calibration(centroid_source,built,centroid_results;options...)
+        frozen_centroid = D.decode(joinpath(centroid_output,"llowfs/graph.conf"),PREFIX)
+        @test only(frozen_centroid["filter.graph"]["nodes"])["props"] ==
+            Dict("reference-centroid-x"=>1.25,"reference-centroid-y"=>1.5)
+        @test read(joinpath(centroid_source,graphs["llowfs"])) == centroid_authored
+        # Re-sign an otherwise valid bundle through the standard writer. Its
+        # branch selection must still agree with its measured root FITS mask.
+        inconsistent = joinpath(temporary,"inconsistent")
+        cp(joinpath(results,"llowfs"),joinpath(inconsistent,"llowfs"))
+        inconsistent_index = C.read_yaml(joinpath(results,"calibration.yaml"))
+        inconsistent_index["branches"]["scc"]["result_sha256"] = C.sha256_file(joinpath(inconsistent,"scc/result.yaml"))
+        C.write_yaml(joinpath(inconsistent,"calibration.yaml"),inconsistent_index)
+        @test_throws ArgumentError E.materialize_calibration(source,built,inconsistent;options...)
         # Rejected numerical evidence must not create a generated selection.
         invalid=joinpath(temporary,"invalid");cp(results,invalid)
         write(joinpath(invalid,"llowfs/result.yaml"),"status: rejected\n")
@@ -87,6 +129,9 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         end
         @test PipeWireAORTC.Artifacts.prepare(PipeWireAORTC.Artifacts.FITSArtifact(joinpath(output,zero["path"])),Float32,(2,)).data==zeros(Float32,2)
         @test PipeWireAORTC.InstrumentConfiguration.load_rtc(selected_rtc).calibration["pixel_selection_mask"]==trues(4)
+        selected_context = C.read_yaml(joinpath(output,"context.yaml"))
+        @test selected_context["llowfs"]["selected_pixel_count"] == 4
+        @test selected_context["scc"]["pixel_selection_mask"] == Bool[1,1,1,0]
         selected_configuration=C.read_yaml(joinpath(output,"selection.yaml"))["rtc_configuration"]
         @test selected_configuration==Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(selected_rtc))
         # The existing exporter selects this generated configuration without

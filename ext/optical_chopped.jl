@@ -48,11 +48,13 @@ function optical_chopped_template(plan, name; mask=nothing)
     mask === nothing && (mask = trues(dimensions["image_rows"],dimensions["image_columns"]))
     size(mask) == (dimensions["image_rows"],dimensions["image_columns"]) && count(mask) == dimensions["selected_pixel_count"] ||
         throw(DimensionMismatch("chopped selection differs from declared RTC dimensions"))
+    document = optical_chopped_document(getproperty(plan.templates,name),name)
     calibration = merge(deepcopy(plan.frames), Dict("pixel_selection_mask"=>vec(permutedims(mask,(2,1)))))
+    calibration[string(name)] = merge(Dict{String,Any}(calibration[string(name)]),
+        Dict("pixel_selection_mask"=>calibration["pixel_selection_mask"],"selected_pixel_count"=>count(mask)))
     context = PipeWireAORTC.InstrumentExport.graph_context(plan.instrument;
         dimensions,mirror_controls=plan.rtc.controls["deformable_mirrors"],calibration)
-    graph = PipeWireAORTC.InstrumentExport.resolve_graph_configuration(getproperty(plan.templates,name),context)
-    document = optical_chopped_document(graph,name)
+    document = PipeWireAORTC.InstrumentExport.resolve_graph_configuration(document,context)
     pair = only(node for node in document["filter.graph"]["nodes"] if node["label"] == "chopped-image-difference-f32")
     pair["config"]["trigger_high_is_fringed"] == getproperty(plan.chopping,name).trigger_high_is_fringed ||
         throw(ArgumentError("chopped measurement polarity differs from its optical publisher"))

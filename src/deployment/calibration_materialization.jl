@@ -12,7 +12,9 @@ end
 function validate_chopped_calibration(report, simulation)
     chopping = get(get(simulation,"plant",Dict()),"chopping",Dict())
     measurements = get(report["recipe"],"measurements",Dict())
-    Set(keys(measurements)) == Set(keys(chopping)) ||
+    signed = Set(name for (name,measurement) in measurements
+        if get(measurement,"kind",nothing) == "chopped-pixel-residual")
+    signed == Set(keys(chopping)) ||
         throw(ArgumentError("calibrated measurement kinds differ from selected optical chopping"))
     provenance = get(report,"provenance",Dict())
     get(provenance,"chopping",Dict()) == chopping ||
@@ -130,14 +132,32 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         report["branches"][name]["accepted"]===true || throw(ArgumentError("branch numerical gates failed"))
         candidate = deepcopy(bundle.context)
         mask = candidate["pixel_selection_mask"]
+        if haskey(candidate,name) && haskey(candidate[name],"pixel_selection_mask")
+            selected_mask = InstrumentConfiguration.calibration_context(candidate,branch_root)["pixel_selection_mask"]
+            candidate[name]["pixel_selection_mask"] == selected_mask &&
+                get(candidate[name],"selected_pixel_count",nothing) == count(selected_mask) ||
+                throw(ArgumentError("branch-specific selection differs from its measured FITS mask"))
+        end
         if context === nothing
             context = candidate
             context["pixel_selection_mask"] = merge(mask,Dict("path"=>name*"/"*mask["path"]))
         else
             previous = context["pixel_selection_mask"]
-            all(key -> get(previous,key,nothing)==get(mask,key,nothing),
-                union(setdiff(Set(keys(previous)),Set(["path"])),setdiff(Set(keys(mask)),Set(["path"])))) ||
-                throw(ArgumentError("branch selection masks differ; shared authored selection cannot represent them"))
+            same_mask = all(key -> get(previous,key,nothing)==get(mask,key,nothing),
+                union(setdiff(Set(keys(previous)),Set(["path"])),setdiff(Set(keys(mask)),Set(["path"]))))
+            # Different cameras require distinct measured selections. New bundles
+            # carry every branch's explicit row-major mask in its own context;
+            # legacy templates continue using the single root selection.
+            if !same_mask
+                all(keys(graphs)) do branch
+                    for value in (context,candidate)
+                        entry = get(value,branch,nothing)
+                        entry isa AbstractDict && haskey(entry,"pixel_selection_mask") &&
+                            haskey(entry,"selected_pixel_count") || return false
+                    end
+                    context[branch] == candidate[branch]
+                end || throw(ArgumentError("different branch masks require matching branch-specific selections"))
+            end
             delete!(candidate,"pixel_selection_mask")
             for (key,value) in candidate
                 haskey(context,key) && context[key]!=value && throw(ArgumentError("branch calibration contexts conflict"))
@@ -149,6 +169,10 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
     end
     required_projection = haskey(recipe_document,"command_completion") ?
         Set(["command-projection","vdm-to-modes","active-to-full","vdm-to-pdm"]) : Set(["command-projection","physical-to-modes"])
+    if haskey(recipe_document,"command_completion") &&
+            get(recipe_document,"tip_tilt",false) === true
+        push!(required_projection,"physical-to-modes")
+    end
     haskey(recipe_document,"upstream_reference") && push!(required_projection,"modes-to-reference")
     Set(keys(index["physical_projection"]))==required_projection || throw(ArgumentError("indexed physical mappings are incomplete"))
     for (name,descriptor) in index["physical_projection"]
@@ -183,7 +207,8 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         for (name,graph) in graphs
             sourcegraph = D.relative_asset(root,graph)
             calibrated = joinpath(branch_paths[name],"graph.conf")
-            added = calibrated_graph_exports(resolve_graph_configuration(D.decode(sourcegraph,prefix),graphcontext),
+            authored_graph = resolve_graph_configuration(D.decode(sourcegraph,prefix),graphcontext)
+            added = calibrated_graph_exports(calibrated_centroid_references(authored_graph,resolved),
                 D.decode(calibrated,prefix))
             exports[name] = Dict("calibrated_graph_sha256"=>Common.sha256_file(calibrated),
                 "authored_graph_sha256"=>Common.sha256_file(sourcegraph),"added_outputs"=>added)

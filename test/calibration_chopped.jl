@@ -27,6 +27,43 @@ end
 
 Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
 
+@testset "chopped calibration resolves branch-specific selections" begin
+    reference(path) = Dict("\$ref"=>path)
+    mask = Bool[1 0 1;1 1 1]
+    legacy = chopped_calibration_document()
+    for node in legacy["filter.graph"]["nodes"]
+        config = node["config"]
+        haskey(config,"mask") && (config["mask"] = node["label"] == "pixel-selection-f32" ?
+            reference("/calibration/pixel_selection_mask") : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key] = count(mask))
+        end
+    end
+    plan = (;rtc=(document=Dict("dimensions"=>Dict("image_rows"=>2,"image_columns"=>3,
+            "selected_pixel_count"=>count(mask))),controls=Dict("deformable_mirrors"=>Dict())),
+        frames=Dict("scc"=>Dict("frame_schema"=>"test.relative-image/1")),
+        templates=(scc=legacy,),instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()),
+        chopping=(scc=(trigger_high_is_fringed=true,),))
+    expected = ChoppedCalibration.optical_chopped_template(plan,:scc;mask)
+    selected = deepcopy(legacy)
+    for node in selected["filter.graph"]["nodes"]
+        config = node["config"]
+        node["label"] == "pixel-selection-f32" &&
+            (config["mask"] = reference("/calibration/scc/pixel_selection_mask"))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key] = reference("/calibration/scc/selected_pixel_count"))
+        end
+    end
+    selected_plan = merge(plan,(templates=(scc=selected,),))
+    actual = ChoppedCalibration.optical_chopped_template(selected_plan,:scc;mask)
+    @test actual == expected
+    @test ChoppedCalibration.optical_frontend_identity(actual) == ChoppedCalibration.optical_frontend_identity(expected)
+    @test length(actual["filter.graph"]["nodes"]) == 4
+    @test plan.frames == Dict("scc"=>Dict("frame_schema"=>"test.relative-image/1"))
+    @test_throws ArgumentError ChoppedCalibration.optical_chopped_template(
+        merge(selected_plan,(chopping=(scc=(trigger_high_is_fringed=false,),),)),:scc;mask)
+end
+
 @testset "chopped calibration retains the authored row-major ROI" begin
     document = chopped_calibration_document()
     mask = Bool[1 0 1;0 1 0]
