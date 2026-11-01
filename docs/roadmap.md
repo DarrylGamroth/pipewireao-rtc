@@ -12,6 +12,39 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Independent shared-mirror optical control — 2026-11-01
+
+Shared JFG/FGPW graph composition serializes independent camera arrivals into
+separate branch controllers and one shared output graph. Each branch retains
+its correction and feedback; SCC pair priming does not block a CoG branch. The
+shared graph supplies VDM summation/completion, physical clipping and feedback
+projection. Native FIFO preserves each camera's ordering without synchronizing
+camera identities or imposing a rate ratio. Ordinary properties/parameters
+retain their graph names. Shared command publications use their own v3 domain,
+generation and sequence; branch telemetry retains its camera metadata.
+
+RTC preparation primes partial and simultaneous camera arrivals, then resets
+all state before admission. Global reset clears both contributions and feedback;
+it does not promise an immediate flat command without a subsequent camera event.
+Multi-controller protective recovery remains unsupported and is not advertised.
+
+Shared optical calibration adds masked CoG, calibrated centroid references
+subtracted before reconstruction, measured pupil tip/tilt and explicit
+`measurement_nulling`. Nulling subtracts a centroid branch's measured owned-mode
+response from unowned command columns, then remeasures all existing acceptance
+gates. It records the response, coefficients, units and ordering; it does not
+silently redefine pupil-orthogonal modes as sensor-orthogonal modes. SPIDERS
+instrument data selects the prototype basis and both loops start open.
+
+RTC 0.2.53 requires FGA 0.8.15, JFG 0.4.5, FGPW 0.1.20 and FI 0.1.5 for
+these contracts. Source checks cover independent arrivals, clipping/feedback,
+invalid CoG holds, reset/failure, graph/FITS publication, calibration leakage
+and zero-allocation warmed callbacks. The matched SPIDERS optical calibration
+passes its unchanged 5% finite-mixture reconstruction gate. Its dual application
+and two-loop GUI schema build offline; a 24-exposure static noiseless optical
+check reduces pupil RMS to 0.319 of its initial value. No physical, noisy-loop
+or deadline qualification is implied. Simulators and GUI remain stopped.
+
 ### Per-buffer optical and electrical properties — 2026-11-01
 
 RTC 0.2.52 adds opt-in `sensor_buffer_properties: true` to external-pupil and

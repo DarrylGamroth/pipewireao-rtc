@@ -208,13 +208,15 @@ function chopped_warmup_samples(graph, options, warmup)
         options.feedback === nothing && options.capture_backend === nothing ||
         throw(ArgumentError("chopped warmup requires ordinary complete-frame Acquisition Version 3"))
     formats = JuliaFilterGraph.input_formats(graph)
-    keys(formats) == (warmup.input,) || throw(ArgumentError("chopped warmup requires its sole image input"))
+    composition = graph isa JuliaFilterGraph.PreparedComposition
+    (composition ? warmup.input in keys(formats) : keys(formats) == (warmup.input,)) ||
+        throw(ArgumentError("chopped warmup requires its declared image input"))
     format = getproperty(formats, warmup.input)
     format.element_type === Float32 && length(format.shape) == 2 ||
         throw(ArgumentError("chopped warmup requires a Float32 image"))
     identity = sequence -> FilterGraphAlgorithms.SampleAcquisitionIdentity(
         ntuple(_ -> UInt8(0xa5), 16), UInt64(1), UInt64(sequence))
-    return ntuple(3) do index
+    samples = ntuple(3) do index
         fringed = isodd(index)
         metadata = FilterGraphAlgorithms.SampleMetadata(index; terminal=true,acquisition_version=3,
             trigger_high=fringed == warmup.trigger_high_is_fringed,
@@ -224,6 +226,39 @@ function chopped_warmup_samples(graph, options, warmup)
             metadata=NamedTuple{(warmup.input,)}((metadata,)),
             expected=index == 1 ? FilterGraphAlgorithms.SccPixelResidualIncompletePair : nothing)
     end
+    composition || return samples
+    # Independently prime the remaining camera branches. These measurements
+    # are unpublished, and the ordinary preparation boundary resets all state.
+    others = filter(!=(warmup.input),keys(formats))
+    additional = map(others) do name
+        camera = getproperty(formats,name)
+        camera.element_type === Float32 && length(camera.shape) == 2 ||
+            throw(ArgumentError("chopped composition warmup requires Float32 camera inputs"))
+        metadata = FilterGraphAlgorithms.SampleMetadata(1; terminal=true,acquisition_version=3,
+            acquisition_identity=FilterGraphAlgorithms.SampleAcquisitionIdentity(
+                ntuple(_ -> UInt8(0xa6),16),UInt64(1),UInt64(1)),
+            exposure_duration_nanoseconds=warmup.exposure_duration_ns)
+        (;inputs=NamedTuple{(name,)}((ones(Float32,camera.shape),)),
+            metadata=NamedTuple{(name,)}((metadata,)),expected=nothing)
+    end
+    # Native independent-input callbacks can also carry simultaneous arrivals.
+    # Exercise that path before admission rather than compiling it on a frame.
+    together = NamedTuple{keys(formats)}(map(keys(formats)) do name
+        camera = getproperty(formats,name)
+        ones(Float32,camera.shape)
+    end)
+    combined_metadata = NamedTuple{keys(formats)}(map(keys(formats)) do name
+        sequence = name === warmup.input ? UInt64(4) : UInt64(2)
+        domain = name === warmup.input ? UInt8(0xa5) : UInt8(0xa6)
+        annotations = name === warmup.input ?
+            (;trigger_high=!warmup.trigger_high_is_fringed,
+                chopped_image_kind=FilterGraphAlgorithms.ChoppedImageUnfringed) : (;)
+        FilterGraphAlgorithms.SampleMetadata(sequence; terminal=true,acquisition_version=3,
+            acquisition_identity=FilterGraphAlgorithms.SampleAcquisitionIdentity(
+                ntuple(_ -> domain,16),UInt64(1),sequence),
+            exposure_duration_nanoseconds=warmup.exposure_duration_ns,annotations...)
+    end)
+    return (samples...,additional...,(;inputs=together,metadata=combined_metadata,expected=nothing))
 end
 
 end
