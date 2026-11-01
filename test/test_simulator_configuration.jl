@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC
+using Test, PipeWireAORTC, JSON
 const S = PipeWireAORTC.SimulatorConfiguration
 const C = PipeWireAORTC.Common
 const R = PipeWireAORTC.SessionRuntime
@@ -191,6 +191,18 @@ end
     input=IOBuffer("{}\n{}\n"); output=IOBuffer()
     @test S.serve(input,output)==0
     @test count(==('\n'),String(take!(output)))==2
+    mktempdir() do root
+        id = "c"^32
+        directory = joinpath(root, id)
+        mkdir(directory)
+        receipt = S.save_state(directory, "failed"; error="candidate rejected before shutdown")
+        withenv("PIPEWIREAO_SIMULATOR_ROOT" => root) do
+            request = Dict("protocol" => S.PROTOCOL, "op" => "job", "arguments" => Dict("id" => id))
+            @test S.respond(JSON.json(request)) == Dict("ok" => true, "result" => receipt)
+            request["arguments"]["extra"] = "unadvertised"
+            @test S.respond(JSON.json(request))["ok"] === false
+        end
+    end
 end
 
 @testset "record reservation and ambiguous launch observation" begin

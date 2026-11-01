@@ -13,15 +13,17 @@ function request_result(request)
     operation = request["op"]
     if operation == "describe"
         Set(keys(arguments)) == Set(("session_id",)) || throw(ArgumentError("describe requires session_id"))
-        return describe(arguments["session_id"])
+        # JSON selects one cold operation. Do not infer the deployment/rebuild
+        # branches while compiling an unrelated description or receipt read.
+        return Base.invokelatest(describe, arguments["session_id"])
     elseif operation == "start_rebuild"
         Set(keys(arguments)) == Set(("session_id", "configuration_sha256", "settings", "resume_running")) ||
             throw(ArgumentError("start_rebuild requires session_id, configuration_sha256, settings and resume_running"))
-        return start_rebuild(arguments["session_id"], arguments["configuration_sha256"], arguments["settings"];
+        return Base.invokelatest(start_rebuild, arguments["session_id"], arguments["configuration_sha256"], arguments["settings"];
             resume_running=arguments["resume_running"])
     elseif operation == "job"
         Set(keys(arguments)) == Set(("id",)) || throw(ArgumentError("job requires id"))
-        return job(arguments["id"])
+        return Base.invokelatest(job, arguments["id"])
     end
     throw(ArgumentError("unknown simulator settings operation"))
 end
