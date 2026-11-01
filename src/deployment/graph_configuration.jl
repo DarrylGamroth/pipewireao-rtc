@@ -46,11 +46,84 @@ import ..Common: configuration_value as graph_configuration_value,
 "Resolve explicit references in node configuration, preserving topology and other fields."
 function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
     result = deepcopy(graph)
+    if haskey(result, "filter.composition")
+        haskey(result, "filter.graph") && throw(ArgumentError("a graph cannot also declare a composition"))
+        # Component graphs are resolved individually. The shared graph loader
+        # validates the composition descriptor and its typed component ports.
+        return result
+    end
     for node in result["filter.graph"]["nodes"]
         haskey(node, "config") || continue
         node["config"] = graph_configuration_value(node["config"], context)
     end
     return result
+end
+
+"Bind a calibrated CoG flat reference before comparing an authored branch graph."
+function calibrated_centroid_references(graph::AbstractDict, calibration::AbstractDict)
+    result = deepcopy(graph)
+    body = result["filter.graph"]
+    for (branch, context) in calibration
+        context isa AbstractDict && haskey(context,"reference_centroid") || continue
+        reference = context["reference_centroid"]
+        reference isa AbstractVector && length(reference) == 2 &&
+            all(value -> value isa AbstractFloat && isfinite(value),reference) ||
+            throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
+        coordinates = filter(input -> input isa AbstractDict &&
+            get(input,"name",nothing) == branch*"-coordinates",get(body,"inputs",[]))
+        isempty(coordinates) && continue # A different branch's template.
+        length(coordinates) == 1 || throw(ArgumentError("ambiguous calibrated centroid coordinates"))
+        endpoint = split(only(coordinates)["endpoint"],':')
+        length(endpoint) == 2 && endpoint[2] == "coordinates" ||
+            throw(ArgumentError("calibrated centroid coordinate port differs"))
+        nodes = filter(node -> node["name"] == endpoint[1],body["nodes"])
+        length(nodes) == 1 && only(nodes)["label"] == "center-of-gravity-f32" ||
+            throw(ArgumentError("calibrated centroid requires center-of-gravity-f32"))
+        properties = get!(only(nodes),"props",Dict{String,Any}())
+        for (key,value) in zip(("reference-centroid-x","reference-centroid-y"),reference)
+            authored = get(properties,key,0.0)
+            authored isa Real && !(authored isa Bool) && isfinite(authored) &&
+                (iszero(authored) || authored == value) ||
+                throw(ArgumentError("authored centroid reference conflicts with calibration"))
+            properties[key] = value
+        end
+    end
+    return result
+end
+
+"Admit only the branch graphs and shared output graph named by one composition."
+function calibrated_composition_paths(application, prepared, selected)
+    descriptors = filter(entry -> haskey(entry.graph,"filter.composition"), prepared)
+    length(descriptors) == 1 || throw(ArgumentError("additional calibrated graphs require one composition"))
+    descriptor = only(descriptors)
+    body = descriptor.graph["filter.composition"]
+    body isa AbstractDict && Set(keys(body)) == Set(["branches","shared"]) ||
+        throw(ArgumentError("invalid calibrated composition descriptor"))
+    branches = body["branches"]
+    branches isa AbstractVector && 1 <= length(branches) <= 16 ||
+        throw(ArgumentError("calibrated composition requires bounded branches"))
+    function component(path)
+        path isa String && !isempty(path) && !isabspath(path) ||
+            throw(ArgumentError("composition components require relative graph paths"))
+        return D.relative_asset(application,relpath(joinpath(dirname(descriptor.path),path),application))
+    end
+    branch_paths = Dict{String,String}()
+    for branch in branches
+        branch isa AbstractDict && haskey(branch,"name") && haskey(branch,"graph") ||
+            throw(ArgumentError("composition branch requires name and graph"))
+        branch["name"] isa String || throw(ArgumentError("composition branch name must be a string"))
+        path = component(branch["graph"])
+        haskey(branch_paths,path) && throw(ArgumentError("composition branches require distinct graphs"))
+        branch_paths[path] = branch["name"]
+    end
+    Set(keys(branch_paths)) == Set(keys(selected.graphs)) &&
+        all(path -> selected.graphs[path].name == branch_paths[path],keys(branch_paths)) ||
+        throw(ArgumentError("composition branches differ from selected calibrated branches"))
+    shared = component(body["shared"])
+    if shared in keys(branch_paths) || shared == descriptor.path
+        throw(ArgumentError("composition shared graph must be distinct"))
+    end
+    return union(Set(keys(branch_paths)), Set([shared,descriptor.path]))
 end
 
 # Decoded dictionaries/arrays may have different container types; scientific
@@ -188,8 +261,13 @@ function prepare_graph_configurations!(application, declarations, instrumentpath
         throw(ArgumentError("graph destination must not overwrite another graph's source"))
     exports = Dict{String,Any}()
     if selected !== nothing
-        Set(paths) == Set(keys(selected.graphs)) || throw(ArgumentError("declared graphs differ from selected calibrated branches"))
+        expected = Set(keys(selected.graphs))
+        if Set(paths) != expected
+            Set(paths) == calibrated_composition_paths(application,prepared,selected) ||
+                throw(ArgumentError("declared graphs differ from calibrated composition components"))
+        end
         for entry in prepared
+            haskey(selected.graphs,entry.path) || continue
             frozen = selected.graphs[entry.path]
             added = calibrated_graph_exports(entry.graph,D.decode(frozen.graph,prefix))
             exports[frozen.name] = Dict("path"=>relpath(entry.path,application),
