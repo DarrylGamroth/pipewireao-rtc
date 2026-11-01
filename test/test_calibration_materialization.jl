@@ -7,6 +7,7 @@ const Calibration=PipeWireAORTC.InstrumentCalibration
 const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
 
 @testset "accepted branch calibration materialization preserves authored recipe" begin
+    for (llowfs_shape,scc_shape) in (((2,2),(2,2)),((256,320),(221,221)))
     mktempdir() do temporary
         source=joinpath(temporary,"source");mkpath(source)
         fixture=external_pupil_owner_documents(source)
@@ -37,14 +38,31 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
             "inputs"=>[Dict("name"=>"pixels","endpoint"=>"centroid:pixels"),
                 Dict("name"=>"llowfs-coordinates","endpoint"=>"centroid:coordinates")],
             "outputs"=>[Dict("name"=>"centroid","endpoint"=>"centroid:centroid-offset")]))
+        masks = Dict("llowfs"=>falses(llowfs_shape),"scc"=>falses(scc_shape))
+        masks["llowfs"][1:2,1:2] .= true
+        masks["scc"][1,1:2] .= true; masks["scc"][2,1] = true
+        mask_bindings = Dict{String,Any}()
+        for (name,mask) in masks
+            path = joinpath(temporary,name*"-pixel-mask.fits"); Calibration.write_fits(path,mask)
+            mask_bindings[name] = Dict("kind"=>"fits","path"=>"artifacts/"*name*"-pixel-mask.fits",
+                "sha256"=>C.sha256_file(path),"hdu"=>1,"axes"=>[2,1],"shape"=>collect(size(mask)),
+                "type"=>"Bool","storage_order"=>"row-major")
+        end
         for name in keys(graphs)
-            mask = name == "scc" ? Bool[1 1; 1 0] : trues(2,2)
-            diagnostics=Dict("selection-mask"=>mask,"physical-to-modes"=>ones(Float32,2,2))
+            mask = masks[name]
+            diagnostics=Dict("selection-mask"=>mask,"physical-to-modes"=>ones(Float32,2,2),
+                "llowfs-pixel-mask"=>masks["llowfs"],"scc-pixel-mask"=>masks["scc"])
             maskpath=joinpath(temporary,name*"-mask.fits");Calibration.write_fits(maskpath,mask)
             context=Dict("pixel_selection_mask"=>Dict("kind"=>"fits","path"=>"artifacts/selection-mask.fits",
-                "sha256"=>C.sha256_file(maskpath),"hdu"=>1,"axes"=>[2,1],"shape"=>[2,2],"type"=>"Bool","storage_order"=>"row-major"))
-            context["llowfs"] = Dict("pixel_selection_mask"=>trues(4),"selected_pixel_count"=>4)
-            context["scc"] = Dict("pixel_selection_mask"=>Bool[1,1,1,0],"selected_pixel_count"=>3)
+                "sha256"=>C.sha256_file(maskpath),"hdu"=>1,"axes"=>[2,1],"shape"=>collect(size(mask)),"type"=>"Bool","storage_order"=>"row-major"))
+            context["llowfs"] = Dict("pixel_selection_mask"=>deepcopy(mask_bindings["llowfs"]),"selected_pixel_count"=>4)
+            context["scc"] = Dict("pixel_selection_mask"=>deepcopy(mask_bindings["scc"]),"selected_pixel_count"=>3)
+            if name == "scc"
+                # The same logical mask may use a different valid artifact path.
+                context["scc"]["pixel_selection_mask"]["path"] = "artifacts/selection-mask.fits"
+                llowfs_shape == (2,2) && (context["llowfs"]["pixel_selection_mask"] =
+                    vec(permutedims(masks["llowfs"],(2,1))))
+            end
             report=Dict("recipe"=>recipe,"recipe_sha256"=>C.sha256_file(joinpath(built,"calibration/optical.yaml")),
                 "source_prescription_identity"=>fixture.document["prescription_identity"],
                 "source_graph_sha256"=>C.sha256_file(joinpath(built,"simulation/definition.yaml")),
@@ -55,6 +73,15 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 "branches"=>Dict(name=>Dict("accepted"=>true)))
             reports[name]=Calibration.write_bundle(joinpath(results,name),report,context,graph,
                 Dict("command-projection"=>ones(Float32,2,2));diagnostics)
+            @test filesize(joinpath(results,name,"context.yaml")) < 16*1024
+            invalid_hash = deepcopy(context)
+            invalid_hash["scc"]["pixel_selection_mask"]["sha256"] = repeat("f",64)
+            @test_throws ArgumentError Calibration.write_bundle(joinpath(temporary,name*"-invalid-nested-hash"),report,
+                invalid_hash,graph,Dict("command-projection"=>ones(Float32,2,2));diagnostics)
+            invalid_path = deepcopy(context)
+            invalid_path["scc"]["pixel_selection_mask"]["path"] = "artifacts/physical-to-modes.fits"
+            @test_throws ArgumentError Calibration.write_bundle(joinpath(temporary,name*"-invalid-nested-path"),report,
+                invalid_path,graph,Dict("command-projection"=>ones(Float32,2,2));diagnostics)
             centroid_context = deepcopy(context)
             centroid_context["llowfs"]["reference_centroid"] = [1.25,1.5]
             calibrated_graph = name == "llowfs" ? E.calibrated_centroid_references(centroid_graph,centroid_context) : graph
@@ -128,10 +155,23 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
             @test PipeWireAORTC.Artifacts.FITSIO.read_header(fits[1])["BUNIT"] == "m OPD"
         end
         @test PipeWireAORTC.Artifacts.prepare(PipeWireAORTC.Artifacts.FITSArtifact(joinpath(output,zero["path"])),Float32,(2,)).data==zeros(Float32,2)
-        @test PipeWireAORTC.InstrumentConfiguration.load_rtc(selected_rtc).calibration["pixel_selection_mask"]==trues(4)
+        @test PipeWireAORTC.InstrumentConfiguration.load_rtc(selected_rtc).calibration["pixel_selection_mask"] ==
+            vec(permutedims(masks["llowfs"],(2,1)))
         selected_context = C.read_yaml(joinpath(output,"context.yaml"))
         @test selected_context["llowfs"]["selected_pixel_count"] == 4
-        @test selected_context["scc"]["pixel_selection_mask"] == Bool[1,1,1,0]
+        @test selected_context["scc"]["pixel_selection_mask"]["path"] == "llowfs/artifacts/scc-pixel-mask.fits"
+        @test filesize(joinpath(output,"context.yaml")) < 16*1024
+        resolved = PipeWireAORTC.InstrumentConfiguration.calibration_context(selected_context,output)
+        for (name,mask) in masks
+            @test resolved[name]["pixel_selection_mask"] == vec(permutedims(mask,(2,1)))
+            @test Calibration.read_bundle(joinpath(output,name)).report == Calibration.read_bundle(joinpath(results,name)).report
+        end
+        invalid_hash = deepcopy(selected_context)
+        invalid_hash["scc"]["pixel_selection_mask"]["sha256"] = repeat("f",64)
+        @test_throws ArgumentError PipeWireAORTC.InstrumentConfiguration.calibration_context(invalid_hash,output)
+        invalid_path = deepcopy(selected_context)
+        invalid_path["scc"]["pixel_selection_mask"]["path"] = "llowfs/artifacts/physical-to-modes.fits"
+        @test_throws ArgumentError PipeWireAORTC.InstrumentConfiguration.calibration_context(invalid_path,output)
         selected_configuration=C.read_yaml(joinpath(output,"selection.yaml"))["rtc_configuration"]
         @test selected_configuration==Dict("path"=>"rtc.yaml","sha256"=>C.sha256_file(selected_rtc))
         # The existing exporter selects this generated configuration without
@@ -190,6 +230,7 @@ const PREFIX=PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
         @test_throws ArgumentError E.prepare_graph_configurations!(source,declarations,"instrument.json",PREFIX;
             configuration="generated/calibration/rtc.yaml")
         @test_throws ArgumentError E.materialize_calibration(source,built,results;options...)
+    end
     end
 end
 

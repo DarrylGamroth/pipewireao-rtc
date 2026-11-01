@@ -219,3 +219,41 @@ end
         end
     end
 end
+
+@testset "full-size optical masks use compact hashed contexts" begin
+    surface = command -> reshape(Float32[command[1],-command[1],command[2],-command[2]],2,2)
+    observe = opd -> begin
+        llowfs = fill(10f0,256,320); scc = fill(10f0,221,221)
+        for image in (llowfs,scc)
+            image[1,1] += opd[1]; image[1,2] += opd[3]
+        end
+        (;llowfs,scc)
+    end
+    llowfs_mask = falses(256,320); llowfs_mask[:,1:160] .= true
+    masks = (llowfs=llowfs_mask,scc=trues(221,221))
+    calibration = Calibration.calibrate_optical(surface,observe,Matrix{Float32}(I,2,2);
+        pupil_support=trues(2,2),branch_modes=(llowfs=1:1,scc=2:2),pixel_masks=masks,
+        poke_m=.01f0,tsvd_rtol=1f-5)
+    context = Dict(string(name)=>Dict("pixel_selection_mask"=>vec(permutedims(mask,(2,1))),
+        "selected_pixel_count"=>count(mask)) for (name,mask) in pairs(masks))
+    mktempdir() do directory
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64))
+        for branch in keys(masks)
+            output = joinpath(directory,string(branch))
+            Calibration.calibrate_optical(calibration,output;report,context,
+                concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[])),branch)
+            bundle = Calibration.read_bundle(output)
+            @test filesize(joinpath(output,"context.yaml")) < 16*1024
+            resolved = PipeWireAORTC.InstrumentConfiguration.calibration_context(bundle.context,output)
+            for (name,mask) in pairs(masks)
+                binding = bundle.context[string(name)]["pixel_selection_mask"]
+                @test binding["kind"] == "fits"
+                @test binding["path"] == "artifacts/"*string(name)*"-pixel-mask.fits"
+                @test binding["sha256"] == bundle.report["artifact_sha256"][string(name)*"-pixel-mask.fits"]
+                @test resolved[string(name)]["pixel_selection_mask"] == vec(permutedims(mask,(2,1)))
+            end
+        end
+        @test context["llowfs"]["pixel_selection_mask"] isa AbstractVector
+    end
+end

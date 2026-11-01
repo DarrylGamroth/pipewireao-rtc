@@ -36,6 +36,19 @@ function validate_chopped_calibration(report, simulation)
     return nothing
 end
 
+"Retain compact FITS declarations relative to the copied bundle directory."
+function rebase_calibration_context(document, prefix)
+    if document isa AbstractDict
+        if get(document,"kind",nothing) == "fits"
+            return merge(document,Dict("path"=>joinpath(prefix,document["path"])))
+        end
+        return Dict(key=>rebase_calibration_context(value,prefix) for (key,value) in document)
+    elseif document isa AbstractVector
+        return map(value->rebase_calibration_context(value,prefix),document)
+    end
+    return deepcopy(document)
+end
+
 """
     materialize_calibration(source, built, calibration; graphs, prefix, ...)
 
@@ -110,6 +123,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
     reports = Dict{String,Any}()
     branch_paths = Dict{String,String}()
     context = nothing
+    resolved_context = nothing
     for name in sort!(collect(keys(graphs)))
         entry = branch_index[name]
         entry["path"]==name || throw(ArgumentError("indexed branches must use their own standard bundle directory"))
@@ -130,38 +144,45 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
             report["source_prescription_identity"]==simulation["prescription_identity"] ||
             throw(ArgumentError("branch optical prescription differs from calibrated application"))
         report["branches"][name]["accepted"]===true || throw(ArgumentError("branch numerical gates failed"))
-        candidate = deepcopy(bundle.context)
+        candidate = bundle.context
         mask = candidate["pixel_selection_mask"]
-        if haskey(candidate,name) && haskey(candidate[name],"pixel_selection_mask")
-            selected_mask = InstrumentConfiguration.calibration_context(candidate,branch_root)["pixel_selection_mask"]
-            candidate[name]["pixel_selection_mask"] == selected_mask &&
-                get(candidate[name],"selected_pixel_count",nothing) == count(selected_mask) ||
+        mask isa AbstractDict && get(mask,"kind",nothing) == "fits" ||
+            throw(ArgumentError("branch selection must retain its typed FITS reference"))
+        resolved_candidate = InstrumentConfiguration.calibration_context(candidate,branch_root)
+        selected_mask = resolved_candidate["pixel_selection_mask"]
+        selected_mask isa AbstractVector{Bool} || throw(ArgumentError("branch selection mask must contain Bool values"))
+        if haskey(resolved_candidate,name) && haskey(resolved_candidate[name],"pixel_selection_mask")
+            resolved_candidate[name]["pixel_selection_mask"] == selected_mask &&
+                get(resolved_candidate[name],"selected_pixel_count",nothing) == count(selected_mask) ||
                 throw(ArgumentError("branch-specific selection differs from its measured FITS mask"))
         end
+        rebased = rebase_calibration_context(candidate,name)
         if context === nothing
-            context = candidate
-            context["pixel_selection_mask"] = merge(mask,Dict("path"=>name*"/"*mask["path"]))
+            context = rebased
+            resolved_context = resolved_candidate
         else
-            previous = context["pixel_selection_mask"]
-            same_mask = all(key -> get(previous,key,nothing)==get(mask,key,nothing),
-                union(setdiff(Set(keys(previous)),Set(["path"])),setdiff(Set(keys(mask)),Set(["path"]))))
-            # Different cameras require distinct measured selections. New bundles
-            # carry every branch's explicit row-major mask in its own context;
-            # legacy templates continue using the single root selection.
+            same_mask = resolved_context["pixel_selection_mask"] == selected_mask &&
+                context["pixel_selection_mask"]["shape"] == mask["shape"]
+            # Cameras may have different root selections when both bundles
+            # retain the same explicit, resolved branch-specific selections.
             if !same_mask
                 all(keys(graphs)) do branch
-                    for value in (context,candidate)
+                    for value in (resolved_context,resolved_candidate)
                         entry = get(value,branch,nothing)
                         entry isa AbstractDict && haskey(entry,"pixel_selection_mask") &&
                             haskey(entry,"selected_pixel_count") || return false
                     end
-                    context[branch] == candidate[branch]
+                    resolved_context[branch] == resolved_candidate[branch]
                 end || throw(ArgumentError("different branch masks require matching branch-specific selections"))
             end
-            delete!(candidate,"pixel_selection_mask")
-            for (key,value) in candidate
-                haskey(context,key) && context[key]!=value && throw(ArgumentError("branch calibration contexts conflict"))
-                context[key] = value
+            for (key,value) in resolved_candidate
+                key == "pixel_selection_mask" && continue
+                haskey(resolved_context,key) && resolved_context[key]!=value &&
+                    throw(ArgumentError("branch calibration contexts conflict"))
+                if !haskey(context,key)
+                    context[key] = rebased[key]
+                    resolved_context[key] = value
+                end
             end
         end
         reports[name] = report

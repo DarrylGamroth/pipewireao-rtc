@@ -1078,10 +1078,21 @@ function Calibration.calibrate_optical_reference(upstream_application::AbstractS
     end
 end
 
+"Describe the exact Bool FITS artifact that the bundle writer will publish."
+function optical_mask_binding(mask, filename)
+    return mktempdir() do directory
+        path = joinpath(directory,filename)
+        Calibration.write_fits(path,mask)
+        Dict("kind"=>"fits","path"=>"artifacts/"*filename,"hdu"=>1,"axes"=>[2,1],
+            "shape"=>collect(size(mask)),"type"=>"Bool","sha256"=>Calibration.digest(path),"storage_order"=>"row-major")
+    end
+end
+
 "Write an accepted optical result using the existing row-major FITS bundle writer."
 function Calibration.calibrate_optical(calibration, output::AbstractString;
         report::AbstractDict, context::AbstractDict, concrete_graph::AbstractDict, branch::Union{Nothing,Symbol}=nothing)
     calibration.report["status"] == "accepted" || throw(ArgumentError("cannot publish a rejected optical calibration"))
+    context = deepcopy(context)
     parameters = Dict{String,Any}("command-projection"=>calibration.projection)
     graph_inputs = Set(String(port isa AbstractString ? last(split(port,':')) : port["name"])
         for port in get(concrete_graph["filter.graph"],"inputs",[]))
@@ -1145,6 +1156,9 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
             (diagnostics[prefix*"reference-centroid"] = measurement.reference_centroid)
         diagnostics[prefix*"reference-image"] = measurement.reference
         diagnostics[prefix*"pixel-mask"] = measurement.mask
+        if haskey(context,string(name)) && haskey(context[string(name)],"pixel_selection_mask")
+            context[string(name)]["pixel_selection_mask"] = optical_mask_binding(measurement.mask,prefix*"pixel-mask.fits")
+        end
         diagnostics[prefix*"interaction-matrix"] = measurement.interaction
         diagnostics[prefix*"half-interaction-matrix"] = measurement.half_interaction
         diagnostics[prefix*"recovery"] = measurement.recovery
@@ -1153,14 +1167,7 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
     if branch !== nothing
         mask = getproperty(calibration.branches,branch).mask
         diagnostics["selection-mask"] = mask
-        context = deepcopy(context)
-        mktempdir() do directory
-            path = joinpath(directory,"selection-mask.fits")
-            Calibration.write_fits(path,mask)
-            context["pixel_selection_mask"] = Dict("kind"=>"fits","path"=>"artifacts/selection-mask.fits",
-                "hdu"=>1,"axes"=>[2,1],"shape"=>collect(size(mask)),"type"=>"Bool",
-                "sha256"=>Calibration.digest(path),"storage_order"=>"row-major")
-        end
+        context["pixel_selection_mask"] = optical_mask_binding(mask,"selection-mask.fits")
     end
     merged = merge(Dict{String,Any}(report),calibration.report)
     projection = calibration.report["physical_projection"]
