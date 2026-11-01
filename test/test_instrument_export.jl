@@ -353,6 +353,50 @@ end
     end
 end
 
+Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"))
+@testset "host optical metadata opt-in changes only built transport settings" begin
+    mktempdir() do directory
+        (;document, config) = external_pupil_owner_documents(directory)
+        authored = read(joinpath(directory, "simulation", "definition.yaml"))
+        for version in (4, 6)
+            simulation = deepcopy(document)
+            simulation["version"] = version
+            if version == 6
+                simulation["rate"] = 500
+                simulation["pacing_rate_hz"] = 10
+            end
+            C.write_json(config, simulation)
+            E.simulation_override!(directory, Dict())
+            @test C.read_json(config) == simulation
+            for enabled in (true, false)
+                E.simulation_override!(directory, Dict("simulation" => Dict("sensor_buffer_properties" => enabled)))
+                @test C.read_json(config) == merge(simulation, Dict("sensor_buffer_properties" => enabled))
+                @test read(joinpath(directory, "simulation", "definition.yaml")) == authored
+            end
+            for invalid in (1, 0, "true", nothing, 1.0)
+                before = read(config)
+                @test_throws ArgumentError E.simulation_override!(directory,
+                    Dict("simulation" => Dict("sensor_buffer_properties" => invalid)))
+                @test read(config) == before
+            end
+            before = read(config)
+            @test_throws ArgumentError E.simulation_override!(directory,
+                Dict("simulation" => Dict("sensor_buffer_properties" => true, "plant" => Dict())))
+            @test read(config) == before
+        end
+        for version in (1, 2, 3, 5, 7, 6.0, nothing)
+            simulation = merge(document, Dict("version" => version))
+            C.write_json(config, simulation)
+            before = read(config)
+            for enabled in (true, false)
+                @test_throws ArgumentError E.simulation_override!(directory,
+                    Dict("simulation" => Dict("sensor_buffer_properties" => enabled)))
+                @test read(config) == before
+            end
+        end
+    end
+end
+
 @testset "shared instrument templates" begin
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     bindings = E.profile_bindings(export_profile(), "julia")

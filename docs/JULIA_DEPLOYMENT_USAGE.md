@@ -881,6 +881,14 @@ pass capture admission. Mirror OPD copies use each optical graph's execution
 context before its captured step. A successful offline build or calibration
 does not qualify physical devices or deadline performance.
 
+For version-4 external-pupil and version-6 clocked optical applications, a build
+host profile can opt into typed exposure properties with
+`simulation: {sensor_buffer_properties: true}`. Only a Boolean is accepted;
+`false` disables the opt-in, and omission retains the source/default selection.
+This changes the built `simulation.conf` transport setting without rewriting
+frozen optical definitions, plant settings, exposure rates or calibration receipts.
+Other simulation owners reject this override.
+
 A simulation definition may list `binding_files` relative to the instrument
 root. Each YAML file contributes named bindings; duplicate names are rejected.
 Compiled optical model paths remain package-relative and are verified against
