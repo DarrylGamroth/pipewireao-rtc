@@ -12,6 +12,29 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Per-buffer optical and electrical properties — 2026-11-01
+
+RTC 0.2.52 adds opt-in `sensor_buffer_properties: true` to external-pupil and
+clocked optical owners. Completed exposures publish optical classification
+independently of the existing Acquisition v3 electrical polarity. Optional
+`sensor_acquisition_versions` selects v2/v3 per sensor; chopped sensors require
+v3. Header, identity, timing, image formats and default metadata remain unchanged.
+The owner precompiles the enabled keyword transport path during Preparing.
+Clocked CUDA admission now uses the existing captured optical execution policy.
+
+This release includes the 21 completed commits from registered 0.2.51 through
+`f6d3706`, merged with upstream `4604ce8`; unfinished dual-calibration/controller
+changes remain excluded. Dependency floors are PipeWireAO 0.6.21 (native 1.7.3),
+HIL 0.2.12, FilterGraphPipeWire 0.1.19 and AOS 0.3.17. Julia 1.13.3 source checks
+pass 151 stream/POD assertions, 48 cold backend/transport assertions against the
+built SPIDERS configuration, and 619 focused cold owner/export/geometry/mode/graph
+assertions. These use the existing science dependency sources with the release
+RTC selected separately; the cold export parser uses installed native 1.7.2.
+Registered resolution and installed native 1.7.3/package validation remain release
+gates until the dependency releases are available. No core, GUI, GPU package or
+simulator was launched. These software checks do not qualify physical devices,
+rolling-loop performance or deadlines.
+
 ### Native mirror and pupil registration — 2026-10-30
 
 Physical mirror declarations can select rotation, y reflection and a pupil-center

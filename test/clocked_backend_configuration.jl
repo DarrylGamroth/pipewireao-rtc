@@ -18,6 +18,35 @@ using Test, PipeWireAORTC
         PipeWireAORTC.Common.write_json(path, document)
         cpu = PipeWireAORTC.AOSOwner.configuration(path)
         @test cpu.command_buffers == 3
+        @test !cpu.sensor_buffer_properties
+        document["sensor_buffer_properties"] = true
+        PipeWireAORTC.Common.write_json(path,document)
+        @test PipeWireAORTC.AOSOwner.configuration(path) == merge(cpu,(;sensor_buffer_properties=true))
+        for invalid in (1,"true",nothing)
+            document["sensor_buffer_properties"] = invalid
+            PipeWireAORTC.Common.write_json(path,document)
+            @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
+        end
+        delete!(document,"sensor_buffer_properties")
+        original_sensor_versions = get(document,"sensor_acquisition_versions",nothing)
+        sensor_name = first(keys(cpu.sensor_acquisition_versions))
+        document["sensor_acquisition_versions"] = Dict(string(sensor_name)=>3)
+        PipeWireAORTC.Common.write_json(path,document)
+        selected = PipeWireAORTC.AOSOwner.configuration(path)
+        @test getproperty(selected.sensor_acquisition_versions,sensor_name) == 3
+        @test selected.sensor_acquisition_versions == merge(cpu.sensor_acquisition_versions,NamedTuple{(sensor_name,)}((3,)))
+        invalid_versions = [Dict("unknown"=>3),Dict(string(sensor_name)=>true)]
+        isempty(cpu.plant.chopping) || push!(invalid_versions,Dict(string(first(keys(cpu.plant.chopping)))=>2))
+        for versions in invalid_versions
+            document["sensor_acquisition_versions"] = versions
+            PipeWireAORTC.Common.write_json(path,document)
+            @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
+        end
+        if original_sensor_versions === nothing
+            delete!(document,"sensor_acquisition_versions")
+        else
+            document["sensor_acquisition_versions"] = original_sensor_versions
+        end
         document["command_buffers"] = 3
         PipeWireAORTC.Common.write_json(path, document)
         @test PipeWireAORTC.AOSOwner.configuration(path) == cpu
@@ -50,7 +79,13 @@ using Test, PipeWireAORTC
         PipeWireAORTC.Common.write_json(path, document)
         amd = PipeWireAORTC.AOSOwner.configuration(path)
         @test amd == merge(cpu, (; backend=:amdgpu, device=1))
-        for (backend, device) in (("cuda", 0), ("cuda", 1), ("unknown", 0),
+        for device in (0, 1)
+            document["backend"] = "cuda"
+            document["device"] = device
+            PipeWireAORTC.Common.write_json(path, document)
+            @test PipeWireAORTC.AOSOwner.configuration(path) == merge(cpu, (; backend=:cuda, device))
+        end
+        for (backend, device) in (("unknown", 0),
                 ("amdgpu", 0), ("amdgpu", -1), ("cpu", 1),
                 ("amdgpu", true), ("amdgpu", "1"), ("amdgpu", nothing))
             document["backend"] = backend
