@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Simulator settings and browser replacement acceptance — 2026-10-31
+
+RTC issues 36 and 12 block rendered-browser cold replacement acceptance. Work
+is isolated on `codex/simulator-settings-and-shutdown`: selected-operation
+compilation and read-only child optimization reduce cold Describe cost while
+preserving backend preparation, sealed assets and native identity checks.
+Focused software checks pass; phase-instrumented private CPU Quit diagnosis
+and actual browser settings/rebuild/reconnect acceptance remain in progress.
+See the [validation record](validation/simulator-settings-20261031/README.md).
+
 ### Explicit optical arithmetic precision — 2026-10-29
 
 The CAL2 performance candidate admits authored `defaults.precision` as a read-only

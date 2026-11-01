@@ -28,6 +28,15 @@ local state = { lifecycle = 2, epoch = 0, operation = nil, graphs = {}, groups =
 local api, catalog
 local fault, dispatch, operation_error
 
+-- Cold lifecycle diagnostics contain only the retained control incarnation and
+-- hook step. They neither inspect frame data nor issue another control request.
+local function operation_context (operation)
+  return "operation=" .. tostring (operation.kind) .. " epoch=" .. tostring (operation.epoch) ..
+      " phase=" .. tostring (operation.phase or "queued") ..
+      " target=" .. tostring (operation.target or "none") ..
+      " elapsed-us=" .. tostring (GLib.get_monotonic_time () - operation.started)
+end
+
 -- Retire the hook before cancellation: cancellation may invoke an I/O callback
 -- synchronously, and a parked transition has no future callback to advance it.
 local function retire (operation, reason)
@@ -49,6 +58,17 @@ end
 
 local function effect (operation, action, ...)
   if catalog and operation.kind ~= 1 then connections.check_core (catalog) end
+  local target = select (1, ...)
+  if target == catalog then operation.target = "owner-controls"
+  else
+    local ok, identity = pcall (function ()
+      return type (target) == "table" and target.identity or control.identity (target)
+    end)
+    operation.target = ok and ("global-id=" .. tostring (identity.global_id) ..
+        "/serial=" .. tostring (identity.serial) ..
+        "/instance=" .. tostring (type (target) == "table" and target.instance or "none")) or "unavailable"
+  end
+  if operation.kind == 1 then Log.info ("AO session effect: " .. operation_context (operation)) end
   local cancel = action (...)
   if type (cancel) == "function" then
     if state.operation == operation and not operation.retired then
@@ -66,7 +86,7 @@ local function guarded (operation, callback)
     if operation.retired or state.operation ~= operation or state.epoch ~= operation.epoch or
         operation.session ~= instance then return end
     if GLib.get_monotonic_time () >= operation.deadline then
-      fault ("Internal session effect expired; outcome unknown")
+      fault ("Internal session effect expired; outcome unknown; " .. operation_context (operation))
       return
     end
     if operation.ticket then
@@ -91,6 +111,7 @@ local function begin (kind, ticket, group)
   state.epoch = state.epoch + 1
   local operation = { epoch = state.epoch, session = instance, kind = kind,
     origin = state.lifecycle, group = group, ticket = ticket, cancels = {},
+    started = GLib.get_monotonic_time (),
     deadline = ticket and math.min (ticket.deadline, GLib.get_monotonic_time () + 5000000) or
         GLib.get_monotonic_time () + startup_timeout_ms * 1000 }
   state.operation = operation
@@ -99,7 +120,7 @@ local function begin (kind, ticket, group)
     if state.operation ~= operation then return false end
     if operation.ticket and not operation.effects_issued then
       operation_error (operation, "Session query expired")
-    else fault ("Internal session effect expired; outcome unknown") end
+    else fault ("Internal session effect expired; outcome unknown; " .. operation_context (operation)) end
     return false
   end)
   return operation
@@ -144,6 +165,17 @@ local function phase (action)
 end
 
 local function hook (name, steps)
+  for step, declaration in pairs (steps) do
+    local execute = declaration.execute
+    declaration.execute = function (event, transition)
+      local operation = event_operation (event)
+      if operation then
+        operation.phase, operation.target = name .. "/" .. step, nil
+        if operation.kind == 1 then Log.info ("AO session step: " .. operation_context (operation)) end
+      end
+      execute (event, transition)
+    end
+  end
   steps.error = { execute = function (event)
     local operation = event_operation (event)
     -- The native transition is already terminal here. Fault compensation owns

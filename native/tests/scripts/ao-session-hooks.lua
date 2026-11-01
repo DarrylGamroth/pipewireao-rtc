@@ -17,7 +17,7 @@ end
 local function session (options)
   options = options or {}
   local test = { now = 1000000, effects = {}, hooks = {}, timers = {}, completions = {},
-    pending = {}, warnings = {}, options = options }
+    pending = {}, warnings = {}, diagnostics = {}, options = options }
   local fault, request, api
   local function record (name, callback, ...)
     test.effects [#test.effects + 1] = name
@@ -157,7 +157,8 @@ local function session (options)
   local environment = setmetatable ({
     require = function (name) return assert (mocks [name], name) end,
     Plugin = { find = function () return endpoint end },
-    Log = { warning = function (message) test.warnings [#test.warnings + 1] = message end },
+    Log = { warning = function (message) test.warnings [#test.warnings + 1] = message end,
+      info = function (message) test.diagnostics [#test.diagnostics + 1] = message end },
     GLib = { get_monotonic_time = function () return test.now end },
     Core = {
       timeout_add = function (_, callback)
@@ -299,6 +300,10 @@ local function normal ()
     test:request (1); done (test)
     order (test, "run:source:1,run:alpha:1,run:beta:1,withdraw-links,shutdown-source,shutdown-owner,remove-controls,clients-absent")
     assert (test.disconnected and test.quit_complete and test.state.lifecycle == 1 and #test.completions == 5)
+    assert (#test.diagnostics <= 20, "Quit diagnostics exceeded its bounded control/step count")
+    assert (table.concat (test.diagnostics, ";"):find (
+        "phase=quit/hold-graphs target=global-id=1/serial=2/instance=none", 1, true))
+    assert (test.diagnostics [#test.diagnostics]:find ("phase=quit/complete target=none", 1, true))
     test:close ()
   end
 end
@@ -404,12 +409,21 @@ local function deadline (reentrant, queued)
   local ticket = test:request (10)
   local operation = test.state.operation
   if not queued then wait_for (function () return test.pending ["run:beta:2"] end) end
+  if not queued then
+    assert (operation.phase == "start/start" and
+        operation.target == "global-id=1/serial=2/instance=none")
+    assert (#test.diagnostics == 0, "Ordinary operations emitted Quit diagnostics")
+  end
   local transition = operation.transition
   test.now = operation.deadline
   operation.expiry.callback ()
   assert (operation.retired and (not transition or transition.completed))
   -- Fault compensation is independent of the retired native transition.
   assert (test.state.faulted or queued)
+  if not queued then
+    assert (table.concat (test.warnings, ";"):find (
+        "phase=start/start target=global-id=1/serial=2/instance=none elapsed-us=5000000", 1, true))
+  end
   if not queued then
     assert (#test.completions == 1 and test.completions [1].ticket == ticket and
         test.completions [1].unknown == true)

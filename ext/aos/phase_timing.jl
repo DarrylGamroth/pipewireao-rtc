@@ -10,6 +10,10 @@ end
 function prepare_phase_timing(options)
     directory = get(options, :phase_timing_directory, nothing)
     directory === nothing && return nothing
+    # Nonempty reports first save during Reset or Quit. Compile that branch
+    # before admission without writing a report or consuming capture samples.
+    precompile(PhaseTiming.save!, (PhaseTiming.Capture,)) ||
+        error("cannot compile prepared phase timing cleanup before admission")
     return OwnerPhaseTiming(PhaseTiming.Capture(directory, options.phase_timing_warmup,
         options.phase_timing_frames, options.pacing_period_ns, options.bootstrap_instance),
         PipeWireExchangeTiming(), Ref{Int64}(0))

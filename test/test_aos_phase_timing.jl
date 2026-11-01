@@ -13,6 +13,9 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
         owner = TimingExt.prepare_phase_timing((; phase_timing_directory=directory,
             phase_timing_frames=4, phase_timing_warmup=0, pacing_period_ns=UInt64(20),
             bootstrap_instance=Int64(7)))
+        @test isempty(readdir(directory))
+        @test owner.capture.seen == 0 && owner.capture.used == 0 && owner.capture.saved_count == -1
+        @test owner.capture.generation == 0 && all(iszero, Iterators.flatten(owner.capture.rows))
         timing = owner.exchange
         timing.generation = 1
         timing.sequence = 3

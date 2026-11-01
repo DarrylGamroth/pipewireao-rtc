@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Simulator management and shutdown — 2026-10-31
+
+The [in-progress validation record](validation/simulator-settings-20261031/README.md)
+separates cold description measurements and software checks from the remaining
+native shutdown and rendered-browser rebuild/reconnect gates.
+
 ## Captured optical calibration — 2026-10-29
 
 The [focused source validation](validation/captured-optical-calibration-20261029/README.md)
