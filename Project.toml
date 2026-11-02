@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -48,7 +48,7 @@ LinearAlgebra = "1"
 AdaptiveOpticsCalibration = "0.17.3"
 Interpolations = "0.16"
 AdaptiveOpticsSim = "0.3.17"
-AdaptiveOpticsSimPipeWireHIL = "0.4.0"
+AdaptiveOpticsSimPipeWireHIL = "0.4.1"
 CUDA = "6.4.2"
 DBInterface = "2.7.0"
 FITSIO = "0.17"
