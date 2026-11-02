@@ -21,6 +21,66 @@ function authored_optical_source(directory)
     return physical, simulation
 end
 
+@testset "omitted empty declarations preserve authored optical sources" begin
+    mktempdir() do directory
+        physical, simulation = authored_optical_source(directory)
+        path = write_external_optical_documents(directory, physical, simulation)
+        original = IC.load_simulation_source(path)
+        simplified = deepcopy(simulation)
+        delete!(simplified, "components")
+        delete!(simplified, "settings_bindings")
+        simplified["profiles"] = Dict("reference" => Dict{String,Any}())
+        write_external_optical_documents(directory, physical, simplified)
+        source = IC.load_simulation_source(path)
+        @test source.document == original.document
+        @test source.authoring == simplified
+        @test IC.settings(source) == IC.settings(original)
+        for mutate! in (doc -> (doc["components"] = nothing),
+                doc -> (doc["settings_bindings"] = nothing),
+                doc -> (doc["profiles"]["reference"]["nodes"] = nothing),
+                doc -> (doc["profiles"]["reference"]["parameters"] = nothing),
+                doc -> (doc["profiles"]["reference"]["unrecognized"] = []))
+            invalid = deepcopy(simplified)
+            mutate!(invalid)
+            write_external_optical_documents(directory, physical, invalid)
+            @test_throws ArgumentError IC.load_simulation_source(path)
+        end
+    end
+end
+
+@testset "omitted source angles preserve resolved photometry" begin
+    mktempdir() do directory
+        physical, simulation = external_optical_documents()
+        simulation["sources"] = Dict("guide" => Dict{String,Any}("source_band" => "H",
+            "source_magnitude" => 4, "source_wavelength_m" => 1.55e-6,
+            "source_position_angle_deg" => 0.0, "source_separation_arcsec" => 0.0))
+        path = write_external_optical_documents(directory, physical, simulation)
+        baseline = IC.load_simulation(path)
+        baseline_settings = IC.settings(baseline)
+        baseline_identity = IC.prescription_identity(baseline, baseline_settings)
+        for key in ("source_position_angle_deg", "source_separation_arcsec")
+            delete!(simulation["sources"]["guide"], key)
+        end
+        write_external_optical_documents(directory, physical, simulation)
+        simplified = IC.load_simulation(path)
+        @test simplified.document == baseline.document
+        @test IC.graph_document(simplified, IC.settings(simplified); simulation_graph="scc") ==
+            IC.graph_document(baseline, baseline_settings; simulation_graph="scc")
+        @test IC.prescription_identity(simplified, IC.settings(simplified)) == baseline_identity
+        @test !haskey(simplified.authoring["sources"]["guide"], "source_separation_arcsec")
+        for key in ("source_position_angle_deg", "source_separation_arcsec"), value in (nothing, true, "0", [])
+            invalid = deepcopy(simulation)
+            invalid["sources"]["guide"][key] = value
+            write_external_optical_documents(directory, physical, invalid)
+            @test_throws ArgumentError IC.load_simulation(path)
+        end
+        simulation["sources"]["guide"]["source_separation_arcsec"] = 2
+        simulation["sources"]["guide"]["source_position_angle_deg"] = 30
+        write_external_optical_documents(directory, physical, simulation)
+        @test IC.load_simulation(path).document["sources"]["guide"] == simulation["sources"]["guide"]
+    end
+end
+
 @testset "authored optical precision remains an explicit cold setting" begin
     mktempdir() do directory
         physical, simulation = authored_optical_source(directory)

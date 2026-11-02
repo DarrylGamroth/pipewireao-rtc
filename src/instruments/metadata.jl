@@ -26,6 +26,15 @@ end
 
 function artifact_paths(declaration,configured)
     paths = Set{String}()
+    union!(paths, get(declaration.document, "binding_files", String[]))
+    for graph_name in keys(declaration.graphs)
+        graph = resolve_graph_document(declaration.graphs[graph_name],declaration,configured,graph_name)
+        for node in graph["nodes"]
+            if get(node,"type",nothing) in ("compiled_optical_paths_f32","compiled_optical_paths_f64")
+                push!(paths,node["config"]["model_path"])
+            end
+        end
+    end
     for selection in values(get(declaration.document, "components", Dict()))
         haskey(selection, "preparation") && push!(paths, selection["preparation"]["recipe"])
     end
@@ -253,6 +262,8 @@ function publication(path)
                 (;pupil=(;outer_radius=1.0,inner_radius=scientific.telescope.central_obstruction_ratio)) : NamedTuple()
             return (;layout=dm.layout,units=spec["units"],command_scale_m=spec["command_scale_m"],
                 pupil_coordinates=dm.pupil_coordinates,
+                (hasproperty(dm.pupil_registration,:rotation_deg) ?
+                    (;pupil_registration=dm.pupil_registration) : NamedTuple())...,
                 pupil...,
                 (hasproperty(dm,:clear_aperture) ? (;clear_aperture=dm.clear_aperture) : NamedTuple())...,
                 limiter=(;kind=control["limiter"]["kind"],
@@ -275,7 +286,7 @@ end
 function prepare_simulation_configuration!(application::AbstractString; simulation="simulation.conf", configuration=nothing)
     path = D.relative_asset(application, simulation)
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    source["version"] in (3,4,5) || throw(ArgumentError("declarative instrument publication requires simulator version 3, 4 or 5"))
+    source["version"] in (3,4,5,6) || throw(ArgumentError("declarative instrument publication requires simulator version 3, 4, 5 or 6"))
     plant = source["plant"]
     declaration = load_simulation(D.relative_asset(application, plant["definition"]))
     configured = settings(declaration, get(plant, "settings", Dict()))

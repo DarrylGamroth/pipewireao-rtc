@@ -29,8 +29,7 @@ end
         _with_private_core() do remote
             remote=joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"],remote)
             O.with_receiver(prepared;remote) do inputs
-                options=Tuple(HIL.PipeWireArrayStreamOptions(;node_name="send-"*string(name),media_name=string(name),
-                    acquisition_version=i==1 ? 2 : 3,schema="test.physical/1",
+                options=Tuple(HIL.PipeWireArrayStreamOptions(;node_name="send-"*string(name),media_name=string(name),schema="test.physical/1",
                     format=NdArrayFormat(NdArray.F32_LE,(4,);layout=NdArray.ROW_MAJOR)) for (i,name) in enumerate(prepared.inputs.names))
                 HIL.with_array_streams(options;remote,input=(false,false)) do wire
                     registry=HIL.with_array_stream(wire,1) do _;Registry(wire.core);end

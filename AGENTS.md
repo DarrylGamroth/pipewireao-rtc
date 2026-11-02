@@ -110,6 +110,9 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- `test/session_graph_schema.jl` uses the optional JFG environment to check actual
+  prepared port schemas against session declarations and native-command limiter
+  equivalence. It opens no core, service or device.
 - `julia --project=. test/test_aos_graph_selection.jl` checks version-3 graph
   selection and Preparing-before-Proper load order without science packages.
   `julia --project=/path/to/science-environment test/aos_selected_graph_loading.jl`
@@ -153,7 +156,11 @@
   checks the actual CPU chopped measurement prefix, signed numerical calibration,
   typed reference-difference publication and old-calibration rejection without
   a core or GPU. `test/calibration_optical_publication.jl` retains the ordinary
-  intensity publication regression. These tests do not qualify a rolling loop.
+  intensity publication regression. `test/calibration_detector_observation.jl`
+  checks the shared detector exposure scale, deterministic F/U calibration,
+  unselected camera independence and detector units in published FITS artifacts.
+  `test/external_optical_preparation.jl` checks ROI bounds and unknown-origin
+  metadata against physical sensor dimensions. These tests do not qualify a rolling loop.
 - `test/test_pupil_source_owner.jl` and `test/test_physical_offset_inputs.jl`
   check the version-5 clocked pupil source and version-2 P/Q-only receiver cold,
   without optional science packages. The optional CPU selectors

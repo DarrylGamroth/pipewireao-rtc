@@ -855,6 +855,42 @@ unavailable; the first live exposure must prime again. Retained last-product
 metadata is inspection history, not evidence of publication. This CPU graph
 preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
+### Clocked optical applications
+
+Version 6, `mode: clocked-optical`, advances a source graph on model time and
+feeds its entrance-pupil OPD and physical mirror OPD to separate optical planes.
+It accepts a native Float32 mirror command and publishes completed optical
+exposures. The static pupil amplitude is an explicitly typed, hashed FITS
+binding; `source_pupil_axes` declares the entrance OPD transform and
+`source_dm_axes` declares the mirror raster axes. The owner checks the mirror
+port schema, units and command limit against the source graph and RTC mirror
+controls, and checks each optical mirror plane's schema, shape and sampling.
+Command and sensor streams use Header plus version-one BufferProperties.
+Physical acquisition identity and exposure duration are independent of Header
+publication sequence and PTS. Sensor optical and electrical classifications are
+explicit, independent facts; the former metadata-version selectors are rejected.
+
+Version-4 external-pupil and version-6 clocked optical applications always
+publish typed exposure facts. The former `sensor_buffer_properties` profile
+opt-in is rejected. This changes transport metadata without rewriting frozen
+optical definitions, plant settings, exposure rates or calibration receipts.
+
+A simulation definition may list `binding_files` relative to the instrument
+root. Each YAML file contributes named bindings; duplicate names are rejected.
+Compiled optical model paths remain package-relative and are verified against
+the declared content hash before preparation. Choose a new cold configuration
+and matching calibration when changing a model or its bindings.
+
+The focused offline checks use an environment containing the optional science
+packages, with no PipeWire service or accelerator required:
+
+```sh
+julia --project=/path/to/science-env test/test_clocked_plane_contract.jl
+julia --project=/path/to/science-env test/calibration_optical.jl
+julia --project=/path/to/science-env test/calibration_chopped.jl
+julia --project=/path/to/science-env test/calibration_command_domain.jl
+```
+
 ### Managed clocked pupil source
 
 A version-5 `mode: pupil-source` simulation configuration selects a named,
@@ -942,6 +978,17 @@ the instrument root. Owner lists start from the selected application, so an
 alternate application need not inherit the default controllers or queues.
 The generated runtime declaration remains `rtc/application.conf`.
 
+Authoring may omit `cpu-latency-us` (null), owner and session-runtime
+`environment` (empty mappings), and a mode's `application` (empty mapping).
+The exporter writes explicit native deployment fields. For `jfg` and `aos`
+owners, omit the Julia `--threads=` placeholder to derive it from host worker
+placement; explicit placeholders are still replaced by that placement. Prepared
+JFG ports also supply omitted session graph `shape`, `element-type` and `schema`.
+Explicit metadata must agree with the prepared port. External source/sink
+contracts and physical schema choices remain explicit. Declared version-11 GUI
+configuration files may omit `session.label`; the exporter uses the deployment
+name. An explicit label continues to select its declared session.
+
 `InstrumentExport.compose(base, component, fresh_output; namespace, roles,
 links, overrides, prefix, owner_arguments=Dict(), sinks=[], node_owners=Dict())`
 combines fully sealed built applications. The base retains its core, session,
@@ -979,11 +1026,9 @@ The staged final graph is prepared with all typed FITS mappings, then
 `PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
 Only a passing staged application becomes the requested output.
 
-Each receiving branch may explicitly select `acquisition_version: 2` or `3`;
-omission preserves Version 2. This must match its actual native producer. A
-chopped SCC graph forwards Version 3 to its physical-offset output, so its
-receiver selects 3 while ordinary LLOWFS may retain 2. Admission remains exact;
-the receiver does not downgrade or reinterpret metadata versions.
+Each receiving branch requires the Properties facts used by its consumer.
+No per-branch Acquisition wire-version selector remains; old selectors are
+rejected before transport starts.
 
 The receiving graph uses three default Julia threads: native graph execution,
 bootstrap monitoring and the offset pump. An explicit preparation profile
@@ -1064,3 +1109,32 @@ hash, both prescription identities and response comparison in its receipts.
 The generic compositor continues rejecting arbitrary publication overrides.
 This prepares a reviewable application and launches no process. Matched noisy
 loop, accelerator and physical-device qualification remain separate gates.
+
+## Application mode inheritance and telemetry queues
+
+An authored mode can set `extends` to another mode in the same `modes.yaml`.
+Mappings merge recursively; child arrays replace inherited arrays, including
+owners and configuration-file selections. Missing parents, cycles, unknown
+fields and inheritance deeper than 16 modes are rejected. Ordinary application
+and native session/core composition still appends arrays as before.
+
+Mode core fragments can explicitly select a bounded telemetry queue template:
+
+```yaml
+core:
+  context.modules:
+    - template: telemetry
+      args:
+        node.name: residual-queue
+        playback.props:
+          media.name: residual
+```
+
+Export expands this to `libpipewire-module-queue`: `application/ndarray`, one
+buffer, copy storage and drop-oldest overflow. Capture runs on `rtc-data-loop`
+with the `-input` node suffix; playback runs on `telemetry-loop` with `-output`,
+`device.api: pipewireao.queue` and `media.class: Data/Source`. Playback repeats
+queue policy as string properties. Explicit supported arguments and capture or
+playback properties override these values; an explicit playback policy remains
+independent. Unknown template names and fields are rejected. Native module
+entries without `template` retain their existing values.

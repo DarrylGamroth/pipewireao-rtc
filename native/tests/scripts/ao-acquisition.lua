@@ -24,7 +24,8 @@ owner.request = function (client, operation, payload, deadline, callback)
 end
 
 local function source_for (profile)
-  local node = { ["bound-id"] = 42, properties = {
+  local node = { ["bound-id"] = 42,
+    get_active_features = function () return Feature.Proxy.BOUND end, properties = {
     ["object.serial"] = "123456", ["node.name"] = "simulator-wfs",
     ["pipewireao.rtc-control.protocol"] = "pipewireao.rtc-control/1",
     ["pipewireao.rtc-control.profile"] = profile,
@@ -108,7 +109,8 @@ local function reject_source (node, declaration, pid)
       { global_id = 99, serial = 1, instance = 777 }, pid),
       "Invalid acquisition source identity was accepted")
 end
-local identity_node = { ["bound-id"] = 42, properties = {
+local identity_node = { ["bound-id"] = 42,
+  get_active_features = function () return Feature.Proxy.BOUND end, properties = {
   ["object.serial"] = "123456", ["node.name"] = "simulator-wfs",
   ["pipewireao.rtc-control.protocol"] = "pipewireao.rtc-control/1",
   ["pipewireao.rtc-control.profile"] = calibration,

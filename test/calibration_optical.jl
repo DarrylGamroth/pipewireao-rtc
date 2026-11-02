@@ -20,6 +20,39 @@ if Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt) === nothing
     end
 end
 
+@testset "native mirror units normalize through the measured OPD response" begin
+    # A 1 µm/native-unit response used to fail a dimensionful null-mode test.
+    surface = command -> reshape(Float32[command[1],-command[1],command[2],-command[2]],2,2) .* 1f-6
+    observe = opd -> (;scc=1f0 .+ opd .* 1f6)
+    projection = Float32[1 1;1 -1]
+    result = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=1f-8,normalization_probe=0.01f0,tsvd_rtol=1f-5,
+        derivative_tolerance=0.001,reconstruction_tolerance=0.001,
+        provenance=Dict("mirror_response"=>Dict("command_units"=>"native command")))
+    @test result.report["physical_projection"]["command_projection_units"] == "native command / m OPD"
+    @test result.report["physical_projection"]["physical_to_modes_units"] == "m OPD / native command"
+    mktempdir() do directory
+        output = joinpath(directory,"bundle")
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test", "source_graph_sha256"=>repeat("a",64))
+        OpticalCalibration.calibrate_optical(result,output;report,context=Dict(),concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[],"links"=>[])))
+        FITSIO = PipeWireAORTC.Artifacts.FITSIO
+        for (file,units) in (("command-projection.fits","native command / m OPD"),("physical-to-modes.fits","m OPD / native command"))
+            FITSIO.FITS(joinpath(output,"artifacts",file),"r") do fits
+                @test FITSIO.read_header(fits[1])["BUNIT"] == units
+            end
+        end
+    end
+    @test result.report["status"] == "accepted"
+    @test result.normalization ≈ fill(1f-6,2)
+    @test result.projection ≈ projection .* 1f6
+    @test result.physical_to_modes * result.projection ≈ Matrix{Float32}(I,2,2) atol=1e-5
+    @test result.validation.accepted
+    @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,observe,projection;
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=1f-8,normalization_probe=0,tsvd_rtol=1f-5)
+end
+
 @testset "physical optical calibration, row-major pixels and disjoint authority" begin
     # Physical commands produce different, non-unit pupil-RMS responses. Image
     # rows deliberately differ so a column-major pixel gather fails this oracle.
@@ -135,6 +168,166 @@ end
     @test input_amplitude == published[2,:,:] == Float32[.1 .4; .2 .5; .3 .6]
 end
 
+@testset "masked CoG and SCC share ten modes with disjoint authority" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation=OpticalCalibrationTestImplementation)
+    mask = Bool[1 0 1;1 1 0]
+    rectangle = Dict("kind"=>"rectangle","rows"=>[1,2],"columns"=>[2,3])
+    @test implementation.optical_rectangle_mask(rectangle,(2,3)) == Bool[0 1 1;0 1 1]
+    @test_throws ArgumentError implementation.optical_rectangle_mask(rectangle,(2,2))
+    for invalid in (merge(rectangle,Dict("rows"=>[0,2])),merge(rectangle,Dict("columns"=>[3,2])),
+            merge(rectangle,Dict("rows"=>Any[true,2])),merge(rectangle,Dict("unknown"=>1)))
+        @test_throws ArgumentError implementation.optical_rectangle_mask(invalid,(2,3))
+    end
+    @test implementation.optical_centroid_coordinates(mask) == Float32[1 1;3 1;1 2;2 2]
+    @test implementation.optical_centroid(Float32[1 100 3;2 4 200],mask) ≈ Float32[2,1.6]
+    @test_throws ArgumentError implementation.optical_centroid(zeros(Float32,2,3),mask)
+    @test_throws ArgumentError implementation.optical_centroid(fill(Float32(Inf),2,3),mask)
+    @test_throws ArgumentError implementation.optical_centroid(fill(-1f0,2,3),mask)
+    @test_throws ArgumentError implementation.optical_centroid(fill(floatmax(Float32),2,3),mask)
+    surface = command -> reshape(vcat(command,-sum(command),0f0),3,4)
+    observe = opd -> begin
+        x,y = opd[1],opd[2]
+        (;llowfs=Float32[1-x-y 100 1+x;1+y 1 200],scc=10f0 .+ opd)
+    end
+    calibration = OpticalCalibration.calibrate_optical(surface,observe,Matrix{Float32}(I,10,10);
+        pupil_support=trues(3,4),branch_modes=(llowfs=1:2,scc=3:10),
+        pixel_masks=(llowfs=mask,scc=trues(3,4)),centroid_measurements=(:llowfs,),
+        poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.001,reconstruction_tolerance=.001)
+    branch = calibration.branches.llowfs
+    @test calibration.report["status"] == "accepted"
+    @test size(branch.reconstructor) == (10,2)
+    @test branch.retained_rank == 2
+    @test branch.reference_centroid == Float32[1.75,1.5]
+    @test branch.interaction[:,1:2] ≈ Float32[.5calibration.projection[1,1] 0;0 .25calibration.projection[2,2]] rtol=1e-4
+    @test all(iszero,branch.reconstructor[3:10,:])
+    @test all(iszero,calibration.branches.scc.reconstructor[1:2,:])
+    @test branch.recovery ≈ Diagonal(Float32[1,1,0,0,0,0,0,0,0,0]) atol=1e-4
+    @test branch.cross_talk == 0
+    @test calibration.physical_to_modes*calibration.projection ≈ Matrix{Float32}(I,10,10) atol=1e-5
+    @test calibration.validation.accepted
+    @test calibration.report["branches"]["llowfs"]["measurement_units"] == "px"
+    mktempdir() do directory
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64))
+        OpticalCalibration.calibrate_optical(calibration,joinpath(directory,"llowfs");report,
+            context=Dict{String,Any}(),concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[],"links"=>[])),branch=:llowfs)
+        bundle = OpticalCalibration.read_bundle(joinpath(directory,"llowfs"))
+        @test "llowfs-coordinates" in bundle.parameter_names
+        @test haskey(bundle.artifacts,"llowfs-reference-centroid.fits")
+        artifact = name -> PipeWireAORTC.Artifacts.prepare(PipeWireAORTC.Artifacts.FITSArtifact(
+            bundle.artifacts[name*".fits"];axes=(2,1)),Float32,size(getproperty(branch,Symbol(name=="llowfs-coordinates" ? "coordinates" : "reconstructor")))).data
+        @test artifact("llowfs-coordinates") == branch.coordinates
+        @test artifact("llowfs-reconstructor") == branch.reconstructor
+    end
+end
+
+@testset "Fourier commands exclude measured physical pupil tip and tilt" begin
+    coordinates = Float64[point[column] for point in collect(Iterators.product(range(-.8,.9;length=6),range(-.7,.6;length=6)))[:],column in 1:2]
+    # Nonuniform native response deliberately makes coordinate-space and
+    # measured pupil-space orthogonalization differ.
+    weights = Float32.(range(.6,1.4;length=36))
+    surface = command -> reshape(vcat(weights.*command,-sum(weights.*command)),1,37)
+    observe = opd -> (;scc=10f0 .+ opd)
+    calibration = OpticalCalibration.calibrate_optical(surface,observe;
+        actuator_coordinates=coordinates,controlled_actuators=trues(36),tip_tilt=true,
+        spatial_frequencies=Float64[.5 0;0 .5;1 0;0 1],pupil_support=trues(1,37),
+        branch_modes=(scc=1:10,),pixel_masks=(scc=trues(1,37),),
+        poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.001,reconstruction_tolerance=.001)
+    @test size(calibration.projection) == (36,10)
+    @test calibration.report["provenance"]["basis"]["kind"] == "tip-tilt-and-sinusoidal"
+    @test maximum(abs,calibration.pupil_modes[:,1:2]'*calibration.pupil_modes[:,3:10])/37 < 1e-6
+    @test calibration.validation.accepted
+    # The detector responds to a higher pupil mode as well as tip/tilt.
+    # Nulling that response must retain the original pupil-removal provenance
+    # while admitting the compensating pupil tip/tilt in the final basis.
+    modal_inverse = pinv(calibration.pupil_modes)
+    measured = opd -> begin
+        coefficients = modal_inverse*vec(opd)
+        x,y = 10coefficients[1]+6coefficients[3],10coefficients[2]
+        (;llowfs=Float32[1-x-y 100 1+x;1+y 1 200],scc=observe(opd).scc)
+    end
+    nulled = OpticalCalibration.calibrate_optical(surface,measured;
+        actuator_coordinates=coordinates,controlled_actuators=trues(36),tip_tilt=true,
+        spatial_frequencies=Float64[.5 0;0 .5;1 0;0 1],pupil_support=trues(1,37),
+        branch_modes=(llowfs=1:2,scc=3:10),pixel_masks=(llowfs=Bool[1 0 1;1 1 0],scc=trues(1,37)),
+        centroid_measurements=(:llowfs,),measurement_nulling=(:llowfs,),poke_m=.01f0,tsvd_rtol=1f-5)
+    basis = nulled.report["provenance"]["basis"]
+    @test basis["tip_tilt_removal"] == calibration.report["provenance"]["basis"]["tip_tilt_removal"]
+    @test basis["source_mode_order"] == calibration.report["provenance"]["basis"]["mode_order"]
+    @test occursin("compensation",basis["mode_order"])
+    @test maximum(abs,nulled.pupil_modes[:,1:2]'*nulled.pupil_modes[:,3:10])/37 > .1
+    @test nulled.validation.accepted
+end
+
+@testset "explicit centroid measurement nulling removes higher-mode leakage" begin
+    largest_command = Ref(0f0)
+    surface = command -> begin
+        largest_command[] = max(largest_command[],maximum(abs,command))
+        maximum(abs,command) < .1f0 || throw(ArgumentError("native normalization probe exceeded its declared scale"))
+        reshape(1f-6 .* vcat(command,-sum(command),0f0),2,3)
+    end
+    observe = opd -> begin
+        x,y,higher = 1f6 .* opd[1:3]
+        (;llowfs=Float32[1-x-.6higher-y 100 1+x+.6higher;1+y 1 200],scc=10f0 .+ 1f6 .* opd)
+    end
+    options = (;pupil_support=trues(2,3),branch_modes=(llowfs=1:2,scc=3:4),
+        pixel_masks=(llowfs=Bool[1 0 1;1 1 0],scc=trues(2,3)),centroid_measurements=(:llowfs,),
+        poke_m=1f-9,normalization_probe=.005f0,tsvd_rtol=1f-5,
+        provenance=Dict("mirror_response"=>Dict("command_units"=>"native command")))
+    projection = Matrix{Float32}(I,4,4)
+    leaking = OpticalCalibration.calibrate_optical(surface,observe,projection;options...,require_observable=false)
+    @test leaking.report["status"] == "rejected"
+    @test maximum(leaking.validation.reconstruction_errors) > .2
+    @test leaking.branches.llowfs.cross_talk > .3
+    corrected = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        options...,measurement_nulling=(:llowfs,))
+    @test corrected.report["status"] == "accepted"
+    @test corrected.validation.accepted
+    @test corrected.branches.llowfs.cross_talk < .01
+    @test corrected.report["derivative_tolerance"] == corrected.report["reconstruction_tolerance"] == .05
+    @test largest_command[] < .1f0
+    record = corrected.report["provenance"]["measurement_nulling"]
+    @test record["branch"] == "llowfs"
+    @test record["owned_modes"] == [1,2]
+    @test record["unowned_modes"] == [3,4]
+    @test record["response_units"] == "px / m OPD"
+    @test record["coefficient_units"] == "1"
+    @test record["source_calibration_identity"] == leaking.report["calibration_identity"]
+    @test maximum(record["column_scales"]) > 1f6
+    @test !haskey(leaking.report["provenance"],"measurement_nulling")
+    metadata = merge(options.provenance,Dict("basis"=>Dict("kind"=>"authored")))
+    authored = OpticalCalibration.calibrate_optical(surface,observe,projection;
+        options...,provenance=metadata,measurement_nulling=(:llowfs,))
+    @test authored.report["provenance"]["basis"] == metadata["basis"] == Dict("kind"=>"authored")
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation=OpticalCalibrationTestImplementation)
+    zero_response = deepcopy(leaking)
+    zero_response.branches.llowfs.interaction[:,3:4] .= 0
+    proposed = implementation.optical_nulling_projection(zero_response,:llowfs;tsvd_rtol=options.tsvd_rtol)
+    @test proposed.record["relative_null_residual"] == 0
+    mktempdir() do directory
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64))
+        OpticalCalibration.calibrate_optical(corrected,joinpath(directory,"nulled");report,context=Dict(),
+            concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[])))
+        retained = OpticalCalibration.read_bundle(joinpath(directory,"nulled")).report["provenance"]["measurement_nulling"]
+        @test retained["source_calibration_identity"] == leaking.report["calibration_identity"]
+        @test retained["source_status"] == "rejected"
+        @test retained["retained_rank"] == 2
+    end
+    for invalid in ((:scc,),(:missing,),(:llowfs,:llowfs),(:llowfs,:scc))
+        @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,observe,projection;
+            options...,measurement_nulling=invalid)
+    end
+    blind = opd -> begin
+        x,higher = 1f6*opd[1],1f6*opd[3]
+        (;llowfs=Float32[1-x-.6higher 100 1+x+.6higher;1 1 200],scc=observe(opd).scc)
+    end
+    @test_throws ArgumentError OpticalCalibration.calibrate_optical(surface,blind,projection;
+        options...,measurement_nulling=(:llowfs,))
+end
+
 @testset "bounded optical recipe and built-application boundary" begin
     mktempdir() do directory
         mkpath(joinpath(directory,"calibration"))
@@ -152,6 +345,21 @@ end
         parsed = implementation.optical_recipe(directory,"calibration/optical.yaml")
         @test parsed.frequencies == Float64[.5 0;0 .5;1 0;0 1]
         @test parsed.branch_modes == (llowfs=[1,2,3,4],scc=[5,6,7,8])
+        ten_mode = merge(recipe,Dict("tip_tilt"=>true,
+            "measurements"=>Dict("llowfs"=>Dict("kind"=>"center-of-gravity")),
+            "branch_modes"=>Dict("llowfs"=>[1,2],"scc"=>collect(3:10)),
+            "held_out_coefficients"=>[[1e-10] for _ in 1:10]))
+        PipeWireAORTC.Common.write_yaml(path,ten_mode)
+        @test implementation.optical_recipe(directory,"calibration/optical.yaml").branch_modes ==
+            (llowfs=[1,2],scc=collect(3:10))
+        PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("measurement_nulling"=>["llowfs"])))
+        @test implementation.optical_recipe(directory,"calibration/optical.yaml").document["measurement_nulling"] == ["llowfs"]
+        for invalid in ("llowfs",["missing"],["scc"],["llowfs","llowfs"],["llowfs","scc"],[1])
+            PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("measurement_nulling"=>invalid)))
+            @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
+        end
+        PipeWireAORTC.Common.write_yaml(path,merge(ten_mode,Dict("tip_tilt"=>1)))
+        @test_throws ArgumentError implementation.optical_recipe(directory,"calibration/optical.yaml")
         measurements=Dict("scc"=>Dict("kind"=>"chopped-pixel-residual"))
         PipeWireAORTC.Common.write_yaml(path,merge(recipe,Dict("measurements"=>measurements)))
         @test implementation.optical_recipe(directory,"calibration/optical.yaml").document["measurements"]==measurements
@@ -263,4 +471,60 @@ end
         @test changed.effective_settings_identity != selected.effective_settings_identity
         @test changed.execution_graph_identity != selected.execution_graph_identity
     end
+end
+
+@testset "calibration mirror matches the executed physical model" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    contract = Dict("nodes"=>[Dict("name"=>"dm","type"=>"measured","config"=>Dict("schema"=>"opd"))],
+        "parameters"=>[Dict("destination"=>"dm.influences","binding"=>"measured")],
+        "inputs"=>[Dict("name"=>"command","destination"=>"dm.pdm_command","binding"=>"zero")])
+    copy = deepcopy(contract)
+    @test implementation.verify_optical_mirror_identity(contract,copy,"dm") === nothing
+    copy["parameters"][1]["binding"] = "other"
+    @test_throws ArgumentError implementation.verify_optical_mirror_identity(contract,copy,"dm")
+    copy = deepcopy(contract)
+    copy["nodes"][1]["config"]["schema"] = "other"
+    @test_throws ArgumentError implementation.verify_optical_mirror_identity(contract,copy,"dm")
+end
+
+@testset "clocked calibration uses the owner physical inputs and settings" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    verify = implementation.verify_clocked_calibration_inputs
+    options = (;source_amplitude_binding="pupil",plant=(;definition="model.yaml"))
+    response = Dict("input"=>"dm_opd","pupil_amplitude"=>"pupil")
+    settings = Dict("wavelength"=>1.55)
+    branches = (;scc="scc")
+    paths = Dict("scc"=>Dict(),"llowfs"=>Dict())
+    @test verify(response,options,"model.yaml",settings,settings,branches,paths) === nothing
+    @test_throws ArgumentError verify(merge(response,Dict("input"=>"pupil_opd")),options,"model.yaml",settings,settings,branches,paths)
+    @test_throws ArgumentError verify(merge(response,Dict("pupil_amplitude"=>"other")),options,"model.yaml",settings,settings,branches,paths)
+    @test_throws ArgumentError verify(response,options,"model.yaml",Dict("wavelength"=>1.6),settings,branches,paths)
+    @test_throws ArgumentError verify(response,options,"other.yaml",settings,settings,branches,paths)
+end
+
+@testset "virtual mirror completion is measured and limited in physical coordinates" begin
+    implementation = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+    implementation === nothing && (implementation = OpticalCalibrationTestImplementation)
+    completion = Float32[1 0; 0 1; 0.5 0.5; 0 0]
+    direct = Bool[1,1,0,0]; healthy = Bool[1,1,1,0]
+    @test implementation.validate_optical_completion(completion,direct,healthy) == [1,2]
+    bad = copy(completion); bad[4,1] = 0.1
+    @test_throws ArgumentError implementation.validate_optical_completion(bad,direct,healthy)
+    bad = copy(completion); bad[1,1] = 0.9
+    @test_throws ArgumentError implementation.validate_optical_completion(bad,direct,healthy)
+    physical = command -> reshape(Float32[command[1],command[2],command[3],-sum(command)],2,2)
+    domain = implementation.bounded_optical_surface(physical,fill(-0.2,4),fill(0.2,4))
+    virtual = command -> domain.surface(completion*command)
+    @test virtual(Float32[0.1,0.1]) == physical(Float32[0.1,0.1,0.1,0])
+    @test_throws ArgumentError virtual(Float32[0.3,0])
+    @test domain.record["tested_maximum_absolute_command"] ≈ 0.1
+    result = OpticalCalibration.calibrate_optical(virtual,opd -> (;scc=1f0 .+ opd),Matrix{Float32}(I,2,2);
+        pupil_support=trues(2,2),branch_modes=(scc=1:2,),pixel_masks=(scc=trues(2,2),),
+        poke_m=0.01f0,normalization_probe=0.02f0,tsvd_rtol=1f-5,
+        derivative_tolerance=0.001,reconstruction_tolerance=0.001)
+    @test result.report["status"] == "accepted"
+    @test size(result.projection) == (2,2) && size(result.physical_to_modes) == (2,2)
+    @test result.physical_to_modes * result.projection ≈ Matrix{Float32}(I,2,2) atol=1e-5
 end

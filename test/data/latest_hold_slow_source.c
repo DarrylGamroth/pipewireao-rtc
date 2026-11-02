@@ -112,8 +112,8 @@ struct fixture {
 #endif
 };
 
-static const uint8_t domain[SPA_META_ACQUISITION_DOMAIN_SIZE] = { 0x42 };
-static const uint8_t primary_domain[SPA_META_ACQUISITION_DOMAIN_SIZE] = { 0x24 };
+static const uint8_t domain[SPA_ACQUISITION_DOMAIN_SIZE] = { 0x42 };
+static const uint8_t primary_domain[SPA_ACQUISITION_DOMAIN_SIZE] = { 0x24 };
 
 #ifdef LATEST_HOLD_BENCH_SAMPLES
 static bool raw_now(uint64_t *result)
@@ -203,18 +203,31 @@ static struct spa_pod *build_header_meta(struct spa_pod_builder *builder)
 			SPA_PARAM_META_size, SPA_POD_Int(sizeof(struct spa_meta_header)));
 }
 
-static struct spa_pod *build_acquisition_meta(struct spa_pod_builder *builder)
+static bool write_identity(struct spa_meta *properties, const uint8_t authority[16],
+		uint64_t generation, uint64_t sequence)
+{
+	const uint32_t flags = SPA_POD_PROP_FLAG_MANDATORY;
+	return spa_meta_properties_init(properties) &&
+		spa_meta_properties_add(properties, SPA_META_PROPERTY_acquisitionDomain,
+			flags, SPA_TYPE_Bytes, 16, authority) &&
+		spa_meta_properties_add_uint64(properties, SPA_META_PROPERTY_acquisitionGeneration,
+			flags, generation) &&
+		spa_meta_properties_add_uint64(properties, SPA_META_PROPERTY_acquisitionSequence,
+			flags, sequence);
+}
+
+static struct spa_pod *build_properties_meta(struct spa_pod_builder *builder)
 {
 	struct spa_pod_frame object;
 
 	spa_pod_builder_push_object(builder, &object, SPA_TYPE_OBJECT_ParamMeta,
 			SPA_PARAM_Meta);
 	spa_pod_builder_add(builder, SPA_PARAM_META_type,
-			SPA_POD_Id(SPA_META_Acquisition), SPA_PARAM_META_size,
-			SPA_POD_Int(sizeof(struct spa_meta_acquisition)), 0);
+			SPA_POD_Id(SPA_META_Properties), SPA_PARAM_META_size,
+			SPA_POD_Int(512), 0);
 	spa_pod_builder_prop(builder, SPA_PARAM_META_features,
 			SPA_POD_PROP_FLAG_MANDATORY);
-	spa_pod_builder_int(builder, SPA_META_FEATURE_ACQUISITION_VERSION_2);
+	spa_pod_builder_int(builder, SPA_META_FEATURE_PROPERTIES_VERSION_1);
 	return spa_pod_builder_pop(builder, &object);
 }
 
@@ -250,7 +263,7 @@ static void source_process(void *userdata)
 	struct pw_buffer *buffer;
 	struct spa_data *block;
 	struct spa_meta_header *header;
-	struct spa_meta_acquisition *acquisition;
+	struct spa_meta *properties;
 	uint32_t cycle;
 	uint32_t sample;
 	float values[VECTOR_LENGTH];
@@ -305,10 +318,9 @@ static void source_process(void *userdata)
 	block = &buffer->buffer->datas[0];
 	header = spa_buffer_find_meta_data(buffer->buffer, SPA_META_Header,
 			sizeof(*header));
-	acquisition = spa_buffer_find_meta_data(buffer->buffer,
-			SPA_META_Acquisition, sizeof(*acquisition));
+	properties = spa_buffer_find_meta(buffer->buffer, SPA_META_Properties);
 	if (block->data == NULL || block->chunk == NULL ||
-		block->maxsize < sizeof(values) || header == NULL || acquisition == NULL) {
+		block->maxsize < sizeof(values) || header == NULL || properties == NULL) {
 		(void)pw_stream_queue_buffer(data->source, buffer);
 		progress_write_end(&data->source_progress_sequence);
 		fail(data, "slow source negotiated incomplete ndarray storage or metadata");
@@ -334,11 +346,10 @@ static void source_process(void *userdata)
 		.dts_offset = 0,
 		.seq = sample,
 	};
-	if (!spa_meta_acquisition_init(acquisition) ||
-		!spa_meta_acquisition_set_identity(acquisition, domain, 7u, sample)) {
+	if (!write_identity(properties, domain, 7u, sample)) {
 		(void)pw_stream_queue_buffer(data->source, buffer);
 		progress_write_end(&data->source_progress_sequence);
-		fail(data, "slow source could not write Acquisition identity");
+		fail(data, "slow source could not write acquisition Properties identity");
 		return;
 	}
 #ifdef LATEST_HOLD_BENCH_SAMPLES
@@ -381,7 +392,7 @@ static void primary_process(void *userdata)
 	struct pw_time time;
 	struct spa_data *block;
 	struct spa_meta_header *header;
-	struct spa_meta_acquisition *acquisition;
+	struct spa_meta *properties;
 	uint32_t sequence;
 	float values[VECTOR_LENGTH];
 #ifdef LATEST_HOLD_BENCH_SAMPLES
@@ -417,10 +428,9 @@ static void primary_process(void *userdata)
 	block = &buffer->buffer->datas[0];
 	header = spa_buffer_find_meta_data(buffer->buffer, SPA_META_Header,
 			sizeof(*header));
-	acquisition = spa_buffer_find_meta_data(buffer->buffer,
-			SPA_META_Acquisition, sizeof(*acquisition));
+	properties = spa_buffer_find_meta(buffer->buffer, SPA_META_Properties);
 	if (block->data == NULL || block->chunk == NULL ||
-		block->maxsize < sizeof(values) || header == NULL || acquisition == NULL) {
+		block->maxsize < sizeof(values) || header == NULL || properties == NULL) {
 		(void)pw_stream_queue_buffer(data->primary_source, buffer);
 		progress_write_end(&data->primary_progress_sequence);
 		fail(data, "primary source negotiated incomplete ndarray storage or metadata");
@@ -446,11 +456,10 @@ static void primary_process(void *userdata)
 		.dts_offset = 0,
 		.seq = sequence,
 	};
-	if (!spa_meta_acquisition_init(acquisition) ||
-		!spa_meta_acquisition_set_identity(acquisition, primary_domain, 9u, sequence)) {
+	if (!write_identity(properties, primary_domain, 9u, sequence)) {
 		(void)pw_stream_queue_buffer(data->primary_source, buffer);
 		progress_write_end(&data->primary_progress_sequence);
-		fail(data, "primary source could not write Acquisition identity");
+		fail(data, "primary source could not write acquisition Properties identity");
 		return;
 	}
 #ifdef LATEST_HOLD_BENCH_SAMPLES
@@ -501,7 +510,7 @@ static void sink_process(void *userdata)
 	struct spa_data *block;
 	struct spa_meta_header *header;
 	struct spa_meta *meta;
-	const struct spa_meta_acquisition *acquisition;
+	struct spa_acquisition_identity acquisition;
 	const float *values;
 	uint32_t received, expected_sample;
 	uint64_t sequence;
@@ -512,24 +521,24 @@ static void sink_process(void *userdata)
 	block = &buffer->buffer->datas[0];
 	header = spa_buffer_find_meta_data(buffer->buffer, SPA_META_Header,
 			sizeof(*header));
-	meta = spa_buffer_find_meta(buffer->buffer, SPA_META_Acquisition);
-	acquisition = meta == NULL ? NULL : meta->data;
+	meta = spa_buffer_find_meta(buffer->buffer, SPA_META_Properties);
 	received = atomic_load_explicit(&data->sink_received, memory_order_relaxed);
 	expected_sample = expected_held_sample(received);
 	if (block->data == NULL || block->chunk == NULL ||
 		block->chunk->offset > block->maxsize ||
 		block->chunk->size != VECTOR_LENGTH * sizeof(float) ||
 		block->maxsize - block->chunk->offset < block->chunk->size ||
-		header == NULL || !spa_meta_acquisition_is_valid(meta) ||
-		acquisition->generation != 7u || acquisition->sequence != expected_sample ||
-		memcmp(acquisition->domain, domain, sizeof(domain)) != 0 ||
+		header == NULL || !spa_meta_properties_is_valid(meta, NULL, 0) ||
+		!spa_meta_properties_get_acquisition_identity(meta, &acquisition) ||
+		acquisition.generation != 7u || acquisition.sequence != expected_sample ||
+		memcmp(acquisition.domain, domain, sizeof(domain)) != 0 ||
 		received >= FULL_HELD_OUTPUTS
 #ifdef LATEST_HOLD_BENCH_SAMPLES
 			+ LATEST_HOLD_BENCH_SAMPLES * HOLD_CYCLES
 #endif
 		) {
 		(void)pw_stream_queue_buffer(data->sink, buffer);
-		fail(data, "hold sink observed an unexpected output or Acquisition identity");
+		fail(data, "hold sink observed an unexpected output or acquisition Properties identity");
 		return;
 	}
 	sequence = header->seq;
@@ -592,7 +601,7 @@ static void command_sink_process(void *userdata)
 	struct spa_data *block;
 	struct spa_meta_header *header;
 	struct spa_meta *meta;
-	const struct spa_meta_acquisition *acquisition;
+	struct spa_acquisition_identity acquisition;
 	const float *values;
 	uint64_t sequence;
 	uint32_t commands;
@@ -606,23 +615,25 @@ static void command_sink_process(void *userdata)
 	block = &buffer->buffer->datas[0];
 	header = spa_buffer_find_meta_data(buffer->buffer, SPA_META_Header,
 			sizeof(*header));
-	meta = spa_buffer_find_meta(buffer->buffer, SPA_META_Acquisition);
-	acquisition = meta == NULL ? NULL : meta->data;
+	meta = spa_buffer_find_meta(buffer->buffer, SPA_META_Properties);
 	if (block->data == NULL || block->chunk == NULL ||
 		block->chunk->offset > block->maxsize ||
 		block->chunk->size != VECTOR_LENGTH * sizeof(float) ||
 		block->maxsize - block->chunk->offset < block->chunk->size ||
-		header == NULL || !spa_meta_acquisition_is_valid(meta) ||
-		acquisition->generation != 9u ||
-		memcmp(acquisition->domain, primary_domain, sizeof(primary_domain)) != 0) {
+		header == NULL || !spa_meta_properties_is_valid(meta, NULL, 0) ||
+		!spa_meta_properties_get_acquisition_identity(meta, &acquisition) ||
+		acquisition.generation != 9u ||
+		memcmp(acquisition.domain, primary_domain, sizeof(primary_domain)) != 0) {
 		(void)pw_stream_queue_buffer(data->command_sink, buffer);
-		fail(data, "processing graph output did not preserve primary Header or Acquisition provenance");
+		fail(data, "processing graph output did not preserve primary Header or acquisition Properties provenance");
 		return;
 	}
-	sequence = acquisition->sequence;
+	sequence = acquisition.sequence;
+	/* This primary source publishes one Header per acquisition. The held slow
+	 * output above deliberately uses an independently advancing Header. */
 	if (header->seq != sequence) {
 		(void)pw_stream_queue_buffer(data->command_sink, buffer);
-		fail(data, "processing graph output Header sequence did not match primary Acquisition identity");
+		fail(data, "processing graph output Header sequence did not match primary acquisition Properties identity");
 		return;
 	}
 #ifdef LATEST_HOLD_BENCH_SAMPLES
@@ -1274,22 +1285,22 @@ int main(int argc, char *argv[])
 	primary_params[0] = build_format(&source_builder, FAST_RATE,
 		PRIMARY_SCHEMA);
 	primary_params[1] = build_header_meta(&source_builder);
-	primary_params[2] = build_acquisition_meta(&source_builder);
+	primary_params[2] = build_properties_meta(&source_builder);
 	spa_pod_builder_init(&source_builder, source_pods, sizeof(source_pods));
 	source_params[0] = build_format(&source_builder, SLOW_RATE,
 		SLOW_SCHEMA);
 	source_params[1] = build_header_meta(&source_builder);
-	source_params[2] = build_acquisition_meta(&source_builder);
+	source_params[2] = build_properties_meta(&source_builder);
 	spa_pod_builder_init(&sink_builder, sink_pods, sizeof(sink_pods));
 	sink_params[0] = build_format(&sink_builder, FAST_RATE,
 		SLOW_SCHEMA);
 	sink_params[1] = build_header_meta(&sink_builder);
-	sink_params[2] = build_acquisition_meta(&sink_builder);
+	sink_params[2] = build_properties_meta(&sink_builder);
 	spa_pod_builder_init(&source_builder, command_pods, sizeof(command_pods));
 	command_params[0] = build_format(&source_builder, FAST_RATE,
 		PRIMARY_SCHEMA);
 	command_params[1] = build_header_meta(&source_builder);
-	command_params[2] = build_acquisition_meta(&source_builder);
+	command_params[2] = build_properties_meta(&source_builder);
 	if (primary_params[0] == NULL || primary_params[1] == NULL ||
 		primary_params[2] == NULL || source_params[0] == NULL || source_params[1] == NULL ||
 		source_params[2] == NULL || sink_params[0] == NULL ||

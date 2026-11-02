@@ -109,8 +109,50 @@ end
         @test declaration.document["wire_contracts"] == simulation["wire_contracts"]
         @test declaration.document["hil"] == Dict("command_input" => "pupil_opd", "frame_output" => "intensity")
         @test "simulation/zemax.yaml" in IC.artifact_paths(declaration, IC.settings(declaration))
+        identity = IC.prescription_identity(declaration, IC.settings(declaration))
+        @test startswith(identity,"sha256:")
+        @test !any(id->id.name in ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","Proper","CUDA","AMDGPU"),keys(Base.loaded_modules))
         @test_throws ArgumentError IC.graph_document(declaration, IC.settings(declaration); simulation_graph="optical-reference")
         @test_throws ArgumentError IC.simulation_graph_sources(Dict("hil" => Dict(), "graphs" => Dict("optical-reference" => Dict())))
         @test_throws ArgumentError IC.simulation_graph_sources(Dict("graphs" => Dict("invalid/name" => Dict())))
+    end
+end
+
+
+@testset "compiled model assets follow resolved profiles and settings without science" begin
+    mktempdir() do directory
+        physical, simulation = external_optical_documents()
+        simulation["components"] = Dict()
+        mkpath(joinpath(directory,"models"))
+        for name in ("reference","alternate","bound")
+            write(joinpath(directory,"models",name*".bin"),"opaque compiled model metadata asset: "*name)
+        end
+        node(path) = Dict("name"=>"optics","type"=>"compiled_optical_paths_f32","config"=>Dict("model_path"=>path))
+        for graph in values(simulation["graphs"])
+            graph["nodes"] = [node("models/reference.bin")]
+        end
+        simulation["profiles"]["alternate"] = Dict("nodes"=>[node("models/alternate.bin")],"parameters"=>[])
+        simulation["profiles"]["bound"] = deepcopy(simulation["profiles"]["alternate"])
+        simulation["settings_schema"]["properties"]["profile"]["enum"] = ["reference","alternate","bound"]
+        simulation["settings_schema"]["properties"]["model_path"] = Dict("type"=>"string")
+        simulation["defaults"]["model_path"] = "models/bound.bin"
+        simulation["settings_bindings"] = [Dict("setting"=>"model_path","nodes"=>["optics"],
+            "config"=>"model_path","profiles"=>["bound"])]
+        declaration = IC.load_simulation(write_external_optical_documents(directory,physical,simulation))
+        for profile in ("reference","alternate","bound")
+            configured = IC.settings(declaration,Dict("profile"=>profile))
+            path = "models/"*profile*".bin"
+            @test IC.artifact_paths(declaration,configured) == Set([path])
+            graph = IC.resolve_graph_document(declaration.graphs["scc"],declaration,configured,"scc")
+            @test graph == IC.graph_document(declaration,configured;simulation_graph="scc")
+            identity = IC.prescription_identity(declaration,configured)
+            original = read(joinpath(directory,path))
+            write(joinpath(directory,path),"changed compiled model: "*profile)
+            @test IC.prescription_identity(declaration,configured) != identity
+            write(joinpath(directory,path),original)
+            @test IC.prescription_identity(declaration,configured) == identity
+        end
+        @test only(declaration.graphs["scc"]["nodes"])["config"]["model_path"] == "models/reference.bin"
+        @test !any(id->id.name in ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","Proper","CUDA","AMDGPU"),keys(Base.loaded_modules))
     end
 end

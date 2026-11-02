@@ -116,7 +116,6 @@ function Offsets.prepare(path::AbstractString,graph)
     options=map(names) do name
         row=d["branches"][string(name)]
         HIL.PipeWireArrayStreamOptions(;node_name=row["node_name"],media_name=string(name)*" physical offset",
-            acquisition_version=get(row,"acquisition_version",2),
             schema=row["schema"],format=NdArrayFormat(NdArray.F32_LE,(size(P,1),);layout=NdArray.ROW_MAJOR))
     end
     return (;declaration=d,receiver,names,calibrations,options=Tuple(options),buffers,total)

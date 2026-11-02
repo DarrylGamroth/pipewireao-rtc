@@ -382,6 +382,22 @@ end
     @test_throws ArgumentError IC.component_template_path("hgcdte")
 end
 
+@testset "physical imaging camera geometry is explicit and complete" begin
+    mktempdir() do directory
+        physical,simulation=external_optical_documents()
+        camera=physical["wavefront_sensors"]["llowfs"]["detector"]
+        merge!(camera,Dict("rows"=>256,"columns"=>320,"pixel_sampling_m"=>[30e-6,30e-6]))
+        @test IC.validate_declaration(physical,directory)===nothing
+        for mutate! in (d->delete!(d,"columns"),d->(d["rows"]=true),d->(d["rows"]=0),
+                d->(d["columns"]=16385),d->(d["pixel_sampling_m"]=[0,30e-6]),
+                d->(d["pixel_sampling_m"]=[NaN,30e-6]),d->(d["pixel_sampling_m"]=[30e-6]))
+            invalid=deepcopy(physical)
+            mutate!(invalid["wavefront_sensors"]["llowfs"]["detector"])
+            @test_throws ArgumentError IC.validate_declaration(invalid,directory)
+        end
+    end
+end
+
 @testset "shared optical settings schema remains extensible and strict" begin
     mktempdir() do directory
         physical, simulation = external_optical_documents()

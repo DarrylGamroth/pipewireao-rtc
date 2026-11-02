@@ -79,7 +79,7 @@ function simulation_documents(path)
     authoring = bounded_yaml(path)
     document = deepcopy(authoring)
     fields(document, ("schema_version", "id", "instrument", "defaults", "settings_schema",
-        "wire_contracts", "graphs", "preparation", "profiles", "bindings", "settings_bindings",
+        "wire_contracts", "graphs", "preparation", "profiles", "bindings", "binding_files", "settings_bindings",
         "frame_period_s", "hil", "sensors", "sources", "components", "responses", "imaging", "observations", "optical_model", "pupil_output"),
         ("schema_version", "id", "instrument", "defaults", "settings_schema",
         "profiles", "frame_period_s"), "simulation definition")
@@ -87,7 +87,39 @@ function simulation_documents(path)
         throw(ArgumentError("simulation definition must declare exactly one of graphs or preparation"))
     haskey(document, "hil") == haskey(document, "wire_contracts") ||
         throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
+    _declaration_object(get!(document, "components", Dict{String,Any}()), "simulation components")
+    _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
+    for profile in values(_declaration_object(document["profiles"], "simulation profiles"))
+        _declaration_object(profile, "simulation profile")
+        haskey(profile, "template") && continue
+        for key in ("nodes", "parameters")
+            _declaration_array(get!(profile, key, Any[]), "profile $key")
+        end
+    end
+    for source in values(_declaration_object(get(document, "sources", Dict()), "simulation sources"))
+        _declaration_object(source, "simulation source")
+        get!(source, "source_separation_arcsec", 0.0)
+        get!(source, "source_position_angle_deg", 0.0)
+    end
     instrument = referenced_instrument(path, document["instrument"])
+    # Generated binding descriptors stay separate from authored model settings.
+    # Each referenced artifact retains its own type, axes, shape and SHA-256.
+    files = get(document, "binding_files", String[])
+    files isa AbstractVector && length(files) <= 8 ||
+        throw(ArgumentError("simulation binding_files requires at most eight relative filenames"))
+    length(unique(files)) == length(files) || throw(ArgumentError("duplicate simulation binding file"))
+    bindings = get!(document, "bindings", Dict{String,Any}())
+    bindings isa AbstractDict || throw(ArgumentError("simulation bindings must be a mapping"))
+    for file in files
+        file isa AbstractString && !isabspath(file) && !occursin('\0',file) &&
+            all(part -> part != "..",splitpath(file)) ||
+            throw(ArgumentError("simulation binding file must be relative"))
+        entries = bounded_yaml(D.relative_asset(instrument.directory, file))
+        for (name, entry) in entries
+            haskey(bindings, name) && throw(ArgumentError("duplicate simulation binding: $name"))
+            bindings[name] = entry
+        end
+    end
     if haskey(document, "optical_model")
         model = fields(document["optical_model"], ("format", "source", "variants"), ("format", "source"), "prepared optical model")
         model["format"] == "zemax" && haskey(document, "graphs") &&
@@ -469,29 +501,14 @@ function graph_requires_proper(declaration, configured; simulation_graph="produc
         selected = get(replacements, node["name"], node)
         type = get(selected, "type", nothing)
         resolved = type isa AbstractDict ? Common.configuration_value(type, configuration_context(declaration, configured)) : type
-        resolved in ("proper_optical_train_f32", "proper_optical_train_f64")
+        resolved in ("proper_optical_train_f32", "proper_optical_train_f64",
+            "compiled_optical_paths_f32", "compiled_optical_paths_f64")
     end
 end
 
-"""
-    graph_document(declaration, configured; calibration=false, simulation_graph=...)
-
-Resolve profile and scalar settings into a declared AOS graph. The default is
-`production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
-Explicitly declared `internal-source` and `dark` graphs retain normal component
-settings. A dark graph must feed each detector's photon-rate input from an
-explicit zero binding, without an optical link to that input. Unknown selections
-reject before preparation.
-"""
-function graph_document(declaration, configured; calibration=false,
-        simulation_graph=calibration ? "calibration" : "production")
-    mode = selected_graph(declaration, simulation_graph)
-    calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
-    model = get(declaration.document, "optical_model", Dict())
-    graph = haskey(declaration.document, "optical_model") &&
-        (haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ||
-         haskey(get(model, "variants", Dict()), mode)) ?
-        optical_graph_document(declaration, configured, mode) : deepcopy(declaration.graphs[mode])
+"Resolve an existing graph's profiles and settings without scientific preparation."
+function resolve_graph_document(graph, declaration, configured, mode)
+    graph = deepcopy(graph)
     profile_name = configured["profile"]
     profile = declaration.document["profiles"][profile_name]
     nodes = graph["nodes"]
@@ -536,7 +553,31 @@ function graph_document(declaration, configured; calibration=false,
     hil = haskey(declaration.document, "hil")
     ideal = hil && mode == "calibration"
     graph["name"] = ideal ? graph["name"] : graph["name"] * "_" * profile_name
-    resolved = Common.configuration_value(graph, configuration_context(declaration, configured))
+    return Common.configuration_value(graph, configuration_context(declaration, configured))
+end
+
+"""
+    graph_document(declaration, configured; calibration=false, simulation_graph=...)
+
+Resolve profile and scalar settings into a declared AOS graph. The default is
+`production`, or the ideal diagnostic `calibration` graph when `calibration=true`.
+Explicitly declared `internal-source` and `dark` graphs retain normal component
+settings. A dark graph must feed each detector's photon-rate input from an
+explicit zero binding, without an optical link to that input. Unknown selections
+reject before preparation.
+"""
+function graph_document(declaration, configured; calibration=false,
+        simulation_graph=calibration ? "calibration" : "production")
+    mode = selected_graph(declaration, simulation_graph)
+    calibration && mode != "calibration" && throw(ArgumentError("conflicting calibration graph selection"))
+    model = get(declaration.document, "optical_model", Dict())
+    graph = haskey(declaration.document, "optical_model") &&
+        (haskey(get(declaration.instrument.document, "optical_paths", Dict()), mode) ||
+         haskey(get(model, "variants", Dict()), mode)) ?
+        optical_graph_document(declaration, configured, mode) : declaration.graphs[mode]
+    resolved = resolve_graph_document(graph, declaration, configured, mode)
+    hil = haskey(declaration.document, "hil")
+    ideal = hil && mode == "calibration"
     prepare_optical_components!(resolved, declaration, configured)
     ideal || apply_responses!(resolved, declaration, configured)
     hil && mode == "dark" && validate_dark_graph(resolved, declaration.document["bindings"])
@@ -582,6 +623,8 @@ function binding_values(::Val{:mirror_coordinates}, declaration, configured, bin
 end
 function binding_values(::Val{:mirror_grid_indices}, declaration, configured, binding)
     values = mirror(declaration,configured,binding["mirror"])
+    haskey(values.registration,:rotation_deg) && throw(ArgumentError(
+        "nonidentity pupil registration is unsupported by grid_gaussian grid-index bindings"))
     return actuator_grid_indices(values.description)
 end
 function measured_influences(declaration,configured,binding)

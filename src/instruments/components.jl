@@ -76,6 +76,7 @@ function component_reference(value::AbstractDict, selection)
             key = last(split(pointer, '/'))
             config = get(selection, "config", Dict())
             haskey(config, key) || throw(ArgumentError("component requires explicit config.$key"))
+            isnothing(config[key]) && throw(ArgumentError("component config.$key must not be null"))
             return deepcopy(config[key])
         end
         return deepcopy(value)
@@ -138,8 +139,39 @@ component_input(value) = false
 component_config_fields(template) = union(Set(key for (key, value) in template["config"] if component_input(value)),
     Set(keys(get(template, "optional_config", Dict()))))
 
+function aos_node_defaults(directory)
+    path = joinpath(directory, "data", "generated", "node-defaults.json")
+    isfile(path) || throw(ArgumentError("missing AOS node defaults metadata; supply explicit component config or regenerate it with AOS tools/export-node-defaults.jl"))
+    document = Common.read_json(path; maximum=65536)
+    fields(document, ("schema_version", "generated", "source", "regeneration", "defaults"),
+        ("schema_version", "generated", "source", "regeneration", "defaults"), "AOS node defaults metadata")
+    document["schema_version"] === 1 || throw(ArgumentError("unsupported AOS node defaults metadata"))
+    source = _declaration_fields(document["source"], ("path", "sha256"), ("path", "sha256"), "AOS node defaults source")
+    source["path"] == "src/algorithm_graphs/node_defaults.jl" || throw(ArgumentError("invalid AOS node defaults source path"))
+    file = joinpath(directory, source["path"])
+    isfile(file) && Common.sha256_file(file) == source["sha256"] ||
+        throw(ArgumentError("stale AOS node defaults metadata; regenerate it with AOS tools/export-node-defaults.jl"))
+    return _declaration_object(document["defaults"], "AOS node defaults")
+end
+
+function aos_node_defaults()
+    path = Base.find_package("AdaptiveOpticsSim")
+    isnothing(path) && throw(ArgumentError("omitted component config requires installed AOS node defaults metadata; supply explicit values or install AdaptiveOpticsSim"))
+    return aos_node_defaults(dirname(dirname(path)))
+end
+
 function component_node(name, selection, model, templates)
     template = component_template(model, templates)
+    if model in ("cmos", "emccd", "pyramid")
+        config = selection["config"]
+        missing = [key for (key, value) in template["config"] if component_input(value) && !haskey(config, key)]
+        if !isempty(missing)
+            defaults = _declaration_object(get(aos_node_defaults(), model, Dict()), "AOS $model node defaults")
+            for key in missing
+                haskey(defaults, key) && (config[key] = deepcopy(defaults[key]))
+            end
+        end
+    end
     prepared = haskey(selection, "preparation")
     config = if prepared
         deepcopy(prepared_component_config(selection["config"]))
@@ -222,6 +254,18 @@ function expand_simulation_components!(document, instrument, directory)
     for (name, selection) in components
         _declaration_identifier(name, "component name")
         validate_component(selection, instrument, document)
+        if selection["template"] == "ingaas" && haskey(selection, "sensor")
+            sensor = instrument["wavefront_sensors"][selection["sensor"]]
+            config = selection["config"]
+            for key in ("rows", "columns", "pixel_sampling_m")
+                if !haskey(config, key) && haskey(get(sensor, "detector", Dict()), key)
+                    config[key] = reference("/instrument/wavefront_sensors/" * pointer_key(selection["sensor"]) * "/detector/" * key)
+                end
+            end
+            if !haskey(config, "exposure_duration_s") && haskey(get(sensor, "acquisition", Dict()), "exposure_duration_s")
+                config["exposure_duration_s"] = reference("/instrument/wavefront_sensors/" * pointer_key(selection["sensor"]) * "/acquisition/exposure_duration_s")
+            end
+        end
         component_preparation(selection, instrument, directory)
     end
     bindings = _declaration_object(get!(document, "bindings", Dict{String,Any}()), "simulation bindings")

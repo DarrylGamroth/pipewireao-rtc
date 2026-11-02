@@ -30,8 +30,8 @@ function capture_source(;start=capture_cursor(),fail=0,metadata_change=identity,
             validity=[index != 3 for index in 1:188])
         receipt = (;identity=PipeWireAO.AcquisitionIdentity(capture_domain,start.generation,sequence),
             model_start_ns=Int64(model),duration_ns=UInt64(duration),
-            header=PipeWireAO.BufferHeader(UInt32(0),UInt32(0),Int64(-17),Int64(-2),sequence),
-            acquisition_version=UInt32(2),acquisition_flags=UInt32(5),
+            header=PipeWireAO.BufferHeader(UInt32(0),UInt32(0),Int64(-17),Int64(-2),sequence+UInt64(100)),
+            optical_classification=nothing,trigger_classification=nothing,
             wire_start=nothing,timebase=nothing,ptp_reference=nothing)
         metadata = metadata_change((;raw=receipt,slopes=receipt,flux=receipt,validity=receipt))
         return (;arrays,metadata),exposure
@@ -93,6 +93,8 @@ end
             @test sample.metadata["raw"]["identity"]["domain"] == bytes2hex(collect(capture_domain.bytes))
             @test sample.metadata["raw"]["identity"]["generation"] == capture_generation
             @test sample.metadata["raw"]["header"]["pts"] == -17
+            @test sample.metadata["raw"]["header"]["sequence"] == 101
+            @test result.manifest["schema_version"] == 2
             @test result.manifest["cursor"]["model_ns"] == 4000000
             @test result.manifest["after"]["generation"] == capture_generation
             @test result.manifest["domain_mapping"]["coordinator"] == capture_coordinator_domain
@@ -115,8 +117,7 @@ end
             clock_metadata = metadata -> map(receipt -> merge(receipt,(;
                 wire_start=PipeWireAO.AcquisitionExposureStart(Int64(99),UInt64(2)),
                 timebase=PipeWireAO.ACQUISITION_TIMEBASE_TAI,
-                ptp_reference=PipeWireAO.AcquisitionPtpReference(PipeWireAO.PtpClockIdentity(ntuple(i -> UInt8(i),8)),UInt8(7)),
-                acquisition_flags=UInt32(15))),metadata)
+                ptp_reference=PipeWireAO.AcquisitionPtpReference(PipeWireAO.PtpClockIdentity(ntuple(i -> UInt8(i),8)),UInt8(7)))),metadata)
             clock_descriptor,_ = capture_write(clock_store;frames=1,metadata_change=clock_metadata)
             clock_read = capture_read(clock_store,clock_descriptor)
             @test clock_read.samples[1].metadata["raw"]["wire_start"]["nanoseconds"] == 99
@@ -259,6 +260,10 @@ end
             descriptor,_ = capture_write(store;frames=1)
             changes = Function[
                 doc -> (doc["unexpected"] = 1),
+                doc -> (doc["schema_version"] = 1),
+                doc -> (doc["exposures"][1]["metadata"]["raw"]["acquisition_version"] = 3),
+                doc -> (doc["exposures"][1]["metadata"]["raw"]["trigger_classification"] = 4),
+                doc -> (doc["exposures"][1]["metadata"]["raw"]["timebase"] = 2),
                 doc -> (doc["profile"] = "copper"),
                 doc -> (doc["illumination"] = "dark"),
                 doc -> (doc["settings"]["graph_sha256"] = repeat("c",64)),
@@ -293,7 +298,7 @@ end
             # Duplicate JSON keys must not silently overwrite an earlier value.
             manifest_path = joinpath(store.directory,descriptor.manifest)
             original = read(manifest_path)
-            duplicated = replace(String(copy(original)),"\"schema_version\":1"=>"\"schema_version\":1,\"schema_version\":1")
+            duplicated = replace(String(copy(original)),"\"schema_version\":2"=>"\"schema_version\":2,\"schema_version\":2")
             @test ncodeunits(duplicated) > length(original)
             chmod(manifest_path,0o600); write(manifest_path,duplicated)
             duplicate_descriptor = CaptureActions.Captured(descriptor.cursor,descriptor.manifest,bytes2hex(sha256(duplicated)),
@@ -332,4 +337,19 @@ end
         end
     end
     @test !any(id.name in ("CUDA","AMDGPU") for id in keys(Base.loaded_modules))
+end
+
+@testset "capture schema preserves missing and explicit classification facts" begin
+    P=PipeWireAO
+    optical=(nothing,P.OPTICAL_ABSENT,P.OPTICAL_UNFRINGED,P.OPTICAL_FRINGED,P.OPTICAL_MIXED)
+    trigger=(nothing,P.ACQUISITION_TRIGGER_ABSENT,P.ACQUISITION_TRIGGER_LOW,P.ACQUISITION_TRIGGER_HIGH,P.ACQUISITION_TRIGGER_MIXED)
+    mktempdir() do parent
+        for (index,(o,t)) in enumerate(Iterators.product(optical,trigger))
+            store=capture_store(parent;name="classification-$index")
+            descriptor,_=capture_write(store;frames=1,metadata_change=metadata -> map(receipt -> merge(receipt,(;optical_classification=o,trigger_classification=t)),metadata))
+            sample=only(capture_read(store,descriptor).samples)
+            @test sample.metadata["raw"]["optical_classification"] == (o===nothing ? nothing : UInt32(o))
+            @test sample.metadata["raw"]["trigger_classification"] == (t===nothing ? nothing : UInt32(t))
+        end
+    end
 end

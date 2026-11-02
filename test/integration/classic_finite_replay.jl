@@ -71,7 +71,7 @@ function recording_parameters(format,schema)
     # two-buffer recorders would constrain the shared source pool below that.
     return (ndarray_format(format;schema),
         Pod(buffers_param(size=payload_size(format),buffers=3)),
-        Pod(header_metadata_param()),Pod(acquisition_metadata_param(;version=2)))
+        Pod(header_metadata_param()),Pod(buffer_properties_metadata_param(512)))
 end
 
 function named_port(registry, node, direction, name=nothing)

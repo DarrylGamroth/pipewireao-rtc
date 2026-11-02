@@ -112,13 +112,17 @@ mirror source grid. Bilinear interpolation covers the entire square pupil; no
 extrapolation, aperture masking, normalization, or reflection factor is added.
 The required SHA-256 identifies the original snapshot; `type` selects Float32 or
 Float64 decoding before interpolation, and `shape` is in logical axis order.
+The separable source-grid interpolation supports identity pupil registration
+only; other registrations require a general two-dimensional resampler.
 """
 function _load_influence_functions(spec::NamedTuple, description, pupil_resolution, pupil_registration)
+    registration = _pupil_registration(pupil_registration)
+    haskey(registration,:rotation_deg) && throw(ArgumentError(
+        "nonidentity pupil registration is unsupported by separable measured-influence sampling"))
     count = command_count(description)
     metadata = _influence_spec(spec, count)
     resolution = _influence_integer(pupil_resolution, typemax(Int), "pupil resolution")
     _influence_storage_size((resolution, resolution, count), sizeof(Float32), "influence output")
-    registration = _pupil_registration(pupil_registration)
     _require_pupil_geometry(description, registration)
     source = Artifacts.FITSArtifact(spec.path; hdu=metadata.hdu, axes=metadata.axes)
     snapshot = Artifacts.snapshot(source.path; check=()->nothing)

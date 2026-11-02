@@ -352,6 +352,47 @@ brightness, readout settings, frontend nodes or their FITS bindings requires
 matching calibration. Neither a relaxed gate nor a diagnostic dither is an
 implicit production selection.
 
+When the optical source declares detector `observations`, optical calibration uses
+that same external-pupil exposure owner and response graph. Held probes reset the
+owner, integrate complete exposures and collect the actual F/U detector frames
+before the authored measurement prefix. Detector photon/readout noise must be
+disabled, with zero dark/glow rates; calibration does not silently change the
+selected response. The scale, exposure, quantum efficiency and other deterministic
+response settings remain part of the optical prescription identity. The retained
+`relative-intensity-optical` recipe kind names this calibration method; declared
+camera observations supply detector frames to it. Branch reports retain the
+measurement units and frame schema, and the existing FITS writer records those
+units on reference images, F/U differences and measured matrices.
+
+A centroid branch selects `measurements: {llowfs: {kind: center-of-gravity}}`.
+Its two measurements fit only its owned modes; every other mode is still probed
+to measure cross-talk. Pupil tip/tilt orthogonality does not imply zero centroid
+response to those other modes.
+
+The explicit recipe option `measurement_nulling: [llowfs]` removes that branch's
+measured linear response from unowned command modes. The initial implementation
+supports one declared centroid branch. With normalized command projection P,
+owned columns O and unowned columns U, it constructs:
+
+```text
+C = D_O⁺ D_U
+P′_U = P_U − P_O C
+```
+
+Here D has units px/m OPD, C is dimensionless, and ⁺ is the AOC TSVD inverse
+using the recipe cutoff. D_O must retain full row rank. Each proposed command
+column is rescaled to unit maximum absolute value before the native-command
+normalization probe is applied again. Calibration then remeasures pupil RMS,
+full/half push-pull responses and held-out mixtures with the unchanged gates.
+A rejected initial candidate supplies measurements, never accepted evidence.
+
+When `tip_tilt: true` is also selected, measured pupil tip/tilt removal occurs
+first and measurement nulling occurs second. The final unowned modes include
+compensating owned components; they are not claimed to remain pure pupil
+TT-orthogonal Fourier modes. Provenance retains the original basis order and
+pupil removal, the candidate identity, D, C, units, column scales and final
+normalization order. Omitting `measurement_nulling` preserves the original basis.
+
 For a chopped branch, the bounded recipe selects
 `measurements: {scc: {kind: chopped-pixel-residual}}`; its branch names must
 exactly match the built source's `plant.chopping`. The initial supported frontend
@@ -438,6 +479,27 @@ zero_command="physical-offset-zero.fits")` selects those accepted bundles in
 an authored instrument source. All validation precedes publication. It checks the
 sealed built input, recipe/source/provenance hashes, branch acceptance and shared
 identities, then verifies that the context reproduces each authored graph.
+The only permitted graph difference is appended named exports of existing
+`node:port` outputs. Original exports remain an exact ordered prefix; all other
+decoded fields and scalar types remain exact. The existing owner compiler checks
+added names, endpoints and formats. Nodes, links, inputs, parameters, execution
+settings and optical/recipe/provenance hash checks retain their strict checks.
+
+The generated selection records `graph_exports` with the frozen
+`calibrated_graph_sha256`, `authored_graph_sha256` and `added_outputs`. Ordinary
+builds using that optical selection recheck the frozen bundle hashes and the
+same graph rule, including selections written before this metadata existed.
+They generate a separate `graph-exports.yaml` receipt with the calibrated and
+`executed_graph_sha256` hashes and added exports. Frozen bundle files and the
+authored selection remain untouched. The declared graph paths must exactly match
+the selected branches; missing or extra graphs reject.
+
+These checks preserve calibration provenance, not application or timing
+qualification. Added native outputs require real consumers and can change
+buffer admission, copying cost and accelerator layouts. `application_accepted`
+remains false; validate command equality and delivery separately. The cold
+compiler/numerical check is `test/calibrated_graph_exports.jl` in an environment
+with FilterGraphIsland, FilterGraphAlgorithms, FilterGraphPipeWire and JuliaFilterGraph.
 The generated destination must be fresh. Standard branch bundles are copied
 unchanged; a shared context, exact-zero Float32 physical command and selection
 receipt are generated there. A generated `rtc.yaml` selects the context and

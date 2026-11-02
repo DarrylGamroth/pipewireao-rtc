@@ -17,10 +17,10 @@ function capture_payload(::Type{T}, count) where {T}
     memory = zeros(UInt8,count*sizeof(T))
     chunk = Ref(PW.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(sizeof(T)),Int32(0)))
     header = Ref(PW.spa_meta_header(UInt32(0),UInt32(0),Int64(9000),Int64(0),UInt64(1)))
-    acquisition = zeros(UInt64,Int(PW.SPA_META_ACQUISITION_SIZE)÷8)
+    acquisition = zeros(UInt64,64)
     metadata = PW.spa_meta[
         PW.spa_meta(PW.SPA_META_Header,UInt32(sizeof(PW.spa_meta_header)),Base.unsafe_convert(Ptr{Cvoid},header)),
-        PW.spa_meta(PW.SPA_META_Acquisition,UInt32(sizeof(acquisition)),Ptr{Cvoid}(pointer(acquisition)))]
+        PW.spa_meta(PW.SPA_META_Properties,UInt32(sizeof(acquisition)),Ptr{Cvoid}(pointer(acquisition)))]
     data = Ref(PW.spa_data(PW.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
         UInt32(length(memory)),pointer(memory),Base.unsafe_convert(Ptr{PW.spa_chunk},chunk)))
     spa_buffer = Ref(PW.spa_buffer(UInt32(2),UInt32(1),pointer(metadata),Base.unsafe_convert(Ptr{PW.spa_data},data)))
@@ -56,8 +56,8 @@ end
 
 function initialize_payload!(fixture, id=identity();duration=10)
     set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),id.sequence))
-    metadata=buffer_acquisition(fixture.buffer)
-    initialize_acquisition!(metadata)
+    metadata=buffer_properties(fixture.buffer)
+    initialize_buffer_properties!(metadata)
     set_acquisition_identity!(metadata,id)
     set_acquisition_exposure_duration!(metadata,UInt64(duration))
 end
@@ -73,6 +73,7 @@ end
             fixture=capture_payload(T,length(slot.wire))
             GC.@preserve fixture begin
                 initialize_payload!(fixture)
+                set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),UInt64(777)))
                 wire=T===Bool ? Bool[false,true] : T.(1:length(slot.wire))
                 fixture.memory .= reinterpret(UInt8,wire)
                 CC._read!(capture,slot,fixture.buffer)
@@ -80,6 +81,7 @@ end
                 @test slot.receipt.identity == identity()
                 @test slot.receipt.model_start_ns == 100
                 @test slot.receipt.header.pts == 9000
+                @test slot.receipt.header.sequence == 777
                 @test slot.receipt.duration_ns == 10
                 @test slot.receipt.wire_start === nothing
                 @test slot.wire == wire
@@ -98,25 +100,23 @@ end
 end
 
 @testset "wrong, stale, duplicate and invalid wire records cannot complete" begin
-    for failure in (:identity,:sequence,:duration,:gap,:corrupted,:payload,:duplicate,:missing_header,:missing_acquisition,:missing_identity,:missing_duration)
+    for failure in (:identity,:duration,:gap,:corrupted,:payload,:duplicate,:missing_header,:missing_properties,:missing_identity,:missing_duration)
         owned_test_capture() do capture
             CC.arm!(capture,exposure())
             fixture=capture_payload(UInt16,6)
             GC.@preserve fixture begin
                 initialize_payload!(fixture)
-                if failure===:missing_header || failure===:missing_acquisition
+                if failure===:missing_header || failure===:missing_properties
                     failure===:missing_header && (fixture.metadata[1]=fixture.metadata[2])
                     fixture.spa_buffer[]=PW.spa_buffer(UInt32(1),UInt32(1),pointer(fixture.metadata),Base.unsafe_convert(Ptr{PW.spa_data},fixture.data))
                 elseif failure===:missing_identity || failure===:missing_duration
-                    metadata=buffer_acquisition(fixture.buffer)
-                    initialize_acquisition!(metadata)
+                    metadata=buffer_properties(fixture.buffer)
+                    initialize_buffer_properties!(metadata)
                     failure===:missing_duration && set_acquisition_identity!(metadata,identity())
                 elseif failure===:identity
-                    set_acquisition_identity!(buffer_acquisition(fixture.buffer),identity(1,2))
-                elseif failure===:sequence
-                    set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(0),Int64(0),UInt64(2)))
+                    initialize_payload!(fixture,identity(1,2))
                 elseif failure===:duration
-                    set_acquisition_exposure_duration!(buffer_acquisition(fixture.buffer),UInt64(11))
+                    initialize_payload!(fixture;duration=11)
                 elseif failure in (:gap,:corrupted)
                     flags=failure===:gap ? SPA.META_HEADER_FLAG_GAP : SPA.META_HEADER_FLAG_CORRUPTED
                     set_buffer_header!(fixture.buffer,BufferHeader(flags,UInt32(0),Int64(0),Int64(0),UInt64(1)))
@@ -218,3 +218,31 @@ end
 end
 
 @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+
+@testset "capture copies independent optional facts under the buffer lease" begin
+    for (optical,trigger) in ((nothing,nothing),(OPTICAL_ABSENT,ACQUISITION_TRIGGER_ABSENT),
+            (OPTICAL_UNFRINGED,ACQUISITION_TRIGGER_LOW),(OPTICAL_FRINGED,ACQUISITION_TRIGGER_HIGH),
+            (OPTICAL_MIXED,ACQUISITION_TRIGGER_MIXED))
+        owned_test_capture() do capture
+            CC.arm!(capture,exposure())
+            storage=capture_payload(UInt16,6)
+            GC.@preserve storage begin
+                properties=initialize_buffer_properties!(storage.buffer)
+                optical===nothing || set_optical_classification!(properties,optical)
+                trigger===nothing || set_trigger_classification!(properties,trigger)
+                set_acquisition_identity!(properties,identity())
+                set_acquisition_exposure_duration!(properties,UInt64(10))
+                reference=AcquisitionPtpReference(PtpClockIdentity(ntuple(UInt8,8)),UInt8(255))
+                set_acquisition_exposure_start_ptp!(properties,Int64(123),typemax(UInt64),reference)
+                CC._read!(capture,capture.slots.raw,storage.buffer)
+                receipt=something(capture.slots.raw.receipt)
+                @test receipt.optical_classification === optical
+                @test receipt.trigger_classification === trigger
+                @test receipt.wire_start.nanoseconds == 123
+                @test receipt.wire_start.uncertainty_nanoseconds == typemax(UInt64)
+                @test receipt.timebase == ACQUISITION_TIMEBASE_TAI
+                @test receipt.ptp_reference == reference
+            end
+        end
+    end
+end

@@ -6,23 +6,132 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-10-31. This section is the current delivery summary. Later sections
+Updated 2026-11-02. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Independent shared-mirror optical control — 2026-11-01
+
+Shared JFG/FGPW graph composition serializes independent camera arrivals into
+separate branch controllers and one shared output graph. Each branch retains
+its correction and feedback; SCC pair priming does not block a CoG branch. The
+shared graph supplies VDM summation/completion, physical clipping and feedback
+projection. Native FIFO preserves each camera's ordering without synchronizing
+camera identities or imposing a rate ratio. Ordinary properties/parameters
+retain their graph names. Shared command publications use their own v3 domain,
+generation and sequence; branch telemetry retains its camera metadata.
+
+RTC preparation primes partial and simultaneous camera arrivals, then resets
+all state before admission. Global reset clears both contributions and feedback;
+it does not promise an immediate flat command without a subsequent camera event.
+Multi-controller protective recovery remains unsupported and is not advertised.
+
+Shared optical calibration adds masked CoG, calibrated centroid references
+subtracted before reconstruction, measured pupil tip/tilt and explicit
+`measurement_nulling`. Nulling subtracts a centroid branch's measured owned-mode
+response from unowned command columns, then remeasures all existing acceptance
+gates. It records the response, coefficients, units and ordering; it does not
+silently redefine pupil-orthogonal modes as sensor-orthogonal modes. SPIDERS
+instrument data selects the prototype basis and both loops start open.
+
+Compiled-model artifact discovery resolves the same profiles and settings
+without preparing unselected optical graphs. The cold regression checks retain
+the exact SPIDERS prescription identity and all eleven asset hashes; actual
+execution keeps its optical preparation, detector response and dark validation.
+
+RTC 0.2.53 requires FGA 0.8.15, JFG 0.4.5, FGPW 0.1.20 and FI 0.1.5 for
+these contracts. Source checks cover independent arrivals, clipping/feedback,
+invalid CoG holds, reset/failure, graph/FITS publication, calibration leakage
+and zero-allocation warmed callbacks. The matched SPIDERS optical calibration
+passes its unchanged 5% finite-mixture reconstruction gate. Its dual application
+and two-loop GUI schema build offline; a 24-exposure static noiseless optical
+check reduces pupil RMS to 0.319 of its initial value. No physical, noisy-loop
+or deadline qualification is implied. Simulators and GUI remain stopped.
+
+### Per-buffer optical and electrical properties — 2026-11-01
+
+Sensor streams always use Header and typed BufferProperties. Acquisition wire
+version selectors and the former optical Properties opt-in are rejected. Capture
+manifest schema 2 stores semantic identity, duration, qualified optional exposure
+clock and independent optical/electrical facts; Header publication counters stay
+independent. Schema 1 capture files are rejected without modifying frozen bytes.
+These changes implement ACQ-ABI-001, ACQ-PROP-001/002 and ACQ-PROP-003 at the RTC
+boundary. Source-only validation does not qualify physical timing or devices.
+
+Julia 1.13.3 source validation selects the exact native 2.0 SDK through direct
+JLL preferences and checks the resolved library path. Focused selectors pass:
+`test_calibration_capture_files.jl` (206 assertions), `test_calibration_capture.jl`
+(125), `test_cal2_capture.jl` (55), `external_pupil_stream_formats.jl` (147), and
+`physical_offsets_observer.jl` (30). Cold physical-input, graph-owner, optical-owner
+and instrument-export selectors pass 426 assertions; three additional rejected
+legacy-selector cases also pass. Run these under the source validation environment
+with the RTC checkout on `LOAD_PATH`; package release pins are a separate gate.
+
+The preceding registered 0.2.52 cohort included the 21 completed commits from 0.2.51 through
+`f6d3706`, merged with upstream `4604ce8`; unfinished dual-calibration/controller
+changes remained excluded. Its dependency floors were PipeWireAO 0.6.21 (native 1.7.3),
+HIL 0.2.12, FilterGraphPipeWire 0.1.19 and AOS 0.3.17. Julia 1.13.3 source checks
+passed 151 stream/POD assertions, 48 cold backend/transport assertions against the
+built SPIDERS configuration, and 681 focused cold owner/export/geometry/mode/graph
+assertions. These use the existing science dependency sources with the release
+RTC selected separately; the cold export parser uses installed native 1.7.2.
+Registered resolution and installed native 1.7.3/package validation remain release
+gates until the dependency releases are available. No core, GUI, GPU package or
+simulator was launched. These software checks do not qualify physical devices,
+rolling-loop performance or deadlines.
+
+### Native mirror and pupil registration — 2026-10-30
+
+Physical mirror declarations can select rotation, y reflection and a pupil-center
+offset independently of command ordering. Shared cold geometry computes the
+registered pupil coordinates and publishes the nonidentity transform for clients
+that display native mirror axes. Pitch-only/default instruments retain their
+existing coordinates and metadata. The generic separable measured-influence
+resampler and `grid_gaussian` binding reject nonidentity registration before
+reading FITS data or preparing grid indices. `coordinate_gaussian` profiles consume
+registered coordinates; already registered scientific arrays remain explicit
+graph inputs. Focused geometry, publication, binding and influence tests check
+these contracts without GPU imports or a live session. Instrument calibration
+adoption remains a separate gate.
+
+### Shared optical propagation metadata — 2026-10-30
+
+The external-pupil owner reports AOS's selected optical execution graph. When
+compatible scalar Proper paths share a prefix, cold native properties mark
+`execution-scope=prepared` and include an `independent.*` descriptor for retained
+fallback execution. These node counts describe prepared coverage, not per-frame
+selection. Optical propagation and reuse remain in AOS; no instrument YAML or
+camera timing changes are required. CPU replay, seeded detector reset and
+metadata checks passed; the full SPIDERS captured AMDGPU check matched the
+independent model exactly for flat and changed-DM frames. CUDA and performance
+qualification await the RTX 3080.
+
+### Optical owner cold compilation — 2026-10-30
+
+The external-pupil/clocked optical owner warms its unpublished numerical path
+and precompiles its control-loop entry during Preparing, without specializing
+on cold runtime/transport handles. Science types, Connect deadlines and lifecycle
+semantics remain unchanged. The
+[source evidence](validation/optical-owner-compilation-20261030/README.md)
+records the compilation/warmup failures and no-core reset checks; fresh managed startup and
+warmed-loop cost still require validation. Prepared JFG schemas now join shape
+and element type in cold session checks; literal native-command/OPD mismatches
+are rejected before sealing. CAL2 capture uses that shared schema reader too.
+
 ### Simulator settings and browser replacement acceptance — 2026-10-31
 
-RTC issues 36 and 12 block rendered-browser cold replacement acceptance. Work
-is isolated on `codex/simulator-settings-and-shutdown`: selected-operation
+The historical private RTC 0.2.51 validation resolved the scoped issues 36 and
+12 acceptance checks on `codex/simulator-settings-and-shutdown`. Selected-operation
 compilation and read-only child optimization reduce cold Describe cost while
 preserving backend preparation, sealed assets and native identity checks.
-Core and focused software checks pass. Timing-report compilation is moved before
-admission without invoking cleanup. Actual nonempty-capture CPU Quits complete
-within the unchanged native bound, and the rendered browser passes settings,
+Those measurements do not qualify the current RTC 0.3 metadata cohort.
+That private run passed core and focused software checks. Timing-report compilation
+is moved before admission without invoking cleanup. Its nonempty-capture CPU Quits
+completed within the unchanged native bound, and its rendered browser passed settings,
 rebuild, durable polling across RTC loss, explicit reconnect, fresh native proof
-and advancing samples. All test-owned sessions are stopped after acceptance.
+and advancing samples. The run stopped its test-owned sessions after acceptance.
 See the [validation record](validation/simulator-settings-20261031/README.md).
 
 ### Explicit optical arithmetic precision — 2026-10-29
@@ -155,7 +264,7 @@ LLOWFS/SCC coverage at PTS zero, with first live feed 0.395 s; managed native
 coverage and lifecycle validation remain pending.
 
 The candidate also wires explicitly alternating SCC exposures through actual
-Acquisition Version 3 trigger classifications and a strict-identity chopped
+independent optical/electrical Properties and a strict-identity chopped
 pixel-residual frontend. Model-window ordinals preserve missing exposures;
 optical kind comes from AOS, independently of sequence parity. Labelled CPU graph
 preparation remains unpublished and resets pair history. Matched static F/U

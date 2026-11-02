@@ -154,7 +154,8 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test_throws ArgumentError IC.validate_simulation(finite_source, physical, directory, graphs)
         end
         @test IC.load(documents.paths.physical).document == physical
-        @test IC.load_simulation(documents.paths.simulation).document == declaration
+        @test IC.load_simulation(documents.paths.simulation).document ==
+            merge(declaration,Dict("components"=>Dict{String,Any}()))
         loaded = IC.load_simulation(documents.paths.simulation)
         context = IC.configuration_context(loaded, IC.settings(loaded))
         @test context["simulation"]["frame_period_ns"] == UInt64(10_000_000)
@@ -364,6 +365,51 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 delete!(invalid["deformable_mirrors"]["primary"],field)
                 @test_throws ArgumentError IC.validate_declaration(invalid,directory)
             end
+        end
+    end
+
+    @testset "registered pupil coordinates and metadata share one physical definition" begin
+        mktempdir() do directory
+            documents = declaration_documents(directory)
+            original = IC.publication(documents.paths.rtc)
+            mirror = documents.physical["deformable_mirrors"]["primary"]
+            @test !hasproperty(original.deformable_mirrors.primary,:pupil_registration)
+            mirror["pupil_registration"] = Dict("actuator_pitch_pupil_radius"=>0.2,
+                "rotation_deg"=>360.0,"flip_y"=>false,"offset_actuators"=>[0.0,0.0])
+            write_documents(documents)
+            @test IC.publication(documents.paths.rtc) == original
+            @test IC.physical_definition(IC.load(documents.paths.physical)).deformable_mirrors.primary.pupil_registration ==
+                (;actuator_pitch_pupil_radius=0.2)
+            mirror["pupil_registration"] = Dict("actuator_pitch_pupil_radius"=>0.2,
+                "rotation_deg"=>31.2,"flip_y"=>true,"offset_actuators"=>[0.73,0.37])
+            write_documents(documents)
+            declared = IC.load(documents.paths.physical)
+            physical = IC.physical_definition(declared).deformable_mirrors.primary
+            publication = IC.publication(documents.paths.rtc)
+            published = publication.deformable_mirrors.primary
+            geometry = IC.mirror(declared,NamedTuple(),"primary")
+            expected = IC.actuator_coordinates(geometry.description;pupil_registration=geometry.registration)
+            @test physical.pupil_coordinates == published.pupil_coordinates == Tuple(Tuple(row) for row in eachcol(expected))
+            @test published.pupil_registration == physical.pupil_registration == geometry.registration
+            @test published.layout == original.deformable_mirrors.primary.layout
+            @test publication.scientific_identity != original.scientific_identity
+            target = IC.prepare_publication(directory)
+            document = JSON.parsefile(target)
+            metadata = document["deformable_mirrors"]["primary"]["pupil_registration"]
+            @test metadata == mirror["pupil_registration"]
+            @test PipeWireAORTC.InstrumentDefinition.validate(document) === document
+            for invalid in (Dict("actuator_pitch_pupil_radius"=>0.2,"unknown"=>true),
+                    Dict("actuator_pitch_pupil_radius"=>0.2),
+                    Dict("actuator_pitch_pupil_radius"=>true),
+                    merge(metadata,Dict("flip_y"=>1)),
+                    merge(metadata,Dict("offset_actuators"=>[0.0,Inf])),
+                    merge(metadata,Dict("offset_actuators"=>[1e308,0.0])))
+                changed = deepcopy(document)
+                changed["deformable_mirrors"]["primary"]["pupil_registration"] = invalid
+                @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate(changed)
+            end
+            delete!(document["deformable_mirrors"]["primary"],"pupil_coordinates")
+            @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate(document)
         end
     end
 

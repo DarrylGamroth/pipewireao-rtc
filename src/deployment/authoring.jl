@@ -13,6 +13,22 @@ function source_application(source, profile=Dict())
     return InstrumentConfiguration.bounded_yaml(path)
 end
 
+# Defaults belong to authoring; native deployment contracts remain fully explicit.
+function application_defaults!(application)
+    get!(application, "cpu-latency-us", nothing)
+    D.validate_environment(get!(application, "environment", Dict{String,Any}()), "application")
+    for owner in get(application, "owners", [])
+        owner isa AbstractDict || throw(ArgumentError("owner must be an object"))
+        D.validate_environment(get!(owner, "environment", Dict{String,Any}()), "owner")
+    end
+    if haskey(application, "session-runtime")
+        session = application["session-runtime"]
+        session isa AbstractDict || throw(ArgumentError("session-runtime must be an object"))
+        D.validate_environment(get!(session, "environment", Dict{String,Any}()), "session-runtime")
+    end
+    return application
+end
+
 function prepare_runtime_configurations!(application, selected=nothing)
     path = joinpath(application,"rtc/application.yaml")
     selected===nothing && !isfile(path) && return nothing

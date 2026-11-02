@@ -83,14 +83,15 @@ end
             "outputs"=>[Dict("name"=>"modal-residual","endpoint"=>"reference:output")]))
         path=joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,graph)
-        contracts=CAL2.graph_output_contracts(path)
+        Base.require(Main,:FilterGraphIsland)
+        contracts=Base.invokelatest(CAL2.E.graph_port_contracts,path)
         contract=contracts["outputs"]["modal-residual"]
         @test contract["schema"]==schema && contract["shape"]==[8]
         prepared=CAL2.product("modal","controller:modal-residual",contract,20,Dict("controller"=>"owner"))
         @test prepared.schema==schema
-        shape_only=Base.invokelatest(CAL2.E.graph_port_contracts,path)["outputs"]["modal-residual"]
-        @test !haskey(shape_only,"schema")
-        @test_throws ArgumentError CAL2.product("required","controller:modal-residual",shape_only,20,Dict("controller"=>"owner"))
+        shared=Base.invokelatest(CAL2.E.graph_port_contracts,path)["outputs"]["modal-residual"]
+        @test shared==contract
+        @test CAL2.product("required","controller:modal-residual",shared,20,Dict("controller"=>"owner")).schema==schema
     end
 end
 
@@ -101,7 +102,7 @@ end
     domain=AcquisitionDomain(ntuple(i->UInt8(i),16))
     before=Float32[1e-6,1e-8]
     for sequence in 1:2
-        receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(sequence)),pts=10*(sequence-1),duration=10,lost_samples=0)
+        receipt=(;identity=AcquisitionIdentity(domain,UInt64(1),UInt64(sequence)),pts=10*(sequence-1),duration=10,lost_samples=0,trigger_state=ACQUISITION_TRIGGER_ABSENT)
         for (sample,payload) in zip(samples,(Float32[1,2],zeros(Float32,2),before,before))
             CAL2.record!(sample,payload,receipt,10)
         end

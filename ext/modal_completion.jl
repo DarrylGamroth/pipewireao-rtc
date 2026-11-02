@@ -19,7 +19,7 @@ function modal_completion_extent(rows, columns, width)
 end
 
 "Prepare an annular direct set and finite thin-plate completion, with no correction beyond its guard."
-function modal_completion(mirror, registration, policy; obstruction)
+function modal_completion(mirror, registration, policy; obstruction, healthy=nothing, coordinates=nothing, outer_radius=1)
     IC.fields(policy,("kind","guard_width_pitches"),("kind",),"modal completion policy")
     policy["kind"] == "thin_plate_annulus" || throw(ArgumentError("unsupported modal completion policy"))
     guard = get(policy,"guard_width_pitches",2)
@@ -34,21 +34,26 @@ function modal_completion(mirror, registration, policy; obstruction)
     positions = map(position -> modal_completion_position(position,(axis_count,axis_count)),mirror.layout.command_positions)
     length(unique(positions)) == length(positions) || throw(ArgumentError("actuator source-grid positions must be unique"))
     count = length(positions)
+    healthy === nothing && (healthy = trues(count))
+    healthy isa AbstractVector{Bool} && length(healthy) == count ||
+        throw(ArgumentError("actuator health must explicitly match physical command order"))
     0 < count <= typemax(UInt16) || throw(ArgumentError("mirror command count exceeds the source-grid map bounds"))
     registered = IC._pupil_registration(registration)
-    outer_radius = 1 + Float64(guard) * registered.actuator_pitch_pupil_radius
-    isfinite(outer_radius) || throw(ArgumentError("outer guard radius must be finite"))
-    coordinates = IC.actuator_coordinates(mirror,Float64;pupil_registration=registered)
-    all(isfinite,coordinates) || throw(ArgumentError("actuator coordinates must be finite"))
+    IC.isfinite_real(outer_radius) && isfinite(Float64(outer_radius)) && outer_radius > 0 ||
+        throw(ArgumentError("registered illuminated radius must be finite and positive"))
+    guard_radius = Float64(outer_radius) + Float64(guard) * registered.actuator_pitch_pupil_radius
+    isfinite(guard_radius) || throw(ArgumentError("outer guard radius must be finite"))
+    coordinates = coordinates === nothing ? IC.actuator_coordinates(mirror,Float64;pupil_registration=registered) : Matrix{Float64}(coordinates)
+    size(coordinates) == (2,count) && all(isfinite,coordinates) || throw(ArgumentError("registered actuator coordinates must be finite [x,y] by physical command"))
     radii = map(index -> hypot(coordinates[1,index],coordinates[2,index]),1:count)
-    controlled = findall(radius -> obstruction <= radius <= 1,radii)
+    controlled = findall(index -> healthy[index] && obstruction*outer_radius <= radii[index] <= outer_radius,1:count)
     length(controlled) >= 3 || throw(ArgumentError("annulus requires at least three directly controlled coordinates"))
     support = permutedims(coordinates[:,controlled])
     centered = support .- sum(support;dims=1) ./ length(controlled)
     scale = maximum(abs,centered)
     scale > 0 && LA.rank(hcat(ones(length(controlled)),centered ./ scale)) == 3 ||
         throw(ArgumentError("directly controlled coordinates must span a two-dimensional affine basis"))
-    supported = findall(<=(outer_radius),radii)
+    supported = findall(index -> healthy[index] && radii[index] <= guard_radius,1:count)
     modal_completion_extent(count,length(controlled),sizeof(Float64))
     modal_completion_extent(length(controlled)+3,length(controlled)+3,sizeof(Float64))
     roles = zeros(UInt8,count)
@@ -78,3 +83,5 @@ function modal_completion(mirror, registration, policy; obstruction)
     all(isfinite,feedback) || throw(ArgumentError("modal reverse projection must preserve finite Float32 coefficients"))
     return (; completion,controlled,selector,feedback,roles)
 end
+
+Calibration.modal_completion(mirror,registration,policy;kwargs...) = modal_completion(mirror,registration,policy;kwargs...)

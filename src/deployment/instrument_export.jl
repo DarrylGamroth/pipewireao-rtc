@@ -30,6 +30,7 @@ include("owner_scheduling.jl")
 include("native_configuration.jl")
 include("instrument_profiles.jl")
 include("instrument_modes.jl")
+include("queue_configuration.jl")
 include("graph_configuration.jl")
 include("session_configuration.jl")
 include("application_composition.jl")
@@ -192,7 +193,7 @@ end
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
     overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz"]) ||
-        throw(ArgumentError("profile simulation permits only backend, device and pacing_rate_hz"))
+        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz"))
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     if get(simulation,"version",nothing) == 4
@@ -317,12 +318,13 @@ function prepare(source::AbstractString, destination::AbstractString;
     authoring = source_application(source,profile)
     mode = selected_mode(source, profile)
     authoring = merge_configuration(authoring, mode["application"])
-    runtime_authoring = deepcopy(authoring)
+    runtime_authoring = application_defaults!(deepcopy(authoring))
     pop!(authoring, "runtime-configurations", nothing)
     graph_configurations = pop!(authoring, "graph-configurations", [])
     configurations = pop!(authoring, "configuration-files", [])
     configuration = pop!(authoring, "configuration", nothing)
     append!(authoring["owners"], get(profile, "devices", []))
+    application_defaults!(authoring)
     authoring = substitute(authoring, bindings)
     !haskey(authoring, "artifacts") && !haskey(authoring, "placement") ||
         throw(ArgumentError("instrument application must not contain generated seals or machine placement"))
@@ -347,7 +349,7 @@ function prepare(source::AbstractString, destination::AbstractString;
         spec["instrument"] = relpath(instrument, application)
         if isfile(joinpath(application,"simulation.conf"))
             simulation = D.decode(joinpath(application,"simulation.conf"),prefix)
-            if get(simulation,"version",nothing) == 4
+            if get(simulation,"version",nothing) in (4,6)
                 # Optical prescription identity needs the selected compiler,
                 # while export always prepares contracts on the CPU.
                 Base.require(Main,:AdaptiveOpticsSim)
@@ -358,7 +360,7 @@ function prepare(source::AbstractString, destination::AbstractString;
                 any(name->InstrumentConfiguration.graph_requires_proper(declaration,configured;simulation_graph=name),
                     keys(declaration.instrument.document["optical_paths"])) && Base.require(Main,:Proper)
             end
-            get(simulation,"version",nothing) in (3,4,5) && Base.invokelatest(
+            get(simulation,"version",nothing) in (3,4,5,6) && Base.invokelatest(
                 InstrumentConfiguration.prepare_simulation_configuration!,application;configuration)
             simulation_override!(application, profile)
             selected = D.decode(joinpath(application,"simulation.conf"),prefix)
@@ -371,7 +373,8 @@ function prepare(source::AbstractString, destination::AbstractString;
             something(configuration, "rtc/configuration.yaml")))
         prepare_graph_configurations!(application, graph_configurations,
             relpath(instrument, application), prefix; dimensions=rtc.document["dimensions"],
-            mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration)
+            mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration,
+            configuration=something(configuration, "rtc/configuration.yaml"))
         prepare_session_configuration!(application, spec, graph_configurations,
             relpath(instrument, application), prefix;
             dimensions=rtc.document["dimensions"], mirror_controls=rtc.controls["deformable_mirrors"], calibration=rtc.calibration, configurations)

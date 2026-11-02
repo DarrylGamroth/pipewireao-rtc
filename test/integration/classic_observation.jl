@@ -119,7 +119,7 @@ function _classic_buffer_parameters(capture::ClassicObservationCapture{T}) where
     return (Pod(buffers_param(buffers=count, blocks=1, size=payload_size(capture.format),
             stride=Int(last(capture.format.shape))*sizeof(T),
             data_types=SPA.Choice(SPA.CHOICE_FLAGS, Int32[memory_types]))),
-        Pod(header_metadata_param()), Pod(acquisition_metadata_param(;version=2)))
+        Pod(header_metadata_param()), Pod(buffer_properties_metadata_param(512)))
 end
 
 function (capture::ClassicObservationCapture{T})(stream) where {T}
@@ -130,10 +130,8 @@ function (capture::ClassicObservationCapture{T})(stream) where {T}
         header=something(buffer_header(capture.buffer))
         header.flags & (SPA.META_HEADER_FLAG_CORRUPTED | SPA.META_HEADER_FLAG_GAP)==0 ||
             error("Classic observation received an invalid Header")
-        metadata=buffer_acquisition(capture.buffer)
+        metadata=buffer_properties(capture.buffer)
         identity=metadata===nothing ? nothing : acquisition_identity(metadata)
-        identity===nothing || identity.sequence==header.sequence ||
-            error("Classic observation Header and acquisition sequence differ")
         # A newly attached display queue may retain the previous generation.
         # Discard it before it can establish this explicitly selected epoch.
         _classic_in_generation(identity,capture.expected_generation) || return nothing

@@ -166,6 +166,8 @@ function control.encode (kind, header, payload)
 end
 
 function control.identity (object)
+  -- Retaining a proxy does not retain its PipeWire incarnation or properties.
+  assert ((object:get_active_features () & Feature.Proxy.BOUND) ~= 0, "Object is not bound")
   local properties = object ["properties"]
   local serial = properties ["object.serial"] or object ["global-properties"] ["object.serial"]
   assert (type (serial) == "string" and serial:match ("^%d+$"), "Missing object serial")
@@ -180,7 +182,7 @@ function control.identity (object)
 end
 
 function control.same_identity (object, identity)
-  if not object then return false end
+  if not object or (object:get_active_features () & Feature.Proxy.BOUND) == 0 then return false end
   local current = control.identity (object)
   return current.global_id == identity.global_id and current.serial == identity.serial
 end

@@ -22,7 +22,7 @@ function (capture::CommandCapture)(stream)
     dequeue_buffer!(capture.buffer,stream) || return nothing
     try
         header=buffer_header(capture.buffer)
-        metadata=buffer_acquisition(capture.buffer)
+        metadata=buffer_properties(capture.buffer)
         data=buffer_data(capture.buffer)
         chunk=chunk_info(data)
         header!==nothing && metadata!==nothing && chunk.size==sizeof(capture.values) || return nothing
@@ -84,7 +84,7 @@ end
                                 end)
                             connect!(observer,:input;flags=STREAM_DRIVER|STREAM_MAP_BUFFERS|STREAM_NO_CONVERT|STREAM_DONT_RECONNECT,
                                 params=(ndarray_format(output.format;schema=output.schema),Pod(buffers_param(size=8,buffers=3)),
-                                    Pod(header_metadata_param()),Pod(acquisition_metadata_param())))
+                                    Pod(header_metadata_param()),Pod(buffer_properties_metadata_param(512))))
                         end
                         registry=with_thread_loop_lock(inputs.transport.loop) do _;Registry(inputs.transport.core);end
                             links=Any[]

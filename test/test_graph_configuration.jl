@@ -15,6 +15,7 @@ function instrument()
             Dict("detector_shape" => [3, 7], "subaperture_shape" => [1, 2],
                 "subaperture_origins" => [[0, 0], [1, 2]]))))
 end
+
 dimensions(n=5) = Dict("controller_command_count" => n)
 
 function graph()
@@ -46,6 +47,12 @@ end
     @test !haskey(context, "parameters")
     @test_throws ArgumentError E.graph_pointer(context, "/parameters/projection/shape/0")
 
+end
+
+@testset "selected-pixel validity uses the selected extent" begin
+    context = E.graph_context(instrument(); dimensions=Dict("selected_pixel_count"=>3))
+    @test E.graph_pointer(context,"/rtc/selected_pixel_mask") == trues(3)
+    @test_throws ArgumentError E.graph_context(instrument(); dimensions=Dict("selected_pixel_count"=>0))
 end
 
 @testset "pyramid graph and session references share the declared calibration context" begin
@@ -126,6 +133,98 @@ end
             [Dict("path" => "graph.conf", "unknown" => true)], "instrument.json", PREFIX; dimensions=dimensions(11))
         @test_throws ArgumentError E.prepare_graph_configurations!(directory,
             Dict(), "instrument.json", PREFIX; dimensions=dimensions(11))
+    end
+end
+
+@testset "calibrated graph exports preserve exact scientific fields and output order" begin
+    frozen = E.resolve_graph_configuration(graph(),E.graph_context(instrument();dimensions=dimensions()))
+    frozen["filter.graph"] = Dict{String,Any}(frozen["filter.graph"])
+    frozen["filter.graph"]["outputs"] = Any[Dict("name"=>"command","endpoint"=>"arbitrary-node:output"),
+        Dict("name"=>"status","endpoint"=>"arbitrary-node:status")]
+    @test isempty(E.calibrated_graph_exports(deepcopy(frozen),frozen))
+    for change in (
+        row -> row["filter.graph"]["nodes"][1]["props"]["gain"] = -0.31,
+        row -> row["filter.graph"]["nodes"][1]["config"]["actuator_count"] = 3.0,
+        row -> row["filter.graph"]["nodes"][1]["config"]["actuator_count"] = true,
+        row -> pop!(row["filter.graph"]["nodes"]),
+        row -> push!(row["filter.graph"]["links"],Dict("output"=>"arbitrary-node:output","input"=>"other:input")),
+        row -> push!(row["filter.graph"]["inputs"],"arbitrary-node:other"),
+        row -> pop!(row["filter.graph"]["outputs"]),
+        row -> reverse!(row["filter.graph"]["outputs"]),
+        row -> row["filter.graph"]["outputs"][1]["name"] = "renamed",
+        row -> row["filter.graph"]["outputs"][1]["endpoint"] = "arbitrary-node:other",
+        row -> row["node.name"] = "another-graph",
+        row -> row["unknown"] = nothing,
+    )
+        changed = deepcopy(frozen); change(changed)
+        @test_throws ArgumentError E.calibrated_graph_exports(changed,frozen)
+    end
+    for output in (Dict("name"=>"command","endpoint"=>"arbitrary-node:extra"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node:output"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node"),
+        Dict("name"=>"extra","endpoint"=>"arbitrary-node:extra","unknown"=>true))
+        changed = deepcopy(frozen); push!(changed["filter.graph"]["outputs"],output)
+        @test_throws ArgumentError E.calibrated_graph_exports(changed,frozen)
+    end
+    @test !E.exact_graph_value(Dict("value"=>true),Dict("value"=>1))
+    @test !E.exact_graph_value(Dict("value"=>1),Dict("value"=>1.0))
+    absent = deepcopy(frozen); delete!(absent["filter.graph"],"outputs")
+    @test isempty(E.calibrated_graph_exports(absent,absent))
+    empty = deepcopy(absent); empty["filter.graph"]["outputs"] = Any[]
+    @test_throws ArgumentError E.calibrated_graph_exports(empty,absent)
+    null = deepcopy(absent); null["filter.graph"]["outputs"] = nothing
+    @test_throws ArgumentError E.calibrated_graph_exports(null,null)
+    @test frozen["filter.graph"]["outputs"][1]["name"] == "command"
+end
+
+@testset "calibrated composition permits only its exact graph components" begin
+    mktempdir() do application
+        for name in ("composition", "scc", "llowfs", "shared", "extra")
+            write(joinpath(application,name*".conf"),"{}")
+        end
+        body=Dict("branches"=>[Dict("name"=>name,"graph"=>name*".conf") for name in ("scc","llowfs")],
+            "shared"=>"shared.conf")
+        document=Dict("node.name"=>"controller","filter.composition"=>body)
+        path=joinpath(application,"composition.conf")
+        entries=[(;path,graph=document)]
+        selected=(;graphs=Dict(joinpath(application,name*".conf")=>(;name) for name in ("scc","llowfs")))
+        @test E.resolve_graph_configuration(document,Dict()) == document
+        @test E.calibrated_composition_paths(application,entries,selected) ==
+            Set(joinpath(application,name*".conf") for name in ("composition","scc","llowfs","shared"))
+        both=deepcopy(document); both["filter.graph"]=Dict()
+        @test_throws ArgumentError E.resolve_graph_configuration(both,Dict())
+        for mutate in (
+            b->b["shared"]="scc.conf",
+            b->b["shared"]="composition.conf",
+            b->b["shared"]=joinpath(application,"shared.conf"),
+            b->b["branches"][1]["name"]="another-sensor",
+            b->b["branches"][2]["graph"]="scc.conf",
+            b->push!(b["branches"],Dict("name"=>"extra","graph"=>"extra.conf")),
+            b->b["unknown"]=true,
+        )
+            changed=deepcopy(document); mutate(changed["filter.composition"])
+            @test_throws ArgumentError E.calibrated_composition_paths(application,[(;path,graph=changed)],selected)
+        end
+        @test_throws ArgumentError E.calibrated_composition_paths(application,[],selected)
+        @test document["filter.composition"] == body
+    end
+end
+
+@testset "only calibrated CoG references replace the zero authoring default" begin
+    graph=Dict("filter.graph"=>Dict("nodes"=>[Dict{String,Any}("name"=>"centroid","label"=>"center-of-gravity-f32")],
+        "inputs"=>[Dict("name"=>"llowfs-coordinates","endpoint"=>"centroid:coordinates")]))
+    context=Dict("llowfs"=>Dict("reference_centroid"=>[15.25,21.5]))
+    bound=E.calibrated_centroid_references(graph,context)
+    @test bound["filter.graph"]["nodes"][1]["props"] ==
+        Dict("reference-centroid-x"=>15.25,"reference-centroid-y"=>21.5)
+    @test !haskey(graph["filter.graph"]["nodes"][1],"props")
+    @test E.calibrated_centroid_references(bound,context) == bound
+    changed=deepcopy(graph); changed["filter.graph"]["nodes"][1]["props"]=Dict("reference-centroid-x"=>0.5)
+    @test_throws ArgumentError E.calibrated_centroid_references(changed,context)
+    changed=deepcopy(graph); changed["filter.graph"]["nodes"][1]["label"]="another-estimator"
+    @test_throws ArgumentError E.calibrated_centroid_references(changed,context)
+    for reference in ([NaN,0.0],[1.0], [true,false])
+        @test_throws ArgumentError E.calibrated_centroid_references(graph,Dict("llowfs"=>Dict("reference_centroid"=>reference)))
     end
 end
 

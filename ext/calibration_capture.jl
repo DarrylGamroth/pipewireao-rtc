@@ -18,8 +18,8 @@ struct Receipt
     model_start_ns::Int64
     duration_ns::UInt64
     header::BufferHeader
-    acquisition_version::UInt32
-    acquisition_flags::UInt32
+    optical_classification::Union{Nothing,OpticalClassification}
+    trigger_classification::Union{Nothing,AcquisitionTriggerState}
     wire_start::Union{Nothing,AcquisitionExposureStart}
     timebase::Union{Nothing,AcquisitionTimebase}
     ptp_reference::Union{Nothing,AcquisitionPtpReference}
@@ -149,8 +149,8 @@ function _format(parameter)
 end
 
 function _buffer_parameters(slot)
-    return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(slot.format))),
-        Pod(header_metadata_param()), Pod(acquisition_metadata_param()))
+    return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(slot.format), metadata_types=(1 << PipeWireAO.LibPipeWire.SPA_META_Header) | (1 << PipeWireAO.LibPipeWire.SPA_META_Properties))),
+        Pod(header_metadata_param()), Pod(buffer_properties_metadata_param(512)))
 end
 
 function _param!(capture, slot, stream, id, parameter)
@@ -172,14 +172,13 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
     slot.phase == ARMED || return _fail!(capture, :duplicate)
     header = buffer_header(buffer)
     header === nothing && return _fail!(capture, :missing_header)
-    header.sequence == something(capture.expected).sequence || return _fail!(capture, :sequence)
     # DISCONT can legitimately mark a generation boundary. Exact acquisition
     # identity still establishes freshness; CORRUPTED/GAP never complete a slot.
     invalid = SPA.META_HEADER_FLAG_CORRUPTED | SPA.META_HEADER_FLAG_GAP
     header.flags & invalid == 0 || return _fail!(capture, :header_flags)
-    metadata = buffer_acquisition(buffer)
-    metadata === nothing && return _fail!(capture, :missing_acquisition)
-    acquisition_valid(metadata) || return _fail!(capture, :acquisition)
+    metadata = buffer_properties(buffer)
+    metadata === nothing && return _fail!(capture, :missing_properties)
+    buffer_properties_valid(metadata) || return _fail!(capture, :properties)
     identity = acquisition_identity(metadata)
     identity === capture.expected || identity == capture.expected || return _fail!(capture, :identity)
     duration = acquisition_exposure_duration(metadata)
@@ -204,7 +203,7 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
         slot.array[slot.permutation[index]] = slot.wire[index]
     end
     slot.receipt = Receipt(something(identity), capture.model_start_ns, capture.duration_ns,
-        header, UInt32(acquisition_version(metadata)), acquisition_flags(metadata), start, timebase, reference)
+        header, optical_classification(metadata), trigger_classification(metadata), start, timebase, reference)
     slot.phase = COMPLETE
     all(other -> other.phase == COMPLETE, values(capture.slots)) && (capture.phase = COMPLETE)
     _signal(capture)

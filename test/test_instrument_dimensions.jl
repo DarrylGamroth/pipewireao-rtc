@@ -26,11 +26,15 @@ const C = PipeWireAORTC.Common
         @test I.controller_dimensions(authoring,instrument)["hidden_mode_count"] == 2
         empty!(authoring["controller"]["hidden_modes"])
         @test I.controller_dimensions(authoring,instrument)["hidden_mode_count"] == 0
+        explicit = I.controller_dimensions(authoring,instrument)
+        delete!(authoring["controller"], "hidden_modes")
+        @test I.controller_dimensions(authoring,instrument) == explicit
+        @test !haskey(authoring["controller"], "hidden_modes")
         for count in (0,-1,true,2.5)
             invalid = deepcopy(original); invalid["controller"]["command_count"] = count
             @test_throws ArgumentError I.controller_dimensions(invalid,instrument)
         end
-        for modes in (["a","a"],[""],[true],"a")
+        for modes in (["a","a"],[""],[true],"a",nothing)
             invalid = deepcopy(original); invalid["controller"]["hidden_modes"] = modes
             @test_throws ArgumentError I.controller_dimensions(invalid,instrument)
         end

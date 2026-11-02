@@ -27,6 +27,67 @@ end
 
 Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
 
+@testset "chopped calibration resolves branch-specific selections" begin
+    reference(path) = Dict("\$ref"=>path)
+    mask = Bool[1 0 1;1 1 1]
+    legacy = chopped_calibration_document()
+    for node in legacy["filter.graph"]["nodes"]
+        config = node["config"]
+        haskey(config,"mask") && (config["mask"] = node["label"] == "pixel-selection-f32" ?
+            reference("/calibration/pixel_selection_mask") : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key] = count(mask))
+        end
+    end
+    plan = (;rtc=(document=Dict("dimensions"=>Dict("image_rows"=>2,"image_columns"=>3,
+            "selected_pixel_count"=>count(mask))),controls=Dict("deformable_mirrors"=>Dict())),
+        frames=Dict("scc"=>Dict("frame_schema"=>"test.relative-image/1")),
+        templates=(scc=legacy,),instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()),
+        chopping=(scc=(trigger_high_is_fringed=true,),))
+    expected = ChoppedCalibration.optical_chopped_template(plan,:scc;mask)
+    selected = deepcopy(legacy)
+    for node in selected["filter.graph"]["nodes"]
+        config = node["config"]
+        node["label"] == "pixel-selection-f32" &&
+            (config["mask"] = reference("/calibration/scc/pixel_selection_mask"))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key] = reference("/calibration/scc/selected_pixel_count"))
+        end
+    end
+    selected_plan = merge(plan,(templates=(scc=selected,),))
+    actual = ChoppedCalibration.optical_chopped_template(selected_plan,:scc;mask)
+    @test actual == expected
+    @test ChoppedCalibration.optical_frontend_identity(actual) == ChoppedCalibration.optical_frontend_identity(expected)
+    @test length(actual["filter.graph"]["nodes"]) == 4
+    @test plan.frames == Dict("scc"=>Dict("frame_schema"=>"test.relative-image/1"))
+    @test_throws ArgumentError ChoppedCalibration.optical_chopped_template(
+        merge(selected_plan,(chopping=(scc=(trigger_high_is_fringed=false,),),)),:scc;mask)
+end
+
+@testset "chopped calibration retains the authored row-major ROI" begin
+    document = chopped_calibration_document()
+    mask = Bool[1 0 1;0 1 0]
+    for node in document["filter.graph"]["nodes"]
+        config = node["config"]
+        haskey(config,"mask") && (config["mask"] = node["label"] == "pixel-selection-f32" ? vec(permutedims(mask)) : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key]=count(mask))
+        end
+    end
+    prefix = ChoppedCalibration.optical_chopped_document(document,:scc)
+    reference = Float32[1 2 3;4 5 6]
+    frontend = ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true;mask)
+    try
+        unfringed = ones(Float32,2,3)
+        fringed = unfringed + reference + Float32[2 9 3;8 4 7]
+        expected = Float32[2 0 3;0 4 0]
+        @test ChoppedCalibration.optical_chopped_measurement!(frontend,fringed,unfringed) == expected
+        @test length(frontend.outputs.measurements) == count(mask)
+    finally
+        FilterGraphIsland.close_execution(frontend.graph)
+    end
+end
+
 @testset "chopped calibration executes the authored signed pixel prefix" begin
     document = chopped_calibration_document()
     prefix = ChoppedCalibration.optical_chopped_document(document,:scc)
@@ -51,11 +112,11 @@ Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
             ChoppedCalibration.optical_frontend_identity(prefix)
 
         warmup=(;input=:image,exposure_duration_ns=10_000_000,trigger_high_is_fringed=true)
-        options=(;acquisition_version=3,execution="complete-frame",feedback=nothing,capture_backend=nothing)
+        options=(;execution="complete-frame",feedback=nothing,capture_backend=nothing)
         samples=ChoppedGraphOwner.chopped_warmup_samples(frontend.graph,options,warmup)
         @test length(samples)==3 && samples[1].expected===SccPixelResidualIncompletePair
-        @test samples[1].metadata.image.acquisition_version==3
-        node=FilterGraphPipeWire.PipeWireNode(frontend.graph;connect=false,acquisition_version=3)
+        @test samples[1].metadata.image.has_acquisition_identity
+        node=FilterGraphPipeWire.PipeWireNode(frontend.graph;connect=false)
         try
             @test FilterGraphPipeWire.prepare!(node;samples,required_outputs=(:measurements,))===node
             @test !node.owner.active && node.owner.process_count==0
@@ -65,12 +126,12 @@ Base.include(@__MODULE__,joinpath(@__DIR__,"chopped_calibration_documents.jl"))
             @test JuliaFilterGraph.output_metadata(frontend.graph).measurements.sequence==3
             pair=only(filter(item->item.name===:pair,frontend.graph.nodes)).prepared.workspace
             @test !chopped_image_is_primed(pair)
-            live=SampleMetadata(1;terminal=true,trigger_high=true,acquisition_version=3,
+            live=SampleMetadata(1;terminal=true,trigger_high=true,chopped_image_kind=ChoppedImageFringed,
                 exposure_duration_nanoseconds=10_000_000,
                 acquisition_identity=SampleAcquisitionIdentity(ntuple(_->UInt8(0xd2),16),1,1))
             @test JuliaFilterGraph.process!(frontend.outputs,frontend.graph,(image=fringed,),(image=live,))===SccPixelResidualIncompletePair
             @test_throws ArgumentError ChoppedGraphOwner.chopped_warmup_samples(frontend.graph,
-                merge(options,(;acquisition_version=2)),warmup)
+                merge(options,(;execution="row-block")),warmup)
         finally
             close(node)
         end
@@ -82,13 +143,21 @@ end
 @testset "matched chopped calibration publishes its real flat difference" begin
     document=chopped_calibration_document()
     specification=document["filter.graph"]
+    mask = Bool[1 1 1; 1 1 0]
+    for item in specification["nodes"]
+        config = item["config"]
+        haskey(config,"mask") && (config["mask"] = item["label"] == "pixel-selection-f32" ? vec(permutedims(mask)) : trues(count(mask)))
+        for key in ("extent","pixel_count")
+            haskey(config,key) && (config[key]=count(mask))
+        end
+    end
     node(name,label,config)=Dict("name"=>name,"type"=>"ndarray","label"=>label,"config"=>config)
     modes="test/chopped-modes/1"
     dense(input_schema,output_schema,input_count)=Dict("input_count"=>input_count,"output_count"=>4,
         "initial_reconstructor"=>nothing,"input_schema"=>input_schema,"output_schema"=>output_schema,
         "reconstructor_schema"=>"test/chopped-matrix/1")
     append!(specification["nodes"],[
-        node("reconstruction","dense-vector-reconstructor-f32",dense(SCC_SELECTED_PIXEL_RESIDUALS_V1,modes,6)),
+        node("reconstruction","dense-vector-reconstructor-f32",dense(SCC_SELECTED_PIXEL_RESIDUALS_V1,modes,count(mask))),
         node("reference","vector-offset-f32",Dict("extent"=>4,"schema"=>modes)),
         node("projection","dense-vector-reconstructor-f32",dense(modes,"test/physical/1",4))])
     append!(specification["links"],[Dict("output"=>output,"input"=>input) for (output,input) in (
@@ -102,14 +171,14 @@ end
     flat_f=Float32[12 13 14;15 16 17]
     flat_u=fill(10f0,2,3)
     reference=flat_f-flat_u
-    frontend=ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true)
+    frontend=ChoppedCalibration.prepare_optical_chopped_frontend(prefix,:scc,reference,10_000_000,true;mask)
     try
         surface=command->reshape(Float32[command[1],command[2],command[3],command[4],
             -command[1]-command[2],-command[3]-command[4]],2,3)
         observe=opd->(;scc=ChoppedCalibration.optical_chopped_measurement!(frontend,flat_f+opd,flat_u))
         provenance=Dict("measurement_frontend_identity"=>Dict("scc"=>ChoppedCalibration.optical_frontend_identity(prefix)))
         calibration=PipeWireAORTC.InstrumentCalibration.calibrate_optical(surface,observe,Matrix{Float32}(I,4,4);
-            pupil_support=trues(2,3),branch_modes=(scc=1:4,),pixel_masks=(scc=trues(2,3),),
+            pupil_support=trues(2,3),branch_modes=(scc=1:4,),pixel_masks=(scc=mask,),
             poke_m=0.02f0,tsvd_rtol=1f-5,derivative_tolerance=0.001,reconstruction_tolerance=0.001,
             signed_measurements=(:scc,),provenance)
         @test calibration.report["status"]=="accepted"

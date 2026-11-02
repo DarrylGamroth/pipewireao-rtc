@@ -1,7 +1,20 @@
+# Compare localized mirror description paths by their exact bytes while keeping
+# every other physical instrument field in the identity.
+function calibration_physical_instrument(directory)
+    document = Common.read_yaml(joinpath(directory,"instrument.yaml"))
+    for mirror in values(document["deformable_mirrors"])
+        path = InstrumentConfiguration.mirror_description_path(directory,mirror["description"])
+        mirror["description"] = Common.sha256_file(path)
+    end
+    return document
+end
+
 function validate_chopped_calibration(report, simulation)
     chopping = get(get(simulation,"plant",Dict()),"chopping",Dict())
     measurements = get(report["recipe"],"measurements",Dict())
-    Set(keys(measurements)) == Set(keys(chopping)) ||
+    signed = Set(name for (name,measurement) in measurements
+        if get(measurement,"kind",nothing) == "chopped-pixel-residual")
+    signed == Set(keys(chopping)) ||
         throw(ArgumentError("calibrated measurement kinds differ from selected optical chopping"))
     provenance = get(report,"provenance",Dict())
     get(provenance,"chopping",Dict()) == chopping ||
@@ -21,6 +34,19 @@ function validate_chopped_calibration(report, simulation)
         end
     end
     return nothing
+end
+
+"Retain compact FITS declarations relative to the copied bundle directory."
+function rebase_calibration_context(document, prefix)
+    if document isa AbstractDict
+        if get(document,"kind",nothing) == "fits"
+            return merge(document,Dict("path"=>joinpath(prefix,document["path"])))
+        end
+        return Dict(key=>rebase_calibration_context(value,prefix) for (key,value) in document)
+    elseif document isa AbstractVector
+        return map(value->rebase_calibration_context(value,prefix),document)
+    end
+    return deepcopy(document)
 end
 
 """
@@ -79,7 +105,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         end
     end
     simulation = D.decode(D.relative_asset(built,simulation_configuration),prefix)
-    get(simulation,"version",nothing)===4 && simulation["mode"]=="external-pupil" ||
+    get(simulation,"version",nothing) in (4,6) && simulation["mode"] in ("external-pupil","clocked-optical") ||
         throw(ArgumentError("optical materialization requires a prepared external-pupil owner"))
     identity = index["calibration_identity"]
     identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) || throw(ArgumentError("invalid calibration identity"))
@@ -90,12 +116,14 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         get(authored_rtc,key,nothing)==get(builtin_rtc.authoring,key,nothing) ||
             throw(ArgumentError("authored RTC $key differs from calibrated application"))
     end
-    # The mirror-free instrument is copied exactly by the normal exporter.
-    Common.sha256_file(joinpath(root,"instrument.yaml")) == Common.sha256_file(joinpath(built,"instrument.yaml")) ||
+    # Export localizes shared mirror paths. Compare all authored fields and the
+    # exact description bytes after resolving each path in its own directory.
+    calibration_physical_instrument(root) == calibration_physical_instrument(built) ||
         throw(ArgumentError("authored physical instrument differs from calibrated application"))
     reports = Dict{String,Any}()
     branch_paths = Dict{String,String}()
     context = nothing
+    resolved_context = nothing
     for name in sort!(collect(keys(graphs)))
         entry = branch_index[name]
         entry["path"]==name || throw(ArgumentError("indexed branches must use their own standard bundle directory"))
@@ -116,27 +144,57 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
             report["source_prescription_identity"]==simulation["prescription_identity"] ||
             throw(ArgumentError("branch optical prescription differs from calibrated application"))
         report["branches"][name]["accepted"]===true || throw(ArgumentError("branch numerical gates failed"))
-        candidate = deepcopy(bundle.context)
+        candidate = bundle.context
         mask = candidate["pixel_selection_mask"]
+        mask isa AbstractDict && get(mask,"kind",nothing) == "fits" ||
+            throw(ArgumentError("branch selection must retain its typed FITS reference"))
+        resolved_candidate = InstrumentConfiguration.calibration_context(candidate,branch_root)
+        selected_mask = resolved_candidate["pixel_selection_mask"]
+        selected_mask isa AbstractVector{Bool} || throw(ArgumentError("branch selection mask must contain Bool values"))
+        if haskey(resolved_candidate,name) && haskey(resolved_candidate[name],"pixel_selection_mask")
+            resolved_candidate[name]["pixel_selection_mask"] == selected_mask &&
+                get(resolved_candidate[name],"selected_pixel_count",nothing) == count(selected_mask) ||
+                throw(ArgumentError("branch-specific selection differs from its measured FITS mask"))
+        end
+        rebased = rebase_calibration_context(candidate,name)
         if context === nothing
-            context = candidate
-            context["pixel_selection_mask"] = merge(mask,Dict("path"=>name*"/"*mask["path"]))
+            context = rebased
+            resolved_context = resolved_candidate
         else
-            previous = context["pixel_selection_mask"]
-            all(key -> get(previous,key,nothing)==get(mask,key,nothing),
-                union(setdiff(Set(keys(previous)),Set(["path"])),setdiff(Set(keys(mask)),Set(["path"])))) ||
-                throw(ArgumentError("branch selection masks differ; shared authored selection cannot represent them"))
-            delete!(candidate,"pixel_selection_mask")
-            for (key,value) in candidate
-                haskey(context,key) && context[key]!=value && throw(ArgumentError("branch calibration contexts conflict"))
-                context[key] = value
+            same_mask = resolved_context["pixel_selection_mask"] == selected_mask &&
+                context["pixel_selection_mask"]["shape"] == mask["shape"]
+            # Cameras may have different root selections when both bundles
+            # retain the same explicit, resolved branch-specific selections.
+            if !same_mask
+                all(keys(graphs)) do branch
+                    for value in (resolved_context,resolved_candidate)
+                        entry = get(value,branch,nothing)
+                        entry isa AbstractDict && haskey(entry,"pixel_selection_mask") &&
+                            haskey(entry,"selected_pixel_count") || return false
+                    end
+                    resolved_context[branch] == resolved_candidate[branch]
+                end || throw(ArgumentError("different branch masks require matching branch-specific selections"))
+            end
+            for (key,value) in resolved_candidate
+                key == "pixel_selection_mask" && continue
+                haskey(resolved_context,key) && resolved_context[key]!=value &&
+                    throw(ArgumentError("branch calibration contexts conflict"))
+                if !haskey(context,key)
+                    context[key] = rebased[key]
+                    resolved_context[key] = value
+                end
             end
         end
         reports[name] = report
         branch_paths[name] = branch_root
     end
-    required_projection = haskey(recipe_document,"upstream_reference") ?
-        Set(["command-projection","physical-to-modes","modes-to-reference"]) : Set(["command-projection","physical-to-modes"])
+    required_projection = haskey(recipe_document,"command_completion") ?
+        Set(["command-projection","vdm-to-modes","active-to-full","vdm-to-pdm"]) : Set(["command-projection","physical-to-modes"])
+    if haskey(recipe_document,"command_completion") &&
+            get(recipe_document,"tip_tilt",false) === true
+        push!(required_projection,"physical-to-modes")
+    end
+    haskey(recipe_document,"upstream_reference") && push!(required_projection,"modes-to-reference")
     Set(keys(index["physical_projection"]))==required_projection || throw(ArgumentError("indexed physical mappings are incomplete"))
     for (name,descriptor) in index["physical_projection"]
         path = D.relative_asset(bundles,descriptor["path"])
@@ -158,16 +216,23 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         command_count isa Int && 1 <= command_count <= 16384 &&
             all(report -> report["command_count"]==command_count,values(reports)) ||
             throw(ArgumentError("accepted branches must declare the same bounded physical command count"))
-        Calibration.write_fits(joinpath(staged,zero_command),zeros(Float32,command_count))
+        mirrors = builtin_rtc.instrument.document["deformable_mirrors"]
+        mirror_units = isempty(mirrors) ? "m OPD" : only(values(mirrors))["units"]
+        Calibration.write_fits(joinpath(staged,zero_command),zeros(Float32,command_count);units=mirror_units)
         Common.write_yaml(joinpath(staged,"context.yaml"),context;
             header="Generated by PipeWireAORTC.InstrumentExport.materialize_calibration from accepted branch bundles.")
         resolved = InstrumentConfiguration.calibration_context(context,staged)
         graphcontext = graph_context(InstrumentConfiguration.json_value(InstrumentConfiguration.physical_definition(builtin_rtc.instrument));
             dimensions=builtin_rtc.document["dimensions"],mirror_controls=builtin_rtc.controls["deformable_mirrors"],calibration=resolved)
+        exports = Dict{String,Any}()
         for (name,graph) in graphs
-            resolve_graph_configuration(D.decode(D.relative_asset(root,graph),prefix),graphcontext)==
-                D.decode(joinpath(branch_paths[name],"graph.conf"),prefix) ||
-                throw(ArgumentError("accepted context does not reproduce authored branch graph $name"))
+            sourcegraph = D.relative_asset(root,graph)
+            calibrated = joinpath(branch_paths[name],"graph.conf")
+            authored_graph = resolve_graph_configuration(D.decode(sourcegraph,prefix),graphcontext)
+            added = calibrated_graph_exports(calibrated_centroid_references(authored_graph,resolved),
+                D.decode(calibrated,prefix))
+            exports[name] = Dict("calibrated_graph_sha256"=>Common.sha256_file(calibrated),
+                "authored_graph_sha256"=>Common.sha256_file(sourcegraph),"added_outputs"=>added)
         end
         updated = deepcopy(authored_rtc)
         physical = InstrumentConfiguration.referenced_instrument(rtcpath,authored_rtc["instrument"]).path
@@ -181,9 +246,10 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
             "calibration_identity"=>identity,"calibration_index_sha256"=>Common.sha256_file(indexpath),
             "source_application_deployment_sha256"=>Common.sha256_file(joinpath(built,"deployment.conf")),
             "recipe_sha256"=>Common.sha256_file(recipepath),"graphs"=>Dict(graphs),
+            "graph_exports"=>exports,
             "rtc_configuration"=>Dict("path"=>"rtc.yaml","sha256"=>Common.sha256_file(joinpath(staged,"rtc.yaml"))),
             "zero_command"=>Dict("path"=>zero_command,"sha256"=>Common.sha256_file(joinpath(staged,zero_command)),
-                "shape"=>[command_count],"type"=>"Float32"),
+                "shape"=>[command_count],"type"=>"Float32","units"=>mirror_units),
             "application_accepted"=>false);
             header="Generated accepted simulation calibration selection; application and hardware qualification remain separate.")
         mv(staged,selected)

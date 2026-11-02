@@ -768,7 +768,25 @@ instrument components, not GUI panel IDs. DM declarations carry source-grid
 `layout` in explicit `command_positions` order, `units`, `command_scale_m`,
 amplitude `limiter` bounds and `shape_control` declarations. Optional
 `pupil_coordinates` use the scientific model's normalized pupil radius convention;
-they are distinct from source-grid Zernike/Fourier coordinates.
+they are distinct from source-grid Zernike/Fourier coordinates. A nonidentity
+mirror-to-pupil registration also publishes `pupil_registration` alongside these
+coordinates. It contains `actuator_pitch_pupil_radius`, `rotation_deg`, `flip_y`
+and `offset_actuators: [dx, dy]`. The native mirror coordinates V have x to the
+right and y upward, centered on the physical source grid and retained in command
+order. With pitch p, pupil coordinates P are
+
+```text
+P = R(rotation_deg) × diag(1, flip_y ? -1 : 1) × (V - p × offset_actuators)
+V = diag(1, flip_y ? -1 : 1) × R(rotation_deg)ᵀ × P + p × offset_actuators
+```
+
+Rotation is counterclockwise in degrees. Offsets locate the optical pupil center
+in native actuator pitches; reflection precedes rotation. Clients that display
+native mirror axes use the inverse and place the circular optical pupil at
+p × offset_actuators. This changes coordinates, never command order. Registration
+is omitted from publication for the identity transform; older metadata retains
+its existing interpretation.
+
 An optional DM `pupil` supplies `inner_radius` and `outer_radius` in the same
 normalized Cartesian frame, with 0 ≤ inner < outer. It requires command-indexed
 `pupil_coordinates`; coordinates may lie outside the annulus. This optical
@@ -783,8 +801,9 @@ scientific definition and its identity unchanged. Plant verification compares
 the published pupil with the selected scientific source, including the telescope
 fallback for older scientific definitions.
 
-An optional DM `clear_aperture: {radius: ...}` describes a centered circular
-mirror clear aperture in that same registered Cartesian frame. It requires
+An optional DM `clear_aperture: {radius: ...}` describes the circular mirror
+clear aperture centered at the native physical mirror origin V = 0. Its radius
+uses the same normalized-pupil unit; registration does not rescale it. It requires
 `pupil_coordinates` and a positive renderable radius. The clear aperture is the
 mirror's optically usable circular aperture; it is distinct from the instrument's
 illuminated optical `pupil`, the actuator footprint and the full mechanical
@@ -1062,7 +1081,24 @@ inconsistent hidden projections/allocation dimensions before writing files.
 spacing in metres. It does not rescale
 optical geometry. Instrument `pupil_registration.actuator_pitch_pupil_radius`
 is dimensionless spacing divided by the registered pupil radius; Classic retains
-0.125. The optional intrinsic `clear_aperture_diameter_m` is a finite positive
+0.125. Physical `pupil_registration` additionally accepts optional `rotation_deg`
+(default 0), `flip_y` (default false) and `offset_actuators` (default [0, 0]),
+with the transform defined in the instrument publication contract above. Pitch
+is finite and positive; rotation and offsets are finite real numbers and the
+reflection flag is Boolean. Equivalent whole turns are removed from the angle.
+For nonidentity registration, pitch, scaled offsets and transformed grid
+coordinates must remain renderable in Float32. The generic measured-influence
+FITS resampler and `grid_gaussian` grid-index binding support only identity
+registration. Their source-grid paths do not apply rotation, reflection or
+offset; they reject those registrations before FITS access or grid-index
+preparation. `coordinate_gaussian` consumes the registered pupil coordinates.
+Already registered influence arrays and coordinates may remain explicit
+scientific graph inputs; this metadata extension does not transform their
+samples or select a different profile. Explicit identity defaults
+resolve to the original pitch-only value, preserving existing coordinates,
+metadata and physical/publication identities. Intrinsic mirror geometry and
+command order remain independent of this registration. The optional intrinsic
+`clear_aperture_diameter_m` is a finite positive
 circular clear-aperture diameter in metres and requires `actuator_pitch_m`.
 The cold metadata resolver computes the dimensionless registered radius as
 `(clear_aperture_diameter_m / actuator_pitch_m) × actuator_pitch_pupil_radius / 2`.
@@ -1152,6 +1188,12 @@ hashed FITS artifact contract. Authored sources with observations require explic
 SHA-256 hashes on all FITS bindings and validate their decoded shape and hash.
 Optional detector settings stay absent unless
 authored, so scientific noise defaults remain with AOS.
+Detector component `rows` and `columns` explicitly define its ROI-local output
+shape. When physical camera dimensions are declared, the ROI must fit those
+dimensions and retain their pixel pitch. An optional acquisition `roi_origin`
+additionally constrains the ROI within the full sensor. An omitted origin remains
+unknown; it does not imply a crop at `[0,0]`. Published detector properties report
+whether that origin is known and retain the local output shape.
 
 `load_simulation_source` returns the expanded authored response graphs in
 `observation_graphs`, without inventing optical graphs or reading generated

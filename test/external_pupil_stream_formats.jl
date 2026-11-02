@@ -13,6 +13,102 @@ function sensor_stream_science(; durations=(llowfs=2_000_000, scc=10_000_000), s
         chopping=chopped ? (;scc=(;initial_phase="fringed")) : NamedTuple())
 end
 
+function sensor_native_buffer(count)
+    native = PipeWireAO.LibPipeWire
+    memory = zeros(UInt8,4count)
+    chunk = Ref(native.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(4),UInt32(0)))
+    header = Ref(native.spa_meta_header(UInt32(0),UInt32(0),Int64(0),Int64(0),UInt64(0)))
+    acquisition = zeros(UInt64,64)
+    metadata = native.spa_meta[
+        native.spa_meta(native.SPA_META_Header,UInt32(sizeof(native.spa_meta_header)),Base.unsafe_convert(Ptr{Cvoid},header)),
+        native.spa_meta(native.SPA_META_Properties,UInt32(sizeof(acquisition)),Ptr{Cvoid}(pointer(acquisition))),
+    ]
+    data = Ref(native.spa_data(native.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
+        UInt32(length(memory)),pointer(memory),Base.unsafe_convert(Ptr{native.spa_chunk},chunk)))
+    spa_buffer = Ref(native.spa_buffer(UInt32(2),UInt32(1),pointer(metadata),Base.unsafe_convert(Ptr{native.spa_data},data)))
+    native_buffer = Ref(native.pw_buffer(Base.unsafe_convert(Ptr{native.spa_buffer},spa_buffer),C_NULL,UInt64(0),UInt64(0),UInt64(0)))
+    buffer = StreamBuffer(Base.unsafe_convert(Ptr{native.pw_buffer},native_buffer))
+    return (;memory,chunk,header,acquisition,metadata,data,spa_buffer,native_buffer,buffer)
+end
+
+@testset "sensors publish version-free Properties with independent classification" begin
+    science = sensor_stream_science(;chopped=true)
+    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
+    @test streams[2].buffer_properties_capacity == streams[3].buffer_properties_capacity == 512
+    HIL = AdaptiveOpticsSimPipeWireHIL
+    native = PipeWireAO.LibPipeWire
+    option = streams[2]
+    parameters = HIL._stream_parameters(option.format,option.schema;
+        buffers=option.buffers,buffer_properties_capacity=option.buffer_properties_capacity)
+    object = PipeWireAO.pod_value(SPA.Parameter,parameters[4]).object
+    @test PipeWireAO.pod_value(Int32,object[SPA.META_PARAM_FEATURES].value) ==
+        Int32(native.SPA_META_FEATURE_PROPERTIES_VERSION_1)
+    @test PipeWireAO.pod_value(Int32,object[SPA.META_PARAM_SIZE].value) == 512
+    state = HIL.ArrayStreamState(6)
+    identity = AcquisitionIdentity(AcquisitionDomain(ntuple(UInt8,16)),UInt64(2),UInt64(7))
+    classification = StreamOwner.trigger_state(science,:llowfs,(;sequence=UInt64(7)))
+    @test classification == ACQUISITION_TRIGGER_ABSENT
+    state.values .= Float32.(1:6)
+    state.receipt = PipeWireArrayReceipt(Int64(60_000_000),UInt64(10_000_000),identity,UInt64(0),classification)
+    storage = sensor_native_buffer(6)
+    process = HIL.ArrayStreamProcess(state,storage.buffer,false,12)
+    GC.@preserve storage begin
+        @test HIL._write_array!(process) === nothing
+        metadata = buffer_properties(storage.buffer)
+        @test buffer_properties_valid(metadata)
+        @test trigger_classification(metadata) == ACQUISITION_TRIGGER_ABSENT
+        @test acquisition_identity(metadata) == identity
+        @test acquisition_exposure_duration(metadata) == 10_000_000
+        @test buffer_header(storage.buffer).sequence == 7
+        @test buffer_header(storage.buffer).pts == 60_000_000
+        @test reinterpret(Float32,storage.memory) == state.values
+        received = HIL.ArrayStreamState(6)
+        reader = HIL.ArrayStreamProcess(received,storage.buffer,true,12)
+        @test HIL._read_array!(reader)
+        @test received.values == state.values
+        @test received.receipt.identity == identity
+        @test received.receipt.trigger_state == ACQUISITION_TRIGGER_ABSENT
+    end
+end
+
+@testset "sensor emitter owns host storage and preserves transport conversion" begin
+    for T in (Float32, Float64)
+        science = sensor_stream_science()
+        sensors = map(sensor -> merge(sensor, (;image=T.(sensor.image))), science.sensors)
+        science = merge(science, (;sensors))
+        execution = StreamOwner.stream_execution((;version=4), science, StreamOwner.OwnerState())
+        metadata = (;sequence=UInt64(1))
+        image = T[11 12 13; 21 22 23]
+        expected = Float32.(image)
+        for index in eachindex(execution.frames)
+            @test eltype(execution.frames[index]) === T
+            @test eltype(execution.buffers[index]) === Float32
+            @test (execution.frames[index] === execution.buffers[index]) == (T === Float32)
+            @test execution.frames[index] !== values(science.sensors)[index].image
+            @test execution.buffers[index] !== image
+        end
+        @test execution.buffers[1] !== execution.buffers[2]
+        @test execution.frames[1] !== execution.frames[2]
+        execution.emit(:llowfs, image, metadata)
+        @test execution.buffers[1] == expected
+        @test size(execution.buffers[1]) == (2,3)
+        @test all(iszero, execution.buffers[2])
+        fill!(image, 0)
+        @test execution.buffers[1] == expected
+        execution.emit(:scc, fill(T(7),2,3), metadata)
+        @test execution.buffers[1] == expected
+        @test execution.buffers[2] == fill(7f0,2,3)
+        execution.emit(:llowfs, fill(T(floatmax(Float32)),2,3), metadata)
+        @test execution.buffers[1] == fill(floatmax(Float32),2,3)
+        @test_throws ArgumentError execution.emit(:llowfs, fill(T(NaN),2,3), metadata)
+        @test_throws ArgumentError execution.emit(:llowfs, fill(T(Inf),2,3), metadata)
+        if T === Float64
+            @test_throws ArgumentError execution.emit(:llowfs, fill(floatmax(Float64),2,3), metadata)
+        end
+    end
+    @test all(id->id.name ∉ ("CUDA","AMDGPU","Proper"), keys(Base.loaded_modules))
+end
+
 function stream_formats(science)
     return StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
 end
@@ -30,8 +126,8 @@ end
             @test stream.format.layout == NdArray.ROW_MAJOR
             @test Dict(stream.properties)["optics.spectral-samples"] == string(samples)
         end
-        @test streams[2].acquisition_version == 2
-        @test streams[3].acquisition_version == (chopped ? 3 : 2)
+        @test streams[2].buffer_properties_capacity == 512
+        @test streams[3].buffer_properties_capacity == 512
         @test science.plant.exposures.scc.duration_ns == 10_000_000
     end
 end
@@ -50,4 +146,25 @@ end
         @test_throws ArgumentError stream_formats(sensor_stream_science(;durations=(llowfs=duration,scc=10_000_000)))
     end
     @test all(id->id.name ∉ ("CUDA","AMDGPU","Proper"), keys(Base.loaded_modules))
+end
+
+@testset "optical classification is independent of trigger polarity" begin
+    required = (PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_OPTICAL_CLASSIFICATION,SPA.Id),
+        PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_TRIGGER_CLASSIFICATION,SPA.Id))
+    science = sensor_stream_science(;chopped=true)
+    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
+    @test streams[1].buffer_properties_capacity == 512
+    @test all(option -> option.buffer_properties_capacity == 512 && option.required_buffer_properties == required,streams[2:3])
+    for polarity in (true,false)
+        configured = merge(science,(;chopping=(;scc=(;trigger_high_is_fringed=polarity))))
+        for (kind,optical) in ((:fringed,OPTICAL_FRINGED),(:unfringed,OPTICAL_UNFRINGED),(:mixed,OPTICAL_MIXED))
+            metadata = (;chopped_image_kind=kind)
+            @test StreamOwner.sensor_optical_classification(configured,:scc,metadata) == optical
+            expected = kind === :mixed ? ACQUISITION_TRIGGER_MIXED :
+                ((kind === :fringed) == polarity ? ACQUISITION_TRIGGER_HIGH : ACQUISITION_TRIGGER_LOW)
+            @test StreamOwner.trigger_state(configured,:scc,metadata) == expected
+        end
+        @test StreamOwner.sensor_optical_classification(configured,:llowfs,(;)) == OPTICAL_ABSENT
+        @test_throws ArgumentError StreamOwner.sensor_optical_classification(configured,:scc,(;))
+    end
 end

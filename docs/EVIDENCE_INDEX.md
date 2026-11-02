@@ -4,7 +4,15 @@
 
 The [validation record](validation/simulator-settings-20261031/README.md)
 separates cold description measurements and software checks from passing private
-CPU shutdown and rendered-browser settings/rebuild/reconnect acceptance.
+CPU shutdown and rendered-browser settings/rebuild/reconnect acceptance on the
+recorded private RTC 0.2.51 cohort, not current RTC 0.3 qualification.
+
+## Optical owner cold compilation — 2026-10-30
+
+The [source validation](validation/optical-owner-compilation-20261030/README.md)
+records compilation and numerical warmup observed during Connect, then moves
+those steps to Preparing with quiet seeded-detector/reset checks. A managed-session
+startup pass and warmed timing remain separate.
 
 ## Captured optical calibration — 2026-10-29
 
