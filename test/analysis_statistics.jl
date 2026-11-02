@@ -39,6 +39,14 @@ observer_bytes(capture, outputs, metadata) = @allocated capture(Val(:frame),outp
         @test config.capture.window_samples == 3
         graph=prepare_graph(graph_path;algorithms=algorithms())
         capture=A.prepare_capture(config.capture,JuliaFilterGraph.output_formats(graph))
+        extension=Base.get_extension(PipeWireAORTC,:PipeWireAORTCGraphExt)
+        node=extension.prepare_analysis_node(config,joinpath(root,"absent.sock"),graph,nothing,capture)
+        try
+            @test node.owner.join === nothing
+            @test node.owner.frame_observer.callback === capture
+        finally
+            close(node)
+        end
         output=map(format->zeros(format.element_type,format.shape),JuliaFilterGraph.output_formats(graph))
         input=(;sample=zeros(Float32,2,3))
         for (i,seq) in enumerate((8,10,14))

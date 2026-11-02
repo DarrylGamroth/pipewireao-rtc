@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Optional analysis metadata preservation — 2026-11-02
+
+The [native-buffer regression record](validation/analysis-metadata-20261102/README.md)
+demonstrates the Header-only analysis output's inability to retain valid source
+facts, then declares the existing shared telemetry profiles. Actual synchronized
+WFS callback publication is checked independently of managed-session readiness.
+
 ## Optional synchronized analysis construction — 2026-11-02
 
 The [focused CPU regression record](validation/analysis-construction-20261102/README.md)

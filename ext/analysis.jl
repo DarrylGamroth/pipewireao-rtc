@@ -294,13 +294,20 @@ function analysis_input_owner(graph)
     return JuliaFilterGraph.prepare_synchronized_inputs(graph; match=:acquisition)
 end
 
-function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256)
+function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
     input_owner = analysis_input_owner(graph)
-    capture = Analysis.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
     observer_options = capture === nothing ? NamedTuple() : (; frame_observer=capture)
-    node = FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
+    return FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
+        input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(graph));
+            required=FilterGraphPipeWire.required_input_metadata(graph)),
+        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(graph))),
         rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units,
         observer_options...)
+end
+
+function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256)
+    capture = Analysis.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
+    node = prepare_analysis_node(config, remote, graph, boundary_layout, capture)
     finished = Threads.Atomic{Bool}(false)
     monitor = nothing
     acquisition = nothing
