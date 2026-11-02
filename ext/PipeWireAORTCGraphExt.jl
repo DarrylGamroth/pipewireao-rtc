@@ -145,8 +145,9 @@ function run_prepared(options, runtime, graph)
     offset_clock = offsets_path === nothing ? nothing : PipeWireAORTC.PhysicalOffsets.frame_observer(
         offsets_path,get(observation,:frame_observer,nothing),JuliaFilterGraph.output_formats(graph))
     offsets_path === nothing || (observation=merge(observation,(;frame_observer=offset_clock)))
+    controllers = Tuple(Symbol(first(split(property, ':'))) for property in correction_properties)
     recovery = isempty(options.recovery_nodes) ? (;) :
-        (; recovery=(controller=Symbol(first(split(only(correction_properties), ':'))),
+        (; recovery=(; (length(controllers) == 1 ? (; controller=only(controllers)) : (; controllers))...,
             participants=Tuple(Symbol.(options.recovery_nodes)),
             reference_timeout_ms=options.correction_timeout_ms))
     absolute_clock=PipeWireAORTC.Common.prepare_absolute_clock(options)

@@ -4,6 +4,7 @@ for name in ("configuration_store", "simulator_configuration", "artifacts", "par
     Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))
 end
 Base.include(Module(:AuxiliarySourceTests), joinpath(@__DIR__, "test_auxiliary_sources.jl"))
+Base.include(Module(:CoupledRecoveryTests), joinpath(@__DIR__, "test_correction_recovery_controllers.jl"))
 include("test_native_session_discovery.jl")
 Base.include(Module(:ExternalPupilOwnerTests), joinpath(@__DIR__, "test_external_pupil_owner.jl"))
 Base.include(Module(:ApplicationCompositionTests), joinpath(@__DIR__, "test_application_composition.jl"))

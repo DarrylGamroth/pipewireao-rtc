@@ -946,11 +946,12 @@ copy do not borrow a concurrently changing command. Its fixed three-buffer pool
 supports the existing capacity-one copy queue; absent or slow observers never
 gate the model. This observes model input adoption, not mechanical settling.
 
-The v4 external-pupil owner accepts optional `sensor_buffers: 2` (integer 2:64).
-Omission retains its two-buffer sensor pools. Capacity-one observation queues
-require at least three producer buffers; select `sensor_buffers: 3` explicitly
-for both optical outputs. The pupil input and scientific pupil output pools keep
-their existing allocation contracts.
+The v4 external-pupil and v6 clocked optical owners default to three sensor
+buffers (`sensor_buffers`, integer 2:64).
+This matches a capacity-one observation queue's retained sample and two handoff
+buffers. Explicit two-buffer settings remain available for compatible consumers;
+every connected consumer must accept the selected fixed count. The pupil input
+and scientific pupil output pools keep their existing allocation contracts.
 
 The v4 external-pupil owner also admits an explicitly selected CUDA device
 (ordinal zero or higher); AMDGPU ordinals start at one and CPU uses zero.

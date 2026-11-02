@@ -93,9 +93,9 @@ function arguments(arguments)
     haskey(values, "--correction-timeout-ms") && isempty(correction_properties) &&
         throw(ArgumentError("correction timeout requires a declared correction property"))
     if !isempty(recovery_nodes)
-        length(correction_properties) == 1 && endswith(only(correction_properties), ":closed") ||
-            throw(ArgumentError("recovery requires one declared NODE:closed correction property"))
-        first(split(only(correction_properties), ':')) in recovery_nodes &&
+        1 <= length(correction_properties) <= 16 && all(endswith(":closed"), correction_properties) ||
+            throw(ArgumentError("recovery requires 1:16 declared NODE:closed correction properties"))
+        any(property -> first(split(property, ':')) in recovery_nodes, correction_properties) &&
             throw(ArgumentError("recovery controller is implicit; declare only participant nodes"))
     end
     supervision = get(values, "--supervision", nothing)
@@ -222,7 +222,7 @@ axes. FITS startup does not change legacy raw `--parameter` file semantics.
 `--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
 for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.
-`--recovery-node NODE` opts the single declared coupled loop into scoped CPU
+`--recovery-node NODE` opts the declared coupled controllers into scoped CPU
 recovery; repeat it for every participating temporal filter and conditioner.
 The controller is implicit. Recovery refuses unsupported scopes before effects;
 reference evidence expires using `--correction-timeout-ms`. No supervisor

@@ -254,3 +254,76 @@ end
     CR.observe_loop!(sm, loop_observation(3, 6, 4, false))
     @test sm.failure === :unexpected_loop_change
 end
+
+function coupled_recovery()
+    now = Ref(UInt64(100))
+    sm = CR.Coordinator(RECOVERY_OWNER; clock=() -> now[], timeout_ms=5, controllers=2)
+    observation(serial, requested, active, closed; token=RECOVERY_TOKEN) =
+        CR.LoopObservation(RECOVERY_OWNER, token, UInt64(serial),
+            map(UInt64, requested), map(UInt64, active), closed)
+    CR.qualify!(sm, observation(1, (3, 9), (3, 9), (true, false); token=UInt64(0)))
+    return sm, now, observation
+end
+
+@testset "Coupled recovery fences exact generations and independent reclosure" begin
+    sm, now, observation = coupled_recovery()
+    @test CR.state(sm) === :PartiallyClosed
+    effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=(UInt64(4), UInt64(10)))
+    CR.observe_loop!(sm, observation(2, (4, 10), (4, 9), (false, false)))
+    @test CR.state(sm) === :Opening
+    @test sm.loop_generation == (3, 9)
+    CR.observe_loop!(sm, observation(3, (4, 10), (4, 10), (false, false)))
+    @test CR.state(sm) === :RestoringReference
+    @test sm.loop_generation == (4, 10)
+    CR.observe_recovery!(sm, recovery_observation(4))
+    CR.observe_reference!(sm, reference_observation(5))
+    @test CR.state(sm) === :Holding
+    @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed=(false, false))
+    release = CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed=(false, true))
+    @test release isa CR.ReleaseRecovery
+    close = CR.observe_release!(sm, release_observation(6; closed=(false, false)))
+    @test close isa CR.CloseLoop
+    CR.staged!(sm, close, (UInt64(4), UInt64(11)))
+    CR.observe_loop!(sm, observation(7, (4, 11), (4, 10), (false, false)))
+    @test CR.state(sm) === :Closing
+    CR.observe_loop!(sm, observation(8, (4, 11), (4, 11), (false, true)))
+    @test CR.state(sm) === :PartiallyClosed
+    @test sm.loop_generation == (4, 11)
+    @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed=(true, true))
+    @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN;
+        closed=(true, false), released=true)
+    CR.observe_reference!(sm, reference_observation(9; ready=false))
+    @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN;
+        closed=(true, true), released=true)
+    CR.observe_reference!(sm, reference_observation(10))
+    remaining = CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN;
+        closed=(true, true), released=true)
+    @test remaining isa CR.CloseLoop # no second release or recovery effect
+    CR.staged!(sm, remaining, (UInt64(5), UInt64(11)))
+    CR.observe_loop!(sm, observation(11, (5, 11), (5, 11), (true, true)))
+    @test CR.state(sm) === :Closed
+    @test sm.failure === nothing
+end
+
+@testset "Coupled adoption cannot hide a stale or conflicting component" begin
+    for (requested, active) in (((4, 10), (5, 9)), ((3, 11), (3, 11)), ((5, 10), (4, 10)))
+        sm, _, observation = coupled_recovery()
+        effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+        CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=(UInt64(4), UInt64(10)))
+        CR.observe_loop!(sm, observation(2, requested, active, (false, false)))
+        @test sm.failure === :conflicting_loop_generation
+        @test CR.state(sm) === :Unverified
+    end
+    sm, _, _ = coupled_recovery()
+    effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=(UInt64(3), UInt64(10)))
+    @test sm.failure === :invalid_loop_generation # every controller must be forced open
+    sm, _, _ = coupled_recovery()
+    effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=UInt64(10))
+    @test sm.failure === :loop_scope_mismatch
+    for count in (0, 17, true)
+        @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; controllers=count)
+    end
+end

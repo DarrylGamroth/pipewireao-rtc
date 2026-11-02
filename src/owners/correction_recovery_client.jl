@@ -34,11 +34,11 @@ Call `resume!` explicitly to release and close. The operation never rebinds to a
 replacement graph/session. A failed operation must be reconciled externally;
 calling this driver again does not replay its effects.
 """
-mutable struct Operation{T,C}
+mutable struct Operation{T,C,N}
     const channel::RecoveryChannel{T}
     const coordinator::C
     const graph::String
-    const controller::String
+    const controller::N
     const request_token::Int64
     const virtual_generation::UInt64
     const previous_recovery_generation::UInt64
@@ -54,14 +54,14 @@ struct RecoveryError{O} <: Exception
 end
 Base.showerror(io::IO, error::RecoveryError) = print(io, "protective recovery failed: ", error.message)
 
-struct RecoverySnapshot
+struct RecoverySnapshot{N,G,V,S,R}
     serial::UInt64
     owner_instance::Int64
-    controller::String
-    closed::Bool
-    loop_requested::UInt64
-    loop_active::UInt64
-    loop_state::Symbol
+    controller::N
+    closed::V
+    loop_requested::G
+    loop_active::G
+    loop_state::S
     request_token::Int64
     release_token::UInt64
     requested_generation::UInt64
@@ -73,6 +73,7 @@ struct RecoverySnapshot
     source_sequence::UInt64
     source_ns::UInt64
     reference_timeout_ns::UInt64
+    controller_readiness::R
 end
 
 function control_check!(channel::RecoveryChannel, deadline::Float64, check)
@@ -124,15 +125,7 @@ function nonnegative(value::Int64)
 end
 property_long(properties, name) = nonnegative(scalar_value(properties, name, :long, Int64))
 
-function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Float64, check)
-    reply = native_request!(channel, RecoveryRunner.RunnerCommand(:properties, graph); deadline, check)
-    reply.result.details.graph == graph || throw(ArgumentError("native graph readback changed"))
-    properties = reply.result.details.properties
-    p = RECOVERY_PREFIX
-    scalar_value(properties, p * "version", :int, Int32) == 1 ||
-        throw(ArgumentError("unsupported recovery property version"))
-    controller = scalar_value(properties, p * "controller", :string, String)
-    isempty(controller) && throw(ArgumentError("recovery controller is absent"))
+function controller_snapshot(properties, controller)
     control = "pipewireao.correction-control." * controller * ":closed."
     scalar_value(properties, control * "fault", :string, String) == "" ||
         throw(NativeControlClient.UnknownOutcome("correction adoption observer has a fault"))
@@ -140,6 +133,46 @@ function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Flo
     loop_state in (:Open, :Closed, :Opening, :Closing) ||
         throw(NativeControlClient.UnknownOutcome("correction adoption is unverified"))
     scalar_value(properties, control * "requested", :bool, Bool)
+    return (; closed=scalar_value(properties, controller * ":closed", :bool, Bool),
+        requested=property_long(properties, controller * ":requested-generation"),
+        active=property_long(properties, controller * ":active-generation"), state=loop_state)
+end
+
+function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Float64, check)
+    reply = native_request!(channel, RecoveryRunner.RunnerCommand(:properties, graph); deadline, check)
+    reply.result.details.graph == graph || throw(ArgumentError("native graph readback changed"))
+    properties = reply.result.details.properties
+    p = RECOVERY_PREFIX
+    version = scalar_value(properties, p * "version", :int, Int32)
+    if version == 1
+        controller = scalar_value(properties, p * "controller", :string, String)
+        isempty(controller) && throw(ArgumentError("recovery controller is absent"))
+        loops = controller_snapshot(properties, controller)
+        readiness = nothing
+    elseif version == 2
+        count = scalar_value(properties, p * "controller-count", :int, Int32)
+        1 <= count <= 16 || throw(ArgumentError("invalid recovery controller count"))
+        controller = ntuple(Int(count)) do index
+            name = scalar_value(properties, p * "controller-$index", :string, String)
+            occursin(r"^[a-zA-Z0-9_.-]{1,128}$", name) ||
+                throw(ArgumentError("invalid recovery controller name"))
+            name
+        end
+        allunique(controller) || throw(ArgumentError("duplicate recovery controllers"))
+        observations = map(name -> controller_snapshot(properties, name), controller)
+        loops = (; closed=map(o -> o.closed, observations),
+            requested=map(o -> o.requested, observations), active=map(o -> o.active, observations),
+            state=map(o -> o.state, observations))
+        readiness = ntuple(Int(count)) do index
+            key = p * "controller-$index-"
+            (; guarded=scalar_value(properties, key * "close-guarded", :bool, Bool),
+                ready=scalar_value(properties, key * "ready", :bool, Bool),
+                sequence=property_long(properties, key * "observation-sequence"),
+                timestamp_ns=property_long(properties, key * "observation-monotonic-nanoseconds"))
+        end
+    else
+        throw(ArgumentError("unsupported recovery property version"))
+    end
     recovery_state = Symbol(scalar_value(properties, p * "state", :string, String))
     recovery_state in (:idle, :pending, :applied, :release_pending, :released) ||
         throw(NativeControlClient.UnknownOutcome("recovery state is " * string(recovery_state)))
@@ -149,9 +182,7 @@ function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Flo
     request_token >= 0 || throw(ArgumentError("negative recovery request token"))
     return RecoverySnapshot(UInt64(reply.header.token),
         scalar_value(properties, "pipewireao.correction-control.owner-instance", :long, Int64),
-        controller, scalar_value(properties, controller * ":closed", :bool, Bool),
-        property_long(properties, controller * ":requested-generation"),
-        property_long(properties, controller * ":active-generation"), loop_state,
+        controller, loops.closed, loops.requested, loops.active, loops.state,
         request_token, property_long(properties, p * "release-token"),
         property_long(properties, p * "requested-generation"),
         property_long(properties, p * "active-generation"),
@@ -160,7 +191,7 @@ function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Flo
         scalar_value(properties, p * "reference-reached", :bool, Bool),
         property_long(properties, p * "observation-sequence"),
         property_long(properties, p * "observation-monotonic-nanoseconds"),
-        UInt64(timeout_ms) * UInt64(1_000_000))
+        UInt64(timeout_ms) * UInt64(1_000_000), readiness)
 end
 
 function snapshot!(operation::Operation; deadline::Float64, check)
@@ -178,6 +209,11 @@ function generation_for(reply::RecoveryRunner.Completion, node::String)
 end
 function write_property!(operation::Operation, name::String, value::RecoveryRunner.RunnerScalar;
         deadline::Float64, check)
+    return write_properties!(operation, Dict{String,RecoveryRunner.RunnerScalar}(name => value);
+        deadline, check)
+end
+function write_properties!(operation::Operation, properties::Dict{String,RecoveryRunner.RunnerScalar};
+        deadline::Float64, check)
     check_timeout!(operation.coordinator)
     operation.coordinator.failure === nothing ||
         throw(NativeControlClient.UnknownOutcome(string(operation.coordinator.failure)))
@@ -190,8 +226,8 @@ function write_property!(operation::Operation, name::String, value::RecoveryRunn
     operation.coordinator.failure === nothing ||
         throw(NativeControlClient.UnknownOutcome(string(operation.coordinator.failure)))
     reply = native_request!(operation.channel,
-        RecoveryRunner.RunnerCommand(:properties_set, operation.graph,
-            Dict{String,RecoveryRunner.RunnerScalar}(name => value)); deadline=effect_deadline, check)
+        RecoveryRunner.RunnerCommand(:properties_set, operation.graph, properties);
+        deadline=effect_deadline, check)
     reply.result.details.graph == operation.graph || throw(ArgumentError("native staging graph changed"))
     return reply
 end
@@ -210,10 +246,13 @@ loop_readback(operation::Operation, snapshot::RecoverySnapshot) =
     LoopObservation(snapshot.owner_instance, operation.coordinator.token, snapshot.serial,
         snapshot.loop_requested, snapshot.loop_active, snapshot.closed)
 function require_open(snapshot::RecoverySnapshot)
-    !snapshot.closed && snapshot.loop_requested == snapshot.loop_active && snapshot.loop_state === :Open ||
+    _all_open(snapshot.closed) && snapshot.loop_requested == snapshot.loop_active &&
+        _states_open(snapshot.loop_state) ||
         throw(NativeControlClient.UnknownOutcome("controller is not coherently held open"))
     return nothing
 end
+_states_open(state::Symbol) = state === :Open
+_states_open(states::Tuple) = all(state -> state === :Open, states)
 function require_scope(operation::Operation, snapshot::RecoverySnapshot)
     snapshot.request_token == operation.request_token &&
         snapshot.recovery_generation == operation.coordinator.recovery_generation ||
@@ -260,7 +299,8 @@ function protective_open!(transport::RecoveryTransport, graph::AbstractString;
         initial.requested_generation == initial.active_generation ||
         throw(ArgumentError("another recovery transaction is pending"))
     timeout = timeout_ms === nothing ? Int(initial.reference_timeout_ns ÷ UInt64(1_000_000)) : timeout_ms
-    coordinator = Coordinator(initial.owner_instance; clock=() -> transport_clock_ns(transport), timeout_ms=timeout)
+    coordinator = Coordinator(initial.owner_instance; clock=() -> transport_clock_ns(transport), timeout_ms=timeout,
+        controllers=initial.controller isa Tuple ? length(initial.controller) : nothing)
     initial.request_token < typemax(Int64) || throw(ArgumentError("recovery request tokens exhausted"))
     operation = Operation(channel, coordinator, String(graph), initial.controller,
         initial.request_token + 1, initial.requested_generation,
@@ -333,8 +373,17 @@ end
 
 Release and close are each sent once. A refused, uncertain or expired release
 never sends CloseLoop and the coordinator remains latched for reconciliation.
+For a plural scope, `controllers=("name", ...)` selects the controllers to close;
+the default selects all. Remaining guarded controllers may be explicitly resumed
+later on the same partially closed operation, using their own fresh evidence.
+That later call does not repeat recovery or release. A controller already closed
+by this operation is never reopened by selecting another controller.
 """
-function resume!(operation::Operation; deadline::Float64, check=NativeControlClient.NO_CHECK)
+function resume!(operation::Operation; deadline::Float64, check=NativeControlClient.NO_CHECK,
+        controllers=nothing)
+    operation.controller isa Tuple && return resume_controllers!(operation; deadline, check, controllers)
+    controllers === nothing || selected_controllers((operation.controller,), controllers) == (operation.controller,) ||
+        throw(ArgumentError("resume selection differs from the singular recovery scope"))
     coordinator = operation.coordinator
     coordinator.failure === nothing && state(coordinator) === :Holding ||
         throw(ArgumentError("resume requires this operation's verified Holding state"))
@@ -400,3 +449,5 @@ function resume!(operation::Operation; deadline::Float64, check=NativeControlCli
         throw(recovery_error(operation, error))
     end
 end
+
+include("correction_recovery_controllers.jl")
