@@ -165,11 +165,11 @@ function source_options(observation::Observation;absolute_clock=AbsoluteClock())
     images = (PipeWireImageSourceOptions(node_name="simulator-focal-image",
             media_name="focal-image", schema=FOCAL_IMAGE_SCHEMA,
             shape=size(observation.values), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties=properties,absolute_clock),
+            buffers=3, properties=properties,absolute_clock=absolute_clock),
         PipeWireImageSourceOptions(node_name="simulator-residual-wavefront",
             media_name="residual-wavefront", schema=WAVEFRONT_SCHEMA,
             shape=size(observation.wavefront), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties=properties,absolute_clock))
+            buffers=3, properties=properties,absolute_clock=absolute_clock))
     return (images..., rms_source_options(observation.atmosphere_snapshot, properties,absolute_clock)...)
 end
 
@@ -178,7 +178,7 @@ rms_source_options(snapshot, properties,absolute_clock) =
     (PipeWireImageSourceOptions(node_name="simulator-wavefront-rms",
         media_name="wavefront-rms", schema=RMS_SCHEMA, shape=RMS_SHAPE,
         rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties,
-        channels=RMS_CHANNELS,absolute_clock),)
+        channels=RMS_CHANNELS,absolute_clock=absolute_clock),)
 
 # One producer admits the complete cohort before advancing the graph. Its busy
 # flag stays set until the consumer releases every transfer, so independent

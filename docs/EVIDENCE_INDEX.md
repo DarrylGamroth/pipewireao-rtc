@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Optical observation clock keyword forwarding — 2026-11-02
+
+The [optional CPU regression record](validation/optical-observation-clock-20261102/README.md)
+records RTC issue #39's real HIL constructor failure and the three explicit
+clock-keyword repairs. Focal, residual-wavefront and RMS source options are
+checked with the registered science cohort; host-verified TAI, managed startup,
+hardware and timing qualification remain separate.
+
 ## Simulator management and shutdown — 2026-10-31
 
 The [validation record](validation/simulator-settings-20261031/README.md)

@@ -1,6 +1,7 @@
 # Optional cold-contract and CPU-product checks; requires the JFG and AOS/HIL stacks.
 using Test, Libdl
 using PipeWireAORTC
+using PipeWireAO: AbsoluteClock, METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI
 using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
@@ -91,6 +92,16 @@ function observation_definition(sensor, resolution)
 end
 
 @testset "cold SH and Pyramid observation contracts match actual CPU products" begin
+    clocks = [AbsoluteClock(METADATA_CLOCK_REALTIME)]
+    @testset "verified nondefault observation clock" begin
+        try
+            push!(clocks, AbsoluteClock(METADATA_CLOCK_TAI; tai_utc_offset=37))
+        catch error
+            error isa InvalidStateException || rethrow()
+            @info "TAI forwarding check skipped: host does not verify TAI−UTC = 37 seconds" exception=error
+            @test_skip false
+        end
+    end
     sensors = ((16, shack_hartmann_rate_node(:sensor; resolution=16,
             telescope_diameter_m=8.0, n_lenslets=4, n_pix_subap=4,
             pixel_scale_arcsec=0.1, source_wavelength_m=0.75e-6,
@@ -112,6 +123,13 @@ end
         try
             sources = Observation.source_options(observation)
             @test length(sources) == 3
+            @test all(source -> source.absolute_clock == AbsoluteClock(), sources)
+            for clock in clocks
+                clocked_sources = Observation.source_options(observation; absolute_clock=clock)
+                @test length(clocked_sources) == 3
+                # Cover focal, residual-wavefront and RMS keyword forwarding.
+                @test all(source -> source.absolute_clock == clock, clocked_sources)
+            end
             for (index, product, values) in ((1, "focal-image", observation.values),
                     (2, "residual-wavefront", observation.wavefront), (3, "wavefront-rms", observation.rms))
                 @test collect(sources[index].shape) == contracts[product]["shape"]
@@ -145,7 +163,8 @@ end
         end
         @test !haskey(Observation.port_contracts(definition.nodes; atmosphere=false), "wavefront-rms")
     end
-    @test !any(id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"), keys(Base.loaded_modules))
+    # KernelAbstractions 0.10 CPU execution legitimately imports GPUCompiler.
+    @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
     @test isempty(filter(path -> occursin(r"(?i)(libcuda|libcudart|libcublas|libcufft|libamdhip|libhsa-runtime)", path), Libdl.dllist()))
 end
 
