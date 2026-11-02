@@ -6,6 +6,8 @@ The [native-buffer regression record](validation/analysis-metadata-20261102/READ
 demonstrates the Header-only analysis output's inability to retain valid source
 facts, then declares the existing shared telemetry profiles. Actual synchronized
 WFS callback publication is checked independently of managed-session readiness.
+Managed RTC 0.4.1 publication/browser-rebuild evidence and final RTC 0.4.4 source
+regressions retain their separate cohort scopes in that record.
 
 ## Optional synchronized analysis construction — 2026-11-02
 

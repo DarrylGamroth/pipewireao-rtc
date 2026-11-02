@@ -146,3 +146,37 @@ The RTC 0.4.3 run completed before the requested pause: **267 assertions pass**
 115), with **one host-verified TAI check skipped** and exit status 0. The worktree
 and running-check results were preserved during the pause; no additional work
 was performed until the user resumed integration.
+
+## RTC 0.4.4 integration
+
+Merge `f0a9a48` incorporates origin/main
+`2fa58e2564099ba2dea9c7a7a0da0af82466c525` without conflicts. Both repair files
+retain the SHA-256 identities recorded above. Upstream's optical-owner clock
+import, cold regression and version/Manifest changes are merged unchanged.
+The private copied environment selects source RTC 0.4.4 through `Pkg.compat`
+and `Pkg.resolve`; all other 0.4.3 cohort pins remain unchanged. Its Manifest
+SHA-256 is `efdc695b84ce40f5a9cc3d47f48a3a08294b2cf0e9842cd20d2be1dfb4dfc65f`.
+
+The same five selectors pass **267 assertions**, with the same **one TAI check
+skipped**. The upstream clocked backend selector also passes **34/34** (25 cold
+configuration, 9 transport/clock-import checks), for **301 passing assertions**
+and exit status 0 overall. The clocked check runs first, before science imports,
+using the real version-6 application
+`adaptive-optics-simulations/build/spiders-qualification/registered-0.4.4/spiders-cpu/simulation.conf`.
+It modifies only its automatically removed temporary copy.
+
+```sh
+julia --project=/home/dgamroth/.local/state/pipewireao/independent-integration-20261102/rtc39/env -e '
+module ClockedBackendChecks; include("test/clocked_backend_configuration.jl"); end
+module OpticalClockChecks; include("test/test_session_configuration_integration.jl"); end
+module MetadataChecks; include("test/analysis_metadata.jl"); end
+module ConstructorChecks; include("test/analysis_synchronized_inputs.jl"); end
+module StatisticsChecks; include("test/analysis_statistics.jl"); end
+module CaptureChecks; include("test/test_analysis_capture.jl"); end' -- /home/dgamroth/workspaces/codex/adaptive-optics-simulations/build/spiders-qualification/registered-0.4.4/spiders-cpu/simulation.conf
+```
+
+No production fixes, assertion accommodations, services or live fixtures are
+added for this merge. Whitespace and changed local evidence links pass review.
+These RTC 0.4.4 source checks do not expand the preceding RTC 0.4.1 managed
+GUI/WFS/rebuild evidence or qualify coupled recovery, optical pool behavior,
+accelerators, hardware, TAI authority or deadlines.
