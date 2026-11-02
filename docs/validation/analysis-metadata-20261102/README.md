@@ -71,6 +71,41 @@ all existing numerical, rejection, provenance and allocation checks remain.
 Together with the native-buffer regression, this is **181 passing assertions**.
 Final source/test review, local evidence links and `git diff --check` pass.
 
-No core, service, device, sibling source or parent live session is modified.
-Native-buffer evidence does not qualify actual negotiated live publication,
-managed startup, hardware or timing.
+The selectors above modify no core, service, device, sibling source or parent
+live session. Native-buffer evidence alone does not qualify actual negotiated
+live publication, managed startup, hardware or timing.
+
+## Managed CPU integration
+
+A separate parent integration run uses source `85851c8` with upstream RTC/HIL
+0.4.1, PipeWireAO 0.8.0 and native/JLL 3.0.0. The private unpublished immutable
+validation version is `0.4.1+rtc39.20261102.3`, tree
+`5d1a69c241a323819410725381d5cec1ae9b4a31`; its production analysis source has
+SHA-256 `42cdb7e9dff5614aa90b3cfb6f7c9e6afdd39edf3b856a733da20a4ad30aa100`,
+identical to this fix. The SDK native library matches the registered artifact:
+`78673c46f7875421531dcb7391a5e6f8b1d1e6b0de0b892cb2a2a3f664fab76a`.
+
+The sealed Classic CPU application reaches Ready and Running through
+`SessionRuntime.start!` and the public native Start. The optional owner reports
+`PIPEWIREAO_ANALYSIS_READY name=rtc-wfs-analysis links=4` and remains running.
+The production native observer receives eight finite eight-element summaries;
+a fresh WASM browser receives advancing summaries in all fifteen one-second
+samples, publication sequence 1101–1244, without page or protocol errors.
+These observations establish negotiated publication in addition to the callback
+checks above. Initial browser attachment before optional-owner preparation
+exposed a separate GUI recovery policy gap; the GUI repair creates fresh,
+verified read-only leases and does not gate required RTC readiness.
+
+Exactly one browser simulator rebuild changes only `atmosphere.L0` from 30 to 31.
+The job completes from UUID `d0a2477b-48d5-4faf-8fed-50ad9cc1c7d9` to
+`f8f1ba75-84e9-4615-836e-d5ac47776b28`; old RTC loss is observed before one
+explicit Reconnect. Fresh native verification, cleared engineering opt-in,
+advancing detector data and exact persisted settings pass. The owner resumes
+Running. No unknown mutation or rebuild is retried. The preceding private
+sessions shut down through the public owner interface with cleanup confirmed.
+
+These are software/application checks of a non-actuating CPU fixture. They do
+not qualify physical hardware, TAI clock authority, real-time deadlines or the
+upstream external-sensor elected-driver change. Raw logs, screenshots and copied
+applications are temporary; this summary and the GUI module validation record
+retain the outcome and source identity.
