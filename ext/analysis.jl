@@ -297,9 +297,10 @@ end
 function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256)
     input_owner = analysis_input_owner(graph)
     capture = Analysis.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
+    observer_options = capture === nothing ? NamedTuple() : (; frame_observer=capture)
     node = FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
         rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units,
-        frame_observer=capture)
+        observer_options...)
     finished = Threads.Atomic{Bool}(false)
     monitor = nothing
     acquisition = nothing

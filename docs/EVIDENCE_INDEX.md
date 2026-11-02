@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Optional synchronized analysis construction — 2026-11-02
+
+The [focused CPU regression record](validation/analysis-construction-20261102/README.md)
+records RTC issue #40's unsupported `frame_observer=nothing` keyword and its
+conditional omission for ordinary synchronized analysis. The real WFS/Node
+constructor check is distinct from managed readiness and captured acquisition.
+
 ## Optical observation clock keyword forwarding — 2026-11-02
 
 The [optional CPU regression record](validation/optical-observation-clock-20261102/README.md)
