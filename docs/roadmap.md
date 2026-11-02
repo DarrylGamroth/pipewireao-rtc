@@ -70,7 +70,26 @@ and two-loop GUI schema build offline; a 24-exposure static noiseless optical
 check reduces pupil RMS to 0.319 of its initial value. No physical, noisy-loop
 or deadline qualification is implied. Simulators and GUI remain stopped.
 
-### Per-buffer optical and electrical properties — 2026-11-01
+### Independent SPA records — 2026-11-02
+
+The 0.4.0 candidate uses standard Header plus independently negotiated identity,
+exposure timing, absolute time, optical chopping and electrical trigger records.
+Generic ports require only Header; algorithm and recording profiles declare
+their additional requirements. Native 3.0 replaces acquisition Properties without
+a compatibility reader. Capture schema 3 preserves owned source records and
+separates source events from recorder receipt/write observations. REALTIME is the
+default absolute clock; explicit TAI requires a valid configured host offset.
+Neither clock label establishes synchronization or physical timing accuracy.
+
+Julia 1.13.3 source checks pass 8,392 RTC core assertions, 228 capture-file
+assertions, 125 capture callback assertions, 164 stream-format assertions and
+the private-core calibration transport checks. Native, binding and graph-runtime
+reviews are complete. Registered-cohort application rebuilds and release remain
+separate gates. Simulators and GUI remain stopped. The
+[native metadata contract](https://github.com/DarrylGamroth/PipeWireAO/blob/codex/independent-spa-metadata/doc/dox/internals/acquisition-metadata.md#independent-spa-metadata-records)
+owns the ABI and framework-wide acceptance scope.
+
+### Historical optical and electrical Properties cohort — 2026-11-01
 
 Sensor streams always use Header and typed BufferProperties. Acquisition wire
 version selectors and the former optical Properties opt-in are rejected. Capture
