@@ -75,6 +75,9 @@ end
 
 function clocked_command_option(options)
     return PipeWireArrayStreamOptions(;node_name=options.command_node,media_name=options.mirror*" native command",buffers=options.command_buffers,
+        absolute_clock=prepare_absolute_clock(options),
+        metadata=(MetadataRequirement(SPA.META_ABSOLUTE_TIME;required=true),
+            MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING)),
         schema=options.command_schema,format=NdArrayFormat(NdArray.F32_LE,(options.command_count,);layout=NdArray.ROW_MAJOR),
         properties=Dict("optics.command-units"=>options.command_units,"optics.calibration-identity"=>options.calibration_identity))
 end

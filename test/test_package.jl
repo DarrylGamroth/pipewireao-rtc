@@ -2,6 +2,30 @@ using Test, PipeWireAORTC, JSON, TOML
 const P = PipeWireAORTC
 tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
 
+function stage_test_dependencies!(sdk)
+    # Source validation can use an isolated environment with unreleased packages.
+    # Relocation must exercise that same dependency closure, rather than the
+    # checkout's frozen deployment manifest or a different native library ABI.
+    active = Base.active_project()
+    active === nothing && return sdk
+    environment = dirname(active)
+    environment == P.package_root() && return sdk
+    for name in ("Manifest.toml", "LocalPreferences.toml")
+        source = joinpath(environment, name)
+        isfile(source) && cp(source, joinpath(sdk, name); force=true)
+    end
+    return sdk
+end
+
+function test_dependency_environment()
+    active = Base.active_project()
+    active === nothing && return Dict{String,String}()
+    # Preferences for a transitive native dependency are resolved through the
+    # validation project that declares it, as in the parent test process.
+    separator = Sys.iswindows() ? ';' : ':'
+    return Dict("JULIA_LOAD_PATH" => join(("@", dirname(active), "@stdlib"), separator))
+end
+
 @testset "callable package modules and operational scripts" begin
     @test Base.PkgId(P).uuid == Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
     manifest = TOML.parsefile(joinpath(P.package_root(), "Manifest.toml"))
@@ -64,6 +88,7 @@ end
         source = joinpath(directory, "export")
         mkdir(source)
         sdk = P.ScienceExport.copy_deployment_runtime(source)
+        @test !isfile(joinpath(sdk,"Manifest.toml"))
         @test isfile(joinpath(sdk, "assets/deployment/pipewireao-session@.service.in"))
         @test !ispath(joinpath(sdk, "src/deploy.jl"))
         @test !ispath(joinpath(sdk, "src/native_supervisor_client.jl"))
@@ -75,11 +100,12 @@ end
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCGraphExt.jl"))
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCAOSExt.jl"))
         @test sort(readdir(joinpath(sdk, "test"))) == sort(readdir(joinpath(P.package_root(), "test")))
+        stage_test_dependencies!(sdk)
         before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.
         command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
             "-e", "using PipeWireAORTC; @assert startswith(PipeWireAORTC.package_root(), ARGS[1])", sdk]
-        @test P.Common.run_checked(command; timeout=60).returncode == 0
+        @test P.Common.run_checked(command; env=test_dependency_environment(), timeout=60).returncode == 0
         relocated = joinpath(directory, "relocated SDK")
         mv(source, relocated)
         sdk = joinpath(relocated, "julia")
@@ -91,7 +117,7 @@ end
         copied = joinpath(directory, "second export")
         mkdir(copied)
         @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
-            "-e", code, sdk, copied]; timeout=60).returncode == 0
+            "-e", code, sdk, copied]; env=test_dependency_environment(), timeout=60).returncode == 0
         @test tree_identity(sdk) == before
         @test isfile(joinpath(copied, "julia", "src", "common.jl"))
         # Missing declared entrypoints must not silently disappear from provenance.
@@ -100,7 +126,7 @@ end
             "try P.ScienceExport.orchestration_sources(); error(\"missing entry accepted\") " *
             "catch e; @assert e isa ArgumentError end"
         @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no",
-            "--project=" * sdk, "-e", missing]; timeout=60).returncode == 0
+            "--project=" * sdk, "-e", missing]; env=test_dependency_environment(), timeout=60).returncode == 0
     end
 end
 

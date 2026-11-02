@@ -110,7 +110,8 @@ function transport_test(socket, directory, daemon)
             format = NdArrayFormat(NdArray.F32_LE,(2,);rate=SPA.Fraction(500,1),layout=NdArray.ROW_MAJOR)
             connect!(demand_sink,:input;flags=STREAM_MAP_BUFFERS|STREAM_INACTIVE|STREAM_DONT_RECONNECT,
                 params=(ndarray_format(format;schema="pipewireao/dm-command-opd-um-f32/1"),
-                    Pod(buffers_param(size=8,buffers=2)),Pod(header_metadata_param())))
+                    Pod(buffers_param(size=8,buffers=2)),Pod(header_metadata_param()),
+                    Pod(metadata_param(MetadataRequirement(SPA.META_ABSOLUTE_TIME)))))
         end
         roundtrip(registry)
         function port(node,direction,name=nothing)
@@ -139,7 +140,11 @@ function transport_test(socket, directory, daemon)
                 (UInt64(2),Float32[0,0],Float32[0,0],Float32[0,0]))
             prior_cycles=source_cycles[]
             Transport.stage!(probe,sequence,figure)
-            await(() -> source_cycles[]>prior_cycles && Transport.calibration_probe_snapshot(probe).published==sequence)
+            await(() -> begin
+                snapshot=Transport.calibration_probe_snapshot(probe)
+                snapshot.error === nothing || throw(snapshot.error)
+                source_cycles[]>prior_cycles && snapshot.published==sequence
+            end)
             try
                 await(() -> begin
                     snapshot=Transport.calibration_probe_snapshot(probe)

@@ -171,6 +171,11 @@
   and explicit `PIPEWIREAO_PREFIX` pointing to a compatible private native SDK.
   They own and close their private cores, check native receipt admission and
   Pause/Run continuity, and do not qualify hardware or deadlines.
+- Optional `test/calibration_transport.jl` uses `--threads=3,1`;
+  `test/calibration_named_transport.jl` and `test/calibration_readiness.jl` use
+  `--threads=4,1`. These fixtures spawn blocking native graph owners and need an
+  interactive main thread for the control task. Set `PIPEWIREAO_PREFIX` to the
+  matching SDK: client-library preferences alone do not select the test daemon.
 - Optional `test/captured_optical_preparation.jl` exercises the shared RTC device
   execution policy, monochromatic/finite-channel/chopped optics, detector response,
   changed inputs, seeded draws and reset without a core. Set

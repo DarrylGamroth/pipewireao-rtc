@@ -157,28 +157,28 @@ function prepare(definition::AlgorithmGraphDefinition, graph; imaging=default_im
     end
 end
 
-source_options(::Nothing) = ()
-function source_options(observation::Observation)
+source_options(::Nothing;absolute_clock=AbsoluteClock()) = ()
+function source_options(observation::Observation;absolute_clock=AbsoluteClock())
     properties = Dict("node.loop.name"=>"telemetry-loop",
         "node.group"=>"pipewireao-optical-observation",
         "node.sync-group"=>"sync.pipewireao-optical-observation")
     images = (PipeWireImageSourceOptions(node_name="simulator-focal-image",
             media_name="focal-image", schema=FOCAL_IMAGE_SCHEMA,
             shape=size(observation.values), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties=properties),
+            buffers=3, properties=properties,absolute_clock),
         PipeWireImageSourceOptions(node_name="simulator-residual-wavefront",
             media_name="residual-wavefront", schema=WAVEFRONT_SCHEMA,
             shape=size(observation.wavefront), rate=SPA.Fraction(UInt32(20), UInt32(1)),
-            buffers=3, properties=properties))
-    return (images..., rms_source_options(observation.atmosphere_snapshot, properties)...)
+            buffers=3, properties=properties,absolute_clock))
+    return (images..., rms_source_options(observation.atmosphere_snapshot, properties,absolute_clock)...)
 end
 
-rms_source_options(::Nothing, properties) = ()
-rms_source_options(snapshot, properties) =
+rms_source_options(::Nothing, properties,absolute_clock) = ()
+rms_source_options(snapshot, properties,absolute_clock) =
     (PipeWireImageSourceOptions(node_name="simulator-wavefront-rms",
         media_name="wavefront-rms", schema=RMS_SCHEMA, shape=RMS_SHAPE,
         rate=SPA.Fraction(UInt32(20), UInt32(1)), buffers=3, properties=properties,
-        channels=RMS_CHANNELS),)
+        channels=RMS_CHANNELS,absolute_clock),)
 
 # One producer admits the complete cohort before advancing the graph. Its busy
 # flag stays set until the consumer releases every transfer, so independent

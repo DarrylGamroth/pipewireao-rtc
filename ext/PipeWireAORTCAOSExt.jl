@@ -12,6 +12,8 @@ const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
 const SourceControl = PipeWireAORTC.NativeSourceControl
 const Backends = AdaptiveOpticsSim.Backends
 
+import PipeWireAORTC.Common: prepare_absolute_clock
+
 include("aos/optical_observation.jl")
 include("aos/phase_timing.jl")
 include("aos/metadata.jl")
@@ -386,6 +388,7 @@ function Owner.run_owner(options)
         mirror_properties = PipeWireAORTC.InstrumentDefinition.mirror_properties(options)
         command_properties = command_mirror_properties(options, options.command_node, mirror_properties)
         pipewire = prepare_pipewire_hil(science.boundary, science.configuration;
+            absolute_clock=prepare_absolute_clock(options),
             frame_buffers=options.detector_observation ? 3 : 2,
             command_buffers=options.command_observation ? 3 : 2,
             applied_command_node_name=applied_command_names(options.command_node, options.applied_command_observation),
@@ -393,7 +396,7 @@ function Owner.run_owner(options)
             applied_command_properties=merge(Dict("node.group" => "pipewireao-applied-observation",
                 "node.sync-group" => "sync.pipewireao-applied-observation", "node.loop.name" => "telemetry-loop"),
                 mirror_properties),
-            image_sources=OpticalObservation.source_options(observation),
+            image_sources=OpticalObservation.source_options(observation;absolute_clock=prepare_absolute_clock(options)),
             frame_properties=merge(SourceControl.source_properties(mailbox), simulation_properties(options, science)),
             frame_params=mailbox.parameters.params,
             on_frame_param_changed=SourceControl.ParameterChanged(mailbox),

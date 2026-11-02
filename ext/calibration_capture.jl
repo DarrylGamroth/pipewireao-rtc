@@ -20,9 +20,9 @@ struct Receipt
     header::BufferHeader
     optical_classification::Union{Nothing,OpticalClassification}
     trigger_classification::Union{Nothing,AcquisitionTriggerState}
-    wire_start::Union{Nothing,AcquisitionExposureStart}
-    timebase::Union{Nothing,AcquisitionTimebase}
-    ptp_reference::Union{Nothing,AcquisitionPtpReference}
+    exposure_timing::Union{Nothing,ExposureTiming}
+    absolute_times::AbsoluteTimes
+    records::MetadataSnapshot
 end
 
 mutable struct Slot{T,N}
@@ -34,6 +34,7 @@ mutable struct Slot{T,N}
     buffer::StreamBuffer
     phase::UInt8
     receipt::Union{Nothing,Receipt}
+    records::MetadataSnapshot
 end
 
 mutable struct Capture{Slots}
@@ -52,6 +53,8 @@ mutable struct Capture{Slots}
     last::Union{Nothing,AcquisitionIdentity}
     started::Bool
     waiting::Bool
+    absolute_clock::MetadataClock
+    absolute_event::TimeEvent
 end
 
 _locked(f, capture::Capture) = with_thread_loop_lock(_ -> f(), main_loop(capture.core))
@@ -102,7 +105,7 @@ function _slot(spec, ::Type{T}, rank) where {T}
         push!(permutation, indices[reverse(Tuple(reversed))...])
     end
     return Slot(format, schema, zeros(T, length(array)), array, permutation,
-        StreamBuffer(), IDLE, nothing)
+        StreamBuffer(), IDLE, nothing, MetadataSnapshot())
 end
 
 function _slots(declarations::NamedTuple)
@@ -148,9 +151,16 @@ function _format(parameter)
     return SPA.Parameter(SPA.Object(object.type, object.id, properties))
 end
 
+const CAPTURE_METADATA = (
+    MetadataRequirement(SPA.META_ACQUISITION_IDENTITY; required=true),
+    MetadataRequirement(SPA.META_EXPOSURE_TIMING; required=true),
+    MetadataRequirement(SPA.META_ABSOLUTE_TIME; required=true),
+    MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+    MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER))
 function _buffer_parameters(slot)
-    return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(slot.format), metadata_types=(1 << PipeWireAO.LibPipeWire.SPA_META_Header) | (1 << PipeWireAO.LibPipeWire.SPA_META_Properties))),
-        Pod(header_metadata_param()), Pod(buffer_properties_metadata_param(512)))
+    return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(slot.format),
+                metadata_types=1 << PipeWireAO.LibPipeWire.SPA_META_Header)),
+        Pod(header_metadata_param()), map(r -> Pod(metadata_param(r)), CAPTURE_METADATA)...)
 end
 
 function _param!(capture, slot, stream, id, parameter)
@@ -176,18 +186,18 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
     # identity still establishes freshness; CORRUPTED/GAP never complete a slot.
     invalid = SPA.META_HEADER_FLAG_CORRUPTED | SPA.META_HEADER_FLAG_GAP
     header.flags & invalid == 0 || return _fail!(capture, :header_flags)
-    metadata = buffer_properties(buffer)
-    metadata === nothing && return _fail!(capture, :missing_properties)
-    buffer_properties_valid(metadata) || return _fail!(capture, :properties)
+    metadata = metadata_records(buffer)
+    metadata_records_valid(metadata, CAPTURE_METADATA) || return _fail!(capture, :metadata)
     identity = acquisition_identity(metadata)
     identity === capture.expected || identity == capture.expected || return _fail!(capture, :identity)
-    duration = acquisition_exposure_duration(metadata)
-    duration === capture.duration_ns || return _fail!(capture, :duration)
-    start = acquisition_exposure_start(metadata)
-    timebase = acquisition_timebase(metadata)
-    reference = acquisition_ptp_reference(metadata)
-    # Optional wire clock provenance is copied without treating its clock as
-    # model time. The validated HIL timestamp is the model-time authority.
+    timing = exposure_timing(metadata)
+    timing !== nothing && timing.has_duration && timing.duration_nanoseconds == capture.duration_ns ||
+        return _fail!(capture, :duration)
+    times = absolute_times(metadata)
+    any(t -> t.clock == capture.absolute_clock && t.event == capture.absolute_event, times) ||
+        return _fail!(capture, :absolute_time)
+    # Model time remains the armed HIL exposure's authority; the source's absolute
+    # event is copied without inventing a physical exposure start from arrival.
     data = buffer_data(buffer)
     chunk = chunk_info(data)
     extent = payload_size(slot.format)
@@ -198,12 +208,13 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
     if T === Bool
         all(x -> x <= 1, memory) || return _fail!(capture, :boolean_encoding)
     end
+    capture_metadata!(slot.records, buffer)
     copyto!(slot.wire, reinterpret(T, memory))
     for index in eachindex(slot.wire)
         slot.array[slot.permutation[index]] = slot.wire[index]
     end
     slot.receipt = Receipt(something(identity), capture.model_start_ns, capture.duration_ns,
-        header, optical_classification(metadata), trigger_classification(metadata), start, timebase, reference)
+        header, optical_classification(metadata), trigger_classification(metadata), timing, times, slot.records)
     slot.phase = COMPLETE
     all(other -> other.phase == COMPLETE, values(capture.slots)) && (capture.phase = COMPLETE)
     _signal(capture)
@@ -247,12 +258,15 @@ control methods acquire that same loop lock. Payload and receipt stores therefor
 happen before the owner observes completion. Close fences stream callbacks before
 releasing an owned wakeup; a live waiter first unwinds its one-shot Timer. No scientific validity, clipping, unit conversion or file policy is applied.
 """
-function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing, wakeup_lock=ReentrantLock())
+function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing, wakeup_lock=ReentrantLock(),
+        absolute_clock::MetadataClock=METADATA_CLOCK_REALTIME, absolute_event::TimeEvent=TIME_EVENT_PRODUCTION)
+    absolute_clock in (METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI) ||
+        throw(ArgumentError("capture absolute clock must be REALTIME or TAI"))
     main_loop(core) isa ThreadLoop || throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
     slots = _slots(declarations)
     condition = wakeup === nothing ? Base.AsyncCondition() : wakeup
     condition isa Base.AsyncCondition && isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
-    capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false)
+    capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false,absolute_clock,absolute_event)
     created = Stream[]
     try
         _locked(capture) do

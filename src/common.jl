@@ -1,5 +1,53 @@
 module Common
 
+import PipeWireAO
+
+# Optional scientific facts preserved by RTC graph and observation boundaries.
+# Required acquisition facts remain the consuming algorithm/profile's contract.
+const TELEMETRY_METADATA=Tuple(PipeWireAO.MetadataRequirement(type) for type in (
+    PipeWireAO.SPA.META_ACQUISITION_IDENTITY,PipeWireAO.SPA.META_EXPOSURE_TIMING,
+    PipeWireAO.SPA.META_ABSOLUTE_TIME,PipeWireAO.SPA.META_OPTICAL_CHOPPING,
+    PipeWireAO.SPA.META_ELECTRICAL_TRIGGER))
+
+function telemetry_metadata_ports(names;required=NamedTuple())
+    profiles=map(Tuple(names)) do name
+        needed=get(required,name,())
+        metadata=map(TELEMETRY_METADATA) do record
+            demanded=any(r->r.type==record.type && r.required,needed)
+            PipeWireAO.MetadataRequirement(record.type,record.size;required=demanded)
+        end
+        extra=Tuple(r for r in needed if !any(base->base.type==r.type,metadata))
+        (;metadata=(metadata...,extra...))
+    end
+    return NamedTuple{Tuple(names)}(profiles)
+end
+
+"Parse an absolute telemetry clock policy without reading a device or preparing science."
+function absolute_clock_configuration(value=nothing)
+    value === nothing && return (;clock=:realtime,tai_utc_offset=nothing)
+    value isa AbstractDict && all(k -> k in ("clock","tai_utc_offset"),keys(value)) ||
+        throw(ArgumentError("absolute_clock accepts clock and optional tai_utc_offset"))
+    clock=get(value,"clock","realtime")
+    clock in ("realtime","tai") || throw(ArgumentError("absolute_clock must select realtime or tai"))
+    offset=get(value,"tai_utc_offset",nothing)
+    if clock == "tai"
+        offset isa Integer && !(offset isa Bool) && 1 <= offset <= 128 ||
+            throw(ArgumentError("TAI−UTC offset must be an integer in1:128"))
+        offset=Int(offset)
+    else
+        offset === nothing || throw(ArgumentError("realtime does not accept a TAI−UTC offset"))
+    end
+    return (;clock=Symbol(clock),tai_utc_offset=offset)
+end
+
+"Prepare the selected absolute clock once, before native endpoints are created."
+function prepare_absolute_clock(options)
+    policy=get(options,:absolute_clock,(;clock=:realtime,tai_utc_offset=nothing))
+    clock=policy.clock === :realtime ? PipeWireAO.METADATA_CLOCK_REALTIME : PipeWireAO.METADATA_CLOCK_TAI
+    return PipeWireAO.AbsoluteClock(clock;tai_utc_offset=policy.tai_utc_offset)
+end
+
+
 using JSON
 using SHA
 using YAML

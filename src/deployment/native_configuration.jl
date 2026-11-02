@@ -113,6 +113,7 @@ function telemetry_queues!(core)
     for declaration in get(core, "context.modules", [])
         get(declaration, "name", nothing) == "libpipewire-module-queue" || continue
         args = declaration["args"]
+        get(args,"queue.media",nothing) == "application/ndarray" && queue_metadata!(args)
         get(args, "queue.storage", nothing) == "copy" &&
             get(args, "queue.overflow", nothing) == "drop-oldest" || continue
         playback = get!(args, "playback.props", Dict{String,Any}())

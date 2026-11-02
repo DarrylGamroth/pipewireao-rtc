@@ -149,7 +149,17 @@ function run_prepared(options, runtime, graph)
         (; recovery=(controller=Symbol(first(split(only(correction_properties), ':'))),
             participants=Tuple(Symbol.(options.recovery_nodes)),
             reference_timeout_ms=options.correction_timeout_ms))
-    common = (; recovery..., name=options.name, remote=options.remote, rate=options.rate,
+    absolute_clock=PipeWireAORTC.Common.prepare_absolute_clock(options)
+    input_names=keys(JuliaFilterGraph.input_formats(graph))
+    output_names=keys(JuliaFilterGraph.output_formats(graph))
+    if options.feedback !== nothing
+        input_names=filter(!=(first(options.feedback)),input_names)
+        output_names=filter(!=(last(options.feedback)),output_names)
+    end
+    common = (; absolute_clock,recovery..., name=options.name, remote=options.remote, rate=options.rate,
+        input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(input_names;
+            required=FilterGraphPipeWire.required_input_metadata(graph)),
+        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(output_names),
         connect=false, run_control=options.session_run_control,
         channel_units=options.channel_units)
     node = isnothing(options.capture_backend) ?

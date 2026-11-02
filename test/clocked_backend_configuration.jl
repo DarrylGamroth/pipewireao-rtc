@@ -72,7 +72,7 @@ using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
         selected = merge(options, (; command_buffers=buffers))
         transport = owner.clocked_command_option(selected)
         @test transport.buffers == buffers
-        @test transport.buffer_properties_capacity == 512
+        @test any(r -> r.type == AdaptiveOpticsSimPipeWireHIL.SPA.META_ABSOLUTE_TIME && r.required,transport.metadata)
     end
     @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end

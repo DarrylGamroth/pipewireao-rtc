@@ -22,12 +22,12 @@ function (capture::CommandCapture)(stream)
     dequeue_buffer!(capture.buffer,stream) || return nothing
     try
         header=buffer_header(capture.buffer)
-        metadata=buffer_properties(capture.buffer)
+        metadata=metadata_records(capture.buffer)
         data=buffer_data(capture.buffer)
         chunk=chunk_info(data)
         header!==nothing && metadata!==nothing && chunk.size==sizeof(capture.values) || return nothing
         copyto!(capture.values,reinterpret(Float32,bytes(data)))
-        capture.receipt=(;identity=acquisition_identity(metadata),pts=header.pts,duration=acquisition_exposure_duration(metadata))
+        capture.receipt=(;identity=acquisition_identity(metadata),pts=header.pts,duration=exposure_timing(metadata).duration_nanoseconds)
     finally
         queue_buffer!(capture.buffer,stream)
     end
@@ -53,6 +53,7 @@ end
             modules="""
                 { name = libpipewire-module-queue args = {
                     queue.media = application/ndarray node.name = applied-queue
+                    metadata = $(C.JSON.json(E.queue_metadata!(Dict{String,Any}())["metadata"]))
                     queue.max-buffers = 1 queue.storage = copy queue.overflow = drop-oldest
                     capture.props = { node.name = applied-queue-input }
                     playback.props = { node.name = applied-queue-output node.loop.name = telemetry-loop }
@@ -84,7 +85,10 @@ end
                                 end)
                             connect!(observer,:input;flags=STREAM_DRIVER|STREAM_MAP_BUFFERS|STREAM_NO_CONVERT|STREAM_DONT_RECONNECT,
                                 params=(ndarray_format(output.format;schema=output.schema),Pod(buffers_param(size=8,buffers=3)),
-                                    Pod(header_metadata_param()),Pod(buffer_properties_metadata_param(512))))
+                                    Pod(header_metadata_param()),map(r -> Pod(metadata_param(r)),
+            (MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
+                MetadataRequirement(SPA.META_ABSOLUTE_TIME),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+                MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))...))
                         end
                         registry=with_thread_loop_lock(inputs.transport.loop) do _;Registry(inputs.transport.core);end
                             links=Any[]

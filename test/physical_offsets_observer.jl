@@ -63,7 +63,7 @@ include("physical_offsets_documents.jl")
         graph,path=physical_offset_fixture(directory;P,Q,C)
         prepared=Offsets.prepare(path,graph)
         @test prepared.receiver isa Offsets.Receiver
-        @test all(option->option.buffer_properties_capacity==512,prepared.options)
+        @test all(option->any(r->r.type==AdaptiveOpticsSimPipeWireHIL.SPA.META_ACQUISITION_IDENTITY && r.required,option.metadata),prepared.options)
         document=Common.read_yaml(path)
         for invalid in (2,3,1,4,true,"3")
             changed=deepcopy(document)

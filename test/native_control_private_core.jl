@@ -30,7 +30,7 @@ function with_control_private_core(f; check_running=true, allow_passive=false,
                                    remote_name=nothing, telemetry_loop=false,
                                    modules="",
                                    spa_libraries="",
-                                   prefix=String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
+                                   prefix=get(ENV,"PIPEWIREAO_PREFIX",String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)))
     libdir = isdir(joinpath(prefix, "lib", "x86_64-linux-gnu")) ?
         joinpath(prefix, "lib", "x86_64-linux-gnu") : joinpath(prefix, "lib")
     daemon_path = joinpath(prefix, "bin", "pipewire-ao")

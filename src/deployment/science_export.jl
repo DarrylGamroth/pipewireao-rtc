@@ -123,9 +123,11 @@ function write_spa_config(path::AbstractString, value;
     return path
 end
 
-# Shared operational closure; instrument projects export their own sources.
+# Shared operational source closure; instrument projects export their own sources.
+# A checkout Manifest is not a deployment dependency closure. Resolve the copied
+# Project or supply a matching registered application Manifest before installation.
 const RUNTIME_ENTRIES = (
-    "Project.toml", "Manifest.toml", "src", "ext", "test", "data",
+    "Project.toml", "src", "ext", "test", "data",
     "session_cli.jl", "session_launch.jl",
     "session_configuration.jl", "session_install.jl",
 )

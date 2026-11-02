@@ -104,8 +104,8 @@ end
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
         streams = ExternalOwner.stream_options(science,options.pupil_node,options.sensor_nodes)
-        @test streams[2].buffer_properties_capacity==512
-        @test streams[3].buffer_properties_capacity==512
+        @test all(r->r.required,streams[2].metadata)
+        @test all(r->r.required,streams[3].metadata)
         @test streams[2].format.rate == SPA.Fraction(500,1)
         @test streams[3].format.rate == SPA.Fraction(100,1)
         packet=zeros(Float32,2,4,4);packet[2,:,:].=1

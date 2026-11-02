@@ -48,7 +48,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup", "--absolute-clock", "--tai-utc-offset")
             key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -101,7 +101,17 @@ function arguments(arguments)
     supervision = get(values, "--supervision", nothing)
     supervision === nothing || length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing), get(values,"--chopped-warmup",nothing)
+    clock_policy=(;)
+    if haskey(values,"--absolute-clock") || haskey(values,"--tai-utc-offset")
+        value=Dict{String,Any}("clock"=>get(values,"--absolute-clock","realtime"))
+        if haskey(values,"--tai-utc-offset")
+            offset=tryparse(Int,values["--tai-utc-offset"])
+            offset === nothing && throw(ArgumentError("TAI−UTC offset requires an integer"))
+            value["tai_utc_offset"]=offset
+        end
+        clock_policy=(;absolute_clock=Common.absolute_clock_configuration(value))
+    end
+    return (; remote, bootstrap_node=node, bootstrap_instance=instance,clock_policy...), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing), get(values,"--chopped-warmup",nothing)
 end
 
 struct FITSBinding
@@ -225,7 +235,7 @@ typed graph outputs. Monitor-only is the default and never changes closure.
 `--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
 `exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
 synthetic F/U/F samples must prime then complete SCC pixel residuals; finally
-the Graph is reset. The owner requires explicit identity, duration and optical classification Properties.
+the Graph is reset. The owner requires explicit identity, exposure timing and optical chopping records.
 """
 main(args) = _main(args)
 

@@ -192,8 +192,9 @@ end
 
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
-    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz"]) ||
-        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz"))
+    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz", "absolute_clock"]) ||
+        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz, absolute_clock"))
+    haskey(overrides,"absolute_clock") && Common.absolute_clock_configuration(overrides["absolute_clock"])
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     if get(simulation,"version",nothing) == 4

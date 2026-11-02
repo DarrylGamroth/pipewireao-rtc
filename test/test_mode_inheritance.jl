@@ -46,6 +46,8 @@ end
     @test queue["args"]["playback.props"]["node.name"] == "residual-queue-output"
     @test queue["args"]["queue.max-buffers"] === 1
     @test queue["args"]["playback.props"]["queue.max-buffers"] == "1"
+    @test Set(r["type"] for r in queue["args"]["metadata"]) == Set(UInt32[768,769,770,771,772])
+    @test all(r -> r["required"] === false,queue["args"]["metadata"])
     override = deepcopy(entry)
     override["args"]["queue.max-buffers"] = 4
     override["args"]["playback.props"]["node.loop.name"] = "other-loop"
@@ -66,5 +68,23 @@ end
             x -> (x["args"]["playback.props"]["unknown"] = true), x -> delete!(x["args"]["playback.props"], "media.name"))
         invalid = deepcopy(entry); mutate!(invalid)
         @test_throws ArgumentError E.queue_templates!(Dict("context.modules" => Any[invalid]))
+    end
+end
+
+@testset "telemetry metadata profiles preserve explicit extensible layouts" begin
+    record(type,size;required=false)=Dict("type"=>type,"size"=>size,"required"=>required)
+    for entries in ([record(0x3fe,17;required=true)],[],
+            [record(0x400+i,1) for i in 1:63],[record(0x3fe,4064)])
+        args=Dict{String,Any}("metadata"=>entries)
+        original=deepcopy(entries)
+        @test E.queue_metadata!(args) === args
+        @test args["metadata"] == original
+    end
+    for entries in ([record(0x3fe,4065)],[record(0x400+i,1) for i in 1:64],
+            [record(0x3fe,8),record(0x3fe,8)],[record(0,8)],[record(13,8)],
+            [record(7,8)],[record(0x3f00001,0)],
+            [record(0x3fe,8;required=1)],[record(true,8)],
+            [merge(record(0x3fe,8),Dict("unknown"=>1))],nothing)
+        @test_throws ArgumentError E.queue_metadata!(Dict{String,Any}("metadata"=>entries))
     end
 end

@@ -86,10 +86,12 @@ function applied_command_option(options)
     properties=merge(PipeWireAORTC.InstrumentDefinition.mirror_properties(options,Symbol(options.mirror)),
         Dict("node.loop.name"=>"telemetry-loop","node.group"=>"pipewireao-applied-observation",
             "node.sync-group"=>"sync.pipewireao-applied-observation",
+            "pipewireao.header.pts.clock"=>"model",
+            "pipewireao.header.pts.absolute-conversion"=>"unavailable",
             "aos.simulation.command-order"=>options.command_order,
             "aos.simulation.calibration-identity"=>options.calibration_identity))
     return PipeWireArrayStreamOptions(;node_name="simulator-"*options.mirror*"-applied",media_name="dm-applied",
-        buffers=3,schema=PipeWireAORTC.Schemas.identifier("applied_dm_command_opd_um"),
+        buffers=3,absolute_clock=Extension.prepare_absolute_clock(options),schema=PipeWireAORTC.Schemas.identifier("applied_dm_command_opd_um"),
         format=NdArrayFormat(NdArray.F32_LE,(options.command_count,);layout=NdArray.ROW_MAJOR,
             rate=SPA.Fraction(UInt32(options.rate),UInt32(1))),properties)
 end

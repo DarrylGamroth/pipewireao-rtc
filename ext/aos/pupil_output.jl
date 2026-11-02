@@ -75,7 +75,7 @@ function contract(declaration, configured; simulation_graph="production")
 end
 
 function prepare(graph, opd::Symbol, amplitude::AbstractMatrix{Float32}, boundary;
-        period_ns::UInt64, properties=Dict{String,String}())
+        period_ns::UInt64, properties=Dict{String,String}(),absolute_clock=AbsoluteClock())
     Base.require_one_based_indexing(amplitude)
     PipeWireAORTC.Artifacts.checked_shape(boundary.shape, sizeof(Float32))
     size(amplitude) == Base.tail(boundary.shape) || throw(DimensionMismatch("pupil amplitude shape differs from contract"))
@@ -91,9 +91,11 @@ function prepare(graph, opd::Symbol, amplitude::AbstractMatrix{Float32}, boundar
         extra = merge(Dict(boundary.properties), Dict(properties),
             Dict("node.loop.name" => "telemetry-loop", "aos.pupil-output.failed" => "false",
                 "aos.pupil-output.completed" => "0", "aos.pupil-output.dropped" => "0",
+                "pipewireao.header.pts.clock" => "model",
+                "pipewireao.header.pts.absolute-conversion" => "unavailable",
                 "pipewireao.ndarray.channels" => source_planes(boundary, format)))
         option = PipeWireArrayStreamOptions(node_name=NODE_NAME, media_name="scientific pupil",
-            schema=boundary.schema, format=format, properties=extra)
+            schema=boundary.schema, format=format, properties=extra,absolute_clock)
         bits = uuid4().value
         domain = AcquisitionDomain(ntuple(i -> UInt8((bits >> (8 * (i - 1))) & 0xff), Val(16)))
         return Publisher(snapshot, Matrix(amplitude), Array{Float32}(undef, boundary.shape), option,
@@ -116,7 +118,7 @@ function prepare(options, science)
     amplitude = getproperty(Extension.prepare_bindings(declaration, configured, (output.amplitude,)), output.amplitude)
     properties = Extension.simulation_properties(options, science)
     properties["aos.simulation.prescription-identity"] = options.prescription_identity
-    return prepare(science.graph, output.opd, amplitude, boundary; options.period_ns, properties)
+    return prepare(science.graph, output.opd, amplitude, boundary; options.period_ns, properties,absolute_clock=Extension.prepare_absolute_clock(options))
 end
 
 "One-based host snapshot [x,y] becomes [quantity,y,x]; no display transform."

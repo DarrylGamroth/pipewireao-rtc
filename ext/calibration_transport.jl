@@ -1,5 +1,6 @@
 import PipeWireAO as PW
 import FilterGraphAlgorithms
+using UUIDs: uuid4
 
 struct CalibrationGraphWorker
     task::Task
@@ -10,7 +11,7 @@ struct CalibrationGraphWorker
 end
 
 "Run the prepared graph on one sticky owner task; the caller retains its graph."
-function start_calibration_graph(descriptor, remote, name, rate; notify)
+function start_calibration_graph(descriptor, remote, name, rate; notify,absolute_clock=PW.AbsoluteClock())
     node = Ref{Any}(nothing)
     failure = Ref{Any}(nothing)
     ready = Threads.Atomic{Bool}(false)
@@ -21,7 +22,10 @@ function start_calibration_graph(descriptor, remote, name, rate; notify)
         try
             stop_requested[] && return nothing
             owned = FilterGraphPipeWire.PipeWireNode(descriptor.graph;
-                remote, name, rate, connect=false,
+                remote, name, rate, connect=false,absolute_clock,
+                input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(descriptor.graph));
+                    required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
+                output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(descriptor.graph))),
                 # Every requested calibration sample must reach the graph.
                 # Latest-input admission can discard it under output starvation.
                 fifo_inputs=true,
@@ -92,6 +96,9 @@ mutable struct CalibrationProbe{L,F}
     source_buffer::PW.StreamBuffer
     feedback_buffer::PW.StreamBuffer
     notify::F
+    absolute_clock::PW.AbsoluteClock
+    origin::NTuple{16,UInt8}
+    last_absolute_time::Union{Nothing,PW.AbsoluteTime}
 end
 
 function calibration_probe_failure!(probe, error)
@@ -111,10 +118,15 @@ function publish_calibration_probe!(probe, stream)
             extent = sizeof(probe.figure)
             copyto!(reinterpret(Float32, PW.buffer_memory(data, extent)), probe.figure)
             PW.set_chunk!(data; size=extent, stride=sizeof(Float32))
+            records=PW.initialize_metadata!(probe.source_buffer)
             PW.set_buffer_header!(probe.source_buffer,
                 PW.BufferHeader(0, 0, 0, 0, probe.sequence))
+            stamp=PW.absolute_time_now(probe.absolute_clock;event=PW.TIME_EVENT_PRODUCTION,
+                origin=probe.origin,previous=probe.last_absolute_time)
+            PW.set_absolute_times!(records,(stamp,))
             PW.queue_buffer!(probe.source_buffer, stream)
             queued = true
+            probe.last_absolute_time=stamp
             probe.published = probe.sequence
             probe.drain_pending = true
             probe.notify()
@@ -183,10 +195,11 @@ function calibration_probe_format(format, rate)
         rate=fraction, layout=PW.NdArray.ROW_MAJOR)
 end
 
-function calibration_probe_parameters(format, schema)
+function calibration_probe_parameters(format, schema;required_absolute_time=false)
     return (PW.ndarray_format(format; schema),
         PW.Pod(PW.buffers_param(size=PW.payload_size(format), buffers=2)),
-        PW.Pod(PW.header_metadata_param()))
+        PW.Pod(PW.header_metadata_param()),
+        PW.Pod(PW.metadata_param(PW.MetadataRequirement(PW.SPA.META_ABSOLUTE_TIME;required=required_absolute_time))))
 end
 
 function calibration_probe_state!(probe, old, current, message)
@@ -202,29 +215,36 @@ end
 
 "Prepare inactive requested-command/constraint-feedback Streams on the held-HIL core."
 function prepare_calibration_probe(core, format, schema, feedback_format, feedback_schema, rate;
-        notify, prefix="calibration", failure=Ref{Any}(nothing))
+        notify, prefix="calibration", failure=Ref{Any}(nothing),absolute_clock=PW.AbsoluteClock())
+    PW.validate_absolute_clock(absolute_clock)
     requested = calibration_probe_format(format, rate)
     feedback = calibration_probe_format(feedback_format, rate)
     requested.shape == feedback.shape || throw(DimensionMismatch("probe and feedback extents differ"))
     loop = PW.main_loop(core)
+    origin=uuid4().value
     probe = CalibrationProbe(loop, nothing, nothing, zeros(Float32, requested.shape...),
         zeros(Float32, feedback.shape...), UInt64(0), UInt64(0), UInt64(0), false, failure, false,
-        PW.StreamBuffer(), PW.StreamBuffer(), notify)
+        PW.StreamBuffer(), PW.StreamBuffer(), notify,absolute_clock,
+        ntuple(i -> UInt8((origin >> (8(i-1))) & 0xff),16),nothing)
     try
         PW.with_thread_loop_lock(loop) do _
             probe.source = PW.Stream(core, prefix*"-requested";
                 properties=Dict("node.name"=>prefix*"-requested", "node.want-driver"=>"true",
-                    "priority.driver"=>"100", "node.reliable"=>"true"),
+                    "priority.driver"=>"100", "node.reliable"=>"true",
+                    "pipewireao.header.pts.clock"=>"unavailable",
+                    "pipewireao.header.pts.absolute-conversion"=>"unavailable"),
                 on_state_changed=(stream, old, current, message) -> calibration_probe_state!(probe, old, current, message),
                 on_process=stream -> publish_calibration_probe!(probe, stream),
                 on_trigger_done=stream -> drain_calibration_probe!(probe, stream))
             probe.feedback = PW.Stream(core, prefix*"-constraint-feedback";
-                properties=Dict("node.name"=>prefix*"-constraint-feedback", "node.reliable"=>"true"),
+                properties=Dict("node.name"=>prefix*"-constraint-feedback", "node.reliable"=>"true",
+                    "pipewireao.header.pts.clock"=>"unavailable",
+                    "pipewireao.header.pts.absolute-conversion"=>"unavailable"),
                 on_state_changed=(stream, old, current, message) -> calibration_probe_state!(probe, old, current, message),
                 on_process=stream -> receive_calibration_feedback!(probe, stream))
             flags = PW.STREAM_MAP_BUFFERS | PW.STREAM_INACTIVE | PW.STREAM_DONT_RECONNECT | PW.STREAM_NO_CONVERT
             PW.connect!(probe.source, :output; flags=flags | PW.STREAM_DRIVER,
-                params=calibration_probe_parameters(requested, schema))
+                params=calibration_probe_parameters(requested, schema;required_absolute_time=true))
             PW.connect!(probe.feedback, :input; flags,
                 params=calibration_probe_parameters(feedback, feedback_schema))
         end
@@ -311,7 +331,7 @@ end
 calibration_probe_members(probe::CalibrationProbe) = (probe,)
 calibration_probe_members(probes::CalibrationProbes) = values(probes.probes)
 
-function prepare_calibration_probes(core, commands::NamedTuple, rate; notify, prefix="calibration")
+function prepare_calibration_probes(core, commands::NamedTuple, rate; notify, prefix="calibration",absolute_clock=PW.AbsoluteClock())
     isempty(commands) && throw(ArgumentError("named calibration requires at least one command"))
     prepared = CalibrationProbe[]
     failure = Ref{Any}(nothing)
@@ -320,7 +340,7 @@ function prepare_calibration_probes(core, commands::NamedTuple, rate; notify, pr
             format = JuliaFilterGraph.input_formats(descriptor.graph).requested
             feedback = JuliaFilterGraph.output_formats(descriptor.graph)[Symbol("constraint-feedback")]
             push!(prepared, prepare_calibration_probe(core, format, format.schema, feedback,
-                feedback.schema, rate; notify, prefix=prefix*"."*String(name), failure))
+                feedback.schema, rate; notify, prefix=prefix*"."*String(name), failure,absolute_clock))
         end
         return CalibrationProbes(PW.main_loop(core), NamedTuple{keys(commands)}(Tuple(prepared)))
     catch primary

@@ -234,3 +234,14 @@ end
         @test S.job(id;root,inspect=absent)["locator"]=="/exact/new-session.pod"
     end
 end
+
+@testset "absolute telemetry clock selection is cold and explicit" begin
+    parseclock=PipeWireAORTC.AOSOwner.absolute_clock_configuration
+    @test parseclock() == (;clock=:realtime,tai_utc_offset=nothing)
+    @test parseclock(Dict("clock"=>"tai","tai_utc_offset"=>37)) == (;clock=:tai,tai_utc_offset=37)
+    for value in (Dict("clock"=>"ptp"),Dict("clock"=>"monotonic"),Dict("clock"=>"tai"),
+            Dict("clock"=>"tai","tai_utc_offset"=>true),Dict("clock"=>"tai","tai_utc_offset"=>0),
+            Dict("clock"=>"realtime","tai_utc_offset"=>37),Dict("other"=>1))
+        @test_throws ArgumentError parseclock(value)
+    end
+end

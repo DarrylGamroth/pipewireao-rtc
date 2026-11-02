@@ -12,6 +12,26 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Independent SPA records — 2026-11-02
+
+The native 3.0 development cohort replaces acquisition-specific Properties with
+Header and independently negotiated identity, exposure, absolute-time, optical
+chopping and electrical-trigger records. Shared telemetry export declares the
+records its queues preserve; explicit bounded layouts can add optional opaque
+records. Transport-owned synchronization state is never copied as scientific data.
+
+RTC capture schema 3 preserves validated source records and separately labels
+recorder receipt and payload-write events. Schema 1/2 captures are rejected;
+historical files remain unchanged. REALTIME is the default. Explicit TAI policy
+requires a verified host offset before endpoints are created, including calibration
+sources, controller products and recording. Header PTS remains a separate timeline.
+
+Source validation passes the RTC core suite (8392 assertions), capture-file
+checks (228), capture callbacks (125), single-command transport (27) and named
+command transport (16 plus 42 cold contracts). Native lifecycle review and stress
+checks pass separately. Cross-package final validation, registered dependencies
+and fresh applications remain release gates. No simulator or GUI is launched.
+
 ### Independent shared-mirror optical control — 2026-11-01
 
 Shared JFG/FGPW graph composition serializes independent camera arrivals into

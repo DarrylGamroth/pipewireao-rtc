@@ -2,7 +2,7 @@
 function pupil_source_configuration(path, document)
     required=("version","mode","plant","command_input","mirror","rate","pacing_rate_hz",
         "backend","device","instrument","rtc_configuration","calibration_identity","prescription_identity")
-    InstrumentConfiguration.fields(document,(required...,"applied_command_observation"),required,"pupil source")
+    InstrumentConfiguration.fields(document,(required...,"applied_command_observation","absolute_clock"),required,"pupil source")
     document["mode"]=="pupil-source" || throw(ArgumentError("version 5 requires mode pupil-source"))
     config_path=abspath(path)
     entry=document["plant"]
@@ -48,7 +48,7 @@ function pupil_source_configuration(path, document)
     instrument=DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"])
     rtc_configuration=DeploymentConfiguration.relative_asset(dirname(config_path),document["rtc_configuration"])
     applied_command_observation=boolean(get(document,"applied_command_observation",false),"applied_command_observation")
-    return (;version=5,applied_command_observation,mode=:pupil_source,config_path,plant=(;definition,graph=selected,settings=plant_settings(configured)),
+    return (;absolute_clock=absolute_clock_configuration(get(document,"absolute_clock",nothing)),version=5,applied_command_observation,mode=:pupil_source,config_path,plant=(;definition,graph=selected,settings=plant_settings(configured)),
         graph=nothing,command_input=input,mirror,command_count,command_order,rate,period_ns,pacing_rate_hz,pacing_period_ns,
         backend,device,instrument,rtc_configuration,pupil_output=true,
         calibration_identity=text(document["calibration_identity"],"calibration identity"),
