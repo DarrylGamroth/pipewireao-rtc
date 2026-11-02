@@ -69,3 +69,8 @@ link also pass inspection.
 No core, service, device or GPU execution is used. Managed application startup,
 TAI qualification, hardware, physical-loop behavior and timing qualification
 require separate evidence.
+
+The [upstream 0.4.1 merge revalidation](../analysis-construction-20261102/README.md#upstream-041-merge)
+reruns this selector on source RTC 0.4.1 and registered HIL 0.4.1: the same
+86 assertions pass and one host-verified TAI check is skipped. The original
+0.4.0 cohort receipt above remains separately scoped.

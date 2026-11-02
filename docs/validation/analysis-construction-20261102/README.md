@@ -54,3 +54,37 @@ pass. The production diff contains only conditional observer-keyword omission.
 This is constructor/dispatch software evidence, not managed readiness, WFS
 publication, captured-acquisition, hardware or timing qualification. No running
 core, service, instrument or GUI session is touched.
+
+## Upstream 0.4.1 merge
+
+Merge `38615d48f47c4dd52c99e151dfb458266a8260c5` incorporates origin/main
+`778a7e2033604d430efd2726ac0f1800638b1629` without conflicts, preserving the
+separate clock repair `837fa60` and analysis repair `8c28b72`. The upstream
+Project/version and external-pupil publication changes are unmodified.
+
+The private copied environment now selects source RTC 0.4.1 and registered
+HIL 0.4.1 via `Pkg.compat`, a targeted `Pkg.add` with `PRESERVE_ALL`, and
+`Pkg.resolve`; all other recorded exact cohort selections remain unchanged.
+The original generated application environment is untouched.
+
+The four selectors run in separate modules in one fresh process to reuse
+compilation while isolating their test globals:
+
+```sh
+julia --project=/home/dgamroth/.local/state/pipewireao/independent-integration-20261102/rtc39/env -e '
+module OpticalClockChecks; include("test/test_session_configuration_integration.jl"); end
+module SynchronizedAnalysisChecks; include("test/analysis_synchronized_inputs.jl"); end
+module StatisticsChecks; include("test/analysis_statistics.jl"); end
+module CaptureChecks; include("test/test_analysis_capture.jl"); end'
+```
+
+The merged-cohort run passes **253 assertions** (clock/integration 86,
+synchronized analysis 3, statistics 49, capture 115), with the same **one TAI
+check skipped** because the shared constructor cannot verify this host's offset.
+Exit status is 0; no assertions or production changes were added to accommodate
+the merge. The resolved private Manifest SHA-256 is
+`e4c730608215c8fd4ef47bb09db367e91cf17ae9b8fd7f112ba195e092856d31`.
+
+These checks do not exercise the upstream external-sensor elected-driver
+publication path, qualify managed readiness on HIL 0.4.1, or supersede any
+separate live receipt from the earlier private 0.4.0 cohort.
