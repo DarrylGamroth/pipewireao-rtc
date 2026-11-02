@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "495a7039fc6470a12a47fbc5a9631be384310bd8"
+project_hash = "067eaa5f094cd95d480a1a87e22ca1937b41efb0"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -301,7 +301,7 @@ version = "0.8.0"
 deps = ["DBInterface", "FITSIO", "Hsm", "Interpolations", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.4.1"
+version = "0.4.3"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]

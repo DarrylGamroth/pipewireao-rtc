@@ -22,10 +22,19 @@ supervision selection (RTC-DEV-036) is unchanged.
 
 | Requirement | Delivery allocation and verification | State |
 | --- | --- | --- |
-| RTC-DEV-032 | Exact-owner bounded native admission; complete coupled scope validation; one existing serialized owner callback; busy, stale, unsupported and partial-scope rejection before effects | planned |
-| RTC-DEV-033 | Open all scoped controllers and reconcile committed/candidate, temporal, retained branch-output and delayed-feedback histories atomically; preserve parameters, acquisition authority and conditioner current/RNG/cadence | planned |
-| RTC-DEV-034 | Fresh successful shared command/reference and componentwise controller-generation evidence; no stopped-camera or SCC-priming proof; release leaves all open; independent guarded explicit closure | planned |
-| RTC-DEV-035 | Exact tokens/incarnations/generations and finite phase budgets across partial adoption, loss, timeout, cancellation, reset and owner replacement; uncertain operations latch without retry | planned |
+| RTC-DEV-032 | Exact-owner bounded native admission; complete coupled scope validation; one existing serialized owner callback; busy, stale, unsupported and partial-scope rejection before effects | CPU callback/client verified |
+| RTC-DEV-033 | Open all scoped controllers and reconcile committed/candidate, temporal, retained branch-output and delayed-feedback histories atomically; preserve parameters, acquisition authority and conditioner current/RNG/cadence | CPU callback/client verified |
+| RTC-DEV-034 | Fresh successful shared command/reference and componentwise controller-generation evidence; no stopped-camera or SCC-priming proof; release leaves all open; independent guarded explicit closure | CPU callback/client verified |
+| RTC-DEV-035 | Exact tokens/incarnations/generations and finite phase budgets across partial adoption, loss, timeout, cancellation, reset and owner replacement; uncertain operations latch without retry | CPU callback/client verified |
+
+Reviewed graph implementation `4d43af1` passes 2,680 optimized FGPW checks,
+including 124 coupled cases and zero-byte warmed processing/adoption gates;
+FGA recovery passes 880 checks. RTC passes its full 8,540-assertion core suite.
+Three confirmed review findings have fail-before/pass-after evidence and are
+closed in the [independent review](reviews/20261102-spiders-coupled/REVIEW.md).
+Patch releases require FGA 0.10.1 and FGPW 0.3.1. Actual SPIDERS private-core
+application acceptance and matching authored configuration remain separate
+instrument gates; no installed session or GUI has been launched.
 
 Stopped-camera policy: the control callback may open and reconcile while both
 cameras are silent. It does not fabricate a frame or command publication. Reference
