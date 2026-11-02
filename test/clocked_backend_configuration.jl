@@ -66,6 +66,10 @@ using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 @testset "clocked command transport uses the resolved buffer contract" begin
     options = PipeWireAORTC.AOSOwner.configuration(abspath(only(ARGS)))
     owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+    @test isdefined(owner, :prepare_absolute_clock)
+    if isdefined(owner, :prepare_absolute_clock)
+        @test owner.prepare_absolute_clock === PipeWireAORTC.Common.prepare_absolute_clock
+    end
     @test options.command_buffers == 3
     @test owner.clocked_command_option(options).buffers == 3
     for buffers in (2, 64)

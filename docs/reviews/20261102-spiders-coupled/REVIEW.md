@@ -54,16 +54,19 @@ outside scope.
   independently reported zero callback and recovery-adoption bytes. Earlier
   allocation observations came from superseded source and are not evidence for
   the final gate; no specific cause is inferred from their difference.
-- The actual SPIDERS private-core recovery selector is a separate application
-  gate and was still running at this review decision. No installed application,
-  physical-device, accelerator or deadline claim follows from these results.
+- Follow-up independent instrument review inspected the actual SPIDERS selector,
+  authored scope, registered dependency trees and completed 729/729 private-core
+  result (64.6 s, `-O0`, functional only). It covers stopped-camera adoption with
+  no fabricated publication, fresh SCC pair priming, open release and independent
+  LLOWFS/SCC closure. All eight CPU/CUDA-selected instrument exports completed.
+  No installed application, physical-device, accelerator or deadline claim follows.
 
 ## Review decision
 
 CR-01, CR-02 and GR-01 are closed by source review and their focused regressions.
 No additional confirmed source findings remain. Combined review is approved for
 the selected complete-frame CPU recovery implementation and its software-test
-scope. Instrument application promotion remains subject to its private-core gate.
+scope. The SPIDERS CPU/private-core application gate also passed follow-up review.
 Software tests do not establish physical-loop behavior, settling, latency, or
 deadline performance. Cold compilation cost was observed during validation but
 was not qualified or changed as part of this review.
