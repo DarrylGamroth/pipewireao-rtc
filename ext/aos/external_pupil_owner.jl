@@ -100,7 +100,7 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
-function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2, input_option=nothing, absolute_clock=PipeWireAO.AbsoluteClock())
+function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=3, input_option=nothing, absolute_clock=PipeWireAO.AbsoluteClock())
     pupil = input_option === nothing ? PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
         schema=science.pupil.schema, format=NdArrayFormat(NdArray.F32_LE,science.pupil.shape;layout=NdArray.ROW_MAJOR),
         properties=science.pupil.properties) : input_option

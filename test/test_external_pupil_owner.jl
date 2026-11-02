@@ -8,8 +8,8 @@ const C = PipeWireAORTC.Common
         (;document,config) = external_pupil_owner_documents(directory)
         options = Owner.configuration(config)
         @test options.version == 4 && options.mode === :external_pupil
-        @test options.sensor_buffers==2
-        for buffers in (3,64)
+        @test options.sensor_buffers==3
+        for buffers in (2,64)
             C.write_json(config,merge(document,Dict("sensor_buffers"=>buffers)))
             @test Owner.configuration(config).sensor_buffers==buffers
         end
