@@ -245,9 +245,10 @@ end
 
 function publish_sensor!(owner,index,buffer,identity,pts,duration,classification; optical_classification=nothing)
     properties = optical_classification === nothing ? (;) : (;optical_classification)
-    if stage_pipewire_array!(owner,index,buffer;identity,pts,duration,trigger_state=classification,properties...)
-        with_array_stream(trigger_process!,owner,index)
-    end
+    stage_pipewire_array!(owner,index,buffer;identity,pts,duration,trigger_state=classification,properties...)
+    # Any sensor may be a non-driving peer of the elected graph driver. Also
+    # retry an already pending sample when a newer exposure could not be staged.
+    trigger_process!(owner)
     return nothing
 end
 
