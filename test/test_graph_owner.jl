@@ -50,11 +50,17 @@ end
         "--recovery-node=temporal"; "--recovery-node"; "command"])
     @test recovery[6] == ["temporal", "command"]
     @test recovery[2] == graph
+    coupled = GraphOwner.arguments([argv; "--correction-property=a:closed";
+        "--correction-property=b:closed"; "--recovery-node=command"])
+    @test coupled[4] == ["a:closed", "b:closed"]
+    @test coupled[6] == ["command"]
     for extra in (["--recovery-node=command"],
             ["--correction-property=controller:closed", "--recovery-node=controller"],
             ["--correction-property=controller:closed", "--recovery-node=bad/name"],
             ["--correction-property=controller:closed", "--recovery-node=x", "--recovery-node=x"],
-            ["--correction-property=a:closed", "--correction-property=b:closed", "--recovery-node=x"])
+            ["--correction-property=a:enabled", "--recovery-node=x"],
+            ["--correction-property=a:closed", "--correction-property=b:closed", "--recovery-node=b"],
+            [["--correction-property=a$i:closed" for i in 1:17]; "--recovery-node=x"])
         @test_throws ArgumentError GraphOwner.arguments([argv; extra])
     end
     timed = GraphOwner.arguments([argv; "--correction-property=controller:closed";

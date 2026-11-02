@@ -322,6 +322,34 @@ intervention thresholds remain unselected. See RTC-DEV-032–036 and the current
 roadmap evidence for qualification limits. Existing live applications are not
 opted into recovery merely by updating the library.
 
+#### Independent controllers sharing a command path — 2026-11-02
+
+The selected extension uses one explicitly complete recovery scope for the
+independent camera branches and shared conditioner. One owner transaction opens
+all scoped controllers and reconciles their histories and retained branch outputs.
+When both cameras are stopped, adoption still clears histories, but reference
+verification waits for a genuine accepted camera event or times out. No synthetic
+camera event or second processing scheduler is introduced.
+
+The singular scope keeps its version-1 native property descriptor. An explicitly
+plural scope uses descriptor version 2: `controller-count`, `controller-1` through
+`controller-N`, and indexed `controller-I-close-guarded`, `controller-I-ready`,
+`controller-I-observation-sequence` and
+`controller-I-observation-monotonic-nanoseconds`. Named controller properties
+retain their own requested/active generations. The client compares these exact
+ordered tuples component by component; no scalar maximum or hash stands for
+their adoption. This descriptor is unrelated to the retired acquisition schemas.
+
+Global release requires fresh all-open command-reference evidence and leaves all
+controllers open. Explicit resume can close a selected subset in one transaction.
+Each controller retains its own first-close guard. After LLOWFS closes, SCC can
+qualify later against fresh shared command/feedback evidence while LLOWFS continues
+to contribute legitimately. SCC additionally requires a genuine post-recovery
+fringed/unfringed pair; priming cannot establish readiness. A refused or uncertain
+close retains its guard, leaves other controllers untouched and is not retried.
+Ordinary hold/resume retains its existing behavior after that controller's guarded
+first close. No GUI changes or physical-device recovery claim are part of this work.
+
 ### Operational controls for the existing coupled loop
 
 The operational extension adds readiness admission and inspectable loop status

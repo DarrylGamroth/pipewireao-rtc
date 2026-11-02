@@ -88,7 +88,7 @@ function external_pupil_configuration(path, document)
     (backend === :cpu ? device == 0 : backend !== :amdgpu || device >= 1) || throw(ArgumentError("invalid external-pupil device ordinal"))
     instrument = DeploymentConfiguration.relative_asset(dirname(config_path), document["instrument"])
     rtc_configuration = DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"])
-    sensor_buffers=integer(get(document,"sensor_buffers",2),"sensor_buffers",2,64)
+    sensor_buffers=integer(get(document,"sensor_buffers",3),"sensor_buffers",2,64)
     source = if clocked
         command_buffers = integer(get(document,"command_buffers",3),"command_buffers",2,64)
         source_graph = text(document["source_graph"],"optical source graph")

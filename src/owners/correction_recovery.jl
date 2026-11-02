@@ -38,13 +38,13 @@ assigned by the serialized owner when obtaining evidence. A serial is not a
 caller readiness assertion or evidence of physical settling. Token zero is used
 only for initial qualification. Adapters must not relabel cached observations.
 """
-struct LoopObservation
+struct LoopObservation{G,V}
     owner_instance::Int64
     token::UInt64
     serial::UInt64
-    requested_generation::UInt64
-    active_generation::UInt64
-    closed::Bool
+    requested_generation::G
+    active_generation::G
+    closed::V
 end
 
 """Graph recovery status; `:applied` establishes scope adoption, not reference arrival."""
@@ -79,13 +79,13 @@ end
 The owner must establish these facts after the release callback boundary; it
 cannot copy the pre-release reference/readiness observation into this record.
 """
-struct ReleaseObservation
+struct ReleaseObservation{V}
     owner_instance::Int64
     token::UInt64
     serial::UInt64
     generation::UInt64
     released::Bool
-    closed::Bool
+    closed::V
     reference_reached::Bool
     coherent::Bool
     ready::Bool
@@ -98,14 +98,15 @@ qualified coordinator. History never restores commands or numerical state.
 Timeouts are checked by the serialized owner, including before every observation
 and operation; no background writer or timer task is created.
 """
-@hsmdef mutable struct Coordinator{C}
+@hsmdef mutable struct Coordinator{C,G,V}
     const owner_instance::Int64
     const clock::C
     const timeout_ns::UInt64
     token::UInt64
     serial::UInt64
-    loop_generation::UInt64
-    expected_loop_generation::UInt64
+    loop_generation::G
+    expected_loop_generation::G
+    target_closed::V
     recovery_generation::UInt64
     reference_serial::UInt64
     reference_since_ns::UInt64
@@ -119,6 +120,7 @@ end
 @statedef Coordinator :Operational
 @statedef Coordinator :Open :Operational
 @statedef Coordinator :Closed :Operational
+@statedef Coordinator :PartiallyClosed :Operational
 @statedef Coordinator :ProtectiveOpen :Operational
 @statedef Coordinator :Opening :ProtectiveOpen
 @statedef Coordinator :RestoringReference :ProtectiveOpen
@@ -130,8 +132,9 @@ end
 @on_initial function(sm::Coordinator{C}, ::Root) where {C}
     return Hsm.transition!(sm, :Unverified)
 end
-@on_event function(sm::Coordinator{C}, ::Unverified, ::Qualified, closed::Bool) where {C}
-    return closed ? Hsm.transition!(sm, :Closed) : Hsm.transition!(sm, :Open)
+@on_event function(sm::Coordinator{C}, ::Unverified, ::Qualified, closed) where {C}
+    return _all_open(closed) ? Hsm.transition!(sm, :Open) :
+        _all_closed(closed) ? Hsm.transition!(sm, :Closed) : Hsm.transition!(sm, :PartiallyClosed)
 end
 @on_event function(sm::Coordinator{C}, ::Operational, ::Protect, _) where {C}
     return Hsm.transition!(sm, :Opening)
@@ -152,7 +155,11 @@ end
     return Hsm.transition!(sm, :Closing)
 end
 @on_event function(sm::Coordinator{C}, ::Closing, ::ClosedApplied, _) where {C}
-    return Hsm.transition!(sm, :Closed)
+    return _all_open(sm.target_closed) ? Hsm.transition!(sm, :Open) :
+        _all_closed(sm.target_closed) ? Hsm.transition!(sm, :Closed) : Hsm.transition!(sm, :PartiallyClosed)
+end
+@on_event function(sm::Coordinator{C}, ::PartiallyClosed, ::CloseRemaining, _) where {C}
+    return Hsm.transition!(sm, :Closing)
 end
 @on_event function(sm::Coordinator{C}, ::Root, ::Failed, uncertain::Bool) where {C}
     return uncertain ? Hsm.transition!(sm, :Unverified) : Hsm.transition!(sm, :Fault)
@@ -209,13 +216,42 @@ function clock_value(now::Integer)
     return UInt64(now)
 end
 
-function Coordinator(owner_instance::Int64; clock=time_ns, timeout_ms::Integer=5000)
+_all_open(closed::Bool) = !closed
+_all_open(closed::Tuple) = all(!, closed)
+_all_closed(closed::Bool) = closed
+_all_closed(closed::Tuple) = all(identity, closed)
+_generation_zero(::UInt64) = UInt64(0)
+_generation_zero(generations::Tuple) = map(_generation_zero, generations)
+_generation_empty(generation::UInt64) = iszero(generation)
+_generation_empty(generations::Tuple) = all(iszero, generations)
+_generation_le(a::UInt64, b::UInt64) = a <= b
+_generation_le(a::Tuple, b::Tuple) = length(a) == length(b) && all(map(<=, a, b))
+_generation_before(a, b) = a != b && _generation_le(a, b)
+_generation_advances(a, b) = a != b && _generation_le(b, a)
+_generation_all_advance(a::UInt64, b::UInt64) = a > b
+_generation_all_advance(a::Tuple, b::Tuple) = length(a) == length(b) && all(map(>, a, b))
+_open_values(::Bool) = false
+_open_values(closed::Tuple) = map(_ -> false, closed)
+_close_values(::Bool) = true
+_close_values(closed::Tuple) = map(_ -> true, closed)
+_adds_closure(after::Bool, before::Bool) = after && !before
+_adds_closure(after::Tuple, before::Tuple) = length(after) == length(before) &&
+    all(map((a, b) -> !b || a, after, before)) && after != before
+_loop_shape(sm, observation) = typeof(observation.requested_generation) === typeof(sm.loop_generation) &&
+    typeof(observation.closed) === typeof(sm.target_closed)
+
+function Coordinator(owner_instance::Int64; clock=time_ns, timeout_ms::Integer=5000,
+        controllers::Union{Nothing,Integer}=nothing)
     owner_instance > 0 || throw(ArgumentError("owner incarnation must be positive"))
     !(timeout_ms isa Bool) && 1 <= timeout_ms <= 60_000 ||
         throw(ArgumentError("timeout_ms must be between 1 and 60000"))
     clock_ns(clock)
+    controllers === nothing || (!(controllers isa Bool) && 1 <= controllers <= 16) ||
+        throw(ArgumentError("controllers must lie in 1:16"))
+    generation = controllers === nothing ? UInt64(0) : ntuple(_ -> UInt64(0), controllers)
+    target = controllers === nothing ? true : ntuple(_ -> true, controllers)
     return Coordinator(owner_instance, clock, UInt64(timeout_ms) * UInt64(1_000_000),
-        UInt64(0), UInt64(0), UInt64(0), UInt64(0), UInt64(0), UInt64(0),
+        UInt64(0), UInt64(0), generation, generation, target, UInt64(0), UInt64(0),
         UInt64(0), UInt64(0), :none, nothing)
 end
 
@@ -254,10 +290,12 @@ end
 function qualify!(sm::Coordinator, observation::LoopObservation)
     sm.failure === nothing && state(sm) === :Unverified || return nothing
     matches(sm, observation) || return nothing
+    _loop_shape(sm, observation) || return failed!(sm, :loop_scope_mismatch)
     observation.requested_generation == observation.active_generation ||
         return failed!(sm, :initial_generation_mismatch)
     sm.serial = observation.serial
     sm.loop_generation = observation.active_generation
+    sm.target_closed = observation.closed
     Hsm.dispatch!(sm, :Qualified, observation.closed)
     return nothing
 end
@@ -267,11 +305,12 @@ function request_protection!(sm::Coordinator, owner_instance::Int64, token::UInt
         reason::Symbol=:operator)
     check_timeout!(sm)
     sm.failure === nothing && owner_instance == sm.owner_instance &&
-        state(sm) in (:Open, :Closed) && token > sm.token ||
+        state(sm) in (:Open, :Closed, :PartiallyClosed) && token > sm.token ||
         throw(ArgumentError("recovery requires a qualified owner and a new operation token"))
     sm.token = token
     sm.reason = reason
-    sm.expected_loop_generation = 0
+    sm.expected_loop_generation = _generation_zero(sm.loop_generation)
+    sm.target_closed = _open_values(sm.target_closed)
     sm.recovery_generation = 0
     sm.reference_serial = 0
     Hsm.dispatch!(sm, :Protect, nothing)
@@ -280,51 +319,54 @@ function request_protection!(sm::Coordinator, owner_instance::Int64, token::UInt
     return StageRecovery(sm.owner_instance, token)
 end
 
-function bind_loop!(sm::Coordinator, effect, generation::UInt64, expected_state::Symbol)
+function bind_loop!(sm::Coordinator, effect, generation, expected_state::Symbol)
     check_timeout!(sm)
     sm.failure === nothing && effect.owner_instance == sm.owner_instance &&
         effect.token == sm.token && state(sm) === expected_state || return nothing
+    typeof(generation) === typeof(sm.loop_generation) || return failed!(sm, :loop_scope_mismatch)
     # A second staging acknowledgement cannot replace an accepted effect.
     sm.expected_loop_generation == generation && return nothing
-    sm.expected_loop_generation == 0 || return failed!(sm, :conflicting_staging)
-    generation > sm.loop_generation || return failed!(sm, :invalid_loop_generation)
+    _generation_empty(sm.expected_loop_generation) || return failed!(sm, :conflicting_staging)
+    _generation_advances(generation, sm.loop_generation) || return failed!(sm, :invalid_loop_generation)
     sm.expected_loop_generation = generation
     return nothing
 end
-staged!(sm::Coordinator, effect::CloseLoop, generation::UInt64) =
+staged!(sm::Coordinator, effect::CloseLoop, generation) =
     bind_loop!(sm, effect, generation, :Closing)
 
 """Observe exact forced-open/close adoption without emitting another stage."""
 function observe_loop!(sm::Coordinator, observation::LoopObservation)
     matches(sm, observation) || return nothing
+    _loop_shape(sm, observation) || return failed!(sm, :loop_scope_mismatch)
     current = state(sm)
     if current in (:RestoringReference, :Verifying, :Holding, :Releasing)
-        observation.active_generation < sm.loop_generation && return nothing
+        _generation_before(observation.active_generation, sm.loop_generation) && return nothing
         expected = sm.expected_loop_generation
-        allowed_generation = expected == 0 ? sm.loop_generation : expected
-        !observation.closed && observation.requested_generation == allowed_generation &&
-            sm.loop_generation <= observation.active_generation <= allowed_generation ||
+        allowed_generation = _generation_empty(expected) ? sm.loop_generation : expected
+        _all_open(observation.closed) && observation.requested_generation == allowed_generation &&
+            _generation_le(sm.loop_generation, observation.active_generation) &&
+            _generation_le(observation.active_generation, allowed_generation) ||
             return failed!(sm, :unexpected_loop_change)
         sm.serial = observation.serial
         if observation.active_generation == allowed_generation
             sm.loop_generation = allowed_generation
-            sm.expected_loop_generation = 0
+            sm.expected_loop_generation = _generation_zero(sm.loop_generation)
         end
         return nothing
     end
     current in (:Opening, :Closing) || return nothing
     expected = sm.expected_loop_generation
-    expected > 0 || return nothing
-    observation.requested_generation < expected && return nothing
-    observation.active_generation < sm.loop_generation && return nothing
-    observation.requested_generation == expected && observation.active_generation <= expected ||
+    _generation_empty(expected) && return nothing
+    _generation_before(observation.requested_generation, expected) && return nothing
+    _generation_before(observation.active_generation, sm.loop_generation) && return nothing
+    observation.requested_generation == expected && _generation_le(observation.active_generation, expected) ||
         return failed!(sm, :conflicting_loop_generation)
     observation.active_generation == expected || return nothing
-    observation.closed == (current === :Closing) ||
+    observation.closed == sm.target_closed ||
         return failed!(sm, :conflicting_loop_value)
     sm.serial = observation.serial
     sm.loop_generation = expected
-    sm.expected_loop_generation = 0
+    sm.expected_loop_generation = _generation_zero(sm.loop_generation)
     if current === :Opening
         Hsm.dispatch!(sm, :Opened, nothing)
         return nothing
@@ -334,13 +376,14 @@ function observe_loop!(sm::Coordinator, observation::LoopObservation)
 end
 
 function recovery_staged!(sm::Coordinator, effect::StageRecovery, generation::UInt64;
-        loop_generation::UInt64)
+        loop_generation)
     check_timeout!(sm)
     sm.failure === nothing && effect.owner_instance == sm.owner_instance &&
         effect.token == sm.token && state(sm) === :Opening || return nothing
+    typeof(loop_generation) === typeof(sm.loop_generation) || return failed!(sm, :loop_scope_mismatch)
     sm.recovery_generation == generation && generation > 0 &&
         sm.expected_loop_generation == loop_generation && return nothing
-    loop_generation > sm.loop_generation || return failed!(sm, :invalid_loop_generation)
+    _generation_all_advance(loop_generation, sm.loop_generation) || return failed!(sm, :invalid_loop_generation)
     sm.recovery_generation == 0 && generation > 0 ||
         return failed!(sm, :invalid_recovery_generation)
     sm.recovery_generation = generation
@@ -367,8 +410,8 @@ end
 
 function observe_reference!(sm::Coordinator, observation::ReferenceObservation)
     matches(sm, observation) || return nothing
-    state(sm) in (:Verifying, :Holding, :Releasing) || return nothing
-    observation.generation == sm.recovery_generation || return nothing
+    state(sm) in (:Verifying, :Holding, :Releasing, :PartiallyClosed) || return nothing
+    sm.recovery_generation > 0 && observation.generation == sm.recovery_generation || return nothing
     sm.serial = observation.serial
     if observation.reference_reached && observation.coherent && observation.ready
         sm.reference_serial = observation.serial
@@ -387,13 +430,23 @@ Recovery completion leaves Holding. Stale evidence or early closure is refused
 without effects. A successful request emits only ReleaseRecovery; the owner must
 observe the matching release with fresh prerequisites before CloseLoop can occur.
 """
-function request_close!(sm::Coordinator, owner_instance::Int64, token::UInt64)
+function request_close!(sm::Coordinator, owner_instance::Int64, token::UInt64;
+        closed=_close_values(sm.target_closed), released::Bool=false)
     check_timeout!(sm)
-    sm.failure === nothing && state(sm) === :Holding &&
+    sm.failure === nothing && (state(sm) === :Holding ||
+        (state(sm) === :PartiallyClosed && released)) &&
         owner_instance == sm.owner_instance && token == sm.token &&
+        sm.recovery_generation > 0 &&
         sm.reference_serial > 0 &&
         clock_ns(sm.clock) - sm.reference_since_ns < sm.timeout_ns ||
         throw(ArgumentError("close requires fresh verified reference, coherence and readiness"))
+    typeof(closed) === typeof(sm.target_closed) && _adds_closure(closed, sm.target_closed) ||
+        throw(ArgumentError("close requires a nonempty scope-compatible controller selection"))
+    sm.target_closed = closed
+    if released && state(sm) === :PartiallyClosed
+        Hsm.dispatch!(sm, :CloseRemaining, nothing)
+        return CloseLoop(sm.owner_instance, sm.token)
+    end
     Hsm.dispatch!(sm, :Release, nothing)
     return ReleaseRecovery(sm.owner_instance, sm.token, sm.recovery_generation)
 end
@@ -404,11 +457,13 @@ function observe_release!(sm::Coordinator, observation::ReleaseObservation)
     observation.generation == sm.recovery_generation || return nothing
     observation.released || return nothing
     sm.serial = observation.serial
-    !observation.closed && observation.reference_reached && observation.coherent &&
+    typeof(observation.closed) === typeof(sm.target_closed) ||
+        return failed!(sm, :loop_scope_mismatch)
+    _all_open(observation.closed) && observation.reference_reached && observation.coherent &&
         observation.ready || return failed!(sm, :release_prerequisites_changed)
     sm.reference_serial = observation.serial
     sm.reference_since_ns = clock_ns(sm.clock)
-    sm.expected_loop_generation = 0
+    sm.expected_loop_generation = _generation_zero(sm.loop_generation)
     Hsm.dispatch!(sm, :Released, nothing)
     return CloseLoop(sm.owner_instance, sm.token)
 end
@@ -420,8 +475,9 @@ The outcome stays Unverified and existing graph inhibition remains authoritative
 """
 function cancel!(sm::Coordinator, owner_instance::Int64, token::UInt64)
     owner_instance == sm.owner_instance && token == sm.token &&
-        state(sm) in (:Opening, :RestoringReference, :Verifying, :Holding,
-            :Releasing, :Closing) && failed!(sm, :operation_cancelled)
+        (state(sm) in (:Opening, :RestoringReference, :Verifying, :Holding,
+            :Releasing, :Closing) || (state(sm) === :PartiallyClosed && sm.recovery_generation > 0)) &&
+        failed!(sm, :operation_cancelled)
     return nothing
 end
 

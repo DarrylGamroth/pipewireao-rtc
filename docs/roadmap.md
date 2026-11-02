@@ -12,6 +12,30 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Coupled-controller protective recovery — 2026-11-02
+
+Authorized continuation: extend RTC-DEV-032–035 from the existing single CPU
+controller to explicitly declared independent camera branches sharing a physical
+mirror. Baseline `778a7e2`, graph runtime `f71a53c`. GUI work is separate; no
+installed application or simulator is started. The existing monitor-only
+supervision selection (RTC-DEV-036) is unchanged.
+
+| Requirement | Delivery allocation and verification | State |
+| --- | --- | --- |
+| RTC-DEV-032 | Exact-owner bounded native admission; complete coupled scope validation; one existing serialized owner callback; busy, stale, unsupported and partial-scope rejection before effects | planned |
+| RTC-DEV-033 | Open all scoped controllers and reconcile committed/candidate, temporal, retained branch-output and delayed-feedback histories atomically; preserve parameters, acquisition authority and conditioner current/RNG/cadence | planned |
+| RTC-DEV-034 | Fresh successful shared command/reference and componentwise controller-generation evidence; no stopped-camera or SCC-priming proof; release leaves all open; independent guarded explicit closure | planned |
+| RTC-DEV-035 | Exact tokens/incarnations/generations and finite phase budgets across partial adoption, loss, timeout, cancellation, reset and owner replacement; uncertain operations latch without retry | planned |
+
+Stopped-camera policy: the control callback may open and reconcile while both
+cameras are silent. It does not fabricate a frame or command publication. Reference
+verification remains pending until a genuine accepted camera event runs the shared
+command path, or the operation times out. Tests must distinguish this from immediate
+actuator flattening. Single-controller recovery and ordinary nonzero hold/resume
+remain regression obligations. Numerical, allocation, private-core lifecycle and
+physical/deadline evidence remain separate; physical devices and GPU controller
+recovery are outside this selected profile.
+
 ### Independent SPA records — 2026-11-02
 
 The native 3.0 development cohort replaces acquisition-specific Properties with

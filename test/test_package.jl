@@ -9,9 +9,13 @@ function stage_test_dependencies!(sdk)
     active = Base.active_project()
     active === nothing && return sdk
     environment = dirname(active)
-    environment == P.package_root() && return sdk
     for name in ("Manifest.toml", "LocalPreferences.toml")
         source = joinpath(environment, name)
+        # Julia workspace tests share their package root's operational manifest.
+        # A relocated SDK needs that closure even when tests run from the root.
+        if !isfile(source) && environment == joinpath(P.package_root(), "test")
+            source = joinpath(P.package_root(), name)
+        end
         isfile(source) && cp(source, joinpath(sdk, name); force=true)
     end
     return sdk
