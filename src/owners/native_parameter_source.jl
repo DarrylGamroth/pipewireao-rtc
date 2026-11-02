@@ -391,6 +391,8 @@ function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
     source.stream = Stream(transport.core, source.node_name;
         properties=Dict("node.name" => source.node_name, "media.type" => "Application",
             "media.category" => "Playback", "media.role" => "DSP", "node.virtual" => "true",
+            "pipewireao.header.pts.clock" => "unavailable",
+            "pipewireao.header.pts.absolute-conversion" => "unavailable",
             "object.linger" => "false"),
         on_process=Process(source),
         on_buffer_added=(stream, _buffer) -> (_publish_pending!(source, stream); nothing),

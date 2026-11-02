@@ -32,7 +32,7 @@ function absolute_clock_configuration(value=nothing)
     offset=get(value,"tai_utc_offset",nothing)
     if clock == "tai"
         offset isa Integer && !(offset isa Bool) && 1 <= offset <= 128 ||
-            throw(ArgumentError("TAI−UTC offset must be an integer in1:128"))
+            throw(ArgumentError("TAI−UTC offset must be an integer in 1:128"))
         offset=Int(offset)
     else
         offset === nothing || throw(ArgumentError("realtime does not accept a TAI−UTC offset"))

@@ -865,7 +865,10 @@ binding; `source_pupil_axes` declares the entrance OPD transform and
 `source_dm_axes` declares the mirror raster axes. The owner checks the mirror
 port schema, units and command limit against the source graph and RTC mirror
 controls, and checks each optical mirror plane's schema, shape and sampling.
-Command and sensor streams use Header plus version-one BufferProperties.
+Command and sensor streams use Header plus independently negotiated SPA records.
+Each port profile declares the records it requires; commands need no invented
+camera identity. Absolute event times use REALTIME by default, with explicit
+validated TAI available. Model time and Header PTS keep their own meanings.
 Physical acquisition identity and exposure duration are independent of Header
 publication sequence and PTS. Sensor optical and electrical classifications are
 explicit, independent facts; the former metadata-version selectors are rejected.
