@@ -109,3 +109,40 @@ not qualify physical hardware, TAI clock authority, real-time deadlines or the
 upstream external-sensor elected-driver change. Raw logs, screenshots and copied
 applications are temporary; this summary and the GUI module validation record
 retain the outcome and source identity.
+
+## Final RTC 0.4.3 source integration
+
+Merge `db1eadc` incorporates origin/main
+`37fb818e00b06ce11ec77f71a031bd92ea7d6019` without conflicts. The analysis and
+optical-observation source files retain their pre-merge SHA-256 identities
+`42cdb7e9dff5614aa90b3cfb6f7c9e6afdd39edf3b856a733da20a4ad30aa100` and
+`e08cee42328362fa6c6b41a3fd35c80275ac8174680759d1cc6c1510d0007da6`.
+Upstream coupled-recovery code, external-sensor pool defaults, generated
+Manifest and version changes are merged unchanged.
+
+Only the private copied test environment is updated through public `Pkg.compat`,
+targeted `Pkg.add(...; preserve=Pkg.PRESERVE_ALL)` and `Pkg.resolve`: source RTC
+0.4.3, registered FilterGraphAlgorithms 0.10.1 and FilterGraphPipeWire 0.3.1.
+HIL remains 0.4.1; AOS 0.3.18, JFG 0.6.0, FilterGraphIsland 0.3.0,
+PipeWireAO 0.8.0/native 3.0.0 and calibration 0.17.3 remain unchanged. The
+resolved private Manifest SHA-256 is
+`d94107d8e5a48b0821b51343c36ad42ae9b5a85da770ffdbfb5ef738852df6a7`.
+
+```sh
+julia --project=/home/dgamroth/.local/state/pipewireao/independent-integration-20261102/rtc39/env -e '
+module OpticalClockChecks; include("test/test_session_configuration_integration.jl"); end
+module MetadataChecks; include("test/analysis_metadata.jl"); end
+module ConstructorChecks; include("test/analysis_synchronized_inputs.jl"); end
+module StatisticsChecks; include("test/analysis_statistics.jl"); end
+module CaptureChecks; include("test/test_analysis_capture.jl"); end'
+```
+
+These focused CPU source checks do not qualify the newly merged coupled recovery
+or optical pool behavior. The preceding managed GUI/WFS/rebuild evidence remains
+specific to its RTC 0.4.1 application cohort; no RTC 0.4.3 live fixture is claimed.
+
+The RTC 0.4.3 run completed before the requested pause: **267 assertions pass**
+(clock/integration 86, native metadata 12, constructor 3, statistics 51, capture
+115), with **one host-verified TAI check skipped** and exit status 0. The worktree
+and running-check results were preserved during the pause; no additional work
+was performed until the user resumed integration.
