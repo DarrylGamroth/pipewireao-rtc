@@ -7,6 +7,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
 using UUIDs, SHA
 import PipeWireAORTC
+import PipeWireAORTC.Common: prepare_absolute_clock
 const IC = PipeWireAORTC.InstrumentConfiguration
 
 function pupil_contract(declaration, configured)
