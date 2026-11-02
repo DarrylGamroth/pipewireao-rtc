@@ -865,29 +865,15 @@ binding; `source_pupil_axes` declares the entrance OPD transform and
 `source_dm_axes` declares the mirror raster axes. The owner checks the mirror
 port schema, units and command limit against the source graph and RTC mirror
 controls, and checks each optical mirror plane's schema, shape and sampling.
-`command_acquisition_version` selects the command input's native Acquisition
-metadata version (2 by default; 2 or 3 only). Match the controller output's
-declared version; a controller using `--acquisition-version 3` requires 3 here.
-`command_buffers` defaults to 3 (integer 2:64). A capacity-one copy telemetry
-queue needs at least three capture buffers. When a command input is linked
-before that queue, its buffer request can determine their shared producer pool;
-requesting two can leave the queue's playback format unavailable. An explicit
-two-buffer override remains available for callers without this fanout. This
-default does not repair general SDK buffer renegotiation or change the optical
-model, command values or calibration identity.
-The clocked owner keeps the facility and mirror source graph on CPU. Optical
-and detector-response graphs can use captured AMDGPU execution; every node must
-pass capture admission. Mirror OPD copies use each optical graph's execution
-context before its captured step. A successful offline build or calibration
-does not qualify physical devices or deadline performance.
+Command and sensor streams use Header plus version-one BufferProperties.
+Physical acquisition identity and exposure duration are independent of Header
+publication sequence and PTS. Sensor optical and electrical classifications are
+explicit, independent facts; the former metadata-version selectors are rejected.
 
-For version-4 external-pupil and version-6 clocked optical applications, a build
-host profile can opt into typed exposure properties with
-`simulation: {sensor_buffer_properties: true}`. Only a Boolean is accepted;
-`false` disables the opt-in, and omission retains the source/default selection.
-This changes the built `simulation.conf` transport setting without rewriting
-frozen optical definitions, plant settings, exposure rates or calibration receipts.
-Other simulation owners reject this override.
+Version-4 external-pupil and version-6 clocked optical applications always
+publish typed exposure facts. The former `sensor_buffer_properties` profile
+opt-in is rejected. This changes transport metadata without rewriting frozen
+optical definitions, plant settings, exposure rates or calibration receipts.
 
 A simulation definition may list `binding_files` relative to the instrument
 root. Each YAML file contributes named bindings; duplicate names are rejected.
@@ -1040,11 +1026,9 @@ The staged final graph is prepared with all typed FITS mappings, then
 `PhysicalOffsets.prepare` verifies factors, sign, offset route and zero startup.
 Only a passing staged application becomes the requested output.
 
-Each receiving branch may explicitly select `acquisition_version: 2` or `3`;
-omission preserves Version 2. This must match its actual native producer. A
-chopped SCC graph forwards Version 3 to its physical-offset output, so its
-receiver selects 3 while ordinary LLOWFS may retain 2. Admission remains exact;
-the receiver does not downgrade or reinterpret metadata versions.
+Each receiving branch requires the Properties facts used by its consumer.
+No per-branch Acquisition wire-version selector remains; old selectors are
+rejected before transport starts.
 
 The receiving graph uses three default Julia threads: native graph execution,
 bootstrap monitoring and the offset pump. An explicit preparation profile

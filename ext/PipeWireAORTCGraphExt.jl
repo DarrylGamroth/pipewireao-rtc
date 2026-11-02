@@ -151,7 +151,7 @@ function run_prepared(options, runtime, graph)
             reference_timeout_ms=options.correction_timeout_ms))
     common = (; recovery..., name=options.name, remote=options.remote, rate=options.rate,
         connect=false, run_control=options.session_run_control,
-        acquisition_version=options.acquisition_version, channel_units=options.channel_units)
+        channel_units=options.channel_units)
     node = isnothing(options.capture_backend) ?
         FilterGraphPipeWire.PipeWireNode(graph; common..., observation..., boundary_layout=options.boundary_layout,
             fifo_inputs=options.fifo_inputs, feedback=options.feedback) :
@@ -204,9 +204,9 @@ function run_prepared(options, runtime, graph)
 end
 
 function chopped_warmup_samples(graph, options, warmup)
-    options.acquisition_version == 3 && options.execution == "complete-frame" &&
+    options.execution == "complete-frame" &&
         options.feedback === nothing && options.capture_backend === nothing ||
-        throw(ArgumentError("chopped warmup requires ordinary complete-frame Acquisition Version 3"))
+        throw(ArgumentError("chopped warmup requires ordinary complete-frame execution"))
     formats = JuliaFilterGraph.input_formats(graph)
     composition = graph isa JuliaFilterGraph.PreparedComposition
     (composition ? warmup.input in keys(formats) : keys(formats) == (warmup.input,)) ||
@@ -218,7 +218,7 @@ function chopped_warmup_samples(graph, options, warmup)
         ntuple(_ -> UInt8(0xa5), 16), UInt64(1), UInt64(sequence))
     samples = ntuple(3) do index
         fringed = isodd(index)
-        metadata = FilterGraphAlgorithms.SampleMetadata(index; terminal=true,acquisition_version=3,
+        metadata = FilterGraphAlgorithms.SampleMetadata(index; terminal=true,
             trigger_high=fringed == warmup.trigger_high_is_fringed,
             chopped_image_kind=fringed ? FilterGraphAlgorithms.ChoppedImageFringed : FilterGraphAlgorithms.ChoppedImageUnfringed,
             acquisition_identity=identity(index), exposure_duration_nanoseconds=warmup.exposure_duration_ns)
@@ -234,7 +234,7 @@ function chopped_warmup_samples(graph, options, warmup)
         camera = getproperty(formats,name)
         camera.element_type === Float32 && length(camera.shape) == 2 ||
             throw(ArgumentError("chopped composition warmup requires Float32 camera inputs"))
-        metadata = FilterGraphAlgorithms.SampleMetadata(1; terminal=true,acquisition_version=3,
+        metadata = FilterGraphAlgorithms.SampleMetadata(1; terminal=true,
             acquisition_identity=FilterGraphAlgorithms.SampleAcquisitionIdentity(
                 ntuple(_ -> UInt8(0xa6),16),UInt64(1),UInt64(1)),
             exposure_duration_nanoseconds=warmup.exposure_duration_ns)
@@ -253,7 +253,7 @@ function chopped_warmup_samples(graph, options, warmup)
         annotations = name === warmup.input ?
             (;trigger_high=!warmup.trigger_high_is_fringed,
                 chopped_image_kind=FilterGraphAlgorithms.ChoppedImageUnfringed) : (;)
-        FilterGraphAlgorithms.SampleMetadata(sequence; terminal=true,acquisition_version=3,
+        FilterGraphAlgorithms.SampleMetadata(sequence; terminal=true,
             acquisition_identity=FilterGraphAlgorithms.SampleAcquisitionIdentity(
                 ntuple(_ -> domain,16),UInt64(1),sequence),
             exposure_duration_nanoseconds=warmup.exposure_duration_ns,annotations...)

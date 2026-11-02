@@ -100,25 +100,19 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
-function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2, input_option=nothing,
-        sensor_acquisition_versions=NamedTuple(), sensor_buffer_properties=false)
+function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=2, input_option=nothing)
     pupil = input_option === nothing ? PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
         schema=science.pupil.schema, format=NdArrayFormat(NdArray.F32_LE,science.pupil.shape;layout=NdArray.ROW_MAJOR),
         properties=science.pupil.properties) : input_option
     sensors = map(keys(science.sensors)) do name
         sensor = getproperty(science.sensors,name)
-        chopped = hasproperty(science.chopping, name)
-        version = get(sensor_acquisition_versions,name,chopped ? 3 : 2)
-        chopped && version != 3 && throw(ArgumentError("chopped sensors require Acquisition Version 3"))
         duration = getproperty(science.plant.exposures,name).duration_ns
         duration > 0 || throw(ArgumentError("sensor exposure duration must be positive"))
         rate = 1_000_000_000 // duration
         PipeWireArrayStreamOptions(; node_name=getproperty(sensor_nodes,name), media_name=string(name),
-            buffers=sensor_buffers, acquisition_version=version,
-            (sensor_buffer_properties ? (;buffer_properties_capacity=256,
-                required_buffer_properties=(PipeWireAO.BufferPropertyRequirement(
-                    PipeWireAO.BUFFER_PROPERTY_OPTICAL_CLASSIFICATION,PipeWireAO.SPA.Id),
-                    PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_TRIGGER_CLASSIFICATION,PipeWireAO.SPA.Id))) : (;))...,
+            buffers=sensor_buffers,
+            required_buffer_properties=(PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_OPTICAL_CLASSIFICATION,PipeWireAO.SPA.Id),
+                PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_TRIGGER_CLASSIFICATION,PipeWireAO.SPA.Id)),
             schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR,
                 rate=SPA.Fraction(numerator(rate),denominator(rate))),
             properties=sensor.properties)
@@ -193,7 +187,7 @@ function trigger_state(science, name, metadata)
 end
 
 # Optical exposure classification is authored by the optics, independently of
-# the electrical trigger mapping retained in Acquisition Version 3.
+# the explicitly authored electrical trigger mapping.
 function sensor_optical_classification(science,name,metadata)
     hasproperty(science.chopping,name) || return PipeWireAO.OPTICAL_ABSENT
     kind = get(metadata,:chopped_image_kind,nothing)
@@ -279,13 +273,12 @@ function stream_execution(options,science,state)
             identity = AcquisitionIdentity(domains[index],UInt64(state.generation),sequence)
             publish_sensor!(transport_owner[],index+1,buffers[index],identity,
                 metadata.pts,metadata.duration,classification;
-                optical_classification=get(options,:sensor_buffer_properties,false) ?
-                    sensor_optical_classification((;chopping),name,metadata) : nothing)
+                optical_classification=sensor_optical_classification((;chopping),name,metadata))
         end
         return nothing
     end
     return (;packet,command,incoming_command,frames,buffers,domains,publication_enabled,
-        transport_owner,sensor_buffer_properties=get(options,:sensor_buffer_properties,false),emit)
+        transport_owner,emit)
 end
 
 # Compile the concrete transport calls without staging synthetic camera frames.
@@ -297,12 +290,10 @@ function warmup_stream_transport!(owner,execution,clocked)
         precompile(publish_sensor!, (typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
             Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
             error("external-pupil output transport preparation failed")
-        if get(execution,:sensor_buffer_properties,false)
-            precompile(Core.kwcall,(NamedTuple{(:optical_classification,),Tuple{PipeWireAO.OpticalClassification}},
-                typeof(publish_sensor!),typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
-                Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
-                error("external-pupil optical property transport preparation failed")
-        end
+        precompile(Core.kwcall,(NamedTuple{(:optical_classification,),Tuple{PipeWireAO.OpticalClassification}},
+            typeof(publish_sensor!),typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
+            Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
+            error("external-pupil optical property transport preparation failed")
     end
     return nothing
 end
@@ -451,8 +442,6 @@ function Owner.run_external_pupil_owner(options)
         science = Owner.prepare_external_pupil_science(options;check=options.owner_check)
         report!(options,mailbox,state)
         streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers,
-            sensor_acquisition_versions=options.sensor_acquisition_versions,
-            sensor_buffer_properties=options.sensor_buffer_properties,
             input_option=options.version == 6 ? clocked_command_option(options) : nothing)
         execution = prepare_stream_execution!(options,science,mailbox,state)
         @info "Optical owner startup" phase=:prepared at_ns=time_ns()

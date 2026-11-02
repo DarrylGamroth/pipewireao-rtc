@@ -98,7 +98,7 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
         copyto!(frontend.inputs.image,optical_image(image))
         # These unpublished records describe the two explicitly selected static
         # optical roles in this calibration, not an acquired camera stream.
-        metadata = FGA.SampleMetadata(index; terminal=true, acquisition_version=3,
+        metadata = FGA.SampleMetadata(index; terminal=true,
             trigger_high=(index == 1) == frontend.polarity,
             chopped_image_kind=index == 1 ? FGA.ChoppedImageFringed : FGA.ChoppedImageUnfringed,
             exposure_duration_nanoseconds=frontend.duration,

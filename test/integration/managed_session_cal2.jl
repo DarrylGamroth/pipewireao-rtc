@@ -36,7 +36,7 @@ function declared_port(session, name, direction)
     return only(filter(value->value["name"]==port && value["direction"]==direction,entry["ports"]))
 end
 has_schema(contract) = get(contract,"schema",nothing) isa AbstractString && !isempty(strip(contract["schema"]))
-function product(name, output, contract, duration, mapping; model_time=true, priming_exposures=0, acquisition_version=2, chopping=nothing)
+function product(name, output, contract, duration, mapping; model_time=true, priming_exposures=0, chopping=nothing)
     node, port=endpoint(output)
     require(has_schema(contract),"CAL2 selector requires an explicit native export schema: $name")
     require(contract["element-type"]=="F32_LE" && get(contract,"layout","ROW_MAJOR")=="ROW_MAJOR",
@@ -46,7 +46,7 @@ function product(name, output, contract, duration, mapping; model_time=true, pri
     rate=get(contract,"rate",nothing)
     fraction=rate===nothing ? nothing : SPA.Fraction(parse.(UInt32,split(rate,'/'))...)
     require(priming_exposures in (0,1) && (model_time || priming_exposures==0),"unsupported capture priming")
-    return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration),model_time,priming_exposures,acquisition_version,chopping)
+    return (;name,node,port,role=mapping[node],shape,schema=String(contract["schema"]),rate=fraction,duration=Int64(duration),model_time,priming_exposures,chopping)
 end
 
 function require_return_schema(native, declared, receiver)
@@ -91,14 +91,14 @@ function reference_products!(products, missing, graph, contracts, receiver, peri
     return nothing
 end
 
-function modal_product!(products, missing, name, graph, contracts, control, duration, mapping; priming_exposures=0, acquisition_version=2)
+function modal_product!(products, missing, name, graph, contracts, control, duration, mapping; priming_exposures=0)
     input = only(filter(link->link["input"]==control.node*":input",graph["filter.graph"]["links"]))
     exports = filter(port->port["endpoint"]==input["output"],graph["filter.graph"]["outputs"])
     if length(exports)==1
         port = only(exports)["name"]
         contract=contracts["outputs"][port]
         if has_schema(contract)
-            push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contract,duration,mapping;priming_exposures,acquisition_version))
+            push!(products,product(name*"-modal-residual",graph["node.name"]*":"*port,contract,duration,mapping;priming_exposures))
         else
             push!(missing,"No explicit native schema for $(input["output"]); $name modal residual cannot be observed.")
         end
@@ -189,8 +189,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         output=optical["sensor_nodes"][name]*":output_1"
         require(mapping[optical["sensor_nodes"][name]]=="cal2-optics","sensor owner differs")
         chopping = get(get(optical["plant"],"chopping",Dict()),name,nothing)
-        acquisition_version = chopping === nothing ? 2 : 3
-        push!(products,product(name,output,declared_port(session,output,"output"),duration,mapping;acquisition_version,chopping))
+        push!(products,product(name,output,declared_port(session,output,"output"),duration,mapping;chopping))
         branch=receiver["branches"][name]
         link=only(filter(link->link["input"]==branch["node_name"]*":input_1",session["links"]))
         require(mapping[first(endpoint(link["output"]))]=="cal2-"*name,"return stream owner differs")
@@ -204,8 +203,8 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
         require_return_schema(branch_contracts["outputs"][last(endpoint(link["output"]))],declared,branch)
         # Chopped controllers suppress the first exposure while the pair primes.
         priming_exposures = haskey(get(optical["plant"],"chopping",Dict()),name) ? 1 : 0
-        push!(products,product(name*"-offset",link["output"],declared,duration,mapping;priming_exposures,acquisition_version))
-        modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping;priming_exposures,acquisition_version)
+        push!(products,product(name*"-offset",link["output"],declared,duration,mapping;priming_exposures))
+        modal_product!(products,missing,name,controller_graph,branch_contracts,control,duration,mapping;priming_exposures)
     end
     physical=receiver["clock_output"]
     push!(products,product("physical",graph_node*":"*physical,contracts["outputs"][physical],period,mapping;model_time=false))
@@ -345,7 +344,7 @@ function observe_epoch(handle,selected,stage,name)
     live=M.dump_graph(handle,selected.prefix)
     C.write_json(joinpath(stage,name*"-graph.json"),live)
     options=Tuple(HIL.PipeWireArrayStreamOptions(node_name="cal2-lifecycle-$(getpid())-$(index)",media_name=product.name,
-        schema=product.schema,acquisition_version=product.acquisition_version,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
+        schema=product.schema,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
         for (index,product) in enumerate(plan.products))
     samples=map(product->Samples(product,plan.sample_count+128),plan.products)
     arrays=map(product->zeros(Float32,product.shape),plan.products)
@@ -435,7 +434,7 @@ function observe_epoch(handle,selected,stage,name)
                 require(length(prefix)==covered_count(product,covered),"covered prefix has missing exposures: $(product.name)")
                 records[product.name]=Dict("node"=>product.node,"port"=>product.port,"shape"=>collect(product.shape),
                     "header_time"=>(product.model_time ? "model nanoseconds" : "publication nanoseconds; model coverage from declared acquisition cadence"),
-                    "acquisition_version"=>product.acquisition_version,"priming_exposures"=>product.priming_exposures,"schema"=>product.schema,"samples"=>prefix,"observed_samples"=>length(log.records),"transport"=>statistics[index])
+                    "priming_exposures"=>product.priming_exposures,"schema"=>product.schema,"samples"=>prefix,"observed_samples"=>length(log.records),"transport"=>statistics[index])
                 records[product.name]["first_payload_sample"]=first(log.records)
                 records[product.name]["last_payload_sample"]=last(log.records)
                 if log.history!==nothing

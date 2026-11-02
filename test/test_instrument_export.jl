@@ -354,7 +354,7 @@ end
 end
 
 Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"))
-@testset "host optical metadata opt-in changes only built transport settings" begin
+@testset "retired host optical metadata opt-in is rejected" begin
     mktempdir() do directory
         (;document, config) = external_pupil_owner_documents(directory)
         authored = read(joinpath(directory, "simulation", "definition.yaml"))
@@ -368,12 +368,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"
             C.write_json(config, simulation)
             E.simulation_override!(directory, Dict())
             @test C.read_json(config) == simulation
-            for enabled in (true, false)
-                E.simulation_override!(directory, Dict("simulation" => Dict("sensor_buffer_properties" => enabled)))
-                @test C.read_json(config) == merge(simulation, Dict("sensor_buffer_properties" => enabled))
-                @test read(joinpath(directory, "simulation", "definition.yaml")) == authored
-            end
-            for invalid in (1, 0, "true", nothing, 1.0)
+            for invalid in (true, false, 1, 0, "true", nothing, 1.0)
                 before = read(config)
                 @test_throws ArgumentError E.simulation_override!(directory,
                     Dict("simulation" => Dict("sensor_buffer_properties" => invalid)))

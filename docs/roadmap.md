@@ -52,22 +52,28 @@ or deadline qualification is implied. Simulators and GUI remain stopped.
 
 ### Per-buffer optical and electrical properties — 2026-11-01
 
-RTC 0.2.52 adds opt-in `sensor_buffer_properties: true` to external-pupil and
-clocked optical owners. Completed exposures publish optical classification
-independently of the existing Acquisition v3 electrical polarity. Optional
-`sensor_acquisition_versions` selects v2/v3 per sensor; chopped sensors require
-v3. Header, identity, timing, image formats and default metadata remain unchanged.
-The owner precompiles the enabled keyword transport path during Preparing.
-Clocked CUDA admission now uses the existing captured optical execution policy.
-A build host's `simulation.sensor_buffer_properties` Boolean can select this
-transport option for v4/v6 owners without modifying frozen optical/calibration
-inputs; unsupported owners, unknown fields and non-Booleans fail before writes.
+Sensor streams always use Header and typed BufferProperties. Acquisition wire
+version selectors and the former optical Properties opt-in are rejected. Capture
+manifest schema 2 stores semantic identity, duration, qualified optional exposure
+clock and independent optical/electrical facts; Header publication counters stay
+independent. Schema 1 capture files are rejected without modifying frozen bytes.
+These changes implement ACQ-ABI-001, ACQ-PROP-001/002 and ACQ-PROP-003 at the RTC
+boundary. Source-only validation does not qualify physical timing or devices.
 
-This release includes the 21 completed commits from registered 0.2.51 through
+Julia 1.13.3 source validation selects the exact native 2.0 SDK through direct
+JLL preferences and checks the resolved library path. Focused selectors pass:
+`test_calibration_capture_files.jl` (206 assertions), `test_calibration_capture.jl`
+(125), `test_cal2_capture.jl` (55), `external_pupil_stream_formats.jl` (147), and
+`physical_offsets_observer.jl` (30). Cold physical-input, graph-owner, optical-owner
+and instrument-export selectors pass 426 assertions; three additional rejected
+legacy-selector cases also pass. Run these under the source validation environment
+with the RTC checkout on `LOAD_PATH`; package release pins are a separate gate.
+
+The preceding registered 0.2.52 cohort included the 21 completed commits from 0.2.51 through
 `f6d3706`, merged with upstream `4604ce8`; unfinished dual-calibration/controller
-changes remain excluded. Dependency floors are PipeWireAO 0.6.21 (native 1.7.3),
+changes remained excluded. Its dependency floors were PipeWireAO 0.6.21 (native 1.7.3),
 HIL 0.2.12, FilterGraphPipeWire 0.1.19 and AOS 0.3.17. Julia 1.13.3 source checks
-pass 151 stream/POD assertions, 48 cold backend/transport assertions against the
+passed 151 stream/POD assertions, 48 cold backend/transport assertions against the
 built SPIDERS configuration, and 681 focused cold owner/export/geometry/mode/graph
 assertions. These use the existing science dependency sources with the release
 RTC selected separately; the cold export parser uses installed native 1.7.2.
@@ -244,7 +250,7 @@ LLOWFS/SCC coverage at PTS zero, with first live feed 0.395 s; managed native
 coverage and lifecycle validation remain pending.
 
 The candidate also wires explicitly alternating SCC exposures through actual
-Acquisition Version 3 trigger classifications and a strict-identity chopped
+independent optical/electrical Properties and a strict-identity chopped
 pixel-residual frontend. Model-window ordinals preserve missing exposures;
 optical kind comes from AOS, independently of sequence parity. Labelled CPU graph
 preparation remains unpublished and resets pair history. Matched static F/U

@@ -30,6 +30,9 @@ const C = PipeWireAORTC.Common
         C.write_json(config,document)
         for change in (d->(d["mode"]="other"),d->(d["backend"]="unknown"),
                 d->(d["device"]=1),d->(d["command_count"]=1),
+                d->(d["sensor_acquisition_versions"]=Dict("scc"=>3)),
+                d->(d["command_acquisition_version"]=3),
+                d->(d["sensor_buffer_properties"]=true),
                 d->delete!(d["sensor_nodes"],"scc"),
                 d->(d["sensor_nodes"]["scc"]=d["pupil_node"]))
             invalid = deepcopy(document); change(invalid); C.write_json(config,invalid)

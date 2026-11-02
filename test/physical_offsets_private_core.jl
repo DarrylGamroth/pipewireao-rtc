@@ -32,7 +32,6 @@ include("physical_offsets_documents.jl")
     mktempdir() do directory
         graph,config=physical_offset_fixture(directory;P,Q,C)
         declaration=Common.read_yaml(config)
-        declaration["branches"]["scc"]["acquisition_version"]=3
         Common.write_yaml(config,declaration)
         wall=Threads.Atomic{UInt64}(100)
         prepared=Offsets.prepare(config,graph)
@@ -58,7 +57,6 @@ include("physical_offsets_documents.jl")
                     ("read-scc",REQUESTED_PDM_COMMAND_V1,4,true,3))
                 options=map(specs) do (name,schema,count,input,version)
                     HIL.PipeWireArrayStreamOptions(;node_name=name,media_name=name,schema,
-                        acquisition_version=version,
                         format=NdArrayFormat(NdArray.F32_LE,(count,);layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(2000,1)))
                 end
                 HIL.with_array_streams(Tuple(options);remote,input=map(x->x[4],specs)) do wire

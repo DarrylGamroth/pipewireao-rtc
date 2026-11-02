@@ -52,8 +52,8 @@ function external_pupil_configuration(path, document)
         "instrument", "rtc_configuration", "calibration_identity", "prescription_identity")
     clocked = document["version"] === 6
     additional = clocked ? ("source_graph","source_amplitude_binding","source_pupil_axes","source_dm_axes","command_input","command_node","command_schema","command_units","command_limit","mirror","rate","pacing_rate_hz") : ("pupil_node",)
-    optional = clocked ? ("command_acquisition_version","command_buffers","sensor_acquisition_versions") : ("sensor_acquisition_versions",)
-    InstrumentConfiguration.fields(document, (required...,"sensor_buffers","sensor_buffer_properties",additional...,optional...), (required...,additional...), "optical owner")
+    optional = clocked ? ("command_buffers",) : ()
+    InstrumentConfiguration.fields(document, (required...,"sensor_buffers",additional...,optional...), (required...,additional...), "optical owner")
     document["mode"] == (clocked ? "clocked-optical" : "external-pupil") || throw(ArgumentError("optical owner mode differs from version"))
     config_path = abspath(path)
     entry = document["plant"]
@@ -72,16 +72,6 @@ function external_pupil_configuration(path, document)
         throw(ArgumentError("sensor_nodes must name every physical optical path exactly once"))
     names = Tuple(Symbol.(sort!(collect(keys(paths)))))
     sensor_nodes = NamedTuple{names}(Tuple(node_name(nodes[string(name)], "sensor node") for name in names))
-    versions = get(document,"sensor_acquisition_versions",Dict())
-    versions isa AbstractDict && length(versions) <= 16 &&
-        all(name -> name isa String && haskey(paths,name),keys(versions)) ||
-        throw(ArgumentError("sensor_acquisition_versions must map known optical paths to versions"))
-    sensor_acquisition_versions = NamedTuple{names}(map(names) do name
-        chopped = hasproperty(chopping,name)
-        version = integer(get(versions,string(name),chopped ? 3 : 2),"sensor acquisition version",2,3)
-        chopped && version != 3 && throw(ArgumentError("chopped sensors require Acquisition Version 3"))
-        version
-    end)
     pupil_node = clocked ? nothing : node_name(document["pupil_node"], "pupil node")
     all_nodes = (clocked ? document["command_node"] : pupil_node, values(sensor_nodes)...)
     length(unique(all_nodes)) == length(all_nodes) || throw(ArgumentError("pupil and sensor node names must differ"))
@@ -99,9 +89,7 @@ function external_pupil_configuration(path, document)
     instrument = DeploymentConfiguration.relative_asset(dirname(config_path), document["instrument"])
     rtc_configuration = DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"])
     sensor_buffers=integer(get(document,"sensor_buffers",2),"sensor_buffers",2,64)
-    sensor_buffer_properties=boolean(get(document,"sensor_buffer_properties",false),"sensor_buffer_properties")
     source = if clocked
-        command_acquisition_version = integer(get(document,"command_acquisition_version",2),"command_acquisition_version",2,3)
         command_buffers = integer(get(document,"command_buffers",3),"command_buffers",2,64)
         source_graph = text(document["source_graph"],"optical source graph")
         haskey(declaration.graphs,source_graph) && source_graph != "calibration" || throw(ArgumentError("unknown optical source graph"))
@@ -176,7 +164,7 @@ function external_pupil_configuration(path, document)
         length(pupil_nodes) == 1 && only(pupil_nodes)["type"] == "spatial_ao_residual_f32" &&
             source_pupil_axes == [2,1] || throw(ArgumentError("clocked source requires native [x,y] spatial AO OPD transformed to [y,x]"))
         (;source_graph,source_amplitude_binding,source_pupil_axes=Tuple(source_pupil_axes),command_input,command_count,command_node=node_name(document["command_node"],"optical command node"),
-            command_schema=text(document["command_schema"],"optical command schema"),command_units=text(document["command_units"],"optical command units"),command_acquisition_version,
+            command_schema=text(document["command_schema"],"optical command schema"),command_units=text(document["command_units"],"optical command units"),
             command_limit=Float32(limit),command_buffers,mirror,rate,period_ns,pacing_rate_hz=document["pacing_rate_hz"],
             pacing_period_ns=pacing_period(document["pacing_rate_hz"],rate))
     else
@@ -184,7 +172,7 @@ function external_pupil_configuration(path, document)
     end
     return merge((; version=clocked ? 6 : 4, mode=clocked ? :clocked_optical : :external_pupil, config_path, sensor_buffers,
         plant=(; definition, settings=plant_settings(configured), chopping), graph=nothing,
-        pupil_node, sensor_nodes, sensor_acquisition_versions, sensor_buffer_properties, backend, device, instrument, rtc_configuration,
+        pupil_node, sensor_nodes, backend, device, instrument, rtc_configuration,
         calibration_identity=text(document["calibration_identity"], "calibration identity"),
         prescription_identity=text(document["prescription_identity"], "prescription identity")),source)
 end

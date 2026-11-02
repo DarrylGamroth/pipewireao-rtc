@@ -162,7 +162,7 @@ end
         streams=Ext.ExternalPupilOwner.stream_options(optical,"pupil",names;sensor_buffers=count)
         @test first(streams).buffers==2
         @test streams[2].buffers==streams[3].buffers==count
-        @test streams[2].acquisition_version==2 && streams[3].acquisition_version==3
+        @test streams[2].buffer_properties_capacity==512 && streams[3].buffer_properties_capacity==512
     end
     @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end

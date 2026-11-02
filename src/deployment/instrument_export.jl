@@ -192,17 +192,10 @@ end
 
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
-    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz", "sensor_buffer_properties"]) ||
-        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz and sensor_buffer_properties"))
+    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz"]) ||
+        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz"))
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
-    if haskey(overrides, "sensor_buffer_properties")
-        version = get(simulation, "version", nothing)
-        (version === 4 || version === 6) ||
-            throw(ArgumentError("sensor_buffer_properties requires an external-pupil or clocked optical owner"))
-        overrides["sensor_buffer_properties"] isa Bool ||
-            throw(ArgumentError("sensor_buffer_properties must be Boolean"))
-    end
     if get(simulation,"version",nothing) == 4
         haskey(overrides,"pacing_rate_hz") && throw(ArgumentError("external-pupil timing is owned by the input source"))
         merge!(simulation,overrides)

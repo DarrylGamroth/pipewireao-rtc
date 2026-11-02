@@ -60,11 +60,11 @@ end
     M = ManagedSessionCAL2
     contract = Dict("schema"=>"test/image/1","element-type"=>"F32_LE","shape"=>[2,2])
     mapping = Dict("sensor"=>"cal2-optics")
-    raw = M.product("scc","sensor:image",contract,10_000_000,mapping;acquisition_version=3)
-    @test raw.acquisition_version == 3
+    raw = M.product("scc","sensor:image",contract,10_000_000,mapping)
+    @test !hasproperty(raw,:acquisition_version)
     @test raw.priming_exposures == 0
     ordinary = M.product("llowfs","sensor:image",contract,2_000_000,mapping)
-    @test ordinary.acquisition_version == 2
+    @test !hasproperty(ordinary,:acquisition_version)
     @test_throws ArgumentError M.product("invalid","sensor:image",contract,10_000_000,mapping;
         model_time=false,priming_exposures=1)
 end

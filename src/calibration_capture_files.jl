@@ -159,7 +159,8 @@ function _capture_receipt(receipt)
             "generation"=>receipt.identity.generation,"sequence"=>receipt.identity.sequence),
         "model_start_ns"=>receipt.model_start_ns,"duration_ns"=>receipt.duration_ns,
         "header"=>Dict(string(key)=>getproperty(header,key) for key in (:flags,:offset,:pts,:dts_offset,:sequence)),
-        "acquisition_version"=>receipt.acquisition_version,"acquisition_flags"=>receipt.acquisition_flags,
+        "optical_classification"=>receipt.optical_classification === nothing ? nothing : UInt32(receipt.optical_classification),
+        "trigger_classification"=>receipt.trigger_classification === nothing ? nothing : UInt32(receipt.trigger_classification),
         "wire_start"=>start === nothing ? nothing : Dict("nanoseconds"=>start.nanoseconds,
             "uncertainty_nanoseconds"=>start.uncertainty_nanoseconds),
         "timebase"=>receipt.timebase === nothing ? nothing : UInt32(receipt.timebase),
@@ -167,8 +168,8 @@ function _capture_receipt(receipt)
             "grandmaster"=>bytes2hex(collect(reference.grandmaster.bytes)),"domain_number"=>reference.domain_number))
 end
 function _capture_check_receipt(value, exposure, domain)
-    _capture_fields(value,("identity","model_start_ns","duration_ns","header","acquisition_version",
-        "acquisition_flags","wire_start","timebase","ptp_reference"))
+    _capture_fields(value,("identity","model_start_ns","duration_ns","header","optical_classification",
+        "trigger_classification","wire_start","timebase","ptp_reference"))
     identity = _capture_fields(value["identity"],("domain","generation","sequence"))
     full = _capture_hash(identity["domain"];bytes=16)
     _capture_require((domain === nothing || full == domain) &&
@@ -179,19 +180,19 @@ function _capture_check_receipt(value, exposure, domain)
     header = _capture_fields(value["header"],("flags","offset","pts","dts_offset","sequence"))
     flags = _capture_uint(header["flags"],UInt32)
     _capture_uint(header["offset"],UInt32); _capture_int(header["pts"]); _capture_int(header["dts_offset"])
-    _capture_require(_capture_uint(header["sequence"]) == exposure.sequence && flags & (PipeWireAO.SPA.META_HEADER_FLAG_CORRUPTED | PipeWireAO.SPA.META_HEADER_FLAG_GAP) == 0,
-        "capture header is stale, corrupted or a gap")
-    version = _capture_uint(value["acquisition_version"],UInt32)
-    acquisition_flags = _capture_uint(value["acquisition_flags"],UInt32)
-    required_flags = UInt32(PipeWireAO.ACQUISITION_FLAG_IDENTITY_VALID | PipeWireAO.ACQUISITION_FLAG_EXPOSURE_DURATION_VALID)
-    _capture_require(version in (2,3) && acquisition_flags & required_flags == required_flags, "capture acquisition metadata is invalid")
+    _capture_uint(header["sequence"])
+    _capture_require(flags & (PipeWireAO.SPA.META_HEADER_FLAG_CORRUPTED | PipeWireAO.SPA.META_HEADER_FLAG_GAP) == 0,
+        "capture header is corrupted or a gap")
+    for key in ("optical_classification", "trigger_classification")
+        value[key] === nothing || _capture_require(_capture_uint(value[key],UInt32) <= 3, "invalid capture classification")
+    end
     start, timebase, reference = value["wire_start"],value["timebase"],value["ptp_reference"]
-    _capture_require((start !== nothing) == (acquisition_flags & PipeWireAO.ACQUISITION_FLAG_EXPOSURE_START_VALID != 0) &&
-        (reference !== nothing) == (acquisition_flags & PipeWireAO.ACQUISITION_FLAG_PTP_REFERENCE_VALID != 0) &&
-        (timebase !== nothing) == (start !== nothing), "capture optional clock flags differ")
+    _capture_require((timebase !== nothing) == (start !== nothing) &&
+        (reference !== nothing) == (start !== nothing && timebase == UInt32(PipeWireAO.ACQUISITION_TIMEBASE_TAI)),
+        "capture optional clock groups differ")
     if start !== nothing
         _capture_fields(start,("nanoseconds","uncertainty_nanoseconds"))
-        _capture_int(start["nanoseconds"]); _capture_uint(start["uncertainty_nanoseconds"])
+        _capture_require(_capture_int(start["nanoseconds"]) >= 0, "negative physical exposure start"); _capture_uint(start["uncertainty_nanoseconds"])
         _capture_require(_capture_uint(timebase,UInt32) in UInt32.((PipeWireAO.ACQUISITION_TIMEBASE_MONOTONIC,
             PipeWireAO.ACQUISITION_TIMEBASE_TAI)), "unknown capture clock timebase")
     end
@@ -280,7 +281,7 @@ function capture_preflight(store::CaptureStore; run::UInt64,serial::UInt64,probe
     request = _capture_request(run,serial)
     directory = joinpath(store.directory,request)
     _capture_require(!ispath(directory) && !islink(directory), "capture request directory already exists")
-    header = Dict{String,Any}("schema_version"=>1,"profile"=>"classic","run"=>run,"serial"=>serial,
+    header = Dict{String,Any}("schema_version"=>2,"profile"=>"classic","run"=>run,"serial"=>serial,
         "probe"=>probe,"stage"=>store.stage,"illumination"=>store.illumination,"settings"=>store.settings,
         "after"=>_capture_cursor(after),"cursor"=>_capture_cursor(after),"payload_bytes"=>bytes,
         "domain_mapping"=>Dict("coordinator"=>after.domain,"wire"=>something(store.domain,repeat("0",32))))
@@ -294,7 +295,7 @@ end
 Write each completed sink-owned Classic sample before calling `acquire()` again.
 `acquire()` returns `(sample, exposure)`; samples contain `arrays` and `metadata`.
 A request creates `run-R-serial-S/manifest.json` only after all payloads succeed.
-Manifest version 1 contains a bounded settings header, after/final cursors,
+Manifest version 2 contains a bounded settings header, after/final cursors,
 `domain_mapping` (`coordinator` UInt64 to 16-byte hex `wire` domain), and an
 `exposures` array. Each entry binds native model time, full wire identities,
 all copied clock/header metadata, intrinsic quality, and four fixed payload
@@ -422,7 +423,7 @@ function read_capture(directory, descriptor::NativeCalibrationActionCodec.Captur
     fields = ("schema_version","profile","run","serial","probe","stage","illumination","settings",
         "after","cursor","payload_bytes","domain_mapping","exposures")
     _capture_fields(manifest,fields)
-    _capture_require(manifest["schema_version"] === 1 && manifest["profile"] == expected_profile &&
+    _capture_require(manifest["schema_version"] === 2 && manifest["profile"] == expected_profile &&
         manifest["stage"] == expected_stage && manifest["illumination"] == expected_illumination &&
         _capture_same_json(manifest["settings"],settings), "capture profile/stage/illumination/settings differ")
     run,serial = _capture_uint(manifest["run"]),_capture_uint(manifest["serial"])

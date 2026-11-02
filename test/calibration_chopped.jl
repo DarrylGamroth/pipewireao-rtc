@@ -112,11 +112,11 @@ end
             ChoppedCalibration.optical_frontend_identity(prefix)
 
         warmup=(;input=:image,exposure_duration_ns=10_000_000,trigger_high_is_fringed=true)
-        options=(;acquisition_version=3,execution="complete-frame",feedback=nothing,capture_backend=nothing)
+        options=(;execution="complete-frame",feedback=nothing,capture_backend=nothing)
         samples=ChoppedGraphOwner.chopped_warmup_samples(frontend.graph,options,warmup)
         @test length(samples)==3 && samples[1].expected===SccPixelResidualIncompletePair
-        @test samples[1].metadata.image.acquisition_version==3
-        node=FilterGraphPipeWire.PipeWireNode(frontend.graph;connect=false,acquisition_version=3)
+        @test samples[1].metadata.image.has_acquisition_identity
+        node=FilterGraphPipeWire.PipeWireNode(frontend.graph;connect=false)
         try
             @test FilterGraphPipeWire.prepare!(node;samples,required_outputs=(:measurements,))===node
             @test !node.owner.active && node.owner.process_count==0
@@ -126,12 +126,12 @@ end
             @test JuliaFilterGraph.output_metadata(frontend.graph).measurements.sequence==3
             pair=only(filter(item->item.name===:pair,frontend.graph.nodes)).prepared.workspace
             @test !chopped_image_is_primed(pair)
-            live=SampleMetadata(1;terminal=true,trigger_high=true,acquisition_version=3,
+            live=SampleMetadata(1;terminal=true,trigger_high=true,chopped_image_kind=ChoppedImageFringed,
                 exposure_duration_nanoseconds=10_000_000,
                 acquisition_identity=SampleAcquisitionIdentity(ntuple(_->UInt8(0xd2),16),1,1))
             @test JuliaFilterGraph.process!(frontend.outputs,frontend.graph,(image=fringed,),(image=live,))===SccPixelResidualIncompletePair
             @test_throws ArgumentError ChoppedGraphOwner.chopped_warmup_samples(frontend.graph,
-                merge(options,(;acquisition_version=2)),warmup)
+                merge(options,(;execution="row-block")),warmup)
         finally
             close(node)
         end

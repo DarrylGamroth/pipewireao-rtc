@@ -18,10 +18,10 @@ function sensor_native_buffer(count)
     memory = zeros(UInt8,4count)
     chunk = Ref(native.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(4),UInt32(0)))
     header = Ref(native.spa_meta_header(UInt32(0),UInt32(0),Int64(0),Int64(0),UInt64(0)))
-    acquisition = zeros(UInt64,Int(native.SPA_META_ACQUISITION_SIZE) ÷ sizeof(UInt64))
+    acquisition = zeros(UInt64,64)
     metadata = native.spa_meta[
         native.spa_meta(native.SPA_META_Header,UInt32(sizeof(native.spa_meta_header)),Base.unsafe_convert(Ptr{Cvoid},header)),
-        native.spa_meta(native.SPA_META_Acquisition,UInt32(sizeof(acquisition)),Ptr{Cvoid}(pointer(acquisition))),
+        native.spa_meta(native.SPA_META_Properties,UInt32(sizeof(acquisition)),Ptr{Cvoid}(pointer(acquisition))),
     ]
     data = Ref(native.spa_data(native.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
         UInt32(length(memory)),pointer(memory),Base.unsafe_convert(Ptr{native.spa_chunk},chunk)))
@@ -31,23 +31,19 @@ function sensor_native_buffer(count)
     return (;memory,chunk,header,acquisition,metadata,data,spa_buffer,native_buffer,buffer)
 end
 
-@testset "unchopped sensors opt into native Acquisition Version 3 without a trigger phase" begin
+@testset "sensors publish version-free Properties with independent classification" begin
     science = sensor_stream_science(;chopped=true)
-    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc");
-        sensor_acquisition_versions=(;llowfs=3,scc=3))
-    @test streams[2].acquisition_version == streams[3].acquisition_version == 3
-    @test StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))[2].acquisition_version == 2
-    @test_throws ArgumentError StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc");
-        sensor_acquisition_versions=(;scc=2))
+    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
+    @test streams[2].buffer_properties_capacity == streams[3].buffer_properties_capacity == 512
     HIL = AdaptiveOpticsSimPipeWireHIL
     native = PipeWireAO.LibPipeWire
     option = streams[2]
     parameters = HIL._stream_parameters(option.format,option.schema;
-        buffers=option.buffers,acquisition_version=option.acquisition_version)
+        buffers=option.buffers,buffer_properties_capacity=option.buffer_properties_capacity)
     object = PipeWireAO.pod_value(SPA.Parameter,parameters[4]).object
     @test PipeWireAO.pod_value(Int32,object[SPA.META_PARAM_FEATURES].value) ==
-        Int32(native.SPA_META_FEATURE_ACQUISITION_VERSION_3)
-    @test PipeWireAO.pod_value(Int32,object[SPA.META_PARAM_SIZE].value) == native.SPA_META_ACQUISITION_SIZE
+        Int32(native.SPA_META_FEATURE_PROPERTIES_VERSION_1)
+    @test PipeWireAO.pod_value(Int32,object[SPA.META_PARAM_SIZE].value) == 512
     state = HIL.ArrayStreamState(6)
     identity = AcquisitionIdentity(AcquisitionDomain(ntuple(UInt8,16)),UInt64(2),UInt64(7))
     classification = StreamOwner.trigger_state(science,:llowfs,(;sequence=UInt64(7)))
@@ -55,20 +51,19 @@ end
     state.values .= Float32.(1:6)
     state.receipt = PipeWireArrayReceipt(Int64(60_000_000),UInt64(10_000_000),identity,UInt64(0),classification)
     storage = sensor_native_buffer(6)
-    process = HIL.ArrayStreamProcess(state,storage.buffer,false,12,option.acquisition_version)
+    process = HIL.ArrayStreamProcess(state,storage.buffer,false,12)
     GC.@preserve storage begin
         @test HIL._write_array!(process) === nothing
-        metadata = buffer_acquisition(storage.buffer)
-        @test acquisition_valid(metadata)
-        @test acquisition_version(metadata) == 3
-        @test acquisition_trigger_state(metadata) == ACQUISITION_TRIGGER_ABSENT
+        metadata = buffer_properties(storage.buffer)
+        @test buffer_properties_valid(metadata)
+        @test trigger_classification(metadata) == ACQUISITION_TRIGGER_ABSENT
         @test acquisition_identity(metadata) == identity
         @test acquisition_exposure_duration(metadata) == 10_000_000
         @test buffer_header(storage.buffer).sequence == 7
         @test buffer_header(storage.buffer).pts == 60_000_000
         @test reinterpret(Float32,storage.memory) == state.values
         received = HIL.ArrayStreamState(6)
-        reader = HIL.ArrayStreamProcess(received,storage.buffer,true,12,UInt32(3))
+        reader = HIL.ArrayStreamProcess(received,storage.buffer,true,12)
         @test HIL._read_array!(reader)
         @test received.values == state.values
         @test received.receipt.identity == identity
@@ -131,8 +126,8 @@ end
             @test stream.format.layout == NdArray.ROW_MAJOR
             @test Dict(stream.properties)["optics.spectral-samples"] == string(samples)
         end
-        @test streams[2].acquisition_version == 2
-        @test streams[3].acquisition_version == (chopped ? 3 : 2)
+        @test streams[2].buffer_properties_capacity == 512
+        @test streams[3].buffer_properties_capacity == 512
         @test science.plant.exposures.scc.duration_ns == 10_000_000
     end
 end
@@ -157,11 +152,9 @@ end
     required = (PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_OPTICAL_CLASSIFICATION,SPA.Id),
         PipeWireAO.BufferPropertyRequirement(PipeWireAO.BUFFER_PROPERTY_TRIGGER_CLASSIFICATION,SPA.Id))
     science = sensor_stream_science(;chopped=true)
-    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc");
-        sensor_buffer_properties=true)
-    @test streams[1].buffer_properties_capacity == 0
-    @test all(option -> option.buffer_properties_capacity == 256 && option.required_buffer_properties == required,streams[2:3])
-    @test streams[3].acquisition_version == 3
+    streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
+    @test streams[1].buffer_properties_capacity == 512
+    @test all(option -> option.buffer_properties_capacity == 512 && option.required_buffer_properties == required,streams[2:3])
     for polarity in (true,false)
         configured = merge(science,(;chopping=(;scc=(;trigger_high_is_fringed=polarity))))
         for (kind,optical) in ((:fringed,OPTICAL_FRINGED),(:unfringed,OPTICAL_UNFRINGED),(:mixed,OPTICAL_MIXED))

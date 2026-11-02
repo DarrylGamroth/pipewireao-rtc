@@ -225,7 +225,7 @@ typed graph outputs. Monitor-only is the default and never changes closure.
 `--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
 `exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
 synthetic F/U/F samples must prime then complete SCC pixel residuals; finally
-the Graph is reset. The owner must select Acquisition Version 3 explicitly.
+the Graph is reset. The owner requires explicit identity, duration and optical classification Properties.
 """
 main(args) = _main(args)
 
