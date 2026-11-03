@@ -46,7 +46,7 @@ end
     @test queue["args"]["playback.props"]["node.name"] == "residual-queue-output"
     @test queue["args"]["queue.max-buffers"] === 1
     @test queue["args"]["playback.props"]["queue.max-buffers"] == "1"
-    @test Set(r["type"] for r in queue["args"]["metadata"]) == Set(UInt32[768,769,770,771,772])
+    @test Set(r["type"] for r in queue["args"]["metadata"]) == Set(UInt32[768,769,773])
     @test all(r -> r["required"] === false,queue["args"]["metadata"])
     override = deepcopy(entry)
     override["args"]["queue.max-buffers"] = 4

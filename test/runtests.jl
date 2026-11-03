@@ -5,6 +5,7 @@ for name in ("configuration_store", "simulator_configuration", "artifacts", "par
 end
 Base.include(Module(:AuxiliarySourceTests), joinpath(@__DIR__, "test_auxiliary_sources.jl"))
 Base.include(Module(:CoupledRecoveryTests), joinpath(@__DIR__, "test_correction_recovery_controllers.jl"))
+Base.include(Module(:QueueMetadataProfilesTests), joinpath(@__DIR__, "queue_metadata_profiles.jl"))
 include("test_native_session_discovery.jl")
 Base.include(Module(:ExternalPupilOwnerTests), joinpath(@__DIR__, "test_external_pupil_owner.jl"))
 Base.include(Module(:ApplicationCompositionTests), joinpath(@__DIR__, "test_application_composition.jl"))

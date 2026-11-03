@@ -57,7 +57,7 @@ function render_templates!(application, spec, profile, prefix)
     declarations = modules["context.modules"]
     declarations isa AbstractVector || throw(ArgumentError("instrument context.modules must be a list"))
     append!(core["context.modules"], declarations)
-    telemetry_queues!(core)
+    telemetry_queues!(core;metadata_defaults=false)
     outputs = Dict{String,Any}(corepath => core)
     clients = Dict{String,String}()
     for (role, path) in spec["client"]
@@ -106,14 +106,14 @@ function validate_telemetry_groups(core)
     return nothing
 end
 
-function telemetry_queues!(core)
+function telemetry_queues!(core;metadata_defaults=true)
     # Copy/drop-oldest playback is independent of the control clock. Without an
     # explicit driver group, the scheduler can attach it to the active RTC driver
     # when the last GUI driver disappears, adding completion dependencies mid-cycle.
     for declaration in get(core, "context.modules", [])
         get(declaration, "name", nothing) == "libpipewire-module-queue" || continue
         args = declaration["args"]
-        get(args,"queue.media",nothing) == "application/ndarray" && queue_metadata!(args)
+        get(args,"queue.media",nothing) == "application/ndarray" && queue_metadata!(args;defaults=metadata_defaults)
         get(args, "queue.storage", nothing) == "copy" &&
             get(args, "queue.overflow", nothing) == "drop-oldest" || continue
         playback = get!(args, "playback.props", Dict{String,Any}())

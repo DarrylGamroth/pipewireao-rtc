@@ -57,16 +57,28 @@ function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(declaration:
     end
 end
 
-function PipeWireAORTC.InstrumentExport.graph_port_contracts(path::AbstractString)
+function PipeWireAORTC.InstrumentExport.graph_port_contracts(path::AbstractString;metadata::Bool=false)
     options = FilterGraphIsland.parse_arguments([
         "--graph", String(path), "--check", "--execution", "complete-frame"])
     graph = FilterGraphIsland.prepare_service_graph(options)
     try
-        return Dict(section => Dict(string(name) => PipeWireAORTC.InstrumentExport.port_contract(format)
+        contracts=Dict(section => Dict(string(name) => PipeWireAORTC.InstrumentExport.port_contract(format)
             for (name, format) in pairs(formats(graph)))
             for (section, formats) in (("inputs", JuliaFilterGraph.input_formats),
                 ("parameters", JuliaFilterGraph.parameter_formats),
                 ("outputs", JuliaFilterGraph.output_formats)))
+        if metadata
+            required=FilterGraphPipeWire.required_input_metadata(graph)
+            inputs=keys(JuliaFilterGraph.input_formats(graph))
+            outputs=keys(JuliaFilterGraph.output_formats(graph))
+            profiles=(inputs=PipeWireAORTC.Common.telemetry_metadata_ports(inputs;required),
+                outputs=PipeWireAORTC.Common.telemetry_metadata_ports(outputs,inputs,
+                    JuliaFilterGraph.output_metadata_source_inputs(graph);required))
+            for section in (:inputs,:outputs), (name,profile) in pairs(getproperty(profiles,section))
+                contracts[string(section)][string(name)]["metadata"]=[Dict("type"=>r.type,"size"=>r.size,"required"=>r.required) for r in profile.metadata]
+            end
+        end
+        return contracts
     finally
         FilterGraphIsland.close_execution(graph)
     end

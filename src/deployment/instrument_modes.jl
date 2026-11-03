@@ -74,8 +74,8 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix; confi
         combined = merge_configuration(original, get(mode, field, Dict()))
         combined = substitute(combined, bindings)
         if field == "core"
-            queue_templates!(combined)
-            telemetry_queues!(combined)
+            queue_templates!(combined;metadata_defaults=false)
+            telemetry_queues!(combined;metadata_defaults=false)
             validate_telemetry_groups(combined)
         end
         ScienceExport.write_spa_config(fullpath, combined)

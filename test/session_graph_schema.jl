@@ -1,5 +1,5 @@
 # Optional no-core check of actual JFG port schemas against session declarations.
-using Test, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
 const E=PipeWireAORTC.InstrumentExport
 const C=PipeWireAORTC.Common
 const D=PipeWireAORTC.DeploymentConfiguration
@@ -86,5 +86,34 @@ end
         @test demanded==expected==clamp.(requested,-0.5f0,0.5f0)
         @test feedback==expected_feedback==requested-demanded
         FilterGraphAlgorithms.commit!(native.workspace);FilterGraphAlgorithms.commit!(legacy.workspace)
+    end
+end
+
+@testset "queue graph profiles follow each output metadata source" begin
+    mktempdir() do directory
+        config(strict)=Dict("pixel_count"=>2,"trigger_high_is_fringed"=>true,
+            "require_acquisition_identity"=>strict)
+        graph=Dict("node.name"=>"classified-graph","filter.graph"=>Dict(
+            "nodes"=>[Dict("name"=>name,"type"=>"ndarray","label"=>"chopped-image-difference-f32",
+                "config"=>config(strict)) for (name,strict) in (("strict",true),("ordinary",false))],
+            "inputs"=>[Dict("name"=>name*"-"*port,"endpoint"=>name*":"*port)
+                for name in ("strict","ordinary") for port in ("image","input-validity")],
+            "outputs"=>[Dict("name"=>name*"-product","endpoint"=>name*":difference")
+                for name in ("strict","ordinary")]))
+        path=joinpath(directory,"graph.conf")
+        PipeWireAORTC.ScienceExport.write_spa_config(path,graph)
+        @test !haskey(E.graph_port_contracts(path)["outputs"]["strict-product"],"metadata")
+        contracts=E.graph_contract_context(directory,[Dict("path"=>"graph.conf")],PREFIX)
+        queue(name)=Dict("name"=>"libpipewire-module-queue","args"=>Dict{String,Any}(
+            "node.name"=>name,"queue.media"=>"application/ndarray"))
+        core=Dict("context.modules"=>[queue("strict"),queue("ordinary")])
+        session=Dict("links"=>[Dict("output"=>"classified-graph:"*name*"-product",
+            "input"=>name*"-input:playback_1") for name in ("strict","ordinary")])
+        E.queue_metadata_profiles!(core,session,contracts,Dict())
+        profiles=Dict(m["args"]["node.name"]=>Set(r["type"] for r in m["args"]["metadata"])
+            for m in core["context.modules"])
+        base=Set(r.type for r in C.TELEMETRY_METADATA)
+        @test profiles["strict"]==union(base,Set((PipeWireAO.SPA.META_OPTICAL_CHOPPING,PipeWireAO.SPA.META_ELECTRICAL_TRIGGER)))
+        @test profiles["ordinary"]==base
     end
 end
