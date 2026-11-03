@@ -12,12 +12,8 @@ function analysis_callback_buffer(data, requirements; header=nothing, identity=n
     if identity !== nothing
         set_acquisition_identity!(records, identity)
         set_exposure_timing!(records, ExposureTiming(100; clock=METADATA_CLOCK_MODEL,
-            clock_domain=identity.domain.bytes, duration_nanoseconds=2000))
-        set_absolute_times!(records, (AbsoluteTime(1700000000, 123;
-            event=TIME_EVENT_ACQUISITION, origin=identity.domain.bytes,
-            clock_domain=identity.domain.bytes),))
-        set_optical_classification!(records, OPTICAL_FRINGED)
-        set_trigger_classification!(records, ACQUISITION_TRIGGER_HIGH)
+            duration_nanoseconds=2000))
+        set_reference_timestamp!(records,ReferenceTimestamp(1_700_000_000_000_000_123))
     end
     extent = UInt32(sizeof(data))
     storage = [native.pw_ndarray_filter_buffer(UInt32(sizeof(native.pw_ndarray_filter_buffer)),
@@ -72,13 +68,28 @@ end
                 @test buffer_header(destination.metadata) == header
                 @test acquisition_identity(destination.metadata) == identity
                 @test exposure_timing(destination.metadata) == exposure_timing(sources[1].metadata)
-                @test absolute_times(destination.metadata) == absolute_times(sources[1].metadata)
-                @test optical_classification(destination.metadata) == OPTICAL_FRINGED
-                @test trigger_classification(destination.metadata) == ACQUISITION_TRIGGER_HIGH
+                @test reference_timestamp(destination.metadata) == reference_timestamp(sources[1].metadata)
+                @test optical_classification(destination.metadata) === nothing
+                @test trigger_classification(destination.metadata) === nothing
             end
         finally
             close(node)
             FilterGraphIsland.close_execution(graph)
         end
     end
+end
+
+@testset "classification profiles follow each declared source port" begin
+    required=(camera=(MetadataRequirement(SPA.META_OPTICAL_CHOPPING;required=true),),ordinary=())
+    inputs=C.telemetry_metadata_ports((:camera,:ordinary);required)
+    outputs=C.telemetry_metadata_ports((:camera_product,:ordinary_product,:shared),
+        (:camera,:ordinary),(1,2,0);required)
+    @test length(inputs.camera.metadata)==5
+    @test length(inputs.ordinary.metadata)==3
+    @test any(r -> r.type==SPA.META_OPTICAL_CHOPPING && r.required,inputs.camera.metadata)
+    @test any(r -> r.type==SPA.META_ELECTRICAL_TRIGGER && !r.required,inputs.camera.metadata)
+    @test length(outputs.camera_product.metadata)==5
+    @test all(!r.required for r in outputs.camera_product.metadata)
+    @test length(outputs.ordinary_product.metadata)==3
+    @test length(outputs.shared.metadata)==3
 end

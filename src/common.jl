@@ -6,45 +6,52 @@ import PipeWireAO
 # Required acquisition facts remain the consuming algorithm/profile's contract.
 const TELEMETRY_METADATA=Tuple(PipeWireAO.MetadataRequirement(type) for type in (
     PipeWireAO.SPA.META_ACQUISITION_IDENTITY,PipeWireAO.SPA.META_EXPOSURE_TIMING,
-    PipeWireAO.SPA.META_ABSOLUTE_TIME,PipeWireAO.SPA.META_OPTICAL_CHOPPING,
-    PipeWireAO.SPA.META_ELECTRICAL_TRIGGER))
+    PipeWireAO.SPA.META_REFERENCE_TIMESTAMP))
+const ACQUISITION_METADATA=Tuple(PipeWireAO.MetadataRequirement(record.type,record.size;required=true)
+    for record in TELEMETRY_METADATA)
 
-function telemetry_metadata_ports(names;required=NamedTuple())
+function telemetry_metadata_ports(names;required=NamedTuple(),optional=NamedTuple())
     profiles=map(Tuple(names)) do name
         needed=get(required,name,())
         metadata=map(TELEMETRY_METADATA) do record
             demanded=any(r->r.type==record.type && r.required,needed)
             PipeWireAO.MetadataRequirement(record.type,record.size;required=demanded)
         end
-        extra=Tuple(r for r in needed if !any(base->base.type==r.type,metadata))
+        supplied=get(optional,name,())
+        classifications=(needed...,supplied...)
+        electrical=any(r -> r.type==PipeWireAO.SPA.META_OPTICAL_CHOPPING,classifications) &&
+            !any(r -> r.type==PipeWireAO.SPA.META_ELECTRICAL_TRIGGER,classifications) ?
+            (PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER),) : ()
+        offered=(needed...,supplied...,electrical...)
+        extra=Tuple(r for r in offered if !any(base->base.type==r.type,metadata))
         (;metadata=(metadata...,extra...))
     end
     return NamedTuple{Tuple(names)}(profiles)
 end
 
-"Parse an absolute telemetry clock policy without reading a device or preparing science."
-function absolute_clock_configuration(value=nothing)
-    value === nothing && return (;clock=:realtime,tai_utc_offset=nothing)
-    value isa AbstractDict && all(k -> k in ("clock","tai_utc_offset"),keys(value)) ||
-        throw(ArgumentError("absolute_clock accepts clock and optional tai_utc_offset"))
-    clock=get(value,"clock","realtime")
-    clock in ("realtime","tai") || throw(ArgumentError("absolute_clock must select realtime or tai"))
-    offset=get(value,"tai_utc_offset",nothing)
-    if clock == "tai"
-        offset isa Integer && !(offset isa Bool) && 1 <= offset <= 128 ||
-            throw(ArgumentError("TAI−UTC offset must be an integer in 1:128"))
-        offset=Int(offset)
-    else
-        offset === nothing || throw(ArgumentError("realtime does not accept a TAI−UTC offset"))
-    end
-    return (;clock=Symbol(clock),tai_utc_offset=offset)
+# Output profiles inherit only the classifications of their declared source Port.
+function telemetry_metadata_ports(names,input_names,sources;required=NamedTuple())
+    inputs=telemetry_metadata_ports(input_names;required)
+    optional=NamedTuple{Tuple(names)}(map(Tuple(sources)) do index
+        iszero(index) && return ()
+        return Tuple(PipeWireAO.MetadataRequirement(r.type,r.size) for r in getproperty(inputs,input_names[index]).metadata)
+    end)
+    return telemetry_metadata_ports(names;optional)
 end
 
-"Prepare the selected absolute clock once, before native endpoints are created."
-function prepare_absolute_clock(options)
-    policy=get(options,:absolute_clock,(;clock=:realtime,tai_utc_offset=nothing))
-    clock=policy.clock === :realtime ? PipeWireAO.METADATA_CLOCK_REALTIME : PipeWireAO.METADATA_CLOCK_TAI
-    return PipeWireAO.AbsoluteClock(clock;tai_utc_offset=policy.tai_utc_offset)
+"Parse a reference clock selection without reading a device or preparing science."
+function reference_clock_configuration(value=nothing)
+    value === nothing && return :realtime
+    value isa AbstractString && value in ("realtime","tai") ||
+        throw(ArgumentError("reference_clock must select realtime or tai"))
+    return Symbol(value)
+end
+
+"Prepare the selected reference clock before native endpoints are created."
+function prepare_reference_clock(options)
+    clock=get(options,:reference_clock,:realtime)
+    clock in (:realtime,:tai) || throw(ArgumentError("unsupported reference clock"))
+    return clock === :realtime ? PipeWireAO.METADATA_CLOCK_REALTIME : PipeWireAO.METADATA_CLOCK_TAI
 end
 
 

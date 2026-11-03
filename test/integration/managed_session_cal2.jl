@@ -344,7 +344,7 @@ function observe_epoch(handle,selected,stage,name)
     live=M.dump_graph(handle,selected.prefix)
     C.write_json(joinpath(stage,name*"-graph.json"),live)
     options=Tuple(HIL.PipeWireArrayStreamOptions(node_name="cal2-lifecycle-$(getpid())-$(index)",media_name=product.name,
-        schema=product.schema,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
+        metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,schema=product.schema,format=NdArrayFormat(NdArray.F32_LE,product.shape;layout=NdArray.ROW_MAJOR,rate=product.rate))
         for (index,product) in enumerate(plan.products))
     samples=map(product->Samples(product,plan.sample_count+128),plan.products)
     arrays=map(product->zeros(Float32,product.shape),plan.products)

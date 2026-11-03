@@ -235,13 +235,14 @@ end
     end
 end
 
-@testset "absolute telemetry clock selection is cold and explicit" begin
-    parseclock=PipeWireAORTC.AOSOwner.absolute_clock_configuration
-    @test parseclock() == (;clock=:realtime,tai_utc_offset=nothing)
-    @test parseclock(Dict("clock"=>"tai","tai_utc_offset"=>37)) == (;clock=:tai,tai_utc_offset=37)
-    for value in (Dict("clock"=>"ptp"),Dict("clock"=>"monotonic"),Dict("clock"=>"tai"),
-            Dict("clock"=>"tai","tai_utc_offset"=>true),Dict("clock"=>"tai","tai_utc_offset"=>0),
-            Dict("clock"=>"realtime","tai_utc_offset"=>37),Dict("other"=>1))
+@testset "reference clock selection is cold and explicit" begin
+    parseclock=PipeWireAORTC.AOSOwner.reference_clock_configuration
+    @test parseclock() === :realtime
+    @test parseclock("realtime") === :realtime
+    @test parseclock("tai") === :tai
+    for value in ("ptp","monotonic",Dict("clock"=>"tai"),
+            Dict("clock"=>"tai","tai_utc_offset"=>37),true,0,Dict("other"=>1))
         @test_throws ArgumentError parseclock(value)
     end
+    @test PipeWireAORTC.Common.prepare_reference_clock((;reference_clock=:tai)) == PipeWireAORTC.Common.PipeWireAO.METADATA_CLOCK_TAI
 end

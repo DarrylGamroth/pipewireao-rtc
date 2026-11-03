@@ -61,25 +61,38 @@ remain regression obligations. Numerical, allocation, private-core lifecycle and
 physical/deadline evidence remain separate; physical devices and GPU controller
 recovery are outside this selected profile.
 
-### Independent SPA records — 2026-11-02
+### Compact SPA metadata — 2026-11-03
 
-The native 3.0 development cohort replaces acquisition-specific Properties with
-Header and independently negotiated identity, exposure, absolute-time, optical
-chopping and electrical-trigger records. Shared telemetry export declares the
-records its queues preserve; explicit bounded layouts can add optional opaque
-records. Transport-owned synchronization state is never copied as scientific data.
+The native 4.0 / PipeWireAO 0.9 source cohort retains standard Header and
+acquisition identity and reduces exposure timing to start, clock and positive
+optional duration. One optional ReferenceTimestamp carries clock, UInt64
+nanoseconds and optional duration. Event arrays, clock UUIDs, mappings and
+uncertainty are retired. Derived products retain their triggering source stamp;
+contributor identities remain separate. No clock label proves synchronization.
 
-RTC capture schema 3 preserves validated source records and separately labels
-recorder receipt and payload-write events. Schema 1/2 captures are rejected;
-historical files remain unchanged. REALTIME is the default. Explicit TAI policy
-requires a verified host offset before endpoints are created, including calibration
-sources, controller products and recording. Header PTS remains a separate timeline.
+RTC 0.5 authors `reference_clock: realtime` or `tai`; the default is REALTIME.
+Old absolute-clock objects, offset qualifications and event selectors reject.
+Generic telemetry declares identity, exposure and reference records. Optical and
+electrical records appear only on relevant chopped-camera/source profiles.
+Required camera/algorithm acquisition facts remain mandatory.
 
-Source validation passes the RTC core suite (8392 assertions), capture-file
-checks (228), capture callbacks (125), single-command transport (27) and named
-command transport (16 plus 42 cold contracts). Native lifecycle review and stress
-checks pass separately. Cross-package final validation, registered dependencies
-and fresh applications remain release gates. No simulator or GUI is launched.
+Capture schema and metadata ABI 4 preserve exact source records and one reference
+timestamp. Recorder receipt and payload-write timestamps stay separate file
+facts with their own clock and UInt64 nanoseconds. Schema 1–3 captures reject
+without modifying frozen files. Installed applications, simulator services and
+GUI remain unchanged. CPU/cold checks do
+not qualify hardware, cross-host clocks, cadence or deadlines.
+
+Julia 1.13.3 source validation (`-O0`, RTC base `39869fc4`, native 4.0/PWA 0.9,
+FGA 0.11/JFG 0.7/FGP 0.4/Island 0.4/HIL 0.5) passes 10,295 RTC core assertions,
+229 capture-file checks, 126 capture callback checks, 172 sensor format/profile
+checks and 20 native-summary/per-Port policy checks. The core suite's expected
+missing-Git-object rejection prints its diagnostic. No CUDA or AMDGPU module is
+loaded by the focused CPU selectors. Bounded private-core command transport
+passes 31 checks, including actual reference-timestamp arrival; named command
+transport passes 16 checks plus 42 cold contracts. Both selectors close their own
+core and resources. Registered dependency publication and fresh instrument
+application checks remain coordinated release gates.
 
 ### Independent shared-mirror optical control — 2026-11-01
 

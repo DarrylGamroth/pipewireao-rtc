@@ -73,7 +73,7 @@ function recording_parameters(format,schema)
         Pod(buffers_param(size=payload_size(format),buffers=3)),
         Pod(header_metadata_param()),map(r -> Pod(metadata_param(r)),
             (MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
-                MetadataRequirement(SPA.META_ABSOLUTE_TIME),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+                MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
                 MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))...)
 end
 

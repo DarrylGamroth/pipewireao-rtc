@@ -13,14 +13,11 @@ function sensor_stream_science(; durations=(llowfs=2_000_000, scc=10_000_000), s
         chopping=chopped ? (;scc=(;initial_phase="fringed")) : NamedTuple())
 end
 
-function sensor_native_buffer(count)
+function sensor_native_buffer(count;requirements=())
     native = PipeWireAO.LibPipeWire
     memory = zeros(UInt8,4count)
     chunk = Ref(native.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(4),UInt32(0)))
-    records=MetadataSnapshot((MetadataRequirement(SPA.META_HEADER),
-        MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
-        MetadataRequirement(SPA.META_ABSOLUTE_TIME),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
-        MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))
+    records=MetadataSnapshot((MetadataRequirement(SPA.META_HEADER),requirements...))
     metadata=records.descriptors
     data = Ref(native.spa_data(native.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
         UInt32(length(memory)),pointer(memory),Base.unsafe_convert(Ptr{native.spa_chunk},chunk)))
@@ -33,7 +30,10 @@ end
 @testset "sensors publish independent records with independent classification" begin
     science = sensor_stream_science(;chopped=true)
     streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
-    @test streams[2].metadata == streams[3].metadata
+    @test Set(r.type for r in streams[2].metadata) == Set((SPA.META_ACQUISITION_IDENTITY,
+        SPA.META_EXPOSURE_TIMING,SPA.META_REFERENCE_TIMESTAMP))
+    @test Set(r.type for r in streams[3].metadata) == Set((SPA.META_ACQUISITION_IDENTITY,
+        SPA.META_EXPOSURE_TIMING,SPA.META_REFERENCE_TIMESTAMP,SPA.META_OPTICAL_CHOPPING,SPA.META_ELECTRICAL_TRIGGER))
     HIL = AdaptiveOpticsSimPipeWireHIL
     native = PipeWireAO.LibPipeWire
     option = streams[2]
@@ -48,21 +48,23 @@ end
     classification = StreamOwner.trigger_state(science,:llowfs,(;sequence=UInt64(7)))
     @test classification == ACQUISITION_TRIGGER_ABSENT
     state.values .= Float32.(1:6)
-    HIL._set_array_receipt!(state.receipt,Int64(60_000_000),UInt64(7),UInt64(10_000_000),identity,UInt64(0),classification,true,OPTICAL_ABSENT,AbsoluteTimes())
-    storage = sensor_native_buffer(6)
-    process = HIL.ArrayStreamProcess(state,storage.buffer,false,12,option.metadata,option.absolute_clock)
+    HIL._set_array_receipt!(state.receipt,Int64(60_000_000),UInt64(7),UInt64(10_000_000),identity,UInt64(0),classification,false,nothing,nothing)
+    storage = sensor_native_buffer(6;requirements=option.metadata)
+    process = HIL.ArrayStreamProcess(state,storage.buffer,false,12,option.metadata,option.reference_clock)
     GC.@preserve storage begin
         @test HIL._write_array!(process) === nothing
         metadata = metadata_records(storage.buffer)
         @test metadata_records_valid(metadata,option.metadata)
-        @test trigger_classification(metadata) == ACQUISITION_TRIGGER_ABSENT
+        @test trigger_classification(metadata) === nothing
+        @test optical_classification(metadata) === nothing
+        @test reference_timestamp(metadata)!==nothing
         @test acquisition_identity(metadata) == identity
         @test exposure_timing(metadata).duration_nanoseconds == 10_000_000
         @test buffer_header(storage.buffer).sequence == 7
         @test buffer_header(storage.buffer).pts == 60_000_000
         @test reinterpret(Float32,storage.memory) == state.values
         received = HIL.ArrayStreamState(6)
-        reader = HIL.ArrayStreamProcess(received,storage.buffer,true,12,option.metadata,option.absolute_clock)
+        reader = HIL.ArrayStreamProcess(received,storage.buffer,true,12,option.metadata,option.reference_clock)
         @test HIL._read_array!(reader)
         @test received.values == state.values
         @test received.receipt.identity == identity
@@ -128,7 +130,8 @@ end
             @test Dict(stream.properties)["pipewireao.header.pts.absolute-conversion"] == "unavailable"
         end
         @test all(r -> r.required,streams[2].metadata)
-        @test streams[3].metadata == streams[2].metadata
+        @test length(streams[2].metadata)==3
+        @test length(streams[3].metadata)==(chopped ? 5 : 3)
         @test science.plant.exposures.scc.duration_ns == 10_000_000
     end
 end
@@ -150,12 +153,14 @@ end
 end
 
 @testset "optical classification is independent of trigger polarity" begin
-    required = Set((SPA.META_ACQUISITION_IDENTITY,SPA.META_EXPOSURE_TIMING,SPA.META_ABSOLUTE_TIME,
+    required = Set((SPA.META_ACQUISITION_IDENTITY,SPA.META_EXPOSURE_TIMING,SPA.META_REFERENCE_TIMESTAMP,
         SPA.META_OPTICAL_CHOPPING,SPA.META_ELECTRICAL_TRIGGER))
     science = sensor_stream_science(;chopped=true)
     streams = StreamOwner.stream_options(science,"test.pupil",(;llowfs="test.llowfs",scc="test.scc"))
     @test any(r -> r.type==SPA.META_ACQUISITION_IDENTITY && r.required,streams[1].metadata)
-    @test all(option -> Set(r.type for r in option.metadata if r.required) == required,streams[2:3])
+    @test Set(r.type for r in streams[3].metadata if r.required) == required
+    @test Set(r.type for r in streams[2].metadata if r.required) == setdiff(required,
+        Set((SPA.META_OPTICAL_CHOPPING,SPA.META_ELECTRICAL_TRIGGER)))
     for polarity in (true,false)
         configured = merge(science,(;chopping=(;scc=(;trigger_high_is_fringed=polarity))))
         for (kind,optical) in ((:fringed,OPTICAL_FRINGED),(:unfringed,OPTICAL_UNFRINGED),(:mixed,OPTICAL_MIXED))

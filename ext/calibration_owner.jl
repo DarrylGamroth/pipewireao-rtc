@@ -491,7 +491,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     frontend = first(prepared)
     command = named ? NamedTuple{keys(command)}(Base.tail(prepared)) : prepared[2]
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
-    absolute_clock = PipeWireAORTC.Common.prepare_absolute_clock(options)
+    reference_clock = PipeWireAORTC.Common.prepare_reference_clock(options)
     references = calibration_commands(command, reference, probe_command, options)
     reference = named ? copy(getproperty(references, probe_command)) : copy(reference)
     outputs = JuliaFilterGraph.output_formats(frontend.graph)
@@ -533,7 +533,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             "command_scale"=>options.command_scale,"reference"=>collect(reference))
         Calibration.CaptureStore(capture_directory;stage=String(capture_stage),
             illumination=simulation_graph == "production" ? "on-sky" : simulation_graph,
-            settings,maximum_bytes=capture_maximum_bytes,recording_clock=absolute_clock)
+            settings,maximum_bytes=capture_maximum_bytes,recording_clock=reference_clock)
     end
     wakeup, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = Native.wake!(wakeup, guard)
@@ -555,21 +555,21 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             exposure_duration_ns=options.exposure_ns, frame_encoding=options.frame_encoding,
             command_scale=options.command_scale,
             timeout_ns=UInt64(Control.budget_ns(Actions.PROFILE, Float64(deadline-Control.monotonic()))))
-        hil = Wire.prepare_pipewire_calibration(boundary, configuration;absolute_clock)
+        hil = Wire.prepare_pipewire_calibration(boundary, configuration;reference_clock)
         rate = UInt32(options.rate)//UInt32(1)
         frame_format = JuliaFilterGraph.input_formats(frontend.graph).raw
         declarations = (; raw=(name=name*".raw",format=capture_format(frame_format, configuration.rate),schema=frame_format.schema),
             (key => (name=name*"."*String(key), format=capture_format(getproperty(outputs,key),configuration.rate),
                 schema=getproperty(outputs,key).schema) for key in keys(outputs))...)
         capture = CalibrationCapture.Capture(hil.core, declarations; wakeup, wakeup_lock=guard,
-            absolute_clock=absolute_clock.clock)
+            reference_clock)
         probe = if named
-            prepare_calibration_probes(hil.core, command, configuration.rate; notify, prefix=name*".calibration",absolute_clock)
+            prepare_calibration_probes(hil.core, command, configuration.rate; notify, prefix=name*".calibration",reference_clock)
         else
             format = JuliaFilterGraph.input_formats(command.graph).requested
             feedback = JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
             prepare_calibration_probe(hil.core, format, format.schema, feedback, feedback.schema,
-                configuration.rate; notify,absolute_clock)
+                configuration.rate; notify,reference_clock)
         end
         with_thread_loop_lock(hil.loop) do _
             registry = Registry(hil.core)
@@ -592,13 +592,13 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         front_node = graph_name*".wfs"
         command_nodes = named ? NamedTuple{keys(command)}(Tuple(graph_name*"."*String(key) for key in keys(command))) : nothing
         command_node = named ? nothing : graph_name*".pdm"
-        push!(workers, start_calibration_graph(frontend,remote,front_node,rate;notify,absolute_clock))
+        push!(workers, start_calibration_graph(frontend,remote,front_node,rate;notify,reference_clock))
         if named
             for (key, descriptor) in pairs(command)
-                push!(workers, start_calibration_graph(descriptor,remote,getproperty(command_nodes,key),rate;notify,absolute_clock))
+                push!(workers, start_calibration_graph(descriptor,remote,getproperty(command_nodes,key),rate;notify,reference_clock))
             end
         else
-            push!(workers, start_calibration_graph(command,remote,command_node,rate;notify,absolute_clock))
+            push!(workers, start_calibration_graph(command,remote,command_node,rate;notify,reference_clock))
         end
         function check_workers()
             for worker in values(workers)

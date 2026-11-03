@@ -17,7 +17,7 @@ function external_pupil_delivery(remote, options)
     formats = (science.pupil.shape,map(sensor->size(sensor.image),values(science.sensors))...)
     schemas = (science.pupil.schema,map(sensor->sensor.schema,values(science.sensors))...)
     peers = Tuple(PipeWireArrayStreamOptions(node_name="test.optical.peer.$index",media_name="test",
-        schema=schemas[index],format=NdArrayFormat(NdArray.F32_LE,formats[index];layout=NdArray.ROW_MAJOR))
+        metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,schema=schemas[index],format=NdArrayFormat(NdArray.F32_LE,formats[index];layout=NdArray.ROW_MAJOR))
         for index in 1:3)
     with_array_streams(peers;remote,input=(false,true,true)) do owner
         registry = with_array_stream(owner,1) do _; Registry(owner.core); end

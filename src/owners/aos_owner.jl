@@ -8,7 +8,7 @@ import UUIDs
 
 import ..Artifacts
 import ..Common
-using ..Common: absolute_clock_configuration
+using ..Common: reference_clock_configuration
 import ..DeploymentConfiguration
 import ..InstrumentDefinition
 import ..InstrumentConfiguration
@@ -232,7 +232,7 @@ function configuration(path::AbstractString)
     shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
         "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
-        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument", "rtc_configuration", "prescription_identity", "absolute_clock")
+        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument", "rtc_configuration", "prescription_identity", "reference_clock")
     shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
         "rate", "exposure_ns", "pacing_rate_hz", "backend", "device")
     route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
@@ -335,7 +335,7 @@ function configuration(path::AbstractString)
         total_bytes <= MAX_RETAINED_BYTES || throw(ArgumentError("retained AOS bindings exceed 512 MiB"))
         push!(artifacts, FITSBinding(binding, source, T, shape))
     end
-    return (; absolute_clock=absolute_clock_configuration(get(document,"absolute_clock",nothing)),
+    return (; reference_clock=reference_clock_configuration(get(document,"reference_clock",nothing)),
         version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
         exposure_ns, pacing_rate_hz, pacing_period_ns, backend, device, artifacts, command_node,
         frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation, pupil_output,

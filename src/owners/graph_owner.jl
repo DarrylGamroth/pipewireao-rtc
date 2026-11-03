@@ -48,7 +48,7 @@ function arguments(arguments)
         terms = split(argument, '='; limit=2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup", "--absolute-clock", "--tai-utc-offset")
+        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup", "--reference-clock")
             key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
@@ -101,16 +101,8 @@ function arguments(arguments)
     supervision = get(values, "--supervision", nothing)
     supervision === nothing || length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    clock_policy=(;)
-    if haskey(values,"--absolute-clock") || haskey(values,"--tai-utc-offset")
-        value=Dict{String,Any}("clock"=>get(values,"--absolute-clock","realtime"))
-        if haskey(values,"--tai-utc-offset")
-            offset=tryparse(Int,values["--tai-utc-offset"])
-            offset === nothing && throw(ArgumentError("TAI−UTC offset requires an integer"))
-            value["tai_utc_offset"]=offset
-        end
-        clock_policy=(;absolute_clock=Common.absolute_clock_configuration(value))
-    end
+    clock_policy=haskey(values,"--reference-clock") ?
+        (;reference_clock=Common.reference_clock_configuration(values["--reference-clock"])) : (;)
     return (; remote, bootstrap_node=node, bootstrap_instance=instance,clock_policy...), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing), get(values,"--chopped-warmup",nothing)
 end
 

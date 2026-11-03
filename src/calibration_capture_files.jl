@@ -2,11 +2,10 @@
 import ..NativeCalibrationActionCodec
 import ..NativeControlClient
 import PipeWireAO
-import UUIDs
 
 const CAPTURE_HEADER_BYTES = 16 * 1024
 const CAPTURE_EXPOSURE_BYTES = 64 * 1024
-const CAPTURE_METADATA_ABI = 3
+const CAPTURE_METADATA_ABI = 4
 const CAPTURE_BYTE_ORDER = ENDIAN_BOM == 0x04030201 ? "little" : "big"
 const CLASSIC_CAPTURE_CONTRACTS = (
     raw=(type=UInt16, encoding="U16_LE", shape=(352,352), bytes=247808),
@@ -115,13 +114,14 @@ mutable struct CaptureStore
     serial::UInt64
     cursor::Union{Nothing,NativeCalibrationActionCodec.AcquisitionCursor}
     domain::Union{Nothing,String}
-    recording_clock::PipeWireAO.AbsoluteClock
-    recorder_origin::NTuple{16,UInt8}
-    last_recorded_time::Union{Nothing,PipeWireAO.AbsoluteTime}
+    recording_clock::PipeWireAO.MetadataClock
 end
 function CaptureStore(directory; stage::String, illumination::String, settings::AbstractDict,
-        maximum_bytes::Integer, profile="classic", recording_clock::PipeWireAO.AbsoluteClock=PipeWireAO.AbsoluteClock())
+        maximum_bytes::Integer, profile="classic", recording_clock::PipeWireAO.MetadataClock=PipeWireAO.METADATA_CLOCK_REALTIME)
     _capture_require(profile == "classic", "unsupported capture profile")
+    _capture_require(recording_clock in (PipeWireAO.METADATA_CLOCK_REALTIME,PipeWireAO.METADATA_CLOCK_TAI),
+        "recording clock must be REALTIME or TAI")
+    PipeWireAO.reference_timestamp_now(recording_clock)
     _capture_text(stage); _capture_text(illumination)
     maximum = _capture_uint(maximum_bytes)
     _capture_require(maximum > 0, "capture budget must be positive")
@@ -131,9 +131,8 @@ function CaptureStore(directory; stage::String, illumination::String, settings::
     _capture_require(!ispath(root) && !islink(root), "capture directory must be fresh")
     mkdir(root;mode=0o700)
     chmod(root,0o700)
-    origin=UUIDs.uuid4().value
     return CaptureStore(root,stage,illumination,snapshot,maximum,0,0,0,nothing,nothing,
-        recording_clock,ntuple(i -> UInt8((origin >> (8(i-1))) & 0xff),16),nothing)
+        recording_clock)
 end
 
 _capture_cursor(cursor) = Dict("domain"=>cursor.domain,"generation"=>cursor.generation,
@@ -162,58 +161,33 @@ _capture_end(value) = NativeCalibrationActionCodec.AcquisitionCursor(value.domai
 
 function _capture_timing(value)
     value === nothing && return nothing
-    id(x) = all(iszero,x) ? nothing : bytes2hex(collect(x))
     return Dict("start_nanoseconds"=>value.has_start ? value.start_nanoseconds : nothing,
         "clock"=>value.has_start ? UInt32(value.clock) : nothing,
-        "clock_domain"=>id(value.clock_domain), "mapping"=>id(value.mapping),
-        "duration_nanoseconds"=>value.has_duration ? value.duration_nanoseconds : nothing,
-        "uncertainty_nanoseconds"=>value.has_uncertainty ? value.uncertainty_nanoseconds : nothing)
+        "duration_nanoseconds"=>value.has_duration ? value.duration_nanoseconds : nothing)
 end
-function _capture_absolute(value)
-    return Dict("seconds"=>value.seconds,"nanoseconds"=>value.nanoseconds,
-        "clock"=>UInt32(value.clock),"event"=>UInt32(value.event),
-        "origin"=>bytes2hex(collect(value.origin)),"clock_domain"=>bytes2hex(collect(value.clock_domain)),
-        "mapping"=>all(iszero,value.mapping) ? nothing : bytes2hex(collect(value.mapping)),
-        "uncertainty_nanoseconds"=>value.has_uncertainty ? value.uncertainty_nanoseconds : nothing,
-        "clock_step"=>value.clock_step)
+function _capture_reference(value)
+    value === nothing && return nothing
+    return Dict("timestamp_nanoseconds"=>value.timestamp_nanoseconds,
+        "clock"=>UInt32(value.clock),
+        "duration_nanoseconds"=>value.has_duration ? value.duration_nanoseconds : nothing)
 end
-function _capture_recording_policy(store)
-    clock=store.recording_clock
-    return Dict("clock"=>UInt32(clock.clock),"tai_utc_offset"=>clock.clock == PipeWireAO.METADATA_CLOCK_TAI ? clock.tai_utc_offset : nothing,
-        "origin"=>bytes2hex(collect(store.recorder_origin)))
-end
-function _capture_recording_time!(store,event)
-    value=PipeWireAO.absolute_time_now(store.recording_clock;event,origin=store.recorder_origin,previous=store.last_recorded_time)
-    store.last_recorded_time=value
-    return value
-end
-function _capture_read_absolute(value)
-    _capture_fields(value,("seconds","nanoseconds","clock","event","origin","clock_domain","mapping","uncertainty_nanoseconds","clock_step"))
-    id(key) = Tuple(hex2bytes(_capture_hash(value[key];bytes=16)))
-    mapping=value["mapping"] === nothing ? nothing : id("mapping")
-    uncertainty=value["uncertainty_nanoseconds"] === nothing ? nothing : _capture_uint(value["uncertainty_nanoseconds"])
-    _capture_require(value["clock_step"] isa Bool,"invalid clock-step flag")
-    return PipeWireAO.AbsoluteTime(_capture_int(value["seconds"]),_capture_uint(value["nanoseconds"],UInt32);
-        clock=PipeWireAO.MetadataClock(_capture_uint(value["clock"],UInt32)),
-        event=PipeWireAO.TimeEvent(_capture_uint(value["event"],UInt32)),origin=id("origin"),clock_domain=id("clock_domain"),
-        mapping,uncertainty_nanoseconds=uncertainty,clock_step=value["clock_step"])
+_capture_recording_policy(store) = Dict("clock"=>UInt32(store.recording_clock))
+function _capture_recording_time(store)
+    value=PipeWireAO.reference_timestamp_now(store.recording_clock)
+    return Dict("clock"=>UInt32(value.clock),"timestamp_nanoseconds"=>value.timestamp_nanoseconds)
 end
 function _capture_check_recording_policy(value)
-    _capture_fields(value,("clock","tai_utc_offset","origin"))
+    _capture_fields(value,("clock",))
     clock=_capture_uint(value["clock"],UInt32)
     _capture_require(clock in UInt32.((PipeWireAO.METADATA_CLOCK_REALTIME,PipeWireAO.METADATA_CLOCK_TAI)),"invalid recording clock")
-    offset=value["tai_utc_offset"]
-    _capture_require(clock == UInt32(PipeWireAO.METADATA_CLOCK_TAI) ?
-        offset isa Integer && !(offset isa Bool) && 1 <= offset <= 128 : offset === nothing,"invalid recording TAI offset policy")
-    _capture_hash(value["origin"];bytes=16)
     return value
 end
 function _capture_check_recording(value,policy)
     _capture_fields(value,("received","payload_written"))
-    for (key,event) in (("received",PipeWireAO.TIME_EVENT_RECEIPT),("payload_written",PipeWireAO.TIME_EVENT_FILE_WRITE))
-        time=_capture_read_absolute(value[key])
-        _capture_require(UInt32(time.clock) == policy["clock"] && time.event == event &&
-            bytes2hex(collect(time.origin)) == policy["origin"],"recorder event/basis/origin differs")
+    for key in ("received","payload_written")
+        time=_capture_fields(value[key],("clock","timestamp_nanoseconds"))
+        _capture_require(_capture_uint(time["clock"],UInt32)==policy["clock"],"recorder clock differs")
+        _capture_require(_capture_uint(time["timestamp_nanoseconds"])<typemax(UInt64),"invalid recorder timestamp")
     end
     return value
 end
@@ -232,7 +206,7 @@ function _capture_receipt(receipt)
         "optical_classification"=>receipt.optical_classification === nothing ? nothing : UInt32(receipt.optical_classification),
         "trigger_classification"=>receipt.trigger_classification === nothing ? nothing : UInt32(receipt.trigger_classification),
         "exposure_timing"=>_capture_timing(receipt.exposure_timing),
-        "absolute_times"=>map(_capture_absolute, collect(receipt.absolute_times)),
+        "reference_timestamp"=>_capture_reference(receipt.reference_timestamp),
         "records"=>_capture_record_storage(receipt.records))
 end
 function _capture_read_record_storage(value)
@@ -259,18 +233,18 @@ end
 const CAPTURE_RECORD_REQUIREMENTS = (
     PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ACQUISITION_IDENTITY;required=true),
     PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING;required=true),
-    PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ABSOLUTE_TIME;required=true))
+    PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_REFERENCE_TIMESTAMP;required=true))
 function _capture_check_receipt(value, exposure, domain)
     _capture_fields(value,("identity","model_start_ns","duration_ns","header","optical_classification",
-        "trigger_classification","exposure_timing","absolute_times","records"))
+        "trigger_classification","exposure_timing","reference_timestamp","records"))
     snapshot=_capture_read_record_storage(value["records"])
     PipeWireAO.metadata_records_valid(snapshot,CAPTURE_RECORD_REQUIREMENTS) ||
         throw(ArgumentError("capture lacks required independent records"))
     identity=PipeWireAO.acquisition_identity(snapshot)
     header=PipeWireAO.buffer_header(snapshot)
     timing=PipeWireAO.exposure_timing(snapshot)
-    absolute=PipeWireAO.absolute_times(snapshot)
-    _capture_require(header !== nothing && identity !== nothing && timing !== nothing && !isempty(absolute),
+    reference=PipeWireAO.reference_timestamp(snapshot)
+    _capture_require(header !== nothing && identity !== nothing && timing !== nothing && reference !== nothing,
         "capture record facts are incomplete")
     full=bytes2hex(collect(identity.domain.bytes))
     _capture_require((domain === nothing || full == domain) &&
@@ -284,7 +258,7 @@ function _capture_check_receipt(value, exposure, domain)
     canonical=_capture_receipt((; identity,model_start_ns=exposure.start_model_ns,duration_ns=exposure.duration_ns,
         header,optical_classification=PipeWireAO.optical_classification(snapshot),
         trigger_classification=PipeWireAO.trigger_classification(snapshot),exposure_timing=timing,
-        absolute_times=absolute,records=snapshot))
+        reference_timestamp=reference,records=snapshot))
     _capture_require(_capture_same_json(value,canonical), "capture facts differ from their native record payloads")
     return full
 end
@@ -364,7 +338,7 @@ function capture_preflight(store::CaptureStore; run::UInt64,serial::UInt64,probe
     request = _capture_request(run,serial)
     directory = joinpath(store.directory,request)
     _capture_require(!ispath(directory) && !islink(directory), "capture request directory already exists")
-    header = Dict{String,Any}("schema_version"=>3,"profile"=>"classic","run"=>run,"serial"=>serial,
+    header = Dict{String,Any}("schema_version"=>4,"profile"=>"classic","run"=>run,"serial"=>serial,
         "probe"=>probe,"stage"=>store.stage,"illumination"=>store.illumination,"settings"=>store.settings,
         "after"=>_capture_cursor(after),"cursor"=>_capture_cursor(after),"payload_bytes"=>bytes,
         "domain_mapping"=>Dict("coordinator"=>after.domain,"wire"=>something(store.domain,repeat("0",32))),
@@ -379,7 +353,7 @@ end
 Write each completed sink-owned Classic sample before calling `acquire()` again.
 `acquire()` returns `(sample, exposure)`; samples contain `arrays` and `metadata`.
 A request creates `run-R-serial-S/manifest.json` only after all payloads succeed.
-Manifest version 3 contains a bounded settings header, after/final cursors,
+Manifest version 4 contains a bounded settings header, after/final cursors,
 `domain_mapping` (`coordinator` UInt64 to 16-byte hex `wire` domain), and an
 `exposures` array. Each entry binds native model time, full wire identities,
 all independent clock/header records, explicitly labelled native metadata ABI/byte
@@ -399,7 +373,7 @@ function capture!(store::CaptureStore, acquire; run::UInt64,serial::UInt64,probe
     for index in 1:Int(frames)
         checked()
         sample, supplied = acquire()
-        received=_capture_recording_time!(store,PipeWireAO.TIME_EVENT_RECEIPT)
+        received=_capture_recording_time(store)
         checked()
         exposure = _capture_exposure(_capture_exposure_dict(supplied),after)
         arrays = _capture_arrays(sample.arrays)
@@ -419,8 +393,8 @@ function capture!(store::CaptureStore, acquire; run::UInt64,serial::UInt64,probe
         end
         record = Dict{String,Any}("exposure"=>_capture_exposure_dict(exposure),"metadata"=>metadata,
             "payloads"=>payloads,"quality"=>_capture_quality(arrays),
-            "recording"=>Dict("received"=>_capture_absolute(received),
-                "payload_written"=>_capture_absolute(_capture_recording_time!(store,PipeWireAO.TIME_EVENT_FILE_WRITE))))
+            "recording"=>Dict("received"=>received,
+                "payload_written"=>_capture_recording_time(store)))
         _capture_require(ncodeunits(_capture_json(record))+1 <= CAPTURE_EXPOSURE_BYTES, "capture exposure metadata exceeds 4096 bytes")
         push!(records,record)
         after = _capture_end(exposure)
@@ -511,7 +485,7 @@ function read_capture(directory, descriptor::NativeCalibrationActionCodec.Captur
     fields = ("schema_version","profile","run","serial","probe","stage","illumination","settings",
         "after","cursor","payload_bytes","domain_mapping","recording","exposures")
     _capture_fields(manifest,fields)
-    _capture_require(manifest["schema_version"] === 3 && manifest["profile"] == expected_profile &&
+    _capture_require(manifest["schema_version"] === 4 && manifest["profile"] == expected_profile &&
         manifest["stage"] == expected_stage && manifest["illumination"] == expected_illumination &&
         _capture_same_json(manifest["settings"],settings), "capture profile/stage/illumination/settings differ")
     run,serial = _capture_uint(manifest["run"]),_capture_uint(manifest["serial"])

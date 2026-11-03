@@ -121,7 +121,7 @@ function _classic_buffer_parameters(capture::ClassicObservationCapture{T}) where
             data_types=SPA.Choice(SPA.CHOICE_FLAGS, Int32[memory_types]))),
         Pod(header_metadata_param()), map(r -> Pod(metadata_param(r)),
             (MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
-                MetadataRequirement(SPA.META_ABSOLUTE_TIME),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+                MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
                 MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))...)
 end
 

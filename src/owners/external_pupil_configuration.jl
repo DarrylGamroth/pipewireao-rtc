@@ -53,7 +53,7 @@ function external_pupil_configuration(path, document)
     clocked = document["version"] === 6
     additional = clocked ? ("source_graph","source_amplitude_binding","source_pupil_axes","source_dm_axes","command_input","command_node","command_schema","command_units","command_limit","mirror","rate","pacing_rate_hz") : ("pupil_node",)
     optional = clocked ? ("command_buffers",) : ()
-    InstrumentConfiguration.fields(document, (required...,"sensor_buffers","absolute_clock",additional...,optional...), (required...,additional...), "optical owner")
+    InstrumentConfiguration.fields(document, (required...,"sensor_buffers","reference_clock",additional...,optional...), (required...,additional...), "optical owner")
     document["mode"] == (clocked ? "clocked-optical" : "external-pupil") || throw(ArgumentError("optical owner mode differs from version"))
     config_path = abspath(path)
     entry = document["plant"]
@@ -170,7 +170,7 @@ function external_pupil_configuration(path, document)
     else
         (;)
     end
-    return merge((; absolute_clock=absolute_clock_configuration(get(document,"absolute_clock",nothing)),
+    return merge((; reference_clock=reference_clock_configuration(get(document,"reference_clock",nothing)),
         version=clocked ? 6 : 4, mode=clocked ? :clocked_optical : :external_pupil, config_path, sensor_buffers,
         plant=(; definition, settings=plant_settings(configured), chopping), graph=nothing,
         pupil_node, sensor_nodes, backend, device, instrument, rtc_configuration,

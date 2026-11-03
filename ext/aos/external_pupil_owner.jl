@@ -7,7 +7,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
 using UUIDs, SHA
 import PipeWireAORTC
-import PipeWireAORTC.Common: prepare_absolute_clock
+import PipeWireAORTC.Common: prepare_reference_clock
 const IC = PipeWireAORTC.InstrumentConfiguration
 
 function pupil_contract(declaration, configured)
@@ -101,10 +101,10 @@ function prepare(path; settings=NamedTuple(), target=Backends.HostComputeDevice(
         sensors=NamedTuple{keys(plant.graphs)}(sensors))
 end
 
-function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=3, input_option=nothing, absolute_clock=PipeWireAO.AbsoluteClock())
+function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=3, input_option=nothing, reference_clock=PipeWireAO.METADATA_CLOCK_REALTIME)
     pupil = input_option === nothing ? PipeWireArrayStreamOptions(; node_name=pupil_node, media_name="External pupil field",
         schema=science.pupil.schema, format=NdArrayFormat(NdArray.F32_LE,science.pupil.shape;layout=NdArray.ROW_MAJOR),
-        properties=science.pupil.properties) : input_option
+        properties=science.pupil.properties,metadata=PipeWireAORTC.Common.ACQUISITION_METADATA) : input_option
     sensors = map(keys(science.sensors)) do name
         sensor = getproperty(science.sensors,name)
         duration = getproperty(science.plant.exposures,name).duration_ns
@@ -112,16 +112,17 @@ function stream_options(science, pupil_node, sensor_nodes; sensor_buffers=3, inp
         rate = 1_000_000_000 // duration
         PipeWireArrayStreamOptions(; node_name=getproperty(sensor_nodes,name), media_name=string(name),
             buffers=sensor_buffers,
-            absolute_clock,
+            reference_clock,
             metadata=(PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ACQUISITION_IDENTITY;required=true),
                 PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING;required=true),
-                PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ABSOLUTE_TIME;required=true),
-                PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_OPTICAL_CHOPPING;required=true),
-                PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER;required=true)),
+                PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_REFERENCE_TIMESTAMP;required=true),
+                (hasproperty(science.chopping,name) ?
+                    (PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_OPTICAL_CHOPPING;required=true),
+                     PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER;required=true)) : ())...),
             schema=sensor.schema, format=NdArrayFormat(NdArray.F32_LE,size(sensor.image);layout=NdArray.ROW_MAJOR,
                 rate=SPA.Fraction(numerator(rate),denominator(rate))),
             properties=merge(sensor.properties,Dict("pipewireao.header.pts.clock"=>"model",
-                "pipewireao.header.pts.absolute-conversion"=>"unavailable")))
+)))
     end
     return (pupil,sensors...)
 end
@@ -508,7 +509,7 @@ function Owner.run_external_pupil_owner(options)
         report!(options,mailbox,state)
         streams = stream_options(science,options.pupil_node,options.sensor_nodes;sensor_buffers=options.sensor_buffers,
             input_option=options.version == 6 ? clocked_command_option(options) : nothing,
-            absolute_clock=prepare_absolute_clock(options))
+            reference_clock=prepare_reference_clock(options))
         execution = prepare_stream_execution!(options,science,mailbox,state)
         @info "Optical owner startup" phase=:prepared at_ns=time_ns()
         Bootstrap.prepared!(runtime)

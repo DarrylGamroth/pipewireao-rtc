@@ -26,7 +26,7 @@ Base.include(@__MODULE__,joinpath(pkgdir(HIL),"test/private_core_helpers.jl"))
             _with_private_core() do remote
                 remote=joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"],remote)
                 option=HIL.PipeWireArrayStreamOptions(;node_name="control-boundary",media_name="control-boundary",
-                    schema="test.physical/1",format=NdArrayFormat(NdArray.F32_LE,(2,);layout=NdArray.ROW_MAJOR))
+                    metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,schema="test.physical/1",format=NdArrayFormat(NdArray.F32_LE,(2,);layout=NdArray.ROW_MAJOR))
                 HIL.with_array_streams((option,);remote,input=(false,)) do transport
                     mailbox=SC.Mailbox(Int64(1))
                     control=nothing

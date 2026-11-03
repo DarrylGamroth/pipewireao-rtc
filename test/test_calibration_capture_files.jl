@@ -25,13 +25,12 @@ capture_cursor(sequence=0,model=0) = CaptureActions.AcquisitionCursor(capture_co
 end
 
 function capture_file_receipt(identity,model,duration; optical=nothing,trigger=nothing,timing=PipeWireAO.ExposureTiming(;duration_nanoseconds=duration),
-        times=PipeWireAO.AbsoluteTimes((PipeWireAO.AbsoluteTime(1730000000,123;
-            event=PipeWireAO.TIME_EVENT_PRODUCTION,origin=capture_domain.bytes,clock_domain=capture_domain.bytes),)))
+        reference_timestamp=PipeWireAO.ReferenceTimestamp(1_730_000_000_000_000_123))
     header=PipeWireAO.BufferHeader(UInt32(0),UInt32(0),Int64(-17),Int64(-2),identity.sequence+UInt64(100))
     requirements=(PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_HEADER),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ACQUISITION_IDENTITY),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ABSOLUTE_TIME),
+        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_REFERENCE_TIMESTAMP),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_OPTICAL_CHOPPING),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER))
     records=PipeWireAO.MetadataSnapshot(requirements)
@@ -39,12 +38,12 @@ function capture_file_receipt(identity,model,duration; optical=nothing,trigger=n
     PipeWireAO.set_buffer_header!(writable,header)
     PipeWireAO.set_acquisition_identity!(writable,identity)
     PipeWireAO.set_exposure_timing!(writable,timing)
-    PipeWireAO.set_absolute_times!(writable,times)
+    PipeWireAO.set_reference_timestamp!(writable,reference_timestamp)
     optical === nothing || PipeWireAO.set_optical_classification!(writable,optical)
     trigger === nothing || PipeWireAO.set_trigger_classification!(writable,trigger)
     return (;identity,model_start_ns=Int64(model),duration_ns=UInt64(duration),header,
         optical_classification=optical,trigger_classification=trigger,exposure_timing=timing,
-        absolute_times=times,records)
+        reference_timestamp,records)
 end
 
 function capture_source(;start=capture_cursor(),fail=0,metadata_change=identity,
@@ -124,7 +123,7 @@ end
             @test sample.metadata["raw"]["identity"]["generation"] == capture_generation
             @test sample.metadata["raw"]["header"]["pts"] == -17
             @test sample.metadata["raw"]["header"]["sequence"] == 101
-            @test result.manifest["schema_version"] == 3
+            @test result.manifest["schema_version"] == 4
             @test result.manifest["cursor"]["model_ns"] == 4000000
             @test result.manifest["after"]["generation"] == capture_generation
             @test result.manifest["domain_mapping"]["coordinator"] == capture_coordinator_domain
@@ -144,20 +143,19 @@ end
                 expected_profile="classic",expected_stage="lamp-training",expected_illumination="lamp",expected_settings=capture_settings)
             # Explicit source TAI requires no PTP record and is distinct from model/recorder time.
             clock_store = capture_store(parent;name="clock")
-            timing=PipeWireAO.ExposureTiming(99;clock=PipeWireAO.METADATA_CLOCK_TAI,clock_domain=capture_domain.bytes,
-                duration_nanoseconds=2000000,uncertainty_nanoseconds=typemax(UInt64))
-            times=PipeWireAO.AbsoluteTimes((PipeWireAO.AbsoluteTime(1730000037,123;
-                clock=PipeWireAO.METADATA_CLOCK_TAI,event=PipeWireAO.TIME_EVENT_ACQUISITION,
-                origin=capture_domain.bytes,clock_domain=capture_domain.bytes),))
+            timing=PipeWireAO.ExposureTiming(99;clock=PipeWireAO.METADATA_CLOCK_TAI,
+                duration_nanoseconds=2000000)
+            reference_timestamp=PipeWireAO.ReferenceTimestamp(typemax(UInt64)-1;
+                clock=PipeWireAO.METADATA_CLOCK_TAI,duration_nanoseconds=17)
             clock_metadata = metadata -> map(receipt -> capture_file_receipt(receipt.identity,receipt.model_start_ns,
-                receipt.duration_ns;timing,times),metadata)
+                receipt.duration_ns;timing,reference_timestamp),metadata)
             clock_descriptor,_ = capture_write(clock_store;frames=1,metadata_change=clock_metadata)
             clock_read = capture_read(clock_store,clock_descriptor)
             @test clock_read.samples[1].metadata["raw"]["exposure_timing"]["start_nanoseconds"] == 99
-            @test clock_read.samples[1].metadata["raw"]["exposure_timing"]["uncertainty_nanoseconds"] == typemax(UInt64)
-            @test clock_read.samples[1].metadata["raw"]["absolute_times"][1]["clock"] == UInt32(PipeWireAO.METADATA_CLOCK_TAI)
+            @test clock_read.samples[1].metadata["raw"]["reference_timestamp"]["timestamp_nanoseconds"] == typemax(UInt64)-1
+            @test clock_read.samples[1].metadata["raw"]["reference_timestamp"]["clock"] == UInt32(PipeWireAO.METADATA_CLOCK_TAI)
             @test clock_read.manifest["recording"]["clock"] == UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
-            @test clock_read.manifest["exposures"][1]["recording"]["received"]["event"] == UInt32(PipeWireAO.TIME_EVENT_RECEIPT)
+            @test clock_read.manifest["exposures"][1]["recording"]["received"]["clock"] == UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
             @test clock_read.samples[1].exposure.start_model_ns == 0
         end
     end
@@ -298,14 +296,15 @@ end
                 doc -> (doc["unexpected"] = 1),
                 doc -> (doc["schema_version"] = 1),
                 doc -> (doc["schema_version"] = 2),
+                doc -> (doc["schema_version"] = 3),
                 doc -> (doc["exposures"][1]["metadata"]["raw"]["acquisition_version"] = 3),
                 doc -> (doc["exposures"][1]["metadata"]["raw"]["trigger_classification"] = 4),
                 doc -> (doc["exposures"][1]["metadata"]["raw"]["timebase"] = 2),
-                doc -> empty!(doc["exposures"][1]["metadata"]["raw"]["absolute_times"]),
+                doc -> (doc["exposures"][1]["metadata"]["raw"]["reference_timestamp"] = nothing),
                 doc -> (doc["exposures"][1]["metadata"]["raw"]["records"]["abi"] = 2),
                 doc -> (doc["exposures"][1]["metadata"]["raw"]["records"]["byte_order"] = "invalid"),
-                doc -> (doc["exposures"][1]["recording"]["received"]["event"] = UInt32(PipeWireAO.TIME_EVENT_ACQUISITION)),
-                doc -> (doc["recording"]["origin"] = repeat("0",32)),
+                doc -> (doc["exposures"][1]["recording"]["received"]["timestamp_nanoseconds"] = typemax(UInt64)),
+                doc -> (doc["recording"]["clock"] = 0),
                 doc -> (doc["profile"] = "copper"),
                 doc -> (doc["illumination"] = "dark"),
                 doc -> (doc["settings"]["graph_sha256"] = repeat("c",64)),
@@ -340,7 +339,7 @@ end
             # Duplicate JSON keys must not silently overwrite an earlier value.
             manifest_path = joinpath(store.directory,descriptor.manifest)
             original = read(manifest_path)
-            duplicated = replace(String(copy(original)),"\"schema_version\":3"=>"\"schema_version\":3,\"schema_version\":3")
+            duplicated = replace(String(copy(original)),"\"schema_version\":4"=>"\"schema_version\":4,\"schema_version\":4")
             @test ncodeunits(duplicated) > length(original)
             chmod(manifest_path,0o600); write(manifest_path,duplicated)
             duplicate_descriptor = CaptureActions.Captured(descriptor.cursor,descriptor.manifest,bytes2hex(sha256(duplicated)),
@@ -413,10 +412,10 @@ end
         @test only(filter(e -> e["type"]==0x900,record["metadata"]["raw"]["records"]["entries"]))["data"] == bytes2hex(opaque)
         @test descriptor.metadata_bytes > 4096
         @test descriptor.metadata_bytes <= CaptureFiles.CAPTURE_HEADER_BYTES+CaptureFiles.CAPTURE_EXPOSURE_BYTES
-        @test record["recording"]["received"]["event"] == UInt32(P.TIME_EVENT_RECEIPT)
-        @test record["recording"]["payload_written"]["event"] == UInt32(P.TIME_EVENT_FILE_WRITE)
-        @test record["metadata"]["raw"]["absolute_times"][1]["event"] == UInt32(P.TIME_EVENT_PRODUCTION)
-        @test record["metadata"]["raw"]["absolute_times"][1]["seconds"] == 1730000000
+        @test record["recording"]["received"]["clock"] == UInt32(P.METADATA_CLOCK_REALTIME)
+        @test record["recording"]["payload_written"]["clock"] == UInt32(P.METADATA_CLOCK_REALTIME)
+        @test record["metadata"]["raw"]["reference_timestamp"]["timestamp_nanoseconds"] == 1_730_000_000_000_000_123
+        @test !haskey(record["metadata"]["raw"],"absolute_times")
         revised,original=capture_rewrite(store,descriptor,d -> push!(d["exposures"][1]["metadata"]["raw"]["records"]["entries"],
             first(d["exposures"][1]["metadata"]["raw"]["records"]["entries"])))
         @test_throws ArgumentError capture_read(store,revised)

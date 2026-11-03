@@ -18,7 +18,7 @@ function capture_payload(::Type{T}, count) where {T}
     chunk = Ref(PW.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(sizeof(T)),Int32(0)))
     records=MetadataSnapshot((MetadataRequirement(SPA.META_HEADER),
         MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
-        MetadataRequirement(SPA.META_ABSOLUTE_TIME),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+        MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
         MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))
     metadata=records.descriptors
     data = Ref(PW.spa_data(PW.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
@@ -41,7 +41,7 @@ function owned_test_capture(f; declarations=capture_declarations())
         context,CoreConnection(context;self=true)
     end
     slots=CC._slots(declarations)
-    capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),ReentrantLock(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false,METADATA_CLOCK_REALTIME,TIME_EVENT_PRODUCTION)
+    capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),ReentrantLock(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false,METADATA_CLOCK_REALTIME)
     try
         f(capture)
     finally
@@ -59,8 +59,7 @@ function initialize_payload!(fixture, id=identity();duration=10)
     set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),id.sequence))
     set_acquisition_identity!(metadata,id)
     set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=UInt64(duration)))
-    set_absolute_times!(metadata,(AbsoluteTime(1730000000,123;event=TIME_EVENT_PRODUCTION,
-        origin=DOMAIN.bytes,clock_domain=DOMAIN.bytes),))
+    set_reference_timestamp!(metadata,ReferenceTimestamp(1_730_000_000_000_000_123))
 
 end
 
@@ -102,7 +101,7 @@ end
 end
 
 @testset "wrong, stale, duplicate and invalid wire records cannot complete" begin
-    for failure in (:identity,:duration,:gap,:corrupted,:payload,:duplicate,:missing_header,:missing_records,:missing_identity,:missing_duration)
+    for failure in (:identity,:duration,:gap,:corrupted,:payload,:duplicate,:missing_header,:missing_records,:missing_identity,:missing_duration,:missing_reference,:reference_clock)
         owned_test_capture() do capture
             CC.arm!(capture,exposure())
             fixture=capture_payload(UInt16,6)
@@ -114,14 +113,21 @@ end
                 elseif failure===:missing_identity || failure===:missing_duration
                     metadata=initialize_metadata!(fixture.buffer)
                     set_buffer_header!(fixture.buffer,BufferHeader(0,0,9000,0,1))
-                    set_absolute_times!(metadata,(AbsoluteTime(1730000000,0;event=TIME_EVENT_PRODUCTION,
-                        origin=DOMAIN.bytes,clock_domain=DOMAIN.bytes),))
+                    set_reference_timestamp!(metadata,ReferenceTimestamp(1_730_000_000_000_000_000))
                     if failure===:missing_duration
                         set_acquisition_identity!(metadata,identity())
-                        set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_MODEL,clock_domain=DOMAIN.bytes))
+                        set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_MODEL))
                     else
                         set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=10))
                     end
+                elseif failure===:missing_reference
+                    metadata=initialize_metadata!(fixture.buffer)
+                    set_buffer_header!(metadata,BufferHeader(0,0,9000,0,1))
+                    set_acquisition_identity!(metadata,identity())
+                    set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=10))
+                elseif failure===:reference_clock
+                    set_reference_timestamp!(writable_metadata_records(fixture.buffer),
+                        ReferenceTimestamp(1_730_000_000_000_000_123;clock=METADATA_CLOCK_TAI))
                 elseif failure===:identity
                     initialize_payload!(fixture,identity(1,2))
                 elseif failure===:duration
@@ -240,16 +246,15 @@ end
                 metadata=writable_metadata_records(storage.buffer)
                 optical===nothing || set_optical_classification!(metadata,optical)
                 trigger===nothing || set_trigger_classification!(metadata,trigger)
-                set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_TAI,clock_domain=DOMAIN.bytes,
-                    duration_nanoseconds=10,uncertainty_nanoseconds=typemax(UInt64)))
+                set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_TAI,
+                    duration_nanoseconds=10))
                 CC._read!(capture,capture.slots.raw,storage.buffer)
                 receipt=something(capture.slots.raw.receipt)
                 @test receipt.optical_classification === optical
                 @test receipt.trigger_classification === trigger
                 @test receipt.exposure_timing.start_nanoseconds == 123
-                @test receipt.exposure_timing.uncertainty_nanoseconds == typemax(UInt64)
                 @test receipt.exposure_timing.clock == METADATA_CLOCK_TAI
-                @test receipt.exposure_timing.mapping == ntuple(_ -> UInt8(0),16)
+                @test receipt.reference_timestamp.timestamp_nanoseconds == 1_730_000_000_000_000_123
             end
         end
     end

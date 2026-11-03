@@ -196,7 +196,7 @@ end
             @test !publisher.failed[]
             wait_proof(() -> publisher.transport_dropped[] >= 2, 10, "visible pending overwrite")
             sinkoption = PipeWireArrayStreamOptions(node_name="test-pupil-consumer",media_name="test pupil",
-                schema=boundary().schema,format=NdArrayFormat(NdArray.F32_LE,(2,4,4);layout=NdArray.ROW_MAJOR))
+                metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,schema=boundary().schema,format=NdArrayFormat(NdArray.F32_LE,(2,4,4);layout=NdArray.ROW_MAJOR))
             with_array_streams((sinkoption,); remote, input=(true,)) do sinkowner
                 sink = sinkowner.streams[1].stream
                 registry = with_array_stream(sinkowner,1) do _; Registry(sinkowner.core); end

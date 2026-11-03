@@ -98,7 +98,7 @@ end
 function empty_probe(loop,count,failure)
     Ext.CalibrationProbe(loop,nothing,nothing,zeros(Float32,count),zeros(Float32,count),
         UInt64(0),UInt64(0),UInt64(0),false,failure,false,StreamBuffer(),StreamBuffer(),()->nothing,
-        AbsoluteClock(),ntuple(i->UInt8(i),16),nothing)
+        METADATA_CLOCK_REALTIME)
 end
 
 @testset "named slots prevalidate every figure and state before changing any token" begin

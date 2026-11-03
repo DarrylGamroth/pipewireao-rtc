@@ -150,17 +150,20 @@ function run_prepared(options, runtime, graph)
         (; recovery=(; (length(controllers) == 1 ? (; controller=only(controllers)) : (; controllers))...,
             participants=Tuple(Symbol.(options.recovery_nodes)),
             reference_timeout_ms=options.correction_timeout_ms))
-    absolute_clock=PipeWireAORTC.Common.prepare_absolute_clock(options)
+    reference_clock=PipeWireAORTC.Common.prepare_reference_clock(options)
     input_names=keys(JuliaFilterGraph.input_formats(graph))
     output_names=keys(JuliaFilterGraph.output_formats(graph))
     if options.feedback !== nothing
         input_names=filter(!=(first(options.feedback)),input_names)
         output_names=filter(!=(last(options.feedback)),output_names)
     end
-    common = (; absolute_clock,recovery..., name=options.name, remote=options.remote, rate=options.rate,
+    source_indices=NamedTuple{Tuple(keys(JuliaFilterGraph.output_formats(graph)))}(JuliaFilterGraph.output_metadata_source_inputs(graph))
+    common = (; reference_clock,recovery..., name=options.name, remote=options.remote, rate=options.rate,
         input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(input_names;
             required=FilterGraphPipeWire.required_input_metadata(graph)),
-        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(output_names),
+        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(output_names,
+            keys(JuliaFilterGraph.input_formats(graph)),map(name -> getproperty(source_indices,name),output_names);
+            required=FilterGraphPipeWire.required_input_metadata(graph)),
         connect=false, run_control=options.session_run_control,
         channel_units=options.channel_units)
     node = isnothing(options.capture_backend) ?

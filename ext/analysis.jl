@@ -300,7 +300,9 @@ function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
     return FilterGraphPipeWire.PipeWireNode(input_owner; name=config.name, remote,
         input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(graph));
             required=FilterGraphPipeWire.required_input_metadata(graph)),
-        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(graph))),
+        output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(graph)),
+                    keys(JuliaFilterGraph.input_formats(graph)),JuliaFilterGraph.output_metadata_source_inputs(graph);
+                    required=FilterGraphPipeWire.required_input_metadata(graph)),
         rate=config.rate, boundary_layout, connect=false, channel_units=config.channel_units,
         observer_options...)
 end

@@ -57,7 +57,7 @@ include("physical_offsets_documents.jl")
                     ("read-scc",REQUESTED_PDM_COMMAND_V1,4,true,3))
                 options=map(specs) do (name,schema,count,input,version)
                     HIL.PipeWireArrayStreamOptions(;node_name=name,media_name=name,schema,
-                        format=NdArrayFormat(NdArray.F32_LE,(count,);layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(2000,1)))
+                        metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,format=NdArrayFormat(NdArray.F32_LE,(count,);layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(2000,1)))
                 end
                 HIL.with_array_streams(Tuple(options);remote,input=map(x->x[4],specs)) do wire
                     progress("test arrays opened")

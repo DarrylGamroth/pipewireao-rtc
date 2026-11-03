@@ -21,7 +21,7 @@ struct Receipt
     optical_classification::Union{Nothing,OpticalClassification}
     trigger_classification::Union{Nothing,AcquisitionTriggerState}
     exposure_timing::Union{Nothing,ExposureTiming}
-    absolute_times::AbsoluteTimes
+    reference_timestamp::Union{Nothing,ReferenceTimestamp}
     records::MetadataSnapshot
 end
 
@@ -53,8 +53,7 @@ mutable struct Capture{Slots}
     last::Union{Nothing,AcquisitionIdentity}
     started::Bool
     waiting::Bool
-    absolute_clock::MetadataClock
-    absolute_event::TimeEvent
+    reference_clock::MetadataClock
 end
 
 _locked(f, capture::Capture) = with_thread_loop_lock(_ -> f(), main_loop(capture.core))
@@ -154,9 +153,7 @@ end
 const CAPTURE_METADATA = (
     MetadataRequirement(SPA.META_ACQUISITION_IDENTITY; required=true),
     MetadataRequirement(SPA.META_EXPOSURE_TIMING; required=true),
-    MetadataRequirement(SPA.META_ABSOLUTE_TIME; required=true),
-    MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
-    MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER))
+    MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP; required=true))
 function _buffer_parameters(slot)
     return (Pod(buffers_param(buffers=2, blocks=1, size=payload_size(slot.format),
                 metadata_types=1 << PipeWireAO.LibPipeWire.SPA_META_Header)),
@@ -193,11 +190,11 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
     timing = exposure_timing(metadata)
     timing !== nothing && timing.has_duration && timing.duration_nanoseconds == capture.duration_ns ||
         return _fail!(capture, :duration)
-    times = absolute_times(metadata)
-    any(t -> t.clock == capture.absolute_clock && t.event == capture.absolute_event, times) ||
-        return _fail!(capture, :absolute_time)
-    # Model time remains the armed HIL exposure's authority; the source's absolute
-    # event is copied without inventing a physical exposure start from arrival.
+    reference = reference_timestamp(metadata)
+    reference !== nothing && reference.clock == capture.reference_clock ||
+        return _fail!(capture, :reference_timestamp)
+    # Model time remains the armed HIL exposure's authority; a source reference
+    # timestamp never invents an exposure-start conversion from arrival.
     data = buffer_data(buffer)
     chunk = chunk_info(data)
     extent = payload_size(slot.format)
@@ -214,7 +211,7 @@ function _read!(capture, slot::Slot{T}, buffer) where {T}
         slot.array[slot.permutation[index]] = slot.wire[index]
     end
     slot.receipt = Receipt(something(identity), capture.model_start_ns, capture.duration_ns,
-        header, optical_classification(metadata), trigger_classification(metadata), timing, times, slot.records)
+        header, optical_classification(metadata), trigger_classification(metadata), timing, reference, slot.records)
     slot.phase = COMPLETE
     all(other -> other.phase == COMPLETE, values(capture.slots)) && (capture.phase = COMPLETE)
     _signal(capture)
@@ -259,14 +256,14 @@ happen before the owner observes completion. Close fences stream callbacks befor
 releasing an owned wakeup; a live waiter first unwinds its one-shot Timer. No scientific validity, clipping, unit conversion or file policy is applied.
 """
 function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing, wakeup_lock=ReentrantLock(),
-        absolute_clock::MetadataClock=METADATA_CLOCK_REALTIME, absolute_event::TimeEvent=TIME_EVENT_PRODUCTION)
-    absolute_clock in (METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI) ||
-        throw(ArgumentError("capture absolute clock must be REALTIME or TAI"))
+        reference_clock::MetadataClock=METADATA_CLOCK_REALTIME)
+    reference_clock in (METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI) ||
+        throw(ArgumentError("capture reference clock must be REALTIME or TAI"))
     main_loop(core) isa ThreadLoop || throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
     slots = _slots(declarations)
     condition = wakeup === nothing ? Base.AsyncCondition() : wakeup
     condition isa Base.AsyncCondition && isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
-    capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false,absolute_clock,absolute_event)
+    capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false,reference_clock)
     created = Stream[]
     try
         _locked(capture) do

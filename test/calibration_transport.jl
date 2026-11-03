@@ -36,6 +36,7 @@ function transport_test(socket, directory, daemon)
     links = PipeWireAO.Link[]
     demanded = zeros(Float32,2)
     demand_sequence = Threads.Atomic{UInt64}(0)
+    demand_reference = Ref{Union{Nothing,ReferenceTimestamp}}(nothing)
     buffer = StreamBuffer()
     try
         path = joinpath(directory,"graph.conf")
@@ -101,6 +102,7 @@ function transport_test(socket, directory, daemon)
                     dequeue_buffer!(buffer,stream) || return nothing
                     try
                         copyto!(demanded,reinterpret(Float32,buffer_memory(buffer_data(buffer),sizeof(demanded))))
+                        demand_reference[] = reference_timestamp(buffer)
                         demand_sequence[] = something(buffer_header(buffer)).sequence
                     finally
                         queue_buffer!(buffer,stream)
@@ -111,7 +113,7 @@ function transport_test(socket, directory, daemon)
             connect!(demand_sink,:input;flags=STREAM_MAP_BUFFERS|STREAM_INACTIVE|STREAM_DONT_RECONNECT,
                 params=(ndarray_format(format;schema="pipewireao/dm-command-opd-um-f32/1"),
                     Pod(buffers_param(size=8,buffers=2)),Pod(header_metadata_param()),
-                    Pod(metadata_param(MetadataRequirement(SPA.META_ABSOLUTE_TIME)))))
+                    Pod(metadata_param(MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP)))))
         end
         roundtrip(registry)
         function port(node,direction,name=nothing)
@@ -164,6 +166,8 @@ function transport_test(socket, directory, daemon)
             @test snapshot.published==snapshot.received==sequence
             @test snapshot.values==feedback
             @test demanded==expected
+            @test something(demand_reference[]).clock==METADATA_CLOCK_REALTIME
+            @test something(demand_reference[]).timestamp_nanoseconds>2^53
             snapshot.values[1]=99
             @test Transport.calibration_probe_snapshot(probe).values==feedback
             @test_throws ArgumentError Transport.stage!(probe,sequence,figure)

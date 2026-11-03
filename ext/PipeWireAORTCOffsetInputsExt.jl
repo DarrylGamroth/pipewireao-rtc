@@ -18,6 +18,7 @@ function Offsets.with_receiver(f,prepared::Offsets.PreparedReceiver;remote,appli
     options=map(eachindex(names)) do i
         row=prepared.inputs.declaration["branches"][string(names[i])]
         HIL.PipeWireArrayStreamOptions(;node_name=row["node_name"],media_name=string(names[i])*" physical offset",
+            metadata=PipeWireAORTC.Common.ACQUISITION_METADATA,
             schema=calibrations[i].schema,
             format=NdArrayFormat(NdArray.F32_LE,(length(prepared.inputs.total),);layout=NdArray.ROW_MAJOR))
     end
