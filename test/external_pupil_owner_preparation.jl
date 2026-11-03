@@ -4,6 +4,70 @@ include(joinpath(@__DIR__,"external_pupil_owner_documents.jl"))
 const ExternalOwner = Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt).ExternalPupilOwner
 const Owner = PipeWireAORTC.AOSOwner
 
+struct OpticalPublicationTransport
+    events::Vector{Any}
+end
+function AdaptiveOpticsSimPipeWireHIL.stage_pipewire_array!(transport::OpticalPublicationTransport,index,image;kwargs...)
+    push!(transport.events,(;index,image=copy(image),metadata=(;kwargs...)))
+    return true
+end
+PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) = push!(transport.events,:trigger)
+
+@testset "production optical emitter batches actual unequal exposure windows" begin
+    mktempdir() do directory
+        (;document,config,physical,simulation) = external_pupil_owner_documents(directory)
+        simulation["graphs"]["scc_unfringed"] = deepcopy(simulation["graphs"]["scc"])
+        document["plant"]["chopping"] = Dict("scc"=>Dict("unfringed_graph"=>"scc_unfringed",
+            "initial_phase"=>"fringed","trigger_high_is_fringed"=>true))
+        write_external_optical_documents(directory,physical,simulation)
+        PipeWireAORTC.Common.write_json(config,document)
+        science = Owner.prepare_external_pupil_science(Owner.configuration(config))
+        state = ExternalOwner.OwnerState()
+        state.generation = 7
+        execution = ExternalOwner.stream_execution((;version=4),science,state)
+        transport = OpticalPublicationTransport(Any[])
+        publisher = ExternalOwner.ExposurePublisher(transport)
+        execution.publication[] = publisher
+        ExternalOwner.warmup!(execution.emit,science,execution.packet,execution.frames,execution.buffers)
+        @test isempty(transport.events)
+        @test science.plant.state.sequence == 0
+        execution.publication_enabled[] = true
+        execution.packet[2,:,:] .= 1
+        domain = AcquisitionDomain(ntuple(UInt8,16))
+        counts = Int[]
+        for sequence in UInt64(1):UInt64(8)
+            receipt = (;identity=AcquisitionIdentity(domain,UInt64(9),sequence),
+                pts=Int64((sequence-1)*1_000_000),duration=UInt64(1_000_000),lost_samples=UInt64(0))
+            before = length(transport.events)
+            @test ExternalOwner.publish_exposures!(publisher) do
+                ExternalOwner.feed!(execution.emit,science.plant,execution.packet,receipt)
+            end
+            events = transport.events[before+1:end]
+            exposed = count(event->event !== :trigger,events)
+            push!(counts,exposed)
+            @test count(==(:trigger),events) == (exposed > 0)
+            exposed > 0 && @test last(events) === :trigger
+        end
+        @test counts == [0,1,0,2,0,1,0,2]
+        for name in keys(science.sensors)
+            index = findfirst(==(name),keys(science.sensors))
+            events = filter(event->event !== :trigger && event.index == index+1,transport.events)
+            duration = name === :llowfs ? 2_000_000 : 4_000_000
+            @test [event.metadata.identity.sequence for event in events] == collect(1:div(8_000_000,duration))
+            @test [event.metadata.pts for event in events] == collect(0:duration:8_000_000-duration)
+            @test all(event->event.metadata.duration == duration,events)
+            @test all(event->event.metadata.identity.domain == execution.domains[index] &&
+                event.metadata.identity.generation == 7,events)
+            @test all(event->eltype(event.image) === Float32 && size(event.image) == size(science.sensors[name].image) &&
+                all(isfinite,event.image) && sum(event.image)>0,events)
+            @test getproperty.(getproperty.(events,:metadata),:trigger_state) ==
+                (name === :scc ? [ACQUISITION_TRIGGER_HIGH,ACQUISITION_TRIGGER_LOW] : fill(ACQUISITION_TRIGGER_ABSENT,4))
+            @test getproperty.(getproperty.(events,:metadata),:optical_classification) ==
+                (name === :scc ? [OPTICAL_FRINGED,OPTICAL_UNFRINGED] : fill(OPTICAL_ABSENT,4))
+        end
+    end
+end
+
 @testset "external-pupil managed owner uses independent exact exposures" begin
     mktempdir() do directory
         (;config,path) = external_pupil_owner_documents(directory)
@@ -15,7 +79,7 @@ const Owner = PipeWireAORTC.AOSOwner
             (;version=4,owner_check=()->(checks[]+=1)),science,
             ExternalOwner.SourceControl.Mailbox(Int64(1)),ExternalOwner.OwnerState())
         @test checks[]>=4
-        @test !execution.publication_enabled[] && execution.transport_owner[]===nothing
+        @test !execution.publication_enabled[] && execution.publication[]===nothing
         @test all(iszero,execution.packet) && all(frame->all(iszero,frame),execution.buffers)
         @test science.plant.state.domain === nothing
         @test all(e->e.sequence==0 && e.covered_ns==0,values(science.plant.exposures))
@@ -166,7 +230,7 @@ end
         execution=ExternalOwner.prepare_stream_execution!((;version=4,owner_check=()->nothing),science,mailbox,state)
         @test first_frame()==expected
         reset_external_pupil!(science.plant)
-        @test !execution.publication_enabled[] && execution.transport_owner[]===nothing
+        @test !execution.publication_enabled[] && execution.publication[]===nothing
         @test_throws ArgumentError execution.emit(:llowfs,fill(floatmax(Float64),8,8),
             (;sequence=UInt64(1)))
         checks=Ref(0)

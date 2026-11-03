@@ -253,6 +253,58 @@ function publish_sensor!(owner,index,buffer,identity,pts,duration,classification
     return nothing
 end
 
+mutable struct ExposurePublisher{O}
+    owner::O
+    active::Bool
+    pending::Bool
+    failed::Bool
+end
+ExposurePublisher(owner) = ExposurePublisher(owner,false,false,false)
+
+"Stage a completed exposure inside the current optical source step."
+function stage_exposure!(publisher::ExposurePublisher,index,buffer,identity,pts,duration,classification; optical_classification=nothing)
+    publisher.failed && throw(ArgumentError("failed exposure publisher requires transport teardown"))
+    publisher.active || throw(ArgumentError("exposure publication requires a source-step boundary"))
+    properties = optical_classification === nothing ? (;) : (;optical_classification)
+    # A rejected newer exposure can leave an older sample pending for retry.
+    publisher.pending = true
+    try
+        return stage_pipewire_array!(publisher.owner,index,buffer;identity,pts,duration,
+            trigger_state=classification,properties...)
+    catch
+        publisher.failed = true
+        rethrow()
+    end
+end
+
+"""
+    publish_exposures!(operation, publisher)
+
+Stage completed exposures during `operation()`, then trigger the connected graph
+once. A step without exposures does not trigger. A nonthrowing staging rejection
+still retries retained HIL samples. Staging is not transactional: after an error,
+the publisher cannot be reused and its transport must be closed, so partial
+staging cannot escape during a later source step.
+"""
+function publish_exposures!(operation,publisher::ExposurePublisher)
+    publisher.failed && throw(ArgumentError("failed exposure publisher requires transport teardown"))
+    publisher.active && throw(ArgumentError("exposure publication boundaries cannot be nested"))
+    publisher.active = true
+    publisher.pending = false
+    try
+        result = operation()
+        publisher.failed && throw(ArgumentError("failed exposure publisher requires transport teardown"))
+        publisher.pending && trigger_process!(publisher.owner)
+        return result
+    catch
+        publisher.failed = true
+        rethrow()
+    finally
+        publisher.active = false
+        publisher.pending = false
+    end
+end
+
 function stream_execution(options,science,state)
     names = keys(science.sensors)
     clocked = options.version == 6
@@ -265,7 +317,7 @@ function stream_execution(options,science,state)
     buffers = map(frame->eltype(frame) === Float32 ? frame : zeros(Float32,size(frame)),frames)
     domains = map(_->domain(),names)
     publication_enabled = Ref(false)
-    transport_owner = Ref{Any}(nothing)
+    publication = Ref{Any}(nothing)
     chopping = science.chopping
     emit = function (name,image,metadata)
         index = findfirst(==(name),names)
@@ -278,27 +330,28 @@ function stream_execution(options,science,state)
         classification = trigger_state((;chopping), name, metadata)
         if publication_enabled[]
             identity = AcquisitionIdentity(domains[index],UInt64(state.generation),sequence)
-            publish_sensor!(transport_owner[],index+1,buffers[index],identity,
+            stage_exposure!(publication[],index+1,buffers[index],identity,
                 metadata.pts,metadata.duration,classification;
                 optical_classification=sensor_optical_classification((;chopping),name,metadata))
         end
         return nothing
     end
     return (;packet,command,incoming_command,frames,buffers,domains,publication_enabled,
-        transport_owner,emit)
+        publication,emit)
 end
 
 # Compile the concrete transport calls without staging synthetic camera frames.
 function warmup_stream_transport!(owner,execution,clocked)
     input = clocked ? execution.incoming_command : execution.packet
+    publisher = execution.publication[]
     precompile(drain_pipewire_array!, (typeof(input),typeof(owner),Int)) ||
         error("external-pupil input transport preparation failed")
     for buffer in execution.buffers
-        precompile(publish_sensor!, (typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
+        precompile(stage_exposure!, (typeof(publisher),Int,typeof(buffer),AcquisitionIdentity,
             Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
             error("external-pupil output transport preparation failed")
         precompile(Core.kwcall,(NamedTuple{(:optical_classification,),Tuple{PipeWireAO.OpticalClassification}},
-            typeof(publish_sensor!),typeof(owner),Int,typeof(buffer),AcquisitionIdentity,
+            typeof(stage_exposure!),typeof(publisher),Int,typeof(buffer),AcquisitionIdentity,
             Int64,UInt64,typeof(ACQUISITION_TRIGGER_ABSENT))) ||
             error("external-pupil optical property transport preparation failed")
     end
@@ -311,8 +364,9 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     clocked = options.version == 6
-    (;packet,command,incoming_command,emit,publication_enabled,transport_owner) = execution
-    transport_owner[] = owner
+    (;packet,command,incoming_command,emit,publication_enabled,publication) = execution
+    publisher = ExposurePublisher(owner)
+    publication[] = publisher
     filter = nothing
     try
         with_thread_loop_lock(transport.loop) do _
@@ -382,7 +436,9 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
                     sleep(0.001)
                     continue
                 end
-                state.sequence = step_clocked_source!(emit,science,command;generation=UInt64(state.generation))
+                state.sequence = publish_exposures!(publisher) do
+                    step_clocked_source!(emit,science,command;generation=UInt64(state.generation))
+                end
                 state.deadline_ns = options.pacing_period_ns == 0 ? UInt64(0) : time_ns()+options.pacing_period_ns
                 continue
             end
@@ -395,7 +451,9 @@ Base.@nospecializeinfer function run_streams!(@nospecialize(options), science, m
                 state.generation = Base.checked_add(state.generation,Int64(1))
             end
             upstream_generation = receipt.identity.generation
-            accepted = feed!(emit,science.plant,packet,receipt)
+            accepted = publish_exposures!(publisher) do
+                feed!(emit,science.plant,packet,receipt)
+            end
             accepted && (state.sequence = Base.checked_add(state.sequence,UInt64(1)))
         end
     finally

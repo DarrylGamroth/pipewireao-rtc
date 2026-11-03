@@ -12,6 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Optical exposure publication — 2026-11-02
+
+The external-pupil and clocked optical owners stage all completed exposures from
+one source step before triggering their connected graph once. Independent
+single-camera steps still trigger once; steps without completed exposures do not
+trigger. Rejected staging retains the HIL retry behavior. A failed step requires
+transport teardown because staged latest slots cannot be rolled back safely.
+The shared boundary preserves acquisition metadata and quiet startup warmup;
+it does not change native async scheduling or callback thread ownership.
+Focused CPU validation is in `test/optical_exposure_publication.jl`; private-core
+continuous feedback remains an instrument application gate, separate from
+cadence, deadlines and physical-loop qualification.
+Julia 1.13.3 at `-O0` passes 378 checks across exposure publication, stream
+formats, clocked backend configuration, actual unequal-duration/chopped owner
+preparation and quiet warmup. These checks open no core or GPU context.
+
 ### Coupled-controller protective recovery — 2026-11-02
 
 Authorized continuation: extend RTC-DEV-032–035 from the existing single CPU

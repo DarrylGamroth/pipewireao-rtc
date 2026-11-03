@@ -193,3 +193,6 @@
   `test/external_pupil_owner_preparation.jl` checks actual monochromatic,
   finite-channel and chopped preparation with AOS/HIL/Proper. Keep both selectors
   outside the core suite, which must not load optional science packages.
+- `test/optical_exposure_publication.jl` uses the same optional science environment
+  to check coincident/single/zero exposure publication, retained-sample retry and
+  failed-step teardown. It opens no core and imports no GPU or Proper backend.
