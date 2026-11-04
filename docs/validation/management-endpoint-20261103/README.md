@@ -1,5 +1,9 @@
 # RTC-owned local management — 2026-11-03
 
+The later [installed rollout](../management-rollout-20261104/README.md) records
+commits/merges and deployment. The source-validation baseline below describes
+the earlier stage, when operator services remained unchanged.
+
 ## Source and scope
 
 RTC baseline `ccaa1d51717d747e4494d33b3b5766ddab1991cc`, branch

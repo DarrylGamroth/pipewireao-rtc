@@ -25,8 +25,11 @@ jobs remain independent of GUI connections; live controls remain native.
 record 150 native IPC assertions, eleven Rust transport checks, actual Rust/store
 integration and ten systemd activation/cgroup-crash assertions. Owner core and
 GUI workspace/compile/lint checks are part of this delivery record. The source
-work is uncommitted; package publication, operator-deployment rollout, scientific
-replacement and physical/real-time qualification are not claimed.
+was subsequently committed and merged into local main; the
+[2026-11-04 UTC rollout](validation/management-rollout-20261104/README.md) installed
+the owner service and web GUI while preserving storage and the running RTC.
+Package publication, scientific replacement and physical/real-time qualification
+are not claimed.
 
 ### Optical exposure publication — 2026-11-02
 

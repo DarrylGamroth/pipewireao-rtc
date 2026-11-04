@@ -1,11 +1,19 @@
 # Delivery evidence catalog
 
+## Installed RTC management and web GUI — 2026-11-04 UTC
+
+The [rollout record](validation/management-rollout-20261104/README.md) records
+merged source, generated service activation, preserved stores and running RTC
+identities, actual deployed browser freshness, and total owner-family PSS through
+idle expiry. Only the web service was restarted; scientific/hardware qualification
+remains separate.
+
 ## RTC-owned local management — 2026-11-03
 
 The [endpoint validation](validation/management-endpoint-20261103/README.md) records
 the shared native companion, production Rust client, FD/receipt/failure gates and
-test-owned systemd activation/crash cleanup. Production rollout and scientific
-qualification remain separate.
+test-owned systemd activation/crash cleanup. The installed rollout is recorded
+separately above; scientific qualification remains separate.
 
 ## Optional analysis metadata preservation — 2026-11-02
 
