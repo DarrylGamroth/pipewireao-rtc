@@ -21,6 +21,8 @@ config.set_quoted('WP_DATA_DIR', wp_data_dir)
 configure_file(output: 'rtc-build.h', configuration: config)
 rtc = executable('pipewireao-rtc', 'main.c',
   dependencies: [wp, pw, gio_unix], install: true)
+management = executable('pipewireao-management', 'management.c',
+  dependencies: [wp, gio_unix], install: true)
 rtc_modules = []
 subdir('modules')
 install_subdir('scripts', install_dir: app_data_dir)

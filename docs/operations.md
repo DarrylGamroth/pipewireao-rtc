@@ -1253,6 +1253,13 @@ CPU transport tests or host real-time qualification.
 
 ## RTC-DEV-031 — Cold simulator configuration replacement
 
+The local [management endpoint](MANAGEMENT_ENDPOINT.md) is an RTC-owned client
+access boundary for the tooling below. It does not replace native live controls
+or add a session authority. Its companion, shared worker and durable receipt
+lifetime are independent of GUI connections. Per-user catalog/history remains
+usable without a running session; simulator effects retain the exact managed
+incarnation fences and scientific preparation requirements below.
+
 For a registered managed development application, the headless RTC tooling MUST
 describe startup settings using the selected plant package's declared defaults
 and schema in the application's pinned environment. The GUI MUST render those

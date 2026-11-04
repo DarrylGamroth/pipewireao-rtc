@@ -5,7 +5,7 @@ function worker_main(args)
     return nothing
 end
 
-function request_result(request)
+function request_result(request; request_id=nothing)
     request isa AbstractDict && Set(keys(request)) == Set(("protocol", "op", "arguments")) &&
         request["protocol"] == PROTOCOL || throw(ArgumentError("invalid simulator settings request"))
     arguments = request["arguments"]
@@ -20,7 +20,7 @@ function request_result(request)
         Set(keys(arguments)) == Set(("session_id", "configuration_sha256", "settings", "resume_running")) ||
             throw(ArgumentError("start_rebuild requires session_id, configuration_sha256, settings and resume_running"))
         return Base.invokelatest(start_rebuild, arguments["session_id"], arguments["configuration_sha256"], arguments["settings"];
-            resume_running=arguments["resume_running"])
+            resume_running=arguments["resume_running"], request_id)
     elseif operation == "job"
         Set(keys(arguments)) == Set(("id",)) || throw(ArgumentError("job requires id"))
         return Base.invokelatest(job, arguments["id"])

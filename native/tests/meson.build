@@ -53,3 +53,6 @@ lua_bindings = executable('test-ao-lua', 'ao-lua.c',
   include_directories: include_directories(wp_source / 'tests/common'),
   dependencies: [wp, pw])
 test('ao-lua-native', lua_bindings, env: test_env, timeout: 30)
+
+# Isolated socket-activation launcher for test/management_endpoint.jl.
+management_activation = executable('management-activate', 'management-activate.c')

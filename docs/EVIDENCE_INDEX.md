@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## RTC-owned local management — 2026-11-03
+
+The [endpoint validation](validation/management-endpoint-20261103/README.md) records
+the shared native companion, production Rust client, FD/receipt/failure gates and
+test-owned systemd activation/crash cleanup. Production rollout and scientific
+qualification remain separate.
+
 ## Optional analysis metadata preservation — 2026-11-02
 
 The [native-buffer regression record](validation/analysis-metadata-20261102/README.md)

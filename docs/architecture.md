@@ -228,7 +228,11 @@ automatic retry or inferred rollback. Requested, submitted and active are distin
 The headless management interface supports artifact registration, catalog reads,
 exact retrieval and paginated history. It does not introduce another live-control
 protocol, execute calibration acquisition or expose a browser gateway. The native
-GUI uses a local helper off its UI thread; shared panels remain WASM-buildable.
+GUI connects to the [RTC-owned local endpoint](MANAGEMENT_ENDPOINT.md) off its UI
+thread. That per-user companion shares a bounded worker across clients and is
+installed/activated independently of GUI and live-session lifetimes. Legacy
+stdio handlers remain available to direct owner tools. Shared GUI panels remain
+WASM-buildable; browser profile admission stays with the existing bridge.
 
 Optional analysis graphs may compute finite/sliding statistics or exponentially
 weighted moments using ordinary scientific Algorithm declarations. A configured

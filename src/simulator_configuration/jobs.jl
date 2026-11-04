@@ -88,16 +88,19 @@ end
 
 "Accept a cold replacement job; disconnecting its client does not cancel it."
 function start_rebuild(session_id::AbstractString, configuration_sha256::AbstractString,
-        settings::AbstractDict; resume_running::Bool=true, root=default_root(), launch=launch_job)
+        settings::AbstractDict; resume_running::Bool=true, root=default_root(), launch=launch_job,
+        request_id=nothing, select=selected_session)
     occursin(r"^[0-9a-f]{64}$", configuration_sha256) || throw(ArgumentError("invalid configuration SHA-256"))
-    selected = selected_session(session_id)
+    request_id === nothing || (request_id isa AbstractString && occursin(r"^[0-9a-f]{32}$", request_id)) ||
+        throw(ArgumentError("invalid management request identity"))
+    selected = select(session_id)
     selected.identity["configuration_sha256"] == configuration_sha256 ||
         throw(ArgumentError("simulator configuration changed; reload settings"))
     # Admission is structural here; pinned scientific validation happens in the
     # durable worker before any request is sent to the old live session.
     AOSOwner.plant_settings(settings)
     root = settings_root(root)
-    id = replace(string(uuid4()), "-"=>"")
+    id = request_id === nothing ? replace(string(uuid4()), "-"=>"") : String(request_id)
     request = Dict(
         "id"=>id, "identity"=>selected.identity, "application"=>selected.application,
         "prefix"=>selected.prefix, "relative_config"=>selected.relative,

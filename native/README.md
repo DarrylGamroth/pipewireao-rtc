@@ -123,3 +123,19 @@ initial Quit-marker clearing, ignored configuration fragments and an absolute
 entrypoint with a hostile current-directory script. Policy tests distinguish a
 successful Quit publication fence from failure. These are CPU functional checks;
 they do not qualify GPUs, physical hardware, deadlines or production release.
+
+## Local management companion
+
+`pipewireao-management` is a separate per-user management executable, built by
+this native project. It reuses GIO and libwireplumber JSON utilities but does not
+connect to or schedule a PipeWire graph. It owns bounded local IPC and a shared
+on-demand owner worker; it is not another RTC supervisor. systemd owns activation
+and process lifetime, and accepted rebuild jobs use their existing independent
+units. See [the endpoint contract](../docs/MANAGEMENT_ENDPOINT.md) for installation,
+request/FD/receipt bounds and the explicit source/installed validation boundary.
+
+Build it with `meson compile -C BUILD pipewireao-management`. Its socket-activation
+acceptance and fault tests are in `test/management_endpoint.jl`, selected with
+`PIPEWIREAO_MANAGEMENT_BINARY=/absolute/path/to/pipewireao-management`. These tests
+start only their own endpoint and workers and require Julia 1.13; they do not
+restart any installed RTC.

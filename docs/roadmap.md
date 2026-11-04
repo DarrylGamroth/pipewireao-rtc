@@ -12,6 +12,22 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### RTC-owned local management — 2026-11-03
+
+The accepted GUI ownership migration now has a native per-user management
+companion and a client-only GUI/bridge transport. The companion reuses existing
+Julia business logic through one bounded shared worker, persists accepted-request
+receipts and owns descriptor lifetimes. systemd activation and accepted rebuild
+jobs remain independent of GUI connections; live controls remain native.
+
+[The contract](MANAGEMENT_ENDPOINT.md) and
+[source/test-owned installed evidence](validation/management-endpoint-20261103/README.md)
+record 150 native IPC assertions, eleven Rust transport checks, actual Rust/store
+integration and ten systemd activation/cgroup-crash assertions. Owner core and
+GUI workspace/compile/lint checks are part of this delivery record. The source
+work is uncommitted; package publication, operator-deployment rollout, scientific
+replacement and physical/real-time qualification are not claimed.
+
 ### Optical exposure publication — 2026-11-02
 
 The external-pupil and clocked optical owners stage all completed exposures from
