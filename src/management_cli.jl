@@ -120,7 +120,10 @@ function unit_texts(prefix; project=active_project(),
     configuration_root = absolute_path(configuration_root, "configuration root")
     root = absolute_path(root, "management state root")
     simulator_root = absolute_path(simulator_root, "simulator root")
-    argv = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=$project", "-e",
+    # Management is cold, bounded tooling. Collect temporary compiler/validation
+    # allocations promptly without changing compilation of artifact packing or jobs.
+    argv = [Base.julia_cmd().exec[1], "--startup-file=no", "--heap-size-hint=256M",
+        "--project=$project", "-e",
         "using PipeWireAORTC; PipeWireAORTC.ManagementCLI.serve()"]
     # systemd resolves the executable word without argv environment expansion.
     executable = unit_value(joinpath(prefix, "bin", "pipewireao-management"))

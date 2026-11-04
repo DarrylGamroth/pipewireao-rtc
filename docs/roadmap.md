@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Startup-settings inspection memory — 2026-11-04 UTC
+
+The [measured inspection update](validation/startup-settings-memory-20261104/README.md)
+adds soft GC targets to management and description-only readers, retaining normal
+compilation and unchanged scientific preflight/job policy. The deployed family
+peak fell to 721 MiB PSS, with 1.48 MiB after idle expiry; the full cold read still
+took 83 seconds. A private-core regression reproduced a token chosen before cold
+validation becoming stale; the client now chooses it afterwards, with no retry
+or rebinding. All five running RTC identities, the web service and storage were
+preserved. Source changes were committed and merged into local main without a
+service restart. Scientific replacement and hardware/timing qualification are
+not claimed.
+
 ### RTC-owned local management — 2026-11-03
 
 The accepted GUI ownership migration now has a native per-user management

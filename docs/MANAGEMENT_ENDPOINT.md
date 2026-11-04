@@ -87,6 +87,13 @@ worker. The owner retires it after 60 idle seconds following a complete reply.
 No operation is interrupted by idle expiry. Ordinary viewing creates no Julia
 work, and opening a second GUI does not create a second private runtime.
 
+Generated worker commands use `--heap-size-hint=256M` to collect temporary
+compiler/validation allocations sooner. The pinned description subprocess uses
+`--heap-size-hint=128M` with its existing `-O0`; compilation remains enabled.
+These are soft GC targets, not process limits. Actual memory includes code, native
+libraries and live allocations. Backend preflight and independent rebuild jobs
+retain their normal compilation and heap policy.
+
 Operation deadline: 60 seconds, except simulator `describe` at 120 seconds for
 cold verification plus its pinned description worker. Trusted installation/test
 configuration may shorten deadlines/idle grace; it cannot be supplied by clients.

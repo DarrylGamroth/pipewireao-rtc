@@ -556,17 +556,19 @@ function request!(client::Client, command;
     try
         deadline_check(deadline, check)
         client.closed && throw(UnknownOutcome("client is closed"))
+        operation = operation_id(client.observation.profile, command)
+        # Encode/validate locally before occupying a pending owner operation.
+        validation_header = Envelope.RequestHeader(something(client.identity),
+            client.observation.instance, Int64(1), operation, Int64(1))
+        encode_request(client.observation.profile, validation_header, command)
+        # Cold encoding may span another caller's completion. Choose the real
+        # token afterwards; validation neither reserves nor submits a request.
         token = with_thread_loop_lock(client.loop) do _
             healthy(client)
             token = max(client.last_token, client.observation.max_accepted)
             token < typemax(Int64) || throw(ArgumentError("request tokens exhausted"))
             token + 1
         end
-        operation = operation_id(client.observation.profile, command)
-        # Encode/validate locally before occupying a pending owner operation.
-        validation_header = Envelope.RequestHeader(something(client.identity),
-            client.observation.instance, token, operation, Int64(1))
-        encode_request(client.observation.profile, validation_header, command)
         # Cold validation/compilation must not inflate the transmitted budget.
         deadline_check(deadline, check)
         remaining = deadline - monotonic()

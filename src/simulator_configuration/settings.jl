@@ -46,10 +46,9 @@ function scientific_description(application, prefix, relative_config; prepare=fa
     return mktempdir() do directory
         output = joinpath(directory, "description.json")
         argv = [Base.julia_cmd().exec[1], "--startup-file=no"]
-        # Description validates cold declarations; it executes no science or
-        # native callbacks. Avoid optimizing that one-shot metadata workload.
-        # Preparation still warms the selected backend with normal compilation.
-        prepare || push!(argv, "-O0")
+        # Description validates cold declarations without science or callbacks.
+        # Collect compiler temporaries sooner; backend preparation keeps its heap policy.
+        prepare || append!(argv, ["-O0", "--heap-size-hint=128M"])
         append!(argv, ["--project=$environment", "-e",
             "using PipeWireAORTC; PipeWireAORTC.SimulatorConfiguration.worker_main(ARGS)", "--",
             prepare ? "preflight" : "describe", D.relative_asset(application, relative_config), output])

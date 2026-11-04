@@ -52,10 +52,11 @@ end
         """)
         # Reuse the generated executable/argv quoting. Only replace the trusted
         # owner worker for deterministic crash injection; no scientific work runs.
-        original=[Base.julia_cmd().exec[1],"--startup-file=no","--project=$(pkgdir(PipeWireAORTC))","-e",
+        original=[Base.julia_cmd().exec[1],"--startup-file=no","--heap-size-hint=256M","--project=$(pkgdir(PipeWireAORTC))","-e",
             "using PipeWireAORTC; PipeWireAORTC.ManagementCLI.serve()"]
         fixture=[Base.julia_cmd().exec[1],"--startup-file=no",script]
         source=read(units["pipewireao-management.service"],String)
+        @test occursin(MC.unit_argument(JSON.json(original)),source)
         source=replace(source,MC.unit_argument(JSON.json(original))=>MC.unit_argument(JSON.json(fixture)))
         source=replace(source,"pipewireao-management.socket"=>socket_unit,"%t/pipewireao/management.sock"=>endpoint)
         service_path=joinpath(root,service); write(service_path,source)

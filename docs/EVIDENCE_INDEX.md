@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Startup-settings memory and cold token selection — 2026-11-04 UTC
+
+The [inspection record](validation/startup-settings-memory-20261104/README.md)
+records the compiler/validation overhead, soft GC targets, a reproduced and fixed
+pre-encoding token race, and deployed management peak/idle PSS. Source/core,
+private-core and installed GUI evidence are distinct. The existing five RTC
+processes, web service, stored artifacts/history and frozen application stayed
+unchanged; hardware/frame deadlines remain unqualified.
+
 ## Installed RTC management and web GUI — 2026-11-04 UTC
 
 The [rollout record](validation/management-rollout-20261104/README.md) records

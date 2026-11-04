@@ -5,6 +5,15 @@ include("native_control_private_core.jl")
 const OwnerEndpoint = PipeWireAORTC.NativeControlEndpoint
 const DECODE_DELAY = Ref(0.0)
 
+struct EncodingCommand{F}
+    compete::F
+end
+Client.operation_id(::TestProfile, ::EncodingCommand) = UInt32(71)
+function Client.encode_request(::TestProfile, header, command::EncodingCommand)
+    command.compete()
+    return Envelope.encode_request(header, SPA.Struct())
+end
+
 function Client.decode_request(::TestProfile, header, payload::SPA.Struct)
     header.operation == 71 && isempty(payload.values) || throw(ArgumentError("invalid test action"))
     DECODE_DELAY[] > 0 && sleep(DECODE_DELAY[])
@@ -192,6 +201,31 @@ function run_endpoint_proof(socket, directory, daemon)
         end
         run_effects[] = true
         wait_proof(() -> istaskdone(stopped_request), 5, "stopped caller cleanup"; check=check_owner)
+
+        # Another caller can complete while local cold encoding runs. The real
+        # request must choose its token after that work, without replaying it.
+        wait_proof(() -> endpoint.pending === nothing, 5, "stopped ticket retirement"; check=check_owner)
+        encoding_client = connect_client(); push!(clients, encoding_client)
+        competing_client = connect_client(); push!(clients, competing_client)
+        competed = Ref(false)
+        competing_token = Ref(Int64(0))
+        before_encoding = effects[]
+        command = EncodingCommand() do
+            competed[] && return nothing
+            competed[] = true
+            reply = ask(competing_client)
+            @test reply.header.result == 0
+            competing_token[] = reply.header.token
+            wait_proof(() -> with_thread_loop_lock(encoding_client.loop) do _
+                encoding_client.observation.max_accepted >= competing_token[]
+            end, 5, "competing completion during encoding"; check=check_owner)
+            return nothing
+        end
+        reply = Client.request!(encoding_client, command;
+            deadline=Client.monotonic()+15, check=check_owner)
+        @test reply.header.result == 0
+        @test reply.header.token > competing_token[]
+        @test effects[] == before_encoding + 2
         println("NATIVE_OWNER_ENDPOINT two_actual_controllers=true no_ports=true effects=$((effects[]))")
     finally
         quit[] = true
