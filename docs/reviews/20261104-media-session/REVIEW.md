@@ -107,6 +107,7 @@ not establish a hardware or timing qualification result.
 | MSR-003 — Preparation can consume the fresh transport deadline check | P1, confirmed. An injected clock advanced to the effect deadline during identity validation; `setparam!` still invoked the native send after its earlier fresh-time check. | Fixed in transport: a final `check_job` runs immediately before enumeration or parameter submission, after identity, object and parameter preparation. The same injected-delay reproduction now refuses the send. An already-set submission marker remains conservative; the fix does not erase earlier cohort mutations. |
 | MSR-004 — Created Link admission omits LinkInfo ID correlation | P2, confirmed validation gap. Otherwise-valid LinkInfo ID 32 was admitted for bound ID 31. A sparse merge could also conceal a later raw event's changed ID by retaining the previous ID. A real native corruption trigger was not established. | Fixed: raw LinkUpdated events are checked before merging, LinkBound is checked against any earlier info, and validation compares the known bound ID. Tests cover both callback orders, changes after a valid observation, valid same-ID events and first-failure retention. |
 | MSR-005 — Link withdrawal suppresses unrelated required losses | P1, confirmed by the same controlled observations before/after. `runtime.withdrawing` suppressed every required-loss report and skipped captured identity checks. Graph removal, graph errors, identity changes and a foreign Link's removal were hidden. | Fixed: loss events always reach the machine; only destruction/error observations of an exact retiring session-created Link `(ID, serial)` are expected. Captured identity validation remains active. A copied path does not confer retirement. Required owner/graph evidence is retained until its separate receipt-proven handoff. |
+| MSR-006 — Property adapters discard the Hsm's admission origin | P2, confirmed interface mismatch. The machine records Ready/Running origin in the effect ticket, but adapters reread mutable lifecycle to decide correction admission and active adoption. Opposite-origin controlled cases reproduced four failures. | Fixed: `perform!` passes the ticket origin; property baseline/completion and correction/recovery guards dispatch on `ReadyOrigin` / `RunningOrigin`. Native owner, group, value and generation proofs remain required. No new phase trait or second state machine was introduced. |
 
 Observed verification: the object selector passes **103 assertions**, including
 16 against an isolated private core and 11 Link-ID regression assertions. The
@@ -137,6 +138,16 @@ pending-creation, native sync and exact absence fences. Logs are
 `/tmp/media-session-withdrawal-after-20261105.log`. The implementation uses
 concrete `Object{P,LinkInfo}` dispatch to identify Link evidence; it adds no
 phase-dependent logic to the event loop.
+
+The complete control selector passes **186 assertions** and the effect selector
+passes **64**. The unchanged property-origin regression went from two passing /
+four failing assertions to six passing assertions. It checks that a Ready
+ticket reports submission without active adoption and a Running ticket waits
+for exact adoption, regardless of the opposite mutable wire status; each
+submits once. Additional correction/recovery cases retain stopped group and
+native owner rejection. Logs are `/tmp/rtc-correction-origin-before.log`,
+`/tmp/rtc-correction-origin-after.log`, `/tmp/rtc-correction-origin-effects.log`
+and the root rerun `/tmp/rtc-typed-session-effects-20261105.log`.
 
 No additional journal defect was confirmed in this review. PipeWireAO publicly
 provides `InfoTracker`, `track_info!`, `has_current_info` and `current_info` for
