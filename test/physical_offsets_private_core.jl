@@ -1,4 +1,5 @@
 # CPU native return-path selector: julia --threads=4,0 --project=<science-env> ...
+# Match client JLL preferences and the daemon's PIPEWIREAO_HIL_TEST_PREFIX.
 using Test, SHA, LinearAlgebra
 using PipeWireAO,
     PipeWireAORTC,

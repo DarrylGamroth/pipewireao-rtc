@@ -218,9 +218,15 @@
   `test/pupil_source_owner_science.jl` and `test/pupil_feedback_composition.jl`
   exercise actual mirror response, model chronology and sealed preparation.
 - The optional `test/physical_offset_inputs_private_core.jl` and
-  `test/pupil_source_control_private_core.jl` require three default Julia threads
-  and explicit `PIPEWIREAO_PREFIX` pointing to a compatible private native SDK.
-  They own and close their private cores, check native receipt admission and
+  `test/pupil_source_control_private_core.jl` require three default Julia threads;
+  `test/physical_offsets_private_core.jl` requires `--threads=4,0`.
+  Their imported HIL helper selects the daemon with
+  `PIPEWIREAO_HIL_TEST_PREFIX`, defaulting to the JLL artifact. Set that variable
+  to the matching SDK and select client libraries through JLL preferences;
+  `PIPEWIREAO_PREFIX` alone does not select this helper's daemon. The
+  [graph negotiation evidence](docs/reviews/20261105-graph-buffers/REVIEW.md)
+  records both tested daemon cohorts and commands. These selectors own and close
+  their private cores, check native receipt admission, frame independence and
   Pause/Run continuity, and do not qualify hardware or deadlines.
 - Optional `test/calibration_transport.jl` uses `--threads=3,1`;
   `test/calibration_named_transport.jl` and `test/calibration_readiness.jl` use

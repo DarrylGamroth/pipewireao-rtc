@@ -57,10 +57,13 @@ verified in two segments, reporting 11,331 assertions across 515 passing summari
 the last cold-wait slice passes 153 assertions, including real CPU preparation
 with a negative CachedNanoClock. Evidence records intermediate failures and fixes.
 
-The physical-offset graph gate remains unqualified: the unchanged baseline
-reproduces its pre-frame buffer-allocation failure. Actual parameter-owner and
-scientific initial-calibration execution, full modal validation, release-cohort,
-sustained cadence, hardware and strict deadline qualification remain separate.
+The [physical-offset graph gate](reviews/20261105-graph-buffers/REVIEW.md) now
+passes 147 assertions on each tested daemon cohort. The test omitted required
+graph acquisition metadata and its SCC tap's trigger declaration; explicit
+matching profiles fix the negotiation and preserve all existing assertions.
+Actual parameter-owner and scientific initial-calibration execution, full modal
+validation, release-cohort, sustained cadence, hardware and strict deadline
+qualification remain separate.
 The session replacement is not promoted as deployed or fully qualified by the
 clock migration.
 
