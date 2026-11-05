@@ -4,7 +4,6 @@ module OwnerBootstrapRuntime
 using PipeWireAO
 import Agent
 import Clocks
-import ..Common
 import Hsm
 using Hsm: @hsmdef, @statedef, @finaldef, @on_initial, @on_event
 import ThreadPinning
@@ -58,6 +57,7 @@ function Transport(
     name::AbstractString,
     instance::Int64;
     application_name::AbstractString = name,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 ) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc-bootstrap")
@@ -94,6 +94,7 @@ function Transport(
                 name,
                 instance,
                 Codec.Preparing;
+                clock,
                 publisher = (filter, params) -> begin
                     wake[] = true
                     update_params!(filter, params)
@@ -195,22 +196,26 @@ function complete!(
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Transport, deadline::Float64; check = () -> nothing)
-    Client.deadline_check(deadline, check)
+function flush_terminal!(
+    runtime::Transport, deadline::Union{Int64,Float64}; check = () -> nothing
+)
+    deadline = Client._deadline_ns(deadline)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
-        Client.deadline_check(deadline, check)
+        Client._supervise(check)
+        Client.deadline_check(deadline, Client.NO_CHECK, Endpoint._now!(runtime.endpoint))
         sync!(runtime.core)
     end
     while true
-        Client.deadline_check(deadline, check)
-        observed = with_thread_loop_lock(runtime.loop) do _
+        Client._supervise(check)
+        observed, at = with_thread_loop_lock(runtime.loop) do _
             Endpoint.operational(runtime.endpoint)
-            runtime.acknowledged_sequence[] == sequence
+            at = Endpoint._now!(runtime.endpoint)
+            Client.deadline_check(deadline, Client.NO_CHECK, at)
+            (runtime.acknowledged_sequence[] == sequence, at)
         end
-        Client.deadline_check(deadline, check)
         observed && return nothing
-        sleep(min(POLL_SECONDS, max(0.0, deadline - Client.monotonic())))
+        sleep(Float64(clamp(Int128(deadline) - at, 0, 5_000_000)) / 1e9)
     end
 end
 
@@ -374,16 +379,22 @@ function Runtime(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     validate_threads()
-    transport = Transport(Codec.PROFILE, remote, name, instance; application_name)
+    transport = Transport(Codec.PROFILE, remote, name, instance; application_name, clock)
     runtime = Runtime(transport)
     try
         precompile(serve!, (typeof(runtime),)) ||
             error("cannot compile native bootstrap monitor before startup")
         _precompile_owner_routes!(Monitor{typeof(runtime),typeof(clock)})
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime; clock)
-        deadline = Client.monotonic() + 5.0
+        started = Clocks.time_nanos(clock)::Int64
+        deadline = Base.Checked.checked_add(started, Int64(5_000_000_000))
+        previous = started
         while !_status(runtime).ready
-            Client.deadline_check(deadline, () -> nothing)
+            at = Clocks.time_nanos(clock)::Int64
+            at >= previous ||
+                throw(Client.UnknownOutcome("bootstrap startup clock regressed"))
+            previous = at
+            Client.deadline_check(deadline, Client.NO_CHECK, at)
             _status(runtime).done && error("bootstrap monitor stopped before startup")
             sleep(POLL_SECONDS)
         end
@@ -613,7 +624,7 @@ function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
         endpoint = runtime.transport.endpoint
         neutral = with_thread_loop_lock(runtime.transport.loop) do _
             Endpoint.operational(endpoint)
-            Client.monotonic() >= ticket.deadline ||
+            Endpoint._now!(endpoint) >= ticket.deadline ||
                 !Endpoint.controller_present(endpoint, ticket.header.controller)
         end
         neutral || rethrow()
@@ -663,7 +674,8 @@ _fault_reply!(
     # Native wire projection, updated with publication by handlers. Pending Quit
     # retains its admission phase until actual scientific cleanup completes.
     lifecycle::Codec.Lifecycle
-    cleanup_deadline::Float64
+    cleanup_deadline::Int64
+    last_at::Union{Nothing,Int64}
 end
 
 @statedef Monitor :Monitoring
@@ -707,11 +719,12 @@ Monitor(runtime; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()) = M
     nothing,
     false,
     Codec.Preparing,
-    0.0,
+    Int64(0),
+    nothing,
 )
 
 _facts(sm::Monitor) = Facts(sm.prepare_done, sm.main_finished, sm.main_error)
-_now(sm::Monitor) = Common.monotonic_seconds(sm.clock)
+_now(sm::Monitor) = Clocks.time_nanos(sm.clock)::Int64
 function _observe!(sm::Monitor)
     snapshot = Status(
         sm.ready,
@@ -907,7 +920,9 @@ end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::FinishedObserved, facts) where {R}
     facts.finished && sm.active === nothing || return Hsm.EventHandled
     _publish!(sm, facts.error === nothing ? Codec.Stopped : Codec.Fault)
-    flush_terminal!(sm.runtime.transport, _now(sm) + 5.0)
+    flush_terminal!(
+        sm.runtime.transport, Base.Checked.checked_add(_now(sm), Int64(5_000_000_000))
+    )
     facts.error === nothing && return Hsm.transition!(sm, :Stopped)
     return Hsm.transition!(sm, :Done)
 end
@@ -950,7 +965,7 @@ end
         sm.incoming = nothing
         # This budget is anchored to the beginning of the failed duty cycle;
         # subordinate native I/O retains its fresh trust-boundary deadline clock.
-        sm.cleanup_deadline = _now(sm) + 5.0
+        sm.cleanup_deadline = Base.Checked.checked_add(_now(sm), Int64(5_000_000_000))
     catch cleanup
         _record_cleanup_failure!(sm, cleanup)
         return Hsm.transition!(sm, :Done)
@@ -1177,7 +1192,12 @@ function Agent.on_start(sm::Monitor)
 end
 function Agent.do_work(sm::Monitor)
     current_task() === sm.owner || error("bootstrap monitor belongs to its reserved task")
-    Clocks.update!(sm.clock, Clocks.time_nanos(sm.source_clock))
+    at = Clocks.time_nanos(sm.source_clock)::Int64
+    sm.last_at === nothing ||
+        at >= sm.last_at ||
+        throw(Client.UnknownOutcome("bootstrap monitor clock regressed"))
+    sm.last_at = at
+    Clocks.update!(sm.clock, at)
     Hsm.dispatch!(sm, :PollTransport)
     work = _drain_owner!(sm)
     Hsm.dispatch!(sm, :CancellationObserved)

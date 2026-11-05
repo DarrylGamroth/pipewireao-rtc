@@ -3,6 +3,7 @@ module ParameterSource
 
 using PipeWireAO
 using SHA
+import Clocks
 import ..Common
 import ..Artifacts
 import ..ControlCodec
@@ -682,7 +683,9 @@ function _completion!(endpoint, ticket, source, result::Int32, message)
 end
 
 """Run one ordinary owner; no links, graph state, science, or adoption decisions."""
-function run_owner(options, runtime)
+function run_owner(
+    options, runtime; clock::Clocks.AbstractNanoClock = runtime.transport.endpoint.clock
+)
     transport = runtime.transport
     wake = Base.Event(true)
     endpoint = listener = timer = nothing
@@ -732,6 +735,7 @@ function run_owner(options, runtime)
                 options.control_node,
                 options.control_instance,
                 Connected;
+                clock,
                 publisher = (filter, params) -> begin
                     update_params!(filter, params)
                     notify(wake)
@@ -745,7 +749,13 @@ function run_owner(options, runtime)
             )
         end
         Bootstrap.await_connected!(runtime, connect_ticket)
+        previous = nothing
         while true
+            at = Clocks.time_nanos(clock)::Int64
+            previous === nothing ||
+                at >= previous ||
+                throw(Client.UnknownOutcome("parameter owner clock regressed"))
+            previous = at
             Bootstrap.preparation_check!(runtime)
             with_thread_loop_lock(transport.loop) do _
                 for source in sources
@@ -762,7 +772,9 @@ function run_owner(options, runtime)
                 active = Endpoint.take!(endpoint)
                 if active !== nothing
                     selected = nothing
-                    timer = Timer(max(0.000001, active.deadline - Client.monotonic())) do _
+                    timer = Timer(
+                        Float64(max(Int128(1_000), Int128(active.deadline) - at)) / 1e9
+                    ) do _
                         notify(wake)
                     end
                     staged = false
@@ -827,7 +839,7 @@ function run_owner(options, runtime)
                             end
                             expired_or_revoked =
                                 (selected !== nothing && selected.revoked !== nothing) ||
-                                Client.monotonic() >= active.deadline
+                                Endpoint._now!(endpoint) >= active.deadline
                             result = expired_or_revoked ? Int32(-110) : Int32(-22)
                             _completion!(
                                 endpoint,

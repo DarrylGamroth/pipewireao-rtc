@@ -396,3 +396,56 @@ end
         end
     end
 end
+
+import Clocks
+mutable struct CaptureWaitClock <: Clocks.AbstractNanoClock
+    values::Vector{Int64}
+    reads::Int
+end
+function Clocks.time_nanos(clock::CaptureWaitClock)
+    clock.reads += 1
+    return clock.values[clock.reads]
+end
+@testset "capture wait samples one signed tick per decision" begin
+    for origin in (Int64(-10), Int64(2)^53 + 1)
+        for (current, reason) in ((origin + 1, :deadline), (origin - 1, :clock))
+            owned_test_capture() do capture
+                CC.arm!(capture, exposure())
+                clock = CaptureWaitClock([origin, current], 0)
+                @test_throws InvalidStateException CC.await!(
+                    capture; deadline = origin + 1, clock
+                )
+                @test capture.failure === reason
+                @test clock.reads == 2 # Timer setup and one decision iteration.
+                @test !capture.waiting
+            end
+        end
+    end
+end
+
+@testset "completed capture checks expiry after owner supervision" begin
+    for origin in (Int64(-10), Int64(2)^53 + 1)
+        owned_test_capture() do capture
+            CC.arm!(capture, exposure())
+            for name in keys(capture.slots)
+                slot = getproperty(capture.slots, name)
+                fixture = capture_payload(eltype(slot.wire), length(slot.wire))
+                GC.@preserve fixture begin
+                    initialize_payload!(fixture)
+                    CC._read!(capture, slot, fixture.buffer)
+                end
+            end
+            @test capture.phase == CC.COMPLETE
+            clock = CaptureWaitClock([origin, origin], 0)
+            @test_throws InvalidStateException CC.await!(
+                capture;
+                deadline = origin + 1,
+                clock,
+                check = () -> (clock.values[2] = origin + 1; nothing),
+            )
+            @test capture.failure === :deadline && capture.phase != CC.IDLE
+            @test clock.reads == 2 # Timer setup plus one locked decision.
+            @test !capture.waiting
+        end
+    end
+end

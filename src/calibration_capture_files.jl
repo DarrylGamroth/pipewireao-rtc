@@ -2,6 +2,7 @@
 import ..CalibrationActionCodec
 import ..ControlClient
 import PipeWireAO
+import Clocks
 
 const CAPTURE_HEADER_BYTES = 16 * 1024
 const CAPTURE_EXPOSURE_BYTES = 64 * 1024
@@ -516,6 +517,8 @@ or acquiring an exposure. The serialized owner may translate an ArgumentError
 from this boundary into a known rejection before any endpoint effect. Later
 capture failures must retain their post-effect disposition. `capture!` repeats
 this check immediately before reserving its complete request budget.
+`deadline` is signed Int64 nanoseconds from `clock`; Float64 seconds convert once
+at entry for compatibility. Each I/O boundary checks a fresh source sample.
 """
 function capture_preflight(
     store::CaptureStore;
@@ -524,19 +527,27 @@ function capture_preflight(
     probe::UInt32,
     cursor,
     frames::UInt32,
-    deadline::Float64,
+    deadline::Union{Int64,Float64},
     check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
+    deadline = ControlClient._deadline_ns(deadline)
     _capture_require(
         run > 0 && serial > 0 && probe <= 16383 && 1 <= frames <= 4096,
         "invalid capture request",
     )
-    _capture_require(isfinite(deadline), "capture deadline must be finite")
-    checked() = (
-        check();
-        ControlClient.monotonic() < deadline ||
+    previous = Ref{Union{Nothing,Int64}}(nothing)
+    function checked()
+        check()
+        current = Clocks.time_nanos(clock)
+        previous[] === nothing ||
+            current >= previous[] ||
+            throw(InvalidStateException("capture clock regressed", :clock))
+        previous[] = current
+        current < deadline ||
             throw(InvalidStateException("capture deadline expired", :deadline))
-    )
+        return nothing
+    end
     checked()
     after = _capture_read_cursor(_capture_cursor(cursor))
     _capture_require(
@@ -611,12 +622,14 @@ function capture!(
     probe::UInt32,
     cursor,
     frames::UInt32,
-    deadline::Float64,
+    deadline::Union{Int64,Float64},
     check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     (; after, bytes, directory, header, request, checked) = capture_preflight(
-        store; run, serial, probe, cursor, frames, deadline, check
+        store; run, serial, probe, cursor, frames, deadline, check, clock
     )
+    checked()
     # Reserve the complete request before any exposure. Interrupted work stays charged.
     store.used_bytes += bytes
     store.run, store.serial = run, serial

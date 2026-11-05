@@ -4,6 +4,7 @@ module CalibrationEndpoint
 using PipeWireAO
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
+import Clocks
 import ..ControlEndpoint as Ingress
 import ..ControlClient as Client
 import ..ControlCodec as Envelope
@@ -189,7 +190,8 @@ end
     Endpoint(remote, name, instance, effects)
 
 Publish an initial-calibration endpoint on an explicitly private remote. One
-control task calls `effects(action, absolute_deadline)` for each admitted action;
+control task calls `effects(action, absolute_deadline)` with signed Int64
+nanoseconds for each admitted action;
 the callback must return the matching typed result only after the actual effect.
 Exceptions denote unknown outcomes and fault the endpoint without retry.
 
@@ -208,6 +210,7 @@ function Endpoint(
     effects;
     wakeup::Base.AsyncCondition = Base.AsyncCondition(),
     wakeup_lock::ReentrantLock = ReentrantLock(),
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     remote = Client.private_remote(remote)
     condition, guard = wakeup, wakeup_lock
@@ -237,6 +240,7 @@ function Endpoint(
                 name,
                 instance,
                 Lifecycle.Connected;
+                clock,
                 publisher = (filter, parameters) -> begin
                     update_params!(filter, parameters)
                     notify_owner()
@@ -296,20 +300,35 @@ function Endpoint(
     end
 end
 
+"""Wait until a predicate succeeds using signed nanosecond decision samples.
+
+Float64 deadlines are the existing seconds compatibility boundary. The caller
+owns cached-clock updates. One source sample starts each wait iteration; Timer
+alone receives seconds. Native effect admission performs its own fresh checks.
+"""
 function await(
-    predicate, condition::Base.AsyncCondition, guard::ReentrantLock, deadline::Float64
+    predicate,
+    condition::Base.AsyncCondition,
+    guard::ReentrantLock,
+    deadline::Union{Int64,Float64};
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
-    isfinite(deadline) || throw(ArgumentError("calibration deadline must be finite"))
-    timer = Timer(_ -> wake!(condition, guard), max(0.0, deadline - Client.monotonic()))
+    deadline = Client._deadline_ns(deadline)
+    at = Clocks.time_nanos(clock)::Int64
+    previous = at
+    timer = Timer(
+        _ -> wake!(condition, guard), Float64(max(Int128(0), Int128(deadline) - at)) / 1e9
+    )
     try
         while true
-            Client.monotonic() < deadline ||
-                throw(Client.UnknownOutcome("calibration owner deadline expired"))
+            at >= previous ||
+                throw(Client.UnknownOutcome("calibration owner clock regressed"))
+            previous = at
+            Client.deadline_check(deadline, Client.NO_CHECK, at)
             value = predicate()
-            Client.monotonic() < deadline ||
-                throw(Client.UnknownOutcome("calibration owner deadline expired"))
             value === nothing || value === false || return value
             wait(condition)
+            at = Clocks.time_nanos(clock)::Int64
         end
     finally
         close(timer)
@@ -341,7 +360,10 @@ _terminal_result(::Actions.Released) = true
 _await_release(endpoint, ticket, ::Actions.AbstractResult, deadline) = false
 function _await_release(endpoint, ticket, ::Actions.Released, deadline)
     release = await(
-        endpoint.wakeup, endpoint.wakeup_lock, min(Float64(deadline), ticket.deadline)
+        endpoint.wakeup,
+        endpoint.wakeup_lock,
+        min(deadline, ticket.deadline);
+        clock = endpoint.ingress.clock,
     ) do
         status = Ingress.terminal_release(endpoint.ingress, ticket)
         status === :waiting ? nothing : status
@@ -395,7 +417,8 @@ outside the PipeWire callback and loop lock. Wrong run/serial/phase requests hav
 no effects. Release remains published until the exact controller disconnects.
 Unknown outcomes fence/close the effect owner and never authorize resumption.
 """
-function serve!(endpoint::Endpoint; deadline::Real)
+function serve!(endpoint::Endpoint; deadline::Union{Int64,Float64})
+    deadline = Client._deadline_ns(deadline)
     endpoint.closed &&
         throw(InvalidStateException("calibration endpoint is closed", :closed))
     Threads.atomic_cas!(endpoint.started, false, true) && throw(
@@ -403,7 +426,12 @@ function serve!(endpoint::Endpoint; deadline::Real)
     )
     try
         while true
-            ticket = await(endpoint.wakeup, endpoint.wakeup_lock, Float64(deadline)) do
+            ticket = await(
+                endpoint.wakeup,
+                endpoint.wakeup_lock,
+                deadline;
+                clock = endpoint.ingress.clock,
+            ) do
                 Ingress.poll!(endpoint.ingress)
                 with_thread_loop_lock(endpoint.loop) do _
                     retained = endpoint.ingress.retained_controller

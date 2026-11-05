@@ -1,12 +1,17 @@
 using Test, PipeWireAO, PipeWireAORTC
 import Hsm
+import Clocks
 include("test_control_client.jl")
 include("control_private_core.jl")
 const Endpoint = PipeWireAORTC.ControlEndpoint
 
-Client.decode_request(::TestProfile, header, payload::SPA.Struct) =
-    header.operation == 71 && isempty(payload.values) ? TestCommand() :
-    throw(ArgumentError("invalid action"))
+const DECODE_CLOCK = Ref{Union{Nothing,Clocks.CachedNanoClock}}(nothing)
+function Client.decode_request(::TestProfile, header, payload::SPA.Struct)
+    header.operation == 71 && isempty(payload.values) ||
+        throw(ArgumentError("invalid action"))
+    DECODE_CLOCK[] === nothing || Clocks.advance!(DECODE_CLOCK[], 1)
+    return TestCommand()
+end
 Client.encode_rejection(::TestProfile, header, lifecycle) =
     Envelope.encode_rejection(header, SPA.Struct(Pod(SPA.Id(UInt32(lifecycle)))))
 Client.encode_failure(::TestProfile, header, lifecycle) =
@@ -136,6 +141,8 @@ function publication_fault(socket, directory, daemon, phase)
             Prepared;
             publisher,
         )
+        @test typeof(endpoint.clock) === Clocks.SystemNanoClock
+        @test endpoint.last_at === nothing
         start!(loop)
         # Fault injection tests publication and slot transitions in isolation.
         # Registry lifetime itself is qualified by the separate actual-client fixture.
@@ -223,5 +230,103 @@ end
         with_control_private_core() do socket, directory, daemon
             publication_fault(socket, directory, daemon, phase)
         end
+    end
+end
+
+function endpoint_clock_proof(socket, directory, daemon, origin, mode)
+    loop = ThreadLoop("test.owner.signed-clock")
+    context = core = endpoint = nothing
+    clock = Clocks.CachedNanoClock(origin)
+    try
+        with_thread_loop_lock(loop) do _
+            context = Context(loop)
+            core = CoreConnection(context; properties = Dict("remote.name" => socket))
+        end
+        endpoint = Endpoint.Endpoint(
+            TestProfile(),
+            TestCommand,
+            loop,
+            core,
+            "test.owner.clock",
+            Int64(23),
+            Prepared;
+            clock,
+        )
+        @test endpoint.clock === clock && endpoint.last_at === nothing
+        start!(loop)
+        with_thread_loop_lock(loop) do _
+            push!(
+                endpoint.controllers,
+                Endpoint.Controller(
+                    IDENTITY.global_id,
+                    IDENTITY.serial,
+                    IDENTITY,
+                    "test.controller",
+                    UInt32(getpid()),
+                    nothing,
+                    true,
+                    false,
+                    false,
+                ),
+            )
+            # Keep this synthetic proof while exercising the real filter/lock.
+            endpoint.retained_controller = IDENTITY
+            header = Envelope.RequestHeader(
+                IDENTITY, Int64(23), Int64(1), UInt32(71), Int64(1)
+            )
+            mode === :decode && (DECODE_CLOCK[] = clock)
+            try
+                Endpoint.stage!(endpoint, Envelope.encode_request(header, SPA.Struct()))
+            finally
+                DECODE_CLOCK[] = nothing
+            end
+            if mode === :overflow
+                @test endpoint.pending === nothing && endpoint.last_token == 0
+                @test Hsm.current(endpoint) === :Idle && endpoint.failure === nothing
+                rejected, _ = Envelope.decode_rejection(endpoint.rejection)
+                @test rejected.result == -22
+            else
+                ticket = endpoint.pending
+                @test ticket.deadline == origin + 1
+                if mode === :regression
+                    Clocks.update!(clock, origin - 1)
+                    @test_throws Client.UnknownOutcome Endpoint.take!(endpoint)
+                    @test endpoint.pending === ticket && Hsm.current(endpoint) === :Staged
+                    @test endpoint.failure == "native owner clock regressed"
+                elseif mode === :submission
+                    @test Endpoint.take!(endpoint) === ticket
+                    Clocks.advance!(clock, 1)
+                    @test_throws ErrorException Endpoint.check_ticket(endpoint, ticket)
+                    @test endpoint.pending === ticket && endpoint.applying
+                else
+                    mode === :decode || Clocks.advance!(clock, 1)
+                    @test Endpoint.take!(endpoint) === nothing
+                    @test endpoint.pending === nothing && !endpoint.applying
+                    @test endpoint.terminal_request === ticket
+                    reply, _ = Envelope.decode_completion(endpoint.completion)
+                    @test reply.result == -110
+                end
+            end
+        end
+    finally
+        endpoint === nothing || close(endpoint)
+        with_thread_loop_lock(loop) do _
+            for resource in (core, context)
+                resource === nothing || close(resource)
+            end
+        end
+        close(loop)
+    end
+end
+
+@testset "native owner receipts and fresh admission use signed nanoseconds" begin
+    with_control_private_core() do socket, directory, daemon
+        for origin in (typemin(Int64), -Int64(2)^60, Int64(2)^53 + 1, typemax(Int64) - 1)
+            endpoint_clock_proof(socket, directory, daemon, origin, :expiry)
+        end
+        endpoint_clock_proof(socket, directory, daemon, typemax(Int64), :overflow)
+        endpoint_clock_proof(socket, directory, daemon, Int64(-10), :regression)
+        endpoint_clock_proof(socket, directory, daemon, Int64(2)^53 + 1, :decode)
+        endpoint_clock_proof(socket, directory, daemon, Int64(-10), :submission)
     end
 end

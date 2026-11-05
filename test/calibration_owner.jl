@@ -13,7 +13,7 @@ mutable struct Effects
 end
 Effects(actions, tasks, closed) = Effects(actions, tasks, closed, :success)
 Base.close(effects::Effects) = (effects.closed = true; nothing)
-function (effects::Effects)(action, deadline)
+function (effects::Effects)(action, deadline::Int64)
     push!(effects.actions, typeof(action))
     push!(effects.tasks, current_task())
     if effects.outcome === :failed

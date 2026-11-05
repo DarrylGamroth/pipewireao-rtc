@@ -193,7 +193,7 @@ end
 # observations, and the Agent duty clock are tested at the transport boundary.
 mutable struct MonitorTransport
     publications::Vector{PipeWireAORTC.OwnerBootstrapCodec.Lifecycle}
-    flushes::Vector{Float64}
+    flushes::Vector{Int64}
     failure::Union{Nothing,Exception}
 end
 Bootstrap.lifecycle!(transport::MonitorTransport, lifecycle) =
@@ -213,7 +213,7 @@ end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
 function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
     runtime = Bootstrap.Runtime(
-        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Float64[], nothing)
+        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Int64[], nothing)
     )
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
@@ -232,7 +232,9 @@ function bootstrap_ticket(operation)
         PipeWireAORTC.ControlClient.operation_id(codec.PROFILE, command),
         Int64(1_000_000_000),
     )
-    PipeWireAORTC.ControlEndpoint.Ticket{Bootstrap.Commands}(header, command, UInt8[], Inf)
+    PipeWireAORTC.ControlEndpoint.Ticket{Bootstrap.Commands}(
+        header, command, UInt8[], typemax(Int64)
+    )
 end
 function owner_message(f, monitor)
     task = @async f()
@@ -408,8 +410,8 @@ end
     Agent.invoke_unchecked(invoker)
     @test fetch(task) === nothing
     @test source.reads == 1
-    @test Bootstrap._now(monitor) == 10.0
-    @test Bootstrap._now(monitor) == 10.0
+    @test Bootstrap._now(monitor) == 10_000_000_000
+    @test Bootstrap._now(monitor) == 10_000_000_000
     @test source.reads == 1
     Agent.invoke_unchecked(invoker)
     @test source.reads == 2
@@ -420,7 +422,7 @@ end
     @test source.reads == 3
     Hsm.dispatch!(monitor, :MonitorFailed, failure)
     @test source.reads == 3
-    @test monitor.cleanup_deadline == 15.0
+    @test monitor.cleanup_deadline == 15_000_000_000
     source.at = 14_999_999_999
     Agent.invoke_unchecked(invoker)
     @test Hsm.current(monitor) === :Cleanup
@@ -429,16 +431,66 @@ end
     Agent.invoke_unchecked(invoker)
     @test Hsm.iscomplete(monitor)
     @test source.reads == 5
-    @test runtime.transport.flushes == [15.0]
+    @test runtime.transport.flushes == [15_000_000_000]
     close(invoker)
 
     source = Clocks.CachedNanoClock(20_000_000_000)
     runtime, monitor, invoker = monitor_runtime(; clock = source)
     Agent.invoke_unchecked(invoker)
-    @test Bootstrap._now(monitor) == 20.0
+    @test Bootstrap._now(monitor) == 20_000_000_000
     Clocks.advance!(source, 1_000_000_000)
     Agent.invoke_unchecked(invoker)
-    @test Bootstrap._now(monitor) == 21.0
+    @test Bootstrap._now(monitor) == 21_000_000_000
     close(invoker)
 end
+@testset "bootstrap signed cleanup budgets and source regression" begin
+    for origin in (typemin(Int64), -Int64(2)^60, Int64(2)^53 + 1)
+        source = CountingNanoClock(origin, 0)
+        runtime, monitor, invoker = monitor_runtime(; clock = source)
+        Agent.invoke_unchecked(invoker)
+        @test Bootstrap._now(monitor) == origin && source.reads == 1
+        failure = ErrorException("observed transport failure")
+        Hsm.dispatch!(monitor, :MonitorFailed, failure)
+        @test monitor.cleanup_deadline == origin + 5_000_000_000
+        @test source.reads == 1
+        source.at = monitor.cleanup_deadline - 1
+        Agent.invoke_unchecked(invoker)
+        @test Hsm.current(monitor) === :Cleanup
+        source.at += 1
+        Agent.invoke_unchecked(invoker)
+        @test Hsm.iscomplete(monitor)
+        @test runtime.transport.flushes == [source.at] && source.reads == 3
+        close(invoker)
+    end
+    source = CountingNanoClock(-10, 0)
+    runtime, monitor, invoker = monitor_runtime(; clock = source)
+    @test monitor.source_clock === source && monitor.clock !== source
+    Agent.invoke_unchecked(invoker)
+    source.at -= 1
+    @test_throws PipeWireAORTC.ControlClient.UnknownOutcome Agent.invoke_unchecked(invoker)
+    @test source.reads == 2 && Bootstrap._now(monitor) == -10
+    @test monitor.last_at == -10
+    close(invoker)
+
+    source = CountingNanoClock(typemax(Int64) - 4_999_999_999, 0)
+    runtime, monitor, invoker = monitor_runtime(; clock = source)
+    Agent.invoke_unchecked(invoker)
+    Hsm.dispatch!(monitor, :MonitorFailed, ErrorException("transport failure"))
+    @test Hsm.iscomplete(monitor) && isempty(runtime.transport.flushes)
+    @test length(monitor.failure.exceptions) == 2
+    @test typeof(monitor.failure.exceptions[2]) === OverflowError
+    @test source.reads == 1
+    close(invoker)
+    runtime, monitor, invoker = monitor_runtime()
+    @test typeof(monitor.source_clock) === Clocks.CachedNanoClock
+    @test monitor.source_clock !== monitor.clock
+    close(invoker)
+    runtime = Bootstrap.Runtime(
+        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Int64[], nothing)
+    )
+    monitor = Bootstrap.Monitor(runtime)
+    @test typeof(monitor.source_clock) === Clocks.SystemNanoClock
+    @test typeof(monitor.clock) === Clocks.CachedNanoClock
+end
+
 end

@@ -788,3 +788,63 @@ end
         capture_restore(store, descriptor, original)
     end
 end
+
+import Clocks
+@testset "capture preflight retains signed deadline and fresh I/O guards" begin
+    mktempdir() do parent
+        for (index, origin) in enumerate((Int64(-10), Int64(2)^53 + 1))
+            store = capture_store(parent; name = "signed-$index")
+            clock = Clocks.CachedNanoClock(origin)
+            prepared = CaptureFiles.capture_preflight(
+                store;
+                run = UInt64(7),
+                serial = UInt64(1),
+                probe = UInt32(1),
+                cursor = capture_cursor(),
+                frames = UInt32(1),
+                deadline = origin + 1,
+                clock,
+            )
+            @test prepared.checked() === nothing
+            @test isempty(readdir(store.directory)) && store.used_bytes == 0
+            Clocks.update!(clock, origin + 1)
+            @test_throws InvalidStateException prepared.checked()
+            Clocks.update!(clock, origin - 1)
+            @test_throws InvalidStateException prepared.checked()
+            Clocks.update!(clock, origin)
+            @test_throws InvalidStateException CaptureFiles.capture_preflight(
+                store;
+                run = UInt64(7),
+                serial = UInt64(1),
+                probe = UInt32(1),
+                cursor = capture_cursor(),
+                frames = UInt32(1),
+                deadline = origin + 1,
+                clock,
+                check = () -> Clocks.update!(clock, origin + 1),
+            )
+            @test isempty(readdir(store.directory)) && store.used_bytes == 0
+            Clocks.update!(clock, origin)
+            checks = Ref(0)
+            acquired = Ref(false)
+            @test_throws InvalidStateException CaptureFiles.capture!(
+                store,
+                () -> (acquired[] = true; error("expired capture acquired"));
+                run = UInt64(7),
+                serial = UInt64(1),
+                probe = UInt32(1),
+                cursor = capture_cursor(),
+                frames = UInt32(1),
+                deadline = origin + 1,
+                clock,
+                check = () -> begin
+                    checks[] += 1
+                    checks[] == 2 && Clocks.update!(clock, origin + 1)
+                end,
+            )
+            @test !acquired[] && checks[] == 2
+            @test isempty(readdir(store.directory)) && store.used_bytes == 0
+            @test store.run == 0 && store.serial == 0
+        end
+    end
+end

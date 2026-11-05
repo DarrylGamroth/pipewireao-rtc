@@ -1,4 +1,5 @@
 using Test, PipeWireAO, PipeWireAORTC
+import Clocks
 
 include("control_private_core.jl")
 const Actions = PipeWireAORTC.CalibrationActionCodec
@@ -72,7 +73,7 @@ function action_retirement_proof(socket, directory, daemon)
                     check = check_owner,
                 )
                 wait_proof(
-                    () -> Client.monotonic() >= accepted.deadline,
+                    () -> Clocks.time_nanos(Clocks.SystemNanoClock()) >= accepted.deadline,
                     5,
                     "accepted owner budget expired";
                     check = check_owner,

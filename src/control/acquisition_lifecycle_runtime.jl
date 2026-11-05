@@ -2,6 +2,7 @@
 module AcquisitionLifecycleRuntime
 
 using PipeWireAO
+import Clocks
 import ..ControlCodec
 import ..ControlClient
 import ..ControlEndpoint
@@ -20,7 +21,6 @@ const Commands = Union{
     Codec.LifecycleCommand{:connect},
     Codec.LifecycleCommand{:shutdown},
 }
-const POLL_SECONDS = 0.005
 
 export Runtime, has_pending, poll!, take!, lifecycle!, complete!, flush_terminal!
 
@@ -38,7 +38,11 @@ end
 
 """Publish Preparing before the existing owner prepares its science or plant."""
 function Runtime(
-    profile::P, remote::AbstractString, name::AbstractString, instance::Int64
+    profile::P,
+    remote::AbstractString,
+    name::AbstractString,
+    instance::Int64;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 ) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc.acquisition.lifecycle.owner")
@@ -73,6 +77,7 @@ function Runtime(
                 name,
                 instance,
                 Codec.Preparing;
+                clock,
                 publisher = (filter, params) -> begin
                     wake[] = true
                     update_params!(filter, params)
@@ -166,22 +171,26 @@ function complete!(
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Runtime, deadline::Float64; check = () -> nothing)
-    Client.deadline_check(deadline, check)
+function flush_terminal!(
+    runtime::Runtime, deadline::Union{Int64,Float64}; check = () -> nothing
+)
+    deadline = Client._deadline_ns(deadline)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
-        Client.deadline_check(deadline, check)
+        Client._supervise(check)
+        Client.deadline_check(deadline, Client.NO_CHECK, Endpoint._now!(runtime.endpoint))
         sync!(runtime.core)
     end
     while true
-        Client.deadline_check(deadline, check)
-        observed = with_thread_loop_lock(runtime.loop) do _
+        Client._supervise(check)
+        observed, at = with_thread_loop_lock(runtime.loop) do _
             Endpoint.operational(runtime.endpoint)
-            runtime.acknowledged_sequence[] == sequence
+            at = Endpoint._now!(runtime.endpoint)
+            Client.deadline_check(deadline, Client.NO_CHECK, at)
+            (runtime.acknowledged_sequence[] == sequence, at)
         end
-        Client.deadline_check(deadline, check)
         observed && return nothing
-        sleep(min(POLL_SECONDS, max(0.0, deadline - Client.monotonic())))
+        sleep(Float64(clamp(Int128(deadline) - at, 0, 5_000_000)) / 1e9)
     end
 end
 

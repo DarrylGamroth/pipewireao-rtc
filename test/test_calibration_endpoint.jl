@@ -2,6 +2,7 @@ module CalibrationEndpointTests
 
 using Test, PipeWireAORTC
 import Hsm
+import Clocks
 
 const E = PipeWireAORTC.CalibrationEndpoint
 const A = PipeWireAORTC.CalibrationActionCodec
@@ -119,6 +120,55 @@ end
     @test sm.command === command
     Hsm.dispatch!(sm, :Faulted)
     @test sm.command === nothing
+end
+
+mutable struct WaitClock <: Clocks.AbstractNanoClock
+    at::Int64
+    reads::Int
+end
+Clocks.time_nanos(clock::WaitClock) = (clock.reads += 1; clock.at)
+
+@testset "calibration waits use one signed sample per decision" begin
+    for origin in (typemin(Int64), -Int64(2)^60, Int64(2)^53 + 1, typemax(Int64) - 1)
+        condition = Base.AsyncCondition()
+        guard = ReentrantLock()
+        clock = WaitClock(origin, 0)
+        try
+            @test E.await(() -> :ready, condition, guard, origin + 1; clock) === :ready
+            @test clock.reads == 1
+            clock.at = origin + 1
+            called = Ref(false)
+            @test_throws PipeWireAORTC.ControlClient.UnknownOutcome E.await(
+                () -> (called[] = true), condition, guard, origin + 1; clock
+            )
+            @test !called[] && clock.reads == 2
+        finally
+            close(condition)
+        end
+    end
+    condition = Base.AsyncCondition()
+    guard = ReentrantLock()
+    clock = WaitClock(-10, 0)
+    calls = Ref(0)
+    try
+        @test_throws PipeWireAORTC.ControlClient.UnknownOutcome E.await(
+            condition, guard, Int64(10); clock
+        ) do
+            calls[] += 1
+            clock.at -= 1
+            E.wake!(condition, guard)
+            false
+        end
+        @test clock.reads == 2 && calls[] == 1
+        clock.at = 1_000_000_000
+        @test E.await(() -> true, condition, guard, 2.0; clock)
+        @test_throws ArgumentError E.await(() -> true, condition, guard, Inf; clock)
+        # Timer conversion also spans signed origins without subtracting Int64s.
+        clock.at = typemin(Int64)
+        @test E.await(() -> true, condition, guard, typemax(Int64); clock)
+    finally
+        close(condition)
+    end
 end
 
 end

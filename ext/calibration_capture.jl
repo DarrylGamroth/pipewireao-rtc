@@ -4,6 +4,7 @@ module CalibrationCapture
 using PipeWireAO
 import PipeWireAORTC
 import AdaptiveOpticsSim
+import Clocks
 
 export Capture, arm!, await!, snapshot
 
@@ -489,10 +490,18 @@ function snapshot(capture::Capture)
     end
 end
 
-"Wait on the owner task until completion/deadline; `check` must throw on owner loss."
-function await!(capture::Capture; deadline::Real, check = () -> nothing)
-    isfinite(deadline) || throw(ArgumentError("capture deadline must be finite"))
-    now = PipeWireAORTC.ControlClient.monotonic
+"""Wait for capture using a signed nanosecond deadline in `clock`'s domain.
+
+Float64 seconds remain an entry compatibility boundary. Each locked decision
+samples once after `check`, which must throw on owner loss. Clock regression fails capture.
+"""
+function await!(
+    capture::Capture;
+    deadline::Union{Int64,Float64},
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    deadline = PipeWireAORTC.ControlClient._deadline_ns(deadline)
     _locked(capture) do
         _usable(capture)
         capture.waiting &&
@@ -501,12 +510,25 @@ function await!(capture::Capture; deadline::Real, check = () -> nothing)
     end
     timer = nothing
     try
-        timer = Timer(_ -> _signal(capture), max(0.0, Float64(deadline) - now()))
+        previous = Ref(Clocks.time_nanos(clock))
+        timer = Timer(
+            _ -> _signal(capture),
+            Float64(max(Int128(0), Int128(deadline) - previous[])) / 1e9,
+        )
         while true
             check()
             result = _locked(capture) do
+                current = Clocks.time_nanos(clock)
+                regressed = current < previous[]
+                previous[] = current
                 _usable(capture)
-                if now() >= deadline
+                if regressed
+                    _fail!(capture, :clock)
+                    throw(
+                        InvalidStateException("calibration capture clock regressed", :clock)
+                    )
+                end
+                if current >= deadline
                     _fail!(capture, :deadline)
                     throw(
                         InvalidStateException(

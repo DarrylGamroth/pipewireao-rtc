@@ -305,7 +305,8 @@ function reference_stage(
             reference,
             name,
             instance,
-            deadline = deadline / 1e9,
+            deadline,
+            clock,
             simulation_graph = condition,
             consume,
             probe_command,
@@ -314,7 +315,7 @@ function reference_stage(
         hashes = copy(frontend.parameter_sha256)
         frontend = command = nothing # ownership transferred to the native endpoint
         serving = @async try
-            Endpoint.serve!(server; deadline = cleanup_deadline / 1e9)
+            Endpoint.serve!(server; deadline = cleanup_deadline)
             nothing
         catch error
             error
@@ -325,6 +326,7 @@ function reference_stage(
             duration;
             command_count = length(selected_reference),
             deadline,
+            clock,
         )
         action(value) = ReferenceClient.complete!(client, value; deadline, record = false)
         held = action(Actions.Hold())

@@ -1,13 +1,14 @@
 # Initial sessions own their graphs and held-probe endpoints exclusively. All
 # scientific samples arrive over the same transport as deployed measurements.
 using PipeWireAO
+import Clocks
 using UUIDs: uuid4
 const Actions = PipeWireAORTC.CalibrationActionCodec
 const Endpoint = PipeWireAORTC.CalibrationEndpoint
 const Control = PipeWireAORTC.ControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
-mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R}
+mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R,N<:Clocks.AbstractNanoClock}
     hil::P
     driver::D
     capture::C
@@ -36,12 +37,17 @@ mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R}
     guard::ReentrantLock
     control::Any
     closed::Bool
+    clock::N
+    last_at::Union{Nothing,Int64}
 end
 
-function remaining(owner::InitialCalibration, deadline)
-    budget = UInt64(
-        Control.budget_ns(Actions.PROFILE, Float64(deadline - Control.monotonic()))
-    )
+function remaining(owner::InitialCalibration, deadline::Int64)
+    at = Clocks.time_nanos(owner.clock)::Int64
+    owner.last_at === nothing ||
+        at >= owner.last_at ||
+        throw(Control.UnknownOutcome("initial calibration clock regressed"))
+    owner.last_at = at
+    budget = UInt64(Control.budget_ns(Actions.PROFILE, Int128(deadline) - at))
     return min(budget, owner.hil.configuration.timeout_ns)
 end
 
@@ -82,7 +88,7 @@ function adopt!(owner::InitialCalibration, figure, deadline)
     # This is a received-and-adopted snapshot, not a parameter submission ACK.
     borrowed = Wire.pipewire_probe_values(owner.hil)
     actual = copy_figures(borrowed)
-    feedback = Endpoint.await(owner.wakeup, owner.guard, Float64(deadline)) do
+    feedback = Endpoint.await(owner.wakeup, owner.guard, deadline; clock = owner.clock) do
         status = check(owner)
         status.received == token ? status.values : nothing
     end
@@ -101,13 +107,13 @@ function exposure!(owner::InitialCalibration, deadline)
     )
     # This witness observes publication at a source completion callback;
     # only the correlated raw/WFS receipts below prove exposure completion.
-    Endpoint.await(owner.wakeup, owner.guard, Float64(deadline)) do
+    Endpoint.await(owner.wakeup, owner.guard, deadline; clock = owner.clock) do
         check(owner)
         Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence ==
         exposure.identity.sequence
     end
     values = CalibrationCapture.await!(
-        owner.capture; deadline = Float64(deadline), check = () -> check(owner)
+        owner.capture; deadline, clock = owner.clock, check = () -> check(owner)
     )
     exposure.probe_sequence == owner.token || error("exposure belongs to another probe")
     check(owner)
@@ -243,7 +249,8 @@ function (owner::InitialCalibration)(action::Actions.Capture, deadline)
             probe = action.probe,
             cursor = owner.cursor,
             frames = action.frames,
-            deadline = Float64(deadline),
+            deadline,
+            clock = owner.clock,
             check = () -> check(owner),
         )
     catch error
@@ -258,7 +265,8 @@ function (owner::InitialCalibration)(action::Actions.Capture, deadline)
         probe = action.probe,
         cursor = owner.cursor,
         frames = action.frames,
-        deadline = Float64(deadline),
+        deadline,
+        clock = owner.clock,
         check = () -> check(owner),
     )
 end
@@ -279,11 +287,26 @@ function Base.close(owner::InitialCalibration)
             push!(errors, error)
         end
     end
-    deadline = Control.monotonic() + 30
+    deadline = try
+        at = Clocks.time_nanos(owner.clock)::Int64
+        owner.last_at === nothing ||
+            at >= owner.last_at ||
+            throw(Control.UnknownOutcome("initial calibration cleanup clock regressed"))
+        owner.last_at = at
+        Base.Checked.checked_add(at, Int64(30_000_000_000))
+    catch error
+        push!(errors, error)
+        nothing
+    end
     for worker in values(owner.workers)
+        deadline === nothing && continue
         try
             Endpoint.await(
-                () -> istaskdone(worker.task), owner.wakeup, owner.guard, deadline
+                () -> istaskdone(worker.task),
+                owner.wakeup,
+                owner.guard,
+                deadline;
+                clock = owner.clock,
             )
             finish_calibration_graph!(worker)
         catch error
@@ -640,6 +663,10 @@ end
         simulation_graph="production", capture_directory=nothing,
         capture_stage=nothing, capture_maximum_bytes=0)
 
+`deadline` is absolute signed Int64 nanoseconds; Float64 seconds remain an input
+compatibility boundary. `clock` accepts a Clocks.AbstractNanoClock directly and
+is shared with the effect owner, ingress and capture waits.
+
 Prepare a non-actuating CPU initial-calibration endpoint from cold projections
 of the built regular graph. `frontend` exposes raw and typed sensor outputs; `command`
 exposes absolute requested→demanded/constraint-feedback. Reference/probes use the
@@ -691,7 +718,8 @@ function Calibration.prepare_initial_calibration(
     reference,
     name::AbstractString,
     instance::Int64,
-    deadline::Real,
+    deadline::Union{Int64,Float64},
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     active = get(frontend.parameters, :active, nothing),
     measurements::Union{Nothing,Symbol} = :slopes,
     probe_command::Union{Nothing,Symbol} = nothing,
@@ -701,6 +729,9 @@ function Calibration.prepare_initial_calibration(
     capture_maximum_bytes::Integer = 0,
     consume = nothing,
 )
+    deadline = Control._deadline_ns(deadline)
+    started = Clocks.time_nanos(clock)::Int64
+    Control.deadline_check(deadline, Control.NO_CHECK, started)
     require_command_projections(command)
     descriptors = calibration_descriptors(frontend, command)
     Threads.nthreads(:default) >= length(descriptors) + 1 || throw(
@@ -883,6 +914,9 @@ function Calibration.prepare_initial_calibration(
             command_input = options.command_input,
             frame_output = options.frame_output,
         )
+        at = Clocks.time_nanos(clock)::Int64
+        at >= started ||
+            throw(Control.UnknownOutcome("initial calibration clock regressed"))
         configuration = Wire.PipeWireHILConfiguration(
             remote = remote,
             frame_node_name = name * ".detector",
@@ -893,9 +927,7 @@ function Calibration.prepare_initial_calibration(
             exposure_duration_ns = options.exposure_ns,
             frame_encoding = options.frame_encoding,
             command_scale = options.command_scale,
-            timeout_ns = UInt64(
-                Control.budget_ns(Actions.PROFILE, Float64(deadline - Control.monotonic()))
-            ),
+            timeout_ns = UInt64(Control.budget_ns(Actions.PROFILE, Int128(deadline) - at)),
         )
         hil = Wire.prepare_pipewire_calibration(boundary, configuration; reference_clock)
         rate = UInt32(options.rate)//UInt32(1)
@@ -985,7 +1017,7 @@ function Calibration.prepare_initial_calibration(
                 key in keys(outputs)
             )...,
         )
-        endpoints = Endpoint.await(wakeup, guard, Float64(deadline)) do
+        endpoints = Endpoint.await(wakeup, guard, deadline; clock) do
             check_workers() || return nothing
             with_thread_loop_lock(hil.loop) do _
                 candidates = map(connections) do (output, out_name, input, in_name)
@@ -1041,7 +1073,7 @@ function Calibration.prepare_initial_calibration(
                 set_active!(member.source, true)
             end
         end
-        Endpoint.await(wakeup, guard, Float64(deadline)) do
+        Endpoint.await(wakeup, guard, deadline; clock) do
             check_workers() || return false
             with_thread_loop_lock(hil.loop) do _
                 all(
@@ -1064,7 +1096,7 @@ function Calibration.prepare_initial_calibration(
         # A discovered/bound Link does not prove every requested-command
         # Stream has finished activation. Admit the first token only after
         # every source and feedback Stream reports native readiness.
-        Endpoint.await(wakeup, guard, Float64(deadline)) do
+        Endpoint.await(wakeup, guard, deadline; clock) do
             check_workers() || return false
             Wire.pipewire_calibration_status(hil).failed &&
                 error("held-probe transport failed during preparation")
@@ -1112,9 +1144,11 @@ function Calibration.prepare_initial_calibration(
             guard,
             nothing,
             false,
+            clock,
+            nothing,
         )
         endpoint = Endpoint.Endpoint(
-            remote, name, instance, owner; wakeup, wakeup_lock = guard
+            remote, name, instance, owner; wakeup, wakeup_lock = guard, clock
         )
         owner.control = endpoint
         return endpoint
@@ -1161,7 +1195,10 @@ function Calibration.prepare_initial_calibration(
                             () -> istaskdone(worker.task),
                             wakeup,
                             guard,
-                            Control.monotonic() + 30,
+                            Base.Checked.checked_add(
+                                Clocks.time_nanos(clock), Int64(30_000_000_000)
+                            );
+                            clock,
                         )
                         finish_calibration_graph!(worker)
                     catch error

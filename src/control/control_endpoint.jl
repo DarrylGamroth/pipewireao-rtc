@@ -4,6 +4,7 @@ module ControlEndpoint
 using PipeWireAO
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
+import Clocks
 import ..ControlCodec
 import ..ControlClient
 
@@ -11,7 +12,6 @@ const Envelope = ControlCodec
 const Client = ControlClient
 const SPA = PipeWireAO.SPA
 const MAX_CONTROLLERS = 32
-monotonic() = Client.monotonic()
 
 "One actual registry incarnation, verified using full NodeInfo."
 mutable struct Controller
@@ -26,11 +26,12 @@ mutable struct Controller
     removed::Bool
 end
 
+"One admitted command with an absolute signed nanosecond deadline."
 struct Ticket{C}
     header::Envelope.RequestHeader
     command::C
     payload::Vector{UInt8}
-    deadline::Float64
+    deadline::Int64
 end
 
 """Native-lock serialized ticket admission; effects execute outside dispatch.
@@ -40,7 +41,7 @@ Hsm owns Idle/Staged/Applying and closed-admission phases. `pending` and
 completed requests for canonical replay. Read-only `applying` and `terminal`
 properties project the admission state. `closed` is the resource lifetime flag.
 """
-@hsmdef mutable struct Endpoint{P<:Client.AbstractProfile,C,L,F}
+@hsmdef mutable struct Endpoint{P<:Client.AbstractProfile,C,L,F,N<:Clocks.AbstractNanoClock}
     profile::P
     loop::ThreadLoop
     registry::Union{Nothing,Registry}
@@ -57,6 +58,8 @@ properties project the admission state. `closed` is the resource lifetime flag.
     failure::Union{Nothing,String}
     closed::Bool
     retained_controller::Union{Nothing,Envelope.ControllerIdentity}
+    const clock::N
+    last_at::Union{Nothing,Int64}
 end
 
 @statedef Endpoint :Open
@@ -123,7 +126,12 @@ end
 
 @on_event function (endpoint::Endpoint, ::Idle, ::Requested, request)
     _replay_or_reject!(endpoint, request) && return Hsm.EventHandled
-    endpoint.pending = _ticket(endpoint, request)
+    ticket = _ticket(endpoint, request)
+    if ticket === nothing
+        _reject!(endpoint, request.header, Int32(-22))
+        return Hsm.EventHandled
+    end
+    endpoint.pending = ticket
     endpoint.last_token = request.header.token
     Hsm.transition!(endpoint, :Staged)
     publish!(endpoint)
@@ -144,7 +152,7 @@ end
 
 @on_event function (endpoint::Endpoint, ::Staged, ::Taken, result)
     ticket = something(endpoint.pending)
-    if monotonic() >= ticket.deadline ||
+    if _now!(endpoint) >= ticket.deadline ||
         !controller_present(endpoint, ticket.header.controller)
         header = Envelope.ReplyHeader(
             ticket.header.controller,
@@ -478,7 +486,7 @@ function terminal_release(endpoint::Endpoint, ticket::Ticket)
         controller.removed && return :removed
         controller.verified && !controller.retired ||
             error("native terminal controller proof was revoked")
-        return monotonic() < ticket.deadline ? :waiting : :expired
+        return _now!(endpoint) < ticket.deadline ? :waiting : :expired
     end
 end
 
@@ -487,7 +495,10 @@ function wait_terminal_release!(endpoint::Endpoint, ticket::Ticket)
     while true
         release = terminal_release(endpoint, ticket)
         release === :waiting || return release
-        sleep(min(0.005, max(0.0, ticket.deadline - monotonic())))
+        at = with_thread_loop_lock(endpoint.loop) do _
+            something(endpoint.last_at)
+        end
+        sleep(Float64(clamp(Int128(ticket.deadline) - at, 0, 5_000_000)) / 1e9)
     end
 end
 
@@ -547,15 +558,30 @@ function _replay_or_reject!(endpoint::Endpoint, request)
 end
 
 function _ticket(endpoint::Endpoint{P,C}, request) where {P,C}
-    budget = min(request.header.budget_ns / 1.0e9, Client.maximum_budget(endpoint.profile))
-    return Ticket{C}(
-        request.header, request.command, request.bytes, request.received + budget
-    )
+    budget = Client.budget_ns(endpoint.profile, request.header.budget_ns)
+    deadline = try
+        Base.Checked.checked_add(request.received, budget)
+    catch
+        return nothing
+    end
+    return Ticket{C}(request.header, request.command, request.bytes, deadline)
+end
+
+# Native callbacks retain their own receipt; native submission checks read this
+# source again under the loop lock, independently of any Agent decision cache.
+function _now!(endpoint::Endpoint)
+    at = Clocks.time_nanos(endpoint.clock)::Int64
+    if endpoint.last_at !== nothing && at < endpoint.last_at
+        endpoint.failure = "native owner clock regressed"
+        throw(Client.UnknownOutcome(endpoint.failure))
+    end
+    endpoint.last_at = at
+    return at
 end
 
 function stage!(endpoint::Endpoint{P,C}, pod::Pod) where {P,C}
+    received = _now!(endpoint)
     operational(endpoint)
-    received = monotonic()
     header = nothing
     # Only request decoding is classified as invalid input. Publication failure
     # is fatal and must never turn an accepted, executable ticket into rejection.
@@ -582,6 +608,7 @@ function Endpoint(
     lifecycle::L;
     publisher = update_params!,
     properties_extra = Dict{String,String}(),
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 ) where {P<:Client.AbstractProfile,C,L}
     instance > 0 || throw(ArgumentError("native owner instance must be positive"))
     0 < ncodeunits(name) <= 128 && isvalid(name) && !occursin('\0', name) ||
@@ -596,7 +623,7 @@ function Endpoint(
     rejected = Client.encode_rejection(
         profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle
     )
-    endpoint = Endpoint{P,C,L,typeof(publisher)}(
+    endpoint = Endpoint{P,C,L,typeof(publisher),typeof(clock)}(
         profile,
         loop,
         nothing,
@@ -612,6 +639,8 @@ function Endpoint(
         rejected,
         nothing,
         false,
+        nothing,
+        clock,
         nothing,
     )
     try
@@ -690,7 +719,7 @@ function _check_ticket(endpoint::Endpoint, ticket::Ticket)
     refresh_controllers!(endpoint)
     controller_present(endpoint, ticket.header.controller) ||
         error("native controller disappeared")
-    monotonic() < ticket.deadline || error("native owner request deadline expired")
+    _now!(endpoint) < ticket.deadline || error("native owner request deadline expired")
     return nothing
 end
 

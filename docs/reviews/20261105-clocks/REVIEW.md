@@ -165,3 +165,59 @@ Local logs: `/tmp/rtc-clk05-root-final-20261105.log`,
 `/tmp/rtc-clk05-standalone-overflow-20261105.log`. These checks do not qualify
 physical recovery, deadlines or hardware. Existing warmed Hsm allocation checks
 are recorded under CLK-04.
+
+## CLK-03: server admission and capture closure
+
+ControlEndpoint tickets use signed nanosecond deadlines anchored to a producer
+receipt taken before decoding. Endpoint clocks are injected directly; fresh
+admission/effect checks run under the native loop lock. Checked receipt-plus-budget
+overflow produces a known rejection before staging. Clock regression fences the
+endpoint. Bootstrap Monitor retains one source sample per Agent cycle and uses
+signed cached cleanup deadlines. Lifecycle/bootstrap publication fences, calibration
+waits and parameter-owner timers consume these signed values; only Timer/sleep
+receive seconds. Public Float64 deadlines normalize at entry.
+
+InitialCalibration, reference preparation, native action clients, capture waits
+and capture-file guards now share the same supplied clock and nanosecond deadline,
+without internal seconds round trips. Saved reference reports retain their
+seconds fields, and recording epoch/reference timestamps retain their native
+clock and metadata representation. Capture wait samples once at the beginning of
+the locked decision after owner supervision; native/I/O boundaries independently
+guard their fresh clocks. Capture-file guards also retain regression watermarks.
+
+Independent review found two capture issues and verified their resolution:
+
+- **R01, confirmed pre-existing gap:** preflight header encoding separated its
+  check from storage reservation. A fresh check now precedes byte reservation,
+  run/serial mutation and directory creation. The same regression test fails four
+  assertions with only that guard removed in an isolated method override; with
+  the guard, expiry leaves budget, identity and directory untouched.
+- **R02, confirmed migration regression:** sampling before a slow supervision hook
+  could consume a complete capture after exact expiry. Sampling once inside the
+  locked decision after supervision restores refusal. The same probe originally
+  returned success/Idle, then throws deadline failure and retains Complete after
+  the fix. Ten permanent checks cover negative and >2⁵³ origins.
+
+Observed checks: 512 pure server/protocol checks; native endpoint 110, faults 149,
+lifecycle 74, bootstrap 51, action retirement 17, calibration effects 47 and sealed
+terminal release 66; optional CPU reference/pyramid/cleanup 120. Native selectors
+include repeated client checks, so these counts are not an independent aggregate.
+Capture files pass 249; native-buffer-backed CPU capture waits pass 152. Formatting
+is idempotent with parsed syntax/literal equality and whitespace checks pass.
+
+The first optional reference run encountered an in-progress optical extension
+import error and precompile fallback; a later fresh run explicitly asserts both
+extensions loaded and passes cleanly. Earlier interrupted source-loading attempts
+are not qualification evidence. Actual parameter-owner loop execution and a real
+scientific InitialCalibration run remain unverified; private-core effect tests
+do not qualify hardware, sustained cadence or deadlines.
+
+Local logs include `/tmp/rtc-clk03-server-pure-bounds.log`,
+`/tmp/rtc-clk03-server-native-sealed.log`,
+`/tmp/rtc-clk03-server-reference-final.log`,
+`/tmp/rtc-clk03-capture-files-final-20261105.log`,
+`/tmp/rtc-clk03-capture-reservation-before-20261105.log`,
+`/tmp/rtc-root-capture-review-probe-20261105.log`,
+`/tmp/rtc-root-capture-review-probe-after-20261105.log`, and
+`/tmp/rtc-root-capture-review-after-20261105.log`. Native tests use explicitly
+selected private cores/artifact SDKs and change no existing services or devices.

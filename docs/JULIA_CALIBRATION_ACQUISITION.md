@@ -170,9 +170,8 @@ handlers. Producers retain their own event receipt timestamps. Advancing a test
 clock changes logical time; it does not run a timer or deliver a deadline event.
 The synchronous acquisition driver samples once at each prepared exchange start
 and retains a separate local receipt sample when that exchange returns. The
-action-client API receives nanosecond deadlines directly. The existing reference
-server preparation/serving APIs still receive explicit seconds conversions. Saved
-reference reports retain their `observed_at` and `deadline` fields in seconds;
+action-client and reference-server APIs receive nanosecond deadlines directly.
+Saved reference reports retain their `observed_at` and `deadline` fields in seconds;
 the report writer performs that conversion explicitly. Scientific model times,
 exposure durations, acquisition cursors and run/serial identities keep their units.
 

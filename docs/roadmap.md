@@ -48,9 +48,11 @@ verified migrations. Physical-offset host receipt/silence timing now uses signed
 Clocks ticks and one sample per receiver cycle; model chronology remains separate.
 Core, CPU input and native receiver checks pass. Its graph private-core gate
 remains unqualified: the baseline reproduces the same pre-frame buffer failure.
-Native clients and MediaSession controls now retain signed receipt/deadline ticks;
-deterministic and private-core client checks pass. Server ticket/endpoint and
-remaining deployment/optical caller chains continue as separate slices.
+Native clients, MediaSession controls and owner endpoints retain signed
+receipt/deadline ticks through calibration and capture. Deterministic and
+private-core admission, effect, fault and terminal-release checks pass. Actual
+parameter-owner execution and scientific initial calibration remain unverified.
+Remaining deployment/optical caller chains continue as separate slices.
 Calibration preparation/acquisition Hsms also retain signed deadlines and event
 times, with known/unknown recovery and saved-report seconds preserved; 726 pure
 checks, optional reference checks and the existing warmed allocation gates pass.
