@@ -196,6 +196,25 @@ Logs: `/tmp/rtc-management-json-endpoint-20261105.log`,
 files under `/tmp/rtc-management-json-build-20261105` and
 `/tmp/rtc-management-json-asan-20261105`. No service or installation changed.
 
+## Maintained tool and type-selector cleanup
+
+The three standalone private-core graph providers now dispatch their expected
+PipeWire EPIPE classification on `PipeWireError`; unrelated errors still
+propagate and the existing RTC-unloaded marker remains required. Twelve direct
+checks cover matching operation/code, a different operation/code and a non-native
+exception. Each provider is copied and launched independently, so its two small
+predicate methods remain local; introducing a shared include would change the
+sealed launch closure. These checks do not run a graph or qualify shutdown.
+
+The unreferenced `scripts/prepare_calibration_lamp.jl` tool was retired. A fresh
+package load confirms all three of its entry dependencies (`Deployment`,
+`HILExport`, `CalibrationCampaign`) are absent. It could not execute against the
+current API. Its instrument-specific sealed-plant rewriting remains in Git
+history; it was not silently remapped to new scientific APIs. The maintained
+package scripts and runtime sources contain no `isa` or `@eval` selectors after
+this cleanup. Frozen evidence, protocol data and independent historical probes
+retain their original content.
+
 ## Remaining integration gate
 
 The direct owner loop, bounded ingress, journal persistence, exact discovery and

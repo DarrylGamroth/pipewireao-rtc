@@ -3,6 +3,10 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
+unloaded_pipewire_error(error) = false
+unloaded_pipewire_error(error::PipeWireAO.PipeWireError) =
+    error.operation === :pw_ndarray_filter_run && error.code == -Base.Libc.EPIPE
+
 import FilterGraphAlgorithms: process!
 
 @algorithm LatestHoldPrimaryPassF32 begin
@@ -91,11 +95,7 @@ try
 catch error
     # The runner has already unloaded and removed its source link before this
     # marker is written. Preserve callback failures and every other run error.
-    if !(
-        error isa PipeWireAO.PipeWireError &&
-        error.operation === :pw_ndarray_filter_run &&
-        error.code == -Base.Libc.EPIPE
-    )
+    if !unloaded_pipewire_error(error)
         rethrow()
     end
     finished[] = true

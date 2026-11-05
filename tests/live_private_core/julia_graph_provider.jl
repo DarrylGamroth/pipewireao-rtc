@@ -3,6 +3,10 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
+unloaded_pipewire_error(error) = false
+unloaded_pipewire_error(error::PipeWireAO.PipeWireError) =
+    error.operation === :pw_ndarray_filter_run && error.code == -Base.Libc.EPIPE
+
 length(ARGS) == 4 || error("expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE RATE")
 core_name, graph_configuration, stop_file, rate_text = ARGS
 rate = parse(Int, rate_text)
@@ -48,11 +52,7 @@ try
 catch error
     # The runner has already unloaded and removed its source link before this
     # marker is written. Preserve callback failures and every other run error.
-    if !(
-        error isa PipeWireAO.PipeWireError &&
-        error.operation === :pw_ndarray_filter_run &&
-        error.code == -Base.Libc.EPIPE
-    )
+    if !unloaded_pipewire_error(error)
         rethrow()
     end
     finished[] = true

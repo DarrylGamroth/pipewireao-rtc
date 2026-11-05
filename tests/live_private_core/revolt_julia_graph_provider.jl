@@ -3,6 +3,10 @@ using FilterGraphPipeWire
 using JuliaFilterGraph
 using PipeWireAO
 
+unloaded_pipewire_error(error) = false
+unloaded_pipewire_error(error::PipeWireAO.PipeWireError) =
+    error.operation === :pw_ndarray_filter_run && error.code == -Base.Libc.EPIPE
+
 length(ARGS) in (3, 4, 5) || error(
     "expected CORE_NAME GRAPH_CONFIGURATION STOP_FILE [NODE_NAME] [EXPECTED_DISCONNECT_FILE]",
 )
@@ -51,11 +55,7 @@ catch error
     # RTC unload removes its owned parameter source. An external graph can
     # report EPIPE as that link disappears. Accept it only after the RTC has
     # completed unload; callback errors are raised before run! reports EPIPE.
-    if isnothing(expected_disconnect) || !(
-        error isa PipeWireAO.PipeWireError &&
-        error.operation === :pw_ndarray_filter_run &&
-        error.code == -Base.Libc.EPIPE
-    )
+    if isnothing(expected_disconnect) || !unloaded_pipewire_error(error)
         rethrow()
     end
     finished[] = true
