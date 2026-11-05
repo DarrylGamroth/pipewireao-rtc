@@ -78,6 +78,15 @@ components and Lua plugins are removed. Export stages the generated Julia
 launcher and package; installed launchers select their pinned Julia/project paths.
 Existing sealed applications are not rewritten.
 
+The private per-invocation launch ledger now uses version 2 and the fields
+`session_pid` / `session_start_ticks`. `SessionRuntime.ready` uses those same
+names. These identify the RTC process; they are not WirePlumber protocol fields.
+No old-name aliases are emitted. Readable unsupported versions are refused
+before manager mutations or ledger writes. Unreadable evidence retains the
+existing exact-invocation ingress-only emergency path; strict post-cleanup
+identity checks still apply. Old installed sessions retain their pinned tools,
+and historical `final-launch.json` reports are not rewritten or upgraded.
+
 ### Interface and trait decisions — 2026-11-05
 
 Interfaces describe operations and evidence, not a required field layout. Concrete

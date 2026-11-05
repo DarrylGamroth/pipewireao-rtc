@@ -37,6 +37,11 @@ The [Julia design conventions](architecture.md#julia-design-conventions) and
 record the shared contracts and explicit clock migration exceptions. Concrete
 protocol types and independent capability traits are reused; phase behavior
 stays with Hsm handlers and captured effect origins.
+New private launch ledgers use version 2 and `session_pid` /
+`session_start_ticks`; older installed sessions keep their pinned tools and
+historical reports are unchanged. The shared formatting profile now covers the
+selected 414 authored Julia files; clock migration exceptions remain explicit
+work in the inventory, rather than a completed package-wide clock claim.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

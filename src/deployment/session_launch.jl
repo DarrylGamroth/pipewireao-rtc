@@ -21,6 +21,15 @@ const S = PipeWireAORTC.SystemdOwners
 const N = PipeWireAORTC.ControlClient
 const E = PipeWireAORTC.ScienceExport
 const P = PipeWireAORTC.Placement
+const LEDGER_VERSION = 2
+
+"Reject unsupported private launch-ledger layouts before interpreting or changing them."
+validate_ledger(record) = throw(ArgumentError("unsupported launch ledger version"))
+function validate_ledger(record::AbstractDict)
+    get(record, "version", nothing) === LEDGER_VERSION ||
+        throw(ArgumentError("unsupported launch ledger version"))
+    return nothing
+end
 
 export Request, Prepared, prepare!, cleanup_invocation!, main
 
@@ -68,9 +77,7 @@ struct Prepared
 end
 
 function cleanup_hook_valid(
-    value::AbstractString,
-    request::Request,
-    source_role::AbstractString,
+    value::AbstractString, request::Request, source_role::AbstractString
 )
     prefix =
         "{ path=" *
@@ -111,8 +118,7 @@ end
 
 function preparation_identity(request::Request, source_role::AbstractString)
     values = S.properties(
-        request.unit;
-        extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type",
+        request.unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type"
     )
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("RTC unit is not in start preparation")
@@ -138,6 +144,7 @@ function preparation_identity(request::Request, source_role::AbstractString)
 end
 
 function launch_record!(runtime, record)
+    validate_ledger(record)
     C.write_json(joinpath(runtime, "launch.json"), record; atomic = true)
 end
 
@@ -194,9 +201,7 @@ function render_inputs!(request, spec, bindings, runtime)
         directory = joinpath(runtime, role)
         mkdir(directory; mode = 0o700)
         for (key, output) in (
-            ("client", "client.conf"),
-            ("core", "daemon.conf"),
-            ("session", "session.conf"),
+            ("client", "client.conf"), ("core", "daemon.conf"), ("session", "session.conf")
         )
             relative = key == "client" ? spec["client"][role] : spec[key]
             source = D.relative_asset(request.package, relative)
@@ -319,8 +324,7 @@ function parameter_owner!(request, spec, session, bindings, runtime)
         ]
     else
         script = D.relative_asset(
-            request.package,
-            "julia/assets/deployment/hil/parameter_source.jl",
+            request.package, "julia/assets/deployment/hil/parameter_source.jl"
         )
         ["--project=" * joinpath(request.package, "julia"), script]
     end
@@ -368,26 +372,26 @@ _core_socket_failure(error) = throw(error)
 _core_socket_failure(::Union{Base.IOError,Base.SystemError}) = nothing
 _fgn_graphs(graphs) = fail("session graphs must be a list")
 _fgn_graphs(graphs::AbstractVector) =
-    filter(graph -> get(graph, "factory", nothing)=="pipewireao.fgn-native", graphs)
+    filter(graph -> get(graph, "factory", nothing) == "pipewireao.fgn-native", graphs)
 _fgn_configuration_token(token) = fail("FGN graph has no configuration path")
 _fgn_configuration_token(::String) = nothing
 _fgn_node_name(name) = fail("FGN graph node differs from its rendered host module")
 _fgn_node_name(::String) = nothing
 _held_source_owner(role, spec) = fail("RTC session requires a declared held source owner")
 _held_source_owner(role::String, spec) =
-    any(owner -> owner["role"]==role, spec["owners"]) ||
+    any(owner -> owner["role"] == role, spec["owners"]) ||
     fail("RTC session requires a declared held source owner")
 _rendered_session_configuration(config, runtime) =
     fail("session generator did not return a private invocation configuration")
 _rendered_session_configuration(config::AbstractString, runtime) =
     isabspath(config) &&
     isfile(config) &&
-    startswith(realpath(config), realpath(runtime)*"/") ||
+    startswith(realpath(config), realpath(runtime) * "/") ||
     fail("session generator did not return a private invocation configuration")
 _unretained_launch_outcome(item, unit, deadline) = nothing
 function _unretained_launch_outcome(item::AbstractDict, unit, deadline)
     if get(item, "state", "") in ("launching", "uncertain") &&
-       S.properties(unit; deadline)["LoadState"]=="not-found"
+        S.properties(unit; deadline)["LoadState"] == "not-found"
         fail("owner launch outcome remains uncertain for $unit")
     end
     return nothing
@@ -396,6 +400,7 @@ _session_renderer(renderer) = fail("RTC session renderer is unavailable")
 _session_renderer(::Function) = nothing
 
 function reserve_owner!(coordinator, role, placement, record)
+    validate_ledger(record)
     service = S.Service(coordinator, role)
     haskey(record["owners"], role) && fail("duplicate owner role $role")
     record["owners"][role] = merge(
@@ -567,14 +572,13 @@ function prepare!(request::Request; render!::Function)
         fail("FGN host role conflicts with a declared external owner")
     prepare_julia_overlay!(request, paths, spec, runtime)
     record = Dict{String,Any}(
-        "version" => 1,
+        "version" => LEDGER_VERSION,
         "phase" => "preparing",
         "name" => spec["name"],
         "unit" => request.unit,
         "invocation" => invocation,
         "session_uuid" => session_uuid,
-        "session_control_instance" =>
-            parse(Int64, bindings["SESSION_CONTROL_INSTANCE"]),
+        "session_control_instance" => parse(Int64, bindings["SESSION_CONTROL_INSTANCE"]),
         "session_controller_instance" =>
             parse(Int64, bindings["SESSION_CONTROLLER_INSTANCE"]),
         "admission_controller_instance" =>
@@ -594,17 +598,22 @@ function prepare!(request::Request; render!::Function)
         record["credentials"] = P.credentials(priority, locked, spec["cpu-latency-us"])
         launch_record!(runtime, record)
         services = Dict{String,S.Service}()
-        services["core"] =
-            reserve_owner!(coordinator, "core", spec["placement"]["core"], record)
+        services["core"] = reserve_owner!(
+            coordinator, "core", spec["placement"]["core"], record
+        )
         owner_records = record["owners"]
         for owner in spec["owners"]
             role = owner["role"]
-            services[role] =
-                reserve_owner!(coordinator, role, spec["placement"][role], record)
-            control_instance =
-                D.uses_heart_protocol(owner) ? bindings["HEART_OWNER_INSTANCE"] :
-                D.uses_acquisition_protocol(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
+            services[role] = reserve_owner!(
+                coordinator, role, spec["placement"][role], record
+            )
+            control_instance = if D.uses_heart_protocol(owner)
+                bindings["HEART_OWNER_INSTANCE"]
+            elseif D.uses_acquisition_protocol(owner)
+                bindings["SOURCE_OWNER_INSTANCE"]
+            else
                 get(owner, "control-instance", nothing)
+            end
             merge!(
                 owner_records[role],
                 Dict{String,Any}(
@@ -620,8 +629,9 @@ function prepare!(request::Request; render!::Function)
         host_env = owner_environment(paths, spec, bindings, runtime, "fgn")
         fgn_nodes = render_fgn_host!(request, spec, session, host_env, runtime)
         if !isempty(fgn_nodes)
-            services["fgn"] =
-                reserve_owner!(coordinator, "fgn", spec["placement"]["rtc"], record)
+            services["fgn"] = reserve_owner!(
+                coordinator, "fgn", spec["placement"]["rtc"], record
+            )
             owner_records["fgn"]["graph-nodes"] = fgn_nodes
         end
         record["cohort_unit"] = S.cohort_name(invocation)
@@ -766,11 +776,7 @@ function prepare!(request::Request; render!::Function)
         end
         atomic_environment(locator, session_env)
         return Prepared(
-            invocation,
-            runtime,
-            remote,
-            String(config),
-            deepcopy(owner_records),
+            invocation, runtime, remote, String(config), deepcopy(owner_records)
         )
     catch error
         record["phase"] = "failed"
@@ -782,16 +788,22 @@ function prepare!(request::Request; render!::Function)
     end
 end
 
-function load_record(runtime, invocation, source_role)
+function _read_ledger(runtime)
     path = joinpath(runtime, "launch.json")
     isfile(path) || fail("invocation launch ledger is unavailable")
-    record = C.read_json(path; maximum = 1024 * 1024)
+    return C.read_json(path; maximum = 1024 * 1024)
+end
+
+function load_record(runtime, invocation, source_role)
+    record = _read_ledger(runtime)
+    validate_ledger(record)
     record["invocation"] == invocation && record["source_role"] == source_role ||
         fail("invocation launch ledger identity differs from cleanup request")
     return record
 end
 
 function retained_service(record, role)
+    validate_ledger(record)
     item = get(record["owners"], role, nothing)
     return _retained_service(record, role, item)
 end
@@ -812,6 +824,7 @@ function _retained_service(record, role, item::AbstractDict)
 end
 
 function cleanup_role!(record, role, deadline)
+    validate_ledger(record)
     invocation = record["invocation"]
     unit = S.PREFIX * invocation * "-" * role * ".service"
     for job in S.listed_jobs(invocation; deadline)
@@ -835,9 +848,7 @@ consumer; each stop must confirm its cgroup is empty. A failed core/source
 stop fences later cleanup and leaves diagnostics for operator recovery.
 """
 function cleanup_invocation!(
-    runtime_root::AbstractString,
-    id::AbstractString;
-    source_role::AbstractString,
+    runtime_root::AbstractString, id::AbstractString; source_role::AbstractString
 )
     invocation = S.valid_invocation(id)
     S.valid_invocation(get(ENV, "INVOCATION_ID", "")) == invocation ||
@@ -845,7 +856,7 @@ function cleanup_invocation!(
     occursin(S.ROLE, source_role) || fail("invalid source role for cleanup")
     runtime = joinpath(runtime_root, invocation)
     record = try
-        load_record(runtime, invocation, source_role)
+        _read_ledger(runtime)
     catch error
         # If the ledger is unreadable, only ingress can be safely revoked by
         # the exact invocation names. Consumer cleanup remains fenced.
@@ -863,6 +874,11 @@ function cleanup_invocation!(
             sprint(showerror, error),
         )
     end
+    # A readable unsupported ledger is not permission to reinterpret an older
+    # layout, nor to enter the unreadable-ledger emergency fallback above.
+    validate_ledger(record)
+    record["invocation"] == invocation && record["source_role"] == source_role ||
+        fail("invocation launch ledger identity differs from cleanup request")
     try
         cleanup_record!(runtime, record, invocation, source_role)
     catch error
@@ -876,6 +892,7 @@ function cleanup_invocation!(
 end
 
 function cleanup_record!(runtime, record, invocation, source_role)
+    validate_ledger(record)
     deadline = monotonic() + 240
     S.cancel_start_jobs!(invocation, deadline)
     units = S.listed_units(invocation; deadline)
@@ -969,18 +986,16 @@ function main(argv = ARGS; render! = nothing)
             argv[2:end];
             required = ["package", "prefix", "unit", "launcher", "runtime-root"],
         )
-        request =
-            Request(args.package, args.prefix, args.unit, args.launcher, args.runtime_root)
+        request = Request(
+            args.package, args.prefix, args.unit, args.launcher, args.runtime_root
+        )
         prepare!(request; render! = render!)
     elseif command == "cleanup"
         args = C.cli_arguments(
-            argv[2:end];
-            required = ["invocation", "runtime-root", "source-role"],
+            argv[2:end]; required = ["invocation", "runtime-root", "source-role"]
         )
         cleanup_invocation!(
-            args.runtime_root,
-            args.invocation;
-            source_role = args.source_role,
+            args.runtime_root, args.invocation; source_role = args.source_role
         )
     else
         fail("unknown RTC launch command")

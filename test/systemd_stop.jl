@@ -9,9 +9,7 @@ const julia = Base.julia_cmd().exec[1]
 const baseline = "--baseline" in ARGS
 const user_runtime = ENV["XDG_RUNTIME_DIR"]
 const user_bus = get(
-    ENV,
-    "DBUS_SESSION_BUS_ADDRESS",
-    "unix:path=" * joinpath(ENV["XDG_RUNTIME_DIR"], "bus"),
+    ENV, "DBUS_SESSION_BUS_ADDRESS", "unix:path=" * joinpath(ENV["XDG_RUNTIME_DIR"], "bus")
 )
 const evidence = joinpath(
     get(ENV, "RTC_STOP_EVIDENCE_ROOT", dirname(tempdir())),
@@ -68,22 +66,22 @@ $environment
         ledger = joinpath(root, only(record_dirs), "launch.json")
         record = C.read_json(ledger)
         if mode == "wrong-pid"
-            record["wireplumber_pid"] += 1
+            record["session_pid"] += 1
         elseif mode == "wrong-ticks"
-            record["wireplumber_start_ticks"] += 1
+            record["session_start_ticks"] += 1
+        elseif mode == "wrong-version"
+            record["version"] = 1
         elseif mode == "wrong-uuid"
             record["session_uuid"] = "b5555555-5555-4555-8555-555555555555"
         elseif mode == "submitted"
-            record["systemd_quit"] = Dict("attempted"=>true, "accepted"=>false)
+            record["systemd_quit"] = Dict("attempted" => true, "accepted" => false)
         end
         C.write_json(ledger, record; atomic = true)
         mode == "missing-ledger" && rm(ledger)
         if mode == "exited"
             write(joinpath(root, "exit-owner"), "1")
             wait_proof(
-                () -> S.properties(unit)["MainPID"] == "0",
-                30,
-                "naturally exited owner",
+                () -> S.properties(unit)["MainPID"] == "0", 30, "naturally exited owner"
             )
         end
         # The test gates one already admitted frame/command at Quit entry.
@@ -92,10 +90,10 @@ $environment
             # Separate new Julia process/code preparation from the owner's
             # actual eight-second native request. Production uses this same
             # 300-second service stop bound; no request deadline is extended.
-            deadline = time_ns()/1e9 + 120
+            deadline = time_ns() / 1e9 + 120
             while !isfile(joinpath(root, "quit-entry")) &&
                   !Base.process_exited(stopping) &&
-                  time_ns()/1e9 < deadline
+                  time_ns() / 1e9 < deadline
                 sleep(0.005)
             end
             baseline && println(
@@ -174,9 +172,7 @@ $environment
     finally
         if S.properties(unit)["MainPID"] != "0"
             run(
-                ignorestatus(
-                    `systemctl --user kill --signal=SIGKILL --kill-whom=all $unit`,
-                ),
+                ignorestatus(`systemctl --user kill --signal=SIGKILL --kill-whom=all $unit`)
             )
         end
         run(ignorestatus(`systemctl --user stop $unit`))
@@ -197,11 +193,12 @@ end
 
 @testset "systemd preserves native authority until graceful Quit" begin
     with_control_private_core(;
-        temporary_prefix = "rtc-stop-",
-        remote_name = "rtc-stop-$(getpid())",
+        temporary_prefix = "rtc-stop-", remote_name = "rtc-stop-$(getpid())"
     ) do remote, directory, daemon
         chmod(dirname(remote), 0o700)
-        withenv("DBUS_SESSION_BUS_ADDRESS"=>user_bus, "XDG_RUNTIME_DIR"=>user_runtime) do
+        withenv(
+            "DBUS_SESSION_BUS_ADDRESS" => user_bus, "XDG_RUNTIME_DIR" => user_runtime
+        ) do
             for mode in (
                 baseline ? ["normal"] :
                 [
@@ -210,6 +207,7 @@ end
                     "unknown",
                     "wrong-pid",
                     "wrong-ticks",
+                    "wrong-version",
                     "wrong-uuid",
                     "submitted",
                     "missing-ledger",

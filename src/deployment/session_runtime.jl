@@ -15,6 +15,7 @@ import ..SessionClient
 import ..SessionCodec
 import ..AcquisitionLifecycleClient
 import ..AcquisitionLifecycleCodec
+import ..PipeWireAORTC
 
 const S = SystemdOwners
 const Discovery = SessionDiscovery
@@ -72,9 +73,7 @@ end
 
 function checked(argv, deadline; limit = 20)
     result = Common.run_checked(
-        argv;
-        timeout = remaining(deadline, limit),
-        maximum_output_bytes = 64 * 1024,
+        argv; timeout = remaining(deadline, limit), maximum_output_bytes = 64 * 1024
     )
     result.returncode == 0 || throw(
         ArgumentError(
@@ -179,7 +178,7 @@ function _assert_installed_instance!(unit, root, unit_file, deadline)
     !(ispath(root) || islink(root)) &&
     !_unit_has_jobs(unit, deadline) &&
     _exact_fragment(fragment, unit_file) || throw(
-        ArgumentError("fresh session manager did not load the exact installed instance"),
+        ArgumentError("fresh session manager did not load the exact installed instance")
     )
     return nothing
 end
@@ -193,7 +192,7 @@ function runtime_directory(unit::AbstractString)
     return joinpath(user_runtime, "pipewireao-session-" * matched.captures[1])
 end
 
-function _identity(unit, runtime_root; deadline = monotonic()+8)
+function _identity(unit, runtime_root; deadline = monotonic() + 8)
     values = S.properties(unit; extra = "Type,Restart,KillMode", deadline)
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "active" &&
@@ -229,11 +228,12 @@ end
 function _retained_ledger(handle::Handle)
     path = joinpath(handle.runtime_root, handle.invocation, "launch.json")
     record = Common.read_json(path; maximum = 1024 * 1024)
+    PipeWireAORTC.SessionLaunch.validate_ledger(record)
     record["unit"] == handle.unit &&
     record["invocation"] == handle.invocation &&
     record["runtime"] == dirname(path) &&
-    record["wireplumber_pid"] == handle.main_pid &&
-    UInt64(record["wireplumber_start_ticks"]) == handle.start_ticks ||
+    record["session_pid"] == handle.main_pid &&
+    UInt64(record["session_start_ticks"]) == handle.start_ticks ||
         throw(ArgumentError("retained launch ledger differs from the live RTC unit"))
     return record
 end
@@ -243,8 +243,7 @@ function _ledger(handle::Handle)
     record["session_process"]["config"] == record["config"] ||
         throw(ArgumentError("prepared process binding differs from session configuration"))
     DeploymentConfiguration.verify_session_process(
-        handle.main_pid,
-        record["session_process"],
+        handle.main_pid, record["session_process"]
     )
     return record
 end
@@ -265,7 +264,8 @@ function _receipt(base, handle::Handle)
     return nothing
 end
 
-function _failed_start_record(root, unit, invocation)
+"Read one bounded failed-start ledger without interpreting its version or identity fields."
+function _read_failed_start_ledger(root, invocation)
     isdir(root) || return nothing
     ids = filter(name -> occursin(r"^[0-9a-f]{32}$", name), readdir(root))
     length(ids) <= 1 ||
@@ -282,6 +282,14 @@ function _failed_start_record(root, unit, invocation)
         id == invocation ||
         throw(ArgumentError("failed session ledger has a different invocation"))
     record = Common.read_json(joinpath(directory, "launch.json"); maximum = 1024 * 1024)
+    return id, record
+end
+
+function _failed_start_record(root, unit, invocation)
+    retained = _read_failed_start_ledger(root, invocation)
+    retained === nothing && return nothing
+    id, record = retained
+    PipeWireAORTC.SessionLaunch.validate_ledger(record)
     record["unit"] == unit &&
     record["invocation"] == id &&
     record["runtime"] == joinpath(root, id) ||
@@ -290,6 +298,15 @@ function _failed_start_record(root, unit, invocation)
 end
 
 function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted, primary)
+    # Unreadable launch evidence must not prevent the exact unit stop and its
+    # ExecStopPost ingress revocation. A readable old layout still refuses
+    # before any manager change; the strict post-stop identity read remains below.
+    retained = try
+        _read_failed_start_ledger(root, nothing)
+    catch
+        nothing
+    end
+    retained === nothing || PipeWireAORTC.SessionLaunch.validate_ledger(last(retained))
     deadline = monotonic() + 320
     _owned_link(unit, unit_file) # Reject a same-name replacement before stopping.
     before = S.properties(unit; extra = "FragmentPath", deadline)
@@ -322,8 +339,8 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
     group = before["ControlGroup"]
     stop_error = nothing
     if before["LoadState"] != "not-found" ||
-       start_attempted ||
-       _unit_has_jobs(unit, deadline)
+        start_attempted ||
+        _unit_has_jobs(unit, deadline)
         stop_error = try
             checked(["systemctl", "--user", "stop", unit], deadline; limit = 300)
             nothing
@@ -397,10 +414,9 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
                 S.cgroup_empty(group) ||
                 throw(ArgumentError("failed session retained a populated owner cgroup"))
         end
-        haskey(record, "wireplumber_pid") &&
+        haskey(record, "session_pid") &&
             S.old_process_exists(
-                Int(record["wireplumber_pid"]),
-                UInt64(record["wireplumber_start_ticks"]),
+                Int(record["session_pid"]), UInt64(record["session_start_ticks"])
             ) &&
             throw(ArgumentError("failed session retained the RTC process"))
         Common.write_json(joinpath(target, "final-launch.json"), record; atomic = true)
@@ -428,7 +444,7 @@ function start!(
     package::AbstractString,
     base::AbstractString;
     prefix::AbstractString = "/opt/pipewireao",
-    deadline = monotonic()+430,
+    deadline = monotonic() + 430,
 )
     source = realpath(package)
     spec = DeploymentConfiguration.profile(joinpath(source, "deployment.conf"), prefix)
@@ -506,23 +522,15 @@ function start!(
             launch_record,
             unit;
             prefix,
-            deadline = min(deadline, monotonic()+20),
-            ready = ()->_analysis_ready(
-                handle,
-                launch_record,
-                min(deadline, monotonic()+10),
-            ),
+            deadline = min(deadline, monotonic() + 20),
+            ready = () ->
+                _analysis_ready(handle, launch_record, min(deadline, monotonic() + 10)),
         )
         return handle
     catch primary
         try
             _reconcile_failed_start!(
-                target,
-                unit,
-                root,
-                unit_file,
-                start_attempted,
-                primary,
+                target, unit, root, unit_file, start_attempted, primary
             )
         catch cleanup
             Common.write_json(
@@ -542,7 +550,7 @@ function start!(
 end
 
 "Attach to an exact installed session unit or a stage receipt."
-function attach(path::AbstractString; deadline = monotonic()+8)
+function attach(path::AbstractString; deadline = monotonic() + 8)
     root = abspath(path)
     receipt = joinpath(root, "session.json")
     if isfile(receipt)
@@ -618,11 +626,11 @@ function _analysis_ready(handle, record, deadline)
         finally
             connection === nothing || close(connection)
         end
-        sleep(min(0.05, max(0, deadline-monotonic())))
+        sleep(min(0.05, max(0, deadline - monotonic())))
     end
     throw(
         ArgumentError(
-            "RTC was not ready for optional analysis: " * sprint(showerror, last_error),
+            "RTC was not ready for optional analysis: " * sprint(showerror, last_error)
         ),
     )
 end
@@ -666,14 +674,12 @@ function _source_endpoint(source)
         (instance !== nothing && instance > 0) ||
         throw(ArgumentError("source requires a valid retained control incarnation"))
     return Dict(
-        "node" => node,
-        "instance" => instance,
-        "profile" => source["control-protocol"],
+        "node" => node, "instance" => instance, "profile" => source["control-protocol"]
     )
 end
 
 "Return a compatibility view built from a live direct Status and exact launch ledger."
-function ready(handle::Handle; deadline = monotonic()+30)
+function ready(handle::Handle; deadline = monotonic() + 30)
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
@@ -708,8 +714,8 @@ function ready(handle::Handle; deadline = monotonic()+30)
     )
     return Dict{String,Any}(
         "unit" => handle.unit,
-        "pid" => handle.main_pid,
-        "wireplumber_start_ticks" => handle.start_ticks,
+        "session_pid" => handle.main_pid,
+        "session_start_ticks" => handle.start_ticks,
         "instance" => handle.invocation,
         "private_runtime" => record["runtime"],
         "observation_remote" => record["remote"],
@@ -721,11 +727,11 @@ function ready(handle::Handle; deadline = monotonic()+30)
         "admitted" => true,
     )
 end
-ready(path::AbstractString; deadline = monotonic()+30) =
+ready(path::AbstractString; deadline = monotonic() + 30) =
     ready(attach(path; deadline); deadline)
 
 "Start a held Ready session once, then require a fresh native Running Status."
-function running!(handle::Handle; deadline = monotonic()+30)
+function running!(handle::Handle; deadline = monotonic() + 30)
     observed = ready(handle; deadline)
     if observed["phase"] == "ready"
         completion = control!(handle, SessionCodec.RunnerCommand(:session_start); deadline)
@@ -740,10 +746,7 @@ end
 
 "Send one typed native session command on the verified direct connection."
 function control!(
-    handle::Handle,
-    command;
-    deadline = monotonic()+8,
-    before_request = ()->nothing,
+    handle::Handle, command; deadline = monotonic() + 8, before_request = () -> nothing
 )
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
@@ -766,11 +769,14 @@ function control!(
 end
 
 "Query the acquisition owner directly after public Release."
-function source_status(ready_record, instrument::AbstractString; deadline = monotonic()+8)
-    kind =
-        instrument == "classic" ? AcquisitionCodec.Classic :
-        instrument == "copper" ? AcquisitionCodec.Copper :
+function source_status(ready_record, instrument::AbstractString; deadline = monotonic() + 8)
+    kind = if instrument == "classic"
+        AcquisitionCodec.Classic
+    elseif instrument == "copper"
+        AcquisitionCodec.Copper
+    else
         throw(ArgumentError("unsupported calibration instrument"))
+    end
     source = ready_record["source_endpoint"]
     get(source, "profile", nothing) == "pipewireao.rtc.calibration-lifecycle/1" ||
         throw(ArgumentError("source Status requires a calibration lifecycle endpoint"))
@@ -829,9 +835,9 @@ function _stopped_record(handle::Handle, deadline)
                 values["ActiveState"] in ("inactive", "failed")
             )
         if quiet &&
-           !_unit_has_jobs(handle.unit, deadline) &&
-           !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
-           S.cgroup_empty(handle.cgroup)
+            !_unit_has_jobs(handle.unit, deadline) &&
+            !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
+            S.cgroup_empty(handle.cgroup)
             # The exact old process is already gone. Validate its retained
             # identity without requiring /proc/<old-pid>/exe to still exist.
             record = _retained_ledger(handle)
@@ -848,9 +854,7 @@ end
 function _retain_stopped!(handle::Handle, deadline)
     record = _stopped_record(handle, deadline)
     handle.stage_root === nothing || Common.write_json(
-        joinpath(handle.stage_root, "final-launch.json"),
-        record;
-        atomic = true,
+        joinpath(handle.stage_root, "final-launch.json"), record; atomic = true
     )
     record["phase"] == "stopped" && get(record, "error", nothing) === nothing ||
         throw(ArgumentError("RTC stopped with a retained service failure"))
@@ -863,7 +867,7 @@ function _retain_stopped!(handle::Handle, deadline)
 end
 
 "Read-only cleanup after an attempted native Quit, including an unknown reply."
-function reconcile_cleanup!(handle::Handle; deadline = monotonic()+320)
+function reconcile_cleanup!(handle::Handle; deadline = monotonic() + 320)
     handle.shutdown_attempted ||
         handle.stop_attempted ||
         throw(ArgumentError("session cleanup has not been attempted"))
@@ -871,7 +875,7 @@ function reconcile_cleanup!(handle::Handle; deadline = monotonic()+320)
 end
 
 "Confirm cleanup only after a successful native Quit completion proved Offline."
-function reconcile_shutdown!(handle::Handle; deadline = monotonic()+320)
+function reconcile_shutdown!(handle::Handle; deadline = monotonic() + 320)
     handle.shutdown_accepted ||
         throw(ArgumentError("native Quit has no accepted Offline completion"))
     return _retain_stopped!(handle, deadline)
@@ -921,12 +925,12 @@ If the request outcome is uncertain or cleanup is incomplete, this throws and
 the handle records the attempt; do not call `shutdown!` again. Use
 [`reconcile_cleanup!`](@ref) to inspect cleanup without replaying Quit.
 """
-function shutdown!(handle::Handle; deadline = monotonic()+320)
+function shutdown!(handle::Handle; deadline = monotonic() + 320)
     _native_quit!(handle) do mark_attempt!
         control!(
             handle,
             SessionCodec.RunnerCommand(:quit);
-            deadline = min(deadline, monotonic()+8),
+            deadline = min(deadline, monotonic() + 8),
             before_request = mark_attempt!,
         )
     end
@@ -934,14 +938,15 @@ function shutdown!(handle::Handle; deadline = monotonic()+320)
 end
 
 "Reconcile a submitted stop without repeating its effect."
-function reconcile_stop!(handle::Handle; deadline = monotonic()+320)
+function reconcile_stop!(handle::Handle; deadline = monotonic() + 320)
     handle.stop_attempted || throw(ArgumentError("session stop has not been submitted"))
     return _retain_stopped!(handle, deadline)
 end
 
 "Stop only the retained unit incarnation; verify ExecStopPost's cleanup receipt."
-function stop!(handle::Handle; deadline = monotonic()+320)
+function stop!(handle::Handle; deadline = monotonic() + 320)
     handle.stop_attempted && throw(ArgumentError("session stop was already attempted"))
+    _retained_ledger(handle)
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
@@ -992,6 +997,7 @@ function final_record(path::AbstractString; invocation = nothing, unit = nothing
     retained = joinpath(base, "final-launch.json")
     source = isfile(retained) ? retained : joinpath(root, id, "launch.json")
     record = Common.read_json(source; maximum = 1024 * 1024)
+    PipeWireAORTC.SessionLaunch.validate_ledger(record)
     record["unit"] == unit && record["invocation"] == id ||
         throw(ArgumentError("stopped session ledger differs from the stage receipt"))
     return record

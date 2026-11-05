@@ -96,19 +96,13 @@ confirm_shutdown(reply) =
 
 function render!(spec, session, bindings, records, runtime)
     return SessionConfiguration.write_session_config(
-        spec,
-        session,
-        bindings,
-        records,
-        runtime;
-        node_owners = node_owners(spec),
+        spec, session, bindings, records, runtime; node_owners = node_owners(spec)
     )
 end
 
 function _preflight(argv)
     args = C.cli_arguments(
-        argv;
-        required = ["package", "prefix", "unit", "launcher", "runtime-root"],
+        argv; required = ["package", "prefix", "unit", "launcher", "runtime-root"]
     )
     spec = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
     node_owners(spec)
@@ -116,8 +110,9 @@ function _preflight(argv)
 end
 
 function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
-    values =
-        S.properties(unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
+    values = S.properties(
+        unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type"
+    )
     values["LoadState"] == "loaded" &&
     values["ActiveState"] in ("activating", "active") &&
     values["Type"] == "exec" &&
@@ -133,11 +128,7 @@ function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
     (S.proc_cgroup(getpid()) == group || startswith(S.proc_cgroup(getpid()), group * "/")) ||
         throw(ArgumentError("publisher is outside the RTC unit cgroup"))
     request = SessionLaunch.Request(
-        dirname(launcher),
-        dirname(launcher),
-        unit,
-        launcher,
-        runtime_root,
+        dirname(launcher), dirname(launcher), unit, launcher, runtime_root
     )
     SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         throw(ArgumentError("RTC emergency cleanup hook changed"))
@@ -154,6 +145,7 @@ function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
 end
 
 function _verified_discovery!(record, session_record)
+    SessionLaunch.validate_ledger(record)
     # SessionDiscovery.publish! remains owner-only. ExecStartPost is a
     # distinct process, so this narrow path writes only after live systemd and
     # direct native Status proof in publish! below.
@@ -183,7 +175,9 @@ function _verified_discovery!(record, session_record)
     return path
 end
 
-function _placement_snapshot(record, unit, invocation, launcher, group, wp_pid, wp_contract)
+function _placement_snapshot(
+    record, unit, invocation, launcher, group, session_pid, session_contract
+)
     owner = S.Coordinator(unit, invocation, group, launcher)
     snapshots = Dict{String,Any}()
     for (role, item) in record["owners"]
@@ -191,7 +185,7 @@ function _placement_snapshot(record, unit, invocation, launcher, group, wp_pid, 
             throw(ArgumentError("recorded owner is not running at session publication"))
         service = S.Service(owner, role)
         item["unit"] == service.unit || throw(
-            ArgumentError("recorded owner unit differs from exclusive invocation name"),
+            ArgumentError("recorded owner unit differs from exclusive invocation name")
         )
         service.main_pid = Int(item["pid"])
         service.invocation = String(item["invocation"])
@@ -202,7 +196,7 @@ function _placement_snapshot(record, unit, invocation, launcher, group, wp_pid, 
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
         S.verify!(service)
     end
-    snapshots["session"] = P.snapshot(wp_pid, wp_contract)
+    snapshots["session"] = P.snapshot(session_pid, session_contract)
     return snapshots
 end
 
@@ -211,6 +205,7 @@ function publish!(args)
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
     record = C.read_json(ledger; maximum = 1024 * 1024)
+    SessionLaunch.validate_ledger(record)
     record["unit"] == args.unit &&
     record["invocation"] == invocation &&
     record["phase"] == "prepared" ||
@@ -220,8 +215,9 @@ function publish!(args)
     source_role = package["source-owner"]
     prepared_identity(name, source_role, record)
     launcher = joinpath(args.package, "bin", "pipewireao-rtc-session")
-    pid, ticks, group =
-        _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
+    pid, ticks, group = _unit_identity(
+        args.unit, invocation, args.runtime_root, launcher, source_role
+    )
     record["session_process"]["config"] == record["config"] ||
         throw(ArgumentError("prepared process binding differs from session configuration"))
     D.verify_session_process(pid, record["session_process"])
@@ -245,7 +241,7 @@ function publish!(args)
     try
         while true
             Client.monotonic() < deadline || throw(
-                ArgumentError("direct session did not warm before publication deadline"),
+                ArgumentError("direct session did not warm before publication deadline")
             )
             warm = Client.request!(
                 client,
@@ -255,8 +251,9 @@ function publish!(args)
             warmup_complete(warm) && break
             sleep(min(0.1, max(0.0, deadline - Client.monotonic())))
         end
-        latest_pid, latest_ticks, latest_group =
-            _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
+        latest_pid, latest_ticks, latest_group = _unit_identity(
+            args.unit, invocation, args.runtime_root, launcher, source_role
+        )
         (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
             throw(ArgumentError("RTC process changed during warmup"))
         snapshots = _placement_snapshot(
@@ -268,8 +265,9 @@ function publish!(args)
             pid,
             package["placement"]["session"],
         )
-        latest_pid, latest_ticks, latest_group =
-            _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
+        latest_pid, latest_ticks, latest_group = _unit_identity(
+            args.unit, invocation, args.runtime_root, launcher, source_role
+        )
         (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
             throw(ArgumentError("RTC process changed during placement inspection"))
         record["placement_snapshot"] = snapshots
@@ -295,22 +293,24 @@ function publish!(args)
             client.global_id < typemax(UInt32) &&
             client.serial > 0 || throw(
                 ArgumentError(
-                    "direct native Status identity differs from prepared session",
+                    "direct native Status identity differs from prepared session"
                 ),
             )
         end
     finally
         close(client)
     end
-    latest_pid, latest_ticks, latest_group =
-        _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
+    latest_pid, latest_ticks, latest_group = _unit_identity(
+        args.unit, invocation, args.runtime_root, launcher, source_role
+    )
     (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
         throw(ArgumentError("RTC process changed during direct Status proof"))
-    session_record =
-        Discovery.SessionRecord(name, uuid, UInt32(pid), expected, remote, node)
+    session_record = Discovery.SessionRecord(
+        name, uuid, UInt32(pid), expected, remote, node
+    )
     directory = Discovery.registry_directory()
-    record["wireplumber_pid"] = pid
-    record["wireplumber_start_ticks"] = ticks
+    record["session_pid"] = pid
+    record["session_start_ticks"] = ticks
     record["placement_snapshot"] = snapshots
     record["discovery_locator"] = joinpath(directory, "session-" * uuid * ".pod")
     C.write_json(ledger, record; atomic = true)
@@ -323,13 +323,15 @@ function retire!(runtime_root)
     ledger = joinpath(runtime_root, invocation, "launch.json")
     isfile(ledger) || return nothing
     record = C.read_json(ledger; maximum = 1024 * 1024)
+    SessionLaunch.validate_ledger(record)
     record["invocation"] == invocation ||
         throw(ArgumentError("retirement ledger has a different invocation"))
     return retire_record!(record, get(record, "discovery_locator", nothing))
 end
 
-retire_record!(record, path) = nothing
+retire_record!(record, path) = SessionLaunch.validate_ledger(record)
 function retire_record!(record, path::String)
+    SessionLaunch.validate_ledger(record)
     directory = Discovery.existing_registry_directory()
     directory === nothing && return nothing
     path == joinpath(directory, "session-" * record["session_uuid"] * ".pod") ||
@@ -339,7 +341,7 @@ function retire_record!(record, path::String)
         current = Discovery._read_record(path)
         (current.session_id, current.owner_pid, current.incarnation) == (
             record["session_uuid"],
-            UInt32(record["wireplumber_pid"]),
+            UInt32(record["session_pid"]),
             Int64(record["session_control_instance"]),
         ) || return nothing
         rm(path)
@@ -372,12 +374,13 @@ function stop!(args)
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
     record = C.read_json(ledger; maximum = 1024 * 1024)
+    SessionLaunch.validate_ledger(record)
     pid = tryparse(Int, values["MainPID"])
     record["unit"] == args.unit &&
     record["invocation"] == invocation &&
     record["runtime"] == runtime &&
-    pid == record["wireplumber_pid"] &&
-    S.start_ticks(pid) == UInt64(record["wireplumber_start_ticks"]) ||
+    pid == record["session_pid"] &&
+    S.start_ticks(pid) == UInt64(record["session_start_ticks"]) ||
         throw(ArgumentError("native stop ledger differs from the live session"))
     main_group = S.proc_cgroup(pid)
     (main_group == group || startswith(main_group, group * "/")) ||
@@ -429,7 +432,7 @@ function stop!(args)
         # Require a fresh MainPID=0 proof on the next pass; PID reuse still faults.
         current_ticks = S.maybe_start_ticks(pid)
         current_ticks === nothing ||
-            current_ticks == UInt64(record["wireplumber_start_ticks"]) ||
+            current_ticks == UInt64(record["session_start_ticks"]) ||
             throw(ArgumentError("RTC PID was reused after native Quit"))
         sleep(min(0.005, max(0.0, deadline - Client.monotonic())))
     end
@@ -444,9 +447,9 @@ function sessions()
         Discovery.list_sessions(directory)
     return [
         Dict(
-            "verification"=>string(entry.verification),
-            "detail"=>entry.detail,
-            "record"=>entry.record,
+            "verification" => string(entry.verification),
+            "detail" => entry.detail,
+            "record" => entry.record,
         ) for entry in entries
     ]
 end
@@ -464,10 +467,11 @@ function _session_entry(session_id::AbstractString)
 end
 
 "Retain the exact direct connection used to prove the selected session's Status."
-function select_direct_session(session_id::AbstractString; deadline = Client.monotonic()+30)
+function select_direct_session(
+    session_id::AbstractString; deadline = Client.monotonic() + 30
+)
     result = SessionClient.select_direct_session(
-        _session_entry(session_id);
-        deadline = Float64(deadline),
+        _session_entry(session_id); deadline = Float64(deadline)
     )
     return selected_connection(result)
 end
@@ -482,17 +486,17 @@ function session_status(connection::SessionClient.Connection)
     status.authority === :rtc_session ||
         throw(ArgumentError("selected endpoint is not a direct RTC session"))
     return Dict(
-        "label"=>selected.record.label,
-        "session_id"=>status.session_id,
-        "owner_pid"=>status.owner_pid,
-        "instance"=>status.incarnation,
-        "remote"=>status.remote,
-        "node"=>status.node_name,
-        "global_id"=>status.global_id,
-        "serial"=>status.object_serial,
-        "native_token"=>status.query_token,
-        "lifecycle"=>String(status.lifecycle),
-        "authority"=>"rtc_session",
+        "label" => selected.record.label,
+        "session_id" => status.session_id,
+        "owner_pid" => status.owner_pid,
+        "instance" => status.incarnation,
+        "remote" => status.remote,
+        "node" => status.node_name,
+        "global_id" => status.global_id,
+        "serial" => status.object_serial,
+        "native_token" => status.query_token,
+        "lifecycle" => String(status.lifecycle),
+        "authority" => "rtc_session",
     )
 end
 
@@ -541,8 +545,9 @@ function main(argv = ARGS)
         _preflight(rest)
         SessionLaunch.main(argv; render!)
     elseif command == "publish"
-        args =
-            C.cli_arguments(rest; required = ["package", "prefix", "unit", "runtime-root"])
+        args = C.cli_arguments(
+            rest; required = ["package", "prefix", "unit", "runtime-root"]
+        )
         publish!(args)
     elseif command == "stop"
         args = C.cli_arguments(rest; required = ["unit", "runtime-root"])

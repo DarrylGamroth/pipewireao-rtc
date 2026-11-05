@@ -1,5 +1,5 @@
 # Cold native session stand-in for the ExecStop integration test. No science,
-# hardware, links, or CUDA are loaded; production ordering is owned by Lua.
+# hardware, links, or CUDA are loaded; production ordering is owned by MediaSession.
 using PipeWireAO, PipeWireAORTC
 const Client = PipeWireAORTC.ControlClient
 const Endpoint = PipeWireAORTC.ControlEndpoint
@@ -11,12 +11,10 @@ const C = PipeWireAORTC.Common
 Client.decode_request(::Profile.Profile, header, payload::SPA.Struct) =
     Codec.Runner.decode_request(header, payload)
 Client.encode_rejection(::Profile.Profile, header, lifecycle) = Envelope.encode_rejection(
-    header,
-    SPA.Struct(Pod(""), Pod("request rejected"), Pod(SPA.Id(UInt32(lifecycle)))),
+    header, SPA.Struct(Pod(""), Pod("request rejected"), Pod(SPA.Id(UInt32(lifecycle))))
 )
 Client.encode_failure(::Profile.Profile, header, lifecycle) = Envelope.encode_completion(
-    header,
-    SPA.Struct(Pod(""), Pod("request expired"), Pod(SPA.Id(UInt32(lifecycle)))),
+    header, SPA.Struct(Pod(""), Pod("request expired"), Pod(SPA.Id(UInt32(lifecycle))))
 )
 
 function main(root, remote, unit, mode)
@@ -30,7 +28,7 @@ function main(root, remote, unit, mode)
     try
         with_thread_loop_lock(loop) do _
             context = Context(loop)
-            core = CoreConnection(context; properties = Dict("remote.name"=>remote))
+            core = CoreConnection(context; properties = Dict("remote.name" => remote))
             endpoint = Endpoint.Endpoint(
                 Profile.Profile(),
                 Codec.RunnerCommand,
@@ -39,22 +37,23 @@ function main(root, remote, unit, mode)
                 "pipewireao.rtc.session.stop-test",
                 Int64(42),
                 Codec.Runner.Running;
-                properties_extra = Dict("pipewireao.rtc.session.session-uuid"=>uuid),
+                properties_extra = Dict("pipewireao.rtc.session.session-uuid" => uuid),
             )
         end
         start!(loop)
         C.write_json(
             joinpath(runtime, "launch.json"),
             Dict(
-                "unit"=>unit,
-                "invocation"=>invocation,
-                "runtime"=>runtime,
-                "wireplumber_pid"=>getpid(),
-                "wireplumber_start_ticks"=>S.start_ticks(getpid()),
-                "session_control_instance"=>42,
-                "session_uuid"=>uuid,
-                "remote"=>remote,
-                "name"=>"stop-test",
+                "version" => 2,
+                "unit" => unit,
+                "invocation" => invocation,
+                "runtime" => runtime,
+                "session_pid" => getpid(),
+                "session_start_ticks" => S.start_ticks(getpid()),
+                "session_control_instance" => 42,
+                "session_uuid" => uuid,
+                "remote" => remote,
+                "name" => "stop-test",
             );
             atomic = true,
         )

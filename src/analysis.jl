@@ -145,8 +145,7 @@ function configuration(path, prefix, document::AbstractDict)
     capture =
         haskey(document, "capture") ?
         capture_contract(
-            capture_configuration(document["capture"]),
-            D.decode(graph, prefix),
+            capture_configuration(document["capture"]), D.decode(graph, prefix)
         ) : nothing
     fits =
         haskey(document, "fits-bindings") ?
@@ -294,12 +293,7 @@ save_receipt!(runtime, record) =
     Common.write_json(joinpath(runtime, "analysis.json"), record; atomic = true)
 
 function environment(
-    runtime,
-    prefix,
-    library;
-    config_directory = runtime,
-    modules = "",
-    spa = "",
+    runtime, prefix, library; config_directory = runtime, modules = "", spa = ""
 )
     env = Dict{String,String}(ENV)
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
@@ -344,13 +338,13 @@ function with_lifecycle_lock(action, runtime, deadline)
         try
             while !locked
                 S.monotonic() < deadline || throw(
-                    ArgumentError("optional analysis lifecycle lock deadline expired"),
+                    ArgumentError("optional analysis lifecycle lock deadline expired")
                 )
-                locked = ccall(:flock, Cint, (Cint, Cint), fd(io), 2|4) == 0
+                locked = ccall(:flock, Cint, (Cint, Cint), fd(io), 2 | 4) == 0
                 locked && break
                 Base.Libc.errno() in (4, 11) ||
                     throw(SystemError("optional analysis flock", Base.Libc.errno()))
-                sleep(min(0.02, max(0, deadline-S.monotonic())))
+                sleep(min(0.02, max(0, deadline - S.monotonic())))
             end
             return action()
         finally
@@ -360,10 +354,11 @@ function with_lifecycle_lock(action, runtime, deadline)
 end
 
 function _same_session(record, unit, deadline)
+    PipeWireAORTC.SessionLaunch.validate_ledger(record)
     values = S.properties(unit; deadline)
     values["ActiveState"] == "active" &&
     values["InvocationID"] == record["invocation"] &&
-    tryparse(Int, values["MainPID"]) == record["wireplumber_pid"] ||
+    tryparse(Int, values["MainPID"]) == record["session_pid"] ||
         throw(ArgumentError("optional analysis session incarnation is no longer active"))
     return nothing
 end
@@ -374,9 +369,10 @@ function start!(
     launch_record,
     session_unit;
     prefix = "/opt/pipewireao",
-    deadline = S.monotonic()+20,
-    ready = ()->nothing,
+    deadline = S.monotonic() + 20,
+    ready = () -> nothing,
 )
+    PipeWireAORTC.SessionLaunch.validate_ledger(launch_record)
     runtime = launch_record["runtime"]
     if ispath(joinpath(runtime, "analysis.json"))
         @warn "Optional analysis start already attempted; preserving its receipt"
@@ -402,12 +398,14 @@ function start!(
             project =
                 D.registered_application(spec) ?
                 D.application_environment(spec, installed) : joinpath(installed, "julia")
-            coordinator =
-                S.Coordinator(String(session_unit), launch_record["invocation"], "")
+            coordinator = S.Coordinator(
+                String(session_unit), launch_record["invocation"], ""
+            )
             for entry in entries
                 service = S.Service(coordinator, "analysis-" * entry["name"])
-                receipt["analysis"][service.role] =
-                    Dict{String,Any}("unit" => service.unit, "state" => "installing")
+                receipt["analysis"][service.role] = Dict{String,Any}(
+                    "unit" => service.unit, "state" => "installing"
+                )
                 argv = [
                     realpath(Base.julia_cmd().exec[1]),
                     "--startup-file=no",
@@ -420,17 +418,18 @@ function start!(
                     "--remote",
                     joinpath(runtime, launch_record["remote"]),
                 ]
-                placement =
-                    Dict("cpus" => entry["cpus"], "leader-cpu" => first(entry["cpus"]))
+                placement = Dict(
+                    "cpus" => entry["cpus"], "leader-cpu" => first(entry["cpus"])
+                )
                 receipt["analysis"][service.role]["placement"] = placement
                 directory = joinpath(runtime, service.role)
                 mkdir(directory; mode = 0o700)
                 bindings = Dict(
-                    "PACKAGE"=>installed,
-                    "PREFIX"=>prefix,
-                    "RUNTIME"=>runtime,
-                    "REMOTE"=>basename(launch_record["remote"]),
-                    "INSTANCE"=>launch_record["invocation"],
+                    "PACKAGE" => installed,
+                    "PREFIX" => prefix,
+                    "RUNTIME" => runtime,
+                    "REMOTE" => basename(launch_record["remote"]),
+                    "INSTANCE" => launch_record["invocation"],
                 )
                 client = D.relative_asset(installed, spec["client"]["analysis"])
                 write(
@@ -460,12 +459,7 @@ function start!(
                     ordinary = true,
                 )
                 S.install_fragment!(
-                    service.unit,
-                    text,
-                    runtime,
-                    receipt;
-                    save = save_receipt!,
-                    deadline,
+                    service.unit, text, runtime, receipt; save = save_receipt!, deadline
                 )
             end
             result = S.checked(["systemctl", "--user", "daemon-reload"]; deadline)
@@ -483,8 +477,7 @@ function start!(
                 item["state"] = "submitted"
                 save_receipt!(runtime, receipt)
                 result = S.checked(
-                    ["systemctl", "--user", "start", "--no-block", item["unit"]];
-                    deadline,
+                    ["systemctl", "--user", "start", "--no-block", item["unit"]]; deadline
                 )
                 result.returncode == 0 ||
                     throw(ArgumentError("optional analysis submission failed for $role"))
@@ -496,33 +489,32 @@ function start!(
                 main = something(tryparse(Int, values["MainPID"]), 0)
                 ticks = S.maybe_start_ticks(main)
                 if ticks !== nothing &&
-                   !isempty(values["ControlGroup"]) &&
-                   S.process_identity(main, ticks, values["ControlGroup"])
+                    !isempty(values["ControlGroup"]) &&
+                    S.process_identity(main, ticks, values["ControlGroup"])
                     item["pid"] = main
                     item["start-ticks"] = ticks
                     item["state"] = "running"
                 end
                 values["ActiveState"] == "failed" &&
-                    @warn "Optional analysis service failed" role result=values["Result"]
+                    @warn "Optional analysis service failed" role result = values["Result"]
                 save_receipt!(runtime, receipt)
             end
         end
     catch error
-        @warn "Optional analysis startup failed; RTC remains active" exception=(
-            error,
-            catch_backtrace(),
+        @warn "Optional analysis startup failed; RTC remains active" exception = (
+            error, catch_backtrace()
         )
         try
-            with_lifecycle_lock(runtime, max(deadline, S.monotonic()+1)) do
+            with_lifecycle_lock(runtime, max(deadline, S.monotonic() + 1)) do
                 path = joinpath(runtime, "analysis.json")
-                saved = isfile(path) ? Common.read_json(path; maximum = 1024*1024) : receipt
+                saved =
+                    isfile(path) ? Common.read_json(path; maximum = 1024 * 1024) : receipt
                 push!(saved["errors"], sprint(showerror, error))
                 save_receipt!(runtime, saved)
             end
         catch receipt_error
-            @warn "Optional analysis receipt could not be saved" exception=(
-                receipt_error,
-                catch_backtrace(),
+            @warn "Optional analysis receipt could not be saved" exception = (
+                receipt_error, catch_backtrace()
             )
         end
     end
@@ -531,9 +523,10 @@ end
 
 """Remove separately retained optional fragments after the invocation sweep is quiet."""
 function cleanup_receipt(runtime, launch_record)
+    PipeWireAORTC.SessionLaunch.validate_ledger(launch_record)
     path = joinpath(runtime, "analysis.json")
     isfile(path) || return nothing
-    receipt = Common.read_json(path; maximum = 1024*1024)
+    receipt = Common.read_json(path; maximum = 1024 * 1024)
     receipt["invocation"] == launch_record["invocation"] &&
     receipt["unit"] == launch_record["unit"] ||
         throw(ArgumentError("optional analysis receipt belongs to another session"))
@@ -569,13 +562,14 @@ function verify_cleanup!(runtime, launch_record, deadline)
                 values["FragmentPath"] in (path, joinpath(S.runtime_unit_directory(), unit))
             )
         ) || throw(
-            ArgumentError("optional analysis manager definition changed before cleanup"),
+            ArgumentError("optional analysis manager definition changed before cleanup")
         )
     end
     return nothing
 end
 
 function cleanup!(runtime, launch_record, deadline)
+    PipeWireAORTC.SessionLaunch.validate_ledger(launch_record)
     with_lifecycle_lock(runtime, deadline) do
         receipt = cleanup_receipt(runtime, launch_record)
         if receipt === nothing
@@ -590,7 +584,7 @@ function cleanup!(runtime, launch_record, deadline)
                 union(units, last.(jobs)),
             ) && throw(
                 ArgumentError(
-                    "optional analysis unit or job remains without its retained receipt",
+                    "optional analysis unit or job remains without its retained receipt"
                 ),
             )
             return nothing
@@ -612,12 +606,12 @@ function cleanup!(runtime, launch_record, deadline)
                 lowercase(values["InvocationID"]) == retained_id ||
                 throw(
                     ArgumentError(
-                        "optional analysis unit incarnation changed before cleanup",
+                        "optional analysis unit incarnation changed before cleanup"
                     ),
                 )
             if get(item, "pid", 0) > 0 &&
-               haskey(item, "start-ticks") &&
-               !isempty(get(item, "cgroup", ""))
+                haskey(item, "start-ticks") &&
+                !isempty(get(item, "cgroup", ""))
                 owner = S.Coordinator(receipt["unit"], receipt["invocation"], "")
                 service = S.Service(owner, role)
                 service.main_pid = item["pid"]
@@ -640,9 +634,7 @@ function cleanup!(runtime, launch_record, deadline)
                     )
                 ) &&
                 throw(
-                    ArgumentError(
-                        "optional analysis unit lacks an exact retained fragment",
-                    ),
+                    ArgumentError("optional analysis unit lacks an exact retained fragment")
                 )
         end
         roles = keys(receipt["analysis"])
@@ -662,7 +654,7 @@ channel_unit_text(value::String) =
 channel_unit_text(value) = false
 
 channel_unit_channels(value) = throw(
-    ArgumentError("analysis channel-units must map at most 64 channel names per Port"),
+    ArgumentError("analysis channel-units must map at most 64 channel names per Port")
 )
 function channel_unit_channels(value::AbstractDict)
     length(value) <= 64 || return channel_unit_channels(nothing)
@@ -700,34 +692,21 @@ observation_queue!(sources, sinks, playback_by_capture, declaration) = nothing
 function observation_queue!(sources, sinks, playback_by_capture, declaration::AbstractDict)
     get(declaration, "name", nothing) == "libpipewire-module-queue" || return nothing
     observation_queue_args!(
-        sources,
-        sinks,
-        playback_by_capture,
-        get(declaration, "args", nothing),
+        sources, sinks, playback_by_capture, get(declaration, "args", nothing)
     )
 end
 observation_queue_args!(sources, sinks, playback_by_capture, args) = nothing
 function observation_queue_args!(sources, sinks, playback_by_capture, args::AbstractDict)
-    capture, playback =
-        get(args, "capture.props", nothing), get(args, "playback.props", nothing)
+    capture, playback = get(args, "capture.props", nothing),
+    get(args, "playback.props", nothing)
     return observation_queue_props!(
-        sources,
-        sinks,
-        playback_by_capture,
-        args,
-        capture,
-        playback,
+        sources, sinks, playback_by_capture, args, capture, playback
     )
 end
 observation_queue_props!(sources, sinks, playback_by_capture, args, capture, playback) =
     nothing
 function observation_queue_props!(
-    sources,
-    sinks,
-    playback_by_capture,
-    args,
-    capture::AbstractDict,
-    playback::AbstractDict,
+    sources, sinks, playback_by_capture, args, capture::AbstractDict, playback::AbstractDict
 )
     # Queue policy belongs to module arguments; endpoint properties cannot turn retention into copying.
     maximum = get(args, "queue.max-buffers", nothing)
@@ -735,8 +714,7 @@ function observation_queue_props!(
     get(args, "queue.overflow", nothing) == "drop-oldest" &&
     ((typeof(maximum) === Int && maximum == 1) || maximum == "1") || return nothing
     all((capture, playback)) do props
-        maximum =
-            get(props, "queue.max-buffers", get(args, "queue.max-buffers", nothing))
+        maximum = get(props, "queue.max-buffers", get(args, "queue.max-buffers", nothing))
         get(props, "queue.storage", get(args, "queue.storage", nothing)) == "copy" &&
             get(props, "queue.overflow", get(args, "queue.overflow", nothing)) ==
             "drop-oldest" &&
@@ -755,11 +733,7 @@ observation_queue_capacity(value::String) = value == "1"
 observation_queue_capacity(value) = false
 observation_queue_nodes!(sources, sinks, playback_by_capture, source, sink) = nothing
 function observation_queue_nodes!(
-    sources,
-    sinks,
-    playback_by_capture,
-    source::String,
-    sink::String,
+    sources, sinks, playback_by_capture, source::String, sink::String
 )
     source in sources || sink in sinks ?
     D.fail("ambiguous analysis observation queue node") : nothing

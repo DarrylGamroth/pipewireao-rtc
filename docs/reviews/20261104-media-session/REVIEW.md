@@ -303,6 +303,31 @@ Terminal host logs are `/tmp/rtc-media-session-host-before.log` and
 
 ## Package formatting and verification — 2026-11-05
 
+### Private ledger naming
+
+`wireplumber_pid` / `wireplumber_start_ticks` were mutable launch-ledger fields,
+not immutable protocol fields. Newly produced ledgers are version 2 and use
+`session_pid` / `session_start_ticks`, also used by `SessionRuntime.ready`.
+One producer-owned validator is shared by launch, runtime, CLI and analysis;
+unsupported versions refuse before mutations, and historical records remain
+untouched. This is an intentional API/schema migration without aliases.
+
+Independent source review caught an overly broad failed-start preflight: a
+missing/malformed ledger could prevent the existing exact-unit stop and its
+ingress-only emergency cleanup. The read is now separated from interpretation;
+read failures retain that path, while readable version-1 records refuse before
+manager calls. The unchanged fake-manager regression went from four passing /
+six failing checks to ten passing checks. Strict post-stop identity/version
+validation remains. Focused checks pass 296 assertions: configuration 118,
+analysis 119 and runtime/stop callers 59. The optional real-systemd wrong-version
+selector was added but not run; no installed ledger or service was touched.
+Logs: `/tmp/rtc-session-ledger-preflight-before.log`,
+`/tmp/rtc-session-ledger-preflight-after.log`,
+`/tmp/rtc-session-ledger-preflight-callers.log` and the root's formatted-source
+rerun `/tmp/rtc-ledger-root-verification-20261105.log`.
+
+### Shared layout
+
 The shared formatter is JuliaFormatter 2.14.8 BlueStyle with the explicit
 repository configuration, four-space indentation, a 92-column margin and up to
 three iterations to reach a fixed layout. DefaultStyle 2.14.8 preserves mixed
@@ -320,6 +345,8 @@ and literal values. This comparison normalizes single-expression condition/
 branch blocks and `if`/`elseif` layout; it is branch-structure equivalence,
 not a claim of byte-identical ASTs. Generated files and immutable evidence are
 excluded. No scientific coefficient, threshold or declaration was retuned.
+The subsequent eight-file ledger slice passes the same branch/literal and
+idempotence checks, completing the selected 414-file authored-source cohort.
 
 After formatting, the session machine/control/effect/ingress/transport/object
 cohort passes 1,179 assertions. The warmed Hsm selector passes 17 checks and
@@ -338,6 +365,8 @@ pass. Logs: `/tmp/rtc-core-suite-20261105.log`,
 `/tmp/rtc-instrument-publication-20261105.log` and
 `/tmp/rtc-core-suite-rerun-20261105.log`. This full run predates the subsequent
 private-ledger version migration, which has its own focused checks.
+The printed Git `cat-file` failure is expected: the configuration-store test
+deliberately removes one loose blob and requires retrieval to fail.
 
 ## Remaining integration gate
 
