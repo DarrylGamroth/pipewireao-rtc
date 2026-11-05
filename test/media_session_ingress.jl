@@ -1,370 +1,455 @@
 module MediaSessionIngressTests
 using Test, PipeWireAO, PipeWireAORTC
 import Clocks
-import PipeWireAORTC: ControlCodec,ControlClient,RunnerCodec,SessionCodec
+import PipeWireAORTC: ControlCodec, ControlClient, RunnerCodec, SessionCodec
 module Session
 import PipeWireAORTC.MediaSession: Identity, QUIT_OPERATION
-include(joinpath(@__DIR__,"..","src","media_session","ingress.jl"))
+include(joinpath(@__DIR__, "..", "src", "media_session", "ingress.jl"))
 end
 const I = Session.Ingress
 const S = PipeWireAORTC.MediaSession
 const C = ControlCodec
 const R = RunnerCodec
 const SPA = PipeWireAO.SPA
-const CONTROLLER = C.ControllerIdentity(UInt32(11),UInt64(12),Int64(13))
-const FACTS = I.Controller(S.Identity(11,12,13,14),"client")
+const CONTROLLER = C.ControllerIdentity(UInt32(11), UInt64(12), Int64(13))
+const FACTS = I.Controller(S.Identity(11, 12, 13, 14), "client")
 str(values::Pod...) = SPA.Struct(Pod[values...])
-function select_actions(::Type{T},actions) where T
+function select_actions(::Type{T}, actions) where {T}
     selected = T[]
     for action in actions
-        add_selected!(selected,action)
+        add_selected!(selected, action)
     end
     return selected
 end
-add_selected!(selected::Vector{T},action::T) where T = (push!(selected,action);nothing)
-add_selected!(selected,action) = nothing
-function gate(;journaled=false)
+add_selected!(selected::Vector{T}, action::T) where {T} = (push!(selected, action); nothing)
+add_selected!(selected, action) = nothing
+function gate(; journaled = false)
     clock = Clocks.CachedNanoClock(Int64(10_000_000_000))
-    g = I.Gate(17;clock,journaled,owner_pid=19)
+    g = I.Gate(17; clock, journaled, owner_pid = 19)
     @test length(I.take_actions!(g)) == 1
-    I.controllers!(g,[FACTS])
+    I.controllers!(g, [FACTS])
     @test length(I.take_actions!(g)) == 1
-    return g,clock
+    return g, clock
 end
-function request(token,operation=:groups;budget=Int64(5_000_000_000),controller=CONTROLLER,endpoint=Int64(17))
+function request(
+    token,
+    operation = :groups;
+    budget = Int64(5_000_000_000),
+    controller = CONTROLLER,
+    endpoint = Int64(17),
+)
     command = R.RunnerCommand(operation)
-    return R.encode_request(C.RequestHeader(controller,endpoint,Int64(token),R.operation_id(command),budget),command)
+    return R.encode_request(
+        C.RequestHeader(
+            controller,
+            endpoint,
+            Int64(token),
+            R.operation_id(command),
+            budget,
+        ),
+        command,
+    )
 end
-function write_request(token;budget=Int64(5_000_000_000),value=Int32(1))
-    command = R.RunnerCommand(:properties_set,"graph",Dict("algorithm:gain"=>R.RunnerScalar(:int,value)))
-    return R.encode_request(C.RequestHeader(CONTROLLER,Int64(17),Int64(token),UInt32(13),budget),command)
+function write_request(token; budget = Int64(5_000_000_000), value = Int32(1))
+    command = R.RunnerCommand(
+        :properties_set,
+        "graph",
+        Dict("algorithm:gain"=>R.RunnerScalar(:int, value)),
+    )
+    return R.encode_request(
+        C.RequestHeader(CONTROLLER, Int64(17), Int64(token), UInt32(13), budget),
+        command,
+    )
 end
-function reply(ticket;failure=false,quit=false)
-    header = C.ReplyHeader(ticket.header.controller,Int64(17),ticket.header.token,ticket.header.operation,Int32(failure ? -5 : 0))
-    payload = failure ? str(Pod("session"),Pod("cancelled"),Pod(SPA.Id(UInt32(3)))) :
-        quit ? str(Pod(SPA.Id(UInt32(1))),Pod(SPA.Id(UInt32(1))),Pod(str(Pod(true)))) :
-        ticket.header.operation == 13 ? str(Pod(SPA.Id(UInt32(3))),Pod(SPA.Id(UInt32(6))),Pod(str(Pod("graph"),Pod(str()),Pod(false)))) :
-        str(Pod(SPA.Id(UInt32(3))),Pod(SPA.Id(UInt32(2))),Pod(str(Pod(str()))))
-    C.encode_completion(header,payload;endpoint=:lifecycle)
+function reply(ticket; failure = false, quit = false)
+    header = C.ReplyHeader(
+        ticket.header.controller,
+        Int64(17),
+        ticket.header.token,
+        ticket.header.operation,
+        Int32(failure ? -5 : 0),
+    )
+    payload =
+        failure ? str(Pod("session"), Pod("cancelled"), Pod(SPA.Id(UInt32(3)))) :
+        quit ? str(Pod(SPA.Id(UInt32(1))), Pod(SPA.Id(UInt32(1))), Pod(str(Pod(true)))) :
+        ticket.header.operation == 13 ?
+        str(
+            Pod(SPA.Id(UInt32(3))),
+            Pod(SPA.Id(UInt32(6))),
+            Pod(str(Pod("graph"), Pod(str()), Pod(false))),
+        ) : str(Pod(SPA.Id(UInt32(3))), Pod(SPA.Id(UInt32(2))), Pod(str(Pod(str()))))
+    C.encode_completion(header, payload; endpoint = :lifecycle)
 end
-function admit!(g,pod;received=Int64(10_000_000_000))
-    I.receive!(g,pod,received)
+function admit!(g, pod; received = Int64(10_000_000_000))
+    I.receive!(g, pod, received)
     return I.take_actions!(g)
 end
-rejection(g) = first(C.decode_rejection(g.rejection;endpoint=:lifecycle))
-completion(g) = first(C.decode_completion(g.completion;endpoint=:lifecycle))
+rejection(g) = first(C.decode_rejection(g.rejection; endpoint = :lifecycle))
+completion(g) = first(C.decode_completion(g.completion; endpoint = :lifecycle))
 @testset "pure ingress validation and retained terminal records" begin
-    g,clock = gate()
+    g, clock = gate()
     initial = g.completion
-    actions = admit!(g,nothing)
+    actions = admit!(g, nothing)
     @test rejection(g).controller === nothing && rejection(g).result == -22
     @test g.completion == initial
-    @test isempty(select_actions(I.DispatchRequest,actions))
+    @test isempty(select_actions(I.DispatchRequest, actions))
     @test rejection(g).operation == 0
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(1;endpoint=Int64(18)))))
+    @test isempty(
+        select_actions(I.DispatchRequest, admit!(g, request(1; endpoint = Int64(18)))),
+    )
     @test rejection(g).result == -116
-    actions = admit!(g,request(1))
-    ticket = only(select_actions(I.DispatchRequest,actions)).ticket
+    actions = admit!(g, request(1))
+    ticket = only(select_actions(I.DispatchRequest, actions)).ticket
     @test ticket.controller == FACTS.identity
     @test ticket.client_name == "client"
     @test ticket.deadline == Int64(15_000_000_000)
     @test g.last_token == 1
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(1))))
-    @test length(select_actions(I.PublishRecords,admit!(g,request(1)))) == 1
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(2))))
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(1))))
+    @test length(select_actions(I.PublishRecords, admit!(g, request(1)))) == 1
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2))))
     @test rejection(g).result == -16
     @test g.pending.ticket === ticket
-    I.complete!(g,ticket,reply(ticket))
-    @test length(select_actions(I.PublishRecords,I.take_actions!(g))) == 1
+    I.complete!(g, ticket, reply(ticket))
+    @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
     @test g.pending === nothing && completion(g).token == 1
     terminal = g.completion
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(1))))
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(1))))
     @test g.completion == terminal
-    admit!(g,request(1;budget=Int64(4_000_000_000)))
+    admit!(g, request(1; budget = Int64(4_000_000_000)))
     @test rejection(g).result == -116
     @test g.completion == terminal
-    admit!(g,request(2;budget=Int64(60_000_000_001)))
+    admit!(g, request(2; budget = Int64(60_000_000_001)))
     @test rejection(g).result == -22
     @test rejection(g).controller === nothing
-    Clocks.update!(clock,Int64(20_000_000_000))
-    admit!(g,request(2);received=Int64(10_000_000_000))
+    Clocks.update!(clock, Int64(20_000_000_000))
+    admit!(g, request(2); received = Int64(10_000_000_000))
     @test rejection(g).result == -110
     @test g.last_token == 1
-    I.state!(g,R.Fault)
-    @test length(select_actions(I.PublishRecords,I.take_actions!(g))) == 1
-    @test_throws MethodError I.state!(g,UInt32(6))
+    I.state!(g, R.Fault)
+    @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
+    @test_throws MethodError I.state!(g, UInt32(6))
 end
 @testset "controller proof and sticky retirement" begin
-    g,_ = gate()
-    I.controllers!(g,[I.Controller(FACTS.identity,"changed")])
+    g, _ = gate()
+    I.controllers!(g, [I.Controller(FACTS.identity, "changed")])
     I.take_actions!(g)
-    admit!(g,request(1))
+    admit!(g, request(1))
     @test rejection(g).result == -116
-    I.controllers!(g,[FACTS]); I.take_actions!(g)
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(1))))
-    @test rejection(g).result == -116
-    g,_ = gate()
-    I.controllers!(g,[I.Controller(FACTS.identity,"client";input_ports=1)])
+    I.controllers!(g, [FACTS])
     I.take_actions!(g)
-    admit!(g,request(1))
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(1))))
     @test rejection(g).result == -116
-    for flag in (:full_info,:bound)
-        invalid = flag === :full_info ? I.Controller(FACTS.identity,"client";full_info=false) : I.Controller(FACTS.identity,"client";bound=false)
-        g,_ = gate()
-        I.controllers!(g,[invalid]); I.take_actions!(g)
-        admit!(g,request(1))
+    g, _ = gate()
+    I.controllers!(g, [I.Controller(FACTS.identity, "client"; input_ports = 1)])
+    I.take_actions!(g)
+    admit!(g, request(1))
+    @test rejection(g).result == -116
+    for flag in (:full_info, :bound)
+        invalid =
+            flag === :full_info ?
+            I.Controller(FACTS.identity, "client"; full_info = false) :
+            I.Controller(FACTS.identity, "client"; bound = false)
+        g, _ = gate()
+        I.controllers!(g, [invalid])
+        I.take_actions!(g)
+        admit!(g, request(1))
         @test rejection(g).result == -116
     end
-    g,_ = gate()
-    I.controllers!(g,I.Controller[])
+    g, _ = gate()
+    I.controllers!(g, I.Controller[])
     I.take_actions!(g)
-    I.controllers!(g,[FACTS]); I.take_actions!(g)
-    admit!(g,request(1))
+    I.controllers!(g, [FACTS])
+    I.take_actions!(g)
+    admit!(g, request(1))
     @test rejection(g).result == -116
-    I.controller_removed!(g,FACTS.identity.global_id,FACTS.identity.serial+1)
+    I.controller_removed!(g, FACTS.identity.global_id, FACTS.identity.serial+1)
     I.take_actions!(g)
     @test length(g.controllers) == 1
-    I.controller_removed!(g,FACTS.identity.global_id,FACTS.identity.serial)
+    I.controller_removed!(g, FACTS.identity.global_id, FACTS.identity.serial)
     I.take_actions!(g)
     @test isempty(g.controllers)
-    @test_throws ArgumentError I.controllers!(g,fill(FACTS,33))
+    @test_throws ArgumentError I.controllers!(g, fill(FACTS, 33))
 end
 @testset "receipt budget and dispatched controller loss" begin
-    g,clock = gate()
-    ticket = only(select_actions(I.DispatchRequest,admit!(g,request(1);received=Int64(8_000_000_000)))).ticket
+    g, clock = gate()
+    ticket = only(
+        select_actions(
+            I.DispatchRequest,
+            admit!(g, request(1); received = Int64(8_000_000_000)),
+        ),
+    ).ticket
     @test ticket.deadline == Int64(13_000_000_000)
-    Clocks.update!(clock,Int64(13_000_000_000))
+    Clocks.update!(clock, Int64(13_000_000_000))
     I.tick!(g)
     actions = I.take_actions!(g)
-    @test length(select_actions(I.AuthorityFailed,actions)) == 1
+    @test length(select_actions(I.AuthorityFailed, actions)) == 1
     @test completion(g).result == -5
     previous = g.completion
-    I.complete!(g,ticket,reply(ticket)); I.take_actions!(g)
+    I.complete!(g, ticket, reply(ticket))
+    I.take_actions!(g)
     @test g.completion == previous
-    g,_ = gate()
-    only(select_actions(I.DispatchRequest,admit!(g,request(1))))
-    I.controllers!(g,I.Controller[])
-    @test length(select_actions(I.AuthorityFailed,I.take_actions!(g))) == 1
+    g, _ = gate()
+    only(select_actions(I.DispatchRequest, admit!(g, request(1))))
+    I.controllers!(g, I.Controller[])
+    @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
     @test completion(g).result == -5
 end
 @testset "requested and terminal journal fences" begin
-    g,_ = gate(;journaled=true)
-    actions = admit!(g,write_request(1))
-    requested = only(select_actions(I.AppendJournal,actions))
+    g, _ = gate(; journaled = true)
+    actions = admit!(g, write_request(1))
+    requested = only(select_actions(I.AppendJournal, actions))
     @test requested.event == :requested
-    @test isempty(select_actions(I.DispatchRequest,actions))
+    @test isempty(select_actions(I.DispatchRequest, actions))
     ticket = requested.ticket
-    I.journal_receipt!(g,requested.id,true)
-    @test only(select_actions(I.DispatchRequest,I.take_actions!(g))).ticket === ticket
-    I.journal_receipt!(g,requested.id,true)
+    I.journal_receipt!(g, requested.id, true)
+    @test only(select_actions(I.DispatchRequest, I.take_actions!(g))).ticket === ticket
+    I.journal_receipt!(g, requested.id, true)
     @test isempty(I.take_actions!(g))
     initial = g.completion
-    I.complete!(g,ticket,reply(ticket))
+    I.complete!(g, ticket, reply(ticket))
     actions = I.take_actions!(g)
-    completed = only(select_actions(I.AppendJournal,actions))
+    completed = only(select_actions(I.AppendJournal, actions))
     @test completed.event == :completed
-    @test isempty(select_actions(I.PublishRecords,actions))
+    @test isempty(select_actions(I.PublishRecords, actions))
     @test g.completion == initial
-    I.journal_receipt!(g,completed.id,true)
-    @test length(select_actions(I.PublishRecords,I.take_actions!(g))) == 1
+    I.journal_receipt!(g, completed.id, true)
+    @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
     @test completion(g).result == 0
     @test g.pending === nothing
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.journal_receipt!(g,requested.id,false,"storage unavailable")
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.journal_receipt!(g, requested.id, false, "storage unavailable")
     actions = I.take_actions!(g)
-    @test isempty(select_actions(I.DispatchRequest,actions))
-    @test isempty(select_actions(I.AuthorityFailed,actions))
+    @test isempty(select_actions(I.DispatchRequest, actions))
+    @test isempty(select_actions(I.AuthorityFailed, actions))
     @test completion(g).result == -5
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.journal_receipt!(g,requested.id,true); I.take_actions!(g)
-    I.complete!(g,requested.ticket,reply(requested.ticket))
-    completed = only(select_actions(I.AppendJournal,I.take_actions!(g)))
-    I.journal_receipt!(g,completed.id,false,"storage unavailable")
-    @test length(select_actions(I.AuthorityFailed,I.take_actions!(g))) == 1
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.journal_receipt!(g, requested.id, true)
+    I.take_actions!(g)
+    I.complete!(g, requested.ticket, reply(requested.ticket))
+    completed = only(select_actions(I.AppendJournal, I.take_actions!(g)))
+    I.journal_receipt!(g, completed.id, false, "storage unavailable")
+    @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
     @test completion(g).result == -5
 end
 @testset "journal expiry before and after dispatch" begin
-    g,clock = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    Clocks.update!(clock,Int64(15_000_000_000))
+    g, clock = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    Clocks.update!(clock, Int64(15_000_000_000))
     I.tick!(g)
     actions = I.take_actions!(g)
-    terminal = only(select_actions(I.AppendJournal,actions))
+    terminal = only(select_actions(I.AppendJournal, actions))
     @test terminal.event == :completed
-    @test isempty(select_actions(I.AuthorityFailed,actions))
-    I.journal_receipt!(g,requested.id,true)
-    @test isempty(select_actions(I.DispatchRequest,I.take_actions!(g)))
-    I.journal_receipt!(g,terminal.id,true); I.take_actions!(g)
+    @test isempty(select_actions(I.AuthorityFailed, actions))
+    I.journal_receipt!(g, requested.id, true)
+    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
+    I.journal_receipt!(g, terminal.id, true)
+    I.take_actions!(g)
     @test completion(g).result == -5
-    g,clock = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.journal_receipt!(g,requested.id,true); I.take_actions!(g)
-    I.complete!(g,requested.ticket,reply(requested.ticket))
-    completed = only(select_actions(I.AppendJournal,I.take_actions!(g)))
-    Clocks.update!(clock,Int64(15_000_000_000))
-    I.journal_receipt!(g,completed.id,true)
+    g, clock = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.journal_receipt!(g, requested.id, true)
+    I.take_actions!(g)
+    I.complete!(g, requested.ticket, reply(requested.ticket))
+    completed = only(select_actions(I.AppendJournal, I.take_actions!(g)))
+    Clocks.update!(clock, Int64(15_000_000_000))
+    I.journal_receipt!(g, completed.id, true)
     actions = I.take_actions!(g)
-    unknown = only(select_actions(I.AppendJournal,actions))
+    unknown = only(select_actions(I.AppendJournal, actions))
     @test unknown.event == :unknown
-    @test length(select_actions(I.AuthorityFailed,actions)) == 1
-    I.journal_receipt!(g,unknown.id,true); I.take_actions!(g)
+    @test length(select_actions(I.AuthorityFailed, actions)) == 1
+    I.journal_receipt!(g, unknown.id, true)
+    I.take_actions!(g)
     @test completion(g).result == -5
 end
 @testset "Quit supersedes pending work and retains old evidence" begin
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.journal_receipt!(g,requested.id,true); I.take_actions!(g)
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.journal_receipt!(g, requested.id, true)
+    I.take_actions!(g)
     old = requested.ticket
-    actions = admit!(g,request(2,:quit))
-    quit = only(select_actions(I.DispatchRequest,actions)).ticket
+    actions = admit!(g, request(2, :quit))
+    quit = only(select_actions(I.DispatchRequest, actions)).ticket
     @test g.pending.ticket === quit && g.retired.ticket === old
-    admit!(g,request(3))
+    admit!(g, request(3))
     @test rejection(g).result == -108
-    I.complete!(g,old,reply(old;failure=true);unknown=true)
-    terminal = only(select_actions(I.AppendJournal,I.take_actions!(g)))
+    I.complete!(g, old, reply(old; failure = true); unknown = true)
+    terminal = only(select_actions(I.AppendJournal, I.take_actions!(g)))
     @test terminal.event == :unknown
     @test g.pending.ticket === quit
-    I.complete!(g,quit,reply(quit;quit=true);terminal=true)
+    I.complete!(g, quit, reply(quit; quit = true); terminal = true)
     I.take_actions!(g)
     @test completion(g).token == 2
-    I.journal_receipt!(g,terminal.id,true); I.take_actions!(g)
+    I.journal_receipt!(g, terminal.id, true)
+    I.take_actions!(g)
     @test completion(g).token == 2
     @test g.pending === nothing && g.retired === nothing
-    @test isempty(select_actions(I.DispatchRequest,admit!(g,request(2,:quit))))
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    actions = admit!(g,request(2,:quit))
-    cancelled = only(select_actions(I.AppendJournal,actions))
+    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2, :quit))))
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    actions = admit!(g, request(2, :quit))
+    cancelled = only(select_actions(I.AppendJournal, actions))
     @test cancelled.event == :completed
-    @test length(select_actions(I.DispatchRequest,actions)) == 1
-    I.journal_receipt!(g,requested.id,true)
-    @test isempty(select_actions(I.DispatchRequest,I.take_actions!(g)))
-    I.journal_receipt!(g,cancelled.id,true); I.take_actions!(g)
+    @test length(select_actions(I.DispatchRequest, actions)) == 1
+    I.journal_receipt!(g, requested.id, true)
+    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
+    I.journal_receipt!(g, cancelled.id, true)
+    I.take_actions!(g)
     @test completion(g).token == 1
 end
 @testset "administrative payloads retain exact public arity" begin
-    g,_ = gate()
-    header = C.RequestHeader(CONTROLLER,Int64(17),Int64(1),UInt32(15),Int64(5_000_000_000))
-    admit!(g,C.encode_request(header,str(Pod(true))))
+    g, _ = gate()
+    header =
+        C.RequestHeader(CONTROLLER, Int64(17), Int64(1), UInt32(15), Int64(5_000_000_000))
+    admit!(g, C.encode_request(header, str(Pod(true))))
     @test rejection(g).result == -22 && rejection(g).controller === nothing
-    actions = admit!(g,C.encode_request(header,str()))
-    @test only(select_actions(I.DispatchRequest,actions)).ticket.command === SessionCodec.WarmupCommand()
+    actions = admit!(g, C.encode_request(header, str()))
+    @test only(select_actions(I.DispatchRequest, actions)).ticket.command ===
+          SessionCodec.WarmupCommand()
 end
 @testset "bounded controller evidence and request output" begin
-    g = I.Gate(17;clock=Clocks.CachedNanoClock(Int64(10_000_000_000)),owner_pid=19)
+    g = I.Gate(17; clock = Clocks.CachedNanoClock(Int64(10_000_000_000)), owner_pid = 19)
     I.take_actions!(g)
-    rows = [I.Controller(S.Identity(i,i+100,i+200,i+300),"client-$i") for i in 1:32]
-    I.controllers!(g,rows)
-    publication = only(select_actions(I.PublishRecords,I.take_actions!(g)))
+    rows = [I.Controller(S.Identity(i, i+100, i+200, i+300), "client-$i") for i = 1:32]
+    I.controllers!(g, rows)
+    publication = only(select_actions(I.PublishRecords, I.take_actions!(g)))
     fields = Dict(SPA.Props(publication.capability).values)
-    @test length(pod_value(SPA.Struct,fields["pipewireao.rtc.session.controllers"]).values) == 32
+    @test length(
+        pod_value(SPA.Struct, fields["pipewireao.rtc.session.controllers"]).values,
+    ) == 32
     @test sizeof(publication.capability) <= 64*1024
-    I.controllers!(g,I.Controller[]); I.take_actions!(g)
-    I.controllers!(g,[I.Controller(S.Identity(33,133,233,333),"new-client")])
-    publication = only(select_actions(I.PublishRecords,I.take_actions!(g)))
+    I.controllers!(g, I.Controller[])
+    I.take_actions!(g)
+    I.controllers!(g, [I.Controller(S.Identity(33, 133, 233, 333), "new-client")])
+    publication = only(select_actions(I.PublishRecords, I.take_actions!(g)))
     fields = Dict(SPA.Props(publication.capability).values)
-    @test isempty(pod_value(SPA.Struct,fields["pipewireao.rtc.session.controllers"]).values)
+    @test isempty(
+        pod_value(SPA.Struct, fields["pipewireao.rtc.session.controllers"]).values,
+    )
     @test length(g.controllers) == 32
-    I.controller_removed!(g,UInt32(1),UInt64(101)); I.take_actions!(g)
-    I.controllers!(g,[I.Controller(S.Identity(33,133,233,333),"new-client")])
-    publication = only(select_actions(I.PublishRecords,I.take_actions!(g)))
+    I.controller_removed!(g, UInt32(1), UInt64(101))
+    I.take_actions!(g)
+    I.controllers!(g, [I.Controller(S.Identity(33, 133, 233, 333), "new-client")])
+    publication = only(select_actions(I.PublishRecords, I.take_actions!(g)))
     fields = Dict(SPA.Props(publication.capability).values)
-    @test length(pod_value(SPA.Struct,fields["pipewireao.rtc.session.controllers"]).values) == 1
+    @test length(
+        pod_value(SPA.Struct, fields["pipewireao.rtc.session.controllers"]).values,
+    ) == 1
     @test length(g.controllers) == 32
     # Undrained output is bounded even when callers ignore the drain contract.
-    for _ in 1:I.MAX_ACTIONS
-        I.state!(g,R.Offline)
+    for _ = 1:I.MAX_ACTIONS
+        I.state!(g, R.Offline)
     end
-    @test_throws ArgumentError I.state!(g,R.Offline)
+    @test_throws ArgumentError I.state!(g, R.Offline)
     @test length(g.actions) == I.MAX_ACTIONS
 end
 @testset "native removal proof permits bounded sequential clients" begin
-    g = I.Gate(17;clock=Clocks.CachedNanoClock(Int64(10_000_000_000)),owner_pid=19)
+    g = I.Gate(17; clock = Clocks.CachedNanoClock(Int64(10_000_000_000)), owner_pid = 19)
     I.take_actions!(g)
-    for index in 1:40
-        facts = I.Controller(S.Identity(index,index+100,index+200,index+300),"client-$index")
-        I.controllers!(g,[facts]); I.take_actions!(g)
-        controller = C.ControllerIdentity(facts.identity.global_id,facts.identity.serial,Int64(facts.identity.instance))
-        ticket = only(select_actions(I.DispatchRequest,admit!(g,request(index;controller)))).ticket
-        I.complete!(g,ticket,reply(ticket)); I.take_actions!(g)
+    for index = 1:40
+        facts = I.Controller(
+            S.Identity(index, index+100, index+200, index+300),
+            "client-$index",
+        )
+        I.controllers!(g, [facts])
+        I.take_actions!(g)
+        controller = C.ControllerIdentity(
+            facts.identity.global_id,
+            facts.identity.serial,
+            Int64(facts.identity.instance),
+        )
+        ticket =
+            only(select_actions(I.DispatchRequest, admit!(g, request(index; controller)))).ticket
+        I.complete!(g, ticket, reply(ticket))
+        I.take_actions!(g)
         @test completion(g).token == index
-        I.controller_removed!(g,facts.identity.global_id,facts.identity.serial)
+        I.controller_removed!(g, facts.identity.global_id, facts.identity.serial)
         I.take_actions!(g)
         @test isempty(g.controllers)
     end
 end
 @testset "unknown success cannot publish a successful scientific claim" begin
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.journal_receipt!(g,requested.id,true); I.take_actions!(g)
-    I.complete!(g,requested.ticket,reply(requested.ticket);unknown=true)
-    terminal = only(select_actions(I.AppendJournal,I.take_actions!(g)))
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.journal_receipt!(g, requested.id, true)
+    I.take_actions!(g)
+    I.complete!(g, requested.ticket, reply(requested.ticket); unknown = true)
+    terminal = only(select_actions(I.AppendJournal, I.take_actions!(g)))
     @test terminal.event == :unknown
-    @test first(C.decode_completion(terminal.pod;endpoint=:lifecycle)).result == -5
-    I.journal_receipt!(g,terminal.id,true); I.take_actions!(g)
+    @test first(C.decode_completion(terminal.pod; endpoint = :lifecycle)).result == -5
+    I.journal_receipt!(g, terminal.id, true)
+    I.take_actions!(g)
     @test completion(g).result == -5
 end
 @testset "controller loss while requested persistence is pending" begin
-    g,_ = gate(;journaled=true)
-    requested = only(select_actions(I.AppendJournal,admit!(g,write_request(1))))
-    I.controllers!(g,I.Controller[])
+    g, _ = gate(; journaled = true)
+    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
+    I.controllers!(g, I.Controller[])
     actions = I.take_actions!(g)
-    terminal = only(select_actions(I.AppendJournal,actions))
+    terminal = only(select_actions(I.AppendJournal, actions))
     @test terminal.event == :completed
-    @test isempty(select_actions(I.AuthorityFailed,actions))
-    @test isempty(select_actions(I.DispatchRequest,actions))
-    I.journal_receipt!(g,requested.id,true)
-    @test isempty(select_actions(I.DispatchRequest,I.take_actions!(g)))
-    I.journal_receipt!(g,terminal.id,false,"bad\0journal"*"x"^20000)
+    @test isempty(select_actions(I.AuthorityFailed, actions))
+    @test isempty(select_actions(I.DispatchRequest, actions))
+    I.journal_receipt!(g, requested.id, true)
+    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
+    I.journal_receipt!(g, terminal.id, false, "bad\0journal"*"x"^20000)
     actions = I.take_actions!(g)
-    @test isempty(select_actions(I.AuthorityFailed,actions))
+    @test isempty(select_actions(I.AuthorityFailed, actions))
     @test sizeof(g.completion) <= 64*1024
     @test completion(g).result == -5
 end
 
 @testset "signed nanosecond receipts retain exact boundaries" begin
-    for origin in (Int64(-10_000_000_000),(Int64(1)<<53)+37)
+    for origin in (Int64(-10_000_000_000), (Int64(1)<<53)+37)
         clock = Clocks.CachedNanoClock(origin)
-        g = I.Gate(17;clock,owner_pid=19)
+        g = I.Gate(17; clock, owner_pid = 19)
         I.take_actions!(g)
-        I.controllers!(g,[FACTS]); I.take_actions!(g)
-        actions = admit!(g,request(1;budget=Int64(1));received=origin)
-        ticket = only(select_actions(I.DispatchRequest,actions)).ticket
+        I.controllers!(g, [FACTS])
+        I.take_actions!(g)
+        actions = admit!(g, request(1; budget = Int64(1)); received = origin)
+        ticket = only(select_actions(I.DispatchRequest, actions)).ticket
         @test ticket.deadline === origin+Int64(1)
         I.tick!(g)
         @test isempty(I.take_actions!(g))
-        Clocks.advance!(clock,Int64(1))
+        Clocks.advance!(clock, Int64(1))
         I.tick!(g)
-        @test length(select_actions(I.AuthorityFailed,I.take_actions!(g))) == 1
+        @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
         @test completion(g).result == -5
     end
     clock = Clocks.CachedNanoClock(typemax(Int64)-1)
-    g = I.Gate(17;clock,owner_pid=19)
+    g = I.Gate(17; clock, owner_pid = 19)
     I.take_actions!(g)
-    I.controllers!(g,[FACTS]); I.take_actions!(g)
-    actions = admit!(g,request(1;budget=Int64(2));received=typemax(Int64)-1)
-    @test isempty(select_actions(I.DispatchRequest,actions))
+    I.controllers!(g, [FACTS])
+    I.take_actions!(g)
+    actions = admit!(g, request(1; budget = Int64(2)); received = typemax(Int64)-1)
+    @test isempty(select_actions(I.DispatchRequest, actions))
     @test rejection(g).result == -22 && rejection(g).controller === nothing
     @test g.pending === nothing && g.last_token == 0
-    @test_throws MethodError I.receive!(g,request(1),10.0)
-    @test_throws TypeError I.Gate(17;clock=()->Int64(0))
+    @test_throws MethodError I.receive!(g, request(1), 10.0)
+    @test_throws TypeError I.Gate(17; clock = ()->Int64(0))
 end
 
 @testset "canonical lifecycle and administrative codec interfaces" begin
-    g,_ = gate()
+    g, _ = gate()
     @test g.lifecycle === R.Offline
-    I.state!(g,R.Configuring)
-    publication = only(select_actions(I.PublishRecords,I.take_actions!(g)))
+    I.state!(g, R.Configuring)
+    publication = only(select_actions(I.PublishRecords, I.take_actions!(g)))
     fields = Dict(SPA.Props(publication.capability).values)
-    @test pod_value(SPA.Id,fields["pipewireao.rtc.session.lifecycle"]).value == UInt32(R.Configuring)
-    admit!(g,nothing)
+    @test pod_value(SPA.Id, fields["pipewireao.rtc.session.lifecycle"]).value ==
+          UInt32(R.Configuring)
+    admit!(g, nothing)
     @test SessionCodec.decode_rejection(g.rejection).lifecycle === R.Configuring
-    header = C.RequestHeader(CONTROLLER,Int64(17),Int64(1),
-        SessionCodec.operation_id(SessionCodec.AdmitCommand()),Int64(5_000_000_000))
-    actions = admit!(g,SessionCodec.encode_request(header,SessionCodec.AdmitCommand()))
-    @test only(select_actions(I.DispatchRequest,actions)).ticket.command === SessionCodec.AdmitCommand()
+    header = C.RequestHeader(
+        CONTROLLER,
+        Int64(17),
+        Int64(1),
+        SessionCodec.operation_id(SessionCodec.AdmitCommand()),
+        Int64(5_000_000_000),
+    )
+    actions = admit!(g, SessionCodec.encode_request(header, SessionCodec.AdmitCommand()))
+    @test only(select_actions(I.DispatchRequest, actions)).ticket.command ===
+          SessionCodec.AdmitCommand()
     @test I.QUIT_OPERATION === S.QUIT_OPERATION
 end
 end
