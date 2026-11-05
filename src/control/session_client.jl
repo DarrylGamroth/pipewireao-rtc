@@ -1,5 +1,6 @@
 """Explicit native verification and a retained connection to one listed RTC session."""
 module SessionClient
+import Clocks
 
 using PipeWireAO: with_thread_loop_lock
 import ..SessionDiscovery
@@ -58,7 +59,10 @@ select_session(entry::Discovery.DiscoveryEntry; kwargs...) =
 
 "Select an RTC session using only the direct native session profile."
 function select_direct_session(
-    entry::Discovery.DiscoveryEntry; deadline::Float64, check = () -> nothing
+    entry::Discovery.DiscoveryEntry;
+    deadline::Union{Int64,Float64},
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     entry.record === nothing && return Discovery.DiscoveryEntry(
         nothing, Discovery.Malformed, "record cannot be selected"
@@ -75,6 +79,7 @@ function select_direct_session(
             record.incarnation;
             deadline,
             check,
+            clock,
         )
         completion = ControlClient.request!(
             client, Session.RunnerCommand(:status); deadline, check

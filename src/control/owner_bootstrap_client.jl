@@ -1,5 +1,6 @@
 """Exact native ordinary-owner binding; no automatic reconnect or retry."""
 module OwnerBootstrapClient
+import Clocks
 import ..ControlClient
 import ..OwnerBootstrapCodec
 const Client = ControlClient
@@ -43,16 +44,26 @@ struct Connection{C<:Client.Client}
     client::C
 end
 request!(
-    connection::Connection, operation::Symbol; deadline::Float64, check = () -> nothing
+    connection::Connection,
+    operation::Symbol;
+    deadline::Union{Int64,Float64},
+    check = () -> nothing,
 ) = Client.request!(connection.client, Codec.Command(operation); deadline, check)
-function status(connection::Connection; deadline::Float64, check = () -> nothing)
+function status(
+    connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
+)
     reply = request!(connection, :status; deadline, check)
     _require_status(reply)
     return reply
 end
 """Bind exact PID/incarnation and require fresh Status, including Preparing."""
-function connect(binding::Binding; deadline::Float64, check = () -> nothing)
-    Client.deadline_check(deadline, check)
+function connect(
+    binding::Binding;
+    deadline::Union{Int64,Float64},
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    deadline = Client._deadline_ns(deadline)
     client = Client.connect(
         Codec.PROFILE,
         binding.remote,
@@ -61,6 +72,7 @@ function connect(binding::Binding; deadline::Float64, check = () -> nothing)
         binding.instance;
         deadline,
         check,
+        clock,
     )
     connection = Connection(binding, client)
     try
@@ -80,26 +92,37 @@ function connect(
     node::AbstractString,
     pid::Integer,
     instance::Integer;
-    deadline::Float64,
+    deadline::Union{Int64,Float64},
     check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
-    Client.deadline_check(deadline, check)
-    return connect(Binding(remote, node, pid, instance); deadline, check)
+    return connect(Binding(remote, node, pid, instance); deadline, check, clock)
 end
-function connect_owner!(connection::Connection; deadline::Float64, check = () -> nothing)
+function connect_owner!(
+    connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
+)
+    deadline = Client._deadline_ns(deadline)
+    previous = nothing
     while true
+        current = Clocks.time_nanos(connection.client.clock)
+        previous === nothing ||
+            current >= previous ||
+            throw(Client.UnknownOutcome("bootstrap client clock regressed"))
+        previous = current
+        Client.deadline_check(deadline, check, current)
         reply = status(connection; deadline, check)
         reply.lifecycle === Codec.Prepared && break
         reply.lifecycle === Codec.Preparing ||
             error("bootstrap owner is not Prepared: $(reply.lifecycle): $(reply.message)")
-        Client.deadline_check(deadline, check)
-        sleep(min(0.005, max(0.0, deadline - Client.monotonic())))
+        sleep(min(0.005, Float64(max(Int128(0), Int128(deadline) - current)) / 1e9))
     end
     reply = request!(connection, :connect; deadline, check)
     _require_connected(reply)
     return reply
 end
-function quit!(connection::Connection; deadline::Float64, check = () -> nothing)
+function quit!(
+    connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
+)
     reply = request!(connection, :quit; deadline, check)
     _require_stopped(reply)
     return reply

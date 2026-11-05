@@ -1,5 +1,6 @@
 """One correlated native calibration run; dictionaries are saved evidence adapters."""
 module CalibrationActionClient
+import Clocks
 
 import ..ControlClient
 import ..CalibrationActionCodec
@@ -41,9 +42,13 @@ function connect(
     run::Integer,
     timeout_ns::Integer;
     command_count::Int = 277,
-    deadline::Float64 = Client.monotonic() + timeout_ns / 1e9,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline::Union{Int64,Float64} = Base.Checked.checked_add(
+        Clocks.time_nanos(clock), Int64(timeout_ns)
+    ),
     check = Client.NO_CHECK,
 )
+    deadline = Client._deadline_ns(deadline)
     0 < run <= typemax(UInt64) && 0 < timeout_ns <= typemax(Int64) ||
         throw(ArgumentError("invalid calibration run or timeout"))
     1 <= command_count <= 4096 || throw(ArgumentError("invalid command contract"))
@@ -55,9 +60,10 @@ function connect(
         binding.instance;
         deadline,
         check,
+        clock,
     )
     try
-        Client.poll(client, deadline, check) do
+        Client.poll(client, deadline, check) do _
             capability = client.observation.capability
             capability === nothing && return false
             capability.lifecycle in (Lifecycle.Preparing, Lifecycle.Prepared) &&
@@ -267,7 +273,9 @@ end
 function _complete!(
     connection::Connection,
     value;
-    deadline::Float64 = Client.monotonic() + connection.timeout_ns / 1e9,
+    deadline::Union{Int64,Float64} = Base.Checked.checked_add(
+        Clocks.time_nanos(connection.client.clock), connection.timeout_ns
+    ),
     check = Client.NO_CHECK,
     record::Bool = true,
 )

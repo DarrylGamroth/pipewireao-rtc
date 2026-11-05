@@ -3,7 +3,7 @@ module ControlClient
 
 using PipeWireAO
 import ..ControlCodec
-import ..Common
+import Clocks
 
 const Envelope = ControlCodec
 const SPA = PipeWireAO.SPA
@@ -57,13 +57,30 @@ function budget_ns(profile::AbstractProfile, remaining::Float64)
     return nanoseconds >= Float64(typemax(Int64)) ? typemax(Int64) :
            max(Int64(1), floor(Int64, nanoseconds))
 end
+function budget_ns(profile::AbstractProfile, remaining::Union{Int64,Int128})
+    remaining > 0 || throw(ArgumentError("invalid native request budget"))
+    limit = budget_ns(profile, maximum_budget(profile))
+    return Int64(min(remaining, limit))
+end
 "Profile-specific immutable bound NodeInfo identity; common profiles have none."
 node_identity(::AbstractProfile, properties, previous) = nothing
 
 const INSTANCE_LOCK = ReentrantLock()
 const NEXT_INSTANCE = Ref(Int64(0))
-monotonic() = Common.monotonic_seconds()
+"Return monotonic seconds for existing public seconds-based tool APIs."
+monotonic() = Clocks.time_nanos(Clocks.SystemNanoClock()) / 1.0e9
 const NO_CHECK = () -> nothing
+
+# Convert only the existing public seconds input. New callers pass Clocks'
+# Int64 nanoseconds directly; every internal deadline and receipt stays signed.
+_deadline_ns(deadline::Int64) = deadline
+function _deadline_ns(deadline::Float64)
+    nanoseconds = deadline * 1.0e9
+    isfinite(nanoseconds) &&
+    Float64(typemin(Int64)) <= nanoseconds < Float64(typemax(Int64)) ||
+        throw(ArgumentError("native deadline must fit signed nanoseconds"))
+    return floor(Int64, nanoseconds)
+end
 
 function next_instance()
     return lock(INSTANCE_LOCK) do
@@ -94,7 +111,7 @@ end
 
 struct ObservedReply{T}
     value::T
-    at::Float64
+    at::Int64
     bytes::Vector{UInt8}
 end
 
@@ -112,7 +129,8 @@ mutable struct Observation{P<:AbstractProfile,L,C,R}
     rejection_seen::Bool
     max_accepted::Int64
     failure::Union{Nothing,String}
-    failure_at::Float64
+    failure_at::Union{Nothing,Int64}
+    last_at::Union{Nothing,Int64}
     fatal_failure::Union{Nothing,String}
     pending::Union{Nothing,Envelope.RequestHeader}
     matched_completion::Union{Nothing,ObservedReply{C}}
@@ -135,7 +153,8 @@ function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Abstrac
         false,
         0,
         nothing,
-        Inf,
+        nothing,
+        nothing,
         nothing,
         nothing,
         nothing,
@@ -144,8 +163,17 @@ function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Abstrac
 end
 
 function fail!(
-    observation::Observation, message; at::Float64 = monotonic(), retirement::Bool = false
+    observation::Observation,
+    message;
+    at::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
+    retirement::Bool = false,
 )
+    if observation.last_at !== nothing && at < observation.last_at
+        message = "owner observation clock regressed"
+        retirement = false
+    else
+        observation.last_at = at
+    end
     !retirement &&
         observation.fatal_failure === nothing &&
         (observation.fatal_failure = String(message))
@@ -209,10 +237,19 @@ same_request(reply::Envelope.ReplyHeader, request::Envelope.RequestHeader) =
     reply.token == request.token &&
     reply.operation == request.operation
 
-function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64} = nothing)
+function observe!(
+    observation::Observation,
+    pod::Pod;
+    at::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
+)
     names = capability_names(observation.profile)
     # A failure preceding a matching reply cannot be revived by later data.
     observation.fatal_failure === nothing || return nothing
+    if observation.last_at !== nothing && at < observation.last_at
+        fail!(observation, "owner observation clock regressed"; at)
+        return nothing
+    end
+    observation.last_at = at
     try
         sizeof(pod) <= reply_bound(observation.profile) ||
             throw(ArgumentError("owner Props exceeds reply bound"))
@@ -244,9 +281,7 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
                 bytes == previous.bytes ||
                     throw(ArgumentError("conflicting terminal completion"))
             end
-            recorded = ObservedReply{completion_type(observation.profile)}(
-                value, at === nothing ? monotonic() : at, bytes
-            )
+            recorded = ObservedReply{completion_type(observation.profile)}(value, at, bytes)
             if previous === nothing || header.token >= previous.value.header.token
                 observation.completion = recorded
             end
@@ -268,7 +303,7 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
             value.header.endpoint_instance == observation.instance ||
                 throw(ArgumentError("rejection instance changed"))
             bytes = copy(pod.data)
-            recorded = ObservedReply(value, at === nothing ? monotonic() : at, bytes)
+            recorded = ObservedReply(value, at, bytes)
             pending = observation.pending
             if pending !== nothing && same_request(value.header, pending)
                 previous = observation.matched_rejection
@@ -285,12 +320,16 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
             throw(ArgumentError("unrecognized owner Props"))
         end
     catch error
-        fail!(observation, sprint(showerror, error); at = at === nothing ? monotonic() : at)
+        fail!(observation, sprint(showerror, error); at)
     end
     return nothing
 end
 
-function matching_reply(observation::Observation, deadline::Float64)
+function matching_reply(
+    observation::Observation,
+    deadline::Int64;
+    now::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
+)
     # Valid completion observed before retirement wins over a later removal.
     # An earlier failure blocks observe!, and a late reply never extends time.
     observation.fatal_failure === nothing ||
@@ -298,16 +337,16 @@ function matching_reply(observation::Observation, deadline::Float64)
     for recorded in (observation.matched_completion, observation.matched_rejection)
         recorded === nothing && continue
         recorded.at <= deadline &&
-            recorded.at <= observation.failure_at &&
+            (observation.failure_at === nothing || recorded.at <= observation.failure_at) &&
             return recorded.value
     end
     observation.failure === nothing || throw(UnknownOutcome(observation.failure))
-    monotonic() < deadline || throw(UnknownOutcome("absolute request deadline expired"))
+    now < deadline || throw(UnknownOutcome("absolute request deadline expired"))
     return nothing
 end
 
 "One private remote and one serialized pending request; explicitly close after use."
-mutable struct Client{O<:Observation}
+mutable struct Client{O<:Observation,C<:Clocks.AbstractNanoClock}
     loop::ThreadLoop
     context::Union{Nothing,Context}
     core::Union{Nothing,CoreConnection}
@@ -331,6 +370,8 @@ mutable struct Client{O<:Observation}
     wakeup::Base.AsyncCondition
     wakeup_lock::ReentrantLock
     registry_listener::Union{Nothing,ManagedListener}
+    clock::C
+    last_at::Union{Nothing,Int64}
 end
 
 
@@ -356,9 +397,10 @@ function Client(
     last_token::Int64,
     closed::Bool,
     active::Bool,
-    request_lock::ReentrantLock,
-) where {O<:Observation}
-    return Client{O}(
+    request_lock::ReentrantLock;
+    clock::C = Clocks.SystemNanoClock(),
+) where {O<:Observation,C<:Clocks.AbstractNanoClock}
+    return Client{O,C}(
         loop,
         context,
         core,
@@ -382,6 +424,8 @@ function Client(
         Base.AsyncCondition(),
         ReentrantLock(),
         nothing,
+        clock,
+        nothing,
     )
 end
 
@@ -402,15 +446,41 @@ function private_remote(remote::AbstractString)
     return path
 end
 
-function deadline_check(deadline::Float64, check)
-    isfinite(deadline) || throw(ArgumentError("native owner deadline must be finite"))
+function _supervise(check)
     try
         check()
     catch error
         throw(UnknownOutcome("supervision check failed: $(sprint(showerror, error))"))
     end
-    monotonic() < deadline || throw(UnknownOutcome("absolute deadline expired"))
     return nothing
+end
+
+function deadline_check(deadline::Int64, check, current::Int64)
+    _supervise(check)
+    current < deadline || throw(UnknownOutcome("absolute deadline expired"))
+    return nothing
+end
+
+# Existing one-shot/server callers still expose seconds. Their input conversion
+# is confined here until their owned loops migrate to signed sampled values.
+function deadline_check(deadline::Union{Int64,Float64}, check)
+    deadline = _deadline_ns(deadline)
+    _supervise(check)
+    return deadline_check(deadline, NO_CHECK, Clocks.time_nanos(Clocks.SystemNanoClock()))
+end
+
+function deadline_check(client::Client, deadline::Int64, check, current::Int64)
+    if client.last_at !== nothing && current < client.last_at
+        throw(UnknownOutcome("native client clock regressed"))
+    end
+    client.last_at = current
+    return deadline_check(deadline, check, current)
+end
+
+"Validate fresh time after supervision/encoding and immediately before native I/O."
+function deadline_check(client::Client, deadline::Int64, check)
+    _supervise(check)
+    return deadline_check(client, deadline, NO_CHECK, Clocks.time_nanos(client.clock))
 end
 
 function serial(properties, name)
@@ -471,31 +541,44 @@ function wake!(client::Client)
 end
 
 function fail!(client::Client, message; kwargs...)
-    fail!(client.observation, message; kwargs...)
+    fail!(client.observation, message; at = Clocks.time_nanos(client.clock), kwargs...)
     wake!(client)
     return nothing
 end
 
-function poll(predicate, client::Client, deadline::Float64, check; verify_health = true)
+function poll(predicate, client::Client, deadline::Int64, check; verify_health = true)
     # Completion/discovery wakes this task. A single deadline timer bounds an
     # otherwise idle connection. Legacy check hooks may supervise external
     # processes, so retain their periodic invocation only when one is supplied.
-    remaining = deadline - monotonic()
-    timer = Timer(_ -> wake!(client), max(0.0, remaining))
+    started = Clocks.time_nanos(client.clock)
+    remaining = max(Int128(0), Int128(deadline) - started)
+    timer_fired = Threads.Atomic{Bool}(false)
+    timer = Timer(Float64(remaining) / 1.0e9) do _
+        timer_fired[] = true
+        wake!(client)
+    end
     supervision =
         check === NO_CHECK ? nothing : Timer(_ -> wake!(client), 0.005; interval = 0.005)
     try
         while true
-            verify_health && deadline_check(deadline, check)
+            current = Clocks.time_nanos(client.clock)
+            verify_health && deadline_check(client, deadline, check, current)
             value = with_thread_loop_lock(client.loop) do _
                 verify_health && healthy(client)
-                predicate()
+                predicate(current)
             end
             if value !== nothing && value !== false
-                verify_health && deadline_check(deadline, check)
+                verify_health && deadline_check(client, deadline, check, current)
                 return value
             end
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check, current)
+            # A deadline notification may arrive while the predicate is busy.
+            # Start the next decision cycle rather than losing that wake-up or
+            # obtaining a second clock sample in this one.
+            if timer_fired[]
+                yield()
+                continue
+            end
             wait(client.wakeup)
         end
     finally
@@ -541,7 +624,11 @@ function node_info!(client::Client, info::NodeInfo; marker::Bool)
             client.owner_ready = true
         end
     catch error
-        fail!(client.observation, sprint(showerror, error))
+        fail!(
+            client.observation,
+            sprint(showerror, error);
+            at = Clocks.time_nanos(client.clock),
+        )
     finally
         wake!(client)
     end
@@ -563,6 +650,9 @@ Discover one exact private-core owner and export one unique inactive no-port
 controller on this connection. Return only after its actual registry incarnation
 is verified and appears in the bounded retained capability. No operation is sent.
 All discovery/subscription/admission steps share one absolute monotonic deadline.
+Pass an `Int64` deadline in nanoseconds from `clock::Clocks.AbstractNanoClock`.
+The `Float64` seconds signature is retained as an entry compatibility boundary;
+injected clocks and deadlines must belong to the same monotonic domain.
 """
 
 function connect(
@@ -571,19 +661,26 @@ function connect(
     node_name::AbstractString,
     expected_pid::Integer,
     expected_instance::Integer;
-    deadline::Float64,
+    deadline::Union{Int64,Float64},
     check = NO_CHECK,
     controller_instance::Union{Nothing,Integer} = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
+    deadline = _deadline_ns(deadline)
     0 < expected_pid <= typemax(UInt32) ||
         throw(ArgumentError("expected owner PID must fit positive Id"))
     0 < expected_instance <= typemax(Int64) ||
         throw(ArgumentError("expected instance must be positive Int64"))
     0 < ncodeunits(node_name) <= 128 && !occursin('\0', node_name) && isvalid(node_name) ||
         throw(ArgumentError("owner node name must be bounded nonempty UTF-8"))
-    deadline_check(deadline, check)
+    _supervise(check)
+    started = Clocks.time_nanos(clock)
+    deadline_check(deadline, NO_CHECK, started)
     path = private_remote(remote)
-    deadline_check(deadline, check)
+    _supervise(check)
+    current = Clocks.time_nanos(clock)
+    current >= started || throw(UnknownOutcome("native client clock regressed"))
+    deadline_check(deadline, NO_CHECK, current)
     _check_controller_instance(controller_instance)
     instance =
         controller_instance === nothing ? next_instance() : Int64(controller_instance)
@@ -609,12 +706,14 @@ function connect(
         0,
         false,
         false,
-        ReentrantLock(),
+        ReentrantLock();
+        clock,
     )
+    client.last_at = current
     stage = "connection and controller export"
     try
         with_thread_loop_lock(client.loop) do _
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check)
             client.context = Context(client.loop)
             client.core = CoreConnection(
                 something(client.context);
@@ -644,11 +743,11 @@ function connect(
         end
         start!(client.loop)
         stage = "controller identity"
-        marker = poll(client, deadline, check) do ;
+        marker = poll(client, deadline, check) do _
             candidate(client, marker_name)
         end
         with_thread_loop_lock(client.loop) do _
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check)
             client.identity = Envelope.ControllerIdentity(
                 marker.id, serial(marker.properties, marker_name), instance
             )
@@ -663,13 +762,13 @@ function connect(
                     fail!(client, sprint(showerror, error); retirement = true),
             )
         end
-        poll(() -> client.marker_ready, client, deadline, check)
+        poll(_ -> client.marker_ready, client, deadline, check)
         stage = "owner identity"
-        owner = poll(client, deadline, check) do ;
+        owner = poll(client, deadline, check) do _
             candidate(client, client.node_name)
         end
         with_thread_loop_lock(client.loop) do _
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check)
             owner.id != 0 && owner.id != typemax(UInt32) ||
                 throw(UnknownOutcome("owner global ID is not assigned"))
             client.global_id = owner.id
@@ -684,21 +783,23 @@ function connect(
                 on_error = (proxy, sequence, error) ->
                     fail!(client, sprint(showerror, error); retirement = true),
                 on_param = (proxy, sequence, id, index, next, pod) -> begin
-                    id == SPA.PARAM_PROPS && pod !== nothing && observe!(observation, pod)
+                    id == SPA.PARAM_PROPS &&
+                        pod !== nothing &&
+                        observe!(observation, pod; at = Clocks.time_nanos(client.clock))
                     wake!(client)
                     nothing
                 end,
             )
         end
-        poll(() -> client.owner_ready, client, deadline, check)
+        poll(_ -> client.owner_ready, client, deadline, check)
         stage = "retained parameters and controller admission"
         with_thread_loop_lock(client.loop) do _
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check)
             healthy(client)
             subscribe_params!(something(client.node), (SPA.PARAM_PROPS,))
             enum_params!(something(client.node), SPA.PARAM_PROPS; count = UInt32(8))
         end
-        poll(client, deadline, check) do
+        poll(client, deadline, check) do _
             cap = observation.capability
             cap !== nothing &&
                 observation.completion_seen &&
@@ -723,7 +824,11 @@ _unknown_outcome(error) = UnknownOutcome(sprint(showerror, error))
 _unknown_outcome(error::UnknownOutcome) = error
 function _fail_request!(client, error)
     with_thread_loop_lock(client.loop) do _
-        fail!(client.observation, sprint(showerror, error))
+        fail!(
+            client.observation,
+            sprint(showerror, error);
+            at = Clocks.time_nanos(client.clock),
+        )
     end
     throw(_unknown_outcome(error))
 end
@@ -740,9 +845,13 @@ a matching typed Completion or Rejection. One absolute deadline covers encoding,
 submission and observation. A reply observed before retirement remains resolved;
 retirement disables future requests. Failure before reply observation is unknown,
 disables this client, and is never retried or rebound. Serialize close with use.
+Pass an `Int64` nanosecond deadline from the client's clock. `Float64` seconds
+are converted once on entry for compatibility. Polling retains one decision
+sample per iteration; native submission independently checks the fresh clock.
 """
 
-function request!(client::Client, command; deadline::Float64, check = NO_CHECK)
+function request!(client::Client, command; deadline::Union{Int64,Float64}, check = NO_CHECK)
+    deadline = _deadline_ns(deadline)
     client.closed && throw(UnknownOutcome("client is closed"))
     trylock(client.request_lock) ||
         throw(ArgumentError("a native owner request is already pending"))
@@ -755,7 +864,7 @@ function request!(client::Client, command; deadline::Float64, check = NO_CHECK)
     installed = false
     header = nothing
     try
-        deadline_check(deadline, check)
+        deadline_check(client, deadline, check)
         client.closed && throw(UnknownOutcome("client is closed"))
         operation = operation_id(client.observation.profile, command)
         # Encode/validate locally before occupying a pending owner operation.
@@ -776,8 +885,8 @@ function request!(client::Client, command; deadline::Float64, check = NO_CHECK)
             token + 1
         end
         # Cold validation/compilation must not inflate the transmitted budget.
-        deadline_check(deadline, check)
-        remaining = deadline - monotonic()
+        deadline_check(client, deadline, check)
+        remaining = Int128(deadline) - something(client.last_at)
         budget = budget_ns(client.observation.profile, remaining)
         header = Envelope.RequestHeader(
             something(client.identity),
@@ -787,10 +896,10 @@ function request!(client::Client, command; deadline::Float64, check = NO_CHECK)
             budget,
         )
         pod = encode_request(client.observation.profile, header, command)
-        deadline_check(deadline, check)
+        deadline_check(client, deadline, check)
         with_thread_loop_lock(client.loop) do _
             healthy(client)
-            deadline_check(deadline, check)
+            deadline_check(client, deadline, check)
             observation = client.observation
             observation.pending === nothing ||
                 throw(ArgumentError("a native request is already pending"))
@@ -802,8 +911,8 @@ function request!(client::Client, command; deadline::Float64, check = NO_CHECK)
             submitted = true
             set_param!(something(client.node), SPA.PARAM_PROPS, pod)
         end
-        return poll(client, deadline, check; verify_health = false) do
-            reply = matching_reply(client.observation, deadline)
+        return poll(client, deadline, check; verify_health = false) do current
+            reply = matching_reply(client.observation, deadline; now = current)
             reply !== nothing && return reply
             healthy(client)
             nothing

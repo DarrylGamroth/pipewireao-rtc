@@ -130,11 +130,15 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         @test runtime.endpoint.lifecycle === Codec.Preparing
         # Warm the exact service path and show an idle scientific hook can
         # return without polling Registry or allocating Julia heap storage.
-        stub_service_once!(runtime)
-        stub_service_once!(runtime)
-        @test !Runtime.has_pending(runtime)
-        @test (@allocated Runtime.has_pending(runtime)) == 0
-        @test (@allocated stub_service_once!(runtime)) == 0
+        # Exclude startup callbacks throughout the idle precondition and
+        # measurement; they can wake the hook and allocate independently.
+        with_thread_loop_lock(runtime.loop) do _
+            stub_service_once!(runtime)
+            stub_service_once!(runtime)
+            @test !Runtime.has_pending(runtime)
+            @test (@allocated Runtime.has_pending(runtime)) == 0
+            @test (@allocated stub_service_once!(runtime)) == 0
+        end
         worker = @async try
             ready_at = Generic.monotonic() + 0.1
             while !quit[]

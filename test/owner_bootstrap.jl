@@ -1,5 +1,6 @@
 # Run with --threads=2,0. These are cold transport/threading tests, no SCI frames.
 using Test, PipeWireAO, PipeWireAORTC, ThreadPinning
+import Clocks
 include("control_private_core.jl")
 include("bootstrap_monitor_gate.jl")
 const B = PipeWireAORTC.OwnerBootstrapClient
@@ -28,7 +29,7 @@ function bootstrap_proof(remote, directory, daemon)
             (reply = reply, at = observed_at, thread = Threads.threadid())
         end
         main_gate(Cuint(1_000_000))
-        main_unblocked = Client.monotonic()
+        main_unblocked = Clocks.time_nanos(Clocks.SystemNanoClock())
         observed = fetch(queries)
         @test observed.at < main_unblocked
         @test observed.thread == 2

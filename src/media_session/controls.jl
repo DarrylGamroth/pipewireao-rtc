@@ -153,8 +153,7 @@ function observe_owner!(runtime, job, owner::Owner)
         end
         kind in kinds && throw(ArgumentError("duplicate owner Props record"))
         push!(kinds, kind)
-        # ControlClient's existing observation API declares seconds.
-        ControlClient.observe!(owner.observation, pod; at = now(runtime) / 1.0e9)
+        ControlClient.observe!(owner.observation, pod; at = now(runtime))
         owner.connected_observed |= _connected_observed(
             owner.profile, owner.observation.capability
         )
@@ -229,8 +228,9 @@ function request_owner!(runtime, job, owner::Owner, command)
             now(runtime) < deadline ||
                 throw(ControlClient.UnknownOutcome("owner control deadline expired"))
             if submitted
-                # Keep nanoseconds in policy; convert at the seconds-based client API.
-                reply = ControlClient.matching_reply(observation, deadline / 1.0e9)
+                reply = ControlClient.matching_reply(
+                    observation, deadline; now = now(runtime)
+                )
                 reply === nothing && return nothing
                 reply.header.result == 0 || throw(
                     ArgumentError("owner rejected operation ($(reply.header.result))")

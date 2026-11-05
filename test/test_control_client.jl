@@ -1,4 +1,5 @@
 using Test, PipeWireAO, PipeWireAORTC
+import Clocks
 
 const Client = PipeWireAORTC.ControlClient
 const Envelope = PipeWireAORTC.ControlCodec
@@ -12,6 +13,8 @@ struct TestReply
     header::Envelope.ReplyHeader
     payload::SPA.Struct
 end
+
+
 struct TestCommand end
 
 Client.profile_name(::TestProfile) = "org.test.owner/1"
@@ -92,7 +95,7 @@ end
     request = Envelope.RequestHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int64(1000))
     observation.pending = request
     reply = Envelope.ReplyHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int32(0))
-    now = Client.monotonic()
+    now = Clocks.time_nanos(Clocks.SystemNanoClock())
     Client.observe!(
         observation, Envelope.encode_completion(reply, SPA.Struct(Pod(Int32(7)))); at = now
     )
@@ -141,4 +144,157 @@ end
     Client.observe!(initial, sentinel)
     @test initial.completion_seen && initial.failure === nothing
     @test initial.completion === nothing
+end
+
+@testset "signed native receipt time and exact deadline ordering" begin
+    function pending_observation()
+        observation = Client.Observation(TestProfile(), Int64(23), UInt32(getpid()))
+        observation.pending = Envelope.RequestHeader(
+            IDENTITY, Int64(23), Int64(1), UInt32(71), Int64(1000)
+        )
+        return observation
+    end
+    header = Envelope.ReplyHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int32(0))
+    pod = Envelope.encode_completion(header, SPA.Struct(Pod(Int32(7))))
+    for at in (Int64(-10), Int64(0), Int64(2)^53 + 1)
+        observation = pending_observation()
+        Client.observe!(observation, pod; at)
+        @test observation.matched_completion.at === at
+        @test Client.matching_reply(observation, at; now = at + 1).header == header
+        Client.observe!(observation, pod; at = at + 2)
+        @test observation.matched_completion.at === at
+        Client.fail!(observation, "retired"; at = at + 3, retirement = true)
+        @test Client.matching_reply(observation, at; now = at + 4).header == header
+    end
+    observation = pending_observation()
+    Client.observe!(observation, pod; at = Int64(2)^53 + 1)
+    @test_throws Client.UnknownOutcome Client.matching_reply(
+        observation, Int64(2)^53; now = Int64(2)^53 + 2
+    )
+    observation = pending_observation()
+    Client.observe!(observation, test_capability(TestProfile()); at = Int64(-2))
+    Client.observe!(observation, pod; at = Int64(-3))
+    @test observation.fatal_failure !== nothing
+    @test observation.matched_completion === nothing
+    @test_throws Client.UnknownOutcome Client.matching_reply(
+        observation, Int64(10); now = Int64(0)
+    )
+end
+
+mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
+    value::Int64
+    reads::Int
+end
+Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.value)
+
+function clock_client(clock)
+    return Client.Client(
+        ThreadLoop("clock-contract"),
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        Client.Observation(TestProfile(), Int64(23), UInt32(getpid())),
+        "owner",
+        "marker",
+        Int64(17),
+        0,
+        0,
+        nothing,
+        false,
+        false,
+        Int64(0),
+        false,
+        false,
+        ReentrantLock();
+        clock,
+    )
+end
+
+@testset "one decision sample and fresh native submission guards" begin
+    clock = CountingNanoClock(-20, 0)
+    client = clock_client(clock)
+    try
+        samples = Int64[]
+        result = Client.poll(
+            client, Int64(100), Client.NO_CHECK; verify_health = false
+        ) do now
+            push!(samples, now)
+            clock.value += 1
+            :finished
+        end
+        @test result === :finished
+        @test samples == [-20]
+        @test clock.reads == 2 # Timer setup and the one decision iteration.
+
+        clock.reads = 0
+        clock.value = 10
+        @test_throws Client.UnknownOutcome Client.deadline_check(
+            client, Int64(11), () -> (clock.value = 11)
+        )
+        @test clock.reads == 1 # The hook runs before the fresh native guard sample.
+        clock.value = 9
+        @test_throws Client.UnknownOutcome Client.deadline_check(
+            client, Int64(100), Client.NO_CHECK
+        )
+    finally
+        close(client)
+    end
+
+    clock = CountingNanoClock(0, 0)
+    client = clock_client(clock)
+    try
+        samples = Int64[]
+        @test_throws Client.UnknownOutcome Client.poll(
+            client, Int64(10), Client.NO_CHECK; verify_health = false
+        ) do now
+            push!(samples, now)
+            clock.value = 20
+            Client.wake!(client)
+            nothing
+        end
+        @test samples == [0, 20]
+        @test clock.reads == 3
+    finally
+        close(client)
+    end
+
+    @test Client.budget_ns(TestProfile(), Int64(1)) === Int64(1)
+    @test Client.budget_ns(TestProfile(), Int128(typemax(Int64)) - typemin(Int64)) ==
+        30_000_000_000
+    @test Client._deadline_ns(Int64(2)^53 + 1) === Int64(2)^53 + 1
+    @test_throws ArgumentError Client._deadline_ns(Inf)
+    @test_throws ArgumentError Client._deadline_ns(Float64(typemax(Int64)) / 1e9)
+end
+
+struct DeadlineProbe{C}
+    clock::C
+    deadlines::Vector{Int64}
+end
+struct ProbeStopped <: Exception end
+function Client.request!(probe::DeadlineProbe, command; deadline, check)
+    push!(probe.deadlines, deadline)
+    throw(ProbeStopped())
+end
+
+@testset "calibration default deadline uses its bound clock" begin
+    actions = PipeWireAORTC.CalibrationActionClient
+    codec = PipeWireAORTC.CalibrationActionCodec
+    binding = actions.Binding("/unused", "clock-test", getpid(), 23)
+    for origin in (Int64(-10), Int64(2)^53 + 1, typemax(Int64) - 50)
+        probe = DeadlineProbe(Clocks.CachedNanoClock(origin), Int64[])
+        connection = actions.Connection(
+            probe, binding, UInt64(1), UInt64(0), Int64(100), 1, Dict{String,Any}[], false
+        )
+        if origin > typemax(Int64) - 100
+            @test_throws OverflowError actions.complete!(connection, codec.Hold())
+            @test isempty(probe.deadlines)
+            @test connection.serial == 0
+        else
+            @test_throws ProbeStopped actions.complete!(connection, codec.Hold())
+            @test probe.deadlines == [origin + 100]
+        end
+    end
 end

@@ -47,3 +47,50 @@ Local run logs: `/tmp/rtc-clk06-root-final-20261105.log`,
 
 These are software functional checks. They do not establish cadence, allocation
 bounds for the graph, real-time deadlines, physical timing or hardware behavior.
+
+## CLK-01/03: native client receipts and decisions
+
+ControlClient stores signed nanosecond receipts/failure watermarks and consumes
+signed deadlines directly. Existing `Float64` seconds arguments convert once at
+public entries. Session, bootstrap, acquisition lifecycle and calibration client
+constructors forward their injected `AbstractNanoClock`; calibration default
+deadlines use that bound clock. MediaSession no longer converts receipts or
+deadlines through seconds. The existing public `monotonic()` seconds helper
+remains a compatibility boundary, reading Clocks directly.
+
+Polling samples once at the beginning of each decision iteration. Callback
+receipts retain their producer sample, and each native submission checks its
+fresh clock after local encoding and again under the loop lock. Widened remaining
+budget arithmetic preserves native `Int64` duration saturation. A retained timely
+reply stays resolved after later consumption/retirement; clock regression is
+fatal. The timer callback uses an atomic flag across possible Julia threads.
+
+Observed checks: client contracts 60, session selection 18, MediaSession controls
+186; native ordinary bootstrap 51, calibration owner 47 and acquisition lifecycle
+74. New checks include negative/zero origins, adjacent ticks above 2⁵³, exact
+receipt boundaries, duplicate publication, queued known replies, callback
+retirement, one sample per polling iteration and fresh submission refusal.
+The signed receipt test fails on the baseline's Float64-only observation API.
+Independent review found and verified fixes for the timer flag and a calibration
+default deadline that originally read SystemNanoClock instead of its bound clock.
+
+The first lifecycle run had 73 passes and one idle allocation assertion failure
+(16,784 bytes). Native startup callbacks could invalidate its idle precondition
+or allocate during the global allocation counter interval, before any client was
+created. Four fresh runtimes each measured 32 locked idle samples at zero bytes,
+then observed a native wake after unlock. The test now holds the documented
+recursive ThreadLoop lock across its existing warmups and idle assertions. Its
+zero-byte budget and production behavior are unchanged; the selector passes 74.
+The precise contribution of polling versus concurrent callback allocations to
+the original byte count is unconfirmed.
+
+Local logs: `/tmp/rtc-clk03-client-final-20261105.log`,
+`/tmp/rtc-clk03-bootstrap-final-20261105.log`,
+`/tmp/rtc-control-clock-native-calibration-20261105.log`,
+`/tmp/rtc-control-clock-before-20261105.log`,
+`/tmp/rtc-control-clock-native-lifecycle-20261105.log`,
+`/tmp/rtc-lifecycle-idle-probe-20261105.log`, and
+`/tmp/rtc-lifecycle-idle-lock-20261105.log`. These private-core tests use the
+explicit PipeWireAO artifact prefix from the package environment. No live daemon,
+device or deadline qualification is implied. Server tickets/endpoints are the
+next CLK-03 slice; this client commit does not claim their migration.

@@ -48,6 +48,9 @@ verified migrations. Physical-offset host receipt/silence timing now uses signed
 Clocks ticks and one sample per receiver cycle; model chronology remains separate.
 Core, CPU input and native receiver checks pass. Its graph private-core gate
 remains unqualified: the baseline reproduces the same pre-frame buffer failure.
+Native clients and MediaSession controls now retain signed receipt/deadline ticks;
+deterministic and private-core client checks pass. Server ticket/endpoint and
+remaining deployment/optical caller chains continue as separate slices.
 
 ### Naming and Julia type dispatch — 2026-11-04
 
