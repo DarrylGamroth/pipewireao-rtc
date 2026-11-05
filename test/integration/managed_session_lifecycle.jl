@@ -201,20 +201,16 @@ end
 function lifecycle_case(application, stage, prefix; running)
     spec = D.profile(joinpath(application, "deployment.conf"), prefix)
     handle = nothing
+    cohort = Faults.runtime_cohort(application,spec,prefix)
     receipt = Dict{String,Any}(
         "completed"=>false,
         "running_case"=>running,
         "deployment_sha256"=>C.sha256_file(joinpath(application, "deployment.conf")),
-        "manifest_sha256"=>C.sha256_file(joinpath(application, "Manifest.toml")),
+        "manifest_sha256"=>cohort["project"]["sha256"]["Manifest.toml"],
         "harness_sha256"=>SOURCE_SHA256,
         "prefix"=>abspath(prefix),
         "startup_budget_seconds"=>Faults.startup_budget(spec),
-        "native_sha256"=>Dict(
-            relative=>C.sha256_file(joinpath(prefix, relative)) for relative in (
-                "bin/pipewireao-rtc",
-                "lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so",
-            )
-        ),
+        "rtc_runtime"=>cohort,
         "scope"=>"Private functional lifecycle and complete named-command delivery; no optical, cadence, latency, or hardware qualification",
     )
     try
@@ -224,6 +220,9 @@ function lifecycle_case(application, stage, prefix; running)
             prefix,
             deadline = W.monotonic()+Faults.startup_budget(spec),
         )
+        ledger = W._ledger(handle)
+        receipt["rtc_runtime"] = Faults.runtime_cohort(application,spec,prefix;
+            process=(pid=handle.main_pid,binding=ledger["session_process"]))
         Faults.checked(
             request(handle, stage, "ready", ["status"])["state"] == "Ready",
             "session is not Ready",

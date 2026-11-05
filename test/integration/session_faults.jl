@@ -1,6 +1,7 @@
 #!/usr/bin/env julia
 # Opt-in actual headless RTC/systemd qualification; never attaches to a live session.
 using Test, PipeWireAO, PipeWireAORTC
+import TOML
 
 const W = PipeWireAORTC.SessionRuntime
 const S = PipeWireAORTC.SystemdOwners
@@ -16,6 +17,69 @@ usage: julia --startup-file=no --project=. test/integration/session_faults.jl \
   --prefix PATH            Installed PipeWireAO prefix (default: /opt/pipewireao)
 """
 clock() = time_ns() / 1e9
+
+"""Record selected runtime assets separately from the loaded harness's sources.
+
+`process` is an optional `(pid, binding)` from the retained launch ledger. Its
+executable/argv are verified while that child is alive; no child source hash is
+inferred from the harness checkout or from a matching package version. A sealed
+Manifest records the selected dependency pin, not an observation of loaded code.
+"""
+function runtime_cohort(application, spec, prefix; process = nothing,
+        verify_process = D.verify_session_process)
+    root = realpath(application)
+    relative = relpath(D.session_executable(spec, root, prefix), root)
+    launcher = D.relative_asset(root, relative)
+    PipeWireAORTC.ScienceExport.validate_rtc(joinpath(root, "rtc"))
+    launcher_hash = C.sha256_file(launcher)
+    get(spec["artifacts"], relative, nothing) == launcher_hash ||
+        throw(ArgumentError("RTC launcher differs from the sealed package"))
+    project = D.registered_application(spec) ? D.application_environment(spec, root) :
+        realpath(joinpath(root, "julia"))
+    project_hashes = Dict{String,String}()
+    for name in ("Project.toml", "Manifest.toml")
+        path = D.relative_asset(root, relpath(joinpath(project, name), root))
+        digest = C.sha256_file(path)
+        get(spec["artifacts"], relpath(path, root), nothing) == digest ||
+            throw(ArgumentError("selected runtime $name differs from the sealed package"))
+        project_hashes[name] = digest
+    end
+    manifest = TOML.parsefile(joinpath(project, "Manifest.toml"))
+    rtc = only(manifest["deps"]["PipeWireAORTC"])
+    selected_pin = Dict(key => get(rtc, key, nothing) for key in
+        ("uuid", "version", "git-tree-sha1"))
+    executable = realpath(Base.julia_cmd().exec[1])
+    observed = nothing
+    if process !== nothing
+        binding = deepcopy(process.binding)
+        verify_process(process.pid, binding)
+        realpath(binding["project"]) == project ||
+            throw(ArgumentError("observed child project differs from the selected runtime"))
+        executable = realpath(binding["julia"])
+        observed = Dict("pid" => process.pid, "binding" => binding)
+    end
+    source_root = pkgdir(PipeWireAORTC)
+    media_session = joinpath(source_root, "src", "media_session")
+    sources = sort!(vcat(["src/PipeWireAORTC.jl"], [
+        relpath(joinpath(parent, name), source_root) for
+        (parent, _, names) in walkdir(media_session) for name in names if endswith(name, ".jl")
+    ]))
+    isdir(media_session) && length(sources) > 1 ||
+        throw(ArgumentError("harness MediaSession source cohort is unavailable"))
+    return Dict(
+        "launcher" => Dict("path" => launcher, "sha256" => launcher_hash),
+        "julia" => Dict("path" => executable, "sha256" => C.sha256_file(executable),
+            "scope" => process === nothing ? "harness executable; child unobserved" :
+                "verified child executable and argv"),
+        "project" => Dict("path" => project, "sha256" => project_hashes,
+            "selected_rtc_pin" => selected_pin),
+        "child_process" => observed,
+        "harness" => Dict("rtc_version" => string(pkgversion(PipeWireAORTC)),
+            "sdk_version" => string(pkgversion(PipeWireAO)), "source_root" => source_root,
+            "media_session_source_sha256" => Dict(name => C.sha256_file(joinpath(source_root, name)) for name in sources),
+            "scope" => "Current harness MediaSession files and package entrypoint; these are not child loaded-code hashes"),
+    )
+end
 function checked(condition, message)
     @test condition
     condition || error(message)
@@ -687,15 +751,7 @@ function run_case(selected; progress = _no_session_progress)
         "package" => selected.package,
         "deployment_sha256" =>
             C.sha256_file(joinpath(selected.package, "deployment.conf")),
-        "sealed_policy" => Dict(
-            k => v for (k, v) in spec["artifacts"] if
-            endswith(k, "ao/session.lua") || endswith(k, "lib/ao-connections.lua")
-        ),
-        "installed_policy" => Dict(
-            relative => C.sha256_file(
-                joinpath(selected.prefix, "share", "pipewireao-rtc", "scripts", relative),
-            ) for relative in ("ao/session.lua", "lib/ao-connections.lua")
-        ),
+        "rtc_runtime" => runtime_cohort(selected.package, spec, selected.prefix),
         "source_protocol" => source["control-protocol"],
         "startup_budget_s" => startup_budget(spec),
         "test_sha256" => C.sha256_file(@__FILE__),
@@ -720,6 +776,8 @@ function run_case(selected; progress = _no_session_progress)
         )
         ready = W.ready(handle; deadline = clock()+30)
         ledger = W.final_record(first_stage)
+        receipt["rtc_runtime"] = runtime_cohort(selected.package, spec, selected.prefix;
+            process = (pid = handle.main_pid, binding = ledger["session_process"]))
         receipt["first_ledger"] = ledger
         receipt["ready_status"] = session_phase(handle, "Ready")
         receipt["running_status"] = session_phase(handle, "Running"; start = true)
@@ -879,6 +937,8 @@ function run_case(selected; progress = _no_session_progress)
         aos_source || W.ready(handle; deadline = clock()+30)
         fresh = session_phase(handle, "Ready")
         second = W.final_record(second_stage)
+        receipt["fresh_rtc_runtime"] = runtime_cohort(selected.package,spec,selected.prefix;
+            process=(pid=handle.main_pid,binding=second["session_process"]))
         checked(
             second["session_uuid"] != ledger["session_uuid"],
             "fresh session reused UUID",

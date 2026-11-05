@@ -200,6 +200,25 @@ files under `/tmp/rtc-management-json-build-20261105` and
 
 ## Maintained tool and type-selector cleanup
 
+The implementation-specific `session_items.jl` and `session_policy_faults.jl`
+integration selectors were retired with links to their Git history. Their
+frozen protocol/test inputs and dated receipts remain unchanged. Valuable
+scientific, lifecycle, fault and exact-cleanup selectors remain. Their shared
+`runtime_cohort` helper replaces old WirePlumber/Lua asset hash requirements
+with the sealed generated launcher, selected Julia/project/Manifest and exact
+live process binding. Harness MediaSession source hashes are explicitly
+separate: a package pin or harness checkout does not prove a child's loaded
+source hash. Cold checks pass 125 assertions, including 27 new cohort checks,
+and lifecycle/CAL2/shutdown selectors load without invoking live methods.
+The process verifier's positive boundary is injected in these cold helper tests;
+the generated-process selector separately checks actual `/proc` verification.
+Log: `/tmp/rtc-session-receipt-cold-final-20261105.log`.
+
+Retained `deployment/wireplumber` observer/realization probes are a separate
+development product. No selected RTC Meson target, export or core-test caller
+requires their Lua files. They are not another RTC session authority or an RTC
+Lua/libwireplumber dependency.
+
 The three standalone private-core graph providers now dispatch their expected
 PipeWire EPIPE classification on `PipeWireError`; unrelated errors still
 propagate and the existing RTC-unloaded marker remains required. Twelve direct

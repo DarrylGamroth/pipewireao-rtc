@@ -41,11 +41,14 @@ function main(application, stage, prefix)
             error("GPU visibility must be cleared for each process")
     end
     report=nothing
+    cohort=Cleanup.runtime_cohort(application,spec,prefix)
     @testset "Classic CPU Ready to Quit" begin
         handle=W.start!(application, stage; prefix, deadline = W.monotonic()+600)
         ledger=W._ledger(handle)
         failures=Exception[]
         try
+            cohort=Cleanup.runtime_cohort(application,spec,prefix;
+                process=(pid=handle.main_pid,binding=ledger["session_process"]))
             reply=W.control!(
                 handle,
                 R.RunnerCommands.parse(["status"]);
@@ -75,21 +78,10 @@ function main(application, stage, prefix)
                 "deployment_sha256"=>C.sha256_file(
                     joinpath(application, "deployment.conf"),
                 ),
-                "manifest_sha256"=>C.sha256_file(joinpath(application, "Manifest.toml")),
+                "manifest_sha256"=>cohort["project"]["sha256"]["Manifest.toml"],
                 "test_sha256"=>SOURCE_SHA256,
-                "native_sha256"=>Dict(
-                    relative=>C.sha256_file(joinpath(prefix, relative)) for relative in (
-                        "bin/pipewireao-rtc",
-                        "lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so",
-                        "lib/libwireplumber-0.5.so.0",
-                    )
-                ),
+                "rtc_runtime"=>cohort,
                 "prefix"=>abspath(prefix),
-                "policy_sha256"=>Dict(
-                    relative=>C.sha256_file(
-                        joinpath(prefix, "share/pipewireao-rtc/scripts", relative),
-                    ) for relative in ("ao/session.lua", "lib/ao-owner.lua")
-                ),
             )
         catch error
             push!(failures, error)

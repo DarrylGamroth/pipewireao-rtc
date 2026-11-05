@@ -103,7 +103,7 @@ julia +1.13 --startup-file=no --threads=2,0 --project=CPU_APPLICATION \
 
 Select the application's pinned depot and the prefix's ordinary client config,
 module, SPA-plugin and library directories in the environment. This is the
-same upstream-libwireplumber/PipeWireAO prefix used by installed fault checks.
+same PipeWireAO SDK prefix selected for the installed application.
 The headless RTC owns admission and required application links. The test client
 uses the unchanged capacity-one display queues, compiles collection while held,
 and requires a complete detector/command prefix at the selected slow pace.
@@ -131,39 +131,53 @@ lifecycle receipts, then reruns the same scientific oracles. It writes
 `offline-verification.json` only after all assertions pass and refuses to
 overwrite an existing receipt. The original live test outcome is retained.
 
-## CPU-only standard Link qualification
+## Current Julia session-policy checks
 
-`session_items.jl` uses the existing private-core helper and real
-`PipeWireAO.NdArraySource` / `NdArraySink` endpoints. It loads the installed
-candidate's production `ao-connections`, upstream Link APIs and RTC-local
-control-module binding, checks exact endpoint identities and port IDs,
-checks that the link creator client belongs to the actual RTC PID, exchanges
-three CPU arrays, and proves link withdrawal while preserving an unrelated node. A separate
-WirePlumber daemon shares the private core through a minimal profile with no
-device monitors or desktop auto-connect policy; this is process coexistence,
-not hardware or full desktop-policy qualification. It starts no systemd
-session, simulator, CUDA runtime or physical device. It stops only its own
-headless RTC child and private daemon; the evidence directory must be fresh.
+The cold policy selectors exercise the Hsm machine, typed effects, object
+binding/link lifecycle, ingress and transport without a WirePlumber host or Lua
+runtime. The machine selector is included in `test/runtests.jl`; the effects,
+objects, ingress and transport selectors are included there as well.
 
 ```sh
-julia --startup-file=no --project=. test/integration/session_items.jl \
-  /absolute/path/to/wireplumber-library-prefix /absolute/path/to/rtc-prefix \
-  /absolute/path/to/fresh-evidence-directory
+julia --startup-file=no --project=. test/test_media_session.jl
+julia --startup-file=no --project=. test/media_session_effects.jl
+julia --startup-file=no --project=. test/media_session_objects.jl
+julia --startup-file=no --project=. test/media_session_ingress.jl
+julia --startup-file=no --project=. test/media_session_transport.jl
 ```
 
-The candidate uses upstream Link and SessionItem interfaces built against
-PipeWireAO, without downstream Lua/POD API extensions. The RTC prefix supplies `ao-lua`. The
-RTC prefix contains its native control module; the generated profile selects
-Lua, `ao-lua` and the control binding, without SessionItem factories, desktop audio policy or an
-all-feature event source. Set `LD_LIBRARY_PATH` with the candidate WirePlumber
-library first, then RTC and PipeWireAO dependencies, so an older library cannot
-shadow the candidate. Endpoint client PID checks bind Client info; registry announcements
-alone do not guarantee the PID property. The fixture leaves the link available
-for 30 seconds for first-use compilation and sample exchange, then checks
-retirement and remote absence. This is a functional test, not a latency bound.
-Logs and `receipt.json` remain in the evidence directory, including failures.
+Optional `media_session_private_core.jl`,
+`media_session_acquisition_private_core.jl`, `media_session_host.jl` and
+`media_session_process.jl`
+checks need the current source
+environment with the PipeWireAO public `iterate!` API and a matching native SDK
+prefix. They own only a private core and test processes. Select two default-pool
+threads plus one interactive thread and set `PIPEWIREAO_PREFIX` to the matching
+PipeWireAO SDK:
 
-## Actual session fault cases
+```sh
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_private_core.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_acquisition_private_core.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_host.jl
+PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
+  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_process.jl
+```
+
+These are functional private-core checks; they do not qualify service
+deployment, physical hardware, deadlines or real-time behavior. The previous
+standard-Link/WirePlumber coexistence selector was implementation-specific and
+has been retired. Its source remains in [Git history](https://github.com/DarrylGamroth/pipewireao-rtc/blob/4f7eaff/test/integration/session_items.jl);
+its results apply only to the earlier implementation.
+
+## Installed-session fault cases
+
+These selectors are being migrated to the direct Julia session host. Earlier
+receipts concern the WirePlumber implementation and do not qualify its
+replacement. Each selected application/source cohort needs a fresh lifecycle
+and fault result; cold helper checks alone do not establish readiness.
 
 `session_faults.jl` is opt-in. It creates new private sessions through
 `PipeWireAORTC.SessionRuntime`; it never attaches to an existing
@@ -173,8 +187,9 @@ Physical DM safe-state actions and operator approval are outside this test.
 Prerequisites:
 
 - Linux user systemd with a working user bus and delegated cgroups.
-- The package's installed PipeWireAO/WirePlumber dependencies, scientific
-  packages, data, and configured CPU/resource rights.
+- The matching PipeWireAO client/SDK source cohort, scientific packages, data,
+  and configured CPU/resource rights. No Lua or libwireplumber RTC dependency
+  is required by the selected host.
 - A sealed package accepted by the current deployment validator, containing a
   headless RTC application, node-owner declarations, and a source using
   `pipewireao.rtc.calibration-lifecycle/1` with `instrument=classic` or `copper`,
@@ -257,9 +272,6 @@ a failed gate does not trigger mutation retries. A cleanup failure remains a
 failure with retained diagnostics; the test does not broadly kill services.
 
 Polling does not establish source-first causal ordering or real-time bounds.
-The separate `session_policy_faults.jl` qualification checks production Lua
-policy ordering with controlled I/O boundaries; its evidence has a different
-scope from the installed-session checks above.
 
 ## Cold source-contract checks
 
@@ -280,34 +292,11 @@ later read settles. They do not establish live fault recovery. Run each selected
 AOS case against a fresh sealed application separately; for Classic's JFG application,
 `--controller-role julia` selects its declared graph owner.
 
-## Deterministic production-policy checks
+## Retired production-policy selector
 
-`session_policy_faults.jl` loads the selected production `ao/session.lua` in
-Lua 5.4 and gates its asynchronous source, graph, and link operations. It
-exercises the real fault callback with controlled I/O boundaries, without
-starting a service or changing the policy. The admitted state is supplied by
-the test; native discovery, transport and systemd are outside this check.
-
-```sh
-julia --startup-file=no --project=test test/integration/session_policy_faults.jl
-julia --startup-file=no --project=test test/integration/session_policy_faults.jl \
-  /absolute/path/to/pipewireao-rtc/runtime/scripts/ao/session.lua
-```
-
-The default policy is `/opt/pipewireao/share/pipewireao-rtc/scripts/ao/session.lua`.
-Install the Lua 5.4 shared library for this optional test. Output records the
-selected policy path and SHA-256; each case creates and closes a separate Lua
-state. The seven cases check source-first hold acknowledgement, both graph
-holds before withdrawal, first-fault retention/cancellation, unknown source
-hold, failed graph hold, uncertain withdrawal, failure before source capture,
-and absence of automatic readmission. Several obligations share a case.
-
-| Scenario | Verification surface | Remaining limit |
-| --- | --- | --- |
-| Source hold before graph hold and withdrawal | Production Lua callback with gated completions | Native/device timing is not measured. |
-| Repeated faults, unknown hold, graph/withdrawal failures | Production Lua callback | Controlled I/O failures do not inject native proxy errors. |
-| Sink removal, owned link removal, graph-child exit | Opt-in installed-session cases | Each selected sealed package/policy closure needs its own live result. |
-| Held Fault with surviving owners, or unknown Hold with complete policy shutdown | Installed-session observations and exact-invocation journals | The finite window does not prove absence of every possible retry. |
-| Complete cleanup and explicitly requested fresh admission | Installed-session cases and exact retained identities | This does not qualify physical command disposition. |
-| Native sink error and proxy-error injection | Gap: needs a cooperative owned sink or a declared plugin fault mechanism | A remotely bound Node has no public `set_error!` operation. |
-| Physical DM safe-state action and approval | Deferred outside the non-actuating RTC profile | The retired JFG harness is not evidence for this RTC path. |
+`session_policy_faults.jl` exercised the old production Lua policy and was
+retired with that implementation. Its source remains in [Git history](https://github.com/DarrylGamroth/pipewireao-rtc/blob/4f7eaff/test/integration/session_policy_faults.jl).
+Historical event-ordering evidence does not qualify current Julia policy. The
+new machine/effect and native private-core selectors above cover the current
+source surface; installed failure/re-admission integration remains a separate
+migration gate.

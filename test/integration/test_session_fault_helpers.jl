@@ -2,6 +2,93 @@
 using Test
 include("session_faults.jl")
 
+@testset "Runtime receipts distinguish selected assets, harness sources and child binding" begin
+    mktempdir() do root
+        application = mkpath(joinpath(root, "application"))
+        prefix = mkpath(joinpath(root, "empty-native-prefix"))
+        project = mkpath(joinpath(application, "runtime"))
+        PipeWireAORTC.ScienceExport.stage_rtc!(application)
+        write(joinpath(project, "Project.toml"), """
+        [deps]
+        PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+        """)
+        # An immutable, deliberately different pin checks that the harness
+        # checkout is not mislabeled as the child's selected package source.
+        write(joinpath(project, "Manifest.toml"), """
+        manifest_format = "2.0"
+        [[deps.PipeWireAORTC]]
+        uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+        version = "99.0.0"
+        git-tree-sha1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        """)
+        files = ("rtc/bin/pipewireao-rtc", "runtime/Project.toml", "runtime/Manifest.toml")
+        spec = Dict{String,Any}(
+            "runtime" => Dict("kind" => "registered", "project" => "runtime"),
+            "session-runtime" => Dict(
+                "argv" => ["@PACKAGE@/rtc/bin/pipewireao-rtc", "-c", "@RUNTIME@/rtc/rtc.conf"],
+                "environment" => Dict{String,String}(),
+            ),
+            "artifacts" => Dict(name => C.sha256_file(joinpath(application, name)) for name in files),
+        )
+        cohort = runtime_cohort(application, spec, prefix)
+        @test cohort["launcher"]["path"] == joinpath(application, first(files))
+        @test cohort["launcher"]["sha256"] == spec["artifacts"][first(files)]
+        @test cohort["project"]["path"] == project
+        @test cohort["project"]["sha256"]["Manifest.toml"] == spec["artifacts"][last(files)]
+        @test cohort["project"]["selected_rtc_pin"]["version"] == "99.0.0"
+        @test cohort["harness"]["rtc_version"] == string(pkgversion(PipeWireAORTC))
+        hashes = cohort["harness"]["media_session_source_sha256"]
+        @test hashes["src/media_session/MediaSession.jl"] == C.sha256_file(
+            joinpath(pkgdir(PipeWireAORTC), "src/media_session/MediaSession.jl"))
+        @test haskey(hashes, "src/media_session/session.jl") && haskey(hashes, "src/media_session/machine.jl")
+        @test all(name -> endswith(name, ".jl"), keys(hashes))
+        @test cohort["child_process"] === nothing
+        @test occursin("child unobserved", cohort["julia"]["scope"])
+        @test occursin("not child loaded-code hashes", cohort["harness"]["scope"])
+        @test readdir(prefix) == String[] # No retired prefix policy/library is read.
+        unexpected = joinpath(application, "rtc", "obsolete-policy.asset")
+        write(unexpected, "outside the generated launcher closure\n")
+        @test_throws ArgumentError runtime_cohort(application, spec, prefix)
+        rm(unexpected)
+
+        for (file, exception) in zip(files, (ArgumentError, D.DeploymentError, D.DeploymentError))
+            altered = deepcopy(spec)
+            altered["artifacts"][file] = "unsealed"
+            @test_throws exception runtime_cohort(application, altered, prefix)
+        end
+        retired = deepcopy(spec)
+        retired["session-runtime"]["argv"][1] = "@PREFIX@/bin/wireplumber"
+        @test_throws D.DeploymentError runtime_cohort(application, retired, prefix)
+
+        config = joinpath(root, "rtc.conf")
+        write(config, "{}\n")
+        executable = realpath(Base.julia_cmd().exec[1])
+        binding = Dict("julia" => executable, "project" => project, "config" => config,
+            "argv" => PipeWireAORTC.ScienceExport.rtc_arguments(executable, project, config))
+        calls = Tuple{Int,Dict{String,Any}}[]
+        verified = runtime_cohort(application, spec, prefix;
+            process = (pid = 12345, binding = binding),
+            verify_process = (pid, observed) -> push!(calls, (pid, observed)))
+        @test only(calls) == (12345, binding)
+        @test verified["child_process"]["pid"] == 12345
+        @test verified["julia"]["path"] == executable
+        @test verified["julia"]["scope"] == "verified child executable and argv"
+        @test verified["harness"] == cohort["harness"]
+        push!(binding["argv"], "changed-after-observation")
+        @test verified["child_process"]["binding"]["argv"] != binding["argv"]
+        pop!(binding["argv"])
+        @test_throws ErrorException runtime_cohort(application, spec, prefix;
+            process = (pid = 12345, binding = binding),
+            verify_process = (_, _) -> error("process binding mismatch"))
+        @test_throws D.DeploymentError runtime_cohort(application, spec, prefix;
+            process = (pid = -1, binding = binding))
+        other_project = mkpath(joinpath(root, "other-project"))
+        different = merge(binding, Dict("project" => other_project))
+        @test_throws ArgumentError runtime_cohort(application, spec, prefix;
+            process = (pid = 12345, binding = different), verify_process = (_, _) -> nothing)
+    end
+end
+
 function source_dump(; running = true, run_token = 4, snapshot_token = 5, sequence = 9)
     source = Dict(
         "role" => "simulator",

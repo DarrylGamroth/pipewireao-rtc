@@ -1104,21 +1104,14 @@ function main(args)
         timeout_seconds = haskey(options, "--timeout-seconds") ?
                           parse(Float64, options["--timeout-seconds"]) : nothing,
     )
+    cohort=M.Faults.runtime_cohort(application,plan.spec,prefix)
     summary=Dict(
         "deployment_sha256"=>C.sha256_file(joinpath(application, "deployment.conf")),
-        "manifest_sha256"=>C.sha256_file(
-            joinpath(application, plan.spec["runtime"]["project"], "Manifest.toml"),
-        ),
+        "manifest_sha256"=>cohort["project"]["sha256"]["Manifest.toml"],
         "prefix"=>prefix,
         "julia_version"=>string(VERSION),
         "selector_rtc_version"=>string(pkgversion(R)),
-        "native_sha256"=>Dict(
-            relative=>C.sha256_file(joinpath(prefix, relative)) for relative in (
-                "bin/pipewireao-rtc",
-                "lib/pipewireao-rtc/modules/libwireplumber-module-ao-control-endpoint.so",
-                "share/pipewireao-rtc/scripts/ao/session.lua",
-            )
-        ),
+        "rtc_runtime"=>cohort,
         "roles"=>[owner["role"] for owner in plan.spec["owners"]],
         "analysis"=>get(plan.spec, "analysis", []),
         "expected_runtime_roles"=>sort!(
@@ -1171,6 +1164,8 @@ function main(args)
             deadline = W.monotonic()+M.Faults.startup_budget(plan.spec),
         )
         ledger=W._ledger(handle)
+        result["rtc_runtime"]=M.Faults.runtime_cohort(application,plan.spec,prefix;
+            process=(pid=handle.main_pid,binding=ledger["session_process"]))
         require(
             Set(keys(ledger["owners"]))==Set(summary["expected_runtime_roles"]),
             "retained native owner roles differ from authored and generated session roles",
