@@ -119,7 +119,7 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 
 A sealed package includes its scientific configurations, calibration artifacts,
 scientific owners, Julia SDK, native headless RTC and selected libwireplumber
-library/modules. Build the native host from [native/](native/README.md).
+library/modules. Build the native host from [runtime/](runtime/README.md).
 The start helper installs to a fresh stage, starts an exact systemd instance,
 and returns after held admission. The helper exits; the headless RTC remains
 the session authority.
@@ -190,13 +190,13 @@ See [headless artifact registration and shared update history](docs/JULIA_DEPLOY
 | --- | --- |
 | `Project.toml`, `Manifest.toml` | Julia package identity and pinned operational environment |
 | `src/` | Julia native clients, shared operational tools |
-| `native/` | Headless executable, application Lua policy, native control and journal modules |
+| `runtime/` | Headless executable, application Lua policy, native control and journal modules |
 | `test/` | Package tests and native protocol records under `test/data/` |
 | `assets/deployment/` | Generic systemd, PipeWire and parameter-source resources |
 | `configs/` | Retained development graph/session configurations |
 | `session_*.jl` | One-shot native session and systemd installation commands |
 
-Session lifecycle policy lives in the headless RTC process under `native/`. The RTC Rust crate is
+Session lifecycle policy lives in the headless RTC process under `runtime/`. The RTC Rust crate is
 retired: the GUI owns its native Rust client, and calibration driving uses the
 shared Julia implementation. Existing sealed SDKs retain their original files
 and launchers. Current instrument definitions are in the

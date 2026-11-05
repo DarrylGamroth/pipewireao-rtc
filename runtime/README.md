@@ -1,4 +1,4 @@
-# Native headless RTC
+# Headless RTC runtime
 
 `pipewireao-rtc -c /absolute/path/to/rtc.conf` runs the RTC application using
 public libwireplumber `WpConf`, `WpCore`, component activation and a GLib main
@@ -54,11 +54,11 @@ See [SPA-JSON validation](../docs/validation/spa-json-20261021/README.md) and
 for exact cohorts and limits.
 
 ```sh
-meson setup native/build native --prefix=/absolute/isolated/prefix --libdir=lib \
+meson setup runtime/build runtime --prefix=/absolute/isolated/prefix --libdir=lib \
   -Dwp_source_dir=/absolute/path/to/wireplumber
-meson compile -C native/build
-meson test -C native/build --print-errorlogs
-meson install -C native/build
+meson compile -C runtime/build
+meson test -C runtime/build --print-errorlogs
+meson install -C runtime/build
 ```
 
 For a build without tests, use `-Dtests=false`; the upstream source checkout is
@@ -71,9 +71,9 @@ cohort's library directory (the deployment launcher sets `LD_LIBRARY_PATH`).
 
 | Owner | Build/source path | Installed path below prefix |
 | --- | --- | --- |
-| Native application | `native/build/pipewireao-rtc` | `bin/pipewireao-rtc` |
-| RTC plugins | `native/build/modules/*.so` | `lib/pipewireao-rtc/modules/*.so` |
-| RTC Lua policy | `native/scripts/` | `share/pipewireao-rtc/scripts/` |
+| Native application | `runtime/build/pipewireao-rtc` | `bin/pipewireao-rtc` |
+| RTC plugins | `runtime/build/modules/*.so` | `lib/pipewireao-rtc/modules/*.so` |
+| RTC Lua policy | `runtime/scripts/` | `share/pipewireao-rtc/scripts/` |
 
 Deployment seals those assets under package `rtc/bin`, `rtc/modules` and
 `rtc/scripts`. `WIREPLUMBER_MODULE_DIR` lists the RTC modules followed by generic

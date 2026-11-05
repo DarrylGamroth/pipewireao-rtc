@@ -4,7 +4,7 @@ const E = PipeWireAORTC.ScienceExport
 const C = PipeWireAORTC.Common
 
 @testset "staged RTC scripts include their application dependencies" begin
-    scripts = joinpath(pkgdir(PipeWireAORTC), "native", "scripts")
+    scripts = joinpath(pkgdir(PipeWireAORTC), "runtime", "scripts")
     for relative in E.RTC_SCRIPTS
         source = read(joinpath(scripts, relative), String)
         for required in eachmatch(r"require\s*\(\s*\"(ao-[^\"]+)\"\s*\)", source)

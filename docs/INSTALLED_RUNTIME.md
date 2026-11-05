@@ -17,7 +17,7 @@ algorithms, graph configurations, native controls and placement are unchanged.
    site/device policy. Configure any required site/device policy separately
    with stock WirePlumber configuration. Do not enable an unconfigured desktop
    session-manager unit. RTC owns its session service generation.
-3. Build and install [the native RTC](../native/README.md) against libwireplumber.
+3. Build and install [the native RTC](../runtime/README.md) against libwireplumber.
    The executable, AO control/journal modules and application Lua scripts belong
    to RTC, not the WirePlumber daemon. Export generic library assets separately
    from RTC assets, with explicit native build/source or installed-prefix inputs.
