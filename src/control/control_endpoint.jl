@@ -1,0 +1,605 @@
+"""Bounded cold owner ingress; the sole owner applies staged effects outside callbacks."""
+module ControlEndpoint
+
+using PipeWireAO
+using Hsm: @hsmdef, @statedef, @on_initial, @on_event
+import Hsm
+import ..ControlCodec
+import ..ControlClient
+
+const Envelope = ControlCodec
+const Client = ControlClient
+const SPA = PipeWireAO.SPA
+const MAX_CONTROLLERS = 32
+monotonic() = Client.monotonic()
+
+"One actual registry incarnation, verified using full NodeInfo."
+mutable struct Controller
+    global_id::UInt32
+    serial::UInt64
+    identity::Union{Nothing,Envelope.ControllerIdentity}
+    name::String
+    pid::UInt32
+    node::Union{Nothing,Node}
+    verified::Bool
+    retired::Bool
+    removed::Bool
+end
+
+struct Ticket{C}
+    header::Envelope.RequestHeader
+    command::C
+    payload::Vector{UInt8}
+    deadline::Float64
+end
+
+"""Native-lock serialized ticket admission; effects execute outside dispatch.
+
+Hsm owns Idle/Staged/Applying and closed-admission phases. `pending` and
+`terminal_request` retain exact tickets; the latter also records ordinary
+completed requests for canonical replay. Read-only `applying` and `terminal`
+properties project the admission state. `closed` is the resource lifetime flag.
+"""
+@hsmdef mutable struct Endpoint{P<:Client.Profile,C,L,F}
+    profile::P
+    loop::ThreadLoop
+    registry::Union{Nothing,Registry}
+    filter::Union{Nothing,Filter}
+    instance::Int64
+    lifecycle::L
+    publisher::F
+    controllers::Vector{Controller}
+    pending::Union{Nothing,Ticket{C}}
+    last_token::Int64
+    terminal_request::Union{Nothing,Ticket{C}}
+    completion::Pod
+    rejection::Pod
+    failure::Union{Nothing,String}
+    closed::Bool
+    retained_controller::Union{Nothing,Envelope.ControllerIdentity}
+end
+
+@statedef Endpoint :Open
+@statedef Endpoint :Idle :Open
+@statedef Endpoint :Pending :Open
+@statedef Endpoint :Staged :Pending
+@statedef Endpoint :Applying :Pending
+# A successful terminal completion closes admission before publication. If
+# publication fails, retain both the applying ticket and the closed gate.
+@statedef Endpoint :TerminalApplying :Pending
+@statedef Endpoint :AdmissionClosed
+
+@on_initial function(endpoint::Endpoint, ::Root)
+    return Hsm.transition!(endpoint, :Idle)
+end
+
+Base.getproperty(endpoint::Endpoint, name::Symbol) =
+    name === :applying ? Hsm.current(endpoint) in (:Applying, :TerminalApplying) :
+    name === :terminal ? Hsm.current(endpoint) in (:TerminalApplying, :AdmissionClosed) :
+    getfield(endpoint, name)
+Base.propertynames(endpoint::Endpoint, private::Bool=false) =
+    private ? (fieldnames(typeof(endpoint))..., :applying, :terminal) :
+    (:profile, :loop, :registry, :filter, :instance, :lifecycle, :publisher,
+        :controllers, :pending, :applying, :last_token, :terminal_request,
+        :completion, :rejection, :failure, :closed, :terminal, :retained_controller)
+
+@on_event function(endpoint::Endpoint, ::Idle, ::AdmissionChecked, result)
+    result[] = Int32(0)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::Pending, ::AdmissionChecked, result)
+    result[] = Int32(-16)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::TerminalApplying, ::AdmissionChecked, result)
+    result[] = Int32(-108)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::AdmissionClosed, ::AdmissionChecked, result)
+    result[] = Int32(-108)
+    return Hsm.EventHandled
+end
+
+@on_event function(endpoint::Endpoint, ::Idle, ::Requested, request)
+    _replay_or_reject!(endpoint, request) && return Hsm.EventHandled
+    endpoint.pending = _ticket(endpoint, request)
+    endpoint.last_token = request.header.token
+    Hsm.transition!(endpoint, :Staged)
+    publish!(endpoint)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::Pending, ::Requested, request)
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-16))
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::TerminalApplying, ::Requested, request)
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-108))
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::AdmissionClosed, ::Requested, request)
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-108))
+    return Hsm.EventHandled
+end
+
+@on_event function(endpoint::Endpoint, ::Staged, ::Taken, result)
+    ticket = something(endpoint.pending)
+    if monotonic() >= ticket.deadline || !controller_present(endpoint, ticket.header.controller)
+        header = Envelope.ReplyHeader(ticket.header.controller, endpoint.instance,
+            ticket.header.token, ticket.header.operation, Int32(-110))
+        endpoint.completion = Client.encode_failure(endpoint.profile, header, endpoint.lifecycle, ticket.command)
+        publish!(endpoint)
+        endpoint.terminal_request = ticket
+        endpoint.pending = nothing
+        return Hsm.transition!(endpoint, :Idle)
+    end
+    result[] = ticket
+    return Hsm.transition!(endpoint, :Applying)
+end
+@on_event function(endpoint::Endpoint, ::Root, ::Taken, _)
+    return Hsm.EventHandled
+end
+
+@on_event function(endpoint::Endpoint, ::Applying, ::Checked, ticket)
+    _check_ticket(endpoint, ticket)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::Root, ::Checked, _)
+    error("native owner ticket is not applying")
+end
+
+@on_event function(endpoint::Endpoint, ::Applying, ::Completed, delivered)
+    ticket, completion, terminal = delivered.ticket, delivered.completion, delivered.terminal
+    endpoint.pending === ticket || error("native owner ticket is not applying")
+    header, _ = Envelope.decode_completion(completion; endpoint=Client.reply_endpoint(endpoint.profile))
+    Client.same_request(header, ticket.header) || throw(ArgumentError("completion does not match staged ticket"))
+    header.result == 0 && _check_ticket(endpoint, ticket)
+    terminal && header.result != 0 &&
+        throw(ArgumentError("terminal admission requires a successful completion"))
+    endpoint.completion = completion
+    if terminal
+        return Hsm.transition!(endpoint, :TerminalApplying)
+    end
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::Root, ::Completed, _)
+    error("native owner ticket is not applying")
+end
+
+@on_event function(endpoint::Endpoint, ::Applying, ::CompletionReady, ticket)
+    _publish_completion!(endpoint, ticket)
+    return Hsm.transition!(endpoint, :Idle)
+end
+@on_event function(endpoint::Endpoint, ::TerminalApplying, ::CompletionReady, ticket)
+    _publish_completion!(endpoint, ticket)
+    return Hsm.transition!(endpoint, :AdmissionClosed)
+end
+@on_event function(endpoint::Endpoint, ::Root, ::CompletionReady, _)
+    error("native owner ticket is not applying")
+end
+
+@on_event function(endpoint::Endpoint, ::Root, ::LifecycleObserved, lifecycle)
+    endpoint.lifecycle = lifecycle
+    publish!(endpoint)
+    return Hsm.EventHandled
+end
+@on_event function(endpoint::Endpoint, ::Root, ::Rejected, rejection)
+    _reject!(endpoint, rejection.header, rejection.result)
+    return Hsm.EventHandled
+end
+
+function metadata(identity::Envelope.ControllerIdentity, pid::UInt32)
+    return (
+        "pipewireao.rtc-control.protocol" => Client.PROTOCOL,
+        "pipewireao.rtc-control.profile" => Client.CONTROLLER_PROFILE,
+        "pipewireao.rtc-control.instance" => string(identity.instance),
+        "pipewireao.rtc-control.owner-pid" => string(pid))
+end
+
+function controller_info!(controller::Controller, info::NodeInfo)
+    controller.retired && return nothing
+    valid = info.id == controller.global_id && info.error === nothing &&
+        info.n_input_ports == 0 && info.n_output_ports == 0
+    if (info.change_mask & NODE_CHANGE_PROPERTIES) != 0
+        serial = tryparse(UInt64, get(info.properties, "object.serial", ""))
+        instance = tryparse(Int64, get(info.properties, "pipewireao.rtc-control.instance", ""))
+        pid = tryparse(UInt32, get(info.properties, "pipewireao.rtc-control.owner-pid", ""))
+        valid &= get(info.properties, "node.name", nothing) == controller.name &&
+            serial == controller.serial && instance !== nothing && instance > 0 &&
+            pid !== nothing && pid > 0
+        if valid
+            identity = Envelope.ControllerIdentity(controller.global_id, controller.serial, instance)
+            valid &= all(get(info.properties, key, nothing) == value for (key, value) in metadata(identity, pid))
+            if controller.identity !== nothing
+                valid &= identity == controller.identity && pid == controller.pid
+            end
+            if valid
+                controller.identity = identity
+                controller.pid = pid
+                controller.verified = true
+            end
+        end
+    end
+    valid || (controller.retired = true; controller.verified = false)
+    return nothing
+end
+
+function capability(endpoint::Endpoint)
+    names = Client.capability_names(endpoint.profile)
+    rows = SPA.Struct(Pod[Pod(SPA.Struct(Pod(SPA.Id(controller.global_id)),
+        Pod(reinterpret(Int64, controller.serial)), Pod(something(controller.identity).instance)))
+        for controller in endpoint.controllers if controller.verified && !controller.retired])
+    return Pod(props_param(SPA.Props(names[1] => Int32(1), names[2] => endpoint.instance,
+        names[3] => SPA.Id(getpid()), names[4] => SPA.Id(UInt32(endpoint.lifecycle)),
+        names[5] => endpoint.last_token, names[6] => rows)))
+end
+
+function healthy(endpoint::Endpoint)
+    endpoint.closed && throw(InvalidStateException("native endpoint closed", :closed))
+    endpoint.failure === nothing ||
+        throw(InvalidStateException("native endpoint failed: $(endpoint.failure)", :failed))
+    return nothing
+end
+
+function operational(endpoint::Endpoint)
+    healthy(endpoint)
+    isrunning(endpoint.loop) || throw(InvalidStateException("native owner loop stopped", :stopped))
+    try
+        state = filter_state(something(endpoint.filter))
+        state == PipeWireAO.LibPipeWire.PW_FILTER_STATE_UNCONNECTED &&
+            throw(InvalidStateException("native owner filter disconnected", :disconnected))
+    catch error
+        endpoint.failure = sprint(showerror, error)
+        rethrow()
+    end
+    return nothing
+end
+
+function publish!(endpoint::Endpoint)
+    endpoint.closed && return nothing
+    healthy(endpoint)
+    try
+        endpoint.publisher(something(endpoint.filter),
+            [capability(endpoint), endpoint.completion, endpoint.rejection])
+    catch error
+        endpoint.failure = sprint(showerror, error)
+        rethrow()
+    end
+    return nothing
+end
+
+function refresh_controllers!(endpoint::Endpoint)
+    healthy(endpoint)
+    endpoint.retained_controller === nothing || return nothing
+    registry = something(endpoint.registry)
+    globals = find_globals(registry; interface="PipeWire:Interface:Node")
+    changed = false
+    for controller in endpoint.controllers
+        matches = filter(global_object -> global_object.id == controller.global_id &&
+            get(global_object.properties, "object.serial", nothing) == string(controller.serial), globals)
+        if isempty(matches) && !controller.retired
+            controller.removed = true
+            controller.retired = true
+            controller.verified = false
+            changed = true
+        end
+    end
+    for controller in endpoint.controllers
+        if controller.retired && controller.node !== nothing
+            close(controller.node)
+            controller.node = nothing
+        end
+    end
+    # A changed proof on a still-live registry incarnation is permanently
+    # revoked. Retain its bounded tombstone until that incarnation disappears.
+    filter!(controller -> !controller.retired || any(global_object ->
+        global_object.id == controller.global_id &&
+        get(global_object.properties, "object.serial", nothing) == string(controller.serial), globals),
+        endpoint.controllers)
+    for global_object in globals
+        length(endpoint.controllers) < MAX_CONTROLLERS || break
+        any(controller -> controller.global_id == global_object.id, endpoint.controllers) && continue
+        name = get(global_object.properties, "node.name", "")
+        startswith(name, "pipewireao.rtc.controller.") || continue
+        serial = tryparse(UInt64, get(global_object.properties, "object.serial", ""))
+        if isempty(name) || ncodeunits(name) > 128 || serial === nothing || serial == 0 ||
+                global_object.id in (UInt32(0), typemax(UInt32))
+            continue
+        end
+        # Registry announcements are sparse. Bind a bounded set of candidate
+        # names, then admit only the exact full NodeInfo proof, never the name.
+        controller = Controller(global_object.id, serial, nothing, name, UInt32(0),
+            nothing, false, false, false)
+        controller.node = bind(registry, global_object, Node;
+            on_info=(node, info) -> begin
+                controller_info!(controller, info)
+                publish!(endpoint)
+                nothing
+            end,
+            on_removed=node -> begin
+                # Preserve an earlier proof/error revocation; its later removal
+                # must never reclassify that incarnation as a clean release.
+                controller.removed |= !controller.retired
+                controller.retired = true
+                controller.verified = false
+                publish!(endpoint)
+                nothing
+            end,
+            on_error=(node, sequence, error) -> begin
+                controller.retired = true
+                controller.verified = false
+                publish!(endpoint)
+                nothing
+            end)
+        push!(endpoint.controllers, controller)
+        changed = true
+    end
+    changed && publish!(endpoint)
+    return nothing
+end
+
+"Retain the accepted controller and stop discovery before ordinary-owner science."
+function retain_controller!(endpoint::Endpoint, ticket::Ticket)
+    with_thread_loop_lock(endpoint.loop) do _
+        check_ticket(endpoint, ticket)
+        identity = ticket.header.controller
+        if endpoint.retained_controller !== nothing
+            endpoint.retained_controller == identity ||
+                throw(ArgumentError("native endpoint already retained another controller"))
+            return nothing
+        end
+        for controller in endpoint.controllers
+            controller.identity == identity && continue
+            controller.node === nothing || close(controller.node)
+        end
+        filter!(controller -> controller.identity == identity, endpoint.controllers)
+        length(endpoint.controllers) == 1 || error("accepted native controller was not unique")
+        stop_global_tracking!(something(endpoint.registry))
+        endpoint.retained_controller = identity
+    end
+    return nothing
+end
+
+controller_present(endpoint::Endpoint, identity::Envelope.ControllerIdentity) =
+    any(controller -> controller.identity == identity && controller.verified && !controller.retired,
+        endpoint.controllers)
+
+"Read terminal delivery state without treating pre-terminal revocation as release."
+function terminal_release(endpoint::Endpoint, ticket::Ticket)
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        endpoint.terminal_request === ticket && endpoint.pending === nothing ||
+            error("native terminal request has not completed")
+        endpoint.terminal || error("native terminal admission remains open")
+        header, _ = Envelope.decode_completion(endpoint.completion;
+            endpoint=Client.reply_endpoint(endpoint.profile))
+        Client.same_request(header, ticket.header) && header.result == 0 ||
+            error("native terminal request has no successful completion")
+        endpoint.retained_controller == ticket.header.controller ||
+            error("native terminal controller was not retained")
+        controller = only(endpoint.controllers)
+        controller.identity == ticket.header.controller ||
+            error("native terminal controller incarnation changed")
+        controller.removed && return :removed
+        controller.verified && !controller.retired ||
+            error("native terminal controller proof was revoked")
+        return monotonic() < ticket.deadline ? :waiting : :expired
+    end
+end
+
+"Keep the cold endpoint available for a reader until exact release or its budget."
+function wait_terminal_release!(endpoint::Endpoint, ticket::Ticket)
+    while true
+        release = terminal_release(endpoint, ticket)
+        release === :waiting || return release
+        sleep(min(0.005, max(0.0, ticket.deadline - monotonic())))
+    end
+end
+
+function rejection!(endpoint::Endpoint, header::Union{Nothing,Envelope.RequestHeader}, result::Int32)
+    Hsm.dispatch!(endpoint, :Rejected, (; header, result))
+    return nothing
+end
+
+function _reject!(endpoint::Endpoint, header, result)
+    reply = header === nothing ? Envelope.ReplyHeader(endpoint.instance, result) :
+        Envelope.ReplyHeader(header.controller, endpoint.instance, header.token, header.operation, result)
+    endpoint.rejection = Client.encode_rejection(endpoint.profile, reply, endpoint.lifecycle)
+    publish!(endpoint)
+    return nothing
+end
+
+function _correlation(endpoint::Endpoint, header::Envelope.RequestHeader, bytes)
+    header.endpoint_instance == endpoint.instance || return Int32(-116)
+    controller_present(endpoint, header.controller) || return Int32(-116)
+    header.token < endpoint.last_token && return Int32(-116)
+    for previous in (endpoint.pending, endpoint.terminal_request)
+        previous === nothing && continue
+        if header.token == previous.header.token
+            return header.controller == previous.header.controller &&
+                header.operation == previous.header.operation && bytes == previous.payload ?
+                Int32(1) : Int32(-114)
+        end
+    end
+    header.token > endpoint.last_token || return Int32(-116)
+    return nothing
+end
+
+function admission(endpoint::Endpoint, header::Envelope.RequestHeader, bytes)
+    result = _correlation(endpoint, header, bytes)
+    result === nothing || return result
+    admitted = Ref(Int32(0))
+    Hsm.dispatch!(endpoint, :AdmissionChecked, admitted)
+    return admitted[]
+end
+
+function _replay_or_reject!(endpoint::Endpoint, request)
+    result = _correlation(endpoint, request.header, request.bytes)
+    result === nothing && return false
+    if result == 1
+        publish!(endpoint)
+    else
+        _reject!(endpoint, request.header, result)
+    end
+    return true
+end
+
+function _ticket(endpoint::Endpoint{P,C}, request) where {P,C}
+    budget = min(request.header.budget_ns / 1.0e9, Client.maximum_budget(endpoint.profile))
+    return Ticket{C}(request.header, request.command, request.bytes, request.received + budget)
+end
+
+function stage!(endpoint::Endpoint{P,C}, pod::Pod) where {P,C}
+    operational(endpoint)
+    received = monotonic()
+    header = nothing
+    # Only request decoding is classified as invalid input. Publication failure
+    # is fatal and must never turn an accepted, executable ticket into rejection.
+    decoded = try
+        header, payload = Envelope.decode_request(pod)
+        command = Client.decode_request(endpoint.profile, header, payload)
+        (command, copy(Pod(payload).data))
+    catch error
+        return rejection!(endpoint, header, Int32(-22))
+    end
+    command, bytes = decoded
+    Hsm.dispatch!(endpoint, :Requested, (; header, command, bytes, received))
+    return nothing
+end
+
+"Create an inactive no-port endpoint on the owner's existing Core/ThreadLoop."
+function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
+        name::AbstractString, instance::Int64, lifecycle::L;
+        publisher=update_params!, properties_extra=Dict{String,String}()) where {P<:Client.Profile,C,L}
+    instance > 0 || throw(ArgumentError("native owner instance must be positive"))
+    0 < ncodeunits(name) <= 128 && isvalid(name) && !occursin('\0', name) ||
+        throw(ArgumentError("native owner name must be bounded nonempty UTF-8"))
+    L === Client.lifecycle_type(profile) || throw(ArgumentError("wrong native owner lifecycle type"))
+    initial = Envelope.encode_completion(Envelope.ReplyHeader(instance, Int32(0)), SPA.Struct();
+        endpoint=Client.reply_endpoint(profile))
+    rejected = Client.encode_rejection(profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle)
+    endpoint = Endpoint{P,C,L,typeof(publisher)}(profile, loop, nothing, nothing, instance, lifecycle, publisher, Controller[],
+        nothing, 0, nothing, initial, rejected, nothing, false, nothing)
+    try
+        with_thread_loop_lock(loop) do _
+            endpoint.registry = Registry(core)
+            properties = Dict(
+                "node.name" => String(name), "media.class" => "Control",
+                "pipewireao.rtc-control.protocol" => Client.PROTOCOL,
+                "pipewireao.rtc-control.profile" => Client.profile_name(profile),
+                "pipewireao.rtc-control.instance" => string(instance),
+                "pipewireao.rtc-control.owner-pid" => string(getpid()))
+            any(key -> haskey(properties,key),keys(properties_extra)) &&
+                throw(ArgumentError("extra native properties cannot replace common identity"))
+            merge!(properties,properties_extra)
+            endpoint.filter = Filter(core, String(name); properties,
+                on_param_changed=(filter, port, id, pod) -> begin
+                    if port === nothing && id == SPA.PARAM_PROPS && pod !== nothing
+                        stage!(endpoint, pod)
+                    end
+                    nothing
+                end)
+            publish!(endpoint)
+            connect!(something(endpoint.filter); flags=FILTER_ASYNC | FILTER_INACTIVE,
+                params=[capability(endpoint), endpoint.completion, endpoint.rejection])
+        end
+        return endpoint
+    catch primary
+        try
+            close(endpoint)
+        catch cleanup
+            throw(CompositeException([primary, cleanup]))
+        end
+        rethrow()
+    end
+end
+
+function poll!(endpoint::Endpoint)
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        refresh_controllers!(endpoint)
+    end
+    return nothing
+end
+
+"Take the sole staged ticket for execution outside the PipeWire loop lock."
+function take!(endpoint::Endpoint{P,C}) where {P,C}
+    return with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        refresh_controllers!(endpoint)
+        result = Ref{Union{Nothing,Ticket{C}}}(nothing)
+        Hsm.dispatch!(endpoint, :Taken, result)
+        return result[]
+    end
+end
+
+function check_ticket(endpoint::Endpoint, ticket::Ticket)
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        Hsm.dispatch!(endpoint, :Checked, ticket)
+    end
+    return nothing
+end
+
+function _check_ticket(endpoint::Endpoint, ticket::Ticket)
+    endpoint.pending === ticket || error("native owner ticket is not applying")
+    refresh_controllers!(endpoint)
+    controller_present(endpoint, ticket.header.controller) || error("native controller disappeared")
+    monotonic() < ticket.deadline || error("native owner request deadline expired")
+    return nothing
+end
+
+function complete!(endpoint::Endpoint, ticket::Ticket, completion::Pod; terminal::Bool=false)
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        Hsm.dispatch!(endpoint, :Completed, (; ticket, completion, terminal))
+        # Separate run-to-completion steps, one native-lock transaction. The
+        # terminal gate closes before publication; only successful publication
+        # retires the applying ticket.
+        Hsm.dispatch!(endpoint, :CompletionReady, ticket)
+    end
+    return nothing
+end
+
+function _publish_completion!(endpoint::Endpoint, ticket::Ticket)
+    endpoint.pending === ticket || error("native owner ticket is not applying")
+    publish!(endpoint)
+    endpoint.terminal_request = ticket
+    endpoint.pending = nothing
+    return nothing
+end
+
+function state!(endpoint::Endpoint{P,C,L}, lifecycle::L) where {P,C,L}
+    with_thread_loop_lock(endpoint.loop) do _
+        operational(endpoint)
+        Hsm.dispatch!(endpoint, :LifecycleObserved, lifecycle)
+    end
+    return nothing
+end
+
+function Base.close(endpoint::Endpoint)
+    endpoint.closed && return nothing
+    failures = Exception[]
+    with_thread_loop_lock(endpoint.loop) do _
+        endpoint.closed = true
+        for controller in endpoint.controllers
+            controller.node === nothing && continue
+            try
+                close(controller.node)
+            catch error
+                push!(failures, error)
+            end
+        end
+        for resource in (endpoint.filter, endpoint.registry)
+            resource === nothing && continue
+            try
+                close(resource)
+            catch error
+                push!(failures, error)
+            end
+        end
+    end
+    isempty(failures) || throw(CompositeException(failures))
+    return nothing
+end
+
+end # module ControlEndpoint

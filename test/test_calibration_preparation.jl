@@ -1,5 +1,7 @@
 module CalibrationPreparationTests
 using Test, PipeWireAORTC
+import Hsm
+import Clocks
 const P = PipeWireAORTC.CalibrationPreparation
 
 request(; run=UInt64(91), serial=UInt64(1), stage="dark", condition="blocked",
@@ -7,6 +9,30 @@ request(; run=UInt64(91), serial=UInt64(1), stage="dark", condition="blocked",
     issued_at=10.0, deadline=20.0) = P.Request(;
         run, serial, stage, condition, configuration_identity, kind, issued_at, deadline)
 confirmation(r; observed_at=11.0, witness="operator-17") = P.Confirmation(r; observed_at, witness)
+
+@testset "Cached nanosecond clocks preserve preparation expiry and regression" begin
+    clock = Clocks.CachedNanoClock(11_000_000_000)
+    p = P.Procedure(request(); clock)
+    c = confirmation(p.request)
+    @test p.clock === clock && P.complete!(p, c) === c
+    Clocks.advance!(clock, 8_999_999_999)
+    @test P.check_current!(p) === c
+    Clocks.advance!(clock, 1)
+    @test_throws ArgumentError P.check_current!(p)
+    @test p.state === :expired && p.reason == "Deadline expired"
+    for regressed in (10_000_000_000, -1)
+        clock = Clocks.CachedNanoClock(11_000_000_000)
+        p = P.Procedure(request(); clock)
+        P.complete!(p, confirmation(p.request))
+        Clocks.update!(clock, regressed)
+        @test_throws ArgumentError P.check_current!(p)
+        @test p.state === :invalidated && p.reason == "Invalid monotonic clock"
+        @test p.last_at == 11.0
+        Clocks.update!(clock, 12_000_000_000)
+        @test_throws ArgumentError P.check_current!(p)
+        @test p.state === :invalidated
+    end
+end
 
 @testset "preparation request and evidence validation" begin
     r = request()
@@ -153,6 +179,56 @@ end
         @test p.state == :pending
     end
     @test P.complete!(p,c) === c
+end
+
+@testset "preparation hierarchy owns direct completion and terminal rejection" begin
+    now, reads = Ref(11.0), Ref(0)
+    p = P.Procedure(request(); clock=() -> (reads[] += 1; now[]))
+    @test reads[] == 1
+    @test Hsm.current(p) === :Pending && Hsm.ancestor(p, :Pending) === :Active
+    @test p.state === :pending && :state in propertynames(p)
+    @test :state ∉ fieldnames(typeof(p))
+    @test propertynames(p) == (:request, :clock, :owner, :state, :confirmation, :reason, :last_at)
+    c = confirmation(p.request)
+    Hsm.dispatch!(p, :Complete, c)
+    @test p.state === :ready && Hsm.current(p) === :Ready
+    @test p.confirmation === c && reads[] == 2
+    @test Hsm.ancestor(p, :Ready) === :Active
+    @test_throws ArgumentError Hsm.dispatch!(p, :Complete, c)
+    @test p.state === :invalidated && p.reason == "Preparation is not pending"
+    @test Hsm.ancestor(p, :Invalidated) === :Terminal
+    @test p.confirmation === c && reads[] == 2
+    now[] = NaN
+    for event in (:Cancel, :Expire)
+        Hsm.dispatch!(p, event)
+        @test p.state === :invalidated && reads[] == 2
+    end
+    @test_throws ArgumentError Hsm.dispatch!(p, :Invalidate, "x"^1025)
+    @test_throws ArgumentError P.invalidate!(p, "")
+    @test_throws ArgumentError Hsm.dispatch!(p, :Complete, c)
+    @test_throws ArgumentError P.check_current!(p)
+    @test p.reason == "Preparation is not pending" && reads[] == 2
+end
+
+@testset "preparation events preserve deadline sampling and owning task" begin
+    now, reads = Ref(20.0), Ref(0)
+    p = P.Procedure(request(); clock=() -> (reads[] += 1; now[]))
+    @test p.state === :expired && p.reason == "Deadline expired" && reads[] == 1
+    @test Hsm.ancestor(p, :Expired) === :Terminal
+    @test_throws ArgumentError P.check_current!(p)
+    @test reads[] == 1
+    now[] = 11.0
+    p = P.Procedure(request(); clock=() -> (reads[] += 1; now[]))
+    sampled = reads[]
+    error = fetch(@async try Hsm.dispatch!(p, :Cancel); nothing catch error; error end)
+    @test error isa ArgumentError && p.state === :pending && reads[] == sampled
+    Hsm.dispatch!(p, :Expire)
+    @test p.state === :pending && reads[] == sampled + 1
+    now[] = 20.0
+    Hsm.dispatch!(p, :Expire)
+    @test p.state === :expired && p.last_at == 20.0 && reads[] == sampled + 2
+    @test_throws ArgumentError Hsm.dispatch!(p, :Complete, confirmation(p.request))
+    @test p.state === :expired && p.confirmation === nothing && reads[] == sampled + 2
 end
 
 end

@@ -6,14 +6,14 @@ using Test, SHA, LinearAlgebra
 using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
-const Server = PipeWireAORTC.NativeCalibrationEndpoint
-const Actions = PipeWireAORTC.NativeCalibrationActionCodec
-const ActionClient = PipeWireAORTC.NativeCalibrationActionClient
+const Server = PipeWireAORTC.CalibrationEndpoint
+const Actions = PipeWireAORTC.CalibrationActionCodec
+const ActionClient = PipeWireAORTC.CalibrationActionClient
 const Acquisition = PipeWireAORTC.CalibrationAcquisition
-const Native = PipeWireAORTC.NativeControlClient
+const ControlClient = PipeWireAORTC.ControlClient
 const Deployment = PipeWireAORTC.DeploymentConfiguration
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
@@ -40,7 +40,10 @@ end
     @test simulation["frame_encoding"] == "uint16"
     declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(
         joinpath(application, simulation["plant"]["definition"]))
-    detector = declaration.authoring["components"]["detector"]["config"]
+    # Validate the selected resolved model, including scientific defaults that
+    # the authored component may omit.
+    detector = only(node for node in declaration.graphs["production"]["nodes"]
+        if node["name"] == "detector")["config"]
     @test detector["photon_noise"]
     @test detector["readout_noise"]
 
@@ -76,12 +79,13 @@ end
                         instance = Int64(70+index)
                         if index == 1
                             @test_throws ArgumentError Calibration.prepare_initial_calibration(application, remote,
-                                merge(frontend, (;source_graph_sha256=repeat("0",64))), command;
-                                reference, name, instance, deadline=Native.monotonic()+120)
+                                Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).GraphProjection(
+                                    frontend;source_graph_sha256=repeat("0",64)), command;
+                                reference, name, instance, deadline=ControlClient.monotonic()+120)
                         end
                         progress("preparing actual Classic endpoint for $scenario")
                         server = Calibration.prepare_initial_calibration(application, remote, frontend, command;
-                            reference, name, instance, deadline=Native.monotonic()+300)
+                            reference, name, instance, deadline=ControlClient.monotonic()+300)
                         # Descriptor ownership transferred to the endpoint.
                         frontend = command = nothing
                         owner = server.effects
@@ -91,7 +95,7 @@ end
                             progress("selected frontend bindings=$([(entry.port, entry.source.path, Calibration.digest(entry.source.path)) for entry in owner.graphs.frontend.bindings])")
                         end
                         capture_module = parentmodule(typeof(owner.capture))
-                        serve_deadline = Native.monotonic()+120
+                        serve_deadline = ControlClient.monotonic()+120
                         serving = @async try
                             Server.serve!(server; deadline=serve_deadline)
                         catch error
@@ -105,14 +109,14 @@ end
                             command_count=length(reference))
                         if scenario === :controller_loss
                             held = ActionClient.complete!(client, Actions.Hold();
-                                deadline=Native.monotonic()+120, record=false)
+                                deadline=ControlClient.monotonic()+120, record=false)
                             @test held isa Actions.Held
                             @test held.cursor.sequence == 0 && owner.token == 1
                             close(client); client = nothing
                             outcome = fetch(serving)
                             progress("idle controller loss server outcome=$outcome")
                             @test outcome isa Exception
-                            @test Native.monotonic() < serve_deadline
+                            @test ControlClient.monotonic() < serve_deadline
                             @test server.phase === :Fault && server.serial == 1
                             # Hold adopted the reference once. A hidden Restore
                             # would advance its token; no exposure was admitted.
@@ -213,7 +217,7 @@ end
                         end
                         close(server)
                         @test owner.closed && owner.hil.closed && !owner.hil.started
-                        @test all(worker -> istaskdone(worker.task) && worker.error[] === nothing, owner.workers)
+                        @test all(worker -> istaskdone(worker.task) && Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).finish_calibration_graph!(worker).error === nothing, owner.workers)
                         @test all(slot -> slot.buffer.handle == C_NULL, values(owner.capture.slots))
                         @test !isopen(server.wakeup) && !isopen(server.core)
                         @test all(stream -> !isopen(stream), values(owner.capture.streams))

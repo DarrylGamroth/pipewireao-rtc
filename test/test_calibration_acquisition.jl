@@ -1,11 +1,12 @@
 module CalibrationAcquisitionTests
 using Test, PipeWireAORTC
+import Clocks
 const A = PipeWireAORTC.CalibrationAcquisition
-const N = PipeWireAORTC.NativeCalibrationActionClient
-const C = PipeWireAORTC.NativeCalibrationActionCodec
-const G = PipeWireAORTC.NativeControlClient
-const E = PipeWireAORTC.NativeControlCodec
-const L = PipeWireAORTC.NativeAcquisitionLifecycleCodec
+const N = PipeWireAORTC.CalibrationActionClient
+const C = PipeWireAORTC.CalibrationActionCodec
+const G = PipeWireAORTC.ControlClient
+const E = PipeWireAORTC.ControlCodec
+const L = PipeWireAORTC.AcquisitionLifecycleCodec
 const CLI = PipeWireAORTC.CalibrationCLI
 const Common = PipeWireAORTC.Common
 const ID = E.ControllerIdentity(UInt32(8), typemax(UInt64), Int64(11))
@@ -50,9 +51,42 @@ end
 Base.close(fake::Endpoint) = (fake.closed=true; nothing)
 function connection(transform=(a,r)->r; run=typemax(UInt64))
     endpoint = Endpoint(C.AcquisitionCursor(typemax(UInt64),UInt64(1)<<63,0,0),Any[],transform,false)
-    return N.Connection(endpoint,BINDING,UInt64(run),UInt64(0),1_000_000_000,2,Any[],false)
+    return N.Connection(endpoint,BINDING,UInt64(run),UInt64(0),1_000_000_000,2,Dict{String,Any}[],false)
 end
 ops(client) = C._operation.([c.action for c in client.client.commands])
+
+@testset "Cached clock acquisition preserves exchange budget and knownness" begin
+    for unknown in (false, true)
+        clock = Clocks.CachedNanoClock(10_000_000_000)
+        client = connection((action, answer) -> begin
+            if C._operation(action) == 2
+                Clocks.advance!(clock, 2_000_000_000)
+                unknown && throw(G.UnknownOutcome("lost completion"))
+            end
+            answer
+        end)
+        result = A.acquire!(client, plan(); clock)
+        @test result.failure == "TimedOut(Adopting)"
+        @test result.phase == (unknown ? "fault" : "aborted")
+        @test result.resume_permitted == !unknown
+        @test ops(client) == (unknown ? [1, 2] : [1, 2, 6, 7])
+        @test client.client.closed == unknown
+    end
+end
+
+@testset "Observer failure after exchange retains known-outcome restoration" begin
+    client = connection()
+    result = A.acquire!(client, plan(); clock=()->0.0,
+        observe=(action,_result,_serial)->(action isa C.Hold && error("observer failed")))
+    @test ops(client) == [1,6,7]
+    @test result.phase == "aborted" && result.resume_permitted
+    @test result.failure == "Endpoint"
+    client = connection((action,result)->action isa C.Hold ?
+        throw(G.UnknownOutcome("completion lost")) : result)
+    result = A.acquire!(client, plan(); clock=()->0.0)
+    @test ops(client) == [1]
+    @test result.phase == "fault" && !result.resume_permitted
+end
 
 @testset "interaction driver typed completions and all settling rules" begin
     for rule in (C.Immediate(),C.DiscardExposures(UInt32(2)),C.ModelTime(UInt64(30)))
@@ -206,6 +240,24 @@ end
             write(path,duplicate)
             @test_throws ArgumentError A.read_plan(path)
         end
+    end
+end
+
+@testset "journal output retains completed calibration snapshots" begin
+    mktempdir() do root
+        path = joinpath(root, "evidence.jsonl")
+        journal = CLI.Journal(path, 1)
+        action = C.Adopt(UInt32(0), Float32[1, 2])
+        cursor = C.AcquisitionCursor(1, 1, 0, 0)
+        result = C.Adopted(cursor, Float32[1, 2], false)
+        CLI.observe!(journal, action, result, UInt64(1), UInt64(1))
+        action.figure[1] = 99
+        result.figure[2] = 99
+        CLI.finish!(journal, Dict("phase" => "complete"))
+        evidence = Common.parse_json.(readlines(path))
+        @test evidence[2]["action"]["figure"] == [1, 2]
+        @test evidence[2]["result"]["figure"] == [1, 2]
+        @test last(evidence)["result"]["phase"] == "complete"
     end
 end
 

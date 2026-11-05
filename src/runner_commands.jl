@@ -1,16 +1,16 @@
 """Translate legacy runner argv and native typed results at the Julia boundary."""
 module RunnerCommands
 
-using ..NativeControlCodec
-using ..NativeRunnerCodec
+using ..ControlCodec
+using ..RunnerCodec
 
 export parse, render
 
 const MAX_ARGUMENTS = 128
 const MAX_PARAMETER_BYTES = 512 * 1024 * 1024
 
-function _string(value)
-    value isa String || throw(ArgumentError("runner command fields must be Strings"))
+_string(value) = throw(ArgumentError("runner command fields must be Strings"))
+function _string(value::String)
     occursin('\0', value) && throw(ArgumentError("runner command fields must not contain NUL"))
     isvalid(value) || throw(ArgumentError("runner command fields must be valid UTF-8"))
     ncodeunits(value) <= 16 * 1024 || throw(ArgumentError("runner field exceeds request limit"))
@@ -102,14 +102,14 @@ function parse(argv::AbstractVector)
     # creates only a bounded cold POD; it does not inspect or open an artifact.
     controller = ControllerIdentity(UInt32(1), UInt64(1), Int64(1))
     header = RequestHeader(controller, Int64(1), Int64(1),
-        NativeRunnerCodec.operation_id(command), Int64(1))
-    NativeRunnerCodec.encode_request(header, command)
+        RunnerCodec.operation_id(command), Int64(1))
+    RunnerCodec.encode_request(header, command)
     return command
 end
 
 _state(state::Lifecycle) = (Offline="Offline", Configuring="Configuring",
     Ready="Ready", Running="Running", Fault="Fault")[Symbol(string(state))]
-_group(state::GroupState) = state == NativeRunnerCodec.Stopped ? "stopped" : "running"
+_group(state::GroupState) = state == RunnerCodec.Stopped ? "stopped" : "running"
 _outcome(outcome::Outcome) = lowercase(string(outcome))
 
 function _scalar_json(value::RunnerScalar)

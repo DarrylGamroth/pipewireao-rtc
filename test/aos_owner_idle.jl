@@ -33,7 +33,7 @@ println("AOS_IDLE_OWNER julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) source
 
 @testset "idle AOS owner retains its locally captured reset callback" begin
     options = (; pacing_period_ns=UInt64(2_000_000), owner_check=()->nothing)
-    mailbox = PipeWireAORTC.NativeSourceControl.Mailbox(Int64(1))
+    mailbox = PipeWireAORTC.SourceControl.Mailbox(Int64(1))
     state = IdleOwnerExtension.OwnerState()
     payload = ntuple(index -> UInt64(index), 512)
     @test !mailbox.ready[]

@@ -3,17 +3,19 @@ module CalibrationCLI
 using JSON
 import ..Common
 import ..CalibrationAcquisition
-import ..NativeCalibrationActionClient
-import ..NativeCalibrationActionCodec
+import ..CalibrationActionClient
+import ..CalibrationActionCodec
 const Acquisition = CalibrationAcquisition
-const Native = NativeCalibrationActionClient
-const Codec = NativeCalibrationActionCodec
+const ActionClient = CalibrationActionClient
+const Codec = CalibrationActionCodec
+
+public main
 
 const MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
 mutable struct Journal{F}
     file::F
     retained::Int
-    records::Vector{Any}
+    records::Vector{Dict{String,Any}}
     error::Union{Nothing,String}
 end
 function Journal(path, probes)
@@ -24,7 +26,7 @@ function Journal(path, probes)
         header = JSON.json(Dict("event"=>"header", "version"=>2,
             "probe_count"=>probes, "max_charged_bytes"=>MAX_EVIDENCE_BYTES)) * "\n"
         write(file, header)
-        return Journal(file, ncodeunits(header), Any[], nothing)
+        return Journal(file, ncodeunits(header), Dict{String,Any}[], nothing)
     catch
         close(file)
         rethrow()
@@ -40,7 +42,8 @@ function record!(journal::Journal, charge, build)
     next = BigInt(journal.retained) + charge
     if next <= MAX_EVIDENCE_BYTES - 256
         journal.retained = Int(next)
-        push!(journal.records, build())
+        # Completion callbacks may reuse their mutable action/result buffers.
+        push!(journal.records, deepcopy(build()))
     else
         journal.error = "evidence size limit exceeded"
     end
@@ -49,7 +52,7 @@ end
 function observe!(journal::Journal, action, result, run, serial)
     record!(journal, 8192 + _figure_charge(action) + _result_charge(result)) do
         Dict("event"=>"completion", "run"=>run, "serial"=>serial,
-            "action"=>Native._action_document(action), "result"=>Native.document(result))
+            "action"=>ActionClient._action_document(action), "result"=>ActionClient.document(result))
     end
 end
 # do-block function goes first.
@@ -75,7 +78,7 @@ end
 function run(argv=ARGS; acquire=Acquisition.acquire)
     args = Common.cli_arguments(argv; required=["remote", "node", "owner-pid", "owner-instance", "plan"],
         allowed=["evidence"])
-    binding = Native.Binding(args.remote, args.node, parse(UInt32, args.owner_pid), parse(Int64, args.owner_instance))
+    binding = ActionClient.Binding(args.remote, args.node, parse(UInt32, args.owner_pid), parse(Int64, args.owner_instance))
     plan = Acquisition.read_plan(args.plan)
     journal = hasproperty(args, :evidence) ? Journal(args.evidence, length(plan.probes)) : nothing
     result = nothing
@@ -95,6 +98,15 @@ function run(argv=ARGS; acquire=Acquisition.acquire)
         journal === nothing || isopen(journal.file) && close(journal.file)
     end
 end
+"""
+    main(argv=ARGS; kwargs...)
+
+Run one calibration acquisition from `--remote`, `--node`, `--owner-pid`,
+`--owner-instance` and `--plan`; optionally save exclusive JSON-lines evidence
+with `--evidence`. Print the acquisition report to stdout. Return `0` for a
+completed acquisition, `1` for another reported phase, or `2` after printing an
+exception to stderr. Keyword arguments pass to the one-shot acquisition driver.
+"""
 function main(argv=ARGS; kwargs...)
     try
         return run(argv; kwargs...)

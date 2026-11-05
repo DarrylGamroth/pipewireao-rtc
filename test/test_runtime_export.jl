@@ -79,7 +79,7 @@ end
         sdk = PipeWireAORTC.ScienceExport.copy_deployment_runtime(root)
         @test PipeWireAORTC.DeploymentConfiguration.validate_runtime(sdk) == sdk
         for name in ("session_install.jl", "src/deployment/session_install.jl",
-                     "src/native/native_control_codec.jl", "assets/deployment/hil/parameter_source.jl")
+                     "src/control/control_codec.jl", "assets/deployment/hil/parameter_source.jl")
             path = joinpath(sdk, name)
             bytes = read(path)
             rm(path)

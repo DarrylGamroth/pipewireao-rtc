@@ -64,6 +64,7 @@ end
 include("calibration_graphs.jl")
 include("modal_calibration.jl")
 include("optical_calibration.jl")
+include("optical_execution.jl")
 include("optical_calibration_publication.jl")
 include("pupil_feedback.jl")
 include("calibration_transport.jl")

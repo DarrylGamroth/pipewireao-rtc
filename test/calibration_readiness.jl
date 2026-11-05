@@ -4,16 +4,16 @@ module CalibrationReadinessTests
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 const Transport = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
-const Native = PipeWireAORTC.NativeCalibrationEndpoint
-const Control = PipeWireAORTC.NativeControlClient
+const CalibrationEndpoint = PipeWireAORTC.CalibrationEndpoint
+const Control = PipeWireAORTC.ControlClient
 
 function registration_trial(remote, registry, path, trial, wakeup, guard)
     graphs = []
     workers = Transport.CalibrationGraphWorker[]
     names = ("test.calibration-readiness.$trial.wfs", "test.calibration-readiness.$trial.pdm")
-    notify() = Native.wake!(wakeup,guard)
+    notify() = CalibrationEndpoint.wake!(wakeup,guard)
     try
         for name in names
             graph = FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
@@ -23,28 +23,26 @@ function registration_trial(remote, registry, path, trial, wakeup, guard)
         end
         # Only native registry and worker notifications can make progress.
         # There is no periodic poll or diagnostic wake before this deadline.
-        Native.await(wakeup,guard,Control.monotonic()+(trial == 1 ? 120 : 10)) do
+        CalibrationEndpoint.await(wakeup,guard,Control.monotonic()+(trial == 1 ? 120 : 10)) do
             for worker in workers
                 if istaskdone(worker.task)
-                    fetch(worker.task)
-                    worker.error[] === nothing || throw(worker.error[])
+                    Transport.finish_calibration_graph!(worker)
                     error("graph stopped before registration")
                 end
             end
-            all(worker -> worker.ready[],workers) || return false
+            all(worker -> Transport.calibration_graph_status(worker).ready,workers) || return false
             all(names) do name
                 all((("in",:requested),("out",:demanded),("out",Symbol("constraint-feedback")))) do (direction,port)
                     Transport.calibration_endpoint(registry,name,direction,port) !== nothing
                 end
             end
         end
-        @test all(worker -> worker.ready[] && !istaskdone(worker.task),workers)
+        @test all(worker -> Transport.calibration_graph_status(worker).ready && !istaskdone(worker.task),workers)
     finally
         foreach(Transport.quit_calibration_graph!,workers)
         for worker in workers
-            Native.await(() -> istaskdone(worker.task),wakeup,guard,Control.monotonic()+20)
-            fetch(worker.task)
-            @test worker.error[] === nothing
+            CalibrationEndpoint.await(() -> istaskdone(worker.task),wakeup,guard,Control.monotonic()+20)
+            @test Transport.finish_calibration_graph!(worker).error === nothing
         end
         all(worker -> istaskdone(worker.task),workers) && foreach(FilterGraphIsland.close_execution,graphs)
     end
@@ -54,7 +52,7 @@ end
     Threads.nthreads(:default) >= 4 || error("run readiness selector with --threads=4")
     with_control_private_core() do remote,directory,daemon
         wakeup,guard = Base.AsyncCondition(),ReentrantLock()
-        notify() = Native.wake!(wakeup,guard)
+        notify() = CalibrationEndpoint.wake!(wakeup,guard)
         loop = ThreadLoop("test.calibration-readiness")
         context = core = registry = listener = nothing
         try

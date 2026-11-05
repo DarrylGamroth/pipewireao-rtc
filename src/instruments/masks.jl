@@ -57,9 +57,9 @@ selected_optical_mask_responses(document, instrument, graphs::AbstractDict, conf
 function selected_optical_mask_responses(document, instrument, path_names, configured=document["defaults"])
     selections = get(document["defaults"], "masks", Dict())
     selected = Tuple{String,String,Any}[]
-    selections isa AbstractDict || (selections = Dict())
+    selections = mask_selections(selections)
     proposed = get(configured, "masks", Dict())
-    proposed isa AbstractDict || (proposed = Dict())
+    proposed = mask_selections(proposed)
     for role in union(keys(selections), keys(proposed))
         original, updated = get(selections, role, nothing), get(proposed, role, nothing)
         if is_fits_mask_selection(original) || is_fits_mask_selection(updated)
@@ -110,7 +110,8 @@ function selected_optical_mask_responses(document, instrument, path_names, confi
     return selected
 end
 
-is_fits_mask_selection(value) = value isa AbstractDict && get(value, "kind", nothing) == "fits"
+is_fits_mask_selection(value::AbstractDict) = get(value, "kind", nothing) == "fits"
+is_fits_mask_selection(value) = false
 
 function expand_optical_mask_bindings!(document, instrument, graphs)
     for (role, port, response) in selected_optical_mask_responses(document, instrument, graphs)
@@ -122,3 +123,6 @@ function expand_optical_mask_bindings!(document, instrument, graphs)
     end
     return nothing
 end
+
+mask_selections(value::AbstractDict) = value
+mask_selections(value) = Dict()

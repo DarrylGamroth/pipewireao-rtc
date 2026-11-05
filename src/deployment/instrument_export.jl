@@ -27,7 +27,7 @@ const TEMPLATE_FILES = ("core.conf.in", "client-rtc.conf.in", "client-julia.conf
 include("authoring.jl")
 include("host_scheduling.jl")
 include("owner_scheduling.jl")
-include("native_configuration.jl")
+include("pipewire_configuration.jl")
 include("instrument_profiles.jl")
 include("instrument_modes.jl")
 include("queue_configuration.jl")
@@ -100,11 +100,28 @@ end
 substitute(value::AbstractVector, bindings) = [substitute(item, bindings) for item in value]
 substitute(value, bindings) = value
 
+_export_bindings(raw) = throw(ArgumentError("profile bindings must be an object"))
+_export_bindings(raw::AbstractDict) = foreach(_export_binding_name,keys(raw))
+_export_binding_name(key) = throw(ArgumentError("profile binding names must be uppercase identifiers"))
+_export_binding_name(key::String) = occursin(r"^[A-Z][A-Z0-9_]*$",key) || throw(ArgumentError("profile binding names must be uppercase identifiers"))
+_export_placement(placement,roles) = throw(ArgumentError("profile placement must name every application process exactly once"))
+_export_placement(placement::AbstractDict,roles) = Set(keys(placement)) == roles || throw(ArgumentError("profile placement must name every application process exactly once"))
+_export_environments(environments,roles) = throw(ArgumentError("profile environment contains an unknown application role"))
+_export_environments(environments::AbstractDict,roles) = Set(keys(environments)) ⊆ roles || throw(ArgumentError("profile environment contains an unknown application role"))
+_export_analysis(overrides) = throw(ArgumentError("profile analysis must map declared analysis names to CPU lists"))
+_export_analysis(::AbstractDict) = nothing
+_backend_compatibility(compatibility,package) = throw(ArgumentError("explicit runtime backend requires matching $package UUID and compatibility metadata"))
+_backend_compatibility(compatibility::AbstractString,package) = !isempty(strip(compatibility)) ||
+    throw(ArgumentError("explicit runtime backend requires matching $package UUID and compatibility metadata"))
+_simulation_overrides(overrides) = throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz, reference_clock"))
+_simulation_overrides(overrides::AbstractDict) = Set(keys(overrides)) ⊆ Set(["backend","device","pacing_rate_hz","reference_clock"]) ||
+    throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz, reference_clock"))
+_simulation_device(device) = throw(ArgumentError("simulation device must be a nonnegative integer"))
+_simulation_device(device::Int) = 0 <= device <= typemax(Int32) || throw(ArgumentError("simulation device must be a nonnegative integer"))
+
 function profile_bindings(profile, julia)
     raw = get(profile, "bindings", Dict())
-    raw isa AbstractDict || throw(ArgumentError("profile bindings must be an object"))
-    all(key -> key isa String && occursin(r"^[A-Z][A-Z0-9_]*$", key), keys(raw)) ||
-        throw(ArgumentError("profile binding names must be uppercase identifiers"))
+    _export_bindings(raw)
     reserved = union(RUNTIME_BINDINGS, Set(["JULIA"]))
     any(key -> key in reserved || startswith(key, "BOOTSTRAP_INSTANCE_"), keys(raw)) &&
         throw(ArgumentError("profile bindings cannot replace runtime or Julia executable bindings"))
@@ -123,13 +140,11 @@ function profile!(spec, profile, bindings)
     haskey(spec, "session-runtime") && push!(roles, "session")
     union!(roles, (owner["role"] for owner in spec["owners"]))
     placement = profile["placement"]
-    placement isa AbstractDict && Set(keys(placement)) == roles ||
-        throw(ArgumentError("profile placement must name every application process exactly once"))
+    _export_placement(placement,roles)
     D.validate_placements(placement, roles)
     spec["placement"] = deepcopy(placement)
     environments = get(profile, "environment", Dict())
-    environments isa AbstractDict && Set(keys(environments)) ⊆ roles ||
-        throw(ArgumentError("profile environment contains an unknown application role"))
+    _export_environments(environments,roles)
     for (role, environment) in environments
         D.validate_environment(environment, role)
         if role == "session"
@@ -143,7 +158,7 @@ function profile!(spec, profile, bindings)
     end
     if haskey(profile, "analysis")
         overrides = profile["analysis"]
-        overrides isa AbstractDict || throw(ArgumentError("profile analysis must map declared analysis names to CPU lists"))
+        _export_analysis(overrides)
         entries = get(spec, "analysis", [])
         Set(keys(overrides)) ⊆ Set(entry["name"] for entry in entries) ||
             throw(ArgumentError("profile analysis names must already be declared by the application"))
@@ -173,9 +188,9 @@ function prepare_backend_environment!(application, backend; required::Bool=false
         uuid = backend == "cuda" ? "052768ef-5323-5732-b1bb-66c8b64840ba" : "21141c5a-9bdb-4563-92ae-f87d6854732e"
         declarations = [section[package] for section in (get(project,"deps",Dict()),optional) if haskey(section,package)]
         compatibility = get(get(project,"compat",Dict()),package,nothing)
-        !isempty(declarations) && all(==(uuid),declarations) &&
-            compatibility isa AbstractString && !isempty(strip(compatibility)) ||
+        !isempty(declarations) && all(==(uuid),declarations) ||
             throw(ArgumentError("explicit runtime backend requires matching $package UUID and compatibility metadata"))
+        _backend_compatibility(compatibility,package)
     end
     haskey(optional, package) || return nothing
     dependencies = get!(project, "deps", Dict{String,Any}())
@@ -192,8 +207,7 @@ end
 
 function simulation_override!(application, profile)
     overrides = get(profile, "simulation", Dict())
-    overrides isa AbstractDict && Set(keys(overrides)) ⊆ Set(["backend", "device", "pacing_rate_hz", "reference_clock"]) ||
-        throw(ArgumentError("profile simulation permits only backend, device, pacing_rate_hz, reference_clock"))
+    _simulation_overrides(overrides)
     haskey(overrides,"reference_clock") && Common.reference_clock_configuration(overrides["reference_clock"])
     path = joinpath(application, "simulation.conf")
     simulation = D.decode(path, get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
@@ -207,7 +221,7 @@ function simulation_override!(application, profile)
     backend = get(overrides, "backend", simulation["backend"])
     backend in ("cpu", "cuda", "amdgpu") || throw(ArgumentError("unsupported simulation backend"))
     device = get(overrides, "device", simulation["device"])
-    typeof(device) === Int && 0 <= device <= typemax(Int32) || throw(ArgumentError("simulation device must be a nonnegative integer"))
+    _simulation_device(device)
     backend == "cpu" && device != 0 && throw(ArgumentError("CPU simulation backend requires device 0"))
     backend == "amdgpu" && device == 0 && throw(ArgumentError("AMDGPU device identifiers start at 1"))
     pacing_rate_hz = get(overrides, "pacing_rate_hz", simulation["pacing_rate_hz"])

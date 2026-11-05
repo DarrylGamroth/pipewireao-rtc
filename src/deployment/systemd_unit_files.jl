@@ -82,7 +82,7 @@ end
 
 function start_services!(services, unit, runtime, record)
     for service in services
-        service.state = :launching
+        launching!(service)
         merge!(record["owners"][service.role], SystemdOwners.record(service))
     end
     save_unit_record!(runtime, record) # All roles retained before a single submission.
@@ -101,7 +101,7 @@ function start_services!(services, unit, runtime, record)
             retain!(service, properties(service.unit))
             verify!(service)
         catch error
-            service.state = :uncertain
+            uncertain!(service)
             service.error = sprint(showerror, error)
             push!(errors, service.role * ": " * service.error)
         end

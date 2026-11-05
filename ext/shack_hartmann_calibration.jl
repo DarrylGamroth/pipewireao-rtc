@@ -26,7 +26,11 @@ end
 # Match acquisition settings when checking source identity during replay/staging.
 function calibration_settings(application, recipe, declaration)
     kind=IC.sensor_kind(declaration.instrument.document["wavefront_sensors"][recipe["sensor"]])
-    kind isa Val{:shack_hartmann} || return IC.settings(declaration,get(recipe,"settings",Dict()))
+    return calibration_settings(kind, application, recipe, declaration)
+end
+calibration_settings(::Val, application, recipe, declaration) =
+    IC.settings(declaration,get(recipe,"settings",Dict()))
+function calibration_settings(::Val{:shack_hartmann}, application, recipe, declaration)
     simulation=PipeWireAORTC.DeploymentConfiguration.decode(joinpath(application,"simulation.conf"),
         get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
     return calibration_settings!(simulation,recipe,declaration)

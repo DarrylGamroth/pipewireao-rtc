@@ -64,29 +64,7 @@ function calibrated_centroid_references(graph::AbstractDict, calibration::Abstra
     result = deepcopy(graph)
     body = result["filter.graph"]
     for (branch, context) in calibration
-        context isa AbstractDict && haskey(context,"reference_centroid") || continue
-        reference = context["reference_centroid"]
-        reference isa AbstractVector && length(reference) == 2 &&
-            all(value -> value isa AbstractFloat && isfinite(value),reference) ||
-            throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
-        coordinates = filter(input -> input isa AbstractDict &&
-            get(input,"name",nothing) == branch*"-coordinates",get(body,"inputs",[]))
-        isempty(coordinates) && continue # A different branch's template.
-        length(coordinates) == 1 || throw(ArgumentError("ambiguous calibrated centroid coordinates"))
-        endpoint = split(only(coordinates)["endpoint"],':')
-        length(endpoint) == 2 && endpoint[2] == "coordinates" ||
-            throw(ArgumentError("calibrated centroid coordinate port differs"))
-        nodes = filter(node -> node["name"] == endpoint[1],body["nodes"])
-        length(nodes) == 1 && only(nodes)["label"] == "center-of-gravity-f32" ||
-            throw(ArgumentError("calibrated centroid requires center-of-gravity-f32"))
-        properties = get!(only(nodes),"props",Dict{String,Any}())
-        for (key,value) in zip(("reference-centroid-x","reference-centroid-y"),reference)
-            authored = get(properties,key,0.0)
-            authored isa Real && !(authored isa Bool) && isfinite(authored) &&
-                (iszero(authored) || authored == value) ||
-                throw(ArgumentError("authored centroid reference conflicts with calibration"))
-            properties[key] = value
-        end
+        calibrated_centroid_reference!(body,branch,context)
     end
     return result
 end
@@ -97,21 +75,17 @@ function calibrated_composition_paths(application, prepared, selected)
     length(descriptors) == 1 || throw(ArgumentError("additional calibrated graphs require one composition"))
     descriptor = only(descriptors)
     body = descriptor.graph["filter.composition"]
-    body isa AbstractDict && Set(keys(body)) == Set(["branches","shared"]) ||
-        throw(ArgumentError("invalid calibrated composition descriptor"))
+    validate_calibrated_composition(body)
     branches = body["branches"]
-    branches isa AbstractVector && 1 <= length(branches) <= 16 ||
-        throw(ArgumentError("calibrated composition requires bounded branches"))
+    validate_calibrated_branches(branches)
     function component(path)
-        path isa String && !isempty(path) && !isabspath(path) ||
-            throw(ArgumentError("composition components require relative graph paths"))
+        validate_composition_component(path)
         return D.relative_asset(application,relpath(joinpath(dirname(descriptor.path),path),application))
     end
     branch_paths = Dict{String,String}()
     for branch in branches
-        branch isa AbstractDict && haskey(branch,"name") && haskey(branch,"graph") ||
-            throw(ArgumentError("composition branch requires name and graph"))
-        branch["name"] isa String || throw(ArgumentError("composition branch name must be a string"))
+        validate_calibrated_branch(branch)
+        validate_composition_branch_name(branch["name"])
         path = component(branch["graph"])
         haskey(branch_paths,path) && throw(ArgumentError("composition branches require distinct graphs"))
         branch_paths[path] = branch["name"]
@@ -130,7 +104,7 @@ end
 # scalar types must remain exact (in Julia, true == 1 == 1.0).
 function exact_graph_value(left::AbstractDict, right::AbstractDict)
     Set(keys(left)) == Set(keys(right)) || return false
-    return all(key -> key isa String && exact_graph_value(left[key], right[key]), keys(left))
+    return all(key -> exact_graph_field(key,left,right), keys(left))
 end
 exact_graph_value(left::AbstractVector, right::AbstractVector) =
     length(left) == length(right) && all(exact_graph_value(a,b) for (a,b) in zip(left,right))
@@ -140,23 +114,20 @@ exact_graph_value(left, right) = typeof(left) === typeof(right) && isequal(left,
 function calibrated_graph_exports(graph::AbstractDict, calibrated::AbstractDict)
     current, frozen = deepcopy(graph), deepcopy(calibrated)
     body, baseline = get(current,"filter.graph",nothing), get(frozen,"filter.graph",nothing)
-    body isa AbstractDict && baseline isa AbstractDict || throw(ArgumentError("calibrated graph requires filter.graph"))
+    validate_calibrated_graph_bodies(body, baseline)
     haskey(body,"outputs") == haskey(baseline,"outputs") || throw(ArgumentError("calibrated output declaration must remain present or absent"))
     outputs, original = pop!(body,"outputs",Any[]), pop!(baseline,"outputs",Any[])
-    outputs isa AbstractVector && original isa AbstractVector || throw(ArgumentError("graph outputs must be arrays"))
+    validate_calibrated_graph_outputs(outputs, original)
     exact_graph_value(current,frozen) || throw(ArgumentError("executed graph changes calibrated fields outside output exports"))
     length(outputs) >= length(original) &&
         all(exact_graph_value(outputs[index],original[index]) for index in eachindex(original)) ||
         throw(ArgumentError("calibrated output exports must remain an exact prefix"))
     added = outputs[length(original)+1:end]
     isempty(added) && return added
-    endpoint(row) = row isa AbstractString ? row : row["endpoint"]
-    endpoints = String[endpoint(row) for row in original]
-    names = String[row["name"] for row in original if row isa AbstractDict]
+    endpoints = String[graph_export_endpoint(row) for row in original]
+    names = String[name for row in original for name in graph_export_names(row)]
     for row in added
-        row isa AbstractDict && Set(keys(row)) == Set(["name","endpoint"]) &&
-            all(key -> row[key] isa String && !isempty(strip(row[key])), ("name","endpoint")) ||
-            throw(ArgumentError("added output exports require only a name and explicit endpoint"))
+        validate_added_graph_export(row)
         parts = split(row["endpoint"],':';limit=2)
         length(parts) == 2 && all(!isempty,parts) || throw(ArgumentError("added output endpoint must name node:port"))
         row["name"] in names && throw(ArgumentError("duplicate output export name"))
@@ -185,7 +156,7 @@ function selected_calibration_graphs(application, configuration)
     context = get(rtc,"calibration",nothing)
     # Ordinary authored RTC contexts and composed physical-offset selections do
     # not point at a sibling context.yaml and retain their existing admission.
-    local_context = context isa String && normpath(joinpath(application,context)) == joinpath(directory,"context.yaml")
+    local_context = selected_graph_context(context,application,directory)
     selectionpath = joinpath(directory,"selection.yaml")
     !local_context && !isfile(selectionpath) && return nothing
     isfile(selectionpath) || throw(ArgumentError("selected optical calibration receipt is missing"))
@@ -194,12 +165,10 @@ function selected_calibration_graphs(application, configuration)
     local_context || throw(ArgumentError("selected optical calibration must use its generated context"))
     get(selection,"version",nothing) === 1 || throw(ArgumentError("optical calibration selection requires version 1"))
     descriptor = get(selection,"rtc_configuration",nothing)
-    descriptor isa AbstractDict && Set(keys(descriptor)) == Set(["path","sha256"]) &&
-        descriptor["path"] == basename(rtcpath) && descriptor["sha256"] == Common.sha256_file(rtcpath) ||
-        throw(ArgumentError("selected RTC configuration differs from calibration selection"))
+    validate_selected_graph_rtc(descriptor, rtcpath)
     identity = get(selection,"calibration_identity",nothing)
-    identity == get(rtc,"calibration_identity",nothing) && identity isa String ||
-        throw(ArgumentError("selected RTC calibration identity differs"))
+    identity == get(rtc,"calibration_identity",nothing) || throw(ArgumentError("selected RTC calibration identity differs"))
+    validate_selected_graph_identity(identity)
     indexpath = D.relative_asset(application,relpath(joinpath(directory,"calibration.yaml"),application))
     Common.sha256_file(indexpath) == get(selection,"calibration_index_sha256",nothing) ||
         throw(ArgumentError("selected optical calibration index hash differs"))
@@ -207,15 +176,13 @@ function selected_calibration_graphs(application, configuration)
     get(index,"version",nothing) === 1 && get(index,"kind",nothing) == "optical-calibration-index" &&
         get(index,"calibration_identity",nothing) == identity || throw(ArgumentError("invalid selected optical calibration index"))
     graphs, branches = get(selection,"graphs",nothing), get(index,"branches",nothing)
-    graphs isa AbstractDict && branches isa AbstractDict && 1 <= length(graphs) <= 16 &&
-        Set(keys(graphs)) == Set(keys(branches)) || throw(ArgumentError("selected graphs must name every calibrated branch"))
+    validate_selected_graph_branches(graphs, branches)
     Calibration = getfield(parentmodule(@__MODULE__),:InstrumentCalibration)
     result = Dict{String,Any}()
     for (name,path) in graphs
-        name isa String && occursin(r"^[a-z][a-z0-9-]{0,31}$",name) && path isa String ||
-            throw(ArgumentError("invalid calibrated branch graph"))
+        validate_selected_branch_graph(name, path)
         entry = branches[name]
-        entry isa AbstractDict && get(entry,"path",nothing) == name || throw(ArgumentError("calibrated branch path differs"))
+        validate_selected_branch_path(entry, name)
         branch = D.relative_asset(application,relpath(joinpath(directory,name,"result.yaml"),application))
         Common.sha256_file(branch) == get(entry,"result_sha256",nothing) || throw(ArgumentError("calibrated branch result hash differs"))
         bundle = Calibration.read_bundle(dirname(branch))
@@ -290,3 +257,134 @@ function prepare_graph_configurations!(application, declarations, instrumentpath
     end
     return nothing
 end
+
+function calibrated_centroid_reference!(body,branch,context::AbstractDict)
+    haskey(context,"reference_centroid") || return nothing
+    reference = context["reference_centroid"]
+    validate_centroid_coordinates(reference)
+    coordinates = filter(input -> centroid_coordinates_port(input,branch),get(body,"inputs",[]))
+    isempty(coordinates) && return nothing # A different branch's template.
+    length(coordinates) == 1 || throw(ArgumentError("ambiguous calibrated centroid coordinates"))
+    endpoint = split(only(coordinates)["endpoint"],':')
+    length(endpoint) == 2 && endpoint[2] == "coordinates" ||
+        throw(ArgumentError("calibrated centroid coordinate port differs"))
+    nodes = filter(node -> node["name"] == endpoint[1],body["nodes"])
+    length(nodes) == 1 && only(nodes)["label"] == "center-of-gravity-f32" ||
+        throw(ArgumentError("calibrated centroid requires center-of-gravity-f32"))
+    properties = get!(only(nodes),"props",Dict{String,Any}())
+    for (key,value) in zip(("reference-centroid-x","reference-centroid-y"),reference)
+        authored = get(properties,key,0.0)
+        validate_authored_centroid(authored, value)
+        properties[key] = value
+    end
+    return nothing
+end
+calibrated_centroid_reference!(body,branch,context) = nothing
+
+function validate_centroid_coordinates(reference::AbstractVector)
+    length(reference) == 2 || throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
+    foreach(validate_centroid_coordinate,reference)
+    return nothing
+end
+validate_centroid_coordinates(reference) = throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
+
+function validate_centroid_coordinate(value::AbstractFloat)
+    isfinite(value) || throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
+    return nothing
+end
+validate_centroid_coordinate(value) = throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
+
+centroid_coordinates_port(input::AbstractDict,branch) = get(input,"name",nothing) == branch*"-coordinates"
+centroid_coordinates_port(input,branch) = false
+
+function validate_authored_centroid(authored::Real, value)
+    isfinite(authored) && (iszero(authored) || authored == value) || throw(ArgumentError("authored centroid reference conflicts with calibration"))
+    return nothing
+end
+validate_authored_centroid(authored, value) = throw(ArgumentError("authored centroid reference conflicts with calibration"))
+
+validate_authored_centroid(authored::Bool,value) = throw(ArgumentError("authored centroid reference conflicts with calibration"))
+
+function validate_calibrated_composition(body::AbstractDict)
+    Set(keys(body)) == Set(["branches","shared"]) || throw(ArgumentError("invalid calibrated composition descriptor"))
+    return nothing
+end
+validate_calibrated_composition(body) = throw(ArgumentError("invalid calibrated composition descriptor"))
+
+function validate_calibrated_branches(branches::AbstractVector)
+    1 <= length(branches) <= 16 || throw(ArgumentError("calibrated composition requires bounded branches"))
+    return nothing
+end
+validate_calibrated_branches(branches) = throw(ArgumentError("calibrated composition requires bounded branches"))
+
+function validate_composition_component(path::String)
+    !isempty(path) && !isabspath(path) || throw(ArgumentError("composition components require relative graph paths"))
+    return nothing
+end
+validate_composition_component(path) = throw(ArgumentError("composition components require relative graph paths"))
+
+function validate_calibrated_branch(branch::AbstractDict)
+    haskey(branch,"name") && haskey(branch,"graph") || throw(ArgumentError("composition branch requires name and graph"))
+    return nothing
+end
+validate_calibrated_branch(branch) = throw(ArgumentError("composition branch requires name and graph"))
+
+validate_composition_branch_name(name::String) = nothing
+validate_composition_branch_name(name) = throw(ArgumentError("composition branch name must be a string"))
+
+validate_calibrated_graph_bodies(body::AbstractDict, baseline::AbstractDict) = nothing
+validate_calibrated_graph_bodies(body, baseline) = throw(ArgumentError("calibrated graph requires filter.graph"))
+
+validate_calibrated_graph_outputs(outputs::AbstractVector, original::AbstractVector) = nothing
+validate_calibrated_graph_outputs(outputs, original) = throw(ArgumentError("graph outputs must be arrays"))
+
+function validate_selected_graph_rtc(descriptor::AbstractDict, rtcpath)
+    Set(keys(descriptor)) == Set(["path","sha256"]) && descriptor["path"] == basename(rtcpath) && descriptor["sha256"] == Common.sha256_file(rtcpath) || throw(ArgumentError("selected RTC configuration differs from calibration selection"))
+    return nothing
+end
+validate_selected_graph_rtc(descriptor, rtcpath) = throw(ArgumentError("selected RTC configuration differs from calibration selection"))
+
+validate_selected_graph_identity(identity::String) = nothing
+validate_selected_graph_identity(identity) = throw(ArgumentError("selected RTC calibration identity differs"))
+
+function validate_selected_graph_branches(graphs::AbstractDict, branches::AbstractDict)
+    1 <= length(graphs) <= 16 && Set(keys(graphs)) == Set(keys(branches)) || throw(ArgumentError("selected graphs must name every calibrated branch"))
+    return nothing
+end
+validate_selected_graph_branches(graphs, branches) = throw(ArgumentError("selected graphs must name every calibrated branch"))
+
+function validate_selected_branch_graph(name::String, path::String)
+    occursin(r"^[a-z][a-z0-9-]{0,31}$",name) || throw(ArgumentError("invalid calibrated branch graph"))
+    return nothing
+end
+validate_selected_branch_graph(name, path) = throw(ArgumentError("invalid calibrated branch graph"))
+
+function validate_selected_branch_path(entry::AbstractDict, name)
+    get(entry,"path",nothing) == name || throw(ArgumentError("calibrated branch path differs"))
+    return nothing
+end
+validate_selected_branch_path(entry, name) = throw(ArgumentError("calibrated branch path differs"))
+
+exact_graph_field(key::String,left,right) = exact_graph_value(left[key],right[key])
+exact_graph_field(key,left,right) = false
+
+graph_export_endpoint(row::AbstractString) = row
+graph_export_endpoint(row) = row["endpoint"]
+graph_export_names(row::AbstractDict) = (row["name"],)
+graph_export_names(row) = ()
+
+function validate_added_graph_export(row::AbstractDict)
+    Set(keys(row)) == Set(["name","endpoint"]) || throw(ArgumentError("added output exports require only a name and explicit endpoint"))
+    foreach(key -> validate_added_graph_export_text(row[key]),("name","endpoint"))
+    return nothing
+end
+validate_added_graph_export(row) = throw(ArgumentError("added output exports require only a name and explicit endpoint"))
+
+function validate_added_graph_export_text(value::String)
+    !isempty(strip(value)) || throw(ArgumentError("added output exports require only a name and explicit endpoint"))
+    return nothing
+end
+validate_added_graph_export_text(value) = throw(ArgumentError("added output exports require only a name and explicit endpoint"))
+
+selected_graph_context(context::String,application,directory) = normpath(joinpath(application,context)) == joinpath(directory,"context.yaml")
+selected_graph_context(context,application,directory) = false

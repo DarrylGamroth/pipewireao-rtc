@@ -24,8 +24,7 @@ function validate_chopped_calibration(report, simulation)
             get(report["branches"][name],"measurement_kind",nothing) == "chopped-pixel-residual" ||
             throw(ArgumentError("chopped execution requires newly calibrated signed pixel residuals"))
         identity = get(get(provenance,"measurement_frontend_identity",Dict()),name,nothing)
-        identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) ||
-            throw(ArgumentError("chopped calibration must bind its executed measurement prefix"))
+        validate_chopped_frontend_identity(identity)
         if get(report,"branch",nothing) == name
             filename = name*"-reference-difference.fits"
             get(report["parameter_files"],name*"-reference-difference",nothing) == filename &&
@@ -37,17 +36,14 @@ function validate_chopped_calibration(report, simulation)
 end
 
 "Retain compact FITS declarations relative to the copied bundle directory."
-function rebase_calibration_context(document, prefix)
-    if document isa AbstractDict
-        if get(document,"kind",nothing) == "fits"
-            return merge(document,Dict("path"=>joinpath(prefix,document["path"])))
-        end
-        return Dict(key=>rebase_calibration_context(value,prefix) for (key,value) in document)
-    elseif document isa AbstractVector
-        return map(value->rebase_calibration_context(value,prefix),document)
+function rebase_calibration_context(document::AbstractDict, prefix)
+    if get(document,"kind",nothing) == "fits"
+        return merge(document,Dict("path"=>joinpath(prefix,document["path"])))
     end
-    return deepcopy(document)
+    return Dict(key=>rebase_calibration_context(value,prefix) for (key,value) in document)
 end
+rebase_calibration_context(document::AbstractVector,prefix) = map(value->rebase_calibration_context(value,prefix),document)
+rebase_calibration_context(document,prefix) = deepcopy(document)
 
 """
     materialize_calibration(source, built, calibration; graphs, prefix, ...)
@@ -71,20 +67,16 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
     built, spec = sealed_application(application, prefix)
     bundles = checked_path(calibration)
     !isfile(joinpath(root,"deployment.conf")) || throw(ArgumentError("materialization requires authored source"))
-    destination isa String && startswith(destination,"generated/") && normpath(destination)==destination && !outside(destination) ||
-        throw(ArgumentError("calibration destination must be an explicit generated source directory"))
+    validate_calibration_destination(destination)
     selected = checked_path(joinpath(root,destination))
-    zero_command isa String && occursin(r"^[a-z][a-z0-9-]{0,63}\.fits$",zero_command) ||
-        throw(ArgumentError("zero command must name a FITS artifact in the generated selection"))
+    validate_calibration_zero_command(zero_command)
     !ispath(selected) || throw(ArgumentError("generated calibration destination must be fresh"))
     indexpath = D.relative_asset(bundles,"calibration.yaml")
     index = Common.read_yaml(indexpath)
     get(index,"version",nothing) === 1 && get(index,"kind",nothing)=="optical-calibration-index" ||
         throw(ArgumentError("expected optical calibration index version 1"))
     branch_index = index["branches"]
-    branch_index isa AbstractDict && 1 <= length(branch_index) <= 16 &&
-        all(name -> name isa String && occursin(r"^[a-z][a-z0-9-]{0,31}$",name),keys(branch_index)) ||
-        throw(ArgumentError("calibration index requires bounded branch names"))
+    validate_calibration_branch_index(branch_index)
     Set(keys(graphs)) == Set(keys(branch_index)) && !isempty(graphs) ||
         throw(ArgumentError("graphs must name every indexed branch exactly once"))
     recipepath = D.relative_asset(built,recipe)
@@ -108,7 +100,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
     get(simulation,"version",nothing) in (4,6) && simulation["mode"] in ("external-pupil","clocked-optical") ||
         throw(ArgumentError("optical materialization requires a prepared external-pupil owner"))
     identity = index["calibration_identity"]
-    identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) || throw(ArgumentError("invalid calibration identity"))
+    validate_materialized_calibration_identity(identity)
     rtcpath = D.relative_asset(root,rtc_configuration)
     authored_rtc = Common.read_yaml(rtcpath)
     builtin_rtc = InstrumentConfiguration.load_rtc(D.relative_asset(built,rtc_configuration))
@@ -146,11 +138,10 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         report["branches"][name]["accepted"]===true || throw(ArgumentError("branch numerical gates failed"))
         candidate = bundle.context
         mask = candidate["pixel_selection_mask"]
-        mask isa AbstractDict && get(mask,"kind",nothing) == "fits" ||
-            throw(ArgumentError("branch selection must retain its typed FITS reference"))
+        validate_calibration_selection_binding(mask)
         resolved_candidate = InstrumentConfiguration.calibration_context(candidate,branch_root)
         selected_mask = resolved_candidate["pixel_selection_mask"]
-        selected_mask isa AbstractVector{Bool} || throw(ArgumentError("branch selection mask must contain Bool values"))
+        validate_calibration_selection_mask(selected_mask)
         if haskey(resolved_candidate,name) && haskey(resolved_candidate[name],"pixel_selection_mask")
             resolved_candidate[name]["pixel_selection_mask"] == selected_mask &&
                 get(resolved_candidate[name],"selected_pixel_count",nothing) == count(selected_mask) ||
@@ -166,14 +157,8 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
             # Cameras may have different root selections when both bundles
             # retain the same explicit, resolved branch-specific selections.
             if !same_mask
-                all(keys(graphs)) do branch
-                    for value in (resolved_context,resolved_candidate)
-                        entry = get(value,branch,nothing)
-                        entry isa AbstractDict && haskey(entry,"pixel_selection_mask") &&
-                            haskey(entry,"selected_pixel_count") || return false
-                    end
-                    resolved_context[branch] == resolved_candidate[branch]
-                end || throw(ArgumentError("different branch masks require matching branch-specific selections"))
+                all(branch -> matching_calibration_selection(get(resolved_context,branch,nothing),
+                    get(resolved_candidate,branch,nothing)),keys(graphs)) || throw(ArgumentError("different branch masks require matching branch-specific selections"))
             end
             for (key,value) in resolved_candidate
                 key == "pixel_selection_mask" && continue
@@ -213,9 +198,7 @@ function materialize_calibration(source::AbstractString, application::AbstractSt
         end
         cp(indexpath,joinpath(staged,"calibration.yaml"))
         command_count = first(values(reports))["command_count"]
-        command_count isa Int && 1 <= command_count <= 16384 &&
-            all(report -> report["command_count"]==command_count,values(reports)) ||
-            throw(ArgumentError("accepted branches must declare the same bounded physical command count"))
+        validate_calibration_command_count(command_count, reports)
         mirrors = builtin_rtc.instrument.document["deformable_mirrors"]
         mirror_units = isempty(mirrors) ? "m OPD" : only(values(mirrors))["units"]
         Calibration.write_fits(joinpath(staged,zero_command),zeros(Float32,command_count);units=mirror_units)
@@ -260,8 +243,7 @@ end
 "Bind the generated RTC selection to the configuration actually executed by its source owner."
 function validate_selected_rtc(application, calibration, selection, index, simulation)
     descriptor = get(selection,"rtc_configuration",nothing)
-    descriptor isa AbstractDict && Set(keys(descriptor)) == Set(["path","sha256"]) &&
-        descriptor["path"] == "rtc.yaml" || throw(ArgumentError("selected calibration requires its generated RTC descriptor"))
+    validate_materialized_rtc_descriptor(descriptor)
     name = normpath(joinpath(calibration,descriptor["path"]))
     path = D.relative_asset(application,name)
     Common.sha256_file(path) == descriptor["sha256"] ||
@@ -275,3 +257,67 @@ function validate_selected_rtc(application, calibration, selection, index, simul
         throw(ArgumentError("selected RTC configuration must use its generated calibration context"))
     return name
 end
+
+function validate_chopped_frontend_identity(identity::String)
+    occursin(r"^sha256:[0-9a-f]{64}$",identity) || throw(ArgumentError("chopped calibration must bind its executed measurement prefix"))
+    return nothing
+end
+validate_chopped_frontend_identity(identity) = throw(ArgumentError("chopped calibration must bind its executed measurement prefix"))
+
+function validate_calibration_destination(destination::String)
+    startswith(destination,"generated/") && normpath(destination)==destination && !outside(destination) || throw(ArgumentError("calibration destination must be an explicit generated source directory"))
+    return nothing
+end
+validate_calibration_destination(destination) = throw(ArgumentError("calibration destination must be an explicit generated source directory"))
+
+function validate_calibration_zero_command(zero_command::String)
+    occursin(r"^[a-z][a-z0-9-]{0,63}\.fits$",zero_command) || throw(ArgumentError("zero command must name a FITS artifact in the generated selection"))
+    return nothing
+end
+validate_calibration_zero_command(zero_command) = throw(ArgumentError("zero command must name a FITS artifact in the generated selection"))
+
+function validate_materialized_calibration_identity(identity::String)
+    occursin(r"^sha256:[0-9a-f]{64}$",identity) || throw(ArgumentError("invalid calibration identity"))
+    return nothing
+end
+validate_materialized_calibration_identity(identity) = throw(ArgumentError("invalid calibration identity"))
+
+function validate_calibration_selection_binding(mask::AbstractDict)
+    get(mask,"kind",nothing) == "fits" || throw(ArgumentError("branch selection must retain its typed FITS reference"))
+    return nothing
+end
+validate_calibration_selection_binding(mask) = throw(ArgumentError("branch selection must retain its typed FITS reference"))
+
+validate_calibration_selection_mask(selected_mask::AbstractVector{Bool}) = nothing
+validate_calibration_selection_mask(selected_mask) = throw(ArgumentError("branch selection mask must contain Bool values"))
+
+function validate_calibration_command_count(command_count::Int, reports)
+    1 <= command_count <= 16384 && all(report -> report["command_count"]==command_count,values(reports)) || throw(ArgumentError("accepted branches must declare the same bounded physical command count"))
+    return nothing
+end
+validate_calibration_command_count(command_count, reports) = throw(ArgumentError("accepted branches must declare the same bounded physical command count"))
+
+function validate_materialized_rtc_descriptor(descriptor::AbstractDict)
+    Set(keys(descriptor)) == Set(["path","sha256"]) && descriptor["path"] == "rtc.yaml" || throw(ArgumentError("selected calibration requires its generated RTC descriptor"))
+    return nothing
+end
+validate_materialized_rtc_descriptor(descriptor) = throw(ArgumentError("selected calibration requires its generated RTC descriptor"))
+
+function validate_calibration_branch_index(branch_index::AbstractDict)
+    1 <= length(branch_index) <= 16 || throw(ArgumentError("calibration index requires bounded branch names"))
+    foreach(validate_calibration_branch_name,keys(branch_index))
+    return nothing
+end
+validate_calibration_branch_index(branch_index) = throw(ArgumentError("calibration index requires bounded branch names"))
+
+function validate_calibration_branch_name(name::String)
+    occursin(r"^[a-z][a-z0-9-]{0,31}$",name) || throw(ArgumentError("calibration index requires bounded branch names"))
+    return nothing
+end
+validate_calibration_branch_name(name) = throw(ArgumentError("calibration index requires bounded branch names"))
+
+function matching_calibration_selection(left::AbstractDict,right::AbstractDict)
+    return haskey(left,"pixel_selection_mask") && haskey(left,"selected_pixel_count") &&
+        haskey(right,"pixel_selection_mask") && haskey(right,"selected_pixel_count") && left == right
+end
+matching_calibration_selection(left,right) = false

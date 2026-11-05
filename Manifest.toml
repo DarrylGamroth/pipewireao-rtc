@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "c4f49e0357e280929199859e75784cadcd5fe0ed"
+project_hash = "abb282a3e5f4416398f783b2b9f872f19d3cc61d"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -15,6 +15,17 @@ weakdeps = ["SparseArrays", "StaticArrays"]
     [deps.Adapt.extensions]
     AdaptSparseArraysExt = "SparseArrays"
     AdaptStaticArraysExt = "StaticArrays"
+
+[[deps.Agent]]
+deps = ["StableTasks"]
+git-tree-sha1 = "f2bacca171b41af041eba411ade9a8e9f9e82f99"
+registries = "DarrylGamrothRegistry"
+uuid = "f7939a7f-2bcc-4096-952b-c44031b5533b"
+version = "0.4.1"
+weakdeps = ["ThreadPinning"]
+
+    [deps.Agent.extensions]
+    AgentThreadPinningExt = "ThreadPinning"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -68,6 +79,12 @@ weakdeps = ["SparseArrays"]
 
     [deps.ChainRulesCore.extensions]
     ChainRulesCoreSparseArraysExt = "SparseArrays"
+
+[[deps.Clocks]]
+git-tree-sha1 = "89539d1efa5ea79acc58e8cbd8f9a6ea381fc148"
+registries = "DarrylGamrothRegistry"
+uuid = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
+version = "0.4.0"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -298,7 +315,7 @@ uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 version = "0.9.0"
 
 [[deps.PipeWireAORTC]]
-deps = ["DBInterface", "FITSIO", "Hsm", "Interpolations", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
+deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "Interpolations", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
 version = "0.5.0"

@@ -1,3 +1,23 @@
+_collect_queue_node!(nodes,node) = nothing
+_collect_queue_node!(nodes,node::String) = push!(nodes,node)
+_composition_links(links) = throw(ArgumentError("composition links must be a list"))
+_composition_links(::AbstractVector) = nothing
+_component_owner_role(role) = throw(ArgumentError("component owner roles must be distinct and new"))
+_component_owner_role(role::String) = occursin(r"^[a-z][a-z0-9-]{0,31}$",role) || throw(ArgumentError("component owner roles must be distinct and new"))
+_component_source_owner(value) = throw(ArgumentError("component requires a declared source owner"))
+_component_source_owner(::String) = nothing
+_component_arguments(arguments) = throw(ArgumentError("owner_arguments must map roles to complete string argument vectors"))
+_component_arguments(arguments::AbstractVector) = foreach(_component_argument,arguments)
+_component_argument(argument) = throw(ArgumentError("owner_arguments must map roles to complete string argument vectors"))
+_component_argument(::String) = nothing
+_composition_override(relative,main,runtime_files) = throw(ArgumentError("invalid composition override path"))
+_composition_override(relative::String,main,runtime_files) = !(relative in ("",".","..")) && !isabspath(relative) && normpath(relative)==relative &&
+    !outside(relative) && !(relative in ("deployment.conf","instrument.json","Project.toml","Manifest.toml")) &&
+    !(relative in (main["session"],main["core"],get(main,"instrument",nothing))) && !(relative in runtime_files) &&
+    !startswith(relative,"components/") && !startswith(relative,"composition/") || throw(ArgumentError("invalid composition override path"))
+_composition_override_source(source) = throw(ArgumentError("composition override must name a regular prepared file"))
+_composition_override_source(source::AbstractString) = isfile(source) && !islink(source) || throw(ArgumentError("composition override must name a regular prepared file"))
+
 # Compose already-built applications without introducing another runtime authority.
 function sealed_application(path, prefix)
     root = checked_path(path)
@@ -90,7 +110,7 @@ function merge_composition_core(base, component)
         args = get(item,"args",Dict())
         for key in ("capture.props","playback.props")
             node = get(get(args,key,Dict()),"node.name",nothing)
-            node isa String && push!(queue_nodes,node)
+            _collect_queue_node!(queue_nodes,node)
         end
     end
     object_nodes = Set(get(get(item,"args",Dict()),"node.name",nothing)
@@ -120,7 +140,7 @@ function merge_composition_session(base, component, links)
     end
     names = [item["node.name"] for section in ("sources", "graphs", "sinks") for item in get(merged, section, [])]
     length(unique(names)) == length(names) || throw(ArgumentError("component node names collide"))
-    links isa AbstractVector || throw(ArgumentError("composition links must be a list"))
+    _composition_links(links)
     append!(get!(merged, "links", Any[]), deepcopy(links))
     return merged
 end
@@ -129,8 +149,8 @@ end
 # endpoints explicitly declare; matching data does not prove native negotiation.
 function validate_composition_links(session, links)
     nodes=Dict(node["node.name"]=>node for section in ("sources","graphs","sinks") for node in get(session,section,[]))
-    function declared(endpoint, direction)
-        endpoint isa AbstractString || return nothing
+    declared(endpoint,direction) = nothing
+    function declared(endpoint::AbstractString, direction)
         parts=split(endpoint,':';keepempty=true)
         length(parts)==2 || return nothing
         node=get(nodes,first(parts),nothing)
@@ -178,15 +198,14 @@ function compose(base::AbstractString, component::AbstractString, destination::A
     Set(keys(roles)) == Set(owner["role"] for owner in extra["owners"]) ||
         throw(ArgumentError("roles must map every component owner exactly once"))
     target_roles = collect(values(roles))
-    all(role -> role isa String && occursin(r"^[a-z][a-z0-9-]{0,31}$", role), target_roles) &&
-        length(unique(target_roles)) == length(target_roles) &&
+    foreach(_component_owner_role,target_roles)
+    length(unique(target_roles)) == length(target_roles) &&
         isempty(intersect(Set(target_roles), Set(keys(main["placement"])))) ||
         throw(ArgumentError("component owner roles must be distinct and new"))
-    get(extra, "source-owner", nothing) isa String || throw(ArgumentError("component requires a declared source owner"))
+    _component_source_owner(get(extra,"source-owner",nothing))
     Set(keys(owner_arguments)) ⊆ Set(owner["role"] for owner in main["owners"]) ||
         throw(ArgumentError("owner_arguments may replace only existing base owner argument vectors"))
-    all(arguments -> arguments isa AbstractVector && all(arg -> arg isa String, arguments), values(owner_arguments)) ||
-        throw(ArgumentError("owner_arguments must map roles to complete string argument vectors"))
+    foreach(_component_arguments,values(owner_arguments))
     Set(keys(node_owners)) == Set(sink["node.name"] for sink in sinks) &&
         all(role -> role in (owner["role"] for owner in main["owners"]),values(node_owners)) ||
         throw(ArgumentError("additional sinks require exact existing base owner roles"))
@@ -197,15 +216,9 @@ function compose(base::AbstractString, component::AbstractString, destination::A
     runtime_files = haskey(main,"runtime") ? Set(normpath(joinpath(main["runtime"]["project"],file))
         for file in ("Project.toml","Manifest.toml")) : Set{String}()
     for (relative, source) in overrides
-        relative isa String && !(relative in ("", ".", "..")) && !isabspath(relative) && normpath(relative) == relative &&
-            !outside(relative) && !(relative in ("deployment.conf", "instrument.json", "Project.toml", "Manifest.toml")) &&
-            !(relative in (main["session"], main["core"], get(main, "instrument", nothing))) &&
-            !(relative in runtime_files) &&
-            !startswith(relative, "components/") && !startswith(relative, "composition/") ||
-            throw(ArgumentError("invalid composition override path"))
+        _composition_override(relative,main,runtime_files)
         !isdir(joinpath(base_root,relative)) || throw(ArgumentError("composition overrides cannot replace directories"))
-        source isa AbstractString && isfile(source) && !islink(source) ||
-            throw(ArgumentError("composition override must name a regular prepared file"))
+        _composition_override_source(source)
         selected[relative] = abspath(source)
     end
     mkpath(dirname(output))
@@ -232,7 +245,7 @@ function compose(base::AbstractString, component::AbstractString, destination::A
                 composition_rebase(arg, component_prefix) for arg in original["argv"]]
             owner["argv"] = replace.(owner["argv"],
                 "@" * D.bootstrap_instance_key(old_role) * "@" => "@" * D.bootstrap_instance_key(owner["role"]) * "@")
-            if D.native_bootstrap(owner)
+            if D.uses_bootstrap_protocol(owner)
                 old_node = original["bootstrap-node"]
                 owner["bootstrap-node"] = namespace * "." * old_node
                 owner["argv"] = [arg == old_node ? owner["bootstrap-node"] : arg for arg in owner["argv"]]

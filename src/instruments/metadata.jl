@@ -314,6 +314,15 @@ function prepare_simulation_configuration!(application::AbstractString; simulati
     return concrete
 end
 
+"""
+    prepare_publication(application; configuration="rtc/configuration.yaml")
+
+Validate the built application's RTC and instrument declarations, generate
+their bounded JSON publication, and atomically write its declared destination.
+Return the output path. The destination must stay inside `application` and
+differ from the authoring and calibration inputs protected by this operation.
+This publishes saved metadata; it does not contact a live session.
+"""
 function prepare_publication(application::AbstractString; configuration="rtc/configuration.yaml")
     path = D.relative_asset(application, configuration)
     rtc = load_rtc(path)

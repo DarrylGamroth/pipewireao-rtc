@@ -291,7 +291,7 @@ the test; native discovery, transport and systemd are outside this check.
 ```sh
 julia --startup-file=no --project=test test/integration/session_policy_faults.jl
 julia --startup-file=no --project=test test/integration/session_policy_faults.jl \
-  /absolute/path/to/pipewireao-rtc/native/scripts/ao/session.lua
+  /absolute/path/to/pipewireao-rtc/runtime/scripts/ao/session.lua
 ```
 
 The default policy is `/opt/pipewireao/share/pipewireao-rtc/scripts/ao/session.lua`.

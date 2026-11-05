@@ -1,7 +1,9 @@
 module CalibrationProcedureTests
 using Test, PipeWireAORTC
+import Hsm
+import Clocks
 const A = PipeWireAORTC.CalibrationAcquisition
-const C = PipeWireAORTC.NativeCalibrationActionCodec
+const C = PipeWireAORTC.CalibrationActionCodec
 const D = Float32[2 1; -1 3; 4 -2]
 const TIMEOUTS = A.Timeouts(ntuple(_ -> 1_000_000_000, 5)...)
 function plan()
@@ -49,6 +51,168 @@ function run!(p, sensor=Sensor())
         deliver!(p,result)
     end
     events
+end
+
+function procedure_at(action; kwargs...)
+    p = A.Procedure(plan(); kwargs...)
+    sensor = Sensor()
+    while !(p.command.action isa action)
+        deliver!(p, response(sensor, p.command.action))
+    end
+    return p, sensor
+end
+
+@testset "Cached clocks retain known completion versus unknown exact expiry" begin
+    clock = Clocks.CachedNanoClock(2_000_000_000)
+    p = A.Procedure(plan(); clock)
+    @test p.clock === clock && p.deadline == 3.0
+    command = p.command
+    Clocks.advance!(clock, 999_999_999)
+    @test A.expire!(p) === nothing && p.command === command
+    Clocks.advance!(clock, 1)
+    @test A.expire!(p) === nothing && p.command === nothing
+    @test p.result.failure == "TimedOut(Holding)" && !p.result.resume_permitted
+    clock = Clocks.CachedNanoClock(2_000_000_000)
+    p = A.Procedure(plan(); clock)
+    Clocks.update!(clock, 3_000_000_000)
+    next = deliver!(p, C.Held(Sensor().cursor))
+    @test next === p.command && next.action isa C.Restore && next.serial == 2
+    @test p.failure == "TimedOut(Holding)" && p.deadline == 4.0
+    @test length(run!(p)) == 2
+    @test p.result.phase == "aborted" && p.result.resume_permitted
+end
+
+@testset "Acquisition events use shared active, recovery and terminal handlers" begin
+    p = A.Procedure(plan(); clock=()->0.0)
+    @test Hsm.current(p) === :Holding
+    @test Hsm.ancestor(p, :Holding) === :Acquiring
+    @test Hsm.ancestor(p, :Acquiring) === :Active
+    command, deadline = p.command, p.deadline
+    @test Hsm.dispatch!(p, :Cancelled) === Hsm.EventHandled
+    @test p.command === command && p.deadline == deadline
+    event = (; run=command.run, serial=command.serial,
+        result=C.Held(Sensor().cursor), at=0.0)
+    @test Hsm.dispatch!(p, :Completed, event) === Hsm.EventHandled
+    @test Hsm.current(p) === :Restoring
+    @test Hsm.ancestor(p, :Restoring) === :Recovery
+    @test p.failure == "Cancelled"
+    run!(p)
+    @test Hsm.current(p) === :Aborted
+    @test Hsm.ancestor(p, :Aborted) === :Terminal
+    terminal = p.result
+    @test A.cancel!(p) === nothing
+    @test A.expire!(p) === nothing
+    @test p.command === nothing && p.result === terminal
+    @test_throws ArgumentError A.fail!(p, "late"; known=true)
+    initially_cancelled = A.Procedure(plan(); clock=()->0.0, cancelled=()->true)
+    @test Hsm.current(initially_cancelled) === :Restoring
+    @test initially_cancelled.command.action isa C.Restore
+    @test initially_cancelled.command.serial == 1
+end
+
+@testset "Known late completion and unknown expiry differ in every action" begin
+    for (action, phase) in ((C.Hold,"Holding"), (C.Adopt,"Adopting"),
+            (C.Settle,"Settling"), (C.Collect,"Collecting"),
+            (C.Restore,"Restoring"), (C.Release,"Releasing"))
+        now = Ref(0.0)
+        p, sensor = procedure_at(action; clock=()->now[])
+        command = p.command
+        now[] = p.deadline
+        next = A.complete!(p, command.run, command.serial,
+            response(sensor, command.action); at=p.deadline)
+        @test p.failure == "TimedOut($phase)"
+        if action in (C.Restore, C.Release)
+            @test next === nothing
+            @test Hsm.current(p) === :Fault
+            @test p.result.recovery_failure == "TimedOut($phase)"
+        else
+            @test next === p.command && next.action isa C.Restore
+            @test next.serial == command.serial + 1
+            @test Hsm.current(p) === :Restoring
+        end
+        now[] = 0.0
+        p, _ = procedure_at(action; clock=()->now[])
+        serial = p.command.serial
+        now[] = p.deadline
+        @test A.expire!(p) === nothing
+        @test p.command === nothing && p.serial == serial
+        @test Hsm.current(p) === :Fault
+        @test p.result.failure == "TimedOut($phase)"
+        @test p.result.recovery_failure == "Endpoint"
+        @test !p.result.resume_permitted
+    end
+end
+
+@testset "In-flight collection precedes cancellation and restoration" begin
+    for valid in (true, false)
+        consumed = Ref(0)
+        p, sensor = procedure_at(C.Collect; clock=()->0.0,
+            consume=(_i,_batch)->(consumed[] += 1))
+        A.cancel!(p)
+        batch = response(sensor, p.command.action)
+        deliver!(p, C.Responses(batch.values, batch.exposures, valid))
+        @test consumed[] == (valid ? 1 : 0)
+        @test length(p.responses) == (valid ? 1 : 0)
+        @test p.command.action isa C.Restore
+        @test p.failure == (valid ? "Cancelled" : "InvalidEvidence")
+        @test length(run!(p,sensor)) == 2
+        @test p.result.phase == "aborted" && p.result.resume_permitted
+    end
+end
+
+@testset "Consumers can request cancellation between Hsm dispatch steps" begin
+    for consumer_error in (false, true)
+        holder = Ref{Union{Nothing,A.Procedure}}(nothing)
+        consumed = Ref(0)
+        consume = function (_probe, _batch)
+            consumed[] += 1
+            A.cancel!(something(holder[]))
+            consumer_error && error("consumer failed after cancellation")
+        end
+        p = A.Procedure(plan(); clock=()->0.0, consume)
+        holder[] = p
+        sensor = Sensor()
+        while !(p.command.action isa C.Collect)
+            deliver!(p, response(sensor,p.command.action))
+        end
+        serial = p.command.serial
+        deliver!(p, response(sensor,p.command.action))
+        @test consumed[] == 1 && p.cancelled
+        @test p.failure == (consumer_error ? "Processing" : "Cancelled")
+        @test p.command.action isa C.Restore && p.command.serial == serial + 1
+        @test p.delivery === nothing
+        @test length(run!(p,sensor)) == 2
+        @test p.result.phase == "aborted" && p.result.resume_permitted
+    end
+end
+
+@testset "Failure precedence and command ownership survive event dispatch" begin
+    p = A.Procedure(plan(); clock=()->0.0)
+    @test A.fail!(p,"First";known=true) === p.command
+    serial = p.command.serial
+    @test A.fail!(p,"Second";known=true) === nothing
+    @test p.serial == serial && p.result.failure == "First"
+    @test p.result.recovery_failure == "Second" && Hsm.current(p) === :Fault
+    p = A.Procedure(plan(); clock=()->0.0)
+    A.complete!(p, UInt64(92), p.command.serial, C.Held(Sensor().cursor); at=NaN)
+    @test p.result.failure == "Endpoint"
+    p = A.Procedure(plan(); clock=()->0.0)
+    command = p.command
+    @test_throws ArgumentError A.complete!(p,command.run,command.serial,
+        C.Held(Sensor().cursor);at=NaN)
+    @test p.command === command && Hsm.current(p) === :Holding
+    @test p.failure === nothing
+    input = plan()
+    p = A.Procedure(input; clock=()->0.0)
+    expected = copy(input.probes[1])
+    fill!(input.reference, 99)
+    fill!(input.probes[1], 99)
+    sensor = Sensor()
+    next = deliver!(p, response(sensor,p.command.action))
+    @test next === p.command && next.action.figure == expected
+    run!(p,sensor)
+    @test sensor.figure == zeros(Float32,2)
+    @test p.result.phase == "complete"
 end
 
 @testset "online response calculation and exact typed replay" begin

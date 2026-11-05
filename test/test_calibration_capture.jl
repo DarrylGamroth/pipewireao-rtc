@@ -88,7 +88,7 @@ end
                 @test slot.wire == wire
             end
         end
-        result=CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+1)
+        result=CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
         @test result.arrays.raw == UInt16[1 2 3;4 5 6]
         @test result.arrays.slopes == Float32[1 2;3 4]
         @test result.arrays.validity == [false,true] # no implicit scientific policy
@@ -143,7 +143,7 @@ end
                 CC._read!(capture,capture.slots.raw,fixture.buffer)
                 @test capture.failure !== :none
                 @test_throws InvalidStateException CC.snapshot(capture)
-                @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+1)
+                @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
             end
         end
     end
@@ -159,7 +159,7 @@ end
     end
     owned_test_capture() do capture
         CC.arm!(capture,exposure())
-        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+0.01)
+        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+0.01)
         @test capture.failure===:deadline
     end
     owned_test_capture() do capture
@@ -171,13 +171,13 @@ end
     owned_test_capture() do capture
         CC.arm!(capture,exposure())
         waiter=@async try
-            CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+5)
+            CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+5)
         catch error
             error
         end
         yield()
         @test capture.waiting
-        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+1)
+        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
         close(capture)
         @test fetch(waiter) isa InvalidStateException
         @test !isopen(capture.wakeup)
@@ -224,7 +224,7 @@ end
                 CC._read!(capture,slot,payload.buffer)
             end
         end
-        result=CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+1)
+        result=CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
         @test keys(result.arrays) == keys(declarations)
         @test result.arrays[Symbol("reconstruction-pixels")] == Float32[1 2 3;4 5 6;7 8 9;10 11 12]
         @test result.arrays[Symbol("mean-pupil-intensity")] == Float32[1]

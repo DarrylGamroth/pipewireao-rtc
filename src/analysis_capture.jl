@@ -14,30 +14,25 @@ struct CaptureProvenance
     source_parameter_sha256::Dict{String,String}
 end
 
-function capture_provenance(value)
+capture_provenance(value) = throw(ArgumentError("capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities"))
+function capture_provenance(value::AbstractDict)
     fields=Set(String.(fieldnames(CaptureProvenance)))
-    value isa AbstractDict && Set(keys(value))==fields ||
+    Set(keys(value))==fields ||
         throw(ArgumentError("capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities"))
-    sha(x)=x isa String && occursin(r"^[0-9a-f]{64}$",x)
-    text(x,limit)=x isa String && isvalid(x) && 0<ncodeunits(x)<=limit && !any(iscntrl,x)
+    sha = capture_sha256
+    text = capture_text
     for key in ("acquisition_receipt_sha256","graph_sha256","source_graph_sha256","recipe_sha256")
         sha(value[key]) || throw(ArgumentError("invalid capture provenance SHA-256: $key"))
     end
     value["fits_bindings_sha256"]===nothing || sha(value["fits_bindings_sha256"]) ||
         throw(ArgumentError("invalid capture FITS bindings SHA-256"))
     identity=value["calibration_identity"]
-    identity isa String && occursin(r"^sha256:[0-9a-f]{64}$",identity) ||
+    capture_calibration_identity(identity) ||
         throw(ArgumentError("capture provenance requires a SHA-256 calibration identity"))
     text(value["operation"],64) && text(value["reference_space"],2048) ||
         throw(ArgumentError("invalid capture reference-space declaration"))
     value["source_stage"]===nothing || endpoint(value["source_stage"])
-    function hashes(key)
-        mapping=value[key]
-        mapping isa AbstractDict && length(mapping)<=64 &&
-            all(pair -> first(pair) isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$",first(pair)) && sha(last(pair)),pairs(mapping)) ||
-            throw(ArgumentError("invalid capture parameter SHA-256 mapping"))
-        return Dict{String,String}(mapping)
-    end
+    hashes(key) = capture_parameter_hashes(value[key])
     return CaptureProvenance(value["acquisition_receipt_sha256"],value["graph_sha256"],value["fits_bindings_sha256"],
         value["source_graph_sha256"],value["recipe_sha256"],identity,value["operation"],
         value["reference_space"],value["source_stage"],hashes("parameter_sha256"),hashes("source_parameter_sha256"))
@@ -58,25 +53,20 @@ struct CaptureConfig
     provenance::Union{Nothing,CaptureProvenance}
 end
 
-function capture_configuration(value)
+capture_configuration(value) = throw(ArgumentError("analysis capture requires label, scope, products, units, sample-count, complete and variance-valid"))
+function capture_configuration(value::AbstractDict)
     fields = Set(["label", "scope", "products", "units", "sample-count", "complete", "variance-valid"])
-    value isa AbstractDict && fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields,Set(["provenance"])) ||
+    fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields,Set(["provenance"])) ||
         throw(ArgumentError("analysis capture requires label, scope, products, units, sample-count, complete and variance-valid"))
-    text(x) = x isa String && isvalid(x) && 0 < ncodeunits(x) <= 255 && !any(iscntrl, x)
+    text(x) = capture_text(x, 255)
     port(x) = text(x) && occursin(r"^[A-Za-z0-9_.-]+$", x)
     text(value["label"]) || throw(ArgumentError("invalid capture label"))
     scope = value["scope"]
-    scope isa AbstractDict && Set(keys(scope)) == Set(["session_label", "graph", "parameter"]) &&
-        all(pair -> text(first(pair)) && text(last(pair)), pairs(scope)) ||
-        throw(ArgumentError("capture scope must declare session_label, graph and parameter for the artifact interface"))
+    capture_scope(scope)
     products = value["products"]
-    products isa AbstractDict && "mean" in keys(products) &&
-        Set(keys(products)) ⊆ Set(["mean", "variance", "stddev"]) && all(port, values(products)) ||
-        throw(ArgumentError("capture products require mean and optional variance/stddev output Ports"))
+    capture_products(products)
     units = value["units"]
-    units isa AbstractDict && Set(keys(units)) == Set(keys(products)) &&
-        all(unit -> text(unit) && all(isascii, unit), values(units)) ||
-        throw(ArgumentError("capture units must name each product explicitly"))
+    capture_units(units, products)
     foreach(ConfigurationStore.fits_units, values(units))
     all(key -> port(value[key]), ("sample-count", "complete", "variance-valid")) ||
         throw(ArgumentError("invalid capture status output Port"))
@@ -96,15 +86,7 @@ function capture_contract(config::CaptureConfig, document::AbstractDict)
     graph = get(document, "filter.graph", document)
     exports = Dict{Symbol,String}()
     for output in get(graph, "outputs", [])
-        endpoint, name = if output isa AbstractString
-            parts = split(output, ':'; limit=2)
-            length(parts) == 2 || throw(ArgumentError("capture exports must identify exact node:port endpoints"))
-            String(output), Symbol(last(parts))
-        elseif output isa AbstractDict && Set(keys(output)) == Set(["name", "endpoint"])
-            String(output["endpoint"]), Symbol(output["name"])
-        else
-            throw(ArgumentError("invalid capture Graph output"))
-        end
+        endpoint, name = capture_export(output)
         haskey(exports, name) && throw(ArgumentError("duplicate capture Graph output"))
         exports[name] = endpoint
     end
@@ -128,7 +110,7 @@ function capture_contract(config::CaptureConfig, document::AbstractDict)
     settings = get(node,"config",Dict())
     get(settings,"mode",nothing) == "finite" || throw(ArgumentError("artifact capture requires finite statistics"))
     window = get(settings,"window_samples",nothing)
-    window isa Integer && !(window isa Bool) && 1 <= window <= typemax(Int) ||
+    capture_window(window) ||
         throw(ArgumentError("capture requires a positive finite window_samples"))
     return CaptureConfig(config.label, config.scope, config.products, config.units,
         config.count,config.complete,config.variance_valid,UInt64(window),config.provenance)
@@ -330,3 +312,50 @@ function capture_artifacts(config, capture::Capture, finished;
     end
     return record
 end
+
+capture_scope(value) = throw(ArgumentError("capture scope must declare session_label, graph and parameter for the artifact interface"))
+function capture_scope(value::AbstractDict)
+    Set(keys(value)) == Set(["session_label", "graph", "parameter"]) && all(pair -> capture_text(first(pair), 255) && capture_text(last(pair), 255), pairs(value)) || return capture_scope(nothing)
+    return value
+end
+
+capture_products(value) = throw(ArgumentError("capture products require mean and optional variance/stddev output Ports"))
+function capture_products(value::AbstractDict)
+    "mean" in keys(value) && Set(keys(value)) ⊆ Set(["mean", "variance", "stddev"]) && all(capture_port, values(value)) || return capture_products(nothing)
+    return value
+end
+
+capture_units(value, products) = throw(ArgumentError("capture units must name each product explicitly"))
+function capture_units(value::AbstractDict, products)
+    Set(keys(value)) == Set(keys(products)) && all(unit -> capture_text(unit, 255) && all(isascii, unit), values(value)) || return capture_units(nothing, products)
+    return value
+end
+
+capture_sha256(value::String) = occursin(r"^[0-9a-f]{64}$", value)
+capture_sha256(value) = false
+capture_text(value::String, limit) = isvalid(value) && 0 < ncodeunits(value) <= limit && !any(iscntrl, value)
+capture_text(value, limit) = false
+capture_port(value) = capture_text(value, 255) && occursin(r"^[A-Za-z0-9_.-]+$", value)
+capture_calibration_identity(value::String) = occursin(r"^sha256:[0-9a-f]{64}$",value)
+capture_calibration_identity(value) = false
+capture_parameter_name(value::String) = occursin(r"^[A-Za-z0-9_.-]{1,128}$",value)
+capture_parameter_name(value) = false
+capture_parameter_hashes(value) = throw(ArgumentError("invalid capture parameter SHA-256 mapping"))
+function capture_parameter_hashes(value::AbstractDict)
+    length(value) <= 64 && all(pair -> capture_parameter_name(first(pair)) && capture_sha256(last(pair)), pairs(value)) ||
+        return capture_parameter_hashes(nothing)
+    return Dict{String,String}(value)
+end
+capture_export(output) = throw(ArgumentError("invalid capture Graph output"))
+function capture_export(output::AbstractString)
+    parts = split(output, ':'; limit=2)
+    length(parts) == 2 || throw(ArgumentError("capture exports must identify exact node:port endpoints"))
+    return String(output), Symbol(last(parts))
+end
+function capture_export(output::AbstractDict)
+    Set(keys(output)) == Set(["name", "endpoint"]) || return capture_export(nothing)
+    return String(output["endpoint"]), Symbol(output["name"])
+end
+capture_window(value::Integer) = 1 <= value <= typemax(Int)
+capture_window(value::Bool) = false
+capture_window(value) = false

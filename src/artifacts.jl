@@ -1,3 +1,8 @@
+"""Prepare owned arrays and transient wire bytes from FITS image artifacts.
+
+This module validates image selection, axis order, shape and element conversion.
+It does not perform calibration, unit conversion or file publication.
+"""
 module Artifacts
 
 using FITSIO
@@ -25,24 +30,37 @@ struct FITSArtifact
     function FITSArtifact(path::AbstractString; hdu=1, axes=nothing)
         !isempty(path) && !occursin('\0', path) ||
             throw(ArgumentError("FITS artifact path must be nonempty and contain no NUL"))
-        hdu isa Integer && !(hdu isa Bool) && 1 <= hdu <= typemax(Int) ||
-            throw(ArgumentError("FITS HDU must be a positive one-based integer"))
-        permutation = if axes === nothing
-            nothing
-        else
-            axes isa Union{Tuple,AbstractVector} ||
-                throw(ArgumentError("FITS axes must be an integer permutation"))
-            !isempty(axes) && all(x -> x isa Integer && !(x isa Bool) &&
-                1 <= x <= typemax(Int), axes) ||
-                throw(ArgumentError("FITS axes must be positive integers"))
-            values = Tuple(Int(x) for x in axes)
-            sort(collect(values)) == collect(1:length(values)) ||
-                throw(ArgumentError("FITS axes must be a permutation of 1:rank"))
-            values
-        end
+        hdu = checked_hdu(hdu)
+        permutation = checked_axes(axes)
         new(abspath(path), Int(hdu), permutation)
     end
 end
+
+checked_hdu(value) = throw(ArgumentError("FITS HDU must be a positive one-based integer"))
+checked_hdu(value::Bool) = checked_hdu(nothing)
+function checked_hdu(value::Integer)
+    1 <= value <= typemax(Int) || return checked_hdu(nothing)
+    return value
+end
+checked_dimension(value) = throw(ArgumentError("artifact dimensions must be positive integers"))
+checked_dimension(value::Bool) = checked_dimension(nothing)
+function checked_dimension(value::Integer)
+    1 <= value <= typemax(Int) || return checked_dimension(nothing)
+    return value
+end
+checked_axes(::Nothing) = nothing
+checked_axes(value) = throw(ArgumentError("FITS axes must be an integer permutation"))
+function checked_axes(axes::Union{Tuple,AbstractVector})
+    !isempty(axes) && all(valid_axis, axes) ||
+        throw(ArgumentError("FITS axes must be positive integers"))
+    values = Tuple(Int(x) for x in axes)
+    sort(collect(values)) == collect(1:length(values)) ||
+        throw(ArgumentError("FITS axes must be a permutation of 1:rank"))
+    return values
+end
+valid_axis(value) = false
+valid_axis(value::Bool) = false
+valid_axis(value::Integer) = 1 <= value <= typemax(Int)
 
 """
 Owned logical calibration data and provenance of its preparation. The hashes in
@@ -54,13 +72,13 @@ struct PreparedArtifact{T,N}
     provenance::Dict{String,Any}
 end
 
-function checked_shape(shape, width::Int)
-    shape isa Union{Tuple,AbstractVector} && !isempty(shape) ||
+checked_shape(shape, width::Int) = throw(ArgumentError("artifact shape must be a nonempty tuple or vector"))
+function checked_shape(shape::Union{Tuple,AbstractVector}, width::Int)
+    !isempty(shape) ||
         throw(ArgumentError("artifact shape must be a nonempty tuple or vector"))
     count = 1
     for dimension in shape
-        dimension isa Integer && !(dimension isa Bool) && 1 <= dimension <= typemax(Int) ||
-            throw(ArgumentError("artifact dimensions must be positive integers"))
+        dimension = checked_dimension(dimension)
         dimension <= MAX_IMAGE_BYTES ÷ width ÷ count ||
             throw(ArgumentError("decoded artifact exceeds 256 MiB"))
         count *= Int(dimension)
@@ -119,13 +137,16 @@ function convert_value(::Type{Bool}, value)
     return value == 1
 end
 
+conversion_error(exception, T, value) = rethrow()
+conversion_error(exception::InexactError, T, value) =
+    throw(ArgumentError("artifact value $value is not exactly representable as $T"))
+
 function convert_value(::Type{T}, value) where {T<:Union{Unsigned,Int32}}
     isfinite(value) || throw(ArgumentError("artifact contains a nonfinite value"))
     converted = try
         T(value)
     catch exception
-        exception isa InexactError || rethrow()
-        throw(ArgumentError("artifact value $value is not exactly representable as $T"))
+        conversion_error(exception, T, value)
     end
     converted == value || throw(ArgumentError("artifact integer conversion must be exact"))
     return converted
@@ -206,6 +227,9 @@ function convert_values!(data::Array{T}, logical::AbstractArray, check) where T
     return data
 end
 
+checked_image(image::ImageHDU) = image
+checked_image(image) = throw(ArgumentError("artifact HDU must contain an image"))
+
 # Internal shared preparation boundary: the catalog retains exactly these bytes.
 function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
         original::Vector{UInt8}; check=()->nothing) where T
@@ -218,7 +242,7 @@ function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
     return FITS(original, "r") do fits
         source.hdu <= length(fits) || throw(ArgumentError("FITS HDU does not exist: $(source.hdu)"))
         image = fits[source.hdu]
-        image isa ImageHDU || throw(ArgumentError("artifact HDU must contain an image"))
+        image = checked_image(image)
         header = read_header(image)
         haskey(header, "BLANK") && throw(ArgumentError("FITS BLANK/null masks are not supported"))
         haskey(header, "ZIMAGE") && throw(ArgumentError("compressed FITS images are not supported"))

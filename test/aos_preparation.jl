@@ -10,8 +10,8 @@ using AdaptiveOpticsSimPipeWireHIL
 
 const AOSPreparationOwner = PipeWireAORTC.AOSOwner
 const AOSReportExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
-const AOSReportControl = PipeWireAORTC.NativeSourceControl
-const AOSReportBootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const AOSReportControl = PipeWireAORTC.SourceControl
+const AOSReportBootstrap = PipeWireAORTC.OwnerBootstrapRuntime
 
 mutable struct ReportPreparationRuntime
     failure::Union{Nothing,Exception}

@@ -1,7 +1,7 @@
 # An ordinary non-HIL AOS graph owns its physical command and model clock.
 # Controllers contribute held absolute vectors; their cadence never drives it.
 module PupilSourceOwner
-using ..PipeWireAORTCAOSExt: Owner, Bootstrap, SourceControl, Backends, target, OwnerState, PupilOutput
+using ..PipeWireAORTCAOSExt: owner_cancelled, Owner, Bootstrap, SourceControl, Backends, target, OwnerState, PupilOutput
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, PipeWireAO
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: poll_graph_output_snapshot!, snapshot_values,
@@ -238,7 +238,7 @@ function Owner.run_pupil_source_owner(options)
         report!(options,mailbox,state)
         run!(options,science,prepared,mailbox,state)
     catch error
-        if !(error isa InterruptException && Bootstrap.clean_cancel(options.bootstrap_runtime))
+        if !(owner_cancelled(error,options.bootstrap_runtime))
             push!(failures,error)
             Bootstrap.fault!(options.bootstrap_runtime,error)
         end

@@ -16,7 +16,22 @@ function stage_test_dependencies!(sdk)
         if !isfile(source) && environment == joinpath(P.package_root(), "test")
             source = joinpath(P.package_root(), name)
         end
-        isfile(source) && cp(source, joinpath(sdk, name); force=true)
+        isfile(source) || continue
+        if name == "Manifest.toml"
+            manifest = TOML.parsefile(source)
+            for entries in values(manifest["deps"]), entry in entries
+                path = get(entry, "path", nothing)
+                path === nothing && continue
+                entry["uuid"] == string(Base.PkgId(P).uuid) && continue
+                entry["path"] = abspath(dirname(source), path)
+            end
+            open(joinpath(sdk, name), "w") do io
+                println(io, "# Generated validation manifest from the active dependency environment.")
+                TOML.print(io, manifest; sorted=true)
+            end
+        else
+            cp(source, joinpath(sdk, name); force=true)
+        end
     end
     return sdk
 end
@@ -40,9 +55,9 @@ end
     @test P.SessionCLI.SessionLaunch === P.SessionLaunch
     @test P.SessionCLI.SessionInstall === P.SessionInstall
     for name in (:SessionConfiguration, :SessionInstall, :SessionRuntime,
-                 :NativeSessionClient, :NativeCalibrationEndpoint, :CalibrationAcquisition, :CalibrationCLI,
-                 :SessionCLI, :NativeOwnerBootstrapRuntime, :NativeParameterSource,
-                 :NativeSourceControl)
+                 :SessionClient, :CalibrationEndpoint, :CalibrationAcquisition, :CalibrationCLI,
+                 :SessionCLI, :OwnerBootstrapRuntime, :ParameterSource,
+                 :SourceControl)
         @test Base.ispublic(P, name)
         @test parentmodule(getproperty(P, name)) === P
     end

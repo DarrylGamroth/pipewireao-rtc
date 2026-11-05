@@ -1,5 +1,6 @@
 using Test, PipeWireAORTC
 import Hsm
+import Clocks
 
 const CR = PipeWireAORTC.CorrectionRecovery
 const RECOVERY_OWNER = Int64(801)
@@ -38,6 +39,116 @@ function holding_recovery(; kwargs...)
     CR.observe_recovery!(sm, recovery_observation(3))
     CR.observe_reference!(sm, reference_observation(4))
     return sm, now
+end
+
+@testset "Cached nanosecond recovery clocks preserve exact expiry and errors" begin
+    clock = Clocks.CachedNanoClock(100)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock, timeout_ms=5)
+    CR.qualify!(sm, loop_observation(1, 3, 3, true; token=UInt64(0)))
+    stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    @test stage isa CR.StageRecovery && sm.clock === clock && sm.pending_since_ns == 100
+    Clocks.advance!(clock, 4_999_999)
+    CR.check_timeout!(sm)
+    @test CR.state(sm) === :Opening && sm.failure === nothing
+    Clocks.advance!(clock, 1)
+    CR.check_timeout!(sm)
+    @test CR.state(sm) === :Unverified && sm.failure === :operation_timeout
+    @test sm.pending_since_ns == 0
+    clock = Clocks.CachedNanoClock(100)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock)
+    CR.qualify!(sm, loop_observation(1, 3, 3, true; token=UInt64(0)))
+    Clocks.update!(clock, -1)
+    CR.check_timeout!(sm)
+    @test CR.state(sm) === :Unverified && sm.failure === :clock_error
+    @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; clock)
+end
+
+@testset "Recovery events own admission facts and latch the first failure" begin
+    now = Ref(UInt64(100))
+    sm = CR.Coordinator(RECOVERY_OWNER; clock=() -> now[], timeout_ms=5)
+    initial = loop_observation(1, 3, 3, true; token=UInt64(0))
+    Hsm.dispatch!(sm, :Qualified, initial)
+    @test CR.state(sm) === :Closed
+    @test (sm.serial, sm.loop_generation, sm.target_closed) == (1, 3, true)
+    request = (; owner_instance=RECOVERY_OWNER, token=RECOVERY_TOKEN, reason=:saturation)
+    Hsm.dispatch!(sm, :Protect, request)
+    @test CR.state(sm) === :Opening
+    @test (sm.token, sm.reason, sm.target_closed) == (RECOVERY_TOKEN, :saturation, false)
+    deadline = sm.pending_since_ns
+    now[] += 1
+    Hsm.dispatch!(sm, :Protect, merge(request, (; token=RECOVERY_TOKEN + UInt64(1))))
+    @test sm.token == RECOVERY_TOKEN && sm.pending_since_ns == deadline
+    Hsm.dispatch!(sm, :Failed, (; reason=:endpoint_lost, uncertain=false))
+    @test CR.state(sm) === :Fault
+    @test sm.failure === :endpoint_lost && sm.reference_serial == 0
+    @test sm.pending_since_ns == 0
+    Hsm.dispatch!(sm, :Failed, (; reason=:later_failure, uncertain=true))
+    Hsm.dispatch!(sm, :Protect, request)
+    @test CR.state(sm) === :Fault && sm.failure === :endpoint_lost
+    @test CR.failed!(sm, :wrapper_failure) === nothing
+    @test sm.failure === :endpoint_lost
+
+    sm, _ = holding_recovery()
+    Hsm.dispatch!(sm, :Failed, (; reason=:uncertain_outcome, uncertain=true))
+    retained = (sm.serial, sm.loop_generation, sm.target_closed, sm.reference_since_ns)
+    Hsm.dispatch!(sm, :Qualified, loop_observation(50, 5, 5, false))
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(51))
+    @test CR.state(sm) === :Unverified && sm.failure === :uncertain_outcome
+    @test (sm.serial, sm.loop_generation, sm.target_closed, sm.reference_since_ns) == retained
+end
+
+@testset "Reference refresh events preserve release deadlines and reject stale facts" begin
+    sm, now = restoring_recovery()
+    CR.observe_recovery!(sm, recovery_observation(3))
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(4))
+    @test CR.state(sm) === :Holding && sm.reference_serial == 4
+    now[] += 1
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(5))
+    @test sm.reference_serial == 5 && sm.reference_since_ns == now[]
+    @test sm.pending_since_ns == 0
+    request = (; owner_instance=RECOVERY_OWNER, token=RECOVERY_TOKEN, closed=true)
+    Hsm.dispatch!(sm, :Release, request)
+    @test CR.state(sm) === :Releasing && sm.target_closed
+    deadline = sm.pending_since_ns
+    now[] += 1
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(6))
+    refreshed = sm.reference_since_ns
+    @test sm.reference_serial == 6 && refreshed == now[]
+    now[] += 1
+    Hsm.dispatch!(sm, :Release, request)
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(6))
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(7; owner=RECOVERY_OWNER + 1))
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(7; generation=10))
+    @test sm.serial == 6 && sm.reference_serial == 6 && sm.reference_since_ns == refreshed
+    @test sm.pending_since_ns == deadline && CR.state(sm) === :Releasing
+    now[] = deadline + sm.timeout_ns
+    CR.check_timeout!(sm)
+    @test CR.state(sm) === :Unverified && sm.failure === :operation_timeout
+    @test sm.pending_since_ns == 0 && sm.reference_serial == 0
+end
+
+@testset "Reference events route invalid evidence and ignore inactive phases" begin
+    sm, now = holding_recovery()
+    CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    freshness = sm.reference_since_ns
+    now[] += 1
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(5; ready=false))
+    @test CR.state(sm) === :Unverified && sm.failure === :release_prerequisites_changed
+    @test sm.serial == 5 && sm.reference_serial == 0
+    @test sm.reference_since_ns == freshness && sm.pending_since_ns == 0
+    Hsm.dispatch!(sm, :Failed, (; reason=:later_failure, uncertain=false))
+    @test CR.state(sm) === :Unverified && sm.failure === :release_prerequisites_changed
+
+    sm, _ = restoring_recovery()
+    before = (sm.serial, sm.reference_serial, sm.reference_since_ns, sm.pending_since_ns)
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(50))
+    @test CR.state(sm) === :RestoringReference && sm.failure === nothing
+    @test (sm.serial, sm.reference_serial, sm.reference_since_ns, sm.pending_since_ns) == before
+    CR.observe_recovery!(sm, recovery_observation(3))
+    deadline = sm.pending_since_ns
+    Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(4; coherent=false))
+    @test CR.state(sm) === :Verifying && sm.failure === nothing
+    @test sm.serial == 4 && sm.reference_serial == 0 && sm.pending_since_ns == deadline
 end
 
 @testset "Protective recovery hierarchy and explicit close intent" begin
@@ -326,4 +437,126 @@ end
     for count in (0, 17, true)
         @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; controllers=count)
     end
+end
+
+@testset "Loop events preserve pending adoption and forced-open monitoring" begin
+    sm, now = qualified_recovery()
+    before = (sm.serial, sm.loop_generation, sm.target_closed, sm.pending_since_ns)
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(2, 4, 4, false; token=UInt64(0)))
+    @test CR.state(sm) === :Closed
+    @test (sm.serial, sm.loop_generation, sm.target_closed, sm.pending_since_ns) == before
+    stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, stage, UInt64(11); loop_generation=UInt64(4))
+    deadline = sm.pending_since_ns
+    now[] += 1
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(2, 4, 3, true))
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(3, 3, 3, true))
+    Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(4))
+    @test CR.state(sm) === :Opening && sm.serial == 1 && sm.loop_generation == 3
+    @test sm.pending_since_ns == deadline && sm.failure === nothing
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(5, 4, 4, false))
+    @test CR.state(sm) === :RestoringReference && sm.serial == 5
+    @test sm.loop_generation == 4 && sm.expected_loop_generation == 0
+    deadline = sm.pending_since_ns
+    now[] += 1
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(6, 4, 3, true))
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(5, 4, 4, false))
+    @test sm.serial == 5 && sm.pending_since_ns == deadline
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(7, 4, 4, false))
+    @test sm.serial == 7 && sm.pending_since_ns == deadline
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(8, 4, 4, true))
+    @test CR.state(sm) === :Unverified && sm.failure === :unexpected_loop_change
+    @test sm.serial == 7 && sm.pending_since_ns == 0
+
+    sm, _ = holding_recovery()
+    CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    close = CR.observe_release!(sm, release_observation(5))
+    CR.staged!(sm, close, UInt64(5))
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(6, 5, 4, false))
+    @test CR.state(sm) === :Closing && sm.serial == 5
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(7, 5, 5, true))
+    @test CR.state(sm) === :Closed && sm.serial == 7 && sm.loop_generation == 5
+
+    sm, _, _ = coupled_recovery()
+    effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    CR.recovery_staged!(sm, effect, UInt64(11); loop_generation=(UInt64(4), UInt64(10)))
+    Hsm.dispatch!(sm, :LoopObserved, loop_observation(2, 4, 4, false))
+    @test CR.state(sm) === :Unverified && sm.failure === :loop_scope_mismatch
+    @test sm.serial == 1 && sm.loop_generation == (3, 9)
+
+    sm, _, _ = coupled_recovery()
+    CR.observe_loop!(sm, loop_observation(2, 4, 4, false; token=UInt64(0)))
+    @test sm.failure === :loop_scope_mismatch # Shape validation precedes phase filtering.
+end
+
+@testset "Recovery observations are handled only while restoring the reference" begin
+    sm, _ = restoring_recovery()
+    deadline = sm.pending_since_ns
+    Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(3; requested=10, active=10))
+    @test CR.state(sm) === :RestoringReference && sm.serial == 2
+    @test sm.pending_since_ns == deadline && sm.failure === nothing
+    Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(4))
+    @test CR.state(sm) === :Verifying && sm.serial == 4
+    Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(5; status=:failed))
+    @test CR.state(sm) === :Verifying && sm.serial == 4 && sm.failure === nothing
+    for (status, expected) in ((:failed, :Fault), (:unknown, :Unverified))
+        sm, _ = restoring_recovery()
+        Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(3; status))
+        @test CR.state(sm) === expected
+        @test sm.failure === (status === :failed ? :recovery_failed : :recovery_unknown)
+        @test sm.serial == 2
+    end
+end
+
+@testset "Staging, cancellation and deadline events follow the active phase" begin
+    sm, now = qualified_recovery()
+    Hsm.dispatch!(sm, :DeadlineChecked, typemax(UInt64))
+    Hsm.dispatch!(sm, :Cancelled, (; owner_instance=RECOVERY_OWNER, token=UInt64(0)))
+    @test CR.state(sm) === :Closed && sm.failure === nothing
+    stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    deadline = sm.pending_since_ns
+    staged = (; effect=stage, generation=UInt64(11), loop_generation=UInt64(4))
+    Hsm.dispatch!(sm, :RecoveryStaged, staged)
+    now[] += 1
+    Hsm.dispatch!(sm, :RecoveryStaged, staged)
+    @test sm.recovery_generation == 11 && sm.expected_loop_generation == 4
+    @test sm.pending_since_ns == deadline
+    Hsm.dispatch!(sm, :LoopStaged, (; effect=CR.CloseLoop(RECOVERY_OWNER, RECOVERY_TOKEN), generation=UInt64(5)))
+    @test sm.expected_loop_generation == 4 && sm.failure === nothing
+    Hsm.dispatch!(sm, :DeadlineChecked, deadline + sm.timeout_ns - UInt64(1))
+    @test CR.state(sm) === :Opening && sm.pending_since_ns == deadline
+    Hsm.dispatch!(sm, :DeadlineChecked, deadline + sm.timeout_ns)
+    @test CR.state(sm) === :Unverified && sm.failure === :operation_timeout
+    @test sm.pending_since_ns == 0
+    Hsm.dispatch!(sm, :RecoveryStaged, merge(staged, (; generation=UInt64(12))))
+    Hsm.dispatch!(sm, :Cancelled, (; owner_instance=RECOVERY_OWNER, token=RECOVERY_TOKEN))
+    @test sm.recovery_generation == 11 && sm.failure === :operation_timeout
+
+    sm, _ = holding_recovery()
+    Hsm.dispatch!(sm, :Cancelled, (; owner_instance=RECOVERY_OWNER + 1, token=RECOVERY_TOKEN))
+    @test CR.state(sm) === :Holding && sm.failure === nothing
+    Hsm.dispatch!(sm, :Cancelled, (; owner_instance=RECOVERY_OWNER, token=RECOVERY_TOKEN))
+    @test CR.state(sm) === :Unverified && sm.failure === :operation_cancelled
+end
+
+@testset "Qualification and release dispatch preserve refusal and clock semantics" begin
+    now = Ref(Int64(100))
+    reads = Ref(0)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock=() -> (reads[] += 1; now[]))
+    CR.qualify!(sm, loop_observation(1, 3, 3, true; token=UInt64(0)))
+    qualified_reads = reads[]
+    now[] = -1
+    CR.qualify!(sm, loop_observation(2, 4, 4, false; token=UInt64(0)))
+    @test CR.state(sm) === :Closed && sm.failure === nothing
+    @test reads[] == qualified_reads && sm.serial == 1
+
+    sm, _ = holding_recovery()
+    release = CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; released=true)
+    @test release isa CR.ReleaseRecovery && CR.state(sm) === :Releasing
+    Hsm.dispatch!(sm, :ReleaseObserved, release_observation(5; released=false))
+    @test sm.serial == 4 && CR.state(sm) === :Releasing
+    Hsm.dispatch!(sm, :ReleaseObserved, release_observation(5; closed=true))
+    @test sm.serial == 5 && sm.failure === :release_prerequisites_changed
+    @test CR.state(sm) === :Unverified && sm.pending_since_ns == 0
+    @test CR.observe_release!(sm, release_observation(6)) === nothing
 end

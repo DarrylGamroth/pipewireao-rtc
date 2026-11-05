@@ -6,10 +6,10 @@ using PipeWireAORTC
 
 
 const RC = PipeWireAORTC.RunnerCommands
-const Codec = PipeWireAORTC.NativeRunnerCodec
-const Envelope = PipeWireAORTC.NativeControlCodec
-const SPA = PipeWireAORTC.NativeRunnerCodec.PipeWireAO.SPA
-const Pod = PipeWireAORTC.NativeRunnerCodec.PipeWireAO.Pod
+const Codec = PipeWireAORTC.RunnerCodec
+const Envelope = PipeWireAORTC.ControlCodec
+const SPA = PipeWireAORTC.RunnerCodec.PipeWireAO.SPA
+const Pod = PipeWireAORTC.RunnerCodec.PipeWireAO.Pod
 p(x) = Pod(x)
 ps(x...) = SPA.Struct(Pod[x...])
 id(x) = p(SPA.Id(UInt32(x)))

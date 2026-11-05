@@ -110,8 +110,7 @@ function validate_settings_schema(schema)
     _declaration_object(schema, "settings schema")
     if haskey(schema, "oneOf")
         fields(schema, ("oneOf", "readOnly", "title", "description"), ("oneOf",), "settings schema alternatives")
-        haskey(schema, "readOnly") && !(schema["readOnly"] isa Bool) &&
-            throw(ArgumentError("settings schema readOnly must be Boolean"))
+        haskey(schema, "readOnly") && settings_readonly(schema["readOnly"])
         for key in ("title", "description")
             haskey(schema, key) && _declaration_text(schema[key], "settings schema $key")
         end
@@ -170,3 +169,6 @@ resolve_profile_settings_schema(selection::AbstractDict) = profile_schema(get(se
 resolve_profile_settings_schema(selection) = throw(ArgumentError("profile settings schema must be a property map or template name"))
 profile_schema(template::AbstractString,selection) = resolve_settings_schema(selection)["properties"]
 profile_schema(template,selection) = deepcopy(selection)
+
+settings_readonly(value::Bool) = nothing
+settings_readonly(value) = throw(ArgumentError("settings schema readOnly must be Boolean"))

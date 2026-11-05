@@ -45,6 +45,7 @@ end
         pupil_support=trues(2,3),branch_modes=(llowfs=1:2,scc=3:4),pixel_masks=(llowfs=mask,scc=mask),
         poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.01,reconstruction_tolerance=.01)
     @test calibration.report["status"] == "accepted"
+    @test calibration.command_coordinates === Implementation.PhysicalCommandCoordinates()
     dimensions = Dict("image_rows"=>2,"image_columns"=>3,"selected_pixel_count"=>4,
         "controller_command_count"=>4,"physical_command_count"=>4)
     plan = (;rtc=(document=Dict("dimensions"=>dimensions),controls=Dict("deformable_mirrors"=>Dict())),
@@ -52,6 +53,19 @@ end
         templates=(llowfs=optical_template("llowfs"),scc=optical_template("scc")),
         instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()))
     prepared = Implementation.optical_publication_graphs(plan,calibration)
+    # Completion-shaped diagnostics cannot switch a physical calibration into
+    # active VDM coordinates or make its absent active_vdm_count required.
+    incidental = merge(calibration,(completion=Matrix{Float32}(I,4,4),))
+    @test Implementation.optical_publication_graphs(plan,incidental) == prepared
+    mktempdir() do directory
+        report = Dict("recipe"=>Dict("kind"=>"linear-test"),"source_prescription_identity"=>"test",
+            "source_graph_sha256"=>repeat("a",64))
+        Calibration.calibrate_optical(incidental,joinpath(directory,"physical");report,context=Dict(),
+            concrete_graph=Dict("filter.graph"=>Dict("nodes"=>[])))
+        artifacts = Calibration.read_bundle(joinpath(directory,"physical")).artifacts
+        @test haskey(artifacts,"physical-to-modes.fits")
+        @test !haskey(artifacts,"vdm-to-modes.fits") && !haskey(artifacts,"active-to-full.fits")
+    end
     @test first(prepared.graphs.llowfs["filter.graph"]["nodes"])["config"]["mask"] == Bool[1,0,1,0,1,1]
     @test prepared.contexts.scc["scc"]["frame_schema"] == "test/scc/1"
     @test haskey(first(plan.templates.llowfs["filter.graph"]["nodes"])["config"]["mask"],"\$ref")
@@ -108,7 +122,7 @@ end
         poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.001,reconstruction_tolerance=.001)
     # Identity completion is sufficient to exercise shared physical mappings:
     # they belong in the suffix bundle artifacts, not every branch's inputs.
-    calibration = merge(calibration,(completion=Matrix{Float32}(I,10,10),
+    calibration = merge(calibration,(command_coordinates=Implementation.CompletedVDMCoordinates(),completion=Matrix{Float32}(I,10,10),
         physical_feedback_to_modes=calibration.physical_to_modes))
     node(name,label,config) = Dict("name"=>name,"type"=>"ndarray","label"=>label,"config"=>config)
     link(output,input) = Dict("output"=>output,"input"=>input)
@@ -152,6 +166,9 @@ end
             "scc"=>Dict("frame_schema"=>"test/image/1","image_shape"=>[3,4])),
         templates=(llowfs=templates[1],scc=templates[2]),instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()))
     prepared = Implementation.optical_publication_graphs(plan,calibration)
+    @test calibration.command_coordinates === Implementation.CompletedVDMCoordinates()
+    @test Implementation.optical_command_count(calibration.command_coordinates,
+        Dict("physical_command_count"=>12,"active_vdm_count"=>10)) == 10
     @test prepared.contexts.scc["llowfs"]["selected_pixel_count"] == 4
     @test prepared.contexts.llowfs["scc"]["selected_pixel_count"] == 12
     @test prepared.graphs.llowfs != prepared.graphs.scc
@@ -170,6 +187,12 @@ end
         output = Implementation.publish_optical_bundles((;calibration,report),joinpath(directory,"accepted"),prepared.graphs,prepared.contexts)
         @test Set(keys(output.index["physical_projection"])) ==
             Set(["command-projection","vdm-to-modes","active-to-full","vdm-to-pdm","physical-to-modes"])
+        without_feedback = merge(calibration,(physical_feedback_to_modes=nothing,))
+        no_feedback = Implementation.publish_optical_bundles((calibration=without_feedback,report=report),
+            joinpath(directory,"without-feedback"),prepared.graphs,prepared.contexts)
+        @test Set(keys(no_feedback.index["physical_projection"])) ==
+            Set(["command-projection","vdm-to-modes","active-to-full","vdm-to-pdm"])
+        @test !haskey(Calibration.read_bundle(joinpath(no_feedback.directory,"llowfs")).artifacts,"physical-to-modes.fits")
         for name in (:llowfs,:scc)
             bundle_path = joinpath(output.directory,string(name))
             bundle = Calibration.read_bundle(bundle_path)

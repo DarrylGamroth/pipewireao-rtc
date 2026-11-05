@@ -176,13 +176,18 @@ function copy_deployment_runtime(package::AbstractString)
     return target
 end
 
+_payload_dimension(dimension) = throw(ArgumentError("payload dimensions must be positive integers"))
+_payload_dimension(::Bool) = throw(ArgumentError("payload dimensions must be positive integers"))
+_payload_dimension(dimension::Integer) = dimension > 0 || throw(ArgumentError("payload dimensions must be positive integers"))
+_port_rate(rate) = rate
+_port_rate(rate::Integer) = "$rate/1"
+
 function payload_bytes(shape, width::Integer)
     width > 0 || throw(ArgumentError("element width must be positive"))
     count = BigInt(width)
     isempty(shape) && throw(ArgumentError("payload shape must not be empty"))
     for dimension in shape
-        dimension isa Integer && !(dimension isa Bool) && dimension > 0 ||
-            throw(ArgumentError("payload dimensions must be positive integers"))
+        _payload_dimension(dimension)
         count *= dimension
         count <= typemax(Int) || throw(ArgumentError("payload shape exceeds addressable size"))
     end
@@ -215,7 +220,7 @@ function port(name, direction, shape, schema, element_type=nothing; parameter=fa
     value = Dict{String,Any}("name" => name, "direction" => direction, "element-type" => element_type,
                              "shape" => collect(shape), "schema" => schema)
     parameter && (value["parameter"] = true)
-    rate === nothing || (value["rate"] = rate isa Integer ? "$rate/1" : rate)
+    rate === nothing || (value["rate"] = _port_rate(rate))
     return value
 end
 

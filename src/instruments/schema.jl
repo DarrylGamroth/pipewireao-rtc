@@ -46,7 +46,7 @@ function _validate_optical_asset(value, directory, label; prescription=false, ch
     !isabspath(path) && normpath(path) == path && all(part -> !(part in (".", "..")), splitpath(path)) ||
         throw(ArgumentError("$label path must be a normalized path inside the instrument"))
     hash = asset["sha256"]
-    hash isa String && occursin(r"^[0-9a-f]{64}$", hash) ||
+    valid_sha256(hash) ||
         throw(ArgumentError("$label sha256 must be a lowercase SHA-256 hash"))
     isfile(joinpath(directory, path)) || throw(ArgumentError("$label must reference an existing file"))
     file = D.relative_asset(directory, path)
@@ -331,8 +331,7 @@ function _validate_sensor_declaration(::Union{Val{:scc},Val{:llowfs}}, spec, dir
         all(key -> ispositive_integer(detector[key]) && detector[key] <= 16384, ("rows","columns")) ||
             throw(ArgumentError("physical detector rows and columns must be in 1:16384"))
         pitch = detector["pixel_sampling_m"]
-        pitch isa AbstractVector && length(pitch) == 2 && all(isfinite_positive,pitch) ||
-            throw(ArgumentError("physical detector pixel_sampling_m requires two positive pitches"))
+        detector_pixel_sampling(pitch)
     end
     return nothing
 end
@@ -597,7 +596,7 @@ function _validate_bindings(bindings, mirrors, defaults, settings_schema, profil
             binding = _declaration_fields(binding_value, ("kind", "path", "hdu", "axes", "type", "shape", "sha256"),
                 ("kind", "path", "hdu", "axes", "type", "shape"), "FITS binding $name")
             _validate_artifact_values(binding, directory, "FITS binding $name"; check_file=false)
-            haskey(binding, "sha256") && !(binding["sha256"] isa String && occursin(r"^[0-9a-f]{64}$", binding["sha256"])) &&
+            haskey(binding, "sha256") && !(valid_sha256(binding["sha256"])) &&
                 throw(ArgumentError("FITS binding sha256 must be a lowercase SHA-256 hash"))
         else
             throw(ArgumentError("unknown instrument binding kind for $name"))
@@ -612,8 +611,7 @@ function _valid_zero_extent(value::AbstractString, defaults, settings_schema, pr
     return true
 end
 function _valid_zero_extent(value::AbstractDict, defaults, settings_schema, profiles)
-    Set(keys(value)) == Set(("\$ref",)) && value["\$ref"] isa AbstractString &&
-        startswith(value["\$ref"], "/") || throw(ArgumentError("invalid zero binding reference"))
+    Set(keys(value)) == Set(("\$ref",)) && absolute_reference(value["\$ref"]) || throw(ArgumentError("invalid zero binding reference"))
     return true
 end
 _valid_zero_extent(value, defaults, settings_schema, profiles) = false
@@ -755,7 +753,19 @@ function validate_imaging(document)
     haskey(get(document, "sources", Dict()), source) ||
         throw(ArgumentError("imaging references absent source $source"))
     padding = get(imaging, "zero_padding", 2)
-    padding isa Integer && !(padding isa Bool) && 1 <= padding <= 16 ||
+    ispositive_integer(padding) && padding <= 16 ||
         throw(ArgumentError("imaging zero_padding must be an integer in 1:16"))
     return nothing
 end
+
+valid_sha256(value::String) = occursin(r"^[0-9a-f]{64}$", value)
+valid_sha256(value) = false
+
+detector_pixel_sampling(value) = throw(ArgumentError("physical detector pixel_sampling_m requires two positive pitches"))
+function detector_pixel_sampling(value::AbstractVector)
+    length(value) == 2 && all(isfinite_positive, value) || return detector_pixel_sampling(nothing)
+    return value
+end
+
+absolute_reference(value::AbstractString) = startswith(value, "/")
+absolute_reference(value) = false

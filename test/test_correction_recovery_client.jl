@@ -1,10 +1,11 @@
 module CorrectionRecoveryClientTests
 using Test, PipeWireAORTC
 const CR = PipeWireAORTC.CorrectionRecovery
-const Runner = PipeWireAORTC.NativeRunnerCodec
-const Envelope = PipeWireAORTC.NativeControlCodec
+const Runner = PipeWireAORTC.RunnerCodec
+const Envelope = PipeWireAORTC.ControlCodec
 
 include("helpers/correction_recovery_transport.jl")
+include("helpers/correction_recovery_readbacks.jl")
 
 @testset "Native recovery driver keeps recovery and resume explicit" begin
     t = ScriptedTransport()
@@ -138,6 +139,78 @@ end
     @test operation.coordinator.recovery_generation == 3
     @test only(t.writes).first == "pipewireao-recovery:request-token"
     @test t.inhibited && !t.closed
+end
+
+@testset "Native singular facts implement the loop observation interface" begin
+    snapshot = native_readback(owner_properties(ScriptedTransport()))
+    @test snapshot isa CR.AbstractLoopObservation
+    @test CR.controller_scope(snapshot) isa CR.SingleController
+    @test snapshot.readbacks isa CR.ControllerReadback{Nothing}
+    @test CR.controller_names(snapshot) == snapshot.controller == "correction"
+    @test CR.owner_instance(snapshot) == snapshot.owner_instance == 501
+    @test CR.observation_serial(snapshot) == snapshot.serial == 1
+    @test CR.operation_token(snapshot) == UInt64(snapshot.request_token) == 7
+    @test CR.requested_generation(snapshot) == snapshot.loop_requested == 3
+    @test CR.active_generation(snapshot) == snapshot.loop_active == 3
+    @test snapshot.requested_generation == snapshot.active_generation == 8
+    @test CR.closed(snapshot) === snapshot.closed === true
+    @test snapshot.loop_state === :Closed
+    @test snapshot.controller_readiness === nothing
+    @test CR.generations_match(snapshot) && CR.all_closed(snapshot) && !CR.all_open(snapshot)
+    @test CR.adoption_matches(snapshot)
+    coordinator = CR.Coordinator(CR.controller_scope(snapshot), snapshot.owner_instance)
+    CR.qualify!(coordinator, snapshot)
+    @test CR.state(coordinator) === :Unverified # persisted token7 is never relabeled0
+    CR.qualify!(coordinator, CR.LoopObservation(snapshot.owner_instance, UInt64(0), snapshot.serial,
+        CR.requested_generation(snapshot), CR.active_generation(snapshot), CR.closed(snapshot)))
+    @test CR.state(coordinator) === :Closed
+    @test CR.same_scope(coordinator, snapshot)
+    @test_throws ArgumentError replace_readbacks(snapshot, CR.SingleController(), (snapshot.readbacks,))
+    @test_throws ArgumentError replace_readbacks(snapshot, CR.CoupledControllers{1}(), (snapshot.readbacks,))
+end
+
+@testset "Version1 names and native validation precedence remain unchanged" begin
+    p = "pipewireao-recovery:"
+    properties = owner_properties(ScriptedTransport())
+    legacy_name = "legacy/controller with spaces:closed"
+    properties[p * "controller"] = scalar(legacy_name)
+    for suffix in (":closed", ":requested-generation", ":active-generation")
+        properties[legacy_name * suffix] = pop!(properties, "correction" * suffix)
+    end
+    for suffix in ("fault", "state", "requested")
+        properties["pipewireao.correction-control." * legacy_name * ":closed." * suffix] =
+            pop!(properties, "pipewireao.correction-control.correction:closed." * suffix)
+    end
+    @test native_readback(properties).controller == legacy_name
+
+    properties = owner_properties(ScriptedTransport())
+    properties[p * "controller"] = scalar("")
+    delete!(properties, "pipewireao.correction-control.correction:closed.fault")
+    failure = readback_error(() -> native_readback(properties))
+    @test failure isa ArgumentError
+    @test occursin("controller is absent", sprint(showerror, failure))
+
+    properties = owner_properties(ScriptedTransport())
+    properties["pipewireao.correction-control.correction:closed.fault"] = scalar("owner adoption fault")
+    properties["correction:closed"] = scalar(Int64(0))
+    failure = readback_error(() -> native_readback(properties))
+    @test failure isa PipeWireAORTC.ControlClient.UnknownOutcome
+    @test occursin("observer has a fault", sprint(showerror, failure))
+
+    properties = owner_properties(ScriptedTransport())
+    control = "pipewireao.correction-control.correction:closed."
+    properties[control * "requested"] = scalar(Int64(0))
+    properties["correction:closed"] = scalar(Int64(0))
+    failure = readback_error(() -> native_readback(properties))
+    @test failure isa ArgumentError
+    @test occursin(control * "requested", sprint(showerror, failure))
+
+    properties = owner_properties(ScriptedTransport())
+    properties["correction:requested-generation"] = scalar(Int64(-1))
+    @test_throws ArgumentError native_readback(properties)
+    properties = owner_properties(ScriptedTransport())
+    properties[p * "version"] = scalar(Int64(1))
+    @test_throws ArgumentError native_readback(properties)
 end
 
 end

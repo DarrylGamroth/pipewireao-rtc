@@ -12,6 +12,8 @@ const MIRROR_PROPERTY = "device.mirror.description"
 const D = DeploymentConfiguration
 digest(json::AbstractString) = bytes2hex(SHA.sha256(codeunits(json)))
 scientific_identity(@nospecialize(value)) = "sha256:" * digest(Common.metadata_json(value))
+published_pupil_registration(value) = nothing
+published_pupil_registration(value::AbstractDict) = haskey(value, "rotation_deg") ? value : nothing
 
 function read_object(json)
     document=Common.parse_json(json)
@@ -469,7 +471,7 @@ function verify_plant(options,plant_module)
             throw(ArgumentError("instrument DM basis declaration differs"))
         get(mirror,"pupil_coordinates",nothing)==get(original,"pupil_coordinates",nothing) || throw(ArgumentError("instrument pupil coordinates differ"))
         registration = get(original,"pupil_registration",nothing)
-        published_registration = registration isa AbstractDict && haskey(registration,"rotation_deg") ? registration : nothing
+        published_registration = published_pupil_registration(registration)
         get(mirror,"pupil_registration",nothing)==published_registration ||
             throw(ArgumentError("instrument pupil registration differs"))
         get(mirror,"clear_aperture",nothing)==get(original,"clear_aperture",nothing) ||

@@ -1,6 +1,6 @@
 # Optional CPU integration: no desktop core, instrument session or GPU is used.
 include("test_correction_observer.jl")
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 @testset "Idle correction deadline publishes from a native timer" begin
     with_control_private_core() do remote, _, _

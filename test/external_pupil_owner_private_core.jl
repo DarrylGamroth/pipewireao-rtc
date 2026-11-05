@@ -4,10 +4,10 @@ import PipeWireAO_jll
 include(joinpath(@__DIR__,"external_pupil_owner_documents.jl"))
 include(joinpath(pkgdir(AdaptiveOpticsSimPipeWireHIL),"test/private_core_helpers.jl"))
 const Owner = PipeWireAORTC.AOSOwner
-const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
-const Client = PipeWireAORTC.NativeOwnerBootstrapClient
-const Codec = PipeWireAORTC.NativeOwnerBootstrapCodec
-const Source = PipeWireAORTC.NativeSourceControl
+const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
+const Client = PipeWireAORTC.OwnerBootstrapClient
+const Codec = PipeWireAORTC.OwnerBootstrapCodec
+const Source = PipeWireAORTC.SourceControl
 const External = Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt).ExternalPupilOwner
 deadline() = time_ns()/1e9 + 30
 
@@ -145,7 +145,7 @@ end
                     source === nothing || close(source)
                 end
                 client === nothing || close(client)
-                runtime.cancel[] = true
+                PipeWireAORTC.OwnerBootstrapRuntime.cancel!(runtime)
                 timedwait(()->istaskdone(owner_task),10;pollint=0.01)
                 close(runtime)
             end

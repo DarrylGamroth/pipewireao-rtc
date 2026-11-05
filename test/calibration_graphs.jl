@@ -30,6 +30,9 @@ end
             inputs=frontend_inputs, outputs=frontend_outputs)
         command = Calibration.calibration_graph(application;
             inputs=command_inputs, outputs=command_outputs)
+        @test frontend isa Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).GraphProjection
+        @test command isa Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).GraphProjection
+        @test frontend.provenance === nothing && command.provenance === nothing
         @test Set(node["name"] for node in frontend.document["filter.graph"]["nodes"]) ==
             Set(("pixel-calibration", "shack-hartmann"))
         @test only(command.document["filter.graph"]["nodes"]) == original_nodes["pdm-command"]

@@ -10,22 +10,34 @@ import ..Analysis
 import ..Common
 import ..DeploymentConfiguration
 import ..SystemdOwners
-import ..NativeSessionDiscovery
-import ..NativeSessionClient
-import ..NativeSessionCodec
-import ..NativeAcquisitionLifecycleClient
-import ..NativeAcquisitionLifecycleCodec
+import ..SessionDiscovery
+import ..SessionClient
+import ..SessionCodec
+import ..AcquisitionLifecycleClient
+import ..AcquisitionLifecycleCodec
 
 const S = SystemdOwners
-const Discovery = NativeSessionDiscovery
-const Session = NativeSessionClient
-const Acquisition = NativeAcquisitionLifecycleClient
-const AcquisitionCodec = NativeAcquisitionLifecycleCodec
+const Discovery = SessionDiscovery
+const Session = SessionClient
+const Acquisition = AcquisitionLifecycleClient
+const AcquisitionCodec = AcquisitionLifecycleCodec
 const UNIT = r"^pipewireao-session@([a-z0-9][a-z0-9-]{0,39})\.service$"
 
 export Handle, start!, attach, ready, running!, control!, source_status, stop!,
     shutdown!, reconcile_shutdown!, reconcile_cleanup!, reconcile_stop!, final_record
 
+"""
+    Handle(unit, runtime_root, invocation, main_pid, start_ticks, cgroup,
+        stop_attempted, shutdown_attempted, shutdown_accepted, stage_root)
+
+Retained identity and client-side operation state for one RTC session.
+
+Handles are returned by [`start!`](@ref) or [`attach`](@ref) after checking the
+exact systemd unit, runtime root, invocation ID, main PID and start ticks, and
+cgroup. The shutdown/stop flags record operations attempted through this handle.
+A handle is not live readiness evidence: query the native session for current
+status before relying on readiness.
+"""
 mutable struct Handle
     unit::String
     runtime_root::String
@@ -39,7 +51,7 @@ mutable struct Handle
     stage_root::Union{Nothing,String}
 end
 
-monotonic() = time_ns() / 1.0e9
+monotonic() = Common.monotonic_seconds()
 remaining(deadline::Real, limit::Real) = begin
     seconds = min(Float64(deadline) - monotonic(), Float64(limit))
     isfinite(seconds) && seconds > 0 || throw(ArgumentError("session operation deadline expired"))
@@ -414,6 +426,13 @@ function attach(path::AbstractString; deadline=monotonic()+8)
     return _identity(unit, root; deadline)
 end
 
+_direct_connection(connection) = throw(ArgumentError("direct session verification failed: $(connection.detail)"))
+_direct_connection(::Session.Connection) = nothing
+_source_control_node(node) = throw(ArgumentError("source requires a bounded exact control node"))
+_source_control_node(node::String) = occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node) || throw(ArgumentError("source requires a bounded exact control node"))
+_stopped_identity(unit,invocation) = throw(ArgumentError("stopped systemd runtime needs its captured unit and invocation"))
+_stopped_identity(::AbstractString,::AbstractString) = nothing
+
 function _selected(record, deadline)
     directory = Discovery.existing_registry_directory()
     directory === nothing && throw(ArgumentError("no local RTC session registry exists"))
@@ -422,8 +441,7 @@ function _selected(record, deadline)
     end
     length(entries) == 1 || throw(ArgumentError("published session UUID is absent or ambiguous"))
     connection = Session.select_direct_session(only(entries); deadline=Float64(deadline))
-    connection isa Session.Connection ||
-        throw(ArgumentError("direct session verification failed: $(connection.detail)"))
+    _direct_connection(connection)
     return connection
 end
 
@@ -462,7 +480,7 @@ function _verify_owners(handle::Handle, record, deadline)
         service.invocation = String(item["invocation"])
         service.start_ticks = UInt64(item["start-ticks"])
         service.cgroup = String(item["cgroup"])
-        service.state = :running
+        S.running!(service)
         values = S.properties(service.unit; deadline)
         values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
             S.same_incarnation(service, values) &&
@@ -473,17 +491,16 @@ function _verify_owners(handle::Handle, record, deadline)
 end
 
 function _source_endpoint(source)
-    native_source = DeploymentConfiguration.native_source(source)
-    native_source || DeploymentConfiguration.native_acquisition(source) ||
+    source_control = DeploymentConfiguration.uses_source_control_protocol(source)
+    source_control || DeploymentConfiguration.uses_acquisition_protocol(source) ||
         throw(ArgumentError("readiness requires a native source control profile"))
     node = get(source, "control-node", nothing)
-    node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node) ||
-        throw(ArgumentError("source requires a bounded exact control node"))
+    _source_control_node(node)
     retained = get(source, "control-instance", nothing)
     instance = tryparse(Int64, string(retained))
     # Native source mailboxes publish their own incarnation; acquisition
     # endpoints instead use the positive instance reserved by SessionLaunch.
-    (native_source && retained === nothing) || (instance !== nothing && instance > 0) ||
+    (source_control && retained === nothing) || (instance !== nothing && instance > 0) ||
         throw(ArgumentError("source requires a valid retained control incarnation"))
     return Dict("node" => node, "instance" => instance,
         "profile" => source["control-protocol"])
@@ -535,7 +552,7 @@ ready(path::AbstractString; deadline=monotonic()+30) =
 function running!(handle::Handle; deadline=monotonic()+30)
     observed = ready(handle; deadline)
     if observed["phase"] == "ready"
-        completion = control!(handle, NativeSessionCodec.RunnerCommand(:session_start);
+        completion = control!(handle, SessionCodec.RunnerCommand(:session_start);
             deadline)
         completion["ok"] === true && completion["state"] == "Running" ||
             throw(ArgumentError("RTC session Start did not complete Running"))
@@ -682,9 +699,19 @@ function _native_quit!(send, handle::Handle)
     return completion
 end
 
+"""
+    shutdown!(handle; deadline=monotonic()+320)
+
+Send one native Quit to the retained session incarnation and wait for its
+correlated Offline completion and exact service/owner cleanup. Returns the
+retained cleanup record. `deadline` is an absolute monotonic time in seconds.
+If the request outcome is uncertain or cleanup is incomplete, this throws and
+the handle records the attempt; do not call `shutdown!` again. Use
+[`reconcile_cleanup!`](@ref) to inspect cleanup without replaying Quit.
+"""
 function shutdown!(handle::Handle; deadline=monotonic()+320)
     _native_quit!(handle) do mark_attempt!
-        control!(handle, NativeSessionCodec.RunnerCommand(:quit);
+        control!(handle, SessionCodec.RunnerCommand(:quit);
             deadline=min(deadline, monotonic()+8), before_request=mark_attempt!)
     end
     return reconcile_shutdown!(handle; deadline)
@@ -736,8 +763,7 @@ function final_record(path::AbstractString; invocation=nothing, unit=nothing)
         isabspath(root) && basename(root) == "pipewireao-session-" * matched.captures[1] ||
             throw(ArgumentError("session receipt runtime root changed"))
     else
-        unit isa AbstractString && invocation isa AbstractString ||
-            throw(ArgumentError("stopped systemd runtime needs its captured unit and invocation"))
+        _stopped_identity(unit,invocation)
         root = runtime_directory(unit)
         base == root || throw(ArgumentError("stopped runtime differs from the captured unit"))
     end

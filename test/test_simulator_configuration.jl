@@ -2,7 +2,7 @@ using Test, PipeWireAORTC, JSON
 const S = PipeWireAORTC.SimulatorConfiguration
 const C = PipeWireAORTC.Common
 const R = PipeWireAORTC.SessionRuntime
-operation(::PipeWireAORTC.NativeRunnerCodec.RunnerCommand{O}) where O = O
+operation(::PipeWireAORTC.RunnerCodec.RunnerCommand{O}) where O = O
 
 module DeclaredPlant
 describe_hil_settings() = (; defaults=(; geometry=16, atmosphere=(; r0=0.15,

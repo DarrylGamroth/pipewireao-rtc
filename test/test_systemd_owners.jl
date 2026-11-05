@@ -1,4 +1,5 @@
 using Test, PipeWireAORTC
+import Hsm
 
 const SO = PipeWireAORTC.SystemdOwners
 const INVOCATION = "0123456789abcdef0123456789abcdef"
@@ -24,6 +25,175 @@ const INVOCATION = "0123456789abcdef0123456789abcdef"
         "83 pipewireao-owner-$(INVOCATION)-source-owner.service stop waiting\n" *
         "84 pipewireao-owner-$(INVOCATION)f-source-owner.service start waiting\n"
     @test SO.parse_jobs(jobs, INVOCATION) == ["82" => "pipewireao-owner-$(INVOCATION)-core.service"]
+end
+
+# A separate copy keeps scripted process/systemd evidence out of package methods.
+module ServiceBoundary
+using PipeWireAORTC
+const Common = PipeWireAORTC.Common
+const Placement = PipeWireAORTC.Placement
+include(joinpath(PipeWireAORTC.package_root(), "src", "deployment", "systemd_owners.jl"))
+const S = SystemdOwners
+@eval S begin
+    const test_values = Ref(Dict{String,String}())
+    const test_calls = Any[]
+    const test_live = Ref(false)
+    const test_old_process = Ref(false)
+    const test_empty = Ref(true)
+    const test_quiet = Ref(false)
+    const test_jobs = Pair{String,String}[]
+    const test_stop_code = Ref(0)
+    const test_group = "/test.slice/retained.service"
+    function properties(unit::String; extra="", deadline=nothing)
+        push!(test_calls, (:properties, unit, extra))
+        return copy(test_values[])
+    end
+    function start_ticks(pid::Int)
+        push!(test_calls, (:start_ticks, pid))
+        return UInt64(71)
+    end
+    function proc_cgroup(pid::Int)
+        push!(test_calls, (:proc_cgroup, pid))
+        return test_group
+    end
+    function process_identity(pid::Int, ticks::UInt64, group::String)
+        push!(test_calls, (:process_identity, pid, ticks, group))
+        return test_live[]
+    end
+    function old_process_exists(pid::Int, ticks::UInt64)
+        push!(test_calls, (:old_process_exists, pid, ticks))
+        return test_old_process[]
+    end
+    function cgroup_empty(group::String)
+        push!(test_calls, (:cgroup_empty, group))
+        return test_empty[]
+    end
+    function listed_jobs(invocation::String; deadline=nothing)
+        push!(test_calls, (:listed_jobs, invocation))
+        return copy(test_jobs)
+    end
+    function quiescent_unit(unit::String; deadline=nothing)
+        push!(test_calls, (:quiescent_unit, unit))
+        return test_quiet[]
+    end
+    function checked(argv::Vector{String}; timeout=5, deadline=nothing)
+        push!(test_calls, (:command, copy(argv)))
+        return (; returncode=test_stop_code[], stderr="")
+    end
+    function wait_empty(group::String, deadline::Float64)
+        push!(test_calls, (:wait_empty, group))
+        return test_empty[]
+    end
+end
+function service()
+    empty!(S.test_calls)
+    empty!(S.test_jobs)
+    S.test_live[] = S.test_old_process[] = S.test_quiet[] = false
+    S.test_empty[] = true
+    S.test_stop_code[] = 0
+    owner = S.Coordinator("pipewireao-session@test.service", "0123456789abcdef0123456789abcdef", "")
+    service = S.Service(owner, "source-owner")
+    S.test_values[] = Dict("LoadState"=>"loaded", "ActiveState"=>"active", "MainPID"=>"42",
+        "InvocationID"=>owner.invocation, "ControlGroup"=>S.test_group,
+        "Result"=>"exit-code", "ExecMainCode"=>"1", "ExecMainStatus"=>"7")
+    return service
+end
+end
+
+@testset "service HSM preserves retained identity and verification order" begin
+    S = ServiceBoundary.S
+    service = ServiceBoundary.service()
+    @test Hsm.current(service) === :Pending && service.state === :pending
+    @test :state in propertynames(service) && :state ∉ fieldnames(typeof(service))
+    @test_throws ErrorException setproperty!(service, :state, :running)
+    @test S.launching!(service) === nothing && service.state === :launching
+    @test isempty(S.test_calls)
+    @test S.retain!(service, S.test_values[]) === service
+    @test service.state === :running && S.pid(service) == 42
+    @test S.test_calls == [(:start_ticks, 42), (:proc_cgroup, 42)]
+    @test (service.invocation, service.start_ticks, service.cgroup) ==
+        (service.coordinator.invocation, UInt64(71), S.test_group)
+    S.test_live[] = true
+    empty!(S.test_calls)
+    @test S.verify!(service) === service
+    @test S.test_calls == [(:properties, service.unit, ""), (:process_identity, 42, UInt64(71), S.test_group)]
+    S.test_values[]["InvocationID"] = repeat("f", 32)
+    @test_throws S.OwnerError S.verify!(service)
+    @test service.state === :running && service.invocation == service.coordinator.invocation
+    @test S.uncertain!(service) === nothing && service.state === :uncertain
+    empty!(S.test_calls)
+    @test_throws S.OwnerError S.verify!(service)
+    @test isempty(S.test_calls)
+    @test S.running!(service) === nothing && service.state === :running
+    service = ServiceBoundary.service()
+    S.launching!(service)
+    S.test_values[]["ControlGroup"] = "/test.slice/different.service"
+    @test_throws S.OwnerError S.retain!(service, S.test_values[])
+    @test service.state === :launching && service.main_pid == 0 && service.start_ticks == 0
+    @test service.invocation == service.coordinator.invocation && service.cgroup == S.test_values[]["ControlGroup"]
+    @test S.test_calls == [(:start_ticks, 42), (:proc_cgroup, 42)]
+end
+
+@testset "service stop events refuse replacements and retain failed outcomes" begin
+    S = ServiceBoundary.S
+    for (field, value) in (("InvocationID", repeat("f", 32)), ("ControlGroup", "/test.slice/replacement.service"), ("MainPID", "43"))
+        service = ServiceBoundary.service()
+        S.retain!(service, S.test_values[])
+        S.test_values[][field] = value
+        empty!(S.test_calls)
+        @test_throws S.OwnerError S.stop!(service)
+        @test service.state === :stop_failed
+        @test service.error == "owner unit incarnation changed; refusing to stop it"
+        @test !any(call -> first(call) === :command, S.test_calls)
+        @test (service.main_pid, service.start_ticks, service.cgroup) == (42, UInt64(71), S.test_group)
+    end
+    service = ServiceBoundary.service()
+    @test S.stop!(service) === nothing && service.state === :pending && isempty(S.test_calls)
+    @test_throws S.OwnerError S.stop!(service, -1)
+    @test service.state === :stop_failed && service.error == "invalid owner exit grace"
+    @test isempty(S.test_calls)
+    service = ServiceBoundary.service()
+    S.launching!(service)
+    @test_throws S.OwnerError S.stop_impl!(service, 0)
+    @test service.state === :uncertain && isempty(service.error)
+    @test_throws S.OwnerError S.stop!(service)
+    @test service.state === :stop_failed
+    @test service.error == "owner launch identity was never retained; refusing to stop uncertain unit"
+    @test !any(call -> first(call) === :command, S.test_calls)
+end
+
+@testset "service stop and failure evidence remain systemd-owned" begin
+    S = ServiceBoundary.S
+    service = ServiceBoundary.service()
+    S.retain!(service, S.test_values[])
+    empty!(S.test_calls)
+    @test S.failure(service) == "owner process identity exited or left its cgroup; Result=exit-code, ExecMainCode=1, ExecMainStatus=7"
+    retained = copy(S.test_calls)
+    @test S.failure(service) == service.error && S.test_calls == retained
+    @test service.state === :running
+    @test S.stop!(service) === nothing && service.state === :stopped
+    commands = filter(call -> first(call) === :command, S.test_calls)
+    @test commands == [(:command, ["systemctl", "--user", "stop", service.unit])]
+    @test last(S.test_calls) == (:old_process_exists, 42, UInt64(71))
+    stopped_calls = copy(S.test_calls)
+    @test S.stop!(service) === nothing && S.test_calls == stopped_calls
+    @test S.failure(service) == service.error && S.test_calls == stopped_calls
+
+    service = ServiceBoundary.service()
+    S.retain!(service, S.test_values[])
+    S.test_values[]["ActiveState"] = "inactive"
+    S.test_values[]["MainPID"] = "0"
+    empty!(S.test_calls)
+    @test S.stop!(service) === nothing && service.state === :stopped
+    @test !any(call -> first(call) === :command, S.test_calls)
+    @test last(S.test_calls) == (:listed_jobs, service.coordinator.invocation)
+
+    service = ServiceBoundary.service()
+    S.retain!(service, S.test_values[])
+    S.test_empty[] = false
+    @test_throws S.OwnerError S.stop!(service)
+    @test service.state === :stop_failed && service.error == "owner cgroup remains populated after stop"
+    @test count(call -> first(call) === :command, S.test_calls) == 1
 end
 
 @testset "owner runtime preserves inherited ROCr helper affinity" begin
@@ -129,7 +299,7 @@ end
     service.start_ticks = SO.start_ticks(getpid())
     service.cgroup = SO.proc_cgroup(getpid())
     service.invocation = INVOCATION
-    service.state = :running
+    SO.running!(service)
     @test SO.alive(service)
     @test !SO.process_identity(getpid(), service.start_ticks + 1, service.cgroup)
     @test SO.old_process_exists(getpid(), service.start_ticks)

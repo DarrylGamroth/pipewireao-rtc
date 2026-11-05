@@ -173,6 +173,6 @@ end
     for links in (fill(Dict(), 65), "not a list")
         @test_throws D.DeploymentError D.validate_session_links(Dict("links" => links))
     end
-    policy = read(joinpath(@__DIR__, "../native/scripts/ao/session.lua"), String)
+    policy = read(joinpath(@__DIR__, "../runtime/scripts/ao/session.lua"), String)
     @test occursin("local MAX_SESSION_LINKS = $(D.MAX_SESSION_LINKS)\n", policy)
 end

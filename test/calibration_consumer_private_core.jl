@@ -6,13 +6,13 @@ module CalibrationConsumerPrivateCoreTests
 using Test, SHA
 using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
-const Endpoint = PipeWireAORTC.NativeCalibrationEndpoint
-const Actions = PipeWireAORTC.NativeCalibrationActionCodec
-const Client = PipeWireAORTC.NativeCalibrationActionClient
-const Native = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.CalibrationEndpoint
+const Actions = PipeWireAORTC.CalibrationActionCodec
+const Client = PipeWireAORTC.CalibrationActionClient
+const ControlClient = PipeWireAORTC.ControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
 hashes(directory) = Dict(relpath(joinpath(root,file),directory) =>
@@ -68,12 +68,12 @@ function test_request_process(owner)
             send_command!(node,node_command(SPA.NODE_COMMAND_REQUEST_PROCESS))
         end
         serviced = try
-            Endpoint.await(condition,guard,Native.monotonic()+10) do
+            Endpoint.await(condition,guard,ControlClient.monotonic()+10) do
                 requests[] > 0 && cycles[] > 0
             end
             true
         catch error
-            error isa Native.UnknownOutcome || rethrow()
+            error isa ControlClient.UnknownOutcome || rethrow()
             false
         end
         progress("explicit RequestProcess requests=$(requests[]), later cycles=$(cycles[]), serviced=$serviced")
@@ -161,7 +161,7 @@ end
                 name, instance = "test.calibration.consumer.$(getpid())", Int64(109)
                 progress("preparing CPU internal-source owner")
                 server = Calibration.prepare_initial_calibration(application,remote,frontend,command;
-                    reference,name,instance,deadline=Native.monotonic()+300,
+                    reference,name,instance,deadline=ControlClient.monotonic()+300,
                     simulation_graph="internal-source",consume)
                 frontend = command = nothing
                 owner = owner_ref[] = server.effects
@@ -181,10 +181,10 @@ end
                         end
                     end
                 end
-                serving = @async try Endpoint.serve!(server;deadline=Native.monotonic()+300) catch error; error end
+                serving = @async try Endpoint.serve!(server;deadline=ControlClient.monotonic()+300) catch error; error end
                 client = Client.connect(Client.Binding(remote,name,getpid(),instance),UInt64(1),
                     Int64(120_000_000_000);command_count=length(reference))
-                complete(action) = Client.complete!(client,action;deadline=Native.monotonic()+120,record=false)
+                complete(action) = Client.complete!(client,action;deadline=ControlClient.monotonic()+120,record=false)
                 @testset "idle native RequestProcess preserves scientific state" begin
                     test_request_process(owner)
                 end
@@ -274,7 +274,7 @@ end
                 @test fetch(serving) === nothing && server.phase === :Released
                 close(server)
                 @test owner.closed && owner.hil.closed && !owner.hil.started
-                @test all(worker -> istaskdone(worker.task) && worker.error[] === nothing,owner.workers)
+                @test all(worker -> istaskdone(worker.task) && Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).finish_calibration_graph!(worker).error === nothing,owner.workers)
                 @test all(slot -> slot.buffer.handle == C_NULL,values(owner.capture.slots))
                 @test !isopen(server.wakeup) && !isopen(server.core)
                 @test all(stream -> !isopen(stream),values(owner.capture.streams))

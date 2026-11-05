@@ -1,22 +1,36 @@
+_runtime_backends(selected) = throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+function _runtime_backends(selected::AbstractVector)
+    foreach(_runtime_backend,selected)
+    length(unique(selected))==length(selected) || throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+    return nothing
+end
+_runtime_backend(backend) = throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+_runtime_backend(backend::AbstractString) = backend in ("cuda","amdgpu") || throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+_profile_bindings_mapping(bindings,label) = throw(ArgumentError("$label bindings must be a mapping"))
+_profile_bindings_mapping(::AbstractDict,label) = nothing
+_merge_profile_field(base::AbstractDict,value::AbstractDict,field) = merge_profile(base,value,field)
+function _merge_profile_field(base,value,field)
+    isequal(base,value) || throw(ArgumentError("conflicting instrument and host profile field: $field"))
+    return base
+end
+
 const INSTRUMENT_PROFILE_FIELDS = Set(["application", "mode", "bindings", "devices", "calibration"])
 const HOST_PROFILE_FIELDS = Set(["scheduling", "bindings", "environment", "analysis", "simulation", "runtime-backends"])
 
 function runtime_backends(profile)
     selected = get(profile,"runtime-backends",String[])
-    selected isa AbstractVector && all(backend->backend isa AbstractString && backend in ("cuda","amdgpu"),selected) &&
-        length(unique(selected))==length(selected) ||
-        throw(ArgumentError("runtime-backends must list distinct known accelerator backends: cuda, amdgpu"))
+    _runtime_backends(selected)
     return selected
 end
 
-function profile_fields(document, allowed, label)
-    document isa AbstractDict || throw(ArgumentError("$label must be a mapping"))
+profile_fields(document, allowed, label) = throw(ArgumentError("$label must be a mapping"))
+function profile_fields(document::AbstractDict, allowed, label)
     InstrumentDefinition.bounded(document, Ref(131072))
     Set(keys(document)) ⊆ allowed || throw(ArgumentError("unknown $label fields"))
     runtime_backends(document)
     application_file(document)
     bindings = get(document, "bindings", Dict())
-    bindings isa AbstractDict || throw(ArgumentError("$label bindings must be a mapping"))
+    _profile_bindings_mapping(bindings,label)
     for (name, value) in bindings
         occursin(r"^[A-Z][A-Z0-9_]*$", name) ||
             throw(ArgumentError("profile binding names must be uppercase identifiers"))
@@ -33,10 +47,8 @@ function merge_profile(profile::AbstractDict, host::AbstractDict, path="")
         field = isempty(path) ? key : "$path.$key"
         if !haskey(combined, key)
             combined[key] = deepcopy(value)
-        elseif combined[key] isa AbstractDict && value isa AbstractDict
-            combined[key] = merge_profile(combined[key], value, field)
-        elseif !isequal(combined[key], value)
-            throw(ArgumentError("conflicting instrument and host profile field: $field"))
+        else
+            combined[key] = _merge_profile_field(combined[key],value,field)
         end
     end
     return combined

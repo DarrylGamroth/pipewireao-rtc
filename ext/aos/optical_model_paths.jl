@@ -14,8 +14,7 @@ AlgorithmGraphs.graph_node_bindings(factory::InstrumentOpticalPathsFactory,confi
 function (factory::InstrumentOpticalPathsFactory)(name::Symbol,config::NamedTuple,
         props::NamedTuple,bindings::NamedTuple=NamedTuple())
     path = config.model_path
-    path isa AbstractString && !isabspath(path) ||
-        throw(ArgumentError("instrument optical model path must be relative"))
+    validate_optical_model_path(path)
     resolved = PipeWireAORTC.DeploymentConfiguration.relative_asset(factory.directory,path)
     return factory.factory(name,merge(config,(;model_path=resolved)),props,bindings)
 end
@@ -27,3 +26,9 @@ function instrument_optical_factories(factories,directory)
     wrappers = map(name -> InstrumentOpticalPathsFactory(getproperty(factories,name),String(directory)),names)
     return merge(factories,NamedTuple{names}(wrappers))
 end
+
+function validate_optical_model_path(path::AbstractString)
+    !isabspath(path) || throw(ArgumentError("instrument optical model path must be relative"))
+    return nothing
+end
+validate_optical_model_path(path) = throw(ArgumentError("instrument optical model path must be relative"))

@@ -3,12 +3,12 @@
 module CalibrationNoResponsePrivateCoreTests
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 const C=PipeWireAORTC.InstrumentCalibration
-const E=PipeWireAORTC.NativeCalibrationEndpoint
-const A=PipeWireAORTC.NativeCalibrationActionCodec
-const Client=PipeWireAORTC.NativeCalibrationActionClient
-const Control=PipeWireAORTC.NativeControlClient
+const E=PipeWireAORTC.CalibrationEndpoint
+const A=PipeWireAORTC.CalibrationActionCodec
+const Client=PipeWireAORTC.CalibrationActionClient
+const Control=PipeWireAORTC.ControlClient
 const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
 
 @testset "consumer-only native Collect keeps full ADC samples and exact bounded receipts" begin

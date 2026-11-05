@@ -2,7 +2,7 @@
 # contract checks only. Set PIPEWIREAORTC_REFERENCE_APPLICATION and --threads=4
 # for the actual caller-owned private-core campaign and cancellation checks.
 module ReferenceCalibrationTests
-using Test, SHA
+using Test, SHA, Sockets
 using PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
@@ -11,6 +11,33 @@ const P = PipeWireAORTC.CalibrationPreparation
 const R = AdaptiveOpticsCalibration.ReferenceFrames
 const A = AdaptiveOpticsCalibration
 const E = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
+
+@testset "reference stage remotes dispatch without changing private-socket validation" begin
+    mktempdir() do directory
+        chmod(directory, 0o700)
+        paths = (; dark=joinpath(directory,"dark"), lamp=joinpath(directory,"lamp"),
+            qualification=joinpath(directory,"qualification"))
+        servers = map(listen, paths)
+        try
+            @test E.reference_remotes(paths) == paths
+            @test E.reference_remotes(paths.dark) ==
+                (; dark=paths.dark, lamp=paths.dark, qualification=paths.dark)
+            reordered = (; qualification=paths.qualification, lamp=paths.lamp, dark=paths.dark)
+            @test keys(E.reference_remotes(reordered)) == keys(reordered)
+            @test_throws ArgumentError E.reference_remotes((; dark=paths.dark))
+            @test_throws ArgumentError E.reference_remotes(merge(paths,(; other=paths.dark)))
+            @test_throws ArgumentError E.reference_remotes(collect(values(paths)))
+            @test_throws ArgumentError E.reference_remotes(nothing)
+            @test_throws ArgumentError E.reference_remotes("relative-socket")
+            @test_throws ArgumentError E.reference_remotes(merge(paths,(; dark="relative-socket")))
+            chmod(directory, 0o755)
+            @test_throws ArgumentError E.reference_remotes(paths.dark)
+        finally
+            chmod(directory, 0o700)
+            foreach(close, values(servers))
+        end
+    end
+end
 
 function reference_recipe()
     Dict("references"=>Dict("source"=>"internal-source",
@@ -96,7 +123,7 @@ end
 end
 
 if haskey(ENV,"PIPEWIREAORTC_REFERENCE_APPLICATION")
-    include("native_control_private_core.jl")
+    include("control_private_core.jl")
     @testset "Classic dark/lamp/frozen qualification candidate on private core" begin
         Threads.nthreads(:default) >= 4 || error("run the native selector with --threads=4")
         application = ENV["PIPEWIREAORTC_REFERENCE_APPLICATION"]

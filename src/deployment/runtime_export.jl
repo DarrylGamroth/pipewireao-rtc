@@ -28,6 +28,10 @@ function copy_tree(source::AbstractString, destination::AbstractString; ignored=
     return destination
 end
 
+_export_entry(entry) = throw(ArgumentError("export entries must be contained relative paths"))
+_export_entry(entry::AbstractString) = !isempty(entry) && !isabspath(entry) &&
+    all(part -> !(part in (".","..")),splitpath(entry)) || throw(ArgumentError("export entries must be contained relative paths"))
+
 _outside(relative) = relative == ".." ||
     startswith(relative, ".." * string(Base.Filesystem.path_separator))
 
@@ -44,9 +48,7 @@ function copy_entries(source::AbstractString, destination::AbstractString, entri
         throw(ArgumentError("export destination exists: $destination"))
     selected = String[]
     for entry in entries
-        entry isa AbstractString && !isempty(entry) && !isabspath(entry) &&
-            all(part -> !(part in (".", "..")), splitpath(entry)) ||
-            throw(ArgumentError("export entries must be contained relative paths"))
+        _export_entry(entry)
         relative = normpath(entry)
         relative in selected && throw(ArgumentError("duplicate export entry: $entry"))
         path = source

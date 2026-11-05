@@ -19,7 +19,12 @@ function registration(request)
     arguments = request["arguments"]
     path = get(arguments, "path", nothing)
     parent = ccall(:getppid, Cint, ())
-    path isa AbstractString && occursin(Regex("^/proc/$parent/fd/[0-9]+\$"), path) ||
+    return registration(request, arguments, path, parent)
+end
+registration(request, arguments, path, parent) =
+    throw(ArgumentError("registration requires an owner-retained input descriptor"))
+function registration(request, arguments, path::AbstractString, parent)
+    occursin(Regex("^/proc/$parent/fd/[0-9]+\$"), path) ||
         throw(ArgumentError("registration requires an owner-retained input descriptor"))
     # This is the one intentional proc-fd boundary. Artifacts.snapshot continues
     # rejecting symlinks and reads only our private regular-file copy below.
@@ -54,43 +59,53 @@ function respond(line::AbstractString)
         # substitution can add bounded path bytes before this worker sees it.
         ncodeunits(line) <= 80 * 1024 || throw(ArgumentError("expanded management request exceeds byte limit"))
         request = JSON.parse(line, Dict{String,Any})
-        request isa AbstractDict || throw(ArgumentError("management request must be an object"))
-        protocol = get(request, "protocol", nothing)
-        if protocol == ConfigurationStore.PROTOCOL
-            # The companion supplies the selected root and, for registration,
-            # substitutes its retained input descriptor. CLI tools retain their
-            # own unchanged direct-file interface in ConfigurationStoreCLI.
-            result = get(request, "op", nothing) == "register" ?
-                registration(request) : ConfigurationStoreCLI.request_result(request)
-            response = Dict("ok" => true, "result" => result)
-            ncodeunits(JSON.json(response)) <= ConfigurationStoreCLI.MAX_REPLY_BYTES ||
-                throw(ArgumentError("configuration reply exceeds byte limit"))
-            return response
-        elseif protocol == SimulatorConfiguration.PROTOCOL
-            if get(request, "op", nothing) == "start_rebuild"
-                id = pop!(request, "id", nothing)
-                id isa AbstractString && occursin(r"^[0-9a-f]{32}$", id) ||
-                    throw(ArgumentError("rebuild requires its owner management request identity"))
-                result = Base.invokelatest(SimulatorConfiguration.request_result, request; request_id=id)
-                response = Dict("ok" => true, "result" => result)
-                ncodeunits(JSON.json(response)) <= SimulatorConfiguration.MAX_REPLY_BYTES ||
-                    throw(ArgumentError("simulator reply exceeds byte limit"))
-                return response
-            end
-            return Base.invokelatest(SimulatorConfiguration.respond, line)
-        end
-        throw(ArgumentError("unsupported management request domain"))
+        return request_response(request, line)
     catch error
         return Dict("ok" => false, "error" => sprint(showerror, error))
     end
+end
+
+request_response(request, line) = throw(ArgumentError("management request must be an object"))
+function request_response(request::AbstractDict, line)
+    protocol = get(request, "protocol", nothing)
+    if protocol == ConfigurationStore.PROTOCOL
+        # The companion supplies the selected root and, for registration,
+        # substitutes its retained input descriptor. CLI tools retain their
+        # own unchanged direct-file interface in ConfigurationStoreCLI.
+        result = get(request, "op", nothing) == "register" ?
+            registration(request) : ConfigurationStoreCLI.request_result(request)
+        response = Dict("ok" => true, "result" => result)
+        ncodeunits(JSON.json(response)) <= ConfigurationStoreCLI.MAX_REPLY_BYTES ||
+            throw(ArgumentError("configuration reply exceeds byte limit"))
+        return response
+    elseif protocol == SimulatorConfiguration.PROTOCOL
+        if get(request, "op", nothing) == "start_rebuild"
+            id = pop!(request, "id", nothing)
+            id = rebuild_request_id(id)
+            result = Base.invokelatest(SimulatorConfiguration.request_result, request; request_id=id)
+            response = Dict("ok" => true, "result" => result)
+            ncodeunits(JSON.json(response)) <= SimulatorConfiguration.MAX_REPLY_BYTES ||
+                throw(ArgumentError("simulator reply exceeds byte limit"))
+            return response
+        end
+        return Base.invokelatest(SimulatorConfiguration.respond, line)
+    end
+    throw(ArgumentError("unsupported management request domain"))
+end
+
+rebuild_request_id(value) = throw(ArgumentError("rebuild requires its owner management request identity"))
+function rebuild_request_id(value::AbstractString)
+    occursin(r"^[0-9a-f]{32}$", value) || return rebuild_request_id(nothing)
+    return value
 end
 
 "Serve the companion's bounded stdio worker; this is not a socket listener."
 serve(input::IO=stdin, output::IO=stdout) =
     ConfigurationStoreCLI.serve(input, output; responder=respond)
 
-function absolute_path(value, field)
-    value isa AbstractString && isabspath(value) && isvalid(value) &&
+absolute_path(value, field) = throw(ArgumentError("$field must be an absolute path without control characters"))
+function absolute_path(value::AbstractString, field)
+    isabspath(value) && isvalid(value) &&
         !any(iscntrl, value) || throw(ArgumentError("$field must be an absolute path without control characters"))
     return String(value)
 end

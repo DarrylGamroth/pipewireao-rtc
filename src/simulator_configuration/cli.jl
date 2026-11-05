@@ -5,11 +5,12 @@ function worker_main(args)
     return nothing
 end
 
-function request_result(request; request_id=nothing)
-    request isa AbstractDict && Set(keys(request)) == Set(("protocol", "op", "arguments")) &&
+request_result(request; request_id=nothing) = throw(ArgumentError("invalid simulator settings request"))
+function request_result(request::AbstractDict; request_id=nothing)
+    Set(keys(request)) == Set(("protocol", "op", "arguments")) &&
         request["protocol"] == PROTOCOL || throw(ArgumentError("invalid simulator settings request"))
     arguments = request["arguments"]
-    arguments isa AbstractDict || throw(ArgumentError("arguments must be an object"))
+    settings_arguments(arguments)
     operation = request["op"]
     if operation == "describe"
         Set(keys(arguments)) == Set(("session_id",)) || throw(ArgumentError("describe requires session_id"))
@@ -39,6 +40,14 @@ function respond(line::AbstractString)
     end
 end
 
+"""
+    serve(input=stdin, output=stdout)
+
+Serve bounded simulator-settings JSON-lines requests until `input` reaches
+EOF. Each line receives one JSON response; malformed requests are returned as
+`ok=false` responses. Returns `0` after EOF. This keeps serving requests and
+does not own the lifetime of any simulator replacement job.
+"""
 serve(input::IO=stdin, output::IO=stdout) = ConfigurationStoreCLI.serve(input, output; responder=respond)
 
 "Serve management requests, or execute one bounded request for Julia/CLI callers."
@@ -50,3 +59,6 @@ function main(args=ARGS; input::IO=stdin, output::IO=stdout)
     JSON.json(output, response); write(output, '\n'); flush(output)
     return response["ok"] ? 0 : 1
 end
+
+settings_arguments(value::AbstractDict) = value
+settings_arguments(value) = throw(ArgumentError("arguments must be an object"))

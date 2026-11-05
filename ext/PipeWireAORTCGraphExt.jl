@@ -8,7 +8,7 @@ import PipeWireAO
 import FilterGraphAlgorithms
 
 const Owner = PipeWireAORTC.GraphOwner
-const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
+const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
 
 include("analysis.jl")
 include("correction_supervision.jl")
@@ -212,7 +212,7 @@ function run_prepared(options, runtime, graph)
             end
         end
     catch error
-        error isa InterruptException && Bootstrap.clean_cancel(runtime) && return nothing
+        owner_cancelled(error,runtime) && return nothing
         Bootstrap.fault!(runtime, error)
         rethrow()
     finally
@@ -229,13 +229,15 @@ function run_prepared(options, runtime, graph)
     return nothing
 end
 
+chopped_warmup_input(graph, formats, input) = keys(formats) == (input,)
+chopped_warmup_input(::JuliaFilterGraph.PreparedComposition, formats, input) = input in keys(formats)
+
 function chopped_warmup_samples(graph, options, warmup)
     options.execution == "complete-frame" &&
         options.feedback === nothing && options.capture_backend === nothing ||
         throw(ArgumentError("chopped warmup requires ordinary complete-frame execution"))
     formats = JuliaFilterGraph.input_formats(graph)
-    composition = graph isa JuliaFilterGraph.PreparedComposition
-    (composition ? warmup.input in keys(formats) : keys(formats) == (warmup.input,)) ||
+    chopped_warmup_input(graph, formats, warmup.input) ||
         throw(ArgumentError("chopped warmup requires its declared image input"))
     format = getproperty(formats, warmup.input)
     format.element_type === Float32 && length(format.shape) == 2 ||
@@ -252,7 +254,11 @@ function chopped_warmup_samples(graph, options, warmup)
             metadata=NamedTuple{(warmup.input,)}((metadata,)),
             expected=index == 1 ? FilterGraphAlgorithms.SccPixelResidualIncompletePair : nothing)
     end
-    composition || return samples
+    return chopped_warmup_samples(graph, formats, warmup, samples)
+end
+
+chopped_warmup_samples(graph, formats, warmup, samples) = samples
+function chopped_warmup_samples(::JuliaFilterGraph.PreparedComposition, formats, warmup, samples)
     # Independently prime the remaining camera branches. These measurements
     # are unpublished, and the ordinary preparation boundary resets all state.
     others = filter(!=(warmup.input),keys(formats))
@@ -286,5 +292,8 @@ function chopped_warmup_samples(graph, options, warmup)
     end)
     return (samples...,additional...,(;inputs=together,metadata=combined_metadata,expected=nothing))
 end
+
+owner_cancelled(::InterruptException,runtime) = Bootstrap.clean_cancel(runtime)
+owner_cancelled(error,runtime) = false
 
 end

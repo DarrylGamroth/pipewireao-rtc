@@ -120,7 +120,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     receipt=C.read_yaml(D.relative_asset(application,"composition/receipt.yaml"))
     require(receipt["namespace"]=="cal2" && Set(values(receipt["roles"]))==expected,"composition role receipt differs")
     for owner in spec["owners"]
-        require(D.native_bootstrap(owner),"normal cohort requires existing native owner bootstrap")
+        require(D.uses_bootstrap_protocol(owner),"normal cohort requires existing native owner bootstrap")
     end
     session=D.decode(D.relative_asset(application,spec["session"]),prefix)
     require(session["profile"]=="development" && session["authority"]=="none","development authority=none is required")

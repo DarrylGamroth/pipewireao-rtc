@@ -3,8 +3,8 @@ using PipeWireAO
 const CS = PipeWireAORTC.ConfigurationStore
 const CLI = PipeWireAORTC.ConfigurationStoreCLI
 const AC = PipeWireAORTC.Artifacts
-const NC = PipeWireAORTC.NativeControlCodec
-const NR = PipeWireAORTC.NativeRunnerCodec
+const NC = PipeWireAORTC.ControlCodec
+const NR = PipeWireAORTC.RunnerCodec
 
 @testset "full transport cache reuses existing materializations" begin
     mktempdir() do root

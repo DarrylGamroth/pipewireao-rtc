@@ -2,15 +2,17 @@ module SystemdOwners
 
 using ..Common
 import ..Placement
+using Hsm: @hsmdef, @statedef, @on_initial, @on_event
+import Hsm
 
-export Coordinator, Service, pid, alive, failure, record, verify!, stop!
+export Coordinator, Service, pid, alive, failure, record, verify!, stop!, launching!, running!, uncertain!
 
 const PREFIX = "pipewireao-owner-"
 const NONCE = r"^[0-9a-f]{32}$"
 cohort_name(invocation) = PREFIX * valid_invocation(invocation) * "-cohort.target"
 const ROLE = r"^[a-z][a-z0-9-]{0,31}$"
 const SHOW_FIELDS = "Id,LoadState,ActiveState,MainPID,InvocationID,ControlGroup"
-monotonic() = time_ns() / 1.0e9
+monotonic() = Common.monotonic_seconds()
 
 struct OwnerError <: Exception
     message::String
@@ -26,7 +28,15 @@ struct Coordinator
 end
 Coordinator(unit::String, invocation::String, cgroup::String) = Coordinator(unit, invocation, cgroup, "")
 
-mutable struct Service
+"""
+    Service(coordinator, role)
+
+Create the pending client record for one named systemd unit in a deployment
+cohort. One control task owns its Hsm and retained process identity. systemd
+owns the process lifetime. The read-only `state` property reports client
+bookkeeping; use `verify!` to check the actual retained incarnation.
+"""
+@hsmdef mutable struct Service
     coordinator::Coordinator
     role::String
     unit::String
@@ -34,8 +44,104 @@ mutable struct Service
     invocation::String
     start_ticks::UInt64
     cgroup::String
-    state::Symbol
     error::String
+end
+
+@statedef Service :Pending
+@statedef Service :Launching
+@statedef Service :Running
+@statedef Service :Stopped
+@statedef Service :Uncertain
+@statedef Service :StopFailed
+
+@on_initial function(service::Service, ::Root)
+    return Hsm.transition!(service, :Pending)
+end
+@on_event function(service::Service, ::Root, ::LaunchRequested, _)
+    return Hsm.transition!(service, :Launching)
+end
+@on_event function(service::Service, ::Root, ::RunningRecorded, _)
+    return Hsm.transition!(service, :Running)
+end
+@on_event function(service::Service, ::Root, ::LaunchUncertain, _)
+    return Hsm.transition!(service, :Uncertain)
+end
+@on_event function(service::Service, ::Root, ::IdentityRetained, values)
+    retain_identity!(service, values)
+    return Hsm.transition!(service, :Running)
+end
+@on_event function(service::Service, ::Running, ::Verified, _)
+    verify_identity(service)
+    return Hsm.EventHandled
+end
+@on_event function(service::Service, ::Root, ::Verified, _)
+    fail("owner service has no retained running identity")
+end
+@on_event function(service::Service, ::Running, ::FailureChecked, _)
+    check_failure!(service)
+    return Hsm.EventHandled
+end
+@on_event function(service::Service, ::Root, ::FailureChecked, _)
+    return Hsm.EventHandled
+end
+@on_event function(service::Service, ::Pending, ::Stop, _)
+    return Hsm.EventHandled
+end
+@on_event function(service::Service, ::Stopped, ::Stop, _)
+    return Hsm.EventHandled
+end
+@on_event function(service::Service, ::Root, ::Stop, grace)
+    if stop_result(service, grace) === :uncertain
+        Hsm.transition!(service, :Uncertain)
+        fail("owner launch identity was never retained; refusing to stop uncertain unit")
+    end
+    return Hsm.transition!(service, :Stopped)
+end
+@on_event function(service::Service, ::Root, ::StopFailed, error)
+    Hsm.transition!(service, :StopFailed)
+    service.error = sprint(showerror, error)
+    return Hsm.EventHandled
+end
+
+const SERVICE_STATES = (; Pending=:pending, Launching=:launching, Running=:running,
+    Stopped=:stopped, Uncertain=:uncertain, StopFailed=:stop_failed)
+Base.getproperty(service::Service, name::Symbol) = name === :state ?
+    getproperty(SERVICE_STATES, Hsm.current(service)) : getfield(service, name)
+Base.propertynames(service::Service, private::Bool=false) = private ?
+    (fieldnames(typeof(service))..., :state) :
+    (:coordinator, :role, :unit, :main_pid, :invocation, :start_ticks, :cgroup, :state, :error)
+
+"""
+    launching!(service)
+
+Dispatch launch-submission bookkeeping and return `nothing`. The caller submits
+the unit separately; this event does not start a process or prove readiness.
+"""
+function launching!(service::Service)
+    Hsm.dispatch!(service, :LaunchRequested)
+    return nothing
+end
+"""
+    running!(service)
+
+Dispatch running bookkeeping after the caller populates the retained process
+identity. Return `nothing`. This event performs no systemd query; use `verify!`
+when admission requires proof of that exact incarnation.
+"""
+function running!(service::Service)
+    Hsm.dispatch!(service, :RunningRecorded)
+    return nothing
+end
+"""
+    uncertain!(service)
+
+Dispatch an uncertain launch outcome and return `nothing`. Retained identity and
+error details remain available for cleanup checks; this event authorizes no
+replacement process or retry.
+"""
+function uncertain!(service::Service)
+    Hsm.dispatch!(service, :LaunchUncertain)
+    return nothing
 end
 
 function valid_invocation(value)
@@ -47,7 +153,7 @@ end
 function Service(owner::Coordinator, role::AbstractString)
     occursin(ROLE, role) || fail("invalid owner role")
     Service(owner, String(role), PREFIX * owner.invocation * "-" * role * ".service",
-            0, "", 0, "", :pending, "")
+            0, "", 0, "", "")
 end
 
 function checked(argv; timeout=5, deadline=nothing)
@@ -105,14 +211,25 @@ function start_ticks(pid::Integer)
     return value
 end
 
+_process_read_failure(error,fallback) = throw(error)
+_process_read_failure(error::Union{Base.IOError,Base.SystemError},fallback) = fallback
+_owner_cpu(cpu) = fail("invalid owner CPU envelope or leader")
+_owner_cpu(cpu::Int) = cpu >= 2 || fail("invalid owner CPU envelope or leader")
+_owner_cpu_envelope(cpus,cpu) = fail("invalid owner CPU envelope or leader")
+function _owner_cpu_envelope(cpus::AbstractVector,cpu::Int)
+    !isempty(cpus) || fail("invalid owner CPU envelope or leader")
+    foreach(_owner_cpu,cpus)
+    length(unique(cpus)) == length(cpus) && cpu in cpus || fail("invalid owner CPU envelope or leader")
+    return nothing
+end
+
 function process_identity(pid::Integer, ticks::UInt64, group::AbstractString)
     old_process_exists(pid, ticks) || return false
     try
         observed = proc_cgroup(pid)
         return (observed == group || startswith(observed, group * "/")) && old_process_exists(pid, ticks)
     catch error
-        (error isa IOError || error isa SystemError) && return false
-        rethrow()
+        return _process_read_failure(error,false)
     end
 end
 
@@ -121,8 +238,7 @@ function old_process_exists(pid::Integer, ticks::UInt64)
     try
         return start_ticks(pid) == ticks
     catch error
-        (error isa IOError || error isa SystemError) && return false
-        rethrow()
+        return _process_read_failure(error,false)
     end
 end
 
@@ -131,8 +247,7 @@ function maybe_start_ticks(pid::Integer)
     try
         return start_ticks(pid)
     catch error
-        (error isa IOError || error isa SystemError) && return nothing
-        rethrow()
+        return _process_read_failure(error,nothing)
     end
 end
 
@@ -142,7 +257,7 @@ function parsed_pid(values)
     return value
 end
 
-function retain!(service::Service, values)
+function retain_identity!(service::Service, values)
     values["LoadState"] == "loaded" || fail("owner unit did not load")
     group = values["ControlGroup"]
     startswith(group, "/") && group != "/" || fail("owner cgroup is unavailable")
@@ -155,23 +270,24 @@ function retain!(service::Service, values)
     (observed == group || startswith(observed, group * "/")) || fail("owner MainPID lies outside its unit cgroup")
     service.main_pid = main
     service.start_ticks = ticks
-    service.state = :running
+    return nothing
+end
+function retain!(service::Service, values)
+    Hsm.dispatch!(service, :IdentityRetained, values)
     return service
 end
 
-function validate_placement(placement)
-    placement isa AbstractDict || fail("owner placement contract must be a mapping")
+validate_placement(placement) = fail("owner placement contract must be a mapping")
+function validate_placement(placement::AbstractDict)
     cpus = get(placement, "cpus", nothing)
     cpu = get(placement, "leader-cpu", nothing)
-    cpus isa AbstractVector && !isempty(cpus) && all(x -> typeof(x) === Int && x >= 2, cpus) &&
-        length(unique(cpus)) == length(cpus) && typeof(cpu) === Int && cpu in cpus ||
-        fail("invalid owner CPU envelope or leader")
+    _owner_cpu_envelope(cpus,cpu)
     return cpu, sort(cpus)
 end
 
 pid(service::Service) = service.main_pid
-function failure(service::Service)
-    if isempty(service.error) && service.state == :running && !alive(service)
+function check_failure!(service::Service)
+    if isempty(service.error) && !alive(service)
         detail = "owner process identity exited or left its cgroup"
         try
             values = properties(service.unit; extra="Result,ExecMainCode,ExecMainStatus")
@@ -181,6 +297,10 @@ function failure(service::Service)
         end
         service.error = detail
     end
+    return nothing
+end
+function failure(service::Service)
+    Hsm.dispatch!(service, :FailureChecked)
     return service.error
 end
 function record(service::Service)
@@ -194,13 +314,16 @@ function alive(service::Service)
     process_identity(service.main_pid, service.start_ticks, service.cgroup)
 end
 
-function verify!(service::Service)
-    service.state == :running || fail("owner service has no retained running identity")
+function verify_identity(service::Service)
     values = properties(service.unit)
     values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
         same_incarnation(service, values) && tryparse(Int, values["MainPID"]) == service.main_pid &&
         alive(service) ||
         fail("owner systemd identity differs from retained incarnation")
+    return nothing
+end
+function verify!(service::Service)
+    Hsm.dispatch!(service, :Verified)
     return service
 end
 
@@ -240,10 +363,7 @@ function wait_empty(group, deadline)
     return cgroup_empty(group)
 end
 
-function stop_impl!(service::Service, grace::Real)
-    isfinite(grace) && grace >= 0 || fail("invalid owner exit grace")
-    service.state == :stopped && return nothing
-    service.state == :pending && return nothing
+function stop_result(service::Service, grace::Real)
     deadline = monotonic() + grace
     while alive(service) && monotonic() < deadline
         sleep(min(0.05, max(0, deadline - monotonic())))
@@ -252,11 +372,9 @@ function stop_impl!(service::Service, grace::Real)
     if isempty(service.invocation)
         if quiescent_unit(service.unit) &&
                 !any(pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation))
-            service.state = :stopped
-            return nothing
+            return :stopped
         end
-        service.state = :uncertain
-        fail("owner launch identity was never retained; refusing to stop uncertain unit")
+        return :uncertain
     end
     quiet = values["LoadState"] == "not-found" ||
         (values["ActiveState"] in ("inactive", "failed") && values["MainPID"] == "0" &&
@@ -264,8 +382,7 @@ function stop_impl!(service::Service, grace::Real)
     if quiet
         if !old_process_exists(service.main_pid, service.start_ticks) && cgroup_empty(service.cgroup) &&
                 !any(pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation))
-            service.state = :stopped
-            return nothing
+            return :stopped
         end
         fail("owner unit is inactive while its retained process, cgroup or start job remains")
     end
@@ -276,7 +393,11 @@ function stop_impl!(service::Service, grace::Real)
     wait_empty(service.cgroup, monotonic() + 16) || fail("owner cgroup remains populated after stop")
     old_process_exists(service.main_pid, service.start_ticks) &&
         fail("owner MainPID survived outside the retained cgroup")
-    service.state = :stopped
+    return :stopped
+end
+function stop_impl!(service::Service, grace::Real)
+    isfinite(grace) && grace >= 0 || fail("invalid owner exit grace")
+    Hsm.dispatch!(service, :Stop, grace)
     return nothing
 end
 
@@ -284,8 +405,7 @@ function stop!(service::Service, grace::Real=0)
     try
         return stop_impl!(service, grace)
     catch error
-        service.state = :stop_failed
-        service.error = sprint(showerror, error)
+        Hsm.dispatch!(service, :StopFailed, error)
         rethrow()
     end
 end

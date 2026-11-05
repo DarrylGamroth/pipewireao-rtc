@@ -75,12 +75,10 @@ function optical_vector_standard_error(samples,mean)
 end
 
 function optical_expectation_options(samples,rounding_samples,training_seed,validation_seed)
-    samples isa Integer && 128 <= samples <= 8192 && samples%8 == 0 ||
-        throw(ArgumentError("host expectation samples must be a multiple of eight in 128:8192"))
-    rounding_samples isa Integer && 128 <= rounding_samples <= samples && rounding_samples%8 == 0 ||
-        throw(ArgumentError("host expectation rounding_samples must be a multiple of eight in 128:samples"))
-    all(seed -> seed isa Integer && !(seed isa Bool) && 0 <= seed < typemax(Int32)-1,
-        (training_seed,validation_seed)) && training_seed != validation_seed && training_seed != validation_seed+1 ||
+    validate_expectation_samples(samples)
+    validate_expectation_rounding(rounding_samples, samples)
+    foreach(validate_expectation_seed,(training_seed,validation_seed))
+    training_seed != validation_seed && training_seed != validation_seed+1 ||
         throw(ArgumentError("host expectation requires distinct nonnegative Int32 training/validation seeds"))
     return nothing
 end
@@ -207,11 +205,7 @@ function optical_expected_reference(system,frontend,calibration,commands,mirror,
         layout = getproperty(noise.nodes,Symbol(adc_node["name"])).owner
         sensor = native.params.sensor
         eltype(native.products.frame)===Float32 || throw(ArgumentError("qualified Host detector arithmetic requires Float32"))
-        sensor isa Detectors.EMCCDSensor && sensor.operating_mode isa Detectors.LinearEMMode &&
-            sensor.output_path isa Detectors.EMOutput && sensor.multiplication_model isa Detectors.ClippedGaussianMultiplicationApproximation &&
-            native.params.full_well === nothing && sensor.register_full_well === nothing &&
-            native.params.bits === nothing && native.params.binning == 1 && native.params.dark_current == 0 ||
-            throw(ArgumentError("host expectation requires the qualified unsaturated linear EMCCD law"))
+        validate_expectation_sensor(sensor,native.params)
         gain = Float64(native.params.gain)
         factor = Float64(Detectors.em_conditional_noise_factor(sensor.multiplication_model,sensor))
         scale,bias = Float64(layout.scale),Float64(layout.bias)
@@ -471,3 +465,22 @@ function optical_expected_samples(noise,prepare_noise,prefix,pin,pout,pworkspace
         flat_residual=data[1].rz*gain_means[1],reference_sign=-1f0,poke_m=h,trial) : nothing
     return (;chosen,trials=[trial],report)
 end
+
+function validate_expectation_samples(samples::Integer)
+    128 <= samples <= 8192 && samples%8 == 0 || throw(ArgumentError("host expectation samples must be a multiple of eight in 128:8192"))
+    return nothing
+end
+validate_expectation_samples(samples) = throw(ArgumentError("host expectation samples must be a multiple of eight in 128:8192"))
+
+function validate_expectation_rounding(rounding_samples::Integer, samples)
+    128 <= rounding_samples <= samples && rounding_samples%8 == 0 || throw(ArgumentError("host expectation rounding_samples must be a multiple of eight in 128:samples"))
+    return nothing
+end
+validate_expectation_rounding(rounding_samples, samples) = throw(ArgumentError("host expectation rounding_samples must be a multiple of eight in 128:samples"))
+
+function validate_expectation_seed(seed::Integer)
+    0 <= seed < typemax(Int32)-1 || throw(ArgumentError("host expectation requires distinct nonnegative Int32 training/validation seeds"))
+    return nothing
+end
+validate_expectation_seed(seed::Bool) = throw(ArgumentError("host expectation requires distinct nonnegative Int32 training/validation seeds"))
+validate_expectation_seed(seed) = throw(ArgumentError("host expectation requires distinct nonnegative Int32 training/validation seeds"))

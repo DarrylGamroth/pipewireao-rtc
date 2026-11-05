@@ -11,8 +11,9 @@ function validate_reference_backend(reference, upstream)
     return nothing
 end
 
-function composition_source(configuration, path)
-    path isa String && !isabspath(path) || throw(ArgumentError("composition authoring paths must be relative"))
+composition_source(configuration,path) = throw(ArgumentError("composition authoring paths must be relative"))
+function composition_source(configuration, path::String)
+    !isabspath(path) || throw(ArgumentError("composition authoring paths must be relative"))
     return D.relative_asset(dirname(configuration),path)
 end
 
@@ -47,8 +48,8 @@ function feedback_frontend(document, raw_endpoint, residual_endpoint)
     visit(node_name(residual_endpoint))
     node_name(raw_endpoint) in selected || throw(ArgumentError("raw input does not reach calibrated residual"))
     incoming = Dict(link["input"]=>link for link in links if node_name(link["input"]) in selected)
-    inputs = Dict((port isa String ? port : port["endpoint"])=>port for port in graph["inputs"]
-        if node_name(port isa String ? port : port["endpoint"]) in selected)
+    inputs = Dict(composition_input_endpoint(port)=>port for port in graph["inputs"]
+        if node_name(composition_input_endpoint(port)) in selected)
     return (;nodes=Dict(name=>nodes[name] for name in selected),links=incoming,inputs)
 end
 
@@ -67,24 +68,18 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     recipe = checked_path(recipe)
     document = Common.read_yaml(recipe)
     required = Set(["version","namespace","roles","links","calibration","receiver","owner_arguments","profile"])
-    document isa AbstractDict && Set(keys(document))==required && document["version"]===1 ||
-        throw(ArgumentError("invalid feedback composition recipe"))
+    validate_feedback_recipe(document, required)
     mainroot, main = sealed_application(base,prefix)
     componentroot, extra = sealed_application(component,prefix)
     namespace = document["namespace"]
     profilepath = profile===nothing ? composition_source(recipe,document["profile"]) : checked_path(profile)
     selected_profile = Common.read_yaml(profilepath)
     profile_fields = Set(["version","backend","device","pacing_rate_hz","silence_ns"])
-    selected_profile isa AbstractDict && profile_fields ⊆ Set(keys(selected_profile)) ⊆ union(profile_fields,Set(["upstream"])) &&
-        selected_profile["version"]===1 || throw(ArgumentError("invalid explicit feedback preparation profile"))
-    valid_device(selection) = selection["backend"] in ("cpu","amdgpu","cuda") && typeof(selection["device"])===Int &&
-        (selection["backend"]=="cpu" ? selection["device"]==0 :
-            (selection["backend"]=="amdgpu" ? 1 : 0)<=selection["device"]<=typemax(Int32))
-    valid_device(selected_profile) ||
+    validate_feedback_profile(selected_profile, profile_fields)
+    feedback_device(selected_profile["backend"],selected_profile["device"]) ||
         throw(ArgumentError("feedback preparation requires an explicit CPU, CUDA or AMDGPU device"))
     upstream_profile = get(selected_profile,"upstream",Dict("backend"=>selected_profile["backend"],"device"=>selected_profile["device"]))
-    upstream_profile isa AbstractDict && Set(keys(upstream_profile))==Set(["backend","device"]) && valid_device(upstream_profile) ||
-        throw(ArgumentError("feedback upstream selection requires only an explicit CPU, CUDA or AMDGPU backend/device"))
+    validate_feedback_upstream(upstream_profile)
     if get(get(document,"receiver",Dict()),"kind",nothing)=="pupil-source"
         return prepare_pupil_feedback(mainroot,main,componentroot,extra,checked_path(destination),recipe,document,profilepath,selected_profile;prefix)
     end
@@ -97,9 +92,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     get(index,"version",nothing)===1 && get(index,"kind",nothing)=="optical-calibration-index" ||
         throw(ArgumentError("feedback requires optical calibration index version 1"))
     branches = index["branches"]
-    branches isa AbstractDict && 1 <= length(branches) <= 16 &&
-        all(name->name isa String && occursin(r"^[a-z][a-z0-9-]{0,31}$",name) && branches[name]["path"]==name,keys(branches)) ||
-        throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))
+    validate_feedback_branches(branches)
     selection["calibration_index_sha256"]==Common.sha256_file(selected) &&
         selection["calibration_identity"]==index["calibration_identity"] || throw(ArgumentError("component calibration selection mismatch"))
     validate_selected_rtc(componentroot,document["calibration"],selection,index,component_simulation)
@@ -112,7 +105,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     receiver = document["receiver"]
     fields = Set(["owner","mirror","rtc_configuration","simulation_configuration","graph_template","graph",
         "parameters_append","parameters","template","configuration"])
-    receiver isa AbstractDict && Set(keys(receiver))==fields || throw(ArgumentError("invalid receiving composition declaration"))
+    validate_feedback_receiver(receiver, fields)
     role = receiver["owner"]
     owner = only(filter(owner->owner["role"]==role,main["owners"]))
     rtc = InstrumentConfiguration.load_rtc(D.relative_asset(mainroot,receiver["rtc_configuration"]))
@@ -239,8 +232,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
     end
     arguments = document["owner_arguments"]
     Set(keys(arguments))==Set(["role","threads","append"]) && arguments["role"]==role || throw(ArgumentError("explicit owner argument preparation requires role, threads and append"))
-    arguments["threads"] isa String && something(tryparse(Int,first(split(arguments["threads"],','))),0)>=3 ||
-        throw(ArgumentError("receiving graph, bootstrap monitor and offset pump require at least three default Julia threads"))
+    validate_feedback_owner_threads(arguments["threads"])
     argv = copy(owner["argv"])
     position = only(findall(arg->startswith(arg,"--threads="),argv))
     argv[position] = "--threads="*arguments["threads"]
@@ -275,3 +267,55 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
 end
 
 include("pupil_feedback_composition.jl")
+
+composition_input_endpoint(port::String) = port
+composition_input_endpoint(port) = port["endpoint"]
+
+function validate_feedback_recipe(document::AbstractDict, required)
+    Set(keys(document))==required && document["version"]===1 || throw(ArgumentError("invalid feedback composition recipe"))
+    return nothing
+end
+validate_feedback_recipe(document, required) = throw(ArgumentError("invalid feedback composition recipe"))
+
+function validate_feedback_profile(selected_profile::AbstractDict, profile_fields)
+    profile_fields ⊆ Set(keys(selected_profile)) ⊆ union(profile_fields,Set(["upstream"])) && selected_profile["version"]===1 || throw(ArgumentError("invalid explicit feedback preparation profile"))
+    return nothing
+end
+validate_feedback_profile(selected_profile, profile_fields) = throw(ArgumentError("invalid explicit feedback preparation profile"))
+
+function validate_feedback_upstream(upstream_profile::AbstractDict)
+    Set(keys(upstream_profile))==Set(["backend","device"]) && feedback_device(upstream_profile["backend"],upstream_profile["device"]) || throw(ArgumentError("feedback upstream selection requires only an explicit CPU, CUDA or AMDGPU backend/device"))
+    return nothing
+end
+validate_feedback_upstream(upstream_profile) = throw(ArgumentError("feedback upstream selection requires only an explicit CPU, CUDA or AMDGPU backend/device"))
+
+function validate_feedback_receiver(receiver::AbstractDict, fields)
+    Set(keys(receiver))==fields || throw(ArgumentError("invalid receiving composition declaration"))
+    return nothing
+end
+validate_feedback_receiver(receiver, fields) = throw(ArgumentError("invalid receiving composition declaration"))
+
+function validate_feedback_owner_threads(threads::String)
+    something(tryparse(Int,first(split(threads,','))),0)>=3 || throw(ArgumentError("receiving graph, bootstrap monitor and offset pump require at least three default Julia threads"))
+    return nothing
+end
+validate_feedback_owner_threads(threads) = throw(ArgumentError("receiving graph, bootstrap monitor and offset pump require at least three default Julia threads"))
+
+function feedback_device(backend,device::Int)
+    return backend in ("cpu","amdgpu","cuda") &&
+        (backend=="cpu" ? device==0 : (backend=="amdgpu" ? 1 : 0)<=device<=typemax(Int32))
+end
+feedback_device(backend,device) = false
+
+function validate_feedback_branches(branches::AbstractDict)
+    1 <= length(branches) <= 16 || throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))
+    foreach(name -> validate_feedback_branch(name,branches),keys(branches))
+    return nothing
+end
+validate_feedback_branches(branches) = throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))
+
+function validate_feedback_branch(name::String, branches)
+    occursin(r"^[a-z][a-z0-9-]{0,31}$",name) && branches[name]["path"]==name || throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))
+    return nothing
+end
+validate_feedback_branch(name, branches) = throw(ArgumentError("indexed branches require bounded names and their own bundle directories"))

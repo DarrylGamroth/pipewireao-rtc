@@ -1,86 +1,10 @@
 import PipeWireAO as PW
 import FilterGraphAlgorithms
 
-struct CalibrationGraphWorker
-    task::Task
-    node::Base.RefValue{Any}
-    error::Base.RefValue{Any}
-    ready::Threads.Atomic{Bool}
-    stop_requested::Threads.Atomic{Bool}
-end
-
-"Run the prepared graph on one sticky owner task; the caller retains its graph."
-function start_calibration_graph(descriptor, remote, name, rate; notify,reference_clock=PW.METADATA_CLOCK_REALTIME)
-    node = Ref{Any}(nothing)
-    failure = Ref{Any}(nothing)
-    ready = Threads.Atomic{Bool}(false)
-    stop_requested = Threads.Atomic{Bool}(false)
-    task = Threads.@spawn begin
-        current_task().sticky = true
-        owned = nothing
-        try
-            stop_requested[] && return nothing
-            owned = FilterGraphPipeWire.PipeWireNode(descriptor.graph;
-                remote, name, rate, connect=false,reference_clock,
-                input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(descriptor.graph));
-                    required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
-                output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(descriptor.graph)),
-                    keys(JuliaFilterGraph.input_formats(descriptor.graph)),JuliaFilterGraph.output_metadata_source_inputs(descriptor.graph);
-                    required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
-                # Every requested calibration sample must reach the graph.
-                # Latest-input admission can discard it under output starvation.
-                fifo_inputs=true,
-                boundary_layout=FilterGraphAlgorithms.RowMajorLayout())
-            stop_requested[] && return nothing
-            FilterGraphPipeWire.prepare!(owned; execution=:complete_frame,
-                required_outputs=Tuple(keys(JuliaFilterGraph.output_formats(descriptor.graph))))
-            stop_requested[] && return nothing
-            FilterGraphPipeWire.connect!(owned)
-            stop_requested[] && return nothing
-            node[] = owned
-            ready[] = true
-            notify()
-            stop_requested[] && return nothing
-            FilterGraphPipeWire.run!(owned)
-        catch error
-            failure[] = error
-        finally
-            try
-                owned === nothing || close(owned)
-            catch error
-                failure[] = failure[] === nothing ? error : CompositeException([failure[], error])
-            end
-            ready[] = false
-            notify()
-        end
-    end
-    # Task completion, rather than its finally block, publishes the error Ref
-    # and wakes deadline-bound teardown after istaskdone becomes observable.
-    @async begin
-        try
-            wait(task)
-        finally
-            notify()
-        end
-    end
-    return CalibrationGraphWorker(task, node, failure, ready, stop_requested)
-end
-
-"Request cross-thread shutdown; await worker.task before closing descriptor.graph."
-function quit_calibration_graph!(worker::CalibrationGraphWorker)
-    worker.stop_requested[] = true
-    worker.ready[] || return nothing
-    # The public cross-thread quit queues a native loop invocation, including
-    # the short interval between publication and entry to run!. Cold preparation
-    # instead observes the retained request before connecting/running.
-    try
-        FilterGraphPipeWire.quit!(worker.node[])
-    catch error
-        already_closed = error isa InvalidStateException && error.state === :closed
-        worker.ready[] && !already_closed && rethrow()
-    end
-    return nothing
-end
+include("calibration_worker.jl")
+using .CalibrationWorkers: CalibrationGraphWorker, start_calibration_graph,
+    quit_calibration_graph!, calibration_graph_status, finish_calibration_graph!,
+    calibration_graph_released
 
 mutable struct CalibrationProbe{L,F}
     loop::L
@@ -180,12 +104,14 @@ function receive_calibration_feedback!(probe, stream)
     return nothing
 end
 
+calibration_rate(rate::PW.SPA.Fraction) = rate
+calibration_rate(rate::Rational) = PW.SPA.Fraction(numerator(rate), denominator(rate))
+calibration_rate(rate) = PW.SPA.Fraction(rate...)
+
 function calibration_probe_format(format, rate)
     format.element_type in (Float32, PW.NdArray.F32_LE) && length(format.shape) == 1 ||
         throw(ArgumentError("calibration probe/feedback must be a Float32 vector"))
-    fraction = rate isa PW.SPA.Fraction ? rate :
-        rate isa Rational ? PW.SPA.Fraction(numerator(rate), denominator(rate)) :
-        PW.SPA.Fraction(rate...)
+    fraction = calibration_rate(rate)
     fraction.num > 0 && fraction.denom > 0 || throw(ArgumentError("calibration rate must be positive"))
     return PW.NdArrayFormat(PW.NdArray.F32_LE, format.shape;
         rate=fraction, layout=PW.NdArray.ROW_MAJOR)
@@ -261,8 +187,7 @@ function validate_calibration_probe(probe::CalibrationProbe, sequence::UInt64, f
     probe.received == probe.sequence || throw(InvalidStateException("probe feedback is pending", :busy))
     length(figure) == length(probe.figure) || throw(DimensionMismatch("probe figure extent differs"))
     # Validate the complete command before changing the owned slot/token.
-    all(value -> value isa Real && !(value isa Bool) && isfinite(value) &&
-        isfinite(Float32(value)), figure) || throw(ArgumentError("probe figure must be finite Float32 values"))
+    foreach(validate_probe_value, figure)
     return nothing
 end
 
@@ -395,3 +320,7 @@ function Base.close(probes::CalibrationProbes)
     isempty(errors) || throw(CompositeException(errors))
     return nothing
 end
+
+validate_probe_value(value::Real) = isfinite(value) && isfinite(Float32(value)) ? nothing : throw(ArgumentError("probe figure must be finite Float32 values"))
+validate_probe_value(value::Bool) = throw(ArgumentError("probe figure must be finite Float32 values"))
+validate_probe_value(value) = throw(ArgumentError("probe figure must be finite Float32 values"))

@@ -14,8 +14,8 @@ import ..DeploymentConfiguration
 import ..SessionRuntime
 import ..SessionCLI
 import ..SystemdOwners
-import ..NativeSessionCodec
-import ..NativeSessionDiscovery
+import ..SessionCodec
+import ..SessionDiscovery
 import ..ConfigurationStoreCLI
 
 const C = Common

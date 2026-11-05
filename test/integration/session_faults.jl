@@ -6,7 +6,7 @@ const W = PipeWireAORTC.SessionRuntime
 const S = PipeWireAORTC.SystemdOwners
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
-const Command = PipeWireAORTC.NativeSessionCodec.RunnerCommand
+const Command = PipeWireAORTC.SessionCodec.RunnerCommand
 const USAGE = """
 usage: julia --startup-file=no --project=. test/integration/session_faults.jl \
   SEALED_NON_ACTUATING_PACKAGE FRESH_STAGE_ROOT [options]
@@ -343,7 +343,7 @@ function decode_aos_source(objects, source, owner, node_identity; instance=nothi
     mailbox = parse(Int64, string(properties["pipewireao.source-control.instance"]))
     mailbox > 0 && (instance === nothing || mailbox == instance) ||
         throw(ArgumentError("source mailbox incarnation changed"))
-    names = PipeWireAORTC.NativeSourceControl.SNAPSHOT_NAMES
+    names = PipeWireAORTC.SourceControl.SNAPSHOT_NAMES
     snapshot = source_fields(node, "pipewireao.source-snapshot.", names)
     for key in ("version", "instance", "generation", "report-generation")
         source_integer(snapshot[key], key; positive=true)

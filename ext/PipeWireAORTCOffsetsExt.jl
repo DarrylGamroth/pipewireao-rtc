@@ -66,7 +66,7 @@ function (observer::ClockObserver)(event::Union{Val{:reset},Val{:invalidated}})
     observer.next === nothing || observer.next(event)
     @atomic observer.clock.version += UInt64(1)
     @atomic observer.clock.valid=false
-    event isa Val{:reset} && (@atomic observer.clock.reset_generation += UInt64(1))
+    reset_clock_generation!(observer.clock, event)
     @atomic observer.clock.version += UInt64(1)
     return nothing
 end
@@ -103,13 +103,11 @@ function Offsets.prepare(path::AbstractString,graph)
     index=findfirst(n->n.name===Symbol(d["algorithm"]),graph.nodes)
     index===nothing && throw(ArgumentError("physical offset algorithm is absent"))
     plan=graph.nodes[index].prepared.plan
-    plan isa FGA.PhysicalOffsetReferencePlan && plan.physical_to_modes==Q && plan.modes_to_reference==C &&
-        d["reference_sign"] in (-1,1) && !(d["reference_sign"] isa Bool) && plan.reference_sign==d["reference_sign"] ||
-        throw(ArgumentError("physical offset graph calibration or sign differs from bound artifacts"))
+    validate_offset_plan(plan,Q,C,d["reference_sign"])
     bindings=graph.parameter_routes
     port=Symbol(d["parameter"])
-    hasproperty(bindings,port) && getproperty(bindings,port) isa JFG.ParameterInput{index,:offset} ||
-        throw(ArgumentError("physical offset parameter must bind exactly the declared algorithm offset"))
+    hasproperty(bindings,port) || throw(ArgumentError("physical offset parameter must bind exactly the declared algorithm offset"))
+    validate_offset_parameter(getproperty(bindings,port),Val(index))
     all(iszero,plan.offset) || throw(ArgumentError("physical offsets must start at zero"))
     inputs=Offsets.receiver_inputs(d,P,Q)
     (;receiver,names,calibrations,buffers,total)=inputs
@@ -174,7 +172,7 @@ function Offsets.with_receiver(f,prepared::NamedTuple;node,remote,frame_clock::C
                                 stream_state(stream)
                             end
                         catch error
-                            error isa PipeWireAO.PipeWireError || rethrow()
+                            recover_stream_state(error)
                             nothing
                         end
                     end
@@ -208,7 +206,7 @@ function Offsets.with_receiver(f,prepared::NamedTuple;node,remote,frame_clock::C
                         FGP.replace_parameters!(node,Symbol(d["parameter"])=>total;supersede=true)
                         submitted_revision=receiver.revision
                     catch error
-                        error isa InvalidStateException && error.state in (:busy,:inhibited) || rethrow()
+                        retain_offset_submission(error)
                         # Keep only the current desired value; pending adoption is
                         # not acknowledgement and cannot renew branch freshness.
                     end
@@ -230,5 +228,26 @@ function Offsets.with_receiver(f,prepared::NamedTuple;node,remote,frame_clock::C
         end
     end
 end
+
+recover_stream_state(::PipeWireAO.PipeWireError) = nothing
+recover_stream_state(error) = rethrow(error)
+
+reset_clock_generation!(clock, ::Val{:reset}) = (@atomic clock.reset_generation += UInt64(1))
+reset_clock_generation!(clock, ::Val{:invalidated}) = nothing
+
+retain_offset_submission(error::InvalidStateException) = error.state in (:busy,:inhibited) ? nothing : rethrow(error)
+retain_offset_submission(error) = rethrow(error)
+
+function validate_offset_plan(plan::FGA.PhysicalOffsetReferencePlan,Q,C,sign)
+    plan.physical_to_modes == Q && plan.modes_to_reference == C && sign in (-1,1) && plan.reference_sign == sign ||
+        throw(ArgumentError("physical offset graph calibration or sign differs from bound artifacts"))
+    return nothing
+end
+validate_offset_plan(plan::FGA.PhysicalOffsetReferencePlan,Q,C,sign::Bool) = throw(ArgumentError("physical offset graph calibration or sign differs from bound artifacts"))
+validate_offset_plan(plan,Q,C,sign) = throw(ArgumentError("physical offset graph calibration or sign differs from bound artifacts"))
+function validate_offset_parameter(binding::JFG.ParameterInput{Index,:offset},::Val{Index}) where {Index}
+    return nothing
+end
+validate_offset_parameter(binding,index) = throw(ArgumentError("physical offset parameter must bind exactly the declared algorithm offset"))
 
 end

@@ -8,7 +8,8 @@ using PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
-const Native = PipeWireAORTC.NativeControlClient
+const ControlClient = PipeWireAORTC.ControlClient
+const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 
 @testset "same graph cannot admit stale projected FITS values" begin
     application = ENV["PIPEWIREAORTC_CALIBRATION_APPLICATION"]
@@ -23,7 +24,7 @@ const Native = PipeWireAORTC.NativeControlClient
         background = copy(parameters[:background])
         background[begin] += one(eltype(background))
         parameters[:background] = background
-        stale = merge(frontend, (; parameters))
+        stale = Ext.GraphProjection(frontend; parameters)
         @test stale.source_graph_sha256 == command.source_graph_sha256 ==
             Calibration.digest(joinpath(application, "rtc", "graph.conf"))
         @test size(background) == size(frontend.parameters[:background])
@@ -40,7 +41,7 @@ const Native = PipeWireAORTC.NativeControlClient
                 error = try
                     Calibration.prepare_initial_calibration(application, remote, stale, command;
                         reference=zeros(Float32, count), name="test.stale-calibration",
-                        instance=Int64(81), deadline=Native.monotonic()+10)
+                        instance=Int64(81), deadline=ControlClient.monotonic()+10)
                     nothing
                 catch caught
                     caught

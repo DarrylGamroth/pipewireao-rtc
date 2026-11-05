@@ -14,7 +14,27 @@ public load, load_simulation, load_simulation_source, load_rtc, settings, graph_
     prepare_publication, prepare_simulation_configuration!, mirror, read_mirror_description, actuator_coordinates,
     actuator_grid_indices, actuator_index_map, source_grid_coordinates, configuration_context, calibration_context
 
+"""
+    prepare_system(path; settings=NamedTuple(), calibration=false,
+        simulation_graph=calibration ? "calibration" : "production", kwargs...)
+
+Prepare the selected AOS graph and its bindings from a simulation declaration.
+The result retains the prepared `graph`, `declaration` and `configured` settings;
+standalone graphs have no HIL `boundary` or `driver`. Requires the optional AOS
+and HIL packages. It creates no RTC session. The loaded extension documents
+compute-target and execution-policy keywords.
+"""
 function prepare_system end
+
+"""
+    prepare_external_pupil(path; settings=NamedTuple(), kwargs...)
+
+Prepare standalone optical paths and optional post-exposure response graphs
+from a simulation declaration. Requires the optional AOS and HIL packages;
+declarations containing an HIL boundary are rejected. AOS owns exposure
+accumulation and numerical execution. The loaded extension documents the
+returned optical/response collections and compute-target options.
+"""
 function prepare_external_pupil end
 function optical_graph_document(declaration, configured, mode)
     throw(ArgumentError("Zemax graph replanning requires AdaptiveOpticsSim, Proper and YAML"))
@@ -105,15 +125,12 @@ function simulation_documents(path)
     # Generated binding descriptors stay separate from authored model settings.
     # Each referenced artifact retains its own type, axes, shape and SHA-256.
     files = get(document, "binding_files", String[])
-    files isa AbstractVector && length(files) <= 8 ||
-        throw(ArgumentError("simulation binding_files requires at most eight relative filenames"))
+    binding_files(files)
     length(unique(files)) == length(files) || throw(ArgumentError("duplicate simulation binding file"))
     bindings = get!(document, "bindings", Dict{String,Any}())
-    bindings isa AbstractDict || throw(ArgumentError("simulation bindings must be a mapping"))
+    binding_mapping(bindings)
     for file in files
-        file isa AbstractString && !isabspath(file) && !occursin('\0',file) &&
-            all(part -> part != "..",splitpath(file)) ||
-            throw(ArgumentError("simulation binding file must be relative"))
+        binding_filename(file)
         entries = bounded_yaml(D.relative_asset(instrument.directory, file))
         for (name, entry) in entries
             haskey(bindings, name) && throw(ArgumentError("duplicate simulation binding: $name"))
@@ -126,7 +143,7 @@ function simulation_documents(path)
             get(get(instrument.document, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
             throw(ArgumentError("prepared optical model requires Zemax execution graphs"))
         source = model["source"]
-        source isa AbstractString && !isabspath(source) || throw(ArgumentError("optical model source must be relative"))
+        optical_model_source(source)
         resolved = D.relative_asset(instrument.directory, relpath(normpath(joinpath(dirname(abspath(path)), source)), instrument.directory))
         resolved == D.relative_asset(instrument.directory, "simulation/definition.yaml") ||
             throw(ArgumentError("optical model must identify its authored simulation/definition.yaml"))
@@ -167,7 +184,7 @@ function resolve_simulation_settings!(document, authoring, instrument)
         end
     end
     selection = authoring["settings_schema"]
-    template = selection isa AbstractString ? selection : get(selection, "template", nothing)
+    template = settings_template(selection)
     if template == "proper_optical_train"
         resolve_optical_settings_schema!(document, instrument.document;
             editable=haskey(document, "preparation") || haskey(document, "optical_model"))
@@ -226,8 +243,7 @@ function load_simulation_source(path::AbstractString)
         _declaration_identifier(name, "optical variant name")
         haskey(paths, name) && throw(ArgumentError("optical variant cannot replace a physical path"))
         fields(selection, ("branch", "settings"), ("branch", "settings"), "optical variant")
-        selection["branch"] isa String && haskey(paths, selection["branch"]) ||
-            throw(ArgumentError("optical variant must select a physical branch"))
+        optical_variant_branch(selection["branch"], paths)
         _declaration_object(selection["settings"], "optical variant settings")
     end
     recipe = _declaration_text(preparation["recipe"], "simulation preparation recipe")
@@ -376,6 +392,14 @@ function mirror_description_path(directory, name::AbstractString)
 end
 mirror_description_path(directory, name) = D.relative_asset(directory, name)
 
+"""
+    mirror(declaration, configured, name)
+
+Return `(description, registration)` for the named physical deformable mirror.
+Read its description and validate the authored pupil registration and physical
+geometry. `configured` is accepted for the preparation interface; mirror
+geometry comes from the instrument declaration.
+"""
 function mirror(declaration, configured, name)
     instrument = physical(declaration)
     spec = instrument.document["deformable_mirrors"][name]
@@ -483,7 +507,7 @@ function pupil_output(declaration, configured; simulation_graph="production")
     binding["kind"] == "pupil_amplitude" && binding["type"] == "Float32" ||
         throw(ArgumentError("pupil output requires a static Float32 pupil_amplitude binding"))
     p = get(configured, "pupil_resolution", nothing)
-    p isa Integer && !(p isa Bool) && 0 < p <= typemax(Int) ||
+    ispositive_integer(p) && p <= typemax(Int) ||
         throw(ArgumentError("pupil output requires a positive selected pupil_resolution"))
     resolution = dimension(configured, Common.configuration_value(binding["resolution"],
         configuration_context(declaration, configured)))
@@ -500,7 +524,7 @@ function graph_requires_proper(declaration, configured; simulation_graph="produc
     return any(declaration.graphs[mode]["nodes"]) do node
         selected = get(replacements, node["name"], node)
         type = get(selected, "type", nothing)
-        resolved = type isa AbstractDict ? Common.configuration_value(type, configuration_context(declaration, configured)) : type
+        resolved = graph_node_type(type, declaration, configured)
         resolved in ("proper_optical_train_f32", "proper_optical_train_f64",
             "compiled_optical_paths_f32", "compiled_optical_paths_f64")
     end
@@ -649,5 +673,38 @@ end
 binding_values(kind::Val,declaration,configured,binding) = throw(ArgumentError("unknown instrument binding kind $kind"))
 
 include("instruments/metadata.jl")
+
+binding_files(value) = throw(ArgumentError("simulation binding_files requires at most eight relative filenames"))
+function binding_files(value::AbstractVector)
+    length(value) <= 8 || return binding_files(nothing)
+    return value
+end
+
+binding_mapping(value::AbstractDict) = value
+binding_mapping(value) = throw(ArgumentError("simulation bindings must be a mapping"))
+
+binding_filename(value) = throw(ArgumentError("simulation binding file must be relative"))
+function binding_filename(value::AbstractString)
+    !isabspath(value) && !occursin('\0',value) && all(part -> part != "..",splitpath(value)) || return binding_filename(nothing)
+    return value
+end
+
+optical_model_source(value) = throw(ArgumentError("optical model source must be relative"))
+function optical_model_source(value::AbstractString)
+    !isabspath(value) || return optical_model_source(nothing)
+    return value
+end
+
+settings_template(selection::AbstractString) = selection
+settings_template(selection) = get(selection, "template", nothing)
+
+optical_variant_branch(value, paths) = throw(ArgumentError("optical variant must select a physical branch"))
+function optical_variant_branch(value::String, paths)
+    haskey(paths, value) || return optical_variant_branch(nothing, paths)
+    return value
+end
+
+graph_node_type(type, declaration, configured) = type
+graph_node_type(type::AbstractDict, declaration, configured) = Common.configuration_value(type, configuration_context(declaration, configured))
 
 end

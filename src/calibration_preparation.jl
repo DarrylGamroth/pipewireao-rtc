@@ -6,9 +6,14 @@ attestation, not continuous hardware readback. This module performs no I/O.
 """
 module CalibrationPreparation
 
+using Hsm: @hsmdef, @statedef, @on_initial, @on_event
+import Hsm
+import ..Common
+
 export Request, Confirmation, Procedure, complete!, cancel!, expire!, invalidate!, check_current!
 
-monotonic() = time_ns() / 1e9
+# Retain the existing seconds callable without another clock-reading wrapper.
+const monotonic = Common.monotonic_seconds
 
 function _text(value::AbstractString, name, maximum)
     0 < ncodeunits(value) <= maximum && isvalid(value) && !occursin('\0', value) &&
@@ -82,27 +87,135 @@ end
 Confirmation(request::Request; observed_at, witness) = Confirmation(request, observed_at, witness)
 
 """
-    Procedure(request; clock=monotonic)
+    Procedure(request; clock=Common.MONOTONIC_CLOCK)
 
 One owning task advances `state` from `:pending` to `:ready`. Cancellation,
 expiry and invalidation are terminal and never ready. At most one confirmation
 and a bounded reason are retained. Every acquisition admission must call
-`check_current!`; callers invalidate observed condition/authority loss.
+`check_current!`; callers invalidate observed condition/authority loss. The
+read-only `state` property projects the active HSM state as a lowercase symbol.
+`clock` accepts a Clocks nanosecond clock or an existing seconds callable.
 """
-mutable struct Procedure{C}
+@hsmdef mutable struct Procedure{C}
     const request::Request
     const clock::C
     const owner::Task
-    state::Symbol
     confirmation::Union{Nothing,Confirmation}
     reason::Union{Nothing,String}
     last_at::Float64
-    function Procedure(request::Request; clock=monotonic)
-        at = _time(clock(), "clock")
-        expired = at >= request.deadline
-        return new{typeof(clock)}(request, clock, current_task(),
-            expired ? :expired : :pending, nothing, expired ? "Deadline expired" : nothing, at)
+end
+
+@statedef Procedure :Active
+@statedef Procedure :Pending :Active
+@statedef Procedure :Ready :Active
+@statedef Procedure :Terminal
+@statedef Procedure :Cancelled :Terminal
+@statedef Procedure :Expired :Terminal
+@statedef Procedure :Invalidated :Terminal
+
+@on_initial function(p::Procedure{C}, ::Root) where {C}
+    return Hsm.transition!(p, :Pending)
+end
+@on_event function(p::Procedure{C}, ::Active, ::DeadlineObserved, at) where {C}
+    _owner(p)
+    if at >= p.request.deadline
+        p.reason = "Deadline expired"
+        return Hsm.transition!(p, :Expired)
     end
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Pending, ::Complete, confirmation) where {C}
+    _owner(p)
+    at = _now!(p)
+    if at === nothing
+        p.reason = "Invalid monotonic clock"
+        Hsm.transition!(p, :Invalidated)
+        throw(ArgumentError(p.reason))
+    elseif at >= p.request.deadline
+        p.reason = "Deadline expired"
+        Hsm.transition!(p, :Expired)
+        throw(ArgumentError(p.reason))
+    end
+    reason = confirmation.request != p.request ? "Preparation request mismatch" :
+        !(p.request.issued_at <= confirmation.observed_at <= at &&
+            confirmation.observed_at < p.request.deadline) ?
+        "Preparation observation is outside the current window" : nothing
+    if reason !== nothing
+        p.reason = reason
+        Hsm.transition!(p, :Invalidated)
+        throw(ArgumentError(reason))
+    end
+    p.confirmation = confirmation
+    return Hsm.transition!(p, :Ready)
+end
+@on_event function(p::Procedure{C}, ::Active, ::Complete, _) where {C}
+    _owner(p)
+    p.reason = "Preparation is not pending"
+    Hsm.transition!(p, :Invalidated)
+    throw(ArgumentError(p.reason))
+end
+@on_event function(p::Procedure{C}, ::Terminal, ::Complete, _) where {C}
+    _owner(p)
+    throw(ArgumentError("Preparation is not pending"))
+end
+@on_event function(p::Procedure{C}, ::Active, ::Cancel, _) where {C}
+    _owner(p)
+    p.reason = "Cancelled"
+    return Hsm.transition!(p, :Cancelled)
+end
+@on_event function(p::Procedure{C}, ::Active, ::Expire, _) where {C}
+    _owner(p)
+    at = _now!(p)
+    if at === nothing
+        p.reason = "Invalid monotonic clock"
+        Hsm.transition!(p, :Invalidated)
+        throw(ArgumentError(p.reason))
+    elseif at >= p.request.deadline
+        p.reason = "Deadline expired"
+        return Hsm.transition!(p, :Expired)
+    end
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Active, ::Invalidate, reason) where {C}
+    _owner(p)
+    p.reason = _text(reason, "reason", 1024)
+    return Hsm.transition!(p, :Invalidated)
+end
+@on_event function(p::Procedure{C}, ::Terminal, ::Cancel, _) where {C}
+    _owner(p)
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Terminal, ::Expire, _) where {C}
+    _owner(p)
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Terminal, ::Invalidate, reason) where {C}
+    _owner(p)
+    _text(reason, "reason", 1024)
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Ready, ::CheckCurrent, _) where {C}
+    _owner(p)
+    return Hsm.EventHandled
+end
+@on_event function(p::Procedure{C}, ::Root, ::CheckCurrent, _) where {C}
+    _owner(p)
+    throw(ArgumentError("Preparation is not ready ($(p.state))"))
+end
+
+const STATES = (; Pending=:pending, Ready=:ready, Cancelled=:cancelled,
+    Expired=:expired, Invalidated=:invalidated)
+Base.getproperty(p::Procedure, name::Symbol) =
+    name === :state ? getproperty(STATES, Hsm.current(p)) : getfield(p, name)
+Base.propertynames(p::Procedure, private::Bool=false) = private ?
+    (fieldnames(typeof(p))..., :state) :
+    (:request, :clock, :owner, :state, :confirmation, :reason, :last_at)
+
+function Procedure(request::Request; clock=Common.MONOTONIC_CLOCK)
+    at = _time(Common.monotonic_seconds(clock), "clock")
+    p = Procedure(request, clock, current_task(), nothing, nothing, at)
+    Hsm.dispatch!(p, :DeadlineObserved, at)
+    return p
 end
 
 function _owner(p::Procedure)
@@ -110,24 +223,13 @@ function _owner(p::Procedure)
     return nothing
 end
 
-function _finish!(p::Procedure, state::Symbol, reason::String)
-    p.state = state
-    p.reason = reason
-    return nothing
-end
-
-function _reject!(p::Procedure, reason::String)
-    p.state in (:pending, :ready) && _finish!(p, :invalidated, reason)
-    throw(ArgumentError(reason))
-end
-
 function _now!(p::Procedure)
     at = try
-        Float64(p.clock())
+        Float64(Common.monotonic_seconds(p.clock))
     catch
-        _reject!(p, "Invalid monotonic clock")
+        return nothing
     end
-    isfinite(at) && at >= p.last_at || _reject!(p, "Invalid monotonic clock")
+    isfinite(at) && at >= p.last_at || return nothing
     p.last_at = at
     return at
 end
@@ -142,34 +244,21 @@ Wrong, stale, late or duplicate completion fences acquisition and throws
 """
 function complete!(p::Procedure, confirmation::Confirmation)
     _owner(p)
-    p.state == :pending || _reject!(p, "Preparation is not pending")
-    at = _now!(p)
-    if at >= p.request.deadline
-        _finish!(p, :expired, "Deadline expired")
-        throw(ArgumentError("Deadline expired"))
-    end
-    confirmation.request == p.request || _reject!(p, "Preparation request mismatch")
-    p.request.issued_at <= confirmation.observed_at <= at &&
-        confirmation.observed_at < p.request.deadline ||
-        _reject!(p, "Preparation observation is outside the current window")
-    p.confirmation = confirmation
-    p.state = :ready
+    Hsm.dispatch!(p, :Complete, confirmation)
     return confirmation
 end
 
 "Cancel pending or ready preparation without retry or hardware effects."
 function cancel!(p::Procedure)
     _owner(p)
-    p.state in (:pending, :ready) && _finish!(p, :cancelled, "Cancelled")
+    Hsm.dispatch!(p, :Cancel)
     return nothing
 end
 
 "Expire pending or ready preparation when its absolute deadline has elapsed."
 function expire!(p::Procedure)
     _owner(p)
-    if p.state in (:pending, :ready) && _now!(p) >= p.request.deadline
-        _finish!(p, :expired, "Deadline expired")
-    end
+    Hsm.dispatch!(p, :Expire)
     return nothing
 end
 
@@ -177,15 +266,15 @@ end
 function invalidate!(p::Procedure, reason::AbstractString)
     _owner(p)
     reason = _text(reason, "reason", 1024)
-    p.state in (:pending, :ready) && _finish!(p, :invalidated, reason)
+    Hsm.dispatch!(p, :Invalidate, reason)
     return nothing
 end
 
 "Return the confirmation only while ready and unexpired; otherwise throw ArgumentError."
 function check_current!(p::Procedure)
     _owner(p)
-    expire!(p)
-    p.state == :ready || throw(ArgumentError("Preparation is not ready ($(p.state))"))
+    Hsm.dispatch!(p, :Expire)
+    Hsm.dispatch!(p, :CheckCurrent)
     return something(p.confirmation)
 end
 

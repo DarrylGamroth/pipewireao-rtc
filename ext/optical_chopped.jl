@@ -107,7 +107,7 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
         if index == 1
             result === FGA.SccPixelResidualIncompletePair || throw(ArgumentError("chopped frontend did not prime on its first optical role"))
         else
-            result isa NamedTuple && all(values(result)) || throw(ArgumentError("chopped frontend rejected its complete pair: $result"))
+            confirm_chopped_pair(result)
         end
     end
     # Preserve the image-shaped calibration interface; unselected pixels are not
@@ -117,3 +117,9 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
     ordered[permutedims(frontend.mask,(2,1))] .= frontend.outputs.measurements
     return permutedims(ordered,(2,1))
 end
+
+function confirm_chopped_pair(result::NamedTuple)
+    all(values(result)) || throw(ArgumentError("chopped frontend rejected its complete pair: $result"))
+    return nothing
+end
+confirm_chopped_pair(result) = throw(ArgumentError("chopped frontend rejected its complete pair: $result"))

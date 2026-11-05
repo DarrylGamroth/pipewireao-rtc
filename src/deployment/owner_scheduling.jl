@@ -67,7 +67,7 @@ function prepare_owner_scheduling!(spec, profile)
         haskey(processes, role) || throw(ArgumentError("missing owner process scheduling for $role"))
         kind = pop!(owner, "kind", nothing)
         if role in get(spec, "auxiliary-source-owners", String[])
-            kind == "aos" && D.native_source(owner) || throw(ArgumentError(
+            kind == "aos" && D.uses_source_control_protocol(owner) || throw(ArgumentError(
                 "auxiliary source owner requires kind aos and native SourceControl"))
         end
         if kind === nothing

@@ -5,7 +5,7 @@ import PipeWireAORTC
 import AdaptiveOpticsSimPipeWireHIL as HIL
 const Offsets=PipeWireAORTC.PhysicalOffsets
 
-mutable struct NativeInputs{P,T}
+mutable struct StreamReceiver{P,T}
     prepared::P
     transport::T
     initial::BitVector
@@ -24,7 +24,7 @@ function Offsets.with_receiver(f,prepared::Offsets.PreparedReceiver;remote,appli
     end
     streams=applied_command===nothing ? Tuple(options) : (options...,applied_command)
     HIL.with_array_streams(streams;remote,input=ntuple(i->i<=length(names),length(streams))) do transport
-        inputs=NativeInputs(prepared.inputs,transport,trues(length(names)),zeros(UInt64,length(names)),
+        inputs=StreamReceiver(prepared.inputs,transport,trues(length(names)),zeros(UInt64,length(names)),
             applied_command===nothing ? 0 : length(streams))
         try
             return f(inputs)
@@ -35,7 +35,7 @@ function Offsets.with_receiver(f,prepared::Offsets.PreparedReceiver;remote,appli
     end
 end
 
-function Offsets.reset_inputs!(inputs::NativeInputs)
+function Offsets.reset_inputs!(inputs::StreamReceiver)
     (;receiver,names,total)=inputs.prepared
     Offsets.disarm!(receiver;reason=:reset)
     receiver.clock_identity=nothing
@@ -51,7 +51,7 @@ end
 
 # Called only by the source task. Native callbacks own bounded staging buffers;
 # they never write receiver contributions, the command, or the scientific graph.
-function Offsets.poll!(inputs::NativeInputs;now_ns::UInt64=time_ns())
+function Offsets.poll!(inputs::StreamReceiver;now_ns::UInt64=time_ns())
     (;receiver,names,calibrations,buffers,total,declaration)=inputs.prepared
     for i in eachindex(names)
         name=names[i]
@@ -64,7 +64,7 @@ function Offsets.poll!(inputs::NativeInputs;now_ns::UInt64=time_ns())
                     stream_state(stream)
                 end
             catch error
-                error isa PipeWireAO.PipeWireError || rethrow()
+                recover_stream_state(error)
                 nothing
             end
         end
@@ -92,5 +92,8 @@ function Offsets.poll!(inputs::NativeInputs;now_ns::UInt64=time_ns())
     Offsets.expire!(receiver,now_ns)
     return Offsets.total!(total,receiver)
 end
+
+recover_stream_state(::PipeWireAO.PipeWireError) = nothing
+recover_stream_state(error) = rethrow(error)
 
 end

@@ -11,12 +11,38 @@ function external_pupil_port_contracts end
 "Return the optional scientific pupil source contract without preparing execution."
 function pupil_output_port_contract end
 
+_pupil_output_enabled(enabled) = throw(ArgumentError("pupil_output must be Boolean"))
+_pupil_output_enabled(::Bool) = nothing
+_widen_session_ports!(graph,::AbstractDict{String,Any}) = false
+function _widen_session_ports!(graph,port)
+    graph["ports"] = Dict{String,Any}[Dict{String,Any}(item) for item in graph["ports"]]
+    return true
+end
+_gui_defaults!(defaults,path,document,spec) = nothing
+function _gui_defaults!(defaults,path,document::AbstractDict,spec)
+    get(document,"schema_version",nothing) == 11 && haskey(document,"view") || return nothing
+    _gui_session_defaults!(defaults,path,get(document,"session",nothing),spec)
+    return nothing
+end
+_gui_session_defaults!(defaults,path,session,spec) = nothing
+function _gui_session_defaults!(defaults,path,session::AbstractDict,spec)
+    label=get(session,"label",get(spec,"name",nothing))
+    _gui_session_label(label)
+    if !haskey(session,"label")
+        session["label"]=label
+        push!(defaults,path)
+    end
+    return nothing
+end
+_gui_session_label(label) = throw(ArgumentError("GUI session label must be a nonempty string"))
+_gui_session_label(label::AbstractString) = !isempty(label) || throw(ArgumentError("GUI session label must be a nonempty string"))
+
 function prepare_pupil_output!(application, spec, files, prefix)
     path = joinpath(application, "simulation.conf")
     isfile(path) || return false
     simulation = D.decode(path, prefix)
     enabled = get(simulation,"version",nothing)==5 || get(simulation, "pupil_output", false)
-    enabled isa Bool || throw(ArgumentError("pupil_output must be Boolean"))
+    _pupil_output_enabled(enabled)
     enabled || return false
     get(simulation, "version", nothing) in (3,5) || throw(ArgumentError("pupil_output requires version 3 or 5"))
     role = spec["source-owner"]
@@ -120,9 +146,7 @@ function validate_session_graph_contracts(session, contracts)
         actual = contracts[name]
         # Reference resolution can infer string-only dictionaries when all
         # numeric metadata was omitted. Widen before adding prepared shapes.
-        if any(port -> !(port isa AbstractDict{String,Any}), graph["ports"])
-            graph["ports"] = Dict{String,Any}[Dict{String,Any}(port) for port in graph["ports"]]
-        end
+        any(port -> _widen_session_ports!(graph,port),graph["ports"])
         for port in graph["ports"]
             section = get(port,"parameter",false) ? "parameters" :
                 port["direction"] == "input" ? "inputs" : "outputs"
@@ -159,17 +183,7 @@ function prepare_session_configuration!(application, spec, declarations, instrum
         push!(paths, path)
         format = declaration["format"]
         document = read_configuration(path, format, prefix)
-        if document isa AbstractDict && get(document, "schema_version", nothing) == 11 && haskey(document, "view") &&
-                get(document, "session", nothing) isa AbstractDict
-            session = document["session"]
-            label = get(session, "label", get(spec, "name", nothing))
-            label isa AbstractString && !isempty(label) ||
-                throw(ArgumentError("GUI session label must be a nonempty string"))
-            if !haskey(session, "label")
-                session["label"] = label
-                push!(gui_defaults, path)
-            end
-        end
+        _gui_defaults!(gui_defaults,path,document,spec)
         push!(files, (; path, format, document))
     end
     pupil_output = prepare_pupil_output!(application, spec, files, prefix)

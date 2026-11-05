@@ -6,14 +6,14 @@ module InternalSourcePrivateCoreTests
 using Test, SHA, LinearAlgebra
 using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
 const IC = PipeWireAORTC.InstrumentConfiguration
-const Endpoint = PipeWireAORTC.NativeCalibrationEndpoint
-const Actions = PipeWireAORTC.NativeCalibrationActionCodec
-const Client = PipeWireAORTC.NativeCalibrationActionClient
-const Native = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.CalibrationEndpoint
+const Actions = PipeWireAORTC.CalibrationActionCodec
+const Client = PipeWireAORTC.CalibrationActionClient
+const ControlClient = PipeWireAORTC.ControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 const Graphs = AdaptiveOpticsSim.AlgorithmGraphs
 
@@ -74,14 +74,14 @@ progress(message) = (println("internal source pilot: ",message); flush(stdout))
                 name, instance = "test.classic.internal.$(getpid())", Int64(108)
                 progress("preparing declared internal-source graph; magnitude=2, poke_m=$(recipe["poke_m"]), mode=$mode")
                 server = Calibration.prepare_initial_calibration(application,remote,frontend,command;
-                    reference,name,instance,deadline=Native.monotonic()+300,simulation_graph="internal-source")
+                    reference,name,instance,deadline=ControlClient.monotonic()+300,simulation_graph="internal-source")
                 frontend = command = nothing
                 owner = server.effects
                 @test Graphs.graph_name(owner.hil.boundary.graph) == Symbol(internal["name"])
                 @test :atmosphere ∉ keys(owner.hil.boundary.graph.nodes)
                 @test owner.active == parameters[:active]
                 capture_module = parentmodule(typeof(owner.capture))
-                serving = @async try Endpoint.serve!(server;deadline=Native.monotonic()+300) catch error; error end
+                serving = @async try Endpoint.serve!(server;deadline=ControlClient.monotonic()+300) catch error; error end
                 client = Client.connect(Client.Binding(remote,name,getpid(),instance),UInt64(1),
                     Int64(120_000_000_000);command_count=length(reference))
                 identity(value) = value === nothing ? nothing : Dict("domain"=>repr(value.domain),
@@ -89,7 +89,7 @@ progress(message) = (println("internal source pilot: ",message); flush(stdout))
                 function capture_state()
                     isopen(owner.capture.core) || return Dict("core_closed"=>true)
                     state = capture_module._locked(owner.capture) do
-                        Dict{String,Any}("sampled_at"=>Native.monotonic(),"phase"=>owner.capture.phase,
+                        Dict{String,Any}("sampled_at"=>ControlClient.monotonic(),"phase"=>owner.capture.phase,
                             "failure"=>string(owner.capture.failure),"waiting"=>owner.capture.waiting,
                             "hil_status"=>Wire.pipewire_calibration_status(owner.hil),
                             "expected"=>identity(owner.capture.expected),
@@ -104,11 +104,11 @@ progress(message) = (println("internal source pilot: ",message); flush(stdout))
                         Dict("set"=>owner.wakeup.set,"waiters"=>
                             [Dict("task"=>objectid(task),"server"=>task===serving) for task in owner.wakeup.cond.waitq])
                     end
-                    state["server_phase"],state["sample_finished_at"] = string(server.phase),Native.monotonic()
+                    state["server_phase"],state["sample_finished_at"] = string(server.phase),ControlClient.monotonic()
                     return state
                 end
                 function complete(action)
-                    submitted = Native.monotonic()
+                    submitted = ControlClient.monotonic()
                     trace = Dict{String,Any}("action"=>string(nameof(typeof(action))),"submitted"=>submitted,
                         "deadline"=>submitted+120,"phase_before"=>string(server.phase))
                     push!(actions,trace)
@@ -130,11 +130,11 @@ progress(message) = (println("internal source pilot: ",message); flush(stdout))
                     end
                     try
                         answer = Client.complete!(client,action;deadline=submitted+120,record=false)
-                        trace["completed"],trace["result"] = Native.monotonic(),string(nameof(typeof(answer)))
+                        trace["completed"],trace["result"] = ControlClient.monotonic(),string(nameof(typeof(answer)))
                         quiet_actions || progress("complete $(trace["action"]) at $(trace["completed"]), result=$(trace["result"]), phase=$(server.phase)")
                         return answer
                     catch error
-                        trace["fault_at"],trace["error"] = Native.monotonic(),sprint(showerror,error)
+                        trace["fault_at"],trace["error"] = ControlClient.monotonic(),sprint(showerror,error)
                         progress("fault $(trace["action"]) at $(trace["fault_at"]), phase=$(server.phase), error=$(trace["error"])")
                         progress("HIL=$(Wire.pipewire_calibration_status(owner.hil))")
                         trace["fault_snapshot"] = capture_state()
@@ -189,7 +189,7 @@ progress(message) = (println("internal source pilot: ",message); flush(stdout))
                 @test fetch(serving) === nothing && server.phase === :Released
                 close(server)
                 @test owner.closed && owner.hil.closed && !owner.hil.started
-                @test all(worker -> istaskdone(worker.task) && worker.error[] === nothing,owner.workers)
+                @test all(worker -> istaskdone(worker.task) && Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).finish_calibration_graph!(worker).error === nothing,owner.workers)
                 @test all(slot -> slot.buffer.handle == C_NULL,values(owner.capture.slots))
                 @test !isopen(server.wakeup) && !isopen(server.core)
                 @test all(stream -> !isopen(stream),values(owner.capture.streams))

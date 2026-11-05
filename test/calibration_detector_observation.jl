@@ -56,7 +56,9 @@ include(joinpath(@__DIR__,"chopped_calibration_documents.jl"))
         write_external_optical_documents(dirname(dirname(path)),physical,simulation)
         chopping = (scc=(unfringed_graph="unfringed",initial_phase="fringed",trigger_high_is_fringed=true),)
         plan = (;rtc=(;document=Dict("dimensions"=>Dict("image_rows"=>8,"image_columns"=>8,"selected_pixel_count"=>64)),
-                controls=Dict("deformable_mirrors"=>Dict())),frames=Dict(),
+                controls=Dict("deformable_mirrors"=>Dict())),
+            frames=Dict("scc"=>Dict("frame_schema"=>detector["frame_schema"],
+                "image_shape"=>[detector["rows"],detector["columns"]])),
             instrument=Dict("deformable_mirrors"=>Dict(),"wavefront_sensors"=>Dict()),
             templates=(scc=chopped_calibration_document((8,8)),),chopping)
         options = (;mirror="primary",branches=(scc="scc",),chopping,publication_plan=plan)

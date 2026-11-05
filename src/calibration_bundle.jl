@@ -4,8 +4,9 @@
 const _BUNDLE_INTEGRITY_FIELDS = ("version", "context_sha256", "graph_sha256",
     "artifact_sha256", "parameter_names", "parameter_files")
 
-function _bundle_name(value; artifact=false)
-    value isa AbstractString && occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", value) ||
+_bundle_name(value; artifact=false) = throw(ArgumentError("calibration artifact names must be plain filenames"))
+function _bundle_name(value::AbstractString; artifact=false)
+    occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", value) ||
         throw(ArgumentError("calibration artifact names must be plain filenames"))
     artifact && !endswith(value, ".fits") &&
         throw(ArgumentError("calibration artifacts must have a .fits extension"))
@@ -19,27 +20,51 @@ function _bundle_file(directory, name; maximum=Artifacts.MAX_FITS_BYTES)
     return DeploymentConfiguration.relative_asset(directory, name)
 end
 
-function _bundle_hash(value, label)
-    value isa AbstractString && occursin(r"^[0-9a-f]{64}$", value) ||
+_bundle_hash(value, label) = throw(ArgumentError("invalid calibration $label SHA-256"))
+function _bundle_hash(value::AbstractString, label)
+    occursin(r"^[0-9a-f]{64}$", value) ||
         throw(ArgumentError("invalid calibration $label SHA-256"))
     return value
 end
 
-function _bundle_report(report)
-    report isa AbstractDict && all(key -> key isa String, keys(report)) ||
-        throw(ArgumentError("calibration result must be a mapping with string keys"))
+_bundle_report(report) = throw(ArgumentError("calibration result must be a mapping with string keys"))
+function _bundle_report(report::AbstractDict)
+    foreach(_bundle_report_key, keys(report))
     haskey(report, "history_sha256") &&
         throw(ArgumentError("calibration history belongs in Git, not the bundle"))
     for key in ("recipe", "source_prescription_identity", "source_graph_sha256")
         haskey(report, key) || throw(ArgumentError("calibration result is missing $key"))
     end
-    report["recipe"] isa AbstractDict || throw(ArgumentError("calibration recipe must be a mapping"))
+    _bundle_mapping(report["recipe"], "recipe")
     identity = report["source_prescription_identity"]
-    identity isa AbstractString && !isempty(strip(identity)) ||
-        throw(ArgumentError("calibration source prescription identity must be nonempty text"))
+    _bundle_identity(identity)
     _bundle_hash(report["source_graph_sha256"], "source graph")
     return report
 end
+
+_bundle_report_key(key) = throw(ArgumentError("calibration result must be a mapping with string keys"))
+_bundle_report_key(::String) = nothing
+_bundle_mapping(value,label) = throw(ArgumentError("calibration $label must be a mapping"))
+_bundle_mapping(value::AbstractDict,label) = value
+_bundle_identity(value) = throw(ArgumentError("calibration source prescription identity must be nonempty text"))
+_bundle_identity(value::AbstractString) = !isempty(strip(value)) ||
+    throw(ArgumentError("calibration source prescription identity must be nonempty text"))
+_bundle_version(value) = throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_version(value::Bool) = throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_version(value::Integer) = value == 1 || throw(ArgumentError("calibration bundle requires version 1"))
+_bundle_parameter_names(value) = throw(ArgumentError("calibration parameter_names must be a list of names"))
+_bundle_parameter_names(value::AbstractVector) = foreach(_bundle_parameter_name,value)
+_bundle_parameter_name(value) = throw(ArgumentError("calibration parameter_names must be a list of names"))
+_bundle_parameter_name(::AbstractString) = nothing
+_bundle_parameter_files(files,names) = throw(ArgumentError("calibration parameter_files must cover exactly the runtime parameters"))
+_bundle_parameter_files(files::AbstractDict,names) = Set(keys(files)) == Set(names) ||
+    throw(ArgumentError("calibration parameter_files must cover exactly the runtime parameters"))
+_bundle_artifact_mappings(parameters,diagnostics) = throw(ArgumentError("calibration parameters and diagnostics must be mappings"))
+_bundle_artifact_mappings(::AbstractDict,::AbstractDict) = nothing
+_bundle_artifact_name(key) = throw(ArgumentError("invalid calibration artifact name"))
+_bundle_artifact_name(key::Union{Symbol,AbstractString}) = _bundle_name(String(key))
+_bundle_array(array,name) = throw(ArgumentError("calibration artifact $name must be an array"))
+_bundle_array(::AbstractArray,name) = nothing
 
 """
     read_bundle(directory)
@@ -67,8 +92,7 @@ function read_bundle(directory::AbstractString)
         end
     end
     report = _bundle_report(Common.read_yaml(_bundle_file(directory, "result.yaml"; maximum=1024^2)))
-    get(report, "version", nothing) isa Integer && !(report["version"] isa Bool) && report["version"] == 1 ||
-        throw(ArgumentError("calibration bundle requires version 1"))
+    _bundle_version(get(report,"version",nothing))
     for key in _BUNDLE_INTEGRITY_FIELDS
         haskey(report, key) || throw(ArgumentError("calibration result is missing $key"))
     end
@@ -79,12 +103,12 @@ function read_bundle(directory::AbstractString)
             throw(ArgumentError("calibration bundle $key mismatch"))
     end
     context = Common.read_yaml(context_path)
-    context isa AbstractDict || throw(ArgumentError("calibration context must be a mapping"))
+    _bundle_mapping(context, "context")
     artifact_directory = joinpath(directory, "artifacts")
     isdir(artifact_directory) && !islink(artifact_directory) ||
         throw(ArgumentError("calibration artifacts must be a non-symlink directory"))
     manifest = report["artifact_sha256"]
-    manifest isa AbstractDict || throw(ArgumentError("calibration artifact_sha256 must be a mapping"))
+    _bundle_mapping(manifest, "artifact_sha256")
     for name in keys(manifest)
         _bundle_name(name; artifact=true)
     end
@@ -103,13 +127,11 @@ function read_bundle(directory::AbstractString)
     # as cold RTC preparation; the stored context remains a small declaration.
     InstrumentConfiguration.calibration_context(context, directory)
     parameter_names = report["parameter_names"]
-    parameter_names isa AbstractVector && all(name -> name isa AbstractString, parameter_names) ||
-        throw(ArgumentError("calibration parameter_names must be a list of names"))
+    _bundle_parameter_names(parameter_names)
     length(unique(parameter_names)) == length(parameter_names) ||
         throw(ArgumentError("calibration parameter_names contains duplicates"))
     parameter_files=report["parameter_files"]
-    parameter_files isa AbstractDict && Set(keys(parameter_files))==Set(parameter_names) ||
-        throw(ArgumentError("calibration parameter_files must cover exactly the runtime parameters"))
+    _bundle_parameter_files(parameter_files,parameter_names)
     for name in parameter_names
         _bundle_name(name)
         filename=_bundle_name(parameter_files[name];artifact=true)
@@ -133,17 +155,15 @@ function write_bundle(directory::AbstractString, report, context, concrete_graph
     _bundle_report(report)
     any(key -> haskey(report, key), _BUNDLE_INTEGRITY_FIELDS) &&
         throw(ArgumentError("calibration report must not supply generated integrity fields"))
-    context isa AbstractDict || throw(ArgumentError("calibration context must be a mapping"))
-    parameters isa AbstractDict && diagnostics isa AbstractDict ||
-        throw(ArgumentError("calibration parameters and diagnostics must be mappings"))
+    _bundle_mapping(context, "context")
+    _bundle_artifact_mappings(parameters,diagnostics)
     arrays = Dict{String,Any}()
     parameter_names = String[]
     for (values, runtime) in ((parameters, true), (diagnostics, false))
         for (key, array) in values
-            key isa Union{Symbol,AbstractString} || throw(ArgumentError("invalid calibration artifact name"))
-            name = _bundle_name(String(key))
+            name = _bundle_artifact_name(key)
             haskey(arrays, name) && throw(ArgumentError("duplicate calibration artifact name: $name"))
-            array isa AbstractArray || throw(ArgumentError("calibration artifact $name must be an array"))
+            _bundle_array(array,name)
             arrays[name] = array
             runtime && push!(parameter_names, name)
         end

@@ -12,36 +12,34 @@ fit the existing artifact image byte limit. No source file is modified.
 calibration_context(document, directory) =
     _calibration_context(document, directory, Ref(Artifacts.MAX_IMAGE_BYTES))
 
-function _calibration_context(document, directory, remaining)
-    if document isa AbstractDict
-        if get(document, "kind", nothing) == "fits"
-            required = ("kind", "path", "hdu", "axes", "shape", "type", "sha256", "storage_order")
-            fields(document, required, required, "calibration FITS reference")
-            document["storage_order"] == "row-major" ||
-                throw(ArgumentError("calibration FITS storage_order must be row-major"))
-            hash = document["sha256"]
-            hash isa String && occursin(r"^[0-9a-f]{64}$", hash) ||
-                throw(ArgumentError("calibration FITS sha256 must be 64 lowercase hexadecimal digits"))
-            T = get(Dict(string(T) => T for T in Artifacts.TARGET_TYPES), document["type"], nothing)
-            T === nothing && throw(ArgumentError("unsupported calibration FITS type"))
-            document["axes"] isa Union{Tuple,AbstractVector} ||
-                throw(ArgumentError("calibration FITS axes must be an explicit permutation"))
-            source = Artifacts.FITSArtifact(D.relative_asset(directory, document["path"]);
-                hdu=document["hdu"], axes=document["axes"])
-            shape = Artifacts.checked_shape(document["shape"], sizeof(T))
-            bytes = prod(shape) * sizeof(T)
-            bytes <= remaining[] ||
-                throw(ArgumentError("calibration FITS arrays together exceed 256 MiB"))
-            remaining[] -= bytes
-            original = Artifacts.snapshot(source.path; check=()->nothing)
-            bytes2hex(SHA.sha256(original)) == hash ||
-                throw(ArgumentError("calibration FITS sha256 differs from the file snapshot"))
-            prepared = Artifacts.prepare_snapshot(source, T, shape, original)
-            return vec(permutedims(prepared.data, Tuple(reverse(1:ndims(prepared.data)))))
-        end
-        return Dict(key => _calibration_context(value, directory, remaining) for (key, value) in document)
-    elseif document isa AbstractVector
-        return map(value -> _calibration_context(value, directory, remaining), document)
+function _calibration_context(document::AbstractDict, directory, remaining)
+    if get(document, "kind", nothing) == "fits"
+        required = ("kind", "path", "hdu", "axes", "shape", "type", "sha256", "storage_order")
+        fields(document, required, required, "calibration FITS reference")
+        document["storage_order"] == "row-major" ||
+            throw(ArgumentError("calibration FITS storage_order must be row-major"))
+        hash = document["sha256"]
+        valid_sha256(hash) ||
+            throw(ArgumentError("calibration FITS sha256 must be 64 lowercase hexadecimal digits"))
+        T = get(Dict(string(T) => T for T in Artifacts.TARGET_TYPES), document["type"], nothing)
+        T === nothing && throw(ArgumentError("unsupported calibration FITS type"))
+        calibration_axes(document["axes"])
+        source = Artifacts.FITSArtifact(D.relative_asset(directory, document["path"]);
+            hdu=document["hdu"], axes=document["axes"])
+        shape = Artifacts.checked_shape(document["shape"], sizeof(T))
+        bytes = prod(shape) * sizeof(T)
+        bytes <= remaining[] ||
+            throw(ArgumentError("calibration FITS arrays together exceed 256 MiB"))
+        remaining[] -= bytes
+        original = Artifacts.snapshot(source.path; check=()->nothing)
+        bytes2hex(SHA.sha256(original)) == hash ||
+            throw(ArgumentError("calibration FITS sha256 differs from the file snapshot"))
+        prepared = Artifacts.prepare_snapshot(source, T, shape, original)
+        return vec(permutedims(prepared.data, Tuple(reverse(1:ndims(prepared.data)))))
     end
-    return deepcopy(document)
+    return Dict(key => _calibration_context(value, directory, remaining) for (key, value) in document)
 end
+_calibration_context(document::AbstractVector, directory, remaining) = map(value -> _calibration_context(value, directory, remaining), document)
+_calibration_context(document, directory, remaining) = deepcopy(document)
+calibration_axes(value::Union{Tuple,AbstractVector}) = value
+calibration_axes(value) = throw(ArgumentError("calibration FITS axes must be an explicit permutation"))

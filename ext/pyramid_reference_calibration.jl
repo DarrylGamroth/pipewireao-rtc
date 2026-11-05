@@ -8,15 +8,10 @@
 # No centroid, ROI eligibility or new physical coordinate is introduced.
 function pyramid_reference_figures(reference,options)
     names = options.command_input
-    names isa Tuple && !isempty(names) && reference isa NamedTuple &&
-        Set(keys(reference)) == Set(names) || throw(ArgumentError(
-        "pyramid reference must explicitly name every simulator command input"))
+    validate_pyramid_reference_names(names, reference)
     figures = map(names) do name
         values = getproperty(reference,name)
-        values isa AbstractVector{Float32} &&
-            length(values) == getproperty(options.command_count,name) &&
-            all(isfinite,values) || throw(ArgumentError(
-            "pyramid reference $name must match its finite Float32 physical command"))
+        validate_pyramid_reference_figure(values,getproperty(options.command_count,name),name)
         Base.require_one_based_indexing(values)
         return collect(values)
     end
@@ -63,18 +58,15 @@ end
 function pyramid_reference_unit_sources(bindings,recipe,calibration)
     files = get(calibration,"parameter_files",nothing)
     manifest = get(calibration,"artifact_sha256",nothing)
-    files isa AbstractDict && manifest isa AbstractDict || throw(ArgumentError(
-        "pyramid modal unit authority requires parameter_files and artifact_sha256"))
+    validate_pyramid_unit_manifest(files, manifest)
     ports = (:reconstructor,(Symbol(entry["name"]*"-selection") for entry in recipe["mirrors"])...)
     hashes = Dict{String,String}()
     for port in ports
         name = string(port)
         filename = get(files,name,nothing)
-        filename isa AbstractString && occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*\.fits$",filename) ||
-            throw(ArgumentError("pyramid unit authority must identify a plain FITS filename for $name"))
+        validate_pyramid_unit_filename(filename, name)
         declared = get(manifest,filename,nothing)
-        declared isa AbstractString && occursin(r"^[0-9a-f]{64}$",declared) || throw(ArgumentError(
-            "pyramid unit authority must declare a SHA-256 for $name"))
+        validate_pyramid_unit_digest(declared, name)
         matching = filter(binding -> binding.port == port,bindings)
         length(matching) == 1 || throw(ArgumentError(
             "pyramid unit authority must bind $name exactly once"))
@@ -187,14 +179,9 @@ function pyramid_reference_adc(production,options)
         get(config,"rounding",nothing) == "nearest_even" || throw(ArgumentError(
         "pyramid raw ADC must retain UInt16 output with nearest-even rounding"))
     output_size = get(config,"output_size",nothing)
-    output_size isa Union{Tuple,AbstractVector} && Tuple(output_size) == options.frame_shape &&
-        get(config,"output_schema",nothing) == options.frame_schema || throw(DimensionMismatch(
-        "pyramid frame layout must retain the declared raw frame shape and schema"))
+    validate_pyramid_frame_output(output_size, config, options)
     range = get(config,"range",nothing)
-    range isa AbstractVector && length(range) == 2 &&
-        all(value -> value isa Real && !(value isa Bool) && isfinite(value) && isinteger(value),range) &&
-        0 <= range[1] < range[2] <= typemax(UInt16) || throw(ArgumentError(
-        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+    validate_pyramid_adc_range(range)
     links = filter(link -> link["destination"] == source[1]*".detector_frame",production["links"])
     length(links) == 1 || throw(ArgumentError("pyramid ADC must have one declared detector-frame source"))
     detector_source = split(only(links)["source"],'.';keepempty=true)
@@ -205,10 +192,7 @@ function pyramid_reference_adc(production,options)
         "pyramid ADC input must come from the declared detector"))
     detector = only(detectors)
     input_size = get(config,"input_size",nothing)
-    get(config,"input_schema",nothing) == detector["config"]["frame_schema"] &&
-        input_size isa Union{Tuple,AbstractVector} && Tuple(input_size) ==
-            (detector["config"]["rows"],detector["config"]["columns"]) || throw(DimensionMismatch(
-        "pyramid frame layout must retain the declared detector shape and electron schema"))
+    validate_pyramid_frame_input(input_size, config, detector)
     return (;rail=UInt32(range[2]),detector,frame_layout)
 end
 
@@ -229,9 +213,7 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
     declaration = IC.load_simulation(options.plant.definition)
     declaration.document["id"] == "gpi2" || throw(ArgumentError(
         "pyramid reference procedure requires the declared GPI instrument"))
-    options.command_input isa Tuple &&
-        Threads.nthreads(:default) >= length(options.command_input)+2 || throw(ArgumentError(
-        "named pyramid acquisition requires at least one thread per command plus frontend and control owners"))
+    validate_pyramid_owner_threads(options.command_input)
     reference = pyramid_reference_figures(reference,options)
     parameters = Calibration.read_parameters(application)
     geometry = pyramid_reference_geometry(application,parameters,options,recipe,declaration)
@@ -371,3 +353,62 @@ function pyramid_references(application,output;remote,reference,run,timeout_s,ca
         return report
     end
 end
+
+function validate_pyramid_reference_names(names::Tuple, reference::NamedTuple)
+    !isempty(names) && Set(keys(reference)) == Set(names) || throw(ArgumentError("pyramid reference must explicitly name every simulator command input"))
+    return nothing
+end
+validate_pyramid_reference_names(names, reference) = throw(ArgumentError("pyramid reference must explicitly name every simulator command input"))
+
+function validate_pyramid_reference_figure(values::AbstractVector{Float32}, count, name)
+    length(values) == count && all(isfinite,values) || throw(ArgumentError("pyramid reference $name must match its finite Float32 physical command"))
+    return nothing
+end
+validate_pyramid_reference_figure(values, count, name) = throw(ArgumentError("pyramid reference $name must match its finite Float32 physical command"))
+
+validate_pyramid_unit_manifest(files::AbstractDict, manifest::AbstractDict) = nothing
+validate_pyramid_unit_manifest(files, manifest) = throw(ArgumentError("pyramid modal unit authority requires parameter_files and artifact_sha256"))
+
+function validate_pyramid_unit_filename(filename::AbstractString, name)
+    occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*\.fits$",filename) || throw(ArgumentError("pyramid unit authority must identify a plain FITS filename for $name"))
+    return nothing
+end
+validate_pyramid_unit_filename(filename, name) = throw(ArgumentError("pyramid unit authority must identify a plain FITS filename for $name"))
+
+function validate_pyramid_unit_digest(declared::AbstractString, name)
+    occursin(r"^[0-9a-f]{64}$",declared) || throw(ArgumentError("pyramid unit authority must declare a SHA-256 for $name"))
+    return nothing
+end
+validate_pyramid_unit_digest(declared, name) = throw(ArgumentError("pyramid unit authority must declare a SHA-256 for $name"))
+
+function validate_pyramid_frame_output(output_size::Union{Tuple,AbstractVector}, config, options)
+    Tuple(output_size) == options.frame_shape && get(config,"output_schema",nothing) == options.frame_schema || throw(DimensionMismatch("pyramid frame layout must retain the declared raw frame shape and schema"))
+    return nothing
+end
+validate_pyramid_frame_output(output_size, config, options) = throw(DimensionMismatch("pyramid frame layout must retain the declared raw frame shape and schema"))
+
+function validate_pyramid_frame_input(input_size::Union{Tuple,AbstractVector}, config, detector)
+    get(config,"input_schema",nothing) == detector["config"]["frame_schema"] && Tuple(input_size) == (detector["config"]["rows"],detector["config"]["columns"]) || throw(DimensionMismatch("pyramid frame layout must retain the declared detector shape and electron schema"))
+    return nothing
+end
+validate_pyramid_frame_input(input_size, config, detector) = throw(DimensionMismatch("pyramid frame layout must retain the declared detector shape and electron schema"))
+
+function validate_pyramid_owner_threads(commands::Tuple)
+    Threads.nthreads(:default) >= length(commands)+2 || throw(ArgumentError("named pyramid acquisition requires at least one thread per command plus frontend and control owners"))
+    return nothing
+end
+validate_pyramid_owner_threads(commands) = throw(ArgumentError("named pyramid acquisition requires at least one thread per command plus frontend and control owners"))
+
+function validate_pyramid_adc_range(range::AbstractVector)
+    length(range) == 2 || throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+    foreach(validate_pyramid_adc_bound,range)
+    0 <= range[1] < range[2] <= typemax(UInt16) || throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+    return nothing
+end
+validate_pyramid_adc_range(range) = throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+function validate_pyramid_adc_bound(value::Real)
+    isfinite(value) && isinteger(value) || throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+    return nothing
+end
+validate_pyramid_adc_bound(value::Bool) = throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))
+validate_pyramid_adc_bound(value) = throw(ArgumentError("pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"))

@@ -1,8 +1,8 @@
 using Test, SHA, PipeWireAORTC
 import PipeWireAO
 const CaptureFiles = PipeWireAORTC.InstrumentCalibration
-const CaptureActions = PipeWireAORTC.NativeCalibrationActionCodec
-const CaptureClock = PipeWireAORTC.NativeControlClient
+const CaptureActions = PipeWireAORTC.CalibrationActionCodec
+const CaptureClock = PipeWireAORTC.ControlClient
 @assert isdefined(CaptureFiles,:CaptureStore)
 
 const capture_settings = Dict{String,Any}("profile"=>"classic","simulation_graph"=>"internal-source",

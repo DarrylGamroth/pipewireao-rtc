@@ -1,7 +1,7 @@
 # Optional CPU/private-core transport selector; no instrument optics or devices.
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 const Transport = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 isdefined(Transport, :start_calibration_graph) ||
     Base.include(Transport, joinpath(@__DIR__, "..", "ext", "calibration_transport.jl"))
@@ -52,6 +52,12 @@ function transport_test(socket, directory, daemon)
         """)
         graph = FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
             "--graph",path,"--check","--execution","complete-frame"]))
+        projection=Transport.GraphProjection(graph;
+            document=PipeWireAORTC.DeploymentConfiguration.decode(path,ENV["PIPEWIREAO_PREFIX"]),
+            bindings=PipeWireAORTC.GraphOwner.FITSBinding[], parameters=Dict{Symbol,Array}(),
+            source_graph_sha256=PipeWireAORTC.InstrumentCalibration.digest(path),
+            parameter_sources=Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(),
+            parameter_sha256=Dict{Symbol,String}())
         with_thread_loop_lock(loop) do _
             context = Context(loop)
             core = CoreConnection(context; properties=Dict("remote.name"=>socket))
@@ -61,13 +67,16 @@ function transport_test(socket, directory, daemon)
                 on_global_removed=(registry,id) -> notify_owner())
         end
         start!(loop)
-        cancelled = Transport.start_calibration_graph((;graph),socket,"test.cancelled-calibration-pdm",500//1; notify=notify_owner)
+        cancelled = Transport.start_calibration_graph(projection,socket,"test.cancelled-calibration-pdm",500//1; notify=notify_owner)
         Transport.quit_calibration_graph!(cancelled)
         await(() -> istaskdone(cancelled.task))
-        @test cancelled.error[]===nothing && cancelled.stop_requested[] && !cancelled.ready[]
-        worker = Transport.start_calibration_graph((;graph),socket,"test.calibration-pdm",500//1; notify=notify_owner)
-        await(() -> worker.ready[] || istaskdone(worker.task))
-        @test worker.error[] === nothing
+        @test Transport.finish_calibration_graph!(cancelled).error===nothing && cancelled.stop_sent && !Transport.calibration_graph_status(cancelled).ready
+        workers=Transport.CalibrationGraphWorker[]
+        Transport.start_command_graphs!(workers,projection,socket,"test.calibration-pdm",500//1;
+            notify=notify_owner,reference_clock=METADATA_CLOCK_REALTIME)
+        worker=only(workers)
+        await(() -> Transport.calibration_graph_status(worker).ready || istaskdone(worker.task))
+        @test Transport.calibration_graph_status(worker).error === nothing
         # Registry state has registry wakeups; a client's later bound node ID
         # has no equivalent notification on this owner's condition.
         endpoint = Ref{Any}(nothing)
@@ -87,11 +96,11 @@ function transport_test(socket, directory, daemon)
         @test !Transport.calibration_incarnation_present(registry,(;node=replaced,port=endpoint[].port))
         @test_throws ErrorException Transport.calibration_link(core,registry,
             (;node=replaced,port=endpoint[].port), endpoint[]; on_info=(_, _)->nothing)
-        formats = JuliaFilterGraph.output_formats(graph)
-        probe = Transport.prepare_calibration_probe(core,JuliaFilterGraph.input_formats(graph).requested,
-            "pipewireao/requested-pdm-command-f32/1",formats[Symbol("constraint-feedback")],
-            "pipewireao/pdm-constraint-feedback-f32/1",500//1;notify=notify_owner)
+        probe = Transport.prepare_command_probe(core,projection,500//1;
+            notify=notify_owner,prefix="unused-scalar-prefix",reference_clock=METADATA_CLOCK_REALTIME)
         with_thread_loop_lock(loop) do _
+            @test stream_properties(probe.source)["node.name"] == "calibration-requested"
+            @test stream_properties(probe.feedback)["node.name"] == "calibration-constraint-feedback"
             trigger_listener = add_listener!(probe.source; on_trigger_done=stream -> begin
                 Threads.atomic_add!(source_cycles,UInt64(1))
                 notify_owner()
@@ -154,12 +163,11 @@ function transport_test(socket, directory, daemon)
                     snapshot.received==sequence && demand_sequence[]==sequence
                 end)
             catch
-                @show Transport.calibration_probe_snapshot(probe) worker.ready[] demand_sequence[]
-                istaskdone(worker.task) && (@show worker.error[])
+                @show Transport.calibration_probe_snapshot(probe) Transport.calibration_graph_status(worker).ready demand_sequence[]
+                istaskdone(worker.task) && (@show Transport.calibration_graph_status(worker).error)
                 with_thread_loop_lock(loop) do _
                     @show stream_state(probe.source) stream_state(probe.feedback) stream_state(demand_sink)
                 end
-                @show FilterGraphPipeWire.node_state(worker.node[])
                 rethrow()
             end
             snapshot=Transport.calibration_probe_snapshot(probe)
@@ -174,7 +182,8 @@ function transport_test(socket, directory, daemon)
         end
         Transport.quit_calibration_graph!(worker)
         await(() -> istaskdone(worker.task))
-        @test worker.error[]===nothing && !worker.ready[]
+        status = Transport.finish_calibration_graph!(worker)
+        @test status.done && status.error===nothing && !status.ready
         with_thread_loop_lock(loop) do _
             close(trigger_listener)
             trigger_listener=nothing

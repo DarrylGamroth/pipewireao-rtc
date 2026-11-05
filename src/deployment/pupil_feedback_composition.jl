@@ -1,3 +1,19 @@
+_pupil_receiver(receiver,fields) = throw(ArgumentError("invalid pupil-source receiving composition declaration"))
+_pupil_receiver(receiver::AbstractDict,fields) = Set(keys(receiver))==fields && receiver["kind"]=="pupil-source" ||
+    throw(ArgumentError("invalid pupil-source receiving composition declaration"))
+_pupil_branches(branches) = throw(ArgumentError("physical receiver requires bounded indexed branch directories"))
+function _pupil_branches(branches::AbstractDict)
+    1 <= length(branches) <= 8 || throw(ArgumentError("physical receiver requires bounded indexed branch directories"))
+    foreach(name -> _pupil_branch(branches,name),keys(branches))
+    return nothing
+end
+_pupil_branch(branches,name) = throw(ArgumentError("physical receiver requires bounded indexed branch directories"))
+_pupil_branch(branches,name::String) = occursin(r"^[a-z][a-z0-9-]{0,31}$",name) && branches[name]["path"]==name ||
+    throw(ArgumentError("physical receiver requires bounded indexed branch directories"))
+_pupil_threads(threads) = throw(ArgumentError("pupil source requires explicit owner arguments with three default threads"))
+_pupil_threads(threads::String) = something(tryparse(Int,first(split(threads,','))),0)>=3 ||
+    throw(ArgumentError("pupil source requires explicit owner arguments with three default threads"))
+
 # The standalone source has no WFS frontend or graph parameter adoption. Its
 # accepted physical projection is selected explicitly in generated RTC data.
 function validate_pupil_equivalence end
@@ -6,8 +22,7 @@ function validate_pupil_source end
 function prepare_pupil_feedback(mainroot,main,componentroot,extra,output,recipe,document,profilepath,selected_profile;prefix)
     receiver=document["receiver"]
     fields=Set(("kind","owner","mirror","rtc_configuration","simulation_configuration","template","configuration"))
-    receiver isa AbstractDict && Set(keys(receiver))==fields && receiver["kind"]=="pupil-source" ||
-        throw(ArgumentError("invalid pupil-source receiving composition declaration"))
+    _pupil_receiver(receiver,fields)
     namespace=document["namespace"]
     role=receiver["owner"]
     role==main["source-owner"] || throw(ArgumentError("pupil source receiver must belong to the declared source owner"))
@@ -35,9 +50,7 @@ function prepare_pupil_feedback(mainroot,main,componentroot,extra,output,recipe,
         selection["calibration_identity"]==index["calibration_identity"] || throw(ArgumentError("component calibration selection mismatch"))
     validate_selected_rtc(componentroot,calibration,selection,index,component_simulation)
     branches=index["branches"]
-    branches isa AbstractDict && 1<=length(branches)<=8 &&
-        all(name->name isa String && occursin(r"^[a-z][a-z0-9-]{0,31}$",name) && branches[name]["path"]==name,keys(branches)) ||
-        throw(ArgumentError("physical receiver requires bounded indexed branch directories"))
+    _pupil_branches(branches)
     Calibration=getfield(parentmodule(@__MODULE__),:InstrumentCalibration)
     reports=Dict{String,Any}()
     for name in sort!(collect(keys(branches)))
@@ -97,9 +110,9 @@ function prepare_pupil_feedback(mainroot,main,componentroot,extra,output,recipe,
     count=length(mirror["layout"]["command_positions"])
     size(matrices["projection"],1)==count || throw(DimensionMismatch("physical projection differs from command order"))
     arguments=document["owner_arguments"]
-    Set(keys(arguments))==Set(("role","threads","append")) && arguments["role"]==role && arguments["threads"] isa String &&
-        something(tryparse(Int,first(split(arguments["threads"],','))),0)>=3 ||
+    Set(keys(arguments))==Set(("role","threads","append")) && arguments["role"]==role ||
         throw(ArgumentError("pupil source requires explicit owner arguments with three default threads"))
+    _pupil_threads(arguments["threads"])
     arguments["append"]==["--physical-offsets","@PACKAGE@/"*receiver["configuration"]] ||
         throw(ArgumentError("physical offsets argument must name the explicit receiver contract"))
     argv=copy(owner["argv"])

@@ -8,8 +8,8 @@ using PipeWireAO
 using YAML
 
 const Owner = PipeWireAORTC.AOSOwner
-const Bootstrap = PipeWireAORTC.NativeOwnerBootstrapRuntime
-const SourceControl = PipeWireAORTC.NativeSourceControl
+const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
+const SourceControl = PipeWireAORTC.SourceControl
 const Backends = AdaptiveOpticsSim.Backends
 
 import PipeWireAORTC.Common: prepare_reference_clock
@@ -72,15 +72,11 @@ function validate_graph(options)
         config = get(node, "config", Dict())
         if haskey(config, "atmosphere_step")
             step = config["atmosphere_step"]
-            step isa Real && !(step isa Bool) && isfinite(step) &&
-                isapprox(step, options.period_ns / 1e9; rtol=1e-12, atol=0) ||
-                throw(ArgumentError("graph atmosphere_step differs from declared model period"))
+            validate_graph_step(step,options.period_ns)
         end
         if haskey(config, "exposure_duration_s")
             exposure = config["exposure_duration_s"]
-            exposure isa Real && !(exposure isa Bool) && isfinite(exposure) &&
-                isapprox(exposure, options.exposure_ns / 1e9; rtol=1e-12, atol=0) ||
-                throw(ArgumentError("graph exposure_duration_s differs from declared exposure"))
+            validate_graph_exposure(exposure,options.exposure_ns)
         end
     end
     return nothing
@@ -431,7 +427,7 @@ function Owner.run_owner(options)
         flush(stdout)
         run_prepared!(options, science, pipewire, observation, mailbox, state, phase, pupil)
     catch error
-        if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
+        if !(owner_cancelled(error,runtime))
             push!(failures, error)
             Bootstrap.fault!(runtime, error)
         end
@@ -461,7 +457,27 @@ function Owner.run_owner(options)
     return nothing
 end
 
+owner_cancelled(::InterruptException,runtime) = Bootstrap.clean_cancel(runtime)
+owner_cancelled(error,runtime) = false
+
 include("aos/external_pupil_owner.jl")
 include("aos/pupil_source_owner.jl")
+
+
+function validate_graph_step(step::Real, nanoseconds)
+    isfinite(step) && isapprox(step,nanoseconds / 1e9; rtol=1e-12,atol=0) || throw(ArgumentError("graph atmosphere_step differs from declared model period"))
+    return nothing
+end
+validate_graph_step(step, nanoseconds) = throw(ArgumentError("graph atmosphere_step differs from declared model period"))
+
+validate_graph_step(step::Bool,nanoseconds) = throw(ArgumentError("graph atmosphere_step differs from declared model period"))
+
+function validate_graph_exposure(exposure::Real, nanoseconds)
+    isfinite(exposure) && isapprox(exposure,nanoseconds / 1e9; rtol=1e-12,atol=0) || throw(ArgumentError("graph exposure_duration_s differs from declared exposure"))
+    return nothing
+end
+validate_graph_exposure(exposure, nanoseconds) = throw(ArgumentError("graph exposure_duration_s differs from declared exposure"))
+
+validate_graph_exposure(exposure::Bool,nanoseconds) = throw(ArgumentError("graph exposure_duration_s differs from declared exposure"))
 
 end

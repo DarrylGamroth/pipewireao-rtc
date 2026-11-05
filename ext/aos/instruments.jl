@@ -94,9 +94,7 @@ function Instruments.optical_graph_document(declaration::NamedTuple, configured:
             simulation_graph=selection["graph"])
         detector = only(node for node in response["nodes"] if node["name"] == selection["detector"])
         sampling = get(detector["config"], "pixel_sampling_m", nothing)
-        sampling isa AbstractVector && length(sampling) == 2 &&
-            all(Instruments.isfinite_positive, sampling) ||
-            throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+        validate_optical_sampling(sampling)
         isapprox(sampling[1], sampling[2]; rtol=8eps(Float32), atol=0) ||
             throw(ArgumentError("PROPER spectral output currently requires square detector pixels"))
         # The selected central wavelength changes the native diffraction grid;
@@ -179,8 +177,7 @@ end
 instrument_execution(::Backends.HostComputeDevice, execution) =
     execution === nothing ? StreamGraphExecution() : execution
 function instrument_execution(::Backends.AcceleratorComputeDevice, execution)
-    execution === nothing || execution isa CapturedGraphExecution ||
-        throw(ArgumentError("RTC accelerator preparation requires CapturedGraphExecution"))
+    validate_accelerator_execution(execution)
     return CapturedGraphExecution()
 end
 
@@ -397,8 +394,7 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
             haskey(sensor, "expected_schema") && sensor["expected_schema"] != config["frame_schema"] &&
                 throw(ArgumentError("observation detector frame_schema differs from its physical sensor expected_schema"))
             sampling = config["pixel_sampling_m"]
-            sampling isa AbstractVector && length(sampling) == 2 && all(Instruments.isfinite_positive, sampling) ||
-                throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+            validate_observation_sampling(sampling)
             exposure = config["exposure_duration_s"]
             Instruments.isfinite_positive(exposure) && isapprox(exposure, seconds; rtol=8eps(Float32), atol=0) ||
                 throw(ArgumentError("observation detector exposure differs from its physical sensor acquisition"))
@@ -439,3 +435,18 @@ function Instruments.prepare_external_pupil(path::AbstractString; settings=Named
     return AlgorithmGraphs.prepare_external_pupil(named(optical);
         exposure_durations=named(durations), observations=named(selections))
 end
+
+validate_accelerator_execution(::Union{Nothing,CapturedGraphExecution}) = nothing
+validate_accelerator_execution(execution) = throw(ArgumentError("RTC accelerator preparation requires CapturedGraphExecution"))
+
+function validate_optical_sampling(sampling::AbstractVector)
+    length(sampling) == 2 && all(Instruments.isfinite_positive,sampling) || throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+    return nothing
+end
+validate_optical_sampling(sampling) = throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+
+function validate_observation_sampling(sampling::AbstractVector)
+    length(sampling) == 2 && all(Instruments.isfinite_positive,sampling) || throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+    return nothing
+end
+validate_observation_sampling(sampling) = throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))

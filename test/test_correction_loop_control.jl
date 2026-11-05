@@ -4,8 +4,8 @@ import FilterGraphAlgorithms as FGA
 import JuliaFilterGraph as JFG
 
 const Commands = PipeWireAORTC.RunnerCommands
-const Codec = PipeWireAORTC.NativeRunnerCodec
-const Envelope = PipeWireAORTC.NativeControlCodec
+const Codec = PipeWireAORTC.RunnerCodec
+const Envelope = PipeWireAORTC.ControlCodec
 
 const LOOP_GRAPH = """
 filter.graph = {

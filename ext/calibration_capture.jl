@@ -86,7 +86,7 @@ end
 
 function _slot(spec, ::Type{T}, rank) where {T}
     format = spec.format
-    format isa NdArrayFormat || throw(ArgumentError("capture format must be an NdArrayFormat"))
+    validate_capture_format(format)
     expected = T === UInt16 ? NdArray.U16_LE : T === Bool ? NdArray.BOOL8 : NdArray.F32_LE
     format.element_type == expected && length(format.shape) == rank ||
         throw(ArgumentError("capture stream element type or rank differs from its declared role"))
@@ -113,7 +113,7 @@ function _slots(declarations::NamedTuple)
     slots = map(keys(declarations), values(declarations)) do name, spec
         name === :raw && return _slot(spec, UInt16, 2)
         format = spec.format
-        format isa NdArrayFormat || throw(ArgumentError("capture format must be an NdArrayFormat"))
+        validate_capture_format(format)
         rank = length(format.shape)
         if format.element_type == NdArray.F32_LE && rank in (1, 2)
             return _slot(spec, Float32, rank)
@@ -259,10 +259,10 @@ function Capture(core::CoreConnection, declarations::NamedTuple; wakeup=nothing,
         reference_clock::MetadataClock=METADATA_CLOCK_REALTIME)
     reference_clock in (METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI) ||
         throw(ArgumentError("capture reference clock must be REALTIME or TAI"))
-    main_loop(core) isa ThreadLoop || throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
+    validate_capture_loop(main_loop(core))
     slots = _slots(declarations)
     condition = wakeup === nothing ? Base.AsyncCondition() : wakeup
-    condition isa Base.AsyncCondition && isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
+    validate_capture_wakeup(condition)
     capture = Capture(core,slots,NamedTuple(),condition,wakeup_lock,wakeup===nothing,IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,false,false,reference_clock)
     created = Stream[]
     try
@@ -322,11 +322,10 @@ end
 "Arm one genuine HIL exposure before its publication; previous data must already be consumed."
 function arm!(capture::Capture, exposure)
     identity = exposure.identity
-    identity isa AcquisitionIdentity && identity.sequence > 0 || throw(ArgumentError("capture requires a full positive acquisition identity"))
+    validate_capture_identity(identity)
     start = AdaptiveOpticsSim.AlgorithmGraphs.model_nanoseconds(exposure.timestamp)
     duration = exposure.exposure_duration_nanoseconds
-    start >= 0 && duration isa UInt64 && duration > 0 && duration <= UInt64(typemax(Int64)-start) ||
-        throw(ArgumentError("capture exposure model start/end must fit nonnegative Int64 nanoseconds"))
+    validate_capture_window(start, duration)
     _locked(capture) do
         _usable(capture)
         capture.started || throw(InvalidStateException("capture streams are inactive",:inactive))
@@ -366,7 +365,7 @@ end
 "Wait on the owner task until completion/deadline; `check` must throw on owner loss."
 function await!(capture::Capture; deadline::Real, check=()->nothing)
     isfinite(deadline) || throw(ArgumentError("capture deadline must be finite"))
-    now = PipeWireAORTC.NativeControlClient.monotonic
+    now = PipeWireAORTC.ControlClient.monotonic
     _locked(capture) do
         _usable(capture)
         capture.waiting && throw(InvalidStateException("capture already has a waiter",:waiting))
@@ -421,5 +420,29 @@ function Base.close(capture::Capture)
     isempty(errors) || throw(CompositeException(errors))
     return nothing
 end
+
+validate_capture_format(format::NdArrayFormat) = nothing
+validate_capture_format(format) = throw(ArgumentError("capture format must be an NdArrayFormat"))
+
+validate_capture_loop(loop::ThreadLoop) = nothing
+validate_capture_loop(loop) = throw(ArgumentError("capture requires a caller-dispatched ThreadLoop core"))
+
+function validate_capture_wakeup(condition::Base.AsyncCondition)
+    isopen(condition) || throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
+    return nothing
+end
+validate_capture_wakeup(condition) = throw(ArgumentError("capture wakeup must be an open AsyncCondition"))
+
+function validate_capture_identity(identity::AcquisitionIdentity)
+    identity.sequence > 0 || throw(ArgumentError("capture requires a full positive acquisition identity"))
+    return nothing
+end
+validate_capture_identity(identity) = throw(ArgumentError("capture requires a full positive acquisition identity"))
+
+function validate_capture_window(start, duration::UInt64)
+    start >= 0 && duration > 0 && duration <= UInt64(typemax(Int64)-start) || throw(ArgumentError("capture exposure model start/end must fit nonnegative Int64 nanoseconds"))
+    return nothing
+end
+validate_capture_window(start, duration) = throw(ArgumentError("capture exposure model start/end must fit nonnegative Int64 nanoseconds"))
 
 end

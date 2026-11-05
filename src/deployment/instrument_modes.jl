@@ -1,3 +1,18 @@
+_mode_fields(mode) = throw(ArgumentError("invalid application mode fields"))
+_mode_fields(mode::AbstractDict) = Set(keys(mode)) ⊆ Set(["extends","application","session","core","omit-views","requires"]) || throw(ArgumentError("invalid application mode fields"))
+_mode_parent(parent) = throw(ArgumentError("mode extends must name a declared mode"))
+_mode_parent(::AbstractString) = nothing
+_mode_fragment(fragment,key) = throw(ArgumentError("mode $key must be an object"))
+_mode_fragment(::AbstractDict,key) = nothing
+_mode_devices(devices) = throw(ArgumentError("devices must be ordinary native owner declarations"))
+_mode_devices(devices::AbstractVector) = foreach(_mode_device,devices)
+_mode_device(device) = throw(ArgumentError("devices must be ordinary native owner declarations"))
+_mode_device(::AbstractDict) = nothing
+_mode_calibration(calibration) = throw(ArgumentError("calibration requires parameters and identity"))
+_mode_calibration(calibration::AbstractDict) = Set(keys(calibration)) == Set(["parameters","identity"]) || throw(ArgumentError("calibration requires parameters and identity"))
+_mode_calibration_identity(identity) = throw(ArgumentError("calibration identity must be nonempty"))
+_mode_calibration_identity(identity::AbstractString) = !isempty(identity) || throw(ArgumentError("calibration identity must be nonempty"))
+
 # Cold composition of ordinary application/session/core configuration fragments.
 # There is no instrument identity or device plugin selection in this code.
 function merge_configuration(base::AbstractDict, fragment::AbstractDict; replace_arrays=false)
@@ -16,15 +31,14 @@ function resolve_mode(modes, name, ancestors=String[])
     name in ancestors && throw(ArgumentError("application mode inheritance cycle"))
     length(ancestors) < 16 || throw(ArgumentError("application mode inheritance exceeds 16 levels"))
     mode = deepcopy(modes[name])
-    mode isa AbstractDict && Set(keys(mode)) ⊆ Set(["extends", "application", "session", "core", "omit-views", "requires"]) ||
-        throw(ArgumentError("invalid application mode fields"))
+    _mode_fields(mode)
     if haskey(mode, "extends")
         parent = pop!(mode, "extends")
-        parent isa AbstractString || throw(ArgumentError("mode extends must name a declared mode"))
+        _mode_parent(parent)
         mode = merge_configuration(resolve_mode(modes, parent, [ancestors; name]), mode; replace_arrays=true)
     end
     for key in ("application", "session", "core")
-        haskey(mode, key) && !(mode[key] isa AbstractDict) && throw(ArgumentError("mode $key must be an object"))
+        haskey(mode,key) && _mode_fragment(mode[key],key)
     end
     for key in ("omit-views", "requires")
         values = InstrumentConfiguration._declaration_array(get(mode, key, []), "mode $key")
@@ -60,8 +74,7 @@ function selected_mode(source, profile)
         profile[field] === nothing && throw(ArgumentError("selected mode requires non-null $field configuration"))
     end
     devices = get(profile, "devices", [])
-    devices isa AbstractVector && all(device -> device isa AbstractDict, devices) ||
-        throw(ArgumentError("devices must be ordinary native owner declarations"))
+    _mode_devices(devices)
     "devices" in get(mode, "requires", []) && isempty(devices) &&
         throw(ArgumentError("selected mode requires device owners"))
     return mode
@@ -82,10 +95,9 @@ function prepare_mode!(application, spec, mode, profile, bindings, prefix; confi
     end
     calibration = get(profile, "calibration", nothing)
     if calibration !== nothing
-        calibration isa AbstractDict && Set(keys(calibration)) == Set(["parameters", "identity"]) ||
-            throw(ArgumentError("calibration requires parameters and identity"))
+        _mode_calibration(calibration)
         identity = calibration["identity"]
-        identity isa AbstractString && !isempty(identity) || throw(ArgumentError("calibration identity must be nonempty"))
+        _mode_calibration_identity(identity)
         selected = D.relative_asset(application, calibration["parameters"])
         document = Common.read_json(selected)
         # Parameter paths are relative to their binding file, not the application.

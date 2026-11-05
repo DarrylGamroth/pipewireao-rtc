@@ -18,7 +18,51 @@ function prepare_command(count, schema)
         FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
             "--graph",path,"--check","--execution","complete-frame"]))
     end
-    return (;graph, source_graph_sha256="test")
+    return Ext.GraphProjection(graph; document=declaration,
+        bindings=PipeWireAORTC.GraphOwner.FITSBinding[], parameters=Dict{Symbol,Array}(),
+        source_graph_sha256="test", parameter_sources=Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(),
+        parameter_sha256=Dict{Symbol,String}())
+end
+
+@testset "projection declaration forms dispatch with parser validation ordering" begin
+    @test Ext.calibration_port("node:value") == (endpoint="node:value",node="node",name=:value)
+    original=Dict{String,Any}("endpoint"=>"node:value","name"=>"external","details"=>[1,2])
+    @test Ext.calibration_port(original) == (endpoint="node:value",node="node",name=:external)
+    copied=Ext.calibration_output(original,:alias)
+    @test copied["name"] == "alias" && original["name"] == "external"
+    @test copied["details"] == original["details"] && copied["details"] !== original["details"]
+    @test Ext.calibration_output("node:value",:alias) == Dict("endpoint"=>"node:value","name"=>"alias")
+    failure = try
+        Ext.calibration_port(Dict("endpoint"=>Int64(1)))
+        nothing
+    catch error
+        error
+    end
+    @test failure isa ArgumentError
+    @test occursin("endpoint must be a string",sprint(showerror,failure))
+    @test_throws KeyError Ext.calibration_port(Dict("endpoint"=>"node:value"))
+    @test_throws ArgumentError Ext.calibration_port(Dict("endpoint"=>"node:value:extra"))
+    @test Ext.calibration_output_selection((:one,:two)) == ((:one,:two),(:one,:two))
+    aliases=(one=:external,two="node:value")
+    @test Ext.calibration_output_selection(aliases) == ((:external,"node:value"),(:one,:two))
+    @test_throws ArgumentError Ext.calibration_output_selection((:one,"node:value"))
+    @test_throws ArgumentError Ext.calibration_output_selection((one=true,))
+    external=Dict(:external=>original)
+    nodes=Dict("node"=>nothing)
+    declared=Ext.calibration_selected_output(:external,external,nodes)
+    internal=Ext.calibration_selected_output("node:value",external,nodes)
+    @test declared.name === :external && internal.name === :value
+    @test declared.endpoint == internal.endpoint == "node:value"
+    @test_throws ArgumentError Ext.calibration_selected_output(:missing,external,nodes)
+    @test_throws ArgumentError Ext.calibration_selected_output("missing:value",external,nodes)
+    @test Ext.validate_calibration_output_endpoints((:one,:two),("node:value","node:value")) === nothing
+    @test_throws ArgumentError Ext.validate_calibration_output_endpoints(aliases,("node:value","node:value"))
+    materialized=Ext.calibration_output_declarations(aliases,external,(declared,internal))
+    @test materialized[1]["name"] == "one" && materialized[1]["details"] == [1,2]
+    @test materialized[1]["details"] !== original["details"]
+    @test materialized[2] == Dict("endpoint"=>"node:value","name"=>"two")
+    retained=Ext.calibration_output_declarations((:external,),external,(declared,))
+    @test retained[1] == original && retained[1] !== original
 end
 
 @testset "sensor measurements select existing typed outputs without an invented validity mask" begin
@@ -39,7 +83,10 @@ end
             "--graph",path,"--check","--execution","complete-frame"]))
     end
     try
-        frontend=(;graph,parameters=Dict{Symbol,Array}())
+        frontend=Ext.GraphProjection(graph; document=declaration,
+            bindings=PipeWireAORTC.GraphOwner.FITSBinding[], parameters=Dict{Symbol,Array}(),
+            source_graph_sha256="test", parameter_sources=Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(),
+            parameter_sha256=Dict{Symbol,String}())
         outputs=JuliaFilterGraph.output_formats(graph)
         @test outputs[Symbol("reconstruction-pixels")].shape==(4,6)
         @test Ext.calibration_measurements(frontend,outputs,Symbol("reconstruction-pixels"),nothing)===nothing
@@ -65,8 +112,8 @@ end
         @test held == (woofer=Float32[0,0],tiptilt=Float32[.1,.2,.3])
         reference.tiptilt[1]=.8
         @test held.tiptilt[1]==.1f0
-        @test Ext.calibration_named_commands(commands)
-        @test !Ext.calibration_named_commands(woofer)
+        @test commands isa Ext.NamedGraphProjections
+        @test woofer isa Ext.GraphProjection
         @test Ext.calibration_descriptors(woofer,commands)==(woofer,woofer,tiptilt)
         for (supplied,figures,selected) in ((commands,reference,nothing), (commands,reference,:missing),
                 ((;woofer),reference,:woofer), (commands,(woofer=reference.woofer,),:woofer),
@@ -89,6 +136,51 @@ end
         @test_throws ErrorException Ext.calibration_feedback(figures,actual,map(x->zero(x),figures))
         @test_throws ErrorException Ext.calibration_feedback(figures,actual,(woofer=feedback.woofer,))
         @test Ext.calibration_feedback(Float32[2],Float32[1],Float32[1])
+
+        @test Ext.require_command_projections(woofer) === woofer
+        @test Ext.require_command_projections(commands) === commands
+        @test_throws ArgumentError Ext.require_command_projections((graph=woofer.graph,source_graph_sha256="test"))
+        @test_throws ArgumentError Ext.require_command_projections((woofer=woofer,tiptilt=tiptilt.graph))
+        @test Ext.calibration_descriptors(nothing,nothing) === (nothing,nothing)
+        @test Ext.calibration_descriptors(woofer,nothing) === (woofer,nothing)
+        @test Ext.calibration_descriptors(nothing,commands) === (nothing,woofer,tiptilt)
+        @test Ext.command_source_names(woofer,"test") == "test.command"
+        @test Ext.command_source_names(commands,"test") == (woofer="test.command.woofer",tiptilt="test.command.tiptilt")
+        @test Ext.command_graph_names(woofer,"graph") == "graph.pdm"
+        @test Ext.command_graph_names(commands,"graph") == (woofer="graph.woofer",tiptilt="graph.tiptilt")
+        @test Ext.prepared_commands(woofer,(tiptilt,woofer)) === woofer
+        @test Ext.prepared_commands(commands,(woofer,tiptilt,woofer)) === (woofer=tiptilt,tiptilt=woofer)
+        scalar_reference=Float32[.2,.4]
+        scalar_copy=Ext.probe_reference(woofer,scalar_reference,nothing,nothing)
+        @test scalar_copy == scalar_reference && scalar_copy !== scalar_reference
+        selected_copy=Ext.probe_reference(commands,reference,held,:tiptilt)
+        @test selected_copy == held.tiptilt && selected_copy !== held.tiptilt
+        @test Ext.probe_figures(nothing,nothing,scalar_reference) === scalar_reference
+        staged=Ext.probe_figures(held,:woofer,scalar_reference)
+        @test staged.woofer === scalar_reference && staged.tiptilt === held.tiptilt
+        actual_copy=Ext.copy_figures(staged)
+        @test actual_copy == staged && actual_copy.woofer !== staged.woofer && actual_copy.tiptilt !== staged.tiptilt
+        @test Ext.probe_figure(actual_copy,:woofer) === actual_copy.woofer
+        @test Ext.probe_figure(scalar_copy,nothing) === scalar_copy
+        @test Ext.require_capture_profile(woofer,(document=Dict("id"=>"revolt-classic"),)) === nothing
+        @test_throws ArgumentError Ext.require_capture_profile(commands,(document=Dict("id"=>"revolt-classic"),))
+        @test_throws ArgumentError Ext.require_capture_profile(woofer,(document=Dict("id"=>"other"),))
+        provenance=Dict(:requested=>Dict("sha256"=>"prepared"))
+        prepared=Ext.GraphProjection(woofer;provenance)
+        @test !ismutabletype(typeof(prepared))
+        for field in (:graph,:document,:bindings,:parameters,:source_graph_sha256,:parameter_sources,:parameter_sha256)
+            @test getproperty(prepared,field) === getproperty(woofer,field)
+        end
+        @test prepared.provenance === provenance && woofer.provenance === nothing
+
+        precedence = try
+            Ext.calibration_commands(commands,(woofer=Float32[0,0],),:missing,options)
+            nothing
+        catch error
+            error
+        end
+        @test precedence isa ArgumentError
+        @test occursin("projections and references must match",sprint(showerror,precedence))
     finally
         FilterGraphIsland.close_execution(woofer.graph)
         FilterGraphIsland.close_execution(tiptilt.graph)

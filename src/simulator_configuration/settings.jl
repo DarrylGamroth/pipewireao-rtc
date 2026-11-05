@@ -124,6 +124,15 @@ function selected_session(session_id)
     end
 end
 
+"""
+    describe(session_id)
+
+Inspect the selected managed RTC session's simulator startup settings using
+its pinned application environment. Returns the declared package, current
+settings and schema, plus `session_id` and `configuration_sha256`; version-3
+applications also include their selected graph. This is a cold description,
+not a readiness check and does not prepare or replace the running simulator.
+"""
 function describe(session_id::AbstractString)
     selected = selected_session(session_id)
     result = scientific_description(selected.application, selected.prefix, selected.relative)

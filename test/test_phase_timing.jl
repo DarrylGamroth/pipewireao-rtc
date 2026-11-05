@@ -3,7 +3,7 @@ using PipeWireAORTC
 
 module PhaseTimingTestHost
 const Common = Main.PipeWireAORTC.Common
-Base.include(@__MODULE__, joinpath(@__DIR__, "../src/owners/phase_timing.jl"))
+Base.include(@__MODULE__, joinpath(@__DIR__, "../src/diagnostics/phase_timing.jl"))
 end
 
 const PhaseTiming = PhaseTimingTestHost.PhaseTiming

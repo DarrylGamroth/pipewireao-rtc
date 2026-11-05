@@ -24,7 +24,10 @@ function Calibration.calibration_graph(application::CleanupApplication;
     application.preparations[] += 1
     application.preparations[] == 4 && error("final command projection preparation failed")
     name = (:frontend, :woofer, :tweeter)[application.preparations[]]
-    return (; graph=CleanupGraph(application, name))
+    return Ext.GraphProjection(CleanupGraph(application, name); document=Dict(),
+        bindings=PipeWireAORTC.GraphOwner.FITSBinding[], parameters=Dict{Symbol,Array}(),
+        source_graph_sha256="test", parameter_sources=Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(),
+        parameter_sha256=Dict{Symbol,String}())
 end
 
 JuliaFilterGraph.output_formats(::CleanupGraph) = (;slopes=(;shape=(1,)))

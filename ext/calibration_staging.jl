@@ -88,7 +88,7 @@ function Calibration.stage_calibration(source, application, calibration, destina
             configuration["controller"]["command_count"]=pop!(dimensions,"controller_command_count")
             for (name,value) in dimensions
                 original=get(configuration["dimensions"],name,nothing)
-                original isa AbstractDict && haskey(original,"\$ref") && continue
+                preserve_calibration_dimension(original) && continue
                 configuration["dimensions"][name]=value
             end
         end
@@ -152,3 +152,6 @@ function Calibration.stage_calibration(source, application, calibration, destina
         C.sha256_file(joinpath(destination, "calibration", "result.yaml")))
     return destination
 end
+
+preserve_calibration_dimension(original::AbstractDict) = haskey(original,"\$ref")
+preserve_calibration_dimension(original) = false

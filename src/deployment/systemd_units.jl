@@ -1,3 +1,26 @@
+_ordering_name(value) = fail("service ordering dependencies must be unit names")
+_ordering_name(::AbstractString) = nothing
+_owner_command(argv) = fail("owner command has an invalid executable or argument")
+function _owner_command(argv::AbstractVector)
+    !isempty(argv) || fail("owner command has an invalid executable or argument")
+    foreach(_owner_argument,argv)
+    !isempty(argv[1]) || fail("owner command has an invalid executable or argument")
+    return nothing
+end
+_owner_argument(value) = fail("owner command has an invalid executable or argument")
+_owner_argument(value::AbstractString) = !occursin('\0',value) || fail("owner command has an invalid executable or argument")
+_owner_environment(key,value) = fail("invalid owner environment")
+_owner_environment(key::AbstractString,value::AbstractString) = occursin(r"^[A-Za-z_][A-Za-z0-9_]*$",key) &&
+    !occursin('\0',value) || fail("invalid owner environment")
+_cohort_units(units) = fail("cohort must name generated owner service units")
+function _cohort_units(units::AbstractVector)
+    !isempty(units) || fail("cohort must name generated owner service units")
+    foreach(_cohort_name,units)
+    return nothing
+end
+_cohort_name(value) = fail("cohort must name generated owner service units")
+_cohort_name(::AbstractString) = nothing
+
 """Quote one systemd unit-file argument as a double-quoted literal."""
 function unit_argument(value::AbstractString)
     occursin('\0', value) && fail("systemd unit argument contains NUL")
@@ -26,15 +49,16 @@ function unit_argument(value::AbstractString)
     return String(take!(io))
 end
 
-function _unit_name(value, description)
-    value isa AbstractString && occursin(r"^[A-Za-z0-9_.@:-]+\.service$", value) ||
+_unit_name(value, description) = fail("invalid $description service unit name")
+function _unit_name(value::AbstractString, description)
+    occursin(r"^[A-Za-z0-9_.@:-]+\.service$", value) ||
         fail("invalid $description service unit name")
     return String(value)
 end
 
-function _after_units(after)
-    after isa AbstractVector && all(value -> value isa AbstractString, after) ||
-        fail("service ordering dependencies must be unit names")
+_after_units(after) = fail("service ordering dependencies must be unit names")
+function _after_units(after::AbstractVector)
+    foreach(_ordering_name,after)
     names = String[_unit_name(value, "ordering dependency") for value in after]
     length(unique(names)) == length(names) || fail("duplicate service ordering dependency")
     return names
@@ -47,9 +71,7 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
     unit = _unit_name(service.unit, "owner")
     unit == PREFIX * valid_invocation(service.coordinator.invocation) * "-" *
         service.role * ".service" || fail("owner service name differs from its invocation and role")
-    argv isa AbstractVector && !isempty(argv) &&
-        all(value -> value isa AbstractString && !occursin('\0', value), argv) &&
-        !isempty(argv[1]) || fail("owner command has an invalid executable or argument")
+    _owner_command(argv)
     isabspath(String(argv[1])) || fail("owner executable must be absolute")
     isabspath(String(cwd)) && isdir(cwd) ||
         fail("owner working directory must exist and be absolute")
@@ -59,9 +81,7 @@ function service_unit(service::Service, argv, env, cwd, placement; after=String[
 
     environment = Dict{String,String}()
     for (key, value) in pairs(env)
-        key isa AbstractString && occursin(r"^[A-Za-z_][A-Za-z0-9_]*$", key) &&
-            value isa AbstractString && !occursin('\0', value) ||
-            fail("invalid owner environment")
+        _owner_environment(key,value)
         environment[String(key)] = String(value)
     end
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
@@ -97,9 +117,7 @@ end
 """Render one cohort target ordered after its exact generated owner units."""
 function cohort_unit(invocation, units)
     id = valid_invocation(invocation)
-    units isa AbstractVector && !isempty(units) &&
-        all(value -> value isa AbstractString, units) ||
-        fail("cohort must name generated owner service units")
+    _cohort_units(units)
     names = String[_unit_name(value, "cohort owner") for value in units]
     length(unique(names)) == length(names) || fail("duplicate cohort owner service unit")
     prefix = PREFIX * id * "-"

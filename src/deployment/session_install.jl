@@ -33,19 +33,22 @@ function required_assets(package)
     return runtime
 end
 
+_installed_source_owner(value) = throw(ArgumentError("new session install requires a declared held source owner"))
+_installed_source_owner(::String) = nothing
+_installed_session_cpu(cpu) = throw(ArgumentError("RTC CPU placement must exclude CPU 0 and 1"))
+_installed_session_cpu(cpu::Int) = cpu >= 2 || throw(ArgumentError("RTC CPU placement must exclude CPU 0 and 1"))
+
 function session_spec(package, prefix)
     spec = D.profile(joinpath(package, "deployment.conf"), prefix)
     spec["cpu-latency-us"] === nothing ||
         throw(ArgumentError("headless RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null"))
-    get(spec, "source-owner", nothing) isa String ||
-        throw(ArgumentError("new session install requires a declared held source owner"))
+    _installed_source_owner(get(spec,"source-owner",nothing))
     haskey(spec, "node-owners") ||
         throw(ArgumentError("new session install requires exact node-owners in deployment.conf"))
     haskey(spec, "session-runtime") ||
         throw(ArgumentError("new session install requires a packaged headless RTC executable"))
     placement = spec["placement"]["session"]
-    all(cpu -> cpu isa Int && cpu >= 2, placement["cpus"]) ||
-        throw(ArgumentError("RTC CPU placement must exclude CPU 0 and 1"))
+    foreach(_installed_session_cpu,placement["cpus"])
     return spec
 end
 

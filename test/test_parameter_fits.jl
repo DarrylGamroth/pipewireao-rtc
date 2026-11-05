@@ -1,6 +1,6 @@
 using Test, PipeWireAORTC, FITSIO, JSON, SHA
 
-const Parameters = PipeWireAORTC.NativeParameterSource
+const Parameters = PipeWireAORTC.ParameterSource
 
 @testset "FITS sparse parameter preload and legacy compatibility" begin
     mktempdir() do directory

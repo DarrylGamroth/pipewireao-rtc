@@ -14,14 +14,34 @@ public Config, Endpoint, LinkSpec, configuration, main
 const D = DeploymentConfiguration
 const S = SystemdOwners
 
+"""
+    Endpoint(node, port)
+
+An exact graph node name and port name used in analysis link declarations.
+"""
 struct Endpoint
     node::String
     port::String
 end
+"""
+    LinkSpec(output, input)
+
+An output-to-input link between two [`Endpoint`](@ref) values.
+"""
 struct LinkSpec
     output::Endpoint
     input::Endpoint
 end
+"""
+    Config(graph, name, rate, links, channel_units, capture, fits_bindings)
+
+Resolved optional analysis graph configuration.
+
+`graph` and `fits_bindings`, when present, are absolute paths resolved from the
+configuration file. `rate` is the declared positive rate as a reduced rational.
+Instances returned by [`configuration`](@ref) have already passed deployment
+analysis declaration validation.
+"""
 struct Config
     graph::String
     name::String
@@ -37,17 +57,16 @@ Config(graph, name, rate, links) = Config(graph, name, rate, links,
 Config(graph, name, rate, links, units) = Config(graph, name, rate, links, units, nothing)
 Config(graph, name, rate, links, units, capture) = Config(graph, name, rate, links, units, capture, nothing)
 
-function channel_units(value)
-    value isa AbstractDict && length(value) <= 64 ||
+channel_units(value) = throw(ArgumentError("analysis channel-units must map at most 64 output Ports"))
+function channel_units(value::AbstractDict)
+    length(value) <= 64 ||
         throw(ArgumentError("analysis channel-units must map at most 64 output Ports"))
     result = Dict{String,Dict{String,String}}()
     bytes = 0
-    text(value) = value isa String && isvalid(value) && !isempty(strip(value)) &&
-        ncodeunits(value) <= 255 && !any(iscntrl, value)
+    text = channel_unit_text
     for (port, channels) in value
         text(port) || throw(ArgumentError("invalid analysis channel-units Port"))
-        channels isa AbstractDict && length(channels) <= 64 ||
-            throw(ArgumentError("analysis channel-units must map at most 64 channel names per Port"))
+        channel_unit_channels(channels)
         units = Dict{String,String}()
         bytes += ncodeunits(port)
         for (name, unit) in channels
@@ -62,8 +81,9 @@ function channel_units(value)
     return result
 end
 
-function endpoint(value)
-    value isa String && ncodeunits(value) <= 257 ||
+endpoint(value) = throw(ArgumentError("analysis endpoint must be a bounded node:port string"))
+function endpoint(value::String)
+    ncodeunits(value) <= 257 ||
         throw(ArgumentError("analysis endpoint must be a bounded node:port string"))
     terms = split(value, ':'; keepempty=true)
     length(terms) == 2 && all(term -> occursin(r"^[A-Za-z0-9_.-]{1,128}$", term), terms) ||
@@ -71,28 +91,35 @@ function endpoint(value)
     return Endpoint(String(terms[1]), String(terms[2]))
 end
 
+"""
+    configuration(path, prefix)
+
+Read and validate an optional analysis configuration and its referenced assets.
+`prefix` selects the PipeWireAO native installation used to decode native
+configuration. Returns a [`Config`](@ref); paths are resolved relative to
+`path`. This validates the configuration only and does not start the graph.
+"""
 function configuration(path::AbstractString, prefix::AbstractString)
-    document = D.decode(path, prefix)
+    return configuration(path, prefix, D.decode(path, prefix))
+end
+configuration(path, prefix, document) = throw(ArgumentError("analysis requires graph, name, rate and links; channel-units, capture and fits-bindings are optional"))
+function configuration(path, prefix, document::AbstractDict)
     required = Set(["graph", "name", "rate", "links"])
-    document isa AbstractDict && required ⊆ Set(keys(document)) &&
+    required ⊆ Set(keys(document)) &&
         Set(keys(document)) ⊆ union(required, Set(["channel-units", "capture", "fits-bindings"])) ||
         throw(ArgumentError("analysis requires graph, name, rate and links; channel-units, capture and fits-bindings are optional"))
     graph = D.relative_asset(dirname(abspath(path)), document["graph"])
     name = document["name"]
-    name isa String && occursin(r"^[A-Za-z0-9_.-]{1,128}$", name) ||
-        throw(ArgumentError("analysis name must be a bounded public node name"))
+    analysis_name(name)
     rate = document["rate"]
-    rate isa String && occursin(r"^[1-9][0-9]{0,8}/[1-9][0-9]{0,8}$", rate) ||
-        throw(ArgumentError("analysis rate must be a positive bounded numerator/denominator"))
+    analysis_rate(rate)
     numerator, denominator = parse.(Int, split(rate, '/'))
     entries = document["links"]
-    entries isa AbstractVector && length(entries) <= 64 ||
-        throw(ArgumentError("analysis links must be a list of at most 64 links"))
+    analysis_links(entries)
     links = LinkSpec[]
     addresses = Set{Tuple{String,String}}()
     for entry in entries
-        entry isa AbstractDict && Set(keys(entry)) == Set(["output", "input"]) ||
-            throw(ArgumentError("analysis link requires only output and input"))
+        analysis_link(entry)
         output, input = endpoint(entry["output"]), endpoint(entry["input"])
         xor(output.node == name, input.node == name) ||
             throw(ArgumentError("each analysis link must touch the analysis node exactly once"))
@@ -115,37 +142,14 @@ function observation_queues(spec, root, prefix)
     sources, sinks = Set{String}(), Set{String}()
     playback_by_capture = Dict{String,String}()
     for declaration in get(core, "context.modules", [])
-        declaration isa AbstractDict && get(declaration, "name", nothing) == "libpipewire-module-queue" || continue
-        args = get(declaration, "args", nothing)
-        args isa AbstractDict || continue
-        capture, playback = get(args,"capture.props",nothing), get(args,"playback.props",nothing)
-        capture isa AbstractDict && playback isa AbstractDict || continue
-        # Native queue policy is selected from module arguments, not endpoint
-        # metadata. An endpoint must not make a retaining queue look like a copy.
-        maximum = get(args, "queue.max-buffers", nothing)
-        get(args, "queue.storage", nothing) == "copy" &&
-            get(args, "queue.overflow", nothing) == "drop-oldest" &&
-            ((typeof(maximum) === Int && maximum == 1) || maximum == "1") || continue
-        all((capture,playback)) do props
-            maximum = get(props,"queue.max-buffers",get(args,"queue.max-buffers",nothing))
-            get(props,"queue.storage",get(args,"queue.storage",nothing)) == "copy" &&
-                get(props,"queue.overflow",get(args,"queue.overflow",nothing)) == "drop-oldest" &&
-                ((typeof(maximum) === Int && maximum == 1) || (maximum isa String && maximum == "1"))
-        end || continue
-        source, sink = get(playback,"node.name",nothing), get(capture,"node.name",nothing)
-        source isa String && sink isa String || continue
-        source in sources || sink in sinks ? D.fail("ambiguous analysis observation queue node") : nothing
-        push!(sources,source)
-        push!(sinks,sink)
-        playback_by_capture[sink] = source
+        observation_queue!(sources, sinks, playback_by_capture, declaration)
     end
     return sources, sinks, playback_by_capture
 end
 
 function validate_deployment(spec, path, prefix)
     entries = get(spec, "analysis", [])
-    entries isa AbstractVector && length(entries) <= 8 ||
-        D.fail("deployment analysis must be a list of at most eight entries")
+    deployment_analysis_entries(entries)
     isempty(entries) && return nothing
     names, nodes = Set{String}(), Set{String}()
     output_captures = Set{String}()
@@ -164,29 +168,23 @@ function validate_deployment(spec, path, prefix)
         push!(required_outputs,endpoint(link["output"]).node)
     end
     client = get(get(spec, "client", Dict()), "analysis", nothing)
-    client isa String && haskey(artifacts, client) || D.fail("analysis requires a sealed client.analysis configuration")
+    analysis_client(client, artifacts)
     client_config = D.decode(D.relative_asset(root, client), prefix)
     for declaration in get(client_config, "context.modules", [])
-        declaration isa AbstractDict && get(declaration,"name",nothing) == "libpipewire-module-rt" &&
-            D.fail("analysis client must not load the realtime module")
+        validate_analysis_client_module(declaration)
     end
     for loop in get(get(client_config,"context.properties",Dict()),"context.data-loops",[])
         get(loop,"loop.rt-prio",0) in (0,"0") || D.fail("analysis client loops must use ordinary scheduling")
     end
     for entry in entries
-        entry isa AbstractDict && Set(keys(entry)) == Set(["name", "config", "cpus"]) ||
-            D.fail("analysis entry requires only name, config and cpus")
+        deployment_analysis_entry(entry)
         name = entry["name"]
-        name isa String && occursin(r"^[a-z][a-z0-9-]{0,22}$", name) && !(name in names) ||
-            D.fail("analysis name must be unique and fit its analysis- service role")
+        analysis_service_name(name, names)
         ("analysis-" * name) in keys(spec["placement"]) &&
             D.fail("analysis service role conflicts with a required owner")
         push!(names, name)
         cpus = entry["cpus"]
-        cpus isa AbstractVector && 1 <= length(cpus) <= 128 &&
-            all(cpu -> typeof(cpu) === Int && cpu >= 2, cpus) &&
-            length(unique(cpus)) == length(cpus) && isempty(intersect(occupied, cpus)) ||
-            D.fail("analysis CPUs must be unique, exclude CPUs 0/1 and required process envelopes")
+        analysis_cpus(cpus, occupied)
         source = D.relative_asset(root, entry["config"])
         haskey(artifacts, entry["config"]) || D.fail("analysis configuration must be sealed")
         config = configuration(source, prefix)
@@ -242,6 +240,14 @@ end
 function run_graph end
 function prepare_graph end
 
+"""
+    main(args=ARGS)
+
+Run one optional analysis graph using `--config PATH --remote ABSOLUTE_SOCKET`.
+The native prefix comes from `PIPEWIREAO_PREFIX` or defaults to
+`/opt/pipewireao`. Returns exit code `0` after graph execution completes;
+invalid arguments, configuration errors, or graph failures throw.
+"""
 function main(args=ARGS)
     path, remote = arguments(args)
     config = configuration(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
@@ -463,7 +469,7 @@ function cleanup!(runtime, launch_record, deadline)
                 service.start_ticks = UInt64(item["start-ticks"])
                 service.invocation = retained_id
                 service.cgroup = item["cgroup"]
-                service.state = :running
+                S.running!(service)
                 S.stop!(service,0)
             else
                 S.cleanup_unit(unit;deadline)
@@ -481,6 +487,114 @@ function cleanup!(runtime, launch_record, deadline)
         save_receipt!(runtime, receipt)
         return nothing
     end
+end
+
+channel_unit_text(value::String) = isvalid(value) && !isempty(strip(value)) && ncodeunits(value) <= 255 && !any(iscntrl, value)
+channel_unit_text(value) = false
+
+channel_unit_channels(value) = throw(ArgumentError("analysis channel-units must map at most 64 channel names per Port"))
+function channel_unit_channels(value::AbstractDict)
+    length(value) <= 64 || return channel_unit_channels(nothing)
+    return value
+end
+
+analysis_name(value) = throw(ArgumentError("analysis name must be a bounded public node name"))
+function analysis_name(value::String)
+    occursin(r"^[A-Za-z0-9_.-]{1,128}$", value) || return analysis_name(nothing)
+    return value
+end
+
+analysis_rate(value) = throw(ArgumentError("analysis rate must be a positive bounded numerator/denominator"))
+function analysis_rate(value::String)
+    occursin(r"^[1-9][0-9]{0,8}/[1-9][0-9]{0,8}$", value) || return analysis_rate(nothing)
+    return value
+end
+
+analysis_links(value) = throw(ArgumentError("analysis links must be a list of at most 64 links"))
+function analysis_links(value::AbstractVector)
+    length(value) <= 64 || return analysis_links(nothing)
+    return value
+end
+
+analysis_link(value) = throw(ArgumentError("analysis link requires only output and input"))
+function analysis_link(value::AbstractDict)
+    Set(keys(value)) == Set(["output", "input"]) || return analysis_link(nothing)
+    return value
+end
+
+observation_queue!(sources, sinks, playback_by_capture, declaration) = nothing
+function observation_queue!(sources, sinks, playback_by_capture, declaration::AbstractDict)
+    get(declaration, "name", nothing) == "libpipewire-module-queue" || return nothing
+    observation_queue_args!(sources, sinks, playback_by_capture, get(declaration, "args", nothing))
+end
+observation_queue_args!(sources, sinks, playback_by_capture, args) = nothing
+function observation_queue_args!(sources, sinks, playback_by_capture, args::AbstractDict)
+    capture, playback = get(args,"capture.props",nothing), get(args,"playback.props",nothing)
+    return observation_queue_props!(sources, sinks, playback_by_capture, args, capture, playback)
+end
+observation_queue_props!(sources, sinks, playback_by_capture, args, capture, playback) = nothing
+function observation_queue_props!(sources, sinks, playback_by_capture, args, capture::AbstractDict, playback::AbstractDict)
+    # Queue policy belongs to module arguments; endpoint properties cannot turn retention into copying.
+    maximum = get(args, "queue.max-buffers", nothing)
+    get(args, "queue.storage", nothing) == "copy" &&
+        get(args, "queue.overflow", nothing) == "drop-oldest" &&
+        ((typeof(maximum) === Int && maximum == 1) || maximum == "1") || return nothing
+    all((capture,playback)) do props
+        maximum = get(props,"queue.max-buffers",get(args,"queue.max-buffers",nothing))
+        get(props,"queue.storage",get(args,"queue.storage",nothing)) == "copy" &&
+            get(props,"queue.overflow",get(args,"queue.overflow",nothing)) == "drop-oldest" &&
+            observation_queue_capacity(maximum)
+    end || return nothing
+    return observation_queue_nodes!(sources, sinks, playback_by_capture,
+        get(playback,"node.name",nothing), get(capture,"node.name",nothing))
+end
+observation_queue_capacity(value::Int) = value == 1
+observation_queue_capacity(value::String) = value == "1"
+observation_queue_capacity(value) = false
+observation_queue_nodes!(sources, sinks, playback_by_capture, source, sink) = nothing
+function observation_queue_nodes!(sources, sinks, playback_by_capture, source::String, sink::String)
+    source in sources || sink in sinks ? D.fail("ambiguous analysis observation queue node") : nothing
+    push!(sources,source)
+    push!(sinks,sink)
+    playback_by_capture[sink] = source
+    return nothing
+end
+
+
+deployment_analysis_entries(value) = D.fail("deployment analysis must be a list of at most eight entries")
+function deployment_analysis_entries(value::AbstractVector)
+    length(value) <= 8 || return deployment_analysis_entries(nothing)
+    return value
+end
+
+analysis_client(value, artifacts) = D.fail("analysis requires a sealed client.analysis configuration")
+function analysis_client(value::String, artifacts)
+    haskey(artifacts, value) || return analysis_client(nothing, artifacts)
+    return value
+end
+
+validate_analysis_client_module(declaration) = nothing
+function validate_analysis_client_module(declaration::AbstractDict)
+    get(declaration,"name",nothing) == "libpipewire-module-rt" && D.fail("analysis client must not load the realtime module")
+    return nothing
+end
+
+deployment_analysis_entry(value) = D.fail("analysis entry requires only name, config and cpus")
+function deployment_analysis_entry(value::AbstractDict)
+    Set(keys(value)) == Set(["name", "config", "cpus"]) || return deployment_analysis_entry(nothing)
+    return value
+end
+
+analysis_service_name(value, names) = D.fail("analysis name must be unique and fit its analysis- service role")
+function analysis_service_name(value::String, names)
+    occursin(r"^[a-z][a-z0-9-]{0,22}$", value) && !(value in names) || return analysis_service_name(nothing, names)
+    return value
+end
+
+analysis_cpus(value, occupied) = D.fail("analysis CPUs must be unique, exclude CPUs 0/1 and required process envelopes")
+function analysis_cpus(value::AbstractVector, occupied)
+    1 <= length(value) <= 128 && all(cpu -> typeof(cpu) === Int && cpu >= 2, value) && length(unique(value)) == length(value) && isempty(intersect(occupied, value)) || return analysis_cpus(nothing, occupied)
+    return value
 end
 
 end

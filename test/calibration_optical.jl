@@ -195,6 +195,20 @@ end
         pixel_masks=(llowfs=mask,scc=trues(3,4)),centroid_measurements=(:llowfs,),
         poke_m=.01f0,tsvd_rtol=1f-5,derivative_tolerance=.001,reconstruction_tolerance=.001)
     branch = calibration.branches.llowfs
+    @test branch.measurement_kind === implementation.CenterOfGravity()
+    @test calibration.branches.scc.measurement_kind === implementation.SelectedPixels()
+    @test calibration.command_coordinates === implementation.PhysicalCommandCoordinates()
+    @test implementation.optical_measurement_count(branch.measurement_kind,branch) == 2
+    # Extra diagnostic fields cannot change a prepared selected-pixel branch's
+    # algorithm, identity fields or admission to centroid-only nulling.
+    pixel = merge(calibration.branches.scc,(coordinates=zeros(Float32,12,2),reference_centroid=zeros(Float32,2)))
+    @test implementation.optical_measurement(pixel.reference,pixel) == implementation.optical_pixels(pixel.reference,pixel.mask)
+    @test implementation.optical_measurement_count(pixel.measurement_kind,pixel) == 12
+    diagnostic_branches = merge(calibration.branches,(scc=pixel,))
+    @test implementation.optical_identity(calibration.projection,calibration.physical_to_modes,diagnostic_branches) ==
+        implementation.optical_identity(calibration.projection,calibration.physical_to_modes,calibration.branches)
+    @test_throws ArgumentError("measurement nulling requires a centroid branch") implementation.optical_nulling_projection(
+        merge(calibration,(branches=diagnostic_branches,)),:scc;tsvd_rtol=1f-5)
     @test calibration.report["status"] == "accepted"
     @test size(branch.reconstructor) == (10,2)
     @test branch.retained_rank == 2

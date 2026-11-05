@@ -7,10 +7,10 @@ function source_dump(; running=true, run_token=4, snapshot_token=5, sequence=9)
         "control-protocol" => "pipewireao.source-control/1")
     owner = Dict("pid" => 42, "control-node" => "simulator-wfs",
         "control-protocol" => "pipewireao.source-control/1")
-    values = PipeWireAORTC.NativeSourceControl.snapshot_values(Int64(101), Int32(3),
+    values = PipeWireAORTC.SourceControl.snapshot_values(Int64(101), Int32(3),
         Int64(snapshot_token), Int32(0), Int64(1), Int64(sequence), running, false, Int64(1), Int64(0))
     snapshot = Any[]
-    for (name, value) in zip(PipeWireAORTC.NativeSourceControl.SNAPSHOT_NAMES, values)
+    for (name, value) in zip(PipeWireAORTC.SourceControl.SNAPSHOT_NAMES, values)
         push!(snapshot, name, value)
     end
     run = Any["pipewireao.run-control.version", 1, "pipewireao.run-control.completed-token", run_token,

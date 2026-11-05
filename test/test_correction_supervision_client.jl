@@ -2,9 +2,9 @@ module CorrectionSupervisionClientTests
 using Test, PipeWireAORTC
 const CS = PipeWireAORTC.CorrectionSupervision
 const CR = PipeWireAORTC.CorrectionRecovery
-const Runner = PipeWireAORTC.NativeRunnerCodec
-const Envelope = PipeWireAORTC.NativeControlCodec
-const Native = PipeWireAORTC.NativeControlClient
+const Runner = PipeWireAORTC.RunnerCodec
+const Envelope = PipeWireAORTC.ControlCodec
+const ControlClient = PipeWireAORTC.ControlClient
 include("helpers/correction_recovery_transport.jl")
 
 # Add owner-produced supervision Props to the existing recovery model. The
@@ -135,7 +135,7 @@ end
         @test c.state === :Unverified
         @test isempty(t.recovery.writes)
         reads = t.property_reads
-        @test_throws Native.UnknownOutcome poll!(c)
+        @test_throws ControlClient.UnknownOutcome poll!(c)
         @test t.property_reads == reads # No retry, read, or effect after refusal.
     end
     for unavailable_state in ("Unknown", "Disabled")
@@ -212,12 +212,12 @@ end
     t = SupervisionTransport(;action="restore_reference",mode=:expired_trigger)
     set_status!(t, :left, "max-gap-ns", "1000000")
     c = client(t)
-    @test_throws Native.UnknownOutcome poll!(c)
+    @test_throws ControlClient.UnknownOutcome poll!(c)
     @test c.state === :Unverified
     @test t.recovery.now_ns < 2_000_000_000
     @test isempty(t.recovery.writes)
     reads = (t.property_reads,t.recovery.token)
-    @test_throws Native.UnknownOutcome poll!(c)
+    @test_throws ControlClient.UnknownOutcome poll!(c)
     @test (t.property_reads,t.recovery.token) == reads
 
     # Normal preflight submits while evidence is fresh, and reference arrival
@@ -234,12 +234,12 @@ end
     t = SupervisionTransport(; action="restore_reference")
     t.replace_before_recovery = true
     c = client(t)
-    @test_throws Native.UnknownOutcome poll!(c)
+    @test_throws ControlClient.UnknownOutcome poll!(c)
     @test c.state === :Unverified
     @test t.property_reads == 2 && isempty(t.recovery.writes)
     # Test the recovery admission fence independently of supervision parsing.
     base = ScriptedTransport()
-    @test_throws Native.UnknownOutcome CR.protective_open!(base, "science";
+    @test_throws ControlClient.UnknownOutcome CR.protective_open!(base, "science";
         deadline=2.0, expected_owner=base.owner+1)
     @test isempty(base.writes)
 
@@ -248,7 +248,7 @@ end
     poll!(c)
     t.recovery.owner += 1
     t.properties[CS.OBSERVATION_PREFIX * "owner-instance"] = scalar(t.recovery.owner)
-    @test_throws Native.UnknownOutcome poll!(c)
+    @test_throws ControlClient.UnknownOutcome poll!(c)
     @test c.state === :Unverified && isempty(t.recovery.writes)
 end
 
@@ -262,7 +262,7 @@ end
         @test isempty(writes(t.recovery, "correction:closed"))
         @test isempty(writes(t.recovery, "pipewireao-recovery:release-token"))
         before = (t.property_reads,length(t.recovery.writes),t.recovery.token)
-        @test_throws Native.UnknownOutcome poll!(c)
+        @test_throws ControlClient.UnknownOutcome poll!(c)
         @test before == (t.property_reads,length(t.recovery.writes),t.recovery.token)
     end
 end

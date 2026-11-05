@@ -219,7 +219,7 @@ if application !== nothing
     end
 end
 if application !== nothing && get(ENV,"PIPEWIREAORTC_PYRAMID_REFERENCE_LIVE","false") == "true"
-    include("native_control_private_core.jl")
+    include("control_private_core.jl")
     @testset "GPI pyramid candidate acquisition on a caller-owned private core" begin
         Threads.nthreads(:default) >= 6 || error("run the GPI selector with --threads=6 or higher")
         before = Ext.reference_application_hashes(application)

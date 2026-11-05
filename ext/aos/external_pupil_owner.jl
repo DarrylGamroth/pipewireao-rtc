@@ -1,7 +1,7 @@
 # Managed external-pupil optics use the ordinary AOS exposure owner and native
 # bootstrap/source controls. No controller or mirror lives in this owner.
 module ExternalPupilOwner
-using ..PipeWireAORTCAOSExt: Owner, Bootstrap, SourceControl, Backends, target, OwnerState, execution_properties
+using ..PipeWireAORTCAOSExt: owner_cancelled, Owner, Bootstrap, SourceControl, Backends, target, OwnerState, execution_properties
 using PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
@@ -210,8 +210,7 @@ function sensor_sequence(metadata, chopped::Bool)
     # clock. The wire identity records the observed window ordinal so missing
     # whole windows cannot appear adjacent. Optical phase is never inferred here.
     pts, duration = metadata.pts, metadata.duration
-    pts isa Int64 && pts >= 0 && duration isa UInt64 && 0 < duration <= typemax(Int64) &&
-        UInt64(pts) % duration == 0 || throw(ArgumentError("chopped exposure must occupy an aligned nonnegative model-time window"))
+    validate_chopped_window(pts, duration)
     return Base.checked_add(div(UInt64(pts), duration), UInt64(1))
 end
 
@@ -523,7 +522,7 @@ function Owner.run_external_pupil_owner(options)
             run_streams!(options,science,mailbox,state,execution,owner,ticket)
         end
     catch error
-        if !(error isa InterruptException && Bootstrap.clean_cancel(runtime))
+        if !(owner_cancelled(error,runtime))
             @error "Optical owner failed" exception=(error,catch_backtrace())
             push!(failures,error)
             Bootstrap.fault!(runtime,error)
@@ -536,4 +535,10 @@ function Owner.run_external_pupil_owner(options)
     isempty(failures) || throw(length(failures)==1 ? only(failures) : CompositeException(failures))
     return nothing
 end
+function validate_chopped_window(pts::Int64, duration::UInt64)
+    pts >= 0 && 0 < duration <= typemax(Int64) && UInt64(pts) % duration == 0 || throw(ArgumentError("chopped exposure must occupy an aligned nonnegative model-time window"))
+    return nothing
+end
+validate_chopped_window(pts, duration) = throw(ArgumentError("chopped exposure must occupy an aligned nonnegative model-time window"))
+
 end

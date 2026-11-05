@@ -52,14 +52,13 @@ function validate_optical_centroid_graph(graph, name, measurement)
 end
 
 # Resolve retained optical controller templates only after acquiring real matrices.
-function validate_optical_graphs(graphs, contexts, names)
-    graphs isa NamedTuple && contexts isa NamedTuple && keys(graphs) == keys(contexts) == names ||
+validate_optical_graphs(graphs, contexts, names) = throw(ArgumentError("concrete graphs and contexts must name every recipe branch in order"))
+function validate_optical_graphs(graphs::NamedTuple, contexts::NamedTuple, names)
+    keys(graphs) == keys(contexts) == names ||
         throw(ArgumentError("concrete graphs and contexts must name every recipe branch in order"))
-    all(context -> context isa AbstractDict,contexts) || throw(ArgumentError("optical branch contexts must be mappings"))
+    foreach(validate_optical_context,contexts)
     for graph in graphs
-        graph isa AbstractDict && haskey(graph,"filter.graph") &&
-            !isempty(get(graph["filter.graph"],"nodes",[])) ||
-            throw(ArgumentError("publishing optical calibration requires concrete nonempty branch graphs"))
+        validate_optical_branch_graph(graph)
     end
     return nothing
 end
@@ -74,8 +73,7 @@ function optical_publication_plan(application, selected; graphs, configuration, 
         graphs = declaration["graphs"]
     end
     names = keys(selected.branches)
-    graphs isa AbstractDict && Set(keys(graphs)) == Set(string.(names)) ||
-        throw(ArgumentError("authored graphs must name every optical recipe branch exactly once"))
+    validate_optical_authored_graphs(graphs, names)
     simulation = D.decode(D.relative_asset(application,"simulation.conf"),prefix)
     get(simulation,"version",nothing) in (4,6) && get(simulation,"mode",nothing) in ("external-pupil","clocked-optical") ||
         throw(ArgumentError("optical publication requires a built external-pupil application"))
@@ -105,7 +103,7 @@ function optical_publication_graphs(plan, calibration)
     names = keys(calibration.branches)
     keys(plan.templates) == names || throw(ArgumentError("measured optical branches differ from authored templates"))
     dimensions = plan.rtc.document["dimensions"]
-    command_count = hasproperty(calibration,:completion) ? dimensions["active_vdm_count"] : dimensions["physical_command_count"]
+    command_count = optical_command_count(calibration.command_coordinates,dimensions)
     size(calibration.projection) == (command_count,dimensions["controller_command_count"]) ||
         throw(DimensionMismatch("measured physical projection differs from cold RTC dimensions"))
     contexts = map(names) do name
@@ -115,18 +113,16 @@ function optical_publication_graphs(plan, calibration)
         size(measured.mask) == size(measured.reference) == shape ||
             throw(DimensionMismatch("measured optical image differs from cold RTC dimensions"))
         eltype(measured.mask) === Bool || throw(ArgumentError("optical selection mask must contain Bool values"))
-        measurement_count = hasproperty(measured,:coordinates) ? 2 : count(measured.mask)
+        measurement_count = optical_measurement_count(measured.measurement_kind,measured)
         size(measured.reconstructor) == (dimensions["controller_command_count"],measurement_count) &&
-            (hasproperty(measured,:coordinates) || haskey(plan.frames[string(name)],"image_shape") ||
-                count(measured.mask) == dimensions["selected_pixel_count"]) ||
+            optical_selection_matches(measured.measurement_kind,measured,plan.frames[string(name)],dimensions) ||
             throw(DimensionMismatch("measured reconstructor differs from declared pixel selection"))
         context = Dict{String,Any}(deepcopy(plan.frames))
         for (branch_name,branch) in pairs(calibration.branches)
             entry = context[string(branch_name)] = Dict{String,Any}(context[string(branch_name)])
             entry["pixel_selection_mask"] = vec(permutedims(branch.mask,(2,1)))
             entry["selected_pixel_count"] = count(branch.mask)
-            hasproperty(branch,:reference_centroid) &&
-                (entry["reference_centroid"] = Float64.(branch.reference_centroid))
+            optical_measurement_context!(branch.measurement_kind,entry,branch)
         end
         # Match calibration_context's row-major FITS conversion exactly. The
         # bundle writer replaces this real measured mask with its typed FITS ref.
@@ -142,7 +138,7 @@ function optical_publication_graphs(plan, calibration)
     end
     for (name,graph) in pairs(graphs)
         measured = getproperty(calibration.branches,name)
-        hasproperty(measured,:coordinates) && validate_optical_centroid_graph(graph,name,measured)
+        validate_optical_measurement_graph(measured.measurement_kind,graph,name,measured)
         hasproperty(get(plan,:chopping,NamedTuple()),name) || continue
         actual = optical_frontend_identity(optical_chopped_document(graph,name))
         expected = calibration.report["provenance"]["measurement_frontend_identity"][string(name)]
@@ -154,7 +150,7 @@ end
 function publish_optical_bundles(result, destination, graphs, contexts)
     validate_optical_graphs(graphs,contexts,keys(result.calibration.branches))
     for (name,measurement) in pairs(result.calibration.branches)
-        hasproperty(measurement,:coordinates) && validate_optical_centroid_graph(getproperty(graphs,name),name,measurement)
+        validate_optical_measurement_graph(measurement.measurement_kind,getproperty(graphs,name),name,measurement)
     end
     for (name,identity) in get(result.calibration.report["provenance"],"measurement_frontend_identity",Dict())
         actual = optical_frontend_identity(optical_chopped_document(getproperty(graphs,Symbol(name)),Symbol(name)))
@@ -184,11 +180,8 @@ function publish_optical_bundles(result, destination, graphs, contexts)
         end
         reports = NamedTuple{keys(graphs)}(reports)
         first_branch = first(keys(reports))
-        inverse_name = hasproperty(result.calibration,:completion) ? "vdm-to-modes" : "physical-to-modes"
-        shared_names = hasproperty(result.calibration,:completion) ?
-            ("command-projection",inverse_name,"active-to-full","vdm-to-pdm") :
-            ("command-projection",inverse_name)
-        hasproperty(result.calibration,:physical_feedback_to_modes) && (shared_names = (shared_names...,"physical-to-modes"))
+        shared_names = (optical_projection_names(result.calibration.command_coordinates)...,
+            optical_feedback_names(get(result.calibration,:physical_feedback_to_modes,nothing))...)
         hasproperty(result.calibration,:fast_reference) && (shared_names = (shared_names...,"modes-to-reference"))
         shared = Dict(name=>Dict("path"=>string(first_branch)*"/artifacts/"*name*".fits",
             "sha256"=>getproperty(reports,first_branch)["artifact_sha256"][name*".fits"])
@@ -210,3 +203,18 @@ function publish_optical_bundles(result, destination, graphs, contexts)
         isdir(temporary) && rm(temporary;recursive=true)
     end
 end
+
+function validate_optical_branch_graph(graph::AbstractDict)
+    haskey(graph,"filter.graph") && !isempty(get(graph["filter.graph"],"nodes",[])) || throw(ArgumentError("publishing optical calibration requires concrete nonempty branch graphs"))
+    return nothing
+end
+validate_optical_branch_graph(graph) = throw(ArgumentError("publishing optical calibration requires concrete nonempty branch graphs"))
+
+validate_optical_context(context::AbstractDict) = nothing
+validate_optical_context(context) = throw(ArgumentError("optical branch contexts must be mappings"))
+
+function validate_optical_authored_graphs(graphs::AbstractDict, names)
+    Set(keys(graphs)) == Set(string.(names)) || throw(ArgumentError("authored graphs must name every optical recipe branch exactly once"))
+    return nothing
+end
+validate_optical_authored_graphs(graphs, names) = throw(ArgumentError("authored graphs must name every optical recipe branch exactly once"))

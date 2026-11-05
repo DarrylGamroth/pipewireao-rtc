@@ -3,16 +3,16 @@
 module CalibrationNamedTransportTests
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 include("calibration_named_commands.jl")
 const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
-const Native=PipeWireAORTC.NativeCalibrationEndpoint
-const Control=PipeWireAORTC.NativeControlClient
+const CalibrationEndpoint=PipeWireAORTC.CalibrationEndpoint
+const Control=PipeWireAORTC.ControlClient
 
 function named_transport(remote,directory,daemon)
     condition,guard=Base.AsyncCondition(),ReentrantLock()
-    notify()=Native.wake!(condition,guard)
-    await(predicate;seconds=15)=Native.await(predicate,condition,guard,Control.monotonic()+seconds)
+    notify()=CalibrationEndpoint.wake!(condition,guard)
+    await(predicate;seconds=15)=CalibrationEndpoint.await(predicate,condition,guard,Control.monotonic()+seconds)
     loop=ThreadLoop("test.named-calibration-transport")
     context=core=registry=listener=probes=nothing
     workers=Ext.CalibrationGraphWorker[]
@@ -20,6 +20,7 @@ function named_transport(remote,directory,daemon)
     sinks=Stream[]
     commands=(woofer=CalibrationNamedCommandTests.prepare_command(2,"test.woofer/1"),
         tiptilt=CalibrationNamedCommandTests.prepare_command(3,"test.tiptilt/1"))
+    nodes=Ext.command_graph_names(commands,"test.named")
     actual=map(descriptor->zeros(Float32,only(JuliaFilterGraph.input_formats(descriptor.graph).requested.shape)),commands)
     sequences=map(_->Ref(UInt64(0)),commands)
     buffers=map(_->StreamBuffer(),commands)
@@ -31,13 +32,13 @@ function named_transport(remote,directory,daemon)
             listener=add_listener!(registry;on_global_added=(_...)->notify(),on_global_removed=(_...)->notify())
         end
         start!(loop)
-        probes=Ext.prepare_calibration_probes(core,commands,500//1;notify,prefix="test.named-command")
+        probes=Ext.prepare_command_probe(core,commands,500//1;notify,prefix="test.named-command",
+            reference_clock=METADATA_CLOCK_REALTIME)
         with_thread_loop_lock(loop) do _
             @test length(unique(stream_properties(probe.source)["node.name"] for probe in values(probes.probes)))==2
         end
-        for (key,descriptor) in pairs(commands)
-            push!(workers,Ext.start_calibration_graph(descriptor,remote,"test.named.$key",500//1;notify))
-        end
+        Ext.start_command_graphs!(workers,commands,remote,nodes,500//1;
+            notify,reference_clock=METADATA_CLOCK_REALTIME)
         with_thread_loop_lock(loop) do _
             for (key,descriptor) in pairs(commands)
                 buffer=getproperty(buffers,key)
@@ -62,20 +63,18 @@ function named_transport(remote,directory,daemon)
                     params=Ext.calibration_probe_parameters(format,"test.$key/1"))
             end
         end
-        connections=Tuple(connection for (index,key) in enumerate(keys(commands)) for connection in (
-            (getproperty(probes.probes,key).source,nothing,"test.named.$key",:requested),
-            ("test.named.$key",Symbol("constraint-feedback"),getproperty(probes.probes,key).feedback,nothing),
-            ("test.named.$key",:demanded,sinks[index],nothing)))
+        streams=NamedTuple{keys(commands)}(Tuple(sinks))
+        connections=Ext.calibration_command_connections(commands,probes,nodes,streams)
         function check()
             for worker in workers
-                istaskdone(worker.task) && error("named graph stopped: $(worker.error[])")
+                istaskdone(worker.task) && error("named graph stopped: $(Ext.calibration_graph_status(worker).error)")
             end
             snapshot=Ext.calibration_probe_snapshot(probes)
             snapshot.error===nothing || throw(snapshot.error)
         end
-        endpoints=Native.await(condition,guard,Control.monotonic()+30) do
+        endpoints=CalibrationEndpoint.await(condition,guard,Control.monotonic()+30) do
             check()
-            all(worker->worker.ready[],workers) || return nothing
+            all(worker->Ext.calibration_graph_status(worker).ready,workers) || return nothing
             with_thread_loop_lock(loop) do _
                 candidates=map(connections) do (output,outname,input,inname)
                     (Ext.calibration_endpoint(registry,output,"out",outname),
@@ -130,9 +129,11 @@ function named_transport(remote,directory,daemon)
         # With one feedback Link absent the aggregate cannot report completion.
         # Test its absolute deadline directly; the public owner additionally
         # fences any graph worker that stops when the Link disappears.
+        feedback_index=only(index for index in eachindex(connections)
+            if connections[index][1] == nodes.tiptilt && connections[index][2] == Symbol("constraint-feedback"))
         with_thread_loop_lock(loop) do _
-            close(links[5])
-            deleteat!(links,5)
+            close(links[feedback_index])
+            deleteat!(links,feedback_index)
         end
         roundtrip(core)
         Ext.stage!(probes,UInt64(4),references)
@@ -145,8 +146,22 @@ function named_transport(remote,directory,daemon)
         for worker in workers
             Ext.quit_calibration_graph!(worker)
         end
-        for worker in workers
+        for (key, worker) in zip(keys(commands), workers)
             await(()->istaskdone(worker.task))
+            fetch(worker.task)
+            status = Ext.calibration_graph_status(worker)
+            @test status.done && status.released
+            if status.error === nothing
+                @test Ext.finish_calibration_graph!(worker).done
+            else
+                # The deliberately removed tiptilt feedback output can fail
+                # its complete-frame owner. Completion must retain that error.
+                @test key === :tiptilt
+                @test status.error isa PipeWireError
+                @test status.error.operation === :pw_ndarray_filter_run
+                @test status.error.code == -32
+                @test_throws PipeWireError Ext.finish_calibration_graph!(worker)
+            end
         end
         probes===nothing || close(probes)
         with_thread_loop_lock(loop) do _

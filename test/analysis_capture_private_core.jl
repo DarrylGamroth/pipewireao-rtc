@@ -4,7 +4,7 @@
 module AnalysisCapturePrivateCoreTests
 using Test, PipeWireAORTC, PipeWireAO
 using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphIsland, FilterGraphPipeWire
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 const C=PipeWireAORTC.Common
 const CS=PipeWireAORTC.ConfigurationStore
 const OUTPUTS=("mean","variance","stddev","sample-count","complete","variance-valid")

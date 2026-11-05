@@ -41,11 +41,9 @@ function _pupil_registration(registration::NamedTuple)
         throw(ArgumentError("pupil registration rotation_deg must be a finite Float64 real number"))
     rotation_deg = rem(Float64(rotation),360.0)
     flip_y = get(registration,:flip_y,false)
-    flip_y isa Bool || throw(ArgumentError("pupil registration flip_y must be Boolean"))
+    registration_flip(flip_y)
     offsets = get(registration,:offset_actuators,(0.0,0.0))
-    (offsets isa Tuple || offsets isa AbstractVector) && length(offsets) == 2 &&
-        all(value -> InstrumentDefinition.finite_bound(value) && isfinite(Float64(value)),offsets) ||
-        throw(ArgumentError("pupil registration offset_actuators must contain two finite Float64 real numbers"))
+    registration_offsets(offsets)
     offset_actuators = map(Float64,Tuple(offsets))
     # Preserve the original value and fingerprint for omitted or explicit defaults.
     iszero(rotation_deg) && !flip_y && all(iszero,offset_actuators) &&
@@ -144,6 +142,14 @@ function actuator_coordinates(
     return coordinates
 end
 
+"""
+    actuator_grid_indices(description, T=Int32)
+
+Return one-based linear pupil-grid indices in physical command order, stored
+as integers of type `T`. The grid's first dimension increases in x and its
+second in y; source description rows are reversed to obtain increasing y.
+Unoccupied grid positions contribute no command entry.
+"""
 function actuator_grid_indices(description::NamedTuple, ::Type{T}=Int32) where {T<:Integer}
     axis_count = _mirror_axis_count(description)
     index_map = actuator_index_map(description)
@@ -172,4 +178,13 @@ function source_grid_coordinates(description::NamedTuple)
             Float64(Float32(rows == 1 ? 0.0 : (row - centre_row) / (rows - 1))))
     end
     return (; zernike_positions, fourier_positions)
+end
+
+registration_flip(value::Bool) = value
+registration_flip(value) = throw(ArgumentError("pupil registration flip_y must be Boolean"))
+
+registration_offsets(value) = throw(ArgumentError("pupil registration offset_actuators must contain two finite Float64 real numbers"))
+function registration_offsets(value::Union{Tuple,AbstractVector})
+    length(value) == 2 && all(x -> InstrumentDefinition.finite_bound(x) && isfinite(Float64(x)), value) || return registration_offsets(nothing)
+    return value
 end

@@ -14,21 +14,72 @@ const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 const S = PipeWireAORTC.SystemdOwners
 const P = PipeWireAORTC.Placement
-const Discovery = PipeWireAORTC.NativeSessionDiscovery
-const Client = PipeWireAORTC.NativeControlClient
-const Session = PipeWireAORTC.NativeSessionCodec
-const Profile = PipeWireAORTC.NativeSessionProfile
-const SessionClient = PipeWireAORTC.NativeSessionClient
+const Discovery = PipeWireAORTC.SessionDiscovery
+const Client = PipeWireAORTC.ControlClient
+const Session = PipeWireAORTC.SessionCodec
+const Profile = PipeWireAORTC.SessionProfile
+const SessionClient = PipeWireAORTC.SessionClient
 const Commands = PipeWireAORTC.RunnerCommands
 
 export main
 
-function node_owners(spec)
-    mapping = get(spec, "node-owners", nothing)
-    mapping isa AbstractDict ||
-        throw(ArgumentError("one-shot session requires exact node-owners in deployment.conf"))
-    return Dict{String,String}(mapping)
+node_owners(spec) = node_owner_mapping(get(spec, "node-owners", nothing))
+node_owner_mapping(mapping::AbstractDict) = Dict{String,String}(mapping)
+node_owner_mapping(mapping) =
+    throw(ArgumentError("one-shot session requires exact node-owners in deployment.conf"))
+
+function prepared_identity(name::String, source_role, record)
+    occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) &&
+        name == record["name"] && source_role == record["source_role"] ||
+        throw(ArgumentError("deployment identity differs from prepared invocation"))
+    return nothing
 end
+prepared_identity(name, source_role, record) =
+    throw(ArgumentError("deployment identity differs from prepared invocation"))
+
+function warmup_complete(reply::Session.AdministrativeCompletion)
+    reply.header.operation == UInt32(15) && reply.header.result == 0 &&
+        reply.error === nothing && reply.lifecycle == Session.Runner.Configuring ||
+        throw(ArgumentError("direct session warmup query did not retain Configuring"))
+    return reply.warmed === true
+end
+warmup_complete(reply) =
+    throw(ArgumentError("direct session warmup query did not retain Configuring"))
+
+function confirm_admission(reply::Session.AdministrativeCompletion)
+    reply.header.operation == UInt32(16) && reply.header.result == 0 &&
+        reply.error === nothing && reply.warmed === true &&
+        reply.lifecycle == Session.Runner.Ready ||
+        throw(ArgumentError("direct session admission did not reach Ready"))
+    return nothing
+end
+confirm_admission(reply) = throw(ArgumentError("direct session admission did not reach Ready"))
+
+function confirm_ready(reply::Session.Completion)
+    reply.header.operation == UInt32(3) && reply.header.result == 0 &&
+        reply.result !== nothing && reply.error === nothing &&
+        reply.lifecycle == Session.Runner.Ready ||
+        throw(ArgumentError("fresh direct Status did not confirm Ready"))
+    return nothing
+end
+confirm_ready(reply) = throw(ArgumentError("fresh direct Status did not confirm Ready"))
+
+function confirm_stoppable(reply::Session.Completion)
+    reply.header.result == 0 && reply.error === nothing &&
+        reply.lifecycle in (Session.Runner.Ready, Session.Runner.Running) ||
+        throw(ArgumentError("native stop requires an admitted healthy session"))
+    return nothing
+end
+confirm_stoppable(reply) = throw(ArgumentError("native stop requires an admitted healthy session"))
+
+function confirm_shutdown(reply::Session.Completion)
+    reply.header.result == 0 && reply.error === nothing &&
+        reply.lifecycle == Session.Runner.Offline && reply.result !== nothing &&
+        reply.result.details.shutdown === true ||
+        throw(ArgumentError("native systemd Quit did not complete Offline"))
+    return nothing
+end
+confirm_shutdown(reply) = throw(ArgumentError("native systemd Quit did not complete Offline"))
 
 function render!(spec, session, bindings, records, runtime)
     return SessionConfiguration.write_session_config(
@@ -75,7 +126,7 @@ function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
 end
 
 function _verified_discovery!(record, session_record)
-    # NativeSessionDiscovery.publish! remains owner-only. ExecStartPost is a
+    # SessionDiscovery.publish! remains owner-only. ExecStartPost is a
     # distinct process, so this narrow path writes only after live systemd and
     # direct native Status proof in publish! below.
     directory = Discovery.registry_directory()
@@ -108,7 +159,7 @@ function _placement_snapshot(record, unit, invocation, launcher, group, wp_pid, 
         service.invocation = String(item["invocation"])
         service.start_ticks = UInt64(item["start-ticks"])
         service.cgroup = String(item["cgroup"])
-        service.state = :running
+        S.running!(service)
         S.verify!(service)
         snapshots[role] = P.snapshot(service.main_pid, item["placement"])
         S.verify!(service)
@@ -128,10 +179,7 @@ function publish!(args)
     package = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
     name = package["name"]
     source_role = package["source-owner"]
-    name isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) &&
-        name == record["name"] &&
-        source_role == record["source_role"] ||
-        throw(ArgumentError("deployment identity differs from prepared invocation"))
+    prepared_identity(name, source_role, record)
     launcher = joinpath(args.package, "bin", "pipewireao-rtc-session")
     pid, ticks, group = _unit_identity(args.unit, invocation, args.runtime_root,
         launcher, source_role)
@@ -152,11 +200,7 @@ function publish!(args)
                 throw(ArgumentError("direct session did not warm before publication deadline"))
             warm = Client.request!(client, Session.WarmupCommand();
                 deadline=min(deadline, Client.monotonic() + 10))
-            warm isa Session.AdministrativeCompletion &&
-                warm.header.operation == UInt32(15) && warm.header.result == 0 &&
-                warm.error === nothing && warm.lifecycle == Session.Runner.Configuring ||
-                throw(ArgumentError("direct session warmup query did not retain Configuring"))
-            warm.warmed === true && break
+            warmup_complete(warm) && break
             sleep(min(0.1, max(0.0, deadline - Client.monotonic())))
         end
         latest_pid, latest_ticks, latest_group = _unit_identity(args.unit, invocation,
@@ -173,18 +217,10 @@ function publish!(args)
         C.write_json(ledger, record; atomic=true)
         admit = Client.request!(client, Session.AdmitCommand();
             deadline=min(deadline, Client.monotonic() + 10))
-        admit isa Session.AdministrativeCompletion &&
-            admit.header.operation == UInt32(16) && admit.header.result == 0 &&
-            admit.error === nothing && admit.warmed === true &&
-            admit.lifecycle == Session.Runner.Ready ||
-            throw(ArgumentError("direct session admission did not reach Ready"))
+        confirm_admission(admit)
         completion = Client.request!(client, Session.RunnerCommand(:status);
             deadline=min(deadline, Client.monotonic() + 10))
-        completion isa Session.Completion &&
-            completion.header.operation == UInt32(3) && completion.header.result == 0 &&
-            completion.result !== nothing && completion.error === nothing &&
-            completion.lifecycle == Session.Runner.Ready ||
-            throw(ArgumentError("fresh direct Status did not confirm Ready"))
+        confirm_ready(completion)
         with_thread_loop_lock(client.loop) do _
             Client.healthy(client)
             client.observation.node_identity == uuid &&
@@ -219,8 +255,11 @@ function retire!(runtime_root)
     record = C.read_json(ledger; maximum=1024 * 1024)
     record["invocation"] == invocation ||
         throw(ArgumentError("retirement ledger has a different invocation"))
-    path = get(record, "discovery_locator", nothing)
-    path isa String || return nothing
+    return retire_record!(record, get(record, "discovery_locator", nothing))
+end
+
+retire_record!(record, path) = nothing
+function retire_record!(record, path::String)
     directory = Discovery.existing_registry_directory()
     directory === nothing && return nothing
     path == joinpath(directory, "session-" * record["session_uuid"] * ".pod") ||
@@ -274,10 +313,7 @@ function stop!(args)
         Int64(record["session_control_instance"]); deadline)
     try
         status = Client.request!(client, Session.RunnerCommand(:status); deadline)
-        status isa Session.Completion && status.header.result == 0 &&
-            status.error === nothing && status.lifecycle in
-                (Session.Runner.Ready, Session.Runner.Running) ||
-            throw(ArgumentError("native stop requires an admitted healthy session"))
+        confirm_stoppable(status)
         with_thread_loop_lock(client.loop) do _
             Client.healthy(client)
             client.observation.node_identity == record["session_uuid"] ||
@@ -289,10 +325,7 @@ function stop!(args)
         C.write_json(ledger, record; atomic=true)
         completion = Client.request!(client, Session.RunnerCommand(:quit);
             deadline=min(deadline, Client.monotonic() + 8))
-        completion isa Session.Completion && completion.header.result == 0 &&
-            completion.error === nothing && completion.lifecycle == Session.Runner.Offline &&
-            completion.result !== nothing && completion.result.details.shutdown === true ||
-            throw(ArgumentError("native systemd Quit did not complete Offline"))
+        confirm_shutdown(completion)
         record["systemd_quit"]["accepted"] = true
         C.write_json(ledger, record; atomic=true)
     finally
@@ -343,9 +376,12 @@ end
 function select_direct_session(session_id::AbstractString; deadline=Client.monotonic()+30)
     result = SessionClient.select_direct_session(_session_entry(session_id);
         deadline=Float64(deadline))
-    result isa SessionClient.Connection && return result
-    throw(ArgumentError("selected RTC session is $(result.verification): $(result.detail)"))
+    return selected_connection(result)
 end
+
+selected_connection(result::SessionClient.Connection) = result
+selected_connection(result) =
+    throw(ArgumentError("selected RTC session is $(result.verification): $(result.detail)"))
 
 function session_status(connection::SessionClient.Connection)
     selected = connection.selected

@@ -18,7 +18,7 @@ using UUIDs
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
-const N = PipeWireAORTC.NativeControlClient
+const N = PipeWireAORTC.ControlClient
 const E = PipeWireAORTC.ScienceExport
 const P = PipeWireAORTC.Placement
 
@@ -29,7 +29,7 @@ struct LaunchError <: Exception
 end
 Base.showerror(io::IO, error::LaunchError) = print(io, error.message)
 fail(message) = throw(LaunchError(message))
-monotonic() = time_ns() / 1.0e9
+monotonic() = C.monotonic_seconds()
 
 struct Request
     package::String
@@ -221,10 +221,9 @@ function parameter_owner!(request, spec, session, bindings, runtime)
             "layout" => layout == "ROW_MAJOR" ? "row-major" : "column-major")
         initial = get(get(session, "parameters", Dict()), target, nothing)
         if initial !== nothing
-            initial isa String && startswith(initial, "PIPEWIREAO_RTC_PARAMETER_") ||
-                fail("initial parameter must name a declared artifact binding")
+            _initial_parameter_binding(initial)
             value = get(spec["environment"], initial, nothing)
-            value isa String || fail("initial parameter artifact binding is absent")
+            _initial_parameter_value(value)
             row["initial_payload_path"] = D.substitute(value, bindings)
         end
         push!(declarations, row)
@@ -238,7 +237,7 @@ function parameter_owner!(request, spec, session, bindings, runtime)
     entry = if D.registered_application(spec)
         environment = D.application_environment(spec, request.package)
         ["--project=" * environment, "-e",
-            "using PipeWireAORTC; PipeWireAORTC.NativeParameterSource.main(ARGS)", "--"]
+            "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)", "--"]
     else
         script = D.relative_asset(request.package, "julia/assets/deployment/hil/parameter_source.jl")
         ["--project=" * joinpath(request.package, "julia"), script]
@@ -259,6 +258,33 @@ function parameter_owner!(request, spec, session, bindings, runtime)
             "--control-node", control, "--control-instance", bindings["PARAMETER_OWNER_INSTANCE"]])
 end
 
+_initial_parameter_binding(initial) = fail("initial parameter must name a declared artifact binding")
+_initial_parameter_binding(initial::String) = startswith(initial,"PIPEWIREAO_RTC_PARAMETER_") || fail("initial parameter must name a declared artifact binding")
+_initial_parameter_value(value) = fail("initial parameter artifact binding is absent")
+_initial_parameter_value(::String) = nothing
+_core_socket_failure(error) = throw(error)
+_core_socket_failure(::Union{Base.IOError,Base.SystemError}) = nothing
+_fgn_graphs(graphs) = fail("session graphs must be a list")
+_fgn_graphs(graphs::AbstractVector) = filter(graph -> get(graph,"factory",nothing)=="pipewireao.fgn-native",graphs)
+_fgn_configuration_token(token) = fail("FGN graph has no configuration path")
+_fgn_configuration_token(::String) = nothing
+_fgn_node_name(name) = fail("FGN graph node differs from its rendered host module")
+_fgn_node_name(::String) = nothing
+_held_source_owner(role,spec) = fail("RTC session requires a declared held source owner")
+_held_source_owner(role::String,spec) = any(owner -> owner["role"]==role,spec["owners"]) || fail("RTC session requires a declared held source owner")
+_rendered_session_configuration(config,runtime) = fail("session generator did not return a private invocation configuration")
+_rendered_session_configuration(config::AbstractString,runtime) = isabspath(config) && isfile(config) &&
+    startswith(realpath(config),realpath(runtime)*"/") || fail("session generator did not return a private invocation configuration")
+_unretained_launch_outcome(item,unit,deadline) = nothing
+function _unretained_launch_outcome(item::AbstractDict,unit,deadline)
+    if get(item,"state","") in ("launching","uncertain") && S.properties(unit;deadline)["LoadState"]=="not-found"
+        fail("owner launch outcome remains uncertain for $unit")
+    end
+    return nothing
+end
+_session_renderer(renderer) = fail("RTC session renderer is unavailable")
+_session_renderer(::Function) = nothing
+
 function reserve_owner!(coordinator, role, placement, record)
     service = S.Service(coordinator, role)
     haskey(record["owners"], role) && fail("duplicate owner role $role")
@@ -276,7 +302,7 @@ function wait_core!(service, socket; seconds=15)
                 close(Sockets.connect(socket))
                 return nothing
             catch error
-                error isa IOError || error isa SystemError || rethrow()
+                _core_socket_failure(error)
             end
         end
         sleep(0.05)
@@ -286,24 +312,23 @@ end
 
 function fgn_graphs(session)
     graphs = get(session, "graphs", Any[])
-    graphs isa AbstractVector || fail("session graphs must be a list")
-    return filter(graph -> get(graph, "factory", nothing) == "pipewireao.fgn-native", graphs)
+    return _fgn_graphs(graphs)
 end
 
 function graph_arguments(graph, env, runtime, prefix)
     get(graph, "module", nothing) == "libpipewire-module-ndarray-filter-chain" ||
         fail("FGN host requires the maintained ndarray filter-chain module")
     token = get(graph, "config.path", nothing)
-    token isa String || fail("FGN graph has no configuration path")
+    _fgn_configuration_token(token)
     match_result = match(r"^\$\{([A-Z][A-Z0-9_]*)\}$", token)
     match_result === nothing && fail("FGN graph configuration must use a declared environment binding")
     path = get(env, match_result.captures[1], "")
     isfile(path) && startswith(realpath(path), realpath(runtime) * "/") ||
         fail("FGN graph configuration is not a rendered invocation asset")
     args = D.decode(path, prefix)
-    get(args, "node.name", nothing) == get(graph, "node.name", nothing) &&
-        get(graph, "node.name", nothing) isa String ||
+    get(args,"node.name",nothing) == get(graph,"node.name",nothing) ||
         fail("FGN graph node differs from its rendered host module")
+    _fgn_node_name(get(graph,"node.name",nothing))
     return args
 end
 
@@ -360,8 +385,7 @@ function prepare!(request::Request; render!::Function)
     spec["cpu-latency-us"] === nothing ||
         fail("RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null")
     source_role = get(spec, "source-owner", nothing)
-    source_role isa String && any(owner -> owner["role"] == source_role, spec["owners"]) ||
-        fail("RTC session requires a declared held source owner")
+    _held_source_owner(source_role,spec)
     coordinator = preparation_identity(request, source_role)
     invocation = coordinator.invocation
     root = request.runtime_root
@@ -387,16 +411,16 @@ function prepare!(request::Request; render!::Function)
         "SESSION_CONTROL_INSTANCE" => string(N.next_instance()),
         "SESSION_CONTROLLER_INSTANCE" => string(N.next_instance()))
     for owner in spec["owners"]
-        D.native_bootstrap(owner) || continue
+        D.uses_bootstrap_protocol(owner) || continue
         bindings[D.bootstrap_instance_key(owner["role"])] = string(N.next_instance())
     end
-    if any(D.native_heart, spec["owners"])
-        heart = only(filter(D.native_heart, spec["owners"]))
+    if any(D.uses_heart_protocol, spec["owners"])
+        heart = only(filter(D.uses_heart_protocol, spec["owners"]))
         bindings["HEART_OWNER_NODE"] = heart["control-node"]
         bindings["HEART_OWNER_INSTANCE"] = string(N.next_instance())
     end
     source = only(filter(owner -> owner["role"] == source_role, spec["owners"]))
-    D.native_acquisition(source) &&
+    D.uses_acquisition_protocol(source) &&
         (bindings["SOURCE_OWNER_INSTANCE"] = string(N.next_instance()))
     paths = D.installed_paths(prefix)
     session = render_inputs!(request, spec, bindings, runtime)
@@ -432,8 +456,8 @@ function prepare!(request::Request; render!::Function)
         for owner in spec["owners"]
             role = owner["role"]
             services[role] = reserve_owner!(coordinator, role, spec["placement"][role], record)
-            control_instance = D.native_heart(owner) ? bindings["HEART_OWNER_INSTANCE"] :
-                D.native_acquisition(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
+            control_instance = D.uses_heart_protocol(owner) ? bindings["HEART_OWNER_INSTANCE"] :
+                D.uses_acquisition_protocol(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
                 get(owner, "control-instance", nothing)
             merge!(owner_records[role], Dict{String,Any}(
                 "bootstrap-node" => get(owner, "bootstrap-node", nothing),
@@ -473,7 +497,7 @@ function prepare!(request::Request; render!::Function)
         # HEART's source command needs the real controller PID. Keep this
         # necessary stage; ordinary FGN/JFG owners start together below.
         staged_roles = Set(["core"])
-        for owner in filter(D.native_heart, spec["owners"])
+        for owner in filter(D.uses_heart_protocol, spec["owners"])
             install_owner!(owner)
             service = services[owner["role"]]
             S.reload_fragments!(record)
@@ -496,9 +520,7 @@ function prepare!(request::Request; render!::Function)
         S.verify!(core)
         S.start_services!(cohort, record["cohort_unit"], runtime, record)
         config = render!(spec, session, bindings, deepcopy(owner_records), runtime)
-        config isa AbstractString && isabspath(config) && isfile(config) &&
-            startswith(realpath(config), realpath(runtime) * "/") ||
-            fail("session generator did not return a private invocation configuration")
+        _rendered_session_configuration(config,runtime)
         generated = D.decode(String(config), prefix)
         all(haskey(generated, key) for key in
             ("context.properties", "wireplumber.profiles", "wireplumber.components")) ||
@@ -515,7 +537,7 @@ function prepare!(request::Request; render!::Function)
             service.invocation = String(item["invocation"])
             service.start_ticks = UInt64(item["start-ticks"])
             service.cgroup = String(item["cgroup"])
-            service.state = :running
+            S.running!(service)
             S.verify!(service)
         end
         record["phase"] = "prepared"
@@ -569,7 +591,10 @@ end
 
 function retained_service(record, role)
     item = get(record["owners"], role, nothing)
-    item isa AbstractDict || return nothing
+    return _retained_service(record,role,item)
+end
+_retained_service(record,role,item) = nothing
+function _retained_service(record,role,item::AbstractDict)
     get(item, "state", "") in ("running", "uncertain") || return nothing
     get(item, "pid", 0) > 0 && !isempty(get(item, "invocation", "")) &&
         !isempty(get(item, "cgroup", "")) || return nothing
@@ -579,7 +604,7 @@ function retained_service(record, role)
     service.invocation = String(item["invocation"])
     service.start_ticks = UInt64(item["start-ticks"])
     service.cgroup = String(item["cgroup"])
-    service.state = :running
+    S.running!(service)
     return service
 end
 
@@ -592,10 +617,7 @@ function cleanup_role!(record, role, deadline)
     retained = retained_service(record, role)
     if retained === nothing
         item = get(record["owners"], role, nothing)
-        uncertain = item isa AbstractDict && get(item, "state", "") in ("launching", "uncertain")
-        if uncertain && S.properties(unit; deadline)["LoadState"] == "not-found"
-            fail("owner launch outcome remains uncertain for $unit")
-        end
+        _unretained_launch_outcome(item,unit,deadline)
         S.cleanup_unit(unit; deadline)
     else
         # A retained PID/start time and cgroup fence a replaced unit. This
@@ -730,7 +752,7 @@ function main(argv=ARGS; render! = nothing)
     isempty(argv) && fail("expected prepare or cleanup")
     command = first(argv)
     if command == "prepare"
-        render! isa Function || fail("RTC session renderer is unavailable")
+        _session_renderer(render!)
         args = C.cli_arguments(argv[2:end];
             required=["package", "prefix", "unit", "launcher", "runtime-root"])
         request = Request(args.package, args.prefix, args.unit, args.launcher, args.runtime_root)

@@ -10,16 +10,18 @@ const MAX_LINE_BYTES = 2 * 1024 * 1024
 const MAX_REPLY_BYTES = 16 * 1024 * 1024
 const TYPES = Dict(string(T)=>T for T in Artifacts.TARGET_TYPES)
 
-function request_result(request)
-    request isa AbstractDict || throw(ArgumentError("request must be an object"))
+request_result(request) = throw(ArgumentError("request must be an object"))
+function request_result(request::AbstractDict)
     get(request,"protocol",nothing) == ConfigurationStore.PROTOCOL || throw(ArgumentError("unsupported protocol"))
     operation = get(request,"op",nothing)
     operation in ("register","list","get","history") || throw(ArgumentError("unknown management operation"))
     arguments = get(request,"arguments",Dict{String,Any}())
-    arguments isa AbstractDict || throw(ArgumentError("arguments must be an object"))
+    return request_result(request, operation, arguments)
+end
+request_result(request, operation, arguments) = throw(ArgumentError("arguments must be an object"))
+function request_result(request, operation, arguments::AbstractDict)
     root = get(request,"root",ConfigurationStore.default_root())
-    root isa AbstractString || throw(ArgumentError("root must be a string"))
-    store = ConfigurationStore.Store(root)
+    store = configuration_store(root)
     if operation == "register"
         allowed = ("path","type","shape","hdu","axes","label","scope","metadata","schema")
         all(k->k in allowed,keys(arguments)) || throw(ArgumentError("unknown register argument"))
@@ -43,6 +45,9 @@ function request_result(request)
             include_records=get(arguments,"include_records",false))
     end
 end
+
+configuration_store(root::AbstractString) = ConfigurationStore.Store(root)
+configuration_store(root) = throw(ArgumentError("root must be a string"))
 
 "Return a management response, including structured errors for malformed requests."
 function respond(line::AbstractString)

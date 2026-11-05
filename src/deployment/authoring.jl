@@ -1,8 +1,17 @@
+_application_owner(owner) = throw(ArgumentError("owner must be an object"))
+_application_owner(::AbstractDict) = nothing
+_application_session(session) = throw(ArgumentError("session-runtime must be an object"))
+_application_session(::AbstractDict) = nothing
+
 # Human-authored YAML is compiled only in a fresh application copy. Runtime
 # interfaces keep their existing native SPA-JSON/JSON paths and consumers.
 function application_file(profile)
     path = get(profile,"application","rtc/application.yaml")
-    path isa String && !isempty(path) && !occursin('\0',path) && !isabspath(path) &&
+    return _application_file(path)
+end
+_application_file(path) = throw(ArgumentError("application must select a contained relative YAML file"))
+function _application_file(path::String)
+    !isempty(path) && !occursin('\0',path) && !isabspath(path) &&
         normpath(path)==path && !outside(path) && lowercase(splitext(path)[2]) in (".yaml",".yml") ||
         throw(ArgumentError("application must select a contained relative YAML file"))
     return path
@@ -18,12 +27,12 @@ function application_defaults!(application)
     get!(application, "cpu-latency-us", nothing)
     D.validate_environment(get!(application, "environment", Dict{String,Any}()), "application")
     for owner in get(application, "owners", [])
-        owner isa AbstractDict || throw(ArgumentError("owner must be an object"))
+        _application_owner(owner)
         D.validate_environment(get!(owner, "environment", Dict{String,Any}()), "owner")
     end
     if haskey(application, "session-runtime")
         session = application["session-runtime"]
-        session isa AbstractDict || throw(ArgumentError("session-runtime must be an object"))
+        _application_session(session)
         D.validate_environment(get!(session, "environment", Dict{String,Any}()), "session-runtime")
     end
     return application

@@ -11,7 +11,7 @@ const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt)
 const Source=Ext.PupilSourceOwner
 Base.include(@__MODULE__,joinpath(@__DIR__,"pupil_source_documents.jl"))
 Base.include(@__MODULE__,joinpath(@__DIR__,"physical_offset_inputs_documents.jl"))
-Base.include(@__MODULE__,joinpath(@__DIR__,"native_control_private_core.jl"))
+Base.include(@__MODULE__,joinpath(@__DIR__,"control_private_core.jl"))
 
 mutable struct CommandCapture
     buffer::StreamBuffer

@@ -5,12 +5,12 @@ using ..Common
 using ..Placement
 import ..PipeWireAORTC
 import ..ScienceExport
-import ..NativeControlClient
-import ..NativeOwnerBootstrapCodec
+import ..ControlClient
+import ..OwnerBootstrapCodec
 
 export DeploymentError, fail, require, digest, atomic_record, installed_paths, decode,
-    validate_environment, relative_asset, valid_cpu_list, native_bootstrap,
-    bootstrap_instance_key, native_heart, native_source, native_acquisition,
+    validate_environment, relative_asset, valid_cpu_list, uses_bootstrap_protocol,
+    bootstrap_instance_key, uses_heart_protocol, uses_source_control_protocol, uses_acquisition_protocol,
     validate_acquisition_arguments, validate_bootstrap_arguments,
     validate_session_runtime, profile, substitute, validate_runtime,
     selected_julia_executable, shell_quote, installed_wrappers, registered_application,
@@ -52,13 +52,7 @@ function decode(path::AbstractString, prefix::AbstractString)
     try
         return Common.read_json(path; maximum=MAX_CONFIG_BYTES)
     catch error
-        error isa SystemError && rethrow()
-        paths = installed_paths(prefix)
-        env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"]))
-        out, _, code = Common.run_checked([paths["parser"], "-N", "-R", path]; env, timeout=10)
-        code == 0 || fail("installed SPA-JSON parser rejected $path")
-        ncodeunits(out) <= MAX_CONFIG_BYTES || fail("decoded deployment configuration exceeds 16 MiB")
-        return Common.parse_json(out)
+        return decode_fallback(error, path, prefix)
     end
 end
 
@@ -66,8 +60,7 @@ end
 # An actual native session additionally requires at least one connection.
 function validate_session_links(session)
     links = get(session, "links", Any[])
-    require(links isa AbstractVector && length(links) <= MAX_SESSION_LINKS,
-        "session links must be a list of at most $MAX_SESSION_LINKS declared connections")
+    validate_links(links)
     return links
 end
 
@@ -80,56 +73,12 @@ function validate_execution_groups(session)
     graphs = Set{String}()
     for role in ("sources", "graphs", "sinks")
         entries = get(session, role, Any[])
-        require(entries isa AbstractVector, "session $role must be a list")
-        for entry in entries
-            require(entry isa AbstractDict, "session $role entry must be a mapping")
-            name = get(entry, "node.name", nothing)
-            require(name isa String && !isempty(name) && !haskey(controlled,name),
-                "session node names must be nonempty and unique: $name")
-            ownership = get(entry, "ownership", nothing)
-            grant = get(entry, "run-control", nothing)
-            require(ownership in (nothing,"runner","external"), "invalid node ownership: $name")
-            managed = if ownership != "external"
-                require(grant === nothing, "runner-owned node has an external run-control grant: $name")
-                true
-            elseif role == "graphs"
-                require(grant in ("session","application"), "external graph requires an explicit run-control grant: $name")
-                grant == "session"
-            else
-                require(grant in (nothing,"application"), "external source or sink remains application controlled: $name")
-                false
-            end
-            controlled[name] = managed
-            if role == "graphs" && managed
-                push!(graphs,name); push!(required,name)
-                get(entry,"factory",nothing) == "api.ndarray.latest-hold" || push!(processing,name)
-            elseif role == "sinks" && ownership != "external"
-                push!(required,name)
-            end
-        end
+        validate_session_role!(controlled, required, processing, graphs, entries, role)
     end
     groups = get(session,"execution-groups",Any[])
-    require(groups isa AbstractVector, "execution-groups must be a list")
-    require(!isempty(graphs) == !isempty(groups),
-        "execution groups require session-controlled graphs and vice versa")
     names = Set{String}()
     membership = Dict{String,String}()
-    for group in groups
-        require(group isa AbstractDict, "execution group must be a mapping")
-        name = get(group,"name",nothing)
-        require(name isa String && !isempty(name) && !occursin('\0',name) && !(name in names),
-            "execution group name must be nonempty and unique: $name")
-        push!(names,name)
-        nodes = get(group,"nodes",nothing)
-        require(nodes isa AbstractVector && !isempty(nodes), "execution group has no members: $name")
-        for node in nodes
-            require(node isa String && haskey(controlled,node) && !haskey(membership,node),
-                "unknown or duplicate execution group member: $node")
-            require(controlled[node], "application-controlled external node cannot belong to execution group: $node")
-            membership[node] = name
-        end
-        require(any(node -> node in processing,nodes), "execution group contains no session-controlled processing graph: $name")
-    end
+    validate_execution_group_memberships!(names, membership, groups, graphs, processing, controlled)
     if !isempty(graphs)
         for node in sort!(collect(required))
             require(haskey(membership,node), "eligible graph or nonexternal sink has no execution group: $node")
@@ -148,16 +97,18 @@ function validate_execution_groups(session)
     return nothing
 end
 
-function validate_environment(value, label)
-    require(value isa AbstractDict && all(value) do (key, item)
-        key isa String && !isempty(key) && !occursin('=', key) && !occursin('\0', key) &&
-            item isa String && !occursin('\0', item)
-    end,
+validate_environment(value, label) = fail("$label environment must map valid names to strings")
+function validate_environment(value::AbstractDict, label)
+    require(all(valid_environment_entry(key, item) for (key,item) in value),
         "$label environment must map valid names to strings")
 end
+valid_environment_entry(key, item) = false
+valid_environment_entry(key::String, item::String) =
+    !isempty(key) && !occursin('=', key) && !occursin('\0', key) && !occursin('\0', item)
 
-function relative_asset(package::AbstractString, name)
-    require(name isa String && !isempty(name) && !occursin('\0', name) && !isabspath(name),
+relative_asset(package::AbstractString, name) = fail("installed asset must be a package-relative path")
+function relative_asset(package::AbstractString, name::String)
+    require(!isempty(name) && !occursin('\0', name) && !isabspath(name),
         "installed asset must be a package-relative path")
     candidate = realpath(joinpath(package, name))
     root = realpath(package)
@@ -166,19 +117,21 @@ function relative_asset(package::AbstractString, name)
     candidate
 end
 
-function valid_cpu_list(value)
-    value isa AbstractVector || fail("process CPU envelope must be a list")
-    Placement.cpu_set(value)
-end
+valid_cpu_list(value::AbstractVector) = Placement.cpu_set(value)
+valid_cpu_list(value) = fail("process CPU envelope must be a list")
 
-native_bootstrap(owner) = get(owner, "bootstrap-protocol", nothing) == NativeControlClient.profile_name(NativeOwnerBootstrapCodec.PROFILE)
+"Return whether a declaration selects the exact OwnerBootstrap protocol."
+uses_bootstrap_protocol(owner) = get(owner, "bootstrap-protocol", nothing) == ControlClient.profile_name(OwnerBootstrapCodec.PROFILE)
 bootstrap_instance_key(role::AbstractString) = "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-"=>"_")
 
-native_heart(owner) = get(owner, "control-protocol", nothing) == "pipewireao.rtc.heart/1"
+"Return whether a declaration selects the existing HEART wrapper control protocol."
+uses_heart_protocol(owner) = get(owner, "control-protocol", nothing) == "pipewireao.rtc.heart/1"
 
-native_source(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
+"Return whether a declaration selects the SourceControl protocol."
+uses_source_control_protocol(owner) = get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 
-native_acquisition(owner) = get(owner, "control-protocol", nothing) in
+"Return whether a declaration selects a calibration or correction acquisition-lifecycle protocol."
+uses_acquisition_protocol(owner) = get(owner, "control-protocol", nothing) in
     ("pipewireao.rtc.calibration-lifecycle/1", "pipewireao.rtc.correction-lifecycle/1")
 
 function validate_acquisition_arguments(owner)
@@ -210,7 +163,7 @@ function validate_bootstrap_arguments(owner)
         require(length(indices)==1 && argv[only(indices)]==flag && only(indices)<length(argv) && argv[only(indices)+1]==value,
             "native bootstrap requires the exact $flag binding")
     end
-    if native_source(owner)
+    if uses_source_control_protocol(owner)
         flag="--control-node"
         indices=findall(arg->first(split(arg,'=';limit=2))==flag,argv)
         require(length(indices)==1 && argv[only(indices)]==flag && only(indices)<length(argv) &&
@@ -229,15 +182,12 @@ const SESSION_PRIVATE_ENVIRONMENT = Set(["INVOCATION_ID", "NOTIFY_SOCKET", "SYST
     "PIPEWIRE_RUNTIME_DIR", "PIPEWIRE_REMOTE", "PIPEWIREAO_REMOTE"])
 
 "Validate the sole headless RTC executable and its exact invocation."
-function validate_session_runtime(value)
-    require(value isa AbstractDict && Set(keys(value)) == Set(["argv", "environment"]),
+validate_session_runtime(value) = fail("session-runtime requires argv and environment")
+function validate_session_runtime(value::AbstractDict)
+    require(Set(keys(value)) == Set(["argv", "environment"]),
         "session-runtime requires argv and environment")
     argv = value["argv"]
-    require(argv isa AbstractVector && length(argv) == 3 &&
-        all(arg -> arg isa String && !occursin('\0', arg), argv) &&
-        first(argv) in ("@PACKAGE@/rtc/bin/pipewireao-rtc", "@PREFIX@/bin/pipewireao-rtc") &&
-        argv[2] == "-c" && argv[3] == "@RUNTIME@/rtc/rtc.conf",
-        "session-runtime requires pipewireao-rtc -c @RUNTIME@/rtc/rtc.conf")
+    validate_session_argv(argv)
     validate_environment(value["environment"], "session-runtime")
     require(isempty(intersect(Set(keys(value["environment"])), SESSION_PRIVATE_ENVIRONMENT)),
         "session-runtime environment cannot override private session bindings")
@@ -273,8 +223,7 @@ end
 "Explicit cold startup budget; acquisition and live-control deadlines are separate."
 function startup_timeout_ms(spec::AbstractDict)
     value = get(spec, "startup-timeout-ms", 300000)
-    require(value isa Integer && !(value isa Bool) && 1000 <= value <= 3600000,
-        "startup-timeout-ms must be an integer in 1000:3600000")
+    validate_startup_timeout(value)
     return Int(value)
 end
 
@@ -284,11 +233,9 @@ registered_application(spec::AbstractDict) = haskey(spec, "runtime")
 """Validate a contained, immutable application environment without resolving packages."""
 function application_environment(spec::AbstractDict, package::AbstractString)
     runtime = spec["runtime"]
-    require(runtime isa AbstractDict && Set(keys(runtime)) == Set(["kind", "project"]) &&
-        runtime["kind"] == "registered", "runtime requires kind=registered and project")
+    validate_registered_runtime(runtime)
     project = runtime["project"]
-    require(project isa String && !isempty(project) && !isabspath(project) &&
-        !occursin('\0', project), "runtime project must be a relative directory")
+    validate_runtime_project(project)
     root = realpath(package)
     environment = realpath(joinpath(root, project))
     require(environment == root || startswith(environment, root * "/"),
@@ -307,43 +254,32 @@ function application_environment(spec::AbstractDict, package::AbstractString)
     require(!haskey(metadata, "sources"), "registered application must not override package sources")
     manifest = TOML.parsefile(joinpath(environment, "Manifest.toml"))
     dependencies = get(manifest, "deps", nothing)
-    require(dependencies isa AbstractDict && !isempty(dependencies),
-        "application manifest must contain its dependency closure")
+    validate_manifest_dependencies(dependencies)
     for (name, uuid) in direct
         entries = get(dependencies, name, Any[])
-        require(entries isa AbstractVector && count(entry -> entry isa AbstractDict &&
-            get(entry, "uuid", nothing) == uuid, entries) == 1,
-            "application manifest must resolve direct dependency $name exactly once")
+        validate_direct_dependency(entries, name, uuid)
     end
     for (name, entries) in dependencies
-        require(entries isa AbstractVector && !isempty(entries), "invalid manifest dependency $name")
+        validate_manifest_entries(entries, name)
         for entry in entries
-            require(entry isa AbstractDict, "invalid manifest dependency record $name")
-            require(!haskey(entry, "path") && !haskey(entry, "repo-url") &&
-                !haskey(entry, "repo-rev"), "application dependencies must resolve through registries")
+            validate_manifest_entry(entry, name)
             uuid = get(entry, "uuid", nothing)
-            require(uuid isa String && occursin(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", uuid),
-                "invalid manifest UUID for $name")
+            validate_manifest_uuid(uuid, name)
             stdlib = joinpath(Sys.STDLIB, name, "Project.toml")
             bundled = isfile(stdlib) && get(TOML.parsefile(stdlib), "uuid", nothing) == uuid
             tree = get(entry, "git-tree-sha1", nothing)
-            require(bundled || tree isa String && occursin(r"^[0-9a-f]{40}$", tree),
+            require(bundled || valid_manifest_tree(tree),
                 "registered dependency $name requires an immutable tree hash")
             version = get(entry, "version", nothing)
-            require(bundled || version isa String && tryparse(VersionNumber, version) !== nothing,
+            require(bundled || valid_manifest_version(version),
                 "registered dependency $name requires a package version")
             required = get(entry, "deps", String[])
-            require(required isa AbstractVector || required isa AbstractDict,
-                "invalid dependency list for $name")
-            names = required isa AbstractDict ? keys(required) : required
+            names = manifest_dependency_names(required, name)
             require(all(dependency -> haskey(dependencies, dependency), names),
                 "application manifest is missing a dependency of $name")
             for dependency in names
                 candidates = dependencies[dependency]
-                require(candidates isa AbstractVector &&
-                    (required isa AbstractDict ? count(candidate -> candidate isa AbstractDict &&
-                        get(candidate, "uuid", nothing) == required[dependency], candidates) == 1 :
-                        length(candidates) == 1), "application manifest has an ambiguous dependency of $name")
+                validate_manifest_candidates(candidates, required, dependency, name)
             end
         end
     end
@@ -382,13 +318,12 @@ function validate_owner_pins(owner, placement)
 end
 
 "Validate the existing process and thread placement contracts without reading an application."
-function validate_placements(placements, roles)
-    require(placements isa AbstractDict && Set(keys(placements)) == roles,
+validate_placements(placements, roles) = fail("each owned process requires an explicit placement contract")
+function validate_placements(placements::AbstractDict, roles)
+    require(Set(keys(placements)) == roles,
         "each owned process requires an explicit placement contract")
     for (role, placement) in placements
-        require(placement isa AbstractDict && Set(keys(placement)) ==
-            Set(["cpus", "leader-cpu", "rt-priority", "threads", "locked-bytes"]),
-            "invalid placement contract for $role")
+        validate_process_placement(placement, role)
         envelope = valid_cpu_list(placement["cpus"])
         require(typeof(placement["leader-cpu"]) === Int && placement["leader-cpu"] in envelope,
             "process leader CPU must belong to its declared envelope")
@@ -398,19 +333,15 @@ function validate_placements(placements, roles)
         require(typeof(placement["locked-bytes"]) === Int && placement["locked-bytes"] >= 0,
             "locked-bytes must be nonnegative")
         threads = placement["threads"]
-        require(threads isa AbstractVector && length(threads) <= 128,
-            "thread requirements must be a bounded list")
+        validate_required_threads(threads)
         for thread in threads
-            require(thread isa AbstractDict && Set(["cpus", "policy", "priority", "count"]) ⊆ Set(keys(thread)) ⊆
-                Set(["cpus", "policy", "priority", "count", "name"]), "invalid required thread fields")
-            require(thread["cpus"] isa AbstractVector, "required thread CPUs must be a list")
-            require(Placement.cpu_set(thread["cpus"]) ⊆ envelope, "required thread exceeds process envelope")
+            validate_required_thread(thread)
+            require(required_thread_cpu_set(thread["cpus"]) ⊆ envelope, "required thread exceeds process envelope")
             require(thread["policy"] in ("fifo", "other") && typeof(thread["count"]) === Int &&
                 typeof(thread["priority"]) === Int && 1 <= thread["count"] <= 128 &&
                 thread["priority"] == (thread["policy"] == "fifo" ? priority : 0),
                 "invalid required thread policy/count")
-            require(!haskey(thread, "name") || thread["name"] isa String &&
-                !isempty(thread["name"]) && !occursin('\0', thread["name"]),
+            require(!haskey(thread, "name") || valid_required_thread_name(thread["name"]),
                 "required thread name must be a nonempty string")
         end
     end
@@ -426,17 +357,16 @@ end
 
 # Shared structural, asset and ownership checks. This does not qualify a
 # dependency environment; installation always goes through profile above.
-function validate_application(value, path, prefix; legacy_export_input::Bool=false)
-    require(value isa AbstractDict && REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
+validate_application(value, path, prefix; legacy_export_input::Bool=false) = fail("expected version 1 deployment with the documented fields")
+function validate_application(value::AbstractDict, path, prefix; legacy_export_input::Bool=false)
+    require(REQUIRED_KEYS ⊆ Set(keys(value)) ⊆
         union(REQUIRED_KEYS, Set(["source-owner","auxiliary-source-owners","detector-observation","session-runtime","node-owners","startup-timeout-ms","runtime","analysis","instrument"])) && get(value, "version", nothing) === 1,
         "expected version 1 deployment with the documented fields")
     startup_timeout_ms(value)
-    require(value["name"] isa String && occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value["name"]),
-        "deployment name must use 1..40 lowercase letters, digits or hyphens")
+    validate_deployment_name(value["name"])
     owners = value["owners"]
-    require(owners isa AbstractVector && length(owners) <= MAX_EXTERNAL_OWNERS,
-        "deployment permits at most eight external owners")
-    require(!haskey(value,"analysis") || value["analysis"] isa AbstractVector && length(value["analysis"]) <= 8,
+    validate_external_owners(owners)
+    require(!haskey(value,"analysis") || valid_analysis_entries(value["analysis"]),
         "deployment analysis must be a list of at most eight entries")
     validate_environment(value["environment"], "deployment")
     roles = Set(["core", "rtc"])
@@ -445,86 +375,13 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
         push!(roles,"session")
     end
     source_role = get(value, "source-owner", nothing)
-    require(source_role === nothing || source_role isa String && !isempty(source_role),
+    require(source_role === nothing || valid_source_role(source_role),
         "source-owner must name an existing external owner")
     auxiliary = get(value, "auxiliary-source-owners", String[])
-    require(auxiliary isa AbstractVector && length(auxiliary) <= MAX_EXTERNAL_OWNERS-1 &&
-        all(role -> role isa String && !isempty(role), auxiliary) &&
-        length(unique(auxiliary)) == length(auxiliary) && !(source_role in auxiliary) &&
-        (isempty(auxiliary) || source_role !== nothing),
-        "auxiliary-source-owners must uniquely name at most seven owners distinct from the primary source")
+    validate_auxiliary_sources(auxiliary, source_role)
     markers = Set{String}()
     for owner in owners
-        require(owner isa AbstractDict, "external owner fields do not match the deployment contract")
-        ordinary = !native_heart(owner) && !native_acquisition(owner)
-        require(!ordinary || native_bootstrap(owner) || legacy_export_input,
-            "ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts")
-        fields = !ordinary ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
-            native_bootstrap(owner) ? Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"]) :
-            Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
-        if native_bootstrap(owner)
-            node = get(owner,"bootstrap-node",nothing)
-            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node),
-                "native bootstrap requires a bounded exact node name")
-        end
-        if native_acquisition(owner)
-            push!(fields, "instrument")
-            require(get(owner, "role", nothing) == source_role,
-                "native acquisition lifecycle must be the selected source owner")
-            require(get(owner, "instrument", nothing) in ("classic", "copper"),
-                "native acquisition requires an explicit Classic or Copper instrument")
-            node = get(owner, "control-node", nothing)
-            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node),
-                "native acquisition requires a bounded exact node name")
-        end
-        if native_heart(owner)
-            require(get(owner, "role", nothing) == "heart", "native HEART profile requires the heart role")
-            node = get(owner, "control-node", nothing)
-            require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node),
-                "native HEART requires a bounded exact node name")
-        end
-        if source_role !== nothing && (get(owner, "role", nothing) == source_role || get(owner, "role", nothing) in auxiliary)
-            if get(owner, "role", nothing) in auxiliary
-                require(native_source(owner) && native_bootstrap(owner),
-                    "auxiliary source requires native SourceControl and owner bootstrap")
-            end
-            require(native_acquisition(owner) || native_source(owner) || legacy_export_input,
-                "source owner requires a native source control profile")
-            native_acquisition(owner) || union!(fields, native_source(owner) ?
-                ["control-protocol", "control-node"] : ["control-request", "control-reply"])
-            if native_source(owner)
-                node = get(owner,"control-node",nothing)
-                require(node isa String && occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node),
-                    "native source requires a bounded exact node name")
-            end
-        end
-        require(Set(keys(owner)) == fields, "external owner fields do not match the deployment contract")
-        role = owner["role"]
-        require(role != "heart" || native_heart(owner) || legacy_export_input,
-            "HEART owner requires the native control profile")
-        require(role isa String && !(role in roles) && occursin(r"^[a-z][a-z0-9-]{0,31}$", role),
-            "external owner role must be unique and filesystem-safe")
-        push!(roles, role)
-        argv = owner["argv"]
-        require(argv isa AbstractVector && 1 <= length(argv) <= 256 &&
-            all(arg -> arg isa String && !occursin('\0', arg), argv) && !isempty(argv[1]),
-            "owner argv must be a nonempty bounded string list")
-        native_acquisition(owner) && validate_acquisition_arguments(owner)
-        native_bootstrap(owner) && validate_bootstrap_arguments(owner)
-        validate_environment(owner["environment"], "owner $role")
-        names = Set{String}()
-        marker_keys = native_heart(owner) || native_acquisition(owner) || native_bootstrap(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
-        role == source_role && !native_source(owner) && !native_acquisition(owner) &&
-            append!(marker_keys, ["control-request", "control-reply"])
-        for key in marker_keys
-            marker = owner[key]
-            require(marker isa String && !(marker in (".", "..")) &&
-                occursin(r"^[a-zA-Z0-9_.-]{1,64}$", marker), "owner $key must be a marker basename")
-            push!(names, marker)
-        end
-        require(length(names) == length(marker_keys) && isempty(intersect(names, markers)),
-            "owner markers must be distinct")
-        union!(markers, names)
+        validate_external_owner!(owner, source_role, auxiliary, roles, markers; legacy_export_input)
     end
     require(source_role === nothing || source_role in (owner["role"] for owner in owners),
         "source-owner must name an existing external owner")
@@ -532,66 +389,52 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
         "auxiliary-source-owners must name declared external owners")
     if !isempty(auxiliary)
         primary = only(filter(owner -> owner["role"] == source_role, owners))
-        require(native_source(primary) || native_acquisition(primary),
+        require(uses_source_control_protocol(primary) || uses_acquisition_protocol(primary),
             "auxiliary sources require a native primary source control")
         source_controls = [owner["control-node"] for owner in owners if owner["role"] in auxiliary || owner["role"] == source_role]
         require(length(unique(source_controls)) == length(source_controls),
             "primary and auxiliary sources require distinct control node names")
     end
-    require(!haskey(value,"detector-observation") || value["detector-observation"] isa Bool,
-        "detector-observation must be a Boolean")
+    haskey(value,"detector-observation") && validate_detector_observation(value["detector-observation"])
     require(!get(value,"detector-observation",false) || source_role !== nothing &&
-        native_source(only(filter(owner->owner["role"] == source_role,owners))),
+        uses_source_control_protocol(only(filter(owner->owner["role"] == source_role,owners))),
         "detector observation requires an admitted native source owner")
     reserved = union(roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"]))
     require(isempty(intersect(markers, reserved)), "owner markers conflict with deployment runtime paths")
     source = source_role === nothing ? nothing : only(filter(owner -> owner["role"] == source_role, owners))
-    if source !== nothing && !native_source(source) && !native_acquisition(source)
+    if source !== nothing && !uses_source_control_protocol(source) && !uses_acquisition_protocol(source)
         staging = splitext(source["control-request"])[1] * ".new"
         require(!(staging in markers || staging in reserved), "source request staging path conflicts with runtime paths")
     end
     validate_placements(value["placement"], roles)
     for owner in owners
-        native_bootstrap(owner) && validate_owner_pins(owner, value["placement"][owner["role"]])
+        uses_bootstrap_protocol(owner) && validate_owner_pins(owner, value["placement"][owner["role"]])
     end
     latency = value["cpu-latency-us"]
     require(latency === nothing || typeof(latency) === Int && 0 <= latency <= typemax(Int32),
         "cpu-latency-us must be null or a nonnegative Int32")
     client_roles = isempty(get(value, "analysis", [])) ? roles : union(roles, Set(["analysis"]))
-    require(value["client"] isa AbstractDict && Set(keys(value["client"])) == client_roles,
-        "each owned process and optional analysis require an explicit client configuration")
+    validate_client_roles(value["client"], client_roles)
     for name in values(value["client"])
         relative_asset(dirname(path), name)
     end
     relative_asset(dirname(path), value["session"])
     relative_asset(dirname(path), value["core"])
-    require(value["artifacts"] isa AbstractDict, "deployment artifacts must be a path/hash mapping")
-    for (name, sha) in value["artifacts"]
-        asset = relative_asset(dirname(path), name)
-        require(sha isa String && occursin(r"^[0-9a-f]{64}$", sha) && digest(asset) == sha,
-            "deployment artifact hash mismatch: $name")
-    end
+    validate_deployment_artifacts(value["artifacts"], path)
     session = decode(relative_asset(dirname(path), value["session"]), prefix)
     validate_session_links(session)
     validate_execution_groups(session)
     if haskey(value, "node-owners")
         mapping = value["node-owners"]
-        require(mapping isa AbstractDict && all(key isa String && role isa String
-            for (key, role) in mapping), "node-owners must map exact node names to owner roles")
+        mapping = node_owners(mapping)
         nodes = String[]
         fgn = false
         parameters = false
         for section in ("sources", "graphs", "sinks")
             entries = get(session, section, nothing)
-            require(entries isa AbstractVector, "session $section must be a list for node-owners")
-            for item in entries
-                require(item isa AbstractDict && get(item, "node.name", nothing) isa String,
-                    "node-owners requires declared node.name for every endpoint")
-                push!(nodes, item["node.name"])
-                fgn |= section == "graphs" && get(item, "factory", nothing) == "pipewireao.fgn-native"
-                parameters |= section == "sources" &&
-                    get(item, "factory", nothing) == "pipewireao.runtime-parameter"
-            end
+            found_fgn, found_parameters = collect_node_owner_endpoints!(nodes, entries, section)
+            fgn |= found_fgn
+            parameters |= found_parameters
         end
         roles = Set(owner["role"] for owner in owners)
         fgn && push!(roles, "fgn")
@@ -599,26 +442,12 @@ function validate_application(value, path, prefix; legacy_export_input::Bool=fal
         core = decode(relative_asset(dirname(path), value["core"]), prefix)
         core_nodes = Set{String}()
         for item in get(core, "context.objects", Any[])
-            item isa AbstractDict || continue
-            args = get(item, "args", nothing)
-            args isa AbstractDict || continue
-            node = get(args, "node.name", nothing)
-            node isa String && push!(core_nodes, node)
+            collect_core_object!(core_nodes, item)
         end
-        # A queue module creates its capture/playback streams through the
-        # private core's own native client, rather than a context SPA object.
-        # Exact names must still originate in the sealed core configuration;
-        # native admission verifies the bound client's process identity.
+        # Queue streams belong to the private core's native client; their names
+        # still originate in the sealed core declaration.
         for item in get(core, "context.modules", Any[])
-            item isa AbstractDict && get(item,"name",nothing) == "libpipewire-module-queue" || continue
-            args = get(item,"args",nothing)
-            args isa AbstractDict || continue
-            for key in ("capture.props","playback.props")
-                properties = get(args,key,nothing)
-                properties isa AbstractDict || continue
-                node = get(properties,"node.name",nothing)
-                node isa String && push!(core_nodes,node)
-            end
+            collect_core_queue!(core_nodes, item)
         end
         !isempty(core_nodes) && push!(roles, "core")
         require(length(unique(nodes)) == length(nodes) && Set(keys(mapping)) == Set(nodes) &&
@@ -745,6 +574,394 @@ function installed_wrappers(julia::AbstractString)
             "exit(PipeWireAORTC.$owner.main(ARGS))' -- \"\$@\"\n"
     end
     return scripts
+end
+
+decode_fallback(error::SystemError, path, prefix) = rethrow()
+function decode_fallback(error, path, prefix)
+    paths = installed_paths(prefix)
+    env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"]))
+    out, _, code = Common.run_checked([paths["parser"], "-N", "-R", path]; env, timeout=10)
+    code == 0 || fail("installed SPA-JSON parser rejected $path")
+    ncodeunits(out) <= MAX_CONFIG_BYTES || fail("decoded deployment configuration exceeds 16 MiB")
+    return Common.parse_json(out)
+end
+
+validate_links(links) = fail("session links must be a list of at most $MAX_SESSION_LINKS declared connections")
+function validate_links(links::AbstractVector)
+    require(length(links) <= MAX_SESSION_LINKS, "session links must be a list of at most $MAX_SESSION_LINKS declared connections")
+    return nothing
+end
+
+validate_session_node_name(name, controlled) = fail("session node names must be nonempty and unique: $name")
+function validate_session_node_name(name::String, controlled)
+    require(!isempty(name) && !haskey(controlled,name), "session node names must be nonempty and unique: $name")
+    return nothing
+end
+
+validate_execution_group_name(name, names) = fail("execution group name must be nonempty and unique: $name")
+function validate_execution_group_name(name::String, names)
+    require(!isempty(name) && !occursin('\0',name) && !(name in names), "execution group name must be nonempty and unique: $name")
+    return nothing
+end
+
+validate_execution_group_nodes(nodes, name) = fail("execution group has no members: $name")
+function validate_execution_group_nodes(nodes::AbstractVector, name)
+    require(!isempty(nodes), "execution group has no members: $name")
+    return nothing
+end
+
+validate_execution_group_member(node, controlled, membership) = fail("unknown or duplicate execution group member: $node")
+function validate_execution_group_member(node::String, controlled, membership)
+    require(haskey(controlled,node) && !haskey(membership,node), "unknown or duplicate execution group member: $node")
+    return nothing
+end
+
+validate_session_argv(argv) = fail("session-runtime requires pipewireao-rtc -c @RUNTIME@/rtc/rtc.conf")
+function validate_session_argv(argv::AbstractVector)
+    require(length(argv) == 3 && all(valid_argv_argument, argv) && first(argv) in ("@PACKAGE@/rtc/bin/pipewireao-rtc", "@PREFIX@/bin/pipewireao-rtc") && argv[2] == "-c" && argv[3] == "@RUNTIME@/rtc/rtc.conf", "session-runtime requires pipewireao-rtc -c @RUNTIME@/rtc/rtc.conf")
+    return nothing
+end
+
+valid_argv_argument(value::String) = !occursin('\0', value)
+valid_argv_argument(value) = false
+
+validate_startup_timeout(value) = fail("startup-timeout-ms must be an integer in 1000:3600000")
+function validate_startup_timeout(value::Integer)
+    require(1000 <= value <= 3600000, "startup-timeout-ms must be an integer in 1000:3600000")
+    return nothing
+end
+
+validate_startup_timeout(value::Bool) = fail("startup-timeout-ms must be an integer in 1000:3600000")
+
+validate_registered_runtime(runtime) = fail("runtime requires kind=registered and project")
+function validate_registered_runtime(runtime::AbstractDict)
+    require(Set(keys(runtime)) == Set(["kind", "project"]) && runtime["kind"] == "registered", "runtime requires kind=registered and project")
+    return nothing
+end
+
+validate_runtime_project(project) = fail("runtime project must be a relative directory")
+function validate_runtime_project(project::String)
+    require(!isempty(project) && !isabspath(project) && !occursin('\0', project), "runtime project must be a relative directory")
+    return nothing
+end
+
+validate_manifest_dependencies(dependencies) = fail("application manifest must contain its dependency closure")
+function validate_manifest_dependencies(dependencies::AbstractDict)
+    require(!isempty(dependencies), "application manifest must contain its dependency closure")
+    return nothing
+end
+
+validate_direct_dependency(entries, name, uuid) = fail("application manifest must resolve direct dependency $name exactly once")
+function validate_direct_dependency(entries::AbstractVector, name, uuid)
+    require(count(entry -> matches_manifest_uuid(entry, uuid), entries) == 1, "application manifest must resolve direct dependency $name exactly once")
+    return nothing
+end
+
+matches_manifest_uuid(entry::AbstractDict, uuid) = get(entry, "uuid", nothing) == uuid
+matches_manifest_uuid(entry, uuid) = false
+
+validate_manifest_entries(entries, name) = fail("invalid manifest dependency $name")
+function validate_manifest_entries(entries::AbstractVector, name)
+    require(!isempty(entries), "invalid manifest dependency $name")
+    return nothing
+end
+
+validate_manifest_entry(entry, name) = fail("invalid manifest dependency record $name")
+function validate_manifest_entry(entry::AbstractDict, name)
+    require(!haskey(entry, "path") && !haskey(entry, "repo-url") && !haskey(entry, "repo-rev"),
+        "application dependencies must resolve through registries")
+    return nothing
+end
+
+validate_manifest_uuid(uuid, name) = fail("invalid manifest UUID for $name")
+function validate_manifest_uuid(uuid::String, name)
+    require(occursin(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", uuid), "invalid manifest UUID for $name")
+    return nothing
+end
+
+valid_manifest_tree(value::String) = occursin(r"^[0-9a-f]{40}$", value)
+valid_manifest_tree(value) = false
+valid_manifest_version(value::String) = tryparse(VersionNumber, value) !== nothing
+valid_manifest_version(value) = false
+
+manifest_dependency_names(required::AbstractVector, name) = required
+manifest_dependency_names(required::AbstractDict, name) = keys(required)
+manifest_dependency_names(required, name) = fail("invalid dependency list for $name")
+
+validate_manifest_candidates(candidates, required, dependency, name) = fail("application manifest has an ambiguous dependency of $name")
+function validate_manifest_candidates(candidates::AbstractVector, required, dependency, name)
+    require(manifest_dependency_matches(candidates, required, dependency), "application manifest has an ambiguous dependency of $name")
+    return nothing
+end
+
+manifest_dependency_matches(candidates, required::AbstractDict, dependency) = count(candidate -> matches_manifest_uuid(candidate, required[dependency]), candidates) == 1
+manifest_dependency_matches(candidates, required::AbstractVector, dependency) = length(candidates) == 1
+
+validate_process_placement(placement, role) = fail("invalid placement contract for $role")
+function validate_process_placement(placement::AbstractDict, role)
+    require(Set(keys(placement)) == Set(["cpus", "leader-cpu", "rt-priority", "threads", "locked-bytes"]), "invalid placement contract for $role")
+    return nothing
+end
+
+validate_required_threads(threads) = fail("thread requirements must be a bounded list")
+function validate_required_threads(threads::AbstractVector)
+    require(length(threads) <= 128, "thread requirements must be a bounded list")
+    return nothing
+end
+
+validate_required_thread(thread) = fail("invalid required thread fields")
+function validate_required_thread(thread::AbstractDict)
+    require(Set(["cpus", "policy", "priority", "count"]) ⊆ Set(keys(thread)) ⊆ Set(["cpus", "policy", "priority", "count", "name"]), "invalid required thread fields")
+    return nothing
+end
+
+valid_required_thread_name(value::String) = !isempty(value) && !occursin('\0', value)
+valid_required_thread_name(value) = false
+
+validate_deployment_name(name) = fail("deployment name must use 1..40 lowercase letters, digits or hyphens")
+function validate_deployment_name(name::String)
+    require(occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name), "deployment name must use 1..40 lowercase letters, digits or hyphens")
+    return nothing
+end
+
+validate_external_owners(owners) = fail("deployment permits at most eight external owners")
+function validate_external_owners(owners::AbstractVector)
+    require(length(owners) <= MAX_EXTERNAL_OWNERS, "deployment permits at most eight external owners")
+    return nothing
+end
+
+valid_analysis_entries(value::AbstractVector) = length(value) <= 8
+valid_analysis_entries(value) = false
+
+valid_source_role(value::String) = !isempty(value)
+valid_source_role(value) = false
+
+validate_auxiliary_sources(auxiliary, source_role) = fail("auxiliary-source-owners must uniquely name at most seven owners distinct from the primary source")
+function validate_auxiliary_sources(auxiliary::AbstractVector, source_role)
+    require(length(auxiliary) <= MAX_EXTERNAL_OWNERS-1 && all(valid_source_role, auxiliary) && length(unique(auxiliary)) == length(auxiliary) && !(source_role in auxiliary) && (isempty(auxiliary) || source_role !== nothing), "auxiliary-source-owners must uniquely name at most seven owners distinct from the primary source")
+    return nothing
+end
+
+valid_owner_node_name(value::String) = occursin(r"^[a-zA-Z0-9_.-]{1,128}$", value)
+valid_owner_node_name(value) = false
+
+validate_external_owner_role(role, roles) = fail("external owner role must be unique and filesystem-safe")
+function validate_external_owner_role(role::String, roles)
+    require(!(role in roles) && occursin(r"^[a-z][a-z0-9-]{0,31}$", role), "external owner role must be unique and filesystem-safe")
+    return nothing
+end
+
+validate_owner_argv(argv) = fail("owner argv must be a nonempty bounded string list")
+function validate_owner_argv(argv::AbstractVector)
+    require(1 <= length(argv) <= 256 && all(valid_argv_argument, argv) && !isempty(argv[1]), "owner argv must be a nonempty bounded string list")
+    return nothing
+end
+
+validate_owner_marker(marker, key) = fail("owner $key must be a marker basename")
+function validate_owner_marker(marker::String, key)
+    require(!(marker in (".", "..")) && occursin(r"^[a-zA-Z0-9_.-]{1,64}$", marker), "owner $key must be a marker basename")
+    return nothing
+end
+
+validate_detector_observation(value::Bool) = nothing
+validate_detector_observation(value) = fail("detector-observation must be a Boolean")
+
+validate_client_roles(clients, client_roles) = fail("each owned process and optional analysis require an explicit client configuration")
+function validate_client_roles(clients::AbstractDict, client_roles)
+    require(Set(keys(clients)) == client_roles, "each owned process and optional analysis require an explicit client configuration")
+    return nothing
+end
+
+validate_artifact_hash(sha, asset, name) = fail("deployment artifact hash mismatch: $name")
+function validate_artifact_hash(sha::String, asset, name)
+    require(occursin(r"^[0-9a-f]{64}$", sha) && digest(asset) == sha, "deployment artifact hash mismatch: $name")
+    return nothing
+end
+
+node_owners(mapping) = fail("node-owners must map exact node names to owner roles")
+node_owners(mapping::AbstractDict) = Dict{String,String}(node_owner_pair(key,role) for (key,role) in mapping)
+node_owner_pair(key::String, role::String) = key => role
+node_owner_pair(key, role) = fail("node-owners must map exact node names to owner roles")
+
+node_owner_name(item) = fail("node-owners requires declared node.name for every endpoint")
+node_owner_name(item::AbstractDict) = node_owner_name_value(get(item, "node.name", nothing))
+node_owner_name_value(value::String) = value
+node_owner_name_value(value) = fail("node-owners requires declared node.name for every endpoint")
+
+collect_core_object!(nodes, item) = nothing
+collect_core_object!(nodes, item::AbstractDict) = collect_core_object_args!(nodes, get(item, "args", nothing))
+collect_core_node!(nodes, properties) = nothing
+collect_core_object_args!(nodes, properties) = nothing
+collect_core_object_args!(nodes, properties::AbstractDict) = collect_core_node!(nodes, get(properties, "node.name", nothing))
+collect_core_node!(nodes, name::String) = push!(nodes, name)
+collect_core_queue!(nodes, item) = nothing
+function collect_core_queue!(nodes, item::AbstractDict)
+    get(item, "name", nothing) == "libpipewire-module-queue" || return nothing
+    return collect_core_queue_args!(nodes, get(item, "args", nothing))
+end
+collect_core_queue_args!(nodes, args) = nothing
+function collect_core_queue_args!(nodes, args::AbstractDict)
+    for key in ("capture.props", "playback.props")
+        properties = get(args, key, nothing)
+        collect_core_queue_properties!(nodes, properties)
+    end
+    return nothing
+end
+collect_core_queue_properties!(nodes, properties) = nothing
+collect_core_queue_properties!(nodes, properties::AbstractDict) = collect_core_node!(nodes, get(properties, "node.name", nothing))
+
+validate_external_owner!(owner, source_role, auxiliary, roles, markers; legacy_export_input) =
+    fail("external owner fields do not match the deployment contract")
+function validate_external_owner!(owner::AbstractDict, source_role, auxiliary, roles, markers; legacy_export_input)
+    ordinary = !uses_heart_protocol(owner) && !uses_acquisition_protocol(owner)
+    require(!ordinary || uses_bootstrap_protocol(owner) || legacy_export_input,
+        "ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts")
+    fields = !ordinary ? Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
+        uses_bootstrap_protocol(owner) ? Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"]) :
+        Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+    if uses_bootstrap_protocol(owner)
+        node = get(owner,"bootstrap-node",nothing)
+        require(valid_owner_node_name(node),
+            "native bootstrap requires a bounded exact node name")
+    end
+    if uses_acquisition_protocol(owner)
+        push!(fields, "instrument")
+        require(get(owner, "role", nothing) == source_role,
+            "native acquisition lifecycle must be the selected source owner")
+        require(get(owner, "instrument", nothing) in ("classic", "copper"),
+            "native acquisition requires an explicit Classic or Copper instrument")
+        node = get(owner, "control-node", nothing)
+        require(valid_owner_node_name(node),
+            "native acquisition requires a bounded exact node name")
+    end
+    if uses_heart_protocol(owner)
+        require(get(owner, "role", nothing) == "heart", "native HEART profile requires the heart role")
+        node = get(owner, "control-node", nothing)
+        require(valid_owner_node_name(node),
+            "native HEART requires a bounded exact node name")
+    end
+    if source_role !== nothing && (get(owner, "role", nothing) == source_role || get(owner, "role", nothing) in auxiliary)
+        if get(owner, "role", nothing) in auxiliary
+            require(uses_source_control_protocol(owner) && uses_bootstrap_protocol(owner),
+                "auxiliary source requires native SourceControl and owner bootstrap")
+        end
+        require(uses_acquisition_protocol(owner) || uses_source_control_protocol(owner) || legacy_export_input,
+            "source owner requires a native source control profile")
+        uses_acquisition_protocol(owner) || union!(fields, uses_source_control_protocol(owner) ?
+            ["control-protocol", "control-node"] : ["control-request", "control-reply"])
+        if uses_source_control_protocol(owner)
+            node = get(owner,"control-node",nothing)
+            require(valid_owner_node_name(node),
+                "native source requires a bounded exact node name")
+        end
+    end
+    require(Set(keys(owner)) == fields, "external owner fields do not match the deployment contract")
+    role = owner["role"]
+    require(role != "heart" || uses_heart_protocol(owner) || legacy_export_input,
+        "HEART owner requires the native control profile")
+    validate_external_owner_role(role, roles)
+    push!(roles, role)
+    argv = owner["argv"]
+    validate_owner_argv(argv)
+    uses_acquisition_protocol(owner) && validate_acquisition_arguments(owner)
+    uses_bootstrap_protocol(owner) && validate_bootstrap_arguments(owner)
+    validate_environment(owner["environment"], "owner $role")
+    names = Set{String}()
+    marker_keys = uses_heart_protocol(owner) || uses_acquisition_protocol(owner) || uses_bootstrap_protocol(owner) ? String[] : ["prepared", "connect", "connected", "quit"]
+    role == source_role && !uses_source_control_protocol(owner) && !uses_acquisition_protocol(owner) &&
+        append!(marker_keys, ["control-request", "control-reply"])
+    for key in marker_keys
+        marker = owner[key]
+        validate_owner_marker(marker, key)
+        push!(names, marker)
+    end
+    require(length(names) == length(marker_keys) && isempty(intersect(names, markers)),
+        "owner markers must be distinct")
+    union!(markers, names)
+    return nothing
+end
+
+validate_session_role!(controlled, required, processing, graphs, entries, role) = fail("session $role must be a list")
+function validate_session_role!(controlled, required, processing, graphs, entries::AbstractVector, role)
+    for entry in entries
+        validate_session_node!(controlled, required, processing, graphs, entry, role)
+    end
+    return nothing
+end
+validate_session_node!(controlled, required, processing, graphs, entry, role) = fail("session $role entry must be a mapping")
+function validate_session_node!(controlled, required, processing, graphs, entry::AbstractDict, role)
+    name = get(entry, "node.name", nothing)
+    validate_session_node_name(name, controlled)
+    ownership = get(entry, "ownership", nothing)
+    grant = get(entry, "run-control", nothing)
+    require(ownership in (nothing,"runner","external"), "invalid node ownership: $name")
+    managed = if ownership != "external"
+        require(grant === nothing, "runner-owned node has an external run-control grant: $name")
+        true
+    elseif role == "graphs"
+        require(grant in ("session","application"), "external graph requires an explicit run-control grant: $name")
+        grant == "session"
+    else
+        require(grant in (nothing,"application"), "external source or sink remains application controlled: $name")
+        false
+    end
+    controlled[name] = managed
+    if role == "graphs" && managed
+        push!(graphs,name); push!(required,name)
+        get(entry,"factory",nothing) == "api.ndarray.latest-hold" || push!(processing,name)
+    elseif role == "sinks" && ownership != "external"
+        push!(required,name)
+    end
+    return nothing
+end
+
+validate_execution_group_memberships!(names, membership, groups, graphs, processing, controlled) = fail("execution-groups must be a list")
+function validate_execution_group_memberships!(names, membership, groups::AbstractVector, graphs, processing, controlled)
+    require(!isempty(graphs) == !isempty(groups),
+        "execution groups require session-controlled graphs and vice versa")
+    for group in groups
+        validate_execution_group!(names, membership, group, processing, controlled)
+    end
+    return nothing
+end
+validate_execution_group!(names, membership, group, processing, controlled) = fail("execution group must be a mapping")
+function validate_execution_group!(names, membership, group::AbstractDict, processing, controlled)
+    name = get(group,"name",nothing)
+    validate_execution_group_name(name, names)
+    push!(names,name)
+    nodes = get(group,"nodes",nothing)
+    validate_execution_group_nodes(nodes, name)
+    for node in nodes
+        validate_execution_group_member(node, controlled, membership)
+        require(controlled[node], "application-controlled external node cannot belong to execution group: $node")
+        membership[node] = name
+    end
+    require(any(node -> node in processing,nodes), "execution group contains no session-controlled processing graph: $name")
+    return nothing
+end
+
+required_thread_cpu_set(cpus::AbstractVector) = Placement.cpu_set(cpus)
+required_thread_cpu_set(cpus) = fail("required thread CPUs must be a list")
+
+validate_deployment_artifacts(artifacts, path) = fail("deployment artifacts must be a path/hash mapping")
+function validate_deployment_artifacts(artifacts::AbstractDict, path)
+    for (name, sha) in artifacts
+        asset = relative_asset(dirname(path), name)
+        validate_artifact_hash(sha, asset, name)
+    end
+    return nothing
+end
+
+collect_node_owner_endpoints!(nodes, entries, section) = fail("session $section must be a list for node-owners")
+function collect_node_owner_endpoints!(nodes, entries::AbstractVector, section)
+    fgn = false
+    parameters = false
+    for item in entries
+        push!(nodes, node_owner_name(item))
+        fgn |= section == "graphs" && get(item, "factory", nothing) == "pipewireao.fgn-native"
+        parameters |= section == "sources" && get(item, "factory", nothing) == "pipewireao.runtime-parameter"
+    end
+    return fgn, parameters
 end
 
 end

@@ -11,11 +11,13 @@ end
 Base.showerror(io::IO, error::PlacementError) = print(io, error.message)
 fail(message) = throw(PlacementError(message))
 
-function cpu_set(values)
-    values isa AbstractVector && !isempty(values) &&
-        all(cpu -> typeof(cpu) === Int && cpu >= 2, values) &&
-        length(unique(values)) == length(values) ||
-        fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
+cpu_set(values) = fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
+_cpu(cpu) = fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
+_cpu(cpu::Int) = cpu >= 2 || fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
+function cpu_set(values::AbstractVector)
+    !isempty(values) || fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
+    foreach(_cpu,values)
+    length(unique(values)) == length(values) || fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
     Set(values)
 end
 

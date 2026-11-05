@@ -3,8 +3,8 @@ module ConfigurationStore
 
 using SQLite, DBInterface, JSON, SHA, FITSIO
 using ..Artifacts
-using ..NativeControlCodec
-using ..NativeRunnerCodec
+using ..ControlCodec
+using ..RunnerCodec
 
 export Store, default_root, register!, list_artifacts, get_artifact, read_artifact, materialize!, history
 
@@ -119,8 +119,9 @@ function Store(root::AbstractString=default_root())
     return Store(root, repository, joinpath(root, "history.sqlite3"), format)
 end
 
-function checked_oid(store, oid)
-    oid isa AbstractString && length(oid) == (store.object_format == "sha1" ? 40 : 64) &&
+checked_oid(store, oid) = throw(ArgumentError("expected a full Git object ID"))
+function checked_oid(store, oid::AbstractString)
+    length(oid) == (store.object_format == "sha1" ? 40 : 64) &&
         all(c -> c in '0':'9' || c in 'a':'f', oid) || throw(ArgumentError("expected a full Git object ID"))
     return String(oid)
 end
@@ -136,34 +137,40 @@ function read_blob(store, oid; limit=Artifacts.MAX_FITS_BYTES)
 end
 
 # JSON identity is independent of dictionary iteration order, including nested metadata.
-function canonical_json(value)
-    if value isa AbstractDict
-        all(key -> key isa AbstractString, keys(value)) || throw(ArgumentError("metadata keys must be strings"))
-        names = sort!(String.(collect(keys(value))))
-        return "{" * join((String(JSON.json(name)) * ":" * canonical_json(value[name]) for name in names), ",") * "}"
-    elseif value isa Union{AbstractVector,Tuple}
-        return "[" * join(canonical_json.(value), ",") * "]"
-    elseif value isa Union{AbstractString,Bool,Integer,Nothing}
-        return String(JSON.json(value))
-    elseif value isa AbstractFloat
-        isfinite(value) || throw(ArgumentError("metadata numbers must be finite"))
-        return String(JSON.json(value))
-    end
-    throw(ArgumentError("metadata must contain JSON values"))
+function canonical_json(value::AbstractDict)
+    foreach(metadata_key, keys(value))
+    names = sort!(String.(collect(keys(value))))
+    return "{" * join((String(JSON.json(name)) * ":" * canonical_json(value[name]) for name in names), ",") * "}"
 end
-function bounded_name(value, field; empty=false)
-    value isa AbstractString && (empty || !isempty(value)) && ncodeunits(value) <= 4096 &&
+metadata_key(key::AbstractString) = nothing
+metadata_key(key) = throw(ArgumentError("metadata keys must be strings"))
+canonical_json(value::Union{AbstractVector,Tuple}) = "[" * join(canonical_json.(value), ",") * "]"
+canonical_json(value::Union{AbstractString,Bool,Integer,Nothing}) = String(JSON.json(value))
+function canonical_json(value::AbstractFloat)
+    isfinite(value) || throw(ArgumentError("metadata numbers must be finite"))
+    return String(JSON.json(value))
+end
+canonical_json(value) = throw(ArgumentError("metadata must contain JSON values"))
+
+bounded_name(value, field; empty=false) = throw(ArgumentError("invalid $field"))
+function bounded_name(value::AbstractString, field; empty=false)
+    (empty || !isempty(value)) && ncodeunits(value) <= 4096 &&
         isvalid(value) && !occursin('\0', value) || throw(ArgumentError("invalid $field"))
     return String(value)
 end
+
+artifact_scope(scope::AbstractDict) = JSON.parse(canonical_json(scope), Dict{String,Any})
+artifact_scope(scope) = bounded_name(scope, "scope")
+checked_metadata(metadata::AbstractDict) = metadata
+checked_metadata(metadata) = throw(ArgumentError("metadata must be a JSON object"))
 
 """Capture and validate the original FITS once, then pin Git objects before indexing them."""
 function register!(store::Store, source::Artifacts.FITSArtifact, ::Type{T}, shape;
         label, scope, metadata=Dict{String,Any}(), schema="") where T
     label = bounded_name(label, "label")
-    scope = scope isa AbstractDict ? JSON.parse(canonical_json(scope), Dict{String,Any}) : bounded_name(scope, "scope")
+    scope = artifact_scope(scope)
     schema = bounded_name(schema, "schema"; empty=true)
-    metadata isa AbstractDict || throw(ArgumentError("metadata must be a JSON object"))
+    checked_metadata(metadata)
     T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported target type"))
     Artifacts.checked_shape(shape, sizeof(T))
     original = Artifacts.snapshot(source.path; check=()->nothing)
@@ -199,9 +206,10 @@ function register!(store::Store, source::Artifacts.FITSArtifact, ::Type{T}, shap
     end
 end
 
-function fits_units(units)
-    units === nothing && return nothing
-    units isa AbstractString && isvalid(units) && !isempty(units) &&
+fits_units(::Nothing) = nothing
+fits_units(units) = throw(ArgumentError("generated FITS units must fit one 68-character ASCII string card without surrounding whitespace"))
+function fits_units(units::AbstractString)
+    isvalid(units) && !isempty(units) &&
         ncodeunits(units) + count(==('\''), units) <= 68 && strip(units) == units &&
         all(c -> isascii(c) && !iscntrl(c), units) ||
         throw(ArgumentError("generated FITS units must fit one 68-character ASCII string card without surrounding whitespace"))
@@ -249,8 +257,10 @@ function row_record(store, row; verify=true)
         "sequence"=>Int(row.sequence),"recorded_at"=>String(row.recorded_at),
         "manifest"=>manifest)
 end
-function page_limit(limit)
-    limit isa Integer && !(limit isa Bool) && 1 <= limit <= 100 || throw(ArgumentError("limit must be in 1:100"))
+page_limit(limit) = throw(ArgumentError("limit must be in 1:100"))
+page_limit(limit::Bool) = page_limit(nothing)
+function page_limit(limit::Integer)
+    1 <= limit <= 100 || throw(ArgumentError("limit must be in 1:100"))
     return Int(limit)
 end
 "Return catalog metadata after verifying the pinned Git manifest, tree and original bytes."
@@ -354,10 +364,16 @@ function materialize!(store::Store, id::AbstractString; storage_order="row-major
     end
 end
 
+artifact_cursor(value) = throw(ArgumentError("invalid cursor"))
+artifact_cursor(value::Integer) = value >= 0 ? value : artifact_cursor(nothing)
+history_cursor(value) = throw(ArgumentError("invalid history cursor"))
+history_cursor(value::Integer) = value > 0 ? value : history_cursor(nothing)
+history_records(value::Bool) = value
+history_records(value) = throw(ArgumentError("include_records must be a boolean"))
 "List a bounded page in registration order, using an exclusive sequence cursor."
 function list_artifacts(store::Store; limit=50, after_sequence=0)
     limit = page_limit(limit)
-    after_sequence isa Integer && after_sequence >= 0 || throw(ArgumentError("invalid cursor"))
+    after_sequence = artifact_cursor(after_sequence)
     items = database(store) do db
         items = Dict{String,Any}[]
         total = 0
@@ -384,10 +400,10 @@ function header_fields(session, header)
     return Dict{String,Any}("key"=>header_key(session,header),"session_id"=>session,
         "endpoint_instance"=>header.endpoint_instance,"token"=>header.token,
         "controller"=>Dict("global_id"=>c.global_id,"serial"=>c.serial,"instance"=>c.instance),
-        "operation"=>String(NativeRunnerCodec.OPERATIONS[Int(header.operation)]),
+        "operation"=>String(RunnerCodec.OPERATIONS[Int(header.operation)]),
         "graph"=>nothing,"changes"=>nothing,"outcome"=>"unknown","error"=>nothing)
 end
-function json_value(value::NativeRunnerCodec.RunnerScalar)
+function json_value(value::RunnerCodec.RunnerScalar)
     numeric = value.kind === :float ? reinterpret(Float32,value.value) :
         value.kind === :double ? reinterpret(Float64,value.value) : value.value
     result = Dict{String,Any}("kind"=>String(value.kind),"value"=>numeric)
@@ -407,9 +423,9 @@ The cursor excludes newer operations while retaining every event of each returne
 """
 function history(store::Store; limit=50, before_sequence=typemax(Int64), session_id=nothing, include_records=false)
     limit = page_limit(limit)
-    before_sequence isa Integer && before_sequence > 0 || throw(ArgumentError("invalid history cursor"))
+    before_sequence = history_cursor(before_sequence)
     session_id === nothing || bounded_name(session_id,"session_id")
-    include_records isa Bool || throw(ArgumentError("include_records must be a boolean"))
+    include_records = history_records(include_records)
     items = Dict{String,Any}[]
     database(store) do db
         query = """SELECT e.sequence,e.operation_key FROM operation_events e WHERE e.sequence<?
@@ -429,11 +445,11 @@ function history(store::Store; limit=50, before_sequence=typemax(Int64), session
                 try
                     Int(row.record_size) <= 65536 || throw(ArgumentError("journal record exceeds native lifecycle byte limit"))
                     if event in ("completed","unknown")
-                        completion = NativeRunnerCodec.decode_completion(bytes)
+                        completion = RunnerCodec.decode_completion(bytes)
                         header = completion.header
                         header_key(session,header) == key || throw(ArgumentError("journal operation key differs from native identity"))
                         item === nothing && (item = header_fields(session,header))
-                        item["operation"] == String(NativeRunnerCodec.OPERATIONS[Int(header.operation)]) || throw(ArgumentError("history operation identity mismatch"))
+                        item["operation"] == String(RunnerCodec.OPERATIONS[Int(header.operation)]) || throw(ArgumentError("history operation identity mismatch"))
                         include_records && (item[event*"_hex"] = bytes2hex(bytes))
                         unresolved |= event == "unknown"
                         item["outcome"] = unresolved ? "unknown" :
@@ -450,11 +466,11 @@ function history(store::Store; limit=50, before_sequence=typemax(Int64), session
                             item["details"] = json_value(details)
                         end
                     else
-                        header,payload = NativeControlCodec.decode_request(bytes)
-                        command = NativeRunnerCodec.decode_request(header,payload)
+                        header,payload = ControlCodec.decode_request(bytes)
+                        command = RunnerCodec.decode_request(header,payload)
                         header_key(session,header) == key || throw(ArgumentError("journal operation key differs from native identity"))
                         item === nothing && (item = header_fields(session,header))
-                        item["operation"] == String(NativeRunnerCodec.OPERATIONS[Int(header.operation)]) || throw(ArgumentError("history operation identity mismatch"))
+                        item["operation"] == String(RunnerCodec.OPERATIONS[Int(header.operation)]) || throw(ArgumentError("history operation identity mismatch"))
                         include_records && (item["request_hex"] = bytes2hex(bytes))
                         if header.operation in (13,14)
                             item["graph"] = command.args[1]

@@ -1,3 +1,16 @@
+_queue_metadata_declarations(value) = throw(ArgumentError("queue metadata must be a list"))
+_queue_metadata_declarations(::AbstractVector) = nothing
+_queue_metadata_integer(value) = throw(ArgumentError("queue metadata requires integer type/size and Boolean required"))
+_queue_metadata_integer(::Bool) = throw(ArgumentError("queue metadata requires integer type/size and Boolean required"))
+_queue_metadata_integer(::Integer) = nothing
+_queue_metadata_required(value) = throw(ArgumentError("queue metadata requires integer type/size and Boolean required"))
+_queue_metadata_required(::Bool) = nothing
+_queue_module(value) = throw(ArgumentError("native module must be an object"))
+_queue_module(::AbstractDict) = nothing
+_queue_capacity(value) = throw(ArgumentError("telemetry queue capacity must be a positive integer"))
+_queue_capacity(::Bool) = throw(ArgumentError("telemetry queue capacity must be a positive integer"))
+_queue_capacity(value::Integer) = value > 0 || throw(ArgumentError("telemetry queue capacity must be a positive integer"))
+
 # RTC telemetry opts into the scientific records it can preserve. The generic
 # native queue remains Header-only unless its cold profile declares more types.
 function queue_metadata!(args;defaults=true)
@@ -5,12 +18,13 @@ function queue_metadata!(args;defaults=true)
     default_records() = [Dict("type"=>r.type,"size"=>r.size,"required"=>false)
         for r in Common.TELEMETRY_METADATA]
     declarations=get!(default_records,args,"metadata")
-    declarations isa AbstractVector || throw(ArgumentError("queue metadata must be a list"))
+    _queue_metadata_declarations(declarations)
     requirements=map(declarations) do item
         InstrumentConfiguration.fields(item,("type","size","required"),("type","size","required"),"queue metadata")
         type,size,required=item["type"],item["size"],item["required"]
-        type isa Integer && !(type isa Bool) && size isa Integer && !(size isa Bool) && required isa Bool ||
-            throw(ArgumentError("queue metadata requires integer type/size and Boolean required"))
+        _queue_metadata_integer(type)
+        _queue_metadata_integer(size)
+        _queue_metadata_required(required)
         requirement=PipeWireAO.MetadataRequirement(type,size;required)
         PipeWireAO.metadata_is_transport_owned(requirement.type) &&
             throw(ArgumentError("queue metadata must not copy transport-owned records"))
@@ -26,7 +40,7 @@ end
 # Explicit authoring templates compile to the native queue contract.
 function queue_templates!(core;metadata_defaults=true)
     for (index, entry) in enumerate(get(core, "context.modules", []))
-        entry isa AbstractDict || throw(ArgumentError("native module must be an object"))
+        _queue_module(entry)
         haskey(entry, "template") || continue
         InstrumentConfiguration.fields(entry, ("template", "args"), ("template", "args"), "queue template")
         entry["template"] == "telemetry" || throw(ArgumentError("unknown queue template"))
@@ -49,7 +63,7 @@ function queue_templates!(core;metadata_defaults=true)
         resolved = merge_configuration(defaults, args)
         queue_metadata!(resolved;defaults=metadata_defaults)
         count = resolved["queue.max-buffers"]
-        count isa Integer && !(count isa Bool) && count > 0 || throw(ArgumentError("telemetry queue capacity must be a positive integer"))
+        _queue_capacity(count)
         for field in ("queue.media", "queue.storage", "queue.overflow")
             InstrumentConfiguration._declaration_text(resolved[field], "telemetry $field")
         end

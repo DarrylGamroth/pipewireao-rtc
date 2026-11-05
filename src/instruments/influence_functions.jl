@@ -33,14 +33,12 @@ function _influence_spec(spec::NamedTuple, count)
         Set(keys(spec)) == Set(_INFLUENCE_FIELDS) || throw(ArgumentError(
             "influence_functions requires exactly $(_INFLUENCE_FIELDS)",
         ))
-    spec.path isa AbstractString && isvalid(spec.path) ||
-        throw(ArgumentError("influence path must be a valid file path string"))
+    influence_path(spec.path)
     hdu = _influence_integer(spec.hdu, typemax(Int), "influence HDU")
     axes = _influence_tuple(spec.axes, 3,
         v -> _influence_integer(v, 3, "influence axis"), "influence axes")
     Set(axes) == Set((1, 2, 3)) || throw(ArgumentError("influence axes must be a permutation of 1:3"))
-    spec.sha256 isa AbstractString && occursin(r"^[0-9a-f]{64}$", spec.sha256) ||
-        throw(ArgumentError("influence sha256 must be 64 lowercase hexadecimal digits"))
+    influence_hash(spec.sha256)
     spec.type in ("Float32", "Float64") ||
         throw(ArgumentError("influence type must be Float32 or Float64"))
     T = spec.type == "Float32" ? Float32 : Float64
@@ -153,3 +151,15 @@ function _load_influence_functions(spec::NamedTuple, description, pupil_resoluti
 end
 
 _load_influence_functions(_, _, _, _) = throw(ArgumentError("influence_functions must be a NamedTuple"))
+
+influence_path(value) = throw(ArgumentError("influence path must be a valid file path string"))
+function influence_path(value::AbstractString)
+    isvalid(value) || return influence_path(nothing)
+    return value
+end
+
+influence_hash(value) = throw(ArgumentError("influence sha256 must be 64 lowercase hexadecimal digits"))
+function influence_hash(value::AbstractString)
+    occursin(r"^[0-9a-f]{64}$", value) || return influence_hash(nothing)
+    return value
+end

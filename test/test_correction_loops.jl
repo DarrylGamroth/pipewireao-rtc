@@ -1,5 +1,6 @@
 using Test, PipeWireAORTC
 import Hsm
+import Clocks
 import PipeWireAO
 
 const CL = PipeWireAORTC.CorrectionLoops
@@ -9,6 +10,85 @@ function loop_at(closed::Bool; generation=Int64(0))
     sm = CL.Loop("correction:closed", OWNER)
     CL.observed!(sm, OWNER, generation, generation, closed)
     return sm
+end
+
+@testset "Unknown events latch the first reason from every correction state" begin
+    opening = loop_at(true)
+    CL.requested!(opening, OWNER, 1, 0, false)
+    closing = loop_at(false)
+    CL.requested!(closing, OWNER, 1, 0, true)
+    for sm in (CL.Loop("correction:closed", OWNER), loop_at(false),
+            loop_at(true), opening, closing)
+        @test Hsm.dispatch!(sm, :Unknown, :observer_error) === Hsm.EventHandled
+        @test CL.state(sm) === :Unknown
+        @test Hsm.current(sm) === :Unknown
+        @test sm.failure === :observer_error
+        @test sm.pending_since_ns == 0
+        @test Hsm.dispatch!(sm, :Unknown, :later_error) === Hsm.EventHandled
+        @test sm.failure === :observer_error
+        retained = (sm.requested_generation, sm.active_generation,
+            sm.requested_closed, sm.applied_closed, sm.initialized)
+        Hsm.dispatch!(sm, :Requested, (; instance=OWNER, requested_generation=Int64(2),
+            active_generation=Int64(1), closed=false))
+        Hsm.dispatch!(sm, :Observed, (; instance=OWNER, requested_generation=Int64(2),
+            active_generation=Int64(2), closed=true))
+        @test (sm.requested_generation, sm.active_generation,
+            sm.requested_closed, sm.applied_closed, sm.initialized) == retained
+        CL.observed!(sm, OWNER, 1, 1, true)
+        CL.requested!(sm, OWNER, 2, 1, false)
+        @test CL.state(sm) === :Unknown
+    end
+end
+
+@testset "Accepted events preserve same-value states and duplicate deadlines" begin
+    for closed in (false, true)
+        now = Ref(UInt64(70))
+        sm = CL.Loop("correction:closed", OWNER; clock=() -> now[])
+        Hsm.dispatch!(sm, :Observed, (; instance=OWNER, requested_generation=Int64(0),
+            active_generation=Int64(0), closed))
+        @test sm.initialized
+        @test CL.state(sm) === (closed ? :Closed : :Open)
+        Hsm.dispatch!(sm, :Requested, (; instance=OWNER, requested_generation=Int64(1),
+            active_generation=Int64(0), closed))
+        @test sm.requested_generation == 1
+        @test sm.pending_since_ns == 0
+        Hsm.dispatch!(sm, :Observed, (; instance=OWNER, requested_generation=Int64(1),
+            active_generation=Int64(1), closed))
+        @test sm.active_generation == 1
+        request = (; instance=OWNER, requested_generation=Int64(2),
+            active_generation=Int64(1), closed=!closed)
+        Hsm.dispatch!(sm, :Requested, request)
+        @test CL.state(sm) === (closed ? :Opening : :Closing)
+        @test Hsm.ancestor(sm, CL.state(sm)) === :Pending
+        @test Hsm.ancestor(sm, :Pending) === :Operational
+        @test sm.pending_since_ns == 70
+        now[] += 1
+        Hsm.dispatch!(sm, :Requested, request)
+        @test sm.pending_since_ns == 70
+        Hsm.dispatch!(sm, :Observed, (; instance=OWNER, requested_generation=Int64(2),
+            active_generation=Int64(2), closed=!closed))
+        @test CL.state(sm) === (closed ? :Open : :Closed)
+        @test sm.pending_since_ns == 0
+    end
+end
+
+struct BrokenTraceClock end
+(::BrokenTraceClock)() = UInt64(70)
+function Hsm.trace_dispatch_start(::CL.Loop{BrokenTraceClock}, event::Symbol, arg)
+    event === :Unknown && error("Hsm dispatch instrumentation failed")
+    return nothing
+end
+
+@testset "An Hsm dispatch failure cannot escape the unknown publication boundary" begin
+    sm = CL.Loop("correction:closed", OWNER; clock=BrokenTraceClock())
+    CL.observed!(sm, OWNER, 0, 0, true)
+    @test CL.unknown!(sm, :observer_error) === nothing
+    @test CL.state(sm) === :Unknown
+    @test sm.failure === :observer_error
+    @test CL.unknown!(sm, :later_error) === nothing
+    @test sm.failure === :observer_error
+    CL.observed!(sm, OWNER, 0, 0, true)
+    @test CL.state(sm) === :Unknown
 end
 
 function loop_props(closed; requested=Int64(0), active=requested,
@@ -21,6 +101,28 @@ end
 function correction_status(props::PipeWireAO.SPA.Props, name, ::Type{T}) where {T}
     return PipeWireAO.pod_value(T, only(pod for (key, pod) in props.values
         if key == "pipewireao.correction-control." * name))
+end
+
+@testset "Cached nanosecond clocks preserve adoption deadlines and validation" begin
+    clock = Clocks.CachedNanoClock(70)
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms=5)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested=1, active=0))
+    sm = only(observer.loops)
+    @test sm.clock === clock && sm.pending_since_ns == 70
+    Clocks.advance!(clock, 4_999_999)
+    observer(Val(:observed), loop_props(false; requested=1, active=0))
+    @test CL.state(sm) === :Closing && sm.pending_since_ns == 70
+    Clocks.advance!(clock, 1)
+    observer(Val(:observed), loop_props(true; requested=1))
+    @test CL.state(sm) === :Unknown && sm.failure === :adoption_timeout
+    clock = Clocks.CachedNanoClock(70)
+    observer = CL.Observer(["correction:closed"], OWNER; clock)
+    observer(Val(:observed), loop_props(false))
+    Clocks.update!(clock, -1)
+    observer(Val(:observed), loop_props(false))
+    @test only(observer.loops).failure === :observer_error
+    @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; clock)
 end
 
 @testset "Correction-control publication reuses exact graph properties" begin

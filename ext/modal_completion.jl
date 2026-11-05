@@ -35,8 +35,7 @@ function modal_completion(mirror, registration, policy; obstruction, healthy=not
     length(unique(positions)) == length(positions) || throw(ArgumentError("actuator source-grid positions must be unique"))
     count = length(positions)
     healthy === nothing && (healthy = trues(count))
-    healthy isa AbstractVector{Bool} && length(healthy) == count ||
-        throw(ArgumentError("actuator health must explicitly match physical command order"))
+    validate_actuator_health(healthy, count)
     0 < count <= typemax(UInt16) || throw(ArgumentError("mirror command count exceeds the source-grid map bounds"))
     registered = IC._pupil_registration(registration)
     IC.isfinite_real(outer_radius) && isfinite(Float64(outer_radius)) && outer_radius > 0 ||
@@ -85,3 +84,9 @@ function modal_completion(mirror, registration, policy; obstruction, healthy=not
 end
 
 Calibration.modal_completion(mirror,registration,policy;kwargs...) = modal_completion(mirror,registration,policy;kwargs...)
+
+function validate_actuator_health(healthy::AbstractVector{Bool}, count)
+    length(healthy) == count || throw(ArgumentError("actuator health must explicitly match physical command order"))
+    return nothing
+end
+validate_actuator_health(healthy, count) = throw(ArgumentError("actuator health must explicitly match physical command order"))

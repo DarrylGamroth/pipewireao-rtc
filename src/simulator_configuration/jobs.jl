@@ -11,7 +11,7 @@ function settings_root(root)
 end
 
 function job_directory(root, id)
-    id isa AbstractString && occursin(r"^[0-9a-f]{32}$", id) || throw(ArgumentError("invalid rebuild job ID"))
+    rebuild_job_id(id)
     directory = joinpath(settings_root(root), id)
     isdir(directory) && !islink(directory) || throw(ArgumentError("rebuild job is unavailable"))
     return directory
@@ -91,7 +91,7 @@ function start_rebuild(session_id::AbstractString, configuration_sha256::Abstrac
         settings::AbstractDict; resume_running::Bool=true, root=default_root(), launch=launch_job,
         request_id=nothing, select=selected_session)
     occursin(r"^[0-9a-f]{64}$", configuration_sha256) || throw(ArgumentError("invalid configuration SHA-256"))
-    request_id === nothing || (request_id isa AbstractString && occursin(r"^[0-9a-f]{32}$", request_id)) ||
+    valid_rebuild_request_id(request_id) ||
         throw(ArgumentError("invalid management request identity"))
     selected = select(session_id)
     selected.identity["configuration_sha256"] == configuration_sha256 ||
@@ -121,6 +121,17 @@ function start_rebuild(session_id::AbstractString, configuration_sha256::Abstrac
     return Dict("id"=>id, "state"=>"queued")
 end
 
+"""
+    job(id; root=default_root(), inspect=SystemdOwners.properties)
+
+Read a retained simulator replacement job by the 32-character lowercase
+hexadecimal ID returned by `start_rebuild` (generated or supplied as
+`request_id`). Returns its receipt, or a copy with state `"failed"` or
+`"unknown"` when the worker ended without a terminal receipt. An unknown state
+means the replacement effect may have been attempted; this query never retries
+it. `root` selects the retained job directory, and `inspect` supplies the
+systemd unit-property query used for a nonterminal job.
+"""
 function job(id::AbstractString; root=default_root(), inspect=SystemdOwners.properties)
     directory = job_directory(root, id)
     result = C.read_json(joinpath(directory, "result.json"); maximum=MAX_REPLY_BYTES)
@@ -187,11 +198,11 @@ function rebuild(request, directory; select=selected_session, prepare=prepare_ca
     save_state(directory, "starting"; previous_application=selected.application)
     stage = joinpath(directory, "replacement")
     replacement = start(candidate, stage; prefix=selected.prefix, deadline=R.monotonic()+1050)
-    status = control(replacement, NativeSessionCodec.RunnerCommand(:status); deadline=R.monotonic()+15)
+    status = control(replacement, SessionCodec.RunnerCommand(:status); deadline=R.monotonic()+15)
     status["ok"] === true && status["state"] == "Ready" ||
         throw(ArgumentError("replacement native admission did not confirm Ready"))
     if request["resume_running"]
-        running = control(replacement, NativeSessionCodec.RunnerCommand(:session_start); deadline=R.monotonic()+30)
+        running = control(replacement, SessionCodec.RunnerCommand(:session_start); deadline=R.monotonic()+30)
         running["ok"] === true && running["state"] == "Running" ||
             throw(ArgumentError("replacement native Start did not confirm Running"))
     end
@@ -234,3 +245,13 @@ function run_job(id::AbstractString; root=default_root(), execute=rebuild)
         end
     end
 end
+
+rebuild_job_id(value) = throw(ArgumentError("invalid rebuild job ID"))
+function rebuild_job_id(value::AbstractString)
+    occursin(r"^[0-9a-f]{32}$", value) || return rebuild_job_id(nothing)
+    return value
+end
+
+valid_rebuild_request_id(::Nothing) = true
+valid_rebuild_request_id(value::AbstractString) = occursin(r"^[0-9a-f]{32}$", value)
+valid_rebuild_request_id(value) = false

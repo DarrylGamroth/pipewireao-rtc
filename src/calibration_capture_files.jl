@@ -1,6 +1,6 @@
 # Included inside InstrumentCalibration. RTC-DEV-029 capture-file boundary.
-import ..NativeCalibrationActionCodec
-import ..NativeControlClient
+import ..CalibrationActionCodec
+import ..ControlClient
 import PipeWireAO
 
 const CAPTURE_HEADER_BYTES = 16 * 1024
@@ -15,64 +15,73 @@ const CLASSIC_CAPTURE_CONTRACTS = (
 const CLASSIC_CAPTURE_BYTES = sum(contract.bytes for contract in CLASSIC_CAPTURE_CONTRACTS)
 
 _capture_require(condition, message) = condition || throw(ArgumentError(message))
-function _capture_fields(value, fields)
-    _capture_require(value isa AbstractDict && Set(keys(value)) == Set(fields), "capture object fields differ")
+_capture_fields(value, fields) = throw(ArgumentError("capture object fields differ"))
+function _capture_fields(value::AbstractDict, fields)
+    _capture_require(Set(keys(value)) == Set(fields), "capture object fields differ")
     return value
 end
-function _capture_uint(value, ::Type{T}=UInt64) where T<:Unsigned
-    _capture_require(value isa Integer && !(value isa Bool) && 0 <= value <= typemax(T), "invalid capture integer")
+_capture_uint(value, ::Type{T}=UInt64) where T<:Unsigned = throw(ArgumentError("invalid capture integer"))
+_capture_uint(value::Bool, ::Type{T}=UInt64) where T<:Unsigned = throw(ArgumentError("invalid capture integer"))
+function _capture_uint(value::Integer, ::Type{T}=UInt64) where T<:Unsigned
+    _capture_require(0 <= value <= typemax(T), "invalid capture integer")
     return T(value)
 end
-function _capture_int(value)
-    _capture_require(value isa Integer && !(value isa Bool) && typemin(Int64) <= value <= typemax(Int64), "invalid signed capture integer")
+_capture_int(value) = throw(ArgumentError("invalid signed capture integer"))
+_capture_int(value::Bool) = throw(ArgumentError("invalid signed capture integer"))
+function _capture_int(value::Integer)
+    _capture_require(typemin(Int64) <= value <= typemax(Int64), "invalid signed capture integer")
     return Int64(value)
 end
-function _capture_text(value; maximum=256)
-    _capture_require(value isa AbstractString && 0 < ncodeunits(value) <= maximum && isvalid(value) && !occursin('\0',value), "invalid capture text")
+_capture_text(value; maximum=256) = throw(ArgumentError("invalid capture text"))
+function _capture_text(value::AbstractString; maximum=256)
+    _capture_require(0 < ncodeunits(value) <= maximum && isvalid(value) && !occursin('\0',value), "invalid capture text")
     return String(value)
 end
-function _capture_hash(value; bytes=32)
-    _capture_require(value isa AbstractString && occursin(Regex("^[0-9a-f]{" * string(2bytes) * "}\$"),value) &&
+_capture_hash(value; bytes=32) = throw(ArgumentError("invalid capture digest or acquisition domain"))
+function _capture_hash(value::AbstractString; bytes=32)
+    _capture_require(occursin(Regex("^[0-9a-f]{" * string(2bytes) * "}\$"),value) &&
         (bytes != 16 || any(!=('0'),value)), "invalid capture digest or acquisition domain")
     return String(value)
 end
 _capture_json(value) = (Common.finite_json(value); Common.JSON.json(value))
-function _capture_same_json(left,right)
-    if left isa AbstractDict && right isa AbstractDict
-        return Set(keys(left)) == Set(keys(right)) &&
-            all(key -> _capture_same_json(left[key],right[key]),keys(left))
-    elseif left isa AbstractVector && right isa AbstractVector
-        return length(left) == length(right) && all(_capture_same_json(a,b) for (a,b) in zip(left,right))
-    elseif left isa Bool || right isa Bool
-        return left === right
-    elseif left isa Integer || right isa Integer
-        return left isa Integer && right isa Integer && left == right
-    end
-    return isequal(left,right)
-end
+_capture_same_json(left,right) = isequal(left,right)
+_capture_same_json(left::AbstractDict,right::AbstractDict) = Set(keys(left)) == Set(keys(right)) &&
+    all(key -> _capture_same_json(left[key],right[key]),keys(left))
+_capture_same_json(left::AbstractVector,right::AbstractVector) = length(left) == length(right) &&
+    all(_capture_same_json(a,b) for (a,b) in zip(left,right))
+_capture_same_json(left::Integer,right) = false
+_capture_same_json(left,right::Integer) = false
+_capture_same_json(left::Integer,right::Integer) = left == right
+_capture_same_json(left::Bool,right) = left === right
+_capture_same_json(left,right::Bool) = left === right
+_capture_same_json(left::Bool,right::Integer) = left === right
+_capture_same_json(left::Integer,right::Bool) = left === right
+_capture_same_json(left::Bool,right::Bool) = left === right
 
 # Bound structure before serialization as well as bounding its encoded length.
 function _capture_settings(value, budget=Ref(CAPTURE_HEADER_BYTES), depth=0)
     budget[] -= 1
     _capture_require(budget[] >= 0 && depth <= 32, "capture settings exceed structural bound")
-    if value isa AbstractDict
-        for (key,item) in value
-            _capture_require(key isa AbstractString, "capture settings require string keys")
-            budget[] -= ncodeunits(key)
-            _capture_settings(item,budget,depth+1)
-        end
-    elseif value isa AbstractVector || value isa Tuple
-        foreach(item -> _capture_settings(item,budget,depth+1),value)
-    elseif value isa AbstractString
-        budget[] -= ncodeunits(value)
-    else
-        _capture_require(value === nothing || value isa Bool || value isa Real, "unsupported capture setting")
-    end
+    _capture_setting!(value,budget,depth)
     _capture_require(budget[] >= 0, "capture settings exceed structural bound")
     return value
 end
-function _capture_snapshot(settings)
-    _capture_require(settings isa AbstractDict, "capture settings must be an object")
+_capture_setting!(value,budget,depth) = throw(ArgumentError("unsupported capture setting"))
+_capture_setting!(value::Union{Nothing,Real},budget,depth) = nothing
+function _capture_setting!(value::AbstractDict,budget,depth)
+    for (key,item) in value
+        _capture_setting_key!(key,budget)
+        _capture_settings(item,budget,depth+1)
+    end
+    return nothing
+end
+_capture_setting_key!(key,budget) = throw(ArgumentError("capture settings require string keys"))
+_capture_setting_key!(key::AbstractString,budget) = (budget[] -= ncodeunits(key); nothing)
+_capture_setting!(value::Union{AbstractVector,Tuple},budget,depth) =
+    foreach(item -> _capture_settings(item,budget,depth+1),value)
+_capture_setting!(value::AbstractString,budget,depth) = (budget[] -= ncodeunits(value); nothing)
+_capture_snapshot(settings) = throw(ArgumentError("capture settings must be an object"))
+function _capture_snapshot(settings::AbstractDict)
     _capture_settings(settings)
     encoded = _capture_json(settings)
     _capture_require(ncodeunits(encoded) <= CAPTURE_HEADER_BYTES, "capture settings exceed 16 KiB")
@@ -112,7 +121,7 @@ mutable struct CaptureStore
     used_bytes::UInt64
     run::UInt64
     serial::UInt64
-    cursor::Union{Nothing,NativeCalibrationActionCodec.AcquisitionCursor}
+    cursor::Union{Nothing,CalibrationActionCodec.AcquisitionCursor}
     domain::Union{Nothing,String}
     recording_clock::PipeWireAO.MetadataClock
 end
@@ -139,14 +148,14 @@ _capture_cursor(cursor) = Dict("domain"=>cursor.domain,"generation"=>cursor.gene
     "sequence"=>cursor.sequence,"model_ns"=>cursor.model_ns)
 function _capture_read_cursor(value)
     _capture_fields(value,("domain","generation","sequence","model_ns"))
-    result = NativeCalibrationActionCodec.AcquisitionCursor((_capture_uint(value[key]) for key in
+    result = CalibrationActionCodec.AcquisitionCursor((_capture_uint(value[key]) for key in
         ("domain","generation","sequence","model_ns"))...)
     _capture_require(result.domain > 0 && result.generation > 0 && result.model_ns <= typemax(Int64), "invalid capture cursor")
     return result
 end
 function _capture_exposure(value, cursor)
     _capture_fields(value,("domain","generation","sequence","start_model_ns","duration_ns"))
-    result = NativeCalibrationActionCodec.Exposure((_capture_uint(value[key]) for key in
+    result = CalibrationActionCodec.Exposure((_capture_uint(value[key]) for key in
         ("domain","generation","sequence","start_model_ns","duration_ns"))...)
     _capture_require(result.domain == cursor.domain && result.generation == cursor.generation &&
         cursor.sequence < typemax(UInt64) && result.sequence == cursor.sequence+1 &&
@@ -156,7 +165,7 @@ function _capture_exposure(value, cursor)
 end
 _capture_exposure_dict(value) = Dict(string(key)=>getproperty(value,key) for key in
     (:domain,:generation,:sequence,:start_model_ns,:duration_ns))
-_capture_end(value) = NativeCalibrationActionCodec.AcquisitionCursor(value.domain,value.generation,
+_capture_end(value) = CalibrationActionCodec.AcquisitionCursor(value.domain,value.generation,
     value.sequence,value.start_model_ns+value.duration_ns)
 
 function _capture_timing(value)
@@ -209,20 +218,35 @@ function _capture_receipt(receipt)
         "reference_timestamp"=>_capture_reference(receipt.reference_timestamp),
         "records"=>_capture_record_storage(receipt.records))
 end
+_capture_metadata_entries(entries) = throw(ArgumentError("capture metadata count exceeds bound"))
+_capture_metadata_entries(entries::AbstractVector) = _capture_require(1 <= length(entries) <= 64,
+    "capture metadata count exceeds bound")
+_capture_metadata_hex(hex) = throw(ArgumentError("invalid capture metadata bytes"))
+_capture_metadata_hex(hex::AbstractString) = _capture_require(iseven(ncodeunits(hex)) &&
+    ncodeunits(hex) <= 8192 && occursin(r"^[0-9a-f]*$",hex), "invalid capture metadata bytes")
+_capture_array(array,role,contract) = throw(ArgumentError("capture $role type or shape differs"))
+_capture_array(array::AbstractArray,role,contract) = _capture_require(
+    eltype(array) === contract.type && size(array) == contract.shape, "capture $role type or shape differs")
+_capture_exposure_records(records,frames) = throw(ArgumentError("capture exposure count differs"))
+_capture_exposure_records(records::AbstractVector,frames) = _capture_require(length(records) == frames,
+    "capture exposure count differs")
+_capture_shape_matches(shape,expected) = false
+_capture_shape_matches(shape::AbstractVector,expected) = length(shape) == length(expected) &&
+    Tuple(_capture_uint.(shape)) == expected
+
 function _capture_read_record_storage(value)
     _capture_fields(value,("abi","byte_order","entries"))
     _capture_require(value["abi"] === CAPTURE_METADATA_ABI && value["byte_order"] == CAPTURE_BYTE_ORDER,
         "capture metadata ABI or native byte order is incompatible")
     entries=value["entries"]
-    _capture_require(entries isa AbstractVector && 1 <= length(entries) <= 64, "capture metadata count exceeds bound")
+    _capture_metadata_entries(entries)
     used=0
     decoded=Pair{UInt32,Vector{UInt8}}[]
     for entry in entries
         _capture_fields(entry,("type","data"))
         type=_capture_uint(entry["type"],UInt32)
         hex=entry["data"]
-        _capture_require(hex isa AbstractString && iseven(ncodeunits(hex)) &&
-            ncodeunits(hex) <= 8192 && occursin(r"^[0-9a-f]*$",hex), "invalid capture metadata bytes")
+        _capture_metadata_hex(hex)
         bytes=div(ncodeunits(hex),2)
         used += (bytes+7)&~7
         _capture_require(used <= 4096, "capture metadata exceeds native byte budget")
@@ -267,8 +291,7 @@ function _capture_arrays(arrays)
     _capture_require(Set(keys(arrays)) == Set(keys(CLASSIC_CAPTURE_CONTRACTS)), "capture payload roles differ")
     for (role,contract) in pairs(CLASSIC_CAPTURE_CONTRACTS)
         array = getproperty(arrays,role)
-        _capture_require(array isa AbstractArray && eltype(array) === contract.type && size(array) == contract.shape,
-            "capture $role type or shape differs")
+        _capture_array(array,role,contract)
     end
     return arrays
 end
@@ -321,7 +344,7 @@ function capture_preflight(store::CaptureStore; run::UInt64,serial::UInt64,probe
         cursor,frames::UInt32,deadline::Float64,check=()->nothing)
     _capture_require(run > 0 && serial > 0 && probe <= 16383 && 1 <= frames <= 4096, "invalid capture request")
     _capture_require(isfinite(deadline), "capture deadline must be finite")
-    checked() = (check(); NativeControlClient.monotonic() < deadline || throw(InvalidStateException("capture deadline expired",:deadline)))
+    checked() = (check(); ControlClient.monotonic() < deadline || throw(InvalidStateException("capture deadline expired",:deadline)))
     checked()
     after = _capture_read_cursor(_capture_cursor(cursor))
     _capture_require(store.run in (0,run) && serial > store.serial, "capture run/serial is stale")
@@ -418,7 +441,7 @@ function capture!(store::CaptureStore, acquire; run::UInt64,serial::UInt64,probe
         rm(completed)
         rethrow()
     end
-    return NativeCalibrationActionCodec.Captured(after,request*"/manifest.json",bytes2hex(sha256(encoded)),
+    return CalibrationActionCodec.Captured(after,request*"/manifest.json",bytes2hex(sha256(encoded)),
         frames,bytes,UInt64(length(encoded)))
 end
 
@@ -466,7 +489,7 @@ continuity, nonoverlapping model-time intervals and canonical paths are verified
 before returning any sample. The
 manifest cannot choose a profile or relax the expected startup snapshot.
 """
-function read_capture(directory, descriptor::NativeCalibrationActionCodec.Captured;
+function read_capture(directory, descriptor::CalibrationActionCodec.Captured;
         expected_profile,expected_stage,expected_illumination,expected_settings)
     _capture_require(expected_profile == "classic", "unsupported expected capture profile")
     _capture_text(expected_stage); _capture_text(expected_illumination)
@@ -494,7 +517,7 @@ function read_capture(directory, descriptor::NativeCalibrationActionCodec.Captur
         _capture_uint(manifest["payload_bytes"]) == descriptor.bytes, "capture request identity or size differs")
     recording_policy=_capture_check_recording_policy(manifest["recording"])
     records = manifest["exposures"]
-    _capture_require(records isa AbstractVector && length(records) == descriptor.frames, "capture exposure count differs")
+    _capture_exposure_records(records,descriptor.frames)
     header = filter(pair -> first(pair) != "exposures",manifest)
     _capture_require(ncodeunits(_capture_json(header))+32 <= CAPTURE_HEADER_BYTES, "capture header exceeds 16 KiB")
     cursor = _capture_read_cursor(manifest["after"])
@@ -515,9 +538,7 @@ function read_capture(directory, descriptor::NativeCalibrationActionCodec.Captur
             payload = _capture_fields(payloads[string(role)],("path","encoding","layout","shape","bytes","sha256"))
             name = _capture_name(index,role)
             _capture_require(payload["path"] == name && payload["encoding"] == contract.encoding &&
-                payload["layout"] == "ROW_MAJOR" && payload["shape"] isa AbstractVector &&
-                length(payload["shape"]) == length(contract.shape) &&
-                Tuple(_capture_uint.(payload["shape"])) == contract.shape &&
+                payload["layout"] == "ROW_MAJOR" && _capture_shape_matches(payload["shape"],contract.shape) &&
                 _capture_uint(payload["bytes"]) == contract.bytes, "capture payload contract differs")
             _capture_hash(payload["sha256"])
             bytes = _capture_read(joinpath(dirname(path),name),contract.bytes)

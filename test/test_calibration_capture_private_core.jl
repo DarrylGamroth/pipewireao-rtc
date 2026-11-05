@@ -1,5 +1,5 @@
 include("test_calibration_capture.jl")
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 function capture_link(core,registry,source,sink)
     wait_proof(10,"capture ports") do
@@ -56,7 +56,7 @@ end
                         wait_array_source!(source,token;timeout_ns=10_000_000_000)
                     end
                 end
-                result=CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+15)
+                result=CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+15)
                 fetch(publisher)
                 @test result.arrays.raw==UInt16[1 2 3;4 5 6]
                 @test result.arrays.slopes==Float32[1 2;3 4]
@@ -71,7 +71,7 @@ end
                 BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),UInt64(3));
                 identity=identity(3,2),exposure_duration_ns=10)
             wait_array_source!(source,token;timeout_ns=10_000_000_000)
-            @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.NativeControlClient.monotonic()+5)
+            @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+5)
             @test capture.failure===:identity
             @test_throws InvalidStateException CC.snapshot(capture)
             close(capture)

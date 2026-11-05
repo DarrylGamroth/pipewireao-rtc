@@ -1,0 +1,572 @@
+"""Cold declarations for optional graph and instrument AOS owners."""
+module AOSOwner
+
+import ..Schemas
+
+import TOML
+import UUIDs
+
+import ..Artifacts
+import ..Common
+using ..Common: reference_clock_configuration
+import ..DeploymentConfiguration
+import ..InstrumentDefinition
+import ..InstrumentConfiguration
+import ..OwnerBootstrapRuntime
+
+public main, plant_settings, plant_declaration
+
+const Bootstrap = OwnerBootstrapRuntime
+const MAX_RETAINED_BYTES = 512 * 1024 * 1024
+const ELEMENT_TYPES = Dict(string(T) => T for T in Artifacts.TARGET_TYPES)
+
+struct FITSBinding{T}
+    binding::Symbol
+    source::Artifacts.FITSArtifact
+    element_type::Type{T}
+    shape::Tuple{Vararg{Int}}
+    function FITSBinding(binding, source, element_type, shape)
+        T = convert(DataType, element_type)
+        return new{T}(binding, source, T, shape)
+    end
+end
+
+text(value, label) = throw(ArgumentError("$label must be a nonempty string"))
+function text(value::String, label)
+    !isempty(value) && ncodeunits(value) <= 16 * 1024 &&
+        !occursin('\0', value) || throw(ArgumentError("$label must be a nonempty string"))
+    return value
+end
+integer(value, label, lower, upper) = throw(ArgumentError("$label must be an integer in $lower:$upper"))
+integer(value::Bool, label, lower, upper) = integer(nothing, label, lower, upper)
+function integer(value::Integer, label, lower, upper)
+    lower <= value <= upper ||
+        throw(ArgumentError("$label must be an integer in $lower:$upper"))
+    return Int(value)
+end
+
+
+pacing_period(value, rate) = throw(ArgumentError("pacing_rate_hz must be finite between zero and the model rate"))
+pacing_period(value::Bool, rate) = pacing_period(nothing, rate)
+function pacing_period(value::Real, rate)
+    isfinite(value) && 0 <= value <= rate ||
+        throw(ArgumentError("pacing_rate_hz must be finite between zero and the model rate"))
+    value == 0 && return UInt64(0)
+    return pacing_period_value(value)
+end
+pacing_period_value(value::Int) = UInt64(div(1_000_000_000 + div(value,2),value))
+function pacing_period_value(value::Real)
+    period = 1e9 / Float64(value)
+    isfinite(period) && 1 <= period < Float64(typemax(UInt64)) ||
+        throw(ArgumentError("pacing period must fit UInt64 nanoseconds"))
+    return round(UInt64,period)
+end
+function identifier(value, label)
+    name = text(value, label)
+    occursin(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name) ||
+        throw(ArgumentError("$label must be an identifier"))
+    return Symbol(name)
+end
+function node_name(value, label)
+    name = text(value, label)
+    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", name) || throw(ArgumentError("invalid $label"))
+    return name
+end
+boolean(value::Bool, label) = value
+boolean(value, label) = throw(ArgumentError("$label must be Boolean"))
+
+"Seal a bounded JSON value into concrete, immutable cold settings."
+Base.@nospecializeinfer function plant_settings(@nospecialize(value), remaining=Ref(4096), depth=0)
+    depth <= 16 || throw(ArgumentError("plant settings exceed 16 nesting levels"))
+    remaining[] -= 1
+    remaining[] >= 0 || throw(ArgumentError("plant settings exceed 4096 values"))
+    return seal_plant_setting(value, remaining, depth)
+end
+function seal_plant_setting(value::AbstractDict, remaining, depth)
+    length(value) <= remaining[] || throw(ArgumentError("plant settings exceed 4096 values"))
+    names = Tuple(identifier(key, "plant setting name") for key in keys(value))
+    items = Tuple(plant_settings(item, remaining, depth + 1) for item in values(value))
+    return NamedTuple{names}(items)
+end
+function seal_plant_setting(value::AbstractVector, remaining, depth)
+    length(value) <= remaining[] || throw(ArgumentError("plant settings exceed 4096 values"))
+    return Tuple(plant_settings(item, remaining, depth + 1) for item in value)
+end
+function seal_plant_setting(value::String, remaining, depth)
+    ncodeunits(value) <= 16 * 1024 && !occursin('\0', value) ||
+        throw(ArgumentError("plant setting strings must be at most 16 KiB without NUL"))
+    return value
+end
+seal_plant_setting(value::Union{Nothing,Bool,Integer}, remaining, depth) = value
+function seal_plant_setting(value::AbstractFloat, remaining, depth)
+    isfinite(value) || return seal_plant_setting(missing, remaining, depth)
+    return value
+end
+seal_plant_setting(value, remaining, depth) = throw(ArgumentError("plant settings must contain finite basic JSON values"))
+
+"""
+    plant_declaration(value; directory=nothing)
+
+Validate a dictionary containing exactly `package` and `settings`, and return
+`(package, settings)` with settings sealed as nested named tuples and tuples.
+If `directory` is supplied, resolve mirror-description and influence-function
+paths as contained assets relative to it. This loads no scientific packages.
+"""
+plant_declaration(value; directory=nothing) = throw(ArgumentError("plant requires exactly package and settings"))
+function plant_declaration(value::AbstractDict; directory=nothing)
+    Set(keys(value)) == Set(("package", "settings")) ||
+        throw(ArgumentError("plant requires exactly package and settings"))
+    package = identifier(value["package"], "plant package")
+    settings = plant_settings_object(value["settings"])
+    if directory !== nothing && haskey(settings,:mirror_description)
+        settings=merge(settings,(;mirror_description=DeploymentConfiguration.relative_asset(
+            directory,settings.mirror_description)))
+    end
+    if directory !== nothing && haskey(settings,:influence_functions) &&
+            hasproperty(settings.influence_functions, :path)
+        influences = settings.influence_functions
+        settings = merge(settings, (; influence_functions=merge(influences,
+            (; path=DeploymentConfiguration.relative_asset(directory, influences.path)))))
+    end
+    return (; package, settings)
+end
+
+plant_settings_object(value::AbstractDict) = plant_settings(value)
+plant_settings_object(value) = throw(ArgumentError("plant settings must be an object"))
+
+"Parse the complete native bootstrap invocation without loading science."
+function arguments(args)
+    values = Dict{String,String}()
+    required = ("--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance")
+    optional = ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
+    allowed = (required..., optional..., "--pipewire-cpu", "--optical-diagnostics-cpu", "--pupil-output-cpu", "--physical-offsets")
+    iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
+    for index in 1:2:length(args)
+        key, value = args[index], args[index + 1]
+        key in allowed || throw(ArgumentError("unknown AOS owner option $key"))
+        haskey(values, key) && throw(ArgumentError("duplicate $key"))
+        values[key] = text(value, key)
+    end
+    all(key -> haskey(values, key), required) || throw(ArgumentError(
+        "AOS owner requires --config, --remote, --control-node, --bootstrap-node and --bootstrap-instance"))
+    remote = values["--remote"]
+    isabspath(remote) || throw(ArgumentError("AOS owner requires an absolute private remote"))
+    control_node = node_name(values["--control-node"], "control node")
+    bootstrap_node = node_name(values["--bootstrap-node"], "bootstrap node")
+    control_node != bootstrap_node || throw(ArgumentError("source and bootstrap nodes must differ"))
+    instance = tryparse(Int64, values["--bootstrap-instance"])
+    instance !== nothing && instance > 0 || throw(ArgumentError("bootstrap instance must be positive"))
+    pipewire_cpu = nothing
+    if haskey(values, "--pipewire-cpu")
+        pipewire_cpu = tryparse(Int, values["--pipewire-cpu"])
+        pipewire_cpu !== nothing && pipewire_cpu >= 2 ||
+            throw(ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1"))
+    end
+    optical_diagnostics_cpu = nothing
+    if haskey(values, "--optical-diagnostics-cpu")
+        optical_diagnostics_cpu = tryparse(Int, values["--optical-diagnostics-cpu"])
+        optical_diagnostics_cpu !== nothing && optical_diagnostics_cpu >= 2 ||
+            throw(ArgumentError("optical diagnostics CPU must exclude CPUs 0 and 1"))
+    end
+    requested_timing = any(key -> haskey(values, key), optional)
+    pupil_output_cpu = nothing
+    if haskey(values, "--pupil-output-cpu")
+        pupil_output_cpu = tryparse(Int, values["--pupil-output-cpu"])
+        pupil_output_cpu !== nothing && pupil_output_cpu >= 2 ||
+            throw(ArgumentError("pupil output CPU must exclude CPUs 0 and 1"))
+        pupil_output_cpu != optical_diagnostics_cpu ||
+            throw(ArgumentError("pupil output and optical diagnostics require distinct CPUs"))
+    end
+    timing_directory = nothing
+    timing_frames = timing_warmup = 0
+    if requested_timing
+        all(key -> haskey(values, key), optional[1:2]) || throw(ArgumentError(
+            "phase timing requires --phase-timing-directory and --phase-timing-frames"))
+        timing_directory = values["--phase-timing-directory"]
+        isabspath(timing_directory) || throw(ArgumentError("phase timing directory must be absolute"))
+        timing_directory = abspath(timing_directory)
+        timing_frames = tryparse(Int, values["--phase-timing-frames"])
+        timing_warmup = tryparse(Int, get(values, "--phase-timing-warmup", "512"))
+        timing_frames !== nothing && 1 <= timing_frames <= 65_536 ||
+            throw(ArgumentError("phase timing frames must be in 1:65536"))
+        timing_warmup !== nothing && 0 <= timing_warmup <= 65_536 ||
+            throw(ArgumentError("phase timing warmup must be in 0:65536"))
+    end
+    return (; remote, control_node, bootstrap_node, bootstrap_instance=instance,
+        config=abspath(values["--config"]), phase_timing_directory=timing_directory,
+        phase_timing_frames=timing_frames, phase_timing_warmup=timing_warmup, pipewire_cpu, optical_diagnostics_cpu, pupil_output_cpu,
+        physical_offsets=haskey(values,"--physical-offsets") ? abspath(values["--physical-offsets"]) : nothing)
+end
+
+# Version 3 can use the public HIL named-command boundary. All maps are
+# sealed in the input declaration order before they reach execution ownership.
+command_inputs(value::AbstractString) = identifier(value, "command_input")
+function command_inputs(values::AbstractVector)
+    1 <= length(values) <= 16 || throw(ArgumentError("command_input requires 1:16 names"))
+    names = Tuple(identifier(value, "command_input") for value in values)
+    length(unique(names)) == length(names) || throw(ArgumentError("command_input names must be distinct"))
+    return names
+end
+command_inputs(value) = throw(ArgumentError("command_input requires an identifier or array of identifiers"))
+
+command_values(validate, value, ::Symbol, label) = validate(value, label)
+function command_values(validate, value::AbstractDict, names::Tuple, label)
+    Set(keys(value)) == Set(string.(names)) ||
+        throw(ArgumentError("$label must name every command input exactly once"))
+    return NamedTuple{names}(Tuple(validate(value[string(name)], "$label.$name") for name in names))
+end
+command_values(validate, value, names::Tuple, label) =
+    throw(ArgumentError("$label must name every command input exactly once"))
+validate_command_inputs(version, ::Symbol) = nothing
+function validate_command_inputs(version, ::Tuple)
+    version == 3 || throw(ArgumentError("named command inputs require version 3"))
+    return nothing
+end
+
+command_count(value, label) = integer(value, label, 1, Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32))
+function command_scale(value::Real, label)
+    isfinite(value) && 0 < value <= floatmax(Float32) ||
+        throw(ArgumentError("$label must be finite and positive"))
+    scale = Float32(value)
+    scale > 0 || throw(ArgumentError("$label underflows Float32"))
+    return scale
+end
+command_scale(value::Bool, label) = throw(ArgumentError("$label must be finite and positive"))
+command_scale(value, label) = throw(ArgumentError("$label must be finite and positive"))
+command_shapes(count::Integer) = (count,)
+command_shapes(counts::NamedTuple) = map(count -> (count,), counts)
+command_items(value) = (value,)
+command_items(values::NamedTuple) = Base.values(values)
+command_names(name::Symbol) = (name,)
+command_names(names::Tuple) = names
+
+mirror_description(declaration, ::Tuple) = nothing
+function mirror_description(declaration, ::Symbol)
+    mirrors = declaration.instrument.document["deformable_mirrors"]
+    return length(mirrors) == 1 ? DeploymentConfiguration.relative_asset(
+        declaration.directory, only(values(mirrors))["description"]) : nothing
+end
+
+"Validate every configuration declaration before preparing any FITS artifact."
+function configuration(path::AbstractString)
+    document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    return configuration(path, document)
+end
+configuration(path, document) = throw(ArgumentError("AOS configuration must be an object"))
+function configuration(path, document::AbstractDict)
+    version = integer(get(document, "version", nothing), "version", 1, 6)
+    version in (4,6) && return external_pupil_configuration(path, document)
+    version == 5 && return pupil_source_configuration(path, document)
+    shared_fields = ("version", "command_input", "frame_output", "command_count", "frame_shape",
+        "rate", "exposure_ns", "pacing_rate_hz", "backend", "device", "command_node",
+        "frame_schema", "command_schema", "command_scale", "total_exchanges", "optical_observation",
+        "detector_observation", "command_observation", "applied_command_observation", "calibration_identity", "instrument", "rtc_configuration", "prescription_identity", "reference_clock")
+    shared_required = ("version", "command_input", "frame_output", "command_count", "frame_shape",
+        "rate", "exposure_ns", "pacing_rate_hz", "backend", "device")
+    route_fields = version == 1 ? ("graph", "artifacts") : ("plant", "frame_encoding")
+    fields = version == 3 ? (shared_fields..., route_fields..., "pupil_output") : (shared_fields..., route_fields...)
+    required = version == 1 ? (shared_required..., route_fields...) :
+        (shared_required..., route_fields..., "frame_schema", "command_schema", "command_scale")
+    version == 3 && (required = (required...,"instrument","calibration_identity","rtc_configuration","prescription_identity"))
+    all(key -> key in fields, keys(document)) &&
+        all(key -> haskey(document, key), required) || throw(ArgumentError("invalid AOS configuration fields"))
+    config_path = abspath(path)
+    graph = version == 1 ? abspath(joinpath(dirname(config_path), text(document["graph"], "graph"))) : nothing
+    graph === nothing || isfile(graph) || throw(ArgumentError("AOS graph does not exist: $graph"))
+    plant = if version == 3
+        entry = document["plant"]
+        InstrumentConfiguration.fields(entry,("definition","settings","graph"),("definition","settings"),"declarative plant")
+        definition = DeploymentConfiguration.relative_asset(dirname(config_path),entry["definition"])
+        declaration = InstrumentConfiguration.load_simulation(definition; validate_optics=false)
+        configured = InstrumentConfiguration.settings(declaration,entry["settings"])
+        selected = InstrumentConfiguration.selected_graph(declaration, get(entry, "graph", "production"))
+        selected == "calibration" && throw(ArgumentError("the numerical calibration graph cannot be selected as a live simulator graph"))
+        (; definition,graph=selected,settings=plant_settings(configured))
+    elseif version == 2
+        plant_declaration(document["plant"]; directory=dirname(config_path))
+    else
+        nothing
+    end
+    command_input = command_inputs(document["command_input"])
+    validate_command_inputs(version, command_input)
+    frame_output = identifier(document["frame_output"], "frame_output")
+    command_count = command_values(AOSOwner.command_count, document["command_count"], command_input, "command_count")
+    sum(command_items(command_count)) <= Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32) ||
+        throw(ArgumentError("combined command storage exceeds the image byte limit"))
+    frame_shape = Artifacts.checked_shape(document["frame_shape"], sizeof(Float32))
+    length(frame_shape) == 2 || throw(ArgumentError("AOS frame_shape must have two dimensions"))
+    rate = integer(document["rate"], "rate", 1, 1_000_000_000)
+    period_ns = UInt64(div(1_000_000_000 + div(rate, 2), rate))
+    exposure_ns = UInt64(integer(document["exposure_ns"], "exposure_ns", 1, period_ns))
+    pacing_rate_hz = document["pacing_rate_hz"]
+    pacing_period_ns = pacing_period(pacing_rate_hz,rate)
+    backend = Symbol(text(document["backend"], "backend"))
+    backend in (:cpu, :cuda, :amdgpu) || throw(ArgumentError("AOS backend must be cpu, cuda or amdgpu"))
+    device = integer(document["device"], "device", 0, typemax(Int32))
+    backend == :cpu && device != 0 && throw(ArgumentError("CPU backend requires device 0"))
+    backend == :amdgpu && device == 0 && throw(ArgumentError("AMDGPU device identifiers start at 1"))
+    command_node = command_values(node_name, get(document, "command_node", "simulator-command"), command_input, "command_node")
+    length(unique(command_items(command_node))) == length(command_items(command_node)) ||
+        throw(ArgumentError("command node names must be distinct"))
+    frame_encoding = version == 1 ? :uint16 : Symbol(text(document["frame_encoding"], "frame_encoding"))
+    frame_encoding === :uint16 || throw(ArgumentError("AOS frame_encoding must be uint16"))
+    frame_schema = text(get(document, "frame_schema", Schemas.identifier("raw_detector_pixels")), "frame_schema")
+    command_schema = command_values(text, get(document, "command_schema", Schemas.identifier("demanded_pdm_command")), command_input, "command_schema")
+    command_scale = command_values(AOSOwner.command_scale, get(document, "command_scale", 1.0f-6), command_input, "command_scale")
+    total = get(document, "total_exchanges", nothing)
+    total_exchanges = total === nothing ? nothing : UInt64(integer(total, "total_exchanges", 1, typemax(Int64)))
+    optical_observation = boolean(get(document, "optical_observation", false), "optical_observation")
+    pupil_output = boolean(get(document, "pupil_output", false), "pupil_output")
+    if pupil_output
+        declaration = InstrumentConfiguration.load_simulation(plant.definition; validate_optics=false)
+        InstrumentConfiguration.pupil_output(declaration,
+            InstrumentConfiguration.settings(declaration, plant.settings); simulation_graph=plant.graph) === nothing &&
+            throw(ArgumentError("pupil_output requires a declared scientific pupil output"))
+    end
+    detector_observation = boolean(get(document, "detector_observation", false), "detector_observation")
+    command_observation = boolean(get(document, "command_observation", false), "command_observation")
+    applied_command_observation = boolean(get(document, "applied_command_observation", false), "applied_command_observation")
+    calibration_identity = haskey(document, "calibration_identity") ?
+        text(document["calibration_identity"], "calibration_identity") : nothing
+    instrument = haskey(document,"instrument") ?
+        DeploymentConfiguration.relative_asset(dirname(config_path),document["instrument"]) : nothing
+    instrument===nothing || version in (2,3) && calibration_identity!==nothing ||
+        throw(ArgumentError("instrument definition requires an instrument plant and calibration identity"))
+    rtc_configuration = version == 3 ? DeploymentConfiguration.relative_asset(dirname(config_path), document["rtc_configuration"]) : nothing
+    prescription_identity = version == 3 ? text(document["prescription_identity"], "prescription identity") : nothing
+    mirror_description = plant === nothing ? nothing : get(plant.settings,:mirror_description,nothing)
+    if version == 3
+        declaration = InstrumentConfiguration.load_simulation(plant.definition; validate_optics=false)
+        mirror_description = AOSOwner.mirror_description(declaration, command_input)
+    end
+    entries = version == 1 ? document["artifacts"] : ()
+    entries = artifact_entries(entries)
+    artifacts = FITSBinding[]
+    names = Set(command_names(command_input))
+    total_bytes = sum(command_items(command_count)) * sizeof(Float32)
+    for entry in entries
+        entry = artifact_entry(entry)
+        binding = identifier(get(entry, "binding", nothing), "artifact binding")
+        binding in names && throw(ArgumentError("duplicate or command FITS binding $binding"))
+        push!(names, binding)
+        T = get(ELEMENT_TYPES, get(entry, "type", nothing), nothing)
+        T === nothing && throw(ArgumentError("unsupported AOS FITS type"))
+        shape = Artifacts.checked_shape(get(entry, "shape", nothing), sizeof(T))
+        axes = get(entry, "axes", nothing)
+        length(shape) > 1 && axes === nothing && throw(ArgumentError("multidimensional FITS bindings require axes"))
+        source = Artifacts.FITSArtifact(joinpath(dirname(abspath(path)), text(get(entry, "path", nothing), "artifact path"));
+            hdu=get(entry, "hdu", 1), axes)
+        source.axes === nothing || length(source.axes) == length(shape) ||
+            throw(DimensionMismatch("FITS axes and shape ranks differ"))
+        total_bytes += prod(shape) * sizeof(T)
+        total_bytes <= MAX_RETAINED_BYTES || throw(ArgumentError("retained AOS bindings exceed 512 MiB"))
+        push!(artifacts, FITSBinding(binding, source, T, shape))
+    end
+    return (; reference_clock=reference_clock_configuration(get(document,"reference_clock",nothing)),
+        version, config_path, plant, graph, command_input, frame_output, command_count, frame_shape, rate, period_ns,
+        exposure_ns, pacing_rate_hz, pacing_period_ns, backend, device, artifacts, command_node,
+        frame_encoding, frame_schema, command_schema, command_scale, total_exchanges, optical_observation, pupil_output,
+        detector_observation, command_observation, applied_command_observation, calibration_identity, instrument, mirror_description, rtc_configuration, prescription_identity)
+end
+
+artifact_entries(entries) = throw(ArgumentError("artifacts must be an array of at most 64 entries"))
+artifact_entries(entries::Tuple{}) = entries
+function artifact_entries(entries::AbstractVector)
+    length(entries) <= 64 || return artifact_entries(nothing)
+    return entries
+end
+artifact_entry(entry) = throw(ArgumentError("invalid AOS FITS binding fields"))
+function artifact_entry(entry::AbstractDict)
+    all(key -> key in ("binding", "path", "hdu", "axes", "type", "shape"), keys(entry)) || return artifact_entry(nothing)
+    return entry
+end
+"Prepare owned logical FITS arrays; preserve their provenance for the science owner."
+function prepare_bindings(entries; check=()->nothing)
+    prepared = Artifacts.PreparedArtifact[]
+    for entry in entries
+        check()
+        push!(prepared, Artifacts.prepare(entry.source, entry.element_type, entry.shape; check))
+    end
+    check()
+    return prepared
+end
+
+function prepare_science end
+function run_owner end
+function prepare_external_pupil_science end
+function run_external_pupil_owner end
+function prepare_pupil_source_science end
+function run_pupil_source_owner end
+
+include("external_pupil_configuration.jl")
+include("pupil_source_configuration.jl")
+
+"The private invocation directory owns this small operational report."
+report_path(options) = joinpath(dirname(options.remote), options.control_node * "-report.json")
+
+"""Save an atomic operational cursor record, without scientific arrays or timing claims."""
+function write_report(options, state, generation, source_instance; failures=())
+    generation === nothing && isempty(failures) &&
+        throw(ArgumentError("an unknown report generation requires a recorded failure"))
+    record = (;
+        version=1, kind="pipewireao.rtc.aos-owner-report/1",
+        bootstrap_instance=integer(options.bootstrap_instance, "bootstrap_instance", 1, typemax(Int64)),
+        source_instance=integer(source_instance, "source_instance", 1, typemax(Int64)),
+        owner_pid=getpid(),
+        generation=generation === nothing ? nothing : integer(generation, "generation", 1, typemax(Int64)),
+        sequence=integer(state.sequence, "sequence", 0, typemax(Int64)),
+        running=state.running, completed=state.completed,
+        backend=string(options.backend), graph=options.graph,
+        graph_sha256=get(options, :graph_sha256, nothing),
+        configuration=get(options, :config_path, nothing),
+        configuration_sha256=get(options, :configuration_sha256, nothing),
+        plant=get(options, :plant, nothing),
+        failures=[first(replace(sprint(showerror, error), '\0' => '?'), 1024) for error in failures],
+    )
+    calibration_identity = get(options, :calibration_identity, nothing)
+    calibration_identity === nothing ||
+        (record = merge(record, (; startup_calibration_identity=calibration_identity)))
+    pupil_output = get(options, :pupil_output_status, () -> nothing)()
+    pupil_output === nothing || (record = merge(record, (; pupil_output)))
+    path = report_path(options)
+    mkpath(dirname(path))
+    temporary, io = mktemp(dirname(path))
+    errors = Exception[]
+    try
+        close(io)
+        Common.write_json(temporary, record)
+        # Same-directory rename replaces the complete file atomically and
+        # preserves a conflicting directory when replacement fails.
+        Base.rename(temporary, path)
+    catch error
+        push!(errors, error)
+    finally
+        try isopen(io) && close(io) catch error; push!(errors, error) end
+        try ispath(temporary) && rm(temporary) catch error; push!(errors, error) end
+    end
+    isempty(errors) || throw(length(errors) == 1 ? only(errors) : CompositeException(errors))
+    return nothing
+end
+
+"Load only the exact plant dependency declared by the active application."
+function load_instrument(package::Symbol)
+    project = Base.active_project()
+    project !== nothing && isfile(project) ||
+        throw(ArgumentError("instrument preparation requires an active application Project.toml"))
+    dependencies = get(TOML.parsefile(project), "deps", nothing)
+    name = string(package)
+    identity = plant_dependency(dependencies, name)
+    instrument = Base.require(identity)
+    Base.PkgId(instrument) == identity ||
+        throw(ArgumentError("loaded plant module differs from the declared dependency identity"))
+    return instrument
+end
+
+plant_dependency(dependencies, name) = throw(ArgumentError("plant package $name must be a direct dependency of the active application"))
+function plant_dependency(dependencies::AbstractDict, name)
+    haskey(dependencies, name) || return plant_dependency(nothing, name)
+    return plant_dependency_identity(dependencies[name], name)
+end
+plant_dependency_identity(uuid::String, name) = Base.PkgId(UUIDs.UUID(uuid), name)
+plant_dependency_identity(uuid, name) = throw(ArgumentError("plant dependency $name must declare a UUID"))
+
+function requires_proper(options)
+    options.version in (3, 4, 5, 6) || return false
+    # Node types decide whether Proper must load; generated optical provenance
+    # is verified afterwards by the ordinary declaration/execution preparation.
+    declaration = InstrumentConfiguration.load_simulation(options.plant.definition; validate_optics=false)
+    configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
+    if options.version in (4,6)
+        names = collect(keys(declaration.instrument.document["optical_paths"]))
+        append!(names, [row.unfringed_graph for row in values(options.plant.chopping)])
+        options.version == 6 && push!(names,options.source_graph)
+        return any(name -> InstrumentConfiguration.graph_requires_proper(declaration, configured;
+            simulation_graph=name), names)
+    end
+    return InstrumentConfiguration.graph_requires_proper(declaration, configured;
+        simulation_graph=get(options.plant, :graph, "production"))
+end
+
+# The application declares optional science packages as its direct dependencies.
+function _main(args; with_owner=Bootstrap.with_owner,
+        load_science=() -> begin
+            Base.require(Main, :AdaptiveOpticsSim)
+            Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
+        end,
+        load_cuda=() -> Base.require(Main, :CUDA),
+        load_amdgpu=() -> Base.require(Main, :AMDGPU),
+        load_plant=load_instrument, load_proper=() -> load_instrument(:Proper), run=run_owner)
+    invocation = arguments(args)
+    options = configuration(invocation.config)
+    data_nodes = options.version == 5 ? ("simulator-pupil-output",(options.applied_command_observation ? ("simulator-"*options.mirror*"-applied",) : ())...) : options.version in (4,6) ? (options.version == 6 ? options.command_node : options.pupil_node,values(options.sensor_nodes)...) :
+        command_items(options.command_node)
+    (options.version==5)==(invocation.physical_offsets!==nothing) ||
+        throw(ArgumentError("pupil sources require --physical-offsets; other AOS versions do not accept it"))
+    options.version==5 && (invocation.phase_timing_directory!==nothing || invocation.optical_diagnostics_cpu!==nothing) &&
+        throw(ArgumentError("pupil sources have no HIL phase timing or optical diagnostic worker"))
+    all(name -> name != invocation.control_node && name != invocation.bootstrap_node, data_nodes) ||
+        throw(ArgumentError("bootstrap, frame and command nodes must differ"))
+    options.version in (4,6) && (invocation.phase_timing_directory !== nothing ||
+        invocation.optical_diagnostics_cpu !== nothing || invocation.pupil_output_cpu !== nothing) &&
+        throw(ArgumentError("external-pupil owners use their input clock and do not support HIL diagnostic workers"))
+    with_owner(merge(options, invocation)) do admitted
+        admitted.owner_check()
+        load_science()
+        admitted.owner_check()
+        admitted.backend === :cuda && load_cuda()
+        admitted.backend === :amdgpu && load_amdgpu()
+        admitted.owner_check()
+        if admitted.version in (3, 4, 5, 6)
+            if requires_proper(admitted)
+                load_proper()
+                admitted.owner_check()
+            end
+            # Optional science loads add graph preparation methods in a newer
+            # world; declaration verification resolves those same graph methods.
+            verify = admitted.version == 5 ? verify_pupil_source_declaration : admitted.version in (4,6) ? verify_external_pupil_declaration :
+                InstrumentDefinition.verify_declaration
+            Base.invokelatest(verify, admitted)
+        elseif admitted.plant !== nothing
+            plant_module = load_plant(admitted.plant.package)
+            admitted.owner_check()
+            InstrumentDefinition.verify_plant(admitted,plant_module)
+            admitted = merge(admitted, (; plant_module))
+        end
+        selected_run=run===run_owner ? admitted.version==5 ? run_pupil_source_owner :
+            admitted.version in (4,6) ? run_external_pupil_owner : run : run
+        Base.invokelatest(selected_run, admitted)
+    end
+    return 0
+end
+
+"""
+    main(args)
+
+Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`,
+`--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
+SPA-JSON configuration declares the simulation YAML graph and FITS bindings;
+version 2 selects an instrument package and immutable settings. Version 3 selects
+a simulation definition and immutable settings without an instrument package.
+Its optional `plant.graph` selects a declared graph and defaults to `production`.
+Only selected native PROPER nodes load the application's direct Proper dependency,
+after bootstrap Preparing publication. Version 3 also accepts an array of command_input names with matching
+command_count, command_node, command_schema and command_scale maps. Named
+commands retain independent shapes and wire units; physical mirror commands
+match their declared mirror names. All versions declare command/frame names,
+extents, timing and backend/device. Paths are relative to the configuration. Preparing is published before optional science imports.
+Version 5 selects `mode: pupil-source`: one named non-HIL graph owns the physical
+mirror command and publishes the declared grey scientific pupil. It requires
+`--physical-offsets PATH` selecting a version-2 P/Q-only receiving contract;
+there is no camera frame, receiving WFS reference or graph parameter transaction.
+FITS preparation is cold startup only; RTC retains lifecycle authority.
+
+Version 4 selects `mode="external-pupil"` and declares a mirror-free plant,
+one `pupil_node`, and a `sensor_nodes` map naming every physical optical path.
+It consumes coherent external OPD/amplitude packets and publishes independent
+Float32 sensor streams at their declared exposure durations. Its timing comes
+from the input model timestamps; supported backends are CPU and AMDGPU. The
+ordinary native bootstrap and source run/pause/reset controls remain authoritative.
+"""
+main(args) = _main(args)
+
+end

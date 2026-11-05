@@ -7,13 +7,13 @@ module InitialCalibrationCapturePrivateCoreTests
 using Test, SHA
 using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
-const Endpoint = PipeWireAORTC.NativeCalibrationEndpoint
-const Actions = PipeWireAORTC.NativeCalibrationActionCodec
-const Client = PipeWireAORTC.NativeCalibrationActionClient
-const Native = PipeWireAORTC.NativeControlClient
+const Endpoint = PipeWireAORTC.CalibrationEndpoint
+const Actions = PipeWireAORTC.CalibrationActionCodec
+const Client = PipeWireAORTC.CalibrationActionClient
+const ControlClient = PipeWireAORTC.ControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
 progress(message) = (println("native Capture pilot: ",message); flush(stdout))
@@ -72,7 +72,7 @@ end
                 name,instance = "test.classic.capture.$(getpid())",Int64(118)
                 progress("preparing one declared $illumination CPU session with capture storage")
                 server = Calibration.prepare_initial_calibration(application,remote,frontend,command;
-                    reference,name,instance,deadline=Native.monotonic()+300,simulation_graph=illumination,
+                    reference,name,instance,deadline=ControlClient.monotonic()+300,simulation_graph=illumination,
                     capture_directory,capture_stage=stage,capture_maximum_bytes=3Calibration.CLASSIC_CAPTURE_BYTES)
                 frontend = command = nothing
                 owner = server.effects
@@ -103,23 +103,23 @@ end
                         @test stored["target_shape"] == identity["target_shape"]
                     end
                 end
-                serving = @async try Endpoint.serve!(server;deadline=Native.monotonic()+360) catch error; error end
+                serving = @async try Endpoint.serve!(server;deadline=ControlClient.monotonic()+360) catch error; error end
                 client = Client.connect(Client.Binding(remote,name,getpid(),instance),UInt64(1),
                     Int64(120_000_000_000);command_count=length(reference))
                 function complete(action)
-                    submitted = Native.monotonic()
+                    submitted = ControlClient.monotonic()
                     trace = Dict{String,Any}("action"=>string(nameof(typeof(action))),"submitted"=>submitted,
                         "phase_before"=>string(server.phase),"deadline"=>submitted+120)
                     push!(actions,trace)
                     progress("submit $(trace["action"]), phase=$(server.phase), serial=$(client.serial+1)")
                     try
                         answer = Client.complete!(client,action;deadline=submitted+120,record=false)
-                        trace["completed"],trace["result"] = Native.monotonic(),string(nameof(typeof(answer)))
+                        trace["completed"],trace["result"] = ControlClient.monotonic(),string(nameof(typeof(answer)))
                         progress("complete $(trace["action"]), result=$(trace["result"]), phase=$(server.phase)")
                         return answer
                     catch error
                         trace["error"] = sprint(showerror,error)
-                        trace["fault_at"] = Native.monotonic()
+                        trace["fault_at"] = ControlClient.monotonic()
                         progress("action failed: $(trace["error"]); no retry")
                         snapshot(owner)
                         rethrow()
@@ -158,7 +158,7 @@ end
                 @test fetch(serving) === nothing && server.phase === :Released
                 close(server)
                 @test owner.closed && owner.hil.closed && !owner.hil.started
-                @test all(worker -> istaskdone(worker.task) && worker.error[] === nothing,owner.workers)
+                @test all(worker -> istaskdone(worker.task) && Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt).finish_calibration_graph!(worker).error === nothing,owner.workers)
                 @test all(slot -> slot.buffer.handle == C_NULL,values(owner.capture.slots))
                 @test all(stream -> !isopen(stream),values(owner.capture.streams))
                 @test !isopen(server.wakeup) && !isopen(server.core)

@@ -6,7 +6,7 @@ import PipeWireAO_jll
 const HIL=AdaptiveOpticsSimPipeWireHIL
 const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt)
 const Source=Ext.PupilSourceOwner
-const SC=PipeWireAORTC.NativeSourceControl
+const SC=PipeWireAORTC.SourceControl
 const O=PipeWireAORTC.PhysicalOffsets
 Base.include(@__MODULE__,joinpath(@__DIR__,"pupil_source_documents.jl"))
 Base.include(@__MODULE__,joinpath(pkgdir(HIL),"test/private_core_helpers.jl"))

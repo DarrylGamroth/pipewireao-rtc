@@ -2,23 +2,21 @@
 # owner; AOC owns the numerical reductions. No activation or recording is implied.
 const ReferenceFrames = AdaptiveOpticsCalibration.ReferenceFrames
 const Preparation = PipeWireAORTC.CalibrationPreparation
-const ReferenceClient = PipeWireAORTC.NativeCalibrationActionClient
+const ReferenceClient = PipeWireAORTC.CalibrationActionClient
 
 function reference_counts(recipe)
     spec = get(recipe,"references",nothing)
-    spec isa AbstractDict || throw(ArgumentError("recipe must declare reference stages"))
+    validate_reference_stages(spec)
     IC.fields(spec,("source","dark","lamp","qualification"),
         ("source","dark","lamp","qualification"),"reference procedure")
     spec["source"] == "internal-source" || throw(ArgumentError("reference source must be internal-source"))
     counts = map(("dark","lamp","qualification")) do name
         value = spec[name]
-        value isa AbstractDict || throw(ArgumentError("$name must be a mapping"))
+        validate_reference_stage(value, name)
         IC.fields(value,("samples","discard_exposures"),("samples","discard_exposures"),name)
         samples, discard = value["samples"],value["discard_exposures"]
-        samples isa Integer && !(samples isa Bool) && (name == "dark" ? 2 : 1) <= samples <= 4096 ||
-            throw(ArgumentError("invalid $name sample count"))
-        discard isa Integer && !(discard isa Bool) && 0 <= discard <= 4096 ||
-            throw(ArgumentError("invalid $name discard count"))
+        validate_reference_samples(samples, name)
+        validate_reference_discard(discard, name)
         (; samples=Int(samples),discard=Int(discard))
     end
     counts[3].discard >= counts[2].discard + counts[2].samples ||
@@ -86,10 +84,9 @@ end
 
 function reference_restoration!(client,reference,deadline)
     restored = ReferenceClient.complete!(client,Actions.Restore(reference,Actions.Immediate());deadline,record=false)
-    restored isa Actions.Restored && restored.figure == reference && !restored.clipped ||
-        error("reference stage restoration was not confirmed")
+    confirm_reference_restoration(restored, reference)
     released = ReferenceClient.complete!(client,Actions.Release();deadline,record=false)
-    released isa Actions.Released || error("reference stage release was not confirmed")
+    confirm_reference_release(released)
     return nothing
 end
 
@@ -176,33 +173,31 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
             reference,name,instance,deadline,simulation_graph=condition,consume,probe_command,measurements)
         hashes = copy(frontend.parameter_sha256)
         frontend = command = nothing # ownership transferred to the native endpoint
-        serving = @async try Native.serve!(server;deadline=cleanup_deadline); nothing catch error; error end
+        serving = @async try Endpoint.serve!(server;deadline=cleanup_deadline); nothing catch error; error end
         client = ReferenceClient.connect(ReferenceClient.Binding(remote,name,getpid(),instance),run,
             Int64(round(timeout_s*1e9));command_count=length(selected_reference),deadline)
         action(value) = ReferenceClient.complete!(client,value;deadline,record=false)
         held = action(Actions.Hold())
-        held isa Actions.Held || error("reference hold was not confirmed")
+        confirm_reference_hold(held)
         acquisition_domain = bytes2hex(collect(server.effects.acquisition_domain.bytes))
         witness = "$name/$instance/$acquisition_domain"
         evidence = confirm === nothing ? Preparation.Confirmation(request;
             observed_at=Control.monotonic(),witness) : confirm(request,witness)
-        evidence isa Preparation.Confirmation && evidence.witness == witness ||
-            throw(ArgumentError("simulator preparation witness differs from the current owner"))
+        confirm_reference_witness(evidence, witness)
         Preparation.complete!(gate,evidence)
         cancelled() && throw(InterruptException())
         adopted = action(Actions.Adopt(UInt32(0),selected_reference))
-        adopted isa Actions.Adopted && adopted.figure == selected_reference && !adopted.clipped ||
-            error("reference figure adoption was not confirmed")
+        confirm_reference_adoption(adopted,selected_reference)
         rule = counts.discard == 0 ? Actions.Immediate() : Actions.DiscardExposures(UInt32(counts.discard))
         settled = action(Actions.Settle(UInt32(0),adopted.cursor,rule))
-        settled isa Actions.Settled || error("reference settling boundary was not confirmed")
+        confirm_reference_settling(settled)
         boundary[] = settled.cursor
         Preparation.check_current!(gate)
         cancelled() && throw(InterruptException())
         response = action(Actions.Collect(UInt32(0),settled.cursor,UInt32(measurement_count),UInt32(counts.samples)))
         # Dark/diagnostic lamp data may have false WFS validity. Their scientific
         # eligibility is determined separately by AOC, never by Responses.valid.
-        response isa Actions.Responses || error("reference collection was not confirmed")
+        confirm_reference_collection(response)
         consumer_error[] === nothing || throw(consumer_error[])
         delivered[] == counts.samples && length(response.exposures) == counts.samples &&
             length(response.values) == measurement_count ||
@@ -257,6 +252,16 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
     return report
 end
 
+reference_remotes(remote::AbstractString) =
+    reference_remotes((; dark=remote, lamp=remote, qualification=remote))
+function reference_remotes(remotes::NamedTuple)
+    Set(keys(remotes)) == Set((:dark,:lamp,:qualification)) ||
+        throw(ArgumentError("remote must identify the private core for each reference stage"))
+    return map(Control.private_remote, remotes)
+end
+reference_remotes(_) =
+    throw(ArgumentError("remote must identify the private core for each reference stage"))
+
 """
     calibrate_references(application, output; remote, reference, run=1,
         timeout_s=300, cancelled=()->false, confirm=nothing)
@@ -288,10 +293,7 @@ function Calibration.calibrate_references(application,output;remote,reference,
     isfinite(timeout_s) && 0 < timeout_s <= 3600 || throw(ArgumentError("reference timeout must be in (0,3600] seconds"))
     timeout_s = Float64(timeout_s)
     timeout_s*1e9 >= 1 || throw(ArgumentError("reference timeout is below one nanosecond"))
-    remotes = remote isa AbstractString ? (;dark=remote,lamp=remote,qualification=remote) : remote
-    remotes isa NamedTuple && Set(keys(remotes)) == Set((:dark,:lamp,:qualification)) ||
-        throw(ArgumentError("remote must identify the private core for each reference stage"))
-    remotes = map(Control.private_remote,remotes)
+    remotes = reference_remotes(remote)
     recipe = Calibration.read_recipe(application)
     counts = reference_counts(recipe)
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application,"simulation.conf"))
@@ -302,7 +304,7 @@ function Calibration.calibrate_references(application,output;remote,reference,
         return pyramid_references(application,output;remote=remotes,reference,run,timeout_s,cancelled,confirm)
     end
     declaration.document["id"] == "revolt-classic" || throw(ArgumentError("unsupported reference instrument"))
-    reference isa AbstractVector{Float32} || throw(ArgumentError("Classic requires one explicit Float32 command figure"))
+    validate_classic_reference(reference)
     parameters = Calibration.read_parameters(application)
     geometry = reference_geometry(application,parameters)
     length(reference) == options.command_count && all(isfinite,reference) ||
@@ -324,7 +326,7 @@ function Calibration.calibrate_references(application,output;remote,reference,
     production = IC.graph_document(declaration,configured)
     detector = only(filter(node -> node["type"] == "detector",production["nodes"]))
     bits = detector["config"]["bits"]
-    bits isa Integer && 1 <= bits <= 16 || throw(ArgumentError("reference ADC rail requires a declared UInt16 bit depth"))
+    validate_reference_adc_bits(bits)
     rail = UInt32(1)<<bits
     rail -= UInt32(1)
     thresholds = copy(parameters[:thresholds][:,2])
@@ -415,3 +417,64 @@ function Calibration.calibrate_references(application,output;remote,reference,
         return report
     end
 end
+
+validate_reference_stages(spec::AbstractDict) = nothing
+validate_reference_stages(spec) = throw(ArgumentError("recipe must declare reference stages"))
+
+validate_reference_stage(value::AbstractDict, name) = nothing
+validate_reference_stage(value, name) = throw(ArgumentError("$name must be a mapping"))
+
+function validate_reference_samples(samples::Integer, name)
+    (name == "dark" ? 2 : 1) <= samples <= 4096 || throw(ArgumentError("invalid $name sample count"))
+    return nothing
+end
+validate_reference_samples(samples, name) = throw(ArgumentError("invalid $name sample count"))
+
+validate_reference_samples(samples::Bool,name) = throw(ArgumentError("invalid $name sample count"))
+
+function validate_reference_discard(discard::Integer, name)
+    0 <= discard <= 4096 || throw(ArgumentError("invalid $name discard count"))
+    return nothing
+end
+validate_reference_discard(discard, name) = throw(ArgumentError("invalid $name discard count"))
+
+validate_reference_discard(discard::Bool,name) = throw(ArgumentError("invalid $name discard count"))
+
+function confirm_reference_restoration(restored::Actions.Restored, reference)
+    restored.figure == reference && !restored.clipped || error("reference stage restoration was not confirmed")
+    return nothing
+end
+confirm_reference_restoration(restored, reference) = error("reference stage restoration was not confirmed")
+
+confirm_reference_release(released::Actions.Released) = nothing
+confirm_reference_release(released) = error("reference stage release was not confirmed")
+
+confirm_reference_hold(held::Actions.Held) = nothing
+confirm_reference_hold(held) = error("reference hold was not confirmed")
+
+function confirm_reference_witness(evidence::Preparation.Confirmation, witness)
+    evidence.witness == witness || throw(ArgumentError("simulator preparation witness differs from the current owner"))
+    return nothing
+end
+confirm_reference_witness(evidence, witness) = throw(ArgumentError("simulator preparation witness differs from the current owner"))
+
+function confirm_reference_adoption(adopted::Actions.Adopted, reference)
+    adopted.figure == reference && !adopted.clipped || error("reference figure adoption was not confirmed")
+    return nothing
+end
+confirm_reference_adoption(adopted, reference) = error("reference figure adoption was not confirmed")
+
+confirm_reference_settling(settled::Actions.Settled) = nothing
+confirm_reference_settling(settled) = error("reference settling boundary was not confirmed")
+
+confirm_reference_collection(response::Actions.Responses) = nothing
+confirm_reference_collection(response) = error("reference collection was not confirmed")
+
+validate_classic_reference(reference::AbstractVector{Float32}) = nothing
+validate_classic_reference(reference) = throw(ArgumentError("Classic requires one explicit Float32 command figure"))
+
+function validate_reference_adc_bits(bits::Integer)
+    1 <= bits <= 16 || throw(ArgumentError("reference ADC rail requires a declared UInt16 bit depth"))
+    return nothing
+end
+validate_reference_adc_bits(bits) = throw(ArgumentError("reference ADC rail requires a declared UInt16 bit depth"))

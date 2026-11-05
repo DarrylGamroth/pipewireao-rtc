@@ -5,7 +5,7 @@ using PipeWireAORTC.Common: JSON
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, snapshot_values,
     poll_graph_output_snapshot!, release_graph_output_snapshot!
-include("native_control_private_core.jl")
+include("control_private_core.jl")
 
 const Pupil = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).PupilOutput
 const CUDA_TEST = "cuda" in ARGS

@@ -7,8 +7,7 @@ function bounded_optical_surface(surface, lower, upper)
     record = Dict{String,Any}("lower"=>lo,"upper"=>hi,
         "tested_maximum_absolute_command"=>0.0,"tested_commands"=>0)
     checked = command -> begin
-        command isa AbstractVector && length(command) == length(lo) ||
-            throw(DimensionMismatch("optical command differs from physical mirror domain"))
+        validate_optical_command_extent(command, lo)
         all(isfinite,command) && all(values -> values[1] <= values[2] <= values[3],zip(lo,command,hi)) ||
             throw(ArgumentError("optical calibration command exceeds the RTC mirror domain"))
         record["tested_maximum_absolute_command"] = max(record["tested_maximum_absolute_command"],
@@ -28,3 +27,9 @@ function optical_native_command_domain(application, mirror, count, surface)
     return bounded_optical_surface(surface,
         IC.limit_values(limiter["lower"],count),IC.limit_values(limiter["upper"],count))
 end
+
+function validate_optical_command_extent(command::AbstractVector, lo)
+    length(command) == length(lo) || throw(DimensionMismatch("optical command differs from physical mirror domain"))
+    return nothing
+end
+validate_optical_command_extent(command, lo) = throw(DimensionMismatch("optical command differs from physical mirror domain"))

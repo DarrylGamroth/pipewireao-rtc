@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 using Test, PipeWireAO, JSON
 
-include(joinpath(@__DIR__, "..", "native_control_private_core.jl"))
+include(joinpath(@__DIR__, "..", "control_private_core.jl"))
 
 length(ARGS) == 3 || error("usage: session_items.jl WIREPLUMBER_LIBRARY_PREFIX RTC_PREFIX FRESH_EVIDENCE_DIRECTORY")
 const WP_PREFIX = realpath(ARGS[1])
