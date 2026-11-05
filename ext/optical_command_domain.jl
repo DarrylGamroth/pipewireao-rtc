@@ -7,10 +7,10 @@ function bounded_optical_surface(surface, lower, upper)
     all(isfinite, hi) &&
     all(lo .<= hi) || throw(ArgumentError("invalid optical physical-command domain"))
     record = Dict{String,Any}(
-        "lower"=>lo,
-        "upper"=>hi,
-        "tested_maximum_absolute_command"=>0.0,
-        "tested_commands"=>0,
+        "lower" => lo,
+        "upper" => hi,
+        "tested_maximum_absolute_command" => 0.0,
+        "tested_commands" => 0,
     )
     checked =
         command -> begin
@@ -19,11 +19,12 @@ function bounded_optical_surface(surface, lower, upper)
             all(values -> values[1] <= values[2] <= values[3], zip(lo, command, hi)) ||
                 throw(
                     ArgumentError(
-                        "optical calibration command exceeds the RTC mirror domain",
+                        "optical calibration command exceeds the RTC mirror domain"
                     ),
                 )
-            record["tested_maximum_absolute_command"] =
-                max(record["tested_maximum_absolute_command"], maximum(abs, command))
+            record["tested_maximum_absolute_command"] = max(
+                record["tested_maximum_absolute_command"], maximum(abs, command)
+            )
             record["tested_commands"] += 1
             return surface(command)
         end
@@ -36,7 +37,7 @@ function optical_native_command_domain(application, mirror, count, surface)
     limiter = rtc.controls["deformable_mirrors"][mirror]["limiter"]
     limiter["kind"] == "amplitude" || throw(
         ArgumentError(
-            "native optical calibration requires an explicit RTC amplitude domain",
+            "native optical calibration requires an explicit RTC amplitude domain"
         ),
     )
     return bounded_optical_surface(

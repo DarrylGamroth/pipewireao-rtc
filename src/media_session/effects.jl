@@ -67,8 +67,9 @@ function perform!(runtime, job, ::CaptureOwners)
     core = _core_identity(runtime)
     core.pid == runtime.configuration["core.owner"]["pid"] ||
         throw(ArgumentError("declared core process differs from remote core"))
-    controller =
-        node!(runtime, job, runtime.configuration["controller.node.name"], getpid())
+    controller = node!(
+        runtime, job, runtime.configuration["controller.node.name"], getpid()
+    )
     object = something(find_object(runtime, controller))
     _assert_controller!(runtime, object)
     capture!(runtime, controller; core)
@@ -108,8 +109,8 @@ function perform!(runtime, job, ::CaptureParameters)
     runtime.parameters === nothing ||
         throw(ArgumentError("parameter publisher is already captured"))
     declarations = filter(
-        declaration->get(declaration, "control-protocol", nothing) ==
-                     PARAMETER_SOURCE_PROFILE,
+        declaration ->
+            get(declaration, "control-protocol", nothing) == PARAMETER_SOURCE_PROFILE,
         runtime.configuration["owners"],
     )
     length(declarations) <= MAX_PARAMETER_PUBLISHERS ||
@@ -145,8 +146,7 @@ function perform!(runtime, job, ::CaptureSources)
         push!(roles, role)
     end
     all(
-        declaration->declaration["control-protocol"] == SOURCE_CONTROL_PROFILE,
-        auxiliary,
+        declaration -> declaration["control-protocol"] == SOURCE_CONTROL_PROFILE, auxiliary
     ) || throw(ArgumentError("auxiliary acquisition requires native SourceControl"))
     handles = Set{UInt64}()
     for declaration in declarations
@@ -255,7 +255,7 @@ function _bootstrap_order(runtime, index::Int, owner::Owner{OwnerBootstrapCodec.
     # partial capture is a prefix; terminal owners can lose their control node
     # before a later Quit, so ordering must retain this admission evidence.
     declarations = filter(
-        declaration->haskey(declaration, "bootstrap-node"),
+        declaration -> haskey(declaration, "bootstrap-node"),
         runtime.configuration["owners"],
     )
     index <= length(declarations) ||
@@ -272,7 +272,7 @@ end
 function perform!(runtime, job, ::ShutdownOwners)
     order = sort!(
         collect(eachindex(runtime.owners));
-        by = index->_bootstrap_order(runtime, index, runtime.owners[index]),
+        by = index -> _bootstrap_order(runtime, index, runtime.owners[index]),
     )
     for index in order
         _shutdown_bootstrap!(runtime, job, runtime.owners[index])
@@ -301,7 +301,7 @@ of the selected execution group participate in a selective control operation.
 function graph_order(runtime, running::Bool, group = nothing)
     names = _graph_names(runtime, group)
     members = Set(names)
-    successors = Dict(name=>Set{String}() for name in names)
+    successors = Dict(name => Set{String}() for name in names)
     for link in runtime.configuration["session"]["links"]
         output, input = first(_endpoint_address(link["output"])),
         first(_endpoint_address(link["input"]))
@@ -314,12 +314,12 @@ function graph_order(runtime, running::Bool, group = nothing)
         push!(visiting, name)
         result = 0
         for successor in successors[name]
-            result = max(result, depth(successor)+1)
+            result = max(result, depth(successor) + 1)
         end
         delete!(visiting, name)
         return depths[name] = result
     end
-    return sort!(names; by = name->(running ? depth(name) : -depth(name), name))
+    return sort!(names; by = name -> (running ? depth(name) : -depth(name), name))
 end
 
 function _graph_states!(runtime, ::Nothing, running::Bool)
@@ -423,8 +423,7 @@ function perform!(runtime, job, ::QueryStatus)
         index == 1 && (primary_running = snapshot.running)
     end
     return status_details(
-        runtime;
-        running = _status_running(job.ticket.origin) && primary_running,
+        runtime; running = _status_running(job.ticket.origin) && primary_running
     )
 end
 _status_running(::RunningOrigin) = true
@@ -460,11 +459,7 @@ function perform!(runtime, job, effect::QueryProperties{<:Tuple})
     return policy_struct(PolicyPod(name), PolicyPod(PolicySPA.Struct(rows)))
 end
 function _generation_details(
-    runtime,
-    job,
-    payload::Tuple,
-    suffix::String;
-    optional_active::Bool,
+    runtime, job, payload::Tuple, suffix::String; optional_active::Bool
 )
     length(payload) == 2 ||
         throw(ArgumentError("generation query requires a graph and algorithm"))
@@ -481,11 +476,7 @@ end
 perform!(runtime, job, effect::QueryPropertyGeneration{<:Tuple}) =
     _generation_details(runtime, job, effect.payload, "generation"; optional_active = true)
 perform!(runtime, job, effect::QueryParameterGeneration{<:Tuple}) = _generation_details(
-    runtime,
-    job,
-    effect.payload,
-    "parameter-sequence";
-    optional_active = false,
+    runtime, job, effect.payload, "parameter-sequence"; optional_active = false
 )
 perform!(runtime, job, effect::UpdateProperties{<:Tuple}) =
     update_properties!(runtime, job, job.ticket.origin, effect.payload)

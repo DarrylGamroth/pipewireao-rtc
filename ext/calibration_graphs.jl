@@ -86,7 +86,7 @@ function calibration_port(value)
 end
 
 function calibration_output(value::AbstractString, name)
-    return Dict{String,Any}("endpoint"=>String(value), "name"=>String(name))
+    return Dict{String,Any}("endpoint" => String(value), "name" => String(name))
 end
 function calibration_output(value, name)
     declaration = deepcopy(value)
@@ -182,8 +182,7 @@ function Calibration.calibration_graph(
     source = joinpath(application, "rtc", "graph.conf")
     source_hash = Calibration.digest(source)
     document = PipeWireAORTC.DeploymentConfiguration.decode(
-        source,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        source, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     specification = document["filter.graph"]
     nodes = Dict{String,Any}()
@@ -206,7 +205,7 @@ function Calibration.calibration_graph(
         haskey(external_inputs, endpoint) &&
             throw(ArgumentError("duplicate external graph input $endpoint"))
         haskey(links, endpoint) && throw(
-            ArgumentError("graph input has both external and Link producers: $endpoint"),
+            ArgumentError("graph input has both external and Link producers: $endpoint")
         )
         external_inputs[endpoint] = port
     end
@@ -266,7 +265,7 @@ function Calibration.calibration_graph(
         function visit(name)
             haskey(nodes, name) || throw(ArgumentError("unknown dependency Node $name"))
             name in visiting && throw(ArgumentError("cycle in calibration graph closure"))
-            name in selected && return
+            name in selected && return nothing
             push!(visiting, name)
             for (endpoint, link) in links
                 calibration_endpoint(endpoint)[2] == name || continue
@@ -291,8 +290,8 @@ function Calibration.calibration_graph(
             throw(ArgumentError("projected input does not reach a selected output"))
 
         retained_parameters = [
-            port for port in specification["inputs"] if
-            calibration_port(port).node in selected &&
+            port for
+            port in specification["inputs"] if calibration_port(port).node in selected &&
                 haskey(parameter_endpoints, calibration_port(port).endpoint)
         ]
         retained_names = Set(calibration_port(port).name for port in retained_parameters)
@@ -303,14 +302,14 @@ function Calibration.calibration_graph(
             throw(ArgumentError("Parameter Port override is outside the projection"))
         bindings = [
             GraphOwner.FITSBinding(
-                entry.port,
-                get(source_overrides, entry.port, entry.source),
+                entry.port, get(source_overrides, entry.port, entry.source)
             ) for entry in bindings
         ]
         projected_document = deepcopy(document)
         projection = projected_document["filter.graph"]
-        projection["nodes"] =
-            [deepcopy(node) for node in specification["nodes"] if node["name"] in selected]
+        projection["nodes"] = [
+            deepcopy(node) for node in specification["nodes"] if node["name"] in selected
+        ]
         projection["links"] = [
             deepcopy(link) for link in get(specification, "links", []) if
             calibration_endpoint(link["input"])[2] in selected &&
@@ -318,24 +317,21 @@ function Calibration.calibration_graph(
         ]
         projection["inputs"] = vcat(
             Any[
-                Dict("name"=>String(name), "endpoint"=>String(endpoint)) for
+                Dict("name" => String(name), "endpoint" => String(endpoint)) for
                 (name, endpoint) in pairs(inputs)
             ],
             deepcopy(retained_parameters),
         )
-        projection["outputs"] =
-            calibration_output_declarations(outputs, external_outputs, selected_outputs)
+        projection["outputs"] = calibration_output_declarations(
+            outputs, external_outputs, selected_outputs
+        )
         parameters = Dict{Symbol,Array}()
         parameter_sha256 = Dict{Symbol,String}()
         projected = mktempdir() do directory
             path = joinpath(directory, "graph.conf")
             PipeWireAORTC.ScienceExport.write_spa_config(path, projected_document)
             options = FilterGraphIsland.parse_arguments([
-                "--graph",
-                path,
-                "--check",
-                "--execution",
-                "complete-frame",
+                "--graph", path, "--check", "--execution", "complete-frame"
             ])
             FilterGraphIsland.prepare_service_graph(
                 options;

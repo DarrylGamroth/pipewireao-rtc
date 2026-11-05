@@ -86,7 +86,7 @@ println(
                         @test !loaded("CUDA")
                     end
                     @test loaded("REVOLTClassicSim") ==
-                          (LoadingRoute == "instrument" && checks[] >= 4)
+                        (LoadingRoute == "instrument" && checks[] >= 4)
                     push!(events, :check)
                     nothing
                 end

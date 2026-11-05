@@ -8,27 +8,38 @@ include("session_faults.jl")
         prefix = mkpath(joinpath(root, "empty-native-prefix"))
         project = mkpath(joinpath(application, "runtime"))
         PipeWireAORTC.ScienceExport.stage_rtc!(application)
-        write(joinpath(project, "Project.toml"), """
-        [deps]
-        PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-        """)
+        write(
+            joinpath(project, "Project.toml"),
+            """
+[deps]
+PipeWireAORTC = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+""",
+        )
         # An immutable, deliberately different pin checks that the harness
         # checkout is not mislabeled as the child's selected package source.
-        write(joinpath(project, "Manifest.toml"), """
-        manifest_format = "2.0"
-        [[deps.PipeWireAORTC]]
-        uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-        version = "99.0.0"
-        git-tree-sha1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        """)
+        write(
+            joinpath(project, "Manifest.toml"),
+            """
+manifest_format = "2.0"
+[[deps.PipeWireAORTC]]
+uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
+version = "99.0.0"
+git-tree-sha1 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+""",
+        )
         files = ("rtc/bin/pipewireao-rtc", "runtime/Project.toml", "runtime/Manifest.toml")
         spec = Dict{String,Any}(
             "runtime" => Dict("kind" => "registered", "project" => "runtime"),
             "session-runtime" => Dict(
-                "argv" => ["@PACKAGE@/rtc/bin/pipewireao-rtc", "-c", "@RUNTIME@/rtc/rtc.conf"],
+                "argv" => [
+                    "@PACKAGE@/rtc/bin/pipewireao-rtc",
+                    "-c",
+                    "@RUNTIME@/rtc/rtc.conf",
+                ],
                 "environment" => Dict{String,String}(),
             ),
-            "artifacts" => Dict(name => C.sha256_file(joinpath(application, name)) for name in files),
+            "artifacts" =>
+                Dict(name => C.sha256_file(joinpath(application, name)) for name in files),
         )
         cohort = runtime_cohort(application, spec, prefix)
         @test cohort["launcher"]["path"] == joinpath(application, first(files))
@@ -39,8 +50,10 @@ include("session_faults.jl")
         @test cohort["harness"]["rtc_version"] == string(pkgversion(PipeWireAORTC))
         hashes = cohort["harness"]["media_session_source_sha256"]
         @test hashes["src/media_session/MediaSession.jl"] == C.sha256_file(
-            joinpath(pkgdir(PipeWireAORTC), "src/media_session/MediaSession.jl"))
-        @test haskey(hashes, "src/media_session/session.jl") && haskey(hashes, "src/media_session/machine.jl")
+            joinpath(pkgdir(PipeWireAORTC), "src/media_session/MediaSession.jl")
+        )
+        @test haskey(hashes, "src/media_session/session.jl") &&
+            haskey(hashes, "src/media_session/machine.jl")
         @test all(name -> endswith(name, ".jl"), keys(hashes))
         @test cohort["child_process"] === nothing
         @test occursin("child unobserved", cohort["julia"]["scope"])
@@ -51,7 +64,8 @@ include("session_faults.jl")
         @test_throws ArgumentError runtime_cohort(application, spec, prefix)
         rm(unexpected)
 
-        for (file, exception) in zip(files, (ArgumentError, D.DeploymentError, D.DeploymentError))
+        for (file, exception) in
+            zip(files, (ArgumentError, D.DeploymentError, D.DeploymentError))
             altered = deepcopy(spec)
             altered["artifacts"][file] = "unsealed"
             @test_throws exception runtime_cohort(application, altered, prefix)
@@ -63,12 +77,21 @@ include("session_faults.jl")
         config = joinpath(root, "rtc.conf")
         write(config, "{}\n")
         executable = realpath(Base.julia_cmd().exec[1])
-        binding = Dict("julia" => executable, "project" => project, "config" => config,
-            "argv" => PipeWireAORTC.ScienceExport.rtc_arguments(executable, project, config))
+        binding = Dict(
+            "julia" => executable,
+            "project" => project,
+            "config" => config,
+            "argv" =>
+                PipeWireAORTC.ScienceExport.rtc_arguments(executable, project, config),
+        )
         calls = Tuple{Int,Dict{String,Any}}[]
-        verified = runtime_cohort(application, spec, prefix;
+        verified = runtime_cohort(
+            application,
+            spec,
+            prefix;
             process = (pid = 12345, binding = binding),
-            verify_process = (pid, observed) -> push!(calls, (pid, observed)))
+            verify_process = (pid, observed) -> push!(calls, (pid, observed)),
+        )
         @test only(calls) == (12345, binding)
         @test verified["child_process"]["pid"] == 12345
         @test verified["julia"]["path"] == executable
@@ -77,15 +100,25 @@ include("session_faults.jl")
         push!(binding["argv"], "changed-after-observation")
         @test verified["child_process"]["binding"]["argv"] != binding["argv"]
         pop!(binding["argv"])
-        @test_throws ErrorException runtime_cohort(application, spec, prefix;
+        @test_throws ErrorException runtime_cohort(
+            application,
+            spec,
+            prefix;
             process = (pid = 12345, binding = binding),
-            verify_process = (_, _) -> error("process binding mismatch"))
-        @test_throws D.DeploymentError runtime_cohort(application, spec, prefix;
-            process = (pid = -1, binding = binding))
+            verify_process = (_, _) -> error("process binding mismatch"),
+        )
+        @test_throws D.DeploymentError runtime_cohort(
+            application, spec, prefix; process = (pid = -1, binding = binding)
+        )
         other_project = mkpath(joinpath(root, "other-project"))
         different = merge(binding, Dict("project" => other_project))
-        @test_throws ArgumentError runtime_cohort(application, spec, prefix;
-            process = (pid = 12345, binding = different), verify_process = (_, _) -> nothing)
+        @test_throws ArgumentError runtime_cohort(
+            application,
+            spec,
+            prefix;
+            process = (pid = 12345, binding = different),
+            verify_process = (_, _) -> nothing,
+        )
     end
 end
 
@@ -139,9 +172,8 @@ function source_dump(; running = true, run_token = 4, snapshot_token = 5, sequen
                 "pipewireao.run-control" => true,
                 "pipewireao.source-snapshot.version" => 1,
             ),
-            "params" => Dict(
-                "Props" => [Dict("params" => snapshot), Dict("params" => run)],
-            ),
+            "params" =>
+                Dict("Props" => [Dict("params" => snapshot), Dict("params" => run)]),
         ),
     )
     client = Dict(
@@ -189,11 +221,7 @@ end
 @testset "Fault source observations bind ACK, process and report identity" begin
     original = source_dump()
     decode(data; instance = nothing) = decode_aos_source(
-        data.objects,
-        data.source,
-        data.owner,
-        data.node_identity;
-        instance,
+        data.objects, data.source, data.owner, data.node_identity; instance
     )
     before = decode(original)
     @test before["snapshot"]["running"] === true
@@ -241,11 +269,11 @@ end
     @test_throws ArgumentError require_aos_hold(
         before,
         decode(
-            source_dump(running = false, run_token = 4, snapshot_token = 5, sequence = 12),
+            source_dump(running = false, run_token = 4, snapshot_token = 5, sequence = 12)
         ),
     )
     @test_throws ArgumentError decode(
-        source_dump(running = false, run_token = 6, snapshot_token = 5),
+        source_dump(running = false, run_token = 6, snapshot_token = 5)
     )
     for (field, value) in (
         ("source_instance", 102),
@@ -273,31 +301,23 @@ end
         100,
     )
     uncertain = entry(
-        "AO source hold uncertain; systemd emergency cleanup required: outcome unknown",
-        110,
+        "AO source hold uncertain; systemd emergency cleanup required: outcome unknown", 110
     )
     timeout = entry("correction_command.sequence 1192 timed out", 120)
     held_policy = policy_fault_evidence([fault], selected, injection)
     @test require_fault_outcome("held", held_policy) === nothing
     shutdown_policy = policy_fault_evidence(
-        [uncertain, fault],
-        selected,
-        injection;
-        source_records = [timeout],
+        [uncertain, fault], selected, injection; source_records = [timeout]
     )
     complete = Dict("cleanup_complete" => true, "cleanup_errors" => [])
     @test require_fault_outcome("policy-shutdown", shutdown_policy, complete) === nothing
     @test_throws ArgumentError require_fault_outcome("held", shutdown_policy)
     @test_throws ArgumentError require_fault_outcome(
-        "policy-shutdown",
-        held_policy,
-        complete,
+        "policy-shutdown", held_policy, complete
     )
     @test_throws ArgumentError require_fault_outcome("policy-shutdown", shutdown_policy)
     @test_throws ArgumentError require_fault_outcome(
-        "policy-shutdown",
-        shutdown_policy,
-        Dict("cleanup_complete" => false),
+        "policy-shutdown", shutdown_policy, Dict("cleanup_complete" => false)
     )
     @test_throws ArgumentError require_fault_outcome(
         "policy-shutdown",
@@ -312,36 +332,27 @@ end
         "AO session fault: Required session link destroyed",
     )
         @test_throws ArgumentError policy_fault_evidence(
-            [entry(message, 90), fault],
-            selected,
-            injection,
+            [entry(message, 90), fault], selected, injection
         )
     end
     @test_throws ArgumentError policy_fault_evidence([], selected, injection)
     @test_throws ArgumentError policy_fault_evidence(
-        [fault, entry(uncertain["MESSAGE"], 90)],
-        selected,
-        injection,
+        [fault, entry(uncertain["MESSAGE"], 90)], selected, injection
     )
     @test_throws ArgumentError policy_fault_evidence(
-        [fault],
-        selected,
-        injection;
-        source_records = [entry(timeout["MESSAGE"], 90)],
+        [fault], selected, injection; source_records = [entry(timeout["MESSAGE"], 90)]
     )
     wrong_boot = deepcopy(timeout)
     wrong_boot["_BOOT_ID"] = "different-boot"
     @test_throws ArgumentError policy_fault_evidence(
-        [fault],
-        selected,
-        injection;
-        source_records = [wrong_boot],
+        [fault], selected, injection; source_records = [wrong_boot]
     )
 end
 
 @testset "Fault cleanup waits for receipt, manager and every owner together" begin
-    handle =
-        (; invocation = "retained-invocation", cgroup = "/retained-manager", main_pid = 42)
+    handle = (;
+        invocation = "retained-invocation", cgroup = "/retained-manager", main_pid = 42
+    )
     active = Dict(
         "LoadState" => "loaded",
         "ActiveState" => "active",
@@ -363,9 +374,7 @@ end
     )
     @test !exact_manager(handle, stopped)
     for (key, value) in (
-        ("InvocationID", "replacement"),
-        ("ControlGroup", "/replacement"),
-        ("MainPID", "43"),
+        ("InvocationID", "replacement"), ("ControlGroup", "/replacement"), ("MainPID", "43")
     )
         @test_throws ArgumentError exact_manager(handle, merge(active, Dict(key => value)))
     end
@@ -388,16 +397,17 @@ end
     )
         mktempdir() do destination
             ticks, reads = Ref(0.0), Ref(0)
-            record =
-                Dict("cleanup_complete" => true, "owners" => Dict(), "phase" => "stopped")
+            record = Dict(
+                "cleanup_complete" => true, "owners" => Dict(), "phase" => "stopped"
+            )
             observed = observe_cleanup!(
                 handle,
                 destination;
                 failed = true,
                 seconds = 1,
-                now = ()->ticks[],
-                pause = seconds->(ticks[] += seconds),
-                read_record = ()->record,
+                now = () -> ticks[],
+                pause = seconds -> (ticks[] += seconds),
+                read_record = () -> record,
                 read_checks = _ -> begin
                     reads[] += 1
                     merge(checks, Dict(pending => reads[] >= 3))
@@ -419,9 +429,9 @@ end
             destination;
             failed = true,
             seconds = 0.2,
-            now = ()->ticks[],
-            pause = seconds->(ticks[] += seconds),
-            read_record = ()->record,
+            now = () -> ticks[],
+            pause = seconds -> (ticks[] += seconds),
+            read_record = () -> record,
             read_checks = _ -> merge(checks, Dict("manager_cgroup_empty" => false)),
         )
         before = cleanup_evidence(destination)
@@ -432,31 +442,31 @@ end
             destination;
             failed = true,
             seconds = 1,
-            now = ()->ticks[],
-            pause = seconds->(ticks[] += seconds),
-            read_record = ()->record,
+            now = () -> ticks[],
+            pause = seconds -> (ticks[] += seconds),
+            read_record = () -> record,
             read_checks = _ -> copy(checks),
         )
         after = cleanup_evidence(destination)
         @test after["observation_errors"] == before["observation_errors"]
         @test first(after["settling_observations"])["checks"]["manager_cgroup_empty"] ===
-              false
+            false
         @test last(after["settling_observations"])["checks"]["manager_cgroup_empty"] ===
-              true
+            true
     end
 end
 
 @testset "fault injection selects the exact declared command link" begin
     captured = Dict(
-        "controller"=>(; identity = (; id = UInt32(10), serial = UInt64(11))),
-        "corrector"=>(; identity = (; id = UInt32(20), serial = UInt64(21))),
+        "controller" => (; identity = (; id = UInt32(10), serial = UInt64(11))),
+        "corrector" => (; identity = (; id = UInt32(20), serial = UInt64(21))),
     )
     link(path, output, input, id) = (;
-        identity = (; id = UInt32(id), serial = UInt64(id+1)),
+        identity = (; id = UInt32(id), serial = UInt64(id + 1)),
         properties = Dict(
-            "object.path"=>path,
-            "link.output.node"=>string(output),
-            "link.input.node"=>string(input),
+            "object.path" => path,
+            "link.output.node" => string(output),
+            "link.input.node" => string(input),
         ),
     )
     optional = link("pipewireao/session/first", 10, 30, 1)
@@ -469,8 +479,6 @@ end
     @test_throws ArgumentError selected_link(exact, captured, [optional, reverse])
     @test_throws ArgumentError selected_link(exact, captured, [command, command])
     @test_throws KeyError selected_link(
-        (; link_nodes = ("unowned", "corrector")),
-        captured,
-        links,
+        (; link_nodes = ("unowned", "corrector")), captured, links
     )
 end

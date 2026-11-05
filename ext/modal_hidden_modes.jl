@@ -24,7 +24,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         throw(ArgumentError("calibration dimensions must be positive integers"))
     m >= n || throw(
         DimensionMismatch(
-            "compact TSVD hidden modes require measurement_count >= mode_count",
+            "compact TSVD hidden modes require measurement_count >= mode_count"
         ),
     )
     receipt["dimensions"]["controller_command_count"] == n ||
@@ -55,7 +55,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         name == basename(name) && !isempty(name) ||
             throw(ArgumentError("calibration artifact must be a file name"))
         path = joinpath(calibration, "artifacts", name)
-        bytes = PipeWireAORTC.Artifacts.snapshot(path; check = ()->nothing)
+        bytes = PipeWireAORTC.Artifacts.snapshot(path; check = () -> nothing)
         bytes2hex(Calibration.sha256(bytes)) == expected ||
             throw(ArgumentError("calibration artifact changed: $name"))
         name in ("interaction-matrix.fits", "reconstructor.fits") &&
@@ -65,14 +65,10 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         haskey(snapshots, name) ||
             throw(ArgumentError("missing calibration artifact hash: $name"))
         source = PipeWireAORTC.Artifacts.FITSArtifact(
-            joinpath(calibration, "artifacts", name);
-            axes = (2, 1),
+            joinpath(calibration, "artifacts", name); axes = (2, 1)
         )
         return PipeWireAORTC.Artifacts.prepare_snapshot(
-            source,
-            Float32,
-            shape,
-            snapshots[name],
+            source, Float32, shape, snapshots[name]
         ).data
     end
     interaction = matrix("interaction-matrix.fits", (m, n))
@@ -81,13 +77,11 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         AdaptiveOpticsCalibration.prepare(
             AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(; rtol = Float32(rtol)),
             AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
-                m,
-                n,
-                Float32,
+                m, n, Float32
             ),
         ),
         AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(
-            interaction .* transpose(weights),
+            interaction .* transpose(weights)
         ),
     )
     rank = AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse)
@@ -95,7 +89,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         throw(ArgumentError("recomputed TSVD rank differs from saved calibration"))
     0 < rank < n || throw(
         ArgumentError(
-            "hidden modes require nonempty retained and discarded TSVD components",
+            "hidden modes require nonempty retained and discarded TSVD components"
         ),
     )
     reconstructor =
@@ -122,7 +116,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
     retained = Float64.(weights .* vectors[:, 1:rank])
     projection_rtol = 1e-4
     checks = Dict(
-        "hidden_inverse_relative_error" => LA.norm(H * B - LA.I) / sqrt(n-rank),
+        "hidden_inverse_relative_error" => LA.norm(H * B - LA.I) / sqrt(n - rank),
         "shape_projection_idempotence_relative_error" =>
             LA.norm(projection * projection - projection) / LA.norm(projection),
         "retained_projection_annihilation_relative_error" =>
@@ -139,7 +133,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
             "retained_projection_annihilation_relative_error",
         ),
     ) || throw(ArgumentError("hidden-mode projection checks failed"))
-    labels = ["tsvd-component-$index" for index = (rank+1):n]
+    labels = ["tsvd-component-$index" for index in (rank+1):n]
     report = Dict(
         "parent_calibration" => relpath(abspath(calibration), abspath(output)),
         "parent_calibration_sha256" => receipt_hash,
@@ -149,7 +143,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
         "mode_count" => n,
         "measurement_count" => m,
         "retained_rank" => rank,
-        "hidden_mode_count" => n-rank,
+        "hidden_mode_count" => n - rank,
         "hidden_modes" => labels,
         "normalization" => receipt["normalization"],
         "mode_rms" => mode_rms,
@@ -175,8 +169,7 @@ function Calibration.calibrate_hidden_modes(calibration, output)
     end
     mkdir(output)
     for (name, values) in (
-        ("shape-to-hidden.fits", shape_to_hidden),
-        ("hidden-to-shape.fits", hidden_to_shape),
+        ("shape-to-hidden.fits", shape_to_hidden), ("hidden-to-shape.fits", hidden_to_shape)
     )
         Calibration.write_fits(joinpath(output, name), values)
     end

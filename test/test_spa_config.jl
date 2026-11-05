@@ -5,9 +5,7 @@ const C = PipeWireAORTC.Common
 
 function parse_spa_config(path)
     parser = joinpath(
-        PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir,
-        "bin",
-        "pwao-spa-json-dump",
+        PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir, "bin", "pwao-spa-json-dump"
     )
     result = C.run_checked([parser, "-N", "-R", path]; timeout = 10)
     @test result.returncode == 0
@@ -177,7 +175,9 @@ end
     mktempdir() do directory
         path = joinpath(directory, "selection.conf")
         mask = trues(1024^2)
-        document = Dict("filter.graph"=>Dict("nodes"=>[Dict("config"=>Dict("mask"=>mask))]))
+        document = Dict(
+            "filter.graph" => Dict("nodes" => [Dict("config" => Dict("mask" => mask))])
+        )
         E.write_spa_config(path, document)
         @test filesize(path) < 16 * 1024^2
         @test parse_spa_config(path) == document

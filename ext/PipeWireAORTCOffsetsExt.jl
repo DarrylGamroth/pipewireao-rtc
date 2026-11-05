@@ -33,65 +33,66 @@ struct ClockObserver{O,N}
 end
 function (observer::ClockObserver{O})(::Val{:frame}, outputs, metadata) where {O}
     observer.next === nothing || observer.next(Val(:frame), outputs, metadata)
-    clock=observer.clock
+    clock = observer.clock
     @atomic clock.version += UInt64(1)
-    admitted=getproperty(metadata, O)
-    valid=admitted.present
+    admitted = getproperty(metadata, O)
+    valid = admitted.present
     if valid
-        m=admitted.value
-        valid=m.has_timestamp &&
-              m.has_exposure_duration &&
-              m.has_acquisition_identity &&
-              !m.corrupted &&
-              !m.discontinuity &&
-              m.timestamp_nanoseconds>=0 &&
-              m.exposure_duration_nanoseconds>0
+        m = admitted.value
+        valid =
+            m.has_timestamp &&
+            m.has_exposure_duration &&
+            m.has_acquisition_identity &&
+            !m.corrupted &&
+            !m.discontinuity &&
+            m.timestamp_nanoseconds >= 0 &&
+            m.exposure_duration_nanoseconds > 0
         if valid
-            identity=m.acquisition_identity
-            domain=identity.domain
-            low=UInt64(0)
-            high=UInt64(0)
-            for i = 1:8
-                low |= UInt64(domain[i]) << (8(i-1))
-                high |= UInt64(domain[i+8]) << (8(i-1))
+            identity = m.acquisition_identity
+            domain = identity.domain
+            low = UInt64(0)
+            high = UInt64(0)
+            for i in 1:8
+                low |= UInt64(domain[i]) << (8(i - 1))
+                high |= UInt64(domain[i+8]) << (8(i - 1))
             end
-            @atomic clock.domain_low=low
-            @atomic clock.domain_high=high
-            @atomic clock.generation=identity.generation
-            @atomic clock.sequence=identity.sequence
-            @atomic clock.pts=m.timestamp_nanoseconds
-            @atomic clock.duration=m.exposure_duration_nanoseconds
+            @atomic clock.domain_low = low
+            @atomic clock.domain_high = high
+            @atomic clock.generation = identity.generation
+            @atomic clock.sequence = identity.sequence
+            @atomic clock.pts = m.timestamp_nanoseconds
+            @atomic clock.duration = m.exposure_duration_nanoseconds
         end
     end
-    @atomic clock.valid=valid
+    @atomic clock.valid = valid
     @atomic clock.version += UInt64(1)
     return nothing
 end
 function (observer::ClockObserver)(event::Union{Val{:reset},Val{:invalidated}})
     observer.next === nothing || observer.next(event)
     @atomic observer.clock.version += UInt64(1)
-    @atomic observer.clock.valid=false
+    @atomic observer.clock.valid = false
     reset_clock_generation!(observer.clock, event)
     @atomic observer.clock.version += UInt64(1)
     return nothing
 end
 function clock_sample(clock)
-    for _ = 1:3
-        before=@atomic clock.version
+    for _ in 1:3
+        before = @atomic clock.version
         isodd(before) && continue
-        low=@atomic clock.domain_low
-        high=@atomic clock.domain_high
-        generation=@atomic clock.generation
-        sequence=@atomic clock.sequence
-        pts=@atomic clock.pts
-        duration=@atomic clock.duration
-        valid=@atomic clock.valid
-        reset_generation=@atomic clock.reset_generation
-        after=@atomic clock.version
-        before==after && !isodd(after) || continue
+        low = @atomic clock.domain_low
+        high = @atomic clock.domain_high
+        generation = @atomic clock.generation
+        sequence = @atomic clock.sequence
+        pts = @atomic clock.pts
+        duration = @atomic clock.duration
+        valid = @atomic clock.valid
+        reset_generation = @atomic clock.reset_generation
+        after = @atomic clock.version
+        before == after && !isodd(after) || continue
         valid || return (; version = after, valid = false, reset_generation)
-        domain=AcquisitionDomain(
-            ntuple(i->UInt8((i<=8 ? low>>(8(i-1)) : high>>(8(i-9))) & 0xff), 16),
+        domain = AcquisitionDomain(
+            ntuple(i -> UInt8((i <= 8 ? low >> (8(i - 1)) : high >> (8(i - 9))) & 0xff), 16)
         )
         return (;
             version = after,
@@ -106,43 +107,41 @@ function clock_sample(clock)
 end
 
 function Offsets.frame_observer(path::AbstractString, prior, formats::NamedTuple)
-    d=Offsets.configuration(path)
+    d = Offsets.configuration(path)
     hasproperty(formats, Symbol(d["clock_output"])) ||
         throw(ArgumentError("physical offset clock output is absent"))
     return ClockObserver{Symbol(d["clock_output"]),typeof(prior)}(ModelClock(), prior)
 end
 
 function Offsets.prepare(path::AbstractString, graph)
-    d=Offsets.configuration(path)
-    P, Q, C=Offsets.matrix(path, d["projection"]),
+    d = Offsets.configuration(path)
+    P, Q, C = Offsets.matrix(path, d["projection"]),
     Offsets.matrix(path, d["inverse"]),
     Offsets.matrix(path, d["reference"])
-    index=findfirst(n->n.name===Symbol(d["algorithm"]), graph.nodes)
-    index===nothing && throw(ArgumentError("physical offset algorithm is absent"))
-    plan=graph.nodes[index].prepared.plan
+    index = findfirst(n -> n.name === Symbol(d["algorithm"]), graph.nodes)
+    index === nothing && throw(ArgumentError("physical offset algorithm is absent"))
+    plan = graph.nodes[index].prepared.plan
     validate_offset_plan(plan, Q, C, d["reference_sign"])
-    bindings=graph.parameter_routes
-    port=Symbol(d["parameter"])
+    bindings = graph.parameter_routes
+    port = Symbol(d["parameter"])
     hasproperty(bindings, port) || throw(
         ArgumentError(
-            "physical offset parameter must bind exactly the declared algorithm offset",
+            "physical offset parameter must bind exactly the declared algorithm offset"
         ),
     )
     validate_offset_parameter(getproperty(bindings, port), Val(index))
     all(iszero, plan.offset) || throw(ArgumentError("physical offsets must start at zero"))
-    inputs=Offsets.receiver_inputs(d, P, Q)
-    (; receiver, names, calibrations, buffers, total)=inputs
-    options=map(names) do name
-        row=d["branches"][string(name)]
+    inputs = Offsets.receiver_inputs(d, P, Q)
+    (; receiver, names, calibrations, buffers, total) = inputs
+    options = map(names) do name
+        row = d["branches"][string(name)]
         HIL.PipeWireArrayStreamOptions(;
             node_name = row["node_name"],
-            media_name = string(name)*" physical offset",
+            media_name = string(name) * " physical offset",
             metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
             schema = row["schema"],
             format = NdArrayFormat(
-                NdArray.F32_LE,
-                (size(P, 1),);
-                layout = NdArray.ROW_MAJOR,
+                NdArray.F32_LE, (size(P, 1),); layout = NdArray.ROW_MAJOR
             ),
         )
     end
@@ -158,58 +157,48 @@ function Offsets.prepare(path::AbstractString, graph)
 end
 
 function Offsets.with_receiver(
-    f,
-    prepared::NamedTuple;
-    node,
-    remote,
-    frame_clock::ClockObserver,
-    clock = time_ns,
+    f, prepared::NamedTuple; node, remote, frame_clock::ClockObserver, clock = time_ns
 )
-    Threads.nthreads(:default)>=3 || throw(
+    Threads.nthreads(:default) >= 3 || throw(
         ArgumentError(
             "physical offset receiver requires three default threads; thread3 owns admission",
         ),
     )
-    (; receiver, names, calibrations, options, buffers, total)=prepared
-    d=prepared.declaration
-    stop=Threads.Atomic{Bool}(false)
+    (; receiver, names, calibrations, options, buffers, total) = prepared
+    d = prepared.declaration
+    stop = Threads.Atomic{Bool}(false)
     HIL.with_array_streams(
-        Tuple(options);
-        remote,
-        input = ntuple(_->true, length(names)),
+        Tuple(options); remote, input = ntuple(_ -> true, length(names))
     ) do transport
-        initial=trues(length(names))
-        rejected=zeros(UInt64, length(names))
-        submitted_revision=typemax(UInt64)
-        clock_version=UInt64(0)
-        reset_generation=UInt64(0)
-        pump=ThreadPinning.@spawnat 3 try
+        initial = trues(length(names))
+        rejected = zeros(UInt64, length(names))
+        submitted_revision = typemax(UInt64)
+        clock_version = UInt64(0)
+        reset_generation = UInt64(0)
+        pump = ThreadPinning.@spawnat 3 try
             while !stop[]
-                sample=clock_sample(frame_clock.clock)
-                if sample!==nothing && sample.version!=clock_version
-                    clock_version=sample.version
-                    reset = sample.reset_generation!=reset_generation
+                sample = clock_sample(frame_clock.clock)
+                if sample !== nothing && sample.version != clock_version
+                    clock_version = sample.version
+                    reset = sample.reset_generation != reset_generation
                     if reset
-                        reset_generation=sample.reset_generation
+                        reset_generation = sample.reset_generation
                         Offsets.disarm!(receiver; reason = :reset)
-                        receiver.clock_identity=nothing
-                        receiver.clock_end_ns=0
+                        receiver.clock_identity = nothing
+                        receiver.clock_end_ns = 0
                         fill!(initial, true)
                         for i in eachindex(names)
                             HIL.reset_pipewire_array!(transport, i)
-                            rejected[i]=0
+                            rejected[i] = 0
                         end
                     end
                     if sample.valid
-                        previous=receiver.clock_identity
+                        previous = receiver.clock_identity
                         Offsets.observe_clock!(
-                            receiver,
-                            sample.identity,
-                            sample.pts,
-                            sample.duration,
+                            receiver, sample.identity, sample.pts, sample.duration
                         )
-                        if previous!==nothing &&
-                           !Offsets.same_cohort(previous, sample.identity)
+                        if previous !== nothing &&
+                            !Offsets.same_cohort(previous, sample.identity)
                             fill!(initial, false)
                         end
                     elseif !reset
@@ -217,14 +206,14 @@ function Offsets.with_receiver(
                         fill!(initial, false)
                     end
                 end
-                status=FGP.parameter_status(node, Symbol(d["algorithm"]))
+                status = FGP.parameter_status(node, Symbol(d["algorithm"]))
                 if status.closure_inhibited
                     Offsets.disarm!(receiver; reason = :protective_recovery)
                     fill!(initial, false)
                 end
                 for i in eachindex(names)
-                    name=names[i]
-                    wire_status=HIL.array_stream_status(transport, i)
+                    name = names[i]
+                    wire_status = HIL.array_stream_status(transport, i)
                     state = if wire_status.failed
                         nothing
                     else
@@ -237,29 +226,29 @@ function Offsets.with_receiver(
                             nothing
                         end
                     end
-                    if state===nothing ||
-                       wire_status.failed ||
-                       wire_status.rejected!=rejected[i] ||
-                       (
-                           receiver.branches[name].present &&
-                           state!=PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
-                       )
+                    if state === nothing ||
+                        wire_status.failed ||
+                        wire_status.rejected != rejected[i] ||
+                        (
+                            receiver.branches[name].present &&
+                            state != PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+                        )
                         Offsets.disarm!(receiver, name; reason = :transport)
-                        initial[i]=false
+                        initial[i] = false
                     end
-                    rejected[i]=wire_status.rejected
-                    receipt=HIL.drain_pipewire_array!(buffers[i], transport, i)
-                    receipt===nothing && continue
+                    rejected[i] = wire_status.rejected
+                    receipt = HIL.drain_pipewire_array!(buffers[i], transport, i)
+                    receipt === nothing && continue
                     if initial[i] &&
-                       receiver.clock_identity!==nothing &&
-                       !status.closure_inhibited
-                        identity=receipt.identity
-                        previous=receiver.branches[name].identity
+                        receiver.clock_identity !== nothing &&
+                        !status.closure_inhibited
+                        identity = receipt.identity
+                        previous = receiver.branches[name].identity
                         # Reset flushes retained pools, and a new acquisition
                         # cohort fences any older in-flight publication.
-                        if previous!==nothing &&
-                           identity.domain==previous.domain &&
-                           identity.generation<=previous.generation
+                        if previous !== nothing &&
+                            identity.domain == previous.domain &&
+                            identity.generation <= previous.generation
                             continue
                         end
                         Offsets.arm!(
@@ -267,7 +256,7 @@ function Offsets.with_receiver(
                             name,
                             AcquisitionIdentity(identity.domain, identity.generation, 0),
                         )
-                        initial[i]=false
+                        initial[i] = false
                     end
                     Offsets.accept!(
                         receiver,
@@ -283,22 +272,20 @@ function Offsets.with_receiver(
                     )
                 end
                 Offsets.expire!(receiver, clock())
-                if receiver.revision!=submitted_revision
+                if receiver.revision != submitted_revision
                     Offsets.total!(total, receiver)
                     try
                         FGP.replace_parameters!(
-                            node,
-                            Symbol(d["parameter"])=>total;
-                            supersede = true,
+                            node, Symbol(d["parameter"]) => total; supersede = true
                         )
-                        submitted_revision=receiver.revision
+                        submitted_revision = receiver.revision
                     catch error
                         retain_offset_submission(error)
                         # Keep only the current desired value; pending adoption is
                         # not acknowledgement and cannot renew branch freshness.
                     end
                 end
-                @ccall gc_safe=true usleep(Cuint(1000)::Cuint)::Cint
+                @ccall gc_safe = true usleep(Cuint(1000)::Cuint)::Cint
                 yield()
             end
         catch
@@ -310,7 +297,7 @@ function Offsets.with_receiver(
         try
             return f()
         finally
-            stop[]=true
+            stop[] = true
             wait(pump)
         end
     end
@@ -333,7 +320,7 @@ function validate_offset_plan(plan::FGA.PhysicalOffsetReferencePlan, Q, C, sign)
     sign in (-1, 1) &&
     plan.reference_sign == sign || throw(
         ArgumentError(
-            "physical offset graph calibration or sign differs from bound artifacts",
+            "physical offset graph calibration or sign differs from bound artifacts"
         ),
     )
     return nothing
@@ -345,14 +332,13 @@ validate_offset_plan(plan, Q, C, sign) = throw(
     ArgumentError("physical offset graph calibration or sign differs from bound artifacts"),
 )
 function validate_offset_parameter(
-    binding::JFG.ParameterInput{Index,:offset},
-    ::Val{Index},
+    binding::JFG.ParameterInput{Index,:offset}, ::Val{Index}
 ) where {Index}
     return nothing
 end
 validate_offset_parameter(binding, index) = throw(
     ArgumentError(
-        "physical offset parameter must bind exactly the declared algorithm offset",
+        "physical offset parameter must bind exactly the declared algorithm offset"
     ),
 )
 

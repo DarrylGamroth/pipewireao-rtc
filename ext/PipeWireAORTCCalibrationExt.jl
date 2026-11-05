@@ -42,9 +42,7 @@ function Calibration.controller_graph(application; overrides = Dict())
 end
 
 function Calibration.controller_storage(
-    graph;
-    raw_input = :raw,
-    feedback_input = Symbol("constraint-feedback"),
+    graph; raw_input = :raw, feedback_input = Symbol("constraint-feedback")
 )
     raw_name, feedback_name = Symbol(raw_input), Symbol(feedback_input)
     raw_format = getproperty(graph.input_formats, raw_name)

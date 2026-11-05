@@ -2,7 +2,7 @@
 # transaction and exact independent controller adoption generations.
 selected_controllers(scope::Tuple, ::Nothing) = scope
 selected_controllers(scope::Tuple, selection) = throw(
-    ArgumentError("resume requires a nonempty bounded collection of controller names"),
+    ArgumentError("resume requires a nonempty bounded collection of controller names")
 )
 function selected_controllers(
     scope::Tuple,
@@ -18,10 +18,7 @@ function selected_controllers(
 end
 
 function fresh_controllers(
-    operation::Operation,
-    snapshot::RecoverySnapshot,
-    selected,
-    after_sequence,
+    operation::Operation, snapshot::RecoverySnapshot, selected, after_sequence
 )
     now = transport_clock_ns(operation.channel.transport)
     timeout = min(operation.reference_timeout_ns, snapshot.reference_timeout_ns)
@@ -41,7 +38,7 @@ function require_controller_values(operation, snapshot, target)
     closed(snapshot) == target &&
     generations_match(snapshot) &&
     requested_generation(snapshot) == operation.coordinator.loop_generation || throw(
-        ControlClient.UnknownOutcome("coupled controller state or generation changed"),
+        ControlClient.UnknownOutcome("coupled controller state or generation changed")
     )
     adoption_matches(snapshot) ||
         throw(ControlClient.UnknownOutcome("coupled controller adoption is not coherent"))
@@ -89,19 +86,17 @@ function release_for_close!(
     while state(coordinator) === :Releasing
         snapshot = snapshot!(operation; deadline, check)
         require_controller_values(
-            operation,
-            snapshot,
-            open_target(controller_scope(coordinator)),
+            operation, snapshot, open_target(controller_scope(coordinator))
         )
         require_scope(operation, snapshot)
         snapshot.requested_generation == virtual_generation &&
         snapshot.active_generation <= virtual_generation ||
             throw(ControlClient.UnknownOutcome("release transaction generation changed"))
         if snapshot.recovery_state === :released &&
-           snapshot.active_generation == virtual_generation
+            snapshot.active_generation == virtual_generation
             require_released(operation, snapshot, virtual_generation)
             if fresh_reference(operation, snapshot, before.source_sequence) &&
-               fresh_controllers(operation, snapshot, pending, before.source_sequence)
+                fresh_controllers(operation, snapshot, pending, before.source_sequence)
                 close = observe_release!(
                     coordinator,
                     ReleaseObservation(
@@ -130,12 +125,13 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
     coordinator = operation.coordinator
     coordinator.failure === nothing && state(coordinator) in (:Holding, :PartiallyClosed) ||
         throw(
-            ArgumentError("resume requires verified Holding or a partially reclosed scope"),
+            ArgumentError("resume requires verified Holding or a partially reclosed scope")
         )
     names = selected_controllers(operation.controller, controllers)
     selected = map(name -> name in names, operation.controller)
-    pending =
-        map((selected, closed) -> selected && !closed, selected, coordinator.target_closed)
+    pending = map(
+        (selected, closed) -> selected && !closed, selected, coordinator.target_closed
+    )
     any(pending) || throw(ArgumentError("selected controllers are already closed"))
     target = map(|, coordinator.target_closed, selected)
     first_close = state(coordinator) === :Holding
@@ -157,16 +153,13 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
                 fresh_reference(operation, before, operation.reference_sequence)
             reference &&
                 fresh_controllers(
-                    operation,
-                    before,
-                    pending,
-                    operation.reference_sequence,
+                    operation, before, pending, operation.reference_sequence
                 ) &&
                 break
             transport_clock_ns(operation.channel.transport) - started <
             coordinator.timeout_ns || throw(
                 ControlClient.UnknownOutcome(
-                    "fresh selected-controller proof did not arrive",
+                    "fresh selected-controller proof did not arrive"
                 ),
             )
             pause_control!(operation; deadline, check)
@@ -191,8 +184,9 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
             closed = target,
             released = !first_close,
         )
-        effect, virtual_generation =
-            release_for_close!(operation, effect, before, pending; deadline, check)
+        effect, virtual_generation = release_for_close!(
+            operation, effect, before, pending; deadline, check
+        )
         changes = Dict{String,RecoveryRunner.RunnerScalar}(
             operation.controller[index] * ":closed" =>
                 RecoveryRunner.RunnerScalar(:bool, true) for
@@ -200,9 +194,7 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
         )
         reply = write_properties!(operation, changes; deadline, check)
         generations = map(
-            pending,
-            operation.controller,
-            coordinator.loop_generation,
+            pending, operation.controller, coordinator.loop_generation
         ) do pending, name, active
             pending ? generation_for(reply, name) : active
         end

@@ -21,9 +21,7 @@ p(x) = Pod(x)
 id(x) = p(SPA.Id(UInt32(x)))
 function reply(op, outcome, details; lifecycle = Runner.Ready)
     Envelope.encode_completion(
-        reply_header(op),
-        ps(id(lifecycle), id(outcome), p(details));
-        endpoint = :lifecycle,
+        reply_header(op), ps(id(lifecycle), id(outcome), p(details)); endpoint = :lifecycle
     )
 end
 
@@ -46,13 +44,7 @@ end
         Runner.RunnerCommand(:reset),
         Runner.RunnerCommand(:properties_set, "graph", props),
         Runner.RunnerCommand(
-            :parameter,
-            "graph",
-            "node.param",
-            "F32_LE",
-            UInt32[2, 3],
-            "",
-            "/tmp/value",
+            :parameter, "graph", "node.param", "F32_LE", UInt32[2, 3], "", "/tmp/value"
         ),
     ]
     @testset "all 14 exact request operations" begin
@@ -62,8 +54,15 @@ end
             header, payload = Envelope.decode_request(bytes)
             @test header.operation == op
             @test length(payload.values) == (
-                op in (1, 2, 3, 9, 10, 11, 12) ? 0 :
-                op in (4, 7, 8) ? 1 : op in (5, 6, 13) ? 2 : 6
+                if op in (1, 2, 3, 9, 10, 11, 12)
+                    0
+                elseif op in (4, 7, 8)
+                    1
+                elseif op in (5, 6, 13)
+                    2
+                else
+                    6
+                end
             )
             @test sizeof(bytes) <= 16 * 1024
             base = sizeof(Envelope.encode_request(request_header(op), SPA.Struct()))
@@ -71,15 +70,12 @@ end
         end
         @test_throws ArgumentError Runner.encode_request(request_header(2), commands[1])
         @test_throws ArgumentError Runner.encode_request(
-            request_header(4),
-            Runner.RunnerCommand(:properties),
+            request_header(4), Runner.RunnerCommand(:properties)
         )
         @test_throws ArgumentError Runner.encode_request(
             request_header(13),
             Runner.RunnerCommand(
-                :properties_set,
-                "graph",
-                Dict{String,Runner.RunnerScalar}(),
+                :properties_set, "graph", Dict{String,Runner.RunnerScalar}()
             ),
         )
         @test_throws ArgumentError Runner.encode_request(
@@ -91,22 +87,15 @@ end
             ),
         )
         oversized = Dict{String,Runner.RunnerScalar}(
-            "node.$i" => Runner.RunnerScalar(:string, repeat("a", 1_000)) for i = 1:42
+            "node.$i" => Runner.RunnerScalar(:string, repeat("a", 1_000)) for i in 1:42
         )
         @test_throws ArgumentError Runner.encode_request(
-            request_header(13),
-            Runner.RunnerCommand(:properties_set, "graph", oversized),
+            request_header(13), Runner.RunnerCommand(:properties_set, "graph", oversized)
         )
         @test_throws ArgumentError Runner.encode_request(
             request_header(14),
             Runner.RunnerCommand(
-                :parameter,
-                "g",
-                "p",
-                "F32_LE",
-                UInt32[typemax(UInt32)],
-                "",
-                "/tmp/p",
+                :parameter, "g", "p", "F32_LE", UInt32[typemax(UInt32)], "", "/tmp/p"
             ),
         )
     end
@@ -158,7 +147,7 @@ end
             @test completion.error === nothing
         end
         status = Runner.decode_completion(
-            reply(3, Runner.Observed, cases[3][2]; lifecycle = Runner.Running),
+            reply(3, Runner.Observed, cases[3][2]; lifecycle = Runner.Running)
         )
         @test status.result.details.owned_nodes == typemax(UInt64)
         @test status.result.details.discarded_by_sink["sink"] == typemax(UInt64)
@@ -168,40 +157,41 @@ end
         observed_long = Runner.decode_completion(reply(4, Runner.Observed, long_snapshot))
         @test length(observed_long.result.details.properties["node.text"].value) == 20_000
         @test Runner.decode_completion(reply(5, Runner.Observed, cases[5][2])).result.details.active ===
-              nothing
+            nothing
     end
 
     @testset "errors and exact schema rejection" begin
         negative = Envelope.ReplyHeader(identity, Int64(42), Int64(3), UInt32(3), Int32(-5))
         error_payload = ps(p("runner"), p("failed"), id(Runner.Fault))
-        failure =
-            Runner.decode_completion(Envelope.encode_completion(negative, error_payload))
+        failure = Runner.decode_completion(
+            Envelope.encode_completion(negative, error_payload)
+        )
         @test failure.result === nothing && failure.error.message == "failed"
         reject = Runner.decode_rejection(Envelope.encode_rejection(negative, error_payload))
         @test reject.error.field == "runner"
         sentinel = Envelope.ReplyHeader(Int64(42), Int32(-22))
         @test Runner.decode_rejection(
-            Envelope.encode_rejection(sentinel, error_payload),
+            Envelope.encode_rejection(sentinel, error_payload)
         ).header.controller === nothing
         @test_throws ArgumentError Runner.decode_completion(
-            Envelope.encode_completion(Envelope.ReplyHeader(Int64(42), Int32(0)), ps()),
+            Envelope.encode_completion(Envelope.ReplyHeader(Int64(42), Int32(0)), ps())
         )
         @test_throws ArgumentError Runner.decode_completion(
-            reply(1, Runner.Submitted, ps(p(true))),
+            reply(1, Runner.Submitted, ps(p(true)))
         )
         @test_throws ArgumentError Runner.decode_completion(
-            reply(10, Runner.Completed, ps(id(3))),
+            reply(10, Runner.Completed, ps(id(3)))
         )
         @test_throws ArgumentError Runner.decode_completion(
-            reply(14, Runner.Submitted, ps(p("g"), p("p"), p(nothing), p(true))),
+            reply(14, Runner.Submitted, ps(p("g"), p("p"), p(nothing), p(true)))
         )
         duplicate_rows = ps(p(ps(p("g"), id(1))), p(ps(p("g"), id(2))))
         @test_throws ArgumentError Runner.decode_completion(
-            reply(2, Runner.Observed, ps(p(duplicate_rows))),
+            reply(2, Runner.Observed, ps(p(duplicate_rows)))
         )
         bad_generation = ps(p(ps(p("n"), p(nothing), p(Int64(1)))))
         @test_throws ArgumentError Runner.decode_completion(
-            reply(13, Runner.Submitted, ps(p("g"), p(bad_generation), p(false))),
+            reply(13, Runner.Submitted, ps(p("g"), p(bad_generation), p(false)))
         )
     end
 end

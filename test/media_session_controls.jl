@@ -50,13 +50,13 @@ function Runtime(
     parameters = nothing,
     lifecycle = RunnerCodec.Running,
     clock::Clocks.AbstractNanoClock = Clocks.CachedNanoClock(
-        Clocks.time_nanos(Clocks.SystemNanoClock()),
+        Clocks.time_nanos(Clocks.SystemNanoClock())
     ),
     properties = Dict(
-        "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>ControlClient.profile_name(BC.PROFILE),
-        "pipewireao.rtc-control.instance"=>"17",
-        "pipewireao.rtc-control.owner-pid"=>"19",
+        "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+        "pipewireao.rtc-control.profile" => ControlClient.profile_name(BC.PROFILE),
+        "pipewireao.rtc-control.instance" => "17",
+        "pipewireao.rtc-control.owner-pid" => "19",
     ),
 )
     Runtime(
@@ -64,8 +64,8 @@ function Runtime(
         parameters,
         IDENTITY,
         Int64(0),
-        Dict("graph"=>UInt64(1)),
-        Dict("loop"=>Group(["graph"], String[], true)),
+        Dict("graph" => UInt64(1)),
+        Dict("loop" => Group(["graph"], String[], true)),
         (lifecycle = lifecycle,),
         properties,
         records,
@@ -99,7 +99,7 @@ function queryparam!(runtime::Runtime, job, handle, param, pod)
 end
 synchronize!(runtime::Runtime, job) = nothing
 function await_condition!(f, runtime::Runtime, job)
-    for _ = 1:20
+    for _ in 1:20
         now(runtime) < job.ticket.deadline ||
             throw(ControlClient.UnknownOutcome("absolute deadline expired"))
         value = f()
@@ -115,10 +115,7 @@ job(runtime; origin = RunningOrigin()) = (
     ),
 )
 function capability(
-    profile = BC.PROFILE;
-    state = UInt32(2),
-    token = Int64(0),
-    registered = true,
+    profile = BC.PROFILE; state = UInt32(2), token = Int64(0), registered = true
 )
     names = ControlClient.capability_names(profile)
     rows =
@@ -138,7 +135,9 @@ function capability(
         Pod(token),
         Pod(SPA.Struct(rows)),
     ]
-    Pod(PipeWireAO.props_param(SPA.Props([names[i]=>values[i] for i in eachindex(names)])))
+    Pod(
+        PipeWireAO.props_param(SPA.Props([names[i] => values[i] for i in eachindex(names)]))
+    )
 end
 bootstrap_reply(token = Int64(1)) = ControlClient.encode_completion(
     BC.PROFILE,
@@ -171,7 +170,7 @@ function source_control_pod(;
     Pod(
         PipeWireAO.props_param(
             SPA.Props([
-                SourceControl.SNAPSHOT_NAMES[i]=>Pod(values[i]) for i in eachindex(values)
+                SourceControl.SNAPSHOT_NAMES[i] => Pod(values[i]) for i in eachindex(values)
             ]),
         ),
     )
@@ -181,10 +180,10 @@ function run_status(token, state; result = Int32(0))
     Pod(
         PipeWireAO.props_param(
             SPA.Props([
-                prefix*"version"=>Pod(Int32(1)),
-                prefix*"completed-token"=>Pod(Int64(token)),
-                prefix*"result"=>Pod(result),
-                prefix*"actual-state"=>Pod(state),
+                prefix * "version" => Pod(Int32(1)),
+                prefix * "completed-token" => Pod(Int64(token)),
+                prefix * "result" => Pod(result),
+                prefix * "actual-state" => Pod(state),
             ]),
         ),
     )
@@ -208,10 +207,7 @@ end
     runtime.send_failure = true
     owner = capture_owner(runtime, UInt64(1), BC.PROFILE, 17, 19)
     @test_throws ErrorException request_owner!(
-        runtime,
-        job(runtime),
-        owner,
-        BC.Command(:connect),
+        runtime, job(runtime), owner, BC.Command(:connect)
     )
     @test length(runtime.submitted) == 1
     @test runtime.mutations == 1 && runtime.queries == 0
@@ -220,7 +216,7 @@ end
     owner = capture_owner(runtime, UInt64(1), BC.PROFILE, 17, 19)
     @test_throws ControlClient.UnknownOutcome request_owner!(
         runtime,
-        (ticket = (deadline = now(runtime)+Int64(2_000_000),),),
+        (ticket = (deadline = now(runtime) + Int64(2_000_000),),),
         owner,
         BC.Command(:connect),
     )
@@ -241,9 +237,7 @@ end
     records = control_records(
         [
             source_control_pod(;
-                kind = SourceControl.RUN,
-                token = Int64(1),
-                running = true,
+                kind = SourceControl.RUN, token = Int64(1), running = true
             ),
             run_status(1, "running"),
         ],
@@ -253,20 +247,14 @@ end
     mismatch = control_records(
         [
             source_control_pod(;
-                kind = SourceControl.RUN,
-                token = Int64(1),
-                running = true,
+                kind = SourceControl.RUN, token = Int64(1), running = true
             ),
             run_status(1, "stopped"),
         ],
         Int64(17),
     )
     @test_throws ArgumentError matching_source_control_record(
-        mismatch,
-        :run,
-        Int64(1),
-        "running",
-        previous,
+        mismatch, :run, Int64(1), "running", previous
     )
     incomplete = control_records(
         [
@@ -281,19 +269,13 @@ end
         Int64(17),
     )
     @test_throws ArgumentError matching_source_control_record(
-        incomplete,
-        :query,
-        Int64(1),
-        "",
-        previous,
+        incomplete, :query, Int64(1), "", previous
     )
     @test_throws ArgumentError source_control_snapshot(
-        named_values(source_control_pod(; running = true, completed = true)),
-        Int64(17),
+        named_values(source_control_pod(; running = true, completed = true)), Int64(17)
     )
     @test_throws ArgumentError source_control_snapshot(
-        named_values(source_control_pod()),
-        Int64(18),
+        named_values(source_control_pod()), Int64(18)
     )
     @test control_state(true) == "running"
     @test control_state(1) == "stopped"
@@ -303,8 +285,8 @@ end
             [source_control_pod(; kind = SourceControl.QUERY, token = Int64(1))],
         ];
         properties = Dict(
-            "pipewireao.source-control.instance"=>"17",
-            "pipewireao.source-control.owner-pid"=>"19",
+            "pipewireao.source-control.instance" => "17",
+            "pipewireao.source-control.owner-pid" => "19",
         ),
     )
     source = SourceControlBinding(UInt64(1), UInt32(19), Int64(17), nothing)
@@ -322,17 +304,14 @@ end
     runtime = Runtime([[capability()], [capability(), status_reply]])
     owner = capture_owner(runtime, UInt64(1), BC.PROFILE, 17, 19)
     @test request_owner!(runtime, job(runtime), owner, BC.Command(:status)).lifecycle ==
-          BC.Prepared
+        BC.Prepared
     @test runtime.mutations == 0 && runtime.queries == 1
     @test length(runtime.submitted) == 1
     runtime = Runtime([[capability()]])
     runtime.send_failure = true
     owner = capture_owner(runtime, UInt64(1), BC.PROFILE, 17, 19)
     @test_throws ErrorException request_owner!(
-        runtime,
-        job(runtime),
-        owner,
-        BC.Command(:status),
+        runtime, job(runtime), owner, BC.Command(:status)
     )
     @test runtime.mutations == 0 && runtime.queries == 1
     @test length(runtime.submitted) == 1
@@ -349,8 +328,8 @@ end
     runtime = Runtime(
         [[source_control_pod()]];
         properties = Dict(
-            "pipewireao.source-control.instance"=>"17",
-            "pipewireao.source-control.owner-pid"=>"19",
+            "pipewireao.source-control.instance" => "17",
+            "pipewireao.source-control.owner-pid" => "19",
         ),
     )
     runtime.send_failure = true
@@ -361,135 +340,84 @@ end
 end
 @testset "correction and protective recovery admission" begin
     config = Dict(
-        "node.pids"=>Dict("graph"=>19),
-        "owners"=>[
-            Dict("pid"=>19, "bootstrap-node"=>"bootstrap", "bootstrap-instance"=>"17"),
+        "node.pids" => Dict("graph" => 19),
+        "owners" => [
+            Dict(
+                "pid" => 19,
+                "bootstrap-node" => "bootstrap",
+                "bootstrap-instance" => "17",
+            ),
         ],
     )
     runtime = Runtime(Vector{Pod}[]; configuration = config)
-    prefix = CORRECTION_PREFIX*"controller:closed"
+    prefix = CORRECTION_PREFIX * "controller:closed"
     values = Dict(
-        "pipewireao.correction-control.version"=>Pod(Int32(1)),
-        "pipewireao.correction-control.owner-instance"=>Pod(Int64(17)),
-        "pipewireao.run-control.actual-state"=>Pod("running"),
-        prefix*".state"=>Pod("Open"),
-        prefix*".fault"=>Pod(""),
-        prefix*".requested"=>Pod(false),
-        "controller:closed"=>Pod(false),
-        "controller:requested-generation"=>Pod(Int64(2)),
-        "controller:active-generation"=>Pod(Int64(2)),
+        "pipewireao.correction-control.version" => Pod(Int32(1)),
+        "pipewireao.correction-control.owner-instance" => Pod(Int64(17)),
+        "pipewireao.run-control.actual-state" => Pod("running"),
+        prefix * ".state" => Pod("Open"),
+        prefix * ".fault" => Pod(""),
+        prefix * ".requested" => Pod(false),
+        "controller:closed" => Pod(false),
+        "controller:requested-generation" => Pod(Int64(2)),
+        "controller:active-generation" => Pod(Int64(2)),
     )
-    updates = Dict("controller:closed"=>Pod(true))
+    updates = Dict("controller:closed" => Pod(true))
     declarations = Dict{String,PropertyDeclaration}()
     @test check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     ) === nothing
     @test_throws ArgumentError check_correction!(
-        runtime,
-        ReadyOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, ReadyOrigin(), "graph", values, updates, declarations
     )
     runtime.machine = (lifecycle = RunnerCodec.Ready,)
     @test check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     ) === nothing
     runtime.groups["loop"] = Group(["graph"], String[], false)
     @test_throws ArgumentError check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     )
     runtime.groups["loop"] = Group(["graph"], String[], true)
     values["pipewireao.run-control.actual-state"] = Pod("stopped")
     @test_throws ArgumentError check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     )
     values["pipewireao.run-control.actual-state"] = Pod("running")
     values[CORRECTION_PREFIX*"owner-instance"] = Pod(Int64(18))
     @test_throws ArgumentError check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     )
     values[CORRECTION_PREFIX*"owner-instance"] = Pod(Int64(17))
     values[prefix*".fault"] = Pod("latched")
     @test_throws ArgumentError check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     )
     values[prefix*".fault"] = Pod("")
     runtime.machine = (lifecycle = RunnerCodec.Ready,)
     @test_throws ArgumentError check_correction!(
-        runtime,
-        ReadyOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, ReadyOrigin(), "graph", values, updates, declarations
     )
     runtime.machine = (lifecycle = RunnerCodec.Running,)
     values[RECOVERY_PREFIX*"version"] = Pod(Int32(1))
     values[RECOVERY_PREFIX*"closure-inhibited"] = Pod(true)
     @test_throws ArgumentError check_parameter_correction(values)
     @test_throws ArgumentError check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        updates,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, updates, declarations
     )
     values[RECOVERY_PREFIX*"closure-inhibited"] = Pod(false)
     values[RECOVERY_PREFIX*"controller"] = Pod("controller")
     values[RECOVERY_PREFIX*"requested-generation"] = Pod(Int64(2))
     values[RECOVERY_PREFIX*"active-generation"] = Pod(Int64(2))
     values[RECOVERY_PREFIX*"request-token"] = Pod(Int64(0))
-    recovery = Dict(RECOVERY_PREFIX*"request-token"=>Pod(Int64(1)))
+    recovery = Dict(RECOVERY_PREFIX * "request-token" => Pod(Int64(1)))
     runtime.machine = (lifecycle = RunnerCodec.Ready,)
     @test check_correction!(
-        runtime,
-        RunningOrigin(),
-        "graph",
-        values,
-        recovery,
-        declarations,
+        runtime, RunningOrigin(), "graph", values, recovery, declarations
     ) === nothing
     runtime.machine = (lifecycle = RunnerCodec.Running,)
     @test_throws ArgumentError check_correction!(
-        runtime,
-        ReadyOrigin(),
-        "graph",
-        values,
-        recovery,
-        declarations,
+        runtime, ReadyOrigin(), "graph", values, recovery, declarations
     )
     values[RECOVERY_PREFIX*"observation-monotonic-nanoseconds"] = Pod(Int64(1_000_000_000))
     values[RECOVERY_PREFIX*"reference-timeout-ms"] = Pod(Int32(100))
@@ -498,37 +426,35 @@ end
     @test !recovery_reference_fresh(values, Int64(990_000_000))
     @test !recovery_reference_fresh(values, Int64(-1))
     @test_throws MethodError recovery_reference_fresh(values, 1.099999)
-    @test correction_status_field(prefix*".state")
-    @test !correction_status_field(prefix*".unsupported")
+    @test correction_status_field(prefix * ".state")
+    @test !correction_status_field(prefix * ".unsupported")
 end
 @testset "typed scalar admission and bitwise adoption" begin
     info = Pod(
         PipeWireAO.prop_info_param(
             SPA.PropInfo(
-                "controller:gain",
-                Pod(SPA.Choice(SPA.CHOICE_RANGE, Float32[1, 0, 2])),
+                "controller:gain", Pod(SPA.Choice(SPA.CHOICE_RANGE, Float32[1, 0, 2]))
             ),
         ),
     )
     @test property_declarations([info])["controller:gain"].kind == SPA.POD_FLOAT
     readonly = Pod(
         PipeWireAO.prop_info_param(
-            SPA.PropInfo("controller:gain", Pod(Float32(1)); flags = 1),
+            SPA.PropInfo("controller:gain", Pod(Float32(1)); flags = 1)
         ),
     )
     @test !property_declarations([readonly])["controller:gain"].writable
     @test_throws ArgumentError property_declarations([info, info])
-    before = Dict("controller"=>Int64(2))
+    before = Dict("controller" => Int64(2))
     after = Dict(
-        "controller:requested-generation"=>Pod(Int64(3)),
-        "controller:active-generation"=>Pod(Int64(3)),
-        "controller:gain"=>Pod(-0.0f0),
+        "controller:requested-generation" => Pod(Int64(3)),
+        "controller:active-generation" => Pod(Int64(3)),
+        "controller:gain" => Pod(-0.0f0),
     )
-    @test !properties_adopted(after, before, Dict("controller:gain"=>Pod(0.0f0)))
-    @test properties_adopted(after, before, Dict("controller:gain"=>Pod(-0.0f0)))
+    @test !properties_adopted(after, before, Dict("controller:gain" => Pod(0.0f0)))
+    @test properties_adopted(after, before, Dict("controller:gain" => Pod(-0.0f0)))
     @test_throws ArgumentError RunnerCodec._scalar_pod(
-        RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, NaN32));
-        finite = true,
+        RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, NaN32)); finite = true
     )
 end
 @testset "property transactions submit once and prove active generations" begin
@@ -536,9 +462,9 @@ end
     props(generation, gain) = Pod(
         PipeWireAO.props_param(
             SPA.Props([
-                "controller:requested-generation"=>Pod(Int64(generation)),
-                "controller:active-generation"=>Pod(Int64(generation)),
-                "controller:gain"=>Pod(Float32(gain)),
+                "controller:requested-generation" => Pod(Int64(generation)),
+                "controller:active-generation" => Pod(Int64(generation)),
+                "controller:gain" => Pod(Float32(gain)),
             ]),
         ),
     )
@@ -546,7 +472,8 @@ end
         :properties_set,
         "graph",
         Dict(
-            "controller:gain"=>RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, 2.0f0)),
+            "controller:gain" =>
+                RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, 2.0f0)),
         ),
     )
     runtime = Runtime([[info], [props(2, 1)], [props(2, 1)], [props(3, 2)]])
@@ -555,8 +482,7 @@ end
     @test policy_bool(result.values[3])
     @test length(runtime.submitted) == 1
     @test PipeWireAO.pod_value(
-        Float32,
-        named_values(only(runtime.submitted))["controller:gain"],
+        Float32, named_values(only(runtime.submitted))["controller:gain"]
     ) == 2.0f0
     runtime = Runtime([[info], [props(2, 1)]]; lifecycle = RunnerCodec.Ready)
     result = update_properties!(runtime, job(runtime; origin = ReadyOrigin()), command)
@@ -564,7 +490,7 @@ end
     @test length(runtime.submitted) == 1
     readonly = Pod(
         PipeWireAO.prop_info_param(
-            SPA.PropInfo("controller:gain", Pod(Float32(1)); flags = 1),
+            SPA.PropInfo("controller:gain", Pod(Float32(1)); flags = 1)
         ),
     )
     runtime = Runtime([[readonly], [props(2, 1)]])
@@ -573,7 +499,7 @@ end
     runtime = Runtime([[info], [props(2, 1)]])
     @test_throws ControlClient.UnknownOutcome update_properties!(
         runtime,
-        (ticket = (deadline = now(runtime)+Int64(2_000_000), origin = RunningOrigin()),),
+        (ticket = (deadline = now(runtime) + Int64(2_000_000), origin = RunningOrigin()),),
         command,
     )
     @test length(runtime.submitted) == 1
@@ -583,9 +509,9 @@ end
     props(generation, gain) = Pod(
         PipeWireAO.props_param(
             SPA.Props([
-                "controller:requested-generation"=>Pod(Int64(generation)),
-                "controller:active-generation"=>Pod(Int64(generation)),
-                "controller:gain"=>Pod(Float32(gain)),
+                "controller:requested-generation" => Pod(Int64(generation)),
+                "controller:active-generation" => Pod(Int64(generation)),
+                "controller:gain" => Pod(Float32(gain)),
             ]),
         ),
     )
@@ -593,12 +519,14 @@ end
         :properties_set,
         "graph",
         Dict(
-            "controller:gain"=>RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, 2.0f0)),
+            "controller:gain" =>
+                RunnerCodec.RunnerScalar(:float, reinterpret(UInt32, 2.0f0)),
         ),
     )
     # A mutable wire status cannot replace the immutable Hsm admission origin.
-    runtime =
-        Runtime([[info], [props(2, 1)], [props(3, 2)]]; lifecycle = RunnerCodec.Running)
+    runtime = Runtime(
+        [[info], [props(2, 1)], [props(3, 2)]]; lifecycle = RunnerCodec.Running
+    )
     result = update_properties!(runtime, job(runtime; origin = ReadyOrigin()), command)
     @test !policy_bool(result.values[3])
     @test runtime.index == 2
@@ -623,15 +551,7 @@ end
     )
         cursor = AC.AcquisitionCursor(UInt64(1), UInt64(1), sequence, UInt64(0))
         snapshot = AC.Snapshot(
-            AC.Classic,
-            cursor,
-            cursor,
-            running,
-            completed,
-            "initial",
-            false,
-            false,
-            nothing,
+            AC.Classic, cursor, cursor, running, completed, "initial", false, false, nothing
         )
         ControlClient.encode_completion(
             profile,
@@ -642,10 +562,10 @@ end
         )
     end
     metadata = Dict(
-        "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>ControlClient.profile_name(profile),
-        "pipewireao.rtc-control.instance"=>"17",
-        "pipewireao.rtc-control.owner-pid"=>"19",
+        "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+        "pipewireao.rtc-control.profile" => ControlClient.profile_name(profile),
+        "pipewireao.rtc-control.instance" => "17",
+        "pipewireao.rtc-control.owner-pid" => "19",
     )
     runtime = Runtime(
         [
@@ -684,21 +604,13 @@ end
         state in (AC.Preparing, AC.Prepared)
 
         metadata = Dict(
-            "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-            "pipewireao.rtc-control.profile"=>ControlClient.profile_name(profile),
-            "pipewireao.rtc-control.instance"=>"17",
-            "pipewireao.rtc-control.owner-pid"=>"19",
+            "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+            "pipewireao.rtc-control.profile" => ControlClient.profile_name(profile),
+            "pipewireao.rtc-control.instance" => "17",
+            "pipewireao.rtc-control.owner-pid" => "19",
         )
         initial = AC.Snapshot(
-            AC.Classic,
-            nothing,
-            nothing,
-            false,
-            false,
-            "initial",
-            false,
-            false,
-            nothing,
+            AC.Classic, nothing, nothing, false, false, "initial", false, false, nothing
         )
         status = ControlClient.encode_completion(
             profile,
@@ -725,23 +637,23 @@ end
         proof = source_operation!(runtime, job(runtime), acquisition, :run; running = false)
         @test proof.completion.lifecycle === state
         @test proof.completion.snapshot.cursor === nothing &&
-              proof.completion.snapshot.report_cursor === nothing
+            proof.completion.snapshot.report_cursor === nothing
         @test !proof.completion.snapshot.held && !proof.completion.snapshot.restored
         @test acquisition.previous === nothing && !owner.retired
         @test runtime.mutations == 0 && runtime.queries == 1
         header, payload = CC.decode_request(only(runtime.submitted))
         @test header.operation ==
               ControlClient.operation_id(profile, AC.LifecycleCommand(:status)) &&
-              isempty(payload.values)
+            isempty(payload.values)
     end
 end
 @testset "initial Hold refuses incomplete, changed and regressed acquisition evidence" begin
     profile = AC.CALIBRATION_PROFILE
     metadata = Dict(
-        "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>ControlClient.profile_name(profile),
-        "pipewireao.rtc-control.instance"=>"17",
-        "pipewireao.rtc-control.owner-pid"=>"19",
+        "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+        "pipewireao.rtc-control.profile" => ControlClient.profile_name(profile),
+        "pipewireao.rtc-control.instance" => "17",
+        "pipewireao.rtc-control.owner-pid" => "19",
     )
     initial(;
         instrument = AC.Classic,
@@ -754,15 +666,7 @@ end
         restored = false,
         window = nothing,
     ) = AC.Snapshot(
-        instrument,
-        cursor,
-        report,
-        running,
-        completed,
-        phase,
-        held,
-        restored,
-        window,
+        instrument, cursor, report, running, completed, phase, held, restored, window
     )
     cursor = AC.AcquisitionCursor(UInt64(1), UInt64(2), UInt64(3), UInt64(4))
     function hold_runtime(
@@ -803,11 +707,7 @@ end
     )
         runtime, acquisition = hold_runtime(snapshot)
         @test_throws ArgumentError source_operation!(
-            runtime,
-            job(runtime),
-            acquisition,
-            :run;
-            running = false,
+            runtime, job(runtime), acquisition, :run; running = false
         )
         @test runtime.mutations == 0 && runtime.queries == 1
         @test !acquisition.owner.retired && acquisition.previous === nothing
@@ -815,31 +715,19 @@ end
     for state in (AC.Fault, AC.Stopped)
         runtime, acquisition = hold_runtime(initial(); state)
         @test_throws ArgumentError source_operation!(
-            runtime,
-            job(runtime),
-            acquisition,
-            :run;
-            running = false,
+            runtime, job(runtime), acquisition, :run; running = false
         )
         @test runtime.mutations == 0 && runtime.queries == 1
     end
     runtime, acquisition = hold_runtime(initial(); message = "preparation failed")
     @test_throws ArgumentError source_operation!(
-        runtime,
-        job(runtime),
-        acquisition,
-        :run;
-        running = false,
+        runtime, job(runtime), acquisition, :run; running = false
     )
     @test runtime.mutations == 0 && runtime.queries == 1
     runtime, acquisition = hold_runtime(initial())
     acquisition.previous = cursor
     @test_throws ArgumentError source_operation!(
-        runtime,
-        job(runtime),
-        acquisition,
-        :run;
-        running = false,
+        runtime, job(runtime), acquisition, :run; running = false
     )
     @test acquisition.previous === cursor && runtime.mutations == 0
     # A query without a current cursor cannot erase acknowledged Connect history.
@@ -849,16 +737,13 @@ end
     # Capability observations are retained even when no Connected cursor was
     # acknowledged before an invalid rollback to Prepared.
     runtime, acquisition = hold_runtime(initial())
-    runtime.records =
-        [[capability(profile; state = UInt32(AC.Connected))], runtime.records...]
+    runtime.records = [
+        [capability(profile; state = UInt32(AC.Connected))], runtime.records...
+    ]
     observe_owner!(runtime, job(runtime), acquisition.owner)
     @test acquisition.owner.connected_observed && acquisition.previous === nothing
     @test_throws ArgumentError source_operation!(
-        runtime,
-        job(runtime),
-        acquisition,
-        :run;
-        running = false,
+        runtime, job(runtime), acquisition, :run; running = false
     )
     @test acquisition.owner.connected_observed && runtime.mutations == 0
     for kwargs in (
@@ -866,41 +751,30 @@ end
         (controller = CC.ControllerIdentity(UInt32(8), UInt64(11), Int64(13)),),
     )
         runtime, acquisition = hold_runtime(initial(); kwargs...)
-        short_job = (ticket = (deadline = now(runtime)+Int64(2_000_000),),)
+        short_job = (ticket = (deadline = now(runtime) + Int64(2_000_000),),)
         @test_throws ControlClient.UnknownOutcome source_operation!(
-            runtime,
-            short_job,
-            acquisition,
-            :run;
-            running = false,
+            runtime, short_job, acquisition, :run; running = false
         )
         @test runtime.mutations == 0 && runtime.queries == 1
     end
     runtime, acquisition = hold_runtime(initial(); instance = Int64(18))
     @test_throws ArgumentError source_operation!(
-        runtime,
-        job(runtime),
-        acquisition,
-        :run;
-        running = false,
+        runtime, job(runtime), acquisition, :run; running = false
     )
     @test runtime.mutations == 0 && runtime.queries == 1
     runtime, acquisition = hold_runtime(nothing; result = Int32(-95))
     @test_throws ArgumentError source_operation!(
-        runtime,
-        job(runtime),
-        acquisition,
-        :run;
-        running = false,
+        runtime, job(runtime), acquisition, :run; running = false
     )
     @test runtime.mutations == 0 && runtime.queries == 1
-    runtime =
-        Runtime([[capability(profile; state = UInt32(AC.Prepared))]]; properties = metadata)
+    runtime = Runtime(
+        [[capability(profile; state = UInt32(AC.Prepared))]]; properties = metadata
+    )
     owner = capture_owner(runtime, UInt64(1), profile, 17, 19)
     acquisition = AcquisitionBinding(owner, AC.Classic, nothing)
     @test_throws ControlClient.UnknownOutcome source_operation!(
         runtime,
-        (ticket = (deadline = now(runtime)+Int64(2_000_000),),),
+        (ticket = (deadline = now(runtime) + Int64(2_000_000),),),
         acquisition,
         :run;
         running = false,
@@ -939,11 +813,7 @@ end
         owner = capture_owner(runtime, UInt64(1), profile, 17, 19)
         acquisition = AcquisitionBinding(owner, AC.Classic, nothing)
         @test_throws ArgumentError source_operation!(
-            runtime,
-            job(runtime),
-            acquisition,
-            :run;
-            running = false,
+            runtime, job(runtime), acquisition, :run; running = false
         )
         @test runtime.queries == 1 && runtime.mutations == 1
         @test acquisition.previous === cursor || acquisition.previous == cursor
@@ -960,18 +830,22 @@ end
         false,
     )
     config = Dict(
-        "session"=>Dict(
-            "sources"=>[
-                Dict("factory"=>"pipewireao.runtime-parameter", "node.name"=>"publisher"),
+        "session" => Dict(
+            "sources" => [
+                Dict(
+                    "factory" => "pipewireao.runtime-parameter",
+                    "node.name" => "publisher",
+                ),
             ],
-            "links"=>[Dict("output"=>"publisher:output_1", "input"=>"graph:matrix")],
+            "links" =>
+                [Dict("output" => "publisher:output_1", "input" => "graph:matrix")],
         ),
     )
     metadata = Dict(
-        "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>ControlClient.profile_name(profile),
-        "pipewireao.rtc-control.instance"=>"17",
-        "pipewireao.rtc-control.owner-pid"=>"19",
+        "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+        "pipewireao.rtc-control.profile" => ControlClient.profile_name(profile),
+        "pipewireao.rtc-control.instance" => "17",
+        "pipewireao.rtc-control.owner-pid" => "19",
     )
     completion = ControlClient.encode_completion(
         profile,
@@ -990,13 +864,7 @@ end
         properties = metadata,
     )
     command = RunnerCodec.RunnerCommand(
-        :parameter,
-        "graph",
-        "matrix",
-        "F32_LE",
-        UInt32[2, 2],
-        "schema",
-        "/tmp/parameter",
+        :parameter, "graph", "matrix", "F32_LE", UInt32[2, 2], "schema", "/tmp/parameter"
     )
     result = submit_parameter!(runtime, job(runtime), command)
     @test policy_text(result.values[1]) == "graph"
@@ -1010,29 +878,23 @@ end
 @testset "shared codecs and unsupported owner discovery" begin
     runtime = Runtime(Vector{Pod}[])
     @test_throws ArgumentError capture_owner(
-        runtime,
-        UInt64(1),
-        "org.example.instrument-owner",
-        17,
-        19,
+        runtime, UInt64(1), "org.example.instrument-owner", 17, 19
     )
     @test isempty(runtime.submitted)
     @test runtime.index == 0
     @test control_request(:run, Int64(7), "running", nothing) ==
-          PipeWireAO.run_control_request(7, :running)
+        PipeWireAO.run_control_request(7, :running)
     @test control_request(:reset, Int64(8), nothing, nothing) ==
-          PipeWireAO.reset_control_request(8)
+        PipeWireAO.reset_control_request(8)
     run = control_status(PipeWireAO.run_control_status(9, 0, :running), Val(:run))
     @test run.token == 9 && run.result == 0 && run.state == "running"
     reset = control_status(PipeWireAO.reset_control_status(10, 0), Val(:reset))
     @test reset.token == 10 && reset.result == 0
     @test_throws ArgumentError control_status(
-        PipeWireAO.run_control_status(11, 1, :running),
-        Val(:run),
+        PipeWireAO.run_control_status(11, 1, :running), Val(:run)
     )
     @test_throws ArgumentError control_status(
-        PipeWireAO.reset_control_status(12, 1),
-        Val(:reset),
+        PipeWireAO.reset_control_status(12, 1), Val(:reset)
     )
     query = SPA.Props(control_request(:query, Int64(13), nothing, Int64(17)))
     @test Tuple(first.(query.values)) == SourceControl.QUERY_NAMES
@@ -1043,12 +905,12 @@ end
     owner = capture_owner(runtime, UInt64(1), BC.PROFILE, 17, 19)
     @test control_deadline(runtime, job(runtime)) === Int64(-55_000_000_000)
     @test request_owner!(runtime, job(runtime), owner, BC.Command(:connect)).lifecycle ==
-          BC.Connected
+        BC.Connected
     header, _ = CC.decode_request(only(runtime.submitted))
     @test header.budget_ns === Int64(5_000_000_000)
     @test runtime.mutations == 1 && runtime.queries == 0
     long_job = (ticket = (deadline = typemax(Int64),),)
-    @test control_deadline(runtime, long_job) === now(runtime)+CONTROL_REQUEST_TIMEOUT_NS
+    @test control_deadline(runtime, long_job) === now(runtime) + CONTROL_REQUEST_TIMEOUT_NS
     @test_throws TypeError control_deadline(runtime, (ticket = (deadline = 5.0,),))
     Clocks.update!(clock, typemax(Int64))
     @test_throws OverflowError control_deadline(runtime, long_job)

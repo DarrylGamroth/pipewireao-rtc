@@ -18,7 +18,9 @@ const Wire = AdaptiveOpticsSimPipeWireHIL
 
 progress(message) = (println("native Capture pilot: ", message); flush(stdout))
 hashes(directory) = Dict(
-    relpath(joinpath(root, file), directory)=>bytes2hex(sha256(read(joinpath(root, file)))) for (root, _, files) in walkdir(directory) for file in files
+    relpath(joinpath(root, file), directory) =>
+        bytes2hex(sha256(read(joinpath(root, file)))) for
+    (root, _, files) in walkdir(directory) for file in files
 )
 
 function snapshot(owner)
@@ -67,7 +69,7 @@ end
     selected_hashes = Dict{String,String}()
     try
         with_control_private_core(;
-            temporary_prefix = "classic-native-capture-",
+            temporary_prefix = "classic-native-capture-"
         ) do remote, directory, daemon
             chmod(dirname(remote), 0o700)
             frontend = Calibration.calibration_graph(
@@ -84,7 +86,7 @@ end
                 )
                 name, instance = "test.classic.capture.$(getpid())", Int64(118)
                 progress(
-                    "preparing one declared $illumination CPU session with capture storage",
+                    "preparing one declared $illumination CPU session with capture storage"
                 )
                 server = Calibration.prepare_initial_calibration(
                     application,
@@ -94,7 +96,7 @@ end
                     reference,
                     name,
                     instance,
-                    deadline = ControlClient.monotonic()+300,
+                    deadline = ControlClient.monotonic() + 300,
                     simulation_graph = illumination,
                     capture_directory,
                     capture_stage = stage,
@@ -103,17 +105,17 @@ end
                 frontend = command = nothing
                 owner = server.effects
                 @test owner.capture_store !== nothing &&
-                      owner.capture_store.directory == capture_directory
+                    owner.capture_store.directory == capture_directory
                 @test owner.capture_store.stage == stage &&
-                      owner.capture_store.illumination == illumination
+                    owner.capture_store.illumination == illumination
                 @test filemode(stat(capture_directory)) & 0o777 == 0o700
-                settings, active =
-                    deepcopy(owner.capture_store.settings), copy(owner.active)
+                settings, active = deepcopy(owner.capture_store.settings),
+                copy(owner.active)
                 full_domain = bytes2hex(collect(owner.acquisition_domain.bytes))
                 @test settings["simulation_graph"] == illumination
                 @test settings["exposure_ns"] == 1_896_000 && settings["rate"] == 500
                 @test settings["rtc_graph_sha256"] ==
-                      app_before[joinpath("rtc", "graph.conf")]
+                    app_before[joinpath("rtc", "graph.conf")]
                 @test settings["detectors"]["detector"]["config"]["photon_noise"]
                 @test settings["detectors"]["detector"]["config"]["readout_noise"]
                 @test settings["detectors"]["detector"]["config"]["bits"] == 12
@@ -129,8 +131,8 @@ end
                         identity = projection.provenance[binding.port]
                         stored = settings[group][port]
                         @test stored["original_sha256"] ==
-                              source_hash ==
-                              identity["original_sha256"]
+                            source_hash ==
+                            identity["original_sha256"]
                         @test stored["sha256"] == identity["sha256"]
                         @test stored["hdu"] == identity["hdu"]
                         @test stored["axes"] == identity["axes"]
@@ -139,7 +141,7 @@ end
                     end
                 end
                 serving = @async try
-                    Endpoint.serve!(server; deadline = ControlClient.monotonic()+360)
+                    Endpoint.serve!(server; deadline = ControlClient.monotonic() + 360)
                 catch error
                     error
                 end
@@ -152,10 +154,10 @@ end
                 function complete(action)
                     submitted = ControlClient.monotonic()
                     trace = Dict{String,Any}(
-                        "action"=>string(nameof(typeof(action))),
-                        "submitted"=>submitted,
-                        "phase_before"=>string(server.phase),
-                        "deadline"=>submitted+120,
+                        "action" => string(nameof(typeof(action))),
+                        "submitted" => submitted,
+                        "phase_before" => string(server.phase),
+                        "deadline" => submitted + 120,
                     )
                     push!(actions, trace)
                     progress(
@@ -163,13 +165,10 @@ end
                     )
                     try
                         answer = Client.complete!(
-                            client,
-                            action;
-                            deadline = submitted+120,
-                            record = false,
+                            client, action; deadline = submitted + 120, record = false
                         )
-                        trace["completed"], trace["result"] =
-                            ControlClient.monotonic(), string(nameof(typeof(answer)))
+                        trace["completed"], trace["result"] = ControlClient.monotonic(),
+                        string(nameof(typeof(answer)))
                         progress(
                             "complete $(trace["action"]), result=$(trace["result"]), phase=$(server.phase)",
                         )
@@ -188,36 +187,37 @@ end
                 probe = UInt32(0)
                 adopted = complete(Actions.Adopt(probe, reference))
                 @test adopted isa Actions.Adopted &&
-                      adopted.figure == reference &&
-                      !adopted.clipped
+                    adopted.figure == reference &&
+                    !adopted.clipped
                 @test owner.probe == probe &&
-                      Wire.pipewire_probe_values(owner.hil) == reference
-                settled =
-                    complete(Actions.Settle(probe, adopted.cursor, Actions.Immediate()))
+                    Wire.pipewire_probe_values(owner.hil) == reference
+                settled = complete(
+                    Actions.Settle(probe, adopted.cursor, Actions.Immediate())
+                )
                 @test settled isa Actions.Settled && server.phase === :Settled
                 # Capture is admitted in Settled. A known preflight rejection
                 # leaves that phase, cursor, payload budget and slots unchanged.
                 rejected = complete(Actions.Capture(probe, settled.cursor, UInt32(4)))
                 @test rejected isa Actions.Failed &&
-                      rejected.reason === Actions.InvalidEvidence
+                    rejected.reason === Actions.InvalidEvidence
                 @test server.phase === :Settled && owner.cursor == settled.cursor
                 @test owner.capture_store.used_bytes == 0 && owner.capture_store.serial == 0
                 @test isempty(readdir(capture_directory))
                 @test all(slot -> slot.receipt === nothing, values(owner.capture.slots))
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                      nothing
+                    nothing
                 descriptor = complete(Actions.Capture(probe, settled.cursor, UInt32(3)))
                 @test descriptor isa Actions.Captured && server.phase === :Captured
                 @test descriptor.frames == 3 &&
-                      descriptor.bytes == 3Calibration.CLASSIC_CAPTURE_BYTES
+                    descriptor.bytes == 3Calibration.CLASSIC_CAPTURE_BYTES
                 @test descriptor.cursor == owner.cursor && descriptor.cursor.sequence == 3
                 @test owner.capture_store.used_bytes == descriptor.bytes
                 @test descriptor.manifest == "run-1-serial-5/manifest.json"
                 @test isempty(client.records)
                 restored = complete(Actions.Restore(reference, Actions.Immediate()))
                 @test restored isa Actions.Restored &&
-                      restored.figure == reference &&
-                      !restored.clipped
+                    restored.figure == reference &&
+                    !restored.clipped
                 @test owner.restored && Wire.pipewire_probe_values(owner.hil) == reference
                 @test complete(Actions.Release()) isa Actions.Released
                 close(client)
@@ -229,7 +229,7 @@ end
                     worker ->
                         istaskdone(worker.task) &&
                         Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).finish_calibration_graph!(
-                            worker,
+                            worker
                         ).error === nothing,
                     owner.workers,
                 )
@@ -237,7 +237,7 @@ end
                 @test all(stream -> !isopen(stream), values(owner.capture.streams))
                 @test !isopen(server.wakeup) && !isopen(server.core)
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                      nothing
+                    nothing
                 closed_owner = owner
             catch error
                 progress("session failed: $(sprint(showerror,error)); no retry")
@@ -263,19 +263,19 @@ end
         )
         @test result.manifest["settings"] == settings
         @test result.manifest["stage"] == stage &&
-              result.manifest["illumination"] == illumination
+            result.manifest["illumination"] == illumination
         @test result.manifest["domain_mapping"] ==
-              Dict("coordinator"=>UInt64(1), "wire"=>full_domain)
+            Dict("coordinator" => UInt64(1), "wire" => full_domain)
         @test length(result.samples) == 3
         @test result.manifest["cursor"]["model_ns"] == descriptor.cursor.model_ns
         @test result.manifest["settings"]["frontend_parameters"]["active"]["original_sha256"] ==
-              selected_hashes["active"]
+            selected_hashes["active"]
         for (index, sample) in enumerate(result.samples)
             @test eltype(sample.arrays.raw) === UInt16 &&
-                  size(sample.arrays.raw) == (352, 352)
+                size(sample.arrays.raw) == (352, 352)
             @test maximum(sample.arrays.raw) <= 0x0fff
             @test sample.exposure.sequence == index &&
-                  sample.exposure.duration_ns == 1_896_000
+                sample.exposure.duration_ns == 1_896_000
             @test sample.exposure.domain == 1
             @test sample.quality["valid_rois"] == count(sample.arrays.validity)
             for receipt in values(sample.metadata)
@@ -287,21 +287,21 @@ end
             end
             if index > 1
                 previous = result.samples[index-1].exposure
-                @test sample.exposure.start_model_ns-previous.start_model_ns == 2_000_000
-                @test sample.exposure.start_model_ns-(
-                    previous.start_model_ns+previous.duration_ns
-                ) == 104_000
+                @test sample.exposure.start_model_ns - previous.start_model_ns == 2_000_000
+                @test sample.exposure.start_model_ns -
+                      (previous.start_model_ns + previous.duration_ns) == 104_000
                 @test sample.arrays.raw !== result.samples[index-1].arrays.raw
             end
         end
-        invalid_active =
-            [findall(active .& .!sample.arrays.validity) for sample in result.samples]
+        invalid_active = [
+            findall(active .& .!sample.arrays.validity) for sample in result.samples
+        ]
         @test any(!isempty, invalid_active)
         raw_summary = [
             Dict(
-                "minimum"=>minimum(sample.arrays.raw),
-                "maximum"=>maximum(sample.arrays.raw),
-                "mean_adc"=>sum(Float64, sample.arrays.raw)/length(sample.arrays.raw),
+                "minimum" => minimum(sample.arrays.raw),
+                "maximum" => maximum(sample.arrays.raw),
+                "mean_adc" => sum(Float64, sample.arrays.raw) / length(sample.arrays.raw),
             ) for sample in result.samples
         ]
         progress(
@@ -328,22 +328,22 @@ end
             PipeWireAORTC.Common.write_json(
                 ENV["PIPEWIREAORTC_CAPTURE_EVIDENCE"],
                 Dict(
-                    "scope"=>"actual native Classic Capture transport/storage; intrinsic invalidity retained; no calibration acceptance",
-                    "descriptor"=>Client.document(descriptor),
-                    "actions"=>actions,
-                    "invalid_active"=>invalid_active,
-                    "illumination"=>illumination,
-                    "raw_adc_summary"=>raw_summary,
-                    "exposures"=>[
+                    "scope" => "actual native Classic Capture transport/storage; intrinsic invalidity retained; no calibration acceptance",
+                    "descriptor" => Client.document(descriptor),
+                    "actions" => actions,
+                    "invalid_active" => invalid_active,
+                    "illumination" => illumination,
+                    "raw_adc_summary" => raw_summary,
+                    "exposures" => [
                         Dict(
-                            "sequence"=>sample.exposure.sequence,
-                            "start_model_ns"=>sample.exposure.start_model_ns,
-                            "duration_ns"=>sample.exposure.duration_ns,
+                            "sequence" => sample.exposure.sequence,
+                            "start_model_ns" => sample.exposure.start_model_ns,
+                            "duration_ns" => sample.exposure.duration_ns,
                         ) for sample in reread.samples
                     ],
-                    "capture_files"=>evidence_before,
-                    "application_files"=>app_before,
-                    "source_files"=>source_before,
+                    "capture_files" => evidence_before,
+                    "application_files" => app_before,
+                    "source_files" => source_before,
                 ),
             )
         end

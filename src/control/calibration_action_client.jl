@@ -16,10 +16,7 @@ struct Binding
     owner_pid::UInt32
     instance::Int64
     function Binding(
-        remote::AbstractString,
-        node::AbstractString,
-        pid::Integer,
-        instance::Integer,
+        remote::AbstractString, node::AbstractString, pid::Integer, instance::Integer
     )
         0 < pid <= typemax(UInt32) || throw(ArgumentError("invalid calibration owner PID"))
         0 < instance <= typemax(Int64) ||
@@ -44,7 +41,7 @@ function connect(
     run::Integer,
     timeout_ns::Integer;
     command_count::Int = 277,
-    deadline::Float64 = Client.monotonic()+timeout_ns/1e9,
+    deadline::Float64 = Client.monotonic() + timeout_ns / 1e9,
     check = Client.NO_CHECK,
 )
     0 < run <= typemax(UInt64) && 0 < timeout_ns <= typemax(Int64) ||
@@ -155,8 +152,7 @@ function action(value::AbstractDict)
     elseif kind == "adopt"
         _fields(value, ("kind", "probe", "figure"))
         return Codec.Adopt(
-            UInt32(_integer(value["probe"], 0, 16383)),
-            _figure(value["figure"], 24),
+            UInt32(_integer(value["probe"], 0, 16383)), _figure(value["figure"], 24)
         )
     elseif kind == "settle"
         _fields(value, ("kind", "probe", "after", "rule"))
@@ -184,8 +180,7 @@ function action(value::AbstractDict)
         _fields(value, ("kind", "figure", "rule"))
         rule = _rule(value["rule"])
         return Codec.Restore(
-            _figure(value["figure"], Codec._add(8, Codec._rule_size(rule))),
-            rule,
+            _figure(value["figure"], Codec._add(8, Codec._rule_size(rule))), rule
         )
     elseif kind == "release"
         _fields(value, ("kind",))
@@ -195,10 +190,10 @@ function action(value::AbstractDict)
 end
 action(value::Codec.AbstractAction) = value
 _cursor_document(c) = Dict(
-    "domain"=>c.domain,
-    "generation"=>c.generation,
-    "sequence"=>c.sequence,
-    "model_ns"=>c.model_ns,
+    "domain" => c.domain,
+    "generation" => c.generation,
+    "sequence" => c.sequence,
+    "model_ns" => c.model_ns,
 )
 _kind(::Codec.Held) = "held"
 _kind(::Codec.Adopted) = "adopted"
@@ -208,43 +203,44 @@ _kind(::Codec.Captured) = "captured"
 _kind(::Codec.Restored) = "restored"
 _kind(::Codec.Released) = "released"
 _kind(::Codec.Failed) = "failed"
-document(r::Codec.Held) = Dict("kind"=>"held", "cursor"=>_cursor_document(r.cursor))
+document(r::Codec.Held) = Dict("kind" => "held", "cursor" => _cursor_document(r.cursor))
 document(r::Codec.Adopted) = Dict(
-    "kind"=>"adopted",
-    "cursor"=>_cursor_document(r.cursor),
-    "figure"=>r.figure,
-    "clipped"=>r.clipped,
+    "kind" => "adopted",
+    "cursor" => _cursor_document(r.cursor),
+    "figure" => r.figure,
+    "clipped" => r.clipped,
 )
-document(r::Codec.Settled) = Dict("kind"=>"settled", "cursor"=>_cursor_document(r.cursor))
+document(r::Codec.Settled) =
+    Dict("kind" => "settled", "cursor" => _cursor_document(r.cursor))
 document(r::Codec.Responses) = Dict(
-    "kind"=>"responses",
-    "values"=>r.values,
-    "exposures"=>[
+    "kind" => "responses",
+    "values" => r.values,
+    "exposures" => [
         Dict(
-            "domain"=>e.domain,
-            "generation"=>e.generation,
-            "sequence"=>e.sequence,
-            "start_model_ns"=>e.start_model_ns,
-            "duration_ns"=>e.duration_ns,
+            "domain" => e.domain,
+            "generation" => e.generation,
+            "sequence" => e.sequence,
+            "start_model_ns" => e.start_model_ns,
+            "duration_ns" => e.duration_ns,
         ) for e in r.exposures
     ],
-    "valid"=>r.valid,
+    "valid" => r.valid,
 )
 document(r::Codec.Captured) = Dict(
-    "kind"=>"captured",
-    "cursor"=>_cursor_document(r.cursor),
-    "manifest"=>r.manifest,
-    "sha256"=>r.sha256,
-    "frames"=>r.frames,
-    "bytes"=>r.bytes,
-    "metadata_bytes"=>r.metadata_bytes,
+    "kind" => "captured",
+    "cursor" => _cursor_document(r.cursor),
+    "manifest" => r.manifest,
+    "sha256" => r.sha256,
+    "frames" => r.frames,
+    "bytes" => r.bytes,
+    "metadata_bytes" => r.metadata_bytes,
 )
 document(r::Codec.Restored) =
-    Dict("kind"=>"restored", "figure"=>r.figure, "clipped"=>r.clipped)
-document(::Codec.Released) = Dict("kind"=>"released")
+    Dict("kind" => "restored", "figure" => r.figure, "clipped" => r.clipped)
+document(::Codec.Released) = Dict("kind" => "released")
 _reason(reason::Codec.FailureReason) =
     ("cancelled", "endpoint", "invalid_evidence", "probe_clipped")[Int(reason)]
-document(r::Codec.Failed) = Dict("kind"=>"failed", "reason"=>_reason(r.reason))
+document(r::Codec.Failed) = Dict("kind" => "failed", "reason" => _reason(r.reason))
 _validate_figure(::Codec.AbstractResult, count) = nothing
 _validate_figure(r::Union{Codec.Adopted,Codec.Restored}, count) =
     length(r.figure) == count ||
@@ -253,7 +249,7 @@ _validate_figure(r::Union{Codec.Adopted,Codec.Restored}, count) =
 _require_completion(::Codec.Completion) = nothing
 _require_completion(reply::Codec.Rejection) = throw(
     ArgumentError(
-        "native calibration request rejected ($(reply.header.result)): $(reply.message)",
+        "native calibration request rejected ($(reply.header.result)): $(reply.message)"
     ),
 )
 _sent_action(value::AbstractDict, command_action) = value
@@ -271,7 +267,7 @@ end
 function _complete!(
     connection::Connection,
     value;
-    deadline::Float64 = Client.monotonic()+connection.timeout_ns/1e9,
+    deadline::Float64 = Client.monotonic() + connection.timeout_ns / 1e9,
     check = Client.NO_CHECK,
     record::Bool = true,
 )
@@ -305,23 +301,23 @@ function _record!(connection, value, command_action, reply)
     result_document = document(result)
     sent_action = _sent_action(value, command_action)
     sent = Dict(
-        "version"=>1,
-        "run"=>connection.run,
-        "serial"=>reply.serial,
-        "timeout_ns"=>connection.timeout_ns,
-        "action"=>sent_action,
+        "version" => 1,
+        "run" => connection.run,
+        "serial" => reply.serial,
+        "timeout_ns" => connection.timeout_ns,
+        "action" => sent_action,
     )
     # Saved evidence must outlive mutations to caller-owned requests and results.
     push!(
         connection.records,
         deepcopy(
             Dict(
-                "request"=>sent,
-                "reply"=>Dict(
-                    "version"=>1,
-                    "run"=>reply.run,
-                    "serial"=>reply.serial,
-                    "result"=>result_document,
+                "request" => sent,
+                "reply" => Dict(
+                    "version" => 1,
+                    "run" => reply.run,
+                    "serial" => reply.serial,
+                    "result" => result_document,
                 ),
             ),
         ),
@@ -332,36 +328,36 @@ _restore_allowed(::Codec.AbstractResult) = true
 _restore_allowed(r::Codec.Restored) = !r.clipped
 _restore_allowed(r::Codec.Failed) = r.reason === Codec.InvalidEvidence
 # Typed callers retain ordinary structured evidence without serializing it live.
-_action_document(::Codec.Hold) = Dict("kind"=>"hold")
-_action_document(::Codec.Release) = Dict("kind"=>"release")
+_action_document(::Codec.Hold) = Dict("kind" => "hold")
+_action_document(::Codec.Release) = Dict("kind" => "release")
 _action_document(a::Codec.Adopt) =
-    Dict("kind"=>"adopt", "probe"=>a.probe, "figure"=>a.figure)
+    Dict("kind" => "adopt", "probe" => a.probe, "figure" => a.figure)
 _action_document(a::Codec.Capture) = Dict(
-    "kind"=>"capture",
-    "probe"=>a.probe,
-    "after"=>_cursor_document(a.after),
-    "frames"=>a.frames,
+    "kind" => "capture",
+    "probe" => a.probe,
+    "after" => _cursor_document(a.after),
+    "frames" => a.frames,
 )
 _action_document(a::Codec.Collect) = Dict(
-    "kind"=>"collect",
-    "probe"=>a.probe,
-    "after"=>_cursor_document(a.after),
-    "measurements"=>a.measurements,
-    "frames"=>a.frames,
+    "kind" => "collect",
+    "probe" => a.probe,
+    "after" => _cursor_document(a.after),
+    "measurements" => a.measurements,
+    "frames" => a.frames,
 )
-_rule_document(::Codec.Immediate) = Dict("kind"=>"immediate")
+_rule_document(::Codec.Immediate) = Dict("kind" => "immediate")
 _rule_document(r::Codec.DiscardExposures) =
-    Dict("kind"=>"discard_exposures", "frames"=>r.frames)
+    Dict("kind" => "discard_exposures", "frames" => r.frames)
 _rule_document(r::Codec.ModelTime) =
-    Dict("kind"=>"model_time", "duration_ns"=>r.duration_ns)
+    Dict("kind" => "model_time", "duration_ns" => r.duration_ns)
 _action_document(a::Codec.Settle) = Dict(
-    "kind"=>"settle",
-    "probe"=>a.probe,
-    "after"=>_cursor_document(a.after),
-    "rule"=>_rule_document(a.rule),
+    "kind" => "settle",
+    "probe" => a.probe,
+    "after" => _cursor_document(a.after),
+    "rule" => _rule_document(a.rule),
 )
 _action_document(a::Codec.Restore) =
-    Dict("kind"=>"restore", "figure"=>a.figure, "rule"=>_rule_document(a.rule))
+    Dict("kind" => "restore", "figure" => a.figure, "rule" => _rule_document(a.rule))
 "Return the correlated typed terminal result, including an action-level Failed."
 function complete!(connection::Connection, value; kwargs...)
     try

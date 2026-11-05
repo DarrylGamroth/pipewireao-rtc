@@ -10,9 +10,7 @@ function copy_file(source::AbstractString, destination::AbstractString)
 end
 
 function copy_tree(
-    source::AbstractString,
-    destination::AbstractString;
-    ignored = Set{String}(),
+    source::AbstractString, destination::AbstractString; ignored = Set{String}()
 )
     isdir(source) && !islink(source) ||
         throw(ArgumentError("missing or symlinked export directory: $source"))
@@ -49,10 +47,7 @@ Callers own the file list; this helper has no instrument or package selection
 policy. Listed directories are copied recursively with the requested exclusions.
 """
 function copy_entries(
-    source::AbstractString,
-    destination::AbstractString,
-    entries;
-    ignored = Set{String}(),
+    source::AbstractString, destination::AbstractString, entries; ignored = Set{String}()
 )
     isdir(source) && !islink(source) ||
         throw(ArgumentError("missing or symlinked export directory: $source"))

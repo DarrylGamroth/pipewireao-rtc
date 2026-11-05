@@ -6,8 +6,7 @@ struct BootstrapMonitorGate <: PipeWireAORTC.OwnerBootstrapRuntime.AbstractOwner
     release::Channel{Nothing}
 end
 function PipeWireAORTC.OwnerBootstrapRuntime._dispatch_owner!(
-    sm,
-    message::BootstrapMonitorGate,
+    sm, message::BootstrapMonitorGate
 )
     put!(message.entered, nothing)
     take!(message.release)

@@ -8,10 +8,7 @@ include("control_private_core.jl")
         timed_out = Threads.Atomic{Bool}(false)
         wakes = Threads.Atomic{Int}(0)
         observer = Loops.Observer(
-            ["correction:closed"],
-            Int64(24);
-            timeout_ms = 10,
-            clock = () -> now[],
+            ["correction:closed"], Int64(24); timeout_ms = 10, clock = () -> now[]
         )
         getter =
             (props, available) -> begin
@@ -34,22 +31,19 @@ include("control_private_core.jl")
         watchdog = nothing
         try
             Loops.attach_timers!(
-                observer,
-                loop,
-                () -> begin
+                observer, loop, () -> begin
                     Threads.atomic_add!(wakes, 1)
                     # Logical time advances only when the real native timer fires.
                     # This distinguishes the wake from incidental startup readback.
                     now[] = UInt64(10_000_000)
                     PipeWireAO.notify_properties!(node.filter)
                     nothing
-                end,
+                end
             )
             start!(loop)
             FilterGraphPipeWire.connect!(node)
             node.filter.callbacks.on_properties(
-                node.filter,
-                PipeWireAO.SPA.Props("correction:closed" => false),
+                node.filter, PipeWireAO.SPA.Props("correction:closed" => false)
             )
             @test Loops.state(only(observer.loops)) === :Opening
             started = time_ns()

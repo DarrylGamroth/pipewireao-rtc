@@ -54,22 +54,22 @@ end
     unverified = D.DiscoveryEntry(record, D.Unverified, "hint")
     @test S.select_session(unverified; deadline = 0.0).verification === D.Inaccessible
     @test S.select_direct_session(unverified; deadline = 0.0).verification ===
-          D.Inaccessible
+        D.Inaccessible
 end
 
 @testset "operator discovery never creates its registry" begin
     mktempdir() do directory
         chmod(directory, 0o700)
-        withenv("XDG_RUNTIME_DIR"=>directory) do
+        withenv("XDG_RUNTIME_DIR" => directory) do
             @test D.existing_registry_directory() === nothing
             @test isempty(readdir(directory))
-            app=joinpath(directory, "pipewireao-rtc")
+            app = joinpath(directory, "pipewireao-rtc")
             mkdir(app; mode = 0o700)
             @test D.existing_registry_directory() === nothing
-            registry=D.registry_directory()
-            before=sort(readdir(registry))
+            registry = D.registry_directory()
+            before = sort(readdir(registry))
             @test isempty(D.list_sessions(registry))
-            @test readdir(registry)==before
+            @test readdir(registry) == before
             @test !ispath(joinpath(registry, ".lock"))
             chmod(registry, 0o755)
             @test_throws ArgumentError D.existing_registry_directory()

@@ -110,8 +110,7 @@ end
 request_payload(command::RunnerCodec.RunnerCommand) = command.args
 request_payload(
     command::Union{
-        RunnerCodec.RunnerCommand{:start_group},
-        RunnerCodec.RunnerCommand{:stop_group},
+        RunnerCodec.RunnerCommand{:start_group},RunnerCodec.RunnerCommand{:stop_group}
     },
 ) = only(command.args)
 request_payload(::Union{SessionCodec.WarmupCommand,SessionCodec.AdmitCommand}) = nothing
@@ -120,7 +119,7 @@ function apply!(session::Session, action::Ingress.DispatchRequest)
     ticket = action.ticket
     operation = ticket.header.operation
     if operation in (WARMUP_OPERATION, ADMIT_OPERATION) &&
-       ticket.controller.instance !=
+        ticket.controller.instance !=
        parse(UInt64, session.configuration["admission.controller-instance"])
         header = ControlCodec.ReplyHeader(
             ticket.header.controller,
@@ -163,8 +162,7 @@ function apply!(session::Session, action::Ingress.PublishRecords)
     # cannot establish wire delivery.
     isopen(session.endpoint) || return nothing
     PipeWireAO.update_params!(
-        session.endpoint,
-        Pod[action.capability, action.completion, action.rejection],
+        session.endpoint, Pod[action.capability, action.completion, action.rejection]
     )
     return nothing
 end
@@ -194,10 +192,7 @@ function apply!(session::Session, action::Ingress.AppendJournal)
     writer = session.journal
     if writer === nothing || !submit!(writer, request)
         Ingress.journal_receipt!(
-            session.ingress,
-            action.id,
-            false,
-            "journal command refused",
+            session.ingress, action.id, false, "journal command refused"
         )
     end
     return nothing
@@ -225,11 +220,7 @@ function reply_pod(ticket::Ingress.AbstractTicket, reply::Reply)
     h = ticket.header
     result = reply.error === nothing ? Int32(0) : Int32(-5)
     header = ControlCodec.ReplyHeader(
-        h.controller,
-        h.endpoint_instance,
-        h.token,
-        h.operation,
-        result,
+        h.controller, h.endpoint_instance, h.token, h.operation, result
     )
     payload = if reply.error !== nothing
         message = reply.error * (reply.unknown ? "; effect outcome unknown" : "")
@@ -257,8 +248,8 @@ function drain!(session::Session)
     cancellation = take_cancelled!(session.machine)
     job = session.active_job
     if cancellation !== nothing &&
-       job !== nothing &&
-       cancellation.serial == job.ticket.serial
+        job !== nothing &&
+        cancellation.serial == job.ticket.serial
         job.cancelled = true
     end
     cancellation === nothing || after_retirement!(session, cancellation.effect)
@@ -277,7 +268,7 @@ function drain!(session::Session)
     end
     # Processing an action can dispatch an immediate reply or a journal refusal.
     # Drain each bounded outbox before applying the next native observation.
-    for _ = 1:Ingress.MAX_ACTIONS
+    for _ in 1:Ingress.MAX_ACTIONS
         actions = Ingress.take_actions!(session.ingress)
         isempty(actions) && return nothing
         foreach(action -> apply!(session, action), actions)
@@ -301,11 +292,11 @@ function start_effect!(session::Session)
     session.active_task = @async begin
         try
             result = perform!(session, job, ticket.effect)
-            session.effect_result =
-                EffectCompleted(ticket, result, Clocks.time_nanos(session.source_clock))
+            session.effect_result = EffectCompleted(
+                ticket, result, Clocks.time_nanos(session.source_clock)
+            )
         catch error
-            session.effect_result =
-                EffectFailed(ticket, sprint(showerror, error), false)
+            session.effect_result = EffectFailed(ticket, sprint(showerror, error), false)
         end
     end
     return nothing
@@ -341,14 +332,11 @@ function Agent.do_work(session::Session)
     end
     writer = session.journal
     if writer !== nothing
-        for _ = 1:writer.capacity
+        for _ in 1:writer.capacity
             result = take_result!(writer)
             result === nothing && break
             Ingress.journal_receipt!(
-                session.ingress,
-                result.token,
-                result.success,
-                result.message,
+                session.ingress, result.token, result.success, result.message
             )
             drain!(session)
             work += 1
@@ -361,8 +349,7 @@ function Agent.do_work(session::Session)
         Observation(
             groups_details(session),
             status_details(
-                session;
-                running = _status_running(session.machine.lifecycle_origin),
+                session; running = _status_running(session.machine.lifecycle_origin)
             ),
         ),
     )
@@ -418,16 +405,14 @@ function observe_controllers!(session::Session)
         instance = parse(UInt64, session.configuration["controller.instance"])
         for fact in observations
             if fact.name == name &&
-               fact.identity.instance == instance &&
-               fact.identity.pid == getpid() &&
-               fact.full_info &&
-               fact.input_ports == 0 &&
-               fact.output_ports == 0
+                fact.identity.instance == instance &&
+                fact.identity.pid == getpid() &&
+                fact.full_info &&
+                fact.input_ports == 0 &&
+                fact.output_ports == 0
                 identity = fact.identity
                 session.controller = ControlCodec.ControllerIdentity(
-                    identity.global_id,
-                    identity.serial,
-                    Int64(instance),
+                    identity.global_id, identity.serial, Int64(instance)
                 )
                 break
             end
@@ -485,9 +470,7 @@ function serve!(session::Session)
     invoker = Agent.AgentInvoker(session)
     signals = [
         SignalSource(
-            session.loop,
-            signal,
-            (_, number)->stage!(session.queue, ShutdownRequested()),
+            session.loop, signal, (_, number) -> stage!(session.queue, ShutdownRequested())
         ) for signal in (Base.SIGINT, Base.SIGTERM)
     ]
     try
@@ -505,13 +488,13 @@ end
 
 function endpoint_properties(profile, instance, name)
     properties = Dict{String,String}(
-        "node.name"=>name,
-        "node.cache-params"=>"false",
-        "media.class"=>"Control",
-        "pipewireao.rtc-control.protocol"=>ControlClient.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>profile,
-        "pipewireao.rtc-control.instance"=>string(instance),
-        "pipewireao.rtc-control.owner-pid"=>string(getpid()),
+        "node.name" => name,
+        "node.cache-params" => "false",
+        "media.class" => "Control",
+        "pipewireao.rtc-control.protocol" => ControlClient.PROTOCOL,
+        "pipewireao.rtc-control.profile" => profile,
+        "pipewireao.rtc-control.instance" => string(instance),
+        "pipewireao.rtc-control.owner-pid" => string(getpid()),
     )
     return properties
 end
@@ -532,12 +515,11 @@ function prepare_dispatch!(session::Session)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
         take_cancelled!(machine)
-        for _ = 1:MAX_DISPATCH_PREPARATION_EFFECTS
+        for _ in 1:MAX_DISPATCH_PREPARATION_EFFECTS
             ticket = machine.effect
             ticket === nothing && break
             Base.precompile(
-                perform!,
-                (typeof(session), Job{typeof(ticket)}, typeof(ticket.effect)),
+                perform!, (typeof(session), Job{typeof(ticket)}, typeof(ticket.effect))
             )
             submitted!(machine, ticket)
             complete!(machine, ticket)
@@ -556,8 +538,7 @@ The creating task must stay on its creating OS thread. The optional journal
 requires an interactive policy thread and a separate default-pool worker.
 """
 function Session(
-    path::AbstractString;
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    path::AbstractString; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
     isdefined(PipeWireAO, :iterate!) ||
         throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
@@ -565,7 +546,7 @@ function Session(
     override = get(ENV, "PIPEWIREAO_CONFIG_NAME", file)
     override == file || throw(
         ArgumentError(
-            "PipeWire context configuration override differs from session configuration",
+            "PipeWire context configuration override differs from session configuration"
         ),
     )
     prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
@@ -590,26 +571,22 @@ function Session(
     controller = nothing
     journal = nothing
     try
-        context = Context(loop; properties = Dict("config.name"=>file))
+        context = Context(loop; properties = Dict("config.name" => file))
         core = CoreConnection(
             context;
-            properties = Dict("remote.name"=>config["context.properties"]["remote.name"]),
-            on_info = (_, info)->stage!(queue, CoreUpdated(info)),
-            on_done = (_, id, sequence)->stage!(queue, CoreDone(id, sequence)),
-            on_error = (_, id, sequence, error)->stage!(
-                queue,
-                CoreError(id, sequence, sprint(showerror, error)),
-            ),
-            on_bound_id = (_, local_id, global_id)->stage!(
-                queue,
-                ClientBound(local_id, global_id),
-            ),
+            properties = Dict("remote.name" => config["context.properties"]["remote.name"]),
+            on_info = (_, info) -> stage!(queue, CoreUpdated(info)),
+            on_done = (_, id, sequence) -> stage!(queue, CoreDone(id, sequence)),
+            on_error = (_, id, sequence, error) ->
+                stage!(queue, CoreError(id, sequence, sprint(showerror, error))),
+            on_bound_id = (_, local_id, global_id) ->
+                stage!(queue, ClientBound(local_id, global_id)),
         )
         registry = Registry(core)
         listener = add_listener!(
             registry;
-            on_global_added = (_, object)->stage!(queue, GlobalAdded(object)),
-            on_global_removed = (_, id)->stage!(queue, GlobalRemoved(id)),
+            on_global_added = (_, object) -> stage!(queue, GlobalAdded(object)),
+            on_global_removed = (_, id) -> stage!(queue, GlobalRemoved(id)),
         )
         instance = parse(Int64, configuration["instance"])
         controller_instance = parse(Int64, configuration["controller.instance"])
@@ -628,18 +605,14 @@ function Session(
             "RTC session";
             properties,
             max_param_bytes = ControlCodec._limit(Val(:request), nothing),
-            on_state_changed = (_, previous, state, message)->stage!(
-                queue,
-                FilterChanged(state, message),
-            ),
-            on_param_changed = (_, port, id, pod)->id == SPA.PARAM_PROPS && stage!(
-                queue,
-                RequestReceived(pod, Clocks.time_nanos(clock)),
-            ),
-            on_param_rejected = (_, port, id, size)->id == SPA.PARAM_PROPS && stage!(
-                queue,
-                RequestReceived(nothing, Clocks.time_nanos(clock)),
-            ),
+            on_state_changed = (_, previous, state, message) ->
+                stage!(queue, FilterChanged(state, message)),
+            on_param_changed = (_, port, id, pod) ->
+                id == SPA.PARAM_PROPS &&
+                stage!(queue, RequestReceived(pod, Clocks.time_nanos(clock))),
+            on_param_rejected = (_, port, id, size) ->
+                id == SPA.PARAM_PROPS &&
+                stage!(queue, RequestReceived(nothing, Clocks.time_nanos(clock))),
         )
         journal_path = get(configuration, "journal.path", nothing)
         journal = journal_path === nothing ? nothing : Journal(journal_path)
@@ -648,8 +621,7 @@ function Session(
             instance;
             clock = cached,
             startup_timeout_ns = Base.Checked.checked_mul(
-                Int64(configuration["startup.timeout-ms"]),
-                Int64(1_000_000),
+                Int64(configuration["startup.timeout-ms"]), Int64(1_000_000)
             ),
         )
         ingress = Ingress.Gate(instance; clock = cached, journaled = journal !== nothing)
@@ -701,9 +673,7 @@ function Session(
         # public Filter has connected yet, so no caller's receipt is deferred.
         Clocks.update!(cached, Clocks.time_nanos(clock))
         machine = Machine(
-            instance;
-            clock = cached,
-            startup_timeout_ns = machine.startup_timeout_ns,
+            instance; clock = cached, startup_timeout_ns = machine.startup_timeout_ns
         )
         session.machine = machine
         observe!(
@@ -757,8 +727,7 @@ function _close_transport!(session::Session, failures::Vector{Exception})
         end
     end
     filter!(
-        record -> record.listener !== nothing || record.proxy !== nothing,
-        session.links,
+        record -> record.listener !== nothing || record.proxy !== nothing, session.links
     )
     for (id, object) in session.objects
         if _close_resource!(failures, object.proxy)

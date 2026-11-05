@@ -54,10 +54,7 @@ mutable struct Runtime{D}
 end
 
 function snapshot(;
-    running = false,
-    completed = false,
-    generation = UInt64(1),
-    sequence = UInt64(0),
+    running = false, completed = false, generation = UInt64(1), sequence = UInt64(0)
 )
     S.SourceSnapshot(
         running,
@@ -87,15 +84,15 @@ function object!(
     instance = Int64(handle),
     profile = Client.CONTROLLER_PROFILE,
 )
-    id=UInt32(handle)
-    serial=UInt64(1000)+UInt64(handle)
+    id = UInt32(handle)
+    serial = UInt64(1000) + UInt64(handle)
     properties = Dict(
-        "object.serial"=>string(serial),
-        "node.name"=>name,
-        "pipewireao.rtc-control.protocol"=>Client.PROTOCOL,
-        "pipewireao.rtc-control.profile"=>profile,
-        "pipewireao.rtc-control.instance"=>string(instance),
-        "pipewireao.rtc-control.owner-pid"=>string(pid),
+        "object.serial" => string(serial),
+        "node.name" => name,
+        "pipewireao.rtc-control.protocol" => Client.PROTOCOL,
+        "pipewireao.rtc-control.profile" => profile,
+        "pipewireao.rtc-control.instance" => string(instance),
+        "pipewireao.rtc-control.owner-pid" => string(pid),
     )
     info = NodeInfo(
         id,
@@ -109,54 +106,55 @@ function object!(
         copy(properties),
         ParamInfo[],
     )
-    runtime.objects[id] =
-        S.Object{Nothing,NodeInfo}(id, serial, properties, nothing, info, false)
+    runtime.objects[id] = S.Object{Nothing,NodeInfo}(
+        id, serial, properties, nothing, info, false
+    )
     runtime.pids[UInt64(id)] = UInt32(pid)
     return runtime.objects[id]
 end
 function Runtime()
     processing = Dict(
-        "role"=>"processing",
-        "pid"=>2001,
-        "bootstrap-node"=>"processing-bootstrap",
-        "bootstrap-instance"=>"110",
+        "role" => "processing",
+        "pid" => 2001,
+        "bootstrap-node" => "processing-bootstrap",
+        "bootstrap-instance" => "110",
     )
     plant = Dict{String,Union{String,Int}}(
-        "role"=>"plant",
-        "pid"=>2002,
-        "bootstrap-node"=>"plant-bootstrap",
-        "bootstrap-instance"=>"120",
-        "control-node"=>"plant-source",
-        "control-instance"=>"121",
-        "control-protocol"=>Client.profile_name(Acquisition.CALIBRATION_PROFILE),
+        "role" => "plant",
+        "pid" => 2002,
+        "bootstrap-node" => "plant-bootstrap",
+        "bootstrap-instance" => "120",
+        "control-node" => "plant-source",
+        "control-instance" => "121",
+        "control-protocol" => Client.profile_name(Acquisition.CALIBRATION_PROFILE),
     )
     parameters = Dict{String,Union{String,Int}}(
-        "role"=>"parameters",
-        "pid"=>2003,
-        "control-node"=>"parameters",
-        "control-instance"=>"131",
-        "control-protocol"=>Client.profile_name(PipeWireAORTC.ParameterSource.PROFILE),
+        "role" => "parameters",
+        "pid" => 2003,
+        "control-node" => "parameters",
+        "control-instance" => "131",
+        "control-protocol" => Client.profile_name(PipeWireAORTC.ParameterSource.PROFILE),
     )
     camera = Dict{String,Union{String,Int}}(
-        "role"=>"camera",
-        "pid"=>2004,
-        "bootstrap-node"=>"camera-bootstrap",
-        "bootstrap-instance"=>"140",
-        "control-node"=>"camera-source",
-        "control-instance"=>"141",
-        "control-protocol"=>S.SOURCE_CONTROL_PROFILE,
+        "role" => "camera",
+        "pid" => 2004,
+        "bootstrap-node" => "camera-bootstrap",
+        "bootstrap-instance" => "140",
+        "control-node" => "camera-source",
+        "control-instance" => "141",
+        "control-protocol" => S.SOURCE_CONTROL_PROFILE,
     )
     configuration = Dict{String,Any}(
-        "owners"=>[processing, plant, parameters, camera],
-        "source"=>plant,
-        "auxiliary-sources"=>[camera],
-        "core.owner"=>Dict("pid"=>9001),
-        "controller.node.name"=>"session-controller",
-        "controller.instance"=>"17",
-        "session"=>Dict(
-            "links"=>[
-                Dict("output"=>"upstream:out", "input"=>"left:in"),
-                Dict("output"=>"upstream:out", "input"=>"right:in"),
+        "owners" => [processing, plant, parameters, camera],
+        "source" => plant,
+        "auxiliary-sources" => [camera],
+        "core.owner" => Dict("pid" => 9001),
+        "controller.node.name" => "session-controller",
+        "controller.instance" => "17",
+        "session" => Dict(
+            "links" => [
+                Dict("output" => "upstream:out", "input" => "left:in"),
+                Dict("output" => "upstream:out", "input" => "right:in"),
             ],
         ),
     )
@@ -169,7 +167,7 @@ function Runtime()
         "version",
         "private-core",
         UInt64(1),
-        Dict("application.process.id"=>"9001"),
+        Dict("application.process.id" => "9001"),
     )
     runtime = Runtime(
         configuration,
@@ -184,18 +182,16 @@ function Runtime()
         Dict{UInt64,Union{Nothing,S.CoreIdentity}}(),
         Dict{UInt64,Bool}(),
         Dict(
-            "upstream"=>UInt64(101),
-            "left"=>UInt64(102),
-            "right"=>UInt64(103),
-            "independent"=>UInt64(104),
+            "upstream" => UInt64(101),
+            "left" => UInt64(102),
+            "right" => UInt64(103),
+            "independent" => UInt64(104),
         ),
         Dict(
-            "science"=>S.Group(
-                ["upstream", "left", "right"],
-                ["upstream", "left", "right"],
-                false,
+            "science" => S.Group(
+                ["upstream", "left", "right"], ["upstream", "left", "right"], false
             ),
-            "observer"=>S.Group(["independent"], ["independent"], false),
+            "observer" => S.Group(["independent"], ["independent"], false),
         ),
         UInt32[],
         Dict{UInt64,S.AbstractSource}(),
@@ -256,30 +252,29 @@ function Runtime()
     )
     cursor = Acquisition.AcquisitionCursor(UInt64(1), UInt64(1), UInt64(0), UInt64(0))
     runtime.bindings[UInt64(22)] = S.AcquisitionBinding(
-        owner(22, Acquisition.CALIBRATION_PROFILE, 2002, 121),
-        Acquisition.Classic,
-        cursor,
+        owner(22, Acquisition.CALIBRATION_PROFILE, 2002, 121), Acquisition.Classic, cursor
     )
-    runtime.bindings[UInt64(42)] =
-        S.SourceControlBinding(UInt64(42), UInt32(2004), Int64(141), snapshot())
-    runtime.snapshots[UInt64(22)]=snapshot()
-    runtime.snapshots[UInt64(42)]=snapshot()
+    runtime.bindings[UInt64(42)] = S.SourceControlBinding(
+        UInt64(42), UInt32(2004), Int64(141), snapshot()
+    )
+    runtime.snapshots[UInt64(22)] = snapshot()
+    runtime.snapshots[UInt64(42)] = snapshot()
     return runtime
 end
 job(origin = S.ReadyOrigin()) = (; ticket = (; origin, deadline = Int64(5_000_000_000)))
 function await_condition!(condition, runtime::Runtime, job)
-    value=condition()
+    value = condition()
     value === nothing && throw(ArgumentError("controlled observation is not ready"))
     return value
 end
 function node!(runtime::Runtime, job, name::AbstractString, pid::Integer)
-    matches=[
+    matches = [
         object for object in values(runtime.objects) if
-        get(S.object_properties(object), "node.name", nothing)==name
+        get(S.object_properties(object), "node.name", nothing) == name
     ]
-    length(matches)==1 || throw(ArgumentError("node is missing or ambiguous"))
-    handle=UInt64(only(matches).id)
-    runtime.pids[handle]==pid || throw(ArgumentError("node PID differs"))
+    length(matches) == 1 || throw(ArgumentError("node is missing or ambiguous"))
+    handle = UInt64(only(matches).id)
+    runtime.pids[handle] == pid || throw(ArgumentError("node PID differs"))
     push!(runtime.trace, (:node, handle))
     return handle
 end
@@ -288,7 +283,7 @@ property(runtime::Runtime, handle::UInt64, key::AbstractString) =
     get(S.object_properties(runtime.objects[UInt32(handle)]), key, nothing)
 function capture!(runtime::Runtime, handle::UInt64; core = nothing)
     if !haskey(runtime.captured, handle)
-        runtime.captured[handle]=core
+        runtime.captured[handle] = core
         push!(runtime.trace, (:capture, handle))
     end
     return nothing
@@ -308,12 +303,12 @@ connect_owner!(runtime::Runtime, job, owner::S.Owner) =
     (push!(runtime.trace, (:connect, owner.handle)); nothing)
 function shutdown_owner!(runtime::Runtime, job, owner::S.Owner)
     push!(runtime.trace, (:shutdown_owner, owner.handle))
-    owner.retired=true
+    owner.retired = true
     return nothing
 end
 function retire_owner!(runtime::Runtime, owner::S.Owner{Bootstrap.Profile})
     owner.retired || error("retirement requires terminal acknowledgement")
-    runtime.retirement_proofs[owner.handle]=owner.retired
+    runtime.retirement_proofs[owner.handle] = owner.retired
     push!(runtime.trace, (:retire_owner, owner.handle))
     return nothing
 end
@@ -327,66 +322,51 @@ prepare_source!(runtime::Runtime, job, binding::S.SourceControlBinding) =
     (push!(runtime.trace, (:prepare, handle(binding))); runtime.snapshots[handle(binding)])
 set_previous!(binding::S.AcquisitionBinding, value) = (
     binding.previous = Acquisition.AcquisitionCursor(
-        UInt64(1),
-        value.generation,
-        value.sequence,
-        UInt64(0),
+        UInt64(1), value.generation, value.sequence, UInt64(0)
     );
     nothing
 )
 set_previous!(binding::S.SourceControlBinding, value) = (binding.previous = value; nothing)
 function source_operation!(
-    runtime::Runtime,
-    job,
-    binding::S.AcquisitionBinding,
-    kind::Symbol;
-    running = false,
+    runtime::Runtime, job, binding::S.AcquisitionBinding, kind::Symbol; running = false
 )
     return operation!(runtime, binding, kind, running)
 end
 function source_operation!(
-    runtime::Runtime,
-    job,
-    binding::S.SourceControlBinding,
-    kind::Symbol;
-    running = false,
+    runtime::Runtime, job, binding::S.SourceControlBinding, kind::Symbol; running = false
 )
     return operation!(runtime, binding, kind, running)
 end
 function operation!(runtime, binding, kind, running)
-    id=handle(binding)
-    push!(runtime.trace, (kind===:run ? (running ? :release : :hold) : kind, id))
-    before=runtime.snapshots[id]
-    value=get(runtime.overrides, (id, kind), nothing)
-    if value===nothing
-        value=kind===:query ? before :
-              kind===:reset ? snapshot(; generation = before.generation+UInt64(1)) :
-              snapshot(;
-            running,
-            generation = before.generation,
-            sequence = before.sequence,
-        )
+    id = handle(binding)
+    push!(runtime.trace, (kind === :run ? (running ? :release : :hold) : kind, id))
+    before = runtime.snapshots[id]
+    value = get(runtime.overrides, (id, kind), nothing)
+    if value === nothing
+        value = if kind === :query
+            before
+        elseif kind === :reset
+            snapshot(; generation = before.generation + UInt64(1))
+        else
+            snapshot(; running, generation = before.generation, sequence = before.sequence)
+        end
     end
-    runtime.snapshots[id]=value
+    runtime.snapshots[id] = value
     set_previous!(binding, value)
     return value
 end
 function shutdown_source!(runtime::Runtime, job, binding::S.AcquisitionBinding)
     push!(runtime.trace, (:shutdown_source, handle(binding)))
-    binding.owner.retired=true
+    binding.owner.retired = true
     return snapshot()
 end
 shutdown_source!(runtime::Runtime, job, binding::S.SourceControlBinding) = nothing
 function node_operation!(
-    runtime::Runtime,
-    job,
-    handle::UInt64,
-    kind::Symbol,
-    argument = nothing,
+    runtime::Runtime, job, handle::UInt64, kind::Symbol, argument = nothing
 )
     push!(
         runtime.trace,
-        (kind===:run ? (argument ? :run_graph : :hold_graph) : :reset_graph, handle),
+        (kind === :run ? (argument ? :run_graph : :hold_graph) : :reset_graph, handle),
     )
     handle in runtime.failures && throw(ArgumentError("controlled graph failure"))
     return nothing
@@ -415,52 +395,50 @@ function capture_sources!(runtime)
     return runtime
 end
 function decode_details(operation, details; state = R.Ready)
-    header=C.ReplyHeader(
+    header = C.ReplyHeader(
         C.ControllerIdentity(UInt32(7), UInt64(17), Int64(27)),
         Int64(31),
         Int64(1),
         operation,
         Int32(0),
     )
-    outcome=operation in (S.STOP_GROUP_OPERATION, S.START_GROUP_OPERATION) ? R.Requested :
-            R.Observed
-    payload=SPA.Struct(
-        Pod[Pod(SPA.Id(UInt32(state))), Pod(SPA.Id(UInt32(outcome))), Pod(details)],
+    outcome =
+        operation in (S.STOP_GROUP_OPERATION, S.START_GROUP_OPERATION) ? R.Requested :
+        R.Observed
+    payload = SPA.Struct(
+        Pod[Pod(SPA.Id(UInt32(state))), Pod(SPA.Id(UInt32(outcome))), Pod(details)]
     )
     return R.decode_completion(C.encode_completion(header, payload; endpoint = :lifecycle)).result
 end
 
 @testset "Exact controller and declared bootstrap admission" begin
-    runtime=Runtime()
+    runtime = Runtime()
     S.perform!(runtime, job(S.ConfiguringOrigin()), S.CaptureOwners())
-    @test [owner.handle for owner in runtime.owners]==UInt64[11, 21, 41]
+    @test [owner.handle for owner in runtime.owners] == UInt64[11, 21, 41]
     @test all(
-        value->value==S.CoreIdentity(UInt32(9001), UInt32(19), "private-core"),
+        value -> value == S.CoreIdentity(UInt32(9001), UInt32(19), "private-core"),
         values(runtime.captured),
     )
     empty!(runtime.trace)
     S.perform!(runtime, job(), S.ConnectOwners())
-    @test runtime.trace==[
-        (:connect, UInt64(11)),
-        (:connect, UInt64(21)),
-        (:connect, UInt64(41)),
-    ]
+    @test runtime.trace ==
+        [(:connect, UInt64(11)), (:connect, UInt64(21)), (:connect, UInt64(41))]
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
-    runtime=Runtime()
-    runtime.controller=C.ControllerIdentity(UInt32(7), UInt64(1008), Int64(17))
+    runtime = Runtime()
+    runtime.controller = C.ControllerIdentity(UInt32(7), UInt64(1008), Int64(17))
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
     @test isempty(runtime.owners)
-    runtime=Runtime()
-    runtime.client_id=UInt32(0)
+    runtime = Runtime()
+    runtime.client_id = UInt32(0)
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
     @test isempty(runtime.captured)
-    runtime=Runtime()
-    runtime.configuration["core.owner"]["pid"]=9002
+    runtime = Runtime()
+    runtime.configuration["core.owner"]["pid"] = 9002
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
-    runtime=Runtime()
-    object=runtime.objects[UInt32(7)]
-    before=object.info
-    object.info=NodeInfo(
+    runtime = Runtime()
+    object = runtime.objects[UInt32(7)]
+    before = object.info
+    object.info = NodeInfo(
         before.id,
         before.max_input_ports,
         before.max_output_ports,
@@ -477,18 +455,18 @@ end
 end
 
 @testset "Publisher and source capture are bounded and do not duplicate bootstrap shutdown" begin
-    runtime=Runtime()
+    runtime = Runtime()
     S.perform!(runtime, job(), S.CaptureOwners())
     S.perform!(runtime, job(), S.CaptureParameters())
-    @test runtime.parameters.handle==31
+    @test runtime.parameters.handle == 31
     capture_sources!(runtime)
-    @test handle.(runtime.sources)==UInt64[22, 42]
+    @test handle.(runtime.sources) == UInt64[22, 42]
     S.perform!(runtime, job(), S.PrepareSources())
-    @test runtime.trace==[(:prepare, UInt64(22)), (:prepare, UInt64(42))]
+    @test runtime.trace == [(:prepare, UInt64(22)), (:prepare, UInt64(42))]
     empty!(runtime.trace)
     S.perform!(runtime, job(), S.ShutdownSources())
     S.perform!(runtime, job(), S.ShutdownOwners())
-    @test runtime.trace==[
+    @test runtime.trace == [
         (:shutdown_source, UInt64(22)),
         (:shutdown_owner, UInt64(21)),
         (:retire_owner, UInt64(21)),
@@ -497,11 +475,8 @@ end
         (:shutdown_owner, UInt64(41)),
         (:retire_owner, UInt64(41)),
     ]
-    @test runtime.retirement_proofs==Dict(
-        UInt64(11)=>true,
-        UInt64(21)=>true,
-        UInt64(41)=>true,
-    )
+    @test runtime.retirement_proofs ==
+        Dict(UInt64(11) => true, UInt64(21) => true, UInt64(41) => true)
     empty!(runtime.trace)
     delete!(runtime.objects, UInt32(21))
     delete!(runtime.objects, UInt32(11))
@@ -509,79 +484,72 @@ end
     S.perform!(runtime, job(S.FaultOrigin()), S.ShutdownSources())
     S.perform!(runtime, job(S.FaultOrigin()), S.ShutdownOwners())
     @test isempty(runtime.trace)
-    runtime=Runtime()
+    runtime = Runtime()
     push!(runtime.configuration["owners"], copy(runtime.configuration["owners"][3]))
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureParameters())
-    @test runtime.parameters===nothing
-    runtime=Runtime()
-    runtime.configuration["auxiliary-sources"][1]["role"]="plant"
+    @test runtime.parameters === nothing
+    runtime = Runtime()
+    runtime.configuration["auxiliary-sources"][1]["role"] = "plant"
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureSources())
     @test isempty(runtime.sources) && isempty(runtime.trace)
 end
 
 @testset "Source chronology requires held and reset proofs" begin
-    runtime=capture_sources!(Runtime())
+    runtime = capture_sources!(Runtime())
     S.perform!(runtime, job(S.ConfiguringOrigin()), S.HoldSources())
-    @test runtime.trace==[(:hold, UInt64(22)), (:hold, UInt64(42))]
+    @test runtime.trace == [(:hold, UInt64(22)), (:hold, UInt64(42))]
     empty!(runtime.trace)
     S.perform!(runtime, job(S.ReadyOrigin()), S.RunSources())
-    @test runtime.trace==[(:release, UInt64(42)), (:release, UInt64(22))]
+    @test runtime.trace == [(:release, UInt64(42)), (:release, UInt64(22))]
     empty!(runtime.trace)
     S.perform!(runtime, job(S.RunningOrigin()), S.HoldSources())
     S.perform!(runtime, job(), S.ResetSources())
-    @test runtime.trace==[
-        (:hold, UInt64(22)),
-        (:hold, UInt64(42)),
-        (:reset, UInt64(22)),
-        (:reset, UInt64(42)),
+    @test runtime.trace == [
+        (:hold, UInt64(22)), (:hold, UInt64(42)), (:reset, UInt64(22)), (:reset, UInt64(42))
     ]
-    @test all(binding->S._source_generation(binding)==UInt64(2), runtime.sources)
-    runtime.overrides[(UInt64(22), :reset)]=snapshot(; generation = UInt64(2))
+    @test all(binding -> S._source_generation(binding) == UInt64(2), runtime.sources)
+    runtime.overrides[(UInt64(22), :reset)] = snapshot(; generation = UInt64(2))
     empty!(runtime.trace)
     @test_throws ArgumentError S.perform!(runtime, job(), S.ResetSources())
-    @test runtime.trace==[(:reset, UInt64(22))]
-    runtime=capture_sources!(Runtime())
-    runtime.overrides[(UInt64(22), :run)]=snapshot(; sequence = UInt64(1))
+    @test runtime.trace == [(:reset, UInt64(22))]
+    runtime = capture_sources!(Runtime())
+    runtime.overrides[(UInt64(22), :run)] = snapshot(; sequence = UInt64(1))
     @test_throws ArgumentError S.perform!(
-        runtime,
-        job(S.ConfiguringOrigin()),
-        S.HoldSources(),
+        runtime, job(S.ConfiguringOrigin()), S.HoldSources()
     )
-    @test runtime.trace==[(:hold, UInt64(22))]
-    runtime=capture_sources!(Runtime())
-    runtime.bindings[UInt64(22)].owner.retired=true
+    @test runtime.trace == [(:hold, UInt64(22))]
+    runtime = capture_sources!(Runtime())
+    runtime.bindings[UInt64(22)].owner.retired = true
     S.perform!(runtime, job(S.FaultOrigin()), S.HoldSources())
-    @test runtime.trace==[(:hold, UInt64(42))]
+    @test runtime.trace == [(:hold, UInt64(42))]
     @test_throws ArgumentError S.perform!(runtime, job(), S.RunSources())
 end
 
 @testset "Graph dependencies, selective groups and fault compensation" begin
-    runtime=Runtime()
+    runtime = Runtime()
     S.perform!(runtime, job(), S.RunGraphs())
-    @test runtime.trace==[
+    @test runtime.trace == [
         (:run_graph, UInt64(104)),
         (:run_graph, UInt64(102)),
         (:run_graph, UInt64(103)),
         (:run_graph, UInt64(101)),
     ]
-    @test all(group->group.running, values(runtime.groups))
+    @test all(group -> group.running, values(runtime.groups))
     empty!(runtime.trace)
-    details=S.perform!(runtime, job(S.RunningOrigin()), S.RunGraphs("science", false))
-    @test runtime.trace==[
-        (:hold_graph, UInt64(101)),
-        (:hold_graph, UInt64(102)),
-        (:hold_graph, UInt64(103)),
+    details = S.perform!(runtime, job(S.RunningOrigin()), S.RunGraphs("science", false))
+    @test runtime.trace == [
+        (:hold_graph, UInt64(101)), (:hold_graph, UInt64(102)), (:hold_graph, UInt64(103))
     ]
     @test !runtime.groups["science"].running && runtime.groups["observer"].running
-    result=decode_details(S.STOP_GROUP_OPERATION, details; state = R.Running)
-    @test result.details.group=="science" && result.details.observed==R.Stopped
+    result = decode_details(S.STOP_GROUP_OPERATION, details; state = R.Running)
+    @test result.details.group == "science" && result.details.observed == R.Stopped
     empty!(runtime.trace)
     push!(runtime.failures, UInt64(101))
     @test_throws ArgumentError S.perform!(runtime, job(S.RunningOrigin()), S.HoldGraphs())
-    @test runtime.trace==[(:hold_graph, UInt64(101))]
+    @test runtime.trace == [(:hold_graph, UInt64(101))]
     empty!(runtime.trace)
     @test_throws ArgumentError S.perform!(runtime, job(S.FaultOrigin()), S.HoldGraphs())
-    @test runtime.trace==[
+    @test runtime.trace == [
         (:hold_graph, UInt64(101)),
         (:hold_graph, UInt64(104)),
         (:hold_graph, UInt64(102)),
@@ -591,7 +559,7 @@ end
     empty!(runtime.trace)
     empty!(runtime.failures)
     S.perform!(runtime, job(), S.ResetGraphs())
-    @test runtime.trace==[
+    @test runtime.trace == [
         (:reset_graph, UInt64(104)),
         (:reset_graph, UInt64(102)),
         (:reset_graph, UInt64(103)),
@@ -602,82 +570,72 @@ end
     @test isempty(runtime.trace)
     push!(
         runtime.configuration["session"]["links"],
-        Dict("output"=>"right:out", "input"=>"upstream:in"),
+        Dict("output" => "right:out", "input" => "upstream:in"),
     )
     @test_throws ArgumentError S.perform!(runtime, job(), S.RunGraphs())
     @test isempty(runtime.trace)
 end
 
 @testset "Wire observations and public property adapters" begin
-    runtime=capture_sources!(Runtime())
+    runtime = capture_sources!(Runtime())
     push!(runtime.links, UInt32(50))
-    details=S.groups_details(runtime)
-    @test decode_details(S.GROUPS_OPERATION, details).details.groups==Dict(
-        "science"=>R.Stopped,
-        "observer"=>R.Stopped,
-    )
-    @test decode_details(S.STATUS_OPERATION, S.status_details(runtime; running = false)).details.owned_links==1
-    runtime.snapshots[UInt64(22)]=snapshot(; running = true)
-    runtime.snapshots[UInt64(42)]=snapshot(; running = true)
-    result=decode_details(
+    details = S.groups_details(runtime)
+    @test decode_details(S.GROUPS_OPERATION, details).details.groups ==
+        Dict("science" => R.Stopped, "observer" => R.Stopped)
+    @test decode_details(S.STATUS_OPERATION, S.status_details(runtime; running = false)).details.owned_links ==
+        1
+    runtime.snapshots[UInt64(22)] = snapshot(; running = true)
+    runtime.snapshots[UInt64(42)] = snapshot(; running = true)
+    result = decode_details(
         S.STATUS_OPERATION,
         S.perform!(runtime, job(S.RunningOrigin()), S.QueryStatus());
         state = R.Running,
     )
     @test result.details.running &&
-          result.details.owned_nodes==0 &&
-          isempty(result.details.discarded_by_sink)
-    @test runtime.trace==[(:query, UInt64(22)), (:query, UInt64(42))]
-    runtime.snapshots[UInt64(22)]=snapshot(; completed = true, sequence = UInt64(3))
-    evidence=S.perform!(runtime, job(S.RunningOrigin()), S.QuerySourceEnd())
-    @test evidence===S.SourceEnd(true, false)
-    runtime.overrides[(UInt64(22), :query)]=snapshot(; generation = UInt64(0))
+        result.details.owned_nodes == 0 &&
+        isempty(result.details.discarded_by_sink)
+    @test runtime.trace == [(:query, UInt64(22)), (:query, UInt64(42))]
+    runtime.snapshots[UInt64(22)] = snapshot(; completed = true, sequence = UInt64(3))
+    evidence = S.perform!(runtime, job(S.RunningOrigin()), S.QuerySourceEnd())
+    @test evidence === S.SourceEnd(true, false)
+    runtime.overrides[(UInt64(22), :query)] = snapshot(; generation = UInt64(0))
     @test_throws ArgumentError S.perform!(runtime, job(S.RunningOrigin()), S.QueryStatus())
-    runtime.properties=Dict(
-        "controller:gain"=>Pod(Float32(0.2)),
-        "controller:requested-generation"=>Pod(Int64(2)),
-        "controller:active-generation"=>Pod(nothing),
-        "controller:requested-parameter-sequence"=>Pod(Int64(3)),
-        "controller:active-parameter-sequence"=>Pod(Int64(3)),
-        "not-scalar"=>Pod(SPA.Struct(Pod[])),
+    runtime.properties = Dict(
+        "controller:gain" => Pod(Float32(0.2)),
+        "controller:requested-generation" => Pod(Int64(2)),
+        "controller:active-generation" => Pod(nothing),
+        "controller:requested-parameter-sequence" => Pod(Int64(3)),
+        "controller:active-parameter-sequence" => Pod(Int64(3)),
+        "not-scalar" => Pod(SPA.Struct(Pod[])),
     )
-    result=decode_details(
-        S.PROPERTIES_OPERATION,
-        S.perform!(runtime, job(), S.QueryProperties(("left",))),
+    result = decode_details(
+        S.PROPERTIES_OPERATION, S.perform!(runtime, job(), S.QueryProperties(("left",)))
     )
-    @test length(result.details.properties)==4 &&
-          !haskey(result.details.properties, "not-scalar")
-    result=decode_details(
+    @test length(result.details.properties) == 4 &&
+        !haskey(result.details.properties, "not-scalar")
+    result = decode_details(
         S.PROPERTY_GENERATION_OPERATION,
         S.perform!(runtime, job(), S.QueryPropertyGeneration(("left", "controller"))),
     )
-    @test result.details.requested==2 && result.details.active===nothing
-    result=decode_details(
+    @test result.details.requested == 2 && result.details.active === nothing
+    result = decode_details(
         S.PARAMETER_GENERATION_OPERATION,
         S.perform!(runtime, job(), S.QueryParameterGeneration(("left", "controller"))),
     )
-    @test result.details.requested==3 && result.details.active==3
-    runtime.properties["controller:active-parameter-sequence"]=Pod(nothing)
+    @test result.details.requested == 3 && result.details.active == 3
+    runtime.properties["controller:active-parameter-sequence"] = Pod(nothing)
     @test_throws ArgumentError S.perform!(
-        runtime,
-        job(),
-        S.QueryParameterGeneration(("left", "controller")),
+        runtime, job(), S.QueryParameterGeneration(("left", "controller"))
     )
     @test_throws ArgumentError S.perform!(
-        runtime,
-        job(),
-        S.QueryProperties(("left", "unexpected")),
+        runtime, job(), S.QueryProperties(("left", "unexpected"))
     )
     @test_throws ArgumentError S.perform!(
-        runtime,
-        job(),
-        S.QueryPropertyGeneration(("left",)),
+        runtime, job(), S.QueryPropertyGeneration(("left",))
     )
     @test S.perform!(
-        runtime,
-        job(),
-        S.UpdateProperties(("left", Dict{String,R.RunnerScalar}())),
-    ).values==Pod[Pod("updated")]
+        runtime, job(), S.UpdateProperties(("left", Dict{String,R.RunnerScalar}()))
+    ).values == Pod[Pod("updated")]
     @test last(runtime.trace) == (:update_ready, UInt64(0))
     @test S.perform!(
         runtime,
@@ -685,17 +643,14 @@ end
         S.UpdateProperties(("left", Dict{String,R.RunnerScalar}())),
     ).values == Pod[Pod("updated")]
     @test last(runtime.trace) == (:update_running, UInt64(0))
-    @test S.perform!(runtime, job(), S.SubmitParameter(("left", "matrix"))).values==Pod[Pod(
-        "submitted",
-    )]
+    @test S.perform!(runtime, job(), S.SubmitParameter(("left", "matrix"))).values ==
+        Pod[Pod("submitted")]
     empty!(runtime.trace)
     S.perform!(runtime, job(), S.DiscoverGraphs())
     S.perform!(runtime, job(), S.ConnectLinks())
     S.perform!(runtime, job(), S.WithdrawLinks())
-    @test runtime.trace==[
-        (:discover, UInt64(0)),
-        (:connect_links, UInt64(0)),
-        (:withdraw_links, UInt64(0)),
+    @test runtime.trace == [
+        (:discover, UInt64(0)), (:connect_links, UInt64(0)), (:withdraw_links, UInt64(0))
     ]
 end
 end

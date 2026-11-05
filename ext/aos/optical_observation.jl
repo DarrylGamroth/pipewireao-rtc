@@ -67,7 +67,7 @@ sensor_configuration(config::ShackHartmannRateNodeConfig) = config
 sensor_configuration(config::PyramidRateNodeConfig) = config
 atmosphere_output(output) = false
 atmosphere_output(
-    ::AdaptiveOpticsSim.AlgorithmGraphs.GraphOutputDefinition{:atmosphere_opd},
+    ::AdaptiveOpticsSim.AlgorithmGraphs.GraphOutputDefinition{:atmosphere_opd}
 ) = true
 reference_snapshots(::Nothing) = ()
 reference_snapshots(snapshot) = (snapshot,)
@@ -102,8 +102,9 @@ end
 
 function owner_imaging_configuration(options)
     options.version == 3 || return default_imaging()
-    declaration =
-        PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
+    declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(
+        options.plant.definition
+    )
     return imaging_configuration(declaration)
 end
 
@@ -135,23 +136,20 @@ function port_contracts(nodes::Tuple; atmosphere::Bool, imaging = default_imagin
     result = Dict(
         "focal-image" =>
             contract((focal_resolution, focal_resolution), "focal_photon_rate"),
-        "residual-wavefront" =>
-            contract((resolution, resolution), "residual_pupil_opd_nm"),
+        "residual-wavefront" => contract((resolution, resolution), "residual_pupil_opd_nm"),
     )
     atmosphere && (result["wavefront-rms"] = contract(RMS_SHAPE, "pupil_opd_rms_nm"))
     return result
 end
 port_contracts(definition::AlgorithmGraphDefinition; imaging = default_imaging()) =
     port_contracts(
-        definition.nodes;
-        atmosphere = any(atmosphere_output, definition.outputs),
-        imaging,
+        definition.nodes; atmosphere = any(atmosphere_output, definition.outputs), imaging
     )
 
 function verify_product(values, contract)
     collect(size(values)) == contract["shape"] && eltype(values) === Float32 || throw(
         DimensionMismatch(
-            "optical observation product differs from its cold port contract",
+            "optical observation product differs from its cold port contract"
         ),
     )
     return nothing
@@ -163,8 +161,7 @@ function prepare(definition::AlgorithmGraphDefinition, graph; imaging = default_
     # Use the plant aperture and the explicitly selected source photometry.
     # This product is ideal photon rate, without detector exposure or noise.
     telescope = Optics.prepare_telescope(
-        config.telescope,
-        AdaptiveOpticsSim.Backends.HostComputeDevice(),
+        config.telescope, AdaptiveOpticsSim.Backends.HostComputeDevice()
     )
     source = imaging_source(imaging.source, config)
     zero_padding = imaging.zero_padding
@@ -208,8 +205,7 @@ function prepare(definition::AlgorithmGraphDefinition, graph; imaging = default_
     catch error
         try
             finalize_snapshots!(
-                close,
-                (snapshot, reference_snapshots(atmosphere_snapshot)...),
+                close, (snapshot, reference_snapshots(atmosphere_snapshot)...)
             )
         catch cleanup
             throw(CompositeException([error, cleanup]))
@@ -221,9 +217,9 @@ end
 source_options(::Nothing; reference_clock = METADATA_CLOCK_REALTIME) = ()
 function source_options(observation::Observation; reference_clock = METADATA_CLOCK_REALTIME)
     properties = Dict(
-        "node.loop.name"=>"telemetry-loop",
-        "node.group"=>"pipewireao-optical-observation",
-        "node.sync-group"=>"sync.pipewireao-optical-observation",
+        "node.loop.name" => "telemetry-loop",
+        "node.group" => "pipewireao-optical-observation",
+        "node.sync-group" => "sync.pipewireao-optical-observation",
     )
     images = (
         PipeWireImageSourceOptions(
@@ -339,12 +335,7 @@ end
 
 stage_rms!(::Nothing, observation, pipewire, metadata) = nothing
 stage_rms!(snapshot, observation, pipewire, metadata) = stage_pipewire_image!(
-    pipewire,
-    3,
-    observation.rms,
-    metadata.sequence,
-    metadata.pts,
-    metadata.generation,
+    pipewire, 3, observation.rms, metadata.sequence, metadata.pts, metadata.generation
 )
 
 function form_products!(observation::Observation)
@@ -354,9 +345,7 @@ function form_products!(observation::Observation)
         Optics.intensity_values(Optics.direct_imaging_output(observation.imaging)),
     )
     form_wavefront!(
-        observation.wavefront,
-        snapshot_values(observation.snapshot),
-        observation.pupil,
+        observation.wavefront, snapshot_values(observation.snapshot), observation.pupil
     )
     form_rms!(observation.atmosphere_snapshot, observation)
     return nothing
@@ -364,10 +353,12 @@ end
 
 form_rms!(::Nothing, observation) = nothing
 function form_rms!(atmosphere_snapshot, observation)
-    observation.rms[1, 1] =
-        pupil_rms_nm(snapshot_values(atmosphere_snapshot), observation.pupil)
-    observation.rms[1, 2] =
-        pupil_rms_nm(snapshot_values(observation.snapshot), observation.pupil)
+    observation.rms[1, 1] = pupil_rms_nm(
+        snapshot_values(atmosphere_snapshot), observation.pupil
+    )
+    observation.rms[1, 2] = pupil_rms_nm(
+        snapshot_values(observation.snapshot), observation.pupil
+    )
     return nothing
 end
 
@@ -401,7 +392,7 @@ end
 function form_focal_image!(destination, intensity)
     ndims(destination) == ndims(intensity) == 2 &&
     axes(destination) == reverse(axes(intensity)) || throw(
-        DimensionMismatch("focal image axes must reverse the rank-two intensity axes"),
+        DimensionMismatch("focal image axes must reverse the rank-two intensity axes")
     )
     Base.mightalias(destination, intensity) &&
         throw(ArgumentError("focal image must not alias the intensity"))
@@ -421,7 +412,7 @@ function form_wavefront!(destination, opd, pupil)
     axes(opd) == axes(pupil) &&
     axes(destination) == reverse(axes(opd)) || throw(
         DimensionMismatch(
-            "wavefront image axes must reverse the matching rank-two OPD and pupil axes",
+            "wavefront image axes must reverse the matching rank-two OPD and pupil axes"
         ),
     )
     (Base.mightalias(destination, opd) || Base.mightalias(destination, pupil)) &&
@@ -456,7 +447,7 @@ function worker!(observation::Observation, pipewire, cpu::Int)
             throw(ArgumentError("optical worker must run on Julia thread two"))
         ThreadPinning.pinthread(cpu)
         println(
-            "OPTICAL_WORKER thread=$(Threads.threadid()) cpu=$(ThreadPinning.getcpuid())",
+            "OPTICAL_WORKER thread=$(Threads.threadid()) cpu=$(ThreadPinning.getcpuid())"
         )
         while !observation.stop[]
             process_sample!(observation, pipewire)
@@ -483,7 +474,7 @@ function start!(observation::Observation, pipewire, cpu)
     )
     cpu !== nothing && cpu > 1 && cpu != ThreadPinning.getcpuid() || throw(
         ArgumentError(
-            "observation worker CPU must differ from the source CPU and exclude CPU0/1",
+            "observation worker CPU must differ from the source CPU and exclude CPU0/1"
         ),
     )
     observation.stop[] = false
@@ -493,7 +484,7 @@ function start!(observation::Observation, pipewire, cpu)
     return nothing
 end
 
-warm!(::Nothing, pipewire; check = ()->nothing, cpu = nothing) = nothing
+warm!(::Nothing, pipewire; check = () -> nothing, cpu = nothing) = nothing
 function pin_image_thread!(cpu::Integer)
     cpu > 1 || throw(ArgumentError("image thread CPU must exclude CPU0/1"))
     # pw_thread_loop_start passes only its name to the native thread creator.
@@ -511,7 +502,7 @@ function pin_image_thread!(cpu::Integer)
         throw(ArgumentError("native image thread CPU placement was not applied"))
     return nothing
 end
-function warm!(observation::Observation, pipewire; check = ()->nothing, cpu = nothing)
+function warm!(observation::Observation, pipewire; check = () -> nothing, cpu = nothing)
     check()
     observation.generation = UInt64(frame_acquisition_generation(pipewire))
     cpu !== nothing && cpu > 1 ||
@@ -566,8 +557,8 @@ function stop_worker!(observation::Observation)
     return nothing
 end
 
-reset!(::Nothing, pipewire; check = ()->nothing, cpu = nothing) = nothing
-function reset!(observation::Observation, pipewire; check = ()->nothing, cpu = nothing)
+reset!(::Nothing, pipewire; check = () -> nothing, cpu = nothing) = nothing
+function reset!(observation::Observation, pipewire; check = () -> nothing, cpu = nothing)
     observation.next_sample_ns = 0
     observation.failed[] = false
     warm!(observation, pipewire; check, cpu)

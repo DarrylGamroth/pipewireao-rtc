@@ -72,8 +72,7 @@ function optical_components_document()
     )
     instrument = Dict(
         "deformable_mirrors" => Dict("woofer" => Dict(), "tweeter" => Dict()),
-        "wavefront_sensors" =>
-            Dict("science_sensor" => Dict(), "guide_sensor" => Dict()),
+        "wavefront_sensors" => Dict("science_sensor" => Dict(), "guide_sensor" => Dict()),
     )
     return document, instrument
 end
@@ -87,20 +86,20 @@ end
     @test graph["nodes"][3] == original["graphs"]["production"]["nodes"][3]
     @test graph["links"] == original["graphs"]["production"]["links"]
     @test document["hil"] ==
-          Dict("command_input" => "woofer_command", "frame_output" => "frame")
+        Dict("command_input" => "woofer_command", "frame_output" => "frame")
     for name in ("woofer", "tweeter")
         config = only(node for node in graph["nodes"] if node["name"] == name)["config"]
         @test config["actuator_count"] ==
-              Dict("\$ref" => "/instrument/deformable_mirrors/$name/actuator_count")
+            Dict("\$ref" => "/instrument/deformable_mirrors/$name/actuator_count")
         @test config["actuator_pitch"] == Dict(
             "\$ref" => "/instrument/deformable_mirrors/$name/pupil_registration/actuator_pitch_pupil_radius",
         )
         @test config["pdm_command_schema"] == "example.command-metres/1"
         @test !haskey(config, "influence_functions_schema")
         @test document["bindings"][name*"_command"]["shape"] ==
-              [Dict("\$ref" => "/instrument/deformable_mirrors/$name/actuator_count")]
+            [Dict("\$ref" => "/instrument/deformable_mirrors/$name/actuator_count")]
         @test document["bindings"][name*"_influence_functions"]["setting"] ==
-              "influences.$name"
+            "influences.$name"
         @test document["profiles"]["measured"]["settings_schema"]["influences"]["properties"][name]["readOnly"]
         grid = only(
             parameter for
@@ -114,24 +113,21 @@ end
         (wire["frame_encoding"], wire["command_scale"]) for
         wire in document["wire_contracts"]
     ] == [
-        ("float32", 1),
-        ("float32", 1e-6),
-        ("uint16", 1),
-        ("uint16", 1e-6),
-        ("uint16", 1),
+        ("float32", 1), ("float32", 1e-6), ("uint16", 1), ("uint16", 1e-6), ("uint16", 1)
     ]
     @test last(document["wire_contracts"])["command_schema"] == "example.external-command/1"
     @test IC.transform(0.2, Dict("transform" => "gaussian_width", "coupling" => 0.35)) ==
-          0.2 / sqrt(-2log(0.35))
+        0.2 / sqrt(-2log(0.35))
     @test Set(expanded.templates) == Set(IC.MIRROR_PROFILES)
     @test original["graphs"]["production"]["nodes"][1] == Dict("name" => "woofer")
 
     document, instrument = optical_components_document()
-    document["components"]["woofer"]["bindings"] =
-        Dict("actuator_grid_indices" => "physical_command_order")
+    document["components"]["woofer"]["bindings"] = Dict(
+        "actuator_grid_indices" => "physical_command_order"
+    )
     IC.expand_simulation_components!(document, instrument, ".")
     @test document["bindings"]["physical_command_order"] ==
-          Dict("kind" => "mirror_grid_indices", "mirror" => "woofer")
+        Dict("kind" => "mirror_grid_indices", "mirror" => "woofer")
 end
 
 @testset "component sensor and source choices remain explicit" begin
@@ -139,17 +135,15 @@ end
         "template" => "shack_hartmann_rate_f32",
         "sensor" => "science_sensor",
         "source" => "off_axis",
-        "config" => Dict(
-            "opd_schema" => "example.opd/1",
-            "photon_rate_schema" => "example.rate/1",
-        ),
+        "config" =>
+            Dict("opd_schema" => "example.opd/1", "photon_rate_schema" => "example.rate/1"),
     )
     node = IC.component_node("science", selection, selection["template"], Set{String}())
     @test node["config"]["n_lenslets"] == Dict(
         "\$ref" => "/instrument/wavefront_sensors/science_sensor/optical_prescription/n_lenslets",
     )
     @test node["config"]["source_separation_arcsec"] ==
-          Dict("\$ref" => "/simulation/sources/off_axis/source_separation_arcsec")
+        Dict("\$ref" => "/simulation/sources/off_axis/source_separation_arcsec")
     selection["sensor"], selection["source"] = "guide_sensor", "on_axis"
     other = IC.component_node("guide", selection, selection["template"], Set{String}())
     @test other["config"]["n_lenslets"] != node["config"]["n_lenslets"]
@@ -168,21 +162,25 @@ end
         document -> (document["components"]["woofer"]["config"]["actuator_count"] = 17),
         document -> (document["components"]["woofer"]["config"]["actuator_pitch"] = 0.1),
         document -> (
-            document["graphs"]["production"]["nodes"][1]["config"] =
-                Dict("actuator_count" => 17)
+            document["graphs"]["production"]["nodes"][1]["config"] = Dict(
+                "actuator_count" => 17
+            )
         ),
         document -> (
-            document["graphs"]["production"]["nodes"][1]["config"] =
-                Dict("actuator_pitch" => 0.1)
+            document["graphs"]["production"]["nodes"][1]["config"] = Dict(
+                "actuator_pitch" => 0.1
+            )
         ),
         document -> (
-            document["graphs"]["production"]["nodes"][1]["config"] =
-                Dict("pdm_command_schema" => "example.other/1")
+            document["graphs"]["production"]["nodes"][1]["config"] = Dict(
+                "pdm_command_schema" => "example.other/1"
+            )
         ),
         document -> (document["graphs"]["production"]["nodes"][1]["props"] = Dict()),
         document -> (
-            document["components"]["woofer"]["bindings"] =
-                Dict("actuator_grid_indices" => "../path")
+            document["components"]["woofer"]["bindings"] = Dict(
+                "actuator_grid_indices" => "../path"
+            )
         ),
         document ->
             (document["graphs"]["production"]["nodes"][1]["config"] = Dict("unknown" => 1)),
@@ -206,9 +204,7 @@ end
         document, instrument = optical_components_document()
         mutate!(document)
         @test_throws ArgumentError IC.expand_simulation_components!(
-            document,
-            instrument,
-            ".",
+            document, instrument, "."
         )
     end
     for (field, value) in (
@@ -220,14 +216,12 @@ end
         document, instrument = optical_components_document()
         document[field] = value
         @test_throws ArgumentError IC.expand_simulation_components!(
-            document,
-            instrument,
-            ".",
+            document, instrument, "."
         )
     end
     @test_throws ArgumentError IC.component_template_path("../grid_gaussian")
     @test_throws ArgumentError IC.expand_wire_contracts(
-        Dict("frames" => fill(Dict(), 9), "commands" => fill(Dict(), 8)),
+        Dict("frames" => fill(Dict(), 9), "commands" => fill(Dict(), 8))
     )
 end
 
@@ -235,9 +229,8 @@ end
     authoring = Dict(
         "settings_schema" => "atmosphere",
         "profiles" => Dict(
-            "custom" => Dict(
-                "settings_schema" => Dict("template" => Dict("type" => "string")),
-            ),
+            "custom" =>
+                Dict("settings_schema" => Dict("template" => Dict("type" => "string"))),
         ),
     )
     @test Set(keys(IC.simulation_catalog_identities(authoring))) == Set(("atmosphere",))
@@ -292,21 +285,17 @@ end
     @test detector("production")["readout_noise_e"] == 2.33
     @test all(detector("calibration")[key] == value for (key, value) in overrides)
     @test detector("calibration")["rows"] ==
-          Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/detector_shape/0")
+        Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/detector_shape/0")
     for field in ("rows", "exposure_duration_s", "gain", "shutter")
         invalid = deepcopy(original)
         invalid["components"]["detector"]["config"][field] = 8
         @test_throws ArgumentError IC.expand_simulation_components!(
-            invalid,
-            instrument,
-            ".",
+            invalid, instrument, "."
         )
         invalid = deepcopy(original)
         last(invalid["graphs"]["calibration"]["nodes"])["config"][field] = 8
         @test_throws ArgumentError IC.expand_simulation_components!(
-            invalid,
-            instrument,
-            ".",
+            invalid, instrument, "."
         )
     end
 end
@@ -368,7 +357,7 @@ end
         "readout_noise" => true,
         "readout_noise_e" => 678.3218668753427,
         "excess_noise_factor" => sqrt(2),
-        "normalized_pupil_sampling" => 1/60,
+        "normalized_pupil_sampling" => 1 / 60,
         "clock_induced_charge_e_per_pixel_frame" => 0.000828,
         "dark_current_e_per_pixel_s" => 0,
         "frame_schema" => "example.electrons/1",
@@ -380,8 +369,8 @@ end
         "source" => "guide",
         "config" => config,
     )
-    document["components"]["pyramid"], document["components"]["detector"] =
-        pyramid, detector
+    document["components"]["pyramid"], document["components"]["detector"] = pyramid,
+    detector
     overrides = Dict(
         "photon_noise" => false,
         "readout_noise" => false,
@@ -404,10 +393,10 @@ end
     node(mode, name) =
         only(node for node in expanded.graphs[mode]["nodes"] if node["name"] == name)
     @test node("production", "pyramid")["config"]["source_wavelength_m"] ==
-          node("production", "detector")["config"]["wavelength_m"] ==
-          Dict("\$ref" => "/simulation/sources/guide/source_wavelength_m")
+        node("production", "detector")["config"]["wavelength_m"] ==
+        Dict("\$ref" => "/simulation/sources/guide/source_wavelength_m")
     @test node("production", "pyramid")["config"]["pupil_samples"] ==
-          Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/pupil_shape/0")
+        Dict("\$ref" => "/instrument/wavefront_sensors/guide_sensor/pupil_shape/0")
     @test node("production", "detector")["type"] == "detector"
     @test node("production", "detector")["detector"] == "emccd"
     @test node("production", "detector")["config"]["shutter"] == "global"
@@ -416,30 +405,24 @@ end
         (key, value) in overrides
     )
     @test config["readout_noise_e"] ==
-          node("production", "detector")["config"]["readout_noise_e"]
+        node("production", "detector")["config"]["readout_noise_e"]
     for key in ("pupil_shape", "pupil_separation_pixels", "pupil_edge_pixels")
         physical = deepcopy(instrument)
         physical["wavefront_sensors"]["guide_sensor"][key][2] += 1
         @test_throws ArgumentError IC.expand_simulation_components!(
-            deepcopy(original),
-            physical,
-            ".",
+            deepcopy(original), physical, "."
         )
     end
     for key in ("wavelength_m", "exposure_duration_s", "shutter")
         invalid = deepcopy(original)
         invalid["components"]["detector"]["config"][key] = 1
         @test_throws ArgumentError IC.expand_simulation_components!(
-            invalid,
-            instrument,
-            ".",
+            invalid, instrument, "."
         )
         invalid = deepcopy(original)
         last(invalid["graphs"]["calibration"]["nodes"])["config"][key] = 1
         @test_throws ArgumentError IC.expand_simulation_components!(
-            invalid,
-            instrument,
-            ".",
+            invalid, instrument, "."
         )
     end
 end
@@ -450,7 +433,7 @@ end
         (Dict("source" => "science"), Dict("source" => "science", "zero_padding" => 3))
         @test isnothing(
             IC.validate_imaging(
-                Dict("sources" => Dict("science" => Dict()), "imaging" => imaging),
+                Dict("sources" => Dict("science" => Dict()), "imaging" => imaging)
             ),
         )
     end
@@ -465,7 +448,7 @@ end
         )...,
     )
         @test_throws ArgumentError IC.validate_imaging(
-            Dict("sources" => Dict("science" => Dict()), "imaging" => imaging),
+            Dict("sources" => Dict("science" => Dict()), "imaging" => imaging)
         )
     end
 end
@@ -477,8 +460,7 @@ end
         "acquisition" => Dict("exposure_duration_s" => 0.01),
     )
     instrument = Dict(
-        "deformable_mirrors" => Dict(),
-        "wavefront_sensors" => Dict("llowfs" => sensor),
+        "deformable_mirrors" => Dict(), "wavefront_sensors" => Dict("llowfs" => sensor)
     )
     config = Dict{String,Any}(
         "spectral_channel" => "h",
@@ -505,8 +487,7 @@ end
         expanded = IC.expand_simulation_components!(deepcopy(document), instrument, ".")
         node = only(expanded.graphs["camera"]["nodes"])
         return PipeWireAORTC.Common.configuration_value(
-            node["config"],
-            Dict("instrument" => instrument),
+            node["config"], Dict("instrument" => instrument)
         )
     end
     explicit = deepcopy(document)
@@ -558,8 +539,7 @@ end
             "schema_version" => 1,
             "generated" => "Generated test metadata",
             "source" => Dict(
-                "path" => source,
-                "sha256" => C.sha256_file(joinpath(directory, source)),
+                "path" => source, "sha256" => C.sha256_file(joinpath(directory, source))
             ),
             "regeneration" => "test generator",
             "defaults" => Dict("cmos" => Dict("photon_noise" => true)),
@@ -597,8 +577,8 @@ if "science" in ARGS
         )
             catalog = IC.component_template(template, Set{String}())
             config = Dict{String,Any}(
-                key => startswith(value["\$ref"], "/schemas/") ? "example.schema/1" : 1
-                for (key, value) in catalog["config"] if IC.component_input(value)
+                key => startswith(value["\$ref"], "/schemas/") ? "example.schema/1" : 1 for
+                (key, value) in catalog["config"] if IC.component_input(value)
             )
             for key in keys(defaults)
                 delete!(config, key)
@@ -609,22 +589,17 @@ if "science" in ARGS
                 "source" => "guide",
                 "config" => config,
             )
-            omitted =
-                IC.component_node("node", selection, template, Set{String}())["config"]
+            omitted = IC.component_node("node", selection, template, Set{String}())["config"]
             @test all(omitted[key] == value for (key, value) in defaults)
             merge!(config, defaults)
-            explicit =
-                IC.component_node("node", selection, template, Set{String}())["config"]
+            explicit = IC.component_node("node", selection, template, Set{String}())["config"]
             @test all(explicit[key] == value for (key, value) in defaults)
             @test explicit == omitted
             for key in keys(defaults)
                 invalid = deepcopy(selection)
                 invalid["config"][key] = nothing
                 @test_throws ArgumentError IC.component_node(
-                    "node",
-                    invalid,
-                    template,
-                    Set{String}(),
+                    "node", invalid, template, Set{String}()
                 )
             end
         end

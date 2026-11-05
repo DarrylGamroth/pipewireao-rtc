@@ -24,22 +24,20 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
         try
             @test E.reference_remotes(paths) == paths
             @test E.reference_remotes(paths.dark) ==
-                  (; dark = paths.dark, lamp = paths.dark, qualification = paths.dark)
+                (; dark = paths.dark, lamp = paths.dark, qualification = paths.dark)
             reordered = (;
-                qualification = paths.qualification,
-                lamp = paths.lamp,
-                dark = paths.dark,
+                qualification = paths.qualification, lamp = paths.lamp, dark = paths.dark
             )
             @test keys(E.reference_remotes(reordered)) == keys(reordered)
             @test_throws ArgumentError E.reference_remotes((; dark = paths.dark))
             @test_throws ArgumentError E.reference_remotes(
-                merge(paths, (; other = paths.dark)),
+                merge(paths, (; other = paths.dark))
             )
             @test_throws ArgumentError E.reference_remotes(collect(values(paths)))
             @test_throws ArgumentError E.reference_remotes(nothing)
             @test_throws ArgumentError E.reference_remotes("relative-socket")
             @test_throws ArgumentError E.reference_remotes(
-                merge(paths, (; dark = "relative-socket")),
+                merge(paths, (; dark = "relative-socket"))
             )
             chmod(directory, 0o755)
             @test_throws ArgumentError E.reference_remotes(paths.dark)
@@ -52,11 +50,12 @@ end
 
 function reference_recipe()
     Dict(
-        "references"=>Dict(
-            "source"=>"internal-source",
-            "dark"=>Dict{String,Any}("samples"=>16, "discard_exposures"=>0),
-            "lamp"=>Dict{String,Any}("samples"=>16, "discard_exposures"=>0),
-            "qualification"=>Dict{String,Any}("samples"=>16, "discard_exposures"=>16),
+        "references" => Dict(
+            "source" => "internal-source",
+            "dark" => Dict{String,Any}("samples" => 16, "discard_exposures" => 0),
+            "lamp" => Dict{String,Any}("samples" => 16, "discard_exposures" => 0),
+            "qualification" =>
+                Dict{String,Any}("samples" => 16, "discard_exposures" => 16),
         ),
     )
 end
@@ -110,15 +109,16 @@ end
     frozen = Float32[1 2; 3 4; 5 6; 7 8]
     frozen_before = copy(frozen)
     plan = A.prepare(
-        R.LampReference([1, 1], UInt16(4095)),
-        R.LampReferenceSpecification(2, 3, 2, 4),
+        R.LampReference([1, 1], UInt16(4095)), R.LampReferenceSpecification(2, 3, 2, 4)
     )
     state = R.LampReferenceState(plan)
     centroids = zeros(Float64, 4, 4)
     flux = zeros(Float32, 2, 4)
     valid = fill(true, 2, 4)
-    for exposure = 1:4
-        slopes = Float32[exposure/8+roi/32+coordinate/16 for roi = 1:4, coordinate = 1:2]
+    for exposure in 1:4
+        slopes = Float32[
+            exposure / 8 + roi / 32 + coordinate / 16 for roi in 1:4, coordinate in 1:2
+        ]
         sample = (;
             arrays = (;
                 raw = copy(raw[:, :, exposure]),
@@ -128,13 +128,15 @@ end
             )
         )
         E.reference_lamp_update!(state, plan, sample, indices, frozen)
-        centroids[:, exposure] =
-            vec(permutedims(Float64.(slopes[indices, :]) .+ Float64.(frozen[indices, :])))
+        centroids[:, exposure] = vec(
+            permutedims(Float64.(slopes[indices, :]) .+ Float64.(frozen[indices, :]))
+        )
         flux[:, exposure] .= 2
     end
     online = E.reference_product(plan, state)
-    input =
-        R.LampReferenceInputs(centroids, flux, valid, raw; centroids_are_absolute = true)
+    input = R.LampReferenceInputs(
+        centroids, flux, valid, raw; centroids_are_absolute = true
+    )
     batch = A.process(plan, input)
     @test online.status == batch.status == R.Valid
     @test online.reference_centroids == batch.reference_centroids
@@ -176,25 +178,20 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
         counts = E.reference_counts(C.read_recipe(application))
         mktempdir() do directory
             with_control_private_core(;
-                temporary_prefix = "classic-reference-campaign-",
+                temporary_prefix = "classic-reference-campaign-"
             ) do remote, core_directory, daemon
                 chmod(dirname(remote), 0o700)
                 output = joinpath(directory, "candidate")
                 requests = Any[]
                 confirm = function (request, witness)
                     push!(requests, request)
-                    @info "Reference stage prepared" stage=request.stage witness
+                    @info "Reference stage prepared" stage = request.stage witness
                     flush(stdout)
                     flush(stderr)
                     P.Confirmation(request; observed_at = E.Control.monotonic(), witness)
                 end
                 report = C.calibrate_references(
-                    application,
-                    output;
-                    remote,
-                    reference,
-                    timeout_s = 600,
-                    confirm,
+                    application, output; remote, reference, timeout_s = 600, confirm
                 )
                 if haskey(ENV, "PIPEWIREAORTC_REFERENCE_EVIDENCE")
                     PipeWireAORTC.Common.write_yaml(
@@ -203,14 +200,14 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                         header = "Generated by test/reference_calibration.jl; candidate receipt only, no raw frames retained.",
                     )
                 end
-                @info "Classic reference candidate" eligible_rois=report["eligible_roi_count"] qualification_status=report["qualification_status"] qualification_eligibility_passed=report["qualification_eligibility_passed"] reference_difference_rms_pixels=report["qualification_reference_difference_rms_pixels"]
+                @info "Classic reference candidate" eligible_rois = report["eligible_roi_count"] qualification_status = report["qualification_status"] qualification_eligibility_passed = report["qualification_eligibility_passed"] reference_difference_rms_pixels = report["qualification_reference_difference_rms_pixels"]
                 @test isfile(joinpath(output, "result.yaml"))
                 @test report["activation"] == "candidate-only"
                 @test !report["interaction_matrix_accepted"]
                 @test report["dark_status"] == "Valid"
                 @test report["lamp_status"] in ("Valid", "Invalid", "NoEligible")
                 @test length(report["stages"]) ==
-                      (report["eligible_roi_count"] == 0 ? 2 : 3)
+                    (report["eligible_roi_count"] == 0 ? 2 : 3)
                 @test length(requests) == length(report["stages"])
                 @test all(request.kind == :simulated for request in requests)
                 @test all(
@@ -225,7 +222,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                     stage in report["stages"]
                 )
                 @test length(
-                    unique(stage["acquisition_domain"] for stage in report["stages"]),
+                    unique(stage["acquisition_domain"] for stage in report["stages"])
                 ) == length(report["stages"])
                 if length(report["stages"]) == 3
                     lamp, qualification = report["stages"][2:3]
@@ -233,19 +230,17 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                     @test qualification["first_start_ns"] >= lamp["last_end_ns"]
                     @test qualification["samples"] == counts.qualification.samples
                     @test qualification["parameter_sha256"]["active"] ==
-                          report["artifacts"]["active"]["sha256"]
+                        report["artifacts"]["active"]["sha256"]
                     @test qualification["parameter_sha256"]["reference-slopes"] ==
-                          report["artifacts"]["reference-slopes"]["sha256"]
+                        report["artifacts"]["reference-slopes"]["sha256"]
                 end
-                types = Dict("Bool"=>Bool, "Float32"=>Float32, "Float64"=>Float64)
+                types = Dict("Bool" => Bool, "Float32" => Float32, "Float64" => Float64)
                 products = Dict{String,Array}()
                 for (name, artifact) in report["artifacts"]
                     path = joinpath(output, artifact["path"])
                     @test C.digest(path) == artifact["sha256"]
                     input = PipeWireAORTC.Artifacts.FITSArtifact(
-                        path;
-                        hdu = artifact["hdu"],
-                        axes = artifact["axes"],
+                        path; hdu = artifact["hdu"], axes = artifact["axes"]
                     )
                     products[name] = PipeWireAORTC.Artifacts.prepare(
                         input,
@@ -278,7 +273,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                     remote,
                     reference,
                     timeout_s = 600,
-                    cancelled = ()->cancelled[],
+                    cancelled = () -> cancelled[],
                     confirm = cancel_confirmation,
                 )
                 @test !ispath(cancelled_output)
@@ -286,7 +281,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                 stale_confirmation = function (request, witness)
                     other = P.Request(
                         request.run,
-                        request.serial+1,
+                        request.serial + 1,
                         request.stage,
                         request.condition,
                         request.configuration_identity,
@@ -307,7 +302,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                 @test !ispath(stale_output)
                 wrong_witness_output = joinpath(directory, "wrong-witness")
                 wrong_witness =
-                    (request, witness)->P.Confirmation(
+                    (request, witness) -> P.Confirmation(
                         request;
                         observed_at = E.Control.monotonic(),
                         witness = "other-owner",
@@ -323,11 +318,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                 @test !ispath(wrong_witness_output)
                 timeout_output = joinpath(directory, "timeout")
                 @test_throws ArgumentError C.calibrate_references(
-                    application,
-                    timeout_output;
-                    remote,
-                    reference,
-                    timeout_s = 1e-9,
+                    application, timeout_output; remote, reference, timeout_s = 1e-9
                 )
                 @test !ispath(timeout_output)
                 @test sort(readdir(directory)) == ["candidate"]

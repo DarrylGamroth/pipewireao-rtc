@@ -53,17 +53,15 @@ end
         @test length(sources[3].channels) == 2
         @test getproperty.(sources[3].channels, :index) == (0, 1)
         @test getproperty.(sources[3].channels, :name) ==
-              ("uncorrected_atmosphere_rms", "corrected_pupil_rms")
+            ("uncorrected_atmosphere_rms", "corrected_pupil_rms")
         @test getproperty.(sources[3].channels, :title) ==
-              ("Uncorrected atmosphere RMS", "Corrected pupil RMS")
+            ("Uncorrected atmosphere RMS", "Corrected pupil RMS")
         @test getproperty.(sources[3].channels, :units) == ("nm OPD", "nm OPD")
         @test isempty(Observation.rms_source_options(nothing, Dict{String,String}()))
-        for index = 1:4
+        for index in 1:4
             stamp = step_hil_frame_at!(science.boundary, science.driver)
             @test Observation.submit!(
-                observation;
-                generation = UInt64(3),
-                pts = Int64(index * 2_000_000),
+                observation; generation = UInt64(3), pts = Int64(index * 2_000_000)
             )
             @test !Observation.submit!(observation; generation = UInt64(3))
             @test Observation.poll!(observation)
@@ -82,15 +80,15 @@ end
                 values = Float64.(before[observation.pupil])
                 expected = std(values; corrected = false) * 1e9
                 actual = sqrt(mean(abs2, Float64.(observation.wavefront[display_pupil])))
-                @test actual ≈ expected atol=1e-4
-                @test observation.rms[1, 2] ≈ actual atol=1e-4
+                @test actual ≈ expected atol = 1e-4
+                @test observation.rms[1, 2] ≈ actual atol = 1e-4
                 @test observation.rms[1, 1] ≈
-                      std(
+                    std(
                     Float64.(
-                        graph_output(science.graph, :atmosphere_opd)[observation.pupil],
+                        graph_output(science.graph, :atmosphere_opd)[observation.pupil]
                     );
                     corrected = false,
-                )*1e9 atol=1e-4
+                ) * 1e9 atol = 1e-4
                 @test abs(mean(Float64.(observation.wavefront[display_pupil]))) < 1e-4
             finally
                 Observation.release!(observation)
@@ -100,8 +98,7 @@ end
         # Force a partial admission through the public snapshot seam. Neither
         # member may be silently reused; cold drain must recover both slots.
         @test try_snapshot_graph_output!(
-            observation.atmosphere_snapshot;
-            generation = UInt64(3),
+            observation.atmosphere_snapshot; generation = UInt64(3)
         )
         @test_throws ArgumentError Observation.submit!(observation; generation = UInt64(3))
         @test observation.busy[]
@@ -111,12 +108,12 @@ end
         @test Observation.submit!(observation; generation = UInt64(4))
         @test Observation.poll!(observation)
         @test snapshot_metadata(observation.snapshot) ==
-              snapshot_metadata(observation.atmosphere_snapshot)
+            snapshot_metadata(observation.atmosphere_snapshot)
         Observation.release!(observation)
         # The public calibration path has no atmosphere; ordinary optical
         # images still prepare, with no invented reference measurement.
         flat = instrument.prepare_calibration_system(;
-            pupil_resolution = size(observation.pupil, 1),
+            pupil_resolution = size(observation.pupil, 1)
         )
         flat_observation = Observation.prepare(flat.definition, flat.graph)
         try
@@ -135,8 +132,7 @@ end
         Observation.close!(observation)
     end
     @test !any(
-        id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"),
-        keys(Base.loaded_modules),
+        id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"), keys(Base.loaded_modules)
     )
     @test isempty(
         filter(

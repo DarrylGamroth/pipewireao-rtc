@@ -9,7 +9,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "zemax_component_documents.jl"))
         declaration = IC.load_simulation(path)
         @test Set(declaration.templates) == Set(("proper_optical_train_f32",))
         @test IC.physical_definition(declaration.instrument).optical_planes.entrance_pupil.diameter_m ==
-              0.012
+            0.012
         node = only(declaration.graphs["scc"]["nodes"])
         @test node["type"] == "proper_optical_train_f32"
         @test node["preparation"] == simulation["components"]["optics"]["preparation"]
@@ -40,21 +40,13 @@ end
     configured = Dict("pupil_resolution" => 4)
     schema = Dict("properties" => Dict("pupil_resolution" => Dict("type" => "integer")))
     for datatype in ("Float32", "Float64"),
-        resolution in
-        (4, "pupil_resolution", Dict("\$ref" => "/settings/pupil_resolution"))
+        resolution in (4, "pupil_resolution", Dict("\$ref" => "/settings/pupil_resolution"))
 
         binding = Dict(
-            "kind" => "pupil_amplitude",
-            "resolution" => resolution,
-            "type" => datatype,
+            "kind" => "pupil_amplitude", "resolution" => resolution, "type" => datatype
         )
         @test IC._validate_bindings(
-            Dict("amplitude" => binding),
-            Dict(),
-            configured,
-            schema,
-            Dict(),
-            @__DIR__
+            Dict("amplitude" => binding), Dict(), configured, schema, Dict(), @__DIR__
         ) === nothing
     end
     for binding in (
@@ -65,12 +57,7 @@ end
         )...,
     )
         @test_throws ArgumentError IC._validate_bindings(
-            Dict("amplitude" => binding),
-            Dict(),
-            configured,
-            schema,
-            Dict(),
-            @__DIR__
+            Dict("amplitude" => binding), Dict(), configured, schema, Dict(), @__DIR__
         )
     end
 end
@@ -121,7 +108,7 @@ end
         end
     end
     @test_throws ArgumentError IC._validate_optical_planes(
-        Dict("entrance_pupil" => Dict("diameter_m" => Inf)),
+        Dict("entrance_pupil" => Dict("diameter_m" => Inf))
     )
     mktempdir() do directory
         physical, simulation = zemax_component_documents(directory)
@@ -133,14 +120,14 @@ end
             )
             simulation["components"]["optics"]["preparation"]["recipe"] = "simulation/escape.yaml"
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load_simulation(
-                write_external_optical_documents(directory, physical, simulation),
+                write_external_optical_documents(directory, physical, simulation)
             )
         end
         mkpath(joinpath(directory, "generated"))
         write(joinpath(directory, "generated", "recipe.yaml"), "schema_version: 1\n")
         simulation["components"]["optics"]["preparation"]["recipe"] = "generated/recipe.yaml"
         @test_throws ArgumentError IC.load_simulation(
-            write_external_optical_documents(directory, physical, simulation),
+            write_external_optical_documents(directory, physical, simulation)
         )
     end
 end
@@ -175,8 +162,9 @@ end
         )
         # A native, unimported branch remains executable in the core-only loader.
         native = deepcopy(only(simulation["graphs"]["scc"]["nodes"]))
-        native["name"], native["type"], native["config"] =
-            "optics", "caller_supplied_optics", Dict("value" => 2)
+        native["name"], native["type"], native["config"] = "optics",
+        "caller_supplied_optics",
+        Dict("value" => 2)
         graphs = Dict{String,Any}("optical-reference" => simulation["graphs"]["scc"])
         for mode in ("production", "calibration")
             graph = deepcopy(simulation["graphs"]["llowfs"])
@@ -184,8 +172,9 @@ end
             graphs[mode] = graph
         end
         simulation["graphs"] = graphs
-        simulation["hil"] =
-            Dict("command" => "optics.pupil_opd", "frame" => "optics.output")
+        simulation["hil"] = Dict(
+            "command" => "optics.pupil_opd", "frame" => "optics.output"
+        )
         simulation["wire_contracts"] = [
             Dict(
                 "frame_encoding" => "uint16",
@@ -197,18 +186,18 @@ end
         path = write_external_optical_documents(directory, physical, simulation)
         declaration = IC.load_simulation(path)
         @test Set(keys(declaration.graphs)) ==
-              Set(("production", "calibration", "optical-reference"))
+            Set(("production", "calibration", "optical-reference"))
         graph = IC.graph_document(declaration, IC.settings(declaration))
         @test only(graph["nodes"])["config"] == Dict("value" => 2)
         @test declaration.document["wire_contracts"] == simulation["wire_contracts"]
         @test declaration.document["hil"] ==
-              Dict("command_input" => "pupil_opd", "frame_output" => "intensity")
+            Dict("command_input" => "pupil_opd", "frame_output" => "intensity")
         @test "simulation/zemax.yaml" in
-              IC.artifact_paths(declaration, IC.settings(declaration))
+            IC.artifact_paths(declaration, IC.settings(declaration))
         identity = IC.prescription_identity(declaration, IC.settings(declaration))
         @test startswith(identity, "sha256:")
         @test !any(
-            id->id.name in (
+            id -> id.name in (
                 "AdaptiveOpticsSim",
                 "AdaptiveOpticsSimPipeWireHIL",
                 "Proper",
@@ -218,15 +207,13 @@ end
             keys(Base.loaded_modules),
         )
         @test_throws ArgumentError IC.graph_document(
-            declaration,
-            IC.settings(declaration);
-            simulation_graph = "optical-reference",
+            declaration, IC.settings(declaration); simulation_graph = "optical-reference"
         )
         @test_throws ArgumentError IC.simulation_graph_sources(
-            Dict("hil" => Dict(), "graphs" => Dict("optical-reference" => Dict())),
+            Dict("hil" => Dict(), "graphs" => Dict("optical-reference" => Dict()))
         )
         @test_throws ArgumentError IC.simulation_graph_sources(
-            Dict("graphs" => Dict("invalid/name" => Dict())),
+            Dict("graphs" => Dict("invalid/name" => Dict()))
         )
     end
 end
@@ -239,59 +226,58 @@ end
         mkpath(joinpath(directory, "models"))
         for name in ("reference", "alternate", "bound")
             write(
-                joinpath(directory, "models", name*".bin"),
-                "opaque compiled model metadata asset: "*name,
+                joinpath(directory, "models", name * ".bin"),
+                "opaque compiled model metadata asset: " * name,
             )
         end
         node(path) = Dict(
-            "name"=>"optics",
-            "type"=>"compiled_optical_paths_f32",
-            "config"=>Dict("model_path"=>path),
+            "name" => "optics",
+            "type" => "compiled_optical_paths_f32",
+            "config" => Dict("model_path" => path),
         )
         for graph in values(simulation["graphs"])
             graph["nodes"] = [node("models/reference.bin")]
         end
-        simulation["profiles"]["alternate"] =
-            Dict("nodes"=>[node("models/alternate.bin")], "parameters"=>[])
+        simulation["profiles"]["alternate"] = Dict(
+            "nodes" => [node("models/alternate.bin")], "parameters" => []
+        )
         simulation["profiles"]["bound"] = deepcopy(simulation["profiles"]["alternate"])
-        simulation["settings_schema"]["properties"]["profile"]["enum"] =
-            ["reference", "alternate", "bound"]
-        simulation["settings_schema"]["properties"]["model_path"] = Dict("type"=>"string")
+        simulation["settings_schema"]["properties"]["profile"]["enum"] = [
+            "reference", "alternate", "bound"
+        ]
+        simulation["settings_schema"]["properties"]["model_path"] = Dict("type" => "string")
         simulation["defaults"]["model_path"] = "models/bound.bin"
         simulation["settings_bindings"] = [
             Dict(
-                "setting"=>"model_path",
-                "nodes"=>["optics"],
-                "config"=>"model_path",
-                "profiles"=>["bound"],
+                "setting" => "model_path",
+                "nodes" => ["optics"],
+                "config" => "model_path",
+                "profiles" => ["bound"],
             ),
         ]
         declaration = IC.load_simulation(
-            write_external_optical_documents(directory, physical, simulation),
+            write_external_optical_documents(directory, physical, simulation)
         )
         for profile in ("reference", "alternate", "bound")
-            configured = IC.settings(declaration, Dict("profile"=>profile))
-            path = "models/"*profile*".bin"
+            configured = IC.settings(declaration, Dict("profile" => profile))
+            path = "models/" * profile * ".bin"
             @test IC.artifact_paths(declaration, configured) == Set([path])
             graph = IC.resolve_graph_document(
-                declaration.graphs["scc"],
-                declaration,
-                configured,
-                "scc",
+                declaration.graphs["scc"], declaration, configured, "scc"
             )
             @test graph ==
-                  IC.graph_document(declaration, configured; simulation_graph = "scc")
+                IC.graph_document(declaration, configured; simulation_graph = "scc")
             identity = IC.prescription_identity(declaration, configured)
             original = read(joinpath(directory, path))
-            write(joinpath(directory, path), "changed compiled model: "*profile)
+            write(joinpath(directory, path), "changed compiled model: " * profile)
             @test IC.prescription_identity(declaration, configured) != identity
             write(joinpath(directory, path), original)
             @test IC.prescription_identity(declaration, configured) == identity
         end
         @test only(declaration.graphs["scc"]["nodes"])["config"]["model_path"] ==
-              "models/reference.bin"
+            "models/reference.bin"
         @test !any(
-            id->id.name in (
+            id -> id.name in (
                 "AdaptiveOpticsSim",
                 "AdaptiveOpticsSimPipeWireHIL",
                 "Proper",

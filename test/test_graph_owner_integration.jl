@@ -51,11 +51,7 @@ filter.graph = {
         )
         for execution in ("complete-frame", "row-block")
             options = FilterGraphIsland.parse_arguments([
-                "--graph",
-                graph_path,
-                "--check",
-                "--execution",
-                execution,
+                "--graph", graph_path, "--check", "--execution", execution
             ])
             arrays = Ref{Any}(nothing)
             graph = FilterGraphIsland.prepare_service_graph(
@@ -73,24 +69,22 @@ filter.graph = {
                 @test JuliaFilterGraph.parameter_formats(graph).background.shape == (8, 6)
                 outputs = (; calibrated = zeros(Float32, 2, 6))
                 inputs = (; raw = fill(UInt16(100), 2, 6))
-                for block = 0:3
+                for block in 0:3
                     metadata = (;
                         raw = FilterGraphAlgorithms.SampleMetadata(
-                            0,
-                            2block;
-                            terminal = block == 3,
+                            0, 2block; terminal = block == 3
                         )
                     )
                     JuliaFilterGraph.process!(outputs, graph, inputs, metadata)
                     @test outputs.calibrated ==
-                          100.0f0 .- background[(2block+1):(2block+2), :]
+                        100.0f0 .- background[(2block+1):(2block+2), :]
                 end
             finally
                 FilterGraphIsland.close_execution(graph)
             end
         end
         @test PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:background] ==
-              background
+            background
         options = FilterGraphIsland.parse_arguments(["--graph", graph_path, "--check"])
         for (array, axes) in (
             (zeros(Float32, 8, 5), (2, 1)),
@@ -165,11 +159,7 @@ parameters = [
             outputs = NamedTuple{(Symbol("selected-pixels"), :regions)}((selected, regions))
             @test all(
                 values(
-                    JuliaFilterGraph.process!(
-                        outputs,
-                        graph,
-                        (; image, calibrated = image),
-                    ),
+                    JuliaFilterGraph.process!(outputs, graph, (; image, calibrated = image))
                 ),
             )
             @test selected == Float32[2, 4, 6]
@@ -178,7 +168,7 @@ parameters = [
             FilterGraphIsland.close_execution(graph)
         end
         @test eltype(
-            PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:mask],
+            PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:mask]
         ) === Bool
         write_fits(mask_path, UInt8[0 2 0; 1 0 1])
         @test_throws ArgumentError prepare()

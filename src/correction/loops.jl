@@ -97,8 +97,8 @@ end
         return Hsm.transition!(sm, :Unknown)
     end
     if sm.requested_generation != sm.active_generation ||
-       request.active_generation != sm.active_generation ||
-       request.requested_generation <= request.active_generation
+        request.active_generation != sm.active_generation ||
+        request.requested_generation <= request.active_generation
         latch_unknown!(sm, :invalid_request_generation)
         return Hsm.transition!(sm, :Unknown)
     end
@@ -267,9 +267,7 @@ function requested!(
     closed::Bool,
 )
     Hsm.dispatch!(
-        sm,
-        :Requested,
-        (; instance, requested_generation, active_generation, closed),
+        sm, :Requested, (; instance, requested_generation, active_generation, closed)
     )
     return nothing
 end
@@ -288,9 +286,7 @@ function observed!(
     closed::Bool,
 )
     Hsm.dispatch!(
-        sm,
-        :Observed,
-        (; instance, requested_generation, active_generation, closed),
+        sm, :Observed, (; instance, requested_generation, active_generation, closed)
     )
     return nothing
 end
@@ -318,7 +314,7 @@ clock_ns(clock) = clock_value(Common.monotonic_ns(clock))
 function clock_value(now::Integer)
     0 <= now <= typemax(UInt64) || throw(
         ArgumentError(
-            "correction-loop clock must return an integer UInt64 nanosecond count",
+            "correction-loop clock must return an integer UInt64 nanosecond count"
         ),
     )
     return UInt64(now)
@@ -433,11 +429,7 @@ function prop_value(::Type{T}, props::PipeWireAO.SPA.Props, name::String) where 
 end
 
 function observe!(
-    ::Val{:requested},
-    sm::Loop,
-    requested::Int64,
-    active::Int64,
-    closed::Bool,
+    ::Val{:requested}, sm::Loop, requested::Int64, active::Int64, closed::Bool
 )
     requested!(sm, sm.instance, requested, active, closed)
     return nothing
@@ -452,8 +444,7 @@ function expire!(sm::Loop, now::UInt64, timeout_ns::UInt64)
 end
 
 function (observer::Observer)(
-    phase::Union{Val{:requested},Val{:observed}},
-    props::PipeWireAO.SPA.Props,
+    phase::Union{Val{:requested},Val{:observed}}, props::PipeWireAO.SPA.Props
 )
     now = try
         clock_ns(observer.clock)

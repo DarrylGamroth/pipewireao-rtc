@@ -24,28 +24,16 @@ Base.size(::OversizedFigure) = (4096,)
 Base.getindex(::OversizedFigure, ::Int) =
     error("oversized figure was read before capacity validation")
 const binding = CalibrationActionClient.Binding(
-    "/tmp/private-core",
-    "owner.actions",
-    UInt32(7),
-    Int64(42),
+    "/tmp/private-core", "owner.actions", UInt32(7), Int64(42)
 )
 const identity = Envelope.ControllerIdentity(UInt32(7), typemax(UInt64), Int64(11))
 header(op, result = Int32(0)) =
     Envelope.ReplyHeader(identity, Int64(42), Int64(1), UInt32(op), result)
 function connection(
-    result;
-    op = 1,
-    run = typemax(UInt64),
-    serial = UInt64(1),
-    transport = Int32(0),
+    result; op = 1, run = typemax(UInt64), serial = UInt64(1), transport = Int32(0)
 )
     reply = Codec.Completion(
-        header(op, transport),
-        Lifecycle.Connected,
-        run,
-        serial,
-        result,
-        "",
+        header(op, transport), Lifecycle.Connected, run, serial, result, ""
     )
     fake = FakeConnection(reply, nothing, Any[], false)
     return CalibrationActionClient.Connection(
@@ -60,28 +48,27 @@ function connection(
     )
 end
 @testset "native calibration action client preserves correlation and known outcomes" begin
-    cursor = Codec.AcquisitionCursor(typemax(UInt64), UInt64(1)<<63, UInt64(0), UInt64(0))
+    cursor = Codec.AcquisitionCursor(typemax(UInt64), UInt64(1) << 63, UInt64(0), UInt64(0))
     client = connection(Codec.Held(cursor))
-    answer = CalibrationActionClient.request!(client, Dict("kind"=>"hold"), "held")
-    @test answer["cursor"]["domain"]==typemax(UInt64)
-    @test only(client.client.commands).run==typemax(UInt64)
-    @test only(client.client.commands).serial==1
-    @test client.can_restore && length(client.records)==1
-    @test client.records[1]["reply"]["run"]==typemax(UInt64)
+    answer = CalibrationActionClient.request!(client, Dict("kind" => "hold"), "held")
+    @test answer["cursor"]["domain"] == typemax(UInt64)
+    @test only(client.client.commands).run == typemax(UInt64)
+    @test only(client.client.commands).serial == 1
+    @test client.can_restore && length(client.records) == 1
+    @test client.records[1]["reply"]["run"] == typemax(UInt64)
     for reason in
         (Codec.Endpoint, Codec.Cancelled, Codec.ProbeClipped, Codec.InvalidEvidence)
-        client=connection(Codec.Failed(reason))
+        client = connection(Codec.Failed(reason))
         @test_throws ArgumentError CalibrationActionClient.request!(
-            client,
-            Codec.Hold(),
-            "held",
+            client, Codec.Hold(), "held"
         )
-        @test client.can_restore==(reason===Codec.InvalidEvidence)
+        @test client.can_restore == (reason === Codec.InvalidEvidence)
         @test !client.client.closed
     end
-    client=connection(Codec.Released(); op = 7)
-    @test CalibrationActionClient.request!(client, Codec.Release(), "released")["kind"]=="released"
-    @test length(client.records)==1
+    client = connection(Codec.Released(); op = 7)
+    @test CalibrationActionClient.request!(client, Codec.Release(), "released")["kind"] ==
+        "released"
+    @test length(client.records) == 1
     close(client)
     @test client.client.closed
 end
@@ -117,7 +104,7 @@ end
 end
 
 @testset "unknown native outcomes retire the action client" begin
-    cursor=Codec.AcquisitionCursor(1, 1, 0, 0)
+    cursor = Codec.AcquisitionCursor(1, 1, 0, 0)
     for client in (
         connection(Codec.Held(cursor); run = UInt64(2)),
         connection(Codec.Held(cursor); serial = UInt64(2)),
@@ -125,70 +112,59 @@ end
         connection(Codec.Released()),
         connection(Codec.Adopted(cursor, Float32[1], false); op = 2),
     )
-        requested=client.client.answer.header.operation==2 ?
-                  Codec.Adopt(UInt32(0), Float32[1, 2]) : Codec.Hold()
+        requested =
+            client.client.answer.header.operation == 2 ?
+            Codec.Adopt(UInt32(0), Float32[1, 2]) : Codec.Hold()
         @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
-            client,
-            requested,
-            "held",
+            client, requested, "held"
         )
         @test !client.can_restore && client.client.closed
     end
-    client=connection(Codec.Held(cursor))
-    client.client.failure=Generic.UnknownOutcome("private core disconnected")
+    client = connection(Codec.Held(cursor))
+    client.client.failure = Generic.UnknownOutcome("private core disconnected")
     @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
-        client,
-        Codec.Hold(),
-        "held",
+        client, Codec.Hold(), "held"
     )
     @test client.client.closed && !client.can_restore
     @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
-        client,
-        Codec.Hold(),
-        "held",
+        client, Codec.Hold(), "held"
     )
-    @test length(client.client.commands)==1 # Never submit a retry.
+    @test length(client.client.commands) == 1 # Never submit a retry.
 end
 @testset "local validation does not consume or submit native requests" begin
-    client=connection(Codec.Released(); op = 7)
+    client = connection(Codec.Released(); op = 7)
     for value in (
-        Dict("kind"=>"adopt", "probe"=>0, "figure"=>[NaN]),
-        Dict("kind"=>"adopt", "probe"=>true, "figure"=>[1]),
-        Dict("kind"=>"hold", "extra"=>1),
-        Dict("kind"=>"unknown"),
+        Dict("kind" => "adopt", "probe" => 0, "figure" => [NaN]),
+        Dict("kind" => "adopt", "probe" => true, "figure" => [1]),
+        Dict("kind" => "hold", "extra" => 1),
+        Dict("kind" => "unknown"),
         Dict(
-            "kind"=>"restore",
-            "figure"=>[1],
-            "rule"=>Dict("kind"=>"model_time", "duration_ns"=>0),
+            "kind" => "restore",
+            "figure" => [1],
+            "rule" => Dict("kind" => "model_time", "duration_ns" => 0),
         ),
     )
         @test_throws ArgumentError CalibrationActionClient.request!(
-            client,
-            value,
-            "released",
+            client, value, "released"
         )
     end
-    @test client.serial==0 && isempty(client.client.commands)
+    @test client.serial == 0 && isempty(client.client.commands)
     for value in (
-        Dict("kind"=>"adopt", "probe"=>0, "figure"=>OversizedFigure()),
+        Dict("kind" => "adopt", "probe" => 0, "figure" => OversizedFigure()),
         Dict(
-            "kind"=>"restore",
-            "figure"=>OversizedFigure(),
-            "rule"=>Dict("kind"=>"immediate"),
+            "kind" => "restore",
+            "figure" => OversizedFigure(),
+            "rule" => Dict("kind" => "immediate"),
         ),
     )
         @test_throws ArgumentError CalibrationActionClient.request!(
-            client,
-            value,
-            "released",
+            client, value, "released"
         )
     end
-    @test client.serial==0 && isempty(client.client.commands)
-    client.serial=typemax(UInt64)
+    @test client.serial == 0 && isempty(client.client.commands)
+    client.serial = typemax(UInt64)
     @test_throws OverflowError CalibrationActionClient.request!(
-        client,
-        Codec.Release(),
-        "released",
+        client, Codec.Release(), "released"
     )
     @test isempty(client.client.commands)
     for values in (("remote", "node", 0, 1), ("remote", "node", 1, 0))
@@ -197,27 +173,27 @@ end
 end
 
 @testset "zero Collect retains known correlated responses for caller validation" begin
-    cursor=Codec.AcquisitionCursor(1, 1, 0, 0)
-    exposure=Codec.Exposure(1, 1, 1, 0, 1)
-    client=connection(Codec.Responses(Float32[], [exposure], true); op = 4)
-    supplied=Dict(
-        "kind"=>"collect",
-        "probe"=>0,
-        "after"=>Dict("domain"=>1, "generation"=>1, "sequence"=>0, "model_ns"=>0),
-        "measurements"=>0,
-        "frames"=>1,
+    cursor = Codec.AcquisitionCursor(1, 1, 0, 0)
+    exposure = Codec.Exposure(1, 1, 1, 0, 1)
+    client = connection(Codec.Responses(Float32[], [exposure], true); op = 4)
+    supplied = Dict(
+        "kind" => "collect",
+        "probe" => 0,
+        "after" => Dict("domain" => 1, "generation" => 1, "sequence" => 0, "model_ns" => 0),
+        "measurements" => 0,
+        "frames" => 1,
     )
-    result=CalibrationActionClient.complete!(client, supplied)
-    @test isempty(result.values) && length(result.exposures)==1 && result.valid
-    @test only(client.client.commands).action.measurements==0
+    result = CalibrationActionClient.complete!(client, supplied)
+    @test isempty(result.values) && length(result.exposures) == 1 && result.valid
+    @test only(client.client.commands).action.measurements == 0
     @test client.can_restore
     for (measurements, frames, result) in (
         (1, 1, Codec.Responses(Float32[], [exposure], true)),
         (0, 1, Codec.Responses(Float32[1], [exposure], true)),
         (0, 2, Codec.Responses(Float32[], [exposure], true)),
     )
-        client=connection(result; op = 4)
-        action=Codec.Collect(UInt32(0), cursor, UInt32(measurements), UInt32(frames))
+        client = connection(result; op = 4)
+        action = Codec.Collect(UInt32(0), cursor, UInt32(measurements), UInt32(frames))
         # The terminal outcome is known. Scientific dimensions are checked by
         # the caller, which must retain explicit restoration on invalid evidence.
         @test CalibrationActionClient.complete!(client, action) === result

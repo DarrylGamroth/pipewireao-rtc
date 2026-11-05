@@ -30,11 +30,10 @@ optical_measurement(::CenterOfGravity, image, branch) =
 optical_fitted_modes(::SelectedPixels, selected, count) = collect(1:count)
 optical_fitted_modes(::CenterOfGravity, selected, count) = selected
 optical_recovery_error(::SelectedPixels, recovery, selection, selected) =
-    LA.norm(recovery-selection)/sqrt(length(selected))
+    LA.norm(recovery - selection) / sqrt(length(selected))
 optical_recovery_error(::CenterOfGravity, recovery, selection, selected) =
-    LA.norm(recovery[selected, selected]-selection[selected, selected])/sqrt(
-        length(selected),
-    )
+    LA.norm(recovery[selected, selected] - selection[selected, selected]) /
+    sqrt(length(selected))
 
 optical_branch(kind::SelectedPixels, branch, coordinates, reference) =
     merge(branch, (; measurement_kind = kind))
@@ -58,7 +57,7 @@ function optical_measurement_report!(::CenterOfGravity, report)
 end
 
 optical_modal_reference(::SelectedPixels, measurement) =
-    -(measurement.reconstructor*optical_measurement(measurement.reference, measurement))
+    -(measurement.reconstructor * optical_measurement(measurement.reference, measurement))
 optical_modal_reference(::CenterOfGravity, measurement) =
     zeros(Float32, size(measurement.reconstructor, 1))
 optical_measurement_parameters!(::SelectedPixels, parameters, prefix, measurement) = nothing
@@ -69,10 +68,7 @@ end
 optical_measurement_diagnostics!(::SelectedPixels, diagnostics, prefix, measurement) =
     nothing
 function optical_measurement_diagnostics!(
-    ::CenterOfGravity,
-    diagnostics,
-    prefix,
-    measurement,
+    ::CenterOfGravity, diagnostics, prefix, measurement
 )
     diagnostics[prefix*"reference-centroid"] = measurement.reference_centroid
     return nothing

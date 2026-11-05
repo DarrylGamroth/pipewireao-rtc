@@ -20,8 +20,7 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
         )
         options = FilterGraphIsland.parse_arguments(["--graph", path, "--check"])
         graph = FilterGraphIsland.prepare_service_graph(
-            options;
-            declarations = FilterGraphIsland.algorithm_declarations(options),
+            options; declarations = FilterGraphIsland.algorithm_declarations(options)
         )
         try
             owner = E.analysis_input_owner(graph)
@@ -49,7 +48,7 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
                 error
             end
             @test failure isa PipeWireAO.PipeWireError &&
-                  failure.operation == :pw_ndarray_filter_connect
+                failure.operation == :pw_ndarray_filter_connect
         finally
             FilterGraphIsland.close_execution(graph)
         end

@@ -5,27 +5,27 @@ validate_optical_target(
     target::Union{
         AdaptiveOpticsSim.Backends.HostComputeDevice,
         AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{
-            AdaptiveOpticsSim.Backends.AMDGPUBackend,
+            AdaptiveOpticsSim.Backends.AMDGPUBackend
         },
         AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{
-            AdaptiveOpticsSim.Backends.CUDABackend,
+            AdaptiveOpticsSim.Backends.CUDABackend
         },
     },
 ) = nothing
 validate_optical_target(target) = throw(
-    ArgumentError("optical calibration supports explicit host, AMDGPU or CUDA targets"),
+    ArgumentError("optical calibration supports explicit host, AMDGPU or CUDA targets")
 )
 
 validate_optical_reference_target(
     target::Union{
         AdaptiveOpticsSim.Backends.HostComputeDevice,
         AdaptiveOpticsSim.Backends.AcceleratorComputeDevice{
-            AdaptiveOpticsSim.Backends.AMDGPUBackend,
+            AdaptiveOpticsSim.Backends.AMDGPUBackend
         },
     },
 ) = nothing
 validate_optical_reference_target(target) = throw(
-    ArgumentError("upstream optical reference supports explicit host or AMDGPU targets"),
+    ArgumentError("upstream optical reference supports explicit host or AMDGPU targets")
 )
 
 validate_optical_expectation_target(target::AdaptiveOpticsSim.Backends.HostComputeDevice) =
@@ -35,13 +35,10 @@ validate_optical_expectation_target(target) = throw(
 )
 
 function validate_expectation_sensor(
-    sensor::AdaptiveOpticsSim.Detectors.EMCCDSensor,
-    params,
+    sensor::AdaptiveOpticsSim.Detectors.EMCCDSensor, params
 )
     validate_expectation_emccd_law(
-        sensor.operating_mode,
-        sensor.output_path,
-        sensor.multiplication_model,
+        sensor.operating_mode, sensor.output_path, sensor.multiplication_model
     )
     params.full_well === nothing &&
     sensor.register_full_well === nothing &&
@@ -49,7 +46,7 @@ function validate_expectation_sensor(
     params.binning == 1 &&
     params.dark_current == 0 || throw(
         ArgumentError(
-            "host expectation requires the qualified unsaturated linear EMCCD law",
+            "host expectation requires the qualified unsaturated linear EMCCD law"
         ),
     )
     return nothing

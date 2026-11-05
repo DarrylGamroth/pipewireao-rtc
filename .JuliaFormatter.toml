@@ -1,4 +1,4 @@
-style = "default"
+style = "blue"
 ignore = [
     "test/data/**",
     "docs/evidence/**",
@@ -11,5 +11,20 @@ ignore = [
 ]
 indent = 4
 margin = 92
+max_iterations = 3
 format_docstrings = false
 format_markdown = false
+# Normalize operator spacing. BlueStyle also expands chained ternaries.
+# Disable optional syntax rewrites and implicit Any field annotations.
+always_use_return = false
+short_to_long_function_def = false
+always_for_in = true
+import_to_using = false
+pipe_to_function_call = false
+conditional_to_if = false
+separate_kwargs_with_semicolon = false
+whitespace_in_kwargs = true
+whitespace_ops_in_indices = false
+remove_extra_newlines = false
+indent_submodule = false
+annotate_untyped_fields_with_any = false

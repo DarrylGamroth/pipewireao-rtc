@@ -38,10 +38,7 @@ end
 
 """Publish Preparing before the existing owner prepares its science or plant."""
 function Runtime(
-    profile::P,
-    remote::AbstractString,
-    name::AbstractString,
-    instance::Int64,
+    profile::P, remote::AbstractString, name::AbstractString, instance::Int64
 ) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc.acquisition.lifecycle.owner")
@@ -161,14 +158,15 @@ function complete!(
         ticket.header.operation,
         result,
     )
-    completion =
-        Client.encode_completion(runtime.profile, header, lifecycle, snapshot, message)
+    completion = Client.encode_completion(
+        runtime.profile, header, lifecycle, snapshot, message
+    )
     Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
     return nothing
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Runtime, deadline::Float64; check = ()->nothing)
+function flush_terminal!(runtime::Runtime, deadline::Float64; check = () -> nothing)
     Client.deadline_check(deadline, check)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)

@@ -38,11 +38,11 @@ end
     mktempdir() do directory
         physical, simulation = external_optical_documents()
         physical["optical_paths"] = Dict(
-            "scc"=>Dict("sensor"=>"scc", "lyot_stop_port"=>"transmitted"),
-            "llowfs"=>Dict("sensor"=>"llowfs", "lyot_stop_port"=>"reflected"),
+            "scc" => Dict("sensor" => "scc", "lyot_stop_port" => "transmitted"),
+            "llowfs" => Dict("sensor" => "llowfs", "lyot_stop_port" => "reflected"),
         )
         for sensor in values(physical["wavefront_sensors"])
-            sensor["acquisition"] = Dict("exposure_duration_s"=>0.002)
+            sensor["acquisition"] = Dict("exposure_duration_s" => 0.002)
         end
         path = write_external_optical_documents(directory, physical, simulation)
         authored_response!(directory, physical, simulation; mtf = true)
@@ -50,7 +50,7 @@ end
         simulation["observations"]["llowfs"]["graph"] = "llowfs_response"
         simulation["graphs"] = Dict{String,Any}(simulation["graphs"])
         simulation["graphs"]["llowfs_response"] = "simulation/low_order_response.yaml"
-        config=simulation["components"]["low_order_detector"]["config"]
+        config = simulation["components"]["low_order_detector"]["config"]
         config["pixel_sampling_m"] = [0.003, 0.003] # diameter / declared pupil resolution
         config["photon_noise"] = false
         config["readout_noise"] = false
@@ -58,10 +58,8 @@ end
             simulation["components"]["low_order_detector"]["template"] = detector
             write_external_optical_documents(directory, physical, simulation)
             target = HostComputeDevice()
-            prepared=IC.prepare_external_pupil(
-                path;
-                target,
-                execution = StreamGraphExecution(),
+            prepared = IC.prepare_external_pupil(
+                path; target, execution = StreamGraphExecution()
             )
             @test keys(prepared.graphs) == (:llowfs, :scc)
             @test all(graph -> graph.target === target, prepared.graphs)
@@ -69,8 +67,8 @@ end
             @test hasproperty(prepared.observations.llowfs, :response)
             @test !hasproperty(prepared.observations.scc, :response)
             @test prepared.observations.llowfs.response.frame_schema ==
-                  config["frame_schema"]
-            emissions=Any[]
+                config["frame_schema"]
+            emissions = Any[]
             emit(name, image, metadata) = push!(emissions, (copy(image), metadata))
             step_external_pupil!(
                 emit,
@@ -79,34 +77,32 @@ end
                 ones(4, 4),
                 ModelTimestamp(0),
                 ModelDuration(2_000_000);
-                domain = ntuple(_->UInt8(1), 16),
+                domain = ntuple(_ -> UInt8(1), 16),
                 generation = UInt64(1),
                 sequence = UInt64(1),
             )
-            @test length(emissions)==2
-            response=only(
+            @test length(emissions) == 2
+            response = only(
                 filter(
-                    item->get(item[2], :quantity, :intensity)==:detector_frame,
+                    item -> get(item[2], :quantity, :intensity) == :detector_frame,
                     emissions,
                 ),
             )
             @test response[1] ≈
-                  Float32.(prepared.exposures.llowfs.image .* 100 .* 0.002 .* 0.8)
+                Float32.(prepared.exposures.llowfs.image .* 100 .* 0.002 .* 0.8)
             @test_throws AlgorithmGraphs.AlgorithmGraphError IC.prepare_external_pupil(
-                path;
-                target,
-                execution = GroupedStreamGraphExecution((:unknown_node,)),
+                path; target, execution = GroupedStreamGraphExecution((:unknown_node,))
             )
-            config["pixel_sampling_m"]=[0.001, 0.001]
+            config["pixel_sampling_m"] = [0.001, 0.001]
             write_external_optical_documents(directory, physical, simulation)
             @test_throws AlgorithmGraphs.AlgorithmGraphError IC.prepare_external_pupil(path)
-            config["pixel_sampling_m"]=[0.003, 0.003]
+            config["pixel_sampling_m"] = [0.003, 0.003]
         end
         physical["wavefront_sensors"]["llowfs"]["expected_schema"] = "example.incompatible/1"
         write_external_optical_documents(directory, physical, simulation)
         @test_throws ArgumentError IC.prepare_external_pupil(path)
         physical["wavefront_sensors"]["llowfs"]["expected_schema"] = config["frame_schema"]
-        config["exposure_duration_s"]=0.001
+        config["exposure_duration_s"] = 0.001
         write_external_optical_documents(directory, physical, simulation)
         @test_throws ArgumentError IC.prepare_external_pupil(path)
     end
@@ -115,8 +111,9 @@ end
 @testset "physical camera permits an explicit ROI with an unknown sensor origin" begin
     mktempdir() do directory
         physical, simulation = external_optical_documents()
-        physical["optical_paths"] =
-            Dict("llowfs"=>Dict("sensor"=>"llowfs", "lyot_stop_port"=>"reflected"))
+        physical["optical_paths"] = Dict(
+            "llowfs" => Dict("sensor" => "llowfs", "lyot_stop_port" => "reflected")
+        )
         path = write_external_optical_documents(directory, physical, simulation)
         authored_response!(directory, physical, simulation)
         simulation["observations"]["llowfs"] = pop!(simulation["observations"], "low_order")
@@ -127,10 +124,10 @@ end
         config["pixel_sampling_m"] = [0.003, 0.003]
         camera = physical["wavefront_sensors"]["llowfs"]
         camera["detector"] = Dict(
-            "name"=>"CRED2",
-            "rows"=>12,
-            "columns"=>14,
-            "pixel_sampling_m"=>[0.003, 0.003],
+            "name" => "CRED2",
+            "rows" => 12,
+            "columns" => 14,
+            "pixel_sampling_m" => [0.003, 0.003],
         )
         write_external_optical_documents(directory, physical, simulation)
         plant = IC.prepare_external_pupil(path)
@@ -142,7 +139,7 @@ end
             IC.settings(declaration),
             plant,
             :llowfs,
-            "sha256:"*repeat("a", 64),
+            "sha256:" * repeat("a", 64),
         )
         @test contract.properties["detector.roi-origin-known"] == "false"
         @test contract.properties["detector.roi-shape"] == "8,8"
@@ -161,7 +158,7 @@ end
             IC.settings(declaration),
             known,
             :llowfs,
-            "sha256:"*repeat("a", 64),
+            "sha256:" * repeat("a", 64),
         )
         @test contract.properties["detector.roi-origin-known"] == "true"
         @test contract.properties["detector.roi-origin"] == "4,6"

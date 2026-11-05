@@ -43,8 +43,9 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "zemax_component_documents.jl"))
         )
         for graph in values(simulation["graphs"])
             push!(graph["nodes"], Dict("name" => "mtf"))
-            graph["links"] =
-                [Dict("source" => "optics.output", "destination" => "mtf.input")]
+            graph["links"] = [
+                Dict("source" => "optics.output", "destination" => "mtf.input")
+            ]
             only(graph["outputs"])["source"] = "mtf.output"
         end
         path = write_external_optical_documents(directory, physical, simulation)
@@ -83,7 +84,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "zemax_component_documents.jl"))
         step_graph!(system.graph)
         image = copy(graph_output(system.graph, :intensity))
         @test all(isfinite, image)
-        @test sum(image) ≈ 12 rtol=2e-5
+        @test sum(image) ≈ 12 rtol = 2e-5
         graph_input(system.graph, :pupil_amplitude) .*= 2
         step_graph!(system.graph)
         @test graph_output(system.graph, :intensity) ≈ 4 .* image
@@ -151,16 +152,16 @@ end
         )
         production = deepcopy(simulation["graphs"]["scc"])
         PipeWireAORTC.Common.write_yaml(
-            joinpath(directory, "simulation", "production.yaml"),
-            production,
+            joinpath(directory, "simulation", "production.yaml"), production
         )
         simulation["graphs"] = Dict(
             "production" => "simulation/production.yaml",
             "calibration" => deepcopy(production),
             "optical-reference" => deepcopy(production),
         )
-        simulation["hil"] =
-            Dict("command" => "optics.pupil_opd", "frame" => "optics.output")
+        simulation["hil"] = Dict(
+            "command" => "optics.pupil_opd", "frame" => "optics.output"
+        )
         simulation["wire_contracts"] = [
             Dict(
                 "frame_encoding" => "uint16",
@@ -199,14 +200,13 @@ end
             generated_settings = IC.settings(generated, overrides)
             @test generated_settings == source_settings
             @test IC.prescription_identity(generated, generated_settings) ==
-                  IC.prescription_identity(source, source_settings)
+                IC.prescription_identity(source, source_settings)
             for mode in ("production", "calibration", "optical-reference")
-                expected =
-                    IC.graph_document(source, source_settings; simulation_graph = mode)
+                expected = IC.graph_document(
+                    source, source_settings; simulation_graph = mode
+                )
                 actual = IC.graph_document(
-                    generated,
-                    generated_settings;
-                    simulation_graph = mode,
+                    generated, generated_settings; simulation_graph = mode
                 )
                 @test actual == expected
                 config = only(actual["nodes"])["config"]
@@ -220,15 +220,15 @@ end
             @test generated_system.boundary !== nothing
             @test generated_system.driver !== nothing
             @test size(graph_output(generated_system.graph, :intensity)) ==
-                  (generated_settings["resolution"], generated_settings["resolution"])
+                (generated_settings["resolution"], generated_settings["resolution"])
             for system in (source_system, generated_system)
                 fill!(graph_input(system.graph, :pupil_amplitude), 1)
                 step_hil_frame!(system.boundary)
             end
             @test hil_frame_buffer(generated_system.boundary) ≈
-                  hil_frame_buffer(source_system.boundary)
+                hil_frame_buffer(source_system.boundary)
             @test sum(hil_frame_buffer(generated_system.boundary)) ≈
-                  generated_settings["pupil_resolution"]^2 rtol=2e-5
+                generated_settings["pupil_resolution"]^2 rtol = 2e-5
         end
         @test all(read(path) == bytes for (path, bytes) in prepared_bytes)
         @test Set(
@@ -246,13 +246,11 @@ end
         write(source_path, read(source_path, String) * "# altered authored source\n")
         @test_throws ArgumentError IC.load_simulation(generated_path)
         @test_throws ArgumentError IC.prescription_identity(
-            generated,
-            IC.settings(generated),
+            generated, IC.settings(generated)
         )
         write(source_path, authored[source_path])
         @test IC.prescription_identity(
-            IC.load_simulation(generated_path),
-            IC.settings(generated),
+            IC.load_simulation(generated_path), IC.settings(generated)
         ) == IC.prescription_identity(source, IC.settings(source))
     end
 end
@@ -262,25 +260,25 @@ end
         physical, simulation = zemax_component_documents(directory)
         graph = simulation["graphs"]["scc"]
         screen = Dict(
-            "surface"=>1,
-            "input"=>"mirror_opd",
-            "size"=>[4, 4],
-            "axes"=>[2, 1],
-            "diameter_m"=>0.012,
-            "schema"=>"example.opd-metres/1",
-            "outside_opd_m"=>0,
+            "surface" => 1,
+            "input" => "mirror_opd",
+            "size" => [4, 4],
+            "axes" => [2, 1],
+            "diameter_m" => 0.012,
+            "schema" => "example.opd-metres/1",
+            "outside_opd_m" => 0,
         )
         only(graph["nodes"])["config"] = Dict(
-            "phase_screens"=>[screen],
-            "pupil_grid"=>Dict("size"=>[4, 4], "axes"=>[2, 1], "diameter_m"=>0.012),
+            "phase_screens" => [screen],
+            "pupil_grid" => Dict("size" => [4, 4], "axes" => [2, 1], "diameter_m" => 0.012),
         )
         simulation["bindings"]["mirror_opd"] = deepcopy(simulation["bindings"]["pupil_opd"])
         push!(
             graph["inputs"],
             Dict(
-                "name"=>"mirror_opd",
-                "binding"=>"mirror_opd",
-                "destination"=>"optics.mirror_opd",
+                "name" => "mirror_opd",
+                "binding" => "mirror_opd",
+                "destination" => "optics.mirror_opd",
             ),
         )
         path = write_external_optical_documents(directory, physical, simulation)
@@ -290,20 +288,19 @@ end
         @test !haskey(config, "phase_screens")
         @test config["pupil_grid"]["center_pixel"] == [2.5, 2.5]
         @test config["pupil_grid"]["sampling_m"] == [0.003, 0.003]
-        @test only(filter(s->s["op"]=="add_opd", config["steps"]))["input"] == "mirror_opd"
+        @test only(filter(s -> s["op"] == "add_opd", config["steps"]))["input"] ==
+            "mirror_opd"
         system = IC.prepare_system(path; simulation_graph = "scc")
         fill!(graph_input(system.graph, :pupil_opd), 0)
         fill!(graph_input(system.graph, :pupil_amplitude), 1)
         fill!(graph_input(system.graph, :mirror_opd), 1e-7)
         step_graph!(system.graph)
         image = copy(graph_output(system.graph, :intensity))
-        @test all(isfinite, image) && sum(image)>0
+        @test all(isfinite, image) && sum(image) > 0
         AdaptiveOpticsSim.Optics.Zemax.prepare(directory; yamlfmt = nothing)
         generated = IC.load_simulation(joinpath(directory, "generated/simulation.yaml"))
         @test IC.graph_document(
-            generated,
-            IC.settings(generated);
-            simulation_graph = "scc",
+            generated, IC.settings(generated); simulation_graph = "scc"
         ) == document
     end
 end

@@ -498,10 +498,15 @@ every existing module has completed migration.
   suffixes. Names describe responsibilities and protocol versions rather than
   implementation history. Keep instrument-specific adapters in their owning
   packages. Preserve exact protocol vocabulary and immutable historical evidence.
-- Format maintained Julia with JuliaFormatter 2.14.8 DefaultStyle, four-space
+- Format maintained Julia with JuliaFormatter 2.14.8 BlueStyle, four-space
   indentation and a 92-character margin. `.JuliaFormatter.toml` is authoritative.
   Keep the formatter in an isolated tooling environment, not the package
-  dependencies. The reproducible formatting command is:
+  dependencies. Disable optional syntax rewrites and implicit `Any` field
+  annotations. BlueStyle consistently spaces operators and expands chained
+  ternaries into ordinary `if`/`elseif` branches. Use explicit `return nothing`
+  for an empty early return. Preserve branch conditions, results, calls and
+  literal values; formatting does not authorize scientific changes. The
+  reproducible formatting command is:
 
   ```sh
   julia --project=/path/to/isolated-juliaformatter -e 'using JuliaFormatter; format("."; throw_on_error=true)'

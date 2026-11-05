@@ -14,10 +14,12 @@ function _validate_optical_filters(value)
             ("wavelength_m", "transmission"),
             "optical filter $name",
         )
-        wavelengths =
-            _declaration_array(filter["wavelength_m"], "optical filter $name wavelength_m")
-        transmission =
-            _declaration_array(filter["transmission"], "optical filter $name transmission")
+        wavelengths = _declaration_array(
+            filter["wavelength_m"], "optical filter $name wavelength_m"
+        )
+        transmission = _declaration_array(
+            filter["transmission"], "optical filter $name transmission"
+        )
         2 <= length(wavelengths) <= 4096 && length(wavelengths) == length(transmission) ||
             throw(ArgumentError("optical filter $name requires 2:4096 paired samples"))
         all(isfinite_positive, wavelengths) &&
@@ -27,7 +29,7 @@ function _validate_optical_filters(value)
             ),
         )
         all(value -> isfinite_real(value) && 0 <= value <= 1, transmission) || throw(
-            ArgumentError("optical filter $name transmission must be finite in [0,1]"),
+            ArgumentError("optical filter $name transmission must be finite in [0,1]")
         )
     end
     return nothing
@@ -40,8 +42,7 @@ function validate_optical_spectra(configured, instrument)
         throw(ArgumentError("spectra replaces the root wavelength_um setting"))
     spectra = _declaration_object(configured["spectra"], "simulation spectra")
     paths = _declaration_object(
-        get(instrument, "optical_paths", Dict()),
-        "physical optical paths",
+        get(instrument, "optical_paths", Dict()), "physical optical paths"
     )
     !isempty(paths) && Set(keys(spectra)) == Set(keys(paths)) || throw(
         ArgumentError("simulation spectra must cover every physical optical path exactly"),
@@ -71,7 +72,7 @@ function validate_optical_spectra(configured, instrument)
         allowed = isempty(installed) ? ("none",) : installed
         filter in allowed || throw(
             ArgumentError(
-                "spectrum $name selects a filter not installed in that optical path",
+                "spectrum $name selects a filter not installed in that optical path"
             ),
         )
     end
@@ -98,8 +99,7 @@ function resolve_optical_settings_schema!(document, instrument; editable = false
             "type" => "object",
             "title" => name,
             "additionalProperties" => false,
-            "required" =>
-                ["wavelength_um", "fractional_bandwidth", "samples", "filter"],
+            "required" => ["wavelength_um", "fractional_bandwidth", "samples", "filter"],
             "properties" => Dict(
                 "wavelength_um" => Dict(
                     "type" => "number",

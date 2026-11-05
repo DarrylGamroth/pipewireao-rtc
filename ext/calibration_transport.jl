@@ -45,14 +45,12 @@ function publish_calibration_probe!(probe, stream)
             extent = sizeof(probe.figure)
             copyto!(reinterpret(Float32, PW.buffer_memory(data, extent)), probe.figure)
             PW.set_chunk!(data; size = extent, stride = sizeof(Float32))
-            records=PW.initialize_metadata!(probe.source_buffer)
+            records = PW.initialize_metadata!(probe.source_buffer)
             PW.set_buffer_header!(
-                probe.source_buffer,
-                PW.BufferHeader(0, 0, 0, 0, probe.sequence),
+                probe.source_buffer, PW.BufferHeader(0, 0, 0, 0, probe.sequence)
             )
             PW.set_reference_timestamp!(
-                records,
-                PW.reference_timestamp_now(probe.reference_clock),
+                records, PW.reference_timestamp_now(probe.reference_clock)
             )
             PW.queue_buffer!(probe.source_buffer, stream)
             queued = true
@@ -95,7 +93,7 @@ function receive_calibration_feedback!(probe, stream)
             probe.published == probe.sequence &&
             probe.received != probe.sequence &&
             header.sequence == probe.sequence || throw(
-                ArgumentError("calibration feedback is duplicate, unarmed or unrelated"),
+                ArgumentError("calibration feedback is duplicate, unarmed or unrelated")
             )
             data = PW.buffer_data(probe.feedback_buffer)
             chunk = PW.chunk_info(data)
@@ -130,10 +128,7 @@ function calibration_probe_format(format, rate)
     fraction.num > 0 && fraction.denom > 0 ||
         throw(ArgumentError("calibration rate must be positive"))
     return PW.NdArrayFormat(
-        PW.NdArray.F32_LE,
-        format.shape;
-        rate = fraction,
-        layout = PW.NdArray.ROW_MAJOR,
+        PW.NdArray.F32_LE, format.shape; rate = fraction, layout = PW.NdArray.ROW_MAJOR
     )
 end
 
@@ -145,8 +140,7 @@ function calibration_probe_parameters(format, schema; required_reference_timesta
         PW.Pod(
             PW.metadata_param(
                 PW.MetadataRequirement(
-                    PW.SPA.META_REFERENCE_TIMESTAMP;
-                    required = required_reference_timestamp,
+                    PW.SPA.META_REFERENCE_TIMESTAMP; required = required_reference_timestamp
                 ),
             ),
         ),
@@ -156,10 +150,9 @@ end
 function calibration_probe_state!(probe, old, current, message)
     probe.closed && return nothing
     if current == PW.LibPipeWire.PW_STREAM_STATE_ERROR ||
-       (current == PW.LibPipeWire.PW_STREAM_STATE_UNCONNECTED && old != current)
+        (current == PW.LibPipeWire.PW_STREAM_STATE_UNCONNECTED && old != current)
         calibration_probe_failure!(
-            probe,
-            ErrorException("calibration probe stream disconnected: $message"),
+            probe, ErrorException("calibration probe stream disconnected: $message")
         )
     else
         probe.notify()
@@ -207,13 +200,13 @@ function prepare_calibration_probe(
         PW.with_thread_loop_lock(loop) do _
             probe.source = PW.Stream(
                 core,
-                prefix*"-requested";
+                prefix * "-requested";
                 properties = Dict(
-                    "node.name"=>prefix*"-requested",
-                    "node.want-driver"=>"true",
-                    "priority.driver"=>"100",
-                    "node.reliable"=>"true",
-                    "pipewireao.header.pts.clock"=>"unavailable",
+                    "node.name" => prefix * "-requested",
+                    "node.want-driver" => "true",
+                    "priority.driver" => "100",
+                    "node.reliable" => "true",
+                    "pipewireao.header.pts.clock" => "unavailable",
                 ),
                 on_state_changed = (stream, old, current, message) ->
                     calibration_probe_state!(probe, old, current, message),
@@ -222,11 +215,11 @@ function prepare_calibration_probe(
             )
             probe.feedback = PW.Stream(
                 core,
-                prefix*"-constraint-feedback";
+                prefix * "-constraint-feedback";
                 properties = Dict(
-                    "node.name"=>prefix*"-constraint-feedback",
-                    "node.reliable"=>"true",
-                    "pipewireao.header.pts.clock"=>"unavailable",
+                    "node.name" => prefix * "-constraint-feedback",
+                    "node.reliable" => "true",
+                    "pipewireao.header.pts.clock" => "unavailable",
                 ),
                 on_state_changed = (stream, old, current, message) ->
                     calibration_probe_state!(probe, old, current, message),
@@ -240,9 +233,7 @@ function prepare_calibration_probe(
                 :output;
                 flags = flags | PW.STREAM_DRIVER,
                 params = calibration_probe_parameters(
-                    requested,
-                    schema;
-                    required_reference_timestamp = true,
+                    requested, schema; required_reference_timestamp = true
                 ),
             )
             PW.connect!(
@@ -265,9 +256,7 @@ end
 
 "Stage one immutable command slot; feedback must finish before the slot is reused."
 function validate_calibration_probe(
-    probe::CalibrationProbe,
-    sequence::UInt64,
-    figure::AbstractVector,
+    probe::CalibrationProbe, sequence::UInt64, figure::AbstractVector
 )
     probe.closed && throw(InvalidStateException("calibration probe is closed", :closed))
     probe.failure[] === nothing || throw(probe.failure[])
@@ -362,7 +351,7 @@ function prepare_calibration_probes(
         for (name, descriptor) in pairs(commands)
             format = JuliaFilterGraph.input_formats(descriptor.graph).requested
             feedback = JuliaFilterGraph.output_formats(descriptor.graph)[Symbol(
-                "constraint-feedback",
+                "constraint-feedback"
             )]
             push!(
                 prepared,
@@ -374,15 +363,14 @@ function prepare_calibration_probes(
                     feedback.schema,
                     rate;
                     notify,
-                    prefix = prefix*"."*String(name),
+                    prefix = prefix * "." * String(name),
                     failure,
                     reference_clock,
                 ),
             )
         end
         return CalibrationProbes(
-            PW.main_loop(core),
-            NamedTuple{keys(commands)}(Tuple(prepared)),
+            PW.main_loop(core), NamedTuple{keys(commands)}(Tuple(prepared))
         )
     catch primary
         errors = Exception[primary]
@@ -415,8 +403,7 @@ function stage!(probes::CalibrationProbes, sequence::UInt64, figures::NamedTuple
             end
         catch error
             foreach(
-                probe -> calibration_probe_failure!(probe, error),
-                values(probes.probes),
+                probe -> calibration_probe_failure!(probe, error), values(probes.probes)
             )
             rethrow()
         end

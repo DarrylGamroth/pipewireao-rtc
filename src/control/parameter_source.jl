@@ -43,7 +43,7 @@ struct Profile <: Client.AbstractProfile end
 """Shared stateless parameter-source control profile instance."""
 const PROFILE = Profile()
 """Parameter-source bootstrap states, encoded as native UInt32 identifiers."""
-@enum Lifecycle::UInt32 Preparing=1 Prepared=2 Connected=3 Fault=4 Stopped=5
+@enum Lifecycle::UInt32 Preparing = 1 Prepared = 2 Connected = 3 Fault = 4 Stopped = 5
 @doc "The parameter source is loading and validating its cold declarations." Preparing
 @doc "The parameter source is prepared and awaits owner connection." Prepared
 @doc "The parameter source has completed its owner connection." Connected
@@ -61,9 +61,7 @@ Client.operation_id(::Profile, ::Command) = UInt32(14)
 Client.encode_request(::Profile, header::Envelope.RequestHeader, command::Command) =
     Runner.encode_request(header, command)
 function Client.decode_request(
-    ::Profile,
-    header::Envelope.RequestHeader,
-    payload::SPA.Struct,
+    ::Profile, header::Envelope.RequestHeader, payload::SPA.Struct
 )
     header.operation == 14 ||
         throw(ArgumentError("parameter source accepts only operation 14"))
@@ -187,10 +185,7 @@ function Client.decode_rejection(::Profile, input::Union{Pod,AbstractVector{UInt
     return Rejection(header, lifecycle, _text(payload.values[2]; empty = true))
 end
 function Client.encode_failure(
-    profile::Profile,
-    header::Envelope.ReplyHeader,
-    ::Lifecycle,
-    command::Command,
+    profile::Profile, header::Envelope.ReplyHeader, ::Lifecycle, command::Command
 )
     graph, inlet = command.args[1:2]
     return Client.encode_completion(
@@ -303,7 +298,7 @@ require explicit axes. These FITS files are decoded into owned memory before
 publication; no packed files are written. Legacy version 1 and native v1 live
 requests retain their raw-file semantics. A FITS preload is not a live update.
 """
-function read_declarations(path::AbstractString, wake::Base.Event; check = ()->nothing)
+function read_declarations(path::AbstractString, wake::Base.Event; check = () -> nothing)
     Base.ENDIAN_BOM == 0x04030201 ||
         throw(ArgumentError("parameter owner requires a little-endian host"))
     config = Common.read_json(path; maximum = 1024 * 1024)
@@ -315,8 +310,9 @@ function read_declarations(path::AbstractString, wake::Base.Event; check = ()->n
     mappings = Set{Tuple{String,String}}()
     names = Set{String}()
     total = 0
-    fields =
-        Set(("node_name", "graph", "inlet", "element_type", "shape", "layout", "schema"))
+    fields = Set((
+        "node_name", "graph", "inlet", "element_type", "shape", "layout", "schema"
+    ))
     for row in rows
         check()
         _declaration_fields(row, fields, fits_initial)
@@ -338,13 +334,17 @@ function read_declarations(path::AbstractString, wake::Base.Event; check = ()->n
         total = Base.checked_add(total, extent)
         total <= MAX_BYTES ||
             throw(ArgumentError("aggregate parameter payload exceeds 512 MiB"))
-        layout =
-            row["layout"] == "row-major" ? NdArray.ROW_MAJOR :
-            row["layout"] == "column-major" ? NdArray.COLUMN_MAJOR :
+        layout = if row["layout"] == "row-major"
+            NdArray.ROW_MAJOR
+        elseif row["layout"] == "column-major"
+            NdArray.COLUMN_MAJOR
+        else
             throw(ArgumentError("invalid parameter layout"))
+        end
         schema = _string(row["schema"]; empty = true, maximum = 16 * 1024)
-        initial =
-            get(row, fits_initial ? "initial_artifact" : "initial_payload_path", nothing)
+        initial = get(
+            row, fits_initial ? "initial_artifact" : "initial_payload_path", nothing
+        )
         if initial !== nothing
             if fits_initial
                 _initial_selection(initial)
@@ -358,7 +358,7 @@ function read_declarations(path::AbstractString, wake::Base.Event; check = ()->n
                     initial.axes !== nothing ||
                     throw(
                         ArgumentError(
-                            "multidimensional FITS artifacts require explicit axes",
+                            "multidimensional FITS artifacts require explicit axes"
                         ),
                     )
                 initial.axes === nothing ||
@@ -433,7 +433,7 @@ function _read_payload!(bytes::Vector{UInt8}, path::AbstractString; check)
     check()
     before = lstat(path)
     isfile(before) && before.size == length(bytes) || throw(
-        ArgumentError("parameter payload must be a regular file of the declared extent"),
+        ArgumentError("parameter payload must be a regular file of the declared extent")
     )
     flags =
         Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW |
@@ -528,8 +528,7 @@ function _publish_pending!(source::Source, stream)
             set_chunk!(data; size = length(source.bytes), stride = source.stride)
             set_buffer_size!(source.buffer, length(source.bytes) ÷ 4)
             set_buffer_header!(
-                source.buffer,
-                BufferHeader(0, 0, 0, 0, UInt64(source.sequence)),
+                source.buffer, BufferHeader(0, 0, 0, 0, UInt64(source.sequence))
             )
             _publication_valid!(source) || return nothing
             queue_buffer!(source.buffer, stream)
@@ -587,18 +586,17 @@ function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
             "object.linger" => "false",
         ),
         on_process = Process(source),
-        on_buffer_added = (stream, _buffer) ->
-            (_publish_pending!(source, stream); nothing),
+        on_buffer_added = (stream, _buffer) -> (_publish_pending!(source, stream); nothing),
         on_state_changed = (stream, old, current, message) -> begin
             if current == PipeWireAO.LibPipeWire.PW_STREAM_STATE_ERROR || (
                 current == PipeWireAO.LibPipeWire.PW_STREAM_STATE_UNCONNECTED &&
                 old != current
             )
                 source.failure = ErrorException(
-                    something(message, "parameter stream disconnected"),
+                    something(message, "parameter stream disconnected")
                 )
             elseif current == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
-                   source.phase == PENDING
+                source.phase == PENDING
                 _publish_pending!(source, stream)
                 if source.phase == PENDING && source.failure === nothing
                     try
@@ -640,8 +638,7 @@ function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
     # Compile callbacks without executing payload copies or graph/science work.
     precompile(source.stream.callbacks.on_process, (typeof(source.stream),))
     precompile(
-        source.stream.callbacks.on_param_changed,
-        (typeof(source.stream), UInt32, Pod),
+        source.stream.callbacks.on_param_changed, (typeof(source.stream), UInt32, Pod)
     )
     source.sequence = source.initial ? 1 : 0
     source.initial_pending = source.initial
@@ -655,8 +652,7 @@ function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
                 STREAM_NO_CONVERT,
         params = (
             ndarray_format(
-                source.format;
-                schema = isempty(source.schema) ? nothing : source.schema,
+                source.format; schema = isempty(source.schema) ? nothing : source.schema
             ),
             source.parameters...,
         ),
@@ -679,14 +675,7 @@ function _completion!(endpoint, ticket, source, result::Int32, message)
         result,
     )
     completion = Client.encode_completion(
-        PROFILE,
-        header,
-        graph,
-        inlet,
-        sequence,
-        submitted,
-        false,
-        message,
+        PROFILE, header, graph, inlet, sequence, submitted, false, message
     )
     Endpoint.complete!(endpoint, ticket, completion)
     return nothing
@@ -702,9 +691,7 @@ function run_owner(options, runtime)
     failures = Exception[]
     try
         sources = read_declarations(
-            options.config,
-            wake;
-            check = () -> Bootstrap.preparation_check!(runtime),
+            options.config, wake; check = () -> Bootstrap.preparation_check!(runtime)
         )
         all(
             source ->
@@ -712,7 +699,7 @@ function run_owner(options, runtime)
                 source.node_name != options.bootstrap_node,
             sources,
         ) || throw(
-            ArgumentError("parameter data and control endpoint names must be distinct"),
+            ArgumentError("parameter data and control endpoint names must be distinct")
         )
         Bootstrap.prepared!(runtime)
         connect_ticket = Bootstrap.take_connect!(runtime)
@@ -798,7 +785,7 @@ function run_owner(options, runtime)
                         )
                         with_thread_loop_lock(transport.loop) do _
                             selected.phase == IDLE || throw(
-                                ArgumentError("parameter publication already pending"),
+                                ArgumentError("parameter publication already pending")
                             )
                         end
                         _read_payload!(
@@ -826,9 +813,9 @@ function run_owner(options, runtime)
                             selected.failure === nothing || throw(selected.failure)
                             selected.revoked === nothing || throw(selected.revoked)
                             if selected.phase == PENDING &&
-                               selected.failure === nothing &&
-                               stream_state(stream) ==
-                               PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+                                selected.failure === nothing &&
+                                stream_state(stream) ==
+                                PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
                                 trigger_process!(stream)
                             end
                         end
@@ -938,7 +925,7 @@ function _owner_options(arguments)
     ]
     options = Common.cli_arguments(arguments; required)
     isabspath(options.config) && isabspath(options.remote) || throw(
-        ArgumentError("parameter owner requires absolute --config and --remote paths"),
+        ArgumentError("parameter owner requires absolute --config and --remote paths")
     )
     for name in (:bootstrap_node, :control_node)
         occursin(r"^[a-zA-Z0-9_.-]{1,128}$", getproperty(options, name)) ||

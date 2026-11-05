@@ -26,9 +26,7 @@ _mode_calibration_identity(identity::AbstractString) =
 # Cold composition of ordinary application/session/core configuration fragments.
 # There is no instrument identity or device plugin selection in this code.
 function merge_configuration(
-    base::AbstractDict,
-    fragment::AbstractDict;
-    replace_arrays = false,
+    base::AbstractDict, fragment::AbstractDict; replace_arrays = false
 )
     result = deepcopy(base)
     for (key, value) in fragment
@@ -39,9 +37,7 @@ function merge_configuration(
     return result
 end
 merge_configuration(
-    base::AbstractVector,
-    fragment::AbstractVector;
-    replace_arrays = false,
+    base::AbstractVector, fragment::AbstractVector; replace_arrays = false
 ) = replace_arrays ? deepcopy(fragment) : vcat(base, fragment)
 merge_configuration(base, fragment; replace_arrays = false) = deepcopy(fragment)
 
@@ -57,9 +53,7 @@ function resolve_mode(modes, name, ancestors = String[])
         parent = pop!(mode, "extends")
         _mode_parent(parent)
         mode = merge_configuration(
-            resolve_mode(modes, parent, [ancestors; name]),
-            mode;
-            replace_arrays = true,
+            resolve_mode(modes, parent, [ancestors; name]), mode; replace_arrays = true
         )
     end
     for key in ("application", "session", "core")
@@ -88,8 +82,9 @@ function selected_mode(source, profile)
     document = InstrumentConfiguration.bounded_yaml(path)
     Set(keys(document)) == Set(["default", "modes"]) ||
         throw(ArgumentError("invalid application modes fields"))
-    modes =
-        InstrumentConfiguration._declaration_object(document["modes"], "application modes")
+    modes = InstrumentConfiguration._declaration_object(
+        document["modes"], "application modes"
+    )
     1 <= length(modes) <= 64 || throw(ArgumentError("application requires 1:64 modes"))
     for name in keys(modes)
         resolve_mode(modes, name)

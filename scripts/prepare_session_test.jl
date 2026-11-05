@@ -23,14 +23,12 @@ function main(args)
     provenance = C.read_json(joinpath(output, "provenance.json"))
     provenance["session_runtime_test"] = Dict(
         "source_package" => package,
-        "source_descriptor_sha256" =>
-            C.sha256_file(joinpath(package, "deployment.conf")),
+        "source_descriptor_sha256" => C.sha256_file(joinpath(package, "deployment.conf")),
         "rtc_revision" => E.revision(PipeWireAORTC.package_root()),
     )
     C.write_json(joinpath(output, "provenance.json"), provenance)
     artifacts = Dict(
-        relpath(joinpath(parent, file), output) =>
-            C.sha256_file(joinpath(parent, file)) for
+        relpath(joinpath(parent, file), output) => C.sha256_file(joinpath(parent, file)) for
         (parent, _, files) in walkdir(output) for
         file in files if relpath(joinpath(parent, file), output) != "deployment.conf"
     )

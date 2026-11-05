@@ -20,8 +20,7 @@ cp(
 )
 owner = only(
     filter(
-        owner -> any(arg -> occursin("AOSOwner.main", arg), owner["argv"]),
-        spec["owners"],
+        owner -> any(arg -> occursin("AOSOwner.main", arg), owner["argv"]), spec["owners"]
     ),
 )
 index = something(findfirst(==("-e"), owner["argv"])) + 1
@@ -29,6 +28,7 @@ owner["argv"][index] =
     "using PipeWireAORTC; include(\"@PACKAGE@/classic_fft_oracle.jl\"); " *
     "Main.ClassicFFTOracle.record_native!(joinpath(ENV[\"PIPEWIREAO_RUNTIME_DIR\"],\"fft-oracle\")); " *
     "PipeWireAORTC.AOSOwner.main(ARGS)"
-spec["artifacts"]["classic_fft_oracle.jl"] =
-    C.sha256_file(joinpath(destination, "classic_fft_oracle.jl"))
+spec["artifacts"]["classic_fft_oracle.jl"] = C.sha256_file(
+    joinpath(destination, "classic_fft_oracle.jl")
+)
 C.write_json(joinpath(destination, "deployment.conf"), spec)

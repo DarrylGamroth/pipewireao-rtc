@@ -1,6 +1,6 @@
 # CPU optical source: measured DM and independent facility residual keep their
 # physical planes. The ordinary optical exposure owner retains F/U integration.
-function prepare_clocked_source(options, science; check = ()->nothing)
+function prepare_clocked_source(options, science; check = () -> nothing)
     # The facility/DM source stays on the host; optical and response graphs use
     # the selected target with the shared captured-only accelerator policy.
     source = IC.prepare_system(
@@ -14,7 +14,7 @@ function prepare_clocked_source(options, science; check = ()->nothing)
     size(command) == (options.command_count,) &&
     all(iszero, command) || throw(
         ArgumentError(
-            "clocked optical mirror requires a zero-initialized native Float32 command",
+            "clocked optical mirror requires a zero-initialized native Float32 command"
         ),
     )
     opd = graph_output(source.graph, :pupil_opd)
@@ -27,7 +27,7 @@ function prepare_clocked_source(options, science; check = ()->nothing)
     )
     eltype(amplitude) === Float32 &&
     all(value -> isfinite(value) && 0 <= value <= 1, amplitude) || throw(
-        ArgumentError("clocked source pupil amplitude must be finite passive Float32"),
+        ArgumentError("clocked source pupil amplitude must be finite passive Float32")
     )
     eltype(opd) === Float32 ||
         throw(ArgumentError("clocked source pupil OPD must be Float32"))
@@ -47,7 +47,7 @@ function prepare_clocked_source(options, science; check = ()->nothing)
     )
         eltype(graph_input(graph, :dm_opd)) === Float32 &&
         size(graph_input(graph, :dm_opd)) == size(dm_opd) || throw(
-            DimensionMismatch("physical mirror OPD differs from optical DM-plane input"),
+            DimensionMismatch("physical mirror OPD differs from optical DM-plane input")
         )
     end
     driver = FixedStepModelTimeDriver(PeriodicSchedule(; period_ns = options.period_ns))
@@ -109,14 +109,14 @@ function step_clocked_source!(emit, science, command; generation::UInt64)
     return sequence
 end
 
-function warmup_clocked_source!(emit, science, command; check = ()->nothing)
-    durations = map(exposure->exposure.duration_ns, values(science.plant.exposures))
+function warmup_clocked_source!(emit, science, command; check = () -> nothing)
+    durations = map(exposure -> exposure.duration_ns, values(science.plant.exposures))
     samples = cld(2maximum(durations), science.source_period_ns)
     0 < samples <= 4096 ||
         throw(ArgumentError("clocked optical warmup exceeds 4096 samples"))
     try
         fill!(command, 0)
-        for _ = 1:samples
+        for _ in 1:samples
             check()
             step_clocked_source!(emit, science, command; generation = UInt64(1))
         end
@@ -130,7 +130,7 @@ end
 function clocked_command_option(options)
     return PipeWireArrayStreamOptions(;
         node_name = options.command_node,
-        media_name = options.mirror*" native command",
+        media_name = options.mirror * " native command",
         buffers = options.command_buffers,
         reference_clock = prepare_reference_clock(options),
         metadata = (
@@ -140,13 +140,11 @@ function clocked_command_option(options)
         ),
         schema = options.command_schema,
         format = NdArrayFormat(
-            NdArray.F32_LE,
-            (options.command_count,);
-            layout = NdArray.ROW_MAJOR,
+            NdArray.F32_LE, (options.command_count,); layout = NdArray.ROW_MAJOR
         ),
         properties = Dict(
-            "optics.command-units"=>options.command_units,
-            "optics.calibration-identity"=>options.calibration_identity,
+            "optics.command-units" => options.command_units,
+            "optics.calibration-identity" => options.calibration_identity,
         ),
     )
 end

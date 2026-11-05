@@ -15,7 +15,7 @@ function _application_file(path::String)
     !isempty(path) &&
     !occursin('\0', path) &&
     !isabspath(path) &&
-    normpath(path)==path &&
+    normpath(path) == path &&
     !outside(path) &&
     lowercase(splitext(path)[2]) in (".yaml", ".yml") ||
         throw(ArgumentError("application must select a contained relative YAML file"))
@@ -31,8 +31,7 @@ end
 function application_defaults!(application)
     get!(application, "cpu-latency-us", nothing)
     D.validate_environment(
-        get!(application, "environment", Dict{String,Any}()),
-        "application",
+        get!(application, "environment", Dict{String,Any}()), "application"
     )
     for owner in get(application, "owners", [])
         _application_owner(owner)
@@ -42,8 +41,7 @@ function application_defaults!(application)
         session = application["session-runtime"]
         _application_session(session)
         D.validate_environment(
-            get!(session, "environment", Dict{String,Any}()),
-            "session-runtime",
+            get!(session, "environment", Dict{String,Any}()), "session-runtime"
         )
     end
     return application
@@ -51,7 +49,7 @@ end
 
 function prepare_runtime_configurations!(application, selected = nothing)
     path = joinpath(application, "rtc/application.yaml")
-    selected===nothing && !isfile(path) && return nothing
+    selected === nothing && !isfile(path) && return nothing
     authoring = selected === nothing ? source_application(application) : deepcopy(selected)
     entries = get(authoring, "runtime-configurations", [])
     InstrumentDefinition.array_value(entries) ||
@@ -67,21 +65,20 @@ function prepare_runtime_configurations!(application, selected = nothing)
         )
         source = D.relative_asset(application, entry["source"])
         name = InstrumentConfiguration._declaration_text(
-            entry["path"],
-            "runtime configuration destination",
+            entry["path"], "runtime configuration destination"
         )
         !isabspath(name) && !occursin('\0', name) ||
             throw(ArgumentError("runtime configuration destination must be relative"))
         destination = checked_path(joinpath(application, name))
         !outside(relpath(destination, application)) &&
-        destination != abspath(application) || throw(
-            ArgumentError("runtime configuration destination escapes application"),
-        )
+        destination != abspath(application) ||
+            throw(ArgumentError("runtime configuration destination escapes application"))
         lowercase(splitext(source)[2]) in (".yaml", ".yml") ||
             throw(ArgumentError("runtime configuration source must be YAML"))
-        source != destination && !(destination in destinations) && !ispath(destination) || throw(
-            ArgumentError("runtime configuration destination must be fresh and unique"),
-        )
+        source != destination && !(destination in destinations) && !ispath(destination) ||
+            throw(
+                ArgumentError("runtime configuration destination must be fresh and unique")
+            )
         push!(destinations, destination)
         format = entry["format"]
         format in ("json", "spa-json") ||
@@ -91,7 +88,7 @@ function prepare_runtime_configurations!(application, selected = nothing)
     end
     pop!(authoring, "runtime-configurations", nothing)
     !ispath(joinpath(application, "rtc/application.conf")) || throw(
-        ArgumentError("runtime application configuration must be generated from YAML"),
+        ArgumentError("runtime application configuration must be generated from YAML")
     )
     for entry in prepared
         if entry.format == "json"

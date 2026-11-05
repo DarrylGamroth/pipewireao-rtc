@@ -34,13 +34,13 @@ end
 
 _calibration_identity(value) = throw(
     ArgumentError(
-        "physical offsets require calibration, schema and command-order identities",
+        "physical offsets require calibration, schema and command-order identities"
     ),
 )
 _calibration_identity(value::AbstractString) =
     !isempty(value) || throw(
         ArgumentError(
-            "physical offsets require calibration, schema and command-order identities",
+            "physical offsets require calibration, schema and command-order identities"
         ),
     )
 _calibration_modes(modes, m) =
@@ -96,10 +96,10 @@ function Calibration(;
         throw(ArgumentError("physical offset limits must be finite positive values"))
     _calibration_time(max_age_ns, Int64)
     _calibration_time(silence_ns, UInt64)
-    norm(Float64.(Q)*Float64.(P)-I) <= span_rtol*sqrt(m) ||
+    norm(Float64.(Q) * Float64.(P) - I) <= span_rtol * sqrt(m) ||
         throw(ArgumentError("physical inverse does not recover calibrated modes"))
     limits = Float32.((command_limit_m, coefficient_limit_m))
-    all(x -> isfinite(x) && x>0, limits) ||
+    all(x -> isfinite(x) && x > 0, limits) ||
         throw(ArgumentError("limits are not representable Float32"))
     return Calibration(
         String(identity),
@@ -169,7 +169,7 @@ function Receiver(calibrations::NamedTuple; command_limit_m)
     isfinite(limit) && limit > 0 ||
         throw(ArgumentError("invalid total physical offset limit"))
     return Receiver(
-        Dict(name=>Contribution(c) for (name, c) in pairs(calibrations)),
+        Dict(name => Contribution(c) for (name, c) in pairs(calibrations)),
         limit,
         nothing,
         0,
@@ -178,12 +178,12 @@ function Receiver(calibrations::NamedTuple; command_limit_m)
 end
 
 function limit_violation(receiver::Receiver, combined)
-    maximum(abs, combined)<=receiver.command_limit_m || return :total_limit
-    coefficients = first(values(receiver.branches)).calibration.Q*combined
+    maximum(abs, combined) <= receiver.command_limit_m || return :total_limit
+    coefficients = first(values(receiver.branches)).calibration.Q * combined
     for contribution in values(receiver.branches)
         authority = contribution.calibration
-        maximum(i -> abs(coefficients[i]), authority.modes)<=authority.coefficient_limit_m ||
-            return :total_coefficient_limit
+        maximum(i -> abs(coefficients[i]), authority.modes) <=
+        authority.coefficient_limit_m || return :total_coefficient_limit
     end
     return nothing
 end
@@ -196,14 +196,13 @@ function disarm!(receiver::Receiver, branch::Symbol; reason::Symbol = :disarmed)
     contribution.reason = reason
     if changed
         violation = limit_violation(
-            receiver,
-            total!(zeros(Float32, length(contribution.value)), receiver),
+            receiver, total!(zeros(Float32, length(contribution.value)), receiver)
         )
-        if violation!==nothing
+        if violation !== nothing
             # Withdrawal can remove a cancelling command or tolerated mode
             # leakage. No intermediate unsafe remainder is ever submitted.
             for other in values(receiver.branches)
-                other===contribution && continue
+                other === contribution && continue
                 fill!(other.value, 0)
                 other.armed = other.present = false
                 other.reason = violation
@@ -222,7 +221,7 @@ end
 
 "Explicitly bind a stopped/reset branch to a source cohort; rearming always begins at zero."
 function arm!(receiver::Receiver, branch::Symbol, identity::AcquisitionIdentity)
-    identity.generation>0 && identity.sequence==0 ||
+    identity.generation > 0 && identity.sequence == 0 ||
         throw(ArgumentError("arming requires positive generation and sequence zero"))
     receiver.clock_identity === nothing &&
         throw(ArgumentError("upstream model clock is not admitted"))
@@ -236,29 +235,26 @@ function arm!(receiver::Receiver, branch::Symbol, identity::AcquisitionIdentity)
     return receiver
 end
 
-same_cohort(a, b) = a.domain==b.domain && a.generation==b.generation
+same_cohort(a, b) = a.domain == b.domain && a.generation == b.generation
 exposure_end(pts, duration) = throw(ArgumentError("invalid model exposure interval"))
 function exposure_end(pts::Int64, duration::UInt64)
-    pts>=0 && duration>0 && duration<=typemax(Int64) ||
+    pts >= 0 && duration > 0 && duration <= typemax(Int64) ||
         throw(ArgumentError("invalid model exposure interval"))
     return Base.checked_add(pts, Int64(duration))
 end
 
 "Observe actual upstream acquisition time; a changed cohort clears every downstream contribution."
 function observe_clock!(
-    receiver::Receiver,
-    identity::AcquisitionIdentity,
-    pts::Int64,
-    duration::UInt64,
+    receiver::Receiver, identity::AcquisitionIdentity, pts::Int64, duration::UInt64
 )
     endpoint = exposure_end(pts, duration)
-    identity.generation>0 && identity.sequence>0 ||
+    identity.generation > 0 && identity.sequence > 0 ||
         throw(ArgumentError("invalid upstream clock identity"))
     previous = receiver.clock_identity
     if previous !== nothing
         if !same_cohort(previous, identity)
             disarm!(receiver; reason = :upstream_cohort)
-        elseif identity.sequence<=previous.sequence || endpoint<receiver.clock_end_ns
+        elseif identity.sequence <= previous.sequence || endpoint < receiver.clock_end_ns
             disarm!(receiver; reason = :upstream_clock)
             return false
         end
@@ -292,39 +288,39 @@ function accept!(
     schema == calibration.schema &&
     calibration_identity == calibration.identity &&
     command_order == calibration.command_order || return reject(:contract)
-    same_cohort(something(c.identity), identity) && identity.sequence>c.last_sequence ||
+    same_cohort(something(c.identity), identity) && identity.sequence > c.last_sequence ||
         return reject(:source_cohort)
-    length(values)==length(c.value) && all(isfinite, values) || return reject(:payload)
-    maximum(abs, values)<=calibration.command_limit_m || return reject(:command_limit)
+    length(values) == length(c.value) && all(isfinite, values) || return reject(:payload)
+    maximum(abs, values) <= calibration.command_limit_m || return reject(:command_limit)
     endpoint = try
         exposure_end(pts, duration)
     catch
         return reject(:interval)
     end
-    pts>=c.end_ns &&
-    endpoint<=receiver.clock_end_ns &&
-    receiver.clock_end_ns-endpoint<=calibration.max_age_ns || return reject(:model_age)
-    c.present && now_ns<c.arrived_ns && return reject(:monotonic_clock)
-    coefficients = calibration.Q*values
-    projected = calibration.P*coefficients
+    pts >= c.end_ns &&
+    endpoint <= receiver.clock_end_ns &&
+    receiver.clock_end_ns - endpoint <= calibration.max_age_ns || return reject(:model_age)
+    c.present && now_ns < c.arrived_ns && return reject(:monotonic_clock)
+    coefficients = calibration.Q * values
+    projected = calibration.P * coefficients
     scale = norm(Float64.(values))
     # The absolute floor is only Float32 rounding at this vector's scale, never a
     # fixed physical tolerance that could admit a small arbitrary command.
-    norm(Float64.(projected)-values) <= calibration.span_rtol*scale ||
+    norm(Float64.(projected) - values) <= calibration.span_rtol * scale ||
         return reject(:physical_span)
-    maximum(abs, coefficients)<=calibration.coefficient_limit_m ||
+    maximum(abs, coefficients) <= calibration.coefficient_limit_m ||
         return reject(:coefficient_limit)
     outside = setdiff(axes(coefficients, 1), calibration.modes)
     norm(Float64.(coefficients[outside])) <=
-    calibration.span_rtol*norm(Float64.(coefficients)) || return reject(:mode_authority)
+    calibration.span_rtol * norm(Float64.(coefficients)) || return reject(:mode_authority)
     # Use the same Float32 addition order as total!: tolerable leakage from an
     # otherwise disjoint branch must not enlarge another branch's mode limit.
     combined = zeros(Float32, length(values))
     for other in Base.values(receiver.branches)
-        combined .+= other===c ? values : other.value
+        combined .+= other === c ? values : other.value
     end
     violation = limit_violation(receiver, combined)
-    violation===nothing || return reject(violation)
+    violation === nothing || return reject(violation)
     copyto!(c.value, values)
     c.last_sequence = identity.sequence
     c.end_ns, c.arrived_ns = endpoint, now_ns
@@ -338,9 +334,9 @@ end
 function expire!(receiver::Receiver, now_ns::UInt64)
     for (branch, c) in receiver.branches
         c.armed && c.present || continue
-        if now_ns<c.arrived_ns || now_ns-c.arrived_ns>c.calibration.silence_ns
+        if now_ns < c.arrived_ns || now_ns - c.arrived_ns > c.calibration.silence_ns
             disarm!(receiver, branch; reason = :silence)
-        elseif receiver.clock_end_ns-c.end_ns>c.calibration.max_age_ns
+        elseif receiver.clock_end_ns - c.end_ns > c.calibration.max_age_ns
             disarm!(receiver, branch; reason = :model_age)
         end
     end
@@ -348,7 +344,7 @@ function expire!(receiver::Receiver, now_ns::UInt64)
 end
 function total!(destination::AbstractVector{Float32}, receiver::Receiver)
     Base.require_one_based_indexing(destination)
-    length(destination)==length(first(values(receiver.branches)).value) ||
+    length(destination) == length(first(values(receiver.branches)).value) ||
         throw(DimensionMismatch("physical offset destination differs from command order"))
     fill!(destination, 0)
     for c in values(receiver.branches)

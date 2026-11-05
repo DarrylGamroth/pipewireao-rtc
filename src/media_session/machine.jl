@@ -44,64 +44,72 @@ _command(::Val{STATUS_OPERATION}) = Status()
 
 struct Properties <: AbstractCommand end
 
-const PROPERTIES_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties))
+const PROPERTIES_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:properties)
+)
 operation(::Properties) = PROPERTIES_OPERATION
 
 _command(::Val{PROPERTIES_OPERATION}) = Properties()
 
 struct PropertyGeneration <: AbstractCommand end
 
-const PROPERTY_GENERATION_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:property_generation))
+const PROPERTY_GENERATION_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:property_generation)
+)
 operation(::PropertyGeneration) = PROPERTY_GENERATION_OPERATION
 
 _command(::Val{PROPERTY_GENERATION_OPERATION}) = PropertyGeneration()
 
 struct ParameterGeneration <: AbstractCommand end
 
-const PARAMETER_GENERATION_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter_generation))
+const PARAMETER_GENERATION_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:parameter_generation)
+)
 operation(::ParameterGeneration) = PARAMETER_GENERATION_OPERATION
 
 _command(::Val{PARAMETER_GENERATION_OPERATION}) = ParameterGeneration()
 
 struct StopGroup <: AbstractCommand end
 
-const STOP_GROUP_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:stop_group))
+const STOP_GROUP_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:stop_group)
+)
 operation(::StopGroup) = STOP_GROUP_OPERATION
 
 _command(::Val{STOP_GROUP_OPERATION}) = StopGroup()
 
 struct StartGroup <: AbstractCommand end
 
-const START_GROUP_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:start_group))
+const START_GROUP_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:start_group)
+)
 operation(::StartGroup) = START_GROUP_OPERATION
 
 _command(::Val{START_GROUP_OPERATION}) = StartGroup()
 
 struct Stop <: AbstractCommand end
 
-const SESSION_STOP_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_stop))
+const SESSION_STOP_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:session_stop)
+)
 operation(::Stop) = SESSION_STOP_OPERATION
 
 _command(::Val{SESSION_STOP_OPERATION}) = Stop()
 
 struct Start <: AbstractCommand end
 
-const SESSION_START_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_start))
+const SESSION_START_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:session_start)
+)
 operation(::Start) = SESSION_START_OPERATION
 
 _command(::Val{SESSION_START_OPERATION}) = Start()
 
 struct SourceEnded <: AbstractCommand end
 
-const SOURCE_ENDED_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:source_ended))
+const SOURCE_ENDED_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:source_ended)
+)
 operation(::SourceEnded) = SOURCE_ENDED_OPERATION
 
 _command(::Val{SOURCE_ENDED_OPERATION}) = SourceEnded()
@@ -115,8 +123,9 @@ _command(::Val{RESET_OPERATION}) = Reset()
 
 struct SetProperties <: AbstractCommand end
 
-const PROPERTIES_SET_OPERATION =
-    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties_set))
+const PROPERTIES_SET_OPERATION = RunnerCodec.operation_id(
+    RunnerCodec.RunnerCommand(:properties_set)
+)
 operation(::SetProperties) = PROPERTIES_SET_OPERATION
 
 _command(::Val{PROPERTIES_SET_OPERATION}) = SetProperties()
@@ -998,7 +1007,7 @@ end
 end
 @on_event function (m::Machine, ::Configuring, ::WarmupRequested, r)
     if r.controller === nothing ||
-       (m.admission_controller !== nothing && r.controller != m.admission_controller)
+        (m.admission_controller !== nothing && r.controller != m.admission_controller)
         _reply!(m, r, :Failed; error = "Resource admission launcher incarnation changed")
     else
         m.admission_controller = r.controller
@@ -1009,10 +1018,7 @@ end
 @on_event function (m::Machine, ::AwaitingAdmission, ::AdmissionRequested, r)
     if m.admission_controller === nothing || r.controller != m.admission_controller
         _reply!(
-            m,
-            r,
-            :Failed;
-            error = "Resource admission requires prior launcher inspection",
+            m, r, :Failed; error = "Resource admission requires prior launcher inspection"
         )
         return Hsm.EventHandled
     end
@@ -1239,12 +1245,12 @@ submit!(m::Machine, r::Request) = (Hsm.dispatch!(m, _event(r.command), r); nothi
 submitted!(m::Machine, t::EffectTicket) =
     (Hsm.dispatch!(m, :Submitted, EffectSubmitted(t)); nothing)
 complete!(m::Machine, t::EffectTicket, result = nothing; at::Int64 = _now(m)) =
-    complete!(m, EffectCompleted(t,result,at))
+    complete!(m, EffectCompleted(t, result, at))
 complete!(m::Machine, event::EffectCompleted) =
     (Hsm.dispatch!(m, :Completion, event); nothing)
 fail!(m::Machine, t::EffectTicket, reason::AbstractString; submitted::Bool = true) =
-    fail!(m, EffectFailed(t,String(reason),submitted))
-fail!(m::Machine, event::EffectFailed) = (Hsm.dispatch!(m,:Failure,event); nothing)
+    fail!(m, EffectFailed(t, String(reason), submitted))
+fail!(m::Machine, event::EffectFailed) = (Hsm.dispatch!(m, :Failure, event); nothing)
 tick!(m::Machine) = (Hsm.dispatch!(m, :Tick); nothing)
 required_lost!(m::Machine, reason::AbstractString) =
     (Hsm.dispatch!(m, :RequiredLost, String(reason)); nothing)

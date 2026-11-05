@@ -67,12 +67,7 @@ directory(root) = Discovery.registry_directory(root)
             "rtc.supervisor",
         )
         @test_throws ArgumentError Discovery.SessionRecord(
-            "name",
-            SESSION_A,
-            current_pid(),
-            Int64(1),
-            "pipewire-0",
-            "rtc.supervisor",
+            "name", SESSION_A, current_pid(), Int64(1), "pipewire-0", "rtc.supervisor"
         )
         @test_throws ArgumentError Discovery.SessionRecord(
             "x"^257,
@@ -91,20 +86,10 @@ directory(root) = Discovery.registry_directory(root)
             "rtc.supervisor/0",
         )
         @test_throws ArgumentError Discovery.SessionRecord(
-            "label",
-            SESSION_A,
-            current_pid(),
-            Int64(1),
-            "/run/user/1000/pipewire",
-            "café",
+            "label", SESSION_A, current_pid(), Int64(1), "/run/user/1000/pipewire", "café"
         )
         @test_throws ArgumentError Discovery.SessionRecord(
-            "label",
-            SESSION_A,
-            current_pid(),
-            Int64(1),
-            "/run/user/1000/pipewire",
-            "n"^129,
+            "label", SESSION_A, current_pid(), Int64(1), "/run/user/1000/pipewire", "n"^129
         )
 
         values = copy(Discovery._fields(pod))
@@ -116,7 +101,7 @@ directory(root) = Discovery.registry_directory(root)
         @test_throws ArgumentError Discovery.decode_record(vcat(pod.data, UInt8[0]))
         @test_throws ArgumentError Discovery.decode_record(UInt8[1, 2, 3])
         @test ncodeunits(
-            Discovery.DiscoveryEntry(item, Discovery.Unverified, "d"^1024).detail,
+            Discovery.DiscoveryEntry(item, Discovery.Unverified, "d"^1024).detail
         ) <= 512
     end
 
@@ -135,8 +120,7 @@ directory(root) = Discovery.registry_directory(root)
                 chmod(first_path, mode)
                 @test only(
                     filter(
-                        entry -> entry.record === nothing,
-                        Discovery.list_sessions(registry),
+                        entry -> entry.record === nothing, Discovery.list_sessions(registry)
                     ),
                 ).verification === Discovery.Malformed
             end
@@ -321,8 +305,9 @@ directory(root) = Discovery.registry_directory(root)
             entry = only(Discovery.list_sessions(registry))
             @test entry.verification === Discovery.Unverified
             @test entry.record.owner_pid == stale_pid
-            selected =
-                Discovery.select_session(entry, _ -> error("supervisor no longer exists"))
+            selected = Discovery.select_session(
+                entry, _ -> error("supervisor no longer exists")
+            )
             @test selected.verification === Discovery.Inaccessible
             @test isfile(stale_path)
         end
@@ -330,7 +315,7 @@ directory(root) = Discovery.registry_directory(root)
         mktempdir() do root
             chmod(root, 0o700)
             registry = directory(root)
-            for value = 1:(Discovery.MAX_ENTRIES+1)
+            for value in 1:(Discovery.MAX_ENTRIES+1)
                 hex = lpad(string(value, base = 16), 32, '0')
                 id = string(
                     hex[1:8],

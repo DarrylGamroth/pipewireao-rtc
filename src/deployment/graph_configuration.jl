@@ -99,8 +99,7 @@ function calibrated_composition_paths(application, prepared, selected)
     function component(path)
         validate_composition_component(path)
         return D.relative_asset(
-            application,
-            relpath(joinpath(dirname(descriptor.path), path), application),
+            application, relpath(joinpath(dirname(descriptor.path), path), application)
         )
     end
     branch_paths = Dict{String,String}()
@@ -115,7 +114,7 @@ function calibrated_composition_paths(application, prepared, selected)
     Set(keys(branch_paths)) == Set(keys(selected.graphs)) &&
     all(path -> selected.graphs[path].name == branch_paths[path], keys(branch_paths)) ||
         throw(
-            ArgumentError("composition branches differ from selected calibrated branches"),
+            ArgumentError("composition branches differ from selected calibrated branches")
         )
     shared = component(body["shared"])
     if shared in keys(branch_paths) || shared == descriptor.path
@@ -138,15 +137,15 @@ exact_graph_value(left, right) = typeof(left) === typeof(right) && isequal(left,
 "Validate an exact calibrated graph with only appended exports of existing outputs."
 function calibrated_graph_exports(graph::AbstractDict, calibrated::AbstractDict)
     current, frozen = deepcopy(graph), deepcopy(calibrated)
-    body, baseline =
-        get(current, "filter.graph", nothing), get(frozen, "filter.graph", nothing)
+    body, baseline = get(current, "filter.graph", nothing),
+    get(frozen, "filter.graph", nothing)
     validate_calibrated_graph_bodies(body, baseline)
     haskey(body, "outputs") == haskey(baseline, "outputs") ||
         throw(ArgumentError("calibrated output declaration must remain present or absent"))
     outputs, original = pop!(body, "outputs", Any[]), pop!(baseline, "outputs", Any[])
     validate_calibrated_graph_outputs(outputs, original)
     exact_graph_value(current, frozen) || throw(
-        ArgumentError("executed graph changes calibrated fields outside output exports"),
+        ArgumentError("executed graph changes calibrated fields outside output exports")
     )
     length(outputs) >= length(original) && all(
         exact_graph_value(outputs[index], original[index]) for index in eachindex(original)
@@ -196,8 +195,9 @@ function selected_calibration_graphs(application, configuration)
     !local_context && !isfile(selectionpath) && return nothing
     isfile(selectionpath) ||
         throw(ArgumentError("selected optical calibration receipt is missing"))
-    selection =
-        Common.read_yaml(D.relative_asset(application, relpath(selectionpath, application)))
+    selection = Common.read_yaml(
+        D.relative_asset(application, relpath(selectionpath, application))
+    )
     !local_context && !haskey(selection, "graphs") && return nothing
     local_context ||
         throw(ArgumentError("selected optical calibration must use its generated context"))
@@ -210,8 +210,7 @@ function selected_calibration_graphs(application, configuration)
         throw(ArgumentError("selected RTC calibration identity differs"))
     validate_selected_graph_identity(identity)
     indexpath = D.relative_asset(
-        application,
-        relpath(joinpath(directory, "calibration.yaml"), application),
+        application, relpath(joinpath(directory, "calibration.yaml"), application)
     )
     Common.sha256_file(indexpath) == get(selection, "calibration_index_sha256", nothing) ||
         throw(ArgumentError("selected optical calibration index hash differs"))
@@ -229,8 +228,7 @@ function selected_calibration_graphs(application, configuration)
         entry = branches[name]
         validate_selected_branch_path(entry, name)
         branch = D.relative_asset(
-            application,
-            relpath(joinpath(directory, name, "result.yaml"), application),
+            application, relpath(joinpath(directory, name, "result.yaml"), application)
         )
         Common.sha256_file(branch) == get(entry, "result_sha256", nothing) ||
             throw(ArgumentError("calibrated branch result hash differs"))
@@ -276,8 +274,7 @@ function prepare_graph_configurations!(
     prepared = map(declarations) do entry
         InstrumentDefinition.object_value(entry) &&
         Set(keys(entry)) ⊆ Set(["path", "source"]) &&
-        haskey(entry, "path") ||
-            throw(ArgumentError("invalid graph-configurations entry"))
+        haskey(entry, "path") || throw(ArgumentError("invalid graph-configurations entry"))
         path = D.relative_asset(application, entry["path"])
         path in paths && throw(ArgumentError("duplicate graph configuration path"))
         push!(paths, path)
@@ -293,8 +290,7 @@ function prepare_graph_configurations!(
         return (; path, sourcepath, graph, header)
     end
     all(
-        entry -> entry.sourcepath == entry.path || !(entry.sourcepath in paths),
-        prepared,
+        entry -> entry.sourcepath == entry.path || !(entry.sourcepath in paths), prepared
     ) || throw(ArgumentError("graph destination must not overwrite another graph's source"))
     exports = Dict{String,Any}()
     if selected !== nothing
@@ -303,7 +299,7 @@ function prepare_graph_configurations!(
             Set(paths) == calibrated_composition_paths(application, prepared, selected) ||
                 throw(
                     ArgumentError(
-                        "declared graphs differ from calibrated composition components",
+                        "declared graphs differ from calibrated composition components"
                     ),
                 )
         end
@@ -312,9 +308,9 @@ function prepare_graph_configurations!(
             frozen = selected.graphs[entry.path]
             added = calibrated_graph_exports(entry.graph, D.decode(frozen.graph, prefix))
             exports[frozen.name] = Dict(
-                "path"=>relpath(entry.path, application),
-                "calibrated_graph_sha256"=>Common.sha256_file(frozen.graph),
-                "added_outputs"=>added,
+                "path" => relpath(entry.path, application),
+                "calibrated_graph_sha256" => Common.sha256_file(frozen.graph),
+                "added_outputs" => added,
             )
         end
     end
@@ -323,16 +319,17 @@ function prepare_graph_configurations!(
     end
     if selected !== nothing
         for entry in values(exports)
-            entry["executed_graph_sha256"] =
-                Common.sha256_file(D.relative_asset(application, entry["path"]))
+            entry["executed_graph_sha256"] = Common.sha256_file(
+                D.relative_asset(application, entry["path"])
+            )
         end
         Common.write_yaml(
             joinpath(selected.directory, "graph-exports.yaml"),
             Dict(
-                "version"=>1,
-                "calibration_identity"=>selected.identity,
-                "graphs"=>exports,
-                "application_accepted"=>false,
+                "version" => 1,
+                "calibration_identity" => selected.identity,
+                "graphs" => exports,
+                "application_accepted" => false,
             );
             header = "Generated by InstrumentExport.prepare from selected frozen calibration graphs and executed graph exports; do not edit.",
         )
@@ -344,8 +341,9 @@ function calibrated_centroid_reference!(body, branch, context::AbstractDict)
     haskey(context, "reference_centroid") || return nothing
     reference = context["reference_centroid"]
     validate_centroid_coordinates(reference)
-    coordinates =
-        filter(input -> centroid_coordinates_port(input, branch), get(body, "inputs", []))
+    coordinates = filter(
+        input -> centroid_coordinates_port(input, branch), get(body, "inputs", [])
+    )
     isempty(coordinates) && return nothing # A different branch's template.
     length(coordinates) == 1 ||
         throw(ArgumentError("ambiguous calibrated centroid coordinates"))
@@ -367,7 +365,7 @@ calibrated_centroid_reference!(body, branch, context) = nothing
 
 function validate_centroid_coordinates(reference::AbstractVector)
     length(reference) == 2 || throw(
-        ArgumentError("calibrated centroid reference requires finite X,Y coordinates"),
+        ArgumentError("calibrated centroid reference requires finite X,Y coordinates")
     )
     foreach(validate_centroid_coordinate, reference)
     return nothing
@@ -377,7 +375,7 @@ validate_centroid_coordinates(reference) =
 
 function validate_centroid_coordinate(value::AbstractFloat)
     isfinite(value) || throw(
-        ArgumentError("calibrated centroid reference requires finite X,Y coordinates"),
+        ArgumentError("calibrated centroid reference requires finite X,Y coordinates")
     )
     return nothing
 end
@@ -385,7 +383,7 @@ validate_centroid_coordinate(value) =
     throw(ArgumentError("calibrated centroid reference requires finite X,Y coordinates"))
 
 centroid_coordinates_port(input::AbstractDict, branch) =
-    get(input, "name", nothing) == branch*"-coordinates"
+    get(input, "name", nothing) == branch * "-coordinates"
 centroid_coordinates_port(input, branch) = false
 
 function validate_authored_centroid(authored::Real, value)
@@ -448,7 +446,7 @@ function validate_selected_graph_rtc(descriptor::AbstractDict, rtcpath)
     Set(keys(descriptor)) == Set(["path", "sha256"]) &&
     descriptor["path"] == basename(rtcpath) &&
     descriptor["sha256"] == Common.sha256_file(rtcpath) || throw(
-        ArgumentError("selected RTC configuration differs from calibration selection"),
+        ArgumentError("selected RTC configuration differs from calibration selection")
     )
     return nothing
 end
@@ -493,7 +491,7 @@ graph_export_names(row) = ()
 
 function validate_added_graph_export(row::AbstractDict)
     Set(keys(row)) == Set(["name", "endpoint"]) || throw(
-        ArgumentError("added output exports require only a name and explicit endpoint"),
+        ArgumentError("added output exports require only a name and explicit endpoint")
     )
     foreach(key -> validate_added_graph_export_text(row[key]), ("name", "endpoint"))
     return nothing
@@ -503,7 +501,7 @@ validate_added_graph_export(row) =
 
 function validate_added_graph_export_text(value::String)
     !isempty(strip(value)) || throw(
-        ArgumentError("added output exports require only a name and explicit endpoint"),
+        ArgumentError("added output exports require only a name and explicit endpoint")
     )
     return nothing
 end

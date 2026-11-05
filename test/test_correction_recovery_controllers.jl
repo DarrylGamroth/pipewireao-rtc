@@ -20,14 +20,7 @@ mutable struct CoupledTransport <: CR.AbstractRecoveryTransport
     transactions::Vector{Vector{String}}
 end
 CoupledTransport(; mode = :normal) = CoupledTransport(
-    ScriptedTransport(),
-    9,
-    9,
-    false,
-    false,
-    (false, false),
-    mode,
-    Vector{String}[],
+    ScriptedTransport(), 9, 9, false, false, (false, false), mode, Vector{String}[]
 )
 CR.transport_instance(t::CoupledTransport) = CR.transport_instance(t.base)
 CR.transport_initial_token(t::CoupledTransport) = CR.transport_initial_token(t.base)
@@ -88,8 +81,8 @@ function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties
 end
 function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties})
     if t.base.recovery_state === :released &&
-       t.base.phase_polls == 2 &&
-       t.mode in (:foreign_scc_open, :foreign_llowfs_open)
+        t.base.phase_polls == 2 &&
+        t.mode in (:foreign_scc_open, :foreign_llowfs_open)
         if t.mode === :foreign_scc_open
             t.base.requested += 1
             t.base.active = t.base.requested
@@ -101,8 +94,8 @@ function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties
     end
     reply = respond!(t.base, command)
     if t.base.recovery_state !== :pending &&
-       t.base.phase_polls >= 2 &&
-       !(t.mode === :stalled_llowfs && t.target)
+        t.base.phase_polls >= 2 &&
+        !(t.mode === :stalled_llowfs && t.target)
         t.active = t.requested
         t.closed = t.target
     end
@@ -115,10 +108,12 @@ function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties
     properties[p*"version"] = scalar(Int32(2))
     properties[p*"controller-count"] = scalar(Int32(t.mode === :bad_count ? 17 : 2))
     properties[p*"controller-1"] = scalar("correction")
-    properties[p*"controller-2"] =
-        scalar(t.mode === :duplicate ? "correction" : "llowfs-correction")
-    properties[p*"reference-reached"] =
-        scalar(properties[p*"reference-reached"].value && !t.base.closed && !t.closed)
+    properties[p*"controller-2"] = scalar(
+        t.mode === :duplicate ? "correction" : "llowfs-correction"
+    )
+    properties[p*"reference-reached"] = scalar(
+        properties[p*"reference-reached"].value && !t.base.closed && !t.closed
+    )
     properties["llowfs-correction:closed"] = scalar(t.closed)
     properties["llowfs-correction:requested-generation"] = scalar(t.requested)
     properties["llowfs-correction:active-generation"] = scalar(t.active)
@@ -129,7 +124,7 @@ function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties
     )
     properties[control*"fault"] = scalar("")
     properties[control*"requested"] = scalar(t.target)
-    for index = 1:2
+    for index in 1:2
         key = p * "controller-$index-"
         ready =
             t.guarded[index] &&
@@ -153,19 +148,14 @@ CR.transport_clock_ns(t::OneControllerTransport) = CR.transport_clock_ns(t.base)
 CR.transport_pause!(t::OneControllerTransport, seconds::Float64) =
     CR.transport_pause!(t.base, seconds)
 function CR.request_native!(
-    t::OneControllerTransport,
-    command::Runner.RunnerCommand;
-    deadline::Float64,
-    check,
+    t::OneControllerTransport, command::Runner.RunnerCommand; deadline::Float64, check
 )
     reply = CR.request_native!(t.base, command; deadline, check)
     return one_controller_reply(t, command, reply)
 end
 one_controller_reply(::OneControllerTransport, command, reply) = reply
 function one_controller_reply(
-    t::OneControllerTransport,
-    ::Runner.RunnerCommand{:properties},
-    reply,
+    t::OneControllerTransport, ::Runner.RunnerCommand{:properties}, reply
 )
     properties = reply.result.details.properties
     p = "pipewireao-recovery:"
@@ -177,8 +167,9 @@ function one_controller_reply(
     properties[p*"controller-1-close-guarded"] = scalar(guarded)
     properties[p*"controller-1-ready"] = scalar(guarded && t.base.phase_polls >= 3)
     properties[p*"controller-1-observation-sequence"] = scalar(t.base.source_sequence)
-    properties[p*"controller-1-observation-monotonic-nanoseconds"] =
-        scalar(t.base.source_ns)
+    properties[p*"controller-1-observation-monotonic-nanoseconds"] = scalar(
+        t.base.source_ns
+    )
     return reply
 end
 
@@ -191,9 +182,7 @@ end
     @test !t.base.closed && !t.closed && t.base.inhibited
     for selection in (("foreign",), (), ("correction", "correction"), "correction", (1,))
         @test_throws ArgumentError CR.resume!(
-            operation;
-            controllers = selection,
-            deadline = 2.0,
+            operation; controllers = selection, deadline = 2.0
         )
     end
     @test length(t.transactions) == 1
@@ -220,24 +209,21 @@ end
     t = CoupledTransport(; mode = :stalled_llowfs)
     operation = CR.protective_open!(t, "science"; deadline = 2.0)
     failure = failure_of(
-        () ->
-            CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0),
+        () -> CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test t.requested == 11 && t.active == 10
     @test !t.closed && !t.base.closed
     @test length(writes(t.base, "llowfs-correction:closed")) == 1
     @test_throws ArgumentError CR.resume!(
-        operation;
-        controllers = ("llowfs-correction",),
-        deadline = 2.0,
+        operation; controllers = ("llowfs-correction",), deadline = 2.0
     )
     t = CoupledTransport()
     operation = CR.protective_open!(t, "science"; deadline = 2.0)
     CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
     t.base.owner += 1
     failure = failure_of(
-        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0),
+        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test isempty(writes(t.base, "correction:closed"))
@@ -258,16 +244,14 @@ end
     operation = CR.protective_open!(t, "science"; deadline = 2.0)
     CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
     failure = failure_of(
-        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0),
+        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test !t.base.closed && t.closed
     @test isempty(writes(t.base, "correction:closed"))
     @test t.guarded == (true, false)
     @test_throws ArgumentError CR.resume!(
-        operation;
-        controllers = ("correction",),
-        deadline = 2.0,
+        operation; controllers = ("correction",), deadline = 2.0
     )
 end
 
@@ -292,9 +276,7 @@ end
     @test CR.state(operation.coordinator) === :Unverified
     @test operation.coordinator.failure === :operation_cancelled
     @test_throws ArgumentError CR.resume!(
-        operation;
-        controllers = ("correction",),
-        deadline = 2.0,
+        operation; controllers = ("correction",), deadline = 2.0
     )
     @test length(t.transactions) == transactions
     @test !t.base.closed && t.closed
@@ -323,7 +305,7 @@ end
     @test CR.controller_scope(snapshot) isa CR.CoupledControllers{2}
     @test snapshot.readbacks isa NTuple{2,CR.ControllerReadback{CR.ControllerReadiness}}
     @test !ismutabletype(typeof(snapshot)) &&
-          all(readback -> !ismutabletype(typeof(readback)), snapshot.readbacks)
+        all(readback -> !ismutabletype(typeof(readback)), snapshot.readbacks)
     @test snapshot.controller == ("correction", "llowfs-correction")
     @test CR.controller_names(snapshot) == snapshot.controller
     @test CR.closed(snapshot) == snapshot.closed == (true, false)
@@ -331,7 +313,7 @@ end
     @test CR.active_generation(snapshot) == snapshot.loop_active == (3, 9)
     @test snapshot.loop_state == (:Closed, :Open)
     @test snapshot.controller_readiness ==
-          map(readback -> readback.readiness, snapshot.readbacks)
+        map(readback -> readback.readiness, snapshot.readbacks)
     @test all(
         proof -> proof isa CR.ControllerReadiness && !ismutabletype(typeof(proof)),
         snapshot.controller_readiness,
@@ -345,8 +327,8 @@ end
         snapshot.controller_readiness,
     )
     @test CR.generations_match(snapshot) &&
-          !CR.all_open(snapshot) &&
-          !CR.all_closed(snapshot)
+        !CR.all_open(snapshot) &&
+        !CR.all_closed(snapshot)
     @test CR.adoption_matches(snapshot)
     @test CR.requested_before(snapshot, (UInt64(4), UInt64(9)))
     @test !CR.requested_before(snapshot, (UInt64(4), UInt64(8)))
@@ -364,14 +346,13 @@ end
     @test all(in(propertynames(snapshot)), aliases)
     @test all(name -> !(name in fieldnames(typeof(snapshot))), aliases)
 
-    reversed =
-        replace_readbacks(snapshot, CR.CoupledControllers{2}(), reverse(snapshot.readbacks))
+    reversed = replace_readbacks(
+        snapshot, CR.CoupledControllers{2}(), reverse(snapshot.readbacks)
+    )
     @test reversed.controller == reverse(snapshot.controller)
     @test CR.requested_generation(reversed) == reverse(CR.requested_generation(snapshot))
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.CoupledControllers{1}(),
-        snapshot.readbacks,
+        snapshot, CR.CoupledControllers{1}(), snapshot.readbacks
     )
     @test_throws ArgumentError replace_readbacks(
         snapshot,
@@ -379,15 +360,11 @@ end
         (first(snapshot.readbacks), first(snapshot.readbacks)),
     )
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.SingleController(),
-        first(snapshot.readbacks),
+        snapshot, CR.SingleController(), first(snapshot.readbacks)
     )
     @test_throws ArgumentError replace_readbacks(snapshot, CR.CoupledControllers{0}(), ())
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.CoupledControllers{17}(),
-        ntuple(_ -> first(snapshot.readbacks), 17),
+        snapshot, CR.CoupledControllers{17}(), ntuple(_ -> first(snapshot.readbacks), 17)
     )
     invalid = CR.ControllerReadback(
         "invalid/name",
@@ -398,24 +375,23 @@ end
         first(snapshot.readbacks).readiness,
     )
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.CoupledControllers{1}(),
-        (invalid,),
+        snapshot, CR.CoupledControllers{1}(), (invalid,)
     )
 end
 
 @testset "An explicitly coupled singleton remains distinct from the scalar profile" begin
     transport = OneControllerTransport(ScriptedTransport())
     channel = CR.RecoveryChannel(transport, CR.transport_instance(transport), Int64(0))
-    snapshot =
-        CR.native_snapshot!(channel, "science"; deadline = 2.0, check = () -> nothing)
+    snapshot = CR.native_snapshot!(
+        channel, "science"; deadline = 2.0, check = () -> nothing
+    )
     singular = native_readback(owner_properties(ScriptedTransport()))
     @test CR.controller_scope(snapshot) isa CR.CoupledControllers{1}
     @test !CR.same_scope(snapshot, singular)
     @test snapshot.controller == ("correction",)
     @test CR.requested_generation(snapshot) ==
-          CR.active_generation(snapshot) ==
-          (UInt64(3),)
+        CR.active_generation(snapshot) ==
+        (UInt64(3),)
     @test CR.closed(snapshot) == (true,)
     @test snapshot.controller_readiness isa Tuple{CR.ControllerReadiness}
     operation = CR.protective_open!(transport, "science"; deadline = 2.0)
@@ -447,8 +423,9 @@ end
     @test occursin("duplicate recovery controllers", sprint(showerror, failure))
 
     properties = owner_properties(CoupledTransport())
-    properties["pipewireao.correction-control.llowfs-correction:closed.state"] =
-        scalar("Unverified")
+    properties["pipewireao.correction-control.llowfs-correction:closed.state"] = scalar(
+        "Unverified"
+    )
     properties[p*"controller-1-ready"] = scalar(Int64(1))
     failure = readback_error(() -> native_readback(properties))
     @test failure isa PipeWireAORTC.ControlClient.UnknownOutcome

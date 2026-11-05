@@ -88,33 +88,33 @@ function operational_instrument()
     dm = document["deformable_mirrors"]["dm"]
     dm["units"] = "µm OPD"
     dm["command_scale_m"] = 1e-6
-    dm["limiter"] =
-        Dict("kind" => "amplitude", "lower" => fill(-0.5, 3), "upper" => fill(0.5, 3))
+    dm["limiter"] = Dict(
+        "kind" => "amplitude", "lower" => fill(-0.5, 3), "upper" => fill(0.5, 3)
+    )
     document["schema_version"] = 2
     document["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "pipewireao/raw-detector-pixels-u16/1"
     return document
 end
 
 @testset "registered optical pupil is distinct from the source grid" begin
-    document=operational_instrument()
-    mirror=document["deformable_mirrors"]["dm"]
-    mirror["pupil"]=Dict("inner_radius"=>0.13, "outer_radius"=>1.0)
-    @test Instrument.validate(document)===document
+    document = operational_instrument()
+    mirror = document["deformable_mirrors"]["dm"]
+    mirror["pupil"] = Dict("inner_radius" => 0.13, "outer_radius" => 1.0)
+    @test Instrument.validate(document) === document
     # Outlying actuator coordinates remain legitimate guard channels.
-    mirror["pupil_coordinates"][1]=[-1.1, 0.0]
-    @test Instrument.validate(document)===document
+    mirror["pupil_coordinates"][1] = [-1.1, 0.0]
+    @test Instrument.validate(document) === document
     for radii in ((1.0, 1.0), (-0.1, 1.0), (0.0, NaN), (false, 1.0))
-        invalid=deepcopy(document)
-        invalid["deformable_mirrors"]["dm"]["pupil"]=Dict(
-            "inner_radius"=>radii[1],
-            "outer_radius"=>radii[2],
+        invalid = deepcopy(document)
+        invalid["deformable_mirrors"]["dm"]["pupil"] = Dict(
+            "inner_radius" => radii[1], "outer_radius" => radii[2]
         )
         @test_throws ArgumentError Instrument.validate(invalid)
     end
-    missing=deepcopy(document)
+    missing = deepcopy(document)
     delete!(missing["deformable_mirrors"]["dm"], "pupil_coordinates")
     @test_throws ArgumentError Instrument.validate(missing)
-    mismatch=deepcopy(document)
+    mismatch = deepcopy(document)
     pop!(mismatch["deformable_mirrors"]["dm"]["pupil_coordinates"])
     @test_throws ArgumentError Instrument.validate(mismatch)
 end
@@ -138,16 +138,14 @@ end
         @test loaded.sha256 == sealed == Instrument.digest(json)
         @test loaded.document == document
         @test Instrument.publication(spec, bindings) ==
-              Dict(Instrument.PROPERTY => json, Instrument.HASH_PROPERTY => sealed)
+            Dict(Instrument.PROPERTY => json, Instrument.HASH_PROPERTY => sealed)
         @test isempty(Instrument.publication(Dict(), Dict()))
         @test_throws ArgumentError Instrument.publication(spec, Dict())
         @test_throws ArgumentError Instrument.publication(
-            spec,
-            Dict("PACKAGE" => "relative"),
+            spec, Dict("PACKAGE" => "relative")
         )
         @test_throws ArgumentError Instrument.publication(
-            merge(spec, Dict("artifacts" => Dict())),
-            bindings,
+            merge(spec, Dict("artifacts" => Dict())), bindings
         )
         @test_throws ArgumentError Instrument.publication(
             merge(spec, Dict("artifacts" => Dict("instrument.json" => repeat("0", 64)))),
@@ -161,17 +159,16 @@ end
         write(outside, json)
         symlink(outside, joinpath(package, "escape.json"))
         for relative in ("../outside.json", "escape.json", outside, "bad\0path")
-            escaped =
-                Dict("instrument" => relative, "artifacts" => Dict(relative => sealed))
+            escaped = Dict(
+                "instrument" => relative, "artifacts" => Dict(relative => sealed)
+            )
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError Instrument.publication(
-                escaped,
-                bindings,
+                escaped, bindings
             )
         end
         @test_throws ArgumentError Instrument.load(joinpath(package, "absent.json"))
         @test_throws Base.IOError Instrument.publication(
-            Dict("instrument" => "absent.json"),
-            bindings,
+            Dict("instrument" => "absent.json"), bindings
         )
         at_limit = json * repeat(" ", Instrument.MAX_BYTES - ncodeunits(json))
         write(path, at_limit)
@@ -212,9 +209,9 @@ end
         @test_throws ArgumentError Instrument.bounded(Dict("value" => repeat("µ", 8193)))
         @test_throws ArgumentError Instrument.bounded(Dict(repeat("x", 129) => 1))
         @test_throws ArgumentError Instrument.bounded(zeros(16385))
-        @test_throws ArgumentError Instrument.bounded([[0] for _ = 1:10000], Ref(100))
+        @test_throws ArgumentError Instrument.bounded([[0] for _ in 1:10000], Ref(100))
         nested = Dict{String,Any}("value" => 0)
-        for _ = 1:17
+        for _ in 1:17
             nested = Dict{String,Any}("nested" => nested)
         end
         @test_throws ArgumentError Instrument.bounded(nested)
@@ -247,8 +244,7 @@ end
             )
             @test_throws ArgumentError Instrument.load(path)
             @test_throws ArgumentError Instrument.publication(
-                spec,
-                Dict("PACKAGE" => package),
+                spec, Dict("PACKAGE" => package)
             )
         end
         for mutation in
@@ -276,18 +272,17 @@ end
         )
         @test Instrument.verify_plant(options, InstrumentPlantForTest) === nothing
         @test Instrument.verify_plant((; instrument = nothing), Module(:NoDefinition)) ===
-              nothing
+            nothing
         @test_throws ArgumentError Instrument.verify_plant(options, Module(:NoDefinition))
-        selected=(; pupil_registration = (; actuator_pitch = 0.125))
-        selected_document=deepcopy(document)
-        selected_document["scientific_identity"]=Instrument.scientific_identity(
-            InstrumentPlantForTest.instrument_definition(selected),
+        selected = (; pupil_registration = (; actuator_pitch = 0.125))
+        selected_document = deepcopy(document)
+        selected_document["scientific_identity"] = Instrument.scientific_identity(
+            InstrumentPlantForTest.instrument_definition(selected)
         )
         write(path, JSON.json(selected_document))
         @test Instrument.verify_plant(
-            merge(options, (; plant = (; settings = selected))),
-            InstrumentPlantForTest,
-        )===nothing
+            merge(options, (; plant = (; settings = selected))), InstrumentPlantForTest
+        ) === nothing
         @test_throws ArgumentError Instrument.verify_plant(options, InstrumentPlantForTest)
         write(path, JSON.json(document))
         for changed in (
@@ -296,14 +291,12 @@ end
             (; frame_schema = "pipewireao/detector-frame-f32/1"),
         )
             @test_throws ArgumentError Instrument.verify_plant(
-                merge(options, changed),
-                InstrumentPlantForTest,
+                merge(options, changed), InstrumentPlantForTest
             )
         end
         for changed in ((; command_count = 2), (; frame_shape = (3, 2)))
             @test_throws DimensionMismatch Instrument.verify_plant(
-                merge(options, changed),
-                InstrumentPlantForTest,
+                merge(options, changed), InstrumentPlantForTest
             )
         end
         for mutation in (
@@ -311,12 +304,14 @@ end
             d -> (d["id"] = "other-instrument"),
             d -> (d["deformable_mirrors"]["dm"]["layout"]["command_positions"][1] = [3, 1]),
             d -> (
-                d["deformable_mirrors"]["dm"]["shape_control"]["bases"][1]["definition"]["positions"][1] =
-                    [-0.25, 0]
+                d["deformable_mirrors"]["dm"]["shape_control"]["bases"][1]["definition"]["positions"][1] = [
+                    -0.25, 0
+                ]
             ),
             d -> (
-                d["deformable_mirrors"]["dm"]["shape_control"]["bases"][2]["definition"]["frequencies"][1] =
-                    [2, 0]
+                d["deformable_mirrors"]["dm"]["shape_control"]["bases"][2]["definition"]["frequencies"][1] = [
+                    2, 0
+                ]
             ),
             d -> (d["deformable_mirrors"]["dm"]["pupil_coordinates"][1] = [-0.5, 0]),
             d -> (d["deformable_mirrors"]["dm"]["pupil"]["outer_radius"] = 1.5),
@@ -325,23 +320,20 @@ end
             d -> (d["deformable_mirrors"]["dm"]["clear_aperture"]["radius"] = 1.3),
             d -> delete!(d["deformable_mirrors"]["dm"], "clear_aperture"),
             d -> (
-                d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] =
-                    [1, 0]
+                d["wavefront_sensors"]["wfs"]["layout"]["subaperture_origins"][1] = [1, 0]
             ),
             d -> (
                 d["wavefront_sensors"]["wfs"]["layout"]["expected_schema"] = "pipewireao/detector-frame-f32/1"
             ),
             d -> (
-                d["deformable_mirrors"]["extra"] =
-                    deepcopy(d["deformable_mirrors"]["dm"])
+                d["deformable_mirrors"]["extra"] = deepcopy(d["deformable_mirrors"]["dm"])
             ),
         )
             invalid = deepcopy(document)
             mutation(invalid)
             write(path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.verify_plant(
-                options,
-                InstrumentPlantForTest,
+                options, InstrumentPlantForTest
             )
         end
     end
@@ -360,10 +352,10 @@ end
         nothing,
         [],
         Dict(),
-        Dict("outer_radius"=>1.0),
-        Dict("outer_radius"=>1.0, "inner_radius"=>0.0, "inferred"=>true),
+        Dict("outer_radius" => 1.0),
+        Dict("outer_radius" => 1.0, "inner_radius" => 0.0, "inferred" => true),
         (
-            Dict("outer_radius"=>outer, "inner_radius"=>inner) for (outer, inner) in (
+            Dict("outer_radius" => outer, "inner_radius" => inner) for (outer, inner) in (
                 (true, 0.0),
                 (1.0, false),
                 (0.0, 0.0),
@@ -376,7 +368,7 @@ end
                 (1e100, 0.0),
                 (1e-100, 0.0),
                 (1.0, 1e-100),
-                (Float64(floatmax(Float32))/4, 0.0),
+                (Float64(floatmax(Float32)) / 4, 0.0),
                 (nextfloat(1.0), 1.0),
             )
         )...,
@@ -421,11 +413,20 @@ end
         nothing,
         [],
         Dict(),
-        Dict("diameter"=>2.0),
-        Dict("radius"=>1.0, "center"=>[0, 0]),
+        Dict("diameter" => 2.0),
+        Dict("radius" => 1.0, "center" => [0, 0]),
         (
-            Dict("radius"=>radius) for radius in
-            (true, false, 0.0, -1.0, Inf, NaN, 1e100, 1e-100, Float64(floatmax(Float32))/4)
+            Dict("radius" => radius) for radius in (
+                true,
+                false,
+                0.0,
+                -1.0,
+                Inf,
+                NaN,
+                1e100,
+                1e-100,
+                Float64(floatmax(Float32)) / 4,
+            )
         )...,
     )
         invalid = deepcopy(document)
@@ -445,8 +446,9 @@ end
         document = operational_instrument()
         source = InstrumentTelescopePlantForTest.instrument_definition()
         document["scientific_identity"] = Instrument.scientific_identity(source)
-        document["deformable_mirrors"]["dm"]["pupil"] =
-            Dict("outer_radius"=>1.0, "inner_radius"=>0.2)
+        document["deformable_mirrors"]["dm"]["pupil"] = Dict(
+            "outer_radius" => 1.0, "inner_radius" => 0.2
+        )
         write(path, JSON.json(document))
         options = (;
             instrument = path,
@@ -461,8 +463,7 @@ end
         document["deformable_mirrors"]["dm"]["pupil"]["inner_radius"] = 0.3
         write(path, JSON.json(document))
         @test_throws ArgumentError Instrument.verify_plant(
-            options,
-            InstrumentTelescopePlantForTest,
+            options, InstrumentTelescopePlantForTest
         )
     end
 end
@@ -471,15 +472,15 @@ end
     document = operational_instrument()
     bases(d) = d["deformable_mirrors"]["dm"]["shape_control"]["bases"]
     sampled = Dict{String,Any}(
-        "id"=>"custom",
-        "name"=>"Custom",
-        "units"=>"µm OPD",
-        "coefficient_limit"=>0.1,
-        "normalization"=>"supplied",
-        "definition"=>Dict(
-            "kind"=>"sampled",
-            "artifact_sha256"=>repeat("b", 64),
-            "modes"=>[Dict("name"=>"First", "values"=>[0.25, -0.5, 1.0])],
+        "id" => "custom",
+        "name" => "Custom",
+        "units" => "µm OPD",
+        "coefficient_limit" => 0.1,
+        "normalization" => "supplied",
+        "definition" => Dict(
+            "kind" => "sampled",
+            "artifact_sha256" => repeat("b", 64),
+            "modes" => [Dict("name" => "First", "values" => [0.25, -0.5, 1.0])],
         ),
     )
     push!(bases(document), sampled)
@@ -497,14 +498,13 @@ end
             deepcopy(bases(d)[1]["definition"]["modes"][1]),
         ),
         d -> (
-            bases(d)[1]["definition"]["positions"][2] =
-                bases(d)[1]["definition"]["positions"][1]
+            bases(d)[1]["definition"]["positions"][2] = bases(d)[1]["definition"]["positions"][1]
         ),
         d -> (bases(d)[2]["definition"]["frequencies"] = [[0, 0]]),
         d -> (bases(d)[2]["definition"]["frequencies"] = [[65, 0]]),
         d -> (bases(d)[2]["definition"]["frequencies"] = [[1, 0], [1, 0]]),
         d -> (bases(d)[2]["definition"]["frequencies"] = fill([1, 0], 257)),
-        d -> (bases(d)[3]["definition"]["artifact_sha256"] = "sha256:"*repeat("b", 64)),
+        d -> (bases(d)[3]["definition"]["artifact_sha256"] = "sha256:" * repeat("b", 64)),
         d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [0, 0, 0]),
         d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [1, 2]),
         d -> (bases(d)[3]["definition"]["modes"][1]["values"] = [1, Inf, 2]),
@@ -520,21 +520,19 @@ end
     # Real sampled-mode arrays cross the byte limit while staying structurally valid.
     bases(oversized)[3]["definition"]["modes"] = [
         Dict(
-            "name"=>"Mode $i",
-            "values"=>[
-                Float64(1.234567f-20),
-                Float64(-2.345678f-20),
-                Float64(3.456789f-20),
-            ],
-        ) for i = 1:64
+            "name" => "Mode $i",
+            "values" =>
+                [Float64(1.234567f-20), Float64(-2.345678f-20), Float64(3.456789f-20)],
+        ) for i in 1:64
     ]
-    expanded = [deepcopy(bases(oversized)[3]) for _ = 1:16]
+    expanded = [deepcopy(bases(oversized)[3]) for _ in 1:16]
     for (index, basis) in enumerate(expanded)
         basis["id"] = "sampled-$index"
     end
     oversized["deformable_mirrors"]["dm"]["shape_control"]["bases"] = expanded
-    oversized["deformable_mirrors"] =
-        Dict("dm$i"=>deepcopy(oversized["deformable_mirrors"]["dm"]) for i = 1:4)
+    oversized["deformable_mirrors"] = Dict(
+        "dm$i" => deepcopy(oversized["deformable_mirrors"]["dm"]) for i in 1:4
+    )
     @test 256 * 1024 < ncodeunits(JSON.json(oversized)) <= Instrument.MAX_BYTES
     @test Instrument.validate(oversized) === oversized
     original_mirror = first(values(oversized["deformable_mirrors"]))
@@ -543,25 +541,25 @@ end
 
         mode["name"] = "Calibrated reconstruction singular vector $i"
     end
-    oversized["deformable_mirrors"] = Dict("dm$i"=>deepcopy(original_mirror) for i = 1:8)
+    oversized["deformable_mirrors"] = Dict("dm$i" => deepcopy(original_mirror) for i in 1:8)
     @test Instrument.bounded(oversized) === nothing
     @test_throws r"1 MiB" Instrument.validate(oversized)
 end
 
 @testset "shape actuator masks are optional and command ordered" begin
-    original=operational_instrument()
-    shape=original["deformable_mirrors"]["dm"]["shape_control"]
-    @test Instrument.validate(original)===original
-    shape["controlled_actuators"]=[true, false, true]
-    @test Instrument.validate(original)===original
+    original = operational_instrument()
+    shape = original["deformable_mirrors"]["dm"]["shape_control"]
+    @test Instrument.validate(original) === original
+    shape["controlled_actuators"] = [true, false, true]
+    @test Instrument.validate(original) === original
     for mask in ([true, false], [1, 0, 1], [true, nothing, true], "all", nothing)
-        shape["controlled_actuators"]=mask
+        shape["controlled_actuators"] = mask
         @test_throws ArgumentError Instrument.validate(original)
     end
-    shape["controlled_actuators"]=fill(false, 3)
+    shape["controlled_actuators"] = fill(false, 3)
     @test_throws ArgumentError Instrument.validate(original)
     empty!(shape["bases"])
-    @test Instrument.validate(original)===original
+    @test Instrument.validate(original) === original
 end
 
 @testset "AOS instrument selection remains a cold declaration" begin
@@ -571,8 +569,7 @@ end
         write(joinpath(package, "instrument.json"), JSON.json(instrument))
         document = Dict{String,Any}(
             "version" => 2,
-            "plant" =>
-                Dict("package" => "InstrumentPlantForTest", "settings" => Dict()),
+            "plant" => Dict("package" => "InstrumentPlantForTest", "settings" => Dict()),
             "command_input" => "pdm_command",
             "frame_output" => "detector_frame",
             "command_count" => 3,
@@ -644,7 +641,7 @@ end
         document["instrument"] = joinpath(package, "instrument.json")
         write(path, JSON.json(document))
         @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError PipeWireAORTC.AOSOwner.configuration(
-            path,
+            path
         )
     end
 end
@@ -704,7 +701,7 @@ end
         )
         policy = configuration["pipewireao.session"]
         @test Set(keys(configuration)) ==
-              Set(("context.properties", "context.modules", "pipewireao.session"))
+            Set(("context.properties", "context.modules", "pipewireao.session"))
         @test policy["node.name"] == "pipewireao.rtc.session.instrument-test"
         @test policy["properties"] == Dict(
             "pipewireao.rtc.session.session-uuid" => bindings["SESSION_UUID"],
@@ -725,47 +722,46 @@ end
 
 @testset "simulated mirror uses the device NodeInfo description" begin
     mktempdir() do root
-        instrument_path=joinpath(root, "instrument.json")
-        mirror_path=joinpath(root, "mirror.json")
-        operational=operational_instrument()
+        instrument_path = joinpath(root, "instrument.json")
+        mirror_path = joinpath(root, "mirror.json")
+        operational = operational_instrument()
         write(instrument_path, JSON.json(operational))
-        description=Dict(
-            "schema_version"=>1,
-            "id"=>"test-mirror",
-            "manufacturer"=>"Test",
-            "model"=>"Three actuators",
-            "layout"=>operational["deformable_mirrors"]["dm"]["layout"],
+        description = Dict(
+            "schema_version" => 1,
+            "id" => "test-mirror",
+            "manufacturer" => "Test",
+            "model" => "Three actuators",
+            "layout" => operational["deformable_mirrors"]["dm"]["layout"],
         )
-        json="\n"*JSON.json(description)*"\n"
+        json = "\n" * JSON.json(description) * "\n"
         write(mirror_path, json)
-        options=(;
+        options = (;
             instrument = instrument_path,
             mirror_description = mirror_path,
             command_count = 3,
         )
-        @test Instrument.mirror_properties(options)==Dict("device.mirror.description"=>json)
+        @test Instrument.mirror_properties(options) ==
+            Dict("device.mirror.description" => json)
         @test isempty(Instrument.mirror_properties((; mirror_description = nothing)))
-        mechanical=merge(
+        mechanical = merge(
             description,
-            Dict("actuator_pitch_m"=>0.0015, "clear_aperture_diameter_m"=>0.0245),
+            Dict("actuator_pitch_m" => 0.0015, "clear_aperture_diameter_m" => 0.0245),
         )
-        mechanical_json="\n"*JSON.json(mechanical)*"\n"
+        mechanical_json = "\n" * JSON.json(mechanical) * "\n"
         write(mirror_path, mechanical_json)
-        @test Instrument.mirror_properties(options)==Dict(
-            "device.mirror.description"=>mechanical_json,
-        )
+        @test Instrument.mirror_properties(options) ==
+            Dict("device.mirror.description" => mechanical_json)
         @test Instrument.mirror_description_json(mirror_path) == mechanical_json
         for extension in (".yaml", ".yml")
             yaml_path = joinpath(root, "mirror" * extension)
             PipeWireAORTC.Common.write_yaml(yaml_path, mechanical)
             yaml_options = merge(options, (; mirror_description = yaml_path))
-            published =
-                Instrument.mirror_properties(yaml_options)[Instrument.MIRROR_PROPERTY]
+            published = Instrument.mirror_properties(yaml_options)[Instrument.MIRROR_PROPERTY]
             @test Instrument.read_object(published) == mechanical
             @test startswith(published, "{")
             @test Instrument.mirror_description_json(yaml_path) == published
             @test_throws ArgumentError Instrument.mirror_properties(
-                merge(yaml_options, (; command_count = 2)),
+                merge(yaml_options, (; command_count = 2))
             )
             write(yaml_path, read(yaml_path, String) * "model: duplicate\n")
             @test_throws ArgumentError Instrument.mirror_properties(yaml_options)
@@ -779,44 +775,43 @@ end
         )
         @test_throws ArgumentError Instrument.mirror_properties(options)
         write(mirror_path, json)
-        @test Instrument.mirror_properties(merge(options, (; instrument = nothing)))==Dict(
-            "device.mirror.description"=>json,
-        )
+        @test Instrument.mirror_properties(merge(options, (; instrument = nothing))) ==
+            Dict("device.mirror.description" => json)
         @test_throws ArgumentError Instrument.mirror_properties(
-            merge(options, (; instrument = nothing, command_count = 2)),
+            merge(options, (; instrument = nothing, command_count = 2))
         )
         for change in (
-            d->(d["layout"]["grid_shape"]=Any[true, 1]),
-            d->(d["layout"]["command_positions"][1]=Any[1.0, 1]),
-            d->(d["layout"]["command_positions"][1]=[0, 1]),
-            d->(d["layout"]["command_positions"][1]=[4, 1]),
-            d->(d["layout"]["command_positions"][1]=[2, 1]),
+            d -> (d["layout"]["grid_shape"] = Any[true, 1]),
+            d -> (d["layout"]["command_positions"][1] = Any[1.0, 1]),
+            d -> (d["layout"]["command_positions"][1] = [0, 1]),
+            d -> (d["layout"]["command_positions"][1] = [4, 1]),
+            d -> (d["layout"]["command_positions"][1] = [2, 1]),
         )
-            invalid=deepcopy(description)
+            invalid = deepcopy(description)
             change(invalid)
             write(mirror_path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.mirror_properties(
-                merge(options, (; instrument = nothing)),
+                merge(options, (; instrument = nothing))
             )
         end
         write(mirror_path, json)
         for suffix in ("junk", " {}", "\n{}")
-            write(mirror_path, json*suffix)
+            write(mirror_path, json * suffix)
             @test_throws ArgumentError Instrument.mirror_properties(options)
         end
         write(mirror_path, json)
         for mutation in (
-            d->(d["pupil_registration"]=Dict("actuator_pitch"=>0.125)),
-            d->(d["schema_version"]=true),
-            d->(d["manufacturer"]=""),
-            d->(d["layout"]["command_positions"][1]=[2, 1]),
+            d -> (d["pupil_registration"] = Dict("actuator_pitch" => 0.125)),
+            d -> (d["schema_version"] = true),
+            d -> (d["manufacturer"] = ""),
+            d -> (d["layout"]["command_positions"][1] = [2, 1]),
         )
-            invalid=deepcopy(description)
+            invalid = deepcopy(description)
             mutation(invalid)
             write(mirror_path, JSON.json(invalid))
             @test_throws ArgumentError Instrument.mirror_properties(options)
         end
-        write(mirror_path, zeros(UInt8, 64*1024+1))
+        write(mirror_path, zeros(UInt8, 64 * 1024 + 1))
         @test_throws ArgumentError Instrument.mirror_properties(options)
         write(mirror_path, UInt8[0xff])
         @test_throws ArgumentError Instrument.mirror_properties(options)
@@ -825,22 +820,21 @@ end
 
 @testset "mirror input is relocated with its application" begin
     mktempdir() do application
-        filename="mirror.json"
+        filename = "mirror.json"
         write(joinpath(application, filename), "{}")
-        declared=Dict(
-            "package"=>"TestPlant",
-            "settings"=>Dict("mirror_description"=>filename),
+        declared = Dict(
+            "package" => "TestPlant", "settings" => Dict("mirror_description" => filename)
         )
-        plant=PipeWireAORTC.AOSOwner.plant_declaration(declared; directory = application)
-        @test plant.settings.mirror_description==joinpath(application, filename)
-        @test declared["settings"]["mirror_description"]==filename
-        @test PipeWireAORTC.AOSOwner.plant_declaration(declared).settings.mirror_description==filename
+        plant = PipeWireAORTC.AOSOwner.plant_declaration(declared; directory = application)
+        @test plant.settings.mirror_description == joinpath(application, filename)
+        @test declared["settings"]["mirror_description"] == filename
+        @test PipeWireAORTC.AOSOwner.plant_declaration(declared).settings.mirror_description ==
+            filename
         for path in ("../outside.json", joinpath(application, filename), "missing.json")
-            invalid=deepcopy(declared)
-            invalid["settings"]["mirror_description"]=path
+            invalid = deepcopy(declared)
+            invalid["settings"]["mirror_description"] = path
             @test_throws Exception PipeWireAORTC.AOSOwner.plant_declaration(
-                invalid;
-                directory = application,
+                invalid; directory = application
             )
         end
     end
@@ -851,9 +845,10 @@ end
         filename = "influence-functions.fits"
         write(joinpath(application, filename), "fits")
         declared = Dict(
-            "package"=>"TestPlant",
-            "settings"=>Dict(
-                "influence_functions"=>Dict("path"=>filename, "wavelength_nm"=>650.0),
+            "package" => "TestPlant",
+            "settings" => Dict(
+                "influence_functions" =>
+                    Dict("path" => filename, "wavelength_nm" => 650.0),
             ),
         )
         plant = PipeWireAORTC.AOSOwner.plant_declaration(declared; directory = application)
@@ -864,8 +859,7 @@ end
             invalid = deepcopy(declared)
             invalid["settings"]["influence_functions"]["path"] = path
             @test_throws Exception PipeWireAORTC.AOSOwner.plant_declaration(
-                invalid;
-                directory = application,
+                invalid; directory = application
             )
         end
     end

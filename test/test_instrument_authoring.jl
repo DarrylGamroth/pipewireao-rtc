@@ -5,147 +5,143 @@ const D = PipeWireAORTC.DeploymentConfiguration
 
 @testset "alternate applications select their own owners modes and core modules" begin
     mktempdir() do root
-        source=joinpath(root, "source")
-        selected="rtc/standalone/application.yaml"
-        baseline=Dict("owners"=>[Dict("role"=>"reconstructor")])
-        alternate=Dict(
-            "owners"=>[Dict("role"=>"simulator")],
-            "runtime-configurations"=>[
-                Dict("source"=>"settings.yaml", "path"=>"settings.conf", "format"=>"json"),
+        source = joinpath(root, "source")
+        selected = "rtc/standalone/application.yaml"
+        baseline = Dict("owners" => [Dict("role" => "reconstructor")])
+        alternate = Dict(
+            "owners" => [Dict("role" => "simulator")],
+            "runtime-configurations" => [
+                Dict(
+                    "source" => "settings.yaml",
+                    "path" => "settings.conf",
+                    "format" => "json",
+                ),
             ],
         )
         C.write_yaml(joinpath(source, "rtc/application.yaml"), baseline)
         C.write_yaml(joinpath(source, selected), alternate)
-        C.write_yaml(joinpath(source, "settings.yaml"), Dict("kind"=>"pupil"))
+        C.write_yaml(joinpath(source, "settings.yaml"), Dict("kind" => "pupil"))
         C.write_yaml(
             joinpath(source, "rtc/modes.yaml"),
             Dict(
-                "default"=>"controller",
-                "modes"=>Dict(
-                    "controller"=>Dict(
-                        "application"=>Dict("owners"=>[Dict("role"=>"monitor")]),
+                "default" => "controller",
+                "modes" => Dict(
+                    "controller" => Dict(
+                        "application" => Dict("owners" => [Dict("role" => "monitor")]),
                     ),
                 ),
             ),
         )
         C.write_yaml(
             joinpath(source, "rtc/standalone/modes.yaml"),
-            Dict("default"=>"source", "modes"=>Dict("source"=>Dict("application"=>Dict()))),
+            Dict(
+                "default" => "source",
+                "modes" => Dict("source" => Dict("application" => Dict())),
+            ),
         )
         C.write_json(
             joinpath(source, "rtc/core.conf"),
             Dict(
-                "context.modules"=>[
+                "context.modules" => [
                     Dict(
-                        "name"=>"libpipewire-module-queue",
-                        "args"=>Dict("node.name"=>"baseline-queue"),
+                        "name" => "libpipewire-module-queue",
+                        "args" => Dict("node.name" => "baseline-queue"),
                     ),
                 ],
             ),
         )
         C.write_json(
-            joinpath(source, "rtc/standalone/core.conf"),
-            Dict("context.modules"=>[]),
+            joinpath(source, "rtc/standalone/core.conf"), Dict("context.modules" => [])
         )
-        before=Dict(
-            path=>read(joinpath(source, path)) for path in E.application_files(source)
+        before = Dict(
+            path => read(joinpath(source, path)) for path in E.application_files(source)
         )
-        @test E.source_application(source)==baseline
-        @test E.source_application(source, Dict("application"=>"rtc/application.yaml"))==baseline
+        @test E.source_application(source) == baseline
+        @test E.source_application(source, Dict("application" => "rtc/application.yaml")) ==
+            baseline
         @test length(
             E.merge_configuration(
-                baseline,
-                E.selected_mode(source, Dict())["application"],
+                baseline, E.selected_mode(source, Dict())["application"]
             )["owners"],
-        )==2
-        profile=Dict(
-            "application"=>selected,
-            "scheduling"=>Dict(
-                "processes"=>Dict(
-                    "core"=>Dict(
-                        "rt-priority"=>0,
-                        "data-loops"=>Dict("rtc-data-loop"=>[2], "telemetry-loop"=>[3]),
+        ) == 2
+        profile = Dict(
+            "application" => selected,
+            "scheduling" => Dict(
+                "processes" => Dict(
+                    "core" => Dict(
+                        "rt-priority" => 0,
+                        "data-loops" => Dict(
+                            "rtc-data-loop" => [2], "telemetry-loop" => [3]
+                        ),
                     ),
                 ),
             ),
         )
-        mode=E.selected_mode(source, profile)
-        authoring=E.merge_configuration(
-            E.source_application(source, profile),
-            mode["application"],
+        mode = E.selected_mode(source, profile)
+        authoring = E.merge_configuration(
+            E.source_application(source, profile), mode["application"]
         )
-        @test authoring==alternate
-        @test only(authoring["owners"])["role"]=="simulator"
-        application=E.copy_source(
-            source,
-            joinpath(root, "standalone");
-            runtime_configurations = false,
+        @test authoring == alternate
+        @test only(authoring["owners"])["role"] == "simulator"
+        application = E.copy_source(
+            source, joinpath(root, "standalone"); runtime_configurations = false
         )
         E.prepare_runtime_configurations!(application, authoring)
-        @test C.read_json(joinpath(application, "settings.conf"))==Dict("kind"=>"pupil")
-        @test C.read_json(joinpath(application, "rtc/application.conf"))==Dict(
-            "owners"=>alternate["owners"],
-        )
-        spec=Dict("core"=>"shared-runtime/core.conf.in", "client"=>Dict())
-        prefix=ENV["PIPEWIREAO_PREFIX"]
+        @test C.read_json(joinpath(application, "settings.conf")) == Dict("kind" => "pupil")
+        @test C.read_json(joinpath(application, "rtc/application.conf")) ==
+            Dict("owners" => alternate["owners"])
+        spec = Dict("core" => "shared-runtime/core.conf.in", "client" => Dict())
+        prefix = ENV["PIPEWIREAO_PREFIX"]
         E.render_templates!(application, spec, profile, prefix)
-        core=D.decode(joinpath(application, spec["core"]), prefix)
-        @test !any(item->item["name"]=="libpipewire-module-queue", core["context.modules"])
-        baseline_output=E.copy_source(
-            source,
-            joinpath(root, "baseline");
-            runtime_configurations = false,
+        core = D.decode(joinpath(application, spec["core"]), prefix)
+        @test !any(
+            item -> item["name"] == "libpipewire-module-queue", core["context.modules"]
+        )
+        baseline_output = E.copy_source(
+            source, joinpath(root, "baseline"); runtime_configurations = false
         )
         E.render_templates!(
             baseline_output,
             deepcopy(spec),
-            Dict("scheduling"=>profile["scheduling"]),
+            Dict("scheduling" => profile["scheduling"]),
             prefix,
         )
-        core=D.decode(joinpath(baseline_output, spec["core"]), prefix)
+        core = D.decode(joinpath(baseline_output, spec["core"]), prefix)
         @test count(
-            item->item["name"]=="libpipewire-module-queue",
-            core["context.modules"],
-        )==1
-        @test all(read(joinpath(source, path))==bytes for (path, bytes) in before)
-        @test Set(E.application_files(source))==Set(keys(before))
-        standalone_only=E.copy_source(
-            source,
-            joinpath(root, "standalone-only");
-            runtime_configurations = false,
+            item -> item["name"] == "libpipewire-module-queue", core["context.modules"]
+        ) == 1
+        @test all(read(joinpath(source, path)) == bytes for (path, bytes) in before)
+        @test Set(E.application_files(source)) == Set(keys(before))
+        standalone_only = E.copy_source(
+            source, joinpath(root, "standalone-only"); runtime_configurations = false
         )
         rm(joinpath(standalone_only, "rtc/application.yaml"))
-        selected_authoring=E.source_application(standalone_only, profile)
+        selected_authoring = E.source_application(standalone_only, profile)
         E.prepare_runtime_configurations!(standalone_only, selected_authoring)
         @test isfile(joinpath(standalone_only, "settings.conf"))
         @test isfile(joinpath(standalone_only, "rtc/application.conf"))
         if isfile(joinpath(standalone_only, "rtc/application.conf"))
-            @test C.read_json(joinpath(standalone_only, "rtc/application.conf"))==Dict(
-                "owners"=>alternate["owners"],
-            )
-            @test C.read_json(joinpath(standalone_only, "settings.conf"))==Dict(
-                "kind"=>"pupil",
-            )
+            @test C.read_json(joinpath(standalone_only, "rtc/application.conf")) ==
+                Dict("owners" => alternate["owners"])
+            @test C.read_json(joinpath(standalone_only, "settings.conf")) ==
+                Dict("kind" => "pupil")
         end
         @test_throws ArgumentError E.source_application(
-            source,
-            Dict("application"=>"../outside.yaml"),
+            source, Dict("application" => "../outside.yaml")
         )
         @test_throws ArgumentError E.source_application(
-            source,
-            Dict("application"=>"rtc/application.json"),
+            source, Dict("application" => "rtc/application.json")
         )
         mktempdir() do outside
-            path=joinpath(outside, "application.yaml")
+            path = joinpath(outside, "application.yaml")
             C.write_yaml(path, baseline)
             symlink(path, joinpath(source, "rtc/linked.yaml"))
             @test_throws D.DeploymentError E.source_application(
-                source,
-                Dict("application"=>"rtc/linked.yaml"),
+                source, Dict("application" => "rtc/linked.yaml")
             )
         end
         @test !any(
-            id->id.name in ("AdaptiveOpticsSim", "CUDA", "AMDGPU"),
+            id -> id.name in ("AdaptiveOpticsSim", "CUDA", "AMDGPU"),
             keys(Base.loaded_modules),
         )
     end
@@ -155,50 +151,58 @@ end
     mktempdir() do root
         source = joinpath(root, "source")
         mkpath(joinpath(source, "rtc"))
-        C.write_yaml(joinpath(source, "settings.yaml"), Dict("rate"=>500, "enabled"=>true))
+        C.write_yaml(
+            joinpath(source, "settings.yaml"), Dict("rate" => 500, "enabled" => true)
+        )
         entries = [
-            Dict("source"=>"settings.yaml", "path"=>"settings.conf", "format"=>"json"),
             Dict(
-                "source"=>"settings.yaml",
-                "path"=>"native/settings.conf",
-                "format"=>"spa-json",
+                "source" => "settings.yaml", "path" => "settings.conf", "format" => "json"
+            ),
+            Dict(
+                "source" => "settings.yaml",
+                "path" => "native/settings.conf",
+                "format" => "spa-json",
             ),
         ]
-        declaration =
-            Dict("name"=>"arbitrary-instrument", "runtime-configurations"=>entries)
+        declaration = Dict(
+            "name" => "arbitrary-instrument", "runtime-configurations" => entries
+        )
         C.write_yaml(joinpath(source, "rtc/application.yaml"), declaration)
         original = read(joinpath(source, "rtc/application.yaml"))
         application = E.copy_source(source, joinpath(root, "application"))
         @test C.read_json(joinpath(application, "settings.conf")) ==
-              Dict("rate"=>500, "enabled"=>true)
+            Dict("rate" => 500, "enabled" => true)
         @test D.decode(
-            joinpath(application, "native/settings.conf"),
-            ENV["PIPEWIREAO_PREFIX"],
+            joinpath(application, "native/settings.conf"), ENV["PIPEWIREAO_PREFIX"]
         ) == C.read_json(joinpath(application, "settings.conf"))
         @test startswith(
             read(joinpath(application, "native/settings.conf"), String),
             "# Generated by PipeWireAORTC",
         )
         @test C.read_json(joinpath(application, "rtc/application.conf")) ==
-              Dict("name"=>"arbitrary-instrument")
+            Dict("name" => "arbitrary-instrument")
         @test read(joinpath(source, "rtc/application.yaml")) == original
         @test !isfile(joinpath(source, "settings.conf"))
         @test_throws ArgumentError E.prepare_runtime_configurations!(application)
         for invalid in (
-            Dict("source"=>"settings.yaml", "path"=>"settings.conf", "format"=>"json"),
-            Dict("source"=>"settings.yaml", "path"=>"../escape", "format"=>"json"),
             Dict(
-                "source"=>"settings.yaml",
-                "path"=>"rtc/application.conf",
-                "format"=>"json",
+                "source" => "settings.yaml", "path" => "settings.conf", "format" => "json"
             ),
-            Dict("source"=>"settings.yaml", "path"=>"settings.yaml", "format"=>"json"),
-            Dict("source"=>"settings.yaml", "path"=>"other.conf", "format"=>"toml"),
+            Dict("source" => "settings.yaml", "path" => "../escape", "format" => "json"),
             Dict(
-                "source"=>"settings.yaml",
-                "path"=>"other.conf",
-                "format"=>"json",
-                "unknown"=>true,
+                "source" => "settings.yaml",
+                "path" => "rtc/application.conf",
+                "format" => "json",
+            ),
+            Dict(
+                "source" => "settings.yaml", "path" => "settings.yaml", "format" => "json"
+            ),
+            Dict("source" => "settings.yaml", "path" => "other.conf", "format" => "toml"),
+            Dict(
+                "source" => "settings.yaml",
+                "path" => "other.conf",
+                "format" => "json",
+                "unknown" => true,
             ),
         )
             candidate = joinpath(root, "candidate")
@@ -206,8 +210,7 @@ end
             C.write_yaml(
                 joinpath(candidate, "rtc/application.yaml"),
                 merge(
-                    declaration,
-                    Dict("runtime-configurations"=>[first(entries), invalid]),
+                    declaration, Dict("runtime-configurations" => [first(entries), invalid])
                 ),
             )
             @test_throws ArgumentError E.prepare_runtime_configurations!(candidate)
@@ -223,32 +226,30 @@ end
         source = joinpath(root, "source")
         mkpath(joinpath(source, "rtc"))
         base = Dict(
-            "runtime-configurations"=>[
-                Dict("source"=>"model.yaml", "path"=>"model.conf", "format"=>"json"),
+            "runtime-configurations" => [
+                Dict("source" => "model.yaml", "path" => "model.conf", "format" => "json"),
             ],
         )
         C.write_yaml(joinpath(source, "rtc/application.yaml"), base)
-        C.write_yaml(joinpath(source, "model.yaml"), Dict("kind"=>"optical"))
-        C.write_yaml(joinpath(source, "parameters.yaml"), Dict("parameters"=>[]))
+        C.write_yaml(joinpath(source, "model.yaml"), Dict("kind" => "optical"))
+        C.write_yaml(joinpath(source, "parameters.yaml"), Dict("parameters" => []))
         mode = Dict(
-            "runtime-configurations"=>[
+            "runtime-configurations" => [
                 Dict(
-                    "source"=>"parameters.yaml",
-                    "path"=>"parameters.conf",
-                    "format"=>"json",
+                    "source" => "parameters.yaml",
+                    "path" => "parameters.conf",
+                    "format" => "json",
                 ),
             ],
         )
         selected = E.merge_configuration(base, mode)
         application = E.copy_source(
-            source,
-            joinpath(root, "controller");
-            runtime_configurations = false,
+            source, joinpath(root, "controller"); runtime_configurations = false
         )
         E.prepare_runtime_configurations!(application, selected)
         @test C.read_json(joinpath(application, "parameters.conf")) ==
-              Dict("parameters"=>[])
-        @test C.read_json(joinpath(application, "model.conf")) == Dict("kind"=>"optical")
+            Dict("parameters" => [])
+        @test C.read_json(joinpath(application, "model.conf")) == Dict("kind" => "optical")
         @test !haskey(
             C.read_json(joinpath(application, "rtc/application.conf")),
             "runtime-configurations",
@@ -262,36 +263,43 @@ end
 end
 
 @testset "omitted routine application fields expand before native validation" begin
-    abbreviated=Dict{String,Any}(
-        "owners"=>[Dict{String,Any}("role"=>"science")],
-        "session-runtime"=>Dict{String,Any}("argv"=>["session"]),
+    abbreviated = Dict{String,Any}(
+        "owners" => [Dict{String,Any}("role" => "science")],
+        "session-runtime" => Dict{String,Any}("argv" => ["session"]),
     )
-    explicit=deepcopy(abbreviated)
-    explicit["cpu-latency-us"]=nothing
-    explicit["environment"]=Dict{String,Any}()
-    only(explicit["owners"])["environment"]=Dict{String,Any}()
-    explicit["session-runtime"]["environment"]=Dict{String,Any}()
-    @test E.application_defaults!(deepcopy(abbreviated))==explicit
-    overrides=deepcopy(explicit)
-    overrides["cpu-latency-us"]=12
-    only(overrides["owners"])["environment"]=Dict("OPENBLAS_NUM_THREADS"=>"2")
-    overrides["session-runtime"]["environment"]=Dict("SITE"=>"test")
-    @test E.application_defaults!(deepcopy(overrides))==overrides
+    explicit = deepcopy(abbreviated)
+    explicit["cpu-latency-us"] = nothing
+    explicit["environment"] = Dict{String,Any}()
+    only(explicit["owners"])["environment"] = Dict{String,Any}()
+    explicit["session-runtime"]["environment"] = Dict{String,Any}()
+    @test E.application_defaults!(deepcopy(abbreviated)) == explicit
+    overrides = deepcopy(explicit)
+    overrides["cpu-latency-us"] = 12
+    only(overrides["owners"])["environment"] = Dict("OPENBLAS_NUM_THREADS" => "2")
+    overrides["session-runtime"]["environment"] = Dict("SITE" => "test")
+    @test E.application_defaults!(deepcopy(overrides)) == overrides
     for target in ("owner", "session", "application"),
-        value in (nothing, [], Dict("BAD=NAME"=>"value"), Dict("COUNT"=>1))
+        value in (nothing, [], Dict("BAD=NAME" => "value"), Dict("COUNT" => 1))
 
-        invalid=deepcopy(abbreviated)
-        destination=target=="owner" ? only(invalid["owners"]) :
-                    target=="session" ? invalid["session-runtime"] : invalid
-        destination["environment"]=value
+        invalid = deepcopy(abbreviated)
+        destination = if target == "owner"
+            only(invalid["owners"])
+        elseif target == "session"
+            invalid["session-runtime"]
+        else
+            invalid
+        end
+        destination["environment"] = value
         @test_throws D.DeploymentError E.application_defaults!(invalid)
     end
     mktempdir() do source
-        path=joinpath(source, "rtc/modes.yaml")
-        C.write_yaml(path, Dict("default"=>"source", "modes"=>Dict("source"=>Dict())))
-        @test E.selected_mode(source, Dict())==Dict("application"=>Dict())
-        for mode in (Dict("application"=>nothing), Dict("unknown"=>true))
-            C.write_yaml(path, Dict("default"=>"source", "modes"=>Dict("source"=>mode)))
+        path = joinpath(source, "rtc/modes.yaml")
+        C.write_yaml(path, Dict("default" => "source", "modes" => Dict("source" => Dict())))
+        @test E.selected_mode(source, Dict()) == Dict("application" => Dict())
+        for mode in (Dict("application" => nothing), Dict("unknown" => true))
+            C.write_yaml(
+                path, Dict("default" => "source", "modes" => Dict("source" => mode))
+            )
             @test_throws ArgumentError E.selected_mode(source, Dict())
         end
     end

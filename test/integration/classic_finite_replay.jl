@@ -17,8 +17,7 @@ const SUPPORT = get(
     "CLASSIC_EXCHANGE_SUPPORT",
     normpath(
         joinpath(
-            @__DIR__,
-            "../../../../adaptive-optics-simulations/test/exchange_fixture.jl",
+            @__DIR__, "../../../../adaptive-optics-simulations/test/exchange_fixture.jl"
         ),
     ),
 )
@@ -26,10 +25,12 @@ include(SUPPORT)
 include(joinpath(@__DIR__, "classic_observation.jl"))
 include(joinpath(@__DIR__, "classic_replay.jl"))
 using .ClassicReplay: prepare_controller, replay
-const REPLAY_SHA256_AT_LOAD =
-    bytes2hex(sha256(read(joinpath(@__DIR__, "classic_replay.jl"))))
-const OBSERVATION_SHA256_AT_LOAD =
-    bytes2hex(sha256(read(joinpath(@__DIR__, "classic_observation.jl"))))
+const REPLAY_SHA256_AT_LOAD = bytes2hex(
+    sha256(read(joinpath(@__DIR__, "classic_replay.jl")))
+)
+const OBSERVATION_SHA256_AT_LOAD = bytes2hex(
+    sha256(read(joinpath(@__DIR__, "classic_observation.jl")))
+)
 const FEEDBACK_IN = Symbol("constraint-feedback")
 const FEEDBACK_OUT = Symbol("controller-constraint-feedback")
 const SCALE = Float32(1e-6)
@@ -50,24 +51,24 @@ function write_private_configuration(path, application, core_name)
     selected = Set(
         [
             "simulator-detector-queue-input";
-            [prefix*"-queue-input" for (_, prefix) in RTC_QUEUES]
+            [prefix * "-queue-input" for (_, prefix) in RTC_QUEUES]
         ],
     )
     queues = filter(installed["context.modules"]) do declaration
-        declaration["name"]=="libpipewire-module-queue" &&
+        declaration["name"] == "libpipewire-module-queue" &&
             declaration["args"]["capture.props"]["node.name"] in selected
     end
-    length(queues)==8 ||
+    length(queues) == 8 ||
         error("application does not declare the eight selected copy queues")
     for declaration in queues
         args = declaration["args"]
-        args["queue.max-buffers"]==1 &&
-        args["queue.storage"]=="copy" &&
-        args["queue.overflow"]=="drop-oldest" ||
+        args["queue.max-buffers"] == 1 &&
+        args["queue.storage"] == "copy" &&
+        args["queue.overflow"] == "drop-oldest" ||
             error("application observation queue contract changed")
     end
     modules = [
-        Dict{String,Any}("name"=>name) for name in (
+        Dict{String,Any}("name" => name) for name in (
             "libpipewire-module-scheduler-v1",
             "libpipewire-module-protocol-native",
             "libpipewire-module-spa-node-factory",
@@ -81,23 +82,23 @@ function write_private_configuration(path, application, core_name)
     # Retain the exact queue declarations and dummy driver objects. Only this
     # functional test's daemon identity and unpinned, non-RT loop placement differ.
     configuration = Dict(
-        "context.properties"=>Dict(
-            "core.daemon"=>true,
-            "core.name"=>core_name,
-            "support.dbus"=>false,
-            "library.use-fallback"=>false,
-            "context.data-loops"=>[
+        "context.properties" => Dict(
+            "core.daemon" => true,
+            "core.name" => core_name,
+            "support.dbus" => false,
+            "library.use-fallback" => false,
+            "context.data-loops" => [
                 Dict(
-                    "loop.name"=>name,
-                    "thread.name"=>name,
-                    "loop.rt-prio"=>-1,
-                    "loop.idle"=>"eventfd",
+                    "loop.name" => name,
+                    "thread.name" => name,
+                    "loop.rt-prio" => -1,
+                    "loop.idle" => "eventfd",
                 ) for name in ("rtc-data-loop", "telemetry-loop")
             ],
         ),
-        "context.spa-libs"=>Dict("support.*"=>"support/libspa-support"),
-        "context.modules"=>modules,
-        "context.objects"=>installed["context.objects"],
+        "context.spa-libs" => Dict("support.*" => "support/libspa-support"),
+        "context.modules" => modules,
+        "context.objects" => installed["context.objects"],
     )
     PipeWireAORTC.ScienceExport.write_spa_config(path, configuration)
     return nothing
@@ -145,13 +146,7 @@ function named_port(registry, node, direction, name = nothing)
 end
 
 function connect_ports(
-    prepared,
-    registry,
-    output_node,
-    output_name,
-    input_node,
-    input_name;
-    trackers = nothing,
+    prepared, registry, output_node, output_name, input_node, input_name; trackers = nothing
 )
     roundtrip(registry)
     output = named_port(registry, output_node, "out", output_name)
@@ -169,7 +164,7 @@ function connect_ports(
                 "object.linger" => "false",
             ),
         )
-        trackers===nothing || push!(trackers, track_info!(link))
+        trackers === nothing || push!(trackers, track_info!(link))
         link
     end
 end
@@ -183,12 +178,12 @@ function prepare_observers(prepared, registry)
         map(specs, captures) do spec, capture
             stream = Stream(
                 prepared.core,
-                "finite-observer-"*spec.name;
+                "finite-observer-" * spec.name;
                 properties = Dict(
-                    "node.name"=>"finite-observer-"*spec.name,
-                    "node.want-driver"=>"true",
-                    "priority.driver"=>"100",
-                    "node.loop.name"=>"telemetry-loop",
+                    "node.name" => "finite-observer-" * spec.name,
+                    "node.want-driver" => "true",
+                    "priority.driver" => "100",
+                    "node.loop.name" => "telemetry-loop",
                 ),
                 on_process = capture,
                 on_param_changed = ClassicObservationFormat(capture),
@@ -198,7 +193,8 @@ function prepare_observers(prepared, registry)
             connect!(
                 stream,
                 :input;
-                flags = STREAM_MAP_BUFFERS|STREAM_INACTIVE | STREAM_DONT_RECONNECT|STREAM_NO_CONVERT|STREAM_DRIVER,
+                flags = STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT |
+                        STREAM_NO_CONVERT | STREAM_DRIVER,
                 params = (
                     ndarray_format(capture.format; schema = capture.schema),
                     _classic_buffer_parameters(capture)...,
@@ -218,36 +214,34 @@ function attach_observers!(prepared, registry, observer)
     for (spec, stream) in zip(observer.specs, observer.streams)
         wait_until("selected observation playback port is not published") do
             with_thread_loop_lock(prepared.loop) do _
-                nodes=find_globals(
+                nodes = find_globals(
                     registry;
                     interface = "PipeWire:Interface:Node",
-                    properties = ("node.name"=>spec.node,),
+                    properties = ("node.name" => spec.node,),
                 )
                 isempty(nodes) && return false
-                outputs=find_globals(
+                outputs = find_globals(
                     registry;
                     interface = "PipeWire:Interface:Port",
                     properties = (
-                        "node.id"=>string(only(nodes).id),
-                        "port.direction"=>"out",
+                        "node.id" => string(only(nodes).id), "port.direction" => "out"
                     ),
                 )
-                inputs=find_globals(
+                inputs = find_globals(
                     registry;
                     interface = "PipeWire:Interface:Port",
                     properties = (
-                        "node.id"=>string(node_id(stream)),
-                        "port.direction"=>"in",
+                        "node.id" => string(node_id(stream)), "port.direction" => "in"
                     ),
                 )
-                return length(outputs)==length(inputs)==1
+                return length(outputs) == length(inputs) == 1
             end
         end
         queue = only(
             find_globals(
                 registry;
                 interface = "PipeWire:Interface:Node",
-                properties = ("node.name"=>spec.node,),
+                properties = ("node.name" => spec.node,),
             ),
         ).id
         push!(
@@ -270,20 +264,20 @@ function drive_observers!(prepared, observer, index, frames, demanded, identity)
     wait_until("selected observation queues did not deliver accepted sequence $index") do
         with_thread_loop_lock(prepared.loop) do _
             for capture in observer.captures
-                capture.error===nothing || throw(capture.error)
+                capture.error === nothing || throw(capture.error)
             end
             if all(
-                capture -> capture.header!==nothing && capture.header.sequence==index,
+                capture -> capture.header !== nothing && capture.header.sequence == index,
                 observer.captures,
             )
-                @test observer.captures[1].values==@view(frames[:, index])
-                @test observer.captures[2].values==@view(demanded[:, index])
-                @test all(capture -> capture.identity==identity, observer.captures)
+                @test observer.captures[1].values == @view(frames[:, index])
+                @test observer.captures[2].values == @view(demanded[:, index])
+                @test all(capture -> capture.identity == identity, observer.captures)
                 return true
             end
             for stream in observer.streams
-                if stream_state(stream)==PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
-                   is_driving(stream)
+                if stream_state(stream) ==
+                   PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING && is_driving(stream)
                     trigger_process!(stream)
                 end
             end
@@ -293,19 +287,20 @@ function drive_observers!(prepared, observer, index, frames, demanded, identity)
 end
 
 function observer_record(prepared, observer, mode)
-    observer===nothing && return Dict("mode"=>String(mode), "selected_queues"=>String[])
+    observer === nothing &&
+        return Dict("mode" => String(mode), "selected_queues" => String[])
     return with_thread_loop_lock(prepared.loop) do _
         Dict(
-            "mode"=>String(mode),
-            "selected_queues"=>[spec.node for spec in observer.specs],
-            "streams"=>[
+            "mode" => String(mode),
+            "selected_queues" => [spec.node for spec in observer.specs],
+            "streams" => [
                 Dict(
-                    "name"=>spec.name,
-                    "samples"=>capture.count,
-                    "distinct_sequences"=>capture.distinct_sequences,
-                    "sequences"=>[
+                    "name" => spec.name,
+                    "samples" => capture.count,
+                    "distinct_sequences" => capture.distinct_sequences,
+                    "sequences" => [
                         identity.sequence for
-                        identity in capture.identities if identity!==nothing
+                        identity in capture.identities if identity !== nothing
                     ],
                 ) for (spec, capture) in zip(observer.specs, observer.captures)
             ],
@@ -328,10 +323,10 @@ function record_prefix!(
     generation = frame_acquisition_generation(prepared)
     identities = Vector{AcquisitionIdentity}(undef, count)
     timings = Vector{PipeWireFrameCommandTiming}(undef, count)
-    for index = 1:count
-        if mode===:churn && index==cld(count, 3)+1
+    for index in 1:count
+        if mode === :churn && index == cld(count, 3) + 1
             detach_observers!(prepared, observer)
-        elseif mode===:churn && index==cld(2count, 3)+1
+        elseif mode === :churn && index == cld(2count, 3) + 1
             attach_observers!(prepared, registry, observer)
         end
         sequence = UInt64(index)
@@ -345,22 +340,22 @@ function record_prefix!(
         with_thread_loop_lock(prepared.loop) do _
             @test frame_capture.count[] == command_capture.count[] == sequence
             @test frame_capture.header.sequence ==
-                  command_capture.header.sequence ==
-                  sequence
+                command_capture.header.sequence ==
+                sequence
             @test frame_capture.identity == command_capture.identity
             @test frame_capture.identity.sequence == sequence
             @test frame_capture.identity.generation == generation
             index == 1 || @test frame_capture.identity.domain == identities[1].domain
             @test frame_capture.version == command_capture.version == 2
             @test frame_capture.duration ==
-                  command_capture.duration ==
-                  prepared.configuration.exposure_duration_ns
+                command_capture.duration ==
+                prepared.configuration.exposure_duration_ns
             copyto!(@view(frames[:, index]), frame_capture.values)
             copyto!(@view(demanded[:, index]), command_capture.values)
             identities[index] = frame_capture.identity
         end
         @test frames[:, index] ==
-              expected_payload(hil_frame_buffer(prepared.boundary), UInt16)
+            expected_payload(hil_frame_buffer(prepared.boundary), UInt16)
         copyto!(@view(adopted[:, index]), hil_command_buffer(prepared.boundary))
         @test adopted[:, index] == demanded[:, index] .* SCALE
         @test hil_boundary_status(prepared.boundary).active_command_sequence == sequence
@@ -368,22 +363,23 @@ function record_prefix!(
         @test timing.sequence == sequence
         @test timing.source_published_nanoseconds <= timing.command_received_nanoseconds
         @test timing.command_received_nanoseconds - timing.source_published_nanoseconds ==
-              timing.end_to_end_latency_nanoseconds
+            timing.end_to_end_latency_nanoseconds
         index == 1 || @test timings[index-1].command_received_nanoseconds <=
-              timing.source_published_nanoseconds
+            timing.source_published_nanoseconds
         timings[index] = timing
-        if mode===:normal ||
-           (mode===:slow && index in (1, count)) ||
-           (mode===:churn && !isempty(observer.links))
+        if mode === :normal ||
+            (mode === :slow && index in (1, count)) ||
+            (mode === :churn && !isempty(observer.links))
             drive_observers!(prepared, observer, index, frames, demanded, identities[index])
         end
     end
     @test hil_boundary_status(prepared.boundary).frame_sequence == UInt64(count)
     if mode in (:slow, :churn)
         for capture in observer.captures
-            sequences =
-                [identity.sequence for identity in capture.identities if identity!==nothing]
-            @test length(sequences)>=2
+            sequences = [
+                identity.sequence for identity in capture.identities if identity !== nothing
+            ]
+            @test length(sequences) >= 2
             @test any(>(1), diff(sequences))
         end
     end
@@ -394,7 +390,7 @@ function run_prefix(application, output, system, count; mode = :none)
     mkpath(output)
     println("Starting finite prefix: ", mode)
     flush(stdout)
-    frames = zeros(UInt16, 352*352, count)
+    frames = zeros(UInt16, 352 * 352, count)
     demanded = zeros(Float32, 277, count)
     adopted = similar(demanded)
     core_name = "classic-finite-$(getpid())-$(time_ns())"
@@ -405,26 +401,25 @@ function run_prefix(application, output, system, count; mode = :none)
     mkpath(runtime)
     mkpath(configuration_path)
     write_private_configuration(
-        joinpath(configuration_path, "private-core.conf"),
-        application,
-        core_name,
+        joinpath(configuration_path, "private-core.conf"), application, core_name
     )
     write(joinpath(configuration_path, "client.conf"), CLIENT_CONFIGURATION)
     # The registered JLL supplies the core; the composed application prefix
     # also supplies the external observation queue module and SPA plugins.
-    artifact =
-        abspath(get(ENV, "CLASSIC_NATIVE_PREFIX", String(PipeWireAO_jll.artifact_dir)))
+    artifact = abspath(
+        get(ENV, "CLASSIC_NATIVE_PREFIX", String(PipeWireAO_jll.artifact_dir))
+    )
     isfile(joinpath(artifact, "lib", "pipewire-ao-0.3", "libpipewire-module-queue.so")) ||
         error(
             "set CLASSIC_NATIVE_PREFIX to the reviewed composed native prefix containing the queue module",
         )
     environment = Dict(
-        "XDG_RUNTIME_DIR"=>runtime,
-        "PIPEWIREAO_RUNTIME_DIR"=>runtime,
-        "PIPEWIREAO_CONFIG_DIR"=>configuration_path,
-        "PIPEWIREAO_MODULE_DIR"=>joinpath(artifact, "lib", "pipewire-ao-0.3"),
-        "PIPEWIREAO_SPA_PLUGIN_DIR"=>joinpath(artifact, "lib", "spa-ao-0.2"),
-        "PIPEWIREAO_DEBUG"=>"0",
+        "XDG_RUNTIME_DIR" => runtime,
+        "PIPEWIREAO_RUNTIME_DIR" => runtime,
+        "PIPEWIREAO_CONFIG_DIR" => configuration_path,
+        "PIPEWIREAO_MODULE_DIR" => joinpath(artifact, "lib", "pipewire-ao-0.3"),
+        "PIPEWIREAO_SPA_PLUGIN_DIR" => joinpath(artifact, "lib", "spa-ao-0.2"),
+        "PIPEWIREAO_DEBUG" => "0",
     )
     result = withenv(environment...) do
         log = open(joinpath(output, "private-core.log"), "w")
@@ -445,11 +440,10 @@ function run_prefix(application, output, system, count; mode = :none)
                 wait = false,
             )
             wait_until(
-                () -> ispath(joinpath(runtime, core_name)),
-                "private core socket missing",
+                () -> ispath(joinpath(runtime, core_name)), "private core socket missing"
             )
             options = PipeWireAORTC.AOSOwner.configuration(
-                joinpath(application, "simulation.conf"),
+                joinpath(application, "simulation.conf")
             )
             configuration = REVOLTClassicSim.pipewire_configuration(
                 system,
@@ -462,10 +456,7 @@ function run_prefix(application, output, system, count; mode = :none)
             @test configuration.frame_encoding == :uint16
             @test configuration.command_scale == SCALE
             prepared = prepare_pipewire_hil(
-                system.boundary,
-                configuration;
-                frame_buffers = 3,
-                command_buffers = 3,
+                system.boundary, configuration; frame_buffers = 3, command_buffers = 3
             )
             published = Channel{Any}(1)
             # With an interactive pool the script's main task runs there.
@@ -484,11 +475,10 @@ function run_prefix(application, output, system, count; mode = :none)
                         connect = false,
                         fifo_inputs = true,
                         boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
-                        feedback = FEEDBACK_IN=>FEEDBACK_OUT,
+                        feedback = FEEDBACK_IN => FEEDBACK_OUT,
                     )
                     FilterGraphPipeWire.prepare!(
-                        controller;
-                        required_outputs = keys(graph.output_formats),
+                        controller; required_outputs = keys(graph.output_formats)
                     )
                     put!(published, controller)
                     FilterGraphPipeWire.connect!(controller)
@@ -502,25 +492,22 @@ function run_prefix(application, output, system, count; mode = :none)
                 end
             end
             timedwait(
-                () -> isready(published) || istaskdone(owner_task),
-                300;
-                pollint = 0.01,
-            )==:ok || error("controller preparation timed out")
+                () -> isready(published) || istaskdone(owner_task), 300; pollint = 0.01
+            ) == :ok || error("controller preparation timed out")
             node = take!(published)
             node isa Exception && throw(node)
             wait_until(
                 () -> FilterGraphPipeWire.node_id(node) !== nothing,
                 "controller publication timed out",
             )
-            frame_capture = capture(UInt16, 352*352)
+            frame_capture = capture(UInt16, 352 * 352)
             command_capture = capture(Float32, 277)
             with_thread_loop_lock(prepared.loop) do _
                 frame_sink = Stream(
                     prepared.core,
                     "finite-frames";
                     properties = Dict(
-                        "node.name"=>"finite-frames",
-                        "node.reliable"=>"true",
+                        "node.name" => "finite-frames", "node.reliable" => "true"
                     ),
                     on_process = frame_capture,
                 )
@@ -528,8 +515,7 @@ function run_prefix(application, output, system, count; mode = :none)
                     prepared.core,
                     "finite-commands";
                     properties = Dict(
-                        "node.name"=>"finite-commands",
-                        "node.reliable"=>"true",
+                        "node.name" => "finite-commands", "node.reliable" => "true"
                     ),
                     on_process = command_capture,
                 )
@@ -619,7 +605,7 @@ function run_prefix(application, output, system, count; mode = :none)
                 find_globals(
                     registry;
                     interface = "PipeWire:Interface:Node",
-                    properties = ("node.name"=>"simulator-detector-queue-input",),
+                    properties = ("node.name" => "simulator-detector-queue-input",),
                 ),
             ).id
             push!(
@@ -639,7 +625,7 @@ function run_prefix(application, output, system, count; mode = :none)
                     find_globals(
                         registry;
                         interface = "PipeWire:Interface:Node",
-                        properties = ("node.name"=>prefix*"-queue-input",),
+                        properties = ("node.name" => prefix * "-queue-input",),
                     ),
                 ).id
                 push!(
@@ -666,13 +652,13 @@ function run_prefix(application, output, system, count; mode = :none)
                     all(
                         tracker ->
                             has_current_info(tracker) &&
-                            current_info(tracker).state==PipeWireAO.LINK_STATE_ACTIVE,
+                            current_info(tracker).state == PipeWireAO.LINK_STATE_ACTIVE,
                         link_trackers,
                     )
                 end
             end
-            if mode!==:none
-                observer=prepare_observers(prepared, registry)
+            if mode !== :none
+                observer = prepare_observers(prepared, registry)
                 attach_observers!(prepared, registry, observer)
             end
             prefix = record_prefix!(
@@ -727,14 +713,13 @@ function run_prefix(application, output, system, count; mode = :none)
             end
             rethrow()
         finally
-            prepared === nothing ||
-                attempt_cleanup!(() -> stop!(prepared), cleanup_errors)
+            prepared === nothing || attempt_cleanup!(() -> stop!(prepared), cleanup_errors)
             node === nothing ||
                 node isa Exception ||
                 attempt_cleanup!(() -> FilterGraphPipeWire.quit!(node), cleanup_errors)
             if owner_task !== nothing
                 attempt_cleanup!(cleanup_errors) do
-                    timedwait(() -> istaskdone(owner_task), 10; pollint = 0.01)==:ok ||
+                    timedwait(() -> istaskdone(owner_task), 10; pollint = 0.01) == :ok ||
                         error("controller did not stop")
                     fetch(owner_task)
                 end
@@ -743,7 +728,7 @@ function run_prefix(application, output, system, count; mode = :none)
                 attempt_cleanup!(cleanup_errors) do
                     with_thread_loop_lock(prepared.loop) do _
                         observations =
-                            observer===nothing ? () :
+                            observer === nothing ? () :
                             (reverse(observer.links)..., observer.streams...)
                         for resource in (
                             reverse(link_trackers)...,
@@ -785,15 +770,15 @@ end
 function run_replay(arguments)
     length(arguments) in (2, 3) || error("expected APPLICATION NEW_OUTPUT [FRAME_COUNT]")
     application, output = abspath.(arguments[1:2])
-    count = length(arguments)==3 ? parse(Int, arguments[3]) : 32
-    6<=count<=256 || error("frame count must be 6:256")
+    count = length(arguments) == 3 ? parse(Int, arguments[3]) : 32
+    6 <= count <= 256 || error("frame count must be 6:256")
     ispath(output) && error("evidence directory must be new")
-    Threads.nthreads(:interactive)>=1 ||
+    Threads.nthreads(:interactive) >= 1 ||
         error("use --threads=2,1 for the native controller owner")
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
-    target = if options.backend===:cpu
+    target = if options.backend === :cpu
         Backends.HostComputeDevice()
-    elseif options.backend===:cuda
+    elseif options.backend === :cuda
         CUDA.functional() || error("CUDA is unavailable")
         CUDA.allowscalar(false)
         compute_device(CUDA.zeros(Float32, 1))
@@ -801,99 +786,96 @@ function run_replay(arguments)
         error("finite Classic replay supports explicit CPU or CUDA selection")
     end
     mkpath(output)
-    declared =
-        PipeWireAORTC.Common.read_json(joinpath(application, "deployment.conf"))["artifacts"]
-    before = Dict(name=>digest(joinpath(application, name)) for name in keys(declared))
-    all(name -> before[name]==declared[name], keys(declared)) ||
+    declared = PipeWireAORTC.Common.read_json(joinpath(application, "deployment.conf"))["artifacts"]
+    before = Dict(name => digest(joinpath(application, name)) for name in keys(declared))
+    all(name -> before[name] == declared[name], keys(declared)) ||
         error("application artifact hash mismatch")
     before["deployment.conf"] = digest(joinpath(application, "deployment.conf"))
     @testset "Classic finite $(options.backend) plant / CPU JFG replay" begin
         system = REVOLTClassicSim.prepare_hil_system(options.plant.settings; target)
-        @test compute_device(system.boundary.frame_output)==target
-        @test compute_device(system.boundary.command_input)==target
+        @test compute_device(system.boundary.frame_output) == target
+        @test compute_device(system.boundary.command_input) == target
         result = run_prefix(application, joinpath(output, "none"), system, count)
         predicted = replay(application, result.frames, result.adopted)
         observation_records = [result.observation]
         for mode in (:normal, :slow, :churn)
             reset_hil_boundary!(system.boundary)
-            @test hil_boundary_status(system.boundary).frame_sequence==0
-            compared =
-                run_prefix(application, joinpath(output, String(mode)), system, count; mode)
-            @test compared.frames==result.frames
-            @test compared.demanded==result.demanded
-            @test compared.adopted==result.adopted
-            @test replay(application, compared.frames, compared.adopted)==predicted
+            @test hil_boundary_status(system.boundary).frame_sequence == 0
+            compared = run_prefix(
+                application, joinpath(output, String(mode)), system, count; mode
+            )
+            @test compared.frames == result.frames
+            @test compared.demanded == result.demanded
+            @test compared.adopted == result.adopted
+            @test replay(application, compared.frames, compared.adopted) == predicted
             push!(observation_records, compared.observation)
         end
         @test any(!iszero, result.adopted)
-        @test count==1 ||
-              any(index -> result.frames[:, index]!=result.frames[:, 1], 2:count)
-        @test count==1 ||
-              any(index -> result.adopted[:, index]!=result.adopted[:, 1], 2:count)
+        @test count == 1 ||
+            any(index -> result.frames[:, index] != result.frames[:, 1], 2:count)
+        @test count == 1 ||
+            any(index -> result.adopted[:, index] != result.adopted[:, 1], 2:count)
         payloads = Dict(
-            "frames-u16-row-major.bin"=>result.frames,
-            "demanded-f32-micrometre.bin"=>result.demanded,
-            "adopted-f32-metre.bin"=>result.adopted,
-            "replayed-f32-metre.bin"=>predicted,
+            "frames-u16-row-major.bin" => result.frames,
+            "demanded-f32-micrometre.bin" => result.demanded,
+            "adopted-f32-metre.bin" => result.adopted,
+            "replayed-f32-metre.bin" => predicted,
         )
         for (name, array) in payloads
             write(joinpath(output, name), array)
         end
         for (name, hash) in before
-            @test digest(joinpath(application, name))==hash
+            @test digest(joinpath(application, name)) == hash
         end
-        @test digest(@__FILE__)==TEST_SHA256_AT_LOAD
-        @test digest(joinpath(@__DIR__, "classic_replay.jl"))==REPLAY_SHA256_AT_LOAD
-        period_ns = round(Int, Float64(system.frame_period_s)*1e9)
+        @test digest(@__FILE__) == TEST_SHA256_AT_LOAD
+        @test digest(joinpath(@__DIR__, "classic_replay.jl")) == REPLAY_SHA256_AT_LOAD
+        period_ns = round(Int, Float64(system.frame_period_s) * 1e9)
         report = Dict(
-            "frames"=>count,
-            "exact_replay"=>predicted==result.adopted,
-            "application"=>application,
-            "application_sha256"=>before,
-            "support_sha256"=>digest(SUPPORT),
-            "test_sha256"=>TEST_SHA256_AT_LOAD,
-            "observation_helper_sha256"=>OBSERVATION_SHA256_AT_LOAD,
-            "controller_replay_sha256"=>REPLAY_SHA256_AT_LOAD,
-            "observation_modes"=>observation_records,
-            "generation"=>result.generation,
-            "core_name"=>result.core_name,
-            "native_prefix"=>result.native_prefix,
-            "native_sha256"=>Dict(
-                name=>digest(joinpath(result.native_prefix, name)) for name in
+            "frames" => count,
+            "exact_replay" => predicted == result.adopted,
+            "application" => application,
+            "application_sha256" => before,
+            "support_sha256" => digest(SUPPORT),
+            "test_sha256" => TEST_SHA256_AT_LOAD,
+            "observation_helper_sha256" => OBSERVATION_SHA256_AT_LOAD,
+            "controller_replay_sha256" => REPLAY_SHA256_AT_LOAD,
+            "observation_modes" => observation_records,
+            "generation" => result.generation,
+            "core_name" => result.core_name,
+            "native_prefix" => result.native_prefix,
+            "native_sha256" => Dict(
+                name => digest(joinpath(result.native_prefix, name)) for name in
                 ("bin/pipewire-ao", "lib/pipewire-ao-0.3/libpipewire-module-queue.so")
             ),
-            "domain"=>bytes2hex(collect(result.identities[1].domain.bytes)),
-            "sequences"=>[identity.sequence for identity in result.identities],
-            "source_published_ns"=>[
-                timing.source_published_nanoseconds for timing in result.timings
-            ],
-            "command_received_ns"=>[
-                timing.command_received_nanoseconds for timing in result.timings
-            ],
-            "model_period_ns"=>period_ns,
-            "derived_model_timestamps_ns"=>collect(0:(count-1)) .* period_ns,
-            "command_scale"=>Float64(SCALE),
-            "julia_version"=>string(VERSION),
-            "backend"=>string(options.backend),
-            "cuda_device"=>options.backend===:cuda ? string(CUDA.device()) : "not used",
-            "frame_min_adc"=>minimum(result.frames),
-            "frame_max_adc"=>maximum(result.frames),
-            "frame_changed_components"=>sum(
+            "domain" => bytes2hex(collect(result.identities[1].domain.bytes)),
+            "sequences" => [identity.sequence for identity in result.identities],
+            "source_published_ns" =>
+                [timing.source_published_nanoseconds for timing in result.timings],
+            "command_received_ns" =>
+                [timing.command_received_nanoseconds for timing in result.timings],
+            "model_period_ns" => period_ns,
+            "derived_model_timestamps_ns" => collect(0:(count-1)) .* period_ns,
+            "command_scale" => Float64(SCALE),
+            "julia_version" => string(VERSION),
+            "backend" => string(options.backend),
+            "cuda_device" => options.backend === :cuda ? string(CUDA.device()) : "not used",
+            "frame_min_adc" => minimum(result.frames),
+            "frame_max_adc" => maximum(result.frames),
+            "frame_changed_components" => sum(
                 index -> sum(result.frames[:, index] .!= result.frames[:, 1]),
                 2:count;
                 init = 0,
             ),
-            "demanded_max_abs_um"=>maximum(abs, result.demanded),
-            "adopted_max_abs_m"=>maximum(abs, result.adopted),
-            "adopted_changed_components"=>sum(
+            "demanded_max_abs_um" => maximum(abs, result.demanded),
+            "adopted_max_abs_m" => maximum(abs, result.adopted),
+            "adopted_changed_components" => sum(
                 index -> sum(result.adopted[:, index] .!= result.adopted[:, 1]),
                 2:count;
                 init = 0,
             ),
-            "payload_sha256"=>Dict(
-                name=>digest(joinpath(output, name)) for name in keys(payloads)
-            ),
-            "scope"=>"finite software composition, exact numerical replay and selected detector/demanded copy-queue observation invariance; no cadence, latency, convergence, physical validation, lossless-observer or other-output invariance claim",
+            "payload_sha256" =>
+                Dict(name => digest(joinpath(output, name)) for name in keys(payloads)),
+            "scope" => "finite software composition, exact numerical replay and selected detector/demanded copy-queue observation invariance; no cadence, latency, convergence, physical validation, lossless-observer or other-output invariance claim",
         )
         PipeWireAORTC.Common.write_yaml(joinpath(output, "result.yaml"), report)
     end
@@ -901,13 +883,13 @@ end
 
 function main(arguments)
     length(arguments) in (2, 3) || error("expected APPLICATION NEW_OUTPUT [FRAME_COUNT]")
-    options=PipeWireAORTC.AOSOwner.configuration(
-        joinpath(abspath(arguments[1]), "simulation.conf"),
+    options = PipeWireAORTC.AOSOwner.configuration(
+        joinpath(abspath(arguments[1]), "simulation.conf")
     )
-    options.backend===:cuda && (@eval import CUDA)
+    options.backend === :cuda && (@eval import CUDA)
     # Optional backend methods/extensions must be visible throughout preparation.
     return Base.invokelatest(run_replay, arguments)
 end
 
-abspath(PROGRAM_FILE)==(@__FILE__) && main(ARGS)
+abspath(PROGRAM_FILE) == (@__FILE__) && main(ARGS)
 end

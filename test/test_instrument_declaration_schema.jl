@@ -118,8 +118,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 ),
             ],
             "graphs" => Dict(
-                "production" => "production.yaml",
-                "calibration" => "calibration.yaml",
+                "production" => "production.yaml", "calibration" => "calibration.yaml"
             ),
             "profiles" => Dict(
                 "basic" => Dict(
@@ -173,30 +172,33 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "deformable_mirrors" => Dict(
                 "primary" => Dict(
                     "limiter" => Dict(
-                        "kind" => "amplitude",
-                        "lower" => -1.0,
-                        "upper" => 1.0,
+                        "kind" => "amplitude", "lower" => -1.0, "upper" => 1.0
                     ),
                     "shape_control" => Dict(
                         "bases" => [
                             Dict(
-                                "id"=>"zernike",
-                                "name"=>"Zernike",
-                                "units"=>"m",
-                                "coefficient_limit"=>1.0,
-                                "normalization"=>"sampled_peak",
-                                "definition"=>Dict(
-                                    "kind"=>"zernike",
-                                    "modes"=>[Dict("n"=>2, "m"=>0, "name"=>"defocus")],
+                                "id" => "zernike",
+                                "name" => "Zernike",
+                                "units" => "m",
+                                "coefficient_limit" => 1.0,
+                                "normalization" => "sampled_peak",
+                                "definition" => Dict(
+                                    "kind" => "zernike",
+                                    "modes" => [
+                                        Dict("n" => 2, "m" => 0, "name" => "defocus"),
+                                    ],
                                 ),
                             ),
                             Dict(
-                                "id"=>"fourier",
-                                "name"=>"Fourier",
-                                "units"=>"m",
-                                "coefficient_limit"=>1.0,
-                                "normalization"=>"sampled_rms",
-                                "definition"=>Dict("kind"=>"fourier", "max_frequency"=>2),
+                                "id" => "fourier",
+                                "name" => "Fourier",
+                                "units" => "m",
+                                "coefficient_limit" => 1.0,
+                                "normalization" => "sampled_rms",
+                                "definition" => Dict(
+                                    "kind" => "fourier",
+                                    "max_frequency" => 2,
+                                ),
                             ),
                         ],
                     ),
@@ -276,43 +278,41 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             finite_source = deepcopy(signed_source)
             finite_source["sources"]["guide"][field] = 90000
             @test_throws ArgumentError IC.validate_simulation(
-                finite_source,
-                physical,
-                directory,
-                graphs,
+                finite_source, physical, directory, graphs
             )
         end
         @test IC.load(documents.paths.physical).document == physical
         @test IC.load_simulation(documents.paths.simulation).document ==
-              merge(declaration, Dict("components"=>Dict{String,Any}()))
+            merge(declaration, Dict("components" => Dict{String,Any}()))
         loaded = IC.load_simulation(documents.paths.simulation)
         context = IC.configuration_context(loaded, IC.settings(loaded))
         @test context["simulation"]["frame_period_ns"] == UInt64(10_000_000)
         @test context["simulation"]["rate"] == 100
         with_response = deepcopy(declaration)
         with_response["responses"] = Dict(
-            "command"=>Dict(
-                "kind"=>"second_order",
-                "natural_frequency_hz"=>20,
-                "damping_ratio"=>0.7,
-                "schema"=>Dict("\$ref"=>"/schemas/tip_tilt_opd_coefficients_m/id"),
+            "command" => Dict(
+                "kind" => "second_order",
+                "natural_frequency_hz" => 20,
+                "damping_ratio" => 0.7,
+                "schema" => Dict("\$ref" => "/schemas/tip_tilt_opd_coefficients_m/id"),
             ),
         )
         C.write_yaml(documents.paths.simulation, with_response)
         loaded_response = IC.load_simulation(documents.paths.simulation)
         @test loaded_response.document["responses"]["command"]["schema"] ==
-              PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
+            PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
         resolved_response = IC.graph_document(loaded_response, IC.settings(loaded_response))
         @test only(
-            n for n in resolved_response["nodes"] if n["name"]=="command_response"
+            n for n in resolved_response["nodes"] if n["name"] == "command_response"
         )["config"]["schema"] ==
-              PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
+            PipeWireAORTC.Schemas.CATALOG["tip_tilt_opd_coefficients_m"]["id"]
         C.write_yaml(documents.paths.simulation, declaration)
-        documents.rtc["dimensions"] =
-            Dict("controller_command_count" => 5, "active_vdm_count" => 3)
+        documents.rtc["dimensions"] = Dict(
+            "controller_command_count" => 5, "active_vdm_count" => 3
+        )
         write_documents(documents)
         @test IC.load_rtc(documents.paths.rtc).document["dimensions"] ==
-              documents.rtc["dimensions"]
+            documents.rtc["dimensions"]
         for dimensions in (
             Dict("controller_command_count" => 0),
             Dict("controller_command_count" => -1),
@@ -332,30 +332,19 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         invalid_wire_contract = deepcopy(declaration)
         invalid_wire_contract["wire_contracts"][1]["command_scale"] = true
         @test_throws ArgumentError IC.validate_simulation(
-            invalid_wire_contract,
-            physical,
-            directory,
-            graphs,
+            invalid_wire_contract, physical, directory, graphs
         )
 
         unknown_parameter = deepcopy(declaration)
-        unknown_parameter["profiles"]["basic"]["parameters"][1]["paramaters"] =
-            unknown_parameter["profiles"]["basic"]["parameters"][1]["destination"]
+        unknown_parameter["profiles"]["basic"]["parameters"][1]["paramaters"] = unknown_parameter["profiles"]["basic"]["parameters"][1]["destination"]
         @test_throws ArgumentError IC.validate_simulation(
-            unknown_parameter,
-            physical,
-            directory,
-            graphs,
+            unknown_parameter, physical, directory, graphs
         )
 
         unknown_binding = deepcopy(declaration)
-        unknown_binding["bindings"]["commands"]["shpae"] =
-            unknown_binding["bindings"]["commands"]["shape"]
+        unknown_binding["bindings"]["commands"]["shpae"] = unknown_binding["bindings"]["commands"]["shape"]
         @test_throws ArgumentError IC.validate_simulation(
-            unknown_binding,
-            physical,
-            directory,
-            graphs,
+            unknown_binding, physical, directory, graphs
         )
 
         inactive_profile_typo = deepcopy(declaration)
@@ -367,10 +356,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             ),
         ]
         @test_throws ArgumentError IC.validate_simulation(
-            inactive_profile_typo,
-            physical,
-            directory,
-            graphs,
+            inactive_profile_typo, physical, directory, graphs
         )
 
         unknown_transform = deepcopy(declaration)
@@ -382,10 +368,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             ),
         ]
         @test_throws ArgumentError IC.validate_simulation(
-            unknown_transform,
-            physical,
-            directory,
-            graphs,
+            unknown_transform, physical, directory, graphs
         )
 
         misplaced_coupling = deepcopy(declaration)
@@ -398,31 +381,24 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             ),
         ]
         @test_throws ArgumentError IC.validate_simulation(
-            misplaced_coupling,
-            physical,
-            directory,
-            graphs,
+            misplaced_coupling, physical, directory, graphs
         )
 
         absent_mirror = deepcopy(declaration)
-        absent_mirror["bindings"]["coordinates"] =
-            Dict("kind" => "mirror_coordinates", "mirror" => "missing")
+        absent_mirror["bindings"]["coordinates"] = Dict(
+            "kind" => "mirror_coordinates", "mirror" => "missing"
+        )
         @test_throws ArgumentError IC.validate_simulation(
-            absent_mirror,
-            physical,
-            directory,
-            graphs,
+            absent_mirror, physical, directory, graphs
         )
 
         for setting in ("missing", "atmosphere.missing")
             invalid = deepcopy(declaration)
-            invalid["settings_bindings"] =
-                [Dict("setting" => setting, "nodes" => ["mirror"])]
+            invalid["settings_bindings"] = [
+                Dict("setting" => setting, "nodes" => ["mirror"])
+            ]
             @test_throws ArgumentError IC.validate_simulation(
-                invalid,
-                physical,
-                directory,
-                graphs,
+                invalid, physical, directory, graphs
             )
         end
 
@@ -436,8 +412,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         end
         for key in ("limiter", "shape_control")
             invalid = deepcopy(physical)
-            invalid["deformable_mirrors"]["primary"][key] =
-                documents.controls["deformable_mirrors"]["primary"][key]
+            invalid["deformable_mirrors"]["primary"][key] = documents.controls["deformable_mirrors"]["primary"][key]
             @test_throws ArgumentError IC.validate_declaration(invalid, directory)
         end
         invalid = deepcopy(physical)
@@ -468,10 +443,10 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             publication = IC.publication(documents.paths.rtc)
             @test publication.id == "synthetic-instrument"
             @test length(publication.deformable_mirrors.primary.layout.command_positions) ==
-                  2
+                2
             target = IC.prepare_publication(directory)
             @test JSON.parsefile(target)["scientific_identity"] ==
-                  publication.scientific_identity
+                publication.scientific_identity
             @test !isfile(joinpath(directory, "simulation.conf"))
         end
     end
@@ -490,13 +465,12 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             documents.rtc["calibration"] = "rtc/calibration.yaml"
             calibration_path = joinpath(directory, "rtc", "calibration.yaml")
             C.write_yaml(
-                calibration_path,
-                Dict("pupil" => Dict("selected_pixel_count" => 5)),
+                calibration_path, Dict("pupil" => Dict("selected_pixel_count" => 5))
             )
             write_documents(documents)
             rm(dirname(documents.paths.simulation); recursive = true)
             @test IC.load_rtc(documents.paths.rtc).calibration ==
-                  Dict("pupil" => Dict("selected_pixel_count" => 5))
+                Dict("pupil" => Dict("selected_pixel_count" => 5))
             target = IC.prepare_publication(directory)
             sensor = JSON.parsefile(target)["wavefront_sensors"]["sensor"]["layout"]
             @test sensor == Dict(
@@ -516,7 +490,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
                 documents.rtc["calibration"] = relpath(outside, directory)
                 C.write_yaml(documents.paths.rtc, documents.rtc)
                 @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load_rtc(
-                    documents.paths.rtc,
+                    documents.paths.rtc
                 )
             end
         end
@@ -533,54 +507,52 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             original_coordinates = publication.deformable_mirrors.primary.pupil_coordinates
             original_layout = publication.deformable_mirrors.primary.layout
             mirror = documents.physical["deformable_mirrors"]["primary"]
-            pupil = Dict("outer_radius"=>1.125, "inner_radius"=>0.3)
+            pupil = Dict("outer_radius" => 1.125, "inner_radius" => 0.3)
             mirror["pupil"] = pupil
             write_documents(documents)
             declared = IC.load(documents.paths.physical)
             with_pupil = IC.publication(documents.paths.rtc)
             scientific_pupil = IC.scientific_definition(documents.paths.simulation)
             @test IC.physical_definition(declared).deformable_mirrors.primary.pupil ==
-                  scientific_pupil.deformable_mirrors.primary.pupil ==
-                  with_pupil.deformable_mirrors.primary.pupil ==
-                  (; outer_radius = 1.125, inner_radius = 0.3)
+                scientific_pupil.deformable_mirrors.primary.pupil ==
+                with_pupil.deformable_mirrors.primary.pupil ==
+                (; outer_radius = 1.125, inner_radius = 0.3)
             @test with_pupil.deformable_mirrors.primary.pupil_coordinates ==
-                  original_coordinates
+                original_coordinates
             @test with_pupil.deformable_mirrors.primary.layout == original_layout
             @test with_pupil.scientific_identity != publication.scientific_identity
             @test scientific_pupil.prescription_identity != scientific.prescription_identity
             target = IC.prepare_publication(directory)
             @test JSON.parsefile(target)["deformable_mirrors"]["primary"]["pupil"] == pupil
             documents.physical["telescope"] = Dict(
-                "telescope_diameter_m"=>8.0,
-                "central_obstruction_ratio"=>0.2,
-                "pupil_reflectivity"=>0.9,
-                "aperture_revision"=>1,
+                "telescope_diameter_m" => 8.0,
+                "central_obstruction_ratio" => 0.2,
+                "pupil_reflectivity" => 0.9,
+                "aperture_revision" => 1,
             )
             write_documents(documents)
             # An explicit per-mirror pupil takes precedence over the telescope fallback.
             @test IC.publication(documents.paths.rtc).deformable_mirrors.primary.pupil ==
-                  with_pupil.deformable_mirrors.primary.pupil
+                with_pupil.deformable_mirrors.primary.pupil
             delete!(mirror, "pupil")
             write_documents(documents)
             @test IC.publication(documents.paths.rtc).deformable_mirrors.primary.pupil ==
-                  (; outer_radius = 1.0, inner_radius = 0.2)
+                (; outer_radius = 1.0, inner_radius = 0.2)
             delete!(documents.physical, "telescope")
             write_documents(documents)
             @test !hasproperty(
-                IC.publication(documents.paths.rtc).deformable_mirrors.primary,
-                :pupil,
+                IC.publication(documents.paths.rtc).deformable_mirrors.primary, :pupil
             )
             for invalid in (
-                Dict("outer_radius"=>1.0),
-                Dict("outer_radius"=>true, "inner_radius"=>0.0),
-                Dict("outer_radius"=>1.0, "inner_radius"=>1e-100),
-                Dict("outer_radius"=>1e100, "inner_radius"=>0.0),
-                Dict("outer_radius"=>nextfloat(1.0), "inner_radius"=>1.0),
+                Dict("outer_radius" => 1.0),
+                Dict("outer_radius" => true, "inner_radius" => 0.0),
+                Dict("outer_radius" => 1.0, "inner_radius" => 1e-100),
+                Dict("outer_radius" => 1e100, "inner_radius" => 0.0),
+                Dict("outer_radius" => nextfloat(1.0), "inner_radius" => 1.0),
             )
                 mirror["pupil"] = invalid
                 @test_throws ArgumentError IC.validate_declaration(
-                    documents.physical,
-                    directory,
+                    documents.physical, directory
                 )
             end
             delete!(mirror, "pupil")
@@ -600,20 +572,20 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             mirror = documents.physical["deformable_mirrors"]["primary"]
             @test !hasproperty(original.deformable_mirrors.primary, :pupil_registration)
             mirror["pupil_registration"] = Dict(
-                "actuator_pitch_pupil_radius"=>0.2,
-                "rotation_deg"=>360.0,
-                "flip_y"=>false,
-                "offset_actuators"=>[0.0, 0.0],
+                "actuator_pitch_pupil_radius" => 0.2,
+                "rotation_deg" => 360.0,
+                "flip_y" => false,
+                "offset_actuators" => [0.0, 0.0],
             )
             write_documents(documents)
             @test IC.publication(documents.paths.rtc) == original
             @test IC.physical_definition(IC.load(documents.paths.physical)).deformable_mirrors.primary.pupil_registration ==
-                  (; actuator_pitch_pupil_radius = 0.2)
+                (; actuator_pitch_pupil_radius = 0.2)
             mirror["pupil_registration"] = Dict(
-                "actuator_pitch_pupil_radius"=>0.2,
-                "rotation_deg"=>31.2,
-                "flip_y"=>true,
-                "offset_actuators"=>[0.73, 0.37],
+                "actuator_pitch_pupil_radius" => 0.2,
+                "rotation_deg" => 31.2,
+                "flip_y" => true,
+                "offset_actuators" => [0.73, 0.37],
             )
             write_documents(documents)
             declared = IC.load(documents.paths.physical)
@@ -622,15 +594,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             published = publication.deformable_mirrors.primary
             geometry = IC.mirror(declared, NamedTuple(), "primary")
             expected = IC.actuator_coordinates(
-                geometry.description;
-                pupil_registration = geometry.registration,
+                geometry.description; pupil_registration = geometry.registration
             )
             @test physical.pupil_coordinates ==
-                  published.pupil_coordinates ==
-                  Tuple(Tuple(row) for row in eachcol(expected))
+                published.pupil_coordinates ==
+                Tuple(Tuple(row) for row in eachcol(expected))
             @test published.pupil_registration ==
-                  physical.pupil_registration ==
-                  geometry.registration
+                physical.pupil_registration ==
+                geometry.registration
             @test published.layout == original.deformable_mirrors.primary.layout
             @test publication.scientific_identity != original.scientific_identity
             target = IC.prepare_publication(directory)
@@ -639,17 +610,17 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             @test metadata == mirror["pupil_registration"]
             @test PipeWireAORTC.InstrumentDefinition.validate(document) === document
             for invalid in (
-                Dict("actuator_pitch_pupil_radius"=>0.2, "unknown"=>true),
-                Dict("actuator_pitch_pupil_radius"=>0.2),
-                Dict("actuator_pitch_pupil_radius"=>true),
-                merge(metadata, Dict("flip_y"=>1)),
-                merge(metadata, Dict("offset_actuators"=>[0.0, Inf])),
-                merge(metadata, Dict("offset_actuators"=>[1e308, 0.0])),
+                Dict("actuator_pitch_pupil_radius" => 0.2, "unknown" => true),
+                Dict("actuator_pitch_pupil_radius" => 0.2),
+                Dict("actuator_pitch_pupil_radius" => true),
+                merge(metadata, Dict("flip_y" => 1)),
+                merge(metadata, Dict("offset_actuators" => [0.0, Inf])),
+                merge(metadata, Dict("offset_actuators" => [1e308, 0.0])),
             )
                 changed = deepcopy(document)
                 changed["deformable_mirrors"]["primary"]["pupil_registration"] = invalid
                 @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate(
-                    changed,
+                    changed
                 )
             end
             delete!(document["deformable_mirrors"]["primary"], "pupil_coordinates")
@@ -672,23 +643,23 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             scientific = IC.scientific_definition(documents.paths.simulation)
             publication = IC.publication(documents.paths.rtc)
             @test physical.deformable_mirrors.primary.clear_aperture ==
-                  scientific.deformable_mirrors.primary.clear_aperture ==
-                  publication.deformable_mirrors.primary.clear_aperture
+                scientific.deformable_mirrors.primary.clear_aperture ==
+                publication.deformable_mirrors.primary.clear_aperture
             @test publication.deformable_mirrors.primary.clear_aperture.radius ≈
-                  0.0245 / 0.0015 / 2 * 0.2
+                0.0245 / 0.0015 / 2 * 0.2
             @test !hasproperty(publication.deformable_mirrors.primary, :pupil)
             @test publication.deformable_mirrors.primary.pupil_coordinates ==
-                  original.deformable_mirrors.primary.pupil_coordinates
+                original.deformable_mirrors.primary.pupil_coordinates
             @test publication.deformable_mirrors.primary.layout ==
-                  original.deformable_mirrors.primary.layout
+                original.deformable_mirrors.primary.layout
             @test publication.deformable_mirrors.primary.shape_control ==
-                  original.deformable_mirrors.primary.shape_control
+                original.deformable_mirrors.primary.shape_control
             @test publication.scientific_identity != original.scientific_identity
             @test scientific.prescription_identity !=
-                  original_scientific.prescription_identity
+                original_scientific.prescription_identity
             target = IC.prepare_publication(directory)
             @test JSON.parsefile(target)["deformable_mirrors"]["primary"]["clear_aperture"]["radius"] ==
-                  publication.deformable_mirrors.primary.clear_aperture.radius
+                publication.deformable_mirrors.primary.clear_aperture.radius
             for diameter in (1e100, 1e-100)
                 description["clear_aperture_diameter_m"] = diameter
                 write(mirror_path, JSON.json(description))
@@ -702,17 +673,17 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             documents = declaration_documents(directory)
             declaration, controls = documents.physical, documents.controls
             mirror = Dict(
-                "schema_version"=>1,
-                "id"=>"test-mirror",
-                "manufacturer"=>"Example",
-                "model"=>"Three commands",
-                "layout"=>Dict(
-                    "schema_version"=>1,
-                    "name"=>"Test grid",
-                    "grid_shape"=>[5, 5],
-                    "axis_labels"=>["source column", "source row"],
-                    "command_positions"=>[[3, 1], [1, 3], [2, 2]],
-                    "command_order"=>"physical",
+                "schema_version" => 1,
+                "id" => "test-mirror",
+                "manufacturer" => "Example",
+                "model" => "Three commands",
+                "layout" => Dict(
+                    "schema_version" => 1,
+                    "name" => "Test grid",
+                    "grid_shape" => [5, 5],
+                    "axis_labels" => ["source column", "source row"],
+                    "command_positions" => [[3, 1], [1, 3], [2, 2]],
+                    "command_order" => "physical",
                 ),
             )
             write(joinpath(directory, "mirror.json"), JSON.json(mirror))
@@ -728,27 +699,26 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             end
             write_samples(samples)
             basis = Dict{String,Any}(
-                "id"=>"custom",
-                "name"=>"Custom modes",
-                "units"=>"m",
-                "coefficient_limit"=>0.2,
-                "normalization"=>"supplied",
-                "definition"=>Dict(
-                    "kind"=>"sampled",
-                    "command_order"=>"mirror",
-                    "names"=>["First", "Second"],
-                    "artifact"=>Dict(
-                        "path"=>"modes.fits",
-                        "hdu"=>1,
-                        "axes"=>[2, 1],
-                        "type"=>"Float32",
-                        "shape"=>[3, 2],
+                "id" => "custom",
+                "name" => "Custom modes",
+                "units" => "m",
+                "coefficient_limit" => 0.2,
+                "normalization" => "supplied",
+                "definition" => Dict(
+                    "kind" => "sampled",
+                    "command_order" => "mirror",
+                    "names" => ["First", "Second"],
+                    "artifact" => Dict(
+                        "path" => "modes.fits",
+                        "hdu" => 1,
+                        "axes" => [2, 1],
+                        "type" => "Float32",
+                        "shape" => [3, 2],
                     ),
                 ),
             )
             push!(
-                controls["deformable_mirrors"]["primary"]["shape_control"]["bases"],
-                basis,
+                controls["deformable_mirrors"]["primary"]["shape_control"]["bases"], basis
             )
             path = documents.paths.rtc
             write_declaration() = write_documents(documents)
@@ -757,33 +727,34 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             publication = IC.publication(path)
             @test publication.schema_version == 2
             @test publication.deformable_mirrors.primary.shape_control.controlled_actuators ===
-                  (true, true, true)
+                (true, true, true)
             for selector in (
                 [],
-                Dict("graph"=>"production.yaml"),
+                Dict("graph" => "production.yaml"),
                 Dict(
-                    "graph"=>"production.yaml",
-                    "bindings"=>"production.yaml",
-                    "active_to_full"=>"missing",
-                    "pdm_to_vdm"=>"inverse",
-                    "extra"=>true,
+                    "graph" => "production.yaml",
+                    "bindings" => "production.yaml",
+                    "active_to_full" => "missing",
+                    "pdm_to_vdm" => "inverse",
+                    "extra" => true,
                 ),
             )
-                invalid_controls=IC.json_value(controls)
-                invalid_controls["deformable_mirrors"]["primary"]["shape_control"]["controlled_actuators"]=selector
+                invalid_controls = IC.json_value(controls)
+                invalid_controls["deformable_mirrors"]["primary"]["shape_control"]["controlled_actuators"] =
+                    selector
                 C.write_yaml(documents.paths.controls, invalid_controls)
                 @test_throws ArgumentError IC.load_rtc(path)
             end
             write_declaration()
             definitions = publication.deformable_mirrors.primary.shape_control.bases
             @test map(b -> b.definition.kind, definitions) ==
-                  ("zernike", "fourier", "sampled")
+                ("zernike", "fourier", "sampled")
             @test definitions[1].normalization == "sampled_peak"
             @test definitions[2].normalization == "sampled_rms"
             @test definitions[3].definition.modes[1].values == Tuple(samples[:, 1])
             @test definitions[3].definition.modes[2].values == Tuple(samples[:, 2])
             @test definitions[3].definition.artifact_sha256 ==
-                  PipeWireAORTC.Common.sha256_file(joinpath(directory, "modes.fits"))
+                PipeWireAORTC.Common.sha256_file(joinpath(directory, "modes.fits"))
             original_identity = publication.scientific_identity
             simulation_identity =
                 IC.scientific_definition(documents.paths.simulation).prescription_identity
@@ -794,14 +765,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             controls_text = read(documents.paths.controls, String)
             rm(documents.paths.controls)
             @test IC.scientific_definition(documents.paths.simulation).prescription_identity ==
-                  simulation_identity
+                simulation_identity
             write(documents.paths.controls, controls_text)
             changed = copy(samples)
             changed[1, 1] = 0.75f0
             write_samples(changed)
             @test IC.publication(path).scientific_identity != original_identity
             @test IC.scientific_definition(documents.paths.simulation).prescription_identity ==
-                  simulation_identity
+                simulation_identity
             write_samples(zeros(Float32, 3, 2))
             @test_throws ArgumentError IC.publication(path)
             changed[1, 1] = Inf32
@@ -844,27 +815,27 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             # Bound publication using actual FITS-backed sampled modes, not padding text.
             write_samples(
                 repeat(
-                    reshape(Float32[1.234567f-20, -2.345678f-20, 3.456789f-20], 3, 1),
-                    1,
-                    64,
+                    reshape(Float32[1.234567f-20, -2.345678f-20, 3.456789f-20], 3, 1), 1, 64
                 ),
             )
             basis["definition"]["names"] = [
                 "Calibrated interaction-matrix reconstruction singular vector $i" for
-                i = 1:64
+                i in 1:64
             ]
             basis["definition"]["artifact"]["shape"] = [3, 64]
-            oversized = [deepcopy(basis) for _ = 1:16]
+            oversized = [deepcopy(basis) for _ in 1:16]
             for (index, entry) in enumerate(oversized)
                 entry["id"] = "basis-$index"
             end
             controls["deformable_mirrors"]["primary"]["shape_control"]["bases"] = oversized
             original_control = controls["deformable_mirrors"]["primary"]
-            controls["deformable_mirrors"] =
-                Dict("mirror-$i"=>deepcopy(original_control) for i = 1:8)
+            controls["deformable_mirrors"] = Dict(
+                "mirror-$i" => deepcopy(original_control) for i in 1:8
+            )
             original = declaration["deformable_mirrors"]["primary"]
-            declaration["deformable_mirrors"] =
-                Dict("mirror-$i"=>deepcopy(original) for i = 1:8)
+            declaration["deformable_mirrors"] = Dict(
+                "mirror-$i" => deepcopy(original) for i in 1:8
+            )
             write_declaration()
             target = joinpath(directory, "publication.json")
             write(target, "existing sealed publication")

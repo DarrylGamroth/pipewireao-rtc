@@ -78,7 +78,7 @@ end
 function render_templates!(application, spec, profile, prefix)
     runtime = joinpath(application, "shared-runtime")
     !ispath(runtime) || throw(
-        ArgumentError("instrument source must not contain generated runtime templates"),
+        ArgumentError("instrument source must not contain generated runtime templates")
     )
     processes = profile["scheduling"]["processes"]
     corepath = spec["core"]
@@ -88,8 +88,7 @@ function render_templates!(application, spec, profile, prefix)
     native_scheduling!(core, processes["core"], "core")
     modules = D.decode(
         D.relative_asset(
-            application,
-            joinpath(dirname(application_file(profile)), "core.conf"),
+            application, joinpath(dirname(application_file(profile)), "core.conf")
         ),
         prefix,
     )
@@ -109,15 +108,12 @@ function render_templates!(application, spec, profile, prefix)
             # The daemon context already checked the complete core loop set.
             # Its one-shot client context can use a subset of those same loops.
             native_scheduling!(
-                config,
-                processes[role],
-                role;
-                allow_extra_loops = role == "core",
+                config, processes[role], role; allow_extra_loops = role == "core"
             )
         elseif role != "analysis"
             throw(
                 ArgumentError(
-                    "native client role has no host scheduling declaration: $role",
+                    "native client role has no host scheduling declaration: $role"
                 ),
             )
         end

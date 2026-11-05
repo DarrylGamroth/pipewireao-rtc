@@ -19,10 +19,10 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
         ))
         @test isempty(readdir(directory))
         @test owner.capture.seen == 0 &&
-              owner.capture.used == 0 &&
-              owner.capture.saved_count == -1
+            owner.capture.used == 0 &&
+            owner.capture.saved_count == -1
         @test owner.capture.generation == 0 &&
-              all(iszero, Iterators.flatten(owner.capture.rows))
+            all(iszero, Iterators.flatten(owner.capture.rows))
         timing = owner.exchange
         timing.generation = 1
         timing.sequence = 3
@@ -36,47 +36,27 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
         frame = PipeWireFrameCommandTiming(UInt64(3), Int64(106), Int64(107))
         gc_before = Base.gc_time_ns()
         TimingExt.record_phase_timing!(
-            owner,
-            timing,
-            frame,
-            UInt64(100),
-            UInt64(110),
-            UInt64(140),
+            owner, timing, frame, UInt64(100), UInt64(110), UInt64(140)
         )
         gc_after = Base.gc_time_ns()
         @test owner.capture.rows[1][1:15] ==
-              (1, 3, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 140, 1)
+            (1, 3, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 140, 1)
         @test gc_before <= owner.capture.rows[1][16] <= gc_after
         @test owner.capture.rows[1][17] > 0
         @test TimingExt.exchange_timing(owner) === timing
         # Compile and warm the exact record call before checking its allocation.
         TimingExt.record_phase_timing!(
-            owner,
-            timing,
-            frame,
-            UInt64(100),
-            UInt64(110),
-            UInt64(140),
+            owner, timing, frame, UInt64(100), UInt64(110), UInt64(140)
         )
         @test TimingExt.exchange_timing(owner) === timing
         @test @allocated(
             TimingExt.record_phase_timing!(
-                owner,
-                timing,
-                frame,
-                UInt64(100),
-                UInt64(110),
-                UInt64(140),
+                owner, timing, frame, UInt64(100), UInt64(110), UInt64(140)
             )
         ) == 0
         @test owner.capture.used == 3
         TimingExt.record_phase_timing!(
-            owner,
-            timing,
-            frame,
-            UInt64(100),
-            UInt64(110),
-            UInt64(140),
+            owner, timing, frame, UInt64(100), UInt64(110), UInt64(140)
         )
         @test TimingExt.exchange_timing(owner) === nothing
         TimingExt.save_phase_timing!(owner)
@@ -93,12 +73,7 @@ const TimingRecorder = PipeWireAORTC.PhaseTiming
             bootstrap_instance = Int64(8),
         ))
         TimingExt.record_phase_timing!(
-            unpaced,
-            timing,
-            frame,
-            UInt64(0),
-            UInt64(110),
-            UInt64(0),
+            unpaced, timing, frame, UInt64(0), UInt64(110), UInt64(0)
         )
         @test unpaced.capture.rows[1][15] == 0
     end

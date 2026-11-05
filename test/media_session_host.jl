@@ -10,43 +10,43 @@ include("control_private_core.jl")
 
 function host_session(socket, directory, daemon; journaled = false)
     policy = Dict{String,Any}(
-        "instance"=>"101",
-        "controller.instance"=>"102",
-        "admission.controller-instance"=>"103",
-        "node.name"=>"host-session",
-        "controller.node.name"=>"pipewireao.rtc.controller.host-session",
-        "startup.timeout-ms"=>300000,
-        "session.uuid"=>"23af16ce-86f6-4d06-b8fc-eb03c6c63776",
-        "properties"=>Dict{String,String}(),
-        "core.owner"=>Dict("pid"=>getpid(daemon), "nodes"=>String[]),
-        "owners"=>[],
-        "node.pids"=>Dict{String,Int}(),
-        "source"=>Dict(
-            "role"=>"missing-source",
-            "control-node"=>"missing-source",
-            "pid"=>getpid(),
+        "instance" => "101",
+        "controller.instance" => "102",
+        "admission.controller-instance" => "103",
+        "node.name" => "host-session",
+        "controller.node.name" => "pipewireao.rtc.controller.host-session",
+        "startup.timeout-ms" => 300000,
+        "session.uuid" => "23af16ce-86f6-4d06-b8fc-eb03c6c63776",
+        "properties" => Dict{String,String}(),
+        "core.owner" => Dict("pid" => getpid(daemon), "nodes" => String[]),
+        "owners" => [],
+        "node.pids" => Dict{String,Int}(),
+        "source" => Dict(
+            "role" => "missing-source",
+            "control-node" => "missing-source",
+            "pid" => getpid(),
         ),
-        "session"=>Dict(
-            "sources"=>[],
-            "graphs"=>[],
-            "sinks"=>[],
-            "links"=>[
-                Dict("output"=>"missing-source:output", "input"=>"missing-sink:input"),
+        "session" => Dict(
+            "sources" => [],
+            "graphs" => [],
+            "sinks" => [],
+            "links" => [
+                Dict("output" => "missing-source:output", "input" => "missing-sink:input"),
             ],
         ),
     )
     journaled && (policy["journal.path"] = joinpath(directory, "host.sqlite"))
     config = Dict(
-        "context.properties"=>Dict(
-            "remote.name"=>socket,
-            "library.use-fallback"=>false,
-            "support.dbus"=>false,
+        "context.properties" => Dict(
+            "remote.name" => socket,
+            "library.use-fallback" => false,
+            "support.dbus" => false,
         ),
-        "context.modules"=>[
-            Dict("name"=>"libpipewire-module-protocol-native"),
-            Dict("name"=>"libpipewire-module-client-node"),
+        "context.modules" => [
+            Dict("name" => "libpipewire-module-protocol-native"),
+            Dict("name" => "libpipewire-module-client-node"),
         ],
-        "pipewireao.session"=>policy,
+        "pipewireao.session" => policy,
     )
     path = joinpath(directory, "host.conf")
     PipeWireAORTC.ScienceExport.write_spa_config(path, config)
@@ -55,7 +55,7 @@ end
 
 function wait_host(predicate, session)
     clock = Clocks.SystemNanoClock()
-    deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), 60*SECOND)
+    deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), 60 * SECOND)
     while true
         S.Agent.do_work(session)
         predicate() && return nothing
@@ -79,7 +79,7 @@ function prepare_host!(session)
     end
     stop_effect_task!(session)
     # These receipts prepare only the policy test. No scientific owner exists.
-    for _ = 1:16
+    for _ in 1:16
         ticket = session.machine.effect
         ticket === nothing && break
         S.complete!(session.machine, ticket)
@@ -101,12 +101,12 @@ function send_pending!(session, command)
         Int64(101),
         Int64(1),
         R.operation_id(command),
-        60*SECOND,
+        60 * SECOND,
     )
     request = R.encode_request(header, command)
     endpoint = session.objects[node_id(session.endpoint)]
     set_param!(endpoint.proxy, PipeWireAO.SPA.PARAM_PROPS, request)
-    wait_host(()->length(session.requests) == 1, session)
+    wait_host(() -> length(session.requests) == 1, session)
     @test session.ingress.pending !== nothing
     @test session.ingress.pending.dispatched
     return only(values(session.requests))
@@ -158,7 +158,7 @@ end
                         R.RunnerCommand(
                             :properties_set,
                             "graph",
-                            Dict("controller:gain"=>R.RunnerScalar(:int, Int32(1))),
+                            Dict("controller:gain" => R.RunnerScalar(:int, Int32(1))),
                         ) : R.RunnerCommand(:quit)
                     ticket = send_pending!(session, command)
                     disconnect_pending!(session)
@@ -170,10 +170,7 @@ end
                         result = something(S.take_result!(writer))
                         @test result.success
                         S.Ingress.journal_receipt!(
-                            session.ingress,
-                            result.token,
-                            result.success,
-                            result.message,
+                            session.ingress, result.token, result.success, result.message
                         )
                         @test drain_failure(session) === nothing
                         database = S.SQLite.DB(writer.path)
@@ -218,7 +215,7 @@ end
                     prepare_host!(session)
                     S.submit!(session.machine, S.Request(S.Quit()))
                     S.drain!(session)
-                    for _ = 1:6
+                    for _ in 1:6
                         S.complete!(session.machine, something(session.machine.effect))
                     end
                     ticket = something(session.machine.effect)
@@ -226,8 +223,7 @@ end
                     @test !session.done
                     if disposition === :fail
                         S.update!(
-                            session,
-                            S.EffectFailed(ticket, "publication failed", false),
+                            session, S.EffectFailed(ticket, "publication failed", false)
                         )
                     else
                         Clocks.update!(session.source_clock, ticket.deadline)

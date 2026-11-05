@@ -6,7 +6,7 @@ include(joinpath(@__DIR__, "control_private_core.jl"))
 function run_sync_proof(socket::String, directory::String, mode::String; label = mode)
     binary = get(ENV, "NATIVE_SYNC_DEADLINE_PROOF", "")
     isempty(binary) && error(
-        "set NATIVE_SYNC_DEADLINE_PROOF to the built native_sync_deadline_proof binary",
+        "set NATIVE_SYNC_DEADLINE_PROOF to the built native_sync_deadline_proof binary"
     )
     isfile(binary) && isexecutable(binary) ||
         error("NATIVE_SYNC_DEADLINE_PROOF is not executable: $binary")
@@ -21,7 +21,7 @@ function run_sync_proof(socket::String, directory::String, mode::String; label =
             () -> isfile(joinpath(directory, "ready")),
             10,
             "$label adapter ready";
-            check = ()->(
+            check = () -> (
                 Base.process_exited(child) &&
                 error("$label proof child exited before ready")
             ),
@@ -65,8 +65,8 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 @test occursin("completion is unknown", bounded)
                 @test occursin("Err(", bounded)
                 @test 200_000_000 <=
-                      parse(Int, match(r"elapsed_ns=(\d+)", bounded)[1]) <=
-                      2_000_000_000
+                    parse(Int, match(r"elapsed_ns=(\d+)", bounded)[1]) <=
+                    2_000_000_000
                 println("SYNC_BOUNDED $bounded")
                 write(joinpath(directory, "release-budget"), "")
 
@@ -74,8 +74,8 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 @test occursin("Err(", default)
                 @test occursin("expired", lowercase(default))
                 @test 4_900_000_000 <=
-                      parse(Int, match(r"elapsed_ns=(\d+)", default)[1]) <=
-                      5_500_000_000
+                    parse(Int, match(r"elapsed_ns=(\d+)", default)[1]) <=
+                    5_500_000_000
                 println("SYNC_DEFAULT $default")
                 run(`kill -CONT $(getpid(daemon))`)
                 sleep(0.25)
@@ -86,8 +86,8 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 @test occursin("completion is unknown", stale)
                 @test occursin("Err(", stale)
                 @test 200_000_000 <=
-                      parse(Int, match(r"elapsed_ns=(\d+)", stale)[1]) <=
-                      2_000_000_000
+                    parse(Int, match(r"elapsed_ns=(\d+)", stale)[1]) <=
+                    2_000_000_000
                 println("SYNC_OLD_ACKS_DID_NOT_COMPLETE_FRESH_SYNC $stale")
                 write(joinpath(directory, "release-stale"), "")
 
@@ -122,15 +122,13 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 )
                 run(`kill -KILL $(getpid(daemon))`)
                 wait_proof(
-                    () -> Base.process_exited(daemon),
-                    5,
-                    "private daemon termination",
+                    () -> Base.process_exited(daemon), 5, "private daemon termination"
                 )
                 wait(daemon)
                 terminated = read_sync_result(directory, "termination")
                 @test occursin("Err(", terminated)
                 @test occursin("PipeWire operation failed:", terminated) ||
-                      occursin("PipeWire sync failed:", terminated)
+                    occursin("PipeWire sync failed:", terminated)
                 @test !occursin("deadline expired", lowercase(terminated))
                 @test parse(Int, match(r"elapsed_ns=(\d+)", terminated)[1]) < 5_000_000_000
                 println("SYNC_TERMINATED $terminated")
@@ -152,7 +150,7 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
     @testset "stopped core bounds discovery and cleanup" begin
         test_binary = get(ENV, "NATIVE_SYNC_DEADLINE_TEST_BINARY", "")
         isempty(test_binary) && error(
-            "set NATIVE_SYNC_DEADLINE_TEST_BINARY to the built ignored Rust test binary",
+            "set NATIVE_SYNC_DEADLINE_TEST_BINARY to the built ignored Rust test binary"
         )
         isfile(test_binary) && isexecutable(test_binary) ||
             error("NATIVE_SYNC_DEADLINE_TEST_BINARY is not executable: $test_binary")
@@ -171,14 +169,13 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                     "live::deadline_tests::stopped_core_bounds_discovery_and_cleanup",
                 ])
                 child = run(
-                    pipeline(addenv(command, env); stdout = log, stderr = log);
-                    wait = false,
+                    pipeline(addenv(command, env); stdout = log, stderr = log); wait = false
                 )
                 wait_proof(
                     () -> isfile(joinpath(directory, "ready")),
                     10,
                     "cleanup test ready";
-                    check = ()->(
+                    check = () -> (
                         Base.process_exited(child) &&
                         error("cleanup test child exited before ready")
                     ),

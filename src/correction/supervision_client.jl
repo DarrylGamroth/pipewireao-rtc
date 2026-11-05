@@ -87,15 +87,10 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
             action in ("none", "monitor_only", "restore_reference") ||
                 throw(ArgumentError("unsupported protective action"))
             sequence, observed_ns, trip_sequence, trip_ns, max_gap_ns = map((
-                "sequence",
-                "observed-ns",
-                "trip-sequence",
-                "trip-ns",
-                "max-gap-ns",
+                "sequence", "observed-ns", "trip-sequence", "trip-ns", "max-gap-ns"
             )) do field
                 parsed = tryparse(UInt64, value(prefix * field, :string, String))
-                parsed === nothing &&
-                    throw(ArgumentError("invalid supervision counter"))
+                parsed === nothing && throw(ArgumentError("invalid supervision counter"))
                 return parsed
             end
             max_gap_ns > 0 &&
@@ -138,8 +133,7 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
         any(item -> item.state != "Disabled" && !item.fresh, observed) &&
             return (; state = :Unknown, observed, operation = nothing)
         restore = any(
-            item -> item.state == "Tripped" && item.action == "restore_reference",
-            observed,
+            item -> item.state == "Tripped" && item.action == "restore_reference", observed
         )
         restore || return (; state = :Monitoring, observed, operation = nothing)
         expiry = minimum(

@@ -18,11 +18,7 @@ end
     closing = loop_at(false)
     CL.requested!(closing, OWNER, 1, 0, true)
     for sm in (
-        CL.Loop("correction:closed", OWNER),
-        loop_at(false),
-        loop_at(true),
-        opening,
-        closing,
+        CL.Loop("correction:closed", OWNER), loop_at(false), loop_at(true), opening, closing
     )
         @test Hsm.dispatch!(sm, :Unknown, :observer_error) === Hsm.EventHandled
         @test CL.state(sm) === :Unknown
@@ -226,7 +222,7 @@ end
         "Correction control/correction:closed",
     ]
     @test getfield.(infos, :display_name) ==
-          ["Control version", "Owner instance", "State", "Fault", "Requested closed"]
+        ["Control version", "Owner instance", "State", "Fault", "Requested closed"]
     @test PipeWireAO.pod_value(Int32, infos[1].type) === Int32(1)
     @test PipeWireAO.pod_value(Int64, infos[2].type) === OWNER
     @test PipeWireAO.pod_value(String, infos[3].type) == "Unknown"
@@ -257,8 +253,9 @@ end
 @testset "Closure adoption expires before late confirmation" begin
     for (initial, desired, pending) in ((false, true, :Closing), (true, false, :Opening))
         now = Ref(UInt64(70))
-        observer =
-            CL.Observer(["correction:closed"], OWNER; timeout_ms = 5, clock = () -> now[])
+        observer = CL.Observer(
+            ["correction:closed"], OWNER; timeout_ms = 5, clock = () -> now[]
+        )
         observer(Val(:observed), loop_props(initial))
         observer(Val(:requested), loop_props(desired; requested = 1, active = 0))
         sm = only(observer.loops)
@@ -277,7 +274,7 @@ end
         @test sm.active_generation == 0
         @test correction_status(late, "correction:closed.state", String) == "Unknown"
         @test correction_status(late, "correction:closed.fault", String) ==
-              "Applied correction did not confirm before the adoption timeout"
+            "Applied correction did not confirm before the adoption timeout"
         @test correction_status(late, "correction:closed.requested", Bool) === desired
         now[] += UInt64(1)
         observer(Val(:observed), loop_props(desired; requested = 1))
@@ -315,8 +312,9 @@ end
 
 @testset "Timely adoption and same-Boolean updates do not expire" begin
     now = Ref(UInt64(0))
-    observer =
-        CL.Observer(["correction:closed"], OWNER; timeout_ms = 1, clock = () -> now[])
+    observer = CL.Observer(
+        ["correction:closed"], OWNER; timeout_ms = 1, clock = () -> now[]
+    )
     observer(Val(:observed), loop_props(false))
     observer(Val(:requested), loop_props(true; requested = 1, active = 0))
     now[] = UInt64(999_999)
@@ -324,9 +322,7 @@ end
     @test correction_status(timely, "correction:closed.state", String) == "Closed"
     now[] = UInt64(10_000_000)
     @test correction_status(
-        observer(loop_props(true; requested = 1), true),
-        "correction:closed.state",
-        String,
+        observer(loop_props(true; requested = 1), true), "correction:closed.state", String
     ) == "Closed"
     observer(Val(:requested), loop_props(true; requested = 2, active = 1))
     now[] = UInt64(100_000_000)
@@ -346,9 +342,7 @@ end
     ) == "Opening"
     now[] += UInt64(1)
     @test correction_status(
-        observer(loop_props(false; requested = 3), true),
-        "correction:closed.state",
-        String,
+        observer(loop_props(false; requested = 3), true), "correction:closed.state", String
     ) == "Unknown"
     @test only(observer.loops).failure === :adoption_timeout
 end
@@ -360,13 +354,11 @@ end
     unavailable = observer(loop_props(true), false)
     @test correction_status(unavailable, "correction:closed.state", String) == "Unknown"
     @test correction_status(unavailable, "correction:closed.fault", String) ==
-          "Authoritative property observation is unavailable"
+        "Authoritative property observation is unavailable"
     @test correction_status(unavailable, "correction:closed.requested", Bool) === true
     @test only(observer.loops).failure === :observer_unavailable
     @test correction_status(
-        observer(loop_props(true), true),
-        "correction:closed.state",
-        String,
+        observer(loop_props(true), true), "correction:closed.state", String
     ) == "Unknown"
     for props in (
         loop_props(Int64(1)),
@@ -378,7 +370,7 @@ end
         status = malformed(props, true)
         @test correction_status(status, "correction:closed.state", String) == "Unknown"
         @test correction_status(status, "correction:closed.fault", String) ==
-              "Authoritative property observation failed or was malformed"
+            "Authoritative property observation failed or was malformed"
         @test correction_status(status, "correction:closed.requested", Bool) === false
         @test only(malformed.loops).failure === :observer_error
     end
@@ -390,7 +382,7 @@ end
     end
     @test CL.Observer(["correction:closed"], OWNER).timeout_ns == UInt64(5_000_000_000)
     @test CL.Observer(["correction:closed"], OWNER; timeout_ms = 60_000).timeout_ns ==
-          UInt64(60_000_000_000)
+        UInt64(60_000_000_000)
     for clock in (() -> -1, () -> true, () -> 1.5, () -> typemax(UInt128))
         @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; clock)
     end
@@ -399,12 +391,10 @@ end
     observer(Val(:observed), loop_props(true))
     now[] = -1
     @test observer(Val(:requested), loop_props(false; requested = 1, active = 0)) ===
-          nothing
+        nothing
     @test only(observer.loops).failure === :observer_error
     @test correction_status(
-        observer(loop_props(true), true),
-        "correction:closed.state",
-        String,
+        observer(loop_props(true), true), "correction:closed.state", String
     ) == "Unknown"
 end
 
@@ -415,8 +405,7 @@ end
     @test_throws ArgumentError CL.Loop("node:property:extra", OWNER)
     @test_throws ArgumentError CL.Loop("correction:closed", Int64(0))
     @test_throws ArgumentError CL.Observer(
-        ["correction:closed", "correction:closed"],
-        OWNER,
+        ["correction:closed", "correction:closed"], OWNER
     )
     for (closed, expected) in ((false, :Open), (true, :Closed))
         sm = CL.Loop("correction:closed", OWNER)

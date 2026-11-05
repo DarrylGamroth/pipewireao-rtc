@@ -21,10 +21,7 @@ struct CleanupGraph
 end
 
 function Calibration.calibration_graph(
-    application::CleanupApplication;
-    inputs,
-    outputs,
-    parameter_sources = Dict(),
+    application::CleanupApplication; inputs, outputs, parameter_sources = Dict()
 )
     application.preparations[] += 1
     application.preparations[] == 4 && error("final command projection preparation failed")
@@ -51,9 +48,7 @@ end
 
 @testset "named stage closes every prepared graph and preserves primary errors" begin
     references = (
-        woofer = zeros(Float32, 2),
-        tweeter = zeros(Float32, 3),
-        tiptilt = zeros(Float32, 1),
+        woofer = zeros(Float32, 2), tweeter = zeros(Float32, 3), tiptilt = zeros(Float32, 1)
     )
     commands = map(
         _ -> (;
@@ -94,9 +89,9 @@ end
         @test observed isa CompositeException
         @test length(observed.exceptions) == 2
         @test sprint(showerror, observed.exceptions[1]) ==
-              "final command projection preparation failed"
+            "final command projection preparation failed"
         @test sprint(showerror, observed.exceptions[2]) ==
-              "$(failed_close) projection close failed"
+            "$(failed_close) projection close failed"
     end
     @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end

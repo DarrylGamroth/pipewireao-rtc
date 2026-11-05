@@ -45,27 +45,13 @@ id(value) = Pod(SPA.Id(UInt32(value)))
         @test Client.lifecycle_type(profile) == Codec.ColdLifecycle
 
         cursor = Codec.AcquisitionCursor(
-            typemax(UInt64),
-            UInt64(1) << 63,
-            typemax(UInt64),
-            UInt64(1) << 63,
+            typemax(UInt64), UInt64(1) << 63, typemax(UInt64), UInt64(1) << 63
         )
         report_cursor = Codec.AcquisitionCursor(
-            UInt64(1) << 63,
-            typemax(UInt64),
-            UInt64(1) << 63,
-            typemax(UInt64),
+            UInt64(1) << 63, typemax(UInt64), UInt64(1) << 63, typemax(UInt64)
         )
         snapshot = Codec.Snapshot(
-            Codec.Copper,
-            cursor,
-            report_cursor,
-            false,
-            true,
-            phase,
-            true,
-            false,
-            window,
+            Codec.Copper, cursor, report_cursor, false, true, phase, true, false, window
         )
         for (op, name) in enumerate((:status, :pause, :resume, :reset, :connect, :shutdown))
             command = Codec.LifecycleCommand(name)
@@ -74,11 +60,7 @@ id(value) = Pod(SPA.Id(UInt32(value)))
             @test isempty(Envelope.decode_request(bytes)[2].values)
             @test Client.decode_request(profile, bytes)[2] == command
             completion = Client.encode_completion(
-                profile,
-                reply(op),
-                Codec.Connected,
-                snapshot,
-                "ok",
+                profile, reply(op), Codec.Connected, snapshot, "ok"
             )
             @test sizeof(completion) <= 64 * 1024
             decoded = Client.decode_completion(profile, completion)
@@ -89,15 +71,7 @@ id(value) = Pod(SPA.Id(UInt32(value)))
             @test decoded.snapshot.phase == phase
         end
         preparing = Codec.Snapshot(
-            Codec.Classic,
-            nothing,
-            nothing,
-            false,
-            false,
-            "initial",
-            false,
-            false,
-            nothing,
+            Codec.Classic, nothing, nothing, false, false, "initial", false, false, nothing
         )
         @test Client.decode_completion(
             profile,
@@ -120,81 +94,40 @@ id(value) = Pod(SPA.Id(UInt32(value)))
         @test rejected.lifecycle == Codec.Fault
         @test rejected.message == "request rejected"
         @test_throws ArgumentError Client.encode_completion(
-            profile,
-            reply(1),
-            Codec.Fault,
-            nothing,
-            "",
+            profile, reply(1), Codec.Fault, nothing, ""
         )
         @test_throws ArgumentError Client.decode_completion(
             profile,
             Envelope.encode_completion(
-                reply(1),
-                ps(id(4), Pod(nothing), Pod(""));
-                endpoint = :lifecycle,
+                reply(1), ps(id(4), Pod(nothing), Pod("")); endpoint = :lifecycle
             ),
         )
         @test_throws ArgumentError Client.encode_request(
-            profile,
-            request(1),
-            Codec.LifecycleCommand(:pause),
+            profile, request(1), Codec.LifecycleCommand(:pause)
         )
         @test_throws ArgumentError Client.decode_request(profile, request(1), ps(id(1)))
         @test_throws ArgumentError Client.decode_request(profile, request(7), ps())
         @test_throws ArgumentError Client.operation_id(
-            profile,
-            Codec.LifecycleCommand{:unknown}(),
+            profile, Codec.LifecycleCommand{:unknown}()
         )
     end
 
     @test_throws ArgumentError Codec.LifecycleCommand(:unknown)
     @test_throws ArgumentError Codec.Snapshot(
-        Codec.Classic,
-        nothing,
-        nothing,
-        true,
-        true,
-        "initial",
-        false,
-        false,
-        nothing,
+        Codec.Classic, nothing, nothing, true, true, "initial", false, false, nothing
     )
     @test_throws ArgumentError Codec.Snapshot(
-        Codec.Classic,
-        nothing,
-        nothing,
-        false,
-        false,
-        "x"^65,
-        false,
-        false,
-        nothing,
+        Codec.Classic, nothing, nothing, false, false, "x"^65, false, false, nothing
     )
     @test_throws ArgumentError Codec.Snapshot(
-        Codec.Classic,
-        nothing,
-        nothing,
-        false,
-        false,
-        "héld",
-        false,
-        false,
-        nothing,
+        Codec.Classic, nothing, nothing, false, false, "héld", false, false, nothing
     )
     @test_throws ArgumentError Client.encode_completion(
         Codec.CALIBRATION_PROFILE,
         reply(1),
         Codec.Connected,
         Codec.Snapshot(
-            Codec.Classic,
-            nothing,
-            nothing,
-            false,
-            false,
-            "held",
-            true,
-            false,
-            nothing,
+            Codec.Classic, nothing, nothing, false, false, "held", true, false, nothing
         ),
         "",
     )
@@ -279,36 +212,20 @@ id(value) = Pod(SPA.Id(UInt32(value)))
         nothing,
     )
     @test Codec._validate_window(Codec.CALIBRATION_PROFILE, Codec.Connected, valid) ===
-          nothing
+        nothing
     correction_initial = Codec.Snapshot(
-        Codec.Classic,
-        nothing,
-        nothing,
-        false,
-        false,
-        "initial",
-        false,
-        false,
-        nothing,
+        Codec.Classic, nothing, nothing, false, false, "initial", false, false, nothing
     )
     @test Codec._validate_window(
-        Codec.CORRECTION_PROFILE,
-        Codec.Prepared,
-        correction_initial,
+        Codec.CORRECTION_PROFILE, Codec.Prepared, correction_initial
     ) === nothing
     @test_throws ArgumentError Codec._validate_window(
-        Codec.CORRECTION_PROFILE,
-        Codec.Connected,
-        correction_initial,
+        Codec.CORRECTION_PROFILE, Codec.Connected, correction_initial
     )
     @test Client.decode_completion(
         Codec.CALIBRATION_PROFILE,
         Client.encode_completion(
-            Codec.CALIBRATION_PROFILE,
-            reply(1),
-            Codec.Connected,
-            valid,
-            "",
+            Codec.CALIBRATION_PROFILE, reply(1), Codec.Connected, valid, ""
         ),
     ).snapshot.report_cursor === nothing
     fields = Codec._fields(Codec._snapshot_pod(valid))
@@ -351,9 +268,7 @@ id(value) = Pod(SPA.Id(UInt32(value)))
         @test_throws ArgumentError Client.decode_completion(
             Codec.CALIBRATION_PROFILE,
             Envelope.encode_completion(
-                reply(1),
-                ps(id(3), Pod(ps(altered...)), Pod(""));
-                endpoint = :lifecycle,
+                reply(1), ps(id(3), Pod(ps(altered...)), Pod("")); endpoint = :lifecycle
             ),
         )
     end
@@ -366,9 +281,7 @@ id(value) = Pod(SPA.Id(UInt32(value)))
         @test_throws ArgumentError Client.decode_completion(
             Codec.CALIBRATION_PROFILE,
             Envelope.encode_completion(
-                reply(1),
-                ps(id(3), Pod(ps(altered...)), Pod(""));
-                endpoint = :lifecycle,
+                reply(1), ps(id(3), Pod(ps(altered...)), Pod("")); endpoint = :lifecycle
             ),
         )
     end
@@ -377,9 +290,7 @@ id(value) = Pod(SPA.Id(UInt32(value)))
     @test_throws ArgumentError Client.decode_completion(
         Codec.CALIBRATION_PROFILE,
         Envelope.encode_completion(
-            reply(1),
-            ps(id(3), Pod(ps(altered...)), Pod(""));
-            endpoint = :lifecycle,
+            reply(1), ps(id(3), Pod(ps(altered...)), Pod("")); endpoint = :lifecycle
         ),
     )
     altered = copy(fields)
@@ -387,25 +298,17 @@ id(value) = Pod(SPA.Id(UInt32(value)))
     @test_throws ArgumentError Client.decode_completion(
         Codec.CALIBRATION_PROFILE,
         Envelope.encode_completion(
-            reply(1),
-            ps(id(3), Pod(ps(altered...)), Pod(""));
-            endpoint = :lifecycle,
+            reply(1), ps(id(3), Pod(ps(altered...)), Pod("")); endpoint = :lifecycle
         ),
     )
     @test_throws ArgumentError Client.encode_completion(
-        Codec.CALIBRATION_PROFILE,
-        reply(1),
-        Codec.Connected,
-        valid,
-        "x"^8193,
+        Codec.CALIBRATION_PROFILE, reply(1), Codec.Connected, valid, "x"^8193
     )
     @test_throws ArgumentError Client.decode_request(
-        Codec.CALIBRATION_PROFILE,
-        fill(UInt8(0), 16 * 1024 + 1),
+        Codec.CALIBRATION_PROFILE, fill(UInt8(0), 16 * 1024 + 1)
     )
     @test_throws ArgumentError Client.decode_completion(
-        Codec.CALIBRATION_PROFILE,
-        fill(UInt8(0), 64 * 1024 + 1),
+        Codec.CALIBRATION_PROFILE, fill(UInt8(0), 64 * 1024 + 1)
     )
 end
 

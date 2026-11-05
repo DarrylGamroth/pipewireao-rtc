@@ -10,9 +10,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "aos_graph_documents.jl"))
         metadata = IC.load_simulation(path; validate_optics = false)
         @test metadata.document == declaration.document
         @test IC.graph_requires_proper(
-            metadata,
-            IC.settings(metadata);
-            simulation_graph = "optical-reference",
+            metadata, IC.settings(metadata); simulation_graph = "optical-reference"
         )
         config = joinpath(directory, "simulation.conf")
         C.write_json(config, document)
@@ -30,27 +28,24 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "aos_graph_documents.jl"))
         @test options.plant.graph == "optical-reference"
         @test Owner.requires_proper(options)
         @test !IC.graph_requires_proper(
-            declaration,
-            IC.settings(declaration);
-            simulation_graph = "internal-source",
+            declaration, IC.settings(declaration); simulation_graph = "internal-source"
         )
         # An explicit selected profile replacement owns the final native type.
-        declaration.document["profiles"]["reference"]["nodes"] =
-            [Dict("name" => "optics", "type" => "other", "config" => Dict())]
+        declaration.document["profiles"]["reference"]["nodes"] = [
+            Dict("name" => "optics", "type" => "other", "config" => Dict())
+        ]
         @test !IC.graph_requires_proper(
-            declaration,
-            IC.settings(declaration);
-            simulation_graph = "optical-reference",
+            declaration, IC.settings(declaration); simulation_graph = "optical-reference"
         )
         declaration.document["defaults"]["native_type"] = "proper_optical_train_f64"
-        declaration.document["settings_schema"]["properties"]["native_type"] =
-            Dict("type" => "string")
-        only(declaration.document["profiles"]["reference"]["nodes"])["type"] =
-            Dict("\$ref" => "/settings/native_type")
+        declaration.document["settings_schema"]["properties"]["native_type"] = Dict(
+            "type" => "string"
+        )
+        only(declaration.document["profiles"]["reference"]["nodes"])["type"] = Dict(
+            "\$ref" => "/settings/native_type"
+        )
         @test IC.graph_requires_proper(
-            declaration,
-            IC.settings(declaration);
-            simulation_graph = "optical-reference",
+            declaration, IC.settings(declaration); simulation_graph = "optical-reference"
         )
         for selection in ("absent", "calibration", "../production", "", true, 1)
             document["plant"]["graph"] = selection

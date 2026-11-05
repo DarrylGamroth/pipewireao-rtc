@@ -146,7 +146,7 @@ struct Restored{V<:AbstractVector{Float32}} <: AbstractResult
     clipped::Bool
 end
 struct Released <: AbstractResult end
-@enum FailureReason::UInt32 Cancelled=1 Endpoint=2 InvalidEvidence=3 ProbeClipped=4
+@enum FailureReason::UInt32 Cancelled = 1 Endpoint = 2 InvalidEvidence = 3 ProbeClipped = 4
 struct Failed <: AbstractResult
     reason::FailureReason
 end
@@ -302,9 +302,7 @@ _args(a::Collect) =
 _args(a::Capture) = _struct(_id(a.probe), Pod(_cursor_pod(a.after)), _id(a.frames))
 _args(a::Restore) = _struct(_float_pod(a.figure, 4096), Pod(_rule_pod(a.rule)))
 function Client.encode_request(
-    profile::CalibrationActionProfile,
-    header::Envelope.RequestHeader,
-    command::Command,
+    profile::CalibrationActionProfile, header::Envelope.RequestHeader, command::Command
 )
     _check(
         header.operation == Client.operation_id(profile, command),
@@ -343,19 +341,17 @@ function _decode_action(operation, pod)
     throw(ArgumentError("unknown calibration operation"))
 end
 function Client.decode_request(
-    ::CalibrationActionProfile,
-    header::Envelope.RequestHeader,
-    payload::SPA.Struct,
+    ::CalibrationActionProfile, header::Envelope.RequestHeader, payload::SPA.Struct
 )
     f = _arity(payload.values, 3)
-    command =
-        Command(_read_long(f[1]), _read_long(f[2]), _decode_action(header.operation, f[3]))
+    command = Command(
+        _read_long(f[1]), _read_long(f[2]), _decode_action(header.operation, f[3])
+    )
     _preflight(command)
     return command
 end
 function Client.decode_request(
-    profile::CalibrationActionProfile,
-    input::Union{Pod,AbstractVector{UInt8}},
+    profile::CalibrationActionProfile, input::Union{Pod,AbstractVector{UInt8}}
 )
     header, payload = Envelope.decode_request(input)
     return header, Client.decode_request(profile, header, payload)
@@ -395,7 +391,7 @@ function _decode_exposures(pod)
     _check(length(flat) % 5 == 0, "exposure array must contain groups of five Longs")
     _frames(length(flat) ÷ 5)
     values = Exposure[
-        Exposure((reinterpret(UInt64, flat[i+j]) for j = 0:4)...) for i = 1:5:length(flat)
+        Exposure((reinterpret(UInt64, flat[i+j]) for j in 0:4)...) for i in 1:5:length(flat)
     ]
     return _exposures(values)
 end
@@ -454,9 +450,7 @@ function collect_reply_size(measurements::Integer, frames::Integer; message_byte
     )
 end
 function preflight_collect_reply(
-    measurements::Integer,
-    frames::Integer;
-    message_bytes::Int = 0,
+    measurements::Integer, frames::Integer; message_bytes::Int = 0
 )
     size = collect_reply_size(measurements, frames; message_bytes)
     _check(size <= 131072, "Collect completion exceeds 128 KiB")
@@ -500,9 +494,7 @@ function _decode_result(pod)
     elseif tag == 4
         _arity(f, 4)
         return Responses(
-            _decode_float(f[2], 131072; minimum = 0),
-            _decode_exposures(f[3]),
-            _bool(f[4]),
+            _decode_float(f[2], 131072; minimum = 0), _decode_exposures(f[3]), _bool(f[4])
         )
     elseif tag == 5
         _arity(f, 7)
@@ -535,8 +527,7 @@ function _completion(header, run, serial, result)
     result === nothing ?
     _check(header.result < 0, "successful completion requires result") :
     _check(
-        _tag(result) == 8 || _tag(result) == header.operation,
-        "operation/result mismatch",
+        _tag(result) == 8 || _tag(result) == header.operation, "operation/result mismatch"
     )
 end
 function Client.encode_completion(
@@ -563,8 +554,7 @@ function Client.encode_completion(
     )
 end
 function Client.decode_completion(
-    ::CalibrationActionProfile,
-    input::Union{Pod,AbstractVector{UInt8}},
+    ::CalibrationActionProfile, input::Union{Pod,AbstractVector{UInt8}}
 )
     header, payload = Envelope.decode_completion(input; endpoint = :calibration)
     f = _arity(payload.values, 5)
@@ -602,14 +592,11 @@ function Client.encode_rejection(
     _check(1 <= UInt32(lifecycle) <= 5, "unknown cold lifecycle")
     text = Lifecycle._checked_string(message; empty = true, limit = 8192)
     return Envelope.encode_rejection(
-        header,
-        _struct(_id(lifecycle), Pod(text));
-        endpoint = :calibration,
+        header, _struct(_id(lifecycle), Pod(text)); endpoint = :calibration
     )
 end
 function Client.decode_rejection(
-    ::CalibrationActionProfile,
-    input::Union{Pod,AbstractVector{UInt8}},
+    ::CalibrationActionProfile, input::Union{Pod,AbstractVector{UInt8}}
 )
     header, payload = Envelope.decode_rejection(input; endpoint = :calibration)
     f = _arity(payload.values, 2)

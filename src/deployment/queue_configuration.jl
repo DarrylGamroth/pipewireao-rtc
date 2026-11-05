@@ -22,34 +22,33 @@ _queue_capacity(value::Integer) =
 function queue_metadata!(args; defaults = true)
     !defaults && !haskey(args, "metadata") && return args
     default_records() = [
-        Dict("type"=>r.type, "size"=>r.size, "required"=>false) for
+        Dict("type" => r.type, "size" => r.size, "required" => false) for
         r in Common.TELEMETRY_METADATA
     ]
-    declarations=get!(default_records, args, "metadata")
+    declarations = get!(default_records, args, "metadata")
     _queue_metadata_declarations(declarations)
-    requirements=map(declarations) do item
+    requirements = map(declarations) do item
         InstrumentConfiguration.fields(
             item,
             ("type", "size", "required"),
             ("type", "size", "required"),
             "queue metadata",
         )
-        type, size, required=item["type"], item["size"], item["required"]
+        type, size, required = item["type"], item["size"], item["required"]
         _queue_metadata_integer(type)
         _queue_metadata_integer(size)
         _queue_metadata_required(required)
-        requirement=PipeWireAO.MetadataRequirement(type, size; required)
+        requirement = PipeWireAO.MetadataRequirement(type, size; required)
         PipeWireAO.metadata_is_transport_owned(requirement.type) &&
             throw(ArgumentError("queue metadata must not copy transport-owned records"))
         requirement
     end
-    explicit_header=any(r->r.type==PipeWireAO.SPA.META_HEADER, requirements)
+    explicit_header = any(r -> r.type == PipeWireAO.SPA.META_HEADER, requirements)
     explicit_header &&
-        !any(r->r.type==PipeWireAO.SPA.META_HEADER && r.required, requirements) &&
+        !any(r -> r.type == PipeWireAO.SPA.META_HEADER && r.required, requirements) &&
         throw(ArgumentError("queue Header must be required"))
     PipeWireAO.validate_metadata_requirements(
-        Tuple(requirements);
-        header = !explicit_header,
+        Tuple(requirements); header = !explicit_header
     )
     return args
 end
@@ -60,10 +59,7 @@ function queue_templates!(core; metadata_defaults = true)
         _queue_module(entry)
         haskey(entry, "template") || continue
         InstrumentConfiguration.fields(
-            entry,
-            ("template", "args"),
-            ("template", "args"),
-            "queue template",
+            entry, ("template", "args"), ("template", "args"), "queue template"
         )
         entry["template"] == "telemetry" || throw(ArgumentError("unknown queue template"))
         args = InstrumentConfiguration._declaration_fields(
@@ -82,16 +78,13 @@ function queue_templates!(core; metadata_defaults = true)
             "telemetry queue arguments",
         )
         name = InstrumentConfiguration._declaration_text(
-            args["node.name"],
-            "telemetry queue name",
+            args["node.name"], "telemetry queue name"
         )
         playback = InstrumentConfiguration._declaration_object(
-            args["playback.props"],
-            "telemetry playback properties",
+            args["playback.props"], "telemetry playback properties"
         )
         InstrumentConfiguration._declaration_text(
-            get(playback, "media.name", nothing),
-            "telemetry media name",
+            get(playback, "media.name", nothing), "telemetry media name"
         )
         for (field, allowed) in (
             ("capture.props", ("node.loop.name", "node.name", "node.group")),
@@ -119,10 +112,8 @@ function queue_templates!(core; metadata_defaults = true)
             "queue.max-buffers" => 1,
             "queue.storage" => "copy",
             "queue.overflow" => "drop-oldest",
-            "capture.props" => Dict(
-                "node.loop.name" => "rtc-data-loop",
-                "node.name" => name * "-input",
-            ),
+            "capture.props" =>
+                Dict("node.loop.name" => "rtc-data-loop", "node.name" => name * "-input"),
             "playback.props" => Dict(
                 "node.loop.name" => "telemetry-loop",
                 "node.name" => name * "-output",
@@ -145,8 +136,9 @@ function queue_templates!(core; metadata_defaults = true)
             haskey(playback, field) ||
                 (resolved["playback.props"][field] = string(resolved[field]))
         end
-        core["context.modules"][index] =
-            Dict("name" => "libpipewire-module-queue", "args" => resolved)
+        core["context.modules"][index] = Dict(
+            "name" => "libpipewire-module-queue", "args" => resolved
+        )
     end
     return core
 end
@@ -155,76 +147,78 @@ end
 # scientific contract resolution. Keep inferred slots optional; explicit authored
 # layouts remain authoritative and must be able to preserve their linked source.
 function queue_metadata_profiles!(core, session, contracts, simulation)
-    classifications=Set(
+    classifications = Set(
         UInt32.((
-            PipeWireAO.SPA.META_OPTICAL_CHOPPING,
-            PipeWireAO.SPA.META_ELECTRICAL_TRIGGER,
+            PipeWireAO.SPA.META_OPTICAL_CHOPPING, PipeWireAO.SPA.META_ELECTRICAL_TRIGGER
         )),
     )
-    profiles=Dict{String,Set{UInt32}}()
+    profiles = Dict{String,Set{UInt32}}()
     for (node, contract) in contracts, (port, output) in contract["outputs"]
-        profiles[node*":"*port]=Set(
+        profiles[node*":"*port] = Set(
             UInt32(r["type"]) for
             r in get(output, "metadata", []) if r["type"] in classifications
         )
     end
     if get(simulation, "version", nothing) in (4, 6)
-        sensors=get(simulation, "sensor_nodes", Dict())
+        sensors = get(simulation, "sensor_nodes", Dict())
         for name in keys(get(get(simulation, "plant", Dict()), "chopping", Dict()))
             haskey(sensors, name) ||
                 throw(ArgumentError("chopping names an unknown sensor: $name"))
-            profiles[sensors[name]*":output_1"]=copy(classifications)
+            profiles[sensors[name]*":output_1"] = copy(classifications)
         end
     end
-    queues=[
+    queues = [
         module_["args"] for module_ in get(core, "context.modules", []) if
-        get(module_, "name", nothing)=="libpipewire-module-queue" &&
-            get(get(module_, "args", Dict()), "queue.media", nothing)=="application/ndarray"
+        get(module_, "name", nothing) == "libpipewire-module-queue" &&
+            get(get(module_, "args", Dict()), "queue.media", nothing) ==
+            "application/ndarray"
     ]
-    links=get(session, "links", [])
-    inferred=[
+    links = get(session, "links", [])
+    inferred = [
         Set(
             UInt32(record["type"]) for
             record in get(args, "metadata", []) if record["type"] in classifications
         ) for args in queues
     ]
     # At most one queue hop per pass, including reverse-ordered chains.
-    for _ = 1:(length(queues)+1)
-        changed=false
+    for _ in 1:(length(queues)+1)
+        changed = false
         for (index, args) in enumerate(queues)
-            name=args["node.name"]
-            capture=get(get(args, "capture.props", Dict()), "node.name", name*"-input")
-            playback=get(get(args, "playback.props", Dict()), "node.name", name*"-output")
+            name = args["node.name"]
+            capture = get(get(args, "capture.props", Dict()), "node.name", name * "-input")
+            playback = get(
+                get(args, "playback.props", Dict()), "node.name", name * "-output"
+            )
             for link in links
-                first(split(link["input"], ':'; limit = 2))==capture || continue
-                before=length(inferred[index])
+                first(split(link["input"], ':'; limit = 2)) == capture || continue
+                before = length(inferred[index])
                 union!(inferred[index], get(profiles, link["output"], Set{UInt32}()))
-                changed |= length(inferred[index])!=before
+                changed |= length(inferred[index]) != before
             end
             for link in links
-                first(split(link["output"], ':'; limit = 2))==playback || continue
-                previous=get!(profiles, link["output"], Set{UInt32}())
-                before=length(previous)
+                first(split(link["output"], ':'; limit = 2)) == playback || continue
+                previous = get!(profiles, link["output"], Set{UInt32}())
+                before = length(previous)
                 union!(previous, inferred[index])
-                changed |= length(previous)!=before
+                changed |= length(previous) != before
             end
         end
         changed || break
     end
     for (args, types) in zip(queues, inferred)
-        explicit=haskey(args, "metadata")
+        explicit = haskey(args, "metadata")
         queue_metadata!(args)
         for type in sort!(collect(types))
-            any(record -> record["type"]==type, args["metadata"]) && continue
+            any(record -> record["type"] == type, args["metadata"]) && continue
             explicit && throw(
                 ArgumentError(
                     "queue $(args["node.name"]) metadata omits source classification $type",
                 ),
             )
-            record=PipeWireAO.MetadataRequirement(type)
+            record = PipeWireAO.MetadataRequirement(type)
             push!(
                 args["metadata"],
-                Dict("type"=>record.type, "size"=>record.size, "required"=>false),
+                Dict("type" => record.type, "size" => record.size, "required" => false),
             )
         end
         queue_metadata!(args)

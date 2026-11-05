@@ -64,10 +64,7 @@ function _validate_optical_masks(value, directory)
                 !isfinite_positive(response["wavelength_m"]) &&
                 throw(ArgumentError("$label wavelength_m must be positive and finite"))
             mask_artifact(
-                response["amplitude"],
-                directory,
-                "$label amplitude";
-                amplitude = true,
+                response["amplitude"], directory, "$label amplitude"; amplitude = true
             )
             if haskey(response, "phase")
                 haskey(response, "wavelength_m") ||
@@ -83,10 +80,7 @@ function _validate_optical_masks(value, directory)
 end
 
 selected_optical_mask_responses(
-    document,
-    instrument,
-    graphs::AbstractDict,
-    configured = document["defaults"],
+    document, instrument, graphs::AbstractDict, configured = document["defaults"]
 ) = selected_optical_mask_responses(
     document,
     instrument,
@@ -95,10 +89,7 @@ selected_optical_mask_responses(
 )
 
 function selected_optical_mask_responses(
-    document,
-    instrument,
-    path_names,
-    configured = document["defaults"],
+    document, instrument, path_names, configured = document["defaults"]
 )
     selections = get(document["defaults"], "masks", Dict())
     selected = Tuple{String,String,Any}[]
@@ -195,9 +186,7 @@ function expand_optical_mask_bindings!(document, instrument, graphs)
             haskey(response, field) || continue
             binding = merge(Dict{String,Any}("kind" => "fits"), deepcopy(response[field]))
             add_component_binding!(
-                document["bindings"],
-                role * "_" * port * "_" * field,
-                binding,
+                document["bindings"], role * "_" * port * "_" * field, binding
             )
         end
     end

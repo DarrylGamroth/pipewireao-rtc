@@ -36,42 +36,27 @@ end
     return Hsm.transition!(sm, :Prepared)
 end
 @on_event function (
-    sm::Protocol,
-    ::Prepared,
-    ::Requested,
-    command::Actions.Command{Actions.Hold},
+    sm::Protocol, ::Prepared, ::Requested, command::Actions.Command{Actions.Hold}
 )
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Held,
-    ::Requested,
-    command::Actions.Command{<:Actions.Adopt},
+    sm::Protocol, ::Held, ::Requested, command::Actions.Command{<:Actions.Adopt}
 )
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Responses,
-    ::Requested,
-    command::Actions.Command{<:Actions.Adopt},
+    sm::Protocol, ::Responses, ::Requested, command::Actions.Command{<:Actions.Adopt}
 )
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Captured,
-    ::Requested,
-    command::Actions.Command{<:Actions.Adopt},
+    sm::Protocol, ::Captured, ::Requested, command::Actions.Command{<:Actions.Adopt}
 )
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Adopted,
-    ::Requested,
-    command::Actions.Command{<:Actions.Settle},
+    sm::Protocol, ::Adopted, ::Requested, command::Actions.Command{<:Actions.Settle}
 )
     return admit!(sm, command)
 end
@@ -84,18 +69,12 @@ end
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Restored,
-    ::Requested,
-    command::Actions.Command{Actions.Release},
+    sm::Protocol, ::Restored, ::Requested, command::Actions.Command{Actions.Release}
 )
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol,
-    ::Active,
-    ::Requested,
-    command::Actions.Command{<:Actions.Restore},
+    sm::Protocol, ::Active, ::Requested, command::Actions.Command{<:Actions.Restore}
 )
     return admit!(sm, command)
 end
@@ -318,10 +297,7 @@ function Endpoint(
 end
 
 function await(
-    predicate,
-    condition::Base.AsyncCondition,
-    guard::ReentrantLock,
-    deadline::Float64,
+    predicate, condition::Base.AsyncCondition, guard::ReentrantLock, deadline::Float64
 )
     isfinite(deadline) || throw(ArgumentError("calibration deadline must be finite"))
     timer = Timer(_ -> wake!(condition, guard), max(0.0, deadline - Client.monotonic()))
@@ -365,9 +341,7 @@ _terminal_result(::Actions.Released) = true
 _await_release(endpoint, ticket, ::Actions.AbstractResult, deadline) = false
 function _await_release(endpoint, ticket, ::Actions.Released, deadline)
     release = await(
-        endpoint.wakeup,
-        endpoint.wakeup_lock,
-        min(Float64(deadline), ticket.deadline),
+        endpoint.wakeup, endpoint.wakeup_lock, min(Float64(deadline), ticket.deadline)
     ) do
         status = Ingress.terminal_release(endpoint.ingress, ticket)
         status === :waiting ? nothing : status
@@ -408,10 +382,7 @@ function apply!(endpoint::Endpoint, ticket::Ingress.Ticket)
         "",
     )
     Ingress.complete!(
-        endpoint.ingress,
-        ticket,
-        completion;
-        terminal = _terminal_result(result),
+        endpoint.ingress, ticket, completion; terminal = _terminal_result(result)
     )
     return result
 end
@@ -428,7 +399,7 @@ function serve!(endpoint::Endpoint; deadline::Real)
     endpoint.closed &&
         throw(InvalidStateException("calibration endpoint is closed", :closed))
     Threads.atomic_cas!(endpoint.started, false, true) && throw(
-        InvalidStateException("calibration endpoint has already been served", :started),
+        InvalidStateException("calibration endpoint has already been served", :started)
     )
     try
         while true
@@ -440,7 +411,7 @@ function serve!(endpoint::Endpoint; deadline::Real)
                         Ingress.controller_present(endpoint.ingress, retained) ||
                         throw(
                             Client.UnknownOutcome(
-                                "retained calibration controller disappeared",
+                                "retained calibration controller disappeared"
                             ),
                         )
                 end
@@ -448,8 +419,7 @@ function serve!(endpoint::Endpoint; deadline::Real)
                 if ticket === nothing
                     with_thread_loop_lock(endpoint.loop) do _
                         header, _ = Envelope.decode_completion(
-                            endpoint.ingress.completion;
-                            endpoint = :calibration,
+                            endpoint.ingress.completion; endpoint = :calibration
                         )
                         header.result < 0 &&
                             error("calibration request retired without a known outcome")

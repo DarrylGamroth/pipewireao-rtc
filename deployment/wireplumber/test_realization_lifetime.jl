@@ -30,7 +30,7 @@ function probe(remote, directory, daemon)
     try
         with_thread_loop_lock(loop) do _
             context = Context(loop)
-            core = CoreConnection(context; properties = Dict("remote.name"=>remote))
+            core = CoreConnection(context; properties = Dict("remote.name" => remote))
             registry = Registry(core)
         end
         start!(loop)
@@ -57,22 +57,22 @@ wireplumber.components = [
 """,
         )
         environment = Dict(
-            "PIPEWIRE_REMOTE"=>remote,
-            "PIPEWIREAO_REMOTE"=>remote,
-            "WIREPLUMBER_MODULE_DIR"=>joinpath(wp_build, "modules"),
-            "WIREPLUMBER_CONFIG_DIR"=>directory,
-            "WIREPLUMBER_DATA_DIR"=>directory*":"*joinpath(wp_source, "src"),
-            "LD_LIBRARY_PATH"=>joinpath(wp_build, "lib/wp")*":"*ENV["LD_LIBRARY_PATH"],
-            "NOTIFY_SOCKET"=>"",
+            "PIPEWIRE_REMOTE" => remote,
+            "PIPEWIREAO_REMOTE" => remote,
+            "WIREPLUMBER_MODULE_DIR" => joinpath(wp_build, "modules"),
+            "WIREPLUMBER_CONFIG_DIR" => directory,
+            "WIREPLUMBER_DATA_DIR" => directory * ":" * joinpath(wp_source, "src"),
+            "LD_LIBRARY_PATH" =>
+                joinpath(wp_build, "lib/wp") * ":" * ENV["LD_LIBRARY_PATH"],
+            "NOTIFY_SOCKET" => "",
         )
-        selection=read(
-            addenv(`ldd $(joinpath(wp_build,"src/wireplumber"))`, environment...),
-            String,
+        selection = read(
+            addenv(`ldd $(joinpath(wp_build,"src/wireplumber"))`, environment...), String
         )
         @test occursin("libpipewire-ao-0.3", selection)
         @test !occursin("libpipewire-0.3.so", selection)
         write(joinpath(evidence, "libraries.log"), selection)
-        wp=run(
+        wp = run(
             pipeline(
                 addenv(
                     `stdbuf -oL $(joinpath(wp_build,"src/wireplumber")) -c wireplumber.conf -p ao-probe`,
@@ -95,42 +95,44 @@ wireplumber.components = [
                 find_globals(
                     registry;
                     interface = "PipeWire:Interface:Node",
-                    properties = Dict("node.name"=>SCOPE_NAME),
+                    properties = Dict("node.name" => SCOPE_NAME),
                 )
             end
         end
-        for generation = 1:2
+        for generation in 1:2
             with_thread_loop_lock(loop) do _
-                marker=Filter(
+                marker = Filter(
                     core,
                     SCOPE_NAME;
-                    properties = Dict("node.name"=>SCOPE_NAME, "media.class"=>"Control"),
-                    on_state_changed = (filter, old, new, detail)->push!(
-                        states,
-                        (generation, string(new), detail),
+                    properties = Dict(
+                        "node.name" => SCOPE_NAME, "media.class" => "Control"
                     ),
+                    on_state_changed = (filter, old, new, detail) ->
+                        push!(states, (generation, string(new), detail)),
                 )
                 connect!(
                     marker;
-                    flags = FILTER_ASYNC|FILTER_INACTIVE,
+                    flags = FILTER_ASYNC | FILTER_INACTIVE,
                     params = [snapshot(generation, 0)],
                 )
             end
-            wait_proof(()->length(current())==1, 10, "bound realization"; check = healthy)
-            identity=only(current())
+            wait_proof(
+                () -> length(current()) == 1, 10, "bound realization"; check = healthy
+            )
+            identity = only(current())
             push!(identities, (identity.id, identity.properties["object.serial"]))
             wait_proof(
-                ()->saw("PROBE_PHASE $generation 0"),
+                () -> saw("PROBE_PHASE $generation 0"),
                 10,
                 "prepared snapshot";
                 check = healthy,
             )
-            @test length(current())==1 # Prepared cannot be withdrawn prematurely.
+            @test length(current()) == 1 # Prepared cannot be withdrawn prematurely.
             with_thread_loop_lock(loop) do _
                 update_params!(marker, [snapshot(generation, 1)])
             end
             wait_proof(
-                ()->saw("PROBE_PHASE $generation 1"),
+                () -> saw("PROBE_PHASE $generation 1"),
                 10,
                 "realize snapshot update";
                 check = healthy,
@@ -139,7 +141,7 @@ wireplumber.components = [
                 update_params!(marker, [snapshot(generation, 2)])
             end
             wait_proof(
-                ()->saw("PROBE_DESTROY_REQUESTED $generation") && isempty(current()),
+                () -> saw("PROBE_DESTROY_REQUESTED $generation") && isempty(current()),
                 10,
                 "remote exported Filter destruction";
                 check = healthy,
@@ -148,25 +150,25 @@ wireplumber.components = [
             @test isempty(current())
             with_thread_loop_lock(loop) do _
                 close(marker)
-                marker=nothing
+                marker = nothing
             end
         end
         @test identities[1] != identities[2]
         C.write_json(
             joinpath(evidence, "receipt.json"),
             Dict(
-                "success"=>true,
-                "scope"=>"typed Props updates, remote destruction and two incarnations only; no links/admission/withdrawal drain qualification",
-                "identities"=>identities,
-                "filter_states"=>states,
-                "wp_pid"=>getpid(wp),
+                "success" => true,
+                "scope" => "typed Props updates, remote destruction and two incarnations only; no links/admission/withdrawal drain qualification",
+                "identities" => identities,
+                "filter_states" => states,
+                "wp_pid" => getpid(wp),
             ),
         )
     finally
-        wp===nothing || stop_proof_child!(wp, "probe WirePlumber")
+        wp === nothing || stop_proof_child!(wp, "probe WirePlumber")
         with_thread_loop_lock(loop) do _
             for resource in (marker, registry, core, context)
-                resource===nothing || close(resource)
+                resource === nothing || close(resource)
             end
         end
         close(loop)

@@ -10,7 +10,7 @@ const OUTPUT = ARGS[3]
 mkpath(OUTPUT)
 
 function idle(microseconds)
-    @ccall gc_safe=true usleep(Cuint(microseconds)::Cuint)::Cint
+    @ccall gc_safe = true usleep(Cuint(microseconds)::Cuint)::Cint
 end
 function window(microseconds)
     before = Base.gc_num()
@@ -60,9 +60,9 @@ function churn(remote, directory, daemon)
         @test startswith(published, "PUBLISHED ")
         @test startswith(removed, "REMOVED ")
         @test started <
-              parse(UInt64, split(published)[end]) <
-              parse(UInt64, split(removed)[end]) <
-              finished
+            parse(UInt64, split(published)[end]) <
+            parse(UInt64, split(removed)[end]) <
+            finished
         println(
             "OWNER_CHURN bytes=",
             observed.allocd,

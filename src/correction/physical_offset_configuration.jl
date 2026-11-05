@@ -8,8 +8,7 @@ _configuration_branches(rows) = throw(ArgumentError("physical offsets require1:8
 function _configuration_branches(rows::AbstractDict)
     1 <= length(rows) <= 8 || throw(ArgumentError("physical offsets require1:8branches"))
     foreach(
-        name -> _configuration_name(name, "physical offsets require1:8branches"),
-        keys(rows),
+        name -> _configuration_name(name, "physical offsets require1:8branches"), keys(rows)
     )
     return nothing
 end
@@ -22,10 +21,10 @@ _projection_matrix(value::AbstractMatrix) = value
 
 # Shared cold artifact/branch admission; no optional graph or transport package.
 function configuration(path; version = 1)
-    filesize(path)<=65536 ||
+    filesize(path) <= 65536 ||
         throw(ArgumentError("physical offsets configuration exceeds64KiB"))
-    d=Common.read_yaml(path)
-    required=Set((
+    d = Common.read_yaml(path)
+    required = Set((
         "version",
         "command_limit_m",
         "projection",
@@ -34,18 +33,19 @@ function configuration(path; version = 1)
         "command_order",
         "branches",
     ))
-    version==1 && union!(
+    version == 1 && union!(
         required,
         ("parameter", "algorithm", "clock_output", "reference", "reference_sign"),
     )
     _configuration_fields(d, required, "invalid physical offsets configuration")
-    d["version"]===version || throw(ArgumentError("invalid physical offsets configuration"))
-    if version==1
+    d["version"] === version ||
+        throw(ArgumentError("invalid physical offsets configuration"))
+    if version == 1
         for key in ("parameter", "algorithm", "clock_output")
             _configuration_name(d[key], "invalid physical offsets $key")
         end
     end
-    rows=d["branches"]
+    rows = d["branches"]
     _configuration_branches(rows)
     return d
 end
@@ -55,22 +55,22 @@ function matrix(path, selection)
         Set(("path", "sha256", "axes", "shape")),
         "physical projection requires path,sha256,axes,shape",
     )
-    file=DeploymentConfiguration.relative_asset(dirname(abspath(path)), selection["path"])
-    hash=selection["sha256"]
+    file = DeploymentConfiguration.relative_asset(dirname(abspath(path)), selection["path"])
+    hash = selection["sha256"]
     _projection_hash(hash)
-    artifact=Artifacts.FITSArtifact(file; axes = selection["axes"])
-    prepared=Artifacts.prepare(artifact, Float32, selection["shape"])
-    prepared.provenance["original_sha256"]==hash ||
+    artifact = Artifacts.FITSArtifact(file; axes = selection["axes"])
+    prepared = Artifacts.prepare(artifact, Float32, selection["shape"])
+    prepared.provenance["original_sha256"] == hash ||
         throw(ArgumentError("physical projection content hash mismatch"))
     return _projection_matrix(prepared.data)
 end
 
 
 function receiver_inputs(d, P, Q)
-    names=Tuple(Symbol.(sort!(collect(keys(d["branches"])))))
-    calibrations=map(names) do name
-        row=d["branches"][string(name)]
-        required=Set((
+    names = Tuple(Symbol.(sort!(collect(keys(d["branches"])))))
+    calibrations = map(names) do name
+        row = d["branches"][string(name)]
+        required = Set((
             "node_name",
             "schema",
             "modes",
@@ -94,15 +94,14 @@ function receiver_inputs(d, P, Q)
             silence_ns = row["silence_ns"],
         )
     end
-    nodes=[d["branches"][string(name)]["node_name"] for name in names]
-    length(unique(nodes))==length(nodes) ||
+    nodes = [d["branches"][string(name)]["node_name"] for name in names]
+    length(unique(nodes)) == length(nodes) ||
         throw(ArgumentError("physical offset branch node names collide"))
-    receiver=Receiver(
-        NamedTuple{names}(calibrations);
-        command_limit_m = d["command_limit_m"],
+    receiver = Receiver(
+        NamedTuple{names}(calibrations); command_limit_m = d["command_limit_m"]
     )
-    buffers=map(_->zeros(Float32, size(P, 1)), names)
-    total=zeros(Float32, size(P, 1))
+    buffers = map(_ -> zeros(Float32, size(P, 1)), names)
+    total = zeros(Float32, size(P, 1))
     return (; declaration = d, receiver, names, calibrations, buffers, total)
 end
 
@@ -119,15 +118,13 @@ function prepare(
     command_order::AbstractString,
     calibration_identity::AbstractString,
 )
-    d=configuration(path; version = 2)
-    d["command_order"]==command_order && d["calibration_identity"]==calibration_identity ||
-        throw(
-            ArgumentError(
-                "physical receiver differs from source calibration or command order",
-            ),
-        )
-    P, Q=matrix(path, d["projection"]), matrix(path, d["inverse"])
-    size(P, 1)==command_count ||
+    d = configuration(path; version = 2)
+    d["command_order"] == command_order &&
+    d["calibration_identity"] == calibration_identity || throw(
+        ArgumentError("physical receiver differs from source calibration or command order"),
+    )
+    P, Q = matrix(path, d["projection"]), matrix(path, d["inverse"])
+    size(P, 1) == command_count ||
         throw(DimensionMismatch("physical receiver differs from source command extent"))
     return PreparedReceiver(receiver_inputs(d, P, Q))
 end

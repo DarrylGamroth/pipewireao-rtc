@@ -3,16 +3,13 @@ using PipeWireAORTC: SessionLaunch, SessionInstall
 
 @testset "installed session launcher keeps the selected Julia project" begin
     launcher = SessionInstall.installed_launcher(
-        "/sdk path/bin/julia";
-        environment = "/app path/env",
+        "/sdk path/bin/julia"; environment = "/app path/env"
     )
     @test occursin(
-        "exec '/sdk path/bin/julia' --startup-file=no --project='/app path/env'",
-        launcher,
+        "exec '/sdk path/bin/julia' --startup-file=no --project='/app path/env'", launcher
     )
     @test occursin(
-        "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))",
-        launcher,
+        "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))", launcher
     )
     checkout = SessionInstall.installed_launcher("/sdk/bin/julia")
     @test occursin("--project=\"\$julia_dir\"", checkout)
@@ -29,10 +26,10 @@ end
     hook = "{ path=/sdk/bin/pipewireao-rtc-session ; argv[]=/sdk/bin/pipewireao-rtc-session stop --unit pipewireao-session@test.service --runtime-root /run/user/1000/pipewireao-session-test ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0 }"
     @test SessionLaunch.stop_hook_valid(hook, request)
     for changed in (
-        replace(hook, "stop --unit"=>"control --unit"),
-        replace(hook, "@test.service"=>"@foreign.service"),
-        replace(hook, "ignore_errors=no"=>"ignore_errors=yes"),
-        replace(hook, "session-test ;"=>"session-foreign ;"),
+        replace(hook, "stop --unit" => "control --unit"),
+        replace(hook, "@test.service" => "@foreign.service"),
+        replace(hook, "ignore_errors=no" => "ignore_errors=yes"),
+        replace(hook, "session-test ;" => "session-foreign ;"),
         hook * " " * hook,
         "",
         "/sdk/bin/pipewireao-rtc-session",
@@ -44,9 +41,9 @@ end
         String,
     )
     @test "ExecStop=@LAUNCHER@ stop --unit %n --runtime-root %t/pipewireao-session-%i" in
-          split(template, '\n')
+        split(template, '\n')
     @test first(findfirst("ExecStop=", template)) <
-          first(findfirst("ExecStopPost=", template))
+        first(findfirst("ExecStopPost=", template))
     @test "KillMode=control-group" in split(template, '\n')
     @test "TimeoutStopSec=300" in split(template, '\n')
 end

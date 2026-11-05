@@ -15,10 +15,9 @@ function validate_responses(document, inputs; label = "production graph input")
         response["kind"] == "second_order" ||
             throw(ArgumentError("unknown plant response kind"))
         all(
-            isfinite_positive,
-            (response["natural_frequency_hz"], response["damping_ratio"]),
+            isfinite_positive, (response["natural_frequency_hz"], response["damping_ratio"])
         ) || throw(
-            ArgumentError("response frequency and damping must be finite and positive"),
+            ArgumentError("response frequency and damping must be finite and positive")
         )
         _declaration_text(response["schema"], "response schema")
     end
@@ -32,9 +31,7 @@ function apply_responses!(graph, declaration, configured)
     for (name, response) in responses
         input = only(entry for entry in graph["inputs"] if entry["name"] == name)
         values = binding_values(
-            declaration,
-            configured,
-            declaration.document["bindings"][input["binding"]],
+            declaration, configured, declaration.document["bindings"][input["binding"]]
         )
         ndims(values) == 1 && eltype(values) === Float32 ||
             throw(ArgumentError("second-order response requires a Float32 vector input"))
@@ -51,20 +48,20 @@ function apply_responses!(graph, declaration, configured)
             graph["nodes"],
             index,
             Dict(
-                "name"=>node_name,
-                "type"=>"second_order_response_f32",
-                "config"=>Dict(
-                    "count"=>length(values),
-                    "schema"=>response["schema"],
-                    "natural_frequency_hz"=>response["natural_frequency_hz"],
-                    "damping_ratio"=>response["damping_ratio"],
-                    "sample_period_s"=>declaration.document["frame_period_s"],
+                "name" => node_name,
+                "type" => "second_order_response_f32",
+                "config" => Dict(
+                    "count" => length(values),
+                    "schema" => response["schema"],
+                    "natural_frequency_hz" => response["natural_frequency_hz"],
+                    "damping_ratio" => response["damping_ratio"],
+                    "sample_period_s" => declaration.document["frame_period_s"],
                 ),
             ),
         )
         push!(
             get!(graph, "links", []),
-            Dict("source"=>node_name*".output", "destination"=>destination),
+            Dict("source" => node_name * ".output", "destination" => destination),
         )
     end
     return graph

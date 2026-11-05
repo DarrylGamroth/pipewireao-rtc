@@ -13,16 +13,13 @@ request(op) =
 reply(op; result = Int32(0)) =
     Envelope.ReplyHeader(identity, Int64(42), Int64(op), UInt32(op), result)
 const cursor = Codec.AcquisitionCursor(
-    typemax(UInt64),
-    UInt64(1)<<63,
-    typemax(UInt64),
-    UInt64(typemax(Int64)),
+    typemax(UInt64), UInt64(1) << 63, typemax(UInt64), UInt64(typemax(Int64))
 )
 const exposure = Codec.Exposure(
     typemax(UInt64),
-    UInt64(1)<<63,
+    UInt64(1) << 63,
     typemax(UInt64),
-    UInt64(1)<<63,
+    UInt64(1) << 63,
     UInt64(typemax(Int64)),
 )
 ps(fields...) = SPA.Struct(Pod[fields...])
@@ -33,7 +30,7 @@ function check_record(name, pod)
     bytes = pod.data
     @test bytes == read(joinpath(data_dir, name * ".pod"))
 end
-function bad_request(name, op, args; run = typemax(UInt64), serial = UInt64(1)<<63)
+function bad_request(name, op, args; run = typemax(UInt64), serial = UInt64(1) << 63)
     pod = Envelope.encode_request(request(op), ps(long(run), long(serial), Pod(args)))
     check_record("bad-request-" * name, pod)
     @test_throws ArgumentError Client.decode_request(profile, pod)
@@ -41,7 +38,13 @@ end
 function bad_reply(name, op, result; lifecycle = UInt32(3))
     pod = Envelope.encode_completion(
         reply(op),
-        ps(id(lifecycle), long(typemax(UInt64)), long(UInt64(1)<<63), Pod(result), Pod(""));
+        ps(
+            id(lifecycle),
+            long(typemax(UInt64)),
+            long(UInt64(1) << 63),
+            Pod(result),
+            Pod(""),
+        );
         endpoint = :calibration,
     )
     check_record("bad-reply-" * name, pod)
@@ -88,13 +91,7 @@ Base.iterate(values::ShiftedVector, state = 1) = iterate(values.values, state)
             (6, Codec.Restored(values, false)),
         )
             encoded = Client.encode_completion(
-                profile,
-                reply(op),
-                Lifecycle.Connected,
-                UInt64(1),
-                UInt64(1),
-                result,
-                "",
+                profile, reply(op), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
             )
             decoded = Client.decode_completion(profile, encoded).result
             decoded_values = op == 4 ? decoded.values : decoded.figure
@@ -116,20 +113,16 @@ end
     @test Client.lifecycle_type(profile) === Lifecycle.ColdLifecycle
     expired_command = Codec.Command(typemax(UInt64), UInt64(1) << 63, Codec.Hold())
     expired = Client.encode_failure(
-        profile,
-        reply(1; result = Int32(-110)),
-        Lifecycle.Connected,
-        expired_command,
+        profile, reply(1; result = Int32(-110)), Lifecycle.Connected, expired_command
     )
     expired_reply = Client.decode_completion(profile, expired)
     @test expired_reply.run == expired_command.run &&
-          expired_reply.serial == expired_command.serial
+        expired_reply.serial == expired_command.serial
     @test expired_reply.header.result == -110 && expired_reply.result === nothing
-    for value in (UInt64(1), UInt64(typemax(Int64)), UInt64(1)<<63, typemax(UInt64))
+    for value in (UInt64(1), UInt64(typemax(Int64)), UInt64(1) << 63, typemax(UInt64))
         command = Codec.Command(value, value, Codec.Hold())
         decoded = Client.decode_request(
-            profile,
-            Client.encode_request(profile, request(1), command),
+            profile, Client.encode_request(profile, request(1), command)
         )[2]
         @test decoded.run == value && decoded.serial == value
     end
@@ -152,26 +145,20 @@ end
         "",
     )
     actions = (
-        "hold"=>Codec.Hold(),
-        "adopt"=>Codec.Adopt(UInt32(16383), Float32[0.0, -0.0, 1.25]),
-        "settle-immediate"=>Codec.Settle(UInt32(0), cursor, Codec.Immediate()),
-        "settle-discard"=>Codec.Settle(
-            UInt32(1),
-            cursor,
-            Codec.DiscardExposures(UInt32(4096)),
-        ),
-        "settle-model"=>Codec.Settle(
-            UInt32(2),
-            cursor,
-            Codec.ModelTime(UInt64(typemax(Int64))),
-        ),
-        "collect"=>Codec.Collect(UInt32(16383), cursor, UInt32(131072), UInt32(4096)),
-        "capture"=>Codec.Capture(UInt32(16383), cursor, UInt32(4096)),
-        "restore"=>Codec.Restore(Float32[1.0, -1.0], Codec.Immediate()),
-        "release"=>Codec.Release(),
+        "hold" => Codec.Hold(),
+        "adopt" => Codec.Adopt(UInt32(16383), Float32[0.0, -0.0, 1.25]),
+        "settle-immediate" => Codec.Settle(UInt32(0), cursor, Codec.Immediate()),
+        "settle-discard" =>
+            Codec.Settle(UInt32(1), cursor, Codec.DiscardExposures(UInt32(4096))),
+        "settle-model" =>
+            Codec.Settle(UInt32(2), cursor, Codec.ModelTime(UInt64(typemax(Int64)))),
+        "collect" => Codec.Collect(UInt32(16383), cursor, UInt32(131072), UInt32(4096)),
+        "capture" => Codec.Capture(UInt32(16383), cursor, UInt32(4096)),
+        "restore" => Codec.Restore(Float32[1.0, -1.0], Codec.Immediate()),
+        "release" => Codec.Release(),
     )
     for (name, action) in actions
-        command = Codec.Command(typemax(UInt64), UInt64(1)<<63, action)
+        command = Codec.Command(typemax(UInt64), UInt64(1) << 63, action)
         op = Client.operation_id(profile, command)
         pod = Client.encode_request(profile, request(op), command)
         check_record("request-" * name, pod)
@@ -182,20 +169,20 @@ end
         @test Codec._preflight(command) == sizeof(pod)
     end
     results = (
-        "held"=>Codec.Held(cursor),
-        "adopted"=>Codec.Adopted(cursor, Float32[0.0, -0.0, 1.25], false),
-        "settled"=>Codec.Settled(cursor),
-        "responses"=>Codec.Responses(Float32[1.0, -1.0], [exposure], false),
-        "captured"=>Codec.Captured(
+        "held" => Codec.Held(cursor),
+        "adopted" => Codec.Adopted(cursor, Float32[0.0, -0.0, 1.25], false),
+        "settled" => Codec.Settled(cursor),
+        "responses" => Codec.Responses(Float32[1.0, -1.0], [exposure], false),
+        "captured" => Codec.Captured(
             cursor,
             "run-1/manifest.json",
             "a"^64,
             UInt32(4096),
             typemax(UInt64),
-            UInt64(1)<<63,
+            UInt64(1) << 63,
         ),
-        "restored"=>Codec.Restored(Float32[1.0, -1.0], true),
-        "released"=>Codec.Released(),
+        "restored" => Codec.Restored(Float32[1.0, -1.0], true),
+        "released" => Codec.Released(),
     )
     for (op, (name, result)) in enumerate(results)
         pod = Client.encode_completion(
@@ -203,13 +190,13 @@ end
             reply(op),
             Lifecycle.Connected,
             typemax(UInt64),
-            UInt64(1)<<63,
+            UInt64(1) << 63,
             result,
             "ok",
         )
         check_record("reply-" * name, pod)
         decoded = Client.decode_completion(profile, pod)
-        @test decoded.run == typemax(UInt64) && decoded.serial == UInt64(1)<<63
+        @test decoded.run == typemax(UInt64) && decoded.serial == UInt64(1) << 63
         @test Client.encode_completion(
             profile,
             decoded.header,
@@ -228,7 +215,7 @@ end
             reply(4),
             Lifecycle.Fault,
             typemax(UInt64),
-            UInt64(1)<<63,
+            UInt64(1) << 63,
             Codec.Failed(reason),
             "",
         )
@@ -240,17 +227,14 @@ end
         reply(4; result = Int32(-22)),
         Lifecycle.Fault,
         typemax(UInt64),
-        UInt64(1)<<63,
+        UInt64(1) << 63,
         nothing,
         "expired",
     )
     check_record("reply-negative", negative)
     @test Client.decode_completion(profile, negative).result === nothing
     rejection = Client.encode_rejection(
-        profile,
-        reply(4; result = Int32(-22)),
-        Lifecycle.Prepared,
-        "rejected",
+        profile, reply(4; result = Int32(-22)), Lifecycle.Prepared, "rejected"
     )
     check_record("rejection", rejection)
     @test Client.decode_rejection(profile, rejection).message == "rejected"
@@ -271,9 +255,7 @@ end
         ),
     )
     bad_request(
-        "rule-unknown",
-        3,
-        ps(id(1), Pod(Lifecycle._cursor_pod(cursor)), Pod(ps(id(4)))),
+        "rule-unknown", 3, ps(id(1), Pod(Lifecycle._cursor_pod(cursor)), Pod(ps(id(4))))
     )
     bad_request(
         "rule-arity",
@@ -284,9 +266,7 @@ end
         "rule-duration",
         3,
         ps(
-            id(1),
-            Pod(Lifecycle._cursor_pod(cursor)),
-            Pod(ps(id(3), long(typemax(UInt64)))),
+            id(1), Pod(Lifecycle._cursor_pod(cursor)), Pod(ps(id(3), long(typemax(UInt64))))
         ),
     )
     bad_reply("wrong-result", 1, ps(id(7)))
@@ -303,10 +283,7 @@ end
         "float-child",
         4,
         ps(
-            id(4),
-            Pod(SPA.Array(Int32[1])),
-            Pod(SPA.Array(Int64[1, 1, 1, 1, 1])),
-            Pod(true),
+            id(4), Pod(SPA.Array(Int32[1])), Pod(SPA.Array(Int64[1, 1, 1, 1, 1])), Pod(true)
         ),
     )
     bad_reply(
@@ -357,13 +334,7 @@ end
     for manifest in ("/absolute", "../escape", "a/../escape", "a//b", "a\\b", "")
         result = Codec.Captured(cursor, manifest, "a"^64, UInt32(1), UInt64(1), UInt64(1))
         @test_throws ArgumentError Client.encode_completion(
-            profile,
-            reply(5),
-            Lifecycle.Connected,
-            UInt64(1),
-            UInt64(1),
-            result,
-            "",
+            profile, reply(5), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
         )
     end
     @test_throws ArgumentError Client.encode_completion(
@@ -376,13 +347,7 @@ end
         "",
     )
     @test_throws ArgumentError Client.encode_completion(
-        profile,
-        reply(1),
-        Lifecycle.Connected,
-        UInt64(1),
-        UInt64(1),
-        nothing,
-        "",
+        profile, reply(1), Lifecycle.Connected, UInt64(1), UInt64(1), nothing, ""
     )
     @test_throws ArgumentError Client.encode_completion(
         profile,
@@ -394,9 +359,7 @@ end
         "x"^8193,
     )
     @test_throws ArgumentError Client.encode_request(
-        profile,
-        request(1),
-        Codec.Command(UInt64(1), UInt64(1), Codec.Release()),
+        profile, request(1), Codec.Command(UInt64(1), UInt64(1), Codec.Release())
     )
     @test_throws ArgumentError Client.encode_request(
         profile,
@@ -404,29 +367,23 @@ end
         Codec.Command(UInt64(1), UInt64(1), Codec.Adopt(UInt32(0), zeros(Float32, 4096))),
     )
     max_figure = findlast(
-        n ->
-            Codec._envelope_base(:request) + 32 + 24 + Codec._array_size(n, 4) <= 16384,
+        n -> Codec._envelope_base(:request) + 32 + 24 + Codec._array_size(n, 4) <= 16384,
         1:4096,
     )
     full_command = Codec.Command(
-        UInt64(1),
-        UInt64(1),
-        Codec.Adopt(UInt32(0), zeros(Float32, max_figure)),
+        UInt64(1), UInt64(1), Codec.Adopt(UInt32(0), zeros(Float32, max_figure))
     )
     @test sizeof(Client.encode_request(profile, request(2), full_command)) == 16384
     @test length(
         Client.decode_request(
-            profile,
-            Client.encode_request(profile, request(2), full_command),
+            profile, Client.encode_request(profile, request(2), full_command)
         )[2].action.figure,
     ) == max_figure
     @test_throws ArgumentError Client.encode_request(
         profile,
         request(2),
         Codec.Command(
-            UInt64(1),
-            UInt64(1),
-            Codec.Adopt(UInt32(0), zeros(Float32, max_figure+1)),
+            UInt64(1), UInt64(1), Codec.Adopt(UInt32(0), zeros(Float32, max_figure + 1))
         ),
     )
     @test_throws ArgumentError Client.decode_request(profile, zeros(UInt8, 16385))
@@ -436,76 +393,59 @@ end
     for (m, n) in ((1, 1), (376, 409), (3600, 100), (32000, 1))
         result = Codec.Responses(zeros(Float32, m), fill(exposure, n), true)
         pod = Client.encode_completion(
-            profile,
-            reply(4),
-            Lifecycle.Connected,
-            UInt64(1),
-            UInt64(1),
-            result,
-            "",
+            profile, reply(4), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
         )
         @test sizeof(pod) == Codec.preflight_collect_reply(m, n)
     end
     max_m = findlast(m -> Codec.collect_reply_size(m, 1) <= 131072, 1:131072)
     @test Codec.preflight_collect_reply(max_m, 1) == 131072
-    @test_throws ArgumentError Codec.preflight_collect_reply(max_m+1, 1)
+    @test_throws ArgumentError Codec.preflight_collect_reply(max_m + 1, 1)
     @test_throws ArgumentError Client.encode_completion(
         profile,
         reply(4),
         Lifecycle.Connected,
         UInt64(1),
         UInt64(1),
-        Codec.Responses(zeros(Float32, max_m+1), [exposure], true),
+        Codec.Responses(zeros(Float32, max_m + 1), [exposure], true),
         "",
     )
 end
 
 @testset "consumer-only Collect has no measurement vector and retains exact bounded exposures" begin
-    action=Codec.Collect(UInt32(0), cursor, UInt32(0), UInt32(2))
-    command=Codec.Command(UInt64(1), UInt64(1), action)
-    encoded=Client.encode_request(profile, request(4), command)
-    decoded=Client.decode_request(profile, encoded)[2]
-    @test decoded.action.measurements==0 && decoded.action.frames==2
-    @test Client.encode_request(profile, request(4), decoded).data==encoded.data
+    action = Codec.Collect(UInt32(0), cursor, UInt32(0), UInt32(2))
+    command = Codec.Command(UInt64(1), UInt64(1), action)
+    encoded = Client.encode_request(profile, request(4), command)
+    decoded = Client.decode_request(profile, encoded)[2]
+    @test decoded.action.measurements == 0 && decoded.action.frames == 2
+    @test Client.encode_request(profile, request(4), decoded).data == encoded.data
     for valid in (true, false)
-        result=Codec.Responses(Float32[], [exposure, exposure], valid)
-        encoded=Client.encode_completion(
-            profile,
-            reply(4),
-            Lifecycle.Connected,
-            UInt64(1),
-            UInt64(1),
-            result,
-            "",
+        result = Codec.Responses(Float32[], [exposure, exposure], valid)
+        encoded = Client.encode_completion(
+            profile, reply(4), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
         )
-        decoded=Client.decode_completion(profile, encoded).result
+        decoded = Client.decode_completion(profile, encoded).result
         @test decoded.values isa Vector{Float32} && isempty(decoded.values)
-        @test length(decoded.exposures)==2 && decoded.exposures[1].domain==exposure.domain
-        @test decoded.exposures[2].start_model_ns==exposure.start_model_ns
-        @test decoded.valid===valid
-        @test sizeof(encoded)==Codec.preflight_collect_reply(0, 2)
+        @test length(decoded.exposures) == 2 &&
+            decoded.exposures[1].domain == exposure.domain
+        @test decoded.exposures[2].start_model_ns == exposure.start_model_ns
+        @test decoded.valid === valid
+        @test sizeof(encoded) == Codec.preflight_collect_reply(0, 2)
     end
-    max_frames=findlast(n->Codec.collect_reply_size(0, n)<=131072, 1:4096)
-    result=Codec.Responses(Float32[], fill(exposure, max_frames), true)
-    encoded=Client.encode_completion(
-        profile,
-        reply(4),
-        Lifecycle.Connected,
-        UInt64(1),
-        UInt64(1),
-        result,
-        "",
+    max_frames = findlast(n -> Codec.collect_reply_size(0, n) <= 131072, 1:4096)
+    result = Codec.Responses(Float32[], fill(exposure, max_frames), true)
+    encoded = Client.encode_completion(
+        profile, reply(4), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
     )
-    @test sizeof(encoded)==Codec.preflight_collect_reply(0, max_frames)
-    @test sizeof(encoded)<=131072
-    @test_throws ArgumentError Codec.preflight_collect_reply(0, max_frames+1)
+    @test sizeof(encoded) == Codec.preflight_collect_reply(0, max_frames)
+    @test sizeof(encoded) <= 131072
+    @test_throws ArgumentError Codec.preflight_collect_reply(0, max_frames + 1)
     @test_throws ArgumentError Client.encode_completion(
         profile,
         reply(4),
         Lifecycle.Connected,
         UInt64(1),
         UInt64(1),
-        Codec.Responses(Float32[], fill(exposure, max_frames+1), true),
+        Codec.Responses(Float32[], fill(exposure, max_frames + 1), true),
         "",
     )
     @test_throws ArgumentError Codec.preflight_collect_reply(0, 0)
@@ -524,31 +464,21 @@ end
         (6, Codec.Restore(Float32[], Codec.Immediate())),
     )
         @test_throws ArgumentError Client.encode_request(
-            profile,
-            request(op),
-            Codec.Command(UInt64(1), UInt64(1), action),
+            profile, request(op), Codec.Command(UInt64(1), UInt64(1), action)
         )
     end
     for (op, result) in (
-        (2, Codec.Adopted(cursor, Float32[], false)),
-        (6, Codec.Restored(Float32[], false)),
+        (2, Codec.Adopted(cursor, Float32[], false)), (6, Codec.Restored(Float32[], false))
     )
         @test_throws ArgumentError Client.encode_completion(
-            profile,
-            reply(op),
-            Lifecycle.Connected,
-            UInt64(1),
-            UInt64(1),
-            result,
-            "",
+            profile, reply(op), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
         )
     end
-    empty_adopt=Envelope.encode_request(
-        request(2),
-        ps(long(1), long(1), Pod(ps(id(0), Pod(SPA.Array(Float32[]))))),
+    empty_adopt = Envelope.encode_request(
+        request(2), ps(long(1), long(1), Pod(ps(id(0), Pod(SPA.Array(Float32[])))))
     )
     @test_throws ArgumentError Client.decode_request(profile, empty_adopt)
-    empty_figure=Envelope.encode_completion(
+    empty_figure = Envelope.encode_completion(
         reply(6),
         ps(
             id(3),

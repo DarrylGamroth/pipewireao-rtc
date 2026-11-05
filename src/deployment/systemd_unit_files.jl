@@ -20,12 +20,7 @@ function runtime_unit_directory()
 end
 
 function install_fragment!(
-    unit,
-    text,
-    runtime,
-    record;
-    save = save_unit_record!,
-    deadline = nothing,
+    unit, text, runtime, record; save = save_unit_record!, deadline = nothing
 )
     path = joinpath(runtime, "units", unit)
     link = joinpath(runtime_unit_directory(), unit)
@@ -51,11 +46,7 @@ function install_fragment!(
 end
 
 function verify_fragment!(
-    unit,
-    record;
-    placement = nothing,
-    ordinary = false,
-    deadline = nothing,
+    unit, record; placement = nothing, ordinary = false, deadline = nothing
 )
     entry = record["unit_files"][unit]
     path = entry["path"]
@@ -151,11 +142,7 @@ function cancel_start_jobs!(invocation, deadline)
 end
 
 function remove_fragments!(
-    runtime,
-    record,
-    deadline;
-    roles = keys(record["owners"]),
-    save = save_unit_record!,
+    runtime, record, deadline; roles = keys(record["owners"]), save = save_unit_record!
 )
     files = get(record, "unit_files", Dict())
     isempty(files) && return nothing # Older launch records have transient services.

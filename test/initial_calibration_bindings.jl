@@ -31,8 +31,8 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
         parameters[:background] = background
         stale = Ext.GraphProjection(frontend; parameters)
         @test stale.source_graph_sha256 ==
-              command.source_graph_sha256 ==
-              Calibration.digest(joinpath(application, "rtc", "graph.conf"))
+            command.source_graph_sha256 ==
+            Calibration.digest(joinpath(application, "rtc", "graph.conf"))
         @test size(background) == size(frontend.parameters[:background])
         @test !isequal(background, frontend.parameters[:background])
 
@@ -53,7 +53,7 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
                         reference = zeros(Float32, count),
                         name = "test.stale-calibration",
                         instance = Int64(81),
-                        deadline = ControlClient.monotonic()+10,
+                        deadline = ControlClient.monotonic() + 10,
                     )
                     nothing
                 catch caught

@@ -37,8 +37,9 @@ end
     with_control_private_core() do remote, directory, daemon
         chmod(dirname(remote), 0o700)
         effects = Effects(DataType[], Task[], false, :failed)
-        server =
-            Server.Endpoint(remote, "test.calibration.failed-action", Int64(43), effects)
+        server = Server.Endpoint(
+            remote, "test.calibration.failed-action", Int64(43), effects
+        )
         serving = @async try
             Server.serve!(server; deadline = ControlClient.monotonic() + 20)
         catch error
@@ -65,7 +66,7 @@ end
             @test effects.actions == [Actions.Hold]
             @test request(2, Actions.Hold()) isa Actions.Held
             @test request(3, Actions.Restore(Float32[0, 0], Actions.Immediate())) isa
-                  Actions.Restored
+                Actions.Restored
             @test request(4, Actions.Release()) isa Actions.Released
             close(client)
             client = nothing
@@ -85,10 +86,7 @@ end
             chmod(dirname(remote), 0o700)
             effects = Effects(DataType[], Task[], false, outcome)
             server = Server.Endpoint(
-                remote,
-                "test.calibration.unknown-action",
-                Int64(44),
-                effects,
+                remote, "test.calibration.unknown-action", Int64(44), effects
             )
             serving = @async try
                 Server.serve!(server; deadline = ControlClient.monotonic() + 20)
@@ -151,18 +149,16 @@ end
             @test request(1, 1, Actions.Hold()) isa Actions.Held
             @test request(2, 2, Actions.Adopt(UInt32(0), Float32[1, 2])) isa Actions.Failed
             @test request(1, 1, Actions.Restore(Float32[0, 0], Actions.Immediate())) isa
-                  Actions.Failed
+                Actions.Failed
             @test effects.actions == [Actions.Hold]
             adopted = request(1, 2, Actions.Adopt(UInt32(0), Float32[1, 2]))
             @test adopted.figure == Float32[1, 2]
             @test request(1, 3, Actions.Release()) isa Actions.Failed
             @test request(
-                1,
-                4,
-                Actions.Settle(UInt32(0), adopted.cursor, Actions.Immediate()),
+                1, 4, Actions.Settle(UInt32(0), adopted.cursor, Actions.Immediate())
             ) isa Actions.Settled
             @test request(1, 5, Actions.Restore(Float32[0, 0], Actions.Immediate())) isa
-                  Actions.Restored
+                Actions.Restored
             @test request(1, 6, Actions.Release()) isa Actions.Released
             close(client)
             client = nothing
@@ -183,7 +179,7 @@ end
         effects = Effects(DataType[], Task[], false)
         server = Server.Endpoint(remote, "test.calibration.interrupted", Int64(42), effects)
         serving = @async try
-            Server.serve!(server; deadline = ControlClient.monotonic()+20)
+            Server.serve!(server; deadline = ControlClient.monotonic() + 20)
         catch error
             error
         end
@@ -195,12 +191,12 @@ end
                 "test.calibration.interrupted",
                 getpid(),
                 42;
-                deadline = ControlClient.monotonic()+10,
+                deadline = ControlClient.monotonic() + 10,
             )
             reply = ControlClient.request!(
                 client,
                 Actions.Command(UInt64(1), UInt64(1), Actions.Hold());
-                deadline = ControlClient.monotonic()+5,
+                deadline = ControlClient.monotonic() + 5,
             )
             @test reply.result isa Actions.Held
             close(client)
@@ -211,8 +207,7 @@ end
             @test server.phase === :Fault
             @test server.ingress.closed
             @test_throws InvalidStateException Server.serve!(
-                server;
-                deadline = ControlClient.monotonic()+1,
+                server; deadline = ControlClient.monotonic() + 1
             )
         finally
             client === nothing || close(client)

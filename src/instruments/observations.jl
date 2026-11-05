@@ -22,8 +22,7 @@ end
 
 function observation_entries(document, instrument)
     observations = _declaration_object(
-        get(document, "observations", Dict()),
-        "simulation observations",
+        get(document, "observations", Dict()), "simulation observations"
     )
     length(observations) <= 16 ||
         throw(ArgumentError("simulation observations exceed 16 entries"))
@@ -40,7 +39,7 @@ function observation_entries(document, instrument)
         )
         isfinite_positive(entry["normalized_to_photon_rate"]) || throw(
             ArgumentError(
-                "observation normalized_to_photon_rate must be finite and positive",
+                "observation normalized_to_photon_rate must be finite and positive"
             ),
         )
         detector = _declaration_identifier(entry["detector"], "observation detector")
@@ -49,11 +48,11 @@ function observation_entries(document, instrument)
         selection = components[detector]
         get(selection, "template", nothing) in
         ("ingaas", "hgcdte_linear_avalanche_array") || throw(
-            ArgumentError("observation detector requires an InGaAs or HgCdTe component"),
+            ArgumentError("observation detector requires an InGaAs or HgCdTe component")
         )
         get(selection, "sensor", nothing) == paths[path]["sensor"] || throw(
             ArgumentError(
-                "observation detector sensor differs from the physical optical path",
+                "observation detector sensor differs from the physical optical path"
             ),
         )
     end
@@ -82,12 +81,12 @@ function validate_observations(document, instrument, directory, graphs; source =
         if !source
             haskey(get(instrument, "optical_paths", Dict()), key) && throw(
                 ArgumentError(
-                    "observation response graph cannot replace a physical optical graph",
+                    "observation response graph cannot replace a physical optical graph"
                 ),
             )
             authored_observation_graph(directory, document["graphs"][key])
             haskey(graphs, path) || throw(
-                ArgumentError("observation requires its physical optical graph $path"),
+                ArgumentError("observation requires its physical optical graph $path")
             )
         end
         graph = graphs[key]
@@ -98,7 +97,7 @@ function validate_observations(document, instrument, directory, graphs; source =
         length(outputs) == 1 && only(outputs)["source"] == entry["detector"] * ".frame" ||
             throw(
                 ArgumentError(
-                    "observation frame output must come from its declared detector",
+                    "observation frame output must come from its declared detector"
                 ),
             )
         detectors = filter(node -> node["name"] == entry["detector"], graph["nodes"])

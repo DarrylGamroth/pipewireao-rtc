@@ -30,10 +30,8 @@ function optical_mask_documents(directory)
         "wavelength_m" => 1.55e-6,
     )
     physical["optical_masks"] = Dict{String,Any}(
-        "measured" => Dict{String,Any}(
-            "transmitted" => response,
-            "reflected" => deepcopy(response),
-        ),
+        "measured" =>
+            Dict{String,Any}("transmitted" => response, "reflected" => deepcopy(response)),
     )
     physical["optical_paths"] = Dict(
         name => Dict("sensor" => name, "lyot_stop_port" => port) for
@@ -51,8 +49,7 @@ function optical_mask_documents(directory)
         port = physical["optical_paths"][name]["lyot_stop_port"]
         names = [
             role * "_" * (role == "lyot" ? port : "transmitted") * "_" * field for
-            role in ("apodizer", "focal_plane", "lyot") for
-            field in ("amplitude", "phase")
+            role in ("apodizer", "focal_plane", "lyot") for field in ("amplitude", "phase")
         ]
         graph["nodes"] = [
             Dict(
@@ -75,7 +72,7 @@ end
         descriptor = IC.physical_definition(declaration.instrument)
         @test descriptor.optical_masks.measured.transmitted.center_pixel == (-2.5, 4.25)
         @test IC.configuration_context(declaration, configured)["instrument"]["optical_masks"] ==
-              physical["optical_masks"]
+            physical["optical_masks"]
         names = Set(
             role * "_" * port * "_" * field for (role, port) in (
                 ("apodizer", "transmitted"),
@@ -85,7 +82,7 @@ end
             ) for field in ("amplitude", "phase")
         )
         @test Set(keys(declaration.document["bindings"])) ==
-              union(names, Set(("pupil_opd", "pupil_amplitude")))
+            union(names, Set(("pupil_opd", "pupil_amplitude")))
         @test issubset(names, IC.selected_binding_names(declaration, configured))
         @test IC.binding_values(
             declaration,
@@ -101,8 +98,7 @@ end
         identity = IC.prescription_identity(declaration, configured)
         @test IC.scientific_definition(path).optical_masks == descriptor.optical_masks
         @test_throws ArgumentError IC.settings(
-            declaration,
-            Dict("masks" => Dict("focal_plane" => Dict("radius_m" => 1e-4))),
+            declaration, Dict("masks" => Dict("focal_plane" => Dict("radius_m" => 1e-4)))
         )
         # Wavelength matching also applies to application-local editable schemas.
         editable = merge(declaration, (; document = deepcopy(declaration.document)))
@@ -111,8 +107,7 @@ end
         @test_throws ArgumentError IC.settings(editable, Dict("wavelength_um" => 1.6))
         editable.document["settings_schema"]["properties"]["masks"]["readOnly"] = false
         @test_throws ArgumentError IC.settings(
-            editable,
-            Dict("masks" => Dict("focal_plane" => Dict("radius_m" => 1e-4))),
+            editable, Dict("masks" => Dict("focal_plane" => Dict("radius_m" => 1e-4)))
         )
         # A selected path requires only its own Lyot port.
         delete!(simulation["graphs"], "llowfs")
@@ -165,8 +160,7 @@ end
             invalid = deepcopy(physical)
             mutate!(invalid["optical_masks"]["measured"])
             @test_throws Union{ArgumentError,DimensionMismatch} IC.validate_declaration(
-                invalid,
-                directory,
+                invalid, directory
             )
         end
         for values in
@@ -176,8 +170,9 @@ end
                 write(fits, values)
             end
             invalid = deepcopy(physical)
-            invalid["optical_masks"]["measured"] =
-                Dict("transmitted" => invalid["optical_masks"]["measured"]["transmitted"])
+            invalid["optical_masks"]["measured"] = Dict(
+                "transmitted" => invalid["optical_masks"]["measured"]["transmitted"]
+            )
             response = invalid["optical_masks"]["measured"]["transmitted"]
             delete!(response, "phase")
             response["amplitude"]["sha256"] = PipeWireAORTC.Common.sha256_file(file)
@@ -206,7 +201,7 @@ end
             physical["optical_masks"]["measured"]["transmitted"]["amplitude"]["path"] = "optics/escape.fits"
             write_external_optical_documents(directory, physical, simulation)
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load(
-                joinpath(directory, "instrument.yaml"),
+                joinpath(directory, "instrument.yaml")
             )
         end
         symlink("mask.fits", joinpath(directory, "optics", "contained.fits"))
@@ -216,7 +211,7 @@ end
         delete!(response, "wavelength_m")
         write_external_optical_documents(directory, physical, simulation)
         @test IC.load(joinpath(directory, "instrument.yaml")).document["optical_masks"] ==
-              physical["optical_masks"]
+            physical["optical_masks"]
     end
 end
 
@@ -250,8 +245,7 @@ end
         @test IC.validate_settings(schema, defaults, defaults) === nothing
         ideal = Dict{String,Any}(
             "focal_plane" => Dict{String,Any}("radius_m" => 1e-4),
-            "lyot" =>
-                Dict("circles" => [Dict("radius_m" => 1e-3, "x_m" => 0, "y_m" => 0)]),
+            "lyot" => Dict("circles" => [Dict("radius_m" => 1e-3, "x_m" => 0, "y_m" => 0)]),
         )
         defaults["masks"] = ideal
         @test IC.validate_settings(schema, defaults, defaults) === nothing
@@ -262,8 +256,9 @@ end
             masks -> (masks["focal_plane"]["unknown"] = 1),
             masks -> (masks["lyot"]["circles"][1]["radius_m"] = 0),
             masks -> (
-                masks["focal_plane"] =
-                    Dict("kind" => "fits", "mask" => "measured", "radius_m" => 1)
+                masks["focal_plane"] = Dict(
+                    "kind" => "fits", "mask" => "measured", "radius_m" => 1
+                )
             ),
             masks -> (masks["apodizer"] = Dict("kind" => "unknown")),
         )
@@ -309,14 +304,10 @@ end
             ),
         )
         @test_throws ArgumentError IC.validate_settings(
-            optional,
-            Dict(),
-            Dict("fixed" => 1),
+            optional, Dict(), Dict("fixed" => 1)
         )
         @test_throws ArgumentError IC.validate_settings(
-            optional,
-            Dict("fixed" => 2),
-            Dict(),
+            optional, Dict("fixed" => 2), Dict()
         )
         @test IC.validate_settings(optional, Dict("editable" => 2), Dict()) === nothing
         @test IC.validate_settings(optional, Dict(), Dict("editable" => 1)) === nothing
@@ -326,19 +317,13 @@ end
             "properties" => Dict("nested" => optional),
         )
         @test_throws ArgumentError IC.validate_settings(
-            nested,
-            Dict(),
-            Dict("nested" => Dict("fixed" => 1)),
+            nested, Dict(), Dict("nested" => Dict("fixed" => 1))
         )
         @test_throws ArgumentError IC.validate_settings(
-            nested,
-            Dict("nested" => Dict("fixed" => 2)),
-            Dict(),
+            nested, Dict("nested" => Dict("fixed" => 2)), Dict()
         )
         @test IC.validate_settings(
-            nested,
-            Dict("nested" => Dict("editable" => 2)),
-            Dict(),
+            nested, Dict("nested" => Dict("editable" => 2)), Dict()
         ) === nothing
         fixed = Dict(
             "type" => "object",
@@ -364,9 +349,7 @@ end
         editable_alternatives["oneOf"][1]["properties"]["value"]["readOnly"] = false
         @test IC.validate_settings(editable_alternatives, updated, original) === nothing
         @test IC.validate_settings(
-            alternatives,
-            merge(original, Dict("gain" => 2)),
-            original,
+            alternatives, merge(original, Dict("gain" => 2)), original
         ) === nothing
     end
 end
@@ -376,8 +359,9 @@ end
         physical, simulation = optical_mask_documents(directory)
         # Physical path identifiers need not equal any execution graph names.
         paths = physical["optical_paths"]
-        physical["optical_paths"] =
-            Dict("science" => paths["scc"], "low_order" => paths["llowfs"])
+        physical["optical_paths"] = Dict(
+            "science" => paths["scc"], "low_order" => paths["llowfs"]
+        )
         prescription = joinpath(directory, "optics", "instrument.zmx")
         write(prescription, "Authored source before Zemax preparation\n")
         physical["optical_prescription"] = Dict(
@@ -394,12 +378,10 @@ end
         @test IC.settings(source) == simulation["defaults"]
         @test !hasproperty(source, :graphs)
         @test Set(keys(source.document["bindings"])) ==
-              Set(("pupil_opd", "pupil_amplitude"))
+            Set(("pupil_opd", "pupil_amplitude"))
         @test Set(
             port for (role, port, _) in IC.selected_optical_mask_responses(
-                source.document,
-                physical,
-                keys(physical["optical_paths"]),
+                source.document, physical, keys(physical["optical_paths"])
             ) if role == "lyot"
         ) == Set(("transmitted", "reflected"))
         @test !ispath(joinpath(directory, "generated"))
@@ -423,18 +405,14 @@ end
         @test IC.settings(declaration) == simulation["defaults"]
         @test haskey(declaration.document["bindings"], "lyot_reflected_amplitude")
         @test Set(
-            IC.optical_graph_names(
-                declaration.document,
-                physical,
-                keys(declaration.graphs),
-            ),
+            IC.optical_graph_names(declaration.document, physical, keys(declaration.graphs))
         ) == Set(["scc", "llowfs"])
         for mutate! in (
-            doc->(doc["observations"]["llowfs"]["graph"]="absent"),
-            doc->(doc["observations"]["llowfs"]["graph"]="scc"),
-            doc->delete!(doc, "observations"),
+            doc -> (doc["observations"]["llowfs"]["graph"] = "absent"),
+            doc -> (doc["observations"]["llowfs"]["graph"] = "scc"),
+            doc -> delete!(doc, "observations"),
         )
-            invalid=deepcopy(simulation)
+            invalid = deepcopy(simulation)
             mutate!(invalid)
             write_external_optical_documents(directory, physical, invalid)
             @test_throws ArgumentError IC.load_simulation(path)

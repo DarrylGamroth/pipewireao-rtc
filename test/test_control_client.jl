@@ -5,7 +5,7 @@ const Envelope = PipeWireAORTC.ControlCodec
 const SessionProfile = PipeWireAORTC.SessionProfile
 const SPA = PipeWireAO.SPA
 
-@enum TestState::UInt32 Preparing=17 Prepared=18
+@enum TestState::UInt32 Preparing = 17 Prepared = 18
 struct TestProfile <: Client.AbstractProfile end
 struct CalibrationProfile <: Client.AbstractProfile end
 struct TestReply
@@ -29,13 +29,15 @@ Client.completion_type(::Union{TestProfile,CalibrationProfile}) = TestReply
 Client.rejection_type(::Union{TestProfile,CalibrationProfile}) = TestReply
 Client.reply_endpoint(::CalibrationProfile) = :calibration
 function Client.decode_completion(profile::Union{TestProfile,CalibrationProfile}, pod)
-    header, payload =
-        Envelope.decode_completion(pod; endpoint = Client.reply_endpoint(profile))
+    header, payload = Envelope.decode_completion(
+        pod; endpoint = Client.reply_endpoint(profile)
+    )
     return TestReply(header, payload)
 end
 function Client.decode_rejection(profile::Union{TestProfile,CalibrationProfile}, pod)
-    header, payload =
-        Envelope.decode_rejection(pod; endpoint = Client.reply_endpoint(profile))
+    header, payload = Envelope.decode_rejection(
+        pod; endpoint = Client.reply_endpoint(profile)
+    )
     return TestReply(header, payload)
 end
 Client.operation_id(::TestProfile, ::TestCommand) = UInt32(71)
@@ -92,16 +94,13 @@ end
     reply = Envelope.ReplyHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int32(0))
     now = Client.monotonic()
     Client.observe!(
-        observation,
-        Envelope.encode_completion(reply, SPA.Struct(Pod(Int32(7))));
-        at = now,
+        observation, Envelope.encode_completion(reply, SPA.Struct(Pod(Int32(7)))); at = now
     )
     @test Client.matching_reply(observation, now + 1) isa TestReply
     @test pod_value(Int32, observation.matched_completion.value.payload.values[1]) == 7
     @test Client.operation_id(profile, TestCommand()) == 71
     @test_throws MethodError Client.operation_id(
-        profile,
-        PipeWireAORTC.RunnerCodec.RunnerCommand(:status),
+        profile, PipeWireAORTC.RunnerCodec.RunnerCommand(:status)
     )
     @test_throws MethodError Client.operation_id(SessionProfile.Profile(), TestCommand())
 end
@@ -112,8 +111,9 @@ end
     profile = CalibrationProfile()
     header = Envelope.ReplyHeader(IDENTITY, Int64(23), Int64(1), UInt32(71), Int32(0))
     empty_payload = SPA.Struct(Pod(SPA.Bytes(UInt8[])))
-    overhead =
-        sizeof(Envelope.encode_completion(header, empty_payload; endpoint = :calibration))
+    overhead = sizeof(
+        Envelope.encode_completion(header, empty_payload; endpoint = :calibration)
+    )
     limit = Client.reply_bound(profile)
     count = limit - overhead
     payload = SPA.Struct(Pod(SPA.Bytes(fill(UInt8(1), count))))
@@ -135,9 +135,7 @@ end
     )
 
     sentinel = Envelope.encode_completion(
-        Envelope.ReplyHeader(Int64(23), Int32(0)),
-        SPA.Struct();
-        endpoint = :calibration,
+        Envelope.ReplyHeader(Int64(23), Int32(0)), SPA.Struct(); endpoint = :calibration
     )
     initial = Client.Observation(profile, Int64(23), UInt32(getpid()))
     Client.observe!(initial, sentinel)

@@ -25,8 +25,9 @@ executable/argv are verified while that child is alive; no child source hash is
 inferred from the harness checkout or from a matching package version. A sealed
 Manifest records the selected dependency pin, not an observation of loaded code.
 """
-function runtime_cohort(application, spec, prefix; process = nothing,
-        verify_process = D.verify_session_process)
+function runtime_cohort(
+    application, spec, prefix; process = nothing, verify_process = D.verify_session_process
+)
     root = realpath(application)
     relative = relpath(D.session_executable(spec, root, prefix), root)
     launcher = D.relative_asset(root, relative)
@@ -34,7 +35,8 @@ function runtime_cohort(application, spec, prefix; process = nothing,
     launcher_hash = C.sha256_file(launcher)
     get(spec["artifacts"], relative, nothing) == launcher_hash ||
         throw(ArgumentError("RTC launcher differs from the sealed package"))
-    project = D.registered_application(spec) ? D.application_environment(spec, root) :
+    project =
+        D.registered_application(spec) ? D.application_environment(spec, root) :
         realpath(joinpath(root, "julia"))
     project_hashes = Dict{String,String}()
     for name in ("Project.toml", "Manifest.toml")
@@ -46,8 +48,9 @@ function runtime_cohort(application, spec, prefix; process = nothing,
     end
     manifest = TOML.parsefile(joinpath(project, "Manifest.toml"))
     rtc = only(manifest["deps"]["PipeWireAORTC"])
-    selected_pin = Dict(key => get(rtc, key, nothing) for key in
-        ("uuid", "version", "git-tree-sha1"))
+    selected_pin = Dict(
+        key => get(rtc, key, nothing) for key in ("uuid", "version", "git-tree-sha1")
+    )
     executable = realpath(Base.julia_cmd().exec[1])
     observed = nothing
     if process !== nothing
@@ -60,24 +63,42 @@ function runtime_cohort(application, spec, prefix; process = nothing,
     end
     source_root = pkgdir(PipeWireAORTC)
     media_session = joinpath(source_root, "src", "media_session")
-    sources = sort!(vcat(["src/PipeWireAORTC.jl"], [
-        relpath(joinpath(parent, name), source_root) for
-        (parent, _, names) in walkdir(media_session) for name in names if endswith(name, ".jl")
-    ]))
+    sources = sort!(
+        vcat(
+            ["src/PipeWireAORTC.jl"],
+            [
+                relpath(joinpath(parent, name), source_root) for
+                (parent, _, names) in walkdir(media_session) for
+                name in names if endswith(name, ".jl")
+            ],
+        ),
+    )
     isdir(media_session) && length(sources) > 1 ||
         throw(ArgumentError("harness MediaSession source cohort is unavailable"))
     return Dict(
         "launcher" => Dict("path" => launcher, "sha256" => launcher_hash),
-        "julia" => Dict("path" => executable, "sha256" => C.sha256_file(executable),
-            "scope" => process === nothing ? "harness executable; child unobserved" :
-                "verified child executable and argv"),
-        "project" => Dict("path" => project, "sha256" => project_hashes,
-            "selected_rtc_pin" => selected_pin),
+        "julia" => Dict(
+            "path" => executable,
+            "sha256" => C.sha256_file(executable),
+            "scope" =>
+                process === nothing ? "harness executable; child unobserved" :
+                "verified child executable and argv",
+        ),
+        "project" => Dict(
+            "path" => project,
+            "sha256" => project_hashes,
+            "selected_rtc_pin" => selected_pin,
+        ),
         "child_process" => observed,
-        "harness" => Dict("rtc_version" => string(pkgversion(PipeWireAORTC)),
-            "sdk_version" => string(pkgversion(PipeWireAO)), "source_root" => source_root,
-            "media_session_source_sha256" => Dict(name => C.sha256_file(joinpath(source_root, name)) for name in sources),
-            "scope" => "Current harness MediaSession files and package entrypoint; these are not child loaded-code hashes"),
+        "harness" => Dict(
+            "rtc_version" => string(pkgversion(PipeWireAORTC)),
+            "sdk_version" => string(pkgversion(PipeWireAO)),
+            "source_root" => source_root,
+            "media_session_source_sha256" => Dict(
+                name => C.sha256_file(joinpath(source_root, name)) for name in sources
+            ),
+            "scope" => "Current harness MediaSession files and package entrypoint; these are not child loaded-code hashes",
+        ),
     )
 end
 function checked(condition, message)
@@ -91,7 +112,7 @@ function options(args)
     length(args) >= 2 || throw(ArgumentError(USAGE))
     iseven(length(args) - 2) || throw(ArgumentError(USAGE))
     values = Dict("--case" => "sink-removal", "--prefix" => "/opt/pipewireao")
-    for index = 3:2:length(args)
+    for index in 3:2:length(args)
         args[index] in ("--case", "--prefix", "--sink", "--controller-role") ||
             throw(ArgumentError("unknown option $(args[index])"))
         values[args[index]] = args[index+1]
@@ -99,9 +120,13 @@ function options(args)
     case = values["--case"]
     case in ("sink-removal", "link-removal", "controller-exit") ||
         throw(ArgumentError("unknown fault case $case"))
-    required =
-        case == "sink-removal" ? "--sink" :
-        case == "controller-exit" ? "--controller-role" : nothing
+    required = if case == "sink-removal"
+        "--sink"
+    elseif case == "controller-exit"
+        "--controller-role"
+    else
+        nothing
+    end
     required === nothing ||
         haskey(values, required) ||
         throw(ArgumentError("$case requires $required"))
@@ -199,10 +224,9 @@ end
 function verify_owners(ledger; missing = nothing)
     for (role, owner) in ledger["owners"]
         role == missing && continue
-        values = S.properties(owner["unit"]; deadline = clock()+8)
+        values = S.properties(owner["unit"]; deadline = clock() + 8)
         checked(
-            values["InvocationID"] == owner["invocation"],
-            "owner invocation changed: $role",
+            values["InvocationID"] == owner["invocation"], "owner invocation changed: $role"
         )
         checked(values["MainPID"] == string(owner["pid"]), "owner PID changed: $role")
         checked(
@@ -251,7 +275,7 @@ function inject!(selected, spec, session, ledger, loop, core, registry, captured
         any(name -> spec["node-owners"][name] == role, graph_names) ||
             error("selected controller role owns no declared graph")
         owner = ledger["owners"][role]
-        values = S.properties(owner["unit"]; deadline = clock()+8)
+        values = S.properties(owner["unit"]; deadline = clock() + 8)
         values["InvocationID"] == owner["invocation"] &&
         values["MainPID"] == string(owner["pid"]) &&
         S.process_identity(owner["pid"], UInt64(owner["start-ticks"]), owner["cgroup"]) ||
@@ -323,11 +347,11 @@ function exact_manager(handle, values)
 end
 
 function cleanup_checks(handle, record)
-    exact_manager(handle, S.properties(handle.unit; deadline = clock()+8))
+    exact_manager(handle, S.properties(handle.unit; deadline = clock() + 8))
     checks = Dict(
         "receipt_complete" => get(record, "cleanup_complete", false) === true,
         "no_cleanup_errors" => isempty(get(record, "cleanup_errors", [])),
-        "unit_quiescent" => S.quiescent_unit(handle.unit; deadline = clock()+8),
+        "unit_quiescent" => S.quiescent_unit(handle.unit; deadline = clock() + 8),
         "manager_exited" => !S.old_process_exists(handle.main_pid, handle.start_ticks),
         "manager_cgroup_empty" => S.cgroup_empty(handle.cgroup),
     )
@@ -346,8 +370,8 @@ function observe_cleanup!(
     seconds = 320,
     now = clock,
     pause = sleep,
-    read_record = ()->W.final_record(destination),
-    read_checks = record->cleanup_checks(handle, record),
+    read_record = () -> W.final_record(destination),
+    read_checks = record -> cleanup_checks(handle, record),
 )
     evidence = cleanup_evidence(destination)
     observations = get!(evidence, "settling_observations", Any[])
@@ -379,13 +403,13 @@ end
 
 function cleanup!(handle, destination; failed)
     evidence = cleanup_evidence(destination)
-    active = exact_manager(handle, S.properties(handle.unit; deadline = clock()+8))
+    active = exact_manager(handle, S.properties(handle.unit; deadline = clock() + 8))
     evidence["stop_attempted"] = handle.stop_attempted
     if active && !handle.stop_attempted
         evidence["action"] = "stop-exact-active-manager"
         save_cleanup(destination, evidence)
         evidence["stop_error"] = try
-            W.stop!(handle; deadline = clock()+320)
+            W.stop!(handle; deadline = clock() + 320)
             nothing
         catch error
             sprint(showerror, error)
@@ -422,13 +446,13 @@ startup_budget(spec) = D.startup_timeout_ms(spec) / 1000 + 130 # Bounded install
 
 function session_phase(handle, expected; start = false)
     if start
-        reply = W.control!(handle, Command(:session_start); deadline = clock()+30)
+        reply = W.control!(handle, Command(:session_start); deadline = clock() + 30)
         checked(
             reply["ok"] === true && reply["state"] == "Running",
             "session Start did not reach Running",
         )
     end
-    reply = W.control!(handle, Command(:status); deadline = clock()+8)
+    reply = W.control!(handle, Command(:status); deadline = clock() + 8)
     checked(
         reply["ok"] === true && reply["state"] == expected,
         "session did not remain $expected",
@@ -448,7 +472,7 @@ function source_fields(node, prefix, names)
     fields = only(records)["params"]
     iseven(length(fields)) || throw(ArgumentError("malformed source named fields"))
     values = Dict{String,Any}()
-    for index = 1:2:length(fields)
+    for index in 1:2:length(fields)
         key = fields[index]
         key isa String && startswith(key, prefix) && !haskey(values, key) ||
             throw(ArgumentError("invalid or duplicate source field"))
@@ -472,15 +496,13 @@ function decode_aos_source(objects, source, owner, node_identity; instance = not
     name = source["control-node"]
     get(owner, "control-node", nothing) == name &&
     get(owner, "control-protocol", nothing) == source["control-protocol"] || throw(
-        ArgumentError("source declaration differs from retained owner control identity"),
+        ArgumentError("source declaration differs from retained owner control identity")
     )
     node = only(
         filter(objects) do object
             get(object, "type", nothing) == "PipeWire:Interface:Node" &&
                 get(
-                    get(get(object, "info", Dict()), "props", Dict()),
-                    "node.name",
-                    nothing,
+                    get(get(object, "info", Dict()), "props", Dict()), "node.name", nothing
                 ) == name
         end,
     )
@@ -575,13 +597,7 @@ function validate_source_report(report, observation)
 end
 
 function inspect_aos_source(
-    selected,
-    destination,
-    ledger,
-    source,
-    node_identity,
-    name;
-    instance = nothing,
+    selected, destination, ledger, source, node_identity, name; instance = nothing
 )
     owner = ledger["owners"][ledger["source_role"]]
     S.process_identity(owner["pid"], UInt64(owner["start-ticks"]), owner["cgroup"]) ||
@@ -591,15 +607,16 @@ function inspect_aos_source(
         [joinpath(selected.prefix, "bin/pwao-dump"), "-N", "-r", ledger["remote"]];
         env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"])),
         timeout = 8,
-        maximum_output_bytes = 16*1024*1024,
+        maximum_output_bytes = 16 * 1024 * 1024,
     )
     result.returncode == 0 || error("source native inspection failed: $(result.stderr)")
     path = joinpath(destination, name * "-graph.json")
     write(path, result.stdout)
-    observation =
-        decode_aos_source(C.read_json(path), source, owner, node_identity; instance)
+    observation = decode_aos_source(
+        C.read_json(path), source, owner, node_identity; instance
+    )
     report = C.read_json(
-        joinpath(dirname(ledger["remote"]), source["control-node"] * "-report.json"),
+        joinpath(dirname(ledger["remote"]), source["control-node"] * "-report.json")
     )
     validate_source_report(report, observation)
     observation["report"] = report
@@ -638,7 +655,7 @@ function journal_records(unit, invocation, pid, destination, label)
             "_PID=" * string(pid),
         ];
         timeout = 8,
-        maximum_output_bytes = 16*1024*1024,
+        maximum_output_bytes = 16 * 1024 * 1024,
     )
     result.returncode == 0 ||
         error("exact owner journal inspection failed: $(result.stderr)")
@@ -749,8 +766,7 @@ function run_case(selected; progress = _no_session_progress)
     receipt = Dict{String,Any}(
         "case" => selected.case,
         "package" => selected.package,
-        "deployment_sha256" =>
-            C.sha256_file(joinpath(selected.package, "deployment.conf")),
+        "deployment_sha256" => C.sha256_file(joinpath(selected.package, "deployment.conf")),
         "rtc_runtime" => runtime_cohort(selected.package, spec, selected.prefix),
         "source_protocol" => source["control-protocol"],
         "startup_budget_s" => startup_budget(spec),
@@ -758,7 +774,7 @@ function run_case(selected; progress = _no_session_progress)
         "rtc_version" => string(pkgversion(PipeWireAORTC)),
         "sdk_version" => string(pkgversion(PipeWireAO)),
         "runtime_source_sha256" => C.sha256_file(
-            joinpath(pkgdir(PipeWireAORTC), "src", "deployment", "session_runtime.jl"),
+            joinpath(pkgdir(PipeWireAORTC), "src", "deployment", "session_runtime.jl")
         ),
         "completed" => false,
     )
@@ -772,12 +788,16 @@ function run_case(selected; progress = _no_session_progress)
             selected.package,
             first_stage;
             prefix = selected.prefix,
-            deadline = clock()+startup_budget(spec),
+            deadline = clock() + startup_budget(spec),
         )
-        ready = W.ready(handle; deadline = clock()+30)
+        ready = W.ready(handle; deadline = clock() + 30)
         ledger = W.final_record(first_stage)
-        receipt["rtc_runtime"] = runtime_cohort(selected.package, spec, selected.prefix;
-            process = (pid = handle.main_pid, binding = ledger["session_process"]))
+        receipt["rtc_runtime"] = runtime_cohort(
+            selected.package,
+            spec,
+            selected.prefix;
+            process = (pid = handle.main_pid, binding = ledger["session_process"]),
+        )
         receipt["first_ledger"] = ledger
         receipt["ready_status"] = session_phase(handle, "Ready")
         receipt["running_status"] = session_phase(handle, "Running"; start = true)
@@ -816,25 +836,18 @@ function run_case(selected; progress = _no_session_progress)
                 nothing
             end
             receipt["injection"] = inject!(
-                selected,
-                spec,
-                session,
-                ledger,
-                loop,
-                core,
-                registry,
-                captured,
-                links,
+                selected, spec, session, ledger, loop, core, registry, captured, links
             )
             save()
             observations = get!(receipt, "fault_observation_errors", Any[])
             outcome = await(25, "held Fault or native policy shutdown") do
-                active = exact_manager(handle, S.properties(handle.unit; deadline = clock()+8))
+                active = exact_manager(
+                    handle, S.properties(handle.unit; deadline = clock() + 8)
+                )
                 active || return "policy-shutdown"
                 try
-                    status = W.control!(handle, Command(:status); deadline = clock()+8)
-                    status["ok"] === true && status["state"] == "Fault" ||
-                        return nothing
+                    status = W.control!(handle, Command(:status); deadline = clock() + 8)
+                    status["ok"] === true && status["state"] == "Fault" || return nothing
                     receipt["fault_status"] = status
                     source_status = if aos_source
                         observation = inspect_aos_source(
@@ -847,7 +860,7 @@ function run_case(selected; progress = _no_session_progress)
                             instance = source_before["instance"],
                         )
                         if observation["snapshot"]["running"] ||
-                           observation["run_ack"]["completed-token"] <=
+                            observation["run_ack"]["completed-token"] <=
                            source_before["run_ack"]["completed-token"]
                             return nothing
                         end
@@ -855,9 +868,7 @@ function run_case(selected; progress = _no_session_progress)
                         observation
                     else
                         value = W.source_status(
-                            ready,
-                            source["instrument"];
-                            deadline = clock()+8,
+                            ready, source["instrument"]; deadline = clock() + 8
                         )
                         value["ok"] === true && value["state"] == "paused" ||
                             return nothing
@@ -869,7 +880,9 @@ function run_case(selected; progress = _no_session_progress)
                 catch error
                     message = sprint(showerror, error)
                     if isempty(observations) || last(observations)["error"] != message
-                        push!(observations, Dict("observed_at" => clock(), "error" => message))
+                        push!(
+                            observations, Dict("observed_at" => clock(), "error" => message)
+                        )
                         save()
                     end
                     return nothing
@@ -879,10 +892,10 @@ function run_case(selected; progress = _no_session_progress)
             save()
             if outcome == "held"
                 # A finite window checks this cohort, without claiming a general timing proof.
-                for _ = 1:3
+                for _ in 1:3
                     sleep(0.2)
                     checked(
-                        W.control!(handle, Command(:status); deadline = clock()+8)["state"] ==
+                        W.control!(handle, Command(:status); deadline = clock() + 8)["state"] ==
                         "Fault",
                         "faulted session changed lifecycle without readmission",
                     )
@@ -900,25 +913,14 @@ function run_case(selected; progress = _no_session_progress)
         # A closed/deactivating manager is observed only; cleanup! sends no redundant stop.
         receipt["fault_cleanup"] = cleanup!(handle, first_stage; failed = true)
         manager_journal = journal_records(
-            handle.unit,
-            handle.invocation,
-            handle.main_pid,
-            first_stage,
-            "manager",
+            handle.unit, handle.invocation, handle.main_pid, first_stage, "manager"
         )
         owner = ledger["owners"][ledger["source_role"]]
         source_journal = journal_records(
-            owner["unit"],
-            owner["invocation"],
-            owner["pid"],
-            first_stage,
-            "source",
+            owner["unit"], owner["invocation"], owner["pid"], first_stage, "source"
         )
         receipt["policy_fault_evidence"] = policy_fault_evidence(
-            manager_journal,
-            selected,
-            receipt["injection"];
-            source_records = source_journal,
+            manager_journal, selected, receipt["injection"]; source_records = source_journal
         )
         require_fault_outcome(
             receipt["fault_outcome"],
@@ -932,20 +934,22 @@ function run_case(selected; progress = _no_session_progress)
             selected.package,
             second_stage;
             prefix = selected.prefix,
-            deadline = clock()+startup_budget(spec),
+            deadline = clock() + startup_budget(spec),
         )
-        aos_source || W.ready(handle; deadline = clock()+30)
+        aos_source || W.ready(handle; deadline = clock() + 30)
         fresh = session_phase(handle, "Ready")
         second = W.final_record(second_stage)
-        receipt["fresh_rtc_runtime"] = runtime_cohort(selected.package,spec,selected.prefix;
-            process=(pid=handle.main_pid,binding=second["session_process"]))
-        checked(
-            second["session_uuid"] != ledger["session_uuid"],
-            "fresh session reused UUID",
+        receipt["fresh_rtc_runtime"] = runtime_cohort(
+            selected.package,
+            spec,
+            selected.prefix;
+            process = (pid = handle.main_pid, binding = second["session_process"]),
         )
         checked(
-            handle.invocation != ledger["invocation"],
-            "fresh session reused invocation",
+            second["session_uuid"] != ledger["session_uuid"], "fresh session reused UUID"
+        )
+        checked(
+            handle.invocation != ledger["invocation"], "fresh session reused invocation"
         )
         for (role, old) in ledger["owners"]
             new = second["owners"][role]

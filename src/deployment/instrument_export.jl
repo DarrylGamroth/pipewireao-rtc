@@ -39,8 +39,9 @@ const PROFILE_FIELDS = Set([
     "scheduling",
     "runtime-backends",
 ])
-const RUNTIME_BINDINGS =
-    Set(["PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"])
+const RUNTIME_BINDINGS = Set([
+    "PACKAGE", "PREFIX", "REMOTE", "RUNTIME", "SOURCE_OWNER_INSTANCE"
+])
 const TEMPLATE_FILES = (
     "core.conf.in",
     "client-rtc.conf.in",
@@ -130,8 +131,9 @@ function substitute(value::AbstractString, bindings)
     )
 end
 function substitute(value::AbstractDict, bindings)
-    pairs =
-        [substitute(key, bindings) => substitute(item, bindings) for (key, item) in value]
+    pairs = [
+        substitute(key, bindings) => substitute(item, bindings) for (key, item) in value
+    ]
     length(unique(first.(pairs))) == length(pairs) ||
         throw(ArgumentError("duplicate bound configuration key"))
     return Dict{String,Any}(pairs)
@@ -147,11 +149,11 @@ _export_binding_name(key::String) =
     occursin(r"^[A-Z][A-Z0-9_]*$", key) ||
     throw(ArgumentError("profile binding names must be uppercase identifiers"))
 _export_placement(placement, roles) = throw(
-    ArgumentError("profile placement must name every application process exactly once"),
+    ArgumentError("profile placement must name every application process exactly once")
 )
 _export_placement(placement::AbstractDict, roles) =
     Set(keys(placement)) == roles || throw(
-        ArgumentError("profile placement must name every application process exactly once"),
+        ArgumentError("profile placement must name every application process exactly once")
     )
 _export_environments(environments, roles) =
     throw(ArgumentError("profile environment contains an unknown application role"))
@@ -197,7 +199,7 @@ function profile_bindings(profile, julia)
     any(key -> key in reserved || startswith(key, "BOOTSTRAP_INSTANCE_"), keys(raw)) &&
         throw(
             ArgumentError(
-                "profile bindings cannot replace runtime or Julia executable bindings",
+                "profile bindings cannot replace runtime or Julia executable bindings"
             ),
         )
     bindings = Dict(String(key) => binding_value(value) for (key, value) in raw)
@@ -228,8 +230,7 @@ function profile!(spec, profile, bindings)
         D.validate_environment(environment, role)
         if role == "session"
             merge!(
-                spec["session-runtime"]["environment"],
-                substitute(environment, bindings),
+                spec["session-runtime"]["environment"], substitute(environment, bindings)
             )
         elseif role in (owner["role"] for owner in spec["owners"])
             owner = only(filter(owner -> owner["role"] == role, spec["owners"]))
@@ -248,7 +249,7 @@ function profile!(spec, profile, bindings)
         entries = get(spec, "analysis", [])
         Set(keys(overrides)) ⊆ Set(entry["name"] for entry in entries) || throw(
             ArgumentError(
-                "profile analysis names must already be declared by the application",
+                "profile analysis names must already be declared by the application"
             ),
         )
         for entry in entries
@@ -261,7 +262,7 @@ function profile!(spec, profile, bindings)
     for entry in get(spec, "analysis", [])
         haskey(entry, "cpus") || throw(
             ArgumentError(
-                "profile must provide CPU placement for each optional analysis process",
+                "profile must provide CPU placement for each optional analysis process"
             ),
         )
         D.valid_cpu_list(entry["cpus"])
@@ -275,15 +276,21 @@ function prepare_backend_environment!(application, backend; required::Bool = fal
     path = joinpath(application, "Project.toml")
     project = TOML.parsefile(path)
     optional = get(project, "weakdeps", Dict())
-    package = backend == "cuda" ? "CUDA" : backend == "amdgpu" ? "AMDGPU" : nothing
+    package = if backend == "cuda"
+        "CUDA"
+    elseif backend == "amdgpu"
+        "AMDGPU"
+    else
+        nothing
+    end
     package === nothing && return nothing
     if required
         uuid =
             backend == "cuda" ? "052768ef-5323-5732-b1bb-66c8b64840ba" :
             "21141c5a-9bdb-4563-92ae-f87d6854732e"
         declarations = [
-            section[package] for section in (get(project, "deps", Dict()), optional) if
-            haskey(section, package)
+            section[package] for
+            section in (get(project, "deps", Dict()), optional) if haskey(section, package)
         ]
         compatibility = get(get(project, "compat", Dict()), package, nothing)
         !isempty(declarations) && all(==(uuid), declarations) || throw(
@@ -355,7 +362,7 @@ colormap_reference(reference) =
 "Localize repository-shared display palettes while preserving authoring files."
 function copy_colormaps!(source, destination)
     gui = joinpath(source, "gui")
-    isdir(gui) || return
+    isdir(gui) || return nothing
     shared = abspath(joinpath(source, "..", "colormaps"))
     for (directory, _, names) in walkdir(gui), name in names
         endswith(name, ".yaml") || continue
@@ -382,7 +389,7 @@ function copy_colormaps!(source, destination)
             if ispath(target)
                 read(target) == read(from) || throw(
                     ArgumentError(
-                        "shared colormap conflicts with instrument asset: $local_name",
+                        "shared colormap conflicts with instrument asset: $local_name"
                     ),
                 )
             else
@@ -410,9 +417,7 @@ end
 
 "Copy instrument source, localizing shared descriptions and palettes for independent deployment."
 function copy_source(
-    source::AbstractString,
-    destination::AbstractString;
-    runtime_configurations::Bool = true,
+    source::AbstractString, destination::AbstractString; runtime_configurations::Bool = true
 )
     path = joinpath(source, "instrument.yaml")
     document = isfile(path) ? InstrumentConfiguration.bounded_yaml(path) : nothing
@@ -441,7 +446,7 @@ function copy_source(
         header = "Generated by PipeWireAORTC from instrument source; shared mirror references localized.",
     )
     if !isempty(descriptions) &&
-       isfile(joinpath(source, "generated", "optics", "provenance.yaml"))
+        isfile(joinpath(source, "generated", "optics", "provenance.yaml"))
         localize_optical_preparation!(source, destination)
     end
     copy_colormaps!(source, destination)
@@ -506,8 +511,7 @@ function prepare(
         copy_source(source, application; runtime_configurations = false)
         prepare_runtime_configurations!(application, runtime_authoring)
         manifest === nothing || RuntimeExport.copy_file(
-            checked_path(manifest),
-            joinpath(application, "Manifest.toml"),
+            checked_path(manifest), joinpath(application, "Manifest.toml")
         )
         render_templates!(application, spec, profile, prefix)
         prepare_mode!(
@@ -533,17 +537,14 @@ function prepare(
                 Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
                 plant = simulation["plant"]
                 declaration = InstrumentConfiguration.load_simulation(
-                    D.relative_asset(application, plant["definition"]),
+                    D.relative_asset(application, plant["definition"])
                 )
                 configured = InstrumentConfiguration.settings(
-                    declaration,
-                    get(plant, "settings", Dict()),
+                    declaration, get(plant, "settings", Dict())
                 )
                 any(
-                    name->InstrumentConfiguration.graph_requires_proper(
-                        declaration,
-                        configured;
-                        simulation_graph = name,
+                    name -> InstrumentConfiguration.graph_requires_proper(
+                        declaration, configured; simulation_graph = name
                     ),
                     keys(declaration.instrument.document["optical_paths"]),
                 ) && Base.require(Main, :Proper)
@@ -562,8 +563,7 @@ function prepare(
         end
         rtc = InstrumentConfiguration.load_rtc(
             D.relative_asset(
-                application,
-                something(configuration, "rtc/configuration.yaml"),
+                application, something(configuration, "rtc/configuration.yaml")
             ),
         )
         prepare_graph_configurations!(

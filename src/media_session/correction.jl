@@ -39,7 +39,7 @@ still require the exact owner incarnation, running group and native Run proof.
 correction_running!(runtime, ::ReadyOrigin, name, values) =
     throw(ArgumentError("correction control requires a running session"))
 function correction_running!(runtime, ::RunningOrigin, name, values)
-    correction_long(values, CORRECTION_PREFIX*"owner-instance") ==
+    correction_long(values, CORRECTION_PREFIX * "owner-instance") ==
     correction_owner_instance(runtime.configuration, name) ||
         throw(ArgumentError("correction graph owner incarnation changed"))
     admitted = false
@@ -55,50 +55,47 @@ function correction_running!(runtime, ::RunningOrigin, name, values)
     return nothing
 end
 function recovery_reference_fresh(values, current_ns::Int64)
-    timestamp = correction_long(values, RECOVERY_PREFIX*"observation-monotonic-nanoseconds")
-    timeout_ms = correction_int(values, RECOVERY_PREFIX*"reference-timeout-ms")
+    timestamp = correction_long(
+        values, RECOVERY_PREFIX * "observation-monotonic-nanoseconds"
+    )
+    timeout_ms = correction_int(values, RECOVERY_PREFIX * "reference-timeout-ms")
     return 1 <= timeout_ms <= 60000 &&
            timestamp > 0 &&
            timestamp <= current_ns &&
-           current_ns-timestamp < Int64(timeout_ms)*1_000_000
+           current_ns - timestamp < Int64(timeout_ms) * 1_000_000
 end
 function recovery_reference_confirmed(values, current_ns::Int64)
-    correction_bool(values, RECOVERY_PREFIX*"reference-reached") &&
-        correction_long(values, RECOVERY_PREFIX*"observation-sequence") > 0 &&
+    correction_bool(values, RECOVERY_PREFIX * "reference-reached") &&
+        correction_long(values, RECOVERY_PREFIX * "observation-sequence") > 0 &&
         recovery_reference_fresh(values, current_ns)
 end
 function check_recovery!(
-    runtime,
-    origin::AbstractOrigin,
-    name,
-    values,
-    updates,
-    declarations,
+    runtime, origin::AbstractOrigin, name, values, updates, declarations
 )
-    request = get(updates, RECOVERY_PREFIX*"request-token", nothing)
-    release = get(updates, RECOVERY_PREFIX*"release-token", nothing)
-    version = get(values, RECOVERY_PREFIX*"version", nothing)
+    request = get(updates, RECOVERY_PREFIX * "request-token", nothing)
+    release = get(updates, RECOVERY_PREFIX * "release-token", nothing)
+    version = get(values, RECOVERY_PREFIX * "version", nothing)
     version !== nothing ||
-        haskey(declarations, RECOVERY_PREFIX*"version") ||
+        haskey(declarations, RECOVERY_PREFIX * "version") ||
         request !== nothing ||
         release !== nothing ||
         return nothing
     version !== nothing && policy_int(version) == 1 ||
         throw(ArgumentError("unsupported recovery-control version"))
-    inhibited = correction_bool(values, RECOVERY_PREFIX*"closure-inhibited")
+    inhibited = correction_bool(values, RECOVERY_PREFIX * "closure-inhibited")
     if request === nothing && release === nothing
         !inhibited ||
             throw(ArgumentError("protective recovery inhibits scientific updates"))
-        controller = correction_text(values, RECOVERY_PREFIX*"controller")
-        close = get(updates, controller*":closed", nothing)
+        controller = correction_text(values, RECOVERY_PREFIX * "controller")
+        close = get(updates, controller * ":closed", nothing)
         if close !== nothing &&
-           policy_bool(close) &&
-           correction_bool(values, RECOVERY_PREFIX*"close-guarded")
+            policy_bool(close) &&
+            correction_bool(values, RECOVERY_PREFIX * "close-guarded")
             length(updates) == 1 ||
                 throw(ArgumentError("recovery close requires one unmixed control request"))
-            correction_text(values, RECOVERY_PREFIX*"state") == "released" &&
-            correction_long(values, RECOVERY_PREFIX*"requested-generation") ==
-            correction_long(values, RECOVERY_PREFIX*"active-generation") &&
+            correction_text(values, RECOVERY_PREFIX * "state") == "released" &&
+            correction_long(values, RECOVERY_PREFIX * "requested-generation") ==
+            correction_long(values, RECOVERY_PREFIX * "active-generation") &&
             recovery_reference_confirmed(values, now(runtime)) ||
                 throw(ArgumentError("recovery command reference is not confirmed"))
         end
@@ -107,39 +104,39 @@ function check_recovery!(
     length(updates) == 1 && !(request !== nothing && release !== nothing) ||
         throw(ArgumentError("recovery requires one unmixed control request"))
     correction_running!(runtime, origin, name, values)
-    correction_int(values, CORRECTION_PREFIX*"version") == 1 ||
+    correction_int(values, CORRECTION_PREFIX * "version") == 1 ||
         throw(ArgumentError("unsupported correction-control version"))
-    controller = correction_text(values, RECOVERY_PREFIX*"controller")
+    controller = correction_text(values, RECOVERY_PREFIX * "controller")
     occursin(r"^[A-Za-z0-9_.-]+$", controller) ||
         throw(ArgumentError("invalid recovery controller"))
-    target = controller*":closed"
-    key = CORRECTION_PREFIX*target
-    current = correction_text(values, key*".state")
+    target = controller * ":closed"
+    key = CORRECTION_PREFIX * target
+    current = correction_text(values, key * ".state")
     current in ("Open", "Closed") || throw(ArgumentError("correction state is not ready"))
-    isempty(correction_text(values, key*".fault")) ||
+    isempty(correction_text(values, key * ".fault")) ||
         throw(ArgumentError("correction fault is latched"))
-    correction_long(values, RECOVERY_PREFIX*"requested-generation") ==
-    correction_long(values, RECOVERY_PREFIX*"active-generation") ||
+    correction_long(values, RECOVERY_PREFIX * "requested-generation") ==
+    correction_long(values, RECOVERY_PREFIX * "active-generation") ||
         throw(ArgumentError("recovery adoption is pending"))
-    correction_long(values, controller*":requested-generation") ==
-    correction_long(values, controller*":active-generation") ||
+    correction_long(values, controller * ":requested-generation") ==
+    correction_long(values, controller * ":active-generation") ||
         throw(ArgumentError("correction property adoption is pending"))
     active = correction_bool(values, target)
     (current == "Closed") == active &&
-    correction_bool(values, key*".requested") == active ||
+    correction_bool(values, key * ".requested") == active ||
         throw(ArgumentError("inconsistent correction state"))
     if request !== nothing
         !inhibited || throw(ArgumentError("protective recovery is already inhibited"))
         token = policy_long(request)
-        token > 0 && token > correction_long(values, RECOVERY_PREFIX*"request-token") ||
+        token > 0 && token > correction_long(values, RECOVERY_PREFIX * "request-token") ||
             throw(ArgumentError("recovery request token must advance"))
     else
         inhibited && !active ||
             throw(ArgumentError("recovery release requires an inhibited open controller"))
-        generation = correction_long(values, RECOVERY_PREFIX*"recovery-generation")
+        generation = correction_long(values, RECOVERY_PREFIX * "recovery-generation")
         generation > 0 && policy_long(release) == generation ||
             throw(ArgumentError("recovery release generation mismatch"))
-        correction_text(values, RECOVERY_PREFIX*"state") in
+        correction_text(values, RECOVERY_PREFIX * "state") in
         ("applied", "release_refused") &&
         recovery_reference_confirmed(values, now(runtime)) ||
             throw(ArgumentError("recovery command reference is not confirmed"))
@@ -147,53 +144,48 @@ function check_recovery!(
     return nothing
 end
 function check_parameter_correction(values)
-    if haskey(values, RECOVERY_PREFIX*"version")
-        correction_int(values, RECOVERY_PREFIX*"version") == 1 ||
+    if haskey(values, RECOVERY_PREFIX * "version")
+        correction_int(values, RECOVERY_PREFIX * "version") == 1 ||
             throw(ArgumentError("unsupported recovery-control version"))
-        !correction_bool(values, RECOVERY_PREFIX*"closure-inhibited") ||
+        !correction_bool(values, RECOVERY_PREFIX * "closure-inhibited") ||
             throw(ArgumentError("protective recovery inhibits scientific updates"))
     end
     return nothing
 end
 function check_correction!(
-    runtime,
-    origin::AbstractOrigin,
-    name,
-    values,
-    updates,
-    declarations,
+    runtime, origin::AbstractOrigin, name, values, updates, declarations
 )
     check_recovery!(runtime, origin, name, values, updates, declarations)
-    version = get(values, CORRECTION_PREFIX*"version", nothing)
-    if version !== nothing || haskey(declarations, CORRECTION_PREFIX*"version")
+    version = get(values, CORRECTION_PREFIX * "version", nothing)
+    if version !== nothing || haskey(declarations, CORRECTION_PREFIX * "version")
         version !== nothing && policy_int(version) == 1 ||
             throw(ArgumentError("unsupported or missing correction-control version"))
     end
     for (property, update) in updates
-        key = CORRECTION_PREFIX*property
+        key = CORRECTION_PREFIX * property
         if any(
-            field -> haskey(values, key*field) || haskey(declarations, key*field),
+            field -> haskey(values, key * field) || haskey(declarations, key * field),
             (".state", ".fault", ".requested"),
         )
             version !== nothing ||
                 throw(ArgumentError("correction-control version missing"))
             correction_running!(runtime, origin, name, values)
-            current = correction_text(values, key*".state")
+            current = correction_text(values, key * ".state")
             current in ("Open", "Closed") ||
                 throw(ArgumentError("correction state is not ready"))
-            isempty(correction_text(values, key*".fault")) ||
+            isempty(correction_text(values, key * ".fault")) ||
                 throw(ArgumentError("correction fault is latched"))
             policy_bool(update)
             active = correction_bool(values, property)
-            correction_bool(values, key*".requested") == active &&
+            correction_bool(values, key * ".requested") == active &&
             (current == "Closed") == active ||
                 throw(ArgumentError("inconsistent correction state"))
             matched = match(r"^([^:]+):.+$", property)
             matched !== nothing || throw(ArgumentError("invalid correction property"))
             algorithm = matched.captures[1]
-            requested = correction_long(values, algorithm*":requested-generation")
+            requested = correction_long(values, algorithm * ":requested-generation")
             requested >= 0 &&
-            requested == correction_long(values, algorithm*":active-generation") ||
+            requested == correction_long(values, algorithm * ":active-generation") ||
                 throw(ArgumentError("correction property adoption is pending"))
         end
     end
@@ -221,16 +213,18 @@ function property_declarations(records)
             choice = PipeWireAO.pod_value(PolicySPA.Choice, declaration.type)
             kind = PipeWireAO.pod_type(PolicyPod(first(choice.values)))
         end
-        declarations[declaration.name] =
-            PropertyDeclaration(kind, (declaration.flags & UInt32(1)) == 0)
+        declarations[declaration.name] = PropertyDeclaration(
+            kind, (declaration.flags & UInt32(1)) == 0
+        )
     end
     return declarations
 end
 function properties_adopted(after, baseline, updates)
     for (algorithm, generation) in baseline
-        requested = correction_long(after, algorithm*":requested-generation")
+        requested = correction_long(after, algorithm * ":requested-generation")
         requested > generation &&
-        requested == correction_long(after, algorithm*":active-generation") || return false
+        requested == correction_long(after, algorithm * ":active-generation") ||
+            return false
     end
     for (name, expected) in updates
         observed = get(after, name, nothing)
@@ -242,14 +236,14 @@ function same_property_scalar(observed::PolicyPod, expected::PolicyPod)
     kind = PipeWireAO.pod_type(expected)
     kind == PipeWireAO.pod_type(observed) || return false
     kind == PolicySPA.POD_BOOL && return policy_bool(observed) == policy_bool(expected)
-    kind == PolicySPA.POD_STRING && return policy_text(observed; limit = 16*1024) ==
-           policy_text(expected; limit = 16*1024)
+    kind == PolicySPA.POD_STRING && return policy_text(observed; limit = 16 * 1024) ==
+           policy_text(expected; limit = 16 * 1024)
     # Numeric scalars retain their exact representation, including signed zero.
     return observed.data == expected.data
 end
 property_baseline(::ReadyOrigin, before, names) = Dict{String,Int64}()
 property_baseline(::RunningOrigin, before, names) = Dict(
-    algorithm=>correction_long(before, algorithm*":requested-generation") for
+    algorithm => correction_long(before, algorithm * ":requested-generation") for
     algorithm in names
 )
 
@@ -294,42 +288,26 @@ function update_properties!(runtime, job, origin::AbstractOrigin, payload::Tuple
         handle,
         "Props",
         PolicyPod(
-            PipeWireAO.props_param(PolicySPA.Props(sort!(collect(updates); by = first))),
+            PipeWireAO.props_param(PolicySPA.Props(sort!(collect(updates); by = first)))
         ),
     )
     return finish_properties!(runtime, job, origin, handle, name, names, updates, baseline)
 end
 function finish_properties!(
-    runtime,
-    job,
-    ::ReadyOrigin,
-    handle,
-    name,
-    names,
-    updates,
-    baseline,
+    runtime, job, ::ReadyOrigin, handle, name, names, updates, baseline
 )
     synchronize!(runtime, job)
     generations = PolicyPod[
         PolicyPod(
-            policy_struct(PolicyPod(algorithm), PolicyPod(nothing), PolicyPod(nothing)),
+            policy_struct(PolicyPod(algorithm), PolicyPod(nothing), PolicyPod(nothing))
         ) for algorithm in names
     ]
     return policy_struct(
-        PolicyPod(name),
-        PolicyPod(PolicySPA.Struct(generations)),
-        PolicyPod(false),
+        PolicyPod(name), PolicyPod(PolicySPA.Struct(generations)), PolicyPod(false)
     )
 end
 function finish_properties!(
-    runtime,
-    job,
-    ::RunningOrigin,
-    handle,
-    name,
-    names,
-    updates,
-    baseline,
+    runtime, job, ::RunningOrigin, handle, name, names, updates, baseline
 )
     return await_condition!(runtime, job) do
         after = named_properties!(runtime, job, handle)
@@ -338,15 +316,13 @@ function finish_properties!(
             PolicyPod(
                 policy_struct(
                     PolicyPod(algorithm),
-                    PolicyPod(correction_long(after, algorithm*":requested-generation")),
-                    PolicyPod(correction_long(after, algorithm*":active-generation")),
+                    PolicyPod(correction_long(after, algorithm * ":requested-generation")),
+                    PolicyPod(correction_long(after, algorithm * ":active-generation")),
                 ),
             ) for algorithm in names
         ]
         policy_struct(
-            PolicyPod(name),
-            PolicyPod(PolicySPA.Struct(generations)),
-            PolicyPod(true),
+            PolicyPod(name), PolicyPod(PolicySPA.Struct(generations)), PolicyPod(true)
         )
     end
 end
@@ -363,8 +339,8 @@ function submit_parameter!(runtime, job, payload::Tuple)
     for publisher in spec["sources"]
         if get(publisher, "factory", nothing) == "pipewireao.runtime-parameter"
             for link in spec["links"]
-                if link["output"] == publisher["node.name"]*":output_1" &&
-                   link["input"] == name*":"*inlet
+                if link["output"] == publisher["node.name"] * ":output_1" &&
+                    link["input"] == name * ":" * inlet
                     declaration === nothing ||
                         throw(ArgumentError("ambiguous parameter source"))
                     declaration = publisher
@@ -375,10 +351,7 @@ function submit_parameter!(runtime, job, payload::Tuple)
     declaration !== nothing && runtime.parameters !== nothing ||
         throw(ArgumentError("parameter inlet has no captured publisher"))
     reply = request_owner!(
-        runtime,
-        job,
-        runtime.parameters,
-        RunnerCodec.RunnerCommand(:parameter, payload...),
+        runtime, job, runtime.parameters, RunnerCodec.RunnerCommand(:parameter, payload...)
     )
     reply.graph == name &&
     reply.inlet == inlet &&
@@ -387,10 +360,7 @@ function submit_parameter!(runtime, job, payload::Tuple)
     !reply.active_adoption_observed ||
         throw(ArgumentError("parameter submission identity or result differs"))
     return policy_struct(
-        PolicyPod(name),
-        PolicyPod(inlet),
-        PolicyPod(nothing),
-        PolicyPod(false),
+        PolicyPod(name), PolicyPod(inlet), PolicyPod(nothing), PolicyPod(false)
     )
 end
 submit_parameter!(runtime, job, command::RunnerCodec.RunnerCommand{:parameter}) =

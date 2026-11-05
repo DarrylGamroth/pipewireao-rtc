@@ -49,7 +49,7 @@ function foreign(remote)
         println("READY")
         flush(stdout)
         readline(stdin) == "publish" || error("phase")
-        @ccall gc_safe=true usleep(Cuint(200_000)::Cuint)::Cint
+        @ccall gc_safe = true usleep(Cuint(200_000)::Cuint)::Cint
         with_thread_loop_lock(loop) do _
             connect!(marker; flags = FILTER_INACTIVE | FILTER_ASYNC)
         end
@@ -64,7 +64,7 @@ function foreign(remote)
             time_ns(),
         )
         flush(stdout)
-        @ccall gc_safe=true usleep(Cuint(1_000_000)::Cuint)::Cint
+        @ccall gc_safe = true usleep(Cuint(1_000_000)::Cuint)::Cint
         with_thread_loop_lock(loop) do _
             close(marker)
         end

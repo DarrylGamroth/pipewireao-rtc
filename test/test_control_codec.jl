@@ -100,20 +100,20 @@ end
         good = raw_envelope(:request, children, payload)
         @test decode_request(good)[1] == header
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, children, payload; names = ("wrong", _payload_name)),
+            raw_envelope(:request, children, payload; names = ("wrong", _payload_name))
         )
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, children[2:end], payload),
+            raw_envelope(:request, children[2:end], payload)
         )
         reordered = copy(children)
         reordered[1], reordered[2] = reordered[2], reordered[1]
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, reordered, payload),
+            raw_envelope(:request, reordered, payload)
         )
         duplicate = copy(children)
         duplicate[8] = duplicate[7]
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, duplicate, payload),
+            raw_envelope(:request, duplicate, payload)
         )
 
         nested = SPA.Struct(PipeWireAO.Pod("inner"))
@@ -127,22 +127,23 @@ end
         )
         nonzero_flags = SPA.Property(SPA.PROP_PARAMS, PipeWireAO.Pod(outer); flags = 1)
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, children, payload; properties = nonzero_flags),
+            raw_envelope(:request, children, payload; properties = nonzero_flags)
         )
         duplicate_properties = SPA.Property[
             SPA.Property(SPA.PROP_PARAMS, PipeWireAO.Pod(outer)),
             SPA.Property(SPA.PROP_PARAMS, PipeWireAO.Pod(outer)),
         ]
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, children, payload; properties = duplicate_properties),
+            raw_envelope(:request, children, payload; properties = duplicate_properties)
         )
 
-        short_int =
-            PipeWireAO.Pod(UInt8[0x01, 0x00, 0x00, 0x00, UInt8(SPA.POD_INT), 0, 0, 0, 0x01])
+        short_int = PipeWireAO.Pod(
+            UInt8[0x01, 0x00, 0x00, 0x00, UInt8(SPA.POD_INT), 0, 0, 0, 0x01]
+        )
         wrongwidth = copy(children)
         wrongwidth[1] = short_int
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, wrongwidth, payload),
+            raw_envelope(:request, wrongwidth, payload)
         )
     end
 
@@ -150,18 +151,12 @@ end
         header, payload = test_request()
         @test_throws ArgumentError ControllerIdentity(UInt32(0), UInt64(1), Int64(1))
         @test_throws ArgumentError ControllerIdentity(
-            UInt32(typemax(UInt32)),
-            UInt64(1),
-            Int64(1),
+            UInt32(typemax(UInt32)), UInt64(1), Int64(1)
         )
         @test_throws ArgumentError ControllerIdentity(UInt32(1), UInt64(0), Int64(1))
         @test_throws ArgumentError ControllerIdentity(UInt32(1), UInt64(1), Int64(0))
         @test_throws ArgumentError RequestHeader(
-            header.controller,
-            Int64(1),
-            Int64(0),
-            UInt32(1),
-            Int64(1),
+            header.controller, Int64(1), Int64(0), UInt32(1), Int64(1)
         )
 
         children = request_children(header)
@@ -169,27 +164,23 @@ end
             partial = copy(children)
             partial[index] = PipeWireAO.Pod(Int64(0))
             @test_throws ArgumentError decode_request(
-                raw_envelope(:request, partial, payload),
+                raw_envelope(:request, partial, payload)
             )
         end
         partial_id = copy(children)
         partial_id[3] = PipeWireAO.Pod(SPA.Id(0))
         @test_throws ArgumentError decode_request(
-            raw_envelope(:request, partial_id, payload),
+            raw_envelope(:request, partial_id, payload)
         )
         @test_throws ArgumentError decode_request(
             raw_envelope(
-                :request,
-                [children[1:3]; PipeWireAO.Pod(Int64(0)); children[5:8]],
-                payload,
+                :request, [children[1:3]; PipeWireAO.Pod(Int64(0)); children[5:8]], payload
             ),
         )
 
         sent = ReplyHeader(Int64(5), Int32(0))
         @test_throws ArgumentError encode_completion(
-            ReplyHeader(Int64(5), Int32(-1)),
-            payload;
-            endpoint = :lifecycle,
+            ReplyHeader(Int64(5), Int32(-1)), payload; endpoint = :lifecycle
         )
         @test_throws ArgumentError encode_rejection(sent, payload; endpoint = :lifecycle)
         @test_throws ArgumentError encode_completion(
@@ -217,7 +208,7 @@ end
         @test decode_request(encode_request(hdr, allowed))[2] == allowed
 
         nested = SPA.Struct(PipeWireAO.Pod("end"))
-        for _ = 1:7
+        for _ in 1:7
             nested = SPA.Struct(PipeWireAO.Pod(nested))
         end
         @test_nowarn encode_request(hdr, nested)
@@ -226,28 +217,28 @@ end
         too_deep_pod = raw_envelope(:request, request_children(hdr), too_deep)
         @test_throws ArgumentError decode_request(too_deep_pod)
 
-        unsupported =
-            PipeWireAO.Pod(SPA.Object(SPA.OBJECT_PROPS, SPA.PARAM_PROPS, SPA.Property[]))
+        unsupported = PipeWireAO.Pod(
+            SPA.Object(SPA.OBJECT_PROPS, SPA.PARAM_PROPS, SPA.Property[])
+        )
         @test_throws ArgumentError encode_request(hdr, SPA.Struct(unsupported))
         @test_throws ArgumentError encode_request(
-            hdr,
-            SPA.Struct(PipeWireAO.Pod(SPA.Fd(3))),
+            hdr, SPA.Struct(PipeWireAO.Pod(SPA.Fd(3)))
         )
         choice = SPA.Choice(SPA.CHOICE_NONE, Int32[1])
         @test_throws ArgumentError encode_request(hdr, SPA.Struct(PipeWireAO.Pod(choice)))
         @test_throws ArgumentError encode_request(
-            hdr,
-            SPA.Struct(PipeWireAO.Pod(SPA.Pointer(1, Ptr{Cvoid}(C_NULL)))),
+            hdr, SPA.Struct(PipeWireAO.Pod(SPA.Pointer(1, Ptr{Cvoid}(C_NULL))))
         )
         @test_throws ArgumentError encode_request(
-            hdr,
-            SPA.Struct(PipeWireAO.Pod(SPA.Sequence(0))),
+            hdr, SPA.Struct(PipeWireAO.Pod(SPA.Sequence(0)))
         )
 
-        bad_utf8 =
-            PipeWireAO.Pod(UInt8[0x02, 0, 0, 0, UInt8(SPA.POD_STRING), 0, 0, 0, 0xff, 0])
-        embedded_null =
-            PipeWireAO.Pod(UInt8[0x03, 0, 0, 0, UInt8(SPA.POD_STRING), 0, 0, 0, 0x61, 0, 0])
+        bad_utf8 = PipeWireAO.Pod(
+            UInt8[0x02, 0, 0, 0, UInt8(SPA.POD_STRING), 0, 0, 0, 0xff, 0]
+        )
+        embedded_null = PipeWireAO.Pod(
+            UInt8[0x03, 0, 0, 0, UInt8(SPA.POD_STRING), 0, 0, 0, 0x61, 0, 0]
+        )
         @test_throws ArgumentError encode_request(hdr, SPA.Struct(bad_utf8))
         @test_throws ArgumentError encode_request(hdr, SPA.Struct(embedded_null))
     end
@@ -262,15 +253,11 @@ end
         @test_throws ArgumentError encode_request(hdr, oversized_array)
 
         lifecycle = ReplyHeader(
-            hdr.controller,
-            hdr.endpoint_instance,
-            hdr.token,
-            hdr.operation,
-            Int32(0),
+            hdr.controller, hdr.endpoint_instance, hdr.token, hdr.operation, Int32(0)
         )
         lifecycle_payload = SPA.Struct(PipeWireAO.Pod(SPA.Bytes(fill(UInt8(0x44), 63_000))))
         @test sizeof(
-            encode_completion(lifecycle, lifecycle_payload; endpoint = :lifecycle),
+            encode_completion(lifecycle, lifecycle_payload; endpoint = :lifecycle)
         ) <= 64 * 1024
         @test_throws ArgumentError encode_completion(
             lifecycle,
@@ -278,10 +265,11 @@ end
             endpoint = :lifecycle,
         )
 
-        calibration_payload =
-            SPA.Struct(PipeWireAO.Pod(SPA.Bytes(fill(UInt8(0x44), 127_000))))
+        calibration_payload = SPA.Struct(
+            PipeWireAO.Pod(SPA.Bytes(fill(UInt8(0x44), 127_000)))
+        )
         @test sizeof(
-            encode_completion(lifecycle, calibration_payload; endpoint = :calibration),
+            encode_completion(lifecycle, calibration_payload; endpoint = :calibration)
         ) <= 128 * 1024
         @test_throws ArgumentError encode_completion(
             lifecycle,
@@ -289,9 +277,7 @@ end
             endpoint = :calibration,
         )
         @test_throws ArgumentError encode_completion(
-            lifecycle,
-            SPA.Struct();
-            endpoint = :other,
+            lifecycle, SPA.Struct(); endpoint = :other
         )
 
         good = encode_request(hdr, SPA.Struct())

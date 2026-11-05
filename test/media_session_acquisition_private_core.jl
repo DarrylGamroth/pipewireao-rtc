@@ -14,18 +14,11 @@ const OBSERVATION_TIMEOUT_SECONDS = 10.0
 const POLL_SECONDS = 0.001
 const EFFECT_BUDGET_NS = Int64(5_000_000_000)
 const STATUS_OPERATION = Client.operation_id(PROFILE, Acquisition.LifecycleCommand(:status))
-const SHUTDOWN_OPERATION =
-    Client.operation_id(PROFILE, Acquisition.LifecycleCommand(:shutdown))
+const SHUTDOWN_OPERATION = Client.operation_id(
+    PROFILE, Acquisition.LifecycleCommand(:shutdown)
+)
 const INITIAL = Acquisition.Snapshot(
-    Acquisition.Classic,
-    nothing,
-    nothing,
-    false,
-    false,
-    "initial",
-    false,
-    false,
-    nothing,
+    Acquisition.Classic, nothing, nothing, false, false, "initial", false, false, nothing
 )
 
 include("control_private_core.jl")
@@ -140,8 +133,7 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
         @test elapsed <= EFFECT_BUDGET_NS
         @test STATUS_OPERATION in operations
         @test all(
-            operation -> operation in (STATUS_OPERATION, SHUTDOWN_OPERATION),
-            operations,
+            operation -> operation in (STATUS_OPERATION, SHUTDOWN_OPERATION), operations
         )
         @test count(==(SHUTDOWN_OPERATION), operations) == 1
         @test session.exitcode == 0

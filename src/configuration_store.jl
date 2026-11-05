@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS operation_events(
 "Return the shared per-user configuration store location without opening it."
 function default_root()
     state_home = get(ENV, "XDG_STATE_HOME", "")
-    isabspath(state_home) || (state_home=joinpath(homedir(), ".local", "state"))
+    isabspath(state_home) || (state_home = joinpath(homedir(), ".local", "state"))
     return joinpath(state_home, "pipewireao", "configuration")
 end
 
@@ -60,23 +60,23 @@ function git_command(repository, arguments...)
     command = `git --no-replace-objects --git-dir=$repository -c core.hooksPath=/dev/null -c gc.auto=0 -c core.fsync=all $(collect(arguments))`
     return addenv(
         command,
-        "GIT_CONFIG_NOSYSTEM"=>"1",
-        "GIT_CONFIG_GLOBAL"=>"/dev/null",
-        "GIT_CONFIG_COUNT"=>"0",
-        "GIT_ATTR_NOSYSTEM"=>"1",
-        "GIT_AUTHOR_NAME"=>"PipeWireAO configuration",
-        "GIT_AUTHOR_EMAIL"=>"configuration@localhost",
-        "GIT_COMMITTER_NAME"=>"PipeWireAO configuration",
-        "GIT_COMMITTER_EMAIL"=>"configuration@localhost",
-        "GIT_AUTHOR_DATE"=>"@0 +0000",
-        "GIT_COMMITTER_DATE"=>"@0 +0000",
-        "GIT_DIR"=>nothing,
-        "GIT_WORK_TREE"=>nothing,
-        "GIT_COMMON_DIR"=>nothing,
-        "GIT_OBJECT_DIRECTORY"=>nothing,
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES"=>nothing,
-        "GIT_NAMESPACE"=>nothing,
-        "GIT_CONFIG_PARAMETERS"=>nothing,
+        "GIT_CONFIG_NOSYSTEM" => "1",
+        "GIT_CONFIG_GLOBAL" => "/dev/null",
+        "GIT_CONFIG_COUNT" => "0",
+        "GIT_ATTR_NOSYSTEM" => "1",
+        "GIT_AUTHOR_NAME" => "PipeWireAO configuration",
+        "GIT_AUTHOR_EMAIL" => "configuration@localhost",
+        "GIT_COMMITTER_NAME" => "PipeWireAO configuration",
+        "GIT_COMMITTER_EMAIL" => "configuration@localhost",
+        "GIT_AUTHOR_DATE" => "@0 +0000",
+        "GIT_COMMITTER_DATE" => "@0 +0000",
+        "GIT_DIR" => nothing,
+        "GIT_WORK_TREE" => nothing,
+        "GIT_COMMON_DIR" => nothing,
+        "GIT_OBJECT_DIRECTORY" => nothing,
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES" => nothing,
+        "GIT_NAMESPACE" => nothing,
+        "GIT_CONFIG_PARAMETERS" => nothing,
     )
 end
 function git_read(repository, arguments...; input = nothing)
@@ -119,8 +119,8 @@ function Store(root::AbstractString = default_root())
                 "CREATE TABLE IF NOT EXISTS configuration_schema(version INTEGER NOT NULL)",
             )
             versions = [
-                Int(row.version) for row in
-                DBInterface.execute(db, "SELECT version FROM configuration_schema")
+                Int(row.version) for
+                row in DBInterface.execute(db, "SELECT version FROM configuration_schema")
             ]
             isempty(versions) &&
                 DBInterface.execute(db, "INSERT INTO configuration_schema VALUES(1)")
@@ -142,8 +142,8 @@ path TEXT PRIMARY KEY,artifact_id TEXT NOT NULL,storage_order TEXT NOT NULL,sha2
             )
             DBInterface.execute(db, OPERATION_SCHEMA)
             columns = Set(
-                String(row.name) for row in
-                DBInterface.execute(db, "PRAGMA table_info(operation_events)")
+                String(row.name) for
+                row in DBInterface.execute(db, "PRAGMA table_info(operation_events)")
             )
             "client_name" in columns || DBInterface.execute(
                 db,
@@ -261,7 +261,7 @@ function register!(
     checked_metadata(metadata)
     T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported target type"))
     Artifacts.checked_shape(shape, sizeof(T))
-    original = Artifacts.snapshot(source.path; check = ()->nothing)
+    original = Artifacts.snapshot(source.path; check = () -> nothing)
     prepared = Artifacts.prepare_snapshot(source, T, shape, original)
     provenance = copy(prepared.provenance)
     delete!(provenance, "source")
@@ -270,14 +270,14 @@ function register!(
     return locked(store.root) do
         content = blob_oid(store, original)
         manifest = Dict(
-            "protocol"=>PROTOCOL,
-            "content_oid"=>content,
-            "object_format"=>store.object_format,
-            "label"=>label,
-            "scope"=>scope,
-            "schema"=>schema,
-            "metadata"=>metadata,
-            "preparation"=>provenance,
+            "protocol" => PROTOCOL,
+            "content_oid" => content,
+            "object_format" => store.object_format,
+            "label" => label,
+            "scope" => scope,
+            "schema" => schema,
+            "metadata" => metadata,
+            "preparation" => provenance,
         )
         text = canonical_json(manifest)
         ncodeunits(text) <= MAX_MANIFEST_BYTES ||
@@ -289,7 +289,7 @@ function register!(
             store.repository,
             "mktree";
             input = codeunits(
-                "100644 blob $content\toriginal.fits\n100644 blob $id\tmanifest.json\n",
+                "100644 blob $content\toriginal.fits\n100644 blob $id\tmanifest.json\n"
             ),
         )
         commit = git_text(
@@ -396,13 +396,13 @@ function row_record(store, row; verify = true)
     checked_oid(store, String(row.content_oid))
     checked_oid(store, String(row.commit_oid))
     return Dict(
-        "id"=>String(row.id),
-        "content_oid"=>String(row.content_oid),
-        "commit_oid"=>String(row.commit_oid),
-        "object_format"=>String(row.object_format),
-        "sequence"=>Int(row.sequence),
-        "recorded_at"=>String(row.recorded_at),
-        "manifest"=>manifest,
+        "id" => String(row.id),
+        "content_oid" => String(row.content_oid),
+        "commit_oid" => String(row.commit_oid),
+        "object_format" => String(row.object_format),
+        "sequence" => Int(row.sequence),
+        "recorded_at" => String(row.recorded_at),
+        "manifest" => manifest,
     )
 end
 page_limit(limit) = throw(ArgumentError("limit must be in 1:100"))
@@ -426,10 +426,7 @@ function get_artifact(store::Store, id::AbstractString)
         throw(ArgumentError("catalog identity mismatch"))
     commit = checked_oid(store, record["commit_oid"])
     pinned = git_text(
-        store.repository,
-        "for-each-ref",
-        "--format=%(objectname)",
-        "refs/artifacts/$id",
+        store.repository, "for-each-ref", "--format=%(objectname)", "refs/artifacts/$id"
     )
     pinned == commit || throw(ArgumentError("artifact Git commit is not pinned"))
     tree = git_text(store.repository, "ls-tree", commit)
@@ -447,22 +444,20 @@ function materialize!(store::Store, id::AbstractString; storage_order = "row-maj
         throw(ArgumentError("unsupported storage order"))
     record = get_artifact(store, id)
     preparation = record["manifest"]["preparation"]
-    T = only(filter(T->string(T)==preparation["target_type"], Artifacts.TARGET_TYPES))
+    T = only(filter(T -> string(T) == preparation["target_type"], Artifacts.TARGET_TYPES))
     original = read_artifact(store, id)
     source = Artifacts.FITSArtifact(
-        "catalog-snapshot";
-        hdu = preparation["hdu"],
-        axes = preparation["axes"],
+        "catalog-snapshot"; hdu = preparation["hdu"], axes = preparation["axes"]
     )
     prepared = Artifacts.prepare_snapshot(source, T, preparation["target_shape"], original)
     bytes = if storage_order == "row-major"
         Artifacts.pack(prepared)
     else
-        output = Vector{UInt8}(undef, length(prepared.data)*sizeof(T))
+        output = Vector{UInt8}(undef, length(prepared.data) * sizeof(T))
         position = 1
         for value in prepared.data
             word = Artifacts.unsigned_word(value)
-            for shift = 0:8:(8*sizeof(T)-1)
+            for shift in 0:8:(8*sizeof(T)-1)
                 output[position] = UInt8((word >> shift) & 0xff)
                 position += 1
             end
@@ -486,14 +481,14 @@ function materialize!(store::Store, id::AbstractString; storage_order = "row-maj
             end
         end
         original_missing = !isfile(joinpath(directory, "original.fits"))
-        prepared_missing = !isfile(joinpath(directory, storage_order*".bin"))
+        prepared_missing = !isfile(joinpath(directory, storage_order * ".bin"))
         addition =
             (original_missing ? length(original) : 0) +
             (prepared_missing ? length(bytes) : 0)
         additional_files = Int(original_missing) + Int(prepared_missing)
         cache_bytes + addition <= 1024^3 && cache_files + additional_files <= 1024 || throw(
             ArgumentError(
-                "materialization cache capacity exceeded; explicit maintenance required",
+                "materialization cache capacity exceeded; explicit maintenance required"
             ),
         )
         mkpath(directory; mode = 0o700)
@@ -502,8 +497,8 @@ function materialize!(store::Store, id::AbstractString; storage_order = "row-maj
             if ispath(retained_path)
                 isfile(retained_path) &&
                 !islink(retained_path) &&
-                filesize(retained_path)==length(content) &&
-                read(retained_path)==content ||
+                filesize(retained_path) == length(content) &&
+                read(retained_path) == content ||
                     throw(ArgumentError("materialized artifact integrity failure"))
             else
                 temporary, io = mktemp(directory)
@@ -526,7 +521,7 @@ function materialize!(store::Store, id::AbstractString; storage_order = "row-maj
             return retained_path
         end
         path = retain("original.fits", original)
-        prepared_path = retain(storage_order*".bin", bytes)
+        prepared_path = retain(storage_order * ".bin", bytes)
         database(store) do db
             DBInterface.execute(
                 db,
@@ -537,13 +532,13 @@ function materialize!(store::Store, id::AbstractString; storage_order = "row-maj
         merge!(
             record,
             Dict(
-                "path"=>path,
-                "prepared_path"=>prepared_path,
-                "storage_order"=>storage_order,
-                "sha256"=>digest,
-                "target_type"=>string(T),
-                "shape"=>preparation["target_shape"],
-                "schema"=>record["manifest"]["schema"],
+                "path" => path,
+                "prepared_path" => prepared_path,
+                "storage_order" => storage_order,
+                "sha256" => digest,
+                "target_type" => string(T),
+                "shape" => preparation["target_shape"],
+                "schema" => record["manifest"]["schema"],
             ),
         )
         return record
@@ -570,15 +565,15 @@ function list_artifacts(store::Store; limit = 50, after_sequence = 0)
         )
             # At most four MiB of canonical manifests per catalog page.
             bytes = ncodeunits(row.manifest)
-            total + bytes > 4*MAX_MANIFEST_BYTES && !isempty(items) && break
+            total + bytes > 4 * MAX_MANIFEST_BYTES && !isempty(items) && break
             push!(items, row_record(store, row))
             total += bytes
         end
         items
     end
     return Dict(
-        "items"=>items,
-        "next_after_sequence"=>isempty(items) ? nothing : items[end]["sequence"],
+        "items" => items,
+        "next_after_sequence" => isempty(items) ? nothing : items[end]["sequence"],
     )
 end
 
@@ -600,34 +595,36 @@ end
 function header_fields(session, header)
     c = header.controller
     return Dict{String,Any}(
-        "key"=>header_key(session, header),
-        "session_id"=>session,
-        "endpoint_instance"=>header.endpoint_instance,
-        "token"=>header.token,
-        "controller"=>Dict(
-            "global_id"=>c.global_id,
-            "serial"=>c.serial,
-            "instance"=>c.instance,
+        "key" => header_key(session, header),
+        "session_id" => session,
+        "endpoint_instance" => header.endpoint_instance,
+        "token" => header.token,
+        "controller" => Dict(
+            "global_id" => c.global_id, "serial" => c.serial, "instance" => c.instance
         ),
-        "operation"=>String(RunnerCodec.OPERATIONS[Int(header.operation)]),
-        "graph"=>nothing,
-        "changes"=>nothing,
-        "outcome"=>"unknown",
-        "error"=>nothing,
+        "operation" => String(RunnerCodec.OPERATIONS[Int(header.operation)]),
+        "graph" => nothing,
+        "changes" => nothing,
+        "outcome" => "unknown",
+        "error" => nothing,
     )
 end
 function json_value(value::RunnerCodec.RunnerScalar)
-    numeric =
-        value.kind === :float ? reinterpret(Float32, value.value) :
-        value.kind === :double ? reinterpret(Float64, value.value) : value.value
-    result = Dict{String,Any}("kind"=>String(value.kind), "value"=>numeric)
+    numeric = if value.kind === :float
+        reinterpret(Float32, value.value)
+    elseif value.kind === :double
+        reinterpret(Float64, value.value)
+    else
+        value.value
+    end
+    result = Dict{String,Any}("kind" => String(value.kind), "value" => numeric)
     value.kind in (:float, :double) && (result["bits"] = string(value.value))
     return result
 end
 json_value(value::NamedTuple) =
-    Dict(String(key)=>json_value(v) for (key, v) in pairs(value))
+    Dict(String(key) => json_value(v) for (key, v) in pairs(value))
 json_value(value::AbstractDict) =
-    Dict(String(key)=>json_value(v) for (key, v) in pairs(value))
+    Dict(String(key) => json_value(v) for (key, v) in pairs(value))
 json_value(value::Union{AbstractVector,Tuple}) = json_value.(collect(value))
 json_value(value::Enum) = string(value)
 json_value(value) = value
@@ -685,7 +682,7 @@ function history(
                         header = completion.header
                         header_key(session, header) == key || throw(
                             ArgumentError(
-                                "journal operation key differs from native identity",
+                                "journal operation key differs from native identity"
                             ),
                         )
                         item === nothing && (item = header_fields(session, header))
@@ -694,16 +691,19 @@ function history(
                             throw(ArgumentError("history operation identity mismatch"))
                         include_records && (item[event*"_hex"] = bytes2hex(bytes))
                         unresolved |= event == "unknown"
-                        item["outcome"] =
-                            unresolved ? "unknown" :
-                            completion.error === nothing ?
-                            string(completion.result.outcome) : "failed"
+                        item["outcome"] = if unresolved
+                            "unknown"
+                        elseif completion.error === nothing
+                            string(completion.result.outcome)
+                        else
+                            "failed"
+                        end
                         item["error"] =
                             completion.error === nothing ? nothing :
                             Dict(
-                                "field"=>completion.error.field,
-                                "message"=>completion.error.message,
-                                "result"=>header.result,
+                                "field" => completion.error.field,
+                                "message" => completion.error.message,
+                                "result" => header.result,
                             )
                         if completion.result !== nothing
                             details = completion.result.details
@@ -711,7 +711,7 @@ function history(
                                 get(item, "graph", nothing) in (nothing, details.graph) ||
                                     throw(
                                         ArgumentError(
-                                            "journal request/completion graph differs",
+                                            "journal request/completion graph differs"
                                         ),
                                     )
                                 item["graph"] = details.graph
@@ -723,7 +723,7 @@ function history(
                         command = RunnerCodec.decode_request(header, payload)
                         header_key(session, header) == key || throw(
                             ArgumentError(
-                                "journal operation key differs from native identity",
+                                "journal operation key differs from native identity"
                             ),
                         )
                         item === nothing && (item = header_fields(session, header))
@@ -736,11 +736,11 @@ function history(
                             item["changes"] =
                                 header.operation == 13 ? json_value(command.args[2]) :
                                 Dict(
-                                    "parameter"=>command.args[2],
-                                    "element_type"=>command.args[3],
-                                    "shape"=>command.args[4],
-                                    "schema"=>command.args[5],
-                                    "path"=>command.args[6],
+                                    "parameter" => command.args[2],
+                                    "element_type" => command.args[3],
+                                    "shape" => command.args[4],
+                                    "schema" => command.args[5],
+                                    "path" => command.args[6],
                                 )
                         end
                         if header.operation == 14
@@ -757,7 +757,7 @@ function history(
                 catch exception
                     unresolved = true
                     item === nothing &&
-                        (item=Dict{String,Any}("key"=>key, "session_id"=>session))
+                        (item = Dict{String,Any}("key" => key, "session_id" => session))
                     item["outcome"] = "unknown"
                     item["error"] = sprint(showerror, exception)
                     include_records && (item["record_hex"] = bytes2hex(bytes))
@@ -772,8 +772,8 @@ function history(
         end
     end
     return Dict(
-        "items"=>items,
-        "next_before_sequence"=>isempty(items) ? nothing : items[end]["start_sequence"],
+        "items" => items,
+        "next_before_sequence" => isempty(items) ? nothing : items[end]["start_sequence"],
     )
 end
 

@@ -21,9 +21,7 @@ snapshot(path) = Dict(
     original = snapshot(source)
     mktempdir() do temporary
         authored = E.copy_source(
-            source,
-            joinpath(temporary, "instrument");
-            runtime_configurations = false,
+            source, joinpath(temporary, "instrument"); runtime_configurations = false
         )
         history = joinpath(authored, "calibration", "history")
         mkpath(history)
@@ -31,7 +29,7 @@ snapshot(path) = Dict(
         before = snapshot(authored)
         incoming = C.read_bundle(calibration)
         @test C.stage_calibration(authored, application, calibration, destination) ==
-              destination
+            destination
         selected = C.read_bundle(joinpath(destination, "calibration"))
         @test !ispath(joinpath(destination, "calibration", "history"))
         @test !ispath(joinpath(destination, "rtc", "calibration.yaml"))
@@ -42,7 +40,7 @@ snapshot(path) = Dict(
         rtc = Common.read_yaml(joinpath(destination, "rtc", "configuration.yaml"))
         @test rtc["calibration"] == "calibration/context.yaml"
         @test rtc["calibration_identity"] ==
-              "sha256:" *
+            "sha256:" *
               Common.sha256_file(joinpath(destination, "calibration", "result.yaml"))
         @test snapshot(authored) == before
     end

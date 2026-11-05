@@ -177,7 +177,7 @@ end
         end
     end
     disabled = supervisor(; enabled = false, action = :restore_reference)
-    for i = 1:10
+    for i in 1:10
         @test sample!(disabled, i, i * 100, 1.0).action === :none
     end
     @test CS.state(disabled) === :Disabled && !disabled.has_sample

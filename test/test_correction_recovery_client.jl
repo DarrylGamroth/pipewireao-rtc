@@ -165,8 +165,8 @@ end
     @test snapshot.loop_state === :Closed
     @test snapshot.controller_readiness === nothing
     @test CR.generations_match(snapshot) &&
-          CR.all_closed(snapshot) &&
-          !CR.all_open(snapshot)
+        CR.all_closed(snapshot) &&
+        !CR.all_open(snapshot)
     @test CR.adoption_matches(snapshot)
     coordinator = CR.Coordinator(CR.controller_scope(snapshot), snapshot.owner_instance)
     CR.qualify!(coordinator, snapshot)
@@ -185,14 +185,10 @@ end
     @test CR.state(coordinator) === :Closed
     @test CR.same_scope(coordinator, snapshot)
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.SingleController(),
-        (snapshot.readbacks,),
+        snapshot, CR.SingleController(), (snapshot.readbacks,)
     )
     @test_throws ArgumentError replace_readbacks(
-        snapshot,
-        CR.CoupledControllers{1}(),
-        (snapshot.readbacks,),
+        snapshot, CR.CoupledControllers{1}(), (snapshot.readbacks,)
     )
 end
 
@@ -205,8 +201,9 @@ end
         properties[legacy_name*suffix] = pop!(properties, "correction" * suffix)
     end
     for suffix in ("fault", "state", "requested")
-        properties["pipewireao.correction-control."*legacy_name*":closed."*suffix] =
-            pop!(properties, "pipewireao.correction-control.correction:closed." * suffix)
+        properties["pipewireao.correction-control."*legacy_name*":closed."*suffix] = pop!(
+            properties, "pipewireao.correction-control.correction:closed." * suffix
+        )
     end
     @test native_readback(properties).controller == legacy_name
 
@@ -218,8 +215,9 @@ end
     @test occursin("controller is absent", sprint(showerror, failure))
 
     properties = owner_properties(ScriptedTransport())
-    properties["pipewireao.correction-control.correction:closed.fault"] =
-        scalar("owner adoption fault")
+    properties["pipewireao.correction-control.correction:closed.fault"] = scalar(
+        "owner adoption fault"
+    )
     properties["correction:closed"] = scalar(Int64(0))
     failure = readback_error(() -> native_readback(properties))
     @test failure isa PipeWireAORTC.ControlClient.UnknownOutcome

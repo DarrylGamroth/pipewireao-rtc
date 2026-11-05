@@ -12,9 +12,7 @@ function pyramid_reference_figures(reference, options)
     figures = map(names) do name
         values = getproperty(reference, name)
         validate_pyramid_reference_figure(
-            values,
-            getproperty(options.command_count, name),
-            name,
+            values, getproperty(options.command_count, name), name
         )
         Base.require_one_based_indexing(values)
         return collect(values)
@@ -39,7 +37,7 @@ function pyramid_reference_units(parameters, recipe, instrument, normalization)
         haskey(mirrors, name) && mirrors[name]["units"] == "m OPD" || throw(
             ArgumentError("pyramid calibration mirror must explicitly declare m OPD units"),
         )
-        selection = parameters[Symbol(name*"-selection")]
+        selection = parameters[Symbol(name * "-selection")]
         ndims(selection) == 2 && size(selection, 2) == count || throw(
             DimensionMismatch(
                 "pyramid mirror selection must address the declared controller coordinates",
@@ -66,7 +64,7 @@ function pyramid_reference_units(parameters, recipe, instrument, normalization)
         end
     end
     all(!isempty, units) || throw(
-        ArgumentError("pyramid selections must cover every declared reconstructor row"),
+        ArgumentError("pyramid selections must cover every declared reconstructor row")
     )
     return units
 end
@@ -79,7 +77,7 @@ function pyramid_reference_unit_sources(bindings, recipe, calibration)
     validate_pyramid_unit_manifest(files, manifest)
     ports = (
         :reconstructor,
-        (Symbol(entry["name"]*"-selection") for entry in recipe["mirrors"])...,
+        (Symbol(entry["name"] * "-selection") for entry in recipe["mirrors"])...,
     )
     hashes = Dict{String,String}()
     for port in ports
@@ -100,7 +98,7 @@ function pyramid_reference_unit_sources(bindings, recipe, calibration)
         observed = Calibration.digest(source.path)
         observed == declared || throw(
             ArgumentError(
-                "pyramid bound $name bytes differ from the OPD normalization authority",
+                "pyramid bound $name bytes differ from the OPD normalization authority"
             ),
         )
         hashes[name] = observed
@@ -109,8 +107,9 @@ function pyramid_reference_unit_sources(bindings, recipe, calibration)
 end
 
 function pyramid_reference_geometry(application, parameters, options, recipe, declaration)
-    calibration =
-        PipeWireAORTC.Common.read_yaml(joinpath(application, "calibration", "result.yaml"))
+    calibration = PipeWireAORTC.Common.read_yaml(
+        joinpath(application, "calibration", "result.yaml")
+    )
     unit_parameter_hashes = pyramid_reference_unit_sources(
         GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf")),
         recipe,
@@ -121,7 +120,7 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     )
     graph = document["filter.graph"]
-    nodes = Dict(node["name"]=>node for node in graph["nodes"])
+    nodes = Dict(node["name"] => node for node in graph["nodes"])
     pixel = nodes["pixel-calibration"]
     pupil = nodes["pyramid"]
     reconstruction = nodes["reconstruction"]
@@ -134,7 +133,7 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
     )
     rows, columns = Tuple(pupil["config"]["image_size"])
     Tuple(pixel["config"]["image_size"]) == (rows, columns) == options.frame_shape || throw(
-        DimensionMismatch("pyramid detector geometry differs from the normal raw frame"),
+        DimensionMismatch("pyramid detector geometry differs from the normal raw frame")
     )
     pupil_shape = Tuple(pupil["config"]["pupil_size"])
     mask = parameters[Symbol("pupil-mask")]
@@ -144,12 +143,12 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
     size(mask) == pupil_shape &&
     size(origins) == (4, 2) || throw(
         DimensionMismatch(
-            "pyramid parameter shapes differ from declared detector/pupil geometry",
+            "pyramid parameter shapes differ from declared detector/pupil geometry"
         ),
     )
     selected = count(mask)
     selected > 0 && reconstruction["config"]["selected_pixel_count"] == selected || throw(
-        DimensionMismatch("pyramid selection differs from the retained reconstructor"),
+        DimensionMismatch("pyramid selection differs from the retained reconstructor")
     )
     modes = reconstruction["config"]["reconstructed_count"]
     size(parameters[:reconstructor]) == (modes, 4selected) &&
@@ -165,32 +164,32 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
         ),
     )
     external = Dict(
-        calibration_port(port).name=>calibration_port(port) for port in graph["outputs"]
+        calibration_port(port).name => calibration_port(port) for port in graph["outputs"]
     )
     external[Symbol("reconstruction-pixels")].endpoint == "pyramid:reconstruction-pixels" &&
     external[Symbol("mean-pupil-intensity")].endpoint == "pyramid:mean-pupil-intensity" ||
         throw(
             ArgumentError(
-                "pyramid diagnostic outputs must retain their normal scientific endpoints",
+                "pyramid diagnostic outputs must retain their normal scientific endpoints"
             ),
         )
     names = options.command_input
     commands = map(names) do name
         port = external[name]
         node = nodes[port.node]
-        port.endpoint == port.node*":demanded" &&
+        port.endpoint == port.node * ":demanded" &&
         node["label"] == "vector-conditioning-f32" &&
         node["config"]["count"] == getproperty(options.command_count, name) &&
         node["config"]["demanded_schema"] == getproperty(options.command_schema, name) ||
             throw(
                 ArgumentError(
-                    "pyramid command output must retain its declared physical conditioner",
+                    "pyramid command output must retain its declared physical conditioner"
                 ),
             )
         return (;
-            requested = port.node*":requested",
+            requested = port.node * ":requested",
             demanded = name,
-            feedback = port.node*":constraint-feedback",
+            feedback = port.node * ":constraint-feedback",
         )
     end
     # Validate shapes against the actual prepared normal graph, not vector lengths.
@@ -205,7 +204,7 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
         outputs[Symbol("mean-pupil-intensity")].element_type === Float32 &&
         outputs[Symbol("mean-pupil-intensity")].shape == (1,) || throw(
             DimensionMismatch(
-                "pyramid normal graph formats differ from the reference contract",
+                "pyramid normal graph formats differ from the reference contract"
             ),
         )
     finally
@@ -213,10 +212,7 @@ function pyramid_reference_geometry(application, parameters, options, recipe, de
     end
     normalization = get(calibration, "normalization", nothing)
     row_units = pyramid_reference_units(
-        parameters,
-        recipe,
-        declaration.instrument.document,
-        normalization,
+        parameters, recipe, declaration.instrument.document, normalization
     )
     probe_command = Symbol(first(recipe["mirrors"])["name"])
     probe_command in names ||
@@ -250,8 +246,7 @@ end
 # scale, bias, rounding and range; only its published UInt16 range defines a rail.
 function pyramid_reference_adc(production, options)
     outputs = filter(
-        output -> output["name"] == string(options.frame_output),
-        production["outputs"],
+        output -> output["name"] == string(options.frame_output), production["outputs"]
     )
     length(outputs) == 1 ||
         throw(ArgumentError("pyramid ADC requires its declared frame output exactly once"))
@@ -261,7 +256,7 @@ function pyramid_reference_adc(production, options)
     layouts = filter(node -> node["name"] == source[1], production["nodes"])
     length(layouts) == 1 && only(layouts)["type"] == "detector_frame_layout_f32" || throw(
         ArgumentError(
-            "pyramid frame output must come from the declared detector frame layout",
+            "pyramid frame output must come from the declared detector frame layout"
         ),
     )
     frame_layout = only(layouts)
@@ -269,7 +264,7 @@ function pyramid_reference_adc(production, options)
     get(config, "output_element_type", nothing) == "uint16" &&
     get(config, "rounding", nothing) == "nearest_even" || throw(
         ArgumentError(
-            "pyramid raw ADC must retain UInt16 output with nearest-even rounding",
+            "pyramid raw ADC must retain UInt16 output with nearest-even rounding"
         ),
     )
     output_size = get(config, "output_size", nothing)
@@ -277,8 +272,7 @@ function pyramid_reference_adc(production, options)
     range = get(config, "range", nothing)
     validate_pyramid_adc_range(range)
     links = filter(
-        link -> link["destination"] == source[1]*".detector_frame",
-        production["links"],
+        link -> link["destination"] == source[1] * ".detector_frame", production["links"]
     )
     length(links) == 1 ||
         throw(ArgumentError("pyramid ADC must have one declared detector-frame source"))
@@ -295,14 +289,7 @@ function pyramid_reference_adc(production, options)
 end
 
 function pyramid_references(
-    application,
-    output;
-    remote,
-    reference,
-    run,
-    timeout_s,
-    cancelled,
-    confirm,
+    application, output; remote, reference, run, timeout_s, cancelled, confirm
 )
     application_hashes = reference_application_hashes(application)
     function check_application()
@@ -314,7 +301,7 @@ function pyramid_references(
     counts = reference_counts(recipe)
     counts.lamp.discard >= 1 || throw(
         ArgumentError(
-            "pyramid lamp training must discard its initial normalization exposure",
+            "pyramid lamp training must discard its initial normalization exposure"
         ),
     )
     options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
@@ -327,8 +314,9 @@ function pyramid_references(
     validate_pyramid_owner_threads(options.command_input)
     reference = pyramid_reference_figures(reference, options)
     parameters = Calibration.read_parameters(application)
-    geometry =
-        pyramid_reference_geometry(application, parameters, options, recipe, declaration)
+    geometry = pyramid_reference_geometry(
+        application, parameters, options, recipe, declaration
+    )
     configured = IC.settings(declaration, options.plant.settings)
     adc = pyramid_reference_adc(IC.graph_document(declaration, configured), options)
     detector, frame_layout, rail = adc.detector, adc.frame_layout, adc.rail
@@ -346,20 +334,20 @@ function pyramid_references(
     end
     frozen_ports = (:flat, Symbol("pupil-mask"), Symbol("pupil-origins"), :reconstructor)
     frozen_parameter_hashes = Dict(
-        string(entry.port)=>Calibration.digest(entry.source.path) for
+        string(entry.port) => Calibration.digest(entry.source.path) for
         entry in GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf")) if
         entry.port in frozen_ports
     )
     Set(keys(frozen_parameter_hashes)) == Set(string.(frozen_ports)) || throw(
         ArgumentError(
-            "pyramid frozen optical inputs must retain their original FITS bindings",
+            "pyramid frozen optical inputs must retain their original FITS bindings"
         ),
     )
     check_application()
     figure_hashes = Dict(
-        string(name)=>bytes2hex(
+        string(name) => bytes2hex(
             Calibration.sha256(
-                PipeWireAORTC.Artifacts.packed_bytes(getproperty(reference, name)),
+                PipeWireAORTC.Artifacts.packed_bytes(getproperty(reference, name))
             ),
         ) for name in keys(reference)
     )
@@ -396,9 +384,7 @@ function pyramid_references(
     dark_plan = AdaptiveOpticsCalibration.prepare(
         ReferenceFrames.DarkFrameMoments(),
         ReferenceFrames.DarkFrameSpecification(
-            geometry.rows,
-            geometry.columns,
-            counts.dark.samples,
+            geometry.rows, geometry.columns, counts.dark.samples
         ),
     )
     dark_state = ReferenceFrames.DarkFrameState(dark_plan)
@@ -456,7 +442,7 @@ function pyramid_references(
             reference_source!(temporary, name, values; artifacts)
         reference_artifacts = Dict{String,String}()
         for (name, figure) in pairs(reference)
-            artifact_name = "reference-"*string(name)
+            artifact_name = "reference-" * string(name)
             write_candidate(artifact_name, figure)
             reference_artifacts[string(name)] = artifact_name
         end
@@ -477,10 +463,8 @@ function pyramid_references(
                 confirm,
                 configuration,
                 check_application,
-                (sample, exposure)->AdaptiveOpticsCalibration.process!(
-                    dark_state,
-                    dark_plan,
-                    sample.arrays.raw,
+                (sample, exposure) -> AdaptiveOpticsCalibration.process!(
+                    dark_state, dark_plan, sample.arrays.raw
                 );
                 dark_options...,
             ),
@@ -489,7 +473,7 @@ function pyramid_references(
         dark.status == ReferenceFrames.Valid || error("pyramid dark reduction is invalid")
         background = Float32.(dark.mean)
         sources = Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(
-            :background=>write_candidate("background", background),
+            :background => write_candidate("background", background)
         )
         push!(
             reports,
@@ -508,11 +492,8 @@ function pyramid_references(
                 confirm,
                 configuration,
                 check_application,
-                (sample, exposure)->pyramid_reference_update!(
-                    lamp_state,
-                    lamp_plan,
-                    sample,
-                );
+                (sample, exposure) ->
+                    pyramid_reference_update!(lamp_state, lamp_plan, sample);
                 stage_options...,
             ),
         )
@@ -542,10 +523,8 @@ function pyramid_references(
                 confirm,
                 configuration,
                 check_application,
-                (sample, exposure)->pyramid_reference_update!(
-                    qualification_state,
-                    qualification_plan,
-                    sample,
+                (sample, exposure) -> pyramid_reference_update!(
+                    qualification_state, qualification_plan, sample
                 );
                 stage_options...,
             ),
@@ -566,87 +545,80 @@ function pyramid_references(
         # scalars explicitly without presenting them as a usable number.
         diagnostic(value) = isfinite(value) ? value : string(value)
         write_candidate(
-            "lamp-diagnostics",
-            [lamp.adc_maximum, lamp.minimum_mean_pupil_intensity],
+            "lamp-diagnostics", [lamp.adc_maximum, lamp.minimum_mean_pupil_intensity]
         )
         write_candidate(
             "qualification-diagnostics",
             [qualification.adc_maximum, qualification.minimum_mean_pupil_intensity],
         )
         report = Dict{String,Any}(
-            "version"=>1,
-            "product"=>"reference-candidate",
-            "sensor"=>"pyramid",
-            "backend"=>"cpu",
-            "frame_encoding"=>"uint16",
-            "application_graph_sha256"=>Calibration.digest(
-                joinpath(application, "rtc", "graph.conf"),
-            ),
-            "recipe_sha256"=>Calibration.digest(
-                joinpath(application, "calibration", "recipe.conf"),
-            ),
-            "configuration"=>Dict(
-                string(key)=>value for (key, value) in pairs(configuration)
-            ),
-            "application_files_sha256"=>application_hashes,
-            "aoc_version"=>string(pkgversion(AdaptiveOpticsCalibration)),
-            "run"=>UInt64(run),
-            "reference_figure_artifacts"=>reference_artifacts,
-            "reference_figure_sha256"=>figure_hashes,
-            "probe_command"=>string(geometry.probe_command),
-            "command_schemas"=>Dict(
-                string(name)=>getproperty(options.command_schema, name) for
+            "version" => 1,
+            "product" => "reference-candidate",
+            "sensor" => "pyramid",
+            "backend" => "cpu",
+            "frame_encoding" => "uint16",
+            "application_graph_sha256" =>
+                Calibration.digest(joinpath(application, "rtc", "graph.conf")),
+            "recipe_sha256" =>
+                Calibration.digest(joinpath(application, "calibration", "recipe.conf")),
+            "configuration" =>
+                Dict(string(key) => value for (key, value) in pairs(configuration)),
+            "application_files_sha256" => application_hashes,
+            "aoc_version" => string(pkgversion(AdaptiveOpticsCalibration)),
+            "run" => UInt64(run),
+            "reference_figure_artifacts" => reference_artifacts,
+            "reference_figure_sha256" => figure_hashes,
+            "probe_command" => string(geometry.probe_command),
+            "command_schemas" => Dict(
+                string(name) => getproperty(options.command_schema, name) for
                 name in keys(reference)
             ),
-            "detector"=>detector,
-            "frame_layout"=>frame_layout,
-            "adc_upper_rail"=>rail,
-            "dark_status"=>string(dark.status),
-            "lamp_status"=>string(lamp.status),
-            "selected_pixel_count_per_pupil"=>geometry.selected,
-            "reconstruction_pixel_axes"=>["pupil", "selected-mask-pixel"],
-            "reference_pixel_units"=>"dimensionless",
-            "modal_reference_units"=>"m OPD",
-            "modal_unit_authority"=>Dict(
-                "normalization"=>geometry.normalization,
-                "parameter_sha256"=>geometry.unit_parameter_hashes,
-                "calibration_result_sha256"=>Calibration.digest(
-                    joinpath(application, "calibration", "result.yaml"),
+            "detector" => detector,
+            "frame_layout" => frame_layout,
+            "adc_upper_rail" => rail,
+            "dark_status" => string(dark.status),
+            "lamp_status" => string(lamp.status),
+            "selected_pixel_count_per_pupil" => geometry.selected,
+            "reconstruction_pixel_axes" => ["pupil", "selected-mask-pixel"],
+            "reference_pixel_units" => "dimensionless",
+            "modal_reference_units" => "m OPD",
+            "modal_unit_authority" => Dict(
+                "normalization" => geometry.normalization,
+                "parameter_sha256" => geometry.unit_parameter_hashes,
+                "calibration_result_sha256" => Calibration.digest(
+                    joinpath(application, "calibration", "result.yaml")
                 ),
-                "mirror_units"=>Dict(
-                    entry["name"]=>declaration.instrument.document["deformable_mirrors"][entry["name"]]["units"]
+                "mirror_units" => Dict(
+                    entry["name"] =>
+                        declaration.instrument.document["deformable_mirrors"][entry["name"]]["units"]
                     for entry in recipe["mirrors"]
                 ),
-                "controller_coordinate_partition"=>[
-                    entry["name"]*"-selection" for entry in recipe["mirrors"]
-                ],
+                "controller_coordinate_partition" =>
+                    [entry["name"] * "-selection" for entry in recipe["mirrors"]],
             ),
-            "normalization"=>"previous successful frame full-pupil mean, including masked pixels",
-            "minimum_mean_diagnostic_frame"=>"current",
-            "frozen_parameter_ports"=>string.(collect(frozen_ports)),
-            "frozen_parameter_sha256"=>frozen_parameter_hashes,
-            "overridden_parameter_ports"=>["background"],
-            "lamp_adc_maximum"=>diagnostic(lamp.adc_maximum),
-            "lamp_minimum_mean_pupil_intensity"=>diagnostic(
-                lamp.minimum_mean_pupil_intensity,
-            ),
-            "qualification_status"=>string(qualification.status),
-            "qualification_adc_maximum"=>diagnostic(qualification.adc_maximum),
-            "qualification_minimum_mean_pupil_intensity"=>diagnostic(
-                qualification.minimum_mean_pupil_intensity,
-            ),
-            "qualification_numerically_valid"=>valid,
-            "qualification_reference_difference_rms_dimensionless"=>(
+            "normalization" => "previous successful frame full-pupil mean, including masked pixels",
+            "minimum_mean_diagnostic_frame" => "current",
+            "frozen_parameter_ports" => string.(collect(frozen_ports)),
+            "frozen_parameter_sha256" => frozen_parameter_hashes,
+            "overridden_parameter_ports" => ["background"],
+            "lamp_adc_maximum" => diagnostic(lamp.adc_maximum),
+            "lamp_minimum_mean_pupil_intensity" =>
+                diagnostic(lamp.minimum_mean_pupil_intensity),
+            "qualification_status" => string(qualification.status),
+            "qualification_adc_maximum" => diagnostic(qualification.adc_maximum),
+            "qualification_minimum_mean_pupil_intensity" =>
+                diagnostic(qualification.minimum_mean_pupil_intensity),
+            "qualification_numerically_valid" => valid,
+            "qualification_reference_difference_rms_dimensionless" => (
                 difference === nothing ? nothing :
-                sqrt(sum(abs2, difference)/length(difference))
+                sqrt(sum(abs2, difference) / length(difference))
             ),
-            "qualification_reference_difference_maximum_dimensionless"=>(
-                difference === nothing ? nothing : maximum(abs, difference)
-            ),
-            "interaction_matrix_accepted"=>false,
-            "activation"=>"candidate-only",
-            "stages"=>reports,
-            "artifacts"=>artifacts,
+            "qualification_reference_difference_maximum_dimensionless" =>
+                (difference === nothing ? nothing : maximum(abs, difference)),
+            "interaction_matrix_accepted" => false,
+            "activation" => "candidate-only",
+            "stages" => reports,
+            "artifacts" => artifacts,
         )
         cancelled() && throw(InterruptException())
         PipeWireAORTC.Common.write_yaml(
@@ -663,7 +635,7 @@ end
 function validate_pyramid_reference_names(names::Tuple, reference::NamedTuple)
     !isempty(names) && Set(keys(reference)) == Set(names) || throw(
         ArgumentError(
-            "pyramid reference must explicitly name every simulator command input",
+            "pyramid reference must explicitly name every simulator command input"
         ),
     )
     return nothing
@@ -675,7 +647,7 @@ validate_pyramid_reference_names(names, reference) = throw(
 function validate_pyramid_reference_figure(values::AbstractVector{Float32}, count, name)
     length(values) == count && all(isfinite, values) || throw(
         ArgumentError(
-            "pyramid reference $name must match its finite Float32 physical command",
+            "pyramid reference $name must match its finite Float32 physical command"
         ),
     )
     return nothing
@@ -687,14 +659,14 @@ validate_pyramid_reference_figure(values, count, name) = throw(
 validate_pyramid_unit_manifest(files::AbstractDict, manifest::AbstractDict) = nothing
 validate_pyramid_unit_manifest(files, manifest) = throw(
     ArgumentError(
-        "pyramid modal unit authority requires parameter_files and artifact_sha256",
+        "pyramid modal unit authority requires parameter_files and artifact_sha256"
     ),
 )
 
 function validate_pyramid_unit_filename(filename::AbstractString, name)
     occursin(r"^[A-Za-z0-9][A-Za-z0-9_.-]*\.fits$", filename) || throw(
         ArgumentError(
-            "pyramid unit authority must identify a plain FITS filename for $name",
+            "pyramid unit authority must identify a plain FITS filename for $name"
         ),
     )
     return nothing
@@ -712,28 +684,24 @@ validate_pyramid_unit_digest(declared, name) =
     throw(ArgumentError("pyramid unit authority must declare a SHA-256 for $name"))
 
 function validate_pyramid_frame_output(
-    output_size::Union{Tuple,AbstractVector},
-    config,
-    options,
+    output_size::Union{Tuple,AbstractVector}, config, options
 )
     Tuple(output_size) == options.frame_shape &&
     get(config, "output_schema", nothing) == options.frame_schema || throw(
         DimensionMismatch(
-            "pyramid frame layout must retain the declared raw frame shape and schema",
+            "pyramid frame layout must retain the declared raw frame shape and schema"
         ),
     )
     return nothing
 end
 validate_pyramid_frame_output(output_size, config, options) = throw(
     DimensionMismatch(
-        "pyramid frame layout must retain the declared raw frame shape and schema",
+        "pyramid frame layout must retain the declared raw frame shape and schema"
     ),
 )
 
 function validate_pyramid_frame_input(
-    input_size::Union{Tuple,AbstractVector},
-    config,
-    detector,
+    input_size::Union{Tuple,AbstractVector}, config, detector
 )
     get(config, "input_schema", nothing) == detector["config"]["frame_schema"] &&
     Tuple(input_size) == (detector["config"]["rows"], detector["config"]["columns"]) ||
@@ -751,7 +719,7 @@ validate_pyramid_frame_input(input_size, config, detector) = throw(
 )
 
 function validate_pyramid_owner_threads(commands::Tuple)
-    Threads.nthreads(:default) >= length(commands)+2 || throw(
+    Threads.nthreads(:default) >= length(commands) + 2 || throw(
         ArgumentError(
             "named pyramid acquisition requires at least one thread per command plus frontend and control owners",
         ),
@@ -780,7 +748,7 @@ function validate_pyramid_adc_range(range::AbstractVector)
 end
 validate_pyramid_adc_range(range) = throw(
     ArgumentError(
-        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds",
+        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"
     ),
 )
 function validate_pyramid_adc_bound(value::Real)
@@ -793,11 +761,11 @@ function validate_pyramid_adc_bound(value::Real)
 end
 validate_pyramid_adc_bound(value::Bool) = throw(
     ArgumentError(
-        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds",
+        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"
     ),
 )
 validate_pyramid_adc_bound(value) = throw(
     ArgumentError(
-        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds",
+        "pyramid ADC range must contain increasing nonnegative integral UInt16 bounds"
     ),
 )

@@ -15,15 +15,13 @@ source_endpoint(profile, instance) = Dict{String,Any}(
     )
         source = source_endpoint(profile, "19")
         @test Runtime._source_endpoint(source) ==
-              Dict("node" => "simulator-wfs", "instance" => Int64(19), "profile" => profile)
+            Dict("node" => "simulator-wfs", "instance" => Int64(19), "profile" => profile)
         if PipeWireAORTC.DeploymentConfiguration.uses_source_control_protocol(source)
             # Native source owners publish their live mailbox incarnation;
             # SessionLaunch does not reserve an acquisition control-instance.
             source["control-instance"] = nothing
             @test Runtime._source_endpoint(source) == Dict(
-                "node" => "simulator-wfs",
-                "instance" => nothing,
-                "profile" => profile,
+                "node" => "simulator-wfs", "instance" => nothing, "profile" => profile
             )
         else
             source["control-instance"] = nothing

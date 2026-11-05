@@ -113,12 +113,7 @@ function validate_execution_groups(session)
     names = Set{String}()
     membership = Dict{String,String}()
     validate_execution_group_memberships!(
-        names,
-        membership,
-        groups,
-        graphs,
-        processing,
-        controlled,
+        names, membership, groups, graphs, processing, controlled
     )
     if !isempty(graphs)
         for node in sort!(collect(required))
@@ -181,7 +176,7 @@ uses_bootstrap_protocol(owner) =
     get(owner, "bootstrap-protocol", nothing) ==
     ControlClient.profile_name(OwnerBootstrapCodec.PROFILE)
 bootstrap_instance_key(role::AbstractString) =
-    "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-"=>"_")
+    "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-" => "_")
 
 "Return whether a declaration selects the existing HEART wrapper control protocol."
 uses_heart_protocol(owner) =
@@ -225,7 +220,7 @@ function validate_acquisition_arguments(owner)
 end
 
 function validate_bootstrap_arguments(owner)
-    argv=owner["argv"]
+    argv = owner["argv"]
     for flag in (
         "--prepared-event",
         "--connect-request",
@@ -235,7 +230,7 @@ function validate_bootstrap_arguments(owner)
         "--control-reply",
     )
         require(
-            !any(arg->first(split(arg, '='; limit = 2))==flag, argv),
+            !any(arg -> first(split(arg, '='; limit = 2)) == flag, argv),
             "native bootstrap cannot use live file controls",
         )
     end
@@ -244,23 +239,23 @@ function validate_bootstrap_arguments(owner)
         ("--bootstrap-instance", "@" * bootstrap_instance_key(owner["role"]) * "@"),
         ("--remote", "@RUNTIME@/@REMOTE@"),
     )
-        indices=findall(arg->first(split(arg, '='; limit = 2))==flag, argv)
+        indices = findall(arg -> first(split(arg, '='; limit = 2)) == flag, argv)
         require(
-            length(indices)==1 &&
-                argv[only(indices)]==flag &&
-                only(indices)<length(argv) &&
-                argv[only(indices)+1]==value,
+            length(indices) == 1 &&
+                argv[only(indices)] == flag &&
+                only(indices) < length(argv) &&
+                argv[only(indices)+1] == value,
             "native bootstrap requires the exact $flag binding",
         )
     end
     if uses_source_control_protocol(owner)
-        flag="--control-node"
-        indices=findall(arg->first(split(arg, '='; limit = 2))==flag, argv)
+        flag = "--control-node"
+        indices = findall(arg -> first(split(arg, '='; limit = 2)) == flag, argv)
         require(
-            length(indices)==1 &&
-                argv[only(indices)]==flag &&
-                only(indices)<length(argv) &&
-                argv[only(indices)+1]==owner["control-node"],
+            length(indices) == 1 &&
+                argv[only(indices)] == flag &&
+                only(indices) < length(argv) &&
+                argv[only(indices)+1] == owner["control-node"],
             "native source requires the exact --control-node binding",
         )
         require(
@@ -268,9 +263,9 @@ function validate_bootstrap_arguments(owner)
             "source and bootstrap nodes must differ",
         )
     end
-    thread_flags=filter(arg->startswith(arg, "--threads="), argv)
+    thread_flags = filter(arg -> startswith(arg, "--threads="), argv)
     require(
-        length(thread_flags)==1 &&
+        length(thread_flags) == 1 &&
             occursin(r"^--threads=([2-9]|[1-9][0-9]+),0$", only(thread_flags)),
         "native bootstrap requires at least two default Julia threads and zero interactive threads",
     )
@@ -325,9 +320,7 @@ end
 
 "Return the pinned Julia process binding used by the generated RTC launcher."
 function session_process_binding(
-    spec::AbstractDict,
-    package::AbstractString,
-    config::AbstractString,
+    spec::AbstractDict, package::AbstractString, config::AbstractString
 )
     validate_session_runtime(spec["session-runtime"])
     launcher_project =
@@ -350,10 +343,7 @@ function verify_session_process(pid::Integer, binding::AbstractDict)
         "invalid headless RTC process binding",
     )
     julia, project, config, argv = session_process_values(
-        binding["julia"],
-        binding["project"],
-        binding["config"],
-        binding["argv"],
+        binding["julia"], binding["project"], binding["config"], binding["argv"]
     )
     expected = ScienceExport.rtc_arguments(julia, project, config)
     require(argv == expected, "invalid headless RTC process arguments")
@@ -378,8 +368,7 @@ function session_process_values(
     all(isabspath, (julia, project, config)) ||
         fail("headless RTC process paths must be absolute")
     return String(julia),
-    String(project),
-    String(config),
+    String(project), String(config),
     String[session_process_argument(value) for value in argv]
 end
 session_process_argument(value::AbstractString) = String(value)
@@ -475,8 +464,7 @@ function validate_owner_pins(owner, placement)
     function option_value(flag)
         positions = findall(arg -> option_key(arg) == flag, argv)
         require(
-            length(positions) == 1,
-            "explicit CPU pins require exactly one $flag argument",
+            length(positions) == 1, "explicit CPU pins require exactly one $flag argument"
         )
         index = only(positions)
         terms = split(argv[index], '='; limit = 2)
@@ -560,9 +548,7 @@ function validate_placements(placements::AbstractDict, roles)
 end
 
 function profile(
-    path::AbstractString,
-    prefix::AbstractString;
-    legacy_export_input::Bool = false,
+    path::AbstractString, prefix::AbstractString; legacy_export_input::Bool = false
 )
     value = decode(path, prefix)
     result = validate_application(value, path, prefix; legacy_export_input)
@@ -575,10 +561,7 @@ end
 validate_application(value, path, prefix; legacy_export_input::Bool = false) =
     fail("expected version 1 deployment with the documented fields")
 function validate_application(
-    value::AbstractDict,
-    path,
-    prefix;
-    legacy_export_input::Bool = false,
+    value::AbstractDict, path, prefix; legacy_export_input::Bool = false
 )
     require(
         REQUIRED_KEYS ⊆
@@ -623,12 +606,7 @@ function validate_application(
     markers = Set{String}()
     for owner in owners
         validate_external_owner!(
-            owner,
-            source_role,
-            auxiliary,
-            roles,
-            markers;
-            legacy_export_input,
+            owner, source_role, auxiliary, roles, markers; legacy_export_input
         )
     end
     require(
@@ -646,8 +624,8 @@ function validate_application(
             "auxiliary sources require a native primary source control",
         )
         source_controls = [
-            owner["control-node"] for owner in owners if
-            owner["role"] in auxiliary || owner["role"] == source_role
+            owner["control-node"] for
+            owner in owners if owner["role"] in auxiliary || owner["role"] == source_role
         ]
         require(
             length(unique(source_controls)) == length(source_controls),
@@ -659,13 +637,12 @@ function validate_application(
     require(
         !get(value, "detector-observation", false) ||
             source_role !== nothing && uses_source_control_protocol(
-                only(filter(owner->owner["role"] == source_role, owners)),
+                only(filter(owner -> owner["role"] == source_role, owners))
             ),
         "detector observation requires an admitted native source owner",
     )
     reserved = union(
-        roles,
-        Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"]),
+        roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"])
     )
     require(
         isempty(intersect(markers, reserved)),
@@ -675,8 +652,8 @@ function validate_application(
         source_role === nothing ? nothing :
         only(filter(owner -> owner["role"] == source_role, owners))
     if source !== nothing &&
-       !uses_source_control_protocol(source) &&
-       !uses_acquisition_protocol(source)
+        !uses_source_control_protocol(source) &&
+        !uses_acquisition_protocol(source)
         staging = splitext(source["control-request"])[1] * ".new"
         require(
             !(staging in markers || staging in reserved),
@@ -713,8 +690,9 @@ function validate_application(
         parameters = false
         for section in ("sources", "graphs", "sinks")
             entries = get(session, section, nothing)
-            found_fgn, found_parameters =
-                collect_node_owner_endpoints!(nodes, entries, section)
+            found_fgn, found_parameters = collect_node_owner_endpoints!(
+                nodes, entries, section
+            )
             fgn |= found_fgn
             parameters |= found_parameters
         end
@@ -746,13 +724,13 @@ function validate_application(
                 )
             end
             if section == "graphs" &&
-               get(item, "factory", nothing) == "pipewireao.fgn-native"
+                get(item, "factory", nothing) == "pipewireao.fgn-native"
                 require(
                     mapping[item["node.name"]] == "fgn",
                     "FGN graph must map to its own host",
                 )
             elseif section == "sources" &&
-                   get(item, "factory", nothing) == "pipewireao.runtime-parameter"
+                get(item, "factory", nothing) == "pipewireao.runtime-parameter"
                 require(
                     mapping[item["node.name"]] == "parameters",
                     "runtime parameter source must map to the parameters owner",
@@ -762,7 +740,7 @@ function validate_application(
     end
     PipeWireAORTC.Analysis.validate_deployment(value, path, prefix)
     if haskey(value, "instrument")
-        asset=relative_asset(dirname(path), value["instrument"])
+        asset = relative_asset(dirname(path), value["instrument"])
         haskey(value["artifacts"], value["instrument"]) ||
             fail("instrument definition must be sealed")
         PipeWireAORTC.InstrumentDefinition.load(asset)
@@ -898,8 +876,9 @@ decode_fallback(error::SystemError, path, prefix) = rethrow()
 function decode_fallback(error, path, prefix)
     paths = installed_paths(prefix)
     env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"]))
-    out, _, code =
-        Common.run_checked([paths["parser"], "-N", "-R", path]; env, timeout = 10)
+    out, _, code = Common.run_checked(
+        [paths["parser"], "-N", "-R", path]; env, timeout = 10
+    )
     code == 0 || fail("installed SPA-JSON parser rejected $path")
     ncodeunits(out) <= MAX_CONFIG_BYTES ||
         fail("decoded deployment configuration exceeds 16 MiB")
@@ -973,8 +952,7 @@ validate_startup_timeout(value) =
     fail("startup-timeout-ms must be an integer in 1000:3600000")
 function validate_startup_timeout(value::Integer)
     require(
-        1000 <= value <= 3600000,
-        "startup-timeout-ms must be an integer in 1000:3600000",
+        1000 <= value <= 3600000, "startup-timeout-ms must be an integer in 1000:3600000"
     )
     return nothing
 end
@@ -1004,8 +982,7 @@ validate_manifest_dependencies(dependencies) =
     fail("application manifest must contain its dependency closure")
 function validate_manifest_dependencies(dependencies::AbstractDict)
     require(
-        !isempty(dependencies),
-        "application manifest must contain its dependency closure",
+        !isempty(dependencies), "application manifest must contain its dependency closure"
     )
     return nothing
 end
@@ -1059,10 +1036,7 @@ manifest_dependency_names(required, name) = fail("invalid dependency list for $n
 validate_manifest_candidates(candidates, required, dependency, name) =
     fail("application manifest has an ambiguous dependency of $name")
 function validate_manifest_candidates(
-    candidates::AbstractVector,
-    required,
-    dependency,
-    name,
+    candidates::AbstractVector, required, dependency, name
 )
     require(
         manifest_dependency_matches(candidates, required, dependency),
@@ -1073,8 +1047,7 @@ end
 
 manifest_dependency_matches(candidates, required::AbstractDict, dependency) =
     count(
-        candidate -> matches_manifest_uuid(candidate, required[dependency]),
-        candidates,
+        candidate -> matches_manifest_uuid(candidate, required[dependency]), candidates
     ) == 1
 manifest_dependency_matches(candidates, required::AbstractVector, dependency) =
     length(candidates) == 1
@@ -1139,7 +1112,7 @@ validate_auxiliary_sources(auxiliary, source_role) = fail(
 )
 function validate_auxiliary_sources(auxiliary::AbstractVector, source_role)
     require(
-        length(auxiliary) <= MAX_EXTERNAL_OWNERS-1 &&
+        length(auxiliary) <= MAX_EXTERNAL_OWNERS - 1 &&
             all(valid_source_role, auxiliary) &&
             length(unique(auxiliary)) == length(auxiliary) &&
             !(source_role in auxiliary) &&
@@ -1184,7 +1157,7 @@ validate_detector_observation(value::Bool) = nothing
 validate_detector_observation(value) = fail("detector-observation must be a Boolean")
 
 validate_client_roles(clients, client_roles) = fail(
-    "each owned process and optional analysis require an explicit client configuration",
+    "each owned process and optional analysis require an explicit client configuration"
 )
 function validate_client_roles(clients::AbstractDict, client_roles)
     require(
@@ -1241,32 +1214,23 @@ collect_core_queue_properties!(nodes, properties::AbstractDict) =
     collect_core_node!(nodes, get(properties, "node.name", nothing))
 
 validate_external_owner!(
-    owner,
-    source_role,
-    auxiliary,
-    roles,
-    markers;
-    legacy_export_input,
+    owner, source_role, auxiliary, roles, markers; legacy_export_input
 ) = fail("external owner fields do not match the deployment contract")
 function validate_external_owner!(
-    owner::AbstractDict,
-    source_role,
-    auxiliary,
-    roles,
-    markers;
-    legacy_export_input,
+    owner::AbstractDict, source_role, auxiliary, roles, markers; legacy_export_input
 )
     ordinary = !uses_heart_protocol(owner) && !uses_acquisition_protocol(owner)
     require(
         !ordinary || uses_bootstrap_protocol(owner) || legacy_export_input,
         "ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts",
     )
-    fields =
-        !ordinary ?
-        Set(["role", "argv", "environment", "control-protocol", "control-node"]) :
-        uses_bootstrap_protocol(owner) ?
-        Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"]) :
+    fields = if !ordinary
+        Set(["role", "argv", "environment", "control-protocol", "control-node"])
+    elseif uses_bootstrap_protocol(owner)
+        Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"])
+    else
         Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+    end
     if uses_bootstrap_protocol(owner)
         node = get(owner, "bootstrap-node", nothing)
         require(
@@ -1297,8 +1261,7 @@ function validate_external_owner!(
         )
         node = get(owner, "control-node", nothing)
         require(
-            valid_owner_node_name(node),
-            "native HEART requires a bounded exact node name",
+            valid_owner_node_name(node), "native HEART requires a bounded exact node name"
         )
     end
     if source_role !== nothing && (
@@ -1372,12 +1335,7 @@ end
 validate_session_role!(controlled, required, processing, graphs, entries, role) =
     fail("session $role must be a list")
 function validate_session_role!(
-    controlled,
-    required,
-    processing,
-    graphs,
-    entries::AbstractVector,
-    role,
+    controlled, required, processing, graphs, entries::AbstractVector, role
 )
     for entry in entries
         validate_session_node!(controlled, required, processing, graphs, entry, role)
@@ -1387,12 +1345,7 @@ end
 validate_session_node!(controlled, required, processing, graphs, entry, role) =
     fail("session $role entry must be a mapping")
 function validate_session_node!(
-    controlled,
-    required,
-    processing,
-    graphs,
-    entry::AbstractDict,
-    role,
+    controlled, required, processing, graphs, entry::AbstractDict, role
 )
     name = get(entry, "node.name", nothing)
     validate_session_node_name(name, controlled)
@@ -1428,20 +1381,10 @@ function validate_session_node!(
 end
 
 validate_execution_group_memberships!(
-    names,
-    membership,
-    groups,
-    graphs,
-    processing,
-    controlled,
+    names, membership, groups, graphs, processing, controlled
 ) = fail("execution-groups must be a list")
 function validate_execution_group_memberships!(
-    names,
-    membership,
-    groups::AbstractVector,
-    graphs,
-    processing,
-    controlled,
+    names, membership, groups::AbstractVector, graphs, processing, controlled
 )
     require(
         !isempty(graphs) == !isempty(groups),
@@ -1455,11 +1398,7 @@ end
 validate_execution_group!(names, membership, group, processing, controlled) =
     fail("execution group must be a mapping")
 function validate_execution_group!(
-    names,
-    membership,
-    group::AbstractDict,
-    processing,
-    controlled,
+    names, membership, group::AbstractDict, processing, controlled
 )
     name = get(group, "name", nothing)
     validate_execution_group_name(name, names)

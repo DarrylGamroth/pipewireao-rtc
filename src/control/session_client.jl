@@ -32,7 +32,7 @@ end
 
 function _fresh_session_status(record::Discovery.SessionRecord, client, completion)
     completion.header.operation == UInt32(3) && completion.header.result == 0 || throw(
-        ArgumentError("session selection requires a successful fresh Status completion"),
+        ArgumentError("session selection requires a successful fresh Status completion")
     )
     state = lifecycle(completion)
     return with_thread_loop_lock(client.loop) do _
@@ -58,14 +58,10 @@ select_session(entry::Discovery.DiscoveryEntry; kwargs...) =
 
 "Select an RTC session using only the direct native session profile."
 function select_direct_session(
-    entry::Discovery.DiscoveryEntry;
-    deadline::Float64,
-    check = ()->nothing,
+    entry::Discovery.DiscoveryEntry; deadline::Float64, check = () -> nothing
 )
     entry.record === nothing && return Discovery.DiscoveryEntry(
-        nothing,
-        Discovery.Malformed,
-        "record cannot be selected",
+        nothing, Discovery.Malformed, "record cannot be selected"
     )
     entry.verification === Discovery.Unverified || return entry
     record = entry.record
@@ -80,8 +76,9 @@ function select_direct_session(
             deadline,
             check,
         )
-        completion =
-            ControlClient.request!(client, Session.RunnerCommand(:status); deadline, check)
+        completion = ControlClient.request!(
+            client, Session.RunnerCommand(:status); deadline, check
+        )
         fresh = _fresh_session_status(record, client, completion)
         selected = Discovery.select_session(entry, _ -> fresh)
         return _retain(selected, client)
@@ -107,8 +104,7 @@ request!(connection::Connection, command::Runner.RunnerCommand; kwargs...) =
 
 "Render a direct typed reply with the selected session UUID, without supervisor fields."
 function render_direct(
-    connection::Connection,
-    reply::Union{Session.Completion,Session.Rejection},
+    connection::Connection, reply::Union{Session.Completion,Session.Rejection}
 )
     selected = connection.selected
     reply.header.endpoint_instance == selected.status.incarnation ||

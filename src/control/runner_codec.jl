@@ -41,9 +41,10 @@ export RunnerCommand,
     decode_completion,
     decode_rejection
 
-@enum Lifecycle::UInt32 Offline=1 Configuring=2 Ready=3 Running=4 Fault=5
-@enum Outcome::UInt32 Accepted=1 Observed=2 Requested=3 Completed=4 Active=5 Submitted=6
-@enum GroupState::UInt32 Stopped=1 GroupRunning=2
+@enum Lifecycle::UInt32 Offline = 1 Configuring = 2 Ready = 3 Running = 4 Fault = 5
+@enum Outcome::UInt32 Accepted = 1 Observed = 2 Requested = 3 Completed = 4 Active = 5 Submitted =
+    6
+@enum GroupState::UInt32 Stopped = 1 GroupRunning = 2
 
 """A scalar's SPA tag and exact bits. Float values use UInt32/UInt64 bits."""
 struct RunnerScalar{T<:Union{Bool,Int32,Int64,UInt32,UInt64,String}}
@@ -226,7 +227,7 @@ function _scalar_pod(value::RunnerScalar; finite::Bool)
         return _pod(SPA.Id(v::UInt32))
     elseif k === :string
         return _pod(
-            _string_check(v::String; empty = true, limit = finite ? 16 * 1024 : 64 * 1024),
+            _string_check(v::String; empty = true, limit = finite ? 16 * 1024 : 64 * 1024)
         )
     end
     return _pod(v)
@@ -299,8 +300,9 @@ function _preflight_request(command::RunnerCommand{O}, base::Int) where {O}
             throw(ArgumentError("invalid property count"))
         rows = 0
         for (name, value) in properties
-            row =
-                _pod_size(_checked_add(_string_size(name), _scalar_size(value), 16 * 1024))
+            row = _pod_size(
+                _checked_add(_string_size(name), _scalar_size(value), 16 * 1024)
+            )
             rows = _checked_add(rows, row, 16 * 1024)
         end
         total = _checked_add(total, _pod_size(rows), 16 * 1024)
@@ -492,9 +494,7 @@ function _decode_details(operation::UInt32, fields, state::Lifecycle)
             (_name(r[1]), _scalar_value(r[2]; finite = false))
         end
         return _result(
-            operation,
-            Observed,
-            (graph = _name(fields[1]), properties = properties),
+            operation, Observed, (graph = _name(fields[1]), properties = properties)
         )
     elseif operation == 5
         _arity(fields, 4)

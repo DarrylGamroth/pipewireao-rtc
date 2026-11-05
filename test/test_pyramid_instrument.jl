@@ -5,10 +5,7 @@ const C = PipeWireAORTC.Common
 const F = PipeWireAORTC.Artifacts.FITSIO
 
 function pyramid_sensor(;
-    detector = [242, 240],
-    pupil = [60, 60],
-    separation = [60, 60],
-    edge = [30, 30],
+    detector = [242, 240], pupil = [60, 60], separation = [60, 60], edge = [30, 30]
 )
     return Dict{String,Any}(
         "kind" => "pyramid",
@@ -34,25 +31,19 @@ end
         )
         @test isempty(readdir(directory))
         rectangular = pyramid_sensor(;
-            detector = [25, 38],
-            pupil = [7, 11],
-            separation = [5, 8],
-            edge = [6, 8],
+            detector = [25, 38], pupil = [7, 11], separation = [5, 8], edge = [6, 8]
         )
         @test IC._validate_sensor_declaration(rectangular, directory, "rectangular") ===
-              nothing
+            nothing
         @test IC.sensor_layout((; directory), rectangular).pupil_origins ==
-              ((6, 8), (18, 8), (6, 27), (18, 27))
+            ((6, 8), (18, 8), (6, 27), (18, 27))
         # The far pupil may end exactly at the detector boundary.
         tight = pyramid_sensor(;
-            detector = [2, 2],
-            pupil = [1, 1],
-            separation = [0, 0],
-            edge = [0, 0],
+            detector = [2, 2], pupil = [1, 1], separation = [0, 0], edge = [0, 0]
         )
         @test IC._validate_sensor_declaration(tight, directory, "tight") === nothing
         @test IC.sensor_layout((; directory), tight).pupil_origins ==
-              ((0, 0), (1, 0), (0, 1), (1, 1))
+            ((0, 0), (1, 0), (0, 1), (1, 1))
         large = pyramid_sensor(;
             detector = [typemax(Int), 2],
             pupil = [1, 1],
@@ -61,14 +52,11 @@ end
         )
         @test IC._validate_sensor_declaration(large, directory, "large") === nothing
         @test IC.sensor_layout((; directory), large).pupil_origins[4] ==
-              (typemax(Int) - 1, 1)
+            (typemax(Int) - 1, 1)
         sensor["acquisition"] = Dict("roi_origin" => [5, 9], "exposure_duration_s" => 0.001)
         @test IC._validate_sensor_declaration(sensor, directory, "pyramid") === nothing
         for key in (
-            "detector_shape",
-            "pupil_shape",
-            "pupil_separation_pixels",
-            "pupil_edge_pixels",
+            "detector_shape", "pupil_shape", "pupil_separation_pixels", "pupil_edge_pixels"
         )
             for value in (
                 Any[true, 1],
@@ -83,9 +71,7 @@ end
                 invalid = pyramid_sensor()
                 invalid[key] = value
                 @test_throws ArgumentError IC._validate_sensor_declaration(
-                    invalid,
-                    directory,
-                    "invalid",
+                    invalid, directory, "invalid"
                 )
             end
         end
@@ -93,9 +79,7 @@ end
             invalid = pyramid_sensor()
             invalid[key] = [0, 60]
             @test_throws ArgumentError IC._validate_sensor_declaration(
-                invalid,
-                directory,
-                "zero",
+                invalid, directory, "zero"
             )
         end
         for sensor in (
@@ -112,9 +96,7 @@ end
             ),
         )
             @test_throws ArgumentError IC._validate_sensor_declaration(
-                sensor,
-                directory,
-                "extent",
+                sensor, directory, "extent"
             )
         end
         for (key, value) in (
@@ -132,18 +114,14 @@ end
             invalid = pyramid_sensor()
             invalid[key] = value
             @test_throws ArgumentError IC._validate_sensor_declaration(
-                invalid,
-                directory,
-                "invalid",
+                invalid, directory, "invalid"
             )
         end
         for key in keys(pyramid_sensor())
             invalid = pyramid_sensor()
             delete!(invalid, key)
             @test_throws ArgumentError IC._validate_sensor_declaration(
-                invalid,
-                directory,
-                "missing",
+                invalid, directory, "missing"
             )
         end
     end
@@ -189,8 +167,7 @@ end
         instrument = (;
             document = Dict(
                 "deformable_mirrors" => Dict(),
-                "wavefront_sensors" =>
-                    Dict("sh" => sensor, "pyramid" => pyramid_sensor()),
+                "wavefront_sensors" => Dict("sh" => sensor, "pyramid" => pyramid_sensor()),
             )
         )
         graph = Dict("name" => "empty", "nodes" => [])
@@ -206,7 +183,7 @@ end
             graphs = Dict("production" => graph, "calibration" => graph),
         )
         @test IC.artifact_paths(declaration, Dict("profile" => "test")) ==
-              Set(["origins.fits"])
+            Set(["origins.fits"])
     end
     @test !any(
         id -> id.name in (

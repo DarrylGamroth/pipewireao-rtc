@@ -10,10 +10,7 @@ end
 (clock::ObserverClock)() = clock.now
 const OBS_FORMATS = (
     feedback = (
-        element_type = Float32,
-        shape = (4,),
-        layout = :row_major,
-        schema = OBS_SCHEMA,
+        element_type = Float32, shape = (4,), layout = :row_major, schema = OBS_SCHEMA
     ),
 )
 function observer_inputs(; tolerance = 0.1, action = :monitor_only)
@@ -25,8 +22,9 @@ function observer_inputs(; tolerance = 0.1, action = :monitor_only)
         max_gap_ns = 60,
         action,
     )
-    policy =
-        (; configuration, tolerance, schema = OBS_SCHEMA, shape = (4,), layout = :row_major)
+    policy = (;
+        configuration, tolerance, schema = OBS_SCHEMA, shape = (4,), layout = :row_major
+    )
     observer = CSO.Observer(OBS_FORMATS, (; feedback = policy); owner_instance = 701, clock)
     return observer, clock, policy
 end
@@ -57,33 +55,21 @@ end
     )
         formats = (feedback = merge(OBS_FORMATS.feedback, replacement),)
         @test_throws ArgumentError CSO.Observer(
-            formats,
-            (; feedback = policy);
-            owner_instance = 701,
-            clock,
+            formats, (; feedback = policy); owner_instance = 701, clock
         )
     end
     @test_throws ArgumentError CSO.Observer(
-        (;),
-        (; feedback = policy);
-        owner_instance = 701,
-        clock,
+        (;), (; feedback = policy); owner_instance = 701, clock
     )
     @test_throws ArgumentError CSO.Observer(OBS_FORMATS, (;); owner_instance = 701, clock)
     @test_throws ArgumentError CSO.Observer(
-        OBS_FORMATS,
-        (; feedback = policy);
-        owner_instance = 0,
-        clock,
+        OBS_FORMATS, (; feedback = policy); owner_instance = 0, clock
     )
     for shape in ((true,), (0,), (-1,), ("4",), (typemax(Int),), (2, 2))
         formats = (feedback = merge(OBS_FORMATS.feedback, (; shape)),)
         bad = merge(policy, (; shape))
         @test_throws ArgumentError CSO.Observer(
-            formats,
-            (; feedback = bad);
-            owner_instance = 701,
-            clock,
+            formats, (; feedback = bad); owner_instance = 701, clock
         )
     end
     large_shape = (PipeWireAORTC.Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32),)
@@ -164,7 +150,7 @@ end
     @atomic binding.published.version = UInt64(2)
     @test !isempty(CSO.property_info(observer))
     @test observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), true) isa
-          PipeWireAO.SPA.Props
+        PipeWireAO.SPA.Props
     frame!(observer, clock, 1, 1000, zeros(Float32, 4))
     # The control getter must never mutate the single-writer Supervisor.
     clock.now = 1061
@@ -217,7 +203,7 @@ end
     @test value.trip_sequence == trip.trip_sequence && value.trip_ns == trip.trip_ns
     @test value.action === trip.action
     @test CSO.rearm_status(observer) ==
-          (requested_token = 0, acknowledged_token = token, result = :refused)
+        (requested_token = 0, acknowledged_token = token, result = :refused)
     @test CSO.request_rearm!(observer, 701) == 0
 
     replacement, clock, _ = observer_inputs()
@@ -234,7 +220,7 @@ end
     # Replayed clear data is not a NEW successful sample.
     frame!(observer, clock, 3, 1150, zeros(Float32, 4))
     @test CSO.rearm_status(observer) ==
-          (requested_token = 0, acknowledged_token = token, result = :refused)
+        (requested_token = 0, acknowledged_token = token, result = :refused)
     @test only(CSO.snapshot(observer)).state === :Tripped
     frame!(observer, clock, 4, 1200, zeros(Float32, 4))
     @test only(CSO.snapshot(observer)).state === :Tripped # No automatic retry.
@@ -266,10 +252,7 @@ end
     _, clock, policy = observer_inputs()
     formats = (; left = OBS_FORMATS.feedback, right = OBS_FORMATS.feedback)
     observer = CSO.Observer(
-        formats,
-        (; left = policy, right = policy);
-        owner_instance = 701,
-        clock,
+        formats, (; left = policy, right = policy); owner_instance = 701, clock
     )
     high = fill(0.2f0, 4)
     clear = zeros(Float32, 4)
@@ -285,9 +268,7 @@ end
     token = CSO.request_rearm!(observer, 701)
     clock.now = 1150
     observer(
-        Val(:frame),
-        (; left = clear, right = high),
-        (; left = header(4), right = header(4)),
+        Val(:frame), (; left = clear, right = high), (; left = header(4), right = header(4))
     )
     @test CSO.rearm_status(observer).result === :refused
     @test all(s -> s.state === :Tripped, CSO.snapshot(observer))
@@ -325,7 +306,7 @@ end
     values = zeros(Float32, 4)
     seen_first = Threads.Atomic{Bool}(false)
     writer = Threads.@spawn begin
-        for sequence = UInt64(1):UInt64(20000)
+        for sequence in UInt64(1):UInt64(20000)
             clock.now = sequence + 1000
             observer(Val(:frame), (feedback = values,), (feedback = header(sequence),))
             if sequence == 1
@@ -371,10 +352,7 @@ end
         Float32[0, -0.0, nextfloat(0.0f0), -nextfloat(0.0f0)],
         Float32[prevfloat(0.125f0), 0.125, nextfloat(0.125f0), -0.125],
         Float32[
-            floatmax(Float32),
-            -floatmax(Float32),
-            floatmin(Float32),
-            -floatmin(Float32),
+            floatmax(Float32), -floatmax(Float32), floatmin(Float32), -floatmin(Float32)
         ],
         Float32[NaN, 0, 1, -1],
         Float32[Inf, 0, 1, -1],
@@ -386,8 +364,7 @@ end
         expected = scalar_feedback_oracle(values, tolerance)
         @test isequal(CSO.feedback_fraction(values, Val((4,)), tolerance), expected)
         @test isequal(
-            CSO.feedback_fraction(ShiftedFeedback(values), Val((4,)), tolerance),
-            expected,
+            CSO.feedback_fraction(ShiftedFeedback(values), Val((4,)), tolerance), expected
         )
         storage = repeat(values, inner = 2)
         @test isequal(

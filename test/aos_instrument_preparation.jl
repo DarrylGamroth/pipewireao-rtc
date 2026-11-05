@@ -61,8 +61,9 @@ function prepare_hil_system(settings::NamedTuple; target, execution)
         ),
     )
     graph = prepare_algorithm_graph(definition; target, execution)
-    actual =
-        prepare_graph_hil_boundary(graph; command_input = :command, frame_output = :frame)
+    actual = prepare_graph_hil_boundary(
+        graph; command_input = :command, frame_output = :frame
+    )
     boundary = Boundary(
         actual,
         graph,
@@ -104,9 +105,7 @@ end
 end
 
 function instrument_document(;
-    backend = "cpu",
-    package = "CountingInstrument",
-    settings = Dict(),
+    backend = "cpu", package = "CountingInstrument", settings = Dict()
 )
     return Dict{String,Any}(
         "version" => 2,
@@ -172,8 +171,9 @@ inputs:
     destination: "modal.coefficients"
 """,
         )
-        document =
-            instrument_document(settings = Dict{String,Any}("graph_path" => graph_path))
+        document = instrument_document(
+            settings = Dict{String,Any}("graph_path" => graph_path)
+        )
         path = joinpath(directory, "owner.conf")
         options = instrument_options(document, path, CountingInstrument)
         science = InstrumentOwner.prepare_science(options)
@@ -206,13 +206,13 @@ inputs:
             invalid = deepcopy(document)
             invalid["plant"]["settings"]["fault"] = fault
             @test_throws ArgumentError InstrumentOwner.prepare_science(
-                instrument_options(invalid, path, CountingInstrument),
+                instrument_options(invalid, path, CountingInstrument)
             )
         end
         invalid = deepcopy(document)
         invalid["plant"]["settings"]["period_s"] = 0.003
         @test_throws ArgumentError InstrumentOwner.prepare_science(
-            instrument_options(invalid, path, CountingInstrument),
+            instrument_options(invalid, path, CountingInstrument)
         )
         for (field, value) in (
             ("command_count", 4),
@@ -223,7 +223,7 @@ inputs:
             invalid = deepcopy(document)
             invalid[field] = value
             @test_throws Exception InstrumentOwner.prepare_science(
-                instrument_options(invalid, path, CountingInstrument),
+                instrument_options(invalid, path, CountingInstrument)
             )
         end
     end
@@ -234,7 +234,7 @@ end
         write(
             joinpath(directory, "mirror-description.json"),
             PipeWireAORTC.InstrumentDefinition.mirror_description_json(
-                ENV["REVOLT_CLASSIC_MIRROR_DESCRIPTION"],
+                ENV["REVOLT_CLASSIC_MIRROR_DESCRIPTION"]
             ),
         )
         document = instrument_document(
@@ -242,7 +242,7 @@ end
             package = "REVOLTClassicSim",
             settings = Dict(
                 "profile" => "grid_gaussian",
-                "mirror_description"=>"mirror-description.json",
+                "mirror_description" => "mirror-description.json",
             ),
         )
         document["command_input"] = "pdm_command"
@@ -251,16 +251,12 @@ end
         document["frame_shape"] = [352, 352]
         document["calibration_identity"] = "declared-classic-startup-calibration"
         options = instrument_options(
-            document,
-            joinpath(directory, "owner.conf"),
-            REVOLTClassicSim,
+            document, joinpath(directory, "owner.conf"), REVOLTClassicSim
         )
         options = merge(
             options,
             (;
-                configuration_sha256 = PipeWireAORTC.Common.sha256_file(
-                    options.config_path,
-                )
+                configuration_sha256 = PipeWireAORTC.Common.sha256_file(options.config_path)
             ),
         )
         science = InstrumentOwner.prepare_science(options)
@@ -281,20 +277,21 @@ end
         @test properties isa Dict{String,String}
         @test properties["aos.simulation.package"] == "REVOLTClassicSim"
         @test properties["aos.simulation.package-version"] ==
-              string(pkgversion(REVOLTClassicSim))
+            string(pkgversion(REVOLTClassicSim))
         @test properties["aos.simulation.profile"] == "grid_gaussian"
         @test properties["aos.simulation.backend"] == string(InstrumentBackend)
         @test properties["aos.simulation.device"] == "0"
         @test properties["aos.simulation.model-period-ns"] == "2000000"
         @test properties["aos.simulation.exposure-ns"] == "1896000"
         @test properties["aos.simulation.configuration-sha256"] ==
-              options.configuration_sha256
+            options.configuration_sha256
         @test properties["aos.simulation.calibration-identity"] ==
-              "declared-classic-startup-calibration"
+            "declared-classic-startup-calibration"
         @test properties["aos.simulation.atmosphere-rng-seed"] == "1"
         @test properties["aos.simulation.detector-rng-seed"] == "0"
-        no_profile =
-            merge(options, (; plant = merge(options.plant, (; settings = NamedTuple()))))
+        no_profile = merge(
+            options, (; plant = merge(options.plant, (; settings = NamedTuple())))
+        )
         @test !haskey(
             InstrumentExtension.simulation_properties(no_profile, science),
             "aos.simulation.profile",
@@ -315,11 +312,11 @@ end
             AdaptiveOpticsSim.AlgorithmGraphs.MultiLayerAtmosphereOPDNode{Float32},
             atmosphere.config,
         )
-        ambiguous =
-            algorithm_graph((atmosphere, second_atmosphere); name = :multiple_atmospheres)
+        ambiguous = algorithm_graph(
+            (atmosphere, second_atmosphere); name = :multiple_atmospheres
+        )
         @test InstrumentExtension.single_seed(
-            ambiguous,
-            InstrumentExtension.atmosphere_seed,
+            ambiguous, InstrumentExtension.atmosphere_seed
         ) === nothing
         detector = only(
             filter(
@@ -334,8 +331,7 @@ end
         )
         ambiguous = algorithm_graph((detector, second_detector); name = :multiple_detectors)
         @test InstrumentExtension.single_seed(
-            ambiguous,
-            InstrumentExtension.detector_seed,
+            ambiguous, InstrumentExtension.detector_seed
         ) === nothing
         @test model_time_sequence(science.driver) == 0
         @test graph_step_sequence(science.graph) == 0

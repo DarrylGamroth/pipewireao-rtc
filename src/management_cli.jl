@@ -87,9 +87,7 @@ function request_response(request::AbstractDict, line)
             id = pop!(request, "id", nothing)
             id = rebuild_request_id(id)
             result = Base.invokelatest(
-                SimulatorConfiguration.request_result,
-                request;
-                request_id = id,
+                SimulatorConfiguration.request_result, request; request_id = id
             )
             response = Dict("ok" => true, "result" => result)
             ncodeunits(JSON.json(response)) <= SimulatorConfiguration.MAX_REPLY_BYTES ||
@@ -211,8 +209,7 @@ function unit_texts(
     WantedBy=sockets.target
     """
     return Dict(
-        "pipewireao-management.service" => service,
-        "pipewireao-management.socket" => socket,
+        "pipewireao-management.service" => service, "pipewireao-management.socket" => socket
     )
 end
 
@@ -226,9 +223,7 @@ function install(
     prefix::AbstractString;
     project = active_project(),
     unit_directory = joinpath(
-        get(ENV, "XDG_CONFIG_HOME", joinpath(homedir(), ".config")),
-        "systemd",
-        "user",
+        get(ENV, "XDG_CONFIG_HOME", joinpath(homedir(), ".config")), "systemd", "user"
     ),
     configuration_root = ConfigurationStore.default_root(),
     root = state_root(),
@@ -245,7 +240,7 @@ function install(
     paths = Dict(name => joinpath(directory, name) for name in keys(units))
     any(ispath, values(paths)) && throw(
         ArgumentError(
-            "management units already exist; explicit owner replacement is required",
+            "management units already exist; explicit owner replacement is required"
         ),
     )
     mkpath(directory; mode = 0o700)

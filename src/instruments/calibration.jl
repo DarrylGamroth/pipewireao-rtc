@@ -14,21 +14,20 @@ calibration_context(document, directory) =
 
 function _calibration_context(document::AbstractDict, directory, remaining)
     if get(document, "kind", nothing) == "fits"
-        required =
-            ("kind", "path", "hdu", "axes", "shape", "type", "sha256", "storage_order")
+        required = (
+            "kind", "path", "hdu", "axes", "shape", "type", "sha256", "storage_order"
+        )
         fields(document, required, required, "calibration FITS reference")
         document["storage_order"] == "row-major" ||
             throw(ArgumentError("calibration FITS storage_order must be row-major"))
         hash = document["sha256"]
         valid_sha256(hash) || throw(
             ArgumentError(
-                "calibration FITS sha256 must be 64 lowercase hexadecimal digits",
+                "calibration FITS sha256 must be 64 lowercase hexadecimal digits"
             ),
         )
         T = get(
-            Dict(string(T) => T for T in Artifacts.TARGET_TYPES),
-            document["type"],
-            nothing,
+            Dict(string(T) => T for T in Artifacts.TARGET_TYPES), document["type"], nothing
         )
         T === nothing && throw(ArgumentError("unsupported calibration FITS type"))
         calibration_axes(document["axes"])
@@ -42,7 +41,7 @@ function _calibration_context(document::AbstractDict, directory, remaining)
         bytes <= remaining[] ||
             throw(ArgumentError("calibration FITS arrays together exceed 256 MiB"))
         remaining[] -= bytes
-        original = Artifacts.snapshot(source.path; check = ()->nothing)
+        original = Artifacts.snapshot(source.path; check = () -> nothing)
         bytes2hex(SHA.sha256(original)) == hash ||
             throw(ArgumentError("calibration FITS sha256 differs from the file snapshot"))
         prepared = Artifacts.prepare_snapshot(source, T, shape, original)

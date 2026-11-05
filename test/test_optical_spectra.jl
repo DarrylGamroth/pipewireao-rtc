@@ -101,7 +101,7 @@ end
         for name in ("scc", "llowfs")
             fields = spectra["properties"][name]["properties"]
             @test Set(keys(fields)) ==
-                  Set(("wavelength_um", "fractional_bandwidth", "samples", "filter"))
+                Set(("wavelength_um", "fractional_bandwidth", "samples", "filter"))
             @test fields["filter"]["enum"] == (name == "scc" ? ["h_band"] : ["none"])
         end
         edited = IC.settings(
@@ -122,8 +122,7 @@ end
         for geometry in ("resolution", "pupil_resolution", "temperature_c")
             @test schema["properties"][geometry]["readOnly"]
             @test_throws ArgumentError IC.settings(
-                declaration,
-                Dict(geometry => configured[geometry] + 1),
+                declaration, Dict(geometry => configured[geometry] + 1)
             )
         end
         for mutate! in (
@@ -171,8 +170,7 @@ end
         # Static baked graphs lack the source recipe required for re-preparation.
         @test declaration.document["settings_schema"]["properties"]["spectra"]["readOnly"]
         @test_throws ArgumentError IC.settings(
-            declaration,
-            Dict("spectra" => Dict("scc" => Dict("wavelength_um" => 1.6))),
+            declaration, Dict("spectra" => Dict("scc" => Dict("wavelength_um" => 1.6)))
         )
         descriptor = IC.physical_definition(declaration.instrument)
         @test descriptor.optical_filters.h_band.transmission == (0.0, 0.8, 0.0)
@@ -202,8 +200,9 @@ end
                 port in ("transmitted", "reflected")
             ),
         )
-        simulation["defaults"]["masks"] =
-            Dict("lyot" => Dict("kind" => "fits", "mask" => "measured"))
+        simulation["defaults"]["masks"] = Dict(
+            "lyot" => Dict("kind" => "fits", "mask" => "measured")
+        )
         paths = keys(physical["optical_paths"])
         @test length(IC.selected_optical_mask_responses(simulation, physical, paths)) == 2
         for (key, value) in (("wavelength_um", 1.6), ("fractional_bandwidth", 0.1))
@@ -212,25 +211,20 @@ end
             configured["spectra"]["llowfs"]["samples"] =
                 key == "fractional_bandwidth" ? 3 : 1
             @test_throws ArgumentError IC.selected_optical_mask_responses(
-                simulation,
-                physical,
-                paths,
-                configured,
+                simulation, physical, paths, configured
             )
         end
         # Only the selected path's Lyot port must match; other ports are unused.
         physical["optical_masks"]["measured"]["reflected"]["wavelength_m"] = 1.6e-6
         @test length(IC.selected_optical_mask_responses(simulation, physical, ("scc",))) ==
-              1
-        simulation["defaults"]["masks"] =
-            Dict("apodizer" => Dict("kind" => "fits", "mask" => "measured"))
+            1
+        simulation["defaults"]["masks"] = Dict(
+            "apodizer" => Dict("kind" => "fits", "mask" => "measured")
+        )
         configured = deepcopy(simulation["defaults"])
         configured["spectra"]["llowfs"]["wavelength_um"] = 1.6
         @test_throws ArgumentError IC.selected_optical_mask_responses(
-            simulation,
-            physical,
-            paths,
-            configured,
+            simulation, physical, paths, configured
         )
     end
 end
@@ -241,8 +235,9 @@ end
         write_external_optical_documents(directory, physical, authored)
         _, execution = optical_spectra_documents(directory; source = false)
         execution["instrument"] = "../instrument.yaml"
-        execution["optical_model"] =
-            Dict("format"=>"zemax", "source"=>"../simulation/definition.yaml")
+        execution["optical_model"] = Dict(
+            "format" => "zemax", "source" => "../simulation/definition.yaml"
+        )
         mkpath(joinpath(directory, "generated"))
         path = joinpath(directory, "generated", "simulation.yaml")
         save(document) = PipeWireAORTC.Common.write_yaml(path, document)
@@ -250,20 +245,15 @@ end
         declaration = IC.load_simulation(path)
         configured = IC.settings(declaration)
         resolved = IC.resolve_graph_document(
-            declaration.graphs["scc"],
-            declaration,
-            configured,
-            "scc",
+            declaration.graphs["scc"], declaration, configured, "scc"
         )
         @test only(resolved["nodes"])["config"]["resolution"] == 8
         @test only(resolved["nodes"])["config"]["wavelength_um"] == 1.55
         @test_throws ArgumentError IC.graph_document(
-            declaration,
-            configured;
-            simulation_graph = "scc",
+            declaration, configured; simulation_graph = "scc"
         )
         @test !any(
-            id->id.name in (
+            id -> id.name in (
                 "AdaptiveOpticsSim",
                 "AdaptiveOpticsSimPipeWireHIL",
                 "Proper",
@@ -274,17 +264,20 @@ end
         )
         @test !declaration.document["settings_schema"]["properties"]["spectra"]["readOnly"]
         @test IC.settings(
-            declaration,
-            Dict("spectra"=>Dict("scc"=>Dict("wavelength_um"=>1.6))),
-        )["spectra"]["scc"]["wavelength_um"]==1.6
+            declaration, Dict("spectra" => Dict("scc" => Dict("wavelength_um" => 1.6)))
+        )["spectra"]["scc"]["wavelength_um"] == 1.6
         for model in (
-            Dict("format"=>"other", "source"=>"../simulation/definition.yaml"),
-            Dict("format"=>"zemax", "source"=>"../simulation/definition.yaml", "extra"=>1),
+            Dict("format" => "other", "source" => "../simulation/definition.yaml"),
             Dict(
-                "format"=>"zemax",
-                "source"=>joinpath(directory, "simulation", "definition.yaml"),
+                "format" => "zemax",
+                "source" => "../simulation/definition.yaml",
+                "extra" => 1,
             ),
-            Dict("format"=>"zemax", "source"=>"../instrument.yaml"),
+            Dict(
+                "format" => "zemax",
+                "source" => joinpath(directory, "simulation", "definition.yaml"),
+            ),
+            Dict("format" => "zemax", "source" => "../instrument.yaml"),
         )
             invalid = deepcopy(execution)
             invalid["optical_model"] = model
@@ -294,8 +287,7 @@ end
         save(execution)
         delete!(authored, "preparation")
         PipeWireAORTC.Common.write_yaml(
-            joinpath(directory, "simulation", "definition.yaml"),
-            authored,
+            joinpath(directory, "simulation", "definition.yaml"), authored
         )
         @test_throws ArgumentError IC.load_simulation(path)
     end

@@ -27,7 +27,7 @@ readback(serial, requested, active, closed; token = UInt64(17)) =
     )
         @test R.controller_scope(o) === R.SingleController()
         @test R.generations_match(o) && R.all_closed(o) && !R.all_open(o)
-        sm = R.Coordinator(Int64(801); clock = ()->UInt64(100))
+        sm = R.Coordinator(Int64(801); clock = () -> UInt64(100))
         R.qualify!(sm, o)
         @test R.state(sm) === :Closed && sm.serial == 1
     end
@@ -46,7 +46,7 @@ readback(serial, requested, active, closed; token = UInt64(17)) =
         @test !R.generations_match(o) && !R.all_open(o) && !R.all_closed(o)
     end
     malformed = R.LoopObservation{Any,Any}(801, 0, 1, UInt64(3), Int64(3), true)
-    sm = R.Coordinator(Int64(801); clock = ()->UInt64(100))
+    sm = R.Coordinator(Int64(801); clock = () -> UInt64(100))
     R.qualify!(sm, malformed)
     @test R.state(sm) === :Unverified && sm.failure === :loop_scope_mismatch
     @test sm.serial == 0
@@ -79,7 +79,7 @@ end
 end
 
 @testset "Accessor-backed observations drive the full recovery protocol" begin
-    sm = R.Coordinator(Int64(801); clock = ()->UInt64(100))
+    sm = R.Coordinator(Int64(801); clock = () -> UInt64(100))
     R.qualify!(sm, readback(1, UInt64(3), UInt64(3), true; token = UInt64(0)))
     stage = R.request_protection!(sm, Int64(801), UInt64(17))
     R.recovery_staged!(sm, stage, UInt64(11); loop_generation = UInt64(4))
@@ -92,15 +92,7 @@ end
     close = R.observe_release!(
         sm,
         R.ReleaseObservation(
-            Int64(801),
-            UInt64(17),
-            UInt64(5),
-            UInt64(11),
-            true,
-            false,
-            true,
-            true,
-            true,
+            Int64(801), UInt64(17), UInt64(5), UInt64(11), true, false, true, true, true
         ),
     )
     R.staged!(sm, close, UInt64(5))
@@ -109,14 +101,14 @@ end
 end
 
 @testset "Malformed loop evidence and release preserve distinct serial boundaries" begin
-    sm = R.Coordinator(Int64(801); clock = ()->UInt64(100))
+    sm = R.Coordinator(Int64(801); clock = () -> UInt64(100))
     R.qualify!(sm, readback(1, UInt64(3), UInt64(3), true; token = UInt64(0)))
     stage = R.request_protection!(sm, Int64(801), UInt64(17))
     R.recovery_staged!(sm, stage, UInt64(11); loop_generation = UInt64(4))
     R.observe_loop!(sm, readback(2, UInt64(4), Int64(4), false))
     @test sm.failure === :loop_scope_mismatch && sm.serial == 1
 
-    sm = R.Coordinator(Int64(801); clock = ()->UInt64(100))
+    sm = R.Coordinator(Int64(801); clock = () -> UInt64(100))
     R.qualify!(sm, readback(1, UInt64(3), UInt64(3), true; token = UInt64(0)))
     stage = R.request_protection!(sm, Int64(801), UInt64(17))
     R.recovery_staged!(sm, stage, UInt64(11); loop_generation = UInt64(4))
@@ -127,15 +119,7 @@ end
     R.observe_release!(
         sm,
         R.ReleaseObservation(
-            Int64(801),
-            UInt64(17),
-            UInt64(5),
-            UInt64(11),
-            true,
-            (false,),
-            true,
-            true,
-            true,
+            Int64(801), UInt64(17), UInt64(5), UInt64(11), true, (false,), true, true, true
         ),
     )
     @test sm.failure === :loop_scope_mismatch && sm.serial == 5

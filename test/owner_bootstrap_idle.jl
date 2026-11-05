@@ -8,7 +8,7 @@ const P = PipeWireAORTC.OwnerBootstrapCodec
 import ThreadPinning
 function idle_window()
     before = Base.gc_num()
-    @ccall gc_safe=true usleep(Cuint(500_000)::Cuint)::Cint
+    @ccall gc_safe = true usleep(Cuint(500_000)::Cuint)::Cint
     after = Base.gc_num()
     Base.GC_Diff(after, before)
 end
@@ -20,12 +20,14 @@ function measured(remote, directory, daemon)
     @test baseline.allocd == 0
     println("BASELINE bytes=", baseline.allocd, " pool=", baseline.poolalloc)
     runtime = R.Runtime(remote, "review.bootstrap", Int64(91))
-    client =
-        B.connect(remote, "review.bootstrap", getpid(), 91; deadline = C.monotonic()+20)
+    client = B.connect(
+        remote, "review.bootstrap", getpid(), 91; deadline = C.monotonic() + 20
+    )
     try
         R.prepared!(runtime)
-        request =
-            ThreadPinning.@spawnat 2 B.connect_owner!(client; deadline = C.monotonic()+20)
+        request = ThreadPinning.@spawnat 2 B.connect_owner!(
+            client; deadline = C.monotonic() + 20
+        )
         ticket = R.take_connect!(runtime)
         R.connected!(runtime, ticket)
         R.await_connected!(runtime, ticket)
@@ -38,11 +40,12 @@ function measured(remote, directory, daemon)
         # Exclude monitor duty cycles to attribute the registry work directly.
         gate = pause_bootstrap_monitor(runtime)
         try
-            for _ = 1:5
+            for _ in 1:5
                 PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
             end
-            poll_bytes =
-                @allocated PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
+            poll_bytes = @allocated PipeWireAORTC.ControlEndpoint.poll!(
+                runtime.transport.endpoint
+            )
             # Poll/take cannot erase a wake produced after the consumed hint.
             runtime.transport.wake[] = true
             R.poll!(runtime.transport)
@@ -50,7 +53,7 @@ function measured(remote, directory, daemon)
             @test R.take!(runtime.transport) === nothing
             @test runtime.transport.wake[]
             @test R._poll_ready!(runtime.transport)
-            for _ = 1:5
+            for _ in 1:5
                 R._poll_ready!(runtime.transport)
                 R._facts(runtime)
             end

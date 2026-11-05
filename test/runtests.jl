@@ -2,28 +2,29 @@ using Test, PipeWireAORTC
 
 Base.include(Module(:MediaSessionMachineTests), joinpath(@__DIR__, "test_media_session.jl"))
 Base.include(
-    Module(:MediaSessionControlTests),
-    joinpath(@__DIR__, "media_session_controls.jl"),
+    Module(:MediaSessionControlTests), joinpath(@__DIR__, "media_session_controls.jl")
 )
 for selector in ("ingress", "transport", "effects", "objects")
-    Base.include(Module(gensym(:MediaSessionTests)),
-        joinpath(@__DIR__, "media_session_" * selector * ".jl"))
+    Base.include(
+        Module(gensym(:MediaSessionTests)),
+        joinpath(@__DIR__, "media_session_" * selector * ".jl"),
+    )
 end
 @testset "Journal owns its SQLite worker" begin
     project = dirname(Base.active_project())
     selector = joinpath(@__DIR__, "media_session_journal.jl")
-    @test success(`$(Base.julia_cmd()) --startup-file=no --threads=2,1 --project=$project $selector`)
+    @test success(
+        `$(Base.julia_cmd()) --startup-file=no --threads=2,1 --project=$project $selector`
+    )
 end
 
 Base.include(
-    Module(:ControlTypeDispatchTests),
-    joinpath(@__DIR__, "control_type_dispatch.jl"),
+    Module(:ControlTypeDispatchTests), joinpath(@__DIR__, "control_type_dispatch.jl")
 )
 
 include("test_recovery_observations.jl")
 Base.include(
-    Module(:CalibrationRecipeTests),
-    joinpath(@__DIR__, "test_calibration_recipe.jl"),
+    Module(:CalibrationRecipeTests), joinpath(@__DIR__, "test_calibration_recipe.jl")
 )
 
 for name in (
@@ -58,13 +59,11 @@ Base.include(
     joinpath(@__DIR__, "test_correction_recovery_controllers.jl"),
 )
 Base.include(
-    Module(:QueueMetadataProfilesTests),
-    joinpath(@__DIR__, "queue_metadata_profiles.jl"),
+    Module(:QueueMetadataProfilesTests), joinpath(@__DIR__, "queue_metadata_profiles.jl")
 )
 include("test_session_discovery.jl")
 Base.include(
-    Module(:ExternalPupilOwnerTests),
-    joinpath(@__DIR__, "test_external_pupil_owner.jl"),
+    Module(:ExternalPupilOwnerTests), joinpath(@__DIR__, "test_external_pupil_owner.jl")
 )
 Base.include(
     Module(:ApplicationCompositionTests),
@@ -72,8 +71,7 @@ Base.include(
 )
 Base.include(Module(:ExecutionGroupTests), joinpath(@__DIR__, "test_execution_groups.jl"))
 Base.include(
-    Module(:CanonicalMetadataTests),
-    joinpath(@__DIR__, "test_canonical_metadata.jl"),
+    Module(:CanonicalMetadataTests), joinpath(@__DIR__, "test_canonical_metadata.jl")
 )
 Base.include(Module(:CAL2CaptureTests), joinpath(@__DIR__, "test_cal2_capture.jl"))
 Base.include(
@@ -99,12 +97,10 @@ include("test_session_configuration.jl")
 include("test_instrument_definition.jl")
 Base.include(Module(:AnalysisCaptureTests), joinpath(@__DIR__, "test_analysis_capture.jl"))
 Base.include(
-    Module(:SimulationBindingFilesTests),
-    joinpath(@__DIR__, "simulation_binding_files.jl"),
+    Module(:SimulationBindingFilesTests), joinpath(@__DIR__, "simulation_binding_files.jl")
 )
 Base.include(
-    Module(:ClockedPlaneContractTests),
-    joinpath(@__DIR__, "test_clocked_plane_contract.jl"),
+    Module(:ClockedPlaneContractTests), joinpath(@__DIR__, "test_clocked_plane_contract.jl")
 )
 
 for name in (
@@ -159,7 +155,6 @@ for name in (
     "graph_configuration",
 )
     Base.include(
-        Module(gensym(:InstrumentSuite)),
-        joinpath(@__DIR__, "test_" * name * ".jl"),
+        Module(gensym(:InstrumentSuite)), joinpath(@__DIR__, "test_" * name * ".jl")
     )
 end

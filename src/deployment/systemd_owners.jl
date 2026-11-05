@@ -413,9 +413,8 @@ function stop_result(service::Service, grace::Real)
     values = properties(service.unit)
     if isempty(service.invocation)
         if quiescent_unit(service.unit) &&
-           !any(
-            pair -> pair.second == service.unit,
-            listed_jobs(service.coordinator.invocation),
+            !any(
+            pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation)
         )
             return :stopped
         end
@@ -432,15 +431,15 @@ function stop_result(service::Service, grace::Real)
         )
     if quiet
         if !old_process_exists(service.main_pid, service.start_ticks) &&
-           cgroup_empty(service.cgroup) &&
-           !any(
-               pair -> pair.second == service.unit,
-               listed_jobs(service.coordinator.invocation),
-           )
+            cgroup_empty(service.cgroup) &&
+            !any(
+                pair -> pair.second == service.unit,
+                listed_jobs(service.coordinator.invocation),
+            )
             return :stopped
         end
         fail(
-            "owner unit is inactive while its retained process, cgroup or start job remains",
+            "owner unit is inactive while its retained process, cgroup or start job remains"
         )
     end
     same_incarnation(service, values) ||
@@ -564,8 +563,8 @@ function cleanup_unit(unit; deadline = nothing)
     values["LoadState"] == "not-found" && return nothing
     group = values["ControlGroup"]
     if values["ActiveState"] in ("inactive", "failed") &&
-       isempty(group) &&
-       values["MainPID"] == "0"
+        isempty(group) &&
+        values["MainPID"] == "0"
         return nothing
     end
     if isempty(group) && values["MainPID"] == "0"

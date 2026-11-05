@@ -58,8 +58,7 @@ operation_id(::AdmitCommand) = UInt32(16)
 encode_request(header::Envelope.RequestHeader, command::RunnerCommand) =
     Runner.encode_request(header, command)
 function encode_request(
-    header::Envelope.RequestHeader,
-    command::Union{WarmupCommand,AdmitCommand},
+    header::Envelope.RequestHeader, command::Union{WarmupCommand,AdmitCommand}
 )
     header.operation == operation_id(command) ||
         throw(ArgumentError("administrative request operation differs from command"))

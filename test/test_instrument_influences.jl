@@ -38,7 +38,7 @@ end
     mktempdir() do directory
         path = joinpath(directory, "influences.fits")
         cube = Array{Float32}(undef, 3, 3, 2)
-        for plane = 1:2, y = 1:3, x = 1:3
+        for plane in 1:2, y in 1:3, x in 1:3
             cube[x, y, plane] = Float32(plane * 10 * (x + 3y))
         end
         FITS(path, "w"; extendedparser = false) do file
@@ -46,10 +46,7 @@ end
         end
         spec = merge(spec, (; path, sha256 = bytes2hex(sha256(read(path)))))
         result = IC._load_influence_functions(
-            merge(spec, (; path)),
-            description,
-            2,
-            (; actuator_pitch_pupil_radius = 1.0),
+            merge(spec, (; path)), description, 2, (; actuator_pitch_pupil_radius = 1.0)
         )
         @test size(result.modes) == (4, 2)
         @test result.modes[1, 2] == 2.0f0 * 10.0f0 * (2.5f0 + 3.0f0 * 1.5f0)
@@ -82,10 +79,7 @@ end
             )...
         )
         @test_throws ArgumentError IC._load_influence_functions(
-            old_spec,
-            description,
-            2,
-            (; actuator_pitch_pupil_radius = 1.0),
+            old_spec, description, 2, (; actuator_pitch_pupil_radius = 1.0)
         )
 
         for invalid in (
@@ -137,10 +131,7 @@ end
             write(file, 2 .* cube)
         end
         @test_throws r"SHA-256" IC._load_influence_functions(
-            spec,
-            description,
-            2,
-            (; actuator_pitch_pupil_radius = 1.0),
+            spec, description, 2, (; actuator_pitch_pupil_radius = 1.0)
         )
     end
 end
@@ -166,10 +157,7 @@ end
             (; actuator_pitch_pupil_radius = 1.0, offset_actuators = (0.73, 0.37)),
         )
             @test_throws r"nonidentity pupil registration" IC._load_influence_functions(
-                spec,
-                two_command_description(),
-                2,
-                registration,
+                spec, two_command_description(), 2, registration
             )
         end
     end
@@ -178,7 +166,7 @@ end
 @testset "influence logical shape and decoded precision" begin
     mktempdir() do directory
         path = joinpath(directory, "influences.fits")
-        cube = [Float64(100plane + 10x + y) for plane = 1:2, x = 1:3, y = 1:4]
+        cube = [Float64(100plane + 10x + y) for plane in 1:2, x in 1:3, y in 1:4]
         FITS(path, "w"; extendedparser = false) do file
             write(file, cube)
         end
@@ -196,10 +184,7 @@ end
             reference_command_m = 1e-6,
         )
         load_influences(input) = IC._load_influence_functions(
-            input,
-            two_command_description(),
-            2,
-            (; actuator_pitch_pupil_radius = 1.0),
+            input, two_command_description(), 2, (; actuator_pitch_pupil_radius = 1.0)
         )
         prepared = load_influences(spec)
         @test prepared.modes[1, 2] == 2.0f0 * (100.0f0 + 10.0f0 * 1.5f0 + 2.5f0)

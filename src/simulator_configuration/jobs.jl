@@ -48,8 +48,8 @@ function attempted_replacement(directory)
 end
 
 function save_state(directory, state; fields...)
-    result = Dict{String,Any}("id"=>basename(directory), "state"=>state)
-    merge!(result, Dict(string(key)=>value for (key, value) in fields))
+    result = Dict{String,Any}("id" => basename(directory), "state" => state)
+    merge!(result, Dict(string(key) => value for (key, value) in fields))
     C.write_json(joinpath(directory, "result.json"), result; atomic = true)
     return result
 end
@@ -57,7 +57,7 @@ end
 function check_identity(expected, actual)
     expected == actual || throw(
         ArgumentError(
-            "session incarnation or simulator configuration changed; reload settings",
+            "session incarnation or simulator configuration changed; reload settings"
         ),
     )
     return nothing
@@ -147,15 +147,15 @@ function start_rebuild(
     # durable worker before any request is sent to the old live session.
     AOSOwner.plant_settings(settings)
     root = settings_root(root)
-    id = request_id === nothing ? replace(string(uuid4()), "-"=>"") : String(request_id)
+    id = request_id === nothing ? replace(string(uuid4()), "-" => "") : String(request_id)
     request = Dict(
-        "id"=>id,
-        "identity"=>selected.identity,
-        "application"=>selected.application,
-        "prefix"=>selected.prefix,
-        "relative_config"=>selected.relative,
-        "settings"=>settings,
-        "resume_running"=>resume_running,
+        "id" => id,
+        "identity" => selected.identity,
+        "application" => selected.application,
+        "prefix" => selected.prefix,
+        "relative_config" => selected.relative,
+        "settings" => settings,
+        "resume_running" => resume_running,
     )
     ncodeunits(JSON.json(request)) <= MAX_REQUEST_BYTES ||
         throw(ArgumentError("rebuild record exceeds 64 KiB"))
@@ -167,17 +167,17 @@ function start_rebuild(
         # or lose the ID just because the launcher acknowledgement was lost.
         C.write_json(
             joinpath(directory, "launch-acknowledgement.json"),
-            Dict("acknowledged"=>false, "error"=>sprint(showerror, error));
+            Dict("acknowledged" => false, "error" => sprint(showerror, error));
             atomic = true,
         )
         return Dict(
-            "id"=>id,
-            "state"=>"queued",
-            "launch_acknowledged"=>false,
+            "id" => id,
+            "state" => "queued",
+            "launch_acknowledged" => false,
             "error" => "Job launch acknowledgement unavailable; observe the retained job without retrying.",
         )
     end
-    return Dict("id"=>id, "state"=>"queued")
+    return Dict("id" => id, "state" => "queued")
 end
 
 """
@@ -206,8 +206,8 @@ function job(id::AbstractString; root = default_root(), inspect = SystemdOwners.
         return merge(
             result,
             Dict(
-                "state"=>(attempted || ambiguous_launch) ? "unknown" : "failed",
-                "error"=>"Rebuild worker ended without a terminal receipt; no operation was retried.",
+                "state" => (attempted || ambiguous_launch) ? "unknown" : "failed",
+                "error" => "Rebuild worker ended without a terminal receipt; no operation was retried.",
             ),
         )
     end
@@ -233,7 +233,7 @@ function prepare_candidate(request, directory; describe_science = scientific_des
     for name in ("systemd", "bin")
         any(startswith(asset, "$name/") for asset in keys(original["artifacts"])) && throw(
             ArgumentError(
-                "rebuild requires an application without sealed installation wrappers",
+                "rebuild requires an application without sealed installation wrappers"
             ),
         )
         path = joinpath(candidate, name)
@@ -271,23 +271,22 @@ function rebuild(
         throw(ArgumentError("session installation receipt is unavailable"))
     fence = joinpath(incarnation_directory(request), "simulator-rebuild", "attempt.json")
     isfile(fence) && throw(
-        ArgumentError("replacement was already attempted for this session incarnation"),
+        ArgumentError("replacement was already attempted for this session incarnation")
     )
     C.write_json(
         fence,
-        Dict("job"=>basename(directory), "identity"=>selected.identity);
+        Dict("job" => basename(directory), "identity" => selected.identity);
         atomic = true,
     )
     save_state(directory, "stopping"; previous_application = selected.application)
-    shutdown(handle; deadline = R.monotonic()+320)
+    shutdown(handle; deadline = R.monotonic() + 320)
     save_state(directory, "starting"; previous_application = selected.application)
     stage = joinpath(directory, "replacement")
-    replacement =
-        start(candidate, stage; prefix = selected.prefix, deadline = R.monotonic()+1050)
+    replacement = start(
+        candidate, stage; prefix = selected.prefix, deadline = R.monotonic() + 1050
+    )
     status = control(
-        replacement,
-        SessionCodec.RunnerCommand(:status);
-        deadline = R.monotonic()+15,
+        replacement, SessionCodec.RunnerCommand(:status); deadline = R.monotonic() + 15
     )
     status["ok"] === true && status["state"] == "Ready" ||
         throw(ArgumentError("replacement native admission did not confirm Ready"))
@@ -295,7 +294,7 @@ function rebuild(
         running = control(
             replacement,
             SessionCodec.RunnerCommand(:session_start);
-            deadline = R.monotonic()+30,
+            deadline = R.monotonic() + 30,
         )
         running["ok"] === true && running["state"] == "Running" ||
             throw(ArgumentError("replacement native Start did not confirm Running"))
@@ -309,7 +308,7 @@ function rebuild(
         stage,
         previous_application = selected.application,
         configuration_sha256 = C.sha256_file(
-            joinpath(stage, "installed", request["relative_config"]),
+            joinpath(stage, "installed", request["relative_config"])
         ),
     )
 end

@@ -5,7 +5,7 @@ const Optical = ManagedSessionOptical
 @testset "bounded paired RMS samples preserve identities and settling prefix" begin
     domain = AcquisitionDomain(ntuple(i -> UInt8(i), PipeWireAO.ACQUISITION_DOMAIN_SIZE))
     samples = Optical.RMSSamples(64)
-    for sequence = 1:64
+    for sequence in 1:64
         identity = AcquisitionIdentity(domain, UInt64(1), UInt64(sequence))
         Optical.record!(samples, Float32[1000, sequence <= 32 ? 1000 : 100], identity)
         Optical.record!(samples, Float32[1, 1], identity) # Duplicate does not replace a paired sample.
@@ -21,14 +21,10 @@ const Optical = ManagedSessionOptical
     first = AcquisitionIdentity(domain, UInt64(1), UInt64(1))
     Optical.record!(fresh, Float32[1000, 100], first)
     @test_throws ErrorException Optical.record!(
-        fresh,
-        Float32[-1, 1],
-        AcquisitionIdentity(domain, UInt64(1), UInt64(2)),
+        fresh, Float32[-1, 1], AcquisitionIdentity(domain, UInt64(1), UInt64(2))
     )
     @test_throws ErrorException Optical.record!(
-        fresh,
-        Float32[1, 1],
-        AcquisitionIdentity(domain, UInt64(2), UInt64(2)),
+        fresh, Float32[1, 1], AcquisitionIdentity(domain, UInt64(2), UInt64(2))
     )
     @test_throws ErrorException Optical.summary(fresh)
 end

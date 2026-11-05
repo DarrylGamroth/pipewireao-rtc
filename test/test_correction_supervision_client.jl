@@ -45,10 +45,7 @@ CR.transport_clock_ns(t::SupervisionTransport) = CR.transport_clock_ns(t.recover
 CR.transport_pause!(t::SupervisionTransport, seconds::Float64) =
     CR.transport_pause!(t.recovery, seconds)
 function CR.request_native!(
-    t::SupervisionTransport,
-    command::Runner.RunnerCommand;
-    deadline::Float64,
-    check,
+    t::SupervisionTransport, command::Runner.RunnerCommand; deadline::Float64, check
 )
     if t.recovery.mode === :expired_trigger && t.property_reads == 1
         # Supervision was fresh when queried, but admission's readiness read
@@ -87,7 +84,7 @@ poll!(c) = CS.poll!(c; deadline = 2.0)
 @testset "Monitor-only supervision never changes correction" begin
     t = SupervisionTransport()
     c = client(t)
-    for _ = 1:3
+    for _ in 1:3
         result = poll!(c)
         @test result.state === :Monitoring && result.operation === nothing
         @test only(result.observed).action == "monitor_only"
@@ -226,7 +223,7 @@ end
     @test t.recovery.competing_close_attempts == 1
     @test t.recovery.competing_close_accepted == 0
     @test !t.recovery.resurrected_correction
-    for _ = 1:3
+    for _ in 1:3
         again = poll!(c)
         @test again.state === :Holding && again.operation === nothing
     end
@@ -269,10 +266,7 @@ end
     # Test the recovery admission fence independently of supervision parsing.
     base = ScriptedTransport()
     @test_throws ControlClient.UnknownOutcome CR.protective_open!(
-        base,
-        "science";
-        deadline = 2.0,
-        expected_owner = base.owner+1,
+        base, "science"; deadline = 2.0, expected_owner = base.owner + 1
     )
     @test isempty(base.writes)
 

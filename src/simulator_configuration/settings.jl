@@ -16,9 +16,7 @@ function declared_settings(instrument::Module, overrides)
     settings = merge_settings(defaults, overrides, schema)
     validate_settings(schema, settings, settings)
     return Dict(
-        "package" => string(nameof(instrument)),
-        "settings" => settings,
-        "schema" => schema,
+        "package" => string(nameof(instrument)), "settings" => settings, "schema" => schema
     )
 end
 
@@ -32,13 +30,11 @@ function scientific_worker(config, output; prepare = false)
         AOSOwner.load_instrument(options.plant.package)
     # Return configured relative filenames; scientific preparation uses the
     # independently resolved application-local file inputs in options.
-    configured =
-        D.decode(config, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))["plant"]["settings"]
+    configured = D.decode(config, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))["plant"]["settings"]
     result =
         options.version in (3, 4) ?
         InstrumentConfiguration.settings_description(
-            InstrumentConfiguration.load_simulation(options.plant.definition),
-            configured,
+            InstrumentConfiguration.load_simulation(options.plant.definition), configured
         ) : declared_settings(instrument, configured)
     options.version == 3 && (result["graph"] = options.plant.graph)
     if prepare
@@ -67,11 +63,7 @@ function scientific_worker(config, output; prepare = false)
 end
 
 function scientific_description(
-    application,
-    prefix,
-    relative_config;
-    prepare = false,
-    log_directory = nothing,
+    application, prefix, relative_config; prepare = false, log_directory = nothing
 )
     spec = D.profile(joinpath(application, "deployment.conf"), prefix)
     environment = D.application_environment(spec, application)
@@ -144,7 +136,7 @@ function selected_session(session_id)
         handle.main_pid == status.owner_pid &&
         ledger["session_control_instance"] == status.incarnation ||
             throw(ArgumentError("native session and managed invocation differ"))
-        R._verify_owners(handle, ledger, R.monotonic()+15)
+        R._verify_owners(handle, ledger, R.monotonic() + 15)
         properties = SystemdOwners.properties(handle.unit; extra = "FragmentPath")
         application = dirname(dirname(realpath(properties["FragmentPath"])))
         basename(application) == "installed" &&
@@ -163,11 +155,11 @@ function selected_session(session_id)
         relative = config_asset(spec)
         config = D.relative_asset(application, relative)
         source = ledger["owners"][spec["source-owner"]]
-        control_node =
-            only(filter(owner -> owner["role"] == spec["source-owner"], spec["owners"]))["control-node"]
+        control_node = only(
+            filter(owner -> owner["role"] == spec["source-owner"], spec["owners"])
+        )["control-node"]
         report = C.read_json(
-            joinpath(runtime, control_node * "-report.json");
-            maximum = 64 * 1024,
+            joinpath(runtime, control_node * "-report.json"); maximum = 64 * 1024
         )
         # Only immutable startup identity is read from this report. Run state
         # and live readiness continue to come from the verified native endpoint.
@@ -184,13 +176,13 @@ function selected_session(session_id)
             relative,
             spec,
             identity = Dict(
-                "session_id"=>String(session_id),
-                "invocation"=>handle.invocation,
-                "owner_pid"=>handle.main_pid,
-                "start_ticks"=>handle.start_ticks,
-                "incarnation"=>status.incarnation,
-                "runtime_root"=>handle.runtime_root,
-                "configuration_sha256"=>C.sha256_file(config),
+                "session_id" => String(session_id),
+                "invocation" => handle.invocation,
+                "owner_pid" => handle.main_pid,
+                "start_ticks" => handle.start_ticks,
+                "incarnation" => status.incarnation,
+                "runtime_root" => handle.runtime_root,
+                "configuration_sha256" => C.sha256_file(config),
             ),
         )
     finally
@@ -209,8 +201,9 @@ not a readiness check and does not prepare or replace the running simulator.
 """
 function describe(session_id::AbstractString)
     selected = selected_session(session_id)
-    result =
-        scientific_description(selected.application, selected.prefix, selected.relative)
+    result = scientific_description(
+        selected.application, selected.prefix, selected.relative
+    )
     result["session_id"] = String(session_id)
     result["configuration_sha256"] = selected.identity["configuration_sha256"]
     return result

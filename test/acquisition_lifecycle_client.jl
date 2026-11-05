@@ -28,11 +28,15 @@ mutable struct StubAcquisition
 end
 
 function stub_snapshot(profile, state::StubAcquisition)
-    phase =
-        state.lifecycle === Codec.Prepared ? "initial" :
-        state.lifecycle === Codec.Stopped ?
-        (profile isa Codec.CalibrationLifecycleProfile ? "released" : "restored") :
-        profile isa Codec.CalibrationLifecycleProfile ? "held" : "correcting"
+    phase = if state.lifecycle === Codec.Prepared
+        "initial"
+    elseif state.lifecycle === Codec.Stopped
+        (profile isa Codec.CalibrationLifecycleProfile ? "released" : "restored")
+    elseif profile isa Codec.CalibrationLifecycleProfile
+        "held"
+    else
+        "correcting"
+    end
     return Codec.Snapshot(
         state.instrument,
         state.cursor,
@@ -53,10 +57,7 @@ function stub_effect!(profile, state::StubAcquisition, ticket, report_path)
     if operation isa Codec.LifecycleCommand{:connect}
         state.lifecycle = Codec.Connected
         state.cursor = Codec.AcquisitionCursor(
-            typemax(UInt64),
-            UInt64(1) << 63,
-            UInt64(4),
-            typemax(UInt64),
+            typemax(UInt64), UInt64(1) << 63, UInt64(4), typemax(UInt64)
         )
         state.held = true
         state.window = profile isa Codec.CorrectionLifecycleProfile ? UInt64(1) : nothing
@@ -70,10 +71,7 @@ function stub_effect!(profile, state::StubAcquisition, ticket, report_path)
         end
         state.report_cursor = old
         state.cursor = Codec.AcquisitionCursor(
-            old.domain,
-            old.generation,
-            old.sequence + UInt64(1),
-            old.model_ns,
+            old.domain, old.generation, old.sequence + UInt64(1), old.model_ns
         )
         state.running = true
     elseif operation isa Codec.LifecycleCommand{:reset}
@@ -84,10 +82,7 @@ function stub_effect!(profile, state::StubAcquisition, ticket, report_path)
             state.running && error("stub correction reset requires pause")
             old = something(state.cursor)
             state.cursor = Codec.AcquisitionCursor(
-                old.domain,
-                old.generation + UInt64(1),
-                UInt64(0),
-                UInt64(0),
+                old.domain, old.generation + UInt64(1), UInt64(0), UInt64(0)
             )
             state.window = something(state.window) + UInt64(1)
         end
@@ -162,7 +157,9 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
                         message,
                     )
                     if ticket.command isa Codec.LifecycleCommand{:shutdown}
-                        Runtime.flush_terminal!(runtime, ticket.deadline; check = check_worker)
+                        Runtime.flush_terminal!(
+                            runtime, ticket.deadline; check = check_worker
+                        )
                         quit[] = true
                     end
                 end
@@ -185,7 +182,7 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         @test client.client.observation.capability.lifecycle === Codec.Prepared
         @test state.effects == 1 # Fresh Status after Prepared, not retained enum data.
         @test Caller.status(client; deadline = deadline(), check = check_worker).snapshot.cursor ===
-              nothing
+            nothing
 
         wrong_profile =
             profile isa Codec.CalibrationLifecycleProfile ? Codec.CORRECTION_PROFILE :
@@ -212,16 +209,18 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
             check = check_worker,
         )
 
-        connected =
-            Caller.connect_owner!(client; deadline = deadline(), check = check_worker)
+        connected = Caller.connect_owner!(
+            client; deadline = deadline(), check = check_worker
+        )
         @test connected.lifecycle === Codec.Connected
         @test connected.snapshot.cursor.generation == UInt64(1) << 63
         @test connected.snapshot.cursor.domain == typemax(UInt64)
         @test connected.snapshot.report_cursor === nothing
         @test connected.snapshot.window ==
-              (profile isa Codec.CorrectionLifecycleProfile ? UInt64(1) : nothing)
-        resumed =
-            Caller.request!(client, :resume; deadline = deadline(), check = check_worker)
+            (profile isa Codec.CorrectionLifecycleProfile ? UInt64(1) : nothing)
+        resumed = Caller.request!(
+            client, :resume; deadline = deadline(), check = check_worker
+        )
         @test resumed.snapshot.running
         @test resumed.snapshot.cursor.sequence == 5
         @test resumed.snapshot.report_cursor.sequence == 4
@@ -230,10 +229,7 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         @test current.snapshot.cursor.sequence == 5
         @test current.snapshot.report_cursor.sequence == 4
         @test Caller.request!(
-            client,
-            :pause;
-            deadline = deadline(),
-            check = check_worker,
+            client, :pause; deadline = deadline(), check = check_worker
         ).snapshot.running == false
         before_reset = state.cursor
         reset = Caller.request!(client, :reset; deadline = deadline(), check = check_worker)
@@ -252,7 +248,9 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         allow_take[] = false
         before_expiry = state.effects
         expired = @async try
-            Caller.request!(client, :status; deadline = deadline(0.25), check = check_worker)
+            Caller.request!(
+                client, :status; deadline = deadline(0.25), check = check_worker
+            )
         catch error
             error
         end
@@ -312,10 +310,7 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         )
         allow_take[] = true
         wait_proof(
-            () -> istaskdone(removed),
-            3,
-            "removed caller outcome";
-            check = check_worker,
+            () -> istaskdone(removed), 3, "removed caller outcome"; check = check_worker
         )
         @test fetch(removed) isa Generic.UnknownOutcome
         wait_proof(
@@ -337,8 +332,9 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
             check = check_worker,
         )
         @test_throws Generic.UnknownOutcome Runtime.flush_terminal!(runtime, deadline(-0.1))
-        shutdown =
-            Caller.request!(client, :shutdown; deadline = deadline(), check = check_worker)
+        shutdown = Caller.request!(
+            client, :shutdown; deadline = deadline(), check = check_worker
+        )
         @test shutdown.lifecycle === Codec.Stopped
         @test shutdown.snapshot.restored && !shutdown.snapshot.held
         wait_proof(
@@ -377,12 +373,7 @@ end
             "calibration",
         )
         run_stub_profile(
-            socket,
-            directory,
-            daemon,
-            Codec.CORRECTION_PROFILE,
-            Codec.Copper,
-            "correction",
+            socket, directory, daemon, Codec.CORRECTION_PROFILE, Codec.Copper, "correction"
         )
     end
 end

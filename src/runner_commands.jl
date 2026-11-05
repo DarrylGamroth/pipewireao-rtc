@@ -20,9 +20,13 @@ function _string(value::String)
 end
 
 function _scalar(value_type::String, value::String)
-    value_type == "bool" && return value == "true" ? RunnerScalar(:bool, true) :
-           value == "false" ? RunnerScalar(:bool, false) :
-           throw(ArgumentError("invalid bool $(repr(value))"))
+    value_type == "bool" && return if value == "true"
+        RunnerScalar(:bool, true)
+    elseif value == "false"
+        RunnerScalar(:bool, false)
+    else
+        throw(ArgumentError("invalid bool $(repr(value))"))
+    end
     value_type == "int" && return RunnerScalar(:int, Base.parse(Int32, value))
     value_type == "long" && return RunnerScalar(:long, Base.parse(Int64, value))
     if value_type == "float"
@@ -82,14 +86,12 @@ function _command(fields::Vector{String})
     n == 1 && fields[1] == "reset" && return RunnerCommand(:reset)
     if n == 5 && fields[1] == "property"
         return RunnerCommand(
-            :properties_set,
-            fields[2],
-            Dict(fields[3] => _scalar(fields[4], fields[5])),
+            :properties_set, fields[2], Dict(fields[3] => _scalar(fields[4], fields[5]))
         )
     end
     if n >= 5 && fields[1] == "properties-set" && (n - 2) % 3 == 0
         values = Dict{String,RunnerScalar}()
-        for i = 3:3:n
+        for i in 3:3:n
             name = fields[i]
             haskey(values, name) && throw(ArgumentError("duplicate property $(repr(name))"))
             values[name] = _scalar(fields[i+1], fields[i+2])
@@ -122,11 +124,7 @@ function parse(argv::AbstractVector)
     # creates only a bounded cold POD; it does not inspect or open an artifact.
     controller = ControllerIdentity(UInt32(1), UInt64(1), Int64(1))
     header = RequestHeader(
-        controller,
-        Int64(1),
-        Int64(1),
-        RunnerCodec.operation_id(command),
-        Int64(1),
+        controller, Int64(1), Int64(1), RunnerCodec.operation_id(command), Int64(1)
     )
     RunnerCodec.encode_request(header, command)
     return command
@@ -153,64 +151,67 @@ function _legacy(result::RunnerResult{O}, lifecycle::Lifecycle) where {O}
     d = result.details
     outcome = _outcome(result.outcome)
     if O === :quit
-        return Dict("outcome"=>outcome, "message"=>"shutdown requested", "shutdown"=>true)
+        return Dict(
+            "outcome" => outcome, "message" => "shutdown requested", "shutdown" => true
+        )
     elseif O === :groups
-        return Dict("outcome"=>outcome, "groups"=>Dict(k=>_group(v) for (k, v) in d.groups))
+        return Dict(
+            "outcome" => outcome, "groups" => Dict(k => _group(v) for (k, v) in d.groups)
+        )
     elseif O === :status
         return Dict(
-            "outcome"=>outcome,
-            "lifecycle_state"=>_state(lifecycle),
-            "running"=>d.running,
-            "owned_nodes"=>d.owned_nodes,
-            "owned_links"=>d.owned_links,
-            "discarded_buffers"=>d.discarded_buffers,
-            "discarded_by_sink"=>d.discarded_by_sink,
+            "outcome" => outcome,
+            "lifecycle_state" => _state(lifecycle),
+            "running" => d.running,
+            "owned_nodes" => d.owned_nodes,
+            "owned_links" => d.owned_links,
+            "discarded_buffers" => d.discarded_buffers,
+            "discarded_by_sink" => d.discarded_by_sink,
         )
     elseif O === :properties
         return Dict(
-            "outcome"=>outcome,
-            "graph"=>d.graph,
-            "properties"=>Dict(k=>_scalar_json(v) for (k, v) in d.properties),
+            "outcome" => outcome,
+            "graph" => d.graph,
+            "properties" => Dict(k => _scalar_json(v) for (k, v) in d.properties),
         )
     elseif O in (:property_generation, :parameter_generation)
         return Dict(
-            "outcome"=>outcome,
-            "graph"=>d.graph,
-            "node"=>d.node,
-            "requested"=>d.requested,
-            "active"=>d.active,
+            "outcome" => outcome,
+            "graph" => d.graph,
+            "node" => d.node,
+            "requested" => d.requested,
+            "active" => d.active,
         )
     elseif O in (:stop_group, :start_group)
         return Dict(
-            "outcome"=>outcome,
-            "group"=>d.group,
-            "requested"=>_group(d.requested),
-            "observed"=>(d.observed === nothing ? nothing : _group(d.observed)),
+            "outcome" => outcome,
+            "group" => d.group,
+            "requested" => _group(d.requested),
+            "observed" => (d.observed === nothing ? nothing : _group(d.observed)),
         )
     elseif O in (:session_stop, :session_start)
-        return Dict("outcome"=>outcome, "session_state"=>uppercase(_state(d.state)))
+        return Dict("outcome" => outcome, "session_state" => uppercase(_state(d.state)))
     elseif O in (:source_ended, :reset)
-        return Dict("outcome"=>outcome, "session_state"=>_state(d.state))
+        return Dict("outcome" => outcome, "session_state" => _state(d.state))
     elseif O === :properties_set
         return Dict(
-            "outcome"=>outcome,
-            "graph"=>d.graph,
-            "active_adoption_observed"=>d.active_adoption_observed,
-            "property_generations"=>[
-                Dict("node"=>g.node, "requested"=>g.requested, "active"=>g.active) for
-                g in d.generations
+            "outcome" => outcome,
+            "graph" => d.graph,
+            "active_adoption_observed" => d.active_adoption_observed,
+            "property_generations" => [
+                Dict("node" => g.node, "requested" => g.requested, "active" => g.active) for g in d.generations
             ],
         )
     elseif O === :parameter
         generation =
             d.generation === nothing ? nothing :
-            Dict("requested"=>d.generation[1], "active"=>d.generation[2])
+            Dict("requested" => d.generation[1], "active" => d.generation[2])
         return Dict(
-            "outcome"=>outcome,
-            "graph"=>d.graph,
-            "parameter"=>d.parameter,
-            "active_adoption_observed"=>false,
-            "parameter_generations"=>generation,
+            "outcome" => outcome,
+            "graph" => d.graph,
+            "parameter" => d.parameter,
+            "active_adoption_observed" => false,
+            "parameter_generations" => generation,
         )
     end
     error("unhandled native runner result $O")
@@ -227,13 +228,13 @@ function _render_error(header, lifecycle, failure; request_id)
     id, session_id = _response_identity(header, request_id)
     state = _state(lifecycle)
     return Dict(
-        "version"=>1,
-        "id"=>id,
-        "session_id"=>session_id,
-        "state"=>state,
-        "result"=>nothing,
-        "ok"=>false,
-        "error"=>Dict("field"=>failure.field, "message"=>failure.message),
+        "version" => 1,
+        "id" => id,
+        "session_id" => session_id,
+        "state" => state,
+        "result" => nothing,
+        "ok" => false,
+        "error" => Dict("field" => failure.field, "message" => failure.message),
     )
 end
 
@@ -245,13 +246,13 @@ function render(reply::Completion; request_id = nothing)
     reply.result !== nothing || throw(ArgumentError("successful completion has no result"))
     id, session_id = _response_identity(header, request_id)
     return Dict(
-        "version"=>1,
-        "id"=>id,
-        "session_id"=>session_id,
-        "state"=>_state(reply.lifecycle),
-        "result"=>_legacy(reply.result, reply.lifecycle),
-        "ok"=>true,
-        "error"=>nothing,
+        "version" => 1,
+        "id" => id,
+        "session_id" => session_id,
+        "state" => _state(reply.lifecycle),
+        "result" => _legacy(reply.result, reply.lifecycle),
+        "ok" => true,
+        "error" => nothing,
     )
 end
 

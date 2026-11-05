@@ -55,29 +55,29 @@ filter.graph = {
         @test contracts["inputs"]["raw"] == Dict(
             "shape" => [3, 7],
             "element-type" => "U16_LE",
-            "schema"=>"pipewireao/raw-detector-pixels-u16/1",
+            "schema" => "pipewireao/raw-detector-pixels-u16/1",
         )
         @test contracts["parameters"]["background"] == Dict(
             "shape" => [3, 7],
             "element-type" => "F32_LE",
-            "schema"=>"pipewireao/background-calibration-f32/1",
+            "schema" => "pipewireao/background-calibration-f32/1",
         )
         @test contracts["parameters"]["mask"] == Dict(
             "shape" => [3, 7],
             "element-type" => "BOOL8",
-            "schema"=>"pipewireao/pixel-selection-mask-bool/1",
+            "schema" => "pipewireao/pixel-selection-mask-bool/1",
         )
         @test contracts["outputs"]["calibrated"] == Dict(
             "shape" => [3, 7],
             "element-type" => "F32_LE",
-            "schema"=>"pipewireao/calibrated-pixels-f32/1",
+            "schema" => "pipewireao/calibrated-pixels-f32/1",
         )
         @test contracts["outputs"]["selected-pixels"]["shape"] == [14]
         spec = Dict("session" => "session.conf", "core" => "core.conf")
         port = Dict(
             "name" => "applied",
             "shape" => reference(
-                "/graphs/arbitrary-rectangular-science/outputs/selected-pixels/shape",
+                "/graphs/arbitrary-rectangular-science/outputs/selected-pixels/shape"
             ),
             "element-type" => reference(
                 "/graphs/arbitrary-rectangular-science/outputs/selected-pixels/element-type",
@@ -87,8 +87,7 @@ filter.graph = {
             "rate" => "20/1",
         )
         C.write_json(
-            joinpath(directory, "session.conf"),
-            Dict("queues" => [Dict("ports" => [port])]),
+            joinpath(directory, "session.conf"), Dict("queues" => [Dict("ports" => [port])])
         )
         C.write_json(joinpath(directory, "core.conf"), Dict("context.modules" => []))
         C.write_json(
@@ -97,30 +96,21 @@ filter.graph = {
         )
         declarations = [Dict("path" => "graph.conf")]
         E.prepare_session_configuration!(
-            directory,
-            spec,
-            declarations,
-            "instrument.json",
-            PREFIX,
+            directory, spec, declarations, "instrument.json", PREFIX
         )
-        resolved =
-            D.decode(joinpath(directory, "session.conf"), PREFIX)["queues"][1]["ports"][1]
+        resolved = D.decode(joinpath(directory, "session.conf"), PREFIX)["queues"][1]["ports"][1]
         @test resolved == merge(port, Dict("shape" => [14], "element-type" => "F32_LE"))
         @test !occursin("\$ref", read(joinpath(directory, "session.conf"), String))
         # Invalid port lookup leaves the complete authoring document untouched.
-        port["shape"] =
-            reference("/graphs/arbitrary-rectangular-science/outputs/missing/shape")
+        port["shape"] = reference(
+            "/graphs/arbitrary-rectangular-science/outputs/missing/shape"
+        )
         C.write_json(
-            joinpath(directory, "session.conf"),
-            Dict("queues" => [Dict("ports" => [port])]),
+            joinpath(directory, "session.conf"), Dict("queues" => [Dict("ports" => [port])])
         )
         before = read(joinpath(directory, "session.conf"))
         @test_throws ArgumentError E.prepare_session_configuration!(
-            directory,
-            spec,
-            declarations,
-            "instrument.json",
-            PREFIX,
+            directory, spec, declarations, "instrument.json", PREFIX
         )
         @test read(joinpath(directory, "session.conf")) == before
         # A second metadata preparation succeeds after the failure's cleanup.
@@ -158,9 +148,7 @@ function observation_definition(sensor, resolution)
                 zeros(Float32, resolution, resolution),
             ),
             graph_input(
-                :surface,
-                :pupil => :surface_opd,
-                zeros(Float32, resolution, resolution),
+                :surface, :pupil => :surface_opd, zeros(Float32, resolution, resolution)
             ),
         ),
         links = (
@@ -224,8 +212,9 @@ end
             @test length(sources) == 3
             @test all(source -> source.reference_clock == METADATA_CLOCK_REALTIME, sources)
             for clock in clocks
-                clocked_sources =
-                    Observation.source_options(observation; reference_clock = clock)
+                clocked_sources = Observation.source_options(
+                    observation; reference_clock = clock
+                )
                 @test length(clocked_sources) == 3
                 # Cover focal, residual-wavefront and RMS keyword forwarding.
                 @test all(source -> source.reference_clock == clock, clocked_sources)
@@ -237,11 +226,10 @@ end
             )
                 @test collect(sources[index].shape) == contracts[product]["shape"]
                 @test E.wire_element_type(eltype(values)) ==
-                      contracts[product]["element-type"]
+                    contracts[product]["element-type"]
             end
             @test_throws DimensionMismatch Observation.verify_product(
-                zeros(Float32, resolution, resolution),
-                contracts["focal-image"],
+                zeros(Float32, resolution, resolution), contracts["focal-image"]
             )
             graph_input(graph, Val(:uncorrected)) .=
                 reshape(Float32.(1:(resolution^2)), resolution, resolution) .* 1.0f-9
@@ -252,7 +240,7 @@ end
                 opd = copy(graph_output(graph, Val(:pupil_opd)))
                 Observation.form_products!(observation)
                 raw_focal = AdaptiveOpticsSim.Optics.intensity_values(
-                    AdaptiveOpticsSim.Optics.direct_imaging_output(observation.imaging),
+                    AdaptiveOpticsSim.Optics.direct_imaging_output(observation.imaging)
                 )
                 @test observation.values == reverse(permutedims(raw_focal); dims = 1)
                 piston = sum(Float64, opd[observation.pupil]) / count(observation.pupil)
@@ -260,11 +248,10 @@ end
                     transmitting ? Float32((Float64(value) - piston) * 1e9) : NaN32
                 end
                 @test isequal(
-                    observation.wavefront,
-                    reverse(permutedims(raw_wavefront); dims = 1),
+                    observation.wavefront, reverse(permutedims(raw_wavefront); dims = 1)
                 )
                 @test observation.rms[1, 2] ==
-                      Observation.pupil_rms_nm(opd, observation.pupil)
+                    Observation.pupil_rms_nm(opd, observation.pupil)
                 @test graph_output(graph, Val(:pupil_opd)) == opd
             finally
                 Observation.release!(observation)
@@ -360,9 +347,8 @@ end
                 "nodes" => [pixel, pyramid, correctors...],
                 "inputs" => inputs,
                 "outputs" => outputs,
-                "links" => [
-                    Dict("output" => "pixels:calibrated", "input" => "pyramid:image"),
-                ],
+                "links" =>
+                    [Dict("output" => "pixels:calibrated", "input" => "pyramid:image")],
             ),
         )
         graph = joinpath(directory, "graph.conf")
@@ -371,17 +357,15 @@ end
         @test contracts["inputs"]["raw"] == Dict(
             "shape" => shape,
             "element-type" => "U16_LE",
-            "schema"=>"pipewireao/raw-detector-pixels-u16/1",
+            "schema" => "pipewireao/raw-detector-pixels-u16/1",
         )
         @test contracts["outputs"]["mean-pupil-intensity"]["element-type"] == "F32_LE"
         queues = [
             Dict(
                 "name" => string(name),
-                "shape" =>
-                    reference("/graphs/named-pyramid-science/outputs/$name/shape"),
-                "element-type" => reference(
-                    "/graphs/named-pyramid-science/outputs/$name/element-type",
-                ),
+                "shape" => reference("/graphs/named-pyramid-science/outputs/$name/shape"),
+                "element-type" =>
+                    reference("/graphs/named-pyramid-science/outputs/$name/element-type"),
             ) for name in keys(counts)
         ]
         C.write_json(joinpath(directory, "session.conf"), Dict("queues" => queues))
@@ -414,21 +398,19 @@ end
 
 @testset "named simulator warmup and diagnostics use every command" begin
     extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
-    commands =
-        (; tweeter = fill(1.0f0, 5), woofer = fill(2.0f0, 3), tiptilt = fill(3.0f0, 2))
+    commands = (;
+        tweeter = fill(1.0f0, 5), woofer = fill(2.0f0, 3), tiptilt = fill(3.0f0, 2)
+    )
     @test isnothing(
         extension.validate_command_buffers(
-            commands,
-            (; woofer = 3, tweeter = 5, tiptilt = 2),
+            commands, (; woofer = 3, tweeter = 5, tiptilt = 2)
         ),
     )
     @test_throws DimensionMismatch extension.validate_command_buffers(
-        commands,
-        (; woofer = 3, tweeter = 5, tiptilt = 3),
+        commands, (; woofer = 3, tweeter = 5, tiptilt = 3)
     )
     @test_throws ArgumentError extension.validate_command_buffers(
-        commands,
-        (; woofer = 3, tweeter = 5),
+        commands, (; woofer = 3, tweeter = 5)
     )
     extension.zero_command_buffers!(commands)
     @test all(command -> all(iszero, command), values(commands))
@@ -445,15 +427,12 @@ end
     completed_timing_bytes(timings) # warm the concrete successful call and measurement
     @test completed_timing_bytes(timings) == 0
     @test_throws ErrorException extension.completed_frame_timing(
-        merge(timings, (; woofer = timing(UInt64(3), Int64(100), Int64(110)))),
+        merge(timings, (; woofer = timing(UInt64(3), Int64(100), Int64(110))))
     )
     @test extension.applied_command_names(
-        (; woofer = "woofer", tweeter = "tweeter", tiptilt = "tiptilt"),
-        true,
+        (; woofer = "woofer", tweeter = "tweeter", tiptilt = "tiptilt"), true
     ) == (;
-        woofer = "woofer-applied",
-        tweeter = "tweeter-applied",
-        tiptilt = "tiptilt-applied",
+        woofer = "woofer-applied", tweeter = "tweeter-applied", tiptilt = "tiptilt-applied"
     )
     @test extension.applied_command_names("command", true) == "simulator-applied-command"
     @test extension.applied_command_names((; woofer = "woofer"), false) === nothing
@@ -490,7 +469,7 @@ end
     imaging = Observation.imaging_configuration((; document))
     @test Observation.imaging_configuration((; document = Dict())).source === nothing
     @test Observation.owner_imaging_configuration((; version = 1)) ==
-          Observation.default_imaging()
+        Observation.default_imaging()
     function image(imaging)
         observation = Observation.prepare(definition, graph; imaging)
         try
@@ -516,32 +495,23 @@ end
     values, metadata = image(science)
     @test size(values) == (48, 48)
     @test Observation.port_contracts(definition; imaging = science)["focal-image"]["shape"] ==
-          [48, 48]
+        [48, 48]
     @test metadata.spectral.wavelength_m == Float32(1.65e-6)
     @test metadata.normalization isa Optics.PhotonRateNormalization
-    @test sum(values) / sum(fallback) ≈ 10.0^(-0.4) rtol=2e-6
+    @test sum(values) / sum(fallback) ≈ 10.0^(-0.4) rtol = 2e-6
     @test metadata.sampling != fallback_metadata.sampling
     source["source_separation_arcsec"] = 1.0
     mismatched = Observation.imaging_configuration((; document))
     @test_throws ArgumentError Observation.port_contracts(definition; imaging = mismatched)
     @test_throws ArgumentError Observation.prepare(definition, graph; imaging = mismatched)
     positive = Optics.Source(
-        band = :R,
-        separation_arcsec = 2,
-        position_angle_deg = 210,
-        T = Float32,
+        band = :R, separation_arcsec = 2, position_angle_deg = 210, T = Float32
     )
     signed = Optics.Source(
-        band = :R,
-        separation_arcsec = -2,
-        position_angle_deg = 30,
-        T = Float32,
+        band = :R, separation_arcsec = -2, position_angle_deg = 30, T = Float32
     )
     periodic = Optics.Source(
-        band = :R,
-        separation_arcsec = -2,
-        position_angle_deg = 390,
-        T = Float32,
+        band = :R, separation_arcsec = -2, position_angle_deg = 390, T = Float32
     )
     @test Observation.imaging_source(signed, (; source = positive)) === signed
     @test Observation.imaging_source(periodic, (; source = signed)) === periodic

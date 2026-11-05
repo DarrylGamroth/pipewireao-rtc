@@ -32,9 +32,9 @@ end
         @test loaded.report == saved.result
         @test loaded.context == saved.context
         @test loaded.parameter_names == ["reconstructor"]
-        @test loaded.parameter_files == Dict("reconstructor"=>"reconstructor.fits")
+        @test loaded.parameter_files == Dict("reconstructor" => "reconstructor.fits")
         @test Set(keys(loaded.artifacts)) ==
-              Set(["reconstructor.fits", "singular-values.fits"])
+            Set(["reconstructor.fits", "singular-values.fits"])
         @test loaded.graph == joinpath(directory, "graph.conf")
         @test saved.report["measurement_count"] == 2
         @test !haskey(saved.report, "version")
@@ -49,8 +49,7 @@ end
         end
         matrix = PipeWireAORTC.Artifacts.prepare(
             PipeWireAORTC.Artifacts.FITSArtifact(
-                loaded.artifacts["reconstructor.fits"];
-                axes = (2, 1),
+                loaded.artifacts["reconstructor.fits"]; axes = (2, 1)
             ),
             Float32,
             (2, 2),
@@ -61,13 +60,12 @@ end
         @test read(joinpath(directory, "result.yaml")) == before
         @test Set(readdir(root)) == Set(["calibration"])
         push!(saved.result["parameter_names"], "shape-reconstructor")
-        saved.result["parameter_files"]["shape-reconstructor"]="reconstructor.fits"
+        saved.result["parameter_files"]["shape-reconstructor"] = "reconstructor.fits"
         Common.write_yaml(joinpath(directory, "result.yaml"), saved.result)
-        @test C.read_bundle(directory).parameter_files["shape-reconstructor"]=="reconstructor.fits"
-        @test Set(readdir(joinpath(directory, "artifacts")))==Set([
-            "reconstructor.fits",
-            "singular-values.fits",
-        ])
+        @test C.read_bundle(directory).parameter_files["shape-reconstructor"] ==
+            "reconstructor.fits"
+        @test Set(readdir(joinpath(directory, "artifacts"))) ==
+            Set(["reconstructor.fits", "singular-values.fits"])
     end
 
     # Every mutation starts from the same valid bundle; the reader is CPU-only.
@@ -75,8 +73,7 @@ end
         "graph bytes" =>
             d -> open(io -> write(io, "# changed\n"), joinpath(d, "graph.conf"), "a"),
         "context bytes" =>
-            d ->
-                Common.write_yaml(joinpath(d, "context.yaml"), Dict("changed" => true)),
+            d -> Common.write_yaml(joinpath(d, "context.yaml"), Dict("changed" => true)),
         "artifact bytes" =>
             d -> open(
                 io -> write(io, UInt8[0xff]),
@@ -93,13 +90,12 @@ end
                 mv(joinpath(d, "graph.conf"), joinpath(dirname(d), "graph.conf"))
                 symlink(joinpath(dirname(d), "graph.conf"), joinpath(d, "graph.conf"))
             end,
-        "linked artifact" =>
-            d -> begin
-                path = joinpath(d, "artifacts", "reconstructor.fits")
-                target = joinpath(dirname(d), "reconstructor.fits")
-                mv(path, target)
-                symlink(target, path)
-            end,
+        "linked artifact" => d -> begin
+            path = joinpath(d, "artifacts", "reconstructor.fits")
+            target = joinpath(dirname(d), "reconstructor.fits")
+            mv(path, target)
+            symlink(target, path)
+        end,
         "linked artifact directory" =>
             d -> begin
                 target = joinpath(dirname(d), "other-artifacts")
@@ -108,8 +104,7 @@ end
             end,
         "duplicate YAML keys" =>
             d -> write(joinpath(d, "result.yaml"), "version: 1\nversion: 1\n"),
-        "oversized YAML" =>
-            d -> write(joinpath(d, "result.yaml"), repeat("x", 1024^2 + 1)),
+        "oversized YAML" => d -> write(joinpath(d, "result.yaml"), repeat("x", 1024^2 + 1)),
     ]
     for (label, mutate!) in mutations
         @testset "$label" begin
@@ -126,8 +121,7 @@ end
         "missing integrity field" => r -> delete!(r, "context_sha256"),
         "unknown version" => r -> (r["version"] = 2),
         "Boolean version" => r -> (r["version"] = true),
-        "missing scientific identity" =>
-            r -> delete!(r, "source_prescription_identity"),
+        "missing scientific identity" => r -> delete!(r, "source_prescription_identity"),
         "invalid source hash" => r -> (r["source_graph_sha256"] = "bad"),
         "invalid context hash" => r -> (r["context_sha256"] = "bad"),
         "manifest list" => r -> (r["artifact_sha256"] = ["reconstructor.fits"]),
@@ -144,7 +138,7 @@ end
         "duplicate parameter" => r -> push!(r["parameter_names"], "reconstructor"),
         "missing binding" => r -> delete!(r["parameter_files"], "reconstructor"),
         "binding traversal" =>
-            r -> (r["parameter_files"]["reconstructor"]="../outside.fits"),
+            r -> (r["parameter_files"]["reconstructor"] = "../outside.fits"),
         "missing parameter artifact" => r -> push!(r["parameter_names"], "absent"),
         "parameter traversal" => r -> push!(r["parameter_names"], "../outside"),
     ]

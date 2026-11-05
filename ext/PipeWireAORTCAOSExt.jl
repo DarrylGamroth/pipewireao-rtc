@@ -60,12 +60,11 @@ function validate_graph(options)
     document = PipeWireAORTC.Common.read_yaml(options.graph)
     inputs = get(document, "inputs", Any[])
     command = filter(
-        entry -> get(entry, "name", nothing) == string(options.command_input),
-        inputs,
+        entry -> get(entry, "name", nothing) == string(options.command_input), inputs
     )
     length(command) == 1 &&
     get(only(command), "binding", nothing) == string(options.command_input) || throw(
-        ArgumentError("command_input must name one graph input with the same binding"),
+        ArgumentError("command_input must name one graph input with the same binding")
     )
     outputs = get(document, "outputs", Any[])
     count(entry -> get(entry, "name", nothing) == string(options.frame_output), outputs) ==
@@ -75,15 +74,14 @@ function validate_graph(options)
         (("inputs", "binding"), ("parameters", "binding"), ("delayed_links", "initial"))
         for entry in get(document, section, Any[])
             push!(
-                required,
-                Owner.identifier(get(entry, key, nothing), "graph $section $key"),
+                required, Owner.identifier(get(entry, key, nothing), "graph $section $key")
             )
         end
     end
     supplied = Set([options.command_input; [entry.binding for entry in options.artifacts]])
     required == supplied || throw(
         ArgumentError(
-            "graph external bindings differ from configured command/FITS bindings",
+            "graph external bindings differ from configured command/FITS bindings"
         ),
     )
     for node in get(document, "nodes", Any[])
@@ -101,7 +99,7 @@ function validate_graph(options)
 end
 
 "Construct a declared AOS graph without an instrument implementation package."
-function prepare_declared_science(options, device; check = ()->nothing)
+function prepare_declared_science(options, device; check = () -> nothing)
     check()
     validate_graph(options)
     check()
@@ -120,9 +118,7 @@ function prepare_declared_science(options, device; check = ()->nothing)
     graph = prepare_algorithm_graph(definition; target = device, execution)
     check()
     boundary = prepare_graph_hil_boundary(
-        graph;
-        command_input = options.command_input,
-        frame_output = options.frame_output,
+        graph; command_input = options.command_input, frame_output = options.frame_output
     )
     return (; definition, graph, boundary, target = device, artifacts)
 end
@@ -141,14 +137,11 @@ function wire_configuration(options)
     )
 end
 
-function prepare_instrument_science(options, device; check = ()->nothing)
+function prepare_instrument_science(options, device; check = () -> nothing)
     plant_module = options.plant_module
     execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
     system = Base.invokelatest(
-        plant_module.prepare_hil_system,
-        options.plant.settings;
-        target = device,
-        execution,
+        plant_module.prepare_hil_system, options.plant.settings; target = device, execution
     )
     check()
     AdaptiveOpticsSimPipeWireHIL.validate_hil_system(
@@ -235,26 +228,27 @@ function completed_frame_timing(timings::NamedTuple)
     ) || error("completed command timings differ from their common source frame")
     received = maximum(timing -> timing.command_received_nanoseconds, values(timings))
     return PipeWireFrameCommandTiming(
-        first_timing.sequence,
-        first_timing.source_published_nanoseconds,
-        received,
+        first_timing.sequence, first_timing.source_published_nanoseconds, received
     )
 end
 
 "Prepare and warm the exact plant boundary once, then restore its initial cursor."
-function Owner.prepare_science(options; check = ()->nothing)
+function Owner.prepare_science(options; check = () -> nothing)
     check()
     device = target(options)
     check()
-    science =
-        options.version == 3 ? prepare_configured_science(options, device; check) :
-        options.plant === nothing ? prepare_declared_science(options, device; check) :
+    science = if options.version == 3
+        prepare_configured_science(options, device; check)
+    elseif options.plant === nothing
+        prepare_declared_science(options, device; check)
+    else
         prepare_instrument_science(options, device; check)
+    end
     check()
     boundary = science.boundary
     size(hil_frame_buffer(boundary)) == options.frame_shape || throw(
         DimensionMismatch(
-            "AOS detector frame differs from configured $(options.frame_shape)",
+            "AOS detector frame differs from configured $(options.frame_shape)"
         ),
     )
     validate_command_buffers(hil_command_buffer(boundary), options.command_count)
@@ -291,13 +285,7 @@ end
 # The idle poll forwards this callable; explicit specialization keeps its
 # prepared science captures from being boxed again on every poll.
 function consume_control!(
-    options,
-    mailbox,
-    pipewire,
-    state,
-    pacing_period,
-    reset_owner!::F,
-    phase = nothing,
+    options, mailbox, pipewire, state, pacing_period, reset_owner!::F, phase = nothing
 ) where {F}
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
@@ -322,13 +310,7 @@ function consume_control!(
         end
         with_frame_stream(pipewire) do stream
             SourceControl.publish!(
-                mailbox,
-                stream,
-                kind,
-                token,
-                result,
-                state,
-                request_generation,
+                mailbox, stream, kind, token, result, state, request_generation
             )
         end
     end
@@ -409,13 +391,7 @@ function run_prepared!(
     flush(stdout)
     while !Bootstrap.cancelled(runtime)
         consume_control!(
-            options,
-            mailbox,
-            pipewire,
-            state,
-            options.pacing_period_ns,
-            reset_owner!,
-            phase,
+            options, mailbox, pipewire, state, options.pacing_period_ns, reset_owner!, phase
         )
         Bootstrap.cancelled(runtime) && break
         if !state.running || time_ns() < state.deadline_ns
@@ -441,12 +417,7 @@ function run_prepared!(
             options.pacing_period_ns == 0 ? UInt64(0) :
             next_deadline(state.deadline_ns, options.pacing_period_ns, time_ns())
         timing === nothing || record_phase_timing!(
-            phase,
-            timing,
-            frame_timing,
-            deadline,
-            optical_finished,
-            state.deadline_ns,
+            phase, timing, frame_timing, deadline, optical_finished, state.deadline_ns
         )
         if options.total_exchanges !== nothing && sequence == options.total_exchanges
             state.running = false
@@ -454,10 +425,7 @@ function run_prepared!(
             state.deadline_ns = 0
             save_phase_timing!(phase)
             save_report!(
-                options,
-                mailbox,
-                state,
-                Int64(frame_acquisition_generation(pipewire)),
+                options, mailbox, state, Int64(frame_acquisition_generation(pipewire))
             )
         end
     end
@@ -508,7 +476,7 @@ function Owner.run_owner(options)
                 graph_sha256 = options.graph === nothing ? nothing :
                                PipeWireAORTC.Common.sha256_file(options.graph),
                 configuration_sha256 = PipeWireAORTC.Common.sha256_file(
-                    options.config_path,
+                    options.config_path
                 ),
             ),
         )
@@ -528,8 +496,9 @@ function Owner.run_owner(options)
         options.owner_check()
         mailbox = prepare_source_control(options, state, source_instance)
         mirror_properties = PipeWireAORTC.InstrumentDefinition.mirror_properties(options)
-        command_properties =
-            command_mirror_properties(options, options.command_node, mirror_properties)
+        command_properties = command_mirror_properties(
+            options, options.command_node, mirror_properties
+        )
         pipewire = prepare_pipewire_hil(
             science.boundary,
             science.configuration;
@@ -537,8 +506,7 @@ function Owner.run_owner(options)
             frame_buffers = options.detector_observation ? 3 : 2,
             command_buffers = options.command_observation ? 3 : 2,
             applied_command_node_name = applied_command_names(
-                options.command_node,
-                options.applied_command_observation,
+                options.command_node, options.applied_command_observation
             ),
             applied_command_buffers = 3,
             applied_command_properties = merge(
@@ -550,8 +518,7 @@ function Owner.run_owner(options)
                 mirror_properties,
             ),
             image_sources = OpticalObservation.source_options(
-                observation;
-                reference_clock = prepare_reference_clock(options),
+                observation; reference_clock = prepare_reference_clock(options)
             ),
             frame_properties = merge(
                 SourceControl.source_properties(mailbox),
@@ -571,9 +538,7 @@ function Owner.run_owner(options)
         pipewire_cpu = get(options, :pipewire_cpu, nothing)
         if pipewire_cpu !== nothing
             PipeWireAORTC.Placement.pin_loop!(
-                pipewire.loop,
-                pipewire_cpu;
-                check = options.owner_check,
+                pipewire.loop, pipewire_cpu; check = options.owner_check
             )
         end
         OpticalObservation.warm!(

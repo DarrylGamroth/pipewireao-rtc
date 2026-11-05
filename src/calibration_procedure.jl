@@ -269,8 +269,8 @@ end
 function Procedure(
     input::Plan;
     clock = Common.MONOTONIC_CLOCK,
-    consume = (_...)->nothing,
-    cancelled = ()->false,
+    consume = (_...) -> nothing,
+    cancelled = () -> false,
 )
     plan = Plan(
         input.run,
@@ -355,8 +355,8 @@ end
 function _completion_error(p::Procedure, completion)
     command = something(p.command)
     if completion.run != command.run ||
-       completion.serial != command.serial ||
-       !ActionClient._valid_result(command.action, completion.result)
+        completion.serial != command.serial ||
+        !ActionClient._valid_result(command.action, completion.result)
         return (; reason = "Endpoint", known = false)
     end
     isfinite(completion.at) || throw(ArgumentError("completion time is not finite"))

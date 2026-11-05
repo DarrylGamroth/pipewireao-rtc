@@ -10,8 +10,7 @@ using Test, PipeWireAORTC
         cp(dirname(source), application)
         path = joinpath(application, basename(source))
         document = PipeWireAORTC.DeploymentConfiguration.decode(
-            path,
-            get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+            path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
         )
         @test document["version"] == 6
         document["backend"] = "cpu"
@@ -26,7 +25,7 @@ using Test, PipeWireAORTC
             "sensor_acquisition_versions",
             "command_acquisition_version",
         )
-            document[key] = key == "sensor_acquisition_versions" ? Dict("scc"=>3) : 3
+            document[key] = key == "sensor_acquisition_versions" ? Dict("scc" => 3) : 3
             PipeWireAORTC.Common.write_json(path, document)
             @test_throws ArgumentError PipeWireAORTC.AOSOwner.configuration(path)
             delete!(document, key)
@@ -38,7 +37,7 @@ using Test, PipeWireAORTC
             document["command_buffers"] = buffers
             PipeWireAORTC.Common.write_json(path, document)
             @test PipeWireAORTC.AOSOwner.configuration(path) ==
-                  merge(cpu, (; command_buffers = buffers))
+                merge(cpu, (; command_buffers = buffers))
         end
         for buffers in (1, 65, nothing, true, "3", 3.0)
             document["command_buffers"] = buffers
@@ -56,7 +55,7 @@ using Test, PipeWireAORTC
             document["device"] = device
             PipeWireAORTC.Common.write_json(path, document)
             @test PipeWireAORTC.AOSOwner.configuration(path) ==
-                  merge(cpu, (; backend = :cuda, device))
+                merge(cpu, (; backend = :cuda, device))
         end
         for (backend, device) in (
             ("unknown", 0),

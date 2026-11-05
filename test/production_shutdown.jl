@@ -11,7 +11,7 @@ const W = P.SessionRuntime
 const S = P.SystemdOwners
 include(ENV["RTC_OPERATOR_VIEW_WRITER"])
 if length(ARGS) == 4 &&
-   (last(ARGS) == "systemd" || get(ENV, "RTC_FINITE_CONTROLS", "0") == "1")
+    (last(ARGS) == "systemd" || get(ENV, "RTC_FINITE_CONTROLS", "0") == "1")
     include(joinpath(first(ARGS), "hil", "source_control.jl"))
     include(ENV["RTC_SOURCE_QUERY_CLIENT"])
     # Bootstrap has already performed warm run/pause/reset requests. The
@@ -44,7 +44,7 @@ function qualify(package, stage, evidence, phase)
     phase in ("finite", "systemd") || error("phase must be finite or systemd")
     ispath(evidence) && error("evidence directory must be fresh")
     mkpath(evidence; mode = 0o700)
-    spec = C.read_json(joinpath(package, "deployment.conf"); maximum = 16*1024*1024)
+    spec = C.read_json(joinpath(package, "deployment.conf"); maximum = 16 * 1024 * 1024)
     source = only(filter(owner -> owner["role"] == spec["source-owner"], spec["owners"]))
     argv = source["argv"]
     option(flag) = argv[only(findall(==(flag), argv))+1]
@@ -63,41 +63,41 @@ function qualify(package, stage, evidence, phase)
     )
     records = Any[]
     result = Dict{String,Any}(
-        "version"=>1,
-        "package"=>realpath(package),
-        "phase"=>phase,
-        "scope"=>"selected sealed simulated native profile; software/application validation",
-        "controls"=>records,
-        "completed"=>false,
-        "failure"=>nothing,
+        "version" => 1,
+        "package" => realpath(package),
+        "phase" => phase,
+        "scope" => "selected sealed simulated native profile; software/application validation",
+        "controls" => records,
+        "completed" => false,
+        "failure" => nothing,
     )
     if phase == "systemd" || get(ENV, "RTC_FINITE_CONTROLS", "0") == "1"
         client_path = ENV["RTC_SOURCE_QUERY_CLIENT"]
         result["source_query_client"] = Dict(
-            "path"=>realpath(client_path),
-            "sha256"=>C.sha256_file(client_path),
-            "scope"=>"existing native V1 typed read-only query client; no source owner modification",
+            "path" => realpath(client_path),
+            "sha256" => C.sha256_file(client_path),
+            "scope" => "existing native V1 typed read-only query client; no source owner modification",
         )
     end
     save() = C.write_json(joinpath(evidence, "qualification.json"), result; atomic = true)
     handle = nothing
     source_client = nothing
     report_path = nothing
-    function control(command; seconds = 8, before_request = ()->nothing)
+    function control(command; seconds = 8, before_request = () -> nothing)
         before = time_ns()
         reply = W.control!(
             handle,
             P.RunnerCommands.parse(command);
-            deadline = clock()+seconds,
+            deadline = clock() + seconds,
             before_request,
         )
         push!(
             records,
             Dict(
-                "command"=>command,
-                "before_ns"=>before,
-                "after_ns"=>time_ns(),
-                "reply"=>reply,
+                "command" => command,
+                "before_ns" => before,
+                "after_ns" => time_ns(),
+                "reply" => reply,
             ),
         )
         save()
@@ -105,22 +105,20 @@ function qualify(package, stage, evidence, phase)
         return reply
     end
     source_status() = NativeSourceClient.request!(
-        source_client,
-        "status",
-        Int64(time_ns());
-        deadline = clock()+8,
+        source_client, "status", Int64(time_ns()); deadline = clock() + 8
     )
     try
         result["launch_before_ns"] = time_ns()
         save()
         handle =
             get(ENV, "RTC_ATTACH_READY", "0") == "1" ?
-            W.attach(stage; deadline = clock()+48) :
-            P.Installation.start!(package, stage; deadline = clock()+1100)
+            W.attach(stage; deadline = clock() + 48) :
+            P.Installation.start!(package, stage; deadline = clock() + 1100)
         result["ready_ns"] = time_ns()
         result["unit"], result["invocation"] = handle.unit, handle.invocation
-        ledger =
-            C.read_json(joinpath(handle.runtime_root, handle.invocation, "launch.json"))
+        ledger = C.read_json(
+            joinpath(handle.runtime_root, handle.invocation, "launch.json")
+        )
         result["session_uuid"], result["remote"] = ledger["session_uuid"], ledger["remote"]
         C.write_json(joinpath(evidence, "launch.json"), ledger; atomic = true)
         ready = control(["status"]; seconds = 48)
@@ -132,17 +130,18 @@ function qualify(package, stage, evidence, phase)
                 ledger["remote"],
                 owner["control-node"],
                 owner["pid"];
-                deadline = clock()+48,
+                deadline = clock() + 48,
             )
-            result["source_initial_values"] =
-                NativeSourceClient.with_thread_loop_lock(source_client.loop) do _
-                    observation = source_client.observation
-                    Dict(
-                        "run"=>observation.run,
-                        "reset"=>observation.reset,
-                        "snapshot"=>collect(observation.snapshot),
-                    )
-                end
+            result["source_initial_values"] = NativeSourceClient.with_thread_loop_lock(
+                source_client.loop
+            ) do _
+                observation = source_client.observation
+                Dict(
+                    "run" => observation.run,
+                    "reset" => observation.reset,
+                    "snapshot" => collect(observation.snapshot),
+                )
+            end
             result["held_source_status"] = source_status()
             require_proof(
                 result["held_source_status"]["ok"] === true &&
@@ -193,9 +192,9 @@ function qualify(package, stage, evidence, phase)
                 C.write_json(
                     joinpath(evidence, "source-steady-controls.json"),
                     Dict(
-                        "status"=>status,
-                        "observed_ns"=>time_ns(),
-                        "session_uuid"=>ledger["session_uuid"],
+                        "status" => status,
+                        "observed_ns" => time_ns(),
+                        "session_uuid" => ledger["session_uuid"],
                     );
                     atomic = true,
                 )
@@ -206,20 +205,19 @@ function qualify(package, stage, evidence, phase)
             end
             wait_proof(240, "finite completion") do
                 isfile(report_path) || return false
-                report = C.read_json(report_path; maximum = 512*1024)
+                report = C.read_json(report_path; maximum = 512 * 1024)
                 report["failure"] === nothing ||
                     error("scientific fault: $(report["failure"])")
                 return report["completed"] === true
             end
-            report = C.read_json(report_path; maximum = 512*1024)
+            report = C.read_json(report_path; maximum = 512 * 1024)
             require_proof(
                 report["completed_frames"] == report["completed_commands"] == 8192,
                 "finite matching counts differ",
             )
             allocation = report["allocation"]
             require_proof(
-                allocation["completed_exchanges"] == 7936,
-                "wrong measured exchange count",
+                allocation["completed_exchanges"] == 7936, "wrong measured exchange count"
             )
             require_proof(
                 allocation["allocated_bytes"] ==
@@ -249,23 +247,22 @@ function qualify(package, stage, evidence, phase)
                 isfile(completion_path) ||
                     (completion_path = joinpath(evidence, "release-finish"))
                 result["operator_controls"] = Dict(
-                    "file"=>basename(completion_path),
-                    "sha256"=>C.sha256_file(completion_path),
-                    "receipt"=>C.read_json(completion_path; maximum = 512*1024),
-                    "scope"=>"external operator receipt; finite count/allocation completion is independent",
+                    "file" => basename(completion_path),
+                    "sha256" => C.sha256_file(completion_path),
+                    "receipt" => C.read_json(completion_path; maximum = 512 * 1024),
+                    "scope" => "external operator receipt; finite count/allocation completion is independent",
                 )
                 save()
             end
             require_proof(
-                control(["session-stop"])["state"] == "Ready",
-                "Stop did not complete Ready",
+                control(["session-stop"])["state"] == "Ready", "Stop did not complete Ready"
             )
             result["quit_before_ns"] = time_ns()
             save()
             W._native_quit!(handle) do mark_attempt!
                 control(["quit"]; before_request = mark_attempt!)
             end
-            result["shutdown"] = W.reconcile_shutdown!(handle; deadline = clock()+320)
+            result["shutdown"] = W.reconcile_shutdown!(handle; deadline = clock() + 320)
             result["quit_after_cleanup_ns"] = time_ns()
             require_proof(handle.shutdown_accepted, "Quit did not complete Offline")
         else
@@ -293,7 +290,7 @@ function qualify(package, stage, evidence, phase)
             require_proof(status["sequence"] < 8192, "source already reached finite limit")
             close(source_client)
             source_client = nothing
-            live = W._identity(handle.unit, handle.runtime_root; deadline = clock()+8)
+            live = W._identity(handle.unit, handle.runtime_root; deadline = clock() + 8)
             require_proof(
                 (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
                 (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup),
@@ -305,23 +302,24 @@ function qualify(package, stage, evidence, phase)
             stopped = C.run_checked(
                 ["systemctl", "--user", "stop", handle.unit];
                 timeout = 320,
-                maximum_output_bytes = 64*1024,
+                maximum_output_bytes = 64 * 1024,
             )
             result["systemd_stop_after_ns"] = time_ns()
             result["systemd_returncode"] = stopped.returncode
-            properties =
-                S.properties(handle.unit; extra = "Result,ExecMainCode,ExecMainStatus")
+            properties = S.properties(
+                handle.unit; extra = "Result,ExecMainCode,ExecMainStatus"
+            )
             result["systemd_properties"] = properties
             require_proof(
                 stopped.returncode == 0 && properties["Result"] == "success",
                 "systemd stop failed",
             )
-            result["shutdown"] = W.reconcile_stop!(handle; deadline = clock()+320)
+            result["shutdown"] = W.reconcile_stop!(handle; deadline = clock() + 320)
             require_proof(
                 result["shutdown"]["systemd_quit"]["accepted"] === true,
                 "ExecStop native Quit was not accepted",
             )
-            report = C.read_json(report_path; maximum = 512*1024)
+            report = C.read_json(report_path; maximum = 512 * 1024)
             require_proof(
                 report["failure"] === nothing &&
                     report["completed_frames"] == report["completed_commands"],
@@ -355,10 +353,10 @@ function qualify(package, stage, evidence, phase)
         adjudicated_path = joinpath(evidence, "release-finish-adjudicated.json")
         if isfile(adjudicated_path)
             result["operator_controls"] = Dict(
-                "file"=>basename(adjudicated_path),
-                "sha256"=>C.sha256_file(adjudicated_path),
-                "receipt"=>C.read_json(adjudicated_path; maximum = 512*1024),
-                "scope"=>"external adjudicated operator receipt; finite completion is independent",
+                "file" => basename(adjudicated_path),
+                "sha256" => C.sha256_file(adjudicated_path),
+                "receipt" => C.read_json(adjudicated_path; maximum = 512 * 1024),
+                "scope" => "external adjudicated operator receipt; finite completion is independent",
             )
         end
         if handle !== nothing
@@ -381,7 +379,7 @@ function qualify(package, stage, evidence, phase)
                         "short-monotonic",
                     ];
                     timeout = 15,
-                    maximum_output_bytes = 4*1024*1024,
+                    maximum_output_bytes = 4 * 1024 * 1024,
                 )
                 write(joinpath(evidence, name * "-journal.log"), captured.stdout)
             end

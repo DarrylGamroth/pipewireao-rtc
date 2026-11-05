@@ -1,7 +1,7 @@
 using Test
 using PipeWireAO
 
-function wait_proof(predicate, seconds::Real, label::AbstractString; check = ()->nothing)
+function wait_proof(predicate, seconds::Real, label::AbstractString; check = () -> nothing)
     deadline = time_ns() / 1e9 + seconds
     while true
         check()
@@ -36,9 +36,7 @@ function with_control_private_core(
     modules = "",
     spa_libraries = "",
     prefix = get(
-        ENV,
-        "PIPEWIREAO_PREFIX",
-        String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir),
+        ENV, "PIPEWIREAO_PREFIX", String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
     ),
 )
     libdir =

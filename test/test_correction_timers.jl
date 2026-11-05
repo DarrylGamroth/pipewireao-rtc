@@ -76,8 +76,9 @@ end
     now = Ref(UInt64(0))
     loop = ThreadLoop("correction-control-rearm")
     wakes = Threads.Atomic{Int}(0)
-    observer =
-        CL.Observer(["correction:closed"], Int64(25); timeout_ms = 50, clock = () -> now[])
+    observer = CL.Observer(
+        ["correction:closed"], Int64(25); timeout_ms = 50, clock = () -> now[]
+    )
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, false)
     CL.attach_timers!(observer, loop, () -> Threads.atomic_add!(wakes, 1))

@@ -25,8 +25,9 @@ graph = prepare_algorithm_graph(
         outputs = (graph_output(:frame, :plant => :output),),
     ),
 )
-boundary =
-    prepare_graph_hil_boundary(graph; command_input = :command, frame_output = :frame)
+boundary = prepare_graph_hil_boundary(
+    graph; command_input = :command, frame_output = :frame
+)
 configuration = PipeWireHILConfiguration(
     remote = core_name,
     frame_node_name = "pipewireao-rtc-external-source",
@@ -46,10 +47,10 @@ try
     completed_phase_2 = false
     while !isfile(stop_file)
         if !completed_phase_1 && isfile(phase_1_request)
-            for expected_sequence = UInt64(1):UInt64(3)
+            for expected_sequence in UInt64(1):UInt64(3)
                 sequence = exchange_frame!(prepared)
                 sequence == expected_sequence || error(
-                    "phase 1 expected sequence $expected_sequence, received $sequence",
+                    "phase 1 expected sequence $expected_sequence, received $sequence"
                 )
                 all(isfinite, hil_frame_buffer(boundary)) ||
                     error("phase 1 produced a non-finite WFS frame")
@@ -60,10 +61,10 @@ try
             flush(stdout)
             completed_phase_1 = true
         elseif completed_phase_1 && !completed_phase_2 && isfile(phase_2_request)
-            for expected_sequence = UInt64(4):UInt64(6)
+            for expected_sequence in UInt64(4):UInt64(6)
                 sequence = exchange_frame!(prepared)
                 sequence == expected_sequence || error(
-                    "phase 2 expected sequence $expected_sequence, received $sequence",
+                    "phase 2 expected sequence $expected_sequence, received $sequence"
                 )
                 all(isfinite, hil_frame_buffer(boundary)) ||
                     error("phase 2 produced a non-finite WFS frame")

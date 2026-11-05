@@ -27,11 +27,11 @@ EventQueue(capacity::Integer = 256; byte_limit::Integer = MAX_OBSERVATION_BYTES)
 event_size(event::AbstractEvent) = Base.summarysize(event)
 function stage!(queue::EventQueue, event::AbstractEvent)
     extent = event_size(event)
-    if queue.count == length(queue.records) || extent > queue.byte_limit-queue.bytes
+    if queue.count == length(queue.records) || extent > queue.byte_limit - queue.bytes
         queue.overflow = true
         return false
     end
-    index = mod1(queue.head+queue.count, length(queue.records))
+    index = mod1(queue.head + queue.count, length(queue.records))
     queue.records[index] = event
     queue.count += 1
     queue.bytes += extent
@@ -41,7 +41,7 @@ function next_event!(queue::EventQueue)
     queue.count == 0 && return nothing
     event = something(queue.records[queue.head])
     queue.records[queue.head] = nothing
-    queue.head = mod1(queue.head+1, length(queue.records))
+    queue.head = mod1(queue.head + 1, length(queue.records))
     queue.count -= 1
     queue.bytes -= event_size(event)
     return event
@@ -134,7 +134,8 @@ function update!(runtime, event::ParamReceived)
         pending.error = "parameter enumeration identity changed"
     elseif event.pod !== nothing
         extent = sizeof(event.pod)
-        if length(pending.records) >= MAX_ENUMERATION_RECORDS || extent > MAX_ENUMERATION_BYTES-pending.bytes
+        if length(pending.records) >= MAX_ENUMERATION_RECORDS ||
+            extent > MAX_ENUMERATION_BYTES - pending.bytes
             pending.error = "parameter enumeration exceeds bound"
         else
             push!(pending.records, event.pod)
@@ -148,7 +149,7 @@ update!(runtime, event::GlobalRemoved) = remove_object!(runtime, event.id)
 function update!(runtime, event::CoreUpdated)
     previous = runtime.core_info
     if previous !== nothing &&
-       (previous.cookie, previous.name) != (event.info.cookie, event.info.name)
+        (previous.cookie, previous.name) != (event.info.cookie, event.info.name)
         required_lost!(runtime.machine, "remote core incarnation changed")
     end
     runtime.core_info = event.info

@@ -14,14 +14,7 @@ request(;
     issued_at = 10.0,
     deadline = 20.0,
 ) = P.Request(;
-    run,
-    serial,
-    stage,
-    condition,
-    configuration_identity,
-    kind,
-    issued_at,
-    deadline,
+    run, serial, stage, condition, configuration_identity, kind, issued_at, deadline
 )
 confirmation(r; observed_at = 11.0, witness = "operator-17") =
     P.Confirmation(r; observed_at, witness)
@@ -84,7 +77,7 @@ end
     )
         @test_throws ArgumentError confirmation(r; kwargs...)
     end
-    @test_throws ArgumentError P.Procedure(r; clock = ()->NaN)
+    @test_throws ArgumentError P.Procedure(r; clock = () -> NaN)
 end
 
 @testset "manual, simulated and service evidence admission" begin
@@ -95,7 +88,7 @@ end
     )
         now = Ref(11.0)
         r = request(; kind)
-        p = P.Procedure(r; clock = ()->now[])
+        p = P.Procedure(r; clock = () -> now[])
         @test p.state == :pending
         @test p.confirmation === nothing
         @test_throws ArgumentError P.check_current!(p)
@@ -126,7 +119,7 @@ end
         request(issued_at = 9.0),
         request(deadline = 21.0),
     )
-        p = P.Procedure(request(); clock = ()->11.0)
+        p = P.Procedure(request(); clock = () -> 11.0)
         @test_throws ArgumentError P.complete!(p, confirmation(wrong))
         @test p.state == :invalidated
         @test p.confirmation === nothing
@@ -134,12 +127,11 @@ end
         @test_throws ArgumentError P.check_current!(p)
     end
     # Exact incarnations are adapter-validated witnesses, not guessed from run IDs.
-    p = P.Procedure(request(kind = :service); clock = ()->11.0)
+    p = P.Procedure(request(kind = :service); clock = () -> 11.0)
     P.complete!(p, confirmation(p.request; witness = "service-epoch-4"))
     P.invalidate!(p, "Service restarted as epoch 5")
     @test_throws ArgumentError P.complete!(
-        p,
-        confirmation(p.request; witness = "service-epoch-5"),
+        p, confirmation(p.request; witness = "service-epoch-5")
     )
     @test_throws ArgumentError P.check_current!(p)
     @test p.confirmation.witness == "service-epoch-4"
@@ -153,12 +145,12 @@ end
         (21.0, 20.0, :expired),
         (9.0, 9.0, :invalidated),
     )
-        p = P.Procedure(request(); clock = ()->at)
+        p = P.Procedure(request(); clock = () -> at)
         @test_throws ArgumentError P.complete!(p, confirmation(p.request; observed_at))
         @test p.state == state
         @test_throws ArgumentError P.check_current!(p)
     end
-    p = P.Procedure(request(); clock = ()->10.0)
+    p = P.Procedure(request(); clock = () -> 10.0)
     c = confirmation(p.request; observed_at = 10.0)
     @test P.complete!(p, c) === c
     @test P.check_current!(p) === c
@@ -167,7 +159,7 @@ end
 @testset "cancellation, invalidation and duplicate completion cannot revive" begin
     for ready in (false, true), event in (:cancel, :invalidate, :duplicate)
         event == :duplicate && !ready && continue
-        p = P.Procedure(request(); clock = ()->11.0)
+        p = P.Procedure(request(); clock = () -> 11.0)
         c = confirmation(p.request)
         ready && P.complete!(p, c)
         if event == :cancel
@@ -190,14 +182,14 @@ end
         @test p.confirmation === (ready ? c : nothing)
     end
     now = Ref(11.0)
-    p = P.Procedure(request(); clock = ()->now[])
+    p = P.Procedure(request(); clock = () -> now[])
     P.expire!(p)
     @test p.state == :pending
     now[] = 20.0
     P.expire!(p)
     @test p.state == :expired
     @test_throws ArgumentError P.complete!(p, confirmation(p.request))
-    p = P.Procedure(request(); clock = ()->11.0)
+    p = P.Procedure(request(); clock = () -> 11.0)
     @test_throws ArgumentError P.invalidate!(p, "x"^1025)
     @test p.state == :pending
 end
@@ -205,21 +197,21 @@ end
 @testset "monotonic clock failure and single-task ownership" begin
     for bad in (NaN, Inf, 10.0)
         now = Ref(11.0)
-        p = P.Procedure(request(); clock = ()->now[])
+        p = P.Procedure(request(); clock = () -> now[])
         P.complete!(p, confirmation(p.request))
         now[] = bad
         @test_throws ArgumentError P.check_current!(p)
         @test p.state == :invalidated
     end
     failed = Ref(false)
-    p = P.Procedure(request(); clock = ()->failed[] ? error("Clock unavailable") : 11.0)
+    p = P.Procedure(request(); clock = () -> failed[] ? error("Clock unavailable") : 11.0)
     P.complete!(p, confirmation(p.request))
     failed[] = true
     @test_throws ArgumentError P.check_current!(p)
     @test p.state == :invalidated
     failed[] = false
     @test_throws ArgumentError P.check_current!(p)
-    p = P.Procedure(request(); clock = ()->11.0)
+    p = P.Procedure(request(); clock = () -> 11.0)
     c = confirmation(p.request)
     for event in (
         () -> P.complete!(p, c),
@@ -248,7 +240,7 @@ end
     @test p.state === :pending && :state in propertynames(p)
     @test :state ∉ fieldnames(typeof(p))
     @test propertynames(p) ==
-          (:request, :clock, :owner, :state, :confirmation, :reason, :last_at)
+        (:request, :clock, :owner, :state, :confirmation, :reason, :last_at)
     c = confirmation(p.request)
     Hsm.dispatch!(p, :Complete, c)
     @test p.state === :ready && Hsm.current(p) === :Ready

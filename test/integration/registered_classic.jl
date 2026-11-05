@@ -14,8 +14,8 @@ function checked(condition, message)
 end
 
 function request(handle, stage, name, fields)
-    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic()+15)
-    C.write_json(joinpath(stage, name*".json"), reply)
+    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic() + 15)
+    C.write_json(joinpath(stage, name * ".json"), reply)
     checked(reply["ok"] === true, "$name rejected")
     println("CLASSIC_CHECK ", name, " state=", reply["state"])
     flush(stdout)
@@ -29,16 +29,17 @@ function dump_graph(handle, stage, prefix, name)
         env = merge(
             Dict(ENV),
             Dict(
-                "LD_LIBRARY_PATH"=>R.DeploymentConfiguration.installed_paths(prefix)["library"],
+                "LD_LIBRARY_PATH" =>
+                    R.DeploymentConfiguration.installed_paths(prefix)["library"],
             ),
         ),
         timeout = 20,
-        maximum_output_bytes = 16*1024*1024,
+        maximum_output_bytes = 16 * 1024 * 1024,
     )
     checked(result.returncode == 0, "native graph inspection failed")
-    path=joinpath(stage, name*".json")
+    path = joinpath(stage, name * ".json")
     write(path, result.stdout)
-    return C.read_json(path; maximum = 16*1024*1024)
+    return C.read_json(path; maximum = 16 * 1024 * 1024)
 end
 
 function simulator_node(graph)
@@ -53,13 +54,15 @@ end
 function source_snapshot(graph)
     source = simulator_node(graph)
     records = source["info"]["params"]["Props"]
-    fields = only(filter(records) do record
-        params = get(record, "params", Any[])
-        !isempty(params) && first(params) == "pipewireao.source-snapshot.version"
-    end)["params"]
+    fields = only(
+        filter(records) do record
+            params = get(record, "params", Any[])
+            !isempty(params) && first(params) == "pipewireao.source-snapshot.version"
+        end,
+    )["params"]
     return Dict(
         replace(fields[index], "pipewireao.source-snapshot." => "") => fields[index+1] for
-        index = 1:2:length(fields)
+        index in 1:2:length(fields)
     )
 end
 
@@ -76,7 +79,7 @@ function saved_report(handle, stage, name, snapshot)
         report["source_instance"] == snapshot["instance"],
         "saved report source incarnation differs",
     )
-    C.write_json(joinpath(stage, name*"-report.json"), report)
+    C.write_json(joinpath(stage, name * "-report.json"), report)
 end
 
 function check_simulator_metadata(application, stage, graph)
@@ -98,8 +101,7 @@ function check_simulator_metadata(application, stage, graph)
         "application does not select the Classic 0.2.1 candidate",
     )
     checked(
-        options.calibration_identity !== nothing,
-        "startup calibration identity is missing",
+        options.calibration_identity !== nothing, "startup calibration identity is missing"
     )
     expected = Dict(
         "aos.simulation.package" => string(options.plant.package),
@@ -139,8 +141,7 @@ end
 function check_invalid_control(handle, stage, graph, properties)
     key = "closed-loop-correction:gain"
     checked(
-        properties["result"]["properties"][key]["type"] == "float",
-        "gain is not Float32",
+        properties["result"]["properties"][key]["type"] == "float", "gain is not Float32"
     )
     baseline = request(
         handle,
@@ -151,10 +152,9 @@ function check_invalid_control(handle, stage, graph, properties)
     # The supported CLI accepts Bool, but PropInfo declares this property Float.
     # The headless RTC rejects this mismatch before issuing a property transaction.
     fields = ["property", graph, key, "bool", "true"]
-    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic()+15)
+    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic() + 15)
     C.write_json(
-        joinpath(stage, "invalid-control.json"),
-        Dict("argv" => fields, "reply" => reply),
+        joinpath(stage, "invalid-control.json"), Dict("argv" => fields, "reply" => reply)
     )
     checked(
         reply["ok"] === false && reply["state"] == "Running" && reply["error"] !== nothing,
@@ -175,8 +175,9 @@ function check_invalid_control(handle, stage, graph, properties)
             after["result"]["active"] == baseline["result"]["active"],
         "rejected control changed the property generation",
     )
-    current =
-        request(handle, stage, "properties-after-invalid-control", ["properties", graph])
+    current = request(
+        handle, stage, "properties-after-invalid-control", ["properties", graph]
+    )
     checked(
         current["result"]["properties"][key] == properties["result"]["properties"][key],
         "rejected control changed the gain",
@@ -190,14 +191,7 @@ function check_invalid_control(handle, stage, graph, properties)
 end
 
 function save_cadence_window(
-    stage,
-    initial,
-    stopped,
-    start_before,
-    start_after,
-    stop_before,
-    stop_after,
-    options,
+    stage, initial, stopped, start_before, start_after, stop_before, stop_after, options
 )
     checked(
         initial["instance"] == stopped["instance"] &&
@@ -235,26 +229,26 @@ function save_cadence_window(
 end
 
 function adopted(handle, stage, name, kind, graph, node; baseline = 0)
-    deadline = W.monotonic()+10
+    deadline = W.monotonic() + 10
     while true
         reply = W.control!(handle, Commands.parse([kind, graph, node]); deadline)
         checked(reply["ok"] === true, "generation query rejected")
         generations = reply["result"]
         if generations["requested"] > baseline &&
-           generations["active"] == generations["requested"]
-            C.write_json(joinpath(stage, name*".json"), reply)
+            generations["active"] == generations["requested"]
+            C.write_json(joinpath(stage, name * ".json"), reply)
             return reply
         end
-        W.monotonic()<deadline || error("active adoption was not observed")
+        W.monotonic() < deadline || error("active adoption was not observed")
         sleep(0.05)
     end
 end
 
 function check_updates(handle, application, stage, graph, properties)
-    key="closed-loop-correction:gain"
-    scalar=properties["result"]["properties"][key]
+    key = "closed-loop-correction:gain"
+    scalar = properties["result"]["properties"][key]
     checked(scalar["type"] == "float", "unexpected gain type")
-    gain=reinterpret(Float32, UInt32(scalar["bits"]))
+    gain = reinterpret(Float32, UInt32(scalar["bits"]))
     # Submit the existing exact value as a scalar transaction; no gain is tuned.
     request(
         handle,
@@ -263,24 +257,19 @@ function check_updates(handle, application, stage, graph, properties)
         ["properties-set", graph, key, "float", string(gain)],
     )
     adopted(
-        handle,
-        stage,
-        "gain-active",
-        "property-generation",
-        graph,
-        "closed-loop-correction",
+        handle, stage, "gain-active", "property-generation", graph, "closed-loop-correction"
     )
-    baseline=R.Artifacts.prepare(
+    baseline = R.Artifacts.prepare(
         R.Artifacts.FITSArtifact(
-            joinpath(application, "artifacts/engineering-offset.fits"),
+            joinpath(application, "artifacts/engineering-offset.fits")
         ),
         Float32,
         (277,),
     )
-    original=R.Artifacts.pack(baseline)
-    baseline.data[1]+=0.001f0
-    probe=R.Artifacts.pack(baseline)
-    path, io=mktemp(stage)
+    original = R.Artifacts.pack(baseline)
+    baseline.data[1] += 0.001f0
+    probe = R.Artifacts.pack(baseline)
+    path, io = mktemp(stage)
     close(io)
     try
         # Native v1 live replacement still accepts transient packed wire bytes.
@@ -290,7 +279,7 @@ function check_updates(handle, application, stage, graph, properties)
             previous = request(
                 handle,
                 stage,
-                name*"-baseline",
+                name * "-baseline",
                 ["parameter-generation", graph, "engineering-offset"],
             )
             write(path, bytes)
@@ -311,7 +300,7 @@ function check_updates(handle, application, stage, graph, properties)
             adopted(
                 handle,
                 stage,
-                name*"-active",
+                name * "-active",
                 "parameter-generation",
                 graph,
                 "engineering-offset";
@@ -325,7 +314,7 @@ function check_updates(handle, application, stage, graph, properties)
 end
 
 function main(application, stage, prefix)
-    handle = W.start!(application, stage; prefix, deadline = W.monotonic()+1030)
+    handle = W.start!(application, stage; prefix, deadline = W.monotonic() + 1030)
     try
         ready = request(handle, stage, "ready", ["status"])
         checked(ready["state"] == "Ready", "source was not held at startup")
@@ -338,7 +327,7 @@ function main(application, stage, prefix)
         )
         saved_report(handle, stage, "initial", initial)
         graph = "revolt-classic-jfg-frame-graph"
-        properties=request(handle, stage, "properties", ["properties", graph])
+        properties = request(handle, stage, "properties", ["properties", graph])
         start_before = time_ns()
         start = request(handle, stage, "start", ["session-start"])
         start_after = time_ns()
@@ -390,8 +379,9 @@ function main(application, stage, prefix)
             request(handle, stage, "running-after-reset", ["status"])["state"] == "Running",
             "session did not resume after reset",
         )
-        ledger =
-            C.read_json(joinpath(handle.runtime_root, handle.invocation, "launch.json"))
+        ledger = C.read_json(
+            joinpath(handle.runtime_root, handle.invocation, "launch.json")
+        )
         observation = observe_classic(ledger["remote"]; timeout = 45)
         C.write_json(joinpath(stage, "observation.json"), observation)
         checked(
@@ -415,7 +405,7 @@ function main(application, stage, prefix)
         )
     finally
         try
-            W.shutdown!(handle; deadline = W.monotonic()+320)
+            W.shutdown!(handle; deadline = W.monotonic() + 320)
         catch quit_error
             failures = Exception[quit_error]
             try
@@ -429,7 +419,7 @@ function main(application, stage, prefix)
             # Failed tests still own their exact unit. Revoke that unit through
             # the bounded emergency cleanup API; never repeat the native Quit.
             try
-                W.stop!(handle; deadline = W.monotonic()+320)
+                W.stop!(handle; deadline = W.monotonic() + 320)
             catch cleanup_error
                 push!(failures, cleanup_error)
             end
@@ -442,18 +432,18 @@ function main(application, stage, prefix)
     C.write_json(
         joinpath(stage, "qualification.json"),
         Dict(
-            "complete"=>true,
-            "profile"=>"classic-cpu-jfg-cuda-aos",
-            "application"=>application,
-            "unit"=>handle.unit,
-            "invocation"=>handle.invocation,
-            "cleanup_complete"=>true,
+            "complete" => true,
+            "profile" => "classic-cpu-jfg-cuda-aos",
+            "application" => application,
+            "unit" => handle.unit,
+            "invocation" => handle.invocation,
+            "cleanup_complete" => true,
         ),
     )
 end
 
 @testset "registered Classic session lifecycle" begin
-    length(ARGS)==3 ||
+    length(ARGS) == 3 ||
         error("usage: registered_classic.jl APPLICATION FRESH_STAGE NATIVE_PREFIX")
     main(ARGS...)
 end

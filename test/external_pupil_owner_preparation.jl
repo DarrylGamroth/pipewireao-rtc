@@ -10,10 +10,7 @@ struct OpticalPublicationTransport
     events::Vector{Any}
 end
 function AdaptiveOpticsSimPipeWireHIL.stage_pipewire_array!(
-    transport::OpticalPublicationTransport,
-    index,
-    image;
-    kwargs...,
+    transport::OpticalPublicationTransport, index, image; kwargs...
 )
     push!(transport.events, (; index, image = copy(image), metadata = (; kwargs...)))
     return true
@@ -23,14 +20,15 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
 
 @testset "production optical emitter batches actual unequal exposure windows" begin
     mktempdir() do directory
-        (; document, config, physical, simulation) =
-            external_pupil_owner_documents(directory)
+        (; document, config, physical, simulation) = external_pupil_owner_documents(
+            directory
+        )
         simulation["graphs"]["scc_unfringed"] = deepcopy(simulation["graphs"]["scc"])
         document["plant"]["chopping"] = Dict(
-            "scc"=>Dict(
-                "unfringed_graph"=>"scc_unfringed",
-                "initial_phase"=>"fringed",
-                "trigger_high_is_fringed"=>true,
+            "scc" => Dict(
+                "unfringed_graph" => "scc_unfringed",
+                "initial_phase" => "fringed",
+                "trigger_high_is_fringed" => true,
             ),
         )
         write_external_optical_documents(directory, physical, simulation)
@@ -43,11 +41,7 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
         publisher = ExternalOwner.ExposurePublisher(transport)
         execution.publication[] = publisher
         ExternalOwner.warmup!(
-            execution.emit,
-            science,
-            execution.packet,
-            execution.frames,
-            execution.buffers,
+            execution.emit, science, execution.packet, execution.frames, execution.buffers
         )
         @test isempty(transport.events)
         @test science.plant.state.sequence == 0
@@ -55,24 +49,21 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
         execution.packet[2, :, :] .= 1
         domain = AcquisitionDomain(ntuple(UInt8, 16))
         counts = Int[]
-        for sequence = UInt64(1):UInt64(8)
+        for sequence in UInt64(1):UInt64(8)
             receipt = (;
                 identity = AcquisitionIdentity(domain, UInt64(9), sequence),
-                pts = Int64((sequence-1)*1_000_000),
+                pts = Int64((sequence - 1) * 1_000_000),
                 duration = UInt64(1_000_000),
                 lost_samples = UInt64(0),
             )
             before = length(transport.events)
             @test ExternalOwner.publish_exposures!(publisher) do
                 ExternalOwner.feed!(
-                    execution.emit,
-                    science.plant,
-                    execution.packet,
-                    receipt,
+                    execution.emit, science.plant, execution.packet, receipt
                 )
             end
             events = transport.events[(before+1):end]
-            exposed = count(event->event !== :trigger, events)
+            exposed = count(event -> event !== :trigger, events)
             push!(counts, exposed)
             @test count(==(:trigger), events) == (exposed > 0)
             exposed > 0 && @test last(events) === :trigger
@@ -81,23 +72,24 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
         for name in keys(science.sensors)
             index = findfirst(==(name), keys(science.sensors))
             events = filter(
-                event->event !== :trigger && event.index == index+1,
-                transport.events,
+                event -> event !== :trigger && event.index == index + 1, transport.events
             )
             duration = name === :llowfs ? 2_000_000 : 4_000_000
             @test [event.metadata.identity.sequence for event in events] == collect(1:div(8_000_000, duration))
             @test [event.metadata.pts for event in events] == collect(0:duration:(8_000_000-duration))
-            @test all(event->event.metadata.duration == duration, events)
+            @test all(event -> event.metadata.duration == duration, events)
             @test all(
-                event->event.metadata.identity.domain == execution.domains[index] &&
-                       event.metadata.identity.generation == 7,
+                event ->
+                    event.metadata.identity.domain == execution.domains[index] &&
+                    event.metadata.identity.generation == 7,
                 events,
             )
             @test all(
-                event->eltype(event.image) === Float32 &&
-                       size(event.image) == size(science.sensors[name].image) &&
-                       all(isfinite, event.image) &&
-                       sum(event.image)>0,
+                event ->
+                    eltype(event.image) === Float32 &&
+                    size(event.image) == size(science.sensors[name].image) &&
+                    all(isfinite, event.image) &&
+                    sum(event.image) > 0,
                 events,
             )
             @test getproperty.(getproperty.(events, :metadata), :trigger_state) == (
@@ -105,7 +97,7 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
                 fill(ACQUISITION_TRIGGER_ABSENT, 4)
             )
             @test getproperty.(getproperty.(events, :metadata), :optical_classification) ==
-                  (
+                (
                 name === :scc ? [OPTICAL_FRINGED, OPTICAL_UNFRINGED] :
                 fill(OPTICAL_ABSENT, 4)
             )
@@ -119,21 +111,23 @@ end
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
         # Preparing warms the actual quiet emitter and resets before admission.
-        checks=Ref(0)
-        execution=ExternalOwner.prepare_stream_execution!(
-            (; version = 4, owner_check = ()->(checks[]+=1)),
+        checks = Ref(0)
+        execution = ExternalOwner.prepare_stream_execution!(
+            (; version = 4, owner_check = () -> (checks[] += 1)),
             science,
             ExternalOwner.SourceControl.Mailbox(Int64(1)),
             ExternalOwner.OwnerState(),
         )
-        @test checks[]>=4
-        @test !execution.publication_enabled[] && execution.publication[]===nothing
+        @test checks[] >= 4
+        @test !execution.publication_enabled[] && execution.publication[] === nothing
         @test all(iszero, execution.packet) &&
-              all(frame->all(iszero, frame), execution.buffers)
+            all(frame -> all(iszero, frame), execution.buffers)
         @test science.plant.state.domain === nothing
-        @test all(e->e.sequence==0 && e.covered_ns==0, values(science.plant.exposures))
+        @test all(
+            e -> e.sequence == 0 && e.covered_ns == 0, values(science.plant.exposures)
+        )
         @test_throws InterruptException ExternalOwner.prepare_stream_execution!(
-            (; version = 4, owner_check = ()->throw(InterruptException())),
+            (; version = 4, owner_check = () -> throw(InterruptException())),
             science,
             ExternalOwner.SourceControl.Mailbox(Int64(1)),
             ExternalOwner.OwnerState(),
@@ -142,9 +136,10 @@ end
         @test contracts["pupil"]["shape"] == [2, 4, 4]
         @test contracts["sensors"]["scc"]["shape"] == [8, 8]
         @test contracts["sensors"]["scc"]["schema"] !=
-              contracts["sensors"]["llowfs"]["schema"]
-        streams =
-            ExternalOwner.stream_options(science, options.pupil_node, options.sensor_nodes)
+            contracts["sensors"]["llowfs"]["schema"]
+        streams = ExternalOwner.stream_options(
+            science, options.pupil_node, options.sensor_nodes
+        )
         @test length(streams) == 3
         @test streams[1].format.rate === nothing
         @test streams[2].format.rate == SPA.Fraction(500, 1)
@@ -156,26 +151,26 @@ end
         IC = PipeWireAORTC.InstrumentConfiguration
         prepared = IC.prepare_simulation_configuration!(directory)
         @test prepared["version"] == 4 &&
-              prepared["prescription_identity"] == science.identity
-        reference(pointer) = Dict("\$ref"=>pointer)
+            prepared["prescription_identity"] == science.identity
+        reference(pointer) = Dict("\$ref" => pointer)
         session = Dict(
-            "sources"=>[
+            "sources" => [
                 Dict(
-                    "node.name"=>"optical-scc",
-                    "ports"=>[
+                    "node.name" => "optical-scc",
+                    "ports" => [
                         Dict(
-                            key=>reference("/simulator/sensors/scc/"*key) for
+                            key => reference("/simulator/sensors/scc/" * key) for
                             key in ("shape", "element-type", "schema")
                         ),
                     ],
                 ),
             ],
-            "sinks"=>[
+            "sinks" => [
                 Dict(
-                    "node.name"=>"optical-pupil",
-                    "ports"=>[
+                    "node.name" => "optical-pupil",
+                    "ports" => [
                         Dict(
-                            key=>reference("/simulator/pupil/"*key) for
+                            key => reference("/simulator/pupil/" * key) for
                             key in ("shape", "element-type", "schema")
                         ),
                     ],
@@ -183,10 +178,10 @@ end
             ],
         )
         C.write_json(joinpath(directory, "session.conf"), session)
-        C.write_json(joinpath(directory, "core.conf"), Dict("context.modules"=>[]))
+        C.write_json(joinpath(directory, "core.conf"), Dict("context.modules" => []))
         E.prepare_session_configuration!(
             directory,
-            Dict("session"=>"session.conf", "core"=>"core.conf"),
+            Dict("session" => "session.conf", "core" => "core.conf"),
             [],
             "instrument.json",
             get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
@@ -200,31 +195,31 @@ end
         @test !occursin("\$ref", read(joinpath(directory, "session.conf"), String))
         packet = zeros(Float32, 2, 4, 4)
         packet[2, :, :] .= 1
-        domain = AcquisitionDomain(ntuple(i->UInt8(i), 16))
+        domain = AcquisitionDomain(ntuple(i -> UInt8(i), 16))
         emit = NamedTuple[]
-        for sequence = UInt64(1):UInt64(2)
+        for sequence in UInt64(1):UInt64(2)
             receipt = (;
                 identity = AcquisitionIdentity(domain, UInt64(1), sequence),
-                pts = Int64((sequence-1)*2_000_000),
+                pts = Int64((sequence - 1) * 2_000_000),
                 duration = UInt64(2_000_000),
                 lost_samples = UInt64(0),
             )
             @test ExternalOwner.feed!(
-                science.plant,
-                packet,
-                receipt,
+                science.plant, packet, receipt
             ) do name, image, metadata
                 push!(emit, (; name, image = copy(image), metadata))
             end
         end
-        @test count(x->x.name===:llowfs, emit) == 2
-        @test count(x->x.name===:scc, emit) == 1
-        @test all(x->sum(x.image)>0, emit)
+        @test count(x -> x.name === :llowfs, emit) == 2
+        @test count(x -> x.name === :scc, emit) == 1
+        @test all(x -> sum(x.image) > 0, emit)
         reset_external_pupil!(science.plant)
         @test science.plant.state.domain === nothing
-        @test all(e->e.sequence==0 && e.covered_ns==0, values(science.plant.exposures))
+        @test all(
+            e -> e.sequence == 0 && e.covered_ns == 0, values(science.plant.exposures)
+        )
     end
-    @test all(id->id.name ∉ ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
+    @test all(id -> id.name ∉ ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
 
 @testset "finite-channel optics publish the exposure cadence" begin
@@ -233,17 +228,17 @@ end
         config = simulation["components"]["optics"]["config"]
         config["channels"] = [
             Dict(
-                "wavelength_um"=>wavelength,
-                "weight"=>1.0,
-                "steps"=>deepcopy(config["steps"]),
+                "wavelength_um" => wavelength,
+                "weight" => 1.0,
+                "steps" => deepcopy(config["steps"]),
             ) for wavelength in (1.5, 1.6)
         ]
         for graph in values(simulation["graphs"])
             graph["nodes"] = [
                 Dict(
-                    "name"=>"optics",
-                    "type"=>"proper_optical_train_f64",
-                    "config"=>deepcopy(config),
+                    "name" => "optics",
+                    "type" => "proper_optical_train_f64",
+                    "config" => deepcopy(config),
                 ),
             ]
         end
@@ -251,146 +246,135 @@ end
         write_external_optical_documents(directory, physical, simulation)
         science = ExternalOwner.prepare(path)
         streams = ExternalOwner.stream_options(
-            science,
-            "finite.pupil",
-            (; llowfs = "finite.llowfs", scc = "finite.scc"),
+            science, "finite.pupil", (; llowfs = "finite.llowfs", scc = "finite.scc")
         )
         @test streams[1].format.rate === nothing
         @test streams[2].format.rate == SPA.Fraction(500, 1)
         @test streams[3].format.rate == SPA.Fraction(250, 1)
-        @test all(exposure->exposure.sequence==0, values(science.plant.exposures))
+        @test all(exposure -> exposure.sequence == 0, values(science.plant.exposures))
     end
 end
 
 @testset "actual chopped exposures retain missing model windows at transport" begin
     mktempdir() do directory
-        (; document, config, path, physical, simulation) =
-            external_pupil_owner_documents(directory)
+        (; document, config, path, physical, simulation) = external_pupil_owner_documents(
+            directory
+        )
         physical["wavefront_sensors"]["scc"]["acquisition"]["exposure_duration_s"] = 0.01
         simulation["graphs"]["scc_unfringed"] = deepcopy(simulation["graphs"]["scc"])
         write_external_optical_documents(directory, physical, simulation)
         document["plant"]["chopping"] = Dict(
-            "scc"=>Dict(
-                "unfringed_graph"=>"scc_unfringed",
-                "initial_phase"=>"fringed",
-                "trigger_high_is_fringed"=>true,
+            "scc" => Dict(
+                "unfringed_graph" => "scc_unfringed",
+                "initial_phase" => "fringed",
+                "trigger_high_is_fringed" => true,
             ),
         )
         PipeWireAORTC.Common.write_json(config, document)
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
-        streams =
-            ExternalOwner.stream_options(science, options.pupil_node, options.sensor_nodes)
-        @test all(r->r.required, streams[2].metadata)
-        @test all(r->r.required, streams[3].metadata)
+        streams = ExternalOwner.stream_options(
+            science, options.pupil_node, options.sensor_nodes
+        )
+        @test all(r -> r.required, streams[2].metadata)
+        @test all(r -> r.required, streams[3].metadata)
         @test streams[2].format.rate == SPA.Fraction(500, 1)
         @test streams[3].format.rate == SPA.Fraction(100, 1)
-        packet=zeros(Float32, 2, 4, 4)
-        packet[2, :, :].=1
-        domain=AcquisitionDomain(ntuple(i->UInt8(i), 16))
-        emitted=NamedTuple[]
+        packet = zeros(Float32, 2, 4, 4)
+        packet[2, :, :] .= 1
+        domain = AcquisitionDomain(ntuple(i -> UInt8(i), 16))
+        emitted = NamedTuple[]
         for index in (1:5..., 16:20...)
-            receipt=(;
+            receipt = (;
                 identity = AcquisitionIdentity(domain, UInt64(1), UInt64(index)),
-                pts = Int64((index-1)*2_000_000),
+                pts = Int64((index - 1) * 2_000_000),
                 duration = UInt64(2_000_000),
                 lost_samples = UInt64(0),
             )
             @test ExternalOwner.feed!(
-                science.plant,
-                packet,
-                receipt,
+                science.plant, packet, receipt
             ) do name, image, metadata
                 push!(emitted, (; name, metadata))
             end
         end
-        scc=filter(item->item.name===:scc, emitted)
-        @test getproperty.(getproperty.(scc, :metadata), :sequence)==[1, 2]
-        @test getproperty.(getproperty.(scc, :metadata), :pts)==[0, 30_000_000]
-        @test getproperty.(getproperty.(scc, :metadata), :duration)==[
-            10_000_000,
-            10_000_000,
-        ]
-        @test getproperty.(getproperty.(scc, :metadata), :chopped_image_kind)==[
-            :fringed,
-            :unfringed,
-        ]
-        @test [ExternalOwner.sensor_sequence(item.metadata, true) for item in scc]==[1, 4]
+        scc = filter(item -> item.name === :scc, emitted)
+        @test getproperty.(getproperty.(scc, :metadata), :sequence) == [1, 2]
+        @test getproperty.(getproperty.(scc, :metadata), :pts) == [0, 30_000_000]
+        @test getproperty.(getproperty.(scc, :metadata), :duration) ==
+            [10_000_000, 10_000_000]
+        @test getproperty.(getproperty.(scc, :metadata), :chopped_image_kind) ==
+            [:fringed, :unfringed]
+        @test [ExternalOwner.sensor_sequence(item.metadata, true) for item in scc] == [1, 4]
         @test [ExternalOwner.trigger_state(science, :scc, item.metadata) for item in scc] == [ACQUISITION_TRIGGER_HIGH, ACQUISITION_TRIGGER_LOW]
-        llowfs=filter(item->item.name===:llowfs, emitted)
-        @test [ExternalOwner.sensor_sequence(item.metadata, false) for item in llowfs]==collect(1:10)
+        llowfs = filter(item -> item.name === :llowfs, emitted)
+        @test [ExternalOwner.sensor_sequence(item.metadata, false) for item in llowfs] == collect(1:10)
         reset_external_pupil!(science.plant)
-        @test science.plant.state.domain===nothing
-        @test all(exposure->exposure.sequence==0, values(science.plant.exposures))
+        @test science.plant.state.domain === nothing
+        @test all(exposure -> exposure.sequence == 0, values(science.plant.exposures))
     end
-    @test !any(id->id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
+    @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
 
 @testset "quiet preparation preserves seeded detector and cancellation state" begin
     mktempdir() do directory
-        (; path, physical, simulation)=external_pupil_owner_documents(directory)
+        (; path, physical, simulation) = external_pupil_owner_documents(directory)
         authored_response!(directory, physical, simulation)
-        observation=pop!(simulation["observations"], "low_order")
-        observation["graph"]="response"
-        observation["normalized_to_photon_rate"]=1e8
-        simulation["observations"]["llowfs"]=observation
-        simulation["graphs"]=Dict{String,Any}(simulation["graphs"])
-        simulation["graphs"]["response"]="simulation/low_order_response.yaml"
-        detector=simulation["components"]["low_order_detector"]["config"]
-        detector["pixel_sampling_m"]=[0.003, 0.003]
-        detector["photon_noise"]=true
+        observation = pop!(simulation["observations"], "low_order")
+        observation["graph"] = "response"
+        observation["normalized_to_photon_rate"] = 1e8
+        simulation["observations"]["llowfs"] = observation
+        simulation["graphs"] = Dict{String,Any}(simulation["graphs"])
+        simulation["graphs"]["response"] = "simulation/low_order_response.yaml"
+        detector = simulation["components"]["low_order_detector"]["config"]
+        detector["pixel_sampling_m"] = [0.003, 0.003]
+        detector["photon_noise"] = true
         write_external_optical_documents(directory, physical, simulation)
-        science=ExternalOwner.prepare(path)
-        packet=zeros(Float32, 2, 4, 4)
-        packet[2, :, :].=1
+        science = ExternalOwner.prepare(path)
+        packet = zeros(Float32, 2, 4, 4)
+        packet[2, :, :] .= 1
         function first_frame()
-            frames=Matrix{Float32}[]
-            receipt=PipeWireArrayReceipt(
+            frames = Matrix{Float32}[]
+            receipt = PipeWireArrayReceipt(
                 Int64(0),
                 UInt64(2_000_000),
                 AcquisitionIdentity(
-                    AcquisitionDomain(ntuple(i->UInt8(i), 16)),
-                    UInt64(1),
-                    UInt64(1),
+                    AcquisitionDomain(ntuple(i -> UInt8(i), 16)), UInt64(1), UInt64(1)
                 ),
                 UInt64(0),
             )
             ExternalOwner.feed!(science.plant, packet, receipt) do name, image, metadata
-                name===:llowfs && push!(frames, copy(image))
+                name === :llowfs && push!(frames, copy(image))
             end
             return only(frames)
         end
-        expected=first_frame()
+        expected = first_frame()
         reset_external_pupil!(science.plant)
-        mailbox=ExternalOwner.SourceControl.Mailbox(Int64(1))
-        state=ExternalOwner.OwnerState()
-        execution=ExternalOwner.prepare_stream_execution!(
-            (; version = 4, owner_check = ()->nothing),
-            science,
-            mailbox,
-            state,
+        mailbox = ExternalOwner.SourceControl.Mailbox(Int64(1))
+        state = ExternalOwner.OwnerState()
+        execution = ExternalOwner.prepare_stream_execution!(
+            (; version = 4, owner_check = () -> nothing), science, mailbox, state
         )
-        @test first_frame()==expected
+        @test first_frame() == expected
         reset_external_pupil!(science.plant)
-        @test !execution.publication_enabled[] && execution.publication[]===nothing
+        @test !execution.publication_enabled[] && execution.publication[] === nothing
         @test_throws ArgumentError execution.emit(
-            :llowfs,
-            fill(floatmax(Float64), 8, 8),
-            (; sequence = UInt64(1)),
+            :llowfs, fill(floatmax(Float64), 8, 8), (; sequence = UInt64(1))
         )
-        checks=Ref(0)
+        checks = Ref(0)
         @test_throws InterruptException ExternalOwner.prepare_stream_execution!(
             (;
                 version = 4,
-                owner_check = ()->((checks[]+=1)==3 && throw(InterruptException())),
+                owner_check = () -> ((checks[] += 1) == 3 && throw(InterruptException())),
             ),
             science,
             mailbox,
             state,
         )
-        @test checks[]==3
-        @test science.plant.state.domain===nothing
-        @test all(e->e.sequence==0 && e.covered_ns==0, values(science.plant.exposures))
-        @test first_frame()==expected
+        @test checks[] == 3
+        @test science.plant.state.domain === nothing
+        @test all(
+            e -> e.sequence == 0 && e.covered_ns == 0, values(science.plant.exposures)
+        )
+        @test first_frame() == expected
     end
 end

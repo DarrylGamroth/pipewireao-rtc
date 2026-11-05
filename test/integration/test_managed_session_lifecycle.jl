@@ -18,65 +18,55 @@ const Managed = ManagedSessionLifecycle
             push!(
                 modules,
                 Dict(
-                    "name"=>"libpipewire-module-queue",
-                    "args"=>Dict(
-                        "capture.props"=>Dict("node.name"=>name*"-in"),
-                        "playback.props"=>Dict(
-                            "node.name"=>name*"-out",
-                            "media.name"=>name,
-                        ),
+                    "name" => "libpipewire-module-queue",
+                    "args" => Dict(
+                        "capture.props" => Dict("node.name" => name * "-in"),
+                        "playback.props" =>
+                            Dict("node.name" => name * "-out", "media.name" => name),
                     ),
                 ),
             )
             push!(
                 sinks,
                 Dict(
-                    "node.name"=>name*"-in",
-                    "ports"=>[
+                    "node.name" => name * "-in",
+                    "ports" => [
                         Dict(
-                            "element-type"=>wire,
-                            "shape"=>shape,
-                            "schema"=>"test/"*name,
-                            "rate"=>"2000/1",
+                            "element-type" => wire,
+                            "shape" => shape,
+                            "schema" => "test/" * name,
+                            "rate" => "2000/1",
                         ),
                     ],
                 ),
             )
         end
         Managed.C.write_json(
-            joinpath(application, "rtc/core.conf"),
-            Dict("context.modules"=>modules),
+            joinpath(application, "rtc/core.conf"), Dict("context.modules" => modules)
         )
-        session = Dict("sinks"=>sinks)
+        session = Dict("sinks" => sinks)
         for (name, element, wire, shape) in descriptions
             product = Managed.observation_spec(
-                application,
-                session,
-                name*"-in",
-                name,
-                "/unused-prefix",
+                application, session, name * "-in", name, "/unused-prefix"
             )
             @test product.type === element
             @test product.shape == Tuple(shape)
-            @test product.node == name*"-out"
+            @test product.node == name * "-out"
             @test product.media == name
-            @test product.schema == "test/"*name
+            @test product.schema == "test/" * name
             @test product.rate == SPA.Fraction(2000, 1)
         end
         @test_throws ArgumentError Managed.observation_spec(
-            application,
-            session,
-            "missing",
-            "missing",
-            "/unused-prefix",
+            application, session, "missing", "missing", "/unused-prefix"
         )
     end
 end
 
 @testset "managed coherent command observations require full identity" begin
     domain = AcquisitionDomain(ntuple(i -> UInt8(i), PipeWireAO.ACQUISITION_DOMAIN_SIZE))
-    other_domain =
-        AcquisitionDomain(ntuple(i -> UInt8(i+1), PipeWireAO.ACQUISITION_DOMAIN_SIZE))
+    other_domain = AcquisitionDomain(
+        ntuple(i -> UInt8(i + 1), PipeWireAO.ACQUISITION_DOMAIN_SIZE)
+    )
     first = AcquisitionIdentity(domain, UInt64(1), UInt64(1))
     second = AcquisitionIdentity(domain, UInt64(1), UInt64(2))
     foreign = AcquisitionIdentity(other_domain, UInt64(1), UInt64(2))

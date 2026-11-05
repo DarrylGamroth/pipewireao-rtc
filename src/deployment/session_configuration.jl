@@ -27,10 +27,10 @@ function _gui_defaults!(defaults, path, document::AbstractDict, spec)
 end
 _gui_session_defaults!(defaults, path, session, spec) = nothing
 function _gui_session_defaults!(defaults, path, session::AbstractDict, spec)
-    label=get(session, "label", get(spec, "name", nothing))
+    label = get(session, "label", get(spec, "name", nothing))
     _gui_session_label(label)
     if !haskey(session, "label")
-        session["label"]=label
+        session["label"] = label
         push!(defaults, path)
     end
     return nothing
@@ -45,7 +45,7 @@ function prepare_pupil_output!(application, spec, files, prefix)
     isfile(path) || return false
     simulation = D.decode(path, prefix)
     enabled =
-        get(simulation, "version", nothing)==5 || get(simulation, "pupil_output", false)
+        get(simulation, "version", nothing) == 5 || get(simulation, "pupil_output", false)
     _pupil_output_enabled(enabled)
     enabled || return false
     get(simulation, "version", nothing) in (3, 5) ||
@@ -53,7 +53,7 @@ function prepare_pupil_output!(application, spec, files, prefix)
     role = spec["source-owner"]
     owner = only(filter(owner -> owner["role"] == role, spec["owners"]))
     "--pupil-output-cpu" in owner["argv"] && "--threads=3,0" in owner["argv"] || throw(
-        ArgumentError("pupil_output requires a dedicated pupil-output worker placement"),
+        ArgumentError("pupil_output requires a dedicated pupil-output worker placement")
     )
     Base.require(Main, :AdaptiveOpticsSim)
     Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
@@ -82,33 +82,33 @@ function prepare_pupil_output!(application, spec, files, prefix)
     haskey(owners, name) &&
         throw(ArgumentError("duplicate scientific pupil node ownership"))
     owners[name] = role
-    if get(simulation, "version", nothing)==5 &&
-       get(simulation, "applied_command_observation", false)
-        options=AOSOwner.configuration(path)
-        applied="simulator-"*options.mirror*"-applied"
-        any(entry->entry["node.name"]==applied, sources) &&
+    if get(simulation, "version", nothing) == 5 &&
+        get(simulation, "applied_command_observation", false)
+        options = AOSOwner.configuration(path)
+        applied = "simulator-" * options.mirror * "-applied"
+        any(entry -> entry["node.name"] == applied, sources) &&
             throw(ArgumentError("duplicate adopted physical-command source"))
         haskey(owners, applied) &&
             throw(ArgumentError("duplicate adopted physical-command ownership"))
         push!(
             sources,
             Dict(
-                "node.name"=>applied,
-                "ownership"=>"external",
-                "ports"=>[
+                "node.name" => applied,
+                "ownership" => "external",
+                "ports" => [
                     Dict(
-                        "name"=>"output_1",
-                        "direction"=>"output",
-                        "shape"=>[options.command_count],
-                        "element-type"=>"F32_LE",
-                        "layout"=>"ROW_MAJOR",
-                        "schema"=>Schemas.identifier("applied_dm_command_opd_um"),
-                        "rate"=>string(options.rate)*"/1",
+                        "name" => "output_1",
+                        "direction" => "output",
+                        "shape" => [options.command_count],
+                        "element-type" => "F32_LE",
+                        "layout" => "ROW_MAJOR",
+                        "schema" => Schemas.identifier("applied_dm_command_opd_um"),
+                        "rate" => string(options.rate) * "/1",
                     ),
                 ],
             ),
         )
-        owners[applied]=role
+        owners[applied] = role
     end
     return true
 end
@@ -187,13 +187,17 @@ function validate_session_graph_contracts(session, contracts)
         # numeric metadata was omitted. Widen before adding prepared shapes.
         any(port -> _widen_session_ports!(graph, port), graph["ports"])
         for port in graph["ports"]
-            section =
-                get(port, "parameter", false) ? "parameters" :
-                port["direction"] == "input" ? "inputs" : "outputs"
+            section = if get(port, "parameter", false)
+                "parameters"
+            elseif port["direction"] == "input"
+                "inputs"
+            else
+                "outputs"
+            end
             portname = port["name"]
             haskey(actual[section], portname) || throw(
                 ArgumentError(
-                    "session graph $name has no prepared $section port $portname",
+                    "session graph $name has no prepared $section port $portname"
                 ),
             )
             expected = actual[section][portname]
@@ -246,14 +250,12 @@ function prepare_session_configuration!(
     for entry in files
         reference_roots!(roots, entry.document)
     end
-    simulation_path=joinpath(application, "simulation.conf")
-    metadata_simulation=isfile(simulation_path) ? D.decode(simulation_path, prefix) : Dict()
+    simulation_path = joinpath(application, "simulation.conf")
+    metadata_simulation =
+        isfile(simulation_path) ? D.decode(simulation_path, prefix) : Dict()
     if isempty(roots) && !pupil_output && isempty(declarations)
         queue_metadata_profiles!(
-            files[2].document,
-            files[1].document,
-            Dict(),
-            metadata_simulation,
+            files[2].document, files[1].document, Dict(), metadata_simulation
         )
         foreach(entry -> Schemas.validate(entry.document), files)
         ScienceExport.write_spa_config(files[2].path, files[2].document)
@@ -281,12 +283,14 @@ function prepare_session_configuration!(
         simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
         plant = simulation["plant"]
         declaration = InstrumentConfiguration.load_simulation(
-            D.relative_asset(application, plant["definition"]),
+            D.relative_asset(application, plant["definition"])
         )
-        configured =
-            InstrumentConfiguration.settings(declaration, get(plant, "settings", Dict()))
-        context["simulation"] =
-            InstrumentConfiguration.configuration_context(declaration, configured)["simulation"]
+        configured = InstrumentConfiguration.settings(
+            declaration, get(plant, "settings", Dict())
+        )
+        context["simulation"] = InstrumentConfiguration.configuration_context(
+            declaration, configured
+        )["simulation"]
     end
     if "simulator" in roots
         Base.require(Main, :AdaptiveOpticsSim)
@@ -304,8 +308,8 @@ function prepare_session_configuration!(
                 chopping = options.plant.chopping,
             )
         elseif get(simulation, "version", nothing) == 5
-            context["simulator"]=Dict(
-                "pupil"=>Base.invokelatest(
+            context["simulator"] = Dict(
+                "pupil" => Base.invokelatest(
                     pupil_output_port_contract,
                     definition;
                     settings = get(plant, "settings", Dict()),

@@ -4,8 +4,9 @@ using Test, PipeWireAORTC, FilterGraphIsland, JSON
 function check_application(application)
     R = PipeWireAORTC
     application = realpath(application)
-    spec =
-        JSON.parse(read(joinpath(application, "deployment.conf"), String), Dict{String,Any})
+    spec = JSON.parse(
+        read(joinpath(application, "deployment.conf"), String), Dict{String,Any}
+    )
     owner = only(filter(owner -> owner["role"] == "julia", spec["owners"]))
     arguments = owner["argv"][(findfirst(==("--"), owner["argv"])+1):end]
     bindings = Dict(
@@ -14,8 +15,9 @@ function check_application(application)
         "REMOTE" => "not-connected",
         "BOOTSTRAP_INSTANCE_JULIA" => "1",
     )
-    arguments =
-        [R.DeploymentConfiguration.substitute(argument, bindings) for argument in arguments]
+    arguments = [
+        R.DeploymentConfiguration.substitute(argument, bindings) for argument in arguments
+    ]
     _, graph_arguments, fits_path = R.GraphOwner.arguments(arguments)
     options = FilterGraphIsland.parse_arguments(graph_arguments)
     entries = R.GraphOwner.bindings(fits_path)

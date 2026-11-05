@@ -33,7 +33,7 @@ function test_request_process(owner)
             cursor = owner.cursor,
             pending = status.pending_exposure,
             frame = AdaptiveOpticsSim.AlgorithmGraphs.hil_boundary_status(
-                owner.hil.boundary,
+                owner.hil.boundary
             ).frame_sequence,
             published = owner.hil.state.transport.frame_published[],
             ready = owner.hil.state.transport.frame_ready[],
@@ -49,19 +49,19 @@ function test_request_process(owner)
                 find_globals(
                     owner.registry;
                     interface = "PipeWire:Interface:Node",
-                    properties = ("node.name"=>owner.hil.configuration.frame_node_name,),
+                    properties = ("node.name" => owner.hil.configuration.frame_node_name,),
                 ),
             )
             @test target.id == node_id(owner.hil.frame_stream)
             @test stream_state(owner.hil.frame_stream) ==
-                  PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+                PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
             @test is_driving(owner.hil.frame_stream)
             node = bind(owner.registry, target, Node)
             listener = add_listener!(
                 owner.hil.frame_stream;
                 on_command = (stream, pod) -> begin
                     if pod_value(SPA.Command, pod).object.id ==
-                       SPA.NODE_COMMAND_REQUEST_PROCESS
+                        SPA.NODE_COMMAND_REQUEST_PROCESS
                         Threads.atomic_add!(requests, UInt64(1))
                         Endpoint.wake!(condition, guard) # Only the test task waits here.
                     end
@@ -81,18 +81,18 @@ function test_request_process(owner)
         before = snapshot()
         @test before.pending === nothing
         @test before.frame ==
-              before.cursor.sequence ==
-              before.published ==
-              before.ready ==
-              0
+            before.cursor.sequence ==
+            before.published ==
+            before.ready ==
+            0
         with_thread_loop_lock(owner.hil.loop) do _
             @test requests[] == cycles[] == 0
             @test find_global(owner.registry, target.id).properties["object.serial"] ==
-                  target.properties["object.serial"]
+                target.properties["object.serial"]
             send_command!(node, node_command(SPA.NODE_COMMAND_REQUEST_PROCESS))
         end
         serviced = try
-            Endpoint.await(condition, guard, ControlClient.monotonic()+10) do
+            Endpoint.await(condition, guard, ControlClient.monotonic() + 10) do
                 requests[] > 0 && cycles[] > 0
             end
             true
@@ -167,8 +167,9 @@ end
         callback_count[] == 3 && error("deliberate bounded consumer failure")
         sample_count[] += 1
         expected_mean .+= vec(permutedims(sample.arrays.slopes)) ./ Float32(2)
-        intrinsic =
-            all(i -> !owner.active[i] || sample.arrays.validity[i], eachindex(owner.active))
+        intrinsic = all(
+            i -> !owner.active[i] || sample.arrays.validity[i], eachindex(owner.active)
+        )
         expected_valid[] &= intrinsic
         last_raw_sum[] = sum(UInt64, sample.arrays.raw)
         # Fault injection: the response must already own its slopes/validity.
@@ -180,7 +181,7 @@ end
     end
     try
         with_control_private_core(;
-            temporary_prefix = "calibration-consumer-",
+            temporary_prefix = "calibration-consumer-"
         ) do remote, directory, daemon
             chmod(dirname(remote), 0o700)
             frontend = command = server = client = serving = nothing
@@ -205,7 +206,7 @@ end
                     reference,
                     name,
                     instance,
-                    deadline = ControlClient.monotonic()+300,
+                    deadline = ControlClient.monotonic() + 300,
                     simulation_graph = "internal-source",
                     consume,
                 )
@@ -223,15 +224,15 @@ end
                         @test properties["node.loop.class"] == "main"
                         lock(stream.state_lock) do
                             @test PipeWireAO.LibPipeWire.pw_stream_get_data_loop(
-                                stream.handle,
+                                stream.handle
                             ) == PipeWireAO.LibPipeWire.pw_thread_loop_get_loop(
-                                owner.hil.loop.handle,
+                                owner.hil.loop.handle
                             )
                         end
                     end
                 end
                 serving = @async try
-                    Endpoint.serve!(server; deadline = ControlClient.monotonic()+300)
+                    Endpoint.serve!(server; deadline = ControlClient.monotonic() + 300)
                 catch error
                     error
                 end
@@ -244,7 +245,7 @@ end
                 complete(action) = Client.complete!(
                     client,
                     action;
-                    deadline = ControlClient.monotonic()+120,
+                    deadline = ControlClient.monotonic() + 120,
                     record = false,
                 )
                 @testset "idle native RequestProcess preserves scientific state" begin
@@ -256,24 +257,22 @@ end
                 @test callback_count[] == sample_count[] == 0
                 settled = complete(
                     Actions.Settle(
-                        UInt32(0),
-                        adopted.cursor,
-                        Actions.DiscardExposures(UInt32(2)),
+                        UInt32(0), adopted.cursor, Actions.DiscardExposures(UInt32(2))
                     ),
                 )
                 @test settled isa Actions.Settled
                 @test settled.cursor.sequence == adopted.cursor.sequence + 2
                 @test callback_count[] == sample_count[] == 0
                 rejected = complete(
-                    Actions.Collect(UInt32(0), settled.cursor, UInt32(0), UInt32(1)),
+                    Actions.Collect(UInt32(0), settled.cursor, UInt32(0), UInt32(1))
                 )
                 @test rejected isa Actions.Failed &&
-                      rejected.reason === Actions.InvalidEvidence
+                    rejected.reason === Actions.InvalidEvidence
                 @test owner.cursor == settled.cursor &&
-                      callback_count[] == sample_count[] == 0
+                    callback_count[] == sample_count[] == 0
                 progress("discarded settling exposures; collecting two samples")
                 response = complete(
-                    Actions.Collect(UInt32(0), settled.cursor, measurements, UInt32(2)),
+                    Actions.Collect(UInt32(0), settled.cursor, measurements, UInt32(2))
                 )
                 @test response isa Actions.Responses
                 @test length(response.exposures) == 2
@@ -293,12 +292,13 @@ end
                 @test eltype(sampled.arrays.raw) === UInt16
                 adopted = complete(Actions.Adopt(UInt32(1), reference))
                 @test adopted isa Actions.Adopted
-                settled =
-                    complete(Actions.Settle(UInt32(1), adopted.cursor, Actions.Immediate()))
+                settled = complete(
+                    Actions.Settle(UInt32(1), adopted.cursor, Actions.Immediate())
+                )
                 @test settled isa Actions.Settled
                 progress("injecting failure during a three-exposure Collect")
                 failed_batch = complete(
-                    Actions.Collect(UInt32(1), settled.cursor, measurements, UInt32(3)),
+                    Actions.Collect(UInt32(1), settled.cursor, measurements, UInt32(3))
                 )
                 @test failed_batch isa Actions.Responses
                 @test !failed_batch.valid
@@ -316,45 +316,46 @@ end
                     else
                         previous = failed_batch.exposures[index-1]
                         @test exposure.start_model_ns ==
-                              previous.start_model_ns + model_period_ns
+                            previous.start_model_ns + model_period_ns
                         @test exposure.start_model_ns >=
-                              previous.start_model_ns + previous.duration_ns
+                            previous.start_model_ns + previous.duration_ns
                     end
                 end
                 @test owner.cursor.sequence == last(failed_batch.exposures).sequence
                 sampled = capture_module.snapshot(owner.capture)
                 @test sampled.metadata.raw.identity.sequence ==
-                      last(failed_batch.exposures).sequence
+                    last(failed_batch.exposures).sequence
                 @test all(isfinite, failed_batch.values)
                 # Admit a fresh probe/settle phase so the next rejection proves
                 # the consumer latch, rather than merely an invalid phase.
                 adopted = complete(Actions.Adopt(UInt32(2), reference))
                 @test adopted isa Actions.Adopted
-                settled =
-                    complete(Actions.Settle(UInt32(2), adopted.cursor, Actions.Immediate()))
+                settled = complete(
+                    Actions.Settle(UInt32(2), adopted.cursor, Actions.Immediate())
+                )
                 @test settled isa Actions.Settled
                 @test server.phase === :Settled
                 cursor = owner.cursor
                 published =
                     Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence
                 rejected = complete(
-                    Actions.Collect(UInt32(2), settled.cursor, measurements, UInt32(1)),
+                    Actions.Collect(UInt32(2), settled.cursor, measurements, UInt32(1))
                 )
                 @test rejected isa Actions.Failed &&
-                      rejected.reason === Actions.InvalidEvidence
+                    rejected.reason === Actions.InvalidEvidence
                 @test server.phase === :Settled
                 @test owner.cursor == cursor
                 @test Wire.pipewire_calibration_status(owner.hil).frame_publication_cycle_sequence ==
-                      published
+                    published
                 @test callback_count[] == 3 && sample_count[] == 2
                 @test isempty(client.records)
                 progress("latched Collect rejected; restoring and releasing")
                 restored = complete(
-                    Actions.Restore(reference, Actions.DiscardExposures(UInt32(1))),
+                    Actions.Restore(reference, Actions.DiscardExposures(UInt32(1)))
                 )
                 @test restored isa Actions.Restored &&
-                      restored.figure == reference &&
-                      !restored.clipped
+                    restored.figure == reference &&
+                    !restored.clipped
                 @test owner.restored
                 @test owner.cursor.sequence == cursor.sequence + 1
                 @test Wire.pipewire_probe_values(owner.hil) == reference
@@ -369,7 +370,7 @@ end
                     worker ->
                         istaskdone(worker.task) &&
                         Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).finish_calibration_graph!(
-                            worker,
+                            worker
                         ).error === nothing,
                     owner.workers,
                 )
@@ -377,7 +378,7 @@ end
                 @test !isopen(server.wakeup) && !isopen(server.core)
                 @test all(stream -> !isopen(stream), values(owner.capture.streams))
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                      nothing
+                    nothing
                 @test owner.capture_store === nothing
             finally
                 client === nothing || close(client)

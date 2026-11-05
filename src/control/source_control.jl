@@ -30,8 +30,9 @@ const SNAPSHOT_NAMES = (
     "pipewireao.source-snapshot.report-generation",
     "pipewireao.source-snapshot.report-sequence",
 )
-const REJECTION_NAMES =
-    map(name -> replace(name, "source-snapshot" => "source-rejection"), SNAPSHOT_NAMES)
+const REJECTION_NAMES = map(
+    name -> replace(name, "source-snapshot" => "source-rejection"), SNAPSHOT_NAMES
+)
 query_values(token::Int64, instance::Int64) = (VERSION, token, instance)
 snapshot_values(
     instance::Int64,
@@ -130,8 +131,9 @@ function Mailbox(instance::Int64)
     reset_buffer = PodBuffer(512)
     run_control_status!(run_buffer, 0, 0, :stopped)
     reset_control_status!(reset_buffer, 0, 0)
-    parameters =
-        PreparedParams((run_buffer.pod, reset_buffer.pod, snapshot.pod, rejection.pod))
+    parameters = PreparedParams((
+        run_buffer.pod, reset_buffer.pod, snapshot.pod, rejection.pod
+    ))
     return Mailbox(
         instance,
         Threads.Atomic{Bool}(false),
@@ -186,13 +188,10 @@ function reject!(mailbox::Mailbox, kind::Int32, token::Int64, result::Int32)
 end
 
 function stage!(
-    mailbox::Mailbox,
-    kind::Int32,
-    token::Int64,
-    requested_running::Bool = false,
+    mailbox::Mailbox, kind::Int32, token::Int64, requested_running::Bool = false
 )
     if (mailbox.kind == kind && mailbox.token == token) ||
-       (mailbox.last_token == token && mailbox.last_kind == kind)
+        (mailbox.last_token == token && mailbox.last_kind == kind)
         # A duplicate has the original pending/committed outcome. Publishing
         # a competing EALREADY reply could reach a controller before that ACK.
         return nothing
@@ -215,9 +214,7 @@ struct ParameterChanged{M}
     mailbox::M
 end
 function (callback::ParameterChanged)(
-    ::Union{Stream,Filter},
-    id::UInt32,
-    pod::Union{Nothing,Pod},
+    ::Union{Stream,Filter}, id::UInt32, pod::Union{Nothing,Pod}
 )
     id == SPA.PARAM_PROPS && pod !== nothing || return nothing
     mailbox = callback.mailbox
@@ -242,9 +239,9 @@ function (callback::ParameterChanged)(
             stage!(mailbox, QUERY, token)
         end
     elseif parse_run_control_status!(mailbox.run_status, pod) == 0 ||
-           parse_reset_control_status!(mailbox.reset_status, pod) == 0 ||
-           parse_props!(mailbox.snapshot_destination, mailbox.snapshot, pod) == 0 ||
-           parse_props!(mailbox.rejection_destination, mailbox.rejection, pod) == 0
+        parse_reset_control_status!(mailbox.reset_status, pod) == 0 ||
+        parse_props!(mailbox.snapshot_destination, mailbox.snapshot, pod) == 0 ||
+        parse_props!(mailbox.rejection_destination, mailbox.rejection, pod) == 0
         # The stream's initial/publication parameters are not requests.
         return nothing
     else
@@ -255,10 +252,7 @@ function (callback::ParameterChanged)(
     return nothing
 end
 function (callback::ParameterChanged)(
-    filter::Filter,
-    port,
-    id::UInt32,
-    pod::Union{Nothing,Pod},
+    filter::Filter, port, id::UInt32, pod::Union{Nothing,Pod}
 )
     port === nothing && callback(filter, id, pod)
     return nothing
@@ -298,10 +292,7 @@ function publish!(
     state.sequence <= typemax(Int64) || error("source sequence exceeds native Long range")
     generation >= 1 || error("source generation must be positive")
     kind == RUN && run_control_status!(
-        mailbox.run_buffer,
-        token,
-        result,
-        state.running ? :running : :stopped,
+        mailbox.run_buffer, token, result, state.running ? :running : :stopped
     )
     kind == RESET && reset_control_status!(mailbox.reset_buffer, token, result)
     values = snapshot_values(
@@ -331,10 +322,7 @@ end
 
 "Publish one staged rejection without changing the retained committed ACK."
 function publish_rejection!(
-    mailbox::Mailbox,
-    stream::Union{Stream,Filter},
-    state,
-    generation::Int64,
+    mailbox::Mailbox, stream::Union{Stream,Filter}, state, generation::Int64
 )
     mailbox.rejected_kind == INITIAL && return nothing
     state.sequence <= typemax(Int64) || error("source sequence exceeds native Long range")

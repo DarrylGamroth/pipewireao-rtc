@@ -4,16 +4,15 @@ settings_mismatch(error) = rethrow()
 json_value(@nospecialize(value)) = Common.parse_json(String(Common.metadata_json(value)))
 
 function merge_settings(
-    defaults::AbstractDict,
-    overrides::AbstractDict,
-    schema::AbstractDict,
+    defaults::AbstractDict, overrides::AbstractDict, schema::AbstractDict
 )
     result = deepcopy(defaults)
     for (key, value) in overrides
         haskey(schema["properties"], key) ||
             throw(ArgumentError("unknown simulator setting $key"))
-        result[key] =
-            merge_setting(get(defaults, key, nothing), value, schema["properties"][key])
+        result[key] = merge_setting(
+            get(defaults, key, nothing), value, schema["properties"][key]
+        )
     end
     return result
 end
@@ -66,11 +65,7 @@ contains_readonly_array(schema, value::AbstractVector) =
 validate_settings(schema, proposed, current; path = "settings", readonly = false) =
     throw(ArgumentError("invalid settings schema"))
 function validate_settings(
-    schema::AbstractDict,
-    proposed,
-    current;
-    path = "settings",
-    readonly = false,
+    schema::AbstractDict, proposed, current; path = "settings", readonly = false
 )
     readonly |= get(schema, "readOnly", false) === true
     readonly &&
@@ -85,7 +80,7 @@ function validate_settings(
                 contains_readonly_setting(alternatives[only(before)], current) ||
                 contains_readonly_setting(alternatives[only(after)], proposed)
             ) && throw(
-                ArgumentError("$path requires a separate calibration/deployment change"),
+                ArgumentError("$path requires a separate calibration/deployment change")
             )
         end
         matches = count(schema["oneOf"]) do branch
@@ -134,11 +129,7 @@ end
 validate_object_settings(schema, proposed, current, path, readonly) =
     throw(ArgumentError("$path must be an object"))
 function validate_object_settings(
-    schema,
-    proposed::AbstractDict,
-    current::AbstractDict,
-    path,
-    readonly,
+    schema, proposed::AbstractDict, current::AbstractDict, path, readonly
 )
     properties = get(schema, "properties", Dict())
     required = get(schema, "required", collect(keys(properties)))
@@ -150,7 +141,7 @@ function validate_object_settings(
             value = haskey(proposed, key) ? proposed[key] : current[key]
             contains_readonly_setting(property, value) && throw(
                 ArgumentError(
-                    "$path.$key requires a separate calibration/deployment change",
+                    "$path.$key requires a separate calibration/deployment change"
                 ),
             )
         end
@@ -169,11 +160,7 @@ end
 validate_array_settings(schema, proposed, current, path, readonly) =
     throw(ArgumentError("$path must be an array"))
 function validate_array_settings(
-    schema,
-    proposed::AbstractVector,
-    current::AbstractVector,
-    path,
-    readonly,
+    schema, proposed::AbstractVector, current::AbstractVector, path, readonly
 )
     max_items = get(schema, "maxItems", readonly ? 4096 : 256)
     max_items = settings_max_items(max_items, path)

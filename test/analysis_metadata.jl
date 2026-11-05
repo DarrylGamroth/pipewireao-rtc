@@ -5,11 +5,7 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 const C = PipeWireAORTC.Common
 
 function analysis_callback_buffer(
-    data,
-    requirements;
-    header = nothing,
-    identity = nothing,
-    output = false,
+    data, requirements; header = nothing, identity = nothing, output = false
 )
     native = PipeWireAO.LibPipeWire
     metadata = MetadataSnapshot((MetadataRequirement(SPA.META_HEADER), requirements...))
@@ -54,18 +50,14 @@ end
     """,
         )
         options = FilterGraphIsland.parse_arguments([
-            "--graph",
-            path,
-            "--check",
-            "--boundary-layout",
-            "row-major",
+            "--graph", path, "--check", "--boundary-layout", "row-major"
         ])
         graph = FilterGraphIsland.prepare_service_graph(
-            options;
-            declarations = FilterGraphIsland.algorithm_declarations(options),
+            options; declarations = FilterGraphIsland.algorithm_declarations(options)
         )
-        config =
-            (; name = "analysis-metadata-test", rate = 500//1, channel_units = NamedTuple())
+        config = (;
+            name = "analysis-metadata-test", rate = 500//1, channel_units = NamedTuple()
+        )
         node = E.prepare_analysis_node(
             config,
             joinpath(directory, "absent.sock"),
@@ -78,32 +70,28 @@ end
             @test node.owner.join isa JuliaFilterGraph.PreparedSynchronizedInputs
             requirements = node.owner.output_records.summary.requirements
             @test Set(r.type for r in requirements) ==
-                  Set(r.type for r in C.TELEMETRY_METADATA)
+                Set(r.type for r in C.TELEMETRY_METADATA)
             identity = AcquisitionIdentity(AcquisitionDomain(ntuple(UInt8, 16)), 7, 42)
             header = BufferHeader(SPA.META_HEADER_FLAG_MARKER, 0, 123456, 0, 42)
             # Values use row-major layout: (x,y) pairs for two subapertures.
             source_values = (Float32[1, 2, 3, 4], Float32[10, 20], Bool[true, true])
             sources = map(
                 values -> analysis_callback_buffer(
-                    values,
-                    C.TELEMETRY_METADATA;
-                    header,
-                    identity,
+                    values, C.TELEMETRY_METADATA; header, identity
                 ),
                 source_values,
             )
             result = fill(NaN32, 8)
-            destination =
-                analysis_callback_buffer(result, Tuple(requirements); output = true)
+            destination = analysis_callback_buffer(
+                result, Tuple(requirements); output = true
+            )
             input_storage = vcat(map(source -> source.storage, sources)...)
             GC.@preserve sources destination input_storage begin
                 inputs = NdArrayFilterBuffers{false}(
-                    Ptr{Cvoid}(pointer(input_storage)),
-                    UInt32(3),
+                    Ptr{Cvoid}(pointer(input_storage)), UInt32(3)
                 )
                 outputs = NdArrayFilterBuffers{true}(
-                    Ptr{Cvoid}(pointer(destination.storage)),
-                    UInt32(1),
+                    Ptr{Cvoid}(pointer(destination.storage)), UInt32(1)
                 )
                 @test all(source -> metadata_records_valid(source.metadata), sources)
                 @test metadata_fits(outputs[1], sources[1].metadata)
@@ -118,9 +106,9 @@ end
                 @test buffer_header(destination.metadata) == header
                 @test acquisition_identity(destination.metadata) == identity
                 @test exposure_timing(destination.metadata) ==
-                      exposure_timing(sources[1].metadata)
+                    exposure_timing(sources[1].metadata)
                 @test reference_timestamp(destination.metadata) ==
-                      reference_timestamp(sources[1].metadata)
+                    reference_timestamp(sources[1].metadata)
                 @test optical_classification(destination.metadata) === nothing
                 @test trigger_classification(destination.metadata) === nothing
             end
@@ -132,26 +120,27 @@ end
 end
 
 @testset "classification profiles follow each declared source port" begin
-    required=(
+    required = (
         camera = (MetadataRequirement(SPA.META_OPTICAL_CHOPPING; required = true),),
         ordinary = (),
     )
-    inputs=C.telemetry_metadata_ports((:camera, :ordinary); required)
-    outputs=C.telemetry_metadata_ports(
+    inputs = C.telemetry_metadata_ports((:camera, :ordinary); required)
+    outputs = C.telemetry_metadata_ports(
         (:camera_product, :ordinary_product, :shared),
         (:camera, :ordinary),
         (1, 2, 0);
         required,
     )
-    @test length(inputs.camera.metadata)==5
-    @test length(inputs.ordinary.metadata)==3
-    @test any(r -> r.type==SPA.META_OPTICAL_CHOPPING && r.required, inputs.camera.metadata)
+    @test length(inputs.camera.metadata) == 5
+    @test length(inputs.ordinary.metadata) == 3
     @test any(
-        r -> r.type==SPA.META_ELECTRICAL_TRIGGER && !r.required,
-        inputs.camera.metadata,
+        r -> r.type == SPA.META_OPTICAL_CHOPPING && r.required, inputs.camera.metadata
     )
-    @test length(outputs.camera_product.metadata)==5
+    @test any(
+        r -> r.type == SPA.META_ELECTRICAL_TRIGGER && !r.required, inputs.camera.metadata
+    )
+    @test length(outputs.camera_product.metadata) == 5
     @test all(!r.required for r in outputs.camera_product.metadata)
-    @test length(outputs.ordinary_product.metadata)==3
-    @test length(outputs.shared.metadata)==3
+    @test length(outputs.ordinary_product.metadata) == 3
+    @test length(outputs.shared.metadata) == 3
 end

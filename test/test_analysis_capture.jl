@@ -6,17 +6,18 @@ const CS = PipeWireAORTC.ConfigurationStore
 
 function declaration()
     Dict(
-        "label"=>"Reference gradients",
-        "scope"=>Dict(
-            "session_label"=>"test",
-            "graph"=>"control",
-            "parameter"=>"reference-slopes",
+        "label" => "Reference gradients",
+        "scope" => Dict(
+            "session_label" => "test",
+            "graph" => "control",
+            "parameter" => "reference-slopes",
         ),
-        "products"=>Dict("mean"=>"mean", "variance"=>"variance", "stddev"=>"stddev"),
-        "units"=>Dict("mean"=>"pixel", "variance"=>"pixel^2", "stddev"=>"pixel"),
-        "sample-count"=>"sample-count",
-        "complete"=>"complete",
-        "variance-valid"=>"variance-valid",
+        "products" =>
+            Dict("mean" => "mean", "variance" => "variance", "stddev" => "stddev"),
+        "units" => Dict("mean" => "pixel", "variance" => "pixel^2", "stddev" => "pixel"),
+        "sample-count" => "sample-count",
+        "complete" => "complete",
+        "variance-valid" => "variance-valid",
     )
 end
 function formats()
@@ -33,17 +34,23 @@ function formats()
 end
 function graph_document(; mode = "finite")
     Dict(
-        "filter.graph"=>Dict(
-            "nodes"=>[
+        "filter.graph" => Dict(
+            "nodes" => [
                 Dict(
-                    "name"=>"statistics",
-                    "label"=>"array-statistics-f32",
-                    "config"=>Dict("mode"=>mode, "window_samples"=>3),
+                    "name" => "statistics",
+                    "label" => "array-statistics-f32",
+                    "config" => Dict("mode" => mode, "window_samples" => 3),
                 ),
             ],
-            "outputs"=>Any[
-                "statistics:"*name for name in
-                ("mean", "variance", "stddev", "sample-count", "complete", "variance-valid")
+            "outputs" => Any[
+                "statistics:" * name for name in (
+                    "mean",
+                    "variance",
+                    "stddev",
+                    "sample-count",
+                    "complete",
+                    "variance-valid",
+                )
             ],
         ),
     )
@@ -53,10 +60,10 @@ configuration() =
 function frame(
     count,
     sequence;
-    complete = count==3,
+    complete = count == 3,
     identity = true,
     generation = UInt64(1),
-    domain = ntuple(_->UInt8(1), 16),
+    domain = ntuple(_ -> UInt8(1), 16),
     corrupted = false,
     discontinuity = false,
 )
@@ -91,23 +98,24 @@ end
     @test config.count === Symbol("sample-count")
     @test config.window_samples == 3
     @test_throws ArgumentError A.prepare_capture(
-        A.capture_configuration(declaration()),
-        formats(),
+        A.capture_configuration(declaration()), formats()
     )
     for mode in ("sliding", "exponential")
         @test_throws ArgumentError A.capture_contract(config, graph_document(; mode))
     end
     for endpoint in ("other:complete", "statistics:variance-valid")
-        graph=graph_document()
-        graph["filter.graph"]["outputs"][5]=Dict("name"=>"complete", "endpoint"=>endpoint)
+        graph = graph_document()
+        graph["filter.graph"]["outputs"][5] = Dict(
+            "name" => "complete", "endpoint" => endpoint
+        )
         @test_throws ArgumentError A.capture_contract(config, graph)
     end
     for invalid in (
-        merge(declaration(), Dict("extra"=>1)),
-        merge(declaration(), Dict("products"=>Dict("mean"=>"complete"))),
-        merge(declaration(), Dict("units"=>Dict("mean"=>"pixel"))),
-        merge(declaration(), Dict("scope"=>Dict("parameter"=>12))),
-        merge(declaration(), Dict("label"=>"invalid\n")),
+        merge(declaration(), Dict("extra" => 1)),
+        merge(declaration(), Dict("products" => Dict("mean" => "complete"))),
+        merge(declaration(), Dict("units" => Dict("mean" => "pixel"))),
+        merge(declaration(), Dict("scope" => Dict("parameter" => 12))),
+        merge(declaration(), Dict("label" => "invalid\n")),
     )
         @test_throws ArgumentError A.capture_configuration(invalid)
     end
@@ -146,7 +154,7 @@ end
         records = A.register_capture!(
             store,
             capture;
-            source = [Dict("node"=>"wfs", "port"=>"slopes")],
+            source = [Dict("node" => "wfs", "port" => "slopes")],
             graph_sha256 = "measured-graph",
         )
         @test Set(keys(records)) == Set(["mean", "variance", "stddev"])
@@ -167,7 +175,7 @@ end
         end
         # The catalog registration has no scientific application side effect.
         @test isempty(CS.history(store)["items"])
-        boundary=CS.register!(
+        boundary = CS.register!(
             store,
             Float32[1];
             label = "Exact BUNIT boundary",
@@ -182,30 +190,22 @@ end
             repeat("x", 69),
             "pixel ",
             " pixel",
-            repeat("x", 67)*"'",
+            repeat("x", 67) * "'",
             1,
         )
             @test_throws ArgumentError CS.register!(
-                store,
-                Float32[1];
-                label = "Invalid units",
-                scope = "test",
-                units,
+                store, Float32[1]; label = "Invalid units", scope = "test", units
             )
         end
     end
     mktempdir() do root
-        store=CS.Store(root)
-        records=Dict{String,Any}()
-        attempts=Ref(0)
-        check() = (attempts[]+=1; attempts[]>1 && error("cancelled between registrations"))
+        store = CS.Store(root)
+        records = Dict{String,Any}()
+        attempts = Ref(0)
+        check() =
+            (attempts[] += 1; attempts[] > 1 && error("cancelled between registrations"))
         @test_throws ErrorException A.register_capture!(
-            store,
-            capture;
-            source = "wfs",
-            graph_sha256 = "graph",
-            records,
-            check,
+            store, capture; source = "wfs", graph_sha256 = "graph", records, check
         )
         @test Set(keys(records)) == Set(["mean"])
         @test length(CS.list_artifacts(store)["items"]) == 1
@@ -234,33 +234,40 @@ end
         if bad in (:reset, :invalidated)
             capture(Val(bad))
         else
-            output, metadata =
-                bad === :generation ? frame(2, 11; generation = UInt64(2)) :
-                bad === :domain ? frame(2, 11; domain = ntuple(_->UInt8(2), 16)) :
-                bad === :identity ? frame(2, 11; identity = false) :
-                bad === :sequence ? frame(2, 10) :
-                bad === :count ? frame(3, 11) :
-                bad === :corrupted ? frame(2, 11; corrupted = true) :
-                bad === :discontinuity ? frame(2, 11; discontinuity = true) :
+            output, metadata = if bad === :generation
+                frame(2, 11; generation = UInt64(2))
+            elseif bad === :domain
+                frame(2, 11; domain = ntuple(_ -> UInt8(2), 16))
+            elseif bad === :identity
+                frame(2, 11; identity = false)
+            elseif bad === :sequence
+                frame(2, 10)
+            elseif bad === :count
+                frame(3, 11)
+            elseif bad === :corrupted
+                frame(2, 11; corrupted = true)
+            elseif bad === :discontinuity
+                frame(2, 11; discontinuity = true)
+            else
                 frame(2, 11; complete = true)
+            end
             bad === :absent && (
-                metadata=merge(
+                metadata = merge(
                     metadata,
                     (;
                         var"sample-count" = (;
-                            present = false,
-                            value = metadata.mean.value,
+                            present = false, value = metadata.mean.value
                         )
                     ),
                 )
             )
             bad === :unmatched &&
-                (metadata=merge(metadata, (; mean = frame(2, 12)[2].mean)))
+                (metadata = merge(metadata, (; mean = frame(2, 12)[2].mean)))
             if bad === :nonfinite
                 output, metadata = frame(2, 11; complete = false)
                 capture(Val(:frame), output, metadata)
-                output, metadata=frame(3, 12)
-                output.mean[1]=NaN32
+                output, metadata = frame(3, 12)
+                output.mean[1] = NaN32
             end
             capture(Val(:frame), output, metadata)
         end
@@ -268,10 +275,7 @@ end
         mktempdir() do root
             store = CS.Store(root)
             @test_throws ArgumentError A.register_capture!(
-                store,
-                capture;
-                source = "wfs",
-                graph_sha256 = "graph",
+                store, capture; source = "wfs", graph_sha256 = "graph"
             )
             @test isempty(CS.list_artifacts(store)["items"])
         end
@@ -280,22 +284,13 @@ end
     capture(Val(:reset)) # Startup reset before any frames is allowed.
     @test capture.ready[] == 0
     mktempdir() do root
-        path=joinpath(root, "graph.conf")
+        path = joinpath(root, "graph.conf")
         write(path, "test graph")
-        run=A.Config(
-            path,
-            "capture",
-            1//1,
-            A.LinkSpec[],
-            Dict{String,Dict{String,String}}(),
-            config,
+        run = A.Config(
+            path, "capture", 1//1, A.LinkSpec[], Dict{String,Dict{String,String}}(), config
         )
-        report=A.capture_artifacts(
-            run,
-            capture,
-            Ref(true);
-            root = joinpath(root, "store"),
-            runtime = root,
+        report = A.capture_artifacts(
+            run, capture, Ref(true); root = joinpath(root, "store"), runtime = root
         )
         @test report["state"] == "incomplete"
         @test !ispath(joinpath(root, "store"))
@@ -304,45 +299,46 @@ end
 end
 
 @testset "bounded immutable capture provenance" begin
-    provenance=Dict(
-        "acquisition_receipt_sha256"=>repeat("1", 64),
-        "graph_sha256"=>repeat("2", 64),
-        "fits_bindings_sha256"=>nothing,
-        "source_graph_sha256"=>repeat("3", 64),
-        "recipe_sha256"=>repeat("4", 64),
-        "calibration_identity"=>"sha256:"*repeat("5", 64),
-        "operation"=>"preserve",
-        "reference_space"=>"selected background subtracted",
-        "source_stage"=>"controller:pixels",
-        "parameter_sha256"=>Dict("background"=>repeat("6", 64)),
-        "source_parameter_sha256"=>Dict("background"=>repeat("7", 64)),
+    provenance = Dict(
+        "acquisition_receipt_sha256" => repeat("1", 64),
+        "graph_sha256" => repeat("2", 64),
+        "fits_bindings_sha256" => nothing,
+        "source_graph_sha256" => repeat("3", 64),
+        "recipe_sha256" => repeat("4", 64),
+        "calibration_identity" => "sha256:" * repeat("5", 64),
+        "operation" => "preserve",
+        "reference_space" => "selected background subtracted",
+        "source_stage" => "controller:pixels",
+        "parameter_sha256" => Dict("background" => repeat("6", 64)),
+        "source_parameter_sha256" => Dict("background" => repeat("7", 64)),
     )
-    configured=merge(declaration(), Dict("provenance"=>provenance))
-    config=A.capture_contract(A.capture_configuration(configured), graph_document())
-    @test A.provenance_metadata(config.provenance)==provenance
+    configured = merge(declaration(), Dict("provenance" => provenance))
+    config = A.capture_contract(A.capture_configuration(configured), graph_document())
+    @test A.provenance_metadata(config.provenance) == provenance
     for changed in (
-        merge(provenance, Dict("extra"=>1)),
-        merge(provenance, Dict("graph_sha256"=>"bad")),
-        merge(provenance, Dict("reference_space"=>repeat("x", 2049))),
-        merge(provenance, Dict("parameter_sha256"=>Dict("../../bad"=>repeat("a", 64)))),
-        merge(provenance, Dict("source_stage"=>"not-an-endpoint")),
+        merge(provenance, Dict("extra" => 1)),
+        merge(provenance, Dict("graph_sha256" => "bad")),
+        merge(provenance, Dict("reference_space" => repeat("x", 2049))),
+        merge(provenance, Dict("parameter_sha256" => Dict("../../bad" => repeat("a", 64)))),
+        merge(provenance, Dict("source_stage" => "not-an-endpoint")),
     )
         @test_throws ArgumentError A.capture_configuration(
-            merge(declaration(), Dict("provenance"=>changed)),
+            merge(declaration(), Dict("provenance" => changed))
         )
     end
-    capture=A.prepare_capture(config, formats())
-    for n = 1:3
-        capture(Val(:frame), frame(n, 10+n)...)
+    capture = A.prepare_capture(config, formats())
+    for n in 1:3
+        capture(Val(:frame), frame(n, 10 + n)...)
     end
     mktempdir() do root
-        records=A.register_capture!(
+        records = A.register_capture!(
             CS.Store(root),
             capture;
             source = "controller:pixels",
             graph_sha256 = repeat("2", 64),
         )
-        @test records["mean"]["manifest"]["metadata"]["acquisition_provenance"]==provenance
+        @test records["mean"]["manifest"]["metadata"]["acquisition_provenance"] ==
+            provenance
         @test_throws ArgumentError A.register_capture!(
             CS.Store(root),
             capture;
@@ -354,10 +350,10 @@ end
 
 @testset "finished incomplete acquisition retains its receipt without opening a store" begin
     mktempdir() do root
-        capture=A.prepare_capture(configuration(), formats())
-        config=(name = "incomplete-capture", graph = "unused", links = A.LinkSpec[])
-        store_path=joinpath(root, "store")
-        record=A.capture_artifacts(
+        capture = A.prepare_capture(configuration(), formats())
+        config = (name = "incomplete-capture", graph = "unused", links = A.LinkSpec[])
+        store_path = joinpath(root, "store")
+        record = A.capture_artifacts(
             config,
             capture,
             Ref(true);
@@ -365,7 +361,7 @@ end
             runtime = root,
             graph_sha256 = "unused",
         )
-        @test record["state"]=="incomplete"
+        @test record["state"] == "incomplete"
         @test isfile(joinpath(root, "incomplete-capture-capture.json"))
         @test !ispath(store_path)
     end

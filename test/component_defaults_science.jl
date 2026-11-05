@@ -26,7 +26,7 @@ const AG = AdaptiveOpticsSim.AlgorithmGraphs
         ),
         (
             AG._emccd_detector_acquisition_f32_node,
-            merge(detector, (; normalized_pupil_sampling = 1/4)),
+            merge(detector, (; normalized_pupil_sampling = 1 / 4)),
             (; photon_noise = true, dark_current_e_per_pixel_s = 0),
         ),
         (
@@ -56,9 +56,7 @@ const AG = AdaptiveOpticsSim.AlgorithmGraphs
         end
         for key in keys(defaults)
             @test_throws AG.AlgorithmGraphError factory(
-                :node,
-                merge(config, NamedTuple{(key,)}((nothing,))),
-                (;),
+                :node, merge(config, NamedTuple{(key,)}((nothing,))), (;)
             )
         end
     end

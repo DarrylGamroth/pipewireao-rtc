@@ -12,7 +12,7 @@ condition(; kwargs...) = merge(
         "persistence_ms" => 1000,
         "max_gap_ms" => 100,
     ),
-    Dict(string(k)=>v for (k, v) in kwargs),
+    Dict(string(k) => v for (k, v) in kwargs),
 )
 
 @testset "Bounded owner supervision authoring and canonical schemas" begin
@@ -25,7 +25,7 @@ condition(; kwargs...) = merge(
         @test length(parsed) == 1
         @test only(parsed).output === Symbol("mirror-feedback")
         @test only(parsed).schema ==
-              PipeWireAORTC.Schemas.identifier("pdm_constraint_feedback")
+            PipeWireAORTC.Schemas.identifier("pdm_constraint_feedback")
         @test only(parsed).configuration.action === :monitor_only
         @test only(parsed).configuration.persistence_ns == 1_000_000_000
         @test only(parsed).tolerance == 0
@@ -40,23 +40,22 @@ condition(; kwargs...) = merge(
             (:action, "close"),
             (:extra, 1),
         )
-            write_condition(condition(; field=>value))
+            write_condition(condition(; field => value))
             @test_throws ArgumentError Owner.read_supervision(path)
         end
         @test_throws ArgumentError Owner.supervision_tolerance(NaN)
         Common.write_yaml(
-            path,
-            Dict("schema_version" => 1, "conditions" => [condition(), condition()]),
+            path, Dict("schema_version" => 1, "conditions" => [condition(), condition()])
         )
         @test_throws ArgumentError Owner.read_supervision(path)
-        for conditions in ([], [condition() for _ = 1:9], Dict())
-            Common.write_yaml(path, Dict("schema_version" => 1, "conditions"=>conditions))
+        for conditions in ([], [condition() for _ in 1:9], Dict())
+            Common.write_yaml(path, Dict("schema_version" => 1, "conditions" => conditions))
             @test_throws ArgumentError Owner.read_supervision(path)
         end
         write(path, repeat(" ", 65537))
         @test_throws ArgumentError Owner.read_supervision(path)
     end
-    base=[
+    base = [
         "--bootstrap-node",
         "bootstrap",
         "--bootstrap-instance",
@@ -65,14 +64,14 @@ condition(; kwargs...) = merge(
         "/tmp/private",
     ]
     @test_throws ArgumentError Owner.arguments([base; "--supervision"; "policy.yaml"])
-    arguments=Owner.arguments(
+    arguments = Owner.arguments(
         [
             base;
             "--correction-property";
             "controller:closed";
             "--supervision";
             "policy.yaml"
-        ],
+        ]
     )
     @test arguments[7] == "policy.yaml"
     @test "--supervision" ∉ arguments[2]

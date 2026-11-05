@@ -7,26 +7,22 @@ const Owner = PipeWireAORTC.GraphOwner
 const Artifacts = PipeWireAORTC.Artifacts
 
 function bundle_graph(calibration)
-    bundle=Calibration.read_bundle(calibration)
-    options=FilterGraphIsland.parse_arguments([
-        "--graph",
-        bundle.graph,
-        "--check",
-        "--execution",
-        "complete-frame",
+    bundle = Calibration.read_bundle(calibration)
+    options = FilterGraphIsland.parse_arguments([
+        "--graph", bundle.graph, "--check", "--execution", "complete-frame"
     ])
     return FilterGraphIsland.prepare_service_graph(
         options;
-        initial_parameters = formats->begin
-            Set(string.(keys(formats)))==Set(bundle.parameter_names) || throw(
+        initial_parameters = formats -> begin
+            Set(string.(keys(formats))) == Set(bundle.parameter_names) || throw(
                 ArgumentError("calibration runtime parameter manifest differs from graph"),
             )
-            entries=[
+            entries = [
                 Owner.FITSBinding(
                     name,
                     Artifacts.FITSArtifact(
                         bundle.artifacts[bundle.parameter_files[string(name)]];
-                        axes = length(format.shape)>1 ?
+                        axes = length(format.shape) > 1 ?
                                collect(reverse(1:length(format.shape))) : nothing,
                     ),
                 ) for (name, format) in pairs(formats)
@@ -37,14 +33,15 @@ function bundle_graph(calibration)
 end
 
 function Calibration.stage_calibration(source, application, calibration, destination)
-    source, application, calibration, destination =
-        E.checked_path.((source, application, calibration, destination))
+    source, application, calibration, destination = E.checked_path.((
+        source, application, calibration, destination
+    ))
     isdir(source) && isdir(application) && isdir(calibration) ||
         throw(ArgumentError("source, application and calibration must be directories"))
     !isfile(joinpath(source, "deployment.conf")) &&
     !isdir(joinpath(source, "shared-runtime")) || throw(
         ArgumentError(
-            "staging requires the authored instrument source, not a built application",
+            "staging requires the authored instrument source, not a built application"
         ),
     )
     !ispath(destination) && !islink(destination) ||
@@ -53,14 +50,14 @@ function Calibration.stage_calibration(source, application, calibration, destina
     E.outside(relpath(destination, application)) &&
     E.outside(relpath(destination, calibration)) || throw(
         ArgumentError(
-            "staging destination must be outside source and calibration directories",
+            "staging destination must be outside source and calibration directories"
         ),
     )
     bundle = Calibration.read_bundle(calibration)
-    resultpath=joinpath(calibration, "result.yaml")
-    graphpath=bundle.graph
-    report=bundle.report
-    Calibration.read_recipe(application)==report["recipe"] ||
+    resultpath = joinpath(calibration, "result.yaml")
+    graphpath = bundle.graph
+    report = bundle.report
+    Calibration.read_recipe(application) == report["recipe"] ||
         throw(ArgumentError("calibration recipe differs from the selected application"))
     recipe = report["recipe"]
     IC.bounded_yaml(joinpath(source, "calibration/recipe.yaml")) ==
@@ -71,16 +68,16 @@ function Calibration.stage_calibration(source, application, calibration, destina
     original_identity = IC.prescription_identity(declaration, settings)
     original_identity == report["source_prescription_identity"] || throw(
         ArgumentError(
-            "calibration source prescription differs from the selected instrument",
+            "calibration source prescription differs from the selected instrument"
         ),
     )
     authored_graph = D.relative_asset(application, recipe["graph_source"])
-    C.sha256_file(D.relative_asset(source, recipe["graph_source"]))==report["source_graph_sha256"] ||
-        throw(
-            ArgumentError("source graph template differs from the calibrated application"),
-        )
+    C.sha256_file(D.relative_asset(source, recipe["graph_source"])) ==
+    report["source_graph_sha256"] || throw(
+        ArgumentError("source graph template differs from the calibrated application")
+    )
     C.sha256_file(authored_graph) == report["source_graph_sha256"] || throw(
-        ArgumentError("calibration authored graph differs from the selected instrument"),
+        ArgumentError("calibration authored graph differs from the selected instrument")
     )
     C.sha256_file(graphpath) == report["graph_sha256"] ||
         throw(ArgumentError("calibration concrete graph hash differs from its receipt"))
@@ -93,29 +90,31 @@ function Calibration.stage_calibration(source, application, calibration, destina
         E.copy_source(source, staged; runtime_configurations = false)
         # Replace the selection only in this owned staging copy.
         # Preserve authored recipe and calibration inputs. Git retains prior selections.
-        selected=joinpath(staged, "calibration")
+        selected = joinpath(staged, "calibration")
         mkpath(selected)
         rm(joinpath(selected, "recipe.conf"); force = true)
         rm(joinpath(selected, "history"); recursive = true, force = true)
         for name in ("artifacts", "result.yaml", "context.yaml", "graph.conf")
-            path=joinpath(selected, name)
+            path = joinpath(selected, name)
             rm(path; recursive = true, force = true)
-            origin=joinpath(calibration, name)
+            origin = joinpath(calibration, name)
             isdir(origin) ? R.copy_tree(origin, path) : R.copy_file(origin, path)
         end
         rm(joinpath(staged, "rtc", "calibration.yaml"); force = true)
-        staged_declaration =
-            IC.load_simulation(D.relative_asset(staged, recipe["simulation"]))
+        staged_declaration = IC.load_simulation(
+            D.relative_asset(staged, recipe["simulation"])
+        )
         staged_settings = IC.settings(staged_declaration, settings)
-        IC.prescription_identity(staged_declaration, staged_settings)==original_identity ||
-            throw(
-                ArgumentError(
-                    "authored source prescription differs from the calibrated application",
-                ),
-            )
+        IC.prescription_identity(staged_declaration, staged_settings) ==
+        original_identity || throw(
+            ArgumentError(
+                "authored source prescription differs from the calibrated application"
+            ),
+        )
         copied_report = deepcopy(report)
-        copied_report["staged_prescription_identity"] =
-            IC.prescription_identity(staged_declaration, staged_settings)
+        copied_report["staged_prescription_identity"] = IC.prescription_identity(
+            staged_declaration, staged_settings
+        )
         copied_resultpath = joinpath(staged, "calibration", "result.yaml")
         C.write_yaml(
             copied_resultpath,
@@ -127,15 +126,14 @@ function Calibration.stage_calibration(source, application, calibration, destina
         configuration["calibration"] = "calibration/context.yaml"
         configuration["calibration_identity"] = "sha256:" * C.sha256_file(copied_resultpath)
         if haskey(report, "dimensions")
-            dimensions=deepcopy(report["dimensions"])
-            configuration["controller"]["command_count"]=pop!(
-                dimensions,
-                "controller_command_count",
+            dimensions = deepcopy(report["dimensions"])
+            configuration["controller"]["command_count"] = pop!(
+                dimensions, "controller_command_count"
             )
             for (name, value) in dimensions
-                original=get(configuration["dimensions"], name, nothing)
+                original = get(configuration["dimensions"], name, nothing)
                 preserve_calibration_dimension(original) && continue
-                configuration["dimensions"][name]=value
+                configuration["dimensions"][name] = value
             end
         end
         C.write_yaml(
@@ -152,28 +150,23 @@ function Calibration.stage_calibration(source, application, calibration, destina
         )
         prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
         E.resolve_graph_configuration(
-            D.decode(D.relative_asset(staged, recipe["graph_source"]), prefix),
-            context,
+            D.decode(D.relative_asset(staged, recipe["graph_source"]), prefix), context
         ) == D.decode(graphpath, prefix) || throw(
             ArgumentError(
-                "calibration context does not reproduce its recorded concrete graph",
+                "calibration context does not reproduce its recorded concrete graph"
             ),
         )
         # Cold source publication must see the newly selected dimensions and parameters.
         R.copy_file(graphpath, D.relative_asset(staged, recipe["graph"]))
         options = FilterGraphIsland.parse_arguments([
-            "--graph",
-            graphpath,
-            "--check",
-            "--execution",
-            "complete-frame",
+            "--graph", graphpath, "--check", "--execution", "complete-frame"
         ])
         graph = FilterGraphIsland.prepare_service_graph(
             options;
             initial_parameters = formats -> begin
-                Set(string.(keys(formats)))==Set(bundle.parameter_names) || throw(
+                Set(string.(keys(formats))) == Set(bundle.parameter_names) || throw(
                     ArgumentError(
-                        "calibration runtime parameter manifest differs from graph",
+                        "calibration runtime parameter manifest differs from graph"
                     ),
                 )
                 rows = Dict{String,Any}[]
@@ -182,7 +175,7 @@ function Calibration.stage_calibration(source, application, calibration, destina
                     format = getproperty(formats, name)
                     filename = bundle.parameter_files[string(name)]
                     haskey(hashes, filename) || throw(
-                        ArgumentError("calibration receipt omits parameter $name"),
+                        ArgumentError("calibration receipt omits parameter $name")
                     )
                     axes = collect(reverse(1:length(format.shape)))
                     path = joinpath(staged, "calibration", "artifacts", filename)
@@ -198,9 +191,7 @@ function Calibration.stage_calibration(source, application, calibration, destina
                         Owner.FITSBinding(
                             name,
                             Artifacts.FITSArtifact(
-                                path;
-                                hdu = 1,
-                                axes = length(axes) > 1 ? axes : nothing,
+                                path; hdu = 1, axes = length(axes) > 1 ? axes : nothing
                             ),
                         ),
                     )
@@ -219,7 +210,7 @@ function Calibration.stage_calibration(source, application, calibration, destina
             # Every selected array has passed the production owner format/byte checks and
             # the scientific parameter replacement contract before publication.
             length(JuliaFilterGraph.parameter_formats(graph)) == count[] || throw(
-                ArgumentError("calibration parameter coverage differs from the graph"),
+                ArgumentError("calibration parameter coverage differs from the graph")
             )
         finally
             FilterGraphIsland.close_execution(graph)

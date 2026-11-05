@@ -12,8 +12,7 @@ function external_optical_documents()
         ),
         "wavefront_sensors" => Dict(
             name => Dict{String,Any}(
-                "kind" => name,
-                "detector" => Dict{String,Any}("name" => detector),
+                "kind" => name, "detector" => Dict{String,Any}("name" => detector)
             ) for (name, detector) in (("scc", "SAPHIRA"), ("llowfs", "CRED2"))
         ),
     )
@@ -69,8 +68,7 @@ function external_optical_documents()
             ),
         ),
         "graphs" => Dict("scc" => deepcopy(graph), "llowfs" => deepcopy(graph)),
-        "profiles" =>
-            Dict("reference" => Dict("nodes" => Any[], "parameters" => Any[])),
+        "profiles" => Dict("reference" => Dict("nodes" => Any[], "parameters" => Any[])),
         "components" => Dict(
             "optics" =>
                 Dict("template" => "proper_optical_train_f64", "config" => config),
@@ -98,34 +96,37 @@ end
 function authored_response!(directory, physical, simulation; mtf = false)
     detector = "low_order_detector"
     config = Dict{String,Any}(
-        "rows"=>8,
-        "columns"=>8,
-        "pixel_sampling_m"=>[1e-3, 1e-3],
-        "spectral_channel"=>"h_band",
-        "exposure_duration_s"=>0.002,
-        "quantum_efficiency"=>0.8,
-        "rng_seed"=>1,
-        "photon_rate_schema"=>"example.photons-per-second/1",
-        "frame_schema"=>"example.electrons/1",
+        "rows" => 8,
+        "columns" => 8,
+        "pixel_sampling_m" => [1e-3, 1e-3],
+        "spectral_channel" => "h_band",
+        "exposure_duration_s" => 0.002,
+        "quantum_efficiency" => 0.8,
+        "rng_seed" => 1,
+        "photon_rate_schema" => "example.photons-per-second/1",
+        "frame_schema" => "example.electrons/1",
     )
-    simulation["components"][detector] =
-        Dict("template"=>"ingaas", "sensor"=>"llowfs", "config"=>config)
-    simulation["bindings"]["photon_rate"] =
-        Dict("kind"=>"zeros", "type"=>"Float32", "shape"=>[8, 8])
-    physical["wavefront_sensors"]["llowfs"]["acquisition"] =
-        Dict("exposure_duration_s"=>0.002)
+    simulation["components"][detector] = Dict(
+        "template" => "ingaas", "sensor" => "llowfs", "config" => config
+    )
+    simulation["bindings"]["photon_rate"] = Dict(
+        "kind" => "zeros", "type" => "Float32", "shape" => [8, 8]
+    )
+    physical["wavefront_sensors"]["llowfs"]["acquisition"] = Dict(
+        "exposure_duration_s" => 0.002
+    )
     graph = Dict{String,Any}(
-        "schema_version"=>1,
-        "name"=>"low_order_response",
-        "nodes"=>Any[Dict("name"=>detector)],
-        "inputs"=>[
+        "schema_version" => 1,
+        "name" => "low_order_response",
+        "nodes" => Any[Dict("name" => detector)],
+        "inputs" => [
             Dict(
-                "name"=>"photon_rate",
-                "binding"=>"photon_rate",
-                "destination"=>detector*".photon_rate",
+                "name" => "photon_rate",
+                "binding" => "photon_rate",
+                "destination" => detector * ".photon_rate",
             ),
         ],
-        "outputs"=>[Dict("name"=>"frame", "source"=>detector*".frame")],
+        "outputs" => [Dict("name" => "frame", "source" => detector * ".frame")],
     )
     if mtf
         transfer_path = joinpath(directory, "mtf.fits")
@@ -133,38 +134,38 @@ function authored_response!(directory, physical, simulation; mtf = false)
             write(file, ones(Float32, 8, 8))
         end
         simulation["bindings"]["mtf_transfer"] = Dict(
-            "kind"=>"fits",
-            "path"=>"mtf.fits",
-            "hdu"=>1,
-            "axes"=>[1, 2],
-            "type"=>"Float32",
-            "shape"=>[8, 8],
-            "sha256"=>PipeWireAORTC.Common.sha256_file(transfer_path),
+            "kind" => "fits",
+            "path" => "mtf.fits",
+            "hdu" => 1,
+            "axes" => [1, 2],
+            "type" => "Float32",
+            "shape" => [8, 8],
+            "sha256" => PipeWireAORTC.Common.sha256_file(transfer_path),
         )
         simulation["components"]["mtf"] = Dict(
-            "template"=>"pixel_mtf",
-            "bindings"=>Dict("transfer"=>"mtf_transfer"),
-            "config"=>Dict(
-                "input_shape"=>[8, 8],
-                "padding"=>0,
-                "input_schema"=>config["photon_rate_schema"],
-                "output_schema"=>config["photon_rate_schema"],
+            "template" => "pixel_mtf",
+            "bindings" => Dict("transfer" => "mtf_transfer"),
+            "config" => Dict(
+                "input_shape" => [8, 8],
+                "padding" => 0,
+                "input_schema" => config["photon_rate_schema"],
+                "output_schema" => config["photon_rate_schema"],
             ),
         )
-        pushfirst!(graph["nodes"], Dict("name"=>"mtf"))
+        pushfirst!(graph["nodes"], Dict("name" => "mtf"))
         only(graph["inputs"])["destination"] = "mtf.input"
-        graph["links"] =
-            [Dict("source"=>"mtf.output", "destination"=>detector*".photon_rate")]
+        graph["links"] = [
+            Dict("source" => "mtf.output", "destination" => detector * ".photon_rate")
+        ]
     end
     PipeWireAORTC.Common.write_yaml(
-        joinpath(directory, "simulation", "low_order_response.yaml"),
-        graph,
+        joinpath(directory, "simulation", "low_order_response.yaml"), graph
     )
     simulation["observations"] = Dict(
-        "low_order"=>Dict(
-            "graph"=>"simulation/low_order_response.yaml",
-            "detector"=>detector,
-            "normalized_to_photon_rate"=>100.0,
+        "low_order" => Dict(
+            "graph" => "simulation/low_order_response.yaml",
+            "detector" => detector,
+            "normalized_to_photon_rate" => 100.0,
         ),
     )
     return graph

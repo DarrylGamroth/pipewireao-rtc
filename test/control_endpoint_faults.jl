@@ -50,8 +50,7 @@ const CONTROLLER_PROPERTIES = Dict(
     Endpoint.controller_info!(controller, node_info(NODE_CHANGE_STATE, Dict()))
     @test !controller.verified && !controller.retired
     Endpoint.controller_info!(
-        controller,
-        node_info(NODE_CHANGE_PROPERTIES, CONTROLLER_PROPERTIES),
+        controller, node_info(NODE_CHANGE_PROPERTIES, CONTROLLER_PROPERTIES)
     )
     @test controller.verified && !controller.retired
     Endpoint.controller_info!(controller, node_info(NODE_CHANGE_STATE, Dict()))
@@ -59,8 +58,7 @@ const CONTROLLER_PROPERTIES = Dict(
     Endpoint.controller_info!(controller, node_info(NODE_CHANGE_PROPERTIES, Dict()))
     @test !controller.verified && controller.retired
     Endpoint.controller_info!(
-        controller,
-        node_info(NODE_CHANGE_PROPERTIES, CONTROLLER_PROPERTIES),
+        controller, node_info(NODE_CHANGE_PROPERTIES, CONTROLLER_PROPERTIES)
     )
     @test !controller.verified && controller.retired
 
@@ -97,9 +95,7 @@ const CONTROLLER_PROPERTIES = Dict(
             ),
         )
         Client.node_info!(
-            client,
-            node_info(NODE_CHANGE_PROPERTIES, properties);
-            marker = false,
+            client, node_info(NODE_CHANGE_PROPERTIES, properties); marker = false
         )
         @test client.owner_ready && observation.failure === nothing
         Client.node_info!(client, node_info(NODE_CHANGE_STATE, Dict()); marker = false)
@@ -158,11 +154,7 @@ function publication_fault(socket, directory, daemon, phase)
             ),
         )
         header = Envelope.RequestHeader(
-            IDENTITY,
-            Int64(23),
-            Int64(1),
-            UInt32(71),
-            Int64(1_000_000_000),
+            IDENTITY, Int64(23), Int64(1), UInt32(71), Int64(1_000_000_000)
         )
         request = Envelope.encode_request(header, SPA.Struct())
         with_thread_loop_lock(loop) do _
@@ -197,15 +189,12 @@ function publication_fault(socket, directory, daemon, phase)
                     )
                     publisher.fail_at = publisher.calls + 1
                     @test_throws ErrorException Endpoint.complete!(
-                        endpoint,
-                        ticket,
-                        completion;
-                        terminal,
+                        endpoint, ticket, completion; terminal
                     )
                     @test endpoint.pending === ticket && endpoint.applying
                     @test endpoint.terminal == terminal
                     @test Hsm.current(endpoint) ===
-                          (terminal ? :TerminalApplying : :Applying)
+                        (terminal ? :TerminalApplying : :Applying)
                 else
                     ticket = endpoint.pending
                     endpoint.controllers[1].retired = true

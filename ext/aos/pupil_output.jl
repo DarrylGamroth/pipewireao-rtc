@@ -53,9 +53,7 @@ function source_planes(boundary, format)
 end
 
 function PipeWireAORTC.InstrumentExport.pupil_output_port_contract(
-    path::AbstractString;
-    settings = Dict(),
-    simulation_graph = "production",
+    path::AbstractString; settings = Dict(), simulation_graph = "production"
 )
     declaration = IC.load_simulation(path)
     boundary = contract(declaration, IC.settings(declaration, settings); simulation_graph)
@@ -126,7 +124,7 @@ function prepare(
         values = snapshot_values(snapshot)
         eltype(values) === Float32 && size(values) == size(amplitude) || throw(
             DimensionMismatch(
-                "scientific pupil output requires matching Float32 OPD and amplitude",
+                "scientific pupil output requires matching Float32 OPD and amplitude"
             ),
         )
         format = NdArrayFormat(NdArray.F32_LE, boundary.shape; layout = NdArray.ROW_MAJOR)
@@ -152,8 +150,9 @@ function prepare(
             metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
         )
         bits = uuid4().value
-        domain =
-            AcquisitionDomain(ntuple(i -> UInt8((bits >> (8 * (i - 1))) & 0xff), Val(16)))
+        domain = AcquisitionDomain(
+            ntuple(i -> UInt8((bits >> (8 * (i - 1))) & 0xff), Val(16))
+        )
         return Publisher(
             snapshot,
             Matrix(amplitude),
@@ -208,9 +207,7 @@ end
 
 "One-based host snapshot [x,y] becomes [quantity,y,x]; no display transform."
 function pack!(
-    packet::Array{Float32,3},
-    opd::AbstractMatrix{Float32},
-    amplitude::Matrix{Float32},
+    packet::Array{Float32,3}, opd::AbstractMatrix{Float32}, amplitude::Matrix{Float32}
 )
     Base.require_one_based_indexing(opd)
     axes(opd) == axes(amplitude) && size(packet) == (2, size(opd, 2), size(opd, 1)) ||
@@ -229,10 +226,7 @@ function sample!(publisher::Publisher; generation::UInt64, model_ns::Int64)
     (publisher.failed[] || publisher.paused[]) && return false
     accepted = try
         try_snapshot_graph_output!(
-            publisher.snapshot;
-            generation,
-            pts = model_ns,
-            model_time_ns = model_ns,
+            publisher.snapshot; generation, pts = model_ns, model_time_ns = model_ns
         )
     catch
         publisher.failed[] = true
@@ -267,8 +261,9 @@ function publish_status!(p, owner; failure = nothing)
         "aos.pupil-output.generation" => string(p.generation[]),
     )
     failure === nothing || (
-        properties["aos.pupil-output.failure"] =
-            first(replace(sprint(showerror, failure), '\0' => '?'), 1024)
+        properties["aos.pupil-output.failure"] = first(
+            replace(sprint(showerror, failure), '\0' => '?'), 1024
+        )
     )
     with_array_stream(owner, 1) do stream
         properties["aos.pupil-output.stream-state"] = string(stream_state(stream))
@@ -290,9 +285,7 @@ function process_sample!(p, owner)
                 1,
                 p.packet;
                 identity = AcquisitionIdentity(
-                    p.domain,
-                    metadata.generation,
-                    metadata.sequence,
+                    p.domain, metadata.generation, metadata.sequence
                 ),
                 pts = metadata.model_time_ns,
                 duration = p.period_ns,
@@ -374,7 +367,7 @@ function worker!(p, remote, cpu)
     return nothing
 end
 
-function await!(predicate, p; check = ()->nothing)
+function await!(predicate, p; check = () -> nothing)
     deadline = time_ns() + UInt64(30_000_000_000)
     while !predicate()
         check()
@@ -390,7 +383,7 @@ function await!(predicate, p; check = ()->nothing)
 end
 
 start!(::Nothing; kwargs...) = nothing
-function start!(p::Publisher; remote, cpu = nothing, check = ()->nothing)
+function start!(p::Publisher; remote, cpu = nothing, check = () -> nothing)
     Threads.nthreads(:default) >= 3 ||
         throw(ArgumentError("pupil output requires three Julia threads"))
     p.task = ThreadPinning.@spawnat 3 begin
@@ -407,7 +400,7 @@ function start!(p::Publisher; remote, cpu = nothing, check = ()->nothing)
 end
 
 drain!(::Nothing; kwargs...) = nothing
-function drain!(p::Publisher; check = ()->nothing)
+function drain!(p::Publisher; check = () -> nothing)
     p.paused[] = true
     request = atomic_add!(p.drain_request, UInt64(1)) + UInt64(1)
     await!(() -> p.drained[] == request, p; check)
@@ -415,7 +408,7 @@ function drain!(p::Publisher; check = ()->nothing)
 end
 
 reset!(::Nothing, generation; kwargs...) = nothing
-function reset!(p::Publisher, generation::UInt64; check = ()->nothing)
+function reset!(p::Publisher, generation::UInt64; check = () -> nothing)
     p.paused[] && p.drained[] == p.drain_request[] ||
         error("pupil output must be drained before reset")
     generation > p.generation[] || error("pupil output generation must increase")

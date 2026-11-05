@@ -40,13 +40,7 @@ function run_endpoint_proof(socket, directory, daemon)
             core = CoreConnection(context; properties = Dict("remote.name" => socket))
         end
         endpoint = OwnerEndpoint.Endpoint(
-            TestProfile(),
-            TestCommand,
-            loop,
-            core,
-            "test.native.owner",
-            Int64(23),
-            Prepared,
+            TestProfile(), TestCommand, loop, core, "test.native.owner", Int64(23), Prepared
         )
         start!(loop)
         owner_task = @async begin
@@ -67,8 +61,7 @@ function run_endpoint_proof(socket, directory, daemon)
                         endpoint,
                         ticket,
                         Envelope.encode_completion(
-                            header,
-                            SPA.Struct(Pod(Int32(effects[]))),
+                            header, SPA.Struct(Pod(Int32(effects[])))
                         ),
                     )
                 end
@@ -114,8 +107,9 @@ function run_endpoint_proof(socket, directory, daemon)
             deadline = Client.monotonic() + seconds,
             check = check_owner,
         )
-        reply =
-            Client.request!(first_client, TestCommand(); deadline = Client.monotonic()+10)
+        reply = Client.request!(
+            first_client, TestCommand(); deadline = Client.monotonic() + 10
+        )
         @test reply.header.result == 0
         @test pod_value(Int32, only(reply.payload.values)) == 1
         @test effects[] == 1
@@ -147,8 +141,7 @@ function run_endpoint_proof(socket, directory, daemon)
         previous_rejection = copy(endpoint.rejection.data)
         with_thread_loop_lock(loop) do _
             OwnerEndpoint.stage!(
-                endpoint,
-                Envelope.encode_request(previous_terminal.header, SPA.Struct()),
+                endpoint, Envelope.encode_request(previous_terminal.header, SPA.Struct())
             )
         end
         rejection_header, _ = Envelope.decode_rejection(endpoint.rejection)
@@ -191,10 +184,7 @@ function run_endpoint_proof(socket, directory, daemon)
             check = check_owner,
         )
         wait_proof(
-            () -> istaskdone(expired),
-            5,
-            "finite client expiry";
-            check = check_owner,
+            () -> istaskdone(expired), 5, "finite client expiry"; check = check_owner
         )
         @test fetch(expired) isa Client.UnknownOutcome
         @test effects[] == 2
@@ -221,10 +211,7 @@ function run_endpoint_proof(socket, directory, daemon)
             error
         end
         wait_proof(
-            () -> endpoint.pending !== nothing,
-            5,
-            "removal admission";
-            check = check_owner,
+            () -> endpoint.pending !== nothing, 5, "removal admission"; check = check_owner
         )
         removed_identity = replacement.identity
         with_thread_loop_lock(replacement.loop) do _
@@ -244,10 +231,7 @@ function run_endpoint_proof(socket, directory, daemon)
             check = check_owner,
         )
         wait_proof(
-            () -> istaskdone(ticket_task),
-            5,
-            "removed caller outcome";
-            check = check_owner,
+            () -> istaskdone(ticket_task), 5, "removed caller outcome"; check = check_owner
         )
         @test fetch(ticket_task) isa Client.UnknownOutcome
         @test effects[] == 2
@@ -279,9 +263,7 @@ function run_endpoint_proof(socket, directory, daemon)
                     Int32(-110),
                 )
                 OwnerEndpoint.complete!(
-                    endpoint,
-                    taken,
-                    Client.encode_failure(TestProfile(), failed, Prepared),
+                    endpoint, taken, Client.encode_failure(TestProfile(), failed, Prepared)
                 )
             end
         end
@@ -356,7 +338,7 @@ function run_endpoint_proof(socket, directory, daemon)
         reply = Client.request!(
             encoding_client,
             command;
-            deadline = Client.monotonic()+15,
+            deadline = Client.monotonic() + 15,
             check = check_owner,
         )
         @test reply.header.result == 0

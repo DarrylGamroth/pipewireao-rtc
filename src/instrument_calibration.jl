@@ -59,9 +59,7 @@ below Nyquist. Reject poles that round onto the unit circle. This cold helper
 does not prepare optical matrices or require FGA or DSP at runtime.
 """
 function lowpass_coefficients(
-    ::Type{T};
-    cutoff_frequency_hz,
-    sample_rate_hz,
+    ::Type{T}; cutoff_frequency_hz, sample_rate_hz
 ) where {T<:Union{Float32,Float64}}
     for value in (cutoff_frequency_hz, sample_rate_hz)
         InstrumentConfiguration.isfinite_real(value) &&
@@ -94,20 +92,17 @@ function _tiptilt_temporal(recipe, frame_period_s)
     period = Float64(frame_period_s)
     sample_rate_hz = inv(period)
     isfinite(period) && isfinite(sample_rate_hz) && sample_rate_hz > 0 || throw(
-        ArgumentError("simulation frame period must give a finite positive sample rate"),
+        ArgumentError("simulation frame period must give a finite positive sample rate")
     )
     description = Dict{String,Any}(
-        "frame_period_s"=>period,
-        "sample_rate_hz"=>sample_rate_hz,
-        "tiptilt"=>Dict("kind"=>"identity"),
+        "frame_period_s" => period,
+        "sample_rate_hz" => sample_rate_hz,
+        "tiptilt" => Dict("kind" => "identity"),
     )
     haskey(recipe, "temporal") ||
         return (; coefficients = Float32[1, 0, 0, 0, 0], description)
     temporal = InstrumentConfiguration._declaration_fields(
-        recipe["temporal"],
-        ("tiptilt",),
-        ("tiptilt",),
-        "calibration temporal",
+        recipe["temporal"], ("tiptilt",), ("tiptilt",), "calibration temporal"
     )
     tiptilt = InstrumentConfiguration._declaration_fields(
         temporal["tiptilt"],
@@ -118,13 +113,11 @@ function _tiptilt_temporal(recipe, frame_period_s)
     tiptilt["kind"] == "lowpass" ||
         throw(ArgumentError("temporal.tiptilt kind must be lowpass"))
     coefficients = lowpass_coefficients(
-        Float32;
-        cutoff_frequency_hz = tiptilt["cutoff_frequency_hz"],
-        sample_rate_hz,
+        Float32; cutoff_frequency_hz = tiptilt["cutoff_frequency_hz"], sample_rate_hz
     )
     description["tiptilt"] = Dict(
-        "kind"=>"lowpass",
-        "cutoff_frequency_hz"=>Float64(tiptilt["cutoff_frequency_hz"]),
+        "kind" => "lowpass",
+        "cutoff_frequency_hz" => Float64(tiptilt["cutoff_frequency_hz"]),
     )
     return (; coefficients, description)
 end
@@ -135,7 +128,7 @@ digest(path) = bytes2hex(sha256(read(path)))
 "Read a reviewed command-completion artifact with an explicit logical shape."
 function source_completion(path; expected_sha256, shape, axes = (2, 1))
     source = Artifacts.FITSArtifact(path; axes)
-    bytes = Artifacts.snapshot(String(path); check = ()->nothing)
+    bytes = Artifacts.snapshot(String(path); check = () -> nothing)
     bytes2hex(sha256(bytes)) == expected_sha256 ||
         throw(ArgumentError("source completion differs from the reviewed input"))
     return Artifacts.prepare_snapshot(source, Float32, shape, bytes).data
@@ -295,15 +288,16 @@ function central_completion(original, obstruction, mirror; pupil_registration)
     end
     isempty(removed) && throw(ArgumentError("no obscured command coordinates"))
     retained = setdiff(collect(axes(original, 2)), removed)
-    grid =
-        CartesianIndices(mirror.layout.grid_shape)[InstrumentConfiguration.actuator_grid_indices(
-            mirror,
-        )]
+    grid = CartesianIndices(mirror.layout.grid_shape)[InstrumentConfiguration.actuator_grid_indices(
+        mirror
+    )]
     by_position = Dict(Tuple(position) => index for (index, position) in pairs(grid))
-    removed_by_actuator =
-        Dict(controlled[column] => row for (row, column) in pairs(removed))
-    direct_by_actuator =
-        Dict(controlled[column] => index for (index, column) in pairs(retained))
+    removed_by_actuator = Dict(
+        controlled[column] => row for (row, column) in pairs(removed)
+    )
+    direct_by_actuator = Dict(
+        controlled[column] => index for (index, column) in pairs(retained)
+    )
     laplacian = zeros(Float64, length(removed), length(removed))
     boundary = zeros(Float64, length(removed), length(retained))
     for (row, column) in pairs(removed)
@@ -334,27 +328,23 @@ end
 
 "Initialize a shape calibration pair, retaining an unbound shape offset's zero default."
 function initialize_shape_offsets!(parameters::AbstractDict, prefix::AbstractString = "")
-    names=map(
-        suffix -> Symbol(prefix*suffix),
+    names = map(
+        suffix -> Symbol(prefix * suffix),
         ("shape-active-to-full", "shape-pdm-to-vdm", "shape-offset"),
     )
-    present=map(name -> haskey(parameters, name), names)
+    present = map(name -> haskey(parameters, name), names)
     any(present) || return parameters
     present[1] && present[2] ||
         throw(ArgumentError("shape calibration requires both completion and inverse ports"))
-    parameters[names[1]]=copy(parameters[Symbol(prefix*"active-to-full")])
-    parameters[names[2]]=copy(parameters[Symbol(prefix*"pdm-to-vdm")])
-    present[3] && (parameters[names[3]]=zero(parameters[names[3]]))
+    parameters[names[1]] = copy(parameters[Symbol(prefix * "active-to-full")])
+    parameters[names[2]] = copy(parameters[Symbol(prefix * "pdm-to-vdm")])
+    present[3] && (parameters[names[3]] = zero(parameters[names[3]]))
     return parameters
 end
 
 "Prepare controller allocation matrices with explicit measurement dimensions."
 function allocation_parameters(
-    parameters,
-    completion,
-    controlled;
-    measurement_count,
-    feedback = nothing,
+    parameters, completion, controlled; measurement_count, feedback = nothing
 )
     n = length(controlled)
     n > 0 && measurement_count > 0 ||
@@ -404,16 +394,13 @@ limit_at(value::AbstractVector, index) = value[index]
 
 "Validate scalar or per-actuator limits without changing their representation."
 function checked_command_limits(
-    ::Type{T},
-    lower,
-    upper,
-    count::Integer,
+    ::Type{T}, lower, upper, count::Integer
 ) where {T<:AbstractFloat}
     InstrumentConfiguration.ispositive_integer(count) ||
         throw(ArgumentError("physical actuator count must be positive"))
     lower, upper = command_limit(T, lower, count), command_limit(T, upper, count)
     all(index -> limit_at(lower, index) < limit_at(upper, index), 1:count) || throw(
-        ArgumentError("lower command limit must be strictly below upper command limit"),
+        ArgumentError("lower command limit must be strictly below upper command limit")
     )
     return (; lower, upper)
 end
@@ -445,8 +432,7 @@ function replace_dimensions!(
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     )
     configuration_path = DeploymentConfiguration.relative_asset(
-        application,
-        get(authoring, "configuration", "rtc/configuration.yaml"),
+        application, get(authoring, "configuration", "rtc/configuration.yaml")
     )
     rtc = InstrumentConfiguration.load_rtc(configuration_path)
     hidden_count = get(rtc.document["dimensions"], "hidden_mode_count", nothing)
@@ -490,18 +476,17 @@ function replace_dimensions!(
         haskey(rtc.controls["deformable_mirrors"], selected) ||
             throw(ArgumentError("unknown calibration mirror"))
         expected_count = InstrumentConfiguration.command_count(
-            InstrumentConfiguration.mirror(rtc, NamedTuple(), selected).description,
+            InstrumentConfiguration.mirror(rtc, NamedTuple(), selected).description
         )
         expected_count == size(parameters[Symbol("vdm-to-pdm")], 1) || throw(
-            DimensionMismatch("calibration command count differs from selected mirror"),
+            DimensionMismatch("calibration command count differs from selected mirror")
         )
         limiter = rtc.control_authoring["deformable_mirrors"][selected]["limiter"]
         limiter["lower"], limiter["upper"] = limits.lower, limits.upper
     end
     graph_path = joinpath(application, "rtc", "graph.conf")
     graph = DeploymentConfiguration.decode(
-        graph_path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        graph_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     for node in graph["filter.graph"]["nodes"]
         config, name = node["config"], node["name"]
@@ -517,8 +502,7 @@ function replace_dimensions!(
     ScienceExport.write_spa_config(graph_path, graph)
     path = joinpath(application, "rtc", "parameters.conf")
     document = DeploymentConfiguration.decode(
-        path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     for entry in document["parameters"]
         array = parameters[Symbol(entry["port"])]
@@ -532,8 +516,7 @@ function replace_dimensions!(
     )
     if limits !== nothing
         controls_path = DeploymentConfiguration.relative_asset(
-            application,
-            rtc.document["mirror_controls"],
+            application, rtc.document["mirror_controls"]
         )
         Common.write_yaml(
             controls_path,
@@ -542,13 +525,11 @@ function replace_dimensions!(
         )
     end
     InstrumentConfiguration.prepare_publication(
-        application;
-        configuration = relpath(configuration_path, application),
+        application; configuration = relpath(configuration_path, application)
     )
     session_path = joinpath(application, "rtc", "session.conf.in")
     session = DeploymentConfiguration.decode(
-        session_path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        session_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     contracts = InstrumentExport.graph_contract_context(
         application,
@@ -568,8 +549,7 @@ end
 function estimator_dimensions(application, estimator)
     Base.require(Main, :FilterGraphIsland)
     contracts = Base.invokelatest(
-        InstrumentExport.graph_port_contracts,
-        joinpath(application, "rtc", "graph.conf"),
+        InstrumentExport.graph_port_contracts, joinpath(application, "rtc", "graph.conf")
     )
     detector_shape = Tuple(contracts["inputs"][estimator["raw_input"]]["shape"])
     measurement_count = foldl(

@@ -18,24 +18,23 @@ focal_allocation(image, intensity) =
     display_mask = Bool[1 1; 1 0; 0 1]
     expected = Float32[75 -75; 25 NaN; NaN -25]
     @test Observation.form_wavefront!(image, opd, mask) === image
-    @test image[display_mask] ≈ expected[display_mask] atol=1e-5
+    @test image[display_mask] ≈ expected[display_mask] atol = 1e-5
     @test all(isnan, image[.!display_mask])
     @test isequal(opd, original)
     @test sqrt(mean(abs2, image[display_mask])) ≈
-          std(Float64.(opd[mask]); corrected = false) * 1e9 rtol=1e-6
-    @test Observation.pupil_rms_nm(opd, mask) ≈ sqrt(mean(abs2, image[display_mask])) rtol=1e-6
+        std(Float64.(opd[mask]); corrected = false) * 1e9 rtol = 1e-6
+    @test Observation.pupil_rms_nm(opd, mask) ≈ sqrt(mean(abs2, image[display_mask])) rtol =
+        1e-6
     @test Observation.pupil_rms_nm(fill(2.0f-3, size(opd)), mask) == 0
     @test_throws DimensionMismatch Observation.pupil_rms_nm(zeros(3, 2), mask)
     @test_throws ArgumentError Observation.pupil_rms_nm(opd, falses(size(mask)))
     shifted_image = similar(image)
     Observation.form_wavefront!(shifted_image, opd .+ 1.0f-6, mask)
-    @test shifted_image[display_mask] ≈ image[display_mask] atol=1e-4
+    @test shifted_image[display_mask] ≈ image[display_mask] atol = 1e-4
     @test_throws DimensionMismatch Observation.form_wavefront!(zeros(2, 3), opd, mask)
     @test_throws DimensionMismatch Observation.form_wavefront!(image, opd, falses(3, 2))
     @test_throws DimensionMismatch Observation.form_wavefront!(
-        zeros(6),
-        vec(opd),
-        vec(mask),
+        zeros(6), vec(opd), vec(mask)
     )
     @test_throws ArgumentError Observation.form_wavefront!(image, opd, falses(size(mask)))
     invalid = copy(opd)
@@ -49,12 +48,14 @@ focal_allocation(image, intensity) =
     opd_storage[2:3, 4:6] .= opd
     pupil_storage[2:3, 4:6] .= mask
     offset_opd = view(opd_storage, Base.IdentityUnitRange(2:3), Base.IdentityUnitRange(4:6))
-    offset_pupil =
-        view(pupil_storage, Base.IdentityUnitRange(2:3), Base.IdentityUnitRange(4:6))
-    offset_image =
-        view(zeros(Float32, 8, 6), Base.IdentityUnitRange(4:6), Base.IdentityUnitRange(2:3))
+    offset_pupil = view(
+        pupil_storage, Base.IdentityUnitRange(2:3), Base.IdentityUnitRange(4:6)
+    )
+    offset_image = view(
+        zeros(Float32, 8, 6), Base.IdentityUnitRange(4:6), Base.IdentityUnitRange(2:3)
+    )
     @test Observation.form_wavefront!(offset_image, offset_opd, offset_pupil) ===
-          offset_image
+        offset_image
     @test axes(offset_image) == reverse(axes(offset_opd))
     @test all(
         isequal(offset_image[destination_index], image[index]) for
@@ -62,14 +63,10 @@ focal_allocation(image, intensity) =
         zip(CartesianIndices(offset_image), CartesianIndices(image))
     )
     @test_throws DimensionMismatch Observation.form_wavefront!(
-        image,
-        offset_opd,
-        offset_pupil,
+        image, offset_opd, offset_pupil
     )
     @test_throws DimensionMismatch Observation.form_wavefront!(
-        offset_image,
-        offset_opd,
-        mask,
+        offset_image, offset_opd, mask
     )
 
     strided_image = view(zeros(Float32, 6, 4), 1:2:5, 2:2:4)
@@ -77,9 +74,7 @@ focal_allocation(image, intensity) =
     @test isequal(strided_image, image)
     square_opd = zeros(Float32, 2, 2)
     @test_throws ArgumentError Observation.form_wavefront!(
-        square_opd,
-        square_opd,
-        trues(2, 2),
+        square_opd, square_opd, trues(2, 2)
     )
     presentation_allocation(image, opd, mask)
     @test presentation_allocation(image, opd, mask) == 0
@@ -102,10 +97,7 @@ end
     optics = AdaptiveOpticsSim.Optics
     telescope = optics.prepare_telescope(
         optics.TelescopeDefinition(
-            resolution = 16,
-            diameter = 7.77,
-            revision = 1,
-            T = Float32,
+            resolution = 16, diameter = 7.77, revision = 1, T = Float32
         ),
         AdaptiveOpticsSim.Backends.HostComputeDevice(),
     )

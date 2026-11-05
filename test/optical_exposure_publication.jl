@@ -13,10 +13,7 @@ end
 ExposureTransport() = ExposureTransport(Any[], true, false, false)
 
 function AdaptiveOpticsSimPipeWireHIL.stage_pipewire_array!(
-    owner::ExposureTransport,
-    index,
-    image;
-    kwargs...,
+    owner::ExposureTransport, index, image; kwargs...
 )
     owner.stage_error && error("staging failed")
     push!(owner.events, (; index, image = copy(image), metadata = (; kwargs...)))
@@ -29,8 +26,9 @@ function PipeWireAO.trigger_process!(owner::ExposureTransport)
 end
 
 function stage_test_exposure!(publisher, index; sequence = UInt64(1))
-    identity =
-        AcquisitionIdentity(AcquisitionDomain(ntuple(UInt8, 16)), UInt64(4), sequence)
+    identity = AcquisitionIdentity(
+        AcquisitionDomain(ntuple(UInt8, 16)), UInt64(4), sequence
+    )
     image = fill(Float32(index), 2, 3)
     return PublicationOwner.stage_exposure!(
         publisher,
@@ -55,7 +53,7 @@ end
     @test result === :completed
     @test length(transport.events) == 3
     @test transport.events[end] === :trigger
-    @test map(event->event.index, transport.events[1:2]) == [2, 3]
+    @test map(event -> event.index, transport.events[1:2]) == [2, 3]
     for event in transport.events[1:2]
         @test event.image == fill(Float32(event.index), 2, 3)
         @test event.metadata.identity.generation == 4
@@ -74,7 +72,7 @@ end
     @test last(transport.events) === :trigger
     empty!(transport.events)
     @test PublicationOwner.publish_exposures!(() -> :no_exposure, publisher) ===
-          :no_exposure
+        :no_exposure
     @test isempty(transport.events)
     @test_throws ArgumentError stage_test_exposure!(publisher, 2)
 end
@@ -127,5 +125,5 @@ end
         @test_throws ErrorException stage_test_exposure!(publisher, 3)
     end
     @test count(==(:trigger), transport.events) == 0
-    @test !any(id->id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+    @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end

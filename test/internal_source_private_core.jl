@@ -37,16 +37,18 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
     @test simulation["frame_encoding"] == "uint16"
     @test simulation["rate"] == 500 && simulation["pacing_rate_hz"] == 10
     @test simulation["exposure_ns"] == 1_896_000 && simulation["command_scale"] == 1e-6
-    declaration =
-        IC.load_simulation(joinpath(application, simulation["plant"]["definition"]))
+    declaration = IC.load_simulation(
+        joinpath(application, simulation["plant"]["definition"])
+    )
     settings = IC.settings(declaration, simulation["plant"]["settings"])
     production = IC.graph_document(declaration, settings)
-    internal =
-        IC.graph_document(declaration, settings; simulation_graph = "internal-source")
+    internal = IC.graph_document(
+        declaration, settings; simulation_graph = "internal-source"
+    )
     detector(graph) = only(node for node in graph["nodes"] if node["name"] == "detector")
     @test detector(internal) == detector(production)
     @test detector(internal)["config"]["photon_noise"] &&
-          detector(internal)["config"]["readout_noise"]
+        detector(internal)["config"]["readout_noise"]
     @test detector(internal)["config"]["bits"] == 12
     @test declaration.document["sources"]["guide"]["source_magnitude"] == 2
     @test any(node -> node["name"] == "atmosphere", production["nodes"])
@@ -67,8 +69,8 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
     )
     zero_binding = declaration.document["bindings"][zero_input["binding"]]
     @test zero_binding["kind"] == "zeros" && zero_binding["type"] == "Float32"
-    recipe, parameters =
-        Calibration.read_recipe(application), Calibration.read_parameters(application)
+    recipe, parameters = Calibration.read_recipe(application),
+    Calibration.read_parameters(application)
     completion =
         parameters[Symbol("vdm-to-pdm")] *
         parameters[Symbol("active-to-full")] *
@@ -83,7 +85,7 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
     quiet_actions = get(ENV, "PIPEWIREAORTC_INTERNAL_SOURCE_QUIET_ACTIONS", "0") == "1"
     try
         with_control_private_core(;
-            temporary_prefix = "classic-internal-source-",
+            temporary_prefix = "classic-internal-source-"
         ) do remote, directory, daemon
             chmod(dirname(remote), 0o700)
             frontend = Calibration.calibration_graph(
@@ -110,18 +112,18 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                     reference,
                     name,
                     instance,
-                    deadline = ControlClient.monotonic()+300,
+                    deadline = ControlClient.monotonic() + 300,
                     simulation_graph = "internal-source",
                 )
                 frontend = command = nothing
                 owner = server.effects
                 @test Graphs.graph_name(owner.hil.boundary.graph) ==
-                      Symbol(internal["name"])
+                    Symbol(internal["name"])
                 @test :atmosphere ∉ keys(owner.hil.boundary.graph.nodes)
                 @test owner.active == parameters[:active]
                 capture_module = parentmodule(typeof(owner.capture))
                 serving = @async try
-                    Endpoint.serve!(server; deadline = ControlClient.monotonic()+300)
+                    Endpoint.serve!(server; deadline = ControlClient.monotonic() + 300)
                 catch error
                     error
                 end
@@ -134,25 +136,26 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                 identity(value) =
                     value === nothing ? nothing :
                     Dict(
-                        "domain"=>repr(value.domain),
-                        "generation"=>value.generation,
-                        "sequence"=>value.sequence,
+                        "domain" => repr(value.domain),
+                        "generation" => value.generation,
+                        "sequence" => value.sequence,
                     )
                 function capture_state()
-                    isopen(owner.capture.core) || return Dict("core_closed"=>true)
+                    isopen(owner.capture.core) || return Dict("core_closed" => true)
                     state = capture_module._locked(owner.capture) do
                         Dict{String,Any}(
-                            "sampled_at"=>ControlClient.monotonic(),
-                            "phase"=>owner.capture.phase,
-                            "failure"=>string(owner.capture.failure),
-                            "waiting"=>owner.capture.waiting,
-                            "hil_status"=>Wire.pipewire_calibration_status(owner.hil),
-                            "expected"=>identity(owner.capture.expected),
-                            "slots"=>Dict(
-                                string(name)=>Dict(
-                                    "phase"=>slot.phase,
-                                    "receipt"=>slot.receipt === nothing ? nothing :
-                                               identity(slot.receipt.identity),
+                            "sampled_at" => ControlClient.monotonic(),
+                            "phase" => owner.capture.phase,
+                            "failure" => string(owner.capture.failure),
+                            "waiting" => owner.capture.waiting,
+                            "hil_status" => Wire.pipewire_calibration_status(owner.hil),
+                            "expected" => identity(owner.capture.expected),
+                            "slots" => Dict(
+                                string(name) => Dict(
+                                    "phase" => slot.phase,
+                                    "receipt" =>
+                                        slot.receipt === nothing ? nothing :
+                                        identity(slot.receipt.identity),
                                 ) for (name, slot) in pairs(owner.capture.slots)
                             ),
                         )
@@ -162,23 +165,28 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                     # native loop lock with Julia's condition spinlock or print.
                     state["condition"] = lock(owner.wakeup.cond) do
                         Dict(
-                            "set"=>owner.wakeup.set,
+                            "set" => owner.wakeup.set,
                             "waiters" => [
-                                Dict("task"=>objectid(task), "server"=>task===serving) for task in owner.wakeup.cond.waitq
+                                Dict(
+                                    "task" => objectid(task),
+                                    "server" => task === serving,
+                                ) for task in owner.wakeup.cond.waitq
                             ],
                         )
                     end
-                    state["server_phase"], state["sample_finished_at"] =
-                        string(server.phase), ControlClient.monotonic()
+                    state["server_phase"], state["sample_finished_at"] = string(
+                        server.phase
+                    ),
+                    ControlClient.monotonic()
                     return state
                 end
                 function complete(action)
                     submitted = ControlClient.monotonic()
                     trace = Dict{String,Any}(
-                        "action"=>string(nameof(typeof(action))),
-                        "submitted"=>submitted,
-                        "deadline"=>submitted+120,
-                        "phase_before"=>string(server.phase),
+                        "action" => string(nameof(typeof(action))),
+                        "submitted" => submitted,
+                        "deadline" => submitted + 120,
+                        "phase_before" => string(server.phase),
                     )
                     push!(actions, trace)
                     quiet_actions || progress(
@@ -196,7 +204,7 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                                 progress(
                                     "outstanding Collect snapshot=" *
                                     PipeWireAORTC.Common.JSON.json(
-                                        trace["outstanding_snapshot"],
+                                        trace["outstanding_snapshot"]
                                     ),
                                 )
                             end
@@ -204,26 +212,23 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                             if !(error isa EOFError)
                                 trace["diagnostic_error"] = sprint(showerror, error)
                                 progress(
-                                    "passive diagnostic error=$(trace["diagnostic_error"])",
+                                    "passive diagnostic error=$(trace["diagnostic_error"])"
                                 )
                             end
                         end
                     try
                         answer = Client.complete!(
-                            client,
-                            action;
-                            deadline = submitted+120,
-                            record = false,
+                            client, action; deadline = submitted + 120, record = false
                         )
-                        trace["completed"], trace["result"] =
-                            ControlClient.monotonic(), string(nameof(typeof(answer)))
+                        trace["completed"], trace["result"] = ControlClient.monotonic(),
+                        string(nameof(typeof(answer)))
                         quiet_actions || progress(
                             "complete $(trace["action"]) at $(trace["completed"]), result=$(trace["result"]), phase=$(server.phase)",
                         )
                         return answer
                     catch error
-                        trace["fault_at"], trace["error"] =
-                            ControlClient.monotonic(), sprint(showerror, error)
+                        trace["fault_at"], trace["error"] = ControlClient.monotonic(),
+                        sprint(showerror, error)
                         progress(
                             "fault $(trace["action"]) at $(trace["fault_at"]), phase=$(server.phase), error=$(trace["error"])",
                         )
@@ -241,14 +246,15 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                 end
                 @test complete(Actions.Hold()) isa Actions.Held
                 for (index, figure) in enumerate(figures)
-                    probe = UInt32(index-1)
+                    probe = UInt32(index - 1)
                     adopted = complete(Actions.Adopt(probe, figure))
                     @test adopted isa Actions.Adopted &&
-                          adopted.figure == figure &&
-                          !adopted.clipped
+                        adopted.figure == figure &&
+                        !adopted.clipped
                     @test Wire.pipewire_probe_values(owner.hil) == figure
-                    settled =
-                        complete(Actions.Settle(probe, adopted.cursor, Actions.Immediate()))
+                    settled = complete(
+                        Actions.Settle(probe, adopted.cursor, Actions.Immediate())
+                    )
                     @test settled isa Actions.Settled
                     answer = complete(
                         Actions.Collect(
@@ -268,33 +274,33 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                     @test answer.valid == isempty(invalid)
                     @test answer.values == vec(permutedims(captured.arrays.slopes))
                     @test eltype(captured.arrays.raw) === UInt16 &&
-                          size(captured.arrays.raw) == (352, 352)
+                        size(captured.arrays.raw) == (352, 352)
                     @test maximum(captured.arrays.raw) <= 0x0fff
                     exposure = only(answer.exposures)
                     @test exposure.domain == 1 && exposure.sequence == index
                     for receipt in values(captured.metadata)
                         @test receipt.identity.domain == owner.acquisition_domain
                         @test (receipt.identity.generation, receipt.identity.sequence) ==
-                              (exposure.generation, exposure.sequence)
+                            (exposure.generation, exposure.sequence)
                         @test receipt.model_start_ns == exposure.start_model_ns
                         @test receipt.duration_ns ==
-                              exposure.duration_ns ==
-                              simulation["exposure_ns"]
+                            exposure.duration_ns ==
+                            simulation["exposure_ns"]
                         @test receipt.header == captured.metadata.raw.header
                     end
                     thresholds = owner.graphs.frontend.parameters[:thresholds]
                     record = Dict(
-                        "figure"=>("flat", "positive", "negative")[index],
-                        "valid"=>answer.valid,
-                        "sequence"=>exposure.sequence,
-                        "active_count"=>count(owner.active),
-                        "invalid_active"=>invalid,
-                        "raw_adc_extrema"=>collect(extrema(captured.arrays.raw)),
-                        "invalid_flux_thresholds"=>[
+                        "figure" => ("flat", "positive", "negative")[index],
+                        "valid" => answer.valid,
+                        "sequence" => exposure.sequence,
+                        "active_count" => count(owner.active),
+                        "invalid_active" => invalid,
+                        "raw_adc_extrema" => collect(extrema(captured.arrays.raw)),
+                        "invalid_flux_thresholds" => [
                             Dict(
-                                "index"=>i,
-                                "flux"=>captured.arrays.flux[i],
-                                "thresholds"=>thresholds[i, :],
+                                "index" => i,
+                                "flux" => captured.arrays.flux[i],
+                                "thresholds" => thresholds[i, :],
                             ) for i in invalid
                         ],
                     )
@@ -303,8 +309,8 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                 end
                 restored = complete(Actions.Restore(reference, Actions.Immediate()))
                 @test restored isa Actions.Restored &&
-                      restored.figure == reference &&
-                      !restored.clipped
+                    restored.figure == reference &&
+                    !restored.clipped
                 @test owner.restored && Wire.pipewire_probe_values(owner.hil) == reference
                 @test complete(Actions.Release()) isa Actions.Released
                 close(client)
@@ -316,7 +322,7 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                     worker ->
                         istaskdone(worker.task) &&
                         Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).finish_calibration_graph!(
-                            worker,
+                            worker
                         ).error === nothing,
                     owner.workers,
                 )
@@ -324,7 +330,7 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                 @test !isopen(server.wakeup) && !isopen(server.core)
                 @test all(stream -> !isopen(stream), values(owner.capture.streams))
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                      nothing
+                    nothing
             finally
                 client === nothing || close(client)
                 server === nothing || close(server)
@@ -341,11 +347,11 @@ progress(message) = (println("internal source pilot: ", message); flush(stdout))
                 PipeWireAORTC.Common.JSON.json(
                     io,
                     Dict(
-                        "scope"=>"three-frame declared stationary-source-equivalent CPU pilot; no numerical acceptance or lamp qualification",
-                        "measurements"=>records,
-                        "actions"=>actions,
-                        "application_sha256"=>before,
-                        "source_sha256"=>source_before,
+                        "scope" => "three-frame declared stationary-source-equivalent CPU pilot; no numerical acceptance or lamp qualification",
+                        "measurements" => records,
+                        "actions" => actions,
+                        "application_sha256" => before,
+                        "source_sha256" => source_before,
                     ),
                 )
             end

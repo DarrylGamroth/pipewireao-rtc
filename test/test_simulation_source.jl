@@ -18,8 +18,9 @@ function authored_optical_source(directory)
     )
     delete!(simulation, "graphs")
     simulation["components"] = Dict()
-    simulation["preparation"] =
-        Dict{String,Any}("kind" => "zemax", "recipe" => "zemax.yaml")
+    simulation["preparation"] = Dict{String,Any}(
+        "kind" => "zemax", "recipe" => "zemax.yaml"
+    )
     simulation["settings_schema"] = "proper_optical_train"
     simulation["defaults"]["temperature_c"] = 20
     mkpath(joinpath(directory, "simulation"))
@@ -79,12 +80,10 @@ end
         simplified = IC.load_simulation(path)
         @test simplified.document == baseline.document
         @test IC.graph_document(
-            simplified,
-            IC.settings(simplified);
-            simulation_graph = "scc",
+            simplified, IC.settings(simplified); simulation_graph = "scc"
         ) == IC.graph_document(baseline, baseline_settings; simulation_graph = "scc")
         @test IC.prescription_identity(simplified, IC.settings(simplified)) ==
-              baseline_identity
+            baseline_identity
         @test !haskey(simplified.authoring["sources"]["guide"], "source_separation_arcsec")
         for key in ("source_position_angle_deg", "source_separation_arcsec"),
             value in (nothing, true, "0", [])
@@ -98,7 +97,7 @@ end
         simulation["sources"]["guide"]["source_position_angle_deg"] = 30
         write_external_optical_documents(directory, physical, simulation)
         @test IC.load_simulation(path).document["sources"]["guide"] ==
-              simulation["sources"]["guide"]
+            simulation["sources"]["guide"]
     end
 end
 
@@ -149,7 +148,7 @@ end
         @test !haskey(source.document, "graphs")
         @test IC.settings(source) == simulation["defaults"]
         @test source.document["settings_schema"]["properties"]["profile"]["enum"] ==
-              ["reference"]
+            ["reference"]
         @test IC.settings_description(source, Dict())["settings"] == simulation["defaults"]
         @test_throws ArgumentError IC.settings(source, Dict("invented" => 1))
         @test_throws ArgumentError IC.settings(source, Dict("wavelength_um" => 2))
@@ -167,7 +166,7 @@ end
         simulation["preparation"]["recipe"] = "../optics/instrument.zmx"
         write_external_optical_documents(directory, physical, simulation)
         @test IC.load_simulation_source(path).preparation_path ==
-              joinpath(directory, "optics", "instrument.zmx")
+            joinpath(directory, "optics", "instrument.zmx")
     end
     @test all(
         id ->
@@ -235,11 +234,12 @@ end
         @test_throws ArgumentError IC.load_simulation_source(path)
         mktempdir() do outside
             write(joinpath(outside, "recipe.yaml"), "schema_version: 1\n")
-            simulation["preparation"]["recipe"] =
-                relpath(joinpath(outside, "recipe.yaml"), dirname(path))
+            simulation["preparation"]["recipe"] = relpath(
+                joinpath(outside, "recipe.yaml"), dirname(path)
+            )
             write_external_optical_documents(directory, physical, simulation)
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load_simulation_source(
-                path,
+                path
             )
         end
     end
@@ -249,12 +249,14 @@ end
     mktempdir() do directory
         physical, simulation = authored_optical_source(directory)
         simulation["preparation"]["variants"] = Dict(
-            "scc_unfringed"=>Dict(
-                "branch"=>"science",
-                "settings"=>Dict(
-                    "masks"=>Dict(
-                        "lyot"=>Dict(
-                            "circles"=>[Dict("radius_m"=>0.0012, "x_m"=>0, "y_m"=>0)],
+            "scc_unfringed" => Dict(
+                "branch" => "science",
+                "settings" => Dict(
+                    "masks" => Dict(
+                        "lyot" => Dict(
+                            "circles" => [
+                                Dict("radius_m" => 0.0012, "x_m" => 0, "y_m" => 0),
+                            ],
                         ),
                     ),
                 ),
@@ -262,20 +264,19 @@ end
         )
         path = write_external_optical_documents(directory, physical, simulation)
         @test IC.load_simulation_source(path).document["preparation"]["variants"] ==
-              simulation["preparation"]["variants"]
+            simulation["preparation"]["variants"]
         for change in (
-            d->(d["preparation"]["variants"]=[]),
-            d->(d["preparation"]["variants"]["scc_unfringed"]["branch"]="unknown"),
-            d->(d["preparation"]["variants"]["scc_unfringed"]["settings"]=[]),
-            d->(d["preparation"]["variants"]["scc_unfringed"]["extra"]=1),
-            d->(
-                d["preparation"]["variants"]["science"]=pop!(
-                    d["preparation"]["variants"],
-                    "scc_unfringed",
+            d -> (d["preparation"]["variants"] = []),
+            d -> (d["preparation"]["variants"]["scc_unfringed"]["branch"] = "unknown"),
+            d -> (d["preparation"]["variants"]["scc_unfringed"]["settings"] = []),
+            d -> (d["preparation"]["variants"]["scc_unfringed"]["extra"] = 1),
+            d -> (
+                d["preparation"]["variants"]["science"] = pop!(
+                    d["preparation"]["variants"], "scc_unfringed"
                 )
             ),
         )
-            invalid=deepcopy(simulation)
+            invalid = deepcopy(simulation)
             change(invalid)
             write_external_optical_documents(directory, physical, invalid)
             @test_throws ArgumentError IC.load_simulation_source(path)
@@ -321,38 +322,37 @@ end
         @test Set(source.templates) == Set(["ingaas", "pixel_mtf"])
         @test source.document["observations"] == simulation["observations"]
         @test source.observation_graphs["low_order_response"]["nodes"][1]["bindings"] ==
-              Dict("transfer"=>"mtf_transfer")
+            Dict("transfer" => "mtf_transfer")
         @test !haskey(
             source.observation_graphs["low_order_response"]["nodes"][2]["config"],
             "photon_noise",
         )
         @test IC.binding_values(
-            source,
-            IC.settings(source),
-            source.document["bindings"]["mtf_transfer"],
+            source, IC.settings(source), source.document["bindings"]["mtf_transfer"]
         ) == ones(Float32, 8, 8)
         @test !ispath(joinpath(directory, "generated"))
         bad_hash = deepcopy(source.document["bindings"]["mtf_transfer"])
         bad_hash["sha256"] = repeat("0", 64)
         @test_throws ArgumentError IC.binding_values(source, IC.settings(source), bad_hash)
         for mutate! in (
-            doc->(doc["observations"]["low_order"]["graph"]="simulation/missing.yaml"),
-            doc->(
-                doc["observations"]["low_order"]["graph"]="generated/low_order_response.yaml"
+            doc -> (doc["observations"]["low_order"]["graph"] = "simulation/missing.yaml"),
+            doc -> (
+                doc["observations"]["low_order"]["graph"] = "generated/low_order_response.yaml"
             ),
-            doc->(doc["observations"]["science"]=pop!(doc["observations"], "low_order")),
-            doc->(doc["observations"]["low_order"]["normalized_to_photon_rate"]=0),
-            doc->(
-                doc["components"]["unused"]=deepcopy(
-                    doc["components"]["low_order_detector"],
+            doc ->
+                (doc["observations"]["science"] = pop!(doc["observations"], "low_order")),
+            doc -> (doc["observations"]["low_order"]["normalized_to_photon_rate"] = 0),
+            doc -> (
+                doc["components"]["unused"] = deepcopy(
+                    doc["components"]["low_order_detector"]
                 )
             ),
-            doc->(doc["components"]["low_order_detector"]["sensor"]="scc"),
-            doc->delete!(doc["bindings"]["mtf_transfer"], "sha256"),
-            doc->(doc["bindings"]["mtf_transfer"]["sha256"]=repeat("0", 64)),
-            doc->(doc["bindings"]["mtf_transfer"]["shape"]=[7, 8]),
+            doc -> (doc["components"]["low_order_detector"]["sensor"] = "scc"),
+            doc -> delete!(doc["bindings"]["mtf_transfer"], "sha256"),
+            doc -> (doc["bindings"]["mtf_transfer"]["sha256"] = repeat("0", 64)),
+            doc -> (doc["bindings"]["mtf_transfer"]["shape"] = [7, 8]),
         )
-            invalid=deepcopy(simulation)
+            invalid = deepcopy(simulation)
             mutate!(invalid)
             write_external_optical_documents(directory, physical, invalid)
             @test_throws Union{

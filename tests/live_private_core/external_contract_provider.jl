@@ -92,7 +92,7 @@ try
             flush(stdout)
             fault_applied = true
         elseif !fault_applied &&
-               (isfile(mutate_source_request) || isfile(mutate_sink_request))
+            (isfile(mutate_source_request) || isfile(mutate_sink_request))
             stream = isfile(mutate_source_request) ? source : sink
             with_thread_loop_lock(loop) do _
                 update_params!(
@@ -100,10 +100,7 @@ try
                     [
                         ndarray_format(
                             NdArrayFormat(
-                                NdArray.F32_LE,
-                                (3,);
-                                layout = NdArray.ROW_MAJOR,
-                                rate,
+                                NdArray.F32_LE, (3,); layout = NdArray.ROW_MAJOR, rate
                             );
                             schema = "org.pipewireao.rtc.incompatible/1",
                         ),

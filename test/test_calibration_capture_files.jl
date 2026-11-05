@@ -6,40 +6,36 @@ const CaptureClock = PipeWireAORTC.ControlClient
 @assert isdefined(CaptureFiles, :CaptureStore)
 
 const capture_settings = Dict{String,Any}(
-    "profile"=>"classic",
-    "simulation_graph"=>"internal-source",
-    "graph_sha256"=>repeat("a", 64),
-    "mask_sha256"=>repeat("b", 64),
-    "source_magnitude"=>2.0,
-    "exposure_ns"=>2000000,
-    "photon_noise"=>true,
-    "readout_noise"=>true,
-    "adc_bits"=>12,
+    "profile" => "classic",
+    "simulation_graph" => "internal-source",
+    "graph_sha256" => repeat("a", 64),
+    "mask_sha256" => repeat("b", 64),
+    "source_magnitude" => 2.0,
+    "exposure_ns" => 2000000,
+    "photon_noise" => true,
+    "readout_noise" => true,
+    "adc_bits" => 12,
 )
 const capture_domain = PipeWireAO.AcquisitionDomain(ntuple(index -> UInt8(index), 16))
-const capture_generation = UInt64(2)^53+7
-const capture_coordinator_domain = UInt64(2)^53+11
+const capture_generation = UInt64(2)^53 + 7
+const capture_coordinator_domain = UInt64(2)^53 + 11
 capture_cursor(sequence = 0, model = 0) = CaptureActions.AcquisitionCursor(
-    capture_coordinator_domain,
-    capture_generation,
-    UInt64(sequence),
-    UInt64(model),
+    capture_coordinator_domain, capture_generation, UInt64(sequence), UInt64(model)
 )
 
 @testset "capture model intervals stay within signed nanosecond range" begin
-    interval=Dict(
-        "domain"=>capture_coordinator_domain,
-        "generation"=>capture_generation,
-        "sequence"=>UInt64(1),
-        "start_model_ns"=>UInt64(typemax(Int64))-1,
-        "duration_ns"=>UInt64(1),
+    interval = Dict(
+        "domain" => capture_coordinator_domain,
+        "generation" => capture_generation,
+        "sequence" => UInt64(1),
+        "start_model_ns" => UInt64(typemax(Int64)) - 1,
+        "duration_ns" => UInt64(1),
     )
-    exposure=CaptureFiles._capture_exposure(interval, capture_cursor())
+    exposure = CaptureFiles._capture_exposure(interval, capture_cursor())
     @test CaptureFiles._capture_end(exposure).model_ns == typemax(Int64)
-    for start in (UInt64(typemax(Int64)), UInt64(typemax(Int64))+1, typemax(UInt64)-1)
+    for start in (UInt64(typemax(Int64)), UInt64(typemax(Int64)) + 1, typemax(UInt64) - 1)
         @test_throws ArgumentError CaptureFiles._capture_exposure(
-            merge(interval, Dict("start_model_ns"=>start)),
-            capture_cursor(),
+            merge(interval, Dict("start_model_ns" => start)), capture_cursor()
         )
     end
 end
@@ -53,14 +49,10 @@ function capture_file_receipt(
     timing = PipeWireAO.ExposureTiming(; duration_nanoseconds = duration),
     reference_timestamp = PipeWireAO.ReferenceTimestamp(1_730_000_000_000_000_123),
 )
-    header=PipeWireAO.BufferHeader(
-        UInt32(0),
-        UInt32(0),
-        Int64(-17),
-        Int64(-2),
-        identity.sequence+UInt64(100),
+    header = PipeWireAO.BufferHeader(
+        UInt32(0), UInt32(0), Int64(-17), Int64(-2), identity.sequence + UInt64(100)
     )
-    requirements=(
+    requirements = (
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_HEADER),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ACQUISITION_IDENTITY),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING),
@@ -68,8 +60,8 @@ function capture_file_receipt(
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_OPTICAL_CHOPPING),
         PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER),
     )
-    records=PipeWireAO.MetadataSnapshot(requirements)
-    writable=PipeWireAO.writable_metadata_records(records)
+    records = PipeWireAO.MetadataSnapshot(requirements)
+    writable = PipeWireAO.writable_metadata_records(records)
     PipeWireAO.set_buffer_header!(writable, header)
     PipeWireAO.set_acquisition_identity!(writable, identity)
     PipeWireAO.set_exposure_timing!(writable, timing)
@@ -100,14 +92,10 @@ function capture_source(;
     function acquire()
         count[] += 1
         count[] == fail && error("interrupted acquisition")
-        sequence = start.sequence+UInt64(count[])
-        model = start.model_ns+UInt64(count[]-1)*UInt64(period)
+        sequence = start.sequence + UInt64(count[])
+        model = start.model_ns + UInt64(count[] - 1) * UInt64(period)
         exposure = CaptureActions.Exposure(
-            start.domain,
-            start.generation,
-            sequence,
-            model,
-            UInt64(duration),
+            start.domain, start.generation, sequence, model, UInt64(duration)
         )
         # Asymmetry catches accidental transpose/column-major encoding. Keep
         # full ADC values including the top UInt16 bit, without electron conversion.
@@ -117,7 +105,7 @@ function capture_source(;
             raw,
             slopes = reshape(Float32.(1:376), 188, 2),
             flux = fill(Float32(count[]), 188),
-            validity = [index != 3 for index = 1:188],
+            validity = [index != 3 for index in 1:188],
         )
         receipt = capture_file_receipt(
             PipeWireAO.AcquisitionIdentity(capture_domain, start.generation, sequence),
@@ -125,20 +113,14 @@ function capture_source(;
             UInt64(duration),
         )
         metadata = metadata_change((;
-            raw = receipt,
-            slopes = receipt,
-            flux = receipt,
-            validity = receipt,
+            raw = receipt, slopes = receipt, flux = receipt, validity = receipt
         ))
         return (; arrays, metadata), exposure
     end
     return acquire, count
 end
 function capture_store(
-    parent;
-    name = "capture",
-    maximum = 10CaptureFiles.CLASSIC_CAPTURE_BYTES,
-    kwargs...,
+    parent; name = "capture", maximum = 10CaptureFiles.CLASSIC_CAPTURE_BYTES, kwargs...
 )
     CaptureFiles.CaptureStore(
         joinpath(parent, name);
@@ -150,12 +132,7 @@ function capture_store(
     )
 end
 function capture_write(
-    store;
-    frames = 2,
-    cursor = capture_cursor(),
-    serial = 1,
-    run = 7,
-    kwargs...,
+    store; frames = 2, cursor = capture_cursor(), serial = 1, run = 7, kwargs...
 )
     acquire, count = capture_source(; start = cursor, kwargs...)
     descriptor = CaptureFiles.capture!(
@@ -166,7 +143,7 @@ function capture_write(
         probe = UInt32(1),
         cursor,
         frames = UInt32(frames),
-        deadline = CaptureClock.monotonic()+30,
+        deadline = CaptureClock.monotonic() + 30,
     )
     return descriptor, count
 end
@@ -184,7 +161,7 @@ function capture_rewrite(store, descriptor, change)
     original = read(path)
     document = PipeWireAORTC.Common.parse_json(String(copy(original)))
     change(document)
-    payload = codeunits(PipeWireAORTC.Common.JSON.json(document)*"\n")
+    payload = codeunits(PipeWireAORTC.Common.JSON.json(document) * "\n")
     chmod(path, 0o600)
     write(path, payload)
     revised = CaptureActions.Captured(
@@ -213,7 +190,7 @@ end
             @test count[] == 2
             @test descriptor.bytes == 2CaptureFiles.CLASSIC_CAPTURE_BYTES
             @test filesize(joinpath(store.directory, descriptor.manifest)) ==
-                  descriptor.metadata_bytes
+                descriptor.metadata_bytes
             result = capture_read(store, descriptor)
             @test length(result.samples) == 2
             sample = first(result.samples)
@@ -227,7 +204,7 @@ end
             @test sample.quality["valid_rois"] == 187
             @test sample.exposure.domain == capture_coordinator_domain
             @test sample.metadata["raw"]["identity"]["domain"] ==
-                  bytes2hex(collect(capture_domain.bytes))
+                bytes2hex(collect(capture_domain.bytes))
             @test sample.metadata["raw"]["identity"]["generation"] == capture_generation
             @test sample.metadata["raw"]["header"]["pts"] == -17
             @test sample.metadata["raw"]["header"]["sequence"] == 101
@@ -235,13 +212,11 @@ end
             @test result.manifest["cursor"]["model_ns"] == 4000000
             @test result.manifest["after"]["generation"] == capture_generation
             @test result.manifest["domain_mapping"]["coordinator"] ==
-                  capture_coordinator_domain
+                capture_coordinator_domain
             @test result.manifest["domain_mapping"]["wire"] ==
-                  bytes2hex(collect(capture_domain.bytes))
+                bytes2hex(collect(capture_domain.bytes))
             raw_path = joinpath(
-                store.directory,
-                dirname(descriptor.manifest),
-                "frame-000001-raw.bin",
+                store.directory, dirname(descriptor.manifest), "frame-000001-raw.bin"
             )
             @test read(raw_path)[1:4] == UInt8[0x00, 0x00, 0x01, 0x80]
             @test filemode(stat(raw_path)) & 0o777 == 0o444
@@ -249,9 +224,7 @@ end
             @test capture_read(store, descriptor).samples[1].arrays.raw[1, 1] == 0
             @test result.samples[1].arrays.raw !== result.samples[2].arrays.raw
             @test_throws ArgumentError capture_read(
-                store,
-                descriptor;
-                expected_stage = "dark",
+                store, descriptor; expected_stage = "dark"
             )
             @test_throws ArgumentError CaptureFiles.read_capture(
                 store.directory,
@@ -273,13 +246,11 @@ end
             )
             # Explicit source TAI requires no PTP record and is distinct from model/recorder time.
             clock_store = capture_store(parent; name = "clock")
-            timing=PipeWireAO.ExposureTiming(
-                99;
-                clock = PipeWireAO.METADATA_CLOCK_TAI,
-                duration_nanoseconds = 2000000,
+            timing = PipeWireAO.ExposureTiming(
+                99; clock = PipeWireAO.METADATA_CLOCK_TAI, duration_nanoseconds = 2000000
             )
-            reference_timestamp=PipeWireAO.ReferenceTimestamp(
-                typemax(UInt64)-1;
+            reference_timestamp = PipeWireAO.ReferenceTimestamp(
+                typemax(UInt64) - 1;
                 clock = PipeWireAO.METADATA_CLOCK_TAI,
                 duration_nanoseconds = 17,
             )
@@ -294,27 +265,29 @@ end
                     ),
                     metadata,
                 )
-            clock_descriptor, _ =
-                capture_write(clock_store; frames = 1, metadata_change = clock_metadata)
+            clock_descriptor, _ = capture_write(
+                clock_store; frames = 1, metadata_change = clock_metadata
+            )
             clock_read = capture_read(clock_store, clock_descriptor)
             @test clock_read.samples[1].metadata["raw"]["exposure_timing"]["start_nanoseconds"] ==
-                  99
+                99
             @test clock_read.samples[1].metadata["raw"]["reference_timestamp"]["timestamp_nanoseconds"] ==
-                  typemax(UInt64)-1
+                typemax(UInt64) - 1
             @test clock_read.samples[1].metadata["raw"]["reference_timestamp"]["clock"] ==
-                  UInt32(PipeWireAO.METADATA_CLOCK_TAI)
+                UInt32(PipeWireAO.METADATA_CLOCK_TAI)
             @test clock_read.manifest["recording"]["clock"] ==
-                  UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
+                UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
             @test clock_read.manifest["exposures"][1]["recording"]["received"]["clock"] ==
-                  UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
+                UInt32(PipeWireAO.METADATA_CLOCK_REALTIME)
             @test clock_read.samples[1].exposure.start_model_ns == 0
         end
     end
     @testset "model cadence may leave gaps between detector exposures" begin
         mktempdir() do parent
             store = capture_store(parent)
-            descriptor, _ =
-                capture_write(store; frames = 2, duration = 1896000, period = 2000000)
+            descriptor, _ = capture_write(
+                store; frames = 2, duration = 1896000, period = 2000000
+            )
             result = capture_read(store, descriptor)
             @test result.samples[1].exposure.start_model_ns == 0
             @test result.samples[1].exposure.duration_ns == 1896000
@@ -323,36 +296,29 @@ end
             @test descriptor.cursor.model_ns == 3896000
             @test result.samples[2].metadata["raw"]["model_start_ns"] == 2000000
             revised, original = capture_rewrite(
-                store,
-                descriptor,
-                doc -> begin
+                store, descriptor, doc -> begin
                     record = doc["exposures"][2]
                     record["exposure"]["start_model_ns"] = 1895999
                     for receipt in values(record["metadata"])
                         receipt["model_start_ns"] = 1895999
                     end
-                end,
+                end
             )
             @test_throws ArgumentError capture_read(store, revised)
             capture_restore(store, descriptor, original)
             overlapping = capture_store(parent; name = "overlapping")
             @test_throws ArgumentError capture_write(
-                overlapping;
-                frames = 2,
-                duration = 2000000,
-                period = 1000000,
+                overlapping; frames = 2, duration = 2000000, period = 1000000
             )
             @test !isfile(
-                joinpath(overlapping.directory, "run-7-serial-1", "manifest.json"),
+                joinpath(overlapping.directory, "run-7-serial-1", "manifest.json")
             )
         end
     end
     @testset "preflight capacity, stale requests, and bounded settings" begin
         mktempdir() do parent
             @test_throws ArgumentError capture_store(
-                parent;
-                name = "copper",
-                profile = "copper",
+                parent; name = "copper", profile = "copper"
             )
             @test !ispath(joinpath(parent, "copper"))
             store = capture_store(parent; maximum = CaptureFiles.CLASSIC_CAPTURE_BYTES)
@@ -366,7 +332,7 @@ end
                     probe = UInt32(1),
                     cursor = capture_cursor(),
                     frames,
-                    deadline = CaptureClock.monotonic()+30,
+                    deadline = CaptureClock.monotonic() + 30,
                 )
                 @test count[] == 0
             end
@@ -380,7 +346,7 @@ end
                 probe = UInt32(1),
                 cursor = descriptor.cursor,
                 frames = UInt32(1),
-                deadline = CaptureClock.monotonic()+30,
+                deadline = CaptureClock.monotonic() + 30,
             )
             @test count[] == 0
             ample = capture_store(parent; name = "ample")
@@ -393,7 +359,7 @@ end
                 probe = UInt32(1),
                 cursor = capture_cursor(),
                 frames = UInt32(1),
-                deadline = CaptureClock.monotonic()+30,
+                deadline = CaptureClock.monotonic() + 30,
             )
             @test count[] == 0
             # A legitimate intervening owner exposure may advance beyond last capture.
@@ -405,7 +371,7 @@ end
                 probe = UInt32(1),
                 cursor = capture_cursor(1, 4000000),
                 frames = UInt32(1),
-                deadline = CaptureClock.monotonic()+30,
+                deadline = CaptureClock.monotonic() + 30,
             )
             @test count[] == 0
             later = capture_cursor(2, 4000000)
@@ -415,7 +381,7 @@ end
                 joinpath(parent, "too-large");
                 stage = "x",
                 illumination = "x",
-                settings = Dict("oversized"=>repeat("x", 16385)),
+                settings = Dict("oversized" => repeat("x", 16385)),
                 maximum_bytes = 1000000,
             )
             @test !ispath(joinpath(parent, "too-large"))
@@ -446,7 +412,7 @@ end
                 probe = UInt32(1),
                 cursor = capture_cursor(),
                 frames = UInt32(1),
-                deadline = CaptureClock.monotonic()+30,
+                deadline = CaptureClock.monotonic() + 30,
             )
             @test prepared.after == capture_cursor()
             @test prepared.bytes == CaptureFiles.CLASSIC_CAPTURE_BYTES
@@ -462,7 +428,7 @@ end
                     probe = UInt32(1),
                     cursor = capture_cursor(),
                     frames,
-                    deadline = CaptureClock.monotonic()+30,
+                    deadline = CaptureClock.monotonic() + 30,
                 )
                 @test state() == before
                 @test isempty(readdir(store.directory))
@@ -480,7 +446,7 @@ end
                     probe = UInt32(1),
                     cursor,
                     frames = UInt32(1),
-                    deadline = CaptureClock.monotonic()+30,
+                    deadline = CaptureClock.monotonic() + 30,
                 )
                 @test state() == before
                 @test readdir(store.directory) == existing
@@ -494,7 +460,7 @@ end
             @test_throws ErrorException capture_write(store; frames = 2, fail = 2)
             @test !isfile(joinpath(store.directory, "run-7-serial-1", "manifest.json"))
             @test isfile(
-                joinpath(store.directory, "run-7-serial-1", "frame-000001-raw.bin"),
+                joinpath(store.directory, "run-7-serial-1", "frame-000001-raw.bin")
             )
             @test store.used_bytes == 2CaptureFiles.CLASSIC_CAPTURE_BYTES
             acquire, count = capture_source()
@@ -506,7 +472,7 @@ end
                 probe = UInt32(1),
                 cursor = store.cursor,
                 frames = UInt32(1),
-                deadline = CaptureClock.monotonic()-1,
+                deadline = CaptureClock.monotonic() - 1,
             )
             @test count[] == 0
             bad = capture_store(parent; name = "bad")
@@ -518,18 +484,14 @@ end
                             metadata.slopes,
                             (;
                                 identity = PipeWireAO.AcquisitionIdentity(
-                                    capture_domain,
-                                    capture_generation,
-                                    UInt64(99),
+                                    capture_domain, capture_generation, UInt64(99)
                                 )
                             ),
                         )
                     ),
                 )
             @test_throws ArgumentError capture_write(
-                bad;
-                frames = 1,
-                metadata_change = change,
+                bad; frames = 1, metadata_change = change
             )
             @test !isfile(joinpath(bad.directory, "run-7-serial-1", "manifest.json"))
             for (index, flag) in enumerate((
@@ -554,12 +516,10 @@ end
                         metadata,
                     )
                 @test_throws ArgumentError capture_write(
-                    flagged;
-                    frames = 1,
-                    metadata_change = change_header,
+                    flagged; frames = 1, metadata_change = change_header
                 )
                 @test !isfile(
-                    joinpath(flagged.directory, "run-7-serial-1", "manifest.json"),
+                    joinpath(flagged.directory, "run-7-serial-1", "manifest.json")
                 )
             end
             stopped = capture_store(parent; name = "stopped")
@@ -572,7 +532,7 @@ end
                 probe = UInt32(1),
                 cursor = capture_cursor(),
                 frames = UInt32(2),
-                deadline = CaptureClock.monotonic()+30,
+                deadline = CaptureClock.monotonic() + 30,
                 check = () -> (count[] == 0 || error("controller lost")),
             )
             @test count[] == 1
@@ -606,7 +566,7 @@ end
                 doc->(doc["exposures"][1]["metadata"]["raw"]["records"]["abi"]=2),
                 doc->(doc["exposures"][1]["metadata"]["raw"]["records"]["byte_order"]="invalid"),
                 doc->(doc["exposures"][1]["recording"]["received"]["timestamp_nanoseconds"]=typemax(
-                    UInt64,
+                    UInt64
                 )),
                 doc->(doc["recording"]["clock"]=0),
                 doc->(doc["profile"]="copper"),
@@ -616,8 +576,7 @@ end
                 doc->(doc["domain_mapping"]["coordinator"]=1),
                 doc->(doc["exposures"][1]["exposure"]["sequence"]=2),
                 doc->(doc["exposures"][1]["metadata"]["raw"]["identity"]["domain"]=repeat(
-                    "0",
-                    32,
+                    "0", 32
                 )),
                 doc->(doc["exposures"][1]["metadata"]["flux"]["model_start_ns"]=1),
                 doc->(doc["exposures"][1]["quality"]["valid_rois"]=188),
@@ -639,8 +598,9 @@ end
                         doc -> (doc["exposures"][1]["payloads"][role]["shape"] = [1]),
                         doc -> (doc["exposures"][1]["payloads"][role]["bytes"] = 1),
                         doc -> (
-                            doc["exposures"][1]["payloads"][role]["sha256"] =
-                                repeat("0", 64)
+                            doc["exposures"][1]["payloads"][role]["sha256"] = repeat(
+                                "0", 64
+                            )
                         ),
                         doc -> (
                             doc["exposures"][1]["payloads"][role]["path"] = "../outside.bin"
@@ -661,7 +621,7 @@ end
             original = read(manifest_path)
             duplicated = replace(
                 String(copy(original)),
-                "\"schema_version\":4"=>"\"schema_version\":4,\"schema_version\":4",
+                "\"schema_version\":4" => "\"schema_version\":4,\"schema_version\":4",
             )
             @test ncodeunits(duplicated) > length(original)
             chmod(manifest_path, 0o600)
@@ -699,19 +659,12 @@ end
                 ),
             )
                 bad = CaptureActions.Captured(
-                    cursor,
-                    path,
-                    descriptor.sha256,
-                    descriptor.frames,
-                    bytes,
-                    metadata,
+                    cursor, path, descriptor.sha256, descriptor.frames, bytes, metadata
                 )
                 @test_throws ArgumentError capture_read(store, bad)
             end
             raw_path = joinpath(
-                store.directory,
-                dirname(descriptor.manifest),
-                "frame-000001-raw.bin",
+                store.directory, dirname(descriptor.manifest), "frame-000001-raw.bin"
             )
             original = read(raw_path)
             chmod(raw_path, 0o600)
@@ -727,9 +680,7 @@ end
             write(raw_path, original)
             # Rehashed BOOL8 payload still rejects a byte that is neither 0 nor 1.
             bool_path = joinpath(
-                store.directory,
-                dirname(descriptor.manifest),
-                "frame-000001-validity.bin",
+                store.directory, dirname(descriptor.manifest), "frame-000001-validity.bin"
             )
             chmod(bool_path, 0o600)
             bool_bytes = read(bool_path)
@@ -739,8 +690,9 @@ end
                 store,
                 descriptor,
                 doc ->
-                    doc["exposures"][1]["payloads"]["validity"]["sha256"] =
-                        bytes2hex(sha256(bool_bytes)),
+                    doc["exposures"][1]["payloads"]["validity"]["sha256"] = bytes2hex(
+                        sha256(bool_bytes)
+                    ),
             )
             @test_throws ArgumentError capture_read(store, revised)
         end
@@ -749,15 +701,11 @@ end
 end
 
 @testset "capture schema preserves missing and explicit classification facts" begin
-    P=PipeWireAO
-    optical=(
-        nothing,
-        P.OPTICAL_ABSENT,
-        P.OPTICAL_UNFRINGED,
-        P.OPTICAL_FRINGED,
-        P.OPTICAL_MIXED,
+    P = PipeWireAO
+    optical = (
+        nothing, P.OPTICAL_ABSENT, P.OPTICAL_UNFRINGED, P.OPTICAL_FRINGED, P.OPTICAL_MIXED
     )
-    trigger=(
+    trigger = (
         nothing,
         P.ACQUISITION_TRIGGER_ABSENT,
         P.ACQUISITION_TRIGGER_LOW,
@@ -766,8 +714,8 @@ end
     )
     mktempdir() do parent
         for (index, (o, t)) in enumerate(Iterators.product(optical, trigger))
-            store=capture_store(parent; name = "classification-$index")
-            descriptor, _=capture_write(
+            store = capture_store(parent; name = "classification-$index")
+            descriptor, _ = capture_write(
                 store;
                 frames = 1,
                 metadata_change = metadata -> map(
@@ -781,45 +729,47 @@ end
                     metadata,
                 ),
             )
-            sample=only(capture_read(store, descriptor).samples)
+            sample = only(capture_read(store, descriptor).samples)
             @test sample.metadata["raw"]["optical_classification"] ==
-                  (o===nothing ? nothing : UInt32(o))
+                (o === nothing ? nothing : UInt32(o))
             @test sample.metadata["raw"]["trigger_classification"] ==
-                  (t===nothing ? nothing : UInt32(t))
+                (t === nothing ? nothing : UInt32(t))
         end
     end
 end
 
 @testset "capture preserves opaque records and separates recorder times" begin
-    P=PipeWireAO
+    P = PipeWireAO
     mktempdir() do parent
-        store=capture_store(parent)
-        opaque=fill(UInt8(0xa7), 3504)
-        change=metadata -> map(metadata) do receipt
-            snapshot=receipt.records
-            entries=[
-                P.metadata_type(snapshot, i)=>collect(P.metadata_bytes(snapshot, i)) for
-                i = 1:P.metadata_count(snapshot)
-            ]
-            push!(entries, UInt32(0x900)=>opaque)
-            merge(receipt, (; records = P.MetadataSnapshot(entries)))
-        end
-        descriptor, _=capture_write(store; frames = 1, metadata_change = change)
-        result=capture_read(store, descriptor)
-        record=only(result.manifest["exposures"])
+        store = capture_store(parent)
+        opaque = fill(UInt8(0xa7), 3504)
+        change =
+            metadata -> map(metadata) do receipt
+                snapshot = receipt.records
+                entries = [
+                    P.metadata_type(snapshot, i) =>
+                        collect(P.metadata_bytes(snapshot, i)) for
+                    i in 1:P.metadata_count(snapshot)
+                ]
+                push!(entries, UInt32(0x900) => opaque)
+                merge(receipt, (; records = P.MetadataSnapshot(entries)))
+            end
+        descriptor, _ = capture_write(store; frames = 1, metadata_change = change)
+        result = capture_read(store, descriptor)
+        record = only(result.manifest["exposures"])
         @test only(
-            filter(e -> e["type"]==0x900, record["metadata"]["raw"]["records"]["entries"]),
+            filter(e -> e["type"] == 0x900, record["metadata"]["raw"]["records"]["entries"])
         )["data"] == bytes2hex(opaque)
         @test descriptor.metadata_bytes > 4096
         @test descriptor.metadata_bytes <=
-              CaptureFiles.CAPTURE_HEADER_BYTES+CaptureFiles.CAPTURE_EXPOSURE_BYTES
+            CaptureFiles.CAPTURE_HEADER_BYTES + CaptureFiles.CAPTURE_EXPOSURE_BYTES
         @test record["recording"]["received"]["clock"] == UInt32(P.METADATA_CLOCK_REALTIME)
         @test record["recording"]["payload_written"]["clock"] ==
-              UInt32(P.METADATA_CLOCK_REALTIME)
+            UInt32(P.METADATA_CLOCK_REALTIME)
         @test record["metadata"]["raw"]["reference_timestamp"]["timestamp_nanoseconds"] ==
-              1_730_000_000_000_000_123
+            1_730_000_000_000_000_123
         @test !haskey(record["metadata"]["raw"], "absolute_times")
-        revised, original=capture_rewrite(
+        revised, original = capture_rewrite(
             store,
             descriptor,
             d -> push!(
@@ -829,7 +779,7 @@ end
         )
         @test_throws ArgumentError capture_read(store, revised)
         capture_restore(store, descriptor, original)
-        revised, original=capture_rewrite(
+        revised, original = capture_rewrite(
             store,
             descriptor,
             d -> empty!(d["exposures"][1]["metadata"]["raw"]["records"]["entries"]),

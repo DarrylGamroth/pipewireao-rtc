@@ -35,65 +35,49 @@ end
 
 @testset "modal units require OPD normalization and an explicit disjoint partition" begin
     parameters = Dict(
-        :reconstructor=>zeros(Float32, 3, 8),
-        Symbol("woofer-selection")=>Float32[0 1 0; 1 0 0],
-        Symbol("tweeter-selection")=>Float32[0 0 1],
+        :reconstructor => zeros(Float32, 3, 8),
+        Symbol("woofer-selection") => Float32[0 1 0; 1 0 0],
+        Symbol("tweeter-selection") => Float32[0 0 1],
     )
-    recipe = Dict("mirrors"=>[Dict("name"=>"woofer"), Dict("name"=>"tweeter")])
+    recipe = Dict("mirrors" => [Dict("name" => "woofer"), Dict("name" => "tweeter")])
     instrument = Dict(
-        "deformable_mirrors"=>Dict(
-            "woofer"=>Dict("units"=>"m OPD"),
-            "tweeter"=>Dict("units"=>"m OPD"),
+        "deformable_mirrors" => Dict(
+            "woofer" => Dict("units" => "m OPD"), "tweeter" => Dict("units" => "m OPD")
         ),
     )
     normalization = "piston-removed pupil RMS OPD"
     @test Ext.pyramid_reference_units(parameters, recipe, instrument, normalization) ==
-          fill("m OPD", 3)
+        fill("m OPD", 3)
     @test_throws ArgumentError Ext.pyramid_reference_units(
-        parameters,
-        recipe,
-        instrument,
-        "unknown",
+        parameters, recipe, instrument, "unknown"
     )
     for selection in
         (Float32[1 0 0], Float32[0 0 0], Float32[0 1 1], Float32[0 0 -1], Float32[0 0 NaN])
         bad = copy(parameters)
         bad[Symbol("tweeter-selection")] = selection
         @test_throws ArgumentError Ext.pyramid_reference_units(
-            bad,
-            recipe,
-            instrument,
-            normalization,
+            bad, recipe, instrument, normalization
         )
     end
     bad = copy(parameters)
     bad[Symbol("tweeter-selection")] = zeros(Float32, 1, 2)
     @test_throws DimensionMismatch Ext.pyramid_reference_units(
-        bad,
-        recipe,
-        instrument,
-        normalization,
+        bad, recipe, instrument, normalization
     )
     bad = deepcopy(instrument)
     bad["deformable_mirrors"]["tweeter"]["units"] = "m surface"
     @test_throws ArgumentError Ext.pyramid_reference_units(
-        parameters,
-        recipe,
-        bad,
-        normalization,
+        parameters, recipe, bad, normalization
     )
-    duplicate = Dict("mirrors"=>[Dict("name"=>"woofer"), Dict("name"=>"woofer")])
+    duplicate = Dict("mirrors" => [Dict("name" => "woofer"), Dict("name" => "woofer")])
     @test_throws ArgumentError Ext.pyramid_reference_units(
-        parameters,
-        duplicate,
-        instrument,
-        normalization,
+        parameters, duplicate, instrument, normalization
     )
 end
 
 @testset "OPD normalization authority binds exact FITS bytes, HDU and axes" begin
     mktempdir() do directory
-        recipe = Dict("mirrors"=>[Dict("name"=>"woofer"), Dict("name"=>"tweeter")])
+        recipe = Dict("mirrors" => [Dict("name" => "woofer"), Dict("name" => "tweeter")])
         values = (
             reconstructor = Float32[1 2; 3 4],
             var"woofer-selection" = Float32[1 0],
@@ -102,36 +86,31 @@ end
         bindings = PipeWireAORTC.GraphOwner.FITSBinding[]
         files, hashes = Dict{String,String}(), Dict{String,String}()
         for (port, array) in pairs(values)
-            filename = string(port)*".fits"
+            filename = string(port) * ".fits"
             path = joinpath(directory, filename)
             C.write_fits(path, array)
             push!(
                 bindings,
                 PipeWireAORTC.GraphOwner.FITSBinding(
-                    port,
-                    PipeWireAORTC.Artifacts.FITSArtifact(path; axes = (2, 1)),
+                    port, PipeWireAORTC.Artifacts.FITSArtifact(path; axes = (2, 1))
                 ),
             )
             files[string(port)] = filename
             hashes[filename] = C.digest(path)
         end
-        calibration = Dict("parameter_files"=>files, "artifact_sha256"=>hashes)
-        expected = Dict(name=>hashes[file] for (name, file) in files)
+        calibration = Dict("parameter_files" => files, "artifact_sha256" => hashes)
+        expected = Dict(name => hashes[file] for (name, file) in files)
         @test Ext.pyramid_reference_unit_sources(bindings, recipe, calibration) == expected
         for port in keys(values)
             changed = deepcopy(calibration)
             changed["artifact_sha256"][files[string(port)]] = repeat("0", 64)
             @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-                bindings,
-                recipe,
-                changed,
+                bindings, recipe, changed
             )
             changed = deepcopy(calibration)
             delete!(changed["parameter_files"], string(port))
             @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-                bindings,
-                recipe,
-                changed,
+                bindings, recipe, changed
             )
         end
         for (hdu, axes) in ((2, (2, 1)), (1, (1, 2)), (1, nothing))
@@ -142,20 +121,14 @@ end
                 PipeWireAORTC.Artifacts.FITSArtifact(original.source.path; hdu, axes),
             )
             @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-                changed,
-                recipe,
-                calibration,
+                changed, recipe, calibration
             )
         end
         @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-            bindings[2:end],
-            recipe,
-            calibration,
+            bindings[2:end], recipe, calibration
         )
         @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-            [bindings; first(bindings)],
-            recipe,
-            calibration,
+            [bindings; first(bindings)], recipe, calibration
         )
         # A generated replacement with altered values is rejected without touching
         # any copied calibration bytes or changing the claimed normalization.
@@ -163,49 +136,56 @@ end
         C.write_fits(replacement, Float32[1 2; 3 5])
         changed = copy(bindings)
         changed[1] = PipeWireAORTC.GraphOwner.FITSBinding(
-            :reconstructor,
-            PipeWireAORTC.Artifacts.FITSArtifact(replacement; axes = (2, 1)),
+            :reconstructor, PipeWireAORTC.Artifacts.FITSArtifact(replacement; axes = (2, 1))
         )
         @test_throws ArgumentError Ext.pyramid_reference_unit_sources(
-            changed,
-            recipe,
-            calibration,
+            changed, recipe, calibration
         )
     end
 end
 
 @testset "pyramid ADC rail follows the declared UInt16 acquisition endpoint" begin
-    options =
-        (frame_output = :published_frame, frame_shape = (4, 3), frame_schema = "test.raw/1")
+    options = (
+        frame_output = :published_frame, frame_shape = (4, 3), frame_schema = "test.raw/1"
+    )
     config = Dict{String,Any}(
-        "output_element_type"=>"uint16",
-        "rounding"=>"nearest_even",
-        "output_size"=>[4, 3],
-        "output_schema"=>"test.raw/1",
-        "range"=>[0, 16383],
-        "input_size"=>[3, 3],
-        "input_schema"=>"test.electrons/1",
-        "scale"=>1/64,
-        "bias"=>1024,
+        "output_element_type" => "uint16",
+        "rounding" => "nearest_even",
+        "output_size" => [4, 3],
+        "output_schema" => "test.raw/1",
+        "range" => [0, 16383],
+        "input_size" => [3, 3],
+        "input_schema" => "test.electrons/1",
+        "scale" => 1 / 64,
+        "bias" => 1024,
     )
     graph = Dict(
-        "nodes"=>[
+        "nodes" => [
             Dict(
-                "name"=>"camera",
-                "type"=>"detector",
-                "config"=>Dict("frame_schema"=>"test.electrons/1", "rows"=>3, "columns"=>3),
+                "name" => "camera",
+                "type" => "detector",
+                "config" => Dict(
+                    "frame_schema" => "test.electrons/1",
+                    "rows" => 3,
+                    "columns" => 3,
+                ),
             ),
-            Dict("name"=>"adc", "type"=>"detector_frame_layout_f32", "config"=>config),
+            Dict(
+                "name" => "adc",
+                "type" => "detector_frame_layout_f32",
+                "config" => config,
+            ),
         ],
-        "outputs"=>[Dict("name"=>"published_frame", "source"=>"adc.frame")],
-        "links"=>[Dict("source"=>"camera.frame", "destination"=>"adc.detector_frame")],
+        "outputs" => [Dict("name" => "published_frame", "source" => "adc.frame")],
+        "links" =>
+            [Dict("source" => "camera.frame", "destination" => "adc.detector_frame")],
     )
     original = deepcopy(graph)
     adc = Ext.pyramid_reference_adc(graph, options)
     @test adc.rail === UInt32(16383)
     @test adc.detector === graph["nodes"][1]
     @test adc.frame_layout === graph["nodes"][2]
-    @test adc.frame_layout["config"]["scale"] == 1/64
+    @test adc.frame_layout["config"]["scale"] == 1 / 64
     @test adc.frame_layout["config"]["bias"] == 1024
     @test graph == original
     for range in (
@@ -258,8 +238,9 @@ end
     pixels = Float32[1 2; 3 4; 5 6; 7 8]
     raw = fill(UInt16(2), 2, 3)
     mean = Float32[5]
-    sample =
-        (arrays = (raw = raw, reconstruction_pixels = pixels, mean_pupil_intensity = mean),)
+    sample = (
+        arrays = (raw = raw, reconstruction_pixels = pixels, mean_pupil_intensity = mean),
+    )
     @test Ext.pyramid_reference_update!(state, plan, sample) === nothing
     pixels .+= 2
     mean .= 1000
@@ -284,23 +265,21 @@ if application !== nothing
         flush(stdout)
         before = Ext.reference_application_hashes(application)
         recipe = C.read_recipe(application)
-        options =
-            PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
+        options = PipeWireAORTC.AOSOwner.configuration(
+            joinpath(application, "simulation.conf")
+        )
         declaration = Ext.IC.load_simulation(options.plant.definition)
         configured = Ext.IC.settings(declaration, options.plant.settings)
         adc = Ext.pyramid_reference_adc(
-            Ext.IC.graph_document(declaration, configured),
-            options,
+            Ext.IC.graph_document(declaration, configured), options
         )
         @test adc.rail == UInt32(16383)
-        @test adc.frame_layout["config"]["scale"] == 1/64
+        @test adc.frame_layout["config"]["scale"] == 1 / 64
         @test adc.frame_layout["config"]["bias"] == 1024
         for condition in ("dark", "internal-source")
             acquisition = Ext.pyramid_reference_adc(
                 Ext.IC.graph_document(
-                    declaration,
-                    configured;
-                    simulation_graph = condition,
+                    declaration, configured; simulation_graph = condition
                 ),
                 options,
             )
@@ -309,13 +288,10 @@ if application !== nothing
         end
         parameters = C.read_parameters(application)
         geometry = Ext.pyramid_reference_geometry(
-            application,
-            parameters,
-            options,
-            recipe,
-            declaration,
+            application, parameters, options, recipe, declaration
         )
-        @info "GPI geometry checked" selected_pixels=geometry.selected controller_coordinates=geometry.modes
+        @info "GPI geometry checked" selected_pixels = geometry.selected controller_coordinates =
+            geometry.modes
         flush(stdout)
         @test geometry.probe_command == Symbol(first(recipe["mirrors"])["name"])
         @test Set(keys(geometry.commands)) == Set(options.command_input)
@@ -327,7 +303,7 @@ if application !== nothing
         )
         try
             @test JuliaFilterGraph.output_formats(dark.graph).calibrated.shape ==
-                  options.frame_shape
+                options.frame_shape
             @test all(
                 node["label"] != "pyramid-pupil-image-f32" for
                 node in dark.document["filter.graph"]["nodes"]
@@ -349,9 +325,9 @@ if application !== nothing
             @test formats.mean_pupil_intensity.shape == (1,)
             @test frontend.parameters[:flat] == parameters[:flat]
             @test frontend.parameters[Symbol("pupil-mask")] ==
-                  parameters[Symbol("pupil-mask")]
+                parameters[Symbol("pupil-mask")]
             @test frontend.parameters[Symbol("pupil-origins")] ==
-                  parameters[Symbol("pupil-origins")]
+                parameters[Symbol("pupil-origins")]
         finally
             FilterGraphIsland.close_execution(frontend.graph)
         end
@@ -359,14 +335,15 @@ if application !== nothing
     end
 end
 if application !== nothing &&
-   get(ENV, "PIPEWIREAORTC_PYRAMID_REFERENCE_LIVE", "false") == "true"
+    get(ENV, "PIPEWIREAORTC_PYRAMID_REFERENCE_LIVE", "false") == "true"
     include("control_private_core.jl")
     @testset "GPI pyramid candidate acquisition on a caller-owned private core" begin
         Threads.nthreads(:default) >= 6 ||
             error("run the GPI selector with --threads=6 or higher")
         before = Ext.reference_application_hashes(application)
-        options =
-            PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
+        options = PipeWireAORTC.AOSOwner.configuration(
+            joinpath(application, "simulation.conf")
+        )
         reference = NamedTuple{options.command_input}(
             Tuple(
                 zeros(Float32, getproperty(options.command_count, name)) for
@@ -376,26 +353,24 @@ if application !== nothing &&
         counts = Ext.reference_counts(C.read_recipe(application))
         parameters = C.read_parameters(application)
         original = Dict(
-            name=>copy(parameters[name]) for name in
-            (:flat, Symbol("pupil-mask"), Symbol("pupil-origins"), :reconstructor)
+            name => copy(parameters[name]) for
+            name in (:flat, Symbol("pupil-mask"), Symbol("pupil-origins"), :reconstructor)
         )
         source = get(ENV, "PIPEWIREAORTC_PYRAMID_REFERENCE_INSTRUMENT", nothing)
         source_before =
             source === nothing ? nothing : Ext.reference_application_hashes(source)
         mktempdir() do directory
             with_control_private_core(;
-                temporary_prefix = "gpi-reference-campaign-",
+                temporary_prefix = "gpi-reference-campaign-"
             ) do remote, core_directory, daemon
                 chmod(dirname(remote), 0o700)
                 requests = Any[]
                 confirmation = function (request, witness)
                     push!(requests, request)
-                    @info "GPI reference stage prepared" stage=request.stage witness
+                    @info "GPI reference stage prepared" stage = request.stage witness
                     flush(stdout)
                     PipeWireAORTC.CalibrationPreparation.Confirmation(
-                        request;
-                        observed_at = Ext.Control.monotonic(),
-                        witness,
+                        request; observed_at = Ext.Control.monotonic(), witness
                     )
                 end
                 output = joinpath(directory, "candidate")
@@ -422,7 +397,7 @@ if application !== nothing &&
                 @test report["probe_command"] == "woofer"
                 @test report["overridden_parameter_ports"] == ["background"]
                 @test report["adc_upper_rail"] == 16383
-                @test report["frame_layout"]["config"]["scale"] == 1/64
+                @test report["frame_layout"]["config"]["scale"] == 1 / 64
                 @test report["frame_layout"]["config"]["bias"] == 1024
                 @test report["frame_layout"]["config"]["rounding"] == "nearest_even"
                 @test length(report["stages"]) == length(requests) == 3
@@ -433,9 +408,7 @@ if application !== nothing &&
                 dark, lamp, qualification = report["stages"]
                 @test [stage["condition"] for stage in report["stages"]] == ["dark", "internal-source", "internal-source"]
                 @test [stage["samples"] for stage in report["stages"]] == [
-                    counts.dark.samples,
-                    counts.lamp.samples,
-                    counts.qualification.samples,
+                    counts.dark.samples, counts.lamp.samples, counts.qualification.samples
                 ]
                 @test lamp["discard_exposures"] >= 1
                 @test qualification["first_sequence"] > lamp["last_sequence"]
@@ -445,25 +418,23 @@ if application !== nothing &&
                     stage in report["stages"]
                 )
                 @test length(
-                    unique(stage["acquisition_domain"] for stage in report["stages"]),
+                    unique(stage["acquisition_domain"] for stage in report["stages"])
                 ) == 3
                 @test lamp["parameter_sha256"]["background"] ==
-                      qualification["parameter_sha256"]["background"] ==
-                      report["artifacts"]["background"]["sha256"]
+                    qualification["parameter_sha256"]["background"] ==
+                    report["artifacts"]["background"]["sha256"]
                 for name in ("flat", "pupil-mask", "pupil-origins")
                     @test lamp["parameter_sha256"][name] ==
-                          qualification["parameter_sha256"][name] ==
-                          report["frozen_parameter_sha256"][name]
+                        qualification["parameter_sha256"][name] ==
+                        report["frozen_parameter_sha256"][name]
                 end
-                types = Dict("Float32"=>Float32, "Float64"=>Float64)
+                types = Dict("Float32" => Float32, "Float64" => Float64)
                 products = Dict{String,Array}()
                 for (name, artifact) in report["artifacts"]
                     path = joinpath(output, artifact["path"])
                     @test C.digest(path) == artifact["sha256"]
                     input = PipeWireAORTC.Artifacts.FITSArtifact(
-                        path;
-                        hdu = artifact["hdu"],
-                        axes = artifact["axes"],
+                        path; hdu = artifact["hdu"], axes = artifact["axes"]
                     )
                     products[name] = PipeWireAORTC.Artifacts.prepare(
                         input,
@@ -474,15 +445,15 @@ if application !== nothing &&
                 @test products["background"] == Float32.(products["dark-mean"])
                 for (name, figure) in pairs(reference)
                     @test products[report["reference_figure_artifacts"][string(name)]] ==
-                          figure
+                        figure
                     @test eltype(
-                        products[report["reference_figure_artifacts"][string(name)]],
+                        products[report["reference_figure_artifacts"][string(name)]]
                     ) === Float32
                 end
                 @test size(products["reference-pixels"]) ==
-                      (4, report["selected_pixel_count_per_pupil"])
+                    (4, report["selected_pixel_count_per_pupil"])
                 @test size(products["modal-reference"]) ==
-                      size(parameters[Symbol("modal-reference")])
+                    size(parameters[Symbol("modal-reference")])
                 if report["lamp_status"] == "Valid"
                     expected = -(
                         Float64.(parameters[:reconstructor]) *
@@ -505,9 +476,9 @@ if application !== nothing &&
                         products["reference-pixels"]
                     @test products["qualification-reference-difference"] == difference
                     @test report["qualification_reference_difference_rms_dimensionless"] ==
-                          sqrt(sum(abs2, difference)/length(difference))
+                        sqrt(sum(abs2, difference) / length(difference))
                     @test report["qualification_reference_difference_maximum_dimensionless"] ==
-                          maximum(abs, difference)
+                        maximum(abs, difference)
                 end
                 if haskey(ENV, "PIPEWIREAORTC_PYRAMID_REFERENCE_EVIDENCE")
                     PipeWireAORTC.Common.write_yaml(
@@ -522,9 +493,7 @@ if application !== nothing &&
                 cancel_confirm = function (request, witness)
                     cancelled[] = true
                     PipeWireAORTC.CalibrationPreparation.Confirmation(
-                        request;
-                        observed_at = Ext.Control.monotonic(),
-                        witness,
+                        request; observed_at = Ext.Control.monotonic(), witness
                     )
                 end
                 cancelled_output = joinpath(directory, "cancelled")
@@ -534,7 +503,7 @@ if application !== nothing &&
                     remote,
                     reference,
                     timeout_s = 600,
-                    cancelled = ()->cancelled[],
+                    cancelled = () -> cancelled[],
                     confirm = cancel_confirm,
                 )
                 @test !ispath(cancelled_output)
@@ -545,7 +514,7 @@ if application !== nothing &&
         @test all(parameters[name] == values for (name, values) in original)
         @test Ext.reference_application_hashes(application) == before
         @test source === nothing ||
-              Ext.reference_application_hashes(source) == source_before
+            Ext.reference_application_hashes(source) == source_before
     end
 end
 @test !any(id.name in ("CUDA", "AMDGPU") for id in keys(Base.loaded_modules))

@@ -38,52 +38,55 @@ end
         physical["optical_output"]["registration"] = "provisional"
         C.write_yaml(joinpath(directory, "instrument.yaml"), physical)
         simulation = C.read_yaml(path)
-        simulation["pupil_output"] =
-            Dict("opd"=>"pupil_opd", "amplitude"=>"pupil_amplitude")
+        simulation["pupil_output"] = Dict(
+            "opd" => "pupil_opd", "amplitude" => "pupil_amplitude"
+        )
         simulation["bindings"]["pupil_amplitude"] = Dict(
-            "kind"=>"pupil_amplitude",
-            "resolution"=>"pupil_resolution",
-            "type"=>"Float32",
+            "kind" => "pupil_amplitude",
+            "resolution" => "pupil_resolution",
+            "type" => "Float32",
         )
         delete!(simulation, "components")
         for graph in values(simulation["graphs"])
             graph["nodes"][1] = Dict(
-                "name"=>"optics",
-                "type"=>"shack_hartmann_rate_f32",
-                "config"=>Dict(
-                    "resolution"=>4,
-                    "telescope_diameter_m"=>0.012,
-                    "n_lenslets"=>2,
-                    "n_pix_subap"=>4,
-                    "pixel_scale_arcsec"=>0.1,
-                    "source_wavelength_m"=>0.75e-6,
-                    "source_photon_irradiance_m2_s"=>1.0,
-                    "opd_schema"=>"example.pupil-opd/1",
-                    "photon_rate_schema"=>"example.frame/1",
+                "name" => "optics",
+                "type" => "shack_hartmann_rate_f32",
+                "config" => Dict(
+                    "resolution" => 4,
+                    "telescope_diameter_m" => 0.012,
+                    "n_lenslets" => 2,
+                    "n_pix_subap" => 4,
+                    "pixel_scale_arcsec" => 0.1,
+                    "source_wavelength_m" => 0.75e-6,
+                    "source_photon_irradiance_m2_s" => 1.0,
+                    "opd_schema" => "example.pupil-opd/1",
+                    "photon_rate_schema" => "example.frame/1",
                 ),
             )
             graph["inputs"] = [
                 Dict(
-                    "name"=>"pupil_opd",
-                    "binding"=>"pupil_opd",
-                    "destination"=>"optics.opd",
+                    "name" => "pupil_opd",
+                    "binding" => "pupil_opd",
+                    "destination" => "optics.opd",
                 ),
             ]
             graph["outputs"][1]["source"] = "optics.photon_rate"
             push!(
                 graph["nodes"],
                 Dict(
-                    "name"=>"pupil",
-                    "type"=>"pupil_opd_composition_f32",
-                    "config"=>Dict(
-                        "resolution"=>4,
-                        "uncompensated_opd_schema"=>"example.pupil-opd/1",
-                        "surface_opd_schema"=>"example.pupil-opd/1",
-                        "pupil_opd_schema"=>"example.pupil-opd/1",
+                    "name" => "pupil",
+                    "type" => "pupil_opd_composition_f32",
+                    "config" => Dict(
+                        "resolution" => 4,
+                        "uncompensated_opd_schema" => "example.pupil-opd/1",
+                        "surface_opd_schema" => "example.pupil-opd/1",
+                        "pupil_opd_schema" => "example.pupil-opd/1",
                     ),
                 ),
             )
-            push!(graph["outputs"], Dict("name"=>"pupil_opd", "source"=>"pupil.pupil_opd"))
+            push!(
+                graph["outputs"], Dict("name" => "pupil_opd", "source" => "pupil.pupil_opd")
+            )
         end
         simulation["hil"]["command"] = "optics.opd"
         simulation["hil"]["frame"] = "optics.photon_rate"
@@ -91,43 +94,41 @@ end
         document["pupil_output"] = true
         C.write_json(joinpath(directory, "simulation.conf"), document)
         @test PipeWireAORTC.AOSOwner.configuration(joinpath(directory, "simulation.conf")).pupil_output
-        C.write_json(joinpath(directory, "session.conf"), Dict("sources"=>[], "links"=>[]))
-        C.write_json(joinpath(directory, "core.conf"), Dict("context.modules"=>[]))
-        owner = Dict("role"=>"plant", "argv"=>["julia", "--threads=2,0"])
+        C.write_json(
+            joinpath(directory, "session.conf"), Dict("sources" => [], "links" => [])
+        )
+        C.write_json(joinpath(directory, "core.conf"), Dict("context.modules" => []))
+        owner = Dict("role" => "plant", "argv" => ["julia", "--threads=2,0"])
         spec = Dict(
-            "session"=>"session.conf",
-            "core"=>"core.conf",
-            "source-owner"=>"plant",
-            "owners"=>[owner],
-            "node-owners"=>Dict{String,String}(),
+            "session" => "session.conf",
+            "core" => "core.conf",
+            "source-owner" => "plant",
+            "owners" => [owner],
+            "node-owners" => Dict{String,String}(),
         )
         E = PipeWireAORTC.InstrumentExport
         prefix = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
         @test_throws ArgumentError E.prepare_session_configuration!(
-            directory,
-            spec,
-            [],
-            "instrument.json",
-            prefix,
+            directory, spec, [], "instrument.json", prefix
         )
         owner["argv"] = ["julia", "--threads=3,0", "--pupil-output-cpu", "4"]
-        reference(pointer) = Dict("\$ref"=>pointer)
+        reference(pointer) = Dict("\$ref" => pointer)
         mkpath(joinpath(directory, "gui"))
         views_path = joinpath(directory, "gui", "operator-views.yaml")
         C.write_yaml(
             views_path,
             Dict(
-                "image"=>[
+                "image" => [
                     Dict(
-                        "source"=>Dict(
-                            "node"=>"simulator-pupil-output",
-                            "port"=>"output_1",
-                            "expected_schema"=>reference("/simulator/pupil/schema"),
+                        "source" => Dict(
+                            "node" => "simulator-pupil-output",
+                            "port" => "output_1",
+                            "expected_schema" => reference("/simulator/pupil/schema"),
                         ),
                     ),
                 ],
-                "focal_shape"=>reference("/simulator/focal-image/shape"),
-                "residual_shape"=>reference("/simulator/residual-wavefront/shape"),
+                "focal_shape" => reference("/simulator/focal-image/shape"),
+                "residual_shape" => reference("/simulator/residual-wavefront/shape"),
             ),
         )
         E.prepare_session_configuration!(
@@ -136,11 +137,12 @@ end
             [],
             "instrument.json",
             prefix;
-            configurations = [Dict("path"=>"gui/operator-views.yaml", "format"=>"yaml")],
+            configurations = [
+                Dict("path" => "gui/operator-views.yaml", "format" => "yaml")
+            ],
         )
         session = PipeWireAORTC.DeploymentConfiguration.decode(
-            joinpath(directory, "session.conf"),
-            prefix,
+            joinpath(directory, "session.conf"), prefix
         )
         source = only(session["sources"])
         @test source["node.name"] == "simulator-pupil-output"
@@ -152,8 +154,8 @@ end
         @test isempty(session["links"])
         views = C.read_yaml(views_path)
         @test only(views["image"])["source"]["expected_schema"] ==
-              port["schema"] ==
-              boundary().schema
+            port["schema"] ==
+            boundary().schema
         @test views["focal_shape"] == [8, 8]
         @test views["residual_shape"] == [4, 4]
         @test !occursin("\$ref", read(views_path, String))
@@ -182,8 +184,7 @@ function pupil_graph()
         return prepare_algorithm_graph(
             definition;
             target = AdaptiveOpticsSim.Backends.AcceleratorComputeDevice(
-                AdaptiveOpticsSim.Backends.CUDABackend(),
-                0,
+                AdaptiveOpticsSim.Backends.CUDABackend(), 0
             ),
             execution = CapturedGraphExecution(),
         )
@@ -204,8 +205,9 @@ pack_bytes(p, values) = @allocated Pupil.pack!(p.packet, values, p.amplitude)
     graph = pupil_graph()
     opd = Float32[1 2 3 4; 5 6 7 8; 9 10 11 12; 13 14 15 16] .* 1.0f-9
     amplitude = Float32[0 0.1 0.2 0; 0.3 0.4 0.5 0.6; 0.7 0.8 0.9 1; 0 0.2 0.4 0]
-    publisher =
-        Pupil.prepare(graph, :pupil_opd, amplitude, boundary(); period_ns = UInt64(500_000))
+    publisher = Pupil.prepare(
+        graph, :pupil_opd, amplitude, boundary(); period_ns = UInt64(500_000)
+    )
     try
         properties = Dict(publisher.options.properties)
         descriptor = JSON.parse(properties["pipewireao.ndarray.channels"])
@@ -219,23 +221,23 @@ pack_bytes(p, values) = @allocated Pupil.pack!(p.packet, values, p.amplitude)
         @test output["layout"] == UInt32(publisher.options.format.layout) == 1
         @test !haskey(output, "channels")
         @test output["planes"] == [
-            Dict("name"=>"opd_m", "index"=>0, "title"=>"Pupil OPD", "units"=>"m OPD"),
             Dict(
-                "name"=>"amplitude",
-                "index"=>1,
-                "title"=>"Pupil amplitude",
-                "units"=>"relative field amplitude",
+                "name" => "opd_m", "index" => 0, "title" => "Pupil OPD", "units" => "m OPD"
+            ),
+            Dict(
+                "name" => "amplitude",
+                "index" => 1,
+                "title" => "Pupil amplitude",
+                "units" => "relative field amplitude",
             ),
         ]
         @test properties["optics.quantities"] == "opd_m,amplitude"
         @test properties["optics.axis-order"] == "quantity,y,x"
         @test_throws ArgumentError Pupil.source_planes(
-            boundary(),
-            NdArrayFormat(NdArray.F32_LE, (4, 4); layout = NdArray.ROW_MAJOR),
+            boundary(), NdArrayFormat(NdArray.F32_LE, (4, 4); layout = NdArray.ROW_MAJOR)
         )
         @test_throws ArgumentError Pupil.source_planes(
-            boundary(),
-            NdArrayFormat(NdArray.F32_LE, (3, 4, 4); layout = NdArray.ROW_MAJOR),
+            boundary(), NdArrayFormat(NdArray.F32_LE, (3, 4, 4); layout = NdArray.ROW_MAJOR)
         )
         copyto!(graph_input(graph, :upstream), opd)
         step_graph!(graph)
@@ -249,7 +251,7 @@ pack_bytes(p, values) = @allocated Pupil.pack!(p.packet, values, p.amplitude)
         )
         values = snapshot_values(publisher.snapshot)
         @test Pupil.pack!(publisher.packet, values, publisher.amplitude) ===
-              publisher.packet
+            publisher.packet
         @test publisher.packet[1, :, :] == permutedims(opd)
         @test publisher.packet[2, :, :] == permutedims(amplitude)
         @test all(isfinite, publisher.packet)
@@ -275,11 +277,9 @@ pack_bytes(p, values) = @allocated Pupil.pack!(p.packet, values, p.amplitude)
             release_graph_output_snapshot!(publisher.snapshot)
         end
         @test Pupil.pack!(publisher.packet, @view(opd[:, :]), amplitude) ===
-              publisher.packet
+            publisher.packet
         @test_throws ArgumentError Pupil.pack!(
-            publisher.packet,
-            ZeroBasedPupil(opd),
-            amplitude,
+            publisher.packet, ZeroBasedPupil(opd), amplitude
         )
         @test_throws DimensionMismatch Pupil.pack!(zeros(Float32, 2, 3, 4), opd, amplitude)
         invalid = copy(opd)
@@ -296,32 +296,26 @@ end
         opd = Float32[1 2 3 4; 5 6 7 8; 9 10 11 12; 13 14 15 16] .* 1.0f-9
         amplitude = Float32[0 0.1 0.2 0; 0.3 0.4 0.5 0.6; 0.7 0.8 0.9 1; 0 0.2 0.4 0]
         publisher = Pupil.prepare(
-            graph,
-            :pupil_opd,
-            amplitude,
-            boundary();
-            period_ns = UInt64(500_000),
+            graph, :pupil_opd, amplitude, boundary(); period_ns = UInt64(500_000)
         )
         try
             Pupil.start!(publisher; remote)
             @test Pupil.registered(publisher)
             @test !Pupil.status(publisher).failed
             # No consumer: completed snapshots and native pending overwrite remain healthy.
-            for sequence = 1:3
+            for sequence in 1:3
                 copyto!(graph_input(graph, :upstream), sequence .* opd)
                 step_graph!(graph)
                 @test Pupil.sample!(
                     publisher;
                     generation = UInt64(1),
-                    model_ns = Int64((sequence-1)*500_000),
+                    model_ns = Int64((sequence - 1) * 500_000),
                 )
                 wait_proof(() -> publisher.completed[] == sequence, 10, "unlinked snapshot")
             end
             @test !publisher.failed[]
             wait_proof(
-                () -> publisher.transport_dropped[] >= 2,
-                10,
-                "visible pending overwrite",
+                () -> publisher.transport_dropped[] >= 2, 10, "visible pending overwrite"
             )
             sinkoption = PipeWireArrayStreamOptions(
                 node_name = "test-pupil-consumer",
@@ -329,9 +323,7 @@ end
                 metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
                 schema = boundary().schema,
                 format = NdArrayFormat(
-                    NdArray.F32_LE,
-                    (2, 4, 4);
-                    layout = NdArray.ROW_MAJOR,
+                    NdArray.F32_LE, (2, 4, 4); layout = NdArray.ROW_MAJOR
                 ),
             )
             with_array_streams((sinkoption,); remote, input = (true,)) do sinkowner
@@ -347,7 +339,7 @@ end
                             find_globals(
                                 registry;
                                 interface = "PipeWire:Interface:Node",
-                                properties = ("node.name"=>Pupil.NODE_NAME,),
+                                properties = ("node.name" => Pupil.NODE_NAME,),
                             ),
                         ) == 1 && node_id(sink) != typemax(UInt32)
                     end
@@ -355,7 +347,7 @@ end
                         find_globals(
                             registry;
                             interface = "PipeWire:Interface:Node",
-                            properties = ("node.name"=>Pupil.NODE_NAME,),
+                            properties = ("node.name" => Pupil.NODE_NAME,),
                         ),
                     )
                     sourceid = sourceglobal.id
@@ -371,8 +363,7 @@ end
                                 registry;
                                 interface = "PipeWire:Interface:Port",
                                 properties = (
-                                    "node.id"=>string(sourceid),
-                                    "port.direction"=>"out",
+                                    "node.id" => string(sourceid), "port.direction" => "out"
                                 ),
                             ),
                         ) == 1 &&
@@ -381,8 +372,8 @@ end
                                     registry;
                                     interface = "PipeWire:Interface:Port",
                                     properties = (
-                                        "node.id"=>string(node_id(sink)),
-                                        "port.direction"=>"in",
+                                        "node.id" => string(node_id(sink)),
+                                        "port.direction" => "in",
                                     ),
                                 ),
                             ) == 1
@@ -392,13 +383,11 @@ end
                             registry;
                             interface = "PipeWire:Interface:Port",
                             properties = (
-                                "node.id"=>string(sourceid),
-                                "port.direction"=>"out",
+                                "node.id" => string(sourceid), "port.direction" => "out"
                             ),
                         ),
                     )
-                    catalog =
-                        Dict(publisher.options.properties)["pipewireao.ndarray.channels"]
+                    catalog = Dict(publisher.options.properties)["pipewireao.ndarray.channels"]
                     wait_proof(10, "scientific source plane descriptor") do
                         roundtrip(registry)
                         has_current_info(sourceinfo) || return false
@@ -407,14 +396,13 @@ end
                         catalog
                     end
                     @test output.properties["port.name"] ==
-                          only(JSON.parse(catalog)["outputs"])["port"]
+                        only(JSON.parse(catalog)["outputs"])["port"]
                     input = only(
                         find_globals(
                             registry;
                             interface = "PipeWire:Interface:Port",
                             properties = (
-                                "node.id"=>string(node_id(sink)),
-                                "port.direction"=>"in",
+                                "node.id" => string(node_id(sink)), "port.direction" => "in"
                             ),
                         ),
                     )
@@ -424,17 +412,17 @@ end
                             "link-factory",
                             Link;
                             properties = Dict(
-                                "link.output.node"=>string(sourceid),
-                                "link.output.port"=>string(output.id),
-                                "link.input.node"=>string(node_id(sink)),
-                                "link.input.port"=>string(input.id),
-                                "object.linger"=>"false",
+                                "link.output.node" => string(sourceid),
+                                "link.output.port" => string(output.id),
+                                "link.input.node" => string(node_id(sink)),
+                                "link.input.port" => string(input.id),
+                                "object.linger" => "false",
                             ),
                         )
                     end
                     linkinfo = track_info!(link)
-                    destination=zeros(Float32, 2, 4, 4)
-                    receipt=Ref{Any}(nothing)
+                    destination = zeros(Float32, 2, 4, 4)
+                    receipt = Ref{Any}(nothing)
                     try
                         wait_proof(10, "late consumer delivery") do
                             receipt[] = drain_pipewire_array!(destination, sinkowner, 1)
@@ -442,26 +430,24 @@ end
                         end
                     catch
                         roundtrip(registry)
-                        @error "Pupil delivery state" publisher=Pupil.status(publisher) sink=stream_state(
-                            sink,
-                        ) source=current_info(sourceinfo) link=current_info(linkinfo)
+                        @error "Pupil delivery state" publisher = Pupil.status(publisher) sink = stream_state(
+                            sink
+                        ) source = current_info(sourceinfo) link = current_info(linkinfo)
                         rethrow()
                     end
                     @test destination[1, :, :] == permutedims(3 .* opd)
                     @test destination[2, :, :] == permutedims(amplitude)
                     @test receipt[].identity.domain == publisher.domain
                     @test receipt[].identity.generation == 1 &&
-                          receipt[].identity.sequence == 3
+                        receipt[].identity.sequence == 3
                     @test receipt[].pts == 1_000_000 && receipt[].duration == 500_000
                     step_graph!(graph) # An intentionally unsampled completed source frame.
                     step_graph!(graph)
                     @test Pupil.sample!(
-                        publisher;
-                        generation = UInt64(1),
-                        model_ns = Int64(2_000_000),
+                        publisher; generation = UInt64(1), model_ns = Int64(2_000_000)
                     )
                     wait_proof(10, "observable source sequence gap") do
-                        candidate=drain_pipewire_array!(destination, sinkowner, 1)
+                        candidate = drain_pipewire_array!(destination, sinkowner, 1)
                         candidate === nothing && return false
                         candidate.identity.sequence == 5
                     end
@@ -472,24 +458,22 @@ end
                     copyto!(graph_input(graph, :upstream), 7 .* opd)
                     step_graph!(graph)
                     @test Pupil.sample!(
-                        publisher;
-                        generation = UInt64(2),
-                        model_ns = Int64(0),
+                        publisher; generation = UInt64(2), model_ns = Int64(0)
                     )
                     wait_proof(10, "new generation receipt") do
-                        candidate=drain_pipewire_array!(destination, sinkowner, 1)
+                        candidate = drain_pipewire_array!(destination, sinkowner, 1)
                         candidate === nothing && return false
-                        receipt[]=candidate
+                        receipt[] = candidate
                         candidate.identity.generation == 2
                     end
                     @test receipt[].identity.sequence == 1 && receipt[].pts == 0
                     @test destination[1, :, :] == permutedims(7 .* opd)
-                    for generation = 3:5
+                    for generation in 3:5
                         # Drain immediately after submission, including an in-flight CUDA host transfer.
                         step_graph!(graph)
                         @test Pupil.sample!(
                             publisher;
-                            generation = UInt64(generation-1),
+                            generation = UInt64(generation - 1),
                             model_ns = Int64(500_000),
                         )
                         Pupil.drain!(publisher)
@@ -498,14 +482,12 @@ end
                         copyto!(graph_input(graph, :upstream), generation .* opd)
                         step_graph!(graph)
                         @test Pupil.sample!(
-                            publisher;
-                            generation = UInt64(generation),
-                            model_ns = Int64(0),
+                            publisher; generation = UInt64(generation), model_ns = Int64(0)
                         )
                         wait_proof(10, "repeated reset receipt") do
-                            candidate=drain_pipewire_array!(destination, sinkowner, 1)
+                            candidate = drain_pipewire_array!(destination, sinkowner, 1)
                             candidate === nothing && return false
-                            receipt[]=candidate
+                            receipt[] = candidate
                             candidate.identity.generation == generation
                         end
                         @test receipt[].identity.sequence == 1 && receipt[].pts == 0
@@ -516,23 +498,19 @@ end
                         find_globals(
                             registry;
                             interface = "PipeWire:Interface:Node",
-                            properties = ("node.name"=>Pupil.NODE_NAME,),
+                            properties = ("node.name" => Pupil.NODE_NAME,),
                         ),
                     ).id == sourceid
                     # A bad scientific frame disables publication, retaining the registered node and link.
                     copyto!(graph_input(graph, :upstream), fill(NaN32, 4, 4))
                     step_graph!(graph)
                     @test Pupil.sample!(
-                        publisher;
-                        generation = UInt64(5),
-                        model_ns = Int64(500_000),
+                        publisher; generation = UInt64(5), model_ns = Int64(500_000)
                     )
                     wait_proof(() -> publisher.failed[], 10, "isolated invalid pupil")
                     @test !istaskdone(publisher.task)
                     @test !Pupil.sample!(
-                        publisher;
-                        generation = UInt64(5),
-                        model_ns = Int64(1_000_000),
+                        publisher; generation = UInt64(5), model_ns = Int64(1_000_000)
                     )
                     wait_proof(10, "native publisher failure property") do
                         roundtrip(registry)
@@ -551,7 +529,7 @@ end
                         find_globals(
                             registry;
                             interface = "PipeWire:Interface:Node",
-                            properties = ("node.name"=>Pupil.NODE_NAME,),
+                            properties = ("node.name" => Pupil.NODE_NAME,),
                         ),
                     ) == 1
                 finally

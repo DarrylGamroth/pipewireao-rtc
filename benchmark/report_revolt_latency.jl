@@ -69,14 +69,7 @@ function parse_latency_csv(path::String, run::Int)
         push!(
             observations,
             (;
-                run,
-                implementation,
-                phase,
-                observation,
-                sequence,
-                source,
-                received,
-                latency,
+                run, implementation, phase, observation, sequence, source, received, latency
             ),
         )
     end
@@ -196,12 +189,10 @@ function main(arguments)
     combined = Dict{String,Any}()
     for implementation in ("native", "julia")
         implementation_observations = filter(
-            observation -> observation.implementation == implementation,
-            all_observations,
+            observation -> observation.implementation == implementation, all_observations
         )
         measurement_observations = filter(
-            observation -> observation.phase == "measurement",
-            implementation_observations,
+            observation -> observation.phase == "measurement", implementation_observations
         )
         isempty(measurement_observations) && error("no $implementation measurement records")
         runs[implementation] = [

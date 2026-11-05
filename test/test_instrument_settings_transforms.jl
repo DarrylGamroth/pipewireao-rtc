@@ -32,8 +32,9 @@ end
             ),
         ],
     )
-    instrument =
-        (; document = Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict()))
+    instrument = (;
+        document = Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict())
+    )
     declaration = (;
         document,
         instrument,
@@ -41,11 +42,7 @@ end
     )
 
     @test IC._validate_settings_bindings(
-        [binding],
-        profiles,
-        configured,
-        Dict(),
-        Set(["frame_layout"]),
+        [binding], profiles, configured, Dict(), Set(["frame_layout"])
     ) === nothing
     for calibration in (false, true)
         resolved = IC.graph_document(declaration, configured; calibration)
@@ -53,25 +50,17 @@ end
         @test config["scale"] == inv(2.5f0)
         @test config["bias"] == 100.0
         @test only(
-            declaration.graphs[calibration ? "calibration" : "production"]["nodes"],
+            declaration.graphs[calibration ? "calibration" : "production"]["nodes"]
         )["config"]["scale"] == 0.0
     end
     for transform in ("identity", "reciprocal")
         invalid = merge(binding, Dict("transform" => transform, "coupling" => 0.35))
         @test_throws ArgumentError IC._validate_settings_bindings(
-            [invalid],
-            profiles,
-            configured,
-            Dict(),
-            Set(["frame_layout"]),
+            [invalid], profiles, configured, Dict(), Set(["frame_layout"])
         )
     end
     gaussian = merge(binding, Dict("transform" => "gaussian_width", "coupling" => 0.35))
     @test IC._validate_settings_bindings(
-        [gaussian],
-        profiles,
-        configured,
-        Dict(),
-        Set(["frame_layout"]),
+        [gaussian], profiles, configured, Dict(), Set(["frame_layout"])
     ) === nothing
 end

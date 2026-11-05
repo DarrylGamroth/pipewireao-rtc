@@ -21,10 +21,7 @@ function application_hashes(directory)
 end
 
 project(; parameter_sources = Dict()) = Calibration.calibration_graph(
-    application;
-    inputs = frontend_inputs,
-    outputs = frontend_outputs,
-    parameter_sources,
+    application; inputs = frontend_inputs, outputs = frontend_outputs, parameter_sources
 )
 
 @testset "typed FITS parameter sources preserve regular graph authority" begin
@@ -51,14 +48,14 @@ project(; parameter_sources = Dict()) = Calibration.calibration_graph(
             values[:active][1] = !values[:active][1]
             overrides = Dict{Symbol,Artifacts.FITSArtifact}()
             for (port, data) in values
-                path = joinpath(directory, string(port)*".fits")
+                path = joinpath(directory, string(port) * ".fits")
                 # Float64 storage exercises the existing typed conversion to Float32.
                 Calibration.write_fits(
-                    path,
-                    eltype(data) === Float32 ? Float64.(data) : data,
+                    path, eltype(data) === Float32 ? Float64.(data) : data
                 )
-                overrides[port] =
-                    Artifacts.FITSArtifact(path; axes = ndims(data) == 1 ? nothing : (2, 1))
+                overrides[port] = Artifacts.FITSArtifact(
+                    path; axes = ndims(data) == 1 ? nothing : (2, 1)
+                )
             end
             candidate = project(parameter_sources = overrides)
             @test candidate.parameter_sources !== overrides
@@ -73,15 +70,16 @@ project(; parameter_sources = Dict()) = Calibration.calibration_graph(
                     @test candidate.parameters[port] == values[port]
                     @test eltype(candidate.parameters[port]) === eltype(originals[port])
                 else
-                    original =
-                        only(filter(binding -> binding.port == port, original_bindings))
+                    original = only(
+                        filter(binding -> binding.port == port, original_bindings)
+                    )
                     @test entry.source.path == original.source.path
                     @test entry.source.hdu == original.source.hdu
                     @test entry.source.axes == original.source.axes
                     @test candidate.parameters[port] == originals[port]
                 end
                 @test candidate.parameter_sha256[port] ==
-                      Calibration.digest(entry.source.path)
+                    Calibration.digest(entry.source.path)
             end
             empty!(overrides)
             @test length(candidate.parameter_sources) == 3
@@ -105,37 +103,35 @@ project(; parameter_sources = Dict()) = Calibration.calibration_graph(
             @test all(==(8.0f0), changed.parameters[:background])
 
             source = candidate.parameter_sources[:background]
-            @test_throws ArgumentError project(parameter_sources = [:background=>source])
+            @test_throws ArgumentError project(parameter_sources = [:background => source])
             @test_throws ArgumentError project(
-                parameter_sources = Dict("background"=>source),
+                parameter_sources = Dict("background" => source)
             )
-            @test_throws ArgumentError project(parameter_sources = Dict(:missing=>source))
-            @test_throws ArgumentError project(parameter_sources = Dict(:raw=>source))
+            @test_throws ArgumentError project(parameter_sources = Dict(:missing => source))
+            @test_throws ArgumentError project(parameter_sources = Dict(:raw => source))
             @test_throws ArgumentError project(
-                parameter_sources = Dict(:background=>values[:background]),
+                parameter_sources = Dict(:background => values[:background])
             )
             @test_throws ArgumentError project(
-                parameter_sources = Dict(:background=>Artifacts.FITSArtifact(path)),
+                parameter_sources = Dict(:background => Artifacts.FITSArtifact(path))
             )
             @test_throws DimensionMismatch project(
                 parameter_sources = Dict(
-                    :background=>Artifacts.FITSArtifact(path; axes = (1,)),
+                    :background => Artifacts.FITSArtifact(path; axes = (1,))
                 ),
             )
             wrong = joinpath(directory, "wrong-shape.fits")
             Calibration.write_fits(wrong, zeros(Float32, 2, 3))
             @test_throws DimensionMismatch project(
                 parameter_sources = Dict(
-                    :background=>Artifacts.FITSArtifact(wrong; axes = (2, 1)),
+                    :background => Artifacts.FITSArtifact(wrong; axes = (2, 1))
                 ),
             )
             reference = candidate.parameter_sources[Symbol("reference-slopes")]
             @test_throws DimensionMismatch project(
                 parameter_sources = Dict(
-                    Symbol("reference-slopes")=>Artifacts.FITSArtifact(
-                        reference.path;
-                        axes = (1, 2),
-                    ),
+                    Symbol("reference-slopes") =>
+                        Artifacts.FITSArtifact(reference.path; axes = (1, 2)),
                 ),
             )
         end

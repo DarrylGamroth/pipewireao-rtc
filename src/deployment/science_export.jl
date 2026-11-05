@@ -11,8 +11,9 @@ import ..package_root, ..resource_root, ..source_relative_path
 const RAW_SCHEMA = Schemas.identifier("raw_detector_pixels")
 const ROW_SCHEMA = Schemas.identifier("raw_pixel_row_block")
 const COMMAND_SCHEMA = Schemas.identifier("demanded_pdm_command")
-const TYPE_BYTES =
-    Dict("F32_LE" => 4, "F64_LE" => 8, "U16_LE" => 2, "U32_LE" => 4, "U8" => 1, "Bool" => 1)
+const TYPE_BYTES = Dict(
+    "F32_LE" => 4, "F64_LE" => 8, "U16_LE" => 2, "U32_LE" => 4, "U8" => 1, "Bool" => 1
+)
 const JULIA_TYPES = Dict(
     "F32_LE" => "Float32",
     "U16_LE" => "UInt16",
@@ -148,16 +149,14 @@ function write_spa_config(
     # Use the upstream parser to verify the exact document that native consumers
     # will read, including its string escaping and native object-key limits.
     parser = joinpath(
-        PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir,
-        "bin",
-        "pwao-spa-json-dump",
+        PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir, "bin", "pwao-spa-json-dump"
     )
     mktempdir() do directory
         source = joinpath(directory, "configuration.conf")
         write(source, payload)
         normalized = Common.run_checked([parser, "-N", "-R", source]; timeout = 10)
         normalized.returncode == 0 || throw(
-            ArgumentError("PipeWire rejected generated SPA-JSON: $(normalized.stderr)"),
+            ArgumentError("PipeWire rejected generated SPA-JSON: $(normalized.stderr)")
         )
         isequal(Common.parse_json(normalized.stdout), value) ||
             throw(ArgumentError("SPA configuration changed during native serialization"))
@@ -239,8 +238,7 @@ function copy_deployment_runtime(package::AbstractString)
     end
     for name in RESOURCE_ENTRYPOINTS
         copy_file(
-            joinpath(resource_root(), name),
-            joinpath(target, "assets", "deployment", name),
+            joinpath(resource_root(), name), joinpath(target, "assets", "deployment", name)
         )
     end
     session_service = joinpath(resource_root(), "pipewireao-session@.service.in")
@@ -283,7 +281,7 @@ function validate_parameter(directory::AbstractString, p::Parameter)
     expected = payload_bytes(p.shape, width)
     isfile(path) && !islink(path) && filesize(path) == expected || throw(
         ArgumentError(
-            "$(p.name) requires $expected bytes for $(p.element_type)$(p.shape): $path",
+            "$(p.name) requires $expected bytes for $(p.element_type)$(p.shape): $path"
         ),
     )
     bytes = read(path)
@@ -385,7 +383,7 @@ function validate_rtc(target)
         throw(ArgumentError("sealed RTC Julia launcher is not executable"))
     read(launcher, String) == rtc_launcher() || throw(
         ArgumentError(
-            "sealed RTC Julia launcher differs from the selected policy entrypoint",
+            "sealed RTC Julia launcher differs from the selected policy entrypoint"
         ),
     )
     files = sort!(
@@ -395,7 +393,7 @@ function validate_rtc(target)
         ],
     )
     files == ["bin/pipewireao-rtc"] || throw(
-        ArgumentError("sealed RTC directory contains assets outside the Julia launcher"),
+        ArgumentError("sealed RTC directory contains assets outside the Julia launcher")
     )
     return nothing
 end

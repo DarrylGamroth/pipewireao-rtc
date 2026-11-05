@@ -123,8 +123,9 @@ const MAX_LINKS = DeploymentConfiguration.MAX_SESSION_LINKS
 
 info_properties(::Nothing) = Dict{String,String}()
 info_properties(info::ObjectInfo) = info.properties
-info_properties(info::FactoryInfo) =
-    merge(info.properties, Dict("factory.name"=>info.name, "factory.type.name"=>info.type))
+info_properties(info::FactoryInfo) = merge(
+    info.properties, Dict("factory.name" => info.name, "factory.type.name" => info.type)
+)
 info_properties(info::PortInfo) = merge(
     info.properties,
     Dict("port.direction" =>
@@ -153,7 +154,8 @@ end
 # It does not waive captured owner, graph or foreign-Link identity requirements.
 _retiring_link(::Object, records) = false
 _retiring_link(object::Object{P,LinkInfo}, records) where {P} = any(
-    record->record.retiring && record.id == object.id && record.serial == object.serial,
+    record ->
+        record.retiring && record.id == object.id && record.serial == object.serial,
     records,
 )
 
@@ -180,22 +182,15 @@ function _add_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
     end
     queue = runtime.queue
     callbacks = (
-        on_info = (_, info)->stage!(queue, ObjectUpdated(id, serial, info)),
-        on_bound = (_, bound)->stage!(queue, ObjectBound(id, serial, bound)),
-        on_removed = (_)->stage!(queue, ObjectError(id, serial, "Bound object removed")),
-        on_error = (_, sequence, error)->stage!(
-            queue,
-            ObjectError(id, serial, sequence, sprint(showerror, error)),
-        ),
+        on_info = (_, info) -> stage!(queue, ObjectUpdated(id, serial, info)),
+        on_bound = (_, bound) -> stage!(queue, ObjectBound(id, serial, bound)),
+        on_removed = (_) -> stage!(queue, ObjectError(id, serial, "Bound object removed")),
+        on_error = (_, sequence, error) ->
+            stage!(queue, ObjectError(id, serial, sequence, sprint(showerror, error))),
     )
     proxy = _bind_object(runtime.registry, global_object, P, callbacks, queue, id)
     object = Object{typeof(proxy),I}(
-        id,
-        serial,
-        copy(global_object.properties),
-        proxy,
-        nothing,
-        false,
+        id, serial, copy(global_object.properties), proxy, nothing, false
     )
     runtime.objects[id] = object
     return object
@@ -203,19 +198,10 @@ end
 _bind_object(registry, global_object, ::Type{P}, callbacks, queue, id) where {P} =
     bind(registry, global_object, P; callbacks...)
 function _bind_object(
-    registry,
-    global_object,
-    ::Type{P},
-    callbacks,
-    queue,
-    id,
+    registry, global_object, ::Type{P}, callbacks, queue, id
 ) where {P<:Union{Node,Port}}
     return bind(
-        registry,
-        global_object,
-        P;
-        callbacks...,
-        on_param = param_callback(queue, id),
+        registry, global_object, P; callbacks..., on_param = param_callback(queue, id)
     )
 end
 
@@ -238,11 +224,7 @@ end
 function _merge_info(::Nothing, update::PortInfo)
     return _merge_info(
         PortInfo(
-            update.id,
-            update.direction,
-            UInt64(0),
-            Dict{String,String}(),
-            ParamInfo[],
+            update.id, update.direction, UInt64(0), Dict{String,String}(), ParamInfo[]
         ),
         update,
     )
@@ -282,7 +264,7 @@ function _merge_info(current::Union{Nothing,NodeInfo}, update::NodeInfo)
         current.id,
         current.max_input_ports,
         current.max_output_ports,
-        current.change_mask|mask,
+        current.change_mask | mask,
         _changed(mask, PipeWireAO.NODE_CHANGE_INPUT_PORTS) ? update.n_input_ports :
         current.n_input_ports,
         _changed(mask, PipeWireAO.NODE_CHANGE_OUTPUT_PORTS) ? update.n_output_ports :
@@ -300,7 +282,7 @@ function _merge_info(current::Union{Nothing,PortInfo}, update::PortInfo)
     return PortInfo(
         current.id,
         update.direction,
-        current.change_mask|mask,
+        current.change_mask | mask,
         _changed(mask, PipeWireAO.PORT_CHANGE_PROPERTIES) ? update.properties :
         current.properties,
         _changed(mask, PipeWireAO.PORT_CHANGE_PARAMS) ? update.params : current.params,
@@ -315,7 +297,7 @@ function _merge_info(current::Union{Nothing,LinkInfo}, update::LinkInfo)
         current.output_port_id,
         current.input_node_id,
         current.input_port_id,
-        current.change_mask|mask,
+        current.change_mask | mask,
         _changed(mask, PipeWireAO.LINK_CHANGE_STATE) ? update.state : current.state,
         _changed(mask, PipeWireAO.LINK_CHANGE_STATE) ? update.error : current.error,
         _changed(mask, PipeWireAO.LINK_CHANGE_FORMAT) ? update.format : current.format,
@@ -327,7 +309,7 @@ function _merge_info(current::Union{Nothing,ClientInfo}, update::ClientInfo)
     current === nothing && return update
     return ClientInfo(
         current.id,
-        current.change_mask|update.change_mask,
+        current.change_mask | update.change_mask,
         _changed(update.change_mask, UInt64(1)) ? update.properties : current.properties,
     )
 end
@@ -338,7 +320,7 @@ function _merge_info(current::Union{Nothing,FactoryInfo}, update::FactoryInfo)
         update.name,
         update.type,
         update.version,
-        current.change_mask|update.change_mask,
+        current.change_mask | update.change_mask,
         _changed(update.change_mask, UInt64(1)) ? update.properties : current.properties,
     )
 end
@@ -356,7 +338,7 @@ function _update_info!(runtime, object::Object{P,I}, info::I) where {P,I}
         try
             assert_identity!(runtime, UInt64(object.id))
         catch error
-            _object_error!(runtime, "Required object changed: "*sprint(showerror, error))
+            _object_error!(runtime, "Required object changed: " * sprint(showerror, error))
         end
     end
     return nothing
@@ -460,7 +442,7 @@ function retire_owner!(runtime, owner::Owner{OwnerBootstrapCodec.Profile})
     nodes, clients = Set{UInt32}(), Set{UInt32}()
     for object in values(runtime.objects)
         haskey(runtime.captured, object.id) || continue
-        any(name->_named_node(object, name), names) || continue
+        any(name -> _named_node(object, name), names) || continue
         assert_identity!(runtime, UInt64(object.id))
         client_id = _node_client(object)
         client_id === nothing &&
@@ -545,15 +527,16 @@ function capture!(runtime, handle::UInt64; core = nothing)
     haskey(runtime.captured, object.id) && return assert_identity!(runtime, handle)
     properties = object_properties(object)
     frozen = Dict{String,Union{Nothing,String}}(
-        key=>get(properties, key, nothing) for key in OBJECT_IDENTITY_KEYS
+        key => get(properties, key, nothing) for key in OBJECT_IDENTITY_KEYS
     )
     info = info_properties(object.info)
     info_frozen = Dict{String,Union{Nothing,String}}(
-        key=>get(info, key, nothing) for key in OBJECT_IDENTITY_KEYS
+        key => get(info, key, nothing) for key in OBJECT_IDENTITY_KEYS
     )
     inputs, outputs = _port_counts(object.info)
-    runtime.captured[object.id] =
-        Captured(object.serial, frozen, info_frozen, inputs, outputs, core)
+    runtime.captured[object.id] = Captured(
+        object.serial, frozen, info_frozen, inputs, outputs, core
+    )
     return assert_identity!(runtime, handle)
 end
 function assert_identity!(runtime, handle::UInt64)
@@ -608,8 +591,9 @@ function _core_factory(runtime, object, name, pid)
     return factory
 end
 function find_object(runtime, name::AbstractString, pid::Integer)
-    matches =
-        Object[object for object in values(runtime.objects) if _named_node(object, name)]
+    matches = Object[
+        object for object in values(runtime.objects) if _named_node(object, name)
+    ]
     length(matches) <= 1 || throw(ArgumentError("ambiguous declared node: $name"))
     isempty(matches) && return nothing
     object = only(matches)
@@ -623,8 +607,9 @@ function find_object(runtime, name::AbstractString, pid::Integer)
         client = find_object(runtime, id)
         client === nothing && return nothing
         client.info === nothing && return nothing
-        actual =
-            tryparse(UInt32, get(object_properties(client), "application.process.id", ""))
+        actual = tryparse(
+            UInt32, get(object_properties(client), "application.process.id", "")
+        )
         actual !== nothing && actual == pid ||
             throw(ArgumentError("declared node has an unexpected process owner: $name"))
     else
@@ -681,11 +666,10 @@ function _endpoint!(runtime, job, address, direction)
     node = UInt32(node!(runtime, job, name, pid))
     port = await_condition!(runtime, job) do
         matches = Object[
-            o for o in values(runtime.objects) if
-            _port_matches(o, node, port_name, direction)
+            o for
+            o in values(runtime.objects) if _port_matches(o, node, port_name, direction)
         ]
-        length(matches) <= 1 ||
-            throw(ArgumentError("ambiguous declared port: $address"))
+        length(matches) <= 1 || throw(ArgumentError("ambiguous declared port: $address"))
         isempty(matches) ? nothing : only(matches)
     end
     declaration = nothing
@@ -728,7 +712,8 @@ function _fixed_value(value::PolicyPod, tag::UInt32, width::Union{Nothing,Int})
     width === nothing ||
         child_size == width ||
         throw(ArgumentError("invalid selected format width"))
-    length(data) >= 24+child_size || throw(ArgumentError("incomplete fixed format default"))
+    length(data) >= 24 + child_size ||
+        throw(ArgumentError("incomplete fixed format default"))
     header = collect(reinterpret(UInt8, UInt32[child_size, child_type]))
     return PolicyPod(vcat(header, data[25:(24+Int(child_size))]))
 end
@@ -782,14 +767,14 @@ function validate_format(pod::PolicyPod, contract::PortContract)
     if contract.rate !== nothing
         rate = format.rate
         rate !== nothing &&
-        UInt64(rate.num)*contract.rate.denom == UInt64(contract.rate.num)*rate.denom ||
+        UInt64(rate.num) * contract.rate.denom == UInt64(contract.rate.num) * rate.denom ||
             throw(ArgumentError("negotiated ndarray rate differs"))
     end
     return nothing
 end
 
 function _link(runtime, sequence::UInt64)
-    index = findfirst(record->record.sequence == sequence, runtime.links)
+    index = findfirst(record -> record.sequence == sequence, runtime.links)
     return index === nothing ? nothing : runtime.links[index]
 end
 function _link_failure!(runtime, record, message)
@@ -806,9 +791,7 @@ function update!(runtime, event::LinkBound)
     record.info === nothing ||
         record.info.id == event.id ||
         return _link_failure!(
-            runtime,
-            record,
-            "Created Link binding differs from observed LinkInfo ID",
+            runtime, record, "Created Link binding differs from observed LinkInfo ID"
         )
     record.id = event.id
     record.pending = false
@@ -851,9 +834,7 @@ function update!(runtime, event::LinkUpdated)
     record.id === nothing ||
         record.id == event.info.id ||
         return _link_failure!(
-            runtime,
-            record,
-            "Link event ID differs from bound Link identity",
+            runtime, record, "Link event ID differs from bound Link identity"
         )
     record.info === nothing ||
         record.info.id == event.info.id ||
@@ -865,9 +846,7 @@ function update!(runtime, event::LinkUpdated)
         event.info.input_port_id,
     ) == (record.output.node, record.output.port, record.input.node, record.input.port) ||
         return _link_failure!(
-            runtime,
-            record,
-            "Link event endpoints differ from exact declaration",
+            runtime, record, "Link event endpoints differ from exact declaration"
         )
     record.info = _merge_info(record.info, event.info)
     try
@@ -904,7 +883,7 @@ function _link_order(rows)
         push!(visiting, node)
         depth = 0
         for successor in get(successors, node, Set{UInt32}())
-            depth = max(depth, rank(successor)+1)
+            depth = max(depth, rank(successor) + 1)
         end
         delete!(visiting, node)
         return depths[node] = depth
@@ -912,7 +891,7 @@ function _link_order(rows)
     for (output, input, passive) in rows
         rank(output.node)
     end
-    return sortperm(eachindex(rows); by = index->(rank(rows[index][2].node), index))
+    return sortperm(eachindex(rows); by = index -> (rank(rows[index][2].node), index))
 end
 function create_links!(runtime, job)
     isempty(runtime.links) && !runtime.withdrawing ||
@@ -922,8 +901,9 @@ function create_links!(runtime, job)
         throw(ArgumentError("invalid declared Link count"))
     rows = Tuple{Endpoint,Endpoint,Bool}[]
     for declaration in declarations
-        output =
-            _endpoint!(runtime, job, declaration["output"], PipeWireAO.DIRECTION_OUTPUT)
+        output = _endpoint!(
+            runtime, job, declaration["output"], PipeWireAO.DIRECTION_OUTPUT
+        )
         input = _endpoint!(runtime, job, declaration["input"], PipeWireAO.DIRECTION_INPUT)
         push!(rows, (output, input, get(declaration, "passive", false)))
     end
@@ -936,12 +916,11 @@ function create_links!(runtime, job)
             assert_identity!(runtime, UInt64(id))
         end
         sequence = Base.Checked.checked_add(
-            Base.Checked.checked_mul(job.ticket.serial, UInt64(65)),
-            UInt64(index),
+            Base.Checked.checked_mul(job.ticket.serial, UInt64(65)), UInt64(index)
         )
         record = LinkRecord(
             sequence,
-            prefix*string(index),
+            prefix * string(index),
             output,
             input,
             passive,
@@ -959,13 +938,13 @@ function create_links!(runtime, job)
         )
         push!(runtime.links, record)
         properties = Dict(
-            "link.output.node"=>string(output.node),
-            "link.output.port"=>string(output.port),
-            "link.input.node"=>string(input.node),
-            "link.input.port"=>string(input.port),
-            "link.passive"=>string(passive),
-            "object.linger"=>"false",
-            "object.path"=>record.path,
+            "link.output.node" => string(output.node),
+            "link.output.port" => string(output.port),
+            "link.input.node" => string(input.node),
+            "link.input.port" => string(input.port),
+            "link.passive" => string(passive),
+            "object.linger" => "false",
+            "object.path" => record.path,
         )
         queue = runtime.queue
         try
@@ -974,21 +953,16 @@ function create_links!(runtime, job)
                 "link-factory",
                 PipeWireAO.Link;
                 properties,
-                on_bound = (_, id)->stage!(queue, LinkBound(sequence, id)),
-                on_info = (_, info)->stage!(queue, LinkUpdated(sequence, info)),
-                on_removed = (_)->stage!(
-                    queue,
-                    LinkError(sequence, "Required Link removed"),
-                ),
-                on_error = (_, seq, error)->stage!(
-                    queue,
-                    LinkError(sequence, sprint(showerror, error)),
-                ),
+                on_bound = (_, id) -> stage!(queue, LinkBound(sequence, id)),
+                on_info = (_, info) -> stage!(queue, LinkUpdated(sequence, info)),
+                on_removed = (_) ->
+                    stage!(queue, LinkError(sequence, "Required Link removed")),
+                on_error = (_, seq, error) ->
+                    stage!(queue, LinkError(sequence, sprint(showerror, error))),
             )
             record.proxy = proxy
             record.listener = add_listener!(
-                proxy.proxy;
-                on_destroyed = (_)->stage!(queue, LinkDestroyed(sequence)),
+                proxy.proxy; on_destroyed = (_) -> stage!(queue, LinkDestroyed(sequence))
             )
         finally
             # create_object is synchronous; binding/negotiation remains pending.
@@ -1025,8 +999,9 @@ end
 function _correlated_link(object::Object{P,LinkInfo}, records) where {P}
     path = get(object_properties(object), "object.path", nothing)
     return any(
-        record->(record.id == object.id && record.serial == object.serial) ||
-                record.path == path,
+        record ->
+            (record.id == object.id && record.serial == object.serial) ||
+            record.path == path,
         records,
     )
 end
@@ -1039,16 +1014,16 @@ function remove_links!(runtime, job)
         _destroy_created!(runtime.core, record.proxy)
     end
     await_condition!(runtime, job) do
-        any(record->record.creation_pending, runtime.links) && return nothing
+        any(record -> record.creation_pending, runtime.links) && return nothing
         # A proxy that was never returned has no future binding callback. Its
         # exact requested path must still pass the server/registry barrier.
         all(
-            record->record.proxy === nothing || (record.destroyed && !record.pending),
+            record -> record.proxy === nothing || (record.destroyed && !record.pending),
             runtime.links,
         ) ? true : nothing
     end
     synchronize!(runtime, job)
-    any(object->_correlated_link(object, runtime.links), values(runtime.objects)) &&
+    any(object -> _correlated_link(object, runtime.links), values(runtime.objects)) &&
         throw(ArgumentError("correlated Link remains after destruction and Core sync"))
     for record in runtime.links
         _close_listener!(record.listener)
@@ -1078,8 +1053,9 @@ function _session_controlled(declaration, role)
 end
 function discover_graphs!(runtime, job)
     spec = runtime.configuration["session"]
-    declared, required, membership =
-        Dict{String,Bool}(), Set{String}(), Dict{String,String}()
+    declared, required, membership = Dict{String,Bool}(),
+    Set{String}(),
+    Dict{String,String}()
     has_graph = false
     for role in ("sources", "graphs", "sinks"), declaration in get(spec, role, [])
         name = String(declaration["node.name"])
@@ -1090,8 +1066,9 @@ function discover_graphs!(runtime, job)
             has_graph = true
             push!(required, name)
             if get(declaration, "factory", nothing) != "api.ndarray.latest-hold"
-                runtime.graphs[name] =
-                    node!(runtime, job, name, runtime.configuration["node.pids"][name])
+                runtime.graphs[name] = node!(
+                    runtime, job, name, runtime.configuration["node.pids"][name]
+                )
             end
         elseif role == "sinks" && get(declaration, "ownership", "runner") != "external"
             push!(required, name)
@@ -1112,12 +1089,12 @@ function discover_graphs!(runtime, job)
             )
             membership[member] = name
         end
-        nodes = filter(member->haskey(runtime.graphs, member), members)
+        nodes = filter(member -> haskey(runtime.graphs, member), members)
         isempty(nodes) && throw(ArgumentError("group has no controlled processing graph"))
         runtime.groups[name] = Group(nodes, members, false)
     end
     has_graph &&
-        !all(name->haskey(membership, name), required) &&
+        !all(name -> haskey(membership, name), required) &&
         throw(ArgumentError("eligible graph or sink has no execution group"))
     for link in spec["links"]
         output, input = first(_endpoint_address(link["output"])),

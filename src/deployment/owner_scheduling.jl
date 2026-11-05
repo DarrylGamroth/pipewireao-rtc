@@ -74,7 +74,7 @@ function owner_scheduling!(::Val{:aos}, owner, process)
             !haskey(workers, "optical-diagnostics") ||
             cpu != worker_cpu(workers, "optical-diagnostics")
         ) || throw(
-            ArgumentError("pupil output and optical diagnostics require distinct CPUs"),
+            ArgumentError("pupil output and optical diagnostics require distinct CPUs")
         )
         append!(argv, ["--pupil-output-cpu", string(cpu)])
     end
@@ -93,7 +93,7 @@ function prepare_owner_scheduling!(spec, profile)
         if role in get(spec, "auxiliary-source-owners", String[])
             kind == "aos" && D.uses_source_control_protocol(owner) || throw(
                 ArgumentError(
-                    "auxiliary source owner requires kind aos and native SourceControl",
+                    "auxiliary source owner requires kind aos and native SourceControl"
                 ),
             )
         end
@@ -110,7 +110,7 @@ function prepare_owner_scheduling!(spec, profile)
         role in owners ||
             isempty(process["workers"]) ||
             throw(
-                ArgumentError("worker placement requires an explicit owner kind for $role"),
+                ArgumentError("worker placement requires an explicit owner kind for $role")
             )
     end
     return spec

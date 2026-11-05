@@ -73,15 +73,12 @@ end
         run =
             options -> begin
                 @test Base.PkgId(options.plant_module) ==
-                      Base.PkgId(Base.UUID(plant_uuid), "DeclaredOwnerPlant")
+                    Base.PkgId(Base.UUID(plant_uuid), "DeclaredOwnerPlant")
                 push!(events, :run)
             end
         invoke =
             () -> PipeWireAORTC.AOSOwner._main(
-                args;
-                with_owner,
-                load_science = () -> push!(events, :science),
-                run,
+                args; with_owner, load_science = () -> push!(events, :science), run
             )
         prior_project = Base.ACTIVE_PROJECT[]
         prior_path = copy(LOAD_PATH)

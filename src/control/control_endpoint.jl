@@ -74,9 +74,13 @@ end
 end
 
 Base.getproperty(endpoint::Endpoint, name::Symbol) =
-    name === :applying ? Hsm.current(endpoint) in (:Applying, :TerminalApplying) :
-    name === :terminal ? Hsm.current(endpoint) in (:TerminalApplying, :AdmissionClosed) :
-    getfield(endpoint, name)
+    if name === :applying
+        Hsm.current(endpoint) in (:Applying, :TerminalApplying)
+    elseif name === :terminal
+        Hsm.current(endpoint) in (:TerminalApplying, :AdmissionClosed)
+    else
+        getfield(endpoint, name)
+    end
 Base.propertynames(endpoint::Endpoint, private::Bool = false) =
     private ? (fieldnames(typeof(endpoint))..., :applying, :terminal) :
     (
@@ -141,7 +145,7 @@ end
 @on_event function (endpoint::Endpoint, ::Staged, ::Taken, result)
     ticket = something(endpoint.pending)
     if monotonic() >= ticket.deadline ||
-       !controller_present(endpoint, ticket.header.controller)
+        !controller_present(endpoint, ticket.header.controller)
         header = Envelope.ReplyHeader(
             ticket.header.controller,
             endpoint.instance,
@@ -150,10 +154,7 @@ end
             Int32(-110),
         )
         endpoint.completion = Client.encode_failure(
-            endpoint.profile,
-            header,
-            endpoint.lifecycle,
-            ticket.command,
+            endpoint.profile, header, endpoint.lifecycle, ticket.command
         )
         publish!(endpoint)
         endpoint.terminal_request = ticket
@@ -176,12 +177,12 @@ end
 end
 
 @on_event function (endpoint::Endpoint, ::Applying, ::Completed, delivered)
-    ticket, completion, terminal =
-        delivered.ticket, delivered.completion, delivered.terminal
+    ticket, completion, terminal = delivered.ticket,
+    delivered.completion,
+    delivered.terminal
     endpoint.pending === ticket || error("native owner ticket is not applying")
     header, _ = Envelope.decode_completion(
-        completion;
-        endpoint = Client.reply_endpoint(endpoint.profile),
+        completion; endpoint = Client.reply_endpoint(endpoint.profile)
     )
     Client.same_request(header, ticket.header) ||
         throw(ArgumentError("completion does not match staged ticket"))
@@ -239,8 +240,9 @@ function controller_info!(controller::Controller, info::NodeInfo)
         info.n_output_ports == 0
     if (info.change_mask & NODE_CHANGE_PROPERTIES) != 0
         serial = tryparse(UInt64, get(info.properties, "object.serial", ""))
-        instance =
-            tryparse(Int64, get(info.properties, "pipewireao.rtc-control.instance", ""))
+        instance = tryparse(
+            Int64, get(info.properties, "pipewireao.rtc-control.instance", "")
+        )
         pid = tryparse(UInt32, get(info.properties, "pipewireao.rtc-control.owner-pid", ""))
         valid &=
             get(info.properties, "node.name", nothing) == controller.name &&
@@ -251,9 +253,7 @@ function controller_info!(controller::Controller, info::NodeInfo)
             pid > 0
         if valid
             identity = Envelope.ControllerIdentity(
-                controller.global_id,
-                controller.serial,
-                instance,
+                controller.global_id, controller.serial, instance
             )
             valid &= all(
                 get(info.properties, key, nothing) == value for
@@ -283,8 +283,8 @@ function capability(endpoint::Endpoint)
                     Pod(reinterpret(Int64, controller.serial)),
                     Pod(something(controller.identity).instance),
                 ),
-            ) for controller in endpoint.controllers if
-            controller.verified && !controller.retired
+            ) for
+            controller in endpoint.controllers if controller.verified && !controller.retired
         ],
     )
     return Pod(
@@ -386,24 +386,16 @@ function refresh_controllers!(endpoint::Endpoint)
         startswith(name, "pipewireao.rtc.controller.") || continue
         serial = tryparse(UInt64, get(global_object.properties, "object.serial", ""))
         if isempty(name) ||
-           ncodeunits(name) > 128 ||
-           serial === nothing ||
-           serial == 0 ||
-           global_object.id in (UInt32(0), typemax(UInt32))
+            ncodeunits(name) > 128 ||
+            serial === nothing ||
+            serial == 0 ||
+            global_object.id in (UInt32(0), typemax(UInt32))
             continue
         end
         # Registry announcements are sparse. Bind a bounded set of candidate
         # names, then admit only the exact full NodeInfo proof, never the name.
         controller = Controller(
-            global_object.id,
-            serial,
-            nothing,
-            name,
-            UInt32(0),
-            nothing,
-            false,
-            false,
-            false,
+            global_object.id, serial, nothing, name, UInt32(0), nothing, false, false, false
         )
         controller.node = bind(
             registry,
@@ -474,8 +466,7 @@ function terminal_release(endpoint::Endpoint, ticket::Ticket)
             error("native terminal request has not completed")
         endpoint.terminal || error("native terminal admission remains open")
         header, _ = Envelope.decode_completion(
-            endpoint.completion;
-            endpoint = Client.reply_endpoint(endpoint.profile),
+            endpoint.completion; endpoint = Client.reply_endpoint(endpoint.profile)
         )
         Client.same_request(header, ticket.header) && header.result == 0 ||
             error("native terminal request has no successful completion")
@@ -501,9 +492,7 @@ function wait_terminal_release!(endpoint::Endpoint, ticket::Ticket)
 end
 
 function rejection!(
-    endpoint::Endpoint,
-    header::Union{Nothing,Envelope.RequestHeader},
-    result::Int32,
+    endpoint::Endpoint, header::Union{Nothing,Envelope.RequestHeader}, result::Int32
 )
     Hsm.dispatch!(endpoint, :Rejected, (; header, result))
     return nothing
@@ -513,14 +502,11 @@ function _reject!(endpoint::Endpoint, header, result)
     reply =
         header === nothing ? Envelope.ReplyHeader(endpoint.instance, result) :
         Envelope.ReplyHeader(
-            header.controller,
-            endpoint.instance,
-            header.token,
-            header.operation,
-            result,
+            header.controller, endpoint.instance, header.token, header.operation, result
         )
-    endpoint.rejection =
-        Client.encode_rejection(endpoint.profile, reply, endpoint.lifecycle)
+    endpoint.rejection = Client.encode_rejection(
+        endpoint.profile, reply, endpoint.lifecycle
+    )
     publish!(endpoint)
     return nothing
 end
@@ -563,10 +549,7 @@ end
 function _ticket(endpoint::Endpoint{P,C}, request) where {P,C}
     budget = min(request.header.budget_ns / 1.0e9, Client.maximum_budget(endpoint.profile))
     return Ticket{C}(
-        request.header,
-        request.command,
-        request.bytes,
-        request.received + budget,
+        request.header, request.command, request.bytes, request.received + budget
     )
 end
 
@@ -611,9 +594,7 @@ function Endpoint(
         endpoint = Client.reply_endpoint(profile),
     )
     rejected = Client.encode_rejection(
-        profile,
-        Envelope.ReplyHeader(instance, Int32(-22)),
-        lifecycle,
+        profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle
     )
     endpoint = Endpoint{P,C,L,typeof(publisher)}(
         profile,
@@ -645,7 +626,7 @@ function Endpoint(
                 "pipewireao.rtc-control.owner-pid" => string(getpid()),
             )
             any(key -> haskey(properties, key), keys(properties_extra)) && throw(
-                ArgumentError("extra native properties cannot replace common identity"),
+                ArgumentError("extra native properties cannot replace common identity")
             )
             merge!(properties, properties_extra)
             endpoint.filter = Filter(
@@ -714,10 +695,7 @@ function _check_ticket(endpoint::Endpoint, ticket::Ticket)
 end
 
 function complete!(
-    endpoint::Endpoint,
-    ticket::Ticket,
-    completion::Pod;
-    terminal::Bool = false,
+    endpoint::Endpoint, ticket::Ticket, completion::Pod; terminal::Bool = false
 )
     with_thread_loop_lock(endpoint.loop) do _
         operational(endpoint)

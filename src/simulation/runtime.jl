@@ -52,7 +52,7 @@ pacing_period(value, rate) =
 pacing_period(value::Bool, rate) = pacing_period(nothing, rate)
 function pacing_period(value::Real, rate)
     isfinite(value) && 0 <= value <= rate || throw(
-        ArgumentError("pacing_rate_hz must be finite between zero and the model rate"),
+        ArgumentError("pacing_rate_hz must be finite between zero and the model rate")
     )
     value == 0 && return UInt64(0)
     return pacing_period_value(value)
@@ -80,9 +80,7 @@ boolean(value, label) = throw(ArgumentError("$label must be Boolean"))
 
 "Seal a bounded JSON value into concrete, immutable cold settings."
 Base.@nospecializeinfer function plant_settings(
-    @nospecialize(value),
-    remaining = Ref(4096),
-    depth = 0,
+    @nospecialize(value), remaining = Ref(4096), depth = 0
 )
     depth <= 16 || throw(ArgumentError("plant settings exceed 16 nesting levels"))
     remaining[] -= 1
@@ -130,19 +128,18 @@ function plant_declaration(value::AbstractDict; directory = nothing)
     package = identifier(value["package"], "plant package")
     settings = plant_settings_object(value["settings"])
     if directory !== nothing && haskey(settings, :mirror_description)
-        settings=merge(
+        settings = merge(
             settings,
             (;
                 mirror_description = DeploymentConfiguration.relative_asset(
-                    directory,
-                    settings.mirror_description,
+                    directory, settings.mirror_description
                 )
             ),
         )
     end
     if directory !== nothing &&
-       haskey(settings, :influence_functions) &&
-       hasproperty(settings.influence_functions, :path)
+        haskey(settings, :influence_functions) &&
+        hasproperty(settings.influence_functions, :path)
         influences = settings.influence_functions
         settings = merge(
             settings,
@@ -151,8 +148,7 @@ function plant_declaration(value::AbstractDict; directory = nothing)
                     influences,
                     (;
                         path = DeploymentConfiguration.relative_asset(
-                            directory,
-                            influences.path,
+                            directory, influences.path
                         )
                     ),
                 )
@@ -169,14 +165,11 @@ plant_settings_object(value) = throw(ArgumentError("plant settings must be an ob
 function arguments(args)
     values = Dict{String,String}()
     required = (
-        "--config",
-        "--remote",
-        "--control-node",
-        "--bootstrap-node",
-        "--bootstrap-instance",
+        "--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance"
     )
-    optional =
-        ("--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup")
+    optional = (
+        "--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup"
+    )
     allowed = (
         required...,
         optional...,
@@ -186,7 +179,7 @@ function arguments(args)
         "--physical-offsets",
     )
     iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
-    for index = 1:2:length(args)
+    for index in 1:2:length(args)
         key, value = args[index], args[index+1]
         key in allowed || throw(ArgumentError("unknown AOS owner option $key"))
         haskey(values, key) && throw(ArgumentError("duplicate $key"))
@@ -211,7 +204,7 @@ function arguments(args)
     if haskey(values, "--pipewire-cpu")
         pipewire_cpu = tryparse(Int, values["--pipewire-cpu"])
         pipewire_cpu !== nothing && pipewire_cpu >= 2 || throw(
-            ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1"),
+            ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1")
         )
     end
     optical_diagnostics_cpu = nothing
@@ -227,7 +220,7 @@ function arguments(args)
         pupil_output_cpu !== nothing && pupil_output_cpu >= 2 ||
             throw(ArgumentError("pupil output CPU must exclude CPUs 0 and 1"))
         pupil_output_cpu != optical_diagnostics_cpu || throw(
-            ArgumentError("pupil output and optical diagnostics require distinct CPUs"),
+            ArgumentError("pupil output and optical diagnostics require distinct CPUs")
         )
     end
     timing_directory = nothing
@@ -284,7 +277,7 @@ function command_values(validate, value::AbstractDict, names::Tuple, label)
     Set(keys(value)) == Set(string.(names)) ||
         throw(ArgumentError("$label must name every command input exactly once"))
     return NamedTuple{names}(
-        Tuple(validate(value[string(name)], "$label.$name") for name in names),
+        Tuple(validate(value[string(name)], "$label.$name") for name in names)
     )
 end
 command_values(validate, value, names::Tuple, label) =
@@ -319,16 +312,14 @@ function mirror_description(declaration, ::Symbol)
     mirrors = declaration.instrument.document["deformable_mirrors"]
     return length(mirrors) == 1 ?
            DeploymentConfiguration.relative_asset(
-        declaration.directory,
-        only(values(mirrors))["description"],
+        declaration.directory, only(values(mirrors))["description"]
     ) : nothing
 end
 
 "Validate every configuration declaration before preparing any FITS artifact."
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(
-        path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     return configuration(path, document)
 end
@@ -416,15 +407,14 @@ function configuration(path, document::AbstractDict)
             "declarative plant",
         )
         definition = DeploymentConfiguration.relative_asset(
-            dirname(config_path),
-            entry["definition"],
+            dirname(config_path), entry["definition"]
         )
-        declaration =
-            InstrumentConfiguration.load_simulation(definition; validate_optics = false)
+        declaration = InstrumentConfiguration.load_simulation(
+            definition; validate_optics = false
+        )
         configured = InstrumentConfiguration.settings(declaration, entry["settings"])
         selected = InstrumentConfiguration.selected_graph(
-            declaration,
-            get(entry, "graph", "production"),
+            declaration, get(entry, "graph", "production")
         )
         selected == "calibration" && throw(
             ArgumentError(
@@ -441,10 +431,7 @@ function configuration(path, document::AbstractDict)
     validate_command_inputs(version, command_input)
     frame_output = identifier(document["frame_output"], "frame_output")
     command_count = command_values(
-        AOSOwner.command_count,
-        document["command_count"],
-        command_input,
-        "command_count",
+        AOSOwner.command_count, document["command_count"], command_input, "command_count"
     )
     sum(command_items(command_count)) <= Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32) ||
         throw(ArgumentError("combined command storage exceeds the image byte limit"))
@@ -495,13 +482,13 @@ function configuration(path, document::AbstractDict)
     total_exchanges =
         total === nothing ? nothing :
         UInt64(integer(total, "total_exchanges", 1, typemax(Int64)))
-    optical_observation =
-        boolean(get(document, "optical_observation", false), "optical_observation")
+    optical_observation = boolean(
+        get(document, "optical_observation", false), "optical_observation"
+    )
     pupil_output = boolean(get(document, "pupil_output", false), "pupil_output")
     if pupil_output
         declaration = InstrumentConfiguration.load_simulation(
-            plant.definition;
-            validate_optics = false,
+            plant.definition; validate_optics = false
         )
         InstrumentConfiguration.pupil_output(
             declaration,
@@ -510,13 +497,14 @@ function configuration(path, document::AbstractDict)
         ) === nothing &&
             throw(ArgumentError("pupil_output requires a declared scientific pupil output"))
     end
-    detector_observation =
-        boolean(get(document, "detector_observation", false), "detector_observation")
-    command_observation =
-        boolean(get(document, "command_observation", false), "command_observation")
+    detector_observation = boolean(
+        get(document, "detector_observation", false), "detector_observation"
+    )
+    command_observation = boolean(
+        get(document, "command_observation", false), "command_observation"
+    )
     applied_command_observation = boolean(
-        get(document, "applied_command_observation", false),
-        "applied_command_observation",
+        get(document, "applied_command_observation", false), "applied_command_observation"
     )
     calibration_identity =
         haskey(document, "calibration_identity") ?
@@ -524,11 +512,10 @@ function configuration(path, document::AbstractDict)
     instrument =
         haskey(document, "instrument") ?
         DeploymentConfiguration.relative_asset(
-            dirname(config_path),
-            document["instrument"],
+            dirname(config_path), document["instrument"]
         ) : nothing
-    instrument===nothing ||
-        version in (2, 3) && calibration_identity!==nothing ||
+    instrument === nothing ||
+        version in (2, 3) && calibration_identity !== nothing ||
         throw(
             ArgumentError(
                 "instrument definition requires an instrument plant and calibration identity",
@@ -537,8 +524,7 @@ function configuration(path, document::AbstractDict)
     rtc_configuration =
         version == 3 ?
         DeploymentConfiguration.relative_asset(
-            dirname(config_path),
-            document["rtc_configuration"],
+            dirname(config_path), document["rtc_configuration"]
         ) : nothing
     prescription_identity =
         version == 3 ? text(document["prescription_identity"], "prescription identity") :
@@ -547,8 +533,7 @@ function configuration(path, document::AbstractDict)
         plant === nothing ? nothing : get(plant.settings, :mirror_description, nothing)
     if version == 3
         declaration = InstrumentConfiguration.load_simulation(
-            plant.definition;
-            validate_optics = false,
+            plant.definition; validate_optics = false
         )
         mirror_description = AOSOwner.mirror_description(declaration, command_input)
     end
@@ -572,8 +557,7 @@ function configuration(path, document::AbstractDict)
             throw(ArgumentError("multidimensional FITS bindings require axes"))
         source = Artifacts.FITSArtifact(
             joinpath(
-                dirname(abspath(path)),
-                text(get(entry, "path", nothing), "artifact path"),
+                dirname(abspath(path)), text(get(entry, "path", nothing), "artifact path")
             );
             hdu = get(entry, "hdu", 1),
             axes,
@@ -588,7 +572,7 @@ function configuration(path, document::AbstractDict)
     end
     return (;
         reference_clock = reference_clock_configuration(
-            get(document, "reference_clock", nothing),
+            get(document, "reference_clock", nothing)
         ),
         version,
         config_path,
@@ -639,7 +623,7 @@ function artifact_entry(entry::AbstractDict)
     return entry
 end
 "Prepare owned logical FITS arrays; preserve their provenance for the science owner."
-function prepare_bindings(entries; check = ()->nothing)
+function prepare_bindings(entries; check = () -> nothing)
     prepared = Artifacts.PreparedArtifact[]
     for entry in entries
         check()
@@ -675,10 +659,7 @@ function write_report(options, state, generation, source_instance; failures = ()
         version = 1,
         kind = "pipewireao.rtc.aos-owner-report/1",
         bootstrap_instance = integer(
-            options.bootstrap_instance,
-            "bootstrap_instance",
-            1,
-            typemax(Int64),
+            options.bootstrap_instance, "bootstrap_instance", 1, typemax(Int64)
         ),
         source_instance = integer(source_instance, "source_instance", 1, typemax(Int64)),
         owner_pid = getpid(),
@@ -750,7 +731,7 @@ end
 
 plant_dependency(dependencies, name) = throw(
     ArgumentError(
-        "plant package $name must be a direct dependency of the active application",
+        "plant package $name must be a direct dependency of the active application"
     ),
 )
 function plant_dependency(dependencies::AbstractDict, name)
@@ -766,8 +747,7 @@ function requires_proper(options)
     # Node types decide whether Proper must load; generated optical provenance
     # is verified afterwards by the ordinary declaration/execution preparation.
     declaration = InstrumentConfiguration.load_simulation(
-        options.plant.definition;
-        validate_optics = false,
+        options.plant.definition; validate_optics = false
     )
     configured = InstrumentConfiguration.settings(declaration, options.plant.settings)
     if options.version in (4, 6)
@@ -776,17 +756,13 @@ function requires_proper(options)
         options.version == 6 && push!(names, options.source_graph)
         return any(
             name -> InstrumentConfiguration.graph_requires_proper(
-                declaration,
-                configured;
-                simulation_graph = name,
+                declaration, configured; simulation_graph = name
             ),
             names,
         )
     end
     return InstrumentConfiguration.graph_requires_proper(
-        declaration,
-        configured;
-        simulation_graph = get(options.plant, :graph, "production"),
+        declaration, configured; simulation_graph = get(options.plant, :graph, "production")
     )
 end
 
@@ -806,33 +782,35 @@ function _main(
 )
     invocation = arguments(args)
     options = configuration(invocation.config)
-    data_nodes =
-        options.version == 5 ?
+    data_nodes = if options.version == 5
         (
             "simulator-pupil-output",
             (
                 options.applied_command_observation ?
-                ("simulator-"*options.mirror*"-applied",) : ()
+                ("simulator-" * options.mirror * "-applied",) : ()
             )...,
-        ) :
-        options.version in (4, 6) ?
+        )
+    elseif options.version in (4, 6)
         (
             options.version == 6 ? options.command_node : options.pupil_node,
             values(options.sensor_nodes)...,
-        ) : command_items(options.command_node)
-    (options.version==5)==(invocation.physical_offsets!==nothing) || throw(
+        )
+    else
+        command_items(options.command_node)
+    end
+    (options.version == 5) == (invocation.physical_offsets !== nothing) || throw(
         ArgumentError(
             "pupil sources require --physical-offsets; other AOS versions do not accept it",
         ),
     )
-    options.version==5 &&
+    options.version == 5 &&
         (
-            invocation.phase_timing_directory!==nothing ||
-            invocation.optical_diagnostics_cpu!==nothing
+            invocation.phase_timing_directory !== nothing ||
+            invocation.optical_diagnostics_cpu !== nothing
         ) &&
         throw(
             ArgumentError(
-                "pupil sources have no HIL phase timing or optical diagnostic worker",
+                "pupil sources have no HIL phase timing or optical diagnostic worker"
             ),
         )
     all(
@@ -864,10 +842,13 @@ function _main(
             end
             # Optional science loads add graph preparation methods in a newer
             # world; declaration verification resolves those same graph methods.
-            verify =
-                admitted.version == 5 ? verify_pupil_source_declaration :
-                admitted.version in (4, 6) ? verify_external_pupil_declaration :
+            verify = if admitted.version == 5
+                verify_pupil_source_declaration
+            elseif admitted.version in (4, 6)
+                verify_external_pupil_declaration
+            else
                 InstrumentDefinition.verify_declaration
+            end
             Base.invokelatest(verify, admitted)
         elseif admitted.plant !== nothing
             plant_module = load_plant(admitted.plant.package)
@@ -875,9 +856,13 @@ function _main(
             InstrumentDefinition.verify_plant(admitted, plant_module)
             admitted = merge(admitted, (; plant_module))
         end
-        selected_run=run===run_owner ?
-                     admitted.version==5 ? run_pupil_source_owner :
-                     admitted.version in (4, 6) ? run_external_pupil_owner : run : run
+        selected_run = run === run_owner ? if admitted.version == 5
+            run_pupil_source_owner
+        elseif admitted.version in (4, 6)
+            run_external_pupil_owner
+        else
+            run
+        end : run
         Base.invokelatest(selected_run, admitted)
     end
     return 0

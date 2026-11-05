@@ -76,17 +76,11 @@ function result(t, ::Runner.RunnerCommand{O}, details; outcome = Runner.Observed
         t.recovery_state === :released &&
         O === :status ? Runner.Ready : Runner.Running
     return Runner.Completion(
-        header,
-        lifecycle,
-        Runner.RunnerResult{O,typeof(details)}(outcome, details),
-        nothing,
+        header, lifecycle, Runner.RunnerResult{O,typeof(details)}(outcome, details), nothing
     )
 end
 function CR.request_native!(
-    t::ScriptedTransport,
-    command::Runner.RunnerCommand;
-    deadline::Float64,
-    check,
+    t::ScriptedTransport, command::Runner.RunnerCommand; deadline::Float64, check
 )
     check()
     t.now_ns += UInt64(100_000)
@@ -158,8 +152,8 @@ function respond!(t, command::Runner.RunnerCommand{:properties_set})
         end
         t.competing_close_attempts += 1
         if !t.inhibited &&
-           t.requested == t.active &&
-           t.virtual_requested == t.virtual_active
+            t.requested == t.active &&
+            t.virtual_requested == t.virtual_active
             t.competing_close_accepted += 1
             t.target_closed = t.closed = true
             t.requested += 1
@@ -182,7 +176,7 @@ scalar(value::String) = Runner.RunnerScalar(:string, value)
 function respond!(t, command::Runner.RunnerCommand{:properties})
     t.phase_polls += 1
     if t.recovery_state === :pending &&
-       t.phase_polls >= (t.mode === :immediate_application ? 1 : 2)
+        t.phase_polls >= (t.mode === :immediate_application ? 1 : 2)
         t.virtual_active = t.virtual_requested
         t.active = t.requested
         t.closed = false

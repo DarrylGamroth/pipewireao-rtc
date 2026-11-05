@@ -71,9 +71,7 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
             push!(graph["nodes"], guide)
             binding = "guide_" * string(resolution)
             simulation["bindings"][binding] = Dict(
-                "kind" => "zeros",
-                "type" => "Float32",
-                "shape" => [resolution, resolution],
+                "kind" => "zeros", "type" => "Float32", "shape" => [resolution, resolution]
             )
             push!(
                 graph["inputs"],
@@ -86,8 +84,9 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
         end
         C.write_yaml(path, simulation)
         declaration = IC.load_simulation(path)
-        document["prescription_identity"] =
-            IC.prescription_identity(declaration, IC.settings(declaration))
+        document["prescription_identity"] = IC.prescription_identity(
+            declaration, IC.settings(declaration)
+        )
         document["plant"]["graph"] = "optical-reference"
         C.write_json(config, document)
         with_owner = (f, options) -> begin
@@ -99,8 +98,8 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
             with_owner,
             run = options -> begin
                 @test loaded("AdaptiveOpticsSim") &&
-                      loaded("AdaptiveOpticsSimPipeWireHIL") &&
-                      loaded("Proper")
+                    loaded("AdaptiveOpticsSimPipeWireHIL") &&
+                    loaded("Proper")
                 @test options.plant.graph == "optical-reference"
                 system = IC.prepare_system(
                     options.plant.definition;
@@ -120,18 +119,16 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
                 fill!(amplitude, 1)
                 graphs.step_graph!(system.graph)
                 @test sum(graphs.graph_output(system.graph, :intensity)) ≈ 16
-                properties =
-                    Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).simulation_properties(
-                        options,
-                        (;
-                            definition = system.definition,
-                            configuration = (; exposure_duration_ns = options.exposure_ns),
-                        ),
-                    )
+                properties = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).simulation_properties(
+                    options,
+                    (;
+                        definition = system.definition,
+                        configuration = (; exposure_duration_ns = options.exposure_ns),
+                    ),
+                )
                 @test properties["aos.simulation.graph"] == "optical-reference"
                 selected = PipeWireAORTC.InstrumentExport.simulator_port_contracts(
-                    path;
-                    simulation_graph = options.plant.graph,
+                    path; simulation_graph = options.plant.graph
                 )
                 default = PipeWireAORTC.InstrumentExport.simulator_port_contracts(path)
                 @test selected["residual-wavefront"]["shape"] == [4, 4]
@@ -150,8 +147,7 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
                     Dict("queues" => [Dict("ports" => [port])]),
                 )
                 C.write_json(
-                    joinpath(directory, "core.conf"),
-                    Dict("context.modules" => []),
+                    joinpath(directory, "core.conf"), Dict("context.modules" => [])
                 )
                 E = PipeWireAORTC.InstrumentExport
                 prefix = String(
@@ -165,8 +161,7 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
                     prefix,
                 )
                 resolved = PipeWireAORTC.DeploymentConfiguration.decode(
-                    joinpath(directory, "session.conf"),
-                    prefix,
+                    joinpath(directory, "session.conf"), prefix
                 )
                 @test only(only(resolved["queues"])["ports"])["shape"] == [4, 4]
             end,

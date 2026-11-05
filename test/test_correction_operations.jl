@@ -4,8 +4,7 @@ const FGA = FilterGraphAlgorithms
 
 @testset "Coupled correction hold, resume and reset semantics" begin
     controller = prepare_algorithm(
-        ClosedLoopIntegratorF32,
-        ClosedLoopIntegratorF32Configuration(state_length = 1),
+        ClosedLoopIntegratorF32, ClosedLoopIntegratorF32Configuration(state_length = 1)
     )
     controller.plan = FGA.prepare_properties(
         controller.plan,
@@ -28,14 +27,14 @@ const FGA = FilterGraphAlgorithms
     )
     for (residual, feedback) in ((100.0f0, 0.1f0), (-200.0f0, -0.2f0), (3.0f0, 0.5f0))
         @test FGA.process!(correction, state, controller, [residual], [feedback]) ===
-              nothing
+            nothing
         @test correction == Float32[1]
         @test state == held_state
     end
     @test FGA.process!(correction, state, controller, Float32[NaN], Float32[0]) ===
-          ClosedLoopCorrectionNonFiniteInput
+        ClosedLoopCorrectionNonFiniteInput
     @test FGA.process!(correction, state, controller, Float32[0], Float32[NaN]) ===
-          ClosedLoopCorrectionNonFiniteFeedback
+        ClosedLoopCorrectionNonFiniteFeedback
     @test correction == Float32[1] && state == held_state
     controller.plan = FGA.prepare_properties(
         controller.plan,

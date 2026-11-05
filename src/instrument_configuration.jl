@@ -55,7 +55,7 @@ returned optical/response collections and compute-target options.
 function prepare_external_pupil end
 function optical_graph_document(declaration, configured, mode)
     throw(
-        ArgumentError("Zemax graph replanning requires AdaptiveOpticsSim, Proper and YAML"),
+        ArgumentError("Zemax graph replanning requires AdaptiveOpticsSim, Proper and YAML")
     )
 end
 function prepare_optical_components!(graph, declaration, configured)
@@ -165,14 +165,13 @@ function simulation_documents(path)
     )
     haskey(document, "graphs") != haskey(document, "preparation") || throw(
         ArgumentError(
-            "simulation definition must declare exactly one of graphs or preparation",
+            "simulation definition must declare exactly one of graphs or preparation"
         ),
     )
     haskey(document, "hil") == haskey(document, "wire_contracts") ||
         throw(ArgumentError("simulation hil and wire_contracts must be declared together"))
     _declaration_object(
-        get!(document, "components", Dict{String,Any}()),
-        "simulation components",
+        get!(document, "components", Dict{String,Any}()), "simulation components"
     )
     _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
     for profile in values(_declaration_object(document["profiles"], "simulation profiles"))
@@ -223,21 +222,20 @@ function simulation_documents(path)
         resolved = D.relative_asset(
             instrument.directory,
             relpath(
-                normpath(joinpath(dirname(abspath(path)), source)),
-                instrument.directory,
+                normpath(joinpath(dirname(abspath(path)), source)), instrument.directory
             ),
         )
         resolved == D.relative_asset(instrument.directory, "simulation/definition.yaml") ||
             throw(
                 ArgumentError(
-                    "optical model must identify its authored simulation/definition.yaml",
+                    "optical model must identify its authored simulation/definition.yaml"
                 ),
             )
         authored = bounded_yaml(resolved)
         abspath(path) == joinpath(instrument.directory, "generated", "simulation.yaml") ||
             throw(
                 ArgumentError(
-                    "prepared optical model must execute generated/simulation.yaml",
+                    "prepared optical model must execute generated/simulation.yaml"
                 ),
             )
         !haskey(authored, "optical_model") ||
@@ -253,15 +251,14 @@ function simulation_documents(path)
         standalone ||
             imported ||
             throw(
-                ArgumentError(
-                    "optical model requires an authored Zemax preparation source",
-                ),
+                ArgumentError("optical model requires an authored Zemax preparation source")
             )
-        variants =
-            _declaration_object(get(model, "variants", Dict()), "prepared optical variants")
+        variants = _declaration_object(
+            get(model, "variants", Dict()), "prepared optical variants"
+        )
         authored_variants = get(get(authored, "preparation", Dict()), "variants", Dict())
         Set(keys(variants)) == Set(keys(authored_variants)) || throw(
-            ArgumentError("prepared optical variants differ from authored preparation"),
+            ArgumentError("prepared optical variants differ from authored preparation")
         )
         for (name, entry) in variants
             fields(entry, ("branch",), ("branch",), "prepared optical variant")
@@ -270,7 +267,7 @@ function simulation_documents(path)
             haskey(get(instrument.document, "optical_paths", Dict()), entry["branch"]) ||
                 throw(
                     ArgumentError(
-                        "prepared optical variant differs from its authored physical branch",
+                        "prepared optical variant differs from its authored physical branch"
                     ),
                 )
         end
@@ -283,15 +280,17 @@ function resolve_simulation_settings!(document, authoring, instrument)
     profiles = _declaration_object(document["profiles"], "simulation profiles")
     1 <= length(profiles) <= 16 || throw(ArgumentError("simulation requires 1:16 profiles"))
     if shared_settings_schema(authoring["settings_schema"]) &&
-       haskey(document["settings_schema"]["properties"], "profile")
-        document["settings_schema"]["properties"]["profile"]["enum"] =
-            sort!(collect(keys(profiles)))
+        haskey(document["settings_schema"]["properties"], "profile")
+        document["settings_schema"]["properties"]["profile"]["enum"] = sort!(
+            collect(keys(profiles))
+        )
     end
     for profile in values(profiles)
         _declaration_object(profile, "simulation profile")
         if haskey(profile, "settings_schema")
-            profile["settings_schema"] =
-                resolve_profile_settings_schema(profile["settings_schema"])
+            profile["settings_schema"] = resolve_profile_settings_schema(
+                profile["settings_schema"]
+            )
         end
     end
     selection = authoring["settings_schema"]
@@ -322,21 +321,16 @@ function load_simulation(path::AbstractString; validate_optics::Bool = true)
             ),
         )
     end
-    expanded =
-        expand_simulation_components!(document, instrument.document, instrument.directory)
+    expanded = expand_simulation_components!(
+        document, instrument.document, instrument.directory
+    )
     validate_observations(
-        document,
-        instrument.document,
-        instrument.directory,
-        expanded.graphs,
+        document, instrument.document, instrument.directory, expanded.graphs
     )
     expand_optical_mask_bindings!(document, instrument.document, expanded.graphs)
     resolve_simulation_settings!(document, authoring, instrument)
     validate_simulation(
-        document,
-        instrument.document,
-        instrument.directory,
-        expanded.graphs,
+        document, instrument.document, instrument.directory, expanded.graphs
     )
     declaration = (;
         path = abspath(path),
@@ -378,17 +372,17 @@ function load_simulation_source(path::AbstractString)
     prescription = get(instrument.document, "optical_prescription", Dict())
     get(prescription, "format", nothing) == preparation["kind"] || throw(
         ArgumentError(
-            "simulation preparation must match the physical optical prescription format",
+            "simulation preparation must match the physical optical prescription format"
         ),
     )
     paths = _declaration_object(
-        get(instrument.document, "optical_paths", Dict()),
-        "physical optical paths",
+        get(instrument.document, "optical_paths", Dict()), "physical optical paths"
     )
     isempty(paths) &&
         throw(ArgumentError("prepared optical source requires physical optical_paths"))
-    variants =
-        _declaration_object(get(preparation, "variants", Dict()), "optical graph variants")
+    variants = _declaration_object(
+        get(preparation, "variants", Dict()), "optical graph variants"
+    )
     length(variants) <= 16 ||
         throw(ArgumentError("optical graph variants exceed 16 entries"))
     for (name, selection) in variants
@@ -406,13 +400,12 @@ function load_simulation_source(path::AbstractString)
     isfile(recipe_candidate) ||
         throw(ArgumentError("simulation preparation recipe must be an existing file"))
     preparation_path = D.relative_asset(
-        instrument.directory,
-        relpath(recipe_candidate, instrument.directory),
+        instrument.directory, relpath(recipe_candidate, instrument.directory)
     )
     relative_recipe = relpath(preparation_path, realpath(instrument.directory))
     "generated" in splitpath(relative_recipe) && throw(
         ArgumentError(
-            "simulation preparation recipe must be an authored asset outside generated",
+            "simulation preparation recipe must be an authored asset outside generated"
         ),
     )
     haskey(document, "hil") &&
@@ -428,25 +421,25 @@ function load_simulation_source(path::AbstractString)
     haskey(document, "imaging") &&
         throw(ArgumentError("prepared optical source does not support imaging"))
     bindings = _declaration_object(
-        get!(document, "bindings", Dict{String,Any}()),
-        "simulation bindings",
+        get!(document, "bindings", Dict{String,Any}()), "simulation bindings"
     )
-    entries =
-        _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
+    entries = _declaration_array(
+        get!(document, "settings_bindings", Any[]), "settings_bindings"
+    )
     resolve_simulation_settings!(document, authoring, instrument)
     validate_simulation_common(document, instrument.document)
-    response_sources =
-        observation_sources(document, instrument.document, instrument.directory)
+    response_sources = observation_sources(
+        document, instrument.document, instrument.directory
+    )
     observation_graphs, templates = Dict{String,Any}(), ()
     if isempty(response_sources)
         isempty(
             _declaration_object(
-                get(document, "components", Dict()),
-                "simulation components",
+                get(document, "components", Dict()), "simulation components"
             ),
         ) || throw(
             ArgumentError(
-                "prepared optical source components require declared observations",
+                "prepared optical source components require declared observations"
             ),
         )
         isempty(entries) || throw(
@@ -458,7 +451,7 @@ function load_simulation_source(path::AbstractString)
             _declaration_object(profile, "simulation profile")
             for key in ("nodes", "parameters")
                 isempty(
-                    _declaration_array(get(profile, key, nothing), "profile $name $key"),
+                    _declaration_array(get(profile, key, nothing), "profile $name $key")
                 ) || throw(
                     ArgumentError(
                         "prepared optical source requires empty profile $key without observations",
@@ -479,15 +472,10 @@ function load_simulation_source(path::AbstractString)
         response_document = deepcopy(document)
         response_document["graphs"] = response_sources
         expanded = expand_simulation_components!(
-            response_document,
-            instrument.document,
-            instrument.directory,
+            response_document, instrument.document, instrument.directory
         )
         validate_simulation(
-            response_document,
-            instrument.document,
-            instrument.directory,
-            expanded.graphs,
+            response_document, instrument.document, instrument.directory, expanded.graphs
         )
         validate_observations(
             response_document,
@@ -500,7 +488,7 @@ function load_simulation_source(path::AbstractString)
             binding["kind"] == "fits" || continue
             haskey(binding, "sha256") || throw(
                 ArgumentError(
-                    "authored observations require SHA-256 for each FITS binding",
+                    "authored observations require SHA-256 for each FITS binding"
                 ),
             )
         end
@@ -560,8 +548,9 @@ function load_rtc(path::AbstractString)
     _declaration_text(document["calibration_identity"], "RTC calibration identity")
     instrument = referenced_instrument(path, document["instrument"])
     document["dimensions"] = controller_dimensions(authoring, instrument)
-    control_authoring =
-        bounded_yaml(D.relative_asset(instrument.directory, document["mirror_controls"]))
+    control_authoring = bounded_yaml(
+        D.relative_asset(instrument.directory, document["mirror_controls"])
+    )
     controls = deepcopy(control_authoring)
     fields(
         controls,
@@ -627,8 +616,7 @@ function settings(declaration::NamedTuple, overrides::AbstractDict = Dict{String
         throw(ArgumentError("unsupported instrument profile $profile"))
     schema = deepcopy(document["settings_schema"])
     merge!(
-        schema["properties"],
-        get(document["profiles"][profile], "settings_schema", Dict()),
+        schema["properties"], get(document["profiles"][profile], "settings_schema", Dict())
     )
     result = merge_settings(document["defaults"], overrides, schema)
     # Standalone optical prescriptions may contain generated coefficients.
@@ -640,9 +628,7 @@ function settings(declaration::NamedTuple, overrides::AbstractDict = Dict{String
         haskey(document, "preparation") ?
         keys(physical(declaration).document["optical_paths"]) :
         optical_graph_names(
-            document,
-            physical(declaration).document,
-            keys(declaration.graphs),
+            document, physical(declaration).document, keys(declaration.graphs)
         )
     selected_optical_mask_responses(document, physical(declaration).document, paths, result)
     return result
@@ -662,9 +648,9 @@ function settings_description(declaration, overrides)
         ),
     )
     return Dict(
-        "package"=>declaration.document["id"],
-        "settings"=>configured,
-        "schema"=>schema,
+        "package" => declaration.document["id"],
+        "settings" => configured,
+        "schema" => schema,
     )
 end
 
@@ -697,7 +683,7 @@ function mirror(declaration, configured, name)
     instrument = physical(declaration)
     spec = instrument.document["deformable_mirrors"][name]
     description = read_mirror_description(
-        mirror_description_path(instrument.directory, spec["description"]),
+        mirror_description_path(instrument.directory, spec["description"])
     )
     registration = _pupil_registration(_instrument_seal(spec["pupil_registration"]))
     _require_pupil_geometry(description, registration)
@@ -713,7 +699,7 @@ function configuration_context(declaration, configured)
         spec["actuator_axis_count"] = _mirror_axis_count(geometry.description)
         spec["grid_shape"] = collect(geometry.description.layout.grid_shape)
         spec["description_json"] = InstrumentDefinition.mirror_description_json(
-            mirror_description_path(declaration.directory, spec["description"]),
+            mirror_description_path(declaration.directory, spec["description"])
         )
     end
     for sensor in values(instrument["wavefront_sensors"])
@@ -739,7 +725,7 @@ function configuration_context(declaration, configured)
         1 <= rate <= 1_000_000_000 &&
         UInt64(div(1_000_000_000 + div(rate, 2), rate)) == period_ns || throw(
             ArgumentError(
-                "simulation frame period must agree with an integer transport rate",
+                "simulation frame period must agree with an integer transport rate"
             ),
         )
         simulation["rate"] = rate
@@ -809,7 +795,7 @@ function pupil_output(declaration, configured; simulation_graph = "production")
     outputs = get(declaration.graphs[mode], "outputs", ())
     count(entry -> entry["name"] == output["opd"], outputs) == 1 || throw(
         ArgumentError(
-            "selected graph must declare exactly one pupil OPD output $(output["opd"])",
+            "selected graph must declare exactly one pupil OPD output $(output["opd"])"
         ),
     )
     bindings = declaration.document["bindings"]
@@ -818,7 +804,7 @@ function pupil_output(declaration, configured; simulation_graph = "production")
         throw(ArgumentError("pupil output names an absent amplitude binding $amplitude"))
     binding = bindings[amplitude]
     binding["kind"] == "pupil_amplitude" && binding["type"] == "Float32" || throw(
-        ArgumentError("pupil output requires a static Float32 pupil_amplitude binding"),
+        ArgumentError("pupil output requires a static Float32 pupil_amplitude binding")
     )
     p = get(configured, "pupil_resolution", nothing)
     ispositive_integer(p) && p <= typemax(Int) ||
@@ -826,8 +812,7 @@ function pupil_output(declaration, configured; simulation_graph = "production")
     resolution = dimension(
         configured,
         Common.configuration_value(
-            binding["resolution"],
-            configuration_context(declaration, configured),
+            binding["resolution"], configuration_context(declaration, configured)
         ),
     )
     resolution == p || throw(
@@ -903,8 +888,7 @@ function resolve_graph_document(graph, declaration, configured, mode)
         input =
             haskey(entry, "setting") ? setting(configured, entry["setting"]) :
             Common.configuration_value(
-                entry["value"],
-                configuration_context(declaration, configured),
+                entry["value"], configuration_context(declaration, configured)
             )
         value = transform(input, entry)
         for node in nodes
@@ -971,7 +955,7 @@ function validate_dark_graph(graph, bindings)
             throw(ArgumentError("dark detector requires one blocked photon-rate input"))
         binding = bindings[only(inputs)["binding"]]
         binding["kind"] == "zeros" && binding["type"] == "Float32" || throw(
-            ArgumentError("dark photon rate requires an explicit Float32 zero binding"),
+            ArgumentError("dark photon rate requires an explicit Float32 zero binding")
         )
     end
     return nothing
@@ -982,7 +966,7 @@ function binding_values(declaration, configured, binding::AbstractDict)
     return binding_values(kind, declaration, configured, binding)
 end
 function binding_values(::Val{:zeros}, declaration, configured, binding)
-    T = get(Dict(string(T)=>T for T in Artifacts.TARGET_TYPES), binding["type"], nothing)
+    T = get(Dict(string(T) => T for T in Artifacts.TARGET_TYPES), binding["type"], nothing)
     T === nothing && throw(ArgumentError("unsupported zero binding element type"))
     context = configuration_context(declaration, configured)
     shape = map(Common.configuration_value(binding["shape"], context)) do extent
@@ -997,8 +981,7 @@ dimension(configured, extent) = throw(ArgumentError("invalid binding dimension")
 function binding_values(::Val{:mirror_coordinates}, declaration, configured, binding)
     values = mirror(declaration, configured, binding["mirror"])
     return actuator_coordinates(
-        values.description;
-        pupil_registration = values.registration,
+        values.description; pupil_registration = values.registration
     )
 end
 function binding_values(::Val{:mirror_grid_indices}, declaration, configured, binding)
@@ -1024,7 +1007,7 @@ end
 binding_values(::Val{:measured_influences}, declaration, configured, binding) =
     measured_influences(declaration, configured, binding).modes
 function binding_values(::Val{:fits}, declaration, configured, binding)
-    T = get(Dict(string(T)=>T for T in Artifacts.TARGET_TYPES), binding["type"], nothing)
+    T = get(Dict(string(T) => T for T in Artifacts.TARGET_TYPES), binding["type"], nothing)
     T === nothing && throw(ArgumentError("unsupported FITS binding element type"))
     source = Artifacts.FITSArtifact(
         D.relative_asset(declaration.directory, binding["path"]);
@@ -1043,7 +1026,7 @@ binding_values(kind::Val, declaration, configured, binding) =
 include("instruments/metadata.jl")
 
 binding_files(value) = throw(
-    ArgumentError("simulation binding_files requires at most eight relative filenames"),
+    ArgumentError("simulation binding_files requires at most eight relative filenames")
 )
 function binding_files(value::AbstractVector)
     length(value) <= 8 || return binding_files(nothing)

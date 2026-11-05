@@ -159,9 +159,7 @@ requested_before(observation::AbstractLoopObservation, generation) =
 requested_before(::SingleController, observation, generation::UInt64) =
     requested_generation(observation) < generation
 function requested_before(
-    ::CoupledControllers{N},
-    observation,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}
 ) where {N}
     requested = requested_generation(observation)
     return requested != generation && all(map(<=, requested, generation))
@@ -173,9 +171,7 @@ active_before(observation::AbstractLoopObservation, generation) =
 active_before(::SingleController, observation, generation::UInt64) =
     active_generation(observation) < generation
 function active_before(
-    ::CoupledControllers{N},
-    observation,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}
 ) where {N}
     active = active_generation(observation)
     return active != generation && all(map(<=, active, generation))
@@ -187,9 +183,7 @@ active_at_most(observation::AbstractLoopObservation, generation) =
 active_at_most(::SingleController, observation, generation::UInt64) =
     active_generation(observation) <= generation
 active_at_most(
-    ::CoupledControllers{N},
-    observation,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}
 ) where {N} = all(map(<=, active_generation(observation), generation))
 
 "Return whether each applied controller generation is at least its baseline."
@@ -198,7 +192,5 @@ active_at_least(observation::AbstractLoopObservation, generation) =
 active_at_least(::SingleController, observation, generation::UInt64) =
     active_generation(observation) >= generation
 active_at_least(
-    ::CoupledControllers{N},
-    observation,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}
 ) where {N} = all(map(>=, active_generation(observation), generation))

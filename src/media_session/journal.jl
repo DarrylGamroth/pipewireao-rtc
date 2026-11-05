@@ -34,7 +34,7 @@ struct JournalRequest
         end
         limit = event === :requested ? 16384 : 65536
         8 <= length(bytes) <= limit &&
-        reinterpret(UInt32, @view(bytes[1:4]))[1] == length(bytes)-8 ||
+        reinterpret(UInt32, @view(bytes[1:4]))[1] == length(bytes) - 8 ||
             throw(ArgumentError("invalid native journal record extent"))
         return new(token, session_id, event, bytes, client_name, client_pid, operation_key)
     end
@@ -203,7 +203,7 @@ function _journal_append(db::SQLite.DB, request::JournalRequest, path::String)
         return JournalResult(
             request.token,
             false,
-            "journal path rejected: "*sprint(showerror, error),
+            "journal path rejected: " * sprint(showerror, error),
             false,
         )
     end
@@ -234,10 +234,7 @@ VALUES (?,?,?,?,?,?)
         catch
         end
         return JournalResult(
-            request.token,
-            false,
-            "journal append failed: "*sprint(showerror, error),
-            true,
+            request.token, false, "journal append failed: " * sprint(showerror, error), true
         )
     end
 end
@@ -279,7 +276,7 @@ function _journal_serve(journal::Journal)
             Agent.invoke_unchecked(invoker) == 0 && sleep(0.001)
         end
     catch error
-        message = "journal worker failed: "*sprint(showerror, error)
+        message = "journal worker failed: " * sprint(showerror, error)
         lock(journal.lock) do
             journal.failure = message
             journal.accepting = false
@@ -301,7 +298,7 @@ function _journal_serve(journal::Journal)
             close(invoker)
         catch error
             lock(journal.lock) do
-                journal.failure = "journal close failed: "*sprint(showerror, error)
+                journal.failure = "journal close failed: " * sprint(showerror, error)
             end
         end
         lock(journal.lock) do
@@ -331,7 +328,7 @@ function Journal(path::AbstractString; capacity::Integer = 8, timeout::Real = 5.
         throw(ArgumentError("invalid journal startup timeout"))
     Threads.threadpool() === :interactive && Threads.nthreads(:default) >= 1 || throw(
         ArgumentError(
-            "journal requires an interactive policy thread and a separate default pool",
+            "journal requires an interactive policy thread and a separate default pool"
         ),
     )
     journal = Journal(

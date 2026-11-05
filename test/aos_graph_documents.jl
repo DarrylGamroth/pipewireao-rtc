@@ -41,8 +41,9 @@ function aos_graph_documents(directory)
     )
     imported = simulation["graphs"]["scc"]
     native = deepcopy(imported)
-    native["nodes"] =
-        [Dict("name" => "optics", "type" => "caller_supplied_optics", "config" => Dict())]
+    native["nodes"] = [
+        Dict("name" => "optics", "type" => "caller_supplied_optics", "config" => Dict())
+    ]
     simulation["graphs"] = Dict(
         "production" => native,
         "calibration" => deepcopy(native),
@@ -106,8 +107,7 @@ function aos_graph_documents(directory)
     document = Dict{String,Any}(
         "version" => 3,
         "plant" => Dict{String,Any}(
-            "definition" => "simulation/definition.yaml",
-            "settings" => Dict(),
+            "definition" => "simulation/definition.yaml", "settings" => Dict()
         ),
         "rtc_configuration" => "rtc/configuration.yaml",
         "instrument" => "instrument.json",

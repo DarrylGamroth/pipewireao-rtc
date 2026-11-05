@@ -8,9 +8,9 @@ const C = PipeWireAORTC.OwnerBootstrapCodec
 const Client = PipeWireAORTC.ControlClient
 const Endpoint = PipeWireAORTC.ControlEndpoint
 function main_gate(microseconds::Cuint)
-    @ccall gc_safe=true usleep(microseconds::Cuint)::Cint
+    @ccall gc_safe = true usleep(microseconds::Cuint)::Cint
 end
-remaining() = Client.monotonic()+10.0
+remaining() = Client.monotonic() + 10.0
 function bootstrap_proof(remote, directory, daemon)
     chmod(dirname(remote), 0o700)
     runtime = R.Runtime(remote, "test.bootstrap", Int64(42))
@@ -53,7 +53,7 @@ function bootstrap_proof(remote, directory, daemon)
         expired = nothing
         try
             expired = ThreadPinning.@spawnat 2 try
-                B.request!(b, :connect; deadline = Client.monotonic()+0.05)
+                B.request!(b, :connect; deadline = Client.monotonic() + 0.05)
             catch error
                 error
             end
@@ -89,8 +89,8 @@ function bootstrap_proof(remote, directory, daemon)
         @test Threads.threadid() == 1
         busy = B.request!(b, :status; deadline = remaining())
         @test busy isa C.Rejection &&
-              busy.header.result < 0 &&
-              busy.lifecycle === C.Prepared
+            busy.header.result < 0 &&
+            busy.lifecycle === C.Prepared
         close(b)
         b = nothing
         R.check_connect!(runtime, ticket)
@@ -129,8 +129,9 @@ function fault_status_proof(remote, directory, daemon)
     runtime = R.Runtime(remote, "test.bootstrap.fault", Int64(43))
     client = nothing
     try
-        client =
-            B.connect(remote, "test.bootstrap.fault", getpid(), 43; deadline = remaining())
+        client = B.connect(
+            remote, "test.bootstrap.fault", getpid(), 43; deadline = remaining()
+        )
         R.fault!(runtime, ErrorException("preparation failed"))
         wait_proof(
             () -> with_thread_loop_lock(runtime.transport.loop) do _
@@ -142,8 +143,9 @@ function fault_status_proof(remote, directory, daemon)
         fault = B.status(client; deadline = remaining())
         @test fault.lifecycle === C.Fault && occursin("preparation failed", fault.message)
         @test B.request!(client, :connect; deadline = remaining()).header.result == -22
-        finishing =
-            ThreadPinning.@spawnat 2 B.request!(client, :quit; deadline = remaining())
+        finishing = ThreadPinning.@spawnat 2 B.request!(
+            client, :quit; deadline = remaining()
+        )
         wait_proof(() -> R.cancelled(runtime), 5, "fault Quit")
         R.finish!(runtime)
         reply = fetch(finishing)
@@ -171,7 +173,9 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
             "loss Prepared",
         )
         applying = ThreadPinning.@spawnat 2 try
-            B.request!(client, :connect; deadline = Client.monotonic()+(remove ? 10 : 0.5))
+            B.request!(
+                client, :connect; deadline = Client.monotonic() + (remove ? 10 : 0.5)
+            )
         catch error
             error
         end
@@ -213,9 +217,8 @@ function accepted_loss_proof(remote, directory, daemon; remove = false)
         @test outcome isa Client.UnknownOutcome || outcome.header.result < 0
         @test Threads.threadid() == 1
     catch error
-        @error "accepted bootstrap loss proof failed before cleanup" exception=(
-            error,
-            catch_backtrace(),
+        @error "accepted bootstrap loss proof failed before cleanup" exception = (
+            error, catch_backtrace()
         )
         rethrow()
     finally

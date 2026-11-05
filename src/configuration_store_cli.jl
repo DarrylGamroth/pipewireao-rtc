@@ -8,7 +8,7 @@ using ..Artifacts
 export main, serve, respond
 const MAX_LINE_BYTES = 2 * 1024 * 1024
 const MAX_REPLY_BYTES = 16 * 1024 * 1024
-const TYPES = Dict(string(T)=>T for T in Artifacts.TARGET_TYPES)
+const TYPES = Dict(string(T) => T for T in Artifacts.TARGET_TYPES)
 
 request_result(request) = throw(ArgumentError("request must be an object"))
 function request_result(request::AbstractDict)
@@ -26,9 +26,10 @@ function request_result(request, operation, arguments::AbstractDict)
     root = get(request, "root", ConfigurationStore.default_root())
     store = configuration_store(root)
     if operation == "register"
-        allowed =
-            ("path", "type", "shape", "hdu", "axes", "label", "scope", "metadata", "schema")
-        all(k->k in allowed, keys(arguments)) ||
+        allowed = (
+            "path", "type", "shape", "hdu", "axes", "label", "scope", "metadata", "schema"
+        )
+        all(k -> k in allowed, keys(arguments)) ||
             throw(ArgumentError("unknown register argument"))
         type = get(TYPES, get(arguments, "type", nothing), nothing)
         type === nothing && throw(ArgumentError("unsupported target type"))
@@ -48,7 +49,7 @@ function request_result(request, operation, arguments::AbstractDict)
             schema = get(arguments, "schema", ""),
         )
     elseif operation == "list"
-        all(k->k in ("limit", "after_sequence"), keys(arguments)) ||
+        all(k -> k in ("limit", "after_sequence"), keys(arguments)) ||
             throw(ArgumentError("unknown list argument"))
         return ConfigurationStore.list_artifacts(
             store;
@@ -56,16 +57,14 @@ function request_result(request, operation, arguments::AbstractDict)
             after_sequence = get(arguments, "after_sequence", 0),
         )
     elseif operation == "get"
-        all(k->k in ("id", "layout"), keys(arguments)) && haskey(arguments, "id") ||
+        all(k -> k in ("id", "layout"), keys(arguments)) && haskey(arguments, "id") ||
             throw(ArgumentError("get requires id and optional layout"))
         return ConfigurationStore.materialize!(
-            store,
-            arguments["id"];
-            storage_order = get(arguments, "layout", "row-major"),
+            store, arguments["id"]; storage_order = get(arguments, "layout", "row-major")
         )
     else
         all(
-            k->k in ("limit", "before_sequence", "session_id", "include_records"),
+            k -> k in ("limit", "before_sequence", "session_id", "include_records"),
             keys(arguments),
         ) || throw(ArgumentError("unknown history argument"))
         return ConfigurationStore.history(
@@ -87,12 +86,12 @@ function respond(line::AbstractString)
         ncodeunits(line) <= MAX_LINE_BYTES ||
             throw(ArgumentError("request exceeds byte limit"))
         request = JSON.parse(line, Dict{String,Any})
-        response = Dict("ok"=>true, "result"=>request_result(request))
+        response = Dict("ok" => true, "result" => request_result(request))
         ncodeunits(JSON.json(response)) <= MAX_REPLY_BYTES ||
             throw(ArgumentError("reply exceeds byte limit; use a smaller page"))
         return response
     catch exception
-        return Dict("ok"=>false, "error"=>sprint(showerror, exception))
+        return Dict("ok" => false, "error" => sprint(showerror, exception))
     end
 end
 
@@ -117,8 +116,8 @@ function serve(input::IO = stdin, output::IO = stdout; responder = respond)
     while !eof(input)
         line = bounded_line(input)
         result =
-            line === nothing ? Dict("ok"=>false, "error"=>"request exceeds byte limit") :
-            responder(line)
+            line === nothing ?
+            Dict("ok" => false, "error" => "request exceeds byte limit") : responder(line)
         JSON.json(output, result)
         write(output, '\n')
         flush(output)

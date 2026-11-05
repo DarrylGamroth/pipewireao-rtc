@@ -60,7 +60,7 @@ struct Configuration
         trip !== nothing && clear !== nothing && clear < trip ||
             throw(ArgumentError("clipping fractions must satisfy 0 ≤ clear < trip ≤ 1"))
         action in (:monitor_only, :hold, :restore_reference) || throw(
-            ArgumentError("action must be :monitor_only, :hold or :restore_reference"),
+            ArgumentError("action must be :monitor_only, :hold or :restore_reference")
         )
         return new(
             trip,
@@ -126,9 +126,17 @@ end
 
 """Return `:Disabled`, `:Unknown`, `:Clear`, `:Pending` or retained `:Tripped`."""
 state(supervisor::Supervisor) =
-    !supervisor.configuration.enabled ? :Disabled :
-    supervisor.tripped ? :Tripped :
-    supervisor.last_fraction === nothing ? :Unknown : supervisor.pending ? :Pending : :Clear
+    if !supervisor.configuration.enabled
+        :Disabled
+    elseif supervisor.tripped
+        :Tripped
+    elseif supervisor.last_fraction === nothing
+        :Unknown
+    elseif supervisor.pending
+        :Pending
+    else
+        :Clear
+    end
 
 """Return the latched trip cause, or `nothing` before a trip/after explicit rearm."""
 reason(supervisor::Supervisor) = supervisor.trip_reason
@@ -155,12 +163,7 @@ persistence interval using the current valid sample. While tripped, valid
 observations only update evidence for explicit rearm and return `:none`.
 """
 function observe!(
-    supervisor::Supervisor,
-    owner_instance,
-    sequence,
-    sample_ns,
-    clipping_fraction;
-    now_ns,
+    supervisor::Supervisor, owner_instance, sequence, sample_ns, clipping_fraction; now_ns
 )
     configuration = supervisor.configuration
     configuration.enabled || return Recommendation(:none, :disabled, false)
@@ -207,7 +210,7 @@ function observe!(
         supervisor.pending_since_ns = sample_ns
     end
     if supervisor.pending &&
-       sample_ns - supervisor.pending_since_ns >= configuration.persistence_ns
+        sample_ns - supervisor.pending_since_ns >= configuration.persistence_ns
         supervisor.tripped = true
         supervisor.trip_reason = :persistent_clipping
         return Recommendation(configuration.action, supervisor.trip_reason, true)

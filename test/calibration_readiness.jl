@@ -13,18 +13,15 @@ const Control = PipeWireAORTC.ControlClient
 function registration_trial(remote, registry, path, trial, wakeup, guard)
     graphs = []
     workers = Transport.CalibrationGraphWorker[]
-    names =
-        ("test.calibration-readiness.$trial.wfs", "test.calibration-readiness.$trial.pdm")
+    names = (
+        "test.calibration-readiness.$trial.wfs", "test.calibration-readiness.$trial.pdm"
+    )
     notify() = CalibrationEndpoint.wake!(wakeup, guard)
     try
         for name in names
             graph = FilterGraphIsland.prepare_service_graph(
                 FilterGraphIsland.parse_arguments([
-                    "--graph",
-                    path,
-                    "--check",
-                    "--execution",
-                    "complete-frame",
+                    "--graph", path, "--check", "--execution", "complete-frame"
                 ]),
             )
             push!(graphs, graph)
@@ -36,9 +33,7 @@ function registration_trial(remote, registry, path, trial, wakeup, guard)
         # Only native registry and worker notifications can make progress.
         # There is no periodic poll or diagnostic wake before this deadline.
         CalibrationEndpoint.await(
-            wakeup,
-            guard,
-            Control.monotonic()+(trial == 1 ? 120 : 10),
+            wakeup, guard, Control.monotonic() + (trial == 1 ? 120 : 10)
         ) do
             for worker in workers
                 if istaskdone(worker.task)
@@ -69,10 +64,7 @@ function registration_trial(remote, registry, path, trial, wakeup, guard)
         foreach(Transport.quit_calibration_graph!, workers)
         for worker in workers
             CalibrationEndpoint.await(
-                () -> istaskdone(worker.task),
-                wakeup,
-                guard,
-                Control.monotonic()+20,
+                () -> istaskdone(worker.task), wakeup, guard, Control.monotonic() + 20
             )
             @test Transport.finish_calibration_graph!(worker).error === nothing
         end
@@ -91,12 +83,12 @@ end
         try
             with_thread_loop_lock(loop) do _
                 context = Context(loop)
-                core = CoreConnection(context; properties = Dict("remote.name"=>remote))
+                core = CoreConnection(context; properties = Dict("remote.name" => remote))
                 registry = Registry(core)
                 listener = add_listener!(
                     registry;
-                    on_global_added = (_...)->(notify(); nothing),
-                    on_global_removed = (_...)->(notify(); nothing),
+                    on_global_added = (_...) -> (notify(); nothing),
+                    on_global_removed = (_...) -> (notify(); nothing),
                 )
             end
             start!(loop)
@@ -114,7 +106,7 @@ end
      } }
      """,
             )
-            for trial = 1:20
+            for trial in 1:20
                 registration_trial(remote, registry, path, trial, wakeup, guard)
             end
         finally

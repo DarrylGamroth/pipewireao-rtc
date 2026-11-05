@@ -7,8 +7,7 @@ const Owner = PipeWireAORTC.AOSOwner
 
 function owner_configuration(directory; backend = "cpu")
     write(
-        joinpath(directory, "simulation.yaml"),
-        "schema_version: 1\nname: declared_test\n",
+        joinpath(directory, "simulation.yaml"), "schema_version: 1\nname: declared_test\n"
     )
     return Dict{String,Any}(
         "version" => 1,
@@ -97,7 +96,7 @@ end
         @test_throws Base.IOError Owner.write_report(options, state, Int64(3), Int64(9))
         @test isdir(path)
         @test read(joinpath(path, "retained"), String) ==
-              "preserve the conflicting directory"
+            "preserve the conflicting directory"
         @test sort(readdir(directory)) == ["simulation.yaml", "simulator-wfs-report.json"]
         @test_throws ArgumentError Owner.write_report(
             options,
@@ -138,16 +137,16 @@ end
         @test Owner.arguments([argv; ["--pupil-output-cpu", "9"]]).pupil_output_cpu == 9
         @test_throws ArgumentError Owner.arguments([argv; ["--pupil-output-cpu", "1"]])
         @test_throws ArgumentError Owner.arguments(
-            [argv; ["--pupil-output-cpu", "8", "--optical-diagnostics-cpu", "8"]],
+            [argv; ["--pupil-output-cpu", "8", "--optical-diagnostics-cpu", "8"]]
         )
         @test Owner.arguments([argv; ["--optical-diagnostics-cpu", "8"]]).optical_diagnostics_cpu ==
-              8
+            8
         @test_throws ArgumentError Owner.arguments([argv; ["--transport-cpu", "7"]])
         @test Owner.arguments([argv; ["--pipewire-cpu", "7"]]).pipewire_cpu == 7
         for cpu in ("-1", "0", "1", "many", "1.5")
             @test_throws ArgumentError Owner.arguments([argv; ["--pipewire-cpu", cpu]])
             @test_throws ArgumentError Owner.arguments(
-                [argv; ["--optical-diagnostics-cpu", cpu]],
+                [argv; ["--optical-diagnostics-cpu", cpu]]
             )
         end
         @test default_timing.phase_timing_directory === nothing
@@ -284,7 +283,7 @@ end
             run = options -> push!(events, :run),
         ) == 0
         @test events ==
-              [:preparing, :check, :science, :check, :cuda, :check, :run, :cleanup]
+            [:preparing, :check, :science, :check, :cuda, :check, :run, :cleanup]
         empty!(events)
         document["backend"] = "amdgpu"
         document["device"] = 1
@@ -299,7 +298,7 @@ end
             run = options -> push!(events, :run),
         ) == 0
         @test events ==
-              [:preparing, :check, :science, :check, :amdgpu, :check, :run, :cleanup]
+            [:preparing, :check, :science, :check, :amdgpu, :check, :run, :cleanup]
         document["device"] = 0
         write(path, JSON.json(document))
         @test_throws ArgumentError Owner.configuration(path)
@@ -316,9 +315,7 @@ end
                 end
             end
         @test_throws InterruptException Owner._main(
-            argv;
-            with_owner = cancelled,
-            load_science = () -> push!(events, :science),
+            argv; with_owner = cancelled, load_science = () -> push!(events, :science)
         )
         @test events == [:preparing, :cleanup]
         @test !any(
@@ -388,15 +385,14 @@ end
         @test only(prepared).provenance["axes"] == [2, 1]
         @test only(prepared).provenance["target_shape"] == [3, 2]
         @test_throws InterruptException Owner.prepare_bindings(
-            options.artifacts;
-            check = () -> throw(InterruptException()),
+            options.artifacts; check = () -> throw(InterruptException())
         )
         @test sort(readdir(directory)) == ["grid.fits", "owner.conf", "simulation.yaml"]
         # Selection is exact, and the square case still requires explicit axes.
         document["artifacts"][1]["shape"] = [2, 3]
         write(path, JSON.json(document))
         @test_throws DimensionMismatch Owner.prepare_bindings(
-            Owner.configuration(path).artifacts,
+            Owner.configuration(path).artifacts
         )
     end
 end
@@ -424,23 +420,23 @@ end
         @test isempty(options.artifacts)
         @test options.config_path == path
         @test options.plant ==
-              (; package = :REVOLTClassicSim, settings = (; profile = "grid_gaussian"))
+            (; package = :REVOLTClassicSim, settings = (; profile = "grid_gaussian"))
         @test isconcretetype(typeof(options.plant))
         @test options.frame_encoding === :uint16
         @test options.calibration_identity == "classic-test-startup-calibration"
         @test Owner.plant_settings(Dict("value" => "")) == (; value = "")
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => "\0"))
         @test_throws ArgumentError Owner.plant_settings(
-            Dict("value" => repeat("a", 16 * 1024 + 1)),
+            Dict("value" => repeat("a", 16 * 1024 + 1))
         )
         @test Owner.plant_settings(
-            Dict("nested" => [1, true, nothing, Dict("value" => 2.0)]),
+            Dict("nested" => [1, true, nothing, Dict("value" => 2.0)])
         ) == (; nested = (1, true, nothing, (; value = 2.0)))
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => Inf))
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => :symbol))
         @test_throws ArgumentError Owner.plant_settings(Dict("value" => zeros(4096)))
         deep = Dict{String,Any}("value" => 1)
-        for _ = 1:17
+        for _ in 1:17
             deep = Dict{String,Any}("nested" => deep)
         end
         @test_throws ArgumentError Owner.plant_settings(deep)

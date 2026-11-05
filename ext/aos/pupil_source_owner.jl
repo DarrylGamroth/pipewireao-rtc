@@ -18,32 +18,32 @@ using AdaptiveOpticsSim.AlgorithmGraphs:
     release_graph_output_snapshot!,
     reset_graph_output_snapshot!
 import PipeWireAORTC
-const IC=PipeWireAORTC.InstrumentConfiguration
-const Offsets=PipeWireAORTC.PhysicalOffsets
-const Extension=parentmodule(@__MODULE__)
+const IC = PipeWireAORTC.InstrumentConfiguration
+const Offsets = PipeWireAORTC.PhysicalOffsets
+const Extension = parentmodule(@__MODULE__)
 
-function Owner.prepare_pupil_source_science(options; check = ()->nothing)
+function Owner.prepare_pupil_source_science(options; check = () -> nothing)
     check()
-    device=target(options)
-    execution=options.backend===:cpu ? StreamGraphExecution() : CapturedGraphExecution()
-    system=IC.prepare_system(
+    device = target(options)
+    execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
+    system = IC.prepare_system(
         options.plant.definition;
         settings = options.plant.settings,
         simulation_graph = options.plant.graph,
         target = device,
         execution,
     )
-    system.boundary===nothing ||
+    system.boundary === nothing ||
         throw(ArgumentError("pupil source cannot own an HIL camera boundary"))
-    command=graph_input(system.graph, options.command_input)
-    eltype(command)===Float32 && size(command)==(options.command_count,) || throw(
-        DimensionMismatch("pupil source command differs from physical Float32 vector"),
+    command = graph_input(system.graph, options.command_input)
+    eltype(command) === Float32 && size(command) == (options.command_count,) || throw(
+        DimensionMismatch("pupil source command differs from physical Float32 vector")
     )
     all(iszero, Array(command)) ||
         throw(ArgumentError("pupil source physical command must start at zero"))
-    driver=FixedStepModelTimeDriver(PeriodicSchedule(; period_ns = options.period_ns))
-    science=merge(system, (; driver, command))
-    publisher=PupilOutput.prepare(options, science)
+    driver = FixedStepModelTimeDriver(PeriodicSchedule(; period_ns = options.period_ns))
+    science = merge(system, (; driver, command))
+    publisher = PupilOutput.prepare(options, science)
     try
         warmup!(science, publisher; check)
     catch
@@ -54,24 +54,22 @@ function Owner.prepare_pupil_source_science(options; check = ()->nothing)
 end
 
 "Warm the actual graph and packet packing, then restore the first model phase."
-function warmup!(science, publisher; check = ()->nothing)
+function warmup!(science, publisher; check = () -> nothing)
     try
         check()
         step_graph_at!(science.graph, science.driver)
         check()
         PupilOutput.sample!(publisher; generation = UInt64(1), model_ns = Int64(0)) ||
             error("pupil source warmup snapshot unavailable")
-        deadline=time_ns()+UInt64(30_000_000_000)
+        deadline = time_ns() + UInt64(30_000_000_000)
         while !poll_graph_output_snapshot!(publisher.snapshot)
             check()
-            time_ns()<deadline || error("pupil source warmup snapshot timed out")
+            time_ns() < deadline || error("pupil source warmup snapshot timed out")
             yield()
         end
         try
             PupilOutput.pack!(
-                publisher.packet,
-                snapshot_values(publisher.snapshot),
-                publisher.amplitude,
+                publisher.packet, snapshot_values(publisher.snapshot), publisher.amplitude
             )
         finally
             release_graph_output_snapshot!(publisher.snapshot)
@@ -93,9 +91,9 @@ end
 function step!(science, publisher, receiver, command; generation::UInt64)
     publisher.failed[] && error("required scientific pupil output failed")
     copyto!(science.command, command)
-    timestamp=step_graph_at!(science.graph, science.driver)
-    sequence=model_time_sequence(science.driver)
-    pts=model_nanoseconds(timestamp)
+    timestamp = step_graph_at!(science.graph, science.driver)
+    sequence = model_time_sequence(science.driver)
+    pts = model_nanoseconds(timestamp)
     Offsets.observe_clock!(
         receiver,
         AcquisitionIdentity(publisher.domain, generation, sequence),
@@ -110,22 +108,21 @@ end
 
 function applied_command_option(options)
     options.applied_command_observation || return nothing
-    properties=merge(
+    properties = merge(
         PipeWireAORTC.InstrumentDefinition.mirror_properties(
-            options,
-            Symbol(options.mirror),
+            options, Symbol(options.mirror)
         ),
         Dict(
-            "node.loop.name"=>"telemetry-loop",
-            "node.group"=>"pipewireao-applied-observation",
-            "node.sync-group"=>"sync.pipewireao-applied-observation",
-            "pipewireao.header.pts.clock"=>"model",
-            "aos.simulation.command-order"=>options.command_order,
-            "aos.simulation.calibration-identity"=>options.calibration_identity,
+            "node.loop.name" => "telemetry-loop",
+            "node.group" => "pipewireao-applied-observation",
+            "node.sync-group" => "sync.pipewireao-applied-observation",
+            "pipewireao.header.pts.clock" => "model",
+            "aos.simulation.command-order" => options.command_order,
+            "aos.simulation.calibration-identity" => options.calibration_identity,
         ),
     )
     return PipeWireArrayStreamOptions(;
-        node_name = "simulator-"*options.mirror*"-applied",
+        node_name = "simulator-" * options.mirror * "-applied",
         media_name = "dm-applied",
         buffers = 3,
         reference_clock = Extension.prepare_reference_clock(options),
@@ -142,23 +139,22 @@ function applied_command_option(options)
 end
 
 function observe_command!(inputs, values, command, publisher, state)
-    index=inputs.applied_command
-    index==0 && return nothing
+    index = inputs.applied_command
+    index == 0 && return nothing
     # The completed model step adopted exactly this source-owned command.
     # Convert metres to the established applied-command micrometre schema.
-    @. values=command/1.0f-6
-    identity=AcquisitionIdentity(publisher.domain, UInt64(state.generation), state.sequence)
-    pts=Base.checked_sub(inputs.prepared.receiver.clock_end_ns, Int64(publisher.period_ns))
+    @. values = command / 1.0f-6
+    identity = AcquisitionIdentity(
+        publisher.domain, UInt64(state.generation), state.sequence
+    )
+    pts = Base.checked_sub(
+        inputs.prepared.receiver.clock_end_ns, Int64(publisher.period_ns)
+    )
     if stage_pipewire_array!(
-        inputs.transport,
-        index,
-        values;
-        identity,
-        pts,
-        duration = publisher.period_ns,
+        inputs.transport, index, values; identity, pts, duration = publisher.period_ns
     )
         with_array_stream(inputs.transport, index) do stream
-            stream_state(stream)==PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
+            stream_state(stream) == PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING &&
                 is_driving(stream) &&
                 trigger_process!(stream)
         end
@@ -174,12 +170,12 @@ end
 
 function consume_control!(options, mailbox, filter, state, reset_owner!)
     mailbox.ready[] || return nothing
-    loop=options.bootstrap_runtime.transport.loop
-    kind, token, running=with_thread_loop_lock(loop) do _
+    loop = options.bootstrap_runtime.transport.loop
+    kind, token, running = with_thread_loop_lock(loop) do _
         SourceControl.pending(mailbox)
     end
-    if kind!=SourceControl.INITIAL
-        result=SourceControl.apply!(
+    if kind != SourceControl.INITIAL
+        result = SourceControl.apply!(
             state,
             kind,
             token,
@@ -188,20 +184,14 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
             max(options.pacing_period_ns, UInt64(1)),
             reset_owner!,
         )
-        if result==0
+        if result == 0
             # Pause commits this source cursor. Its already committed snapshot
             # may finish below that watermark; retain it across Pause/Run.
-            kind==SourceControl.RESET && report!(options, mailbox, state)
+            kind == SourceControl.RESET && report!(options, mailbox, state)
         end
         with_thread_loop_lock(loop) do _
             SourceControl.publish!(
-                mailbox,
-                filter,
-                kind,
-                token,
-                result,
-                state,
-                state.generation,
+                mailbox, filter, kind, token, result, state, state.generation
             )
         end
     end
@@ -212,37 +202,36 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
 end
 
 function run!(options, science, prepared, mailbox, state)
-    runtime=options.bootstrap_runtime
-    transport=runtime.transport
-    publisher=science.publisher
+    runtime = options.bootstrap_runtime
+    transport = runtime.transport
+    publisher = science.publisher
     Bootstrap.prepared!(runtime)
-    ticket=Bootstrap.take_connect!(runtime)
+    ticket = Bootstrap.take_connect!(runtime)
     Bootstrap.check_connect!(runtime, ticket)
-    applied_command=applied_command_option(options)
-    applied_values=applied_command===nothing ? Float32[] :
-                   zeros(Float32, options.command_count)
+    applied_command = applied_command_option(options)
+    applied_values =
+        applied_command === nothing ? Float32[] : zeros(Float32, options.command_count)
     Offsets.with_receiver(prepared; remote = options.remote, applied_command) do inputs
-        cpu=get(options, :pipewire_cpu, nothing)
-        cpu===nothing || PipeWireAORTC.Placement.pin_loop!(
-            inputs.transport.loop,
-            cpu;
-            check = options.owner_check,
+        cpu = get(options, :pipewire_cpu, nothing)
+        cpu === nothing || PipeWireAORTC.Placement.pin_loop!(
+            inputs.transport.loop, cpu; check = options.owner_check
         )
-        filter=nothing
+        filter = nothing
         try
             with_thread_loop_lock(transport.loop) do _
-                properties=merge(
+                properties = merge(
                     SourceControl.source_properties(mailbox),
                     Extension.simulation_properties(options, science),
                     Dict(
-                        "node.name"=>options.control_node,
-                        "media.class"=>"Control",
-                        "aos.simulation.mode"=>"pupil-source",
-                        "aos.simulation.prescription-identity"=>options.prescription_identity,
-                        "aos.simulation.command-order"=>options.command_order,
+                        "node.name" => options.control_node,
+                        "media.class" => "Control",
+                        "aos.simulation.mode" => "pupil-source",
+                        "aos.simulation.prescription-identity" =>
+                            options.prescription_identity,
+                        "aos.simulation.command-order" => options.command_order,
                     ),
                 )
-                filter=Filter(
+                filter = Filter(
                     transport.core,
                     options.control_node;
                     properties,
@@ -250,7 +239,7 @@ function run!(options, science, prepared, mailbox, state)
                 )
                 connect!(
                     filter;
-                    flags = FILTER_ASYNC|FILTER_INACTIVE,
+                    flags = FILTER_ASYNC | FILTER_INACTIVE,
                     params = mailbox.parameters.params,
                 )
             end
@@ -258,11 +247,11 @@ function run!(options, science, prepared, mailbox, state)
                 publisher;
                 remote = options.remote,
                 cpu = get(options, :pupil_output_cpu, nothing),
-                check = ()->Bootstrap.check_connect!(runtime, ticket),
+                check = () -> Bootstrap.check_connect!(runtime, ticket),
             )
             while true
                 Bootstrap.check_connect!(runtime, ticket)
-                registered=with_thread_loop_lock(transport.loop) do _
+                registered = with_thread_loop_lock(transport.loop) do _
                     node_id(filter) ∉ (UInt32(0), typemax(UInt32))
                 end
                 registered &= all(eachindex(inputs.transport.streams)) do index
@@ -280,40 +269,36 @@ function run!(options, science, prepared, mailbox, state)
             Bootstrap.connected!(runtime, ticket)
             Bootstrap.await_connected!(runtime, ticket)
             reset_owner! =
-                ()->begin
+                () -> begin
                     PupilOutput.drain!(publisher; check = options.owner_check)
                     Offsets.reset_inputs!(inputs)
                     reset_science!(science)
-                    state.generation=Base.checked_add(state.generation, Int64(1))
-                    inputs.applied_command==0 || reset_pipewire_array!(
+                    state.generation = Base.checked_add(state.generation, Int64(1))
+                    inputs.applied_command == 0 || reset_pipewire_array!(
                         inputs.transport,
                         inputs.applied_command;
                         identity = AcquisitionIdentity(
-                            publisher.domain,
-                            UInt64(state.generation),
-                            UInt64(0),
+                            publisher.domain, UInt64(state.generation), UInt64(0)
                         ),
                     )
                     fill!(applied_values, 0)
-                    state.sequence=0
-                    state.completed=false
-                    state.deadline_ns=0
+                    state.sequence = 0
+                    state.completed = false
+                    state.deadline_ns = 0
                     PupilOutput.reset!(
-                        publisher,
-                        UInt64(state.generation);
-                        check = options.owner_check,
+                        publisher, UInt64(state.generation); check = options.owner_check
                     )
                 end
             while !Bootstrap.cancelled(runtime)
                 consume_control!(options, mailbox, filter, state, reset_owner!)
                 Bootstrap.cancelled(runtime) && break
-                if !state.running || time_ns()<state.deadline_ns
+                if !state.running || time_ns() < state.deadline_ns
                     yield()
                     GC.safepoint()
                     continue
                 end
-                command=Offsets.poll!(inputs)
-                state.sequence=step!(
+                command = Offsets.poll!(inputs)
+                state.sequence = step!(
                     science,
                     publisher,
                     prepared.inputs.receiver,
@@ -321,18 +306,17 @@ function run!(options, science, prepared, mailbox, state)
                     generation = UInt64(state.generation),
                 )
                 observe_command!(inputs, applied_values, command, publisher, state)
-                state.deadline_ns=options.pacing_period_ns==0 ? UInt64(0) :
-                                  Extension.next_deadline(
-                    state.deadline_ns,
-                    options.pacing_period_ns,
-                    time_ns(),
-                )
+                state.deadline_ns =
+                    options.pacing_period_ns == 0 ? UInt64(0) :
+                    Extension.next_deadline(
+                        state.deadline_ns, options.pacing_period_ns, time_ns()
+                    )
             end
         finally
             Bootstrap.finishing!(runtime)
-            PupilOutput.drain!(publisher; check = ()->nothing)
+            PupilOutput.drain!(publisher; check = () -> nothing)
             with_thread_loop_lock(transport.loop) do _
-                filter===nothing || close(filter)
+                filter === nothing || close(filter)
             end
         end
     end
@@ -340,37 +324,38 @@ function run!(options, science, prepared, mailbox, state)
 end
 
 function Owner.run_pupil_source_owner(options)
-    options=merge(
+    options = merge(
         options,
         (; configuration_sha256 = PipeWireAORTC.Common.sha256_file(options.config_path)),
     )
-    state=OwnerState()
-    mailbox=SourceControl.Mailbox(Int64(rand(UInt64)%UInt64(typemax(Int64)))+Int64(1))
-    failures=Exception[]
-    science=nothing
+    state = OwnerState()
+    mailbox = SourceControl.Mailbox(Int64(rand(UInt64) % UInt64(typemax(Int64))) + Int64(1))
+    failures = Exception[]
+    science = nothing
     try
-        prepared=Offsets.prepare(
+        prepared = Offsets.prepare(
             options.physical_offsets;
             options.command_count,
             options.command_order,
             options.calibration_identity,
         )
-        names=[row["node_name"] for row in values(prepared.inputs.declaration["branches"])]
-        reserved=(
+        names = [
+            row["node_name"] for row in values(prepared.inputs.declaration["branches"])
+        ]
+        reserved = (
             options.control_node,
             options.bootstrap_node,
             PupilOutput.NODE_NAME,
             (
                 options.applied_command_observation ?
-                ("simulator-"*options.mirror*"-applied",) : ()
+                ("simulator-" * options.mirror * "-applied",) : ()
             )...,
         )
-        all(name->name ∉ reserved, names) ||
+        all(name -> name ∉ reserved, names) ||
             throw(ArgumentError("pupil source native node names collide"))
-        science=Owner.prepare_pupil_source_science(options; check = options.owner_check)
-        options=merge(
-            options,
-            (; pupil_output_status = ()->PupilOutput.status(science.publisher)),
+        science = Owner.prepare_pupil_source_science(options; check = options.owner_check)
+        options = merge(
+            options, (; pupil_output_status = () -> PupilOutput.status(science.publisher))
         )
         report!(options, mailbox, state)
         run!(options, science, prepared, mailbox, state)
@@ -381,11 +366,11 @@ function Owner.run_pupil_source_owner(options)
         end
     finally
         Bootstrap.finishing!(options.bootstrap_runtime)
-        if science!==nothing
+        if science !== nothing
             fill!(science.command, 0)
             PupilOutput.close!(science.publisher)
         end
-        state.running=false
+        state.running = false
         try
             Owner.write_report(options, state, state.generation, mailbox.instance; failures)
         catch error
@@ -393,7 +378,7 @@ function Owner.run_pupil_source_owner(options)
         end
     end
     isempty(failures) ||
-        throw(length(failures)==1 ? only(failures) : CompositeException(failures))
+        throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
 end
 end

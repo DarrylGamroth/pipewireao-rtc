@@ -8,10 +8,10 @@ const GraphOwner = PipeWireAORTC.GraphOwner
     mktemp() do path, io
         close(io)
         document = Dict{String,Any}(
-            "version"=>1,
-            "input"=>"image",
-            "exposure_duration_ns"=>10_000_000,
-            "trigger_high_is_fringed"=>true,
+            "version" => 1,
+            "input" => "image",
+            "exposure_duration_ns" => 10_000_000,
+            "trigger_high_is_fringed" => true,
         )
         PipeWireAORTC.Common.write_yaml(path, document)
         @test GraphOwner.read_chopped_warmup(path) == (;
@@ -20,18 +20,18 @@ const GraphOwner = PipeWireAORTC.GraphOwner
             trigger_high_is_fringed = true,
         )
         for change in (
-            d->(d["version"]=true),
-            d->(d["input"]="bad input"),
-            d->(d["exposure_duration_ns"]=0),
-            d->(d["trigger_high_is_fringed"]=1),
-            d->(d["period"]=2),
+            d -> (d["version"] = true),
+            d -> (d["input"] = "bad input"),
+            d -> (d["exposure_duration_ns"] = 0),
+            d -> (d["trigger_high_is_fringed"] = 1),
+            d -> (d["period"] = 2),
         )
-            invalid=deepcopy(document)
+            invalid = deepcopy(document)
             change(invalid)
             PipeWireAORTC.Common.write_yaml(path, invalid)
             @test_throws ArgumentError GraphOwner.read_chopped_warmup(path)
         end
-        argv=[
+        argv = [
             "--bootstrap-node",
             "rtc.bootstrap.graph",
             "--bootstrap-instance",
@@ -64,8 +64,9 @@ end
         "--fits-bindings",
         "bindings.conf",
     ]
-    binding, graph, fits, correction_properties, timeout_ms, recovery_nodes =
-        GraphOwner.arguments(argv)
+    binding, graph, fits, correction_properties, timeout_ms, recovery_nodes = GraphOwner.arguments(
+        argv
+    )
     @test isempty(correction_properties)
     @test isempty(recovery_nodes)
     @test timeout_ms == 5000
@@ -75,7 +76,7 @@ end
         bootstrap_instance = 7,
     )
     @test graph ==
-          ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
+        ["--remote", "/tmp/rtc-private", "--graph", "graph.conf", "--session-run-control"]
     @test fits == "bindings.conf"
     with_loop = GraphOwner.arguments([argv; "--correction-property"; "controller:closed"])
     @test with_loop[4] == ["controller:closed"]
@@ -117,7 +118,7 @@ end
             "--correction-property=b:closed",
             "--recovery-node=b",
         ],
-        [["--correction-property=a$i:closed" for i = 1:17]; "--recovery-node=x"],
+        [["--correction-property=a$i:closed" for i in 1:17]; "--recovery-node=x"],
     )
         @test_throws ArgumentError GraphOwner.arguments([argv; extra])
     end
@@ -127,7 +128,7 @@ end
             "--correction-property=controller:closed";
             "--correction-timeout-ms";
             "2000"
-        ],
+        ]
     )
     @test timed[5] == 2000
     @test timed[2] == graph
@@ -152,7 +153,7 @@ end
     )
     for invalid in ("closed", ":closed", "controller:", "a:b:c", "controller:\0closed")
         @test_throws ArgumentError GraphOwner.arguments(
-            [argv; "--correction-property"; invalid],
+            [argv; "--correction-property"; invalid]
         )
     end
     @test_throws ArgumentError GraphOwner.arguments(
@@ -270,55 +271,46 @@ end
         @test only(updates).second == permutedims(values)
         @test only(updates).second isa Matrix{Float32}
         @test sort(readdir(directory)) ==
-              ["bindings.conf", "bindings.json", "reference.fits"]
+            ["bindings.conf", "bindings.json", "reference.fits"]
         @test_throws DimensionMismatch GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = Float32, shape = (2, 3))),
+            entries, (; reference = (; element_type = Float32, shape = (2, 3)))
         )
         transposed = [
             GraphOwner.FITSBinding(
-                :reference,
-                PipeWireAORTC.Artifacts.FITSArtifact(path; axes = (1, 2)),
+                :reference, PipeWireAORTC.Artifacts.FITSArtifact(path; axes = (1, 2))
             ),
         ]
         @test_throws DimensionMismatch GraphOwner.prepare_bindings(transposed, formats)
         @test only(
             GraphOwner.prepare_bindings(
-                entries,
-                (; reference = (; element_type = Float64, shape = (3, 2))),
+                entries, (; reference = (; element_type = Float64, shape = (3, 2)))
             ),
         ).second isa Matrix{Float64}
         rm(path)
         # All graph format checks precede opening even the first FITS source.
         @test_throws r"Graph has no external Parameter Port" GraphOwner.prepare_bindings(
-            entries,
-            (;),
+            entries, (;)
         )
         @test_throws r"unsupported FITS parameter type" GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = UInt64, shape = (3, 2))),
+            entries, (; reference = (; element_type = UInt64, shape = (3, 2)))
         )
         @test_throws r"artifact dimensions must be positive integers" GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = Float32, shape = (0, 2))),
+            entries, (; reference = (; element_type = Float32, shape = (0, 2)))
         )
         @test_throws r"artifact dimensions must be positive integers" GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = Float32, shape = (true, 2))),
+            entries, (; reference = (; element_type = Float32, shape = (true, 2)))
         )
         @test_throws r"decoded artifact exceeds 256 MiB" GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = Float32, shape = (67108865, 1))),
+            entries, (; reference = (; element_type = Float32, shape = (67108865, 1)))
         )
         @test_throws DimensionMismatch GraphOwner.prepare_bindings(
-            entries,
-            (; reference = (; element_type = Float32, shape = (6,))),
+            entries, (; reference = (; element_type = Float32, shape = (6,)))
         )
-        no_axes =
-            [GraphOwner.FITSBinding(:reference, PipeWireAORTC.Artifacts.FITSArtifact(path))]
+        no_axes = [
+            GraphOwner.FITSBinding(:reference, PipeWireAORTC.Artifacts.FITSArtifact(path))
+        ]
         @test_throws r"multidimensional FITS binding requires axes" GraphOwner.prepare_bindings(
-            no_axes,
-            formats,
+            no_axes, formats
         )
         second = GraphOwner.FITSBinding(:second, only(entries).source)
         @test_throws r"artifact dimensions must be positive integers" GraphOwner.prepare_bindings(
@@ -338,13 +330,10 @@ end
             ),
         )
         @test_throws r"duplicate FITS parameter" GraphOwner.prepare_bindings(
-            [entries; entries],
-            formats,
+            [entries; entries], formats
         )
         @test_throws InterruptException GraphOwner.prepare_bindings(
-            entries,
-            formats;
-            check = () -> throw(InterruptException()),
+            entries, formats; check = () -> throw(InterruptException())
         )
         for invalid in (
             """{"parameters":[{"port":"r","path":"x","shape":[2,2]}]}""",
@@ -368,7 +357,8 @@ end
             write(fits, Float32[3, 4])
         end
         entries = [
-            GraphOwner.FITSBinding(port, PipeWireAORTC.Artifacts.FITSArtifact(path; hdu)) for (port, hdu) in ((:first, 1), (:second, 2))
+            GraphOwner.FITSBinding(port, PipeWireAORTC.Artifacts.FITSArtifact(path; hdu))
+            for (port, hdu) in ((:first, 1), (:second, 2))
         ]
         formats = (;
             first = (; element_type = Float32, shape = (2,)),
@@ -379,8 +369,8 @@ end
         @test first_hdu.data == Float32[1, 2]
         @test second_hdu.data == Float32[3, 4]
         @test first_hdu.provenance["original_sha256"] ==
-              second_hdu.provenance["original_sha256"] ==
-              PipeWireAORTC.InstrumentCalibration.digest(path)
+            second_hdu.provenance["original_sha256"] ==
+            PipeWireAORTC.InstrumentCalibration.digest(path)
         @test first_hdu.provenance["sha256"] != second_hdu.provenance["sha256"]
         @test first_hdu.provenance["hdu"] == 1 && second_hdu.provenance["hdu"] == 2
         @test first_hdu.provenance["axes"] == second_hdu.provenance["axes"] == [1]
@@ -405,8 +395,7 @@ end
                 write(fits, values)
             end
             @test_throws ArgumentError GraphOwner.prepare_bindings(
-                [entry],
-                (; values = (; element_type = T, shape = (2,))),
+                [entry], (; values = (; element_type = T, shape = (2,)))
             )
         end
     end

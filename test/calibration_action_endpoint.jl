@@ -44,9 +44,7 @@ function action_retirement_proof(socket, directory, daemon)
             )
             push!(clients, client)
             command = Actions.Command(
-                typemax(UInt64),
-                (UInt64(1) << 63) + UInt64(index),
-                Actions.Hold(),
+                typemax(UInt64), (UInt64(1) << 63) + UInt64(index), Actions.Hold()
             )
             budget = cause === :deadline ? 0.5 : 10.0
             pending_request = @async try

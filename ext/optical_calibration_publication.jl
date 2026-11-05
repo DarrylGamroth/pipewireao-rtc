@@ -1,9 +1,10 @@
 "Require the published CoG to subtract its calibrated reference before reconstruction."
 function validate_optical_centroid_graph(graph, name, measurement)
     specification = graph["filter.graph"]
-    parameter = Symbol(string(name)*"-coordinates")
-    ports =
-        filter(port -> calibration_port(port).name == parameter, specification["inputs"])
+    parameter = Symbol(string(name) * "-coordinates")
+    ports = filter(
+        port -> calibration_port(port).name == parameter, specification["inputs"]
+    )
     length(ports) == 1 ||
         throw(ArgumentError("centroid graph requires its measured coordinates parameter"))
     endpoint = calibration_port(only(ports))
@@ -13,11 +14,10 @@ function validate_optical_centroid_graph(graph, name, measurement)
     node = only(nodes)
     node["label"] == "center-of-gravity-f32" &&
     node["config"]["pixel_count"] == count(measurement.mask) || throw(
-        ArgumentError("centroid graph differs from the calibrated selected pixel count"),
+        ArgumentError("centroid graph differs from the calibrated selected pixel count")
     )
     pixel_links = filter(
-        link -> link["input"] == node["name"]*":pixels",
-        get(specification, "links", []),
+        link -> link["input"] == node["name"] * ":pixels", get(specification, "links", [])
     )
     length(pixel_links) == 1 ||
         throw(ArgumentError("centroid graph requires one selected-pixel input"))
@@ -32,14 +32,14 @@ function validate_optical_centroid_graph(graph, name, measurement)
     selected["label"] == "pixel-selection-f32" &&
     Tuple(selected["config"]["image_size"]) == size(measurement.mask) &&
     selected["config"]["mask"] == vec(permutedims(measurement.mask, (2, 1))) || throw(
-        ArgumentError("centroid graph differs from the measured row-major pixel mask"),
+        ArgumentError("centroid graph differs from the measured row-major pixel mask")
     )
     any(
-        port -> calibration_port(port).endpoint == selected["name"]*":image",
+        port -> calibration_port(port).endpoint == selected["name"] * ":image",
         get(specification, "inputs", []),
     ) &&
     !any(
-        link -> link["input"] == selected["name"]*":image",
+        link -> link["input"] == selected["name"] * ":image",
         get(specification, "links", []),
     ) || throw(
         ArgumentError(
@@ -47,7 +47,7 @@ function validate_optical_centroid_graph(graph, name, measurement)
         ),
     )
     reconstruction_ports = filter(
-        port -> calibration_port(port).name == Symbol(string(name)*"-reconstructor"),
+        port -> calibration_port(port).name == Symbol(string(name) * "-reconstructor"),
         specification["inputs"],
     )
     length(reconstruction_ports) == 1 ||
@@ -63,8 +63,8 @@ function validate_optical_centroid_graph(graph, name, measurement)
     endswith(reconstruction_endpoint.endpoint, ":reconstructor") &&
     any(
         link ->
-            link["output"] == node["name"]*":centroid-offset" &&
-            link["input"] == reconstruction["name"]*":ordered-input",
+            link["output"] == node["name"] * ":centroid-offset" &&
+            link["input"] == reconstruction["name"] * ":ordered-input",
         get(specification, "links", []),
     ) || throw(
         ArgumentError(
@@ -72,11 +72,11 @@ function validate_optical_centroid_graph(graph, name, measurement)
         ),
     )
     reference_ports = filter(
-        port -> calibration_port(port).name == Symbol(string(name)*"-modal-reference"),
+        port -> calibration_port(port).name == Symbol(string(name) * "-modal-reference"),
         specification["inputs"],
     )
     length(reference_ports) == 1 || throw(
-        ArgumentError("centroid graph requires its measured modal reference parameter"),
+        ArgumentError("centroid graph requires its measured modal reference parameter")
     )
     reference_endpoint = calibration_port(only(reference_ports))
     reference = only(
@@ -89,12 +89,12 @@ function validate_optical_centroid_graph(graph, name, measurement)
     endswith(reference_endpoint.endpoint, ":offset") &&
     any(
         link ->
-            link["output"] == reconstruction["name"]*":output" &&
-            link["input"] == reference["name"]*":requested",
+            link["output"] == reconstruction["name"] * ":output" &&
+            link["input"] == reference["name"] * ":requested",
         get(specification, "links", []),
     ) || throw(
         ArgumentError(
-            "centroid graph must apply the calibrated measured-minus-reference sign",
+            "centroid graph must apply the calibrated measured-minus-reference sign"
         ),
     )
     properties = get(node, "props", Dict())
@@ -111,12 +111,12 @@ end
 
 # Resolve retained optical controller templates only after acquiring real matrices.
 validate_optical_graphs(graphs, contexts, names) = throw(
-    ArgumentError("concrete graphs and contexts must name every recipe branch in order"),
+    ArgumentError("concrete graphs and contexts must name every recipe branch in order")
 )
 function validate_optical_graphs(graphs::NamedTuple, contexts::NamedTuple, names)
     keys(graphs) == keys(contexts) == names || throw(
         ArgumentError(
-            "concrete graphs and contexts must name every recipe branch in order",
+            "concrete graphs and contexts must name every recipe branch in order"
         ),
     )
     foreach(validate_optical_context, contexts)
@@ -130,8 +130,9 @@ function optical_publication_plan(application, selected; graphs, configuration, 
     Export = PipeWireAORTC.InstrumentExport
     D = PipeWireAORTC.DeploymentConfiguration
     if graphs === nothing
-        declaration =
-            PipeWireAORTC.Common.read_yaml(D.relative_asset(application, configuration))
+        declaration = PipeWireAORTC.Common.read_yaml(
+            D.relative_asset(application, configuration)
+        )
         IC.fields(
             declaration,
             (
@@ -153,7 +154,7 @@ function optical_publication_plan(application, selected; graphs, configuration, 
     simulation = D.decode(D.relative_asset(application, "simulation.conf"), prefix)
     get(simulation, "version", nothing) in (4, 6) &&
     get(simulation, "mode", nothing) in ("external-pupil", "clocked-optical") || throw(
-        ArgumentError("optical publication requires a built external-pupil application"),
+        ArgumentError("optical publication requires a built external-pupil application")
     )
     rtc = IC.load_rtc(D.relative_asset(application, simulation["rtc_configuration"]))
     plant = simulation["plant"]
@@ -161,25 +162,25 @@ function optical_publication_plan(application, selected; graphs, configuration, 
     chopping = options.plant.chopping
     definition = D.relative_asset(application, plant["definition"])
     Calibration.digest(definition) == Calibration.digest(
-        D.relative_asset(application, selected.document["optical_simulation"]),
+        D.relative_asset(application, selected.document["optical_simulation"])
     ) || throw(
-        ArgumentError("optical recipe differs from the built external-pupil definition"),
+        ArgumentError("optical recipe differs from the built external-pupil definition")
     )
     declaration = IC.load_simulation(definition)
     IC.canonical(IC.settings(declaration, get(plant, "settings", Dict()))) ==
     IC.canonical(IC.settings(declaration, get(selected.document, "settings", Dict()))) ||
         throw(
-            ArgumentError("optical recipe effective settings differ from built execution"),
+            ArgumentError("optical recipe effective settings differ from built execution")
         )
     contracts = Export.external_pupil_port_contracts(
-        definition;
-        settings = get(plant, "settings", Dict()),
-        chopping,
+        definition; settings = get(plant, "settings", Dict()), chopping
     )
     frames = Dict(
-        string(name)=>Dict(
-            "frame_schema"=>contracts["sensors"][getproperty(selected.branches, name)]["schema"],
-            "image_shape"=>contracts["sensors"][getproperty(selected.branches, name)]["shape"],
+        string(name) => Dict(
+            "frame_schema" =>
+                contracts["sensors"][getproperty(selected.branches, name)]["schema"],
+            "image_shape" =>
+                contracts["sensors"][getproperty(selected.branches, name)]["shape"],
         ) for name in names
     )
     templates = NamedTuple{names}(
@@ -189,12 +190,11 @@ function optical_publication_plan(application, selected; graphs, configuration, 
         ),
     )
     validate_optical_graphs(
-        templates,
-        NamedTuple{names}(Tuple(Dict() for _ in names)),
-        names,
+        templates, NamedTuple{names}(Tuple(Dict() for _ in names)), names
     )
-    instrument =
-        PipeWireAORTC.Common.read_json(D.relative_asset(application, "instrument.json"))
+    instrument = PipeWireAORTC.Common.read_json(
+        D.relative_asset(application, "instrument.json")
+    )
     return (; rtc, frames, templates, instrument, chopping)
 end
 
@@ -218,29 +218,26 @@ function optical_publication_graphs(plan, calibration)
             ),
         )
         size(measured.mask) == size(measured.reference) == shape || throw(
-            DimensionMismatch("measured optical image differs from cold RTC dimensions"),
+            DimensionMismatch("measured optical image differs from cold RTC dimensions")
         )
         eltype(measured.mask) === Bool ||
             throw(ArgumentError("optical selection mask must contain Bool values"))
-        measurement_count =
-            optical_measurement_count(measured.measurement_kind, measured)
+        measurement_count = optical_measurement_count(measured.measurement_kind, measured)
         size(measured.reconstructor) ==
         (dimensions["controller_command_count"], measurement_count) &&
         optical_selection_matches(
-            measured.measurement_kind,
-            measured,
-            plan.frames[string(name)],
-            dimensions,
+            measured.measurement_kind, measured, plan.frames[string(name)], dimensions
         ) || throw(
             DimensionMismatch(
-                "measured reconstructor differs from declared pixel selection",
+                "measured reconstructor differs from declared pixel selection"
             ),
         )
         context = Dict{String,Any}(deepcopy(plan.frames))
         for (branch_name, branch) in pairs(calibration.branches)
             entry =
-                context[string(branch_name)] =
-                    Dict{String,Any}(context[string(branch_name)])
+                context[string(branch_name)] = Dict{String,Any}(
+                    context[string(branch_name)]
+                )
             entry["pixel_selection_mask"] = vec(permutedims(branch.mask, (2, 1)))
             entry["selected_pixel_count"] = count(branch.mask)
             optical_measurement_context!(branch.measurement_kind, entry, branch)
@@ -259,12 +256,10 @@ function optical_publication_graphs(plan, calibration)
             calibration = calibration_context,
         )
         graph = PipeWireAORTC.InstrumentExport.resolve_graph_configuration(
-            template,
-            context,
+            template, context
         )
         PipeWireAORTC.InstrumentExport.calibrated_centroid_references(
-            graph,
-            calibration_context,
+            graph, calibration_context
         )
     end
     for (name, graph) in pairs(graphs)
@@ -272,8 +267,9 @@ function optical_publication_graphs(plan, calibration)
         validate_optical_measurement_graph(measured.measurement_kind, graph, name, measured)
         hasproperty(get(plan, :chopping, NamedTuple()), name) || continue
         actual = optical_frontend_identity(optical_chopped_document(graph, name))
-        expected =
-            calibration.report["provenance"]["measurement_frontend_identity"][string(name)]
+        expected = calibration.report["provenance"]["measurement_frontend_identity"][string(
+            name
+        )]
         actual == expected || throw(
             ArgumentError(
                 "published chopped measurement prefix differs from its calibrated execution",
@@ -287,23 +283,18 @@ function publish_optical_bundles(result, destination, graphs, contexts)
     validate_optical_graphs(graphs, contexts, keys(result.calibration.branches))
     for (name, measurement) in pairs(result.calibration.branches)
         validate_optical_measurement_graph(
-            measurement.measurement_kind,
-            getproperty(graphs, name),
-            name,
-            measurement,
+            measurement.measurement_kind, getproperty(graphs, name), name, measurement
         )
     end
     for (name, identity) in get(
-        result.calibration.report["provenance"],
-        "measurement_frontend_identity",
-        Dict(),
+        result.calibration.report["provenance"], "measurement_frontend_identity", Dict()
     )
         actual = optical_frontend_identity(
-            optical_chopped_document(getproperty(graphs, Symbol(name)), Symbol(name)),
+            optical_chopped_document(getproperty(graphs, Symbol(name)), Symbol(name))
         )
         actual == identity || throw(
             ArgumentError(
-                "published chopped graph differs from its calibrated measurement prefix",
+                "published chopped graph differs from its calibrated measurement prefix"
             ),
         )
     end
@@ -317,7 +308,7 @@ function publish_optical_bundles(result, destination, graphs, contexts)
             report = Calibration.calibrate_optical(
                 result.calibration,
                 branch;
-                report = merge(result.report, Dict("branch"=>string(name))),
+                report = merge(result.report, Dict("branch" => string(name))),
                 context = getproperty(contexts, name),
                 concrete_graph = getproperty(graphs, name),
                 branch = name,
@@ -327,17 +318,18 @@ function publish_optical_bundles(result, destination, graphs, contexts)
             mktempdir() do directory
                 entries = [
                     Dict(
-                        "port"=>parameter,
-                        "path"=>joinpath(branch, "artifacts", filename),
-                        "hdu"=>1,
-                        "axes"=>any(
-                            suffix -> endswith(parameter, suffix),
-                            ("-modal-reference", "-reference-difference"),
-                        ) ? [1] : [2, 1],
+                        "port" => parameter,
+                        "path" => joinpath(branch, "artifacts", filename),
+                        "hdu" => 1,
+                        "axes" =>
+                            any(
+                                suffix -> endswith(parameter, suffix),
+                                ("-modal-reference", "-reference-difference"),
+                            ) ? [1] : [2, 1],
                     ) for (parameter, filename) in report["parameter_files"]
                 ]
                 bindings = joinpath(directory, "parameters.conf")
-                PipeWireAORTC.Common.write_json(bindings, Dict("parameters"=>entries))
+                PipeWireAORTC.Common.write_json(bindings, Dict("parameters" => entries))
                 GraphOwner.read_bindings(joinpath(branch, "graph.conf"), bindings)
             end
             report
@@ -347,15 +339,16 @@ function publish_optical_bundles(result, destination, graphs, contexts)
         shared_names = (
             optical_projection_names(result.calibration.command_coordinates)...,
             optical_feedback_names(
-                get(result.calibration, :physical_feedback_to_modes, nothing),
+                get(result.calibration, :physical_feedback_to_modes, nothing)
             )...,
         )
         hasproperty(result.calibration, :fast_reference) &&
             (shared_names = (shared_names..., "modes-to-reference"))
         shared = Dict(
-            name=>Dict(
-                "path"=>string(first_branch)*"/artifacts/"*name*".fits",
-                "sha256"=>getproperty(reports, first_branch)["artifact_sha256"][name*".fits"],
+            name => Dict(
+                "path" => string(first_branch) * "/artifacts/" * name * ".fits",
+                "sha256" =>
+                    getproperty(reports, first_branch)["artifact_sha256"][name*".fits"],
             ) for name in shared_names
         )
         for report in reports, name in keys(shared)
@@ -366,15 +359,15 @@ function publish_optical_bundles(result, destination, graphs, contexts)
             )
         end
         index = Dict(
-            "version"=>1,
-            "kind"=>"optical-calibration-index",
-            "calibration_identity"=>result.report["calibration_identity"],
-            "physical_projection"=>shared,
-            "branches"=>Dict(
-                string(name)=>Dict(
-                    "path"=>string(name),
-                    "result_sha256"=>Calibration.digest(
-                        joinpath(temporary, string(name), "result.yaml"),
+            "version" => 1,
+            "kind" => "optical-calibration-index",
+            "calibration_identity" => result.report["calibration_identity"],
+            "physical_projection" => shared,
+            "branches" => Dict(
+                string(name) => Dict(
+                    "path" => string(name),
+                    "result_sha256" => Calibration.digest(
+                        joinpath(temporary, string(name), "result.yaml")
                     ),
                 ) for name in keys(reports)
             ),
@@ -395,14 +388,14 @@ function validate_optical_branch_graph(graph::AbstractDict)
     haskey(graph, "filter.graph") && !isempty(get(graph["filter.graph"], "nodes", [])) ||
         throw(
             ArgumentError(
-                "publishing optical calibration requires concrete nonempty branch graphs",
+                "publishing optical calibration requires concrete nonempty branch graphs"
             ),
         )
     return nothing
 end
 validate_optical_branch_graph(graph) = throw(
     ArgumentError(
-        "publishing optical calibration requires concrete nonempty branch graphs",
+        "publishing optical calibration requires concrete nonempty branch graphs"
     ),
 )
 
@@ -417,5 +410,5 @@ function validate_optical_authored_graphs(graphs::AbstractDict, names)
     return nothing
 end
 validate_optical_authored_graphs(graphs, names) = throw(
-    ArgumentError("authored graphs must name every optical recipe branch exactly once"),
+    ArgumentError("authored graphs must name every optical recipe branch exactly once")
 )

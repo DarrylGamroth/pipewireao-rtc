@@ -9,8 +9,7 @@ function read_recipe(application)
     require_prepared_application(application)
     path = DeploymentConfiguration.relative_asset(application, "calibration/recipe.conf")
     recipe = DeploymentConfiguration.decode(
-        path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     common = (
         "version",
@@ -31,46 +30,49 @@ function read_recipe(application)
     DeploymentConfiguration.relative_asset(application, recipe["graph_source"]) !=
     DeploymentConfiguration.relative_asset(application, recipe["graph"]) || throw(
         ArgumentError(
-            "calibration graph template and execution graph must be distinct files",
+            "calibration graph template and execution graph must be distinct files"
         ),
     )
-    declaration =
-        InstrumentConfiguration.load_simulation(joinpath(application, recipe["simulation"]))
-    sensor =
-        get(declaration.instrument.document["wavefront_sensors"], recipe["sensor"], nothing)
+    declaration = InstrumentConfiguration.load_simulation(
+        joinpath(application, recipe["simulation"])
+    )
+    sensor = get(
+        declaration.instrument.document["wavefront_sensors"], recipe["sensor"], nothing
+    )
     sensor === nothing && throw(ArgumentError("calibration sensor is not declared"))
     kind = InstrumentConfiguration.sensor_kind(sensor)
     sensor_fields = _sensor_recipe_fields(kind)
     Set(keys(recipe)) ⊆ Set((common..., sensor_fields.extra...)) ||
         throw(ArgumentError("unknown calibration recipe fields"))
     for key in ("poke_m", "tsvd_rtol")
-        value=recipe[key]
+        value = recipe[key]
         InstrumentConfiguration.isfinite_real(value) &&
-        value>0 &&
+        value > 0 &&
         isfinite(Float32(value)) &&
-        Float32(value)>0 ||
+        Float32(value) > 0 ||
             throw(ArgumentError("calibration $key must be positive and finite in Float32"))
     end
     recipe["tsvd_rtol"] < 1 ||
         throw(ArgumentError("calibration tsvd_rtol must be below one"))
-    all(key->haskey(recipe, key), sensor_fields.required) ||
+    all(key -> haskey(recipe, key), sensor_fields.required) ||
         throw(ArgumentError("incomplete sensor calibration recipe"))
     InstrumentConfiguration.settings(declaration, get(recipe, "settings", Dict()))
     _validate_sensor_recipe(kind, application, recipe, declaration)
-    rtc=InstrumentConfiguration.load_rtc(joinpath(application, recipe["rtc_configuration"]))
-    context=InstrumentExport.graph_context(
+    rtc = InstrumentConfiguration.load_rtc(
+        joinpath(application, recipe["rtc_configuration"])
+    )
+    context = InstrumentExport.graph_context(
         InstrumentConfiguration.json_value(
-            InstrumentConfiguration.physical_definition(rtc.instrument),
+            InstrumentConfiguration.physical_definition(rtc.instrument)
         );
         dimensions = rtc.document["dimensions"],
         mirror_controls = rtc.controls["deformable_mirrors"],
         calibration = rtc.calibration,
     )
-    prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     InstrumentExport.resolve_graph_configuration(
         DeploymentConfiguration.decode(
-            joinpath(application, recipe["graph_source"]),
-            prefix,
+            joinpath(application, recipe["graph_source"]), prefix
         ),
         context,
     ) == DeploymentConfiguration.decode(joinpath(application, recipe["graph"]), prefix) ||
@@ -79,15 +81,15 @@ function read_recipe(application)
                 "compiled calibration graph differs from its retained template; rebuild the application",
             ),
         )
-    context["graphs"]=InstrumentExport.graph_contract_context(
+    context["graphs"] = InstrumentExport.graph_contract_context(
         application,
-        [Dict("path"=>recipe["graph"])],
+        [Dict("path" => recipe["graph"])],
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     )
-    authored=InstrumentConfiguration.bounded_yaml(
-        joinpath(application, "calibration/recipe.yaml"),
+    authored = InstrumentConfiguration.bounded_yaml(
+        joinpath(application, "calibration/recipe.yaml")
     )
-    Common.configuration_value(authored, context)==recipe || throw(
+    Common.configuration_value(authored, context) == recipe || throw(
         ArgumentError(
             "compiled calibration recipe differs from authoring; rebuild the application",
         ),
@@ -126,7 +128,7 @@ function _validate_sensor_recipe(::Val{:shack_hartmann}, application, recipe, de
         "source completion",
     )
     DeploymentConfiguration.relative_asset(application, recipe["source_completion"]["path"])
-    estimator_fields=(
+    estimator_fields = (
         "feedback_input",
         "detector_shape",
         "slopes_output",
@@ -136,10 +138,7 @@ function _validate_sensor_recipe(::Val{:shack_hartmann}, application, recipe, de
         "flux_output",
     )
     InstrumentConfiguration.fields(
-        recipe["estimator"],
-        estimator_fields,
-        estimator_fields,
-        "calibration estimator",
+        recipe["estimator"], estimator_fields, estimator_fields, "calibration estimator"
     )
     haskey(declaration.instrument.document["deformable_mirrors"], recipe["mirror"]) ||
         throw(ArgumentError("calibration mirror is not declared"))
@@ -147,19 +146,16 @@ function _validate_sensor_recipe(::Val{:shack_hartmann}, application, recipe, de
 end
 
 function _validate_sensor_recipe(::Val{:pyramid}, application, recipe, declaration)
-    entries=recipe["mirrors"]
+    entries = recipe["mirrors"]
     _recipe_mirrors(entries)
-    names=String[]
+    names = String[]
     for entry in entries
         InstrumentConfiguration.fields(
-            entry,
-            ("name", "mode_count", "completion"),
-            ("name",),
-            "calibration mirror",
+            entry, ("name", "mode_count", "completion"), ("name",), "calibration mirror"
         )
         haskey(entry, "mode_count") ⊻ haskey(entry, "completion") || throw(
             ArgumentError(
-                "calibration mirror requires exactly one mode_count or completion",
+                "calibration mirror requires exactly one mode_count or completion"
             ),
         )
         haskey(entry, "mode_count") &&
@@ -169,18 +165,15 @@ function _validate_sensor_recipe(::Val{:pyramid}, application, recipe, declarati
             throw(ArgumentError("calibration mirror is not declared"))
         push!(names, entry["name"])
     end
-    length(unique(names))==length(names) ||
+    length(unique(names)) == length(names) ||
         throw(ArgumentError("calibration mirrors must be distinct"))
-    stage_fields=("command_input", "mirror", "command_limits_m")
+    stage_fields = ("command_input", "mirror", "command_limits_m")
     InstrumentConfiguration.fields(
-        recipe["tiptilt"],
-        stage_fields,
-        stage_fields,
-        "calibration tiptilt",
+        recipe["tiptilt"], stage_fields, stage_fields, "calibration tiptilt"
     )
     recipe["tiptilt"]["mirror"] in names ||
         throw(ArgumentError("tiptilt mirror must be calibrated"))
-    limits=recipe["tiptilt"]["command_limits_m"]
+    limits = recipe["tiptilt"]["command_limits_m"]
     _recipe_tiptilt_limits(limits)
     checked_command_limits(Float32, limits..., 2)
     _tiptilt_temporal(recipe, declaration.document["frame_period_s"])
@@ -189,65 +182,51 @@ end
 
 "Run a declared sensor procedure and produce the standard calibration bundle."
 function calibrate_system(application, output; kwargs...)
-    output=_calibration_output((application,), output)
-    recipe=read_recipe(application)
-    declaration=InstrumentConfiguration.load_simulation(
-        joinpath(application, recipe["simulation"]),
+    output = _calibration_output((application,), output)
+    recipe = read_recipe(application)
+    declaration = InstrumentConfiguration.load_simulation(
+        joinpath(application, recipe["simulation"])
     )
-    kind=InstrumentConfiguration.sensor_kind(
-        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]],
+    kind = InstrumentConfiguration.sensor_kind(
+        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
     )
     load_calibration_optics(declaration, recipe)
     # Optional optical extensions must be visible throughout the procedure,
     # including its prepared graph's stepping methods.
     return Base.invokelatest(
-        _calibrate_system,
-        kind,
-        application,
-        recipe,
-        output;
-        kwargs...,
+        _calibrate_system, kind, application, recipe, output; kwargs...
     )
 end
 function _calibrate_system end
 
 "Validate a standard calibration bundle against its declared instrument model."
 function validate_system(application, calibration, output; kwargs...)
-    output=_calibration_output((application, calibration), output)
-    recipe=read_recipe(application)
-    declaration=InstrumentConfiguration.load_simulation(
-        joinpath(application, recipe["simulation"]),
+    output = _calibration_output((application, calibration), output)
+    recipe = read_recipe(application)
+    declaration = InstrumentConfiguration.load_simulation(
+        joinpath(application, recipe["simulation"])
     )
-    kind=InstrumentConfiguration.sensor_kind(
-        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]],
+    kind = InstrumentConfiguration.sensor_kind(
+        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
     )
-    bundle=read_bundle(calibration)
+    bundle = read_bundle(calibration)
     # Recipes in the receipt describe the acquisition; current authoring cannot
     # silently change settings, normalization or controller policy during replay.
-    recipe==bundle.report["recipe"] ||
+    recipe == bundle.report["recipe"] ||
         throw(ArgumentError("calibration recipe differs from the selected application"))
     load_calibration_optics(declaration, recipe)
     return Base.invokelatest(
-        _validate_system,
-        kind,
-        application,
-        recipe,
-        calibration,
-        output;
-        kwargs...,
+        _validate_system, kind, application, recipe, calibration, output; kwargs...
     )
 end
 function _validate_system end
 
 function load_calibration_optics(declaration, recipe)
-    configured=InstrumentConfiguration.settings(
-        declaration,
-        get(recipe, "settings", Dict()),
+    configured = InstrumentConfiguration.settings(
+        declaration, get(recipe, "settings", Dict())
     )
     if InstrumentConfiguration.graph_requires_proper(
-        declaration,
-        configured;
-        simulation_graph = "calibration",
+        declaration, configured; simulation_graph = "calibration"
     )
         AOSOwner.load_instrument(:Proper)
     end
@@ -257,12 +236,12 @@ end
 function stage_calibration end
 
 function _calibration_output(inputs, output)
-    destination=InstrumentExport.checked_path(output)
+    destination = InstrumentExport.checked_path(output)
     !ispath(destination) && !islink(destination) ||
         throw(ArgumentError("calibration output must be fresh"))
     all(
-        input->InstrumentExport.outside(
-            relpath(destination, InstrumentExport.checked_path(input)),
+        input -> InstrumentExport.outside(
+            relpath(destination, InstrumentExport.checked_path(input))
         ),
         inputs,
     ) || throw(ArgumentError("calibration output must be outside its inputs"))

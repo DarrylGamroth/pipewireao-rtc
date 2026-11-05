@@ -50,8 +50,7 @@ function adapter_definition(type, config, input; props = Dict())
     )
 end
 adapter_graph(type, config, input; kwargs...) = prepare_algorithm_graph(
-    adapter_definition(type, config, input; kwargs...);
-    target = AdapterTarget,
+    adapter_definition(type, config, input; kwargs...); target = AdapterTarget
 )
 
 @testset "UInt16 camera output before transport" begin
@@ -85,35 +84,21 @@ adapter_graph(type, config, input; kwargs...) = prepare_algorithm_graph(
         Dict("output_element_type" => "int16"),
     )
         @test_throws AdapterAOG.AlgorithmGraphError adapter_definition(
-            "detector_frame_layout_f32",
-            merge(config, changes),
-            input,
+            "detector_frame_layout_f32", merge(config, changes), input
         )
     end
 end
 
 adapter_owner(
-    definition::AlgorithmGraphDefinition,
-    inputs,
-    outputs;
-    target = AdapterTarget,
+    definition::AlgorithmGraphDefinition, inputs, outputs; target = AdapterTarget
 ) = adapter_owner(only(definition.nodes), inputs, outputs; target)
 function adapter_owner(
-    node::AlgorithmNodeDefinition{Name,Node},
-    inputs,
-    outputs;
-    target = AdapterTarget,
+    node::AlgorithmNodeDefinition{Name,Node}, inputs, outputs; target = AdapterTarget
 ) where {Name,Node}
     ports = AdapterAOG.graph_node_ports(Node, node.config)
     @test !isempty(ports)
     return AdapterAOG.prepare_graph_node(
-        Node,
-        node.config,
-        node.props,
-        inputs,
-        outputs,
-        NamedTuple(),
-        target,
+        Node, node.config, node.props, inputs, outputs, NamedTuple(), target
     )
 end
 
@@ -233,9 +218,7 @@ end
 
     @testset "Host views, one-based axes, concrete ownership, and allocation" begin
         definition = adapter_definition(
-            "detector_frame_layout_f32",
-            layout_config(),
-            zeros(Float32, 2, 3),
+            "detector_frame_layout_f32", layout_config(), zeros(Float32, 2, 3)
         )
         input = view(reshape(Float32.(1:24), 4, 6), 1:2:4, 1:2:6)
         frame = view(fill(99.0f0, 10, 14), 1:2:10, 2:2:14)
@@ -247,28 +230,26 @@ end
         @test all(isconcretetype, fieldtypes(typeof(owner)))
         @test adapter_allocations(owner) == (; step = 0, reset = 0)
         @test AdapterAOG.graph_node_capture_capability(owner) isa
-              AdapterAOG.GraphNodeCaptureUnsupported
+            AdapterAOG.GraphNodeCaptureUnsupported
         clipped_config = layout_config()
         clipped_config["range"] = [0, 2]
         clipped_definition = adapter_definition(
-            "detector_frame_layout_f32",
-            clipped_config,
-            zeros(Float32, 2, 3),
+            "detector_frame_layout_f32", clipped_config, zeros(Float32, 2, 3)
         )
-        clipped_owner =
-            adapter_owner(clipped_definition, (; detector_frame = input), (; frame))
+        clipped_owner = adapter_owner(
+            clipped_definition, (; detector_frame = input), (; frame)
+        )
         @test adapter_allocations(clipped_owner) == (; step = 0, reset = 0)
         rounded_config = merge(
             layout_config(),
             Dict("bias" => 0.5, "range" => [0, 16383], "rounding" => "nearest_even"),
         )
         rounded_definition = adapter_definition(
-            "detector_frame_layout_f32",
-            rounded_config,
-            zeros(Float32, 2, 3),
+            "detector_frame_layout_f32", rounded_config, zeros(Float32, 2, 3)
         )
-        rounded_owner =
-            adapter_owner(rounded_definition, (; detector_frame = input), (; frame))
+        rounded_owner = adapter_owner(
+            rounded_definition, (; detector_frame = input), (; frame)
+        )
         AdapterAOG.step_graph_node!(rounded_owner)
         expected[2:3, 3:5] .= input .* 2.0f0
         @test frame == expected
@@ -289,8 +270,7 @@ end
             (; detector_frame = zeros(Float32, 2, 3)),
             (; frame = zeros(Float32, 5, 7));
             target = AdaptiveOpticsSim.Backends.AcceleratorComputeDevice(
-                AdaptiveOpticsSim.Backends.CUDABackend(),
-                0,
+                AdaptiveOpticsSim.Backends.CUDABackend(), 0
             ),
         )
     end
@@ -323,26 +303,19 @@ end
             config -> (config["rounding"] = "nearest"),
             config -> (config["rounding"] = true),
             config -> (config["rounding"] = nothing),
+            config ->
+                merge!(config, Dict("rounding" => "nearest_even", "range" => [0.5, 10])),
             config -> merge!(
-                config,
-                Dict("rounding" => "nearest_even", "range" => [0.5, 10]),
+                config, Dict("rounding" => "nearest_even", "range" => [1 + eps(), 10])
             ),
-            config -> merge!(
-                config,
-                Dict("rounding" => "nearest_even", "range" => [1 + eps(), 10]),
-            ),
-            config -> merge!(
-                config,
-                Dict("rounding" => "nearest_even", "range" => [0, 10.5]),
-            ),
+            config ->
+                merge!(config, Dict("rounding" => "nearest_even", "range" => [0, 10.5])),
         )
         for change in layout_changes
             config = layout_config()
             change(config)
             @test_throws AlgorithmGraphError adapter_definition(
-                "detector_frame_layout_f32",
-                config,
-                zeros(Float32, 2, 3),
+                "detector_frame_layout_f32", config, zeros(Float32, 2, 3)
             )
         end
         @test_throws AlgorithmGraphError adapter_definition(
@@ -352,9 +325,7 @@ end
             props = Dict("extra" => 1),
         )
         @test_throws AlgorithmGraphError adapter_graph(
-            "detector_frame_layout_f32",
-            layout_config(),
-            zeros(Float64, 2, 3),
+            "detector_frame_layout_f32", layout_config(), zeros(Float64, 2, 3)
         )
     end
 end

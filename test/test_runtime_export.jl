@@ -18,10 +18,7 @@ tree_identity(root) = Dict(
         write(joinpath(source, "other-instrument", "matrix"), "not selected")
         destination = joinpath(root, "selected")
         @test R.copy_entries(
-            source,
-            destination,
-            ("Project.toml", "src");
-            ignored = Set(["ignored.tmp"]),
+            source, destination, ("Project.toml", "src"); ignored = Set(["ignored.tmp"])
         ) == destination
         @test read(joinpath(destination, "Project.toml"), String) == "project"
         @test read(joinpath(destination, "src", "owner.jl"), String) == "owner"
@@ -45,27 +42,19 @@ tree_identity(root) = Dict(
             @test !ispath(rejected)
         end
         @test_throws ArgumentError R.copy_entries(
-            source,
-            joinpath(source, "nested"),
-            ("src",),
+            source, joinpath(source, "nested"), ("src",)
         )
         @test !ispath(joinpath(source, "nested"))
         symlink(joinpath(source, "src"), joinpath(source, "linked"))
         @test_throws ArgumentError R.copy_entries(
-            source,
-            joinpath(root, "linked-output"),
-            ("linked",),
+            source, joinpath(root, "linked-output"), ("linked",)
         )
         @test_throws ArgumentError R.copy_entries(
-            source,
-            joinpath(root, "linked-parent"),
-            ("linked/owner.jl",),
+            source, joinpath(root, "linked-parent"), ("linked/owner.jl",)
         )
         symlink(joinpath(root, "absent"), joinpath(root, "dangling"))
         @test_throws ArgumentError R.copy_entries(
-            source,
-            joinpath(root, "dangling"),
-            ("src",),
+            source, joinpath(root, "dangling"), ("src",)
         )
         # Relative file paths also preserve their parent directories.
         partial = joinpath(root, "partial")
@@ -127,7 +116,7 @@ end
             bytes = read(path)
             rm(path)
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError PipeWireAORTC.DeploymentConfiguration.validate_runtime(
-                sdk,
+                sdk
             )
             write(path, bytes)
             @test PipeWireAORTC.DeploymentConfiguration.validate_runtime(sdk) == sdk

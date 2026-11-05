@@ -24,7 +24,7 @@ end
 function _bundle_file(directory, name; maximum = Artifacts.MAX_FITS_BYTES)
     path = joinpath(directory, name)
     isfile(path) && !islink(path) && filesize(path) <= maximum || throw(
-        ArgumentError("calibration bundle file is missing, linked or too large: $name"),
+        ArgumentError("calibration bundle file is missing, linked or too large: $name")
     )
     return DeploymentConfiguration.relative_asset(directory, name)
 end
@@ -78,7 +78,7 @@ _bundle_parameter_files(files, names) = throw(
 _bundle_parameter_files(files::AbstractDict, names) =
     Set(keys(files)) == Set(names) || throw(
         ArgumentError(
-            "calibration parameter_files must cover exactly the runtime parameters",
+            "calibration parameter_files must cover exactly the runtime parameters"
         ),
     )
 _bundle_artifact_mappings(parameters, diagnostics) =
@@ -118,7 +118,7 @@ function read_bundle(directory::AbstractString)
         end
     end
     report = _bundle_report(
-        Common.read_yaml(_bundle_file(directory, "result.yaml"; maximum = 1024^2)),
+        Common.read_yaml(_bundle_file(directory, "result.yaml"; maximum = 1024^2))
     )
     _bundle_version(get(report, "version", nothing))
     for key in _BUNDLE_INTEGRITY_FIELDS
@@ -142,14 +142,14 @@ function read_bundle(directory::AbstractString)
     end
     Set(readdir(artifact_directory)) == Set(keys(manifest)) || throw(
         ArgumentError(
-            "calibration artifact manifest does not exactly cover artifact files",
+            "calibration artifact manifest does not exactly cover artifact files"
         ),
     )
     artifacts = Dict{String,String}()
     for (name, expected) in manifest
         path = _bundle_file(artifact_directory, name)
         # Reuse the bounded no-follow FITS snapshot reader, including inode checks.
-        bytes = Artifacts.snapshot(path; check = ()->nothing)
+        bytes = Artifacts.snapshot(path; check = () -> nothing)
         bytes2hex(sha256(bytes)) == _bundle_hash(expected, "artifact $name") ||
             throw(ArgumentError("calibration artifact hash mismatch: $name"))
         artifacts[name] = path
@@ -161,11 +161,11 @@ function read_bundle(directory::AbstractString)
     _bundle_parameter_names(parameter_names)
     length(unique(parameter_names)) == length(parameter_names) ||
         throw(ArgumentError("calibration parameter_names contains duplicates"))
-    parameter_files=report["parameter_files"]
+    parameter_files = report["parameter_files"]
     _bundle_parameter_files(parameter_files, parameter_names)
     for name in parameter_names
         _bundle_name(name)
-        filename=_bundle_name(parameter_files[name]; artifact = true)
+        filename = _bundle_name(parameter_files[name]; artifact = true)
         haskey(artifacts, filename) ||
             throw(ArgumentError("calibration parameter has no artifact: $name"))
     end
@@ -198,7 +198,7 @@ function write_bundle(
 )
     _bundle_report(report)
     any(key -> haskey(report, key), _BUNDLE_INTEGRITY_FIELDS) && throw(
-        ArgumentError("calibration report must not supply generated integrity fields"),
+        ArgumentError("calibration report must not supply generated integrity fields")
     )
     _bundle_mapping(context, "context")
     _bundle_artifact_mappings(parameters, diagnostics)
@@ -232,7 +232,7 @@ function write_bundle(
         result = Dict{String,Any}(report)
         result["version"] = 1
         result["parameter_names"] = sort!(parameter_names)
-        result["parameter_files"] = Dict(name=>name*".fits" for name in parameter_names)
+        result["parameter_files"] = Dict(name => name * ".fits" for name in parameter_names)
         result["context_sha256"] = Common.sha256_file(joinpath(temporary, "context.yaml"))
         result["graph_sha256"] = Common.sha256_file(joinpath(temporary, "graph.conf"))
         result["artifact_sha256"] = hashes

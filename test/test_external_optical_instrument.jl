@@ -28,13 +28,12 @@ end
 function pupil_output_documents()
     physical, simulation = external_optical_documents()
     physical["optical_output"] = deepcopy(physical["optical_input"])
-    simulation["pupil_output"] =
-        Dict{String,Any}("opd" => "pupil_opd", "amplitude" => "pupil_amplitude")
+    simulation["pupil_output"] = Dict{String,Any}(
+        "opd" => "pupil_opd", "amplitude" => "pupil_amplitude"
+    )
     simulation["components"] = Dict()
     simulation["bindings"]["pupil_amplitude"] = Dict(
-        "kind" => "pupil_amplitude",
-        "resolution" => "pupil_resolution",
-        "type" => "Float32",
+        "kind" => "pupil_amplitude", "resolution" => "pupil_resolution", "type" => "Float32"
     )
     simulation["bindings"]["pupil_opd"]["type"] = "Float32"
     config = Dict(
@@ -76,7 +75,7 @@ end
     mktempdir() do directory
         physical, simulation = pupil_output_documents()
         declaration = IC.load_simulation(
-            write_external_optical_documents(directory, physical, simulation),
+            write_external_optical_documents(directory, physical, simulation)
         )
         configured = IC.settings(declaration)
         output = IC.pupil_output(declaration, configured)
@@ -87,27 +86,22 @@ end
             pupil_resolution = 4,
         )
         @test IC.pupil_output(
-            declaration,
-            IC.settings(declaration, (; pupil_resolution = 12)),
+            declaration, IC.settings(declaration, (; pupil_resolution = 12))
         ).pupil_resolution == 12
         @test IC.physical_definition(declaration.instrument).optical_output ==
-              IC._instrument_seal(physical["optical_output"])
+            IC._instrument_seal(physical["optical_output"])
         output.optical["diameter_m"] = 0.1
         @test declaration.instrument.document["optical_output"]["diameter_m"] == 0.012
         @test_throws ArgumentError IC.pupil_output(
-            declaration,
-            configured;
-            simulation_graph = "missing",
+            declaration, configured; simulation_graph = "missing"
         )
         @test_throws ArgumentError IC.pupil_output(
-            declaration,
-            configured;
-            simulation_graph = "diagnostic",
+            declaration, configured; simulation_graph = "diagnostic"
         )
         # Select the authored OPD name exactly; diagnostic synonyms do not match.
         declaration.document["pupil_output"]["opd"] = "diagnostic_opd"
         @test IC.pupil_output(declaration, configured; simulation_graph = "diagnostic").opd ==
-              :diagnostic_opd
+            :diagnostic_opd
         declaration.document["pupil_output"]["opd"] = "pupil_opd"
         for binding in (
             Dict("kind" => "zeros", "shape" => [4, 4], "type" => "Float32"),
@@ -148,7 +142,7 @@ end
             invalid = deepcopy(physical)
             mutate!(invalid["optical_output"])
             @test_throws ArgumentError IC.load_simulation(
-                write_external_optical_documents(directory, invalid, simulation),
+                write_external_optical_documents(directory, invalid, simulation)
             )
         end
         for mutate! in (
@@ -159,12 +153,12 @@ end
             invalid = deepcopy(simulation)
             mutate!(invalid["pupil_output"])
             @test_throws ArgumentError IC.load_simulation(
-                write_external_optical_documents(directory, physical, invalid),
+                write_external_optical_documents(directory, physical, invalid)
             )
         end
         delete!(physical, "optical_output")
         @test_throws ArgumentError IC.load_simulation(
-            write_external_optical_documents(directory, physical, simulation),
+            write_external_optical_documents(directory, physical, simulation)
         )
     end
 end
@@ -179,47 +173,42 @@ end
         @test descriptor.optical_prescription.format == "zemax"
         @test descriptor.optical_prescription.path == "optics/instrument.zmx"
         @test descriptor.optical_prescription.sha256 ==
-              physical["optical_prescription"]["sha256"]
+            physical["optical_prescription"]["sha256"]
         @test descriptor.optical_prescription.catalog_archive.path == "optics/catalog.zip"
         @test descriptor.optical_paths.science ==
-              (; sensor = "scc", lyot_stop_port = "transmitted")
+            (; sensor = "scc", lyot_stop_port = "transmitted")
         @test descriptor.optical_paths.low_order ==
-              (; sensor = "llowfs", lyot_stop_port = "reflected")
+            (; sensor = "llowfs", lyot_stop_port = "reflected")
         scientific = IC.scientific_definition(path)
         @test scientific.optical_prescription == descriptor.optical_prescription
         @test scientific.optical_paths == descriptor.optical_paths
         context = IC.configuration_context(declaration, configured)
         @test context["instrument"]["optical_prescription"] ==
-              physical["optical_prescription"]
+            physical["optical_prescription"]
         @test context["instrument"]["optical_paths"] == physical["optical_paths"]
         @test Set(IC.artifact_paths(declaration, configured)) ==
-              Set(("optics/instrument.zmx", "optics/catalog.zip"))
+            Set(("optics/instrument.zmx", "optics/catalog.zip"))
         mktempdir() do output
             destination = joinpath(output, "application")
             PipeWireAORTC.InstrumentExport.copy_source(
-                directory,
-                destination;
-                runtime_configurations = false,
+                directory, destination; runtime_configurations = false
             )
             copied = IC.load(joinpath(destination, "instrument.yaml"))
             @test IC.physical_definition(copied) == descriptor
             @test read(joinpath(destination, "optics", "instrument.zmx")) ==
-                  read(joinpath(directory, "optics", "instrument.zmx"))
+                read(joinpath(directory, "optics", "instrument.zmx"))
             @test read(joinpath(destination, "optics", "catalog.zip")) ==
-                  read(joinpath(directory, "optics", "catalog.zip"))
+                read(joinpath(directory, "optics", "catalog.zip"))
         end
         reference = Dict("\$ref" => "/instrument/optical_paths/science/lyot_stop_port")
         @test PipeWireAORTC.Common.configuration_value(reference, context) == "transmitted"
         reference["\$ref"] = "/instrument/optical_paths/missing/lyot_stop_port"
         @test_throws ArgumentError PipeWireAORTC.Common.configuration_value(
-            reference,
-            context,
+            reference, context
         )
         delete!(physical["optical_prescription"], "catalog_archive")
         write_external_optical_documents(
-            directory,
-            physical,
-            external_optical_documents()[2],
+            directory, physical, external_optical_documents()[2]
         )
         @test !hasproperty(
             IC.physical_definition(IC.load(joinpath(directory, "instrument.yaml"))).optical_prescription,
@@ -248,8 +237,9 @@ end
             reference =
                 asset == "instrument.zmx" ? physical["optical_prescription"] :
                 physical["optical_prescription"]["catalog_archive"]
-            reference["sha256"] =
-                PipeWireAORTC.Common.sha256_file(joinpath(directory, "optics", asset))
+            reference["sha256"] = PipeWireAORTC.Common.sha256_file(
+                joinpath(directory, "optics", asset)
+            )
             write_external_optical_documents(directory, physical, simulation)
             @test IC.scientific_definition(path).prescription_identity != identity
         end
@@ -262,8 +252,9 @@ end
         for mutate! in (
             document -> (document["optical_prescription"]["format"] = "unknown"),
             document -> (
-                document["optical_prescription"]["sha256"] =
-                    uppercase(document["optical_prescription"]["sha256"])
+                document["optical_prescription"]["sha256"] = uppercase(
+                    document["optical_prescription"]["sha256"]
+                )
             ),
             document -> (document["optical_prescription"]["sha256"] = "0"^64),
             document -> (
@@ -271,8 +262,9 @@ end
             ),
             document -> (document["optical_prescription"]["path"] = "../instrument.zmx"),
             document -> (
-                document["optical_prescription"]["path"] =
-                    joinpath(directory, "optics", "instrument.zmx")
+                document["optical_prescription"]["path"] = joinpath(
+                    directory, "optics", "instrument.zmx"
+                )
             ),
             document -> (document["optical_prescription"]["path"] = "optics/missing.zmx"),
             document -> (document["optical_prescription"]["model"] = "unknown"),
@@ -292,8 +284,9 @@ end
             document -> (document["optical_paths"]["science"]["graph"] = "scc"),
             document -> delete!(document["optical_paths"]["science"], "lyot_stop_port"),
             document -> (
-                document["optical_paths"]["Invalid"] =
-                    pop!(document["optical_paths"], "science")
+                document["optical_paths"]["Invalid"] = pop!(
+                    document["optical_paths"], "science"
+                )
             ),
         )
             invalid = deepcopy(physical)
@@ -308,14 +301,14 @@ end
             physical["optical_prescription"]["path"] = "optics/escape.zmx"
             write_external_optical_documents(directory, physical, simulation)
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.load(
-                joinpath(directory, "instrument.yaml"),
+                joinpath(directory, "instrument.yaml")
             )
         end
         symlink("instrument.zmx", joinpath(directory, "optics", "contained.zmx"))
         physical["optical_prescription"]["path"] = "optics/contained.zmx"
         write_external_optical_documents(directory, physical, simulation)
         @test IC.load(joinpath(directory, "instrument.yaml")).document["optical_prescription"]["path"] ==
-              "optics/contained.zmx"
+            "optics/contained.zmx"
     end
 end
 
@@ -326,12 +319,10 @@ end
             config = simulation["components"]["optics"]["config"]
             quantity === nothing || (config["output_quantity"] = quantity)
             declaration = IC.load_simulation(
-                write_external_optical_documents(directory, physical, simulation),
+                write_external_optical_documents(directory, physical, simulation)
             )
             graph = IC.graph_document(
-                declaration,
-                IC.settings(declaration);
-                simulation_graph = "scc",
+                declaration, IC.settings(declaration); simulation_graph = "scc"
             )
             output = only(graph["nodes"])["config"]
             if quantity === nothing
@@ -357,9 +348,7 @@ end
         @test !haskey(declaration.document, "wire_contracts")
         @test_throws ArgumentError IC.graph_document(declaration, configured)
         @test_throws ArgumentError IC.graph_document(
-            declaration,
-            configured;
-            calibration = true,
+            declaration, configured; calibration = true
         )
         graph = IC.graph_document(declaration, configured; simulation_graph = "scc")
         config = only(graph["nodes"])["config"]
@@ -368,12 +357,10 @@ end
         @test config["diameter_m"] == physical["optical_input"]["diameter_m"]
         @test config["steps"] == simulation["components"]["optics"]["config"]["steps"]
         @test IC.configuration_context(declaration, configured)["instrument"]["wavefront_sensors"]["scc"] ==
-              physical["wavefront_sensors"]["scc"]
+            physical["wavefront_sensors"]["scc"]
         @test size(
             IC.binding_values(
-                declaration,
-                configured,
-                declaration.document["bindings"]["pupil_opd"],
+                declaration, configured, declaration.document["bindings"]["pupil_opd"]
             ),
         ) == (4, 4)
         @test_throws ArgumentError IC.settings(declaration, Dict("invented" => 1))
@@ -391,13 +378,15 @@ end
                 (document["graphs"]["../escape"] = first(values(document["graphs"]))),
             document -> (document["unknown"] = true),
             document -> (
-                document["hil"] =
-                    Dict("command_input" => "pupil_opd", "frame_output" => "intensity")
+                document["hil"] = Dict(
+                    "command_input" => "pupil_opd", "frame_output" => "intensity"
+                )
             ),
             document -> (document["wire_contracts"] = Any[]),
             document -> (
-                document["components"]["unused"] =
-                    deepcopy(document["components"]["optics"])
+                document["components"]["unused"] = deepcopy(
+                    document["components"]["optics"]
+                )
             ),
             document -> (document["components"]["optics"]["config"]["invented"] = 1),
             document -> delete!(document["components"]["optics"]["config"], "steps"),
@@ -419,8 +408,9 @@ end
             "command_schema" => "example.command/1",
             "command_scale" => 1.0,
         )
-        simulation["hil"] =
-            Dict("command_input" => "pupil_opd", "frame_output" => "intensity")
+        simulation["hil"] = Dict(
+            "command_input" => "pupil_opd", "frame_output" => "intensity"
+        )
         simulation["wire_contracts"] = [wire]
         path = write_external_optical_documents(directory, physical, simulation)
         @test_throws ArgumentError IC.load_simulation(path) # HIL still requires production/calibration.
@@ -448,7 +438,7 @@ end
         PipeWireAORTC.Common.write_yaml(rtc_path, rtc)
         PipeWireAORTC.Common.write_yaml(
             joinpath(directory, "rtc/mirror-controls.yaml"),
-            Dict("schema_version"=>1, "deformable_mirrors"=>Dict()),
+            Dict("schema_version" => 1, "deformable_mirrors" => Dict()),
         )
         @test isempty(IC.load_rtc(rtc_path).instrument.document["deformable_mirrors"])
     end
@@ -486,7 +476,7 @@ end
         physical["wavefront_sensors"]["scc"]["detector"]["controller"] = "NRC-HAA HIAC"
         path = write_external_optical_documents(directory, physical, simulation)
         @test IC.scientific_definition(path).wavefront_sensors.scc.layout.detector.controller ==
-              "NRC-HAA HIAC"
+            "NRC-HAA HIAC"
     end
 end
 
@@ -494,8 +484,9 @@ end
     mktempdir() do directory
         physical, simulation = external_optical_documents()
         for name in ("scc", "llowfs")
-            physical["wavefront_sensors"][name]["acquisition"] =
-                Dict{String,Any}("exposure_duration_s" => 0.001234567)
+            physical["wavefront_sensors"][name]["acquisition"] = Dict{String,Any}(
+                "exposure_duration_s" => 0.001234567
+            )
             physical["wavefront_sensors"][name]["expected_schema"] = "example.$name/1"
         end
         physical["wavefront_sensors"]["llowfs"]["acquisition"]["roi_origin"] = [2, 3]
@@ -512,11 +503,10 @@ end
             @test sensor["acquisition"]["exposure_us"] ≈ 1234.567
         end
         @test !haskey(
-            context["instrument"]["wavefront_sensors"]["scc"]["acquisition"],
-            "roi_origin",
+            context["instrument"]["wavefront_sensors"]["scc"]["acquisition"], "roi_origin"
         )
         @test context["instrument"]["wavefront_sensors"]["llowfs"]["acquisition"]["roi_origin"] ==
-              [2, 3]
+            [2, 3]
         @test !haskey(
             declaration.instrument.document["wavefront_sensors"]["scc"]["acquisition"],
             "exposure_ns",
@@ -575,23 +565,23 @@ end
 
 @testset "physical imaging camera geometry is explicit and complete" begin
     mktempdir() do directory
-        physical, simulation=external_optical_documents()
-        camera=physical["wavefront_sensors"]["llowfs"]["detector"]
+        physical, simulation = external_optical_documents()
+        camera = physical["wavefront_sensors"]["llowfs"]["detector"]
         merge!(
             camera,
-            Dict("rows"=>256, "columns"=>320, "pixel_sampling_m"=>[30e-6, 30e-6]),
+            Dict("rows" => 256, "columns" => 320, "pixel_sampling_m" => [30e-6, 30e-6]),
         )
-        @test IC.validate_declaration(physical, directory)===nothing
+        @test IC.validate_declaration(physical, directory) === nothing
         for mutate! in (
-            d->delete!(d, "columns"),
-            d->(d["rows"]=true),
-            d->(d["rows"]=0),
-            d->(d["columns"]=16385),
-            d->(d["pixel_sampling_m"]=[0, 30e-6]),
-            d->(d["pixel_sampling_m"]=[NaN, 30e-6]),
-            d->(d["pixel_sampling_m"]=[30e-6]),
+            d -> delete!(d, "columns"),
+            d -> (d["rows"] = true),
+            d -> (d["rows"] = 0),
+            d -> (d["columns"] = 16385),
+            d -> (d["pixel_sampling_m"] = [0, 30e-6]),
+            d -> (d["pixel_sampling_m"] = [NaN, 30e-6]),
+            d -> (d["pixel_sampling_m"] = [30e-6]),
         )
-            invalid=deepcopy(physical)
+            invalid = deepcopy(physical)
             mutate!(invalid["wavefront_sensors"]["llowfs"]["detector"])
             @test_throws ArgumentError IC.validate_declaration(invalid, directory)
         end
@@ -623,12 +613,12 @@ end
         @test declaration.document["settings_schema"]["title"] == "Optical test"
         @test declaration.document["settings_schema"]["additionalProperties"] === false
         @test declaration.document["settings_schema"]["properties"]["profile"]["enum"] ==
-              ["reference"]
+            ["reference"]
         @test Set(IC.simulation_catalog_identities(declaration.authoring) |> keys) ==
-              Set(["proper_optical_train"])
+            Set(["proper_optical_train"])
         @test_throws ArgumentError IC.settings(declaration, Dict("wavelength_um" => 2.0))
         @test IC.settings(declaration, Dict("masks" => Dict("radius_m" => 0.002)))["masks"]["radius_m"] ==
-              0.002
+            0.002
         for overrides in (
             Dict("temperature_c" => -273.15),
             Dict("wavelength_um" => 0),
@@ -647,9 +637,7 @@ end
             standalone = IC.load_simulation(path)
             @test !isempty(
                 IC.graph_document(
-                    standalone,
-                    IC.settings(standalone);
-                    simulation_graph = mode,
+                    standalone, IC.settings(standalone); simulation_graph = mode
                 )["nodes"],
             )
         end
@@ -669,12 +657,14 @@ end
         graph = simulation["graphs"]["llowfs"]
         only(graph["nodes"])["name"] = "other_optics"
         for input in graph["inputs"]
-            input["destination"] =
-                replace(input["destination"], "optics." => "other_optics.")
+            input["destination"] = replace(
+                input["destination"], "optics." => "other_optics."
+            )
         end
         only(graph["outputs"])["source"] = "other_optics.output"
-        simulation["components"]["other_optics"] =
-            deepcopy(simulation["components"]["optics"])
+        simulation["components"]["other_optics"] = deepcopy(
+            simulation["components"]["optics"]
+        )
         path = write_external_optical_documents(directory, physical, simulation)
         exception = try
             IC.load_simulation(path)
@@ -689,8 +679,7 @@ end
         )
         physical, simulation = external_optical_documents()
         filter!(
-            input -> input["name"] != "pupil_opd",
-            simulation["graphs"]["llowfs"]["inputs"],
+            input -> input["name"] != "pupil_opd", simulation["graphs"]["llowfs"]["inputs"]
         )
         simulation["responses"] = Dict(
             "pupil_opd" => Dict(

@@ -102,7 +102,7 @@ _adapter_rounding(value, context) =
 
 function _adapter_rounding_range(range::Tuple, ::typeof(RoundNearest), context)
     all(isinteger, range) || throw(
-        _adapter_error("$context requires integral bounds with nearest_even rounding"),
+        _adapter_error("$context requires integral bounds with nearest_even rounding")
     )
     return nothing
 end
@@ -121,14 +121,12 @@ function _adapter_output_contract(::Type{UInt16}, range::Tuple, ::typeof(RoundNe
 end
 _adapter_output_contract(::Type{UInt16}, range, rounding) = throw(
     _adapter_error(
-        "UInt16 camera output requires a bounded range and nearest_even rounding",
+        "UInt16 camera output requires a bounded range and nearest_even rounding"
     ),
 )
 
 function _detector_frame_layout_f32_node(
-    name::Symbol,
-    config::NamedTuple,
-    props::NamedTuple,
+    name::Symbol, config::NamedTuple, props::NamedTuple
 )
     fields = (
         :input_size,
@@ -142,8 +140,9 @@ function _detector_frame_layout_f32_node(
         :output_schema,
         :output_element_type,
     )
-    required =
-        (:input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema)
+    required = (
+        :input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema
+    )
     context = "node '$name' config"
     _adapter_fields(config, fields, required, context)
     _adapter_fields(props, (), (), "node '$name' props")
@@ -209,8 +208,7 @@ function configured_graph_node_types(directory = nothing)
 end
 
 function AlgorithmGraphs.graph_node_ports(
-    ::Type{DetectorFrameLayoutNode},
-    config::DetectorFrameLayoutConfig{T},
+    ::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T}
 ) where {T}
     return (
         AlgorithmGraphs.graph_port_contract(
@@ -235,9 +233,7 @@ function AlgorithmGraphs.graph_node_ports(
 end
 
 function _adapter_buffer(
-    values::AbstractArray{T,N},
-    shape::NTuple{N,Int},
-    ::Type{T} = Float32,
+    values::AbstractArray{T,N}, shape::NTuple{N,Int}, ::Type{T} = Float32
 ) where {T,N}
     Base.require_one_based_indexing(values)
     size(values) == shape ||
@@ -282,7 +278,7 @@ _adapter_capture_capability(::Backends.AbstractComputeDevice) =
     AlgorithmGraphs.GraphNodeCaptureUnsupported()
 _adapter_capture_capability(
     ::Backends.AcceleratorComputeDevice{
-        <:Union{Backends.CUDABackend,Backends.AMDGPUBackend},
+        <:Union{Backends.CUDABackend,Backends.AMDGPUBackend}
     },
 ) = AlgorithmGraphs.GraphNodeCaptureSafe()
 AlgorithmGraphs.graph_node_capture_capability(owner::DetectorFrameLayoutOwner) =
@@ -299,11 +295,7 @@ _layout_value(value, scale, bias, range, rounding) =
 function AlgorithmGraphs.step_graph_node!(owner::DetectorFrameLayoutOwner)
     fill!(owner.frame, zero(eltype(owner.frame)))
     owner.science .= _layout_value.(
-        owner.detector_frame,
-        owner.scale,
-        owner.bias,
-        Ref(owner.range),
-        Ref(owner.rounding),
+        owner.detector_frame, owner.scale, owner.bias, Ref(owner.range), Ref(owner.rounding)
     )
     return nothing
 end

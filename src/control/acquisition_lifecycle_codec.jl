@@ -37,19 +37,19 @@ const CORRECTION_PROFILE = CorrectionLifecycleProfile()
 _namespace(::CalibrationLifecycleProfile) = "pipewireao.rtc.calibration-lifecycle"
 _namespace(::CorrectionLifecycleProfile) = "pipewireao.rtc.correction-lifecycle"
 Client.profile_name(
-    profile::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile},
+    profile::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile}
 ) = _namespace(profile) * "/1"
 Client.reply_endpoint(::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile}) =
     :lifecycle
 Client.capability_names(
-    profile::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile},
+    profile::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile}
 ) = Tuple(
     _namespace(profile) * "." * suffix for suffix in
     ("version", "instance", "owner-pid", "lifecycle", "last-token", "controllers")
 )
 
-@enum ColdLifecycle::UInt32 Preparing=1 Prepared=2 Connected=3 Fault=4 Stopped=5
-@enum Instrument::UInt32 Classic=1 Copper=2
+@enum ColdLifecycle::UInt32 Preparing = 1 Prepared = 2 Connected = 3 Fault = 4 Stopped = 5
+@enum Instrument::UInt32 Classic = 1 Copper = 2
 
 struct LifecycleCommand{O} end
 function LifecycleCommand(operation::Symbol)
@@ -66,8 +66,7 @@ const OPERATIONS = (
     (:shutdown, UInt32(6)),
 )
 function Client.operation_id(
-    ::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile},
-    ::LifecycleCommand{O},
+    ::Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile}, ::LifecycleCommand{O}
 ) where {O}
     for (name, id) in OPERATIONS
         name === O && return id
@@ -157,10 +156,7 @@ _id(pod) = _scalar(pod, SPA.POD_ID, SPA.Id).value
 _long(pod) = _scalar(pod, SPA.POD_LONG, Int64)
 _bool(pod) = _scalar(pod, SPA.POD_BOOL, Bool)
 function _checked_string(
-    value::AbstractString;
-    empty::Bool,
-    limit::Int,
-    ascii::Bool = false,
+    value::AbstractString; empty::Bool, limit::Int, ascii::Bool = false
 )
     (empty || !isempty(value)) &&
     ncodeunits(value) <= limit &&
@@ -201,23 +197,20 @@ const CALIBRATION_PHASES = (
     "released",
     "fault",
 )
-const CORRECTION_PHASES =
-    ("initial", "startup_run", "correcting", "restore_run", "restored", "fault")
+const CORRECTION_PHASES = (
+    "initial", "startup_run", "correcting", "restore_run", "restored", "fault"
+)
 _phases(::CalibrationLifecycleProfile) = CALIBRATION_PHASES
 _phases(::CorrectionLifecycleProfile) = CORRECTION_PHASES
 
 function _validate_window(
-    ::CalibrationLifecycleProfile,
-    ::ColdLifecycle,
-    snapshot::Snapshot,
+    ::CalibrationLifecycleProfile, ::ColdLifecycle, snapshot::Snapshot
 )
     snapshot.window === nothing || throw(ArgumentError("calibration has no window"))
     return nothing
 end
 function _validate_window(
-    ::CorrectionLifecycleProfile,
-    lifecycle::ColdLifecycle,
-    snapshot::Snapshot,
+    ::CorrectionLifecycleProfile, lifecycle::ColdLifecycle, snapshot::Snapshot
 )
     if lifecycle === Connected
         snapshot.window !== nothing && snapshot.window > 0 ||
@@ -278,18 +271,14 @@ function _decode_snapshot(profile::Profile, lifecycle::ColdLifecycle, pod)
 end
 
 function Client.encode_request(
-    profile::Profile,
-    header::Envelope.RequestHeader,
-    command::LifecycleCommand,
+    profile::Profile, header::Envelope.RequestHeader, command::LifecycleCommand
 )
     header.operation == Client.operation_id(profile, command) ||
         throw(ArgumentError("lifecycle header/command operation mismatch"))
     return Envelope.encode_request(header, _struct())
 end
 function Client.decode_request(
-    ::Profile,
-    header::Envelope.RequestHeader,
-    payload::SPA.Struct,
+    ::Profile, header::Envelope.RequestHeader, payload::SPA.Struct
 )
     isempty(payload.values) ||
         throw(ArgumentError("lifecycle request payload must be empty"))
@@ -336,16 +325,11 @@ function Client.decode_completion(profile::Profile, input::Union{Pod,AbstractVec
         header.result >= 0 &&
         throw(ArgumentError("successful completion requires snapshot"))
     return Completion(
-        header,
-        lifecycle,
-        snapshot,
-        _string(f[3]; empty = true, limit = 8192),
+        header, lifecycle, snapshot, _string(f[3]; empty = true, limit = 8192)
     )
 end
 function Client.encode_rejection(
-    ::Profile,
-    header::Envelope.ReplyHeader,
-    lifecycle::ColdLifecycle,
+    ::Profile, header::Envelope.ReplyHeader, lifecycle::ColdLifecycle
 )
     return Envelope.encode_rejection(
         header,
@@ -357,22 +341,14 @@ function Client.decode_rejection(::Profile, input::Union{Pod,AbstractVector{UInt
     header, payload = Envelope.decode_rejection(input; endpoint = :lifecycle)
     f = _arity(payload.values, 2)
     return Rejection(
-        header,
-        _enum(ColdLifecycle, f[1]),
-        _string(f[2]; empty = true, limit = 8192),
+        header, _enum(ColdLifecycle, f[1]), _string(f[2]; empty = true, limit = 8192)
     )
 end
 function Client.encode_failure(
-    profile::Profile,
-    header::Envelope.ReplyHeader,
-    lifecycle::ColdLifecycle,
+    profile::Profile, header::Envelope.ReplyHeader, lifecycle::ColdLifecycle
 )
     return Client.encode_completion(
-        profile,
-        header,
-        lifecycle,
-        nothing,
-        "request expired or controller removed",
+        profile, header, lifecycle, nothing, "request expired or controller removed"
     )
 end
 

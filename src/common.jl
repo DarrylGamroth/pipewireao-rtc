@@ -32,38 +32,33 @@ owner; production native deadlines use the fresh default system clock.
 
 # Optional scientific facts preserved by RTC graph and observation boundaries.
 # Required acquisition facts remain the consuming algorithm/profile's contract.
-const TELEMETRY_METADATA=Tuple(
+const TELEMETRY_METADATA = Tuple(
     PipeWireAO.MetadataRequirement(type) for type in (
         PipeWireAO.SPA.META_ACQUISITION_IDENTITY,
         PipeWireAO.SPA.META_EXPOSURE_TIMING,
         PipeWireAO.SPA.META_REFERENCE_TIMESTAMP,
     )
 )
-const ACQUISITION_METADATA=Tuple(
+const ACQUISITION_METADATA = Tuple(
     PipeWireAO.MetadataRequirement(record.type, record.size; required = true) for
     record in TELEMETRY_METADATA
 )
 
 function telemetry_metadata_ports(names; required = NamedTuple(), optional = NamedTuple())
-    profiles=map(Tuple(names)) do name
-        needed=get(required, name, ())
-        metadata=map(TELEMETRY_METADATA) do record
-            demanded=any(r->r.type==record.type && r.required, needed)
+    profiles = map(Tuple(names)) do name
+        needed = get(required, name, ())
+        metadata = map(TELEMETRY_METADATA) do record
+            demanded = any(r -> r.type == record.type && r.required, needed)
             PipeWireAO.MetadataRequirement(record.type, record.size; required = demanded)
         end
-        supplied=get(optional, name, ())
-        classifications=(needed..., supplied...)
-        electrical=any(
-            r -> r.type==PipeWireAO.SPA.META_OPTICAL_CHOPPING,
-            classifications,
-        ) && !any(
-            r -> r.type==PipeWireAO.SPA.META_ELECTRICAL_TRIGGER,
-            classifications,
-        ) ? (
-            PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER),
-        ) : ()
-        offered=(needed..., supplied..., electrical...)
-        extra=Tuple(r for r in offered if !any(base->base.type==r.type, metadata))
+        supplied = get(optional, name, ())
+        classifications = (needed..., supplied...)
+        electrical =
+            any(r -> r.type == PipeWireAO.SPA.META_OPTICAL_CHOPPING, classifications) &&
+            !any(r -> r.type == PipeWireAO.SPA.META_ELECTRICAL_TRIGGER, classifications) ?
+            (PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER),) : ()
+        offered = (needed..., supplied..., electrical...)
+        extra = Tuple(r for r in offered if !any(base -> base.type == r.type, metadata))
         (; metadata = (metadata..., extra...))
     end
     return NamedTuple{Tuple(names)}(profiles)
@@ -71,8 +66,8 @@ end
 
 # Output profiles inherit only the classifications of their declared source Port.
 function telemetry_metadata_ports(names, input_names, sources; required = NamedTuple())
-    inputs=telemetry_metadata_ports(input_names; required)
-    optional=NamedTuple{Tuple(names)}(
+    inputs = telemetry_metadata_ports(input_names; required)
+    optional = NamedTuple{Tuple(names)}(
         map(Tuple(sources)) do index
             iszero(index) && return ()
             return Tuple(
@@ -97,7 +92,7 @@ reference_clock_configuration(value) =
 
 "Prepare the selected reference clock before native endpoints are created."
 function prepare_reference_clock(options)
-    clock=get(options, :reference_clock, :realtime)
+    clock = get(options, :reference_clock, :realtime)
     clock in (:realtime, :tai) || throw(ArgumentError("unsupported reference clock"))
     return clock === :realtime ? PipeWireAO.METADATA_CLOCK_REALTIME :
            PipeWireAO.METADATA_CLOCK_TAI
@@ -132,10 +127,7 @@ function read_yaml(path::AbstractString; maximum::Integer = 1024 * 1024)
             push!(explicit, name)
         end
         return YAML.construct_mapping(
-            Dict{String,Any},
-            constructor,
-            node;
-            strict_unique_keys = true,
+            Dict{String,Any}, constructor, node; strict_unique_keys = true
         )
     end
     constructors = Dict("tag:yaml.org,2002:map" => mapping)
@@ -421,8 +413,9 @@ function run_checked(
         throw(ArgumentError("process output bound must be positive"))
     command = prepare_command(argv)
     cwd === nothing || (command = Cmd(command; dir = String(cwd)))
-    command =
-        addenv(command, (String(key) => String(value) for (key, value) in pairs(env))...)
+    command = addenv(
+        command, (String(key) => String(value) for (key, value) in pairs(env))...
+    )
     return mktempdir() do directory
         out_path =
             stdout_path === nothing ? joinpath(directory, "stdout") : String(stdout_path)
@@ -438,15 +431,16 @@ function run_checked(
                     wait = false,
                 )
                 try
-                    state =
-                        timedwait(timeout; pollint = clamp(timeout / 10, 0.001, 0.01)) do
-                            filesize(out_path) <= maximum_output_bytes &&
-                            filesize(err_path) <= maximum_output_bytes ||
-                                throw(ArgumentError("subprocess output exceeds bound"))
-                            process_exited(process)
-                        end
+                    state = timedwait(
+                        timeout; pollint = clamp(timeout / 10, 0.001, 0.01)
+                    ) do
+                        filesize(out_path) <= maximum_output_bytes &&
+                        filesize(err_path) <= maximum_output_bytes ||
+                            throw(ArgumentError("subprocess output exceeds bound"))
+                        process_exited(process)
+                    end
                     state == :ok || throw(
-                        ErrorException("subprocess exceeded $(timeout) second deadline"),
+                        ErrorException("subprocess exceeded $(timeout) second deadline")
                     )
                     wait(process)
                 finally

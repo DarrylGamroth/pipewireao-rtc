@@ -10,35 +10,30 @@ mutable struct Capture
 end
 (capture::Capture)(stream) = nothing
 @testset "Repeated masked observation payload" begin
-    capture=Capture(
-        Float32[NaN, 2],
-        nothing,
-        BufferHeader(0, 0, Int64(42), 0, UInt64(1)),
-        nothing,
+    capture = Capture(
+        Float32[NaN, 2], nothing, BufferHeader(0, 0, Int64(42), 0, UInt64(1)), nothing
     )
-    record=ClassicManagedReplay.PrefixCapture(capture, 1)
+    record = ClassicManagedReplay.PrefixCapture(capture, 1)
     record(nothing)
-    @test capture.error===nothing && record.seen[1]
+    @test capture.error === nothing && record.seen[1]
     record(nothing)
-    @test capture.error===nothing
-    capture.values[2]=3
+    @test capture.error === nothing
+    capture.values[2] = 3
     record(nothing)
     @test capture.error isa ErrorException
 end
 @testset "Selected acquisition generation" begin
-    domain=AcquisitionDomain(ntuple(_->0x01, 16))
-    previous=AcquisitionIdentity(domain, UInt64(1), UInt64(32))
-    current=AcquisitionIdentity(domain, UInt64(2), UInt64(1))
+    domain = AcquisitionDomain(ntuple(_ -> 0x01, 16))
+    previous = AcquisitionIdentity(domain, UInt64(1), UInt64(32))
+    current = AcquisitionIdentity(domain, UInt64(2), UInt64(1))
     @test ClassicManagedReplay._classic_in_generation(nothing, nothing)
     @test !ClassicManagedReplay._classic_in_generation(previous, UInt64(2))
     @test ClassicManagedReplay._classic_in_generation(current, UInt64(2))
     @test_throws ErrorException ClassicManagedReplay._classic_in_generation(
-        nothing,
-        UInt64(2),
+        nothing, UInt64(2)
     )
     @test_throws ErrorException ClassicManagedReplay._classic_in_generation(
-        current,
-        UInt64(1),
+        current, UInt64(1)
     )
 end
 end

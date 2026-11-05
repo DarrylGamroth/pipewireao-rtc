@@ -1,7 +1,7 @@
 # Scientific metadata and provenance are resolved from the same declaration
 # used to prepare the plant; operator views contain only references to it.
 canonical(value::AbstractDict) = NamedTuple{Tuple(Symbol.(sort!(collect(keys(value)))))}(
-    Tuple(canonical(value[key]) for key in sort!(collect(keys(value)))),
+    Tuple(canonical(value[key]) for key in sort!(collect(keys(value))))
 )
 # Keep array length out of the type: detector masks can contain millions of values.
 # JSON arrays retain the same byte representation as the former tuples.
@@ -24,7 +24,7 @@ function selected_binding_names(declaration, configured)
             union!(
                 names,
                 values(
-                    node_configuration_bindings(entry, declaration.document["bindings"]),
+                    node_configuration_bindings(entry, declaration.document["bindings"])
                 ),
             )
         end
@@ -43,14 +43,11 @@ function artifact_paths(declaration, configured)
     union!(paths, get(declaration.document, "binding_files", String[]))
     for graph_name in keys(declaration.graphs)
         graph = resolve_graph_document(
-            declaration.graphs[graph_name],
-            declaration,
-            configured,
-            graph_name,
+            declaration.graphs[graph_name], declaration, configured, graph_name
         )
         for node in graph["nodes"]
             if get(node, "type", nothing) in
-               ("compiled_optical_paths_f32", "compiled_optical_paths_f64")
+                ("compiled_optical_paths_f32", "compiled_optical_paths_f64")
                 push!(paths, node["config"]["model_path"])
             end
         end
@@ -78,8 +75,8 @@ function artifact_paths(declaration, configured)
     end
     for name in selected_binding_names(declaration, configured)
         binding = declaration.document["bindings"][name]
-        get(binding, "kind", nothing)=="fits" && push!(paths, binding["path"])
-        get(binding, "kind", nothing)=="measured_influences" &&
+        get(binding, "kind", nothing) == "fits" && push!(paths, binding["path"])
+        get(binding, "kind", nothing) == "measured_influences" &&
             push!(paths, setting(configured, binding["setting"])["path"])
     end
     return paths
@@ -137,18 +134,18 @@ function prescription_identity(declaration, configured)
     end
     schema = settings_description(declaration, configured)["schema"]
     structural = Dict(
-        key=>configured[key] for (key, field) in schema["properties"] if
+        key => configured[key] for (key, field) in schema["properties"] if
         get(field, "readOnly", false) && haskey(configured, key)
     )
     # Spectra alter propagation coefficients even when cold replacement permits
     # editing them; their selected values remain part of prescription identity.
     haskey(configured, "spectra") && (structural["spectra"] = configured["spectra"])
     graph_hashes = Dict(
-        name=>graph_source_identity(declaration.directory, source) for
+        name => graph_source_identity(declaration.directory, source) for
         (name, source) in declaration.document["graphs"]
     )
     templates = Dict(
-        name=>Common.sha256_file(component_template_path(name)) for
+        name => Common.sha256_file(component_template_path(name)) for
         name in declaration.templates
     )
     catalogs = simulation_catalog_identities(declaration.authoring)
@@ -188,7 +185,7 @@ function sensor_layout(::Val{:shack_hartmann}, declaration, spec)
         hdu = source["hdu"],
         axes = source["axes"],
     )
-    T = get(Dict(string(T)=>T for T in Artifacts.TARGET_TYPES), source["type"], nothing)
+    T = get(Dict(string(T) => T for T in Artifacts.TARGET_TYPES), source["type"], nothing)
     T === nothing && throw(ArgumentError("unknown subaperture origin element type"))
     source_shape = Tuple(source["shape"])
     origins = Artifacts.prepare(artifact, T, source_shape).data
@@ -198,7 +195,8 @@ function sensor_layout(::Val{:shack_hartmann}, declaration, spec)
     length(unique(positions)) == length(positions) ||
         throw(ArgumentError("duplicate subaperture origin"))
     all(
-        p -> all(axis -> 0 <= p[axis] && p[axis]+shape[axis] <= detector_shape[axis], 1:2),
+        p ->
+            all(axis -> 0 <= p[axis] && p[axis] + shape[axis] <= detector_shape[axis], 1:2),
         positions,
     ) || throw(ArgumentError("subaperture region lies outside the detector"))
     return (; detector_shape, subaperture_shape = shape, subaperture_origins = positions)
@@ -216,14 +214,15 @@ function resolve_basis(declaration, basis, description, source)
     elseif kind == "fourier"
         columns, rows = description.layout.grid_shape
         cap = definition["max_frequency"]
-        max_x, max_y = min(cap, max(0, (columns-2)÷2)), min(cap, max(0, (rows-2)÷2))
+        max_x, max_y = min(cap, max(0, (columns - 2) ÷ 2)), min(cap, max(0, (rows - 2) ÷ 2))
         # Bound the descriptor before constructing it; never truncate a basis.
         count = max_x + max_y * (2 * max_x + 1)
         1 <= count <= 256 || throw(
             ArgumentError("Fourier basis requires 1:256 frequencies; reduce max_frequency"),
         )
-        frequencies =
-            Tuple((x, y) for y = 0:max_y for x = (-max_x):max_x if y > 0 || x > 0)
+        frequencies = Tuple(
+            (x, y) for y in 0:max_y for x in (-max_x):max_x if y > 0 || x > 0
+        )
         (;
             kind,
             positions = source.fourier_positions,
@@ -235,7 +234,7 @@ function resolve_basis(declaration, basis, description, source)
         shape = Tuple(artifact["shape"])
         shape[1] == length(description.layout.command_positions) || throw(
             DimensionMismatch(
-                "sampled basis artifact rows must match mirror command count",
+                "sampled basis artifact rows must match mirror command count"
             ),
         )
         T = only(T for T in Artifacts.TARGET_TYPES if string(T) == artifact["type"])
@@ -263,8 +262,7 @@ function physical_definition(declaration)
     mirrors = map(mirror_keys) do name
         geometry = mirror(declaration, NamedTuple(), name)
         description, registration = geometry.description, geometry.registration
-        coordinates =
-            actuator_coordinates(description; pupil_registration = registration)
+        coordinates = actuator_coordinates(description; pupil_registration = registration)
         spec = document["deformable_mirrors"][name]
         pupil =
             haskey(spec, "pupil") ? (; pupil = _instrument_seal(spec["pupil"])) :
@@ -332,23 +330,19 @@ function scientific_definition(path::AbstractString, overrides = NamedTuple())
         geometry = getproperty(result.deformable_mirrors, name)
         active = selected_binding_names(declaration, configured)
         bindings = [
-            binding for
-            (binding_name, binding) in declaration.document["bindings"] if
+            binding for (binding_name, binding) in declaration.document["bindings"] if
             binding_name in active &&
-                get(binding, "kind", nothing)=="measured_influences" &&
-                get(binding, "mirror", nothing)==String(name)
+                get(binding, "kind", nothing) == "measured_influences" &&
+                get(binding, "mirror", nothing) == String(name)
         ]
-        length(bindings)<=1 || throw(
-            ArgumentError("mirror declares multiple selected influence calibrations"),
-        )
+        length(bindings) <= 1 ||
+            throw(ArgumentError("mirror declares multiple selected influence calibrations"))
         return isempty(bindings) ? geometry :
                merge(
             geometry,
             (;
                 influence_functions = measured_influences(
-                    declaration,
-                    configured,
-                    only(bindings),
+                    declaration, configured, only(bindings)
                 ).provenance
             ),
         )
@@ -356,9 +350,7 @@ function scientific_definition(path::AbstractString, overrides = NamedTuple())
     result = merge(
         result,
         (;
-            deformable_mirrors = NamedTuple{keys(result.deformable_mirrors)}(
-                Tuple(mirrors),
-            )
+            deformable_mirrors = NamedTuple{keys(result.deformable_mirrors)}(Tuple(mirrors))
         ),
     )
     if hasproperty(result, :telescope)
@@ -366,8 +358,7 @@ function scientific_definition(path::AbstractString, overrides = NamedTuple())
             result,
             (;
                 telescope = merge(
-                    result.telescope,
-                    (; resolution = configured["pupil_resolution"]),
+                    result.telescope, (; resolution = configured["pupil_resolution"])
                 )
             ),
         )
@@ -375,14 +366,13 @@ function scientific_definition(path::AbstractString, overrides = NamedTuple())
     haskey(configured, "spectra") &&
         (result = merge(result, (; spectra = _instrument_seal(configured["spectra"]))))
     return merge(
-        result,
-        (; prescription_identity = prescription_identity(declaration, configured)),
+        result, (; prescription_identity = prescription_identity(declaration, configured))
     )
 end
 
-limit_values(value::Real, count) = ntuple(_->Float64(value), count)
+limit_values(value::Real, count) = ntuple(_ -> Float64(value), count)
 limit_values(value::AbstractVector, count) =
-    length(value)==count ? Tuple(value) :
+    length(value) == count ? Tuple(value) :
     throw(DimensionMismatch("mirror limits must be command-sized"))
 limit_values(value, count) =
     throw(ArgumentError("mirror limits must be numeric scalars or arrays"))
@@ -398,42 +388,41 @@ function publication(path)
                 spec = declaration.instrument.document["deformable_mirrors"][String(name)]
                 control = declaration.controls["deformable_mirrors"][String(name)]
                 dm = getproperty(scientific.deformable_mirrors, name)
-                description =
-                    mirror(declaration, NamedTuple(), String(name)).description
+                description = mirror(declaration, NamedTuple(), String(name)).description
                 source = source_grid_coordinates(description)
                 bases = Tuple(
                     resolve_basis(declaration, basis, description, source) for
                     basis in control["shape_control"]["bases"]
                 )
                 n = length(dm.layout.command_positions)
-                controlled =
-                    if haskey(control["shape_control"], "controlled_actuators")
-                        Base.require(Main, :FilterGraphIsland)
-                        Base.invokelatest(
-                            controlled_actuators,
-                            declaration,
-                            control["shape_control"]["controlled_actuators"],
-                            n,
-                        )
-                    else
-                        ntuple(_ -> true, n)
-                    end
+                controlled = if haskey(control["shape_control"], "controlled_actuators")
+                    Base.require(Main, :FilterGraphIsland)
+                    Base.invokelatest(
+                        controlled_actuators,
+                        declaration,
+                        control["shape_control"]["controlled_actuators"],
+                        n,
+                    )
+                else
+                    ntuple(_ -> true, n)
+                end
                 shape_control = (; bases, controlled_actuators = controlled)
                 InstrumentDefinition.validate_shape_control(
-                    json_value(shape_control),
-                    spec["units"],
-                    n,
+                    json_value(shape_control), spec["units"], n
                 )
-                pupil =
-                    hasproperty(dm, :pupil) ? (; pupil = dm.pupil) :
-                    hasproperty(scientific, :telescope) &&
-                    hasproperty(scientific.telescope, :central_obstruction_ratio) ?
+                pupil = if hasproperty(dm, :pupil)
+                    (; pupil = dm.pupil)
+                elseif hasproperty(scientific, :telescope) &&
+                    hasproperty(scientific.telescope, :central_obstruction_ratio)
                     (;
                         pupil = (;
                             outer_radius = 1.0,
                             inner_radius = scientific.telescope.central_obstruction_ratio,
                         )
-                    ) : NamedTuple()
+                    )
+                else
+                    NamedTuple()
+                end
                 return (;
                     layout = dm.layout,
                     units = spec["units"],
@@ -469,7 +458,7 @@ function publication(path)
                     ) ?
                     (;
                         expected_schema = declaration.instrument.document["wavefront_sensors"][String(
-                            name,
+                            name
                         )]["expected_schema"]
                     ) : (;),
                 )
@@ -491,15 +480,13 @@ end
 
 "Resolve simulator references in a copied application before its existing parser runs."
 function prepare_simulation_configuration!(
-    application::AbstractString;
-    simulation = "simulation.conf",
-    configuration = nothing,
+    application::AbstractString; simulation = "simulation.conf", configuration = nothing
 )
     path = D.relative_asset(application, simulation)
     source = D.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
     source["version"] in (3, 4, 5, 6) || throw(
         ArgumentError(
-            "declarative instrument publication requires simulator version 3, 4, 5 or 6",
+            "declarative instrument publication requires simulator version 3, 4, 5 or 6"
         ),
     )
     plant = source["plant"]
@@ -508,7 +495,7 @@ function prepare_simulation_configuration!(
     source["rtc_configuration"] = something(configuration, source["rtc_configuration"])
     rtc = load_rtc(D.relative_asset(application, source["rtc_configuration"]))
     rtc.instrument.path == declaration.instrument.path || throw(
-        ArgumentError("simulation and RTC must reference the same physical instrument"),
+        ArgumentError("simulation and RTC must reference the same physical instrument")
     )
     context = configuration_context(declaration, configured)
     context["rtc"] = rtc.document
@@ -545,8 +532,7 @@ differ from the authoring and calibration inputs protected by this operation.
 This publishes saved metadata; it does not contact a live session.
 """
 function prepare_publication(
-    application::AbstractString;
-    configuration = "rtc/configuration.yaml",
+    application::AbstractString; configuration = "rtc/configuration.yaml"
 )
     path = D.relative_asset(application, configuration)
     rtc = load_rtc(path)
@@ -557,7 +543,7 @@ function prepare_publication(
         ),
     )
     output = abspath(joinpath(application, name))
-    startswith(output, realpath(application)*"/") && !islink(output) ||
+    startswith(output, realpath(application) * "/") && !islink(output) ||
         throw(ArgumentError("publication escapes application"))
     protected = Set([
         path,
@@ -575,7 +561,7 @@ function prepare_publication(
     haskey(rtc.document, "calibration") &&
         push!(protected, D.relative_asset(application, rtc.document["calibration"]))
     for control in values(rtc.controls["deformable_mirrors"])
-        shape=control["shape_control"]
+        shape = control["shape_control"]
         haskey(shape, "controlled_actuators") || continue
         for field in ("graph", "bindings")
             push!(

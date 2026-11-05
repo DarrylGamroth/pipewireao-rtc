@@ -38,7 +38,7 @@ function chopped_warmup(value::AbstractDict)
     duration = value["exposure_duration_ns"]
     warmup_duration(duration) || throw(
         ArgumentError(
-            "chopped warmup exposure duration must be positive Int64 nanoseconds",
+            "chopped warmup exposure duration must be positive Int64 nanoseconds"
         ),
     )
     warmup_polarity(value["trigger_high_is_fringed"])
@@ -117,8 +117,7 @@ function arguments(arguments)
         index += 1
     end
     all(
-        key -> haskey(values, key),
-        ("--bootstrap-node", "--bootstrap-instance", "--remote"),
+        key -> haskey(values, key), ("--bootstrap-node", "--bootstrap-instance", "--remote")
     ) || throw(
         ArgumentError(
             "native graph owner requires explicit --bootstrap-node, --bootstrap-instance and --remote",
@@ -144,15 +143,14 @@ function arguments(arguments)
         1 <= length(correction_properties) <= 16 &&
         all(endswith(":closed"), correction_properties) || throw(
             ArgumentError(
-                "recovery requires 1:16 declared NODE:closed correction properties",
+                "recovery requires 1:16 declared NODE:closed correction properties"
             ),
         )
         any(
-            property -> first(split(property, ':')) in recovery_nodes,
-            correction_properties,
+            property -> first(split(property, ':')) in recovery_nodes, correction_properties
         ) && throw(
             ArgumentError(
-                "recovery controller is implicit; declare only participant nodes",
+                "recovery controller is implicit; declare only participant nodes"
             ),
         )
     end
@@ -160,15 +158,15 @@ function arguments(arguments)
     supervision === nothing ||
         length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    clock_policy=haskey(values, "--reference-clock") ?
-                 (;
-        reference_clock = Common.reference_clock_configuration(values["--reference-clock"])
-    ) : (;)
+    clock_policy =
+        haskey(values, "--reference-clock") ?
+        (;
+            reference_clock = Common.reference_clock_configuration(
+                values["--reference-clock"]
+            )
+        ) : (;)
     return (;
-        remote,
-        bootstrap_node = node,
-        bootstrap_instance = instance,
-        clock_policy...,
+        remote, bootstrap_node = node, bootstrap_instance = instance, clock_policy...
     ),
     graph,
     bindings,
@@ -187,8 +185,7 @@ end
 
 function bindings(path::AbstractString)
     document = DeploymentConfiguration.decode(
-        path,
-        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     )
     return bindings(path, document)
 end
@@ -223,7 +220,7 @@ function bindings(path::AbstractString, document::AbstractDict)
 end
 
 """Validate every declaration before reading FITS; retain arrays and their snapshot provenance."""
-function prepare_artifacts(entries, formats; check = ()->nothing)
+function prepare_artifacts(entries, formats; check = () -> nothing)
     total = 0
     ports = Set{Symbol}()
     for entry in entries
@@ -261,7 +258,7 @@ function prepare_artifacts(entries, formats; check = ()->nothing)
     return [entry.port => artifact for (entry, artifact) in zip(entries, prepared)]
 end
 
-function prepare_bindings(entries, formats; check = ()->nothing)
+function prepare_bindings(entries, formats; check = () -> nothing)
     return [
         port => artifact.data for
         (port, artifact) in prepare_artifacts(entries, formats; check)
@@ -279,15 +276,9 @@ function _main(
     load_science = () -> Base.require(Main, :FilterGraphIsland),
     run = run_owner,
 )
-    binding,
-    graph_arguments,
-    fits_path,
-    correction_properties,
-    correction_timeout_ms,
-    recovery_nodes,
-    supervision_path,
-    offsets_path,
-    warmup_path = arguments(args)
+    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path = arguments(
+        args
+    )
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()

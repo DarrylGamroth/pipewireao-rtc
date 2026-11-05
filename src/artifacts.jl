@@ -177,7 +177,7 @@ unsigned_word(value::Int32) = reinterpret(UInt32, value)
 unsigned_word(value::Float32) = reinterpret(UInt32, value)
 unsigned_word(value::Float64) = reinterpret(UInt64, value)
 
-function packed_bytes(data::Array{T,N}; check = ()->nothing) where {T,N}
+function packed_bytes(data::Array{T,N}; check = () -> nothing) where {T,N}
     check()
     checked_shape(size(data), sizeof(T))
     bytes = Vector{UInt8}(undef, length(data) * sizeof(T))
@@ -194,7 +194,7 @@ function packed_bytes!(bytes::Vector{UInt8}, storage::AbstractArray{T}, check) w
     for (index, value) in enumerate(storage)
         (index - 1) % 65536 == 0 && check()
         word = unsigned_word(value)
-        for shift = 0:8:(8*sizeof(T)-1)
+        for shift in 0:8:(8*sizeof(T)-1)
             bytes[position] = UInt8((word >> shift) & 0xff)
             position += 1
         end
@@ -208,7 +208,7 @@ end
 Return transient little-endian, row-major bytes of the artifact's current data.
 Bool values use zero/one bytes. This operation does not write files.
 """
-pack(artifact::PreparedArtifact; check = ()->nothing) = packed_bytes(artifact.data; check)
+pack(artifact::PreparedArtifact; check = () -> nothing) = packed_bytes(artifact.data; check)
 
 """
     prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing)
@@ -222,7 +222,7 @@ conversion is performed. Both the source image and target are limited to 256 MiB
 The optional `check` callback can cancel preparation by throwing; its exception
 propagates, and no prepared result is returned. No file is written.
 """
-function prepare(source::FITSArtifact, ::Type{T}, shape; check = ()->nothing) where {T}
+function prepare(source::FITSArtifact, ::Type{T}, shape; check = () -> nothing) where {T}
     check()
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
     target_shape = checked_shape(shape, sizeof(T))
@@ -244,11 +244,7 @@ checked_image(image) = throw(ArgumentError("artifact HDU must contain an image")
 
 # Internal shared preparation boundary: the catalog retains exactly these bytes.
 function prepare_snapshot(
-    source::FITSArtifact,
-    ::Type{T},
-    shape,
-    original::Vector{UInt8};
-    check = ()->nothing,
+    source::FITSArtifact, ::Type{T}, shape, original::Vector{UInt8}; check = () -> nothing
 ) where {T}
     check()
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
@@ -271,7 +267,7 @@ function prepare_snapshot(
         logical_shape = Tuple(source_shape[axis] for axis in permutation)
         logical_shape == target_shape || throw(
             DimensionMismatch(
-                "FITS logical shape $logical_shape differs from target $target_shape",
+                "FITS logical shape $logical_shape differs from target $target_shape"
             ),
         )
         source_data = read(image)
@@ -291,10 +287,13 @@ function prepare_snapshot(
             "target_shape" => collect(target_shape),
             "byte_order" => "little-endian",
             "storage_order" => "row-major",
-            "conversion" =>
-                T <: AbstractFloat ?
-                "finite float conversion; target rounding allowed; overflow rejected" :
-                T === Bool ? "exact zero/one conversion" : "exact integer conversion",
+            "conversion" => if T <: AbstractFloat
+                "finite float conversion; target rounding allowed; overflow rejected"
+            elseif T === Bool
+                "exact zero/one conversion"
+            else
+                "exact integer conversion"
+            end,
         )
         for key in ("BSCALE", "BZERO", "BUNIT")
             haskey(header, key) && (provenance[key] = header[key])

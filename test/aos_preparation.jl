@@ -30,7 +30,7 @@ mutable struct ReportControlTransport
 end
 AdaptiveOpticsSimPipeWireHIL.with_frame_stream(f, ::ReportControlTransport) = f(nothing)
 AdaptiveOpticsSimPipeWireHIL.frame_acquisition_generation(
-    transport::ReportControlTransport,
+    transport::ReportControlTransport
 ) = transport.generation
 
 @testset "AOS report save precedes native report readiness and reset ACK" begin
@@ -58,28 +58,18 @@ AdaptiveOpticsSimPipeWireHIL.frame_acquisition_generation(
         mkpath(path)
         write(joinpath(path, "retained"), "do not replace this directory")
         @test_throws Base.IOError AOSReportExtension.save_report!(
-            blocked,
-            mailbox,
-            state,
-            Int64(2),
+            blocked, mailbox, state, Int64(2)
         )
         @test mailbox.report_generation == 1 && mailbox.report_sequence == 4
         @test_throws Base.IOError AOSReportExtension.prepare_source_control(
-            blocked,
-            state,
-            Int64(10),
+            blocked, state, Int64(10)
         )
         # The actual control consumer reaches a real failed filesystem save
         # after applying reset, before any Stream publication can occur.
         AOSReportControl.stage!(mailbox, AOSReportControl.RESET, Int64(1))
         transport = ReportControlTransport(1)
         @test_throws Base.IOError AOSReportExtension.consume_control!(
-            blocked,
-            mailbox,
-            transport,
-            state,
-            UInt64(0),
-            () -> (transport.generation = 2),
+            blocked, mailbox, transport, state, UInt64(0), () -> (transport.generation = 2)
         )
         @test state.sequence == 0
         @test mailbox.kind == AOSReportControl.RESET && mailbox.token == 1
@@ -187,8 +177,7 @@ inputs:
         @test all(iszero, hil_frame_buffer(science.boundary))
         adopt_hil_command!(science.boundary, replay.sequence)
         @test_throws InterruptException AOSPreparationOwner.prepare_science(
-            options;
-            check = () -> throw(InterruptException()),
+            options; check = () -> throw(InterruptException())
         )
         @testset "initial report failure prevents native preparation" begin
             runtime = ReportPreparationRuntime(nothing, false, false)

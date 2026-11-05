@@ -134,7 +134,7 @@ function wait_lockstep_command!(sink, sequence)
         observed == sequence && return nothing
         observed == 0 || error("Julia command sequence $observed; expected $sequence")
         time_ns() - start <= 5_000_000_000 || error(
-            "Julia command sequence $sequence did not arrive before the fixture timeout",
+            "Julia command sequence $sequence did not arrive before the fixture timeout"
         )
         sleep(0.001)
     end
@@ -167,7 +167,7 @@ function latency_request()
     samples > 0 || error("REVOLT latency samples must be positive")
     output = get(ENV, "PIPEWIREAO_RTC_REVOLT_LATENCY_CSV", nothing)
     isnothing(output) && error(
-        "PIPEWIREAO_RTC_REVOLT_LATENCY_CSV is required when collecting REVOLT latency",
+        "PIPEWIREAO_RTC_REVOLT_LATENCY_CSV is required when collecting REVOLT latency"
     )
     return (; warmup, samples, output)
 end
@@ -206,7 +206,7 @@ function controller_slopes(frame)
         x_moment = 0.0f0
         y_moment = 0.0f0
         flux = 0.0f0
-        for row = 0:(SUBAPERTURE_SIZE-1), column = 0:(SUBAPERTURE_SIZE-1)
+        for row in 0:(SUBAPERTURE_SIZE-1), column in 0:(SUBAPERTURE_SIZE-1)
             value = frame[row_origin+row+1, column_origin+column+1]
             x_moment += value * (Float32(column) - center)
             y_moment += value * (Float32(row) - center)
@@ -444,7 +444,7 @@ function require_source_end_unchanged(phase, snapshot, implementation)
     require_stable_provider_nodes(phase, implementation, UInt64(10))
     current = source_end_snapshot(phase)
     isequal(current, snapshot) || error(
-        "$implementation plant or command state changed after finite source completion",
+        "$implementation plant or command state changed after finite source completion"
     )
     PipeWireAO.stream_state(phase.plant.pipewire.frame_stream)
     PipeWireAO.stream_state(phase.plant.pipewire.command_stream)
@@ -594,11 +594,7 @@ function exchange_range!(
 end
 
 function exchange_latency_range!(
-    phase,
-    request,
-    reference_slopes,
-    control_matrix,
-    implementation,
+    phase, request, reference_slopes, control_matrix, implementation
 )
     total = request.warmup + request.samples
     # The established ten-frame equivalence fixture intentionally leaves the
@@ -613,11 +609,10 @@ function exchange_latency_range!(
             Tuple{String,Int,UInt64,Int64,Int64,UInt64},
         },
     }(
-        undef,
-        total,
+        undef, total
     )
 
-    for observation = 1:total
+    for observation in 1:total
         expected_sequence = first_sequence + UInt64(observation - 1)
         completed_sequence = exchange_frame!(phase.plant.pipewire)
         completed_sequence == expected_sequence || error(
@@ -641,7 +636,7 @@ function exchange_latency_range!(
         slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
         residual_command = control_matrix * (slopes - reference_slopes)
         expected_command = @. FINAL_CONTROLLER_POLE * phase.direct_state +
-           FINAL_CONTROLLER_GAIN * residual_command
+            FINAL_CONTROLLER_GAIN * residual_command
         require_close(
             "latency_hsdm277_command",
             expected_sequence,
@@ -702,7 +697,7 @@ function run_lockstep(reference_slopes, control_matrix)
             sleep(0.01)
         end
         isfile(stop_file) && return nothing
-        for sequence = UInt64(1):UInt64(10)
+        for sequence in UInt64(1):UInt64(10)
             exchange_range!(
                 phase,
                 sequence:sequence,
@@ -757,9 +752,7 @@ function main()
     write(
         native_graph_path,
         graph_configuration(
-            ENV["PIPEWIREAO_RTC_FGN_BUNDLE"],
-            reference_slopes,
-            control_matrix,
+            ENV["PIPEWIREAO_RTC_FGN_BUNDLE"], reference_slopes, control_matrix
         ),
     )
     write(julia_graph_path, graph_configuration(nothing, reference_slopes, control_matrix))
@@ -768,9 +761,7 @@ function main()
             native_graph_path,
             replace(
                 graph_configuration(
-                    ENV["PIPEWIREAO_RTC_FGN_BUNDLE"],
-                    reference_slopes,
-                    control_matrix,
+                    ENV["PIPEWIREAO_RTC_FGN_BUNDLE"], reference_slopes, control_matrix
                 ),
                 "pipewireao-rtc-revolt-controller" => "pipewireao-rtc-revolt-native",
             ),
@@ -838,8 +829,8 @@ function main()
                 flush(stdout)
                 native_second_first_done = true
             elseif native_second_first_done &&
-                   !native_second_done &&
-                   isfile(native_phase_2_continue)
+                !native_second_done &&
+                isfile(native_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
@@ -896,9 +887,9 @@ function main()
                 flush(stdout)
                 native_latency_done = true
             elseif native_third_done &&
-                   native_latency_done &&
-                   !native_end_done &&
-                   isfile(native_source_end)
+                native_latency_done &&
+                !native_end_done &&
+                isfile(native_source_end)
                 isnothing(latency) ||
                     error("finite source-end check requires no latency extension")
                 length(native_commands) == 10 || error(
@@ -971,15 +962,15 @@ function main()
                     pole = UPDATED_CONTROLLER_POLE,
                 )
                 println(
-                    "REVOLT_HIL_ADOPTION implementation=julia sequence=5 parameter=previous",
+                    "REVOLT_HIL_ADOPTION implementation=julia sequence=5 parameter=previous"
                 )
                 flush(stdout)
                 println("REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
                 julia_second_first_done = true
             elseif julia_second_first_done &&
-                   !julia_second_done &&
-                   isfile(julia_phase_2_continue)
+                !julia_second_done &&
+                isfile(julia_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
                     phase,
@@ -1036,9 +1027,9 @@ function main()
                 flush(stdout)
                 julia_latency_done = true
             elseif julia_third_done &&
-                   julia_latency_done &&
-                   !julia_end_done &&
-                   isfile(julia_source_end)
+                julia_latency_done &&
+                !julia_end_done &&
+                isfile(julia_source_end)
                 isnothing(latency) ||
                     error("finite source-end check requires no latency extension")
                 graph_step_sequence(phase.plant.graph) == UInt64(10) ||

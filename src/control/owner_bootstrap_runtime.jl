@@ -68,8 +68,9 @@ function Transport(
     connection_failure = Ref{Union{Nothing,String}}(nothing)
     try
         with_thread_loop_lock(loop) do _
-            context =
-                Context(loop; properties = Dict("application.name" => application_name))
+            context = Context(
+                loop; properties = Dict("application.name" => application_name)
+            )
             core = CoreConnection(
                 context;
                 properties = Dict("remote.name" => path),
@@ -194,7 +195,7 @@ function complete!(
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Transport, deadline::Float64; check = ()->nothing)
+function flush_terminal!(runtime::Transport, deadline::Float64; check = () -> nothing)
     Client.deadline_check(deadline, check)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
@@ -262,17 +263,7 @@ struct Status
     done::Bool
 end
 Status() = Status(
-    false,
-    false,
-    false,
-    nothing,
-    false,
-    false,
-    false,
-    nothing,
-    nothing,
-    false,
-    false,
+    false, false, false, nothing, false, false, false, nothing, nothing, false, false
 )
 
 struct OwnerReply
@@ -402,9 +393,7 @@ function Runtime(
             # Shutdown is a message too; never mutate monitor-owned handshakes.
             try
                 _enqueue!(
-                    runtime.mailbox,
-                    OwnerClosed(Channel{OwnerReply}(1));
-                    cleanup = true,
+                    runtime.mailbox, OwnerClosed(Channel{OwnerReply}(1)); cleanup = true
                 )
             catch
             end
@@ -508,8 +497,7 @@ function take_connect!(runtime::Runtime)
         status = _status(runtime)
         if status.connect_ticket !== nothing && !status.connect_taken
             ticket = _request!(
-                runtime,
-                ConnectTaken(Channel{OwnerReply}(1), status.connect_ticket),
+                runtime, ConnectTaken(Channel{OwnerReply}(1), status.connect_ticket)
             )
             ticket === nothing || return ticket
         end
@@ -533,8 +521,7 @@ before the owner closes its scientific node.
 function connecting!(runtime::Runtime, ticket::Endpoint.Ticket; ready, quit)
     preparation_check!(runtime)
     _request!(
-        runtime,
-        ConnectionRegistered(Channel{OwnerReply}(1), ticket, Hooks(ready, quit)),
+        runtime, ConnectionRegistered(Channel{OwnerReply}(1), ticket, Hooks(ready, quit))
     )
     return nothing
 end
@@ -643,10 +630,7 @@ end
 _fault_reply!(runtime, ticket, command::Codec.Command{:status}, lifecycle) =
     _apply!(runtime, ticket, command, lifecycle)
 _fault_reply!(
-    runtime,
-    ticket,
-    command::Union{Codec.Command{:connect},Codec.Command{:quit}},
-    lifecycle,
+    runtime, ticket, command::Union{Codec.Command{:connect},Codec.Command{:quit}}, lifecycle
 ) = complete!(
     runtime.transport,
     ticket,
@@ -878,10 +862,7 @@ end
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Monitor{R},
-    ::FaultConnectPending,
-    ::TicketObserved,
-    facts,
+    sm::Monitor{R}, ::FaultConnectPending, ::TicketObserved, facts
 ) where {R}
     ticket = something(sm.active)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
@@ -1023,8 +1004,7 @@ function _health(sm::Monitor)
     sm.cancel && throw(InterruptException())
     sm.finishing && throw(
         InvalidStateException(
-            "bootstrap owner finished admitting connection work",
-            :closed,
+            "bootstrap owner finished admitting connection work", :closed
         ),
     )
     return nothing
@@ -1035,10 +1015,7 @@ function _connection_health(sm::Monitor, ticket)
     return nothing
 end
 function _reply!(
-    sm::Monitor,
-    message::AbstractOwnerMessage;
-    ticket = nothing,
-    error = nothing,
+    sm::Monitor, message::AbstractOwnerMessage; ticket = nothing, error = nothing
 )
     _observe!(sm)
     put!(message.reply, OwnerReply(ticket, error))
@@ -1061,20 +1038,14 @@ end
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Monitor{R},
-    ::Monitoring,
-    ::ConnectCheckedByOwner,
-    message,
+    sm::Monitor{R}, ::Monitoring, ::ConnectCheckedByOwner, message
 ) where {R}
     _connection_health(sm, message.ticket)
     _reply!(sm, message)
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Monitor{R},
-    ::Monitoring,
-    ::ConnectAwaitedByOwner,
-    message,
+    sm::Monitor{R}, ::Monitoring, ::ConnectAwaitedByOwner, message
 ) where {R}
     _connection_health(sm, message.ticket)
     _reply!(sm, message)
@@ -1088,10 +1059,7 @@ end
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Monitor{R},
-    ::Monitoring,
-    ::ConnectionRegisteredByOwner,
-    message,
+    sm::Monitor{R}, ::Monitoring, ::ConnectionRegisteredByOwner, message
 ) where {R}
     _connection_health(sm, message.ticket)
     sm.hooks = message.hooks
@@ -1099,10 +1067,7 @@ end
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Monitor{R},
-    ::Monitoring,
-    ::ConnectCompletedByOwner,
-    message,
+    sm::Monitor{R}, ::Monitoring, ::ConnectCompletedByOwner, message
 ) where {R}
     _connection_health(sm, message.ticket)
     sm.connect_done = true
@@ -1191,7 +1156,7 @@ function _drain_owner!(sm::Monitor)
     work = 0
     # A finite per-direction budget keeps native duties responsive under callers.
     for channel in (sm.runtime.mailbox.cleanup, sm.runtime.mailbox.owner)
-        for _ = 1:MAILBOX_CAPACITY
+        for _ in 1:MAILBOX_CAPACITY
             isready(channel) || break
             message = Base.take!(channel)
             try
@@ -1255,13 +1220,12 @@ end
 function _idle!()
     # Julia Timer progress can depend on the construction thread's libuv loop.
     # This ordinary cold syscall stays responsive while main is in native code.
-    @ccall gc_safe=true usleep(Cuint(5000)::Cuint)::Cint
+    @ccall gc_safe = true usleep(Cuint(5000)::Cuint)::Cint
     yield()
     return nothing
 end
 function serve!(
-    runtime::Runtime;
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    runtime::Runtime; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
     bind(runtime.mailbox.owner, current_task())
     bind(runtime.mailbox.cleanup, current_task())
@@ -1300,10 +1264,7 @@ treat an interrupt after accepted cancellation as clean owner shutdown.
 """
 function with_owner(f, options; application_name::AbstractString = options.bootstrap_node)
     runtime = Runtime(
-        options.remote,
-        options.bootstrap_node,
-        options.bootstrap_instance;
-        application_name,
+        options.remote, options.bootstrap_node, options.bootstrap_instance; application_name
     )
     return _with_owner(f, options, runtime)
 end

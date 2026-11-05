@@ -11,11 +11,11 @@ _component_source_owner(value) =
     throw(ArgumentError("component requires a declared source owner"))
 _component_source_owner(::String) = nothing
 _component_arguments(arguments) = throw(
-    ArgumentError("owner_arguments must map roles to complete string argument vectors"),
+    ArgumentError("owner_arguments must map roles to complete string argument vectors")
 )
 _component_arguments(arguments::AbstractVector) = foreach(_component_argument, arguments)
 _component_argument(argument) = throw(
-    ArgumentError("owner_arguments must map roles to complete string argument vectors"),
+    ArgumentError("owner_arguments must map roles to complete string argument vectors")
 )
 _component_argument(::String) = nothing
 _composition_override(relative, main, runtime_files) =
@@ -23,7 +23,7 @@ _composition_override(relative, main, runtime_files) =
 _composition_override(relative::String, main, runtime_files) =
     !(relative in ("", ".", "..")) &&
     !isabspath(relative) &&
-    normpath(relative)==relative &&
+    normpath(relative) == relative &&
     !outside(relative) &&
     !(
         relative in ("deployment.conf", "instrument.json", "Project.toml", "Manifest.toml")
@@ -56,7 +56,7 @@ function composition_environment(base, component, base_root, component_root)
     base["environment"] == component["environment"] ||
         throw(ArgumentError("composed application environments differ"))
     runtime = get(base, "runtime", nothing)
-    runtime === nothing && return
+    runtime === nothing && return nothing
     project = runtime["project"]
     main = TOML.parsefile(joinpath(base_root, project, "Project.toml"))
     extra = TOML.parsefile(joinpath(component_root, project, "Project.toml"))
@@ -67,8 +67,9 @@ function composition_environment(base, component, base_root, component_root)
         get(get(extra, "compat", Dict()), name, nothing) ||
             throw(ArgumentError("base and component compatibility bounds differ for $name"))
     end
-    manifests =
-        [joinpath(root, project, "Manifest.toml") for root in (base_root, component_root)]
+    manifests = [
+        joinpath(root, project, "Manifest.toml") for root in (base_root, component_root)
+    ]
     isfile(first(manifests)) == isfile(last(manifests)) ||
         throw(ArgumentError("both composition inputs must have a manifest, or neither"))
     if isfile(first(manifests))
@@ -121,8 +122,9 @@ function merge_composition_core(base, component)
                 if property == "context.data-loops"
                     loops = get!(target, property, Any[])
                     for loop in setting
-                        matching =
-                            filter(item -> item["loop.name"] == loop["loop.name"], loops)
+                        matching = filter(
+                            item -> item["loop.name"] == loop["loop.name"], loops
+                        )
                         isempty(matching) ? push!(loops, deepcopy(loop)) :
                         only(matching) == loop ||
                         throw(ArgumentError("conflicting native data loop"))
@@ -192,30 +194,31 @@ end
 # Opaque/undeclared ports retain existing admission. Compare only fields both
 # endpoints explicitly declare; matching data does not prove native negotiation.
 function validate_composition_links(session, links)
-    nodes=Dict(
-        node["node.name"]=>node for section in ("sources", "graphs", "sinks") for
+    nodes = Dict(
+        node["node.name"] => node for section in ("sources", "graphs", "sinks") for
         node in get(session, section, [])
     )
     declared(endpoint, direction) = nothing
     function declared(endpoint::AbstractString, direction)
-        parts=split(endpoint, ':'; keepempty = true)
-        length(parts)==2 || return nothing
-        node=get(nodes, first(parts), nothing)
-        node===nothing && return nothing
-        matches=filter(
-            port->get(port, "name", nothing)==last(parts) &&
-                  get(port, "direction", nothing)==direction,
+        parts = split(endpoint, ':'; keepempty = true)
+        length(parts) == 2 || return nothing
+        node = get(nodes, first(parts), nothing)
+        node === nothing && return nothing
+        matches = filter(
+            port ->
+                get(port, "name", nothing) == last(parts) &&
+                get(port, "direction", nothing) == direction,
             get(node, "ports", []),
         )
         return isempty(matches) ? nothing : only(matches)
     end
     for link in links
-        output=declared(link["output"], "output")
-        input=declared(link["input"], "input")
-        (output===nothing || input===nothing) && continue
+        output = declared(link["output"], "output")
+        input = declared(link["input"], "input")
+        (output === nothing || input === nothing) && continue
         for field in ("shape", "element-type", "layout", "schema")
             if haskey(output, field) && haskey(input, field)
-                output[field]==input[field] || throw(
+                output[field] == input[field] || throw(
                     ArgumentError(
                         "composition link $field mismatch: $(link["output"]) → $(link["input"])",
                     ),
@@ -255,7 +258,7 @@ function compose(
         throw(ArgumentError("invalid component namespace"))
     isempty(overrides) && throw(
         ArgumentError(
-            "composition requires explicit prepared graph/configuration overrides",
+            "composition requires explicit prepared graph/configuration overrides"
         ),
     )
     base_root, main = sealed_application(base, prefix)
@@ -273,7 +276,7 @@ function compose(
     _component_source_owner(get(extra, "source-owner", nothing))
     Set(keys(owner_arguments)) ⊆ Set(owner["role"] for owner in main["owners"]) || throw(
         ArgumentError(
-            "owner_arguments may replace only existing base owner argument vectors",
+            "owner_arguments may replace only existing base owner argument vectors"
         ),
     )
     foreach(_component_arguments, values(owner_arguments))
@@ -312,7 +315,8 @@ function compose(
         spec = deepcopy(main)
         runtime_project =
             haskey(spec, "runtime") ? normpath(spec["runtime"]["project"]) : "."
-        shared_project = runtime_project=="." ? "@PACKAGE@" : "@PACKAGE@/"*runtime_project
+        shared_project =
+            runtime_project == "." ? "@PACKAGE@" : "@PACKAGE@/" * runtime_project
         for owner in spec["owners"]
             haskey(owner_arguments, owner["role"]) &&
                 (owner["argv"] = deepcopy(owner_arguments[owner["role"]]))
@@ -323,7 +327,7 @@ function compose(
             owner["role"] = roles[old_role]
             # The one shared registered runtime supplies both applications.
             owner["argv"] = [
-                arg in ("--project="*shared_project, shared_project) ? arg :
+                arg in ("--project=" * shared_project, shared_project) ? arg :
                 composition_rebase(arg, component_prefix) for arg in original["argv"]
             ]
             owner["argv"] = replace.(
@@ -348,8 +352,7 @@ function compose(
             auxiliary,
             [
                 roles[role] for role in vcat(
-                    [extra["source-owner"]],
-                    get(extra, "auxiliary-source-owners", String[]),
+                    [extra["source-owner"]], get(extra, "auxiliary-source-owners", String[])
                 )
             ],
         )
@@ -361,7 +364,7 @@ function compose(
                 haskey(roles, role) ||
                 throw(
                     ArgumentError(
-                        "component nodes must belong to its core or external owners",
+                        "component nodes must belong to its core or external owners"
                     ),
                 )
             mapping[node] = role == "core" ? "core" : roles[role]
@@ -390,8 +393,7 @@ function compose(
         core = merge_composition_core(
             D.decode(joinpath(base_root, main["core"]), prefix),
             composition_rebase(
-                D.decode(joinpath(component_root, extra["core"]), prefix),
-                component_prefix,
+                D.decode(joinpath(component_root, extra["core"]), prefix), component_prefix
             ),
         )
         for (relative, source) in selected
@@ -404,21 +406,20 @@ function compose(
         Common.write_yaml(
             joinpath(package, "composition", "receipt.yaml"),
             Dict(
-                "version"=>1,
-                "namespace"=>namespace,
-                "roles"=>Dict(roles),
-                "links"=>links,
-                "owner_arguments"=>Dict(owner_arguments),
-                "sinks"=>sinks,
-                "node_owners"=>Dict(node_owners),
-                "base_deployment_sha256"=>Common.sha256_file(
-                    joinpath(base_root, "deployment.conf"),
-                ),
-                "component_deployment_sha256"=>Common.sha256_file(
-                    joinpath(component_root, "deployment.conf"),
-                ),
-                "overrides"=>Dict(
-                    relative=>Common.sha256_file(source) for (relative, source) in selected
+                "version" => 1,
+                "namespace" => namespace,
+                "roles" => Dict(roles),
+                "links" => links,
+                "owner_arguments" => Dict(owner_arguments),
+                "sinks" => sinks,
+                "node_owners" => Dict(node_owners),
+                "base_deployment_sha256" =>
+                    Common.sha256_file(joinpath(base_root, "deployment.conf")),
+                "component_deployment_sha256" =>
+                    Common.sha256_file(joinpath(component_root, "deployment.conf")),
+                "overrides" => Dict(
+                    relative => Common.sha256_file(source) for
+                    (relative, source) in selected
                 ),
             );
             header = "Generated by PipeWireAORTC.InstrumentExport.compose from sealed built applications.",

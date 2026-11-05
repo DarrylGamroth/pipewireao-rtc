@@ -24,7 +24,7 @@ Client.capability_names(::Profile) = Tuple(
     "pipewireao.rtc.owner-bootstrap." * suffix for suffix in
     ("version", "instance", "owner-pid", "lifecycle", "last-token", "controllers")
 )
-@enum Lifecycle::UInt32 Preparing=1 Prepared=2 Connected=3 Fault=4 Stopped=5
+@enum Lifecycle::UInt32 Preparing = 1 Prepared = 2 Connected = 3 Fault = 4 Stopped = 5
 struct Command{O} end
 const OPERATIONS = ((:status, UInt32(1)), (:connect, UInt32(2)), (:quit, UInt32(3)))
 function Command(operation::Symbol)
@@ -72,18 +72,14 @@ function _payload(payload::SPA.Struct)
     return lifecycle, _message(pod_value(String, message))
 end
 function Client.encode_request(
-    profile::Profile,
-    header::Envelope.RequestHeader,
-    command::Command,
+    profile::Profile, header::Envelope.RequestHeader, command::Command
 )
     header.operation == Client.operation_id(profile, command) ||
         throw(ArgumentError("bootstrap header/command mismatch"))
     return Envelope.encode_request(header, _struct())
 end
 function Client.decode_request(
-    ::Profile,
-    header::Envelope.RequestHeader,
-    payload::SPA.Struct,
+    ::Profile, header::Envelope.RequestHeader, payload::SPA.Struct
 )
     isempty(payload.values) ||
         throw(ArgumentError("bootstrap requests require empty Struct"))
@@ -101,10 +97,7 @@ function _operation(header)
         throw(ArgumentError("unknown bootstrap completion operation"))
 end
 function Client.encode_completion(
-    ::Profile,
-    header::Envelope.ReplyHeader,
-    lifecycle::Lifecycle,
-    message::AbstractString,
+    ::Profile, header::Envelope.ReplyHeader, lifecycle::Lifecycle, message::AbstractString
 )
     _operation(header)
     header.result == 0 &&
@@ -141,13 +134,8 @@ function Client.decode_rejection(::Profile, input::Union{Pod,AbstractVector{UInt
     return Rejection(header, _payload(payload)...)
 end
 Client.encode_failure(
-    profile::Profile,
-    header::Envelope.ReplyHeader,
-    lifecycle::Lifecycle,
+    profile::Profile, header::Envelope.ReplyHeader, lifecycle::Lifecycle
 ) = Client.encode_completion(
-    profile,
-    header,
-    lifecycle,
-    "request expired or controller removed",
+    profile, header, lifecycle, "request expired or controller removed"
 )
 end

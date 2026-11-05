@@ -4,18 +4,19 @@
 function optical_chopped_document(concrete, branch)
     document = deepcopy(concrete)
     specification = document["filter.graph"]
-    residuals =
-        filter(node -> node["label"] == "scc-pixel-residual-f32", specification["nodes"])
+    residuals = filter(
+        node -> node["label"] == "scc-pixel-residual-f32", specification["nodes"]
+    )
     length(residuals) == 1 ||
         throw(ArgumentError("chopped calibration requires one SCC pixel-residual Node"))
     endpoint = only(residuals)["name"] * ":selected-residuals"
-    nodes = Dict(node["name"]=>node for node in specification["nodes"])
+    nodes = Dict(node["name"] => node for node in specification["nodes"])
     links = get(specification, "links", [])
     selected = Set{String}()
     visiting = Set{String}()
     function visit(name)
         name in visiting && throw(ArgumentError("cycle in chopped measurement prefix"))
-        name in selected && return
+        name in selected && return nothing
         haskey(nodes, name) ||
             throw(ArgumentError("unknown chopped measurement dependency"))
         push!(visiting, name)
@@ -44,16 +45,18 @@ function optical_chopped_document(concrete, branch)
     )
     get(pair["config"], "require_acquisition_identity", false) === true ||
         throw(ArgumentError("chopped calibration requires acquisition identity continuity"))
-    specification["nodes"] =
-        [node for node in specification["nodes"] if node["name"] in selected]
-    specification["links"] =
-        [link for link in links if calibration_endpoint(link["input"])[2] in selected]
+    specification["nodes"] = [
+        node for node in specification["nodes"] if node["name"] in selected
+    ]
+    specification["links"] = [
+        link for link in links if calibration_endpoint(link["input"])[2] in selected
+    ]
     specification["inputs"] = [
         port for port in specification["inputs"] if calibration_port(port).node in selected
     ]
-    specification["outputs"] = [Dict("name"=>"measurements", "endpoint"=>endpoint)]
+    specification["outputs"] = [Dict("name" => "measurements", "endpoint" => endpoint)]
     names = Set(calibration_port(port).name for port in specification["inputs"])
-    names == Set((:image, Symbol(string(branch)*"-reference-difference"))) || throw(
+    names == Set((:image, Symbol(string(branch) * "-reference-difference"))) || throw(
         ArgumentError(
             "chopped prefix must expose image and its matched reference-difference parameter",
         ),
@@ -74,13 +77,13 @@ function optical_chopped_template(plan, name; mask = nothing)
     document = optical_chopped_document(getproperty(plan.templates, name), name)
     calibration = merge(
         deepcopy(plan.frames),
-        Dict("pixel_selection_mask"=>vec(permutedims(mask, (2, 1)))),
+        Dict("pixel_selection_mask" => vec(permutedims(mask, (2, 1)))),
     )
     calibration[string(name)] = merge(
         Dict{String,Any}(calibration[string(name)]),
         Dict(
-            "pixel_selection_mask"=>calibration["pixel_selection_mask"],
-            "selected_pixel_count"=>count(mask),
+            "pixel_selection_mask" => calibration["pixel_selection_mask"],
+            "selected_pixel_count" => count(mask),
         ),
     )
     context = PipeWireAORTC.InstrumentExport.graph_context(
@@ -96,20 +99,15 @@ function optical_chopped_template(plan, name; mask = nothing)
     )
     pair["config"]["trigger_high_is_fringed"] ==
     getproperty(plan.chopping, name).trigger_high_is_fringed || throw(
-        ArgumentError("chopped measurement polarity differs from its optical publisher"),
+        ArgumentError("chopped measurement polarity differs from its optical publisher")
     )
     return document
 end
 
 function prepare_optical_chopped_frontend(
-    document,
-    name,
-    reference,
-    duration,
-    polarity;
-    mask = nothing,
+    document, name, reference, duration, polarity; mask = nothing
 )
-    parameter = Symbol(string(name)*"-reference-difference")
+    parameter = Symbol(string(name) * "-reference-difference")
     mask === nothing && (mask = trues(size(reference)))
     size(mask) == size(reference) && any(mask) ||
         throw(DimensionMismatch("chopped mask differs from reference image"))
@@ -118,22 +116,19 @@ function prepare_optical_chopped_frontend(
         path = joinpath(directory, "graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path, document)
         options = FilterGraphIsland.parse_arguments([
-            "--graph",
-            path,
-            "--check",
-            "--execution",
-            "complete-frame",
+            "--graph", path, "--check", "--execution", "complete-frame"
         ])
         FilterGraphIsland.prepare_service_graph(
             options;
             initial_parameters = formats -> begin
                 keys(formats) == (parameter,) &&
-                getproperty(formats, parameter).shape == (length(reference_pixels),) || throw(
-                    ArgumentError(
-                        "chopped frontend reference parameter differs from detector pixels",
-                    ),
-                )
-                [parameter=>reference_pixels]
+                getproperty(formats, parameter).shape == (length(reference_pixels),) ||
+                    throw(
+                        ArgumentError(
+                            "chopped frontend reference parameter differs from detector pixels",
+                        ),
+                    )
+                [parameter => reference_pixels]
             end,
         )
     end
@@ -143,7 +138,7 @@ function prepare_optical_chopped_frontend(
         formats.image.element_type === Float32 &&
         formats.image.shape == size(reference) || throw(
             ArgumentError(
-                "chopped frontend must consume the actual Float32 detector image",
+                "chopped frontend must consume the actual Float32 detector image"
             ),
         )
         output = JuliaFilterGraph.output_formats(graph).measurements
@@ -182,16 +177,11 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
                                  FGA.ChoppedImageUnfringed,
             exposure_duration_nanoseconds = frontend.duration,
             acquisition_identity = FGA.SampleAcquisitionIdentity(
-                ntuple(_->UInt8(0xc1), 16),
-                1,
-                index,
+                ntuple(_ -> UInt8(0xc1), 16), 1, index
             ),
         )
         result = JuliaFilterGraph.process!(
-            frontend.outputs,
-            frontend.graph,
-            frontend.inputs,
-            (image = metadata,),
+            frontend.outputs, frontend.graph, frontend.inputs, (image = metadata,)
         )
         if index == 1
             result === FGA.SccPixelResidualIncompletePair || throw(

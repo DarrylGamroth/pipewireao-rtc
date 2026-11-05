@@ -280,10 +280,7 @@ function _validate_payload(value::SPA.Struct)
 end
 
 function _envelope_size(
-    kind::Symbol,
-    header_values::Vector{PipeWireAO.Pod},
-    payload::SPA.Struct,
-    limit::Int,
+    kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int
 )
     hname, pname = _names(kind)
     headersize = _pod_struct_size(header_values, limit)
@@ -298,10 +295,7 @@ function _envelope_size(
 end
 
 function _envelope(
-    kind::Symbol,
-    header_values::Vector{PipeWireAO.Pod},
-    payload::SPA.Struct,
-    limit::Int,
+    kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int
 )
     _envelope_size(kind, header_values, payload, limit) <= limit ||
         throw(ArgumentError("control POD exceeds its byte limit"))
@@ -317,9 +311,7 @@ function _envelope(
     )
     pod = PipeWireAO.Pod(
         SPA.Parameter(
-            SPA.OBJECT_PROPS,
-            SPA.PARAM_PROPS,
-            SPA.Property(SPA.PROP_PARAMS, value),
+            SPA.OBJECT_PROPS, SPA.PARAM_PROPS, SPA.Property(SPA.PROP_PARAMS, value)
         ),
     )
     _strict_pod(pod, limit)
@@ -332,10 +324,7 @@ function encode_request(header::RequestHeader, payload::SPA.Struct)
 end
 
 function _encode_reply(
-    kind::Symbol,
-    header::ReplyHeader,
-    payload::SPA.Struct,
-    endpoint::Symbol,
+    kind::Symbol, header::ReplyHeader, payload::SPA.Struct, endpoint::Symbol
 )
     if kind === :completion
         header.result <= 0 ||
@@ -382,10 +371,10 @@ function _decode_identity(values)
     token = _long(values[6])
     operation = _id(values[7])
     if iszero(gid) &&
-       iszero(serial) &&
-       iszero(instance) &&
-       iszero(token) &&
-       iszero(operation)
+        iszero(serial) &&
+        iszero(instance) &&
+        iszero(token) &&
+        iszero(operation)
         return nothing, token, operation
     end
     controller = ControllerIdentity(gid, serial, instance)

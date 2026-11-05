@@ -34,16 +34,14 @@ const Parameters = PipeWireAORTC.ParameterSource
             @test source.sequence == 0
             @test source.stream === nothing
             @test source.initial_provenance["original_sha256"] ==
-                  bytes2hex(sha256(read(artifact)))
+                bytes2hex(sha256(read(artifact)))
             @test source.initial_provenance["publication_storage_order"] == layout
             @test source.initial_provenance["publication_sha256"] ==
-                  bytes2hex(sha256(source.bytes))
+                bytes2hex(sha256(source.bytes))
             @test sort(readdir(directory)) == sort([initial_files; "parameters.json"])
         end
         @test_throws InterruptException Parameters.read_declarations(
-            config,
-            Base.Event();
-            check = ()->throw(InterruptException()),
+            config, Base.Event(); check = () -> throw(InterruptException())
         )
 
         for version in (0, 3, true, 2.0)
@@ -89,8 +87,7 @@ const Parameters = PipeWireAORTC.ParameterSource
         @test occursin("parameter source supports only F32_LE", sprint(showerror, failure))
 
         legacy = merge(
-            idle,
-            Dict("initial_payload_path" => joinpath(directory, "legacy-payload")),
+            idle, Dict("initial_payload_path" => joinpath(directory, "legacy-payload"))
         )
         write(legacy["initial_payload_path"], vec(data))
         save(2, [legacy])

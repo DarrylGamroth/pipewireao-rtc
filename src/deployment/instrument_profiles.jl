@@ -1,11 +1,11 @@
 _runtime_backends(selected) = throw(
     ArgumentError(
-        "runtime-backends must list distinct known accelerator backends: cuda, amdgpu",
+        "runtime-backends must list distinct known accelerator backends: cuda, amdgpu"
     ),
 )
 function _runtime_backends(selected::AbstractVector)
     foreach(_runtime_backend, selected)
-    length(unique(selected))==length(selected) || throw(
+    length(unique(selected)) == length(selected) || throw(
         ArgumentError(
             "runtime-backends must list distinct known accelerator backends: cuda, amdgpu",
         ),
@@ -14,13 +14,13 @@ function _runtime_backends(selected::AbstractVector)
 end
 _runtime_backend(backend) = throw(
     ArgumentError(
-        "runtime-backends must list distinct known accelerator backends: cuda, amdgpu",
+        "runtime-backends must list distinct known accelerator backends: cuda, amdgpu"
     ),
 )
 _runtime_backend(backend::AbstractString) =
     backend in ("cuda", "amdgpu") || throw(
         ArgumentError(
-            "runtime-backends must list distinct known accelerator backends: cuda, amdgpu",
+            "runtime-backends must list distinct known accelerator backends: cuda, amdgpu"
         ),
     )
 _profile_bindings_mapping(bindings, label) =
@@ -34,15 +34,11 @@ function _merge_profile_field(base, value, field)
     return base
 end
 
-const INSTRUMENT_PROFILE_FIELDS =
-    Set(["application", "mode", "bindings", "devices", "calibration"])
+const INSTRUMENT_PROFILE_FIELDS = Set([
+    "application", "mode", "bindings", "devices", "calibration"
+])
 const HOST_PROFILE_FIELDS = Set([
-    "scheduling",
-    "bindings",
-    "environment",
-    "analysis",
-    "simulation",
-    "runtime-backends",
+    "scheduling", "bindings", "environment", "analysis", "simulation", "runtime-backends"
 ])
 
 function runtime_backends(profile)
@@ -68,7 +64,7 @@ function profile_fields(document::AbstractDict, allowed, label)
             startswith(name, "BOOTSTRAP_INSTANCE_")
         ) && throw(
             ArgumentError(
-                "profile bindings cannot replace runtime or Julia executable bindings",
+                "profile bindings cannot replace runtime or Julia executable bindings"
             ),
         )
         binding_value(value)
@@ -106,7 +102,7 @@ function combine_profile(profile, host = nothing)
     for name in keys(get(profile, "bindings", Dict()))
         (name == "RT_PRIORITY" || endswith(name, "_CPU") || endswith(name, "_CPUS")) &&
             throw(
-                ArgumentError("host placement binding belongs in the host profile: $name"),
+                ArgumentError("host placement binding belongs in the host profile: $name")
             )
     end
     host === nothing && return deepcopy(profile)
@@ -115,15 +111,13 @@ function combine_profile(profile, host = nothing)
         (name == "RT_PRIORITY" || endswith(name, "_CPU") || endswith(name, "_CPUS")) &&
             throw(
                 ArgumentError(
-                    "scheduling binding must be derived from host scheduling: $name",
+                    "scheduling binding must be derived from host scheduling: $name"
                 ),
             )
     end
     compiled = host_scheduling(host)
     profile_fields(
-        compiled,
-        union(HOST_PROFILE_FIELDS, Set(["placement"])),
-        "resolved host profile",
+        compiled, union(HOST_PROFILE_FIELDS, Set(["placement"])), "resolved host profile"
     )
     return merge_profile(profile, compiled)
 end

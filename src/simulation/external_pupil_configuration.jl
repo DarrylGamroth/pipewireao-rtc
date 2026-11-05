@@ -15,7 +15,10 @@ function verify_clocked_mirror_plane(node, mirror_config, schema, resolution)
     elseif node["type"] == "compiled_optical_paths_f32"
         grid = get(config, "dm_grid", nothing)
         clocked_mirror_grid(grid)
-        merge(Dict{String,Any}(grid), Dict("schema"=>get(config, "dm_opd_schema", nothing)))
+        merge(
+            Dict{String,Any}(grid),
+            Dict("schema" => get(config, "dm_opd_schema", nothing)),
+        )
     else
         throw(ArgumentError("unsupported clocked optical mirror-plane owner"))
     end
@@ -26,8 +29,7 @@ function verify_clocked_mirror_plane(node, mirror_config, schema, resolution)
     get(plane, "axes", nothing) == [1, 2] &&
     get(plane, "center_pixel", nothing) == [center, center] &&
     all(
-        value -> isapprox(value, pitch; rtol = 1e-6, atol = 0),
-        get(plane, "sampling_m", []),
+        value -> isapprox(value, pitch; rtol = 1e-6, atol = 0), get(plane, "sampling_m", [])
     ) &&
     length(get(plane, "sampling_m", [])) == 2 ||
         throw(ArgumentError("optical mirror plane schema, axes or sampling differ"))
@@ -65,8 +67,7 @@ function external_pupil_chopping(value::AbstractDict, declaration)
             unfringed_graph = graph,
             initial_phase = phase,
             trigger_high_is_fringed = boolean(
-                row["trigger_high_is_fringed"],
-                "trigger_high_is_fringed",
+                row["trigger_high_is_fringed"], "trigger_high_is_fringed"
             ),
         )
     end
@@ -122,8 +123,9 @@ function external_pupil_configuration(path, document)
         ("definition", "settings"),
         "external-pupil plant",
     )
-    definition =
-        DeploymentConfiguration.relative_asset(dirname(config_path), entry["definition"])
+    definition = DeploymentConfiguration.relative_asset(
+        dirname(config_path), entry["definition"]
+    )
     declaration = InstrumentConfiguration.load_simulation(definition)
     haskey(declaration.document, "hil") &&
         throw(ArgumentError("external-pupil owner requires standalone optical paths"))
@@ -139,7 +141,7 @@ function external_pupil_configuration(path, document)
     optical_sensor_nodes(nodes, paths)
     names = Tuple(Symbol.(sort!(collect(keys(paths)))))
     sensor_nodes = NamedTuple{names}(
-        Tuple(node_name(nodes[string(name)], "sensor node") for name in names),
+        Tuple(node_name(nodes[string(name)], "sensor node") for name in names)
     )
     pupil_node = clocked ? nothing : node_name(document["pupil_node"], "pupil node")
     all_nodes = (clocked ? document["command_node"] : pupil_node, values(sensor_nodes)...)
@@ -148,11 +150,10 @@ function external_pupil_configuration(path, document)
     for (name, optical_path) in paths
         haskey(declaration.graphs, name) ||
             throw(ArgumentError("optical path has no graph $name"))
-        sensor =
-            declaration.instrument.document["wavefront_sensors"][optical_path["sensor"]]
+        sensor = declaration.instrument.document["wavefront_sensors"][optical_path["sensor"]]
         duration = get(get(sensor, "acquisition", Dict()), "exposure_duration_s", nothing)
         InstrumentConfiguration.isfinite_positive(duration) || throw(
-            ArgumentError("each optical sensor requires a positive exposure duration"),
+            ArgumentError("each optical sensor requires a positive exposure duration")
         )
     end
     backend = Symbol(text(document["backend"], "backend"))
@@ -161,16 +162,15 @@ function external_pupil_configuration(path, document)
     device = integer(document["device"], "device", 0, typemax(Int32))
     (backend === :cpu ? device == 0 : backend !== :amdgpu || device >= 1) ||
         throw(ArgumentError("invalid external-pupil device ordinal"))
-    instrument =
-        DeploymentConfiguration.relative_asset(dirname(config_path), document["instrument"])
-    rtc_configuration = DeploymentConfiguration.relative_asset(
-        dirname(config_path),
-        document["rtc_configuration"],
+    instrument = DeploymentConfiguration.relative_asset(
+        dirname(config_path), document["instrument"]
     )
-    sensor_buffers=integer(get(document, "sensor_buffers", 3), "sensor_buffers", 2, 64)
+    rtc_configuration = DeploymentConfiguration.relative_asset(
+        dirname(config_path), document["rtc_configuration"]
+    )
+    sensor_buffers = integer(get(document, "sensor_buffers", 3), "sensor_buffers", 2, 64)
     source = if clocked
-        command_buffers =
-            integer(get(document, "command_buffers", 3), "command_buffers", 2, 64)
+        command_buffers = integer(get(document, "command_buffers", 3), "command_buffers", 2, 64)
         source_graph = text(document["source_graph"], "optical source graph")
         haskey(declaration.graphs, source_graph) && source_graph != "calibration" ||
             throw(ArgumentError("unknown optical source graph"))
@@ -181,21 +181,19 @@ function external_pupil_configuration(path, document)
         )
         command_count = length(
             InstrumentConfiguration.json_value(
-                InstrumentConfiguration.physical_definition(declaration.instrument),
+                InstrumentConfiguration.physical_definition(declaration.instrument)
             )["deformable_mirrors"][mirror]["layout"]["command_positions"],
         )
-        command_input =
-            identifier(document["command_input"], "optical source command input")
+        command_input = identifier(
+            document["command_input"], "optical source command input"
+        )
         graph_document = InstrumentConfiguration.graph_document(
-            declaration,
-            configured;
-            simulation_graph = source_graph,
+            declaration, configured; simulation_graph = source_graph
         )
         inputs = filter(
-            row -> row["name"] == string(command_input),
-            graph_document["inputs"],
+            row -> row["name"] == string(command_input), graph_document["inputs"]
         )
-        length(inputs) == 1 && only(inputs)["destination"] == mirror*".pdm_command" ||
+        length(inputs) == 1 && only(inputs)["destination"] == mirror * ".pdm_command" ||
             throw(
                 ArgumentError(
                     "clocked optical command must bind the declared physical mirror input",
@@ -205,7 +203,7 @@ function external_pupil_configuration(path, document)
         length(nodes) == 1 ||
             throw(ArgumentError("clocked optical source requires one mirror"))
         only(nodes)["type"] == "deformable_mirror_surface_f32" || throw(
-            ArgumentError("clocked optical mirror requires a Float32 surface model"),
+            ArgumentError("clocked optical mirror requires a Float32 surface model")
         )
         command_binding = declaration.document["bindings"][only(inputs)["binding"]]
         get(command_binding, "type", nothing) == "Float32" &&
@@ -216,7 +214,7 @@ function external_pupil_configuration(path, document)
         )
         mirror_config = only(nodes)["config"]
         get(mirror_config, "pdm_command_schema", nothing) == document["command_schema"] || throw(
-            ArgumentError("clocked optical command schema differs from mirror port"),
+            ArgumentError("clocked optical command schema differs from mirror port")
         )
         rtc = InstrumentConfiguration.load_rtc(rtc_configuration)
         limiter = rtc.controls["deformable_mirrors"][mirror]["limiter"]
@@ -233,16 +231,16 @@ function external_pupil_configuration(path, document)
                 ),
             )
         only(filter(row -> row["name"] == "dm_opd", graph_document["outputs"]))["source"] ==
-        mirror*".surface_opd" || throw(
+        mirror * ".surface_opd" || throw(
             ArgumentError(
-                "clocked optical mirror OPD must retain the measured mirror output",
+                "clocked optical mirror OPD must retain the measured mirror output"
             ),
         )
         rate = integer(document["rate"], "rate", 1, 1_000_000_000)
-        period_ns = UInt64(div(1_000_000_000+div(rate, 2), rate))
-        round(UInt64, Float64(Float32(declaration.document["frame_period_s"]))*1e9) ==
+        period_ns = UInt64(div(1_000_000_000 + div(rate, 2), rate))
+        round(UInt64, Float64(Float32(declaration.document["frame_period_s"])) * 1e9) ==
         period_ns || throw(
-            ArgumentError("clocked optical source cadence differs from its graph"),
+            ArgumentError("clocked optical source cadence differs from its graph")
         )
         limit = document["command_limit"]
         InstrumentConfiguration.isfinite_positive(limit) && isfinite(Float32(limit)) ||
@@ -252,21 +250,18 @@ function external_pupil_configuration(path, document)
         mirror_schema = get(mirror_config, "surface_opd_schema", nothing)
         mirror_resolution = get(mirror_config, "resolution", nothing)
         physical_mirror_raster(mirror_schema, mirror_resolution) || throw(
-            ArgumentError("physical mirror must declare an OPD schema and raster"),
+            ArgumentError("physical mirror must declare an OPD schema and raster")
         )
         optical_graphs = vcat(
-            collect(keys(paths)),
-            [row.unfringed_graph for row in values(chopping)],
+            collect(keys(paths)), [row.unfringed_graph for row in values(chopping)]
         )
         for optical_graph in optical_graphs
             graph = InstrumentConfiguration.graph_document(
-                declaration,
-                configured;
-                simulation_graph = optical_graph,
+                declaration, configured; simulation_graph = optical_graph
             )
             dm_inputs = filter(row -> row["name"] == "dm_opd", graph["inputs"])
             length(dm_inputs) == 1 || throw(
-                ArgumentError("optical graph must expose the physical mirror OPD"),
+                ArgumentError("optical graph must expose the physical mirror OPD")
             )
             input = only(dm_inputs)
             binding = declaration.document["bindings"][input["binding"]]
@@ -278,14 +273,12 @@ function external_pupil_configuration(path, document)
             length(nodes) == 1 ||
                 throw(ArgumentError("optical mirror input has no unique owner"))
             verify_clocked_mirror_plane(
-                only(nodes),
-                mirror_config,
-                mirror_schema,
-                mirror_resolution,
+                only(nodes), mirror_config, mirror_schema, mirror_resolution
             )
         end
-        source_amplitude_binding =
-            text(document["source_amplitude_binding"], "source amplitude binding")
+        source_amplitude_binding = text(
+            document["source_amplitude_binding"], "source amplitude binding"
+        )
         haskey(declaration.document["bindings"], source_amplitude_binding) ||
             throw(ArgumentError("unknown static pupil amplitude binding"))
         amplitude_binding = declaration.document["bindings"][source_amplitude_binding]
@@ -300,8 +293,9 @@ function external_pupil_configuration(path, document)
                 ),
             )
         source_pupil_axes = document["source_pupil_axes"]
-        pupil_output =
-            only(filter(row -> row["name"] == "pupil_opd", graph_document["outputs"]))
+        pupil_output = only(
+            filter(row -> row["name"] == "pupil_opd", graph_document["outputs"])
+        )
         pupil_owner = first(split(pupil_output["source"], "."))
         pupil_nodes = filter(row -> row["name"] == pupil_owner, graph_document["nodes"])
         length(pupil_nodes) == 1 &&
@@ -334,7 +328,7 @@ function external_pupil_configuration(path, document)
     return merge(
         (;
             reference_clock = reference_clock_configuration(
-                get(document, "reference_clock", nothing),
+                get(document, "reference_clock", nothing)
             ),
             version = clocked ? 6 : 4,
             mode = clocked ? :clocked_optical : :external_pupil,
@@ -349,12 +343,10 @@ function external_pupil_configuration(path, document)
             instrument,
             rtc_configuration,
             calibration_identity = text(
-                document["calibration_identity"],
-                "calibration identity",
+                document["calibration_identity"], "calibration identity"
             ),
             prescription_identity = text(
-                document["prescription_identity"],
-                "prescription identity",
+                document["prescription_identity"], "prescription identity"
             ),
         ),
         source,
@@ -370,7 +362,7 @@ function verify_external_pupil_declaration(options)
     rtc = IC.load_rtc(options.rtc_configuration)
     rtc.instrument.path == declaration.instrument.path || throw(
         ArgumentError(
-            "external-pupil simulation and RTC must reference the same instrument",
+            "external-pupil simulation and RTC must reference the same instrument"
         ),
     )
     options.calibration_identity == rtc.document["calibration_identity"] ||

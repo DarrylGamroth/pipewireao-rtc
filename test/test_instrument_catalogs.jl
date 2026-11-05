@@ -42,13 +42,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     @test IC.resolve_basis_definition(first)["definition"]["modes"][1]["name"] == "Piston"
 
     selected = deepcopy(first)
-    selected["definition"] =
-        Dict("modes" => [Dict("n" => 2, "m" => 0, "name" => "Defocus")])
+    selected["definition"] = Dict(
+        "modes" => [Dict("n" => 2, "m" => 0, "name" => "Defocus")]
+    )
     @test IC.resolve_basis_definition(selected)["definition"]["modes"] ==
-          selected["definition"]["modes"]
+        selected["definition"]["modes"]
     fourier = merge(first, Dict("template" => "fourier"))
     @test IC.resolve_basis_definition(fourier)["definition"] ==
-          Dict("kind" => "fourier", "max_frequency" => 7)
+        Dict("kind" => "fourier", "max_frequency" => 7)
     @test IC.resolve_basis_definition(fourier)["normalization"] == "sampled_rms"
     fourier["definition"] = Dict("max_frequency" => 3)
     @test IC.resolve_basis_definition(fourier)["definition"]["max_frequency"] == 3
@@ -102,8 +103,9 @@ end
         "description" => "Prepared simulator settings",
     )
     schema = IC.resolve_settings_schema(selection)
-    second =
-        IC.resolve_settings_schema(merge(selection, Dict("title" => "Second instrument")))
+    second = IC.resolve_settings_schema(
+        merge(selection, Dict("title" => "Second instrument"))
+    )
     @test schema["title"] == "First instrument" && second["title"] == "Second instrument"
     @test schema["properties"] == second["properties"]
     @test !haskey(schema["properties"]["profile"], "enum")
@@ -112,7 +114,7 @@ end
     atmosphere = schema["properties"]["atmosphere"]["properties"]
     @test atmosphere["reference_wavelength_m"]["x-display-scale"] == 1e9
     @test atmosphere["reference_wavelength_m"]["x-display-title"] ==
-          "Reference wavelength (nm)"
+        "Reference wavelength (nm)"
     @test atmosphere["layer_ids"]["uniqueItems"]
     @test atmosphere["rng_seed"]["minimum"] == 0
     @test Set(keys(atmosphere)) == Set((
@@ -128,19 +130,20 @@ end
     ))
     atmosphere["r0"]["title"] = "Changed"
     @test second["properties"]["atmosphere"]["properties"]["r0"]["title"] ==
-          "Fried parameter r0 (m)"
+        "Fried parameter r0 (m)"
     @test IC.resolve_settings_schema("atmosphere")["properties"] == second["properties"]
 
-    augmented =
-        merge(selection, Dict("properties" => Dict("gain" => Dict("type" => "number"))))
+    augmented = merge(
+        selection, Dict("properties" => Dict("gain" => Dict("type" => "number")))
+    )
     @test IC.resolve_settings_schema(augmented)["properties"]["gain"] ==
-          Dict("type" => "number")
+        Dict("type" => "number")
     @test !haskey(IC.resolve_settings_schema(selection)["properties"], "gain")
-    inline =
-        Dict("type" => "object", "properties" => Dict("gain" => Dict("type" => "number")))
+    inline = Dict(
+        "type" => "object", "properties" => Dict("gain" => Dict("type" => "number"))
+    )
     @test IC.resolve_settings_schema(inline) == inline
-    measured =
-        IC.resolve_settings_schema("measured_influences")["properties"]["influence_functions"]
+    measured = IC.resolve_settings_schema("measured_influences")["properties"]["influence_functions"]
     @test measured["readOnly"]
     @test Set(measured["required"]) == Set((
         "path",
@@ -157,17 +160,17 @@ end
     ))
     @test measured["properties"]["axes"]["uniqueItems"]
     @test measured["properties"]["shape"]["minItems"] ==
-          measured["properties"]["shape"]["maxItems"] ==
-          3
+        measured["properties"]["shape"]["maxItems"] ==
+        3
     @test measured["properties"]["type"]["enum"] == ["Float32", "Float64"]
     @test measured["properties"]["sha256"]["minLength"] ==
-          measured["properties"]["sha256"]["maxLength"] ==
-          64
+        measured["properties"]["sha256"]["maxLength"] ==
+        64
     @test measured["properties"]["command_indices"]["maxItems"] == 4096
     @test measured["properties"]["sample_pitch"]["items"]["exclusiveMinimum"] == 0
     measured["properties"]["axes"]["title"] = "Changed"
     @test IC.resolve_settings_schema("measured_influences")["properties"]["influence_functions"]["properties"]["axes"]["title"] ==
-          "FITS axes (column, row, command)"
+        "FITS axes (column, row, command)"
     for invalid in (
         "unknown",
         "../atmosphere",
@@ -188,14 +191,13 @@ end
 end
 
 @testset "inline profile properties do not collide with catalog selection" begin
-    property = Dict("template"=>Dict("type"=>"string"))
+    property = Dict("template" => Dict("type" => "string"))
     @test IC.resolve_profile_settings_schema(property) == property
     @test IC.resolve_profile_settings_schema(property) !== property
     @test haskey(
-        IC.resolve_profile_settings_schema("measured_influences"),
-        "influence_functions",
+        IC.resolve_profile_settings_schema("measured_influences"), "influence_functions"
     )
     @test_throws ArgumentError IC.resolve_profile_settings_schema(
-        Dict("template"=>"unknown"),
+        Dict("template" => "unknown")
     )
 end

@@ -121,10 +121,7 @@ end
 
 function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:AbstractProfile}
     return Observation{
-        P,
-        lifecycle_type(profile),
-        completion_type(profile),
-        rejection_type(profile),
+        P,lifecycle_type(profile),completion_type(profile),rejection_type(profile)
     }(
         profile,
         instance,
@@ -147,10 +144,7 @@ function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Abstrac
 end
 
 function fail!(
-    observation::Observation,
-    message;
-    at::Float64 = monotonic(),
-    retirement::Bool = false,
+    observation::Observation, message; at::Float64 = monotonic(), retirement::Bool = false
 )
     !retirement &&
         observation.fatal_failure === nothing &&
@@ -233,8 +227,7 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
             observation.max_accepted = cap.last_token
         elseif name == "pipewireao.rtc.control.completion.header"
             header, payload = Envelope.decode_completion(
-                pod;
-                endpoint = reply_endpoint(observation.profile),
+                pod; endpoint = reply_endpoint(observation.profile)
             )
             header.endpoint_instance == observation.instance ||
                 throw(ArgumentError("completion instance changed"))
@@ -252,9 +245,7 @@ function observe!(observation::Observation, pod::Pod; at::Union{Nothing,Float64}
                     throw(ArgumentError("conflicting terminal completion"))
             end
             recorded = ObservedReply{completion_type(observation.profile)}(
-                value,
-                at === nothing ? monotonic() : at,
-                bytes,
+                value, at === nothing ? monotonic() : at, bytes
             )
             if previous === nothing || header.token >= previous.value.header.token
                 observation.completion = recorded
@@ -659,9 +650,7 @@ function connect(
         with_thread_loop_lock(client.loop) do _
             deadline_check(deadline, check)
             client.identity = Envelope.ControllerIdentity(
-                marker.id,
-                serial(marker.properties, marker_name),
-                instance,
+                marker.id, serial(marker.properties, marker_name), instance
             )
             client.marker_node = bind(
                 something(client.registry),
@@ -718,8 +707,9 @@ function connect(
         end
         return client
     catch error
-        contextual =
-            UnknownOutcome("connection failed during $stage: $(sprint(showerror, error))")
+        contextual = UnknownOutcome(
+            "connection failed during $stage: $(sprint(showerror, error))"
+        )
         try
             close(client)
         catch cleanup_error

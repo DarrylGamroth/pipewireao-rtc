@@ -6,13 +6,7 @@ isdefined(S, :Journal) ||
 record() = copy(Pod(SPA.Struct()).data)
 request(token; event = :requested, key = "operation/$token", bytes = record()) =
     S.JournalRequest(
-        UInt64(token),
-        "session/1",
-        event,
-        bytes,
-        "controller",
-        UInt32(getpid()),
-        key,
+        UInt64(token), "session/1", event, bytes, "controller", UInt32(getpid()), key
     )
 
 function result(journal)
@@ -32,22 +26,20 @@ end
         @test journal.capacity == 8
         bytes = record()
         original = copy(bytes)
-        for token = 1:8
+        for token in 1:8
             @test S.submit!(journal, request(token; bytes))
         end
         fill!(bytes, 0xff)
         @test !S.submit!(journal, request(9))
         @test timedwait(
-            () -> lock(() -> length(journal.results)==8, journal.lock),
-            5;
-            pollint = 0.001,
+            () -> lock(() -> length(journal.results) == 8, journal.lock), 5; pollint = 0.001
         ) === :ok
         # Even after completion, retained receipts reserve capacity. No worker
         # or filesystem access is necessary to reject a full/closed submission.
         @test !S.submit!(journal, request(9))
         close(journal)
         @test !S.submit!(journal, request(10))
-        receipts = [something(S.take_result!(journal)) for _ = 1:8]
+        receipts = [something(S.take_result!(journal)) for _ in 1:8]
         @test getfield.(receipts, :token) == UInt64.(1:8)
         @test all(r -> r.success && !r.unknown && isempty(r.message), receipts)
         @test S.take_result!(journal) === nothing
@@ -60,14 +52,12 @@ end
                     event = String(row.event),
                     bytes = Vector{UInt8}(row.record),
                     key = String(row.operation_key),
-                ) for row in DBInterface.execute(
-                    db,
-                    "SELECT * FROM operation_events ORDER BY sequence",
-                )
+                ) for row in
+                DBInterface.execute(db, "SELECT * FROM operation_events ORDER BY sequence")
             ]
             @test length(rows) == 8
             @test all(row -> row.bytes == original && row.event == "requested", rows)
-            @test getfield.(rows, :key) == ["operation/$index" for index = 1:8]
+            @test getfield.(rows, :key) == ["operation/$index" for index in 1:8]
             @test only(
                 String(row.journal_mode) for
                 row in DBInterface.execute(db, "PRAGMA journal_mode")
@@ -81,12 +71,12 @@ end
 @testset "Closing fences new work and retains every admitted receipt" begin
     mktempdir() do directory
         journal = S.Journal(joinpath(directory, "journal.sqlite"))
-        for token = 1:8
+        for token in 1:8
             @test S.submit!(journal, request(token))
         end
         close(journal)
         @test !S.submit!(journal, request(9))
-        receipts = [something(S.take_result!(journal)) for _ = 1:8]
+        receipts = [something(S.take_result!(journal)) for _ in 1:8]
         @test getfield.(receipts, :token) == UInt64.(1:8)
         @test all(receipt -> receipt.success, receipts)
         @test S.take_result!(journal) === nothing
@@ -99,8 +89,7 @@ end
         db = SQLite.DB(path)
         DBInterface.execute(db, "PRAGMA user_version=37")
         DBInterface.execute(
-            db,
-            "CREATE TABLE configuration_schema(version INTEGER NOT NULL)",
+            db, "CREATE TABLE configuration_schema(version INTEGER NOT NULL)"
         )
         DBInterface.execute(db, "INSERT INTO configuration_schema VALUES (17)")
         DBInterface.execute(
@@ -140,11 +129,8 @@ recorded_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')))
                 row in DBInterface.execute(db, "SELECT version FROM configuration_schema")
             ) == 17
             rows = [
-                (String(row.operation_key), String(row.event)) for
-                row in DBInterface.execute(
-                    db,
-                    "SELECT * FROM operation_events ORDER BY sequence",
-                )
+                (String(row.operation_key), String(row.event)) for row in
+                DBInterface.execute(db, "SELECT * FROM operation_events ORDER BY sequence")
             ]
             @test first(rows) == ("legacy:1", "requested")
             @test rows[2:end] == [

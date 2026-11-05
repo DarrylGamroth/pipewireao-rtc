@@ -58,14 +58,14 @@ function summary(samples::RMSSamples; settling_frames = 32)
     uncorrected, corrected = mean(atmosphere[trailing]), mean(residual[trailing])
     uncorrected > 0 || error("uncorrected atmosphere has zero RMS")
     return Dict(
-        "sample_count"=>samples.count,
-        "settling_frames"=>settling_frames,
-        "uncorrected_atmosphere_rms_nm"=>atmosphere,
-        "corrected_pupil_rms_nm"=>residual,
-        "identities"=>M.Observation._classic_identity_record.(samples.identities),
-        "trailing_uncorrected_mean_nm"=>uncorrected,
-        "trailing_corrected_mean_nm"=>corrected,
-        "residual_ratio"=>corrected/uncorrected,
+        "sample_count" => samples.count,
+        "settling_frames" => settling_frames,
+        "uncorrected_atmosphere_rms_nm" => atmosphere,
+        "corrected_pupil_rms_nm" => residual,
+        "identities" => M.Observation._classic_identity_record.(samples.identities),
+        "trailing_uncorrected_mean_nm" => uncorrected,
+        "trailing_corrected_mean_nm" => corrected,
+        "residual_ratio" => corrected / uncorrected,
     )
 end
 
@@ -79,11 +79,7 @@ function main(application, stage, prefix; sample_count = 128)
         error("development authority=none is required")
     products = M.observation_specs(application, prefix)
     rms = M.observation_spec(
-        application,
-        session,
-        "simulator-wavefront-rms-queue-input",
-        "wavefront-rms",
-        prefix,
+        application, session, "simulator-wavefront-rms-queue-input", "wavefront-rms", prefix
     )
     rms.shape == (1, 2) &&
     rms.type === Float32 &&
@@ -92,24 +88,24 @@ function main(application, stage, prefix; sample_count = 128)
     samples = RMSSamples(sample_count)
     handle = nothing
     result = Dict{String,Any}(
-        "completed"=>false,
-        "deployment_sha256"=>C.sha256_file(joinpath(application, "deployment.conf")),
-        "manifest_sha256"=>C.sha256_file(joinpath(application, "Manifest.toml")),
-        "harness_sha256"=>C.sha256_file(@__FILE__),
-        "scope"=>"Finite native simulated optical correction; no cadence, latency or hardware qualification",
+        "completed" => false,
+        "deployment_sha256" => C.sha256_file(joinpath(application, "deployment.conf")),
+        "manifest_sha256" => C.sha256_file(joinpath(application, "Manifest.toml")),
+        "harness_sha256" => C.sha256_file(@__FILE__),
+        "scope" => "Finite native simulated optical correction; no cadence, latency or hardware qualification",
     )
     try
         handle = W.start!(
             application,
             stage;
             prefix,
-            deadline = W.monotonic()+M.Faults.startup_budget(spec),
+            deadline = W.monotonic() + M.Faults.startup_budget(spec),
         )
         initial = M.inspect_source(handle, application, prefix, stage, "ready")
         result["backend"] = initial["report"]["backend"]
         configuration = C.read_json(joinpath(application, "simulation.conf"))
-        result["model_rate_hz"], result["test_pacing_rate_hz"] =
-            configuration["rate"], configuration["pacing_rate_hz"]
+        result["model_rate_hz"], result["test_pacing_rate_hz"] = configuration["rate"],
+        configuration["pacing_rate_hz"]
         observation = M.Observation.observe_classic(
             W._ledger(handle)["remote"];
             timeout = 120,

@@ -12,12 +12,12 @@ using AdaptiveOpticsCalibration.Reconstructors:
 using LinearAlgebra: I, norm
 
 function calibration_scale(simulation, declaration, mirror)
-    scale=Float32(
-        declaration.instrument.document["deformable_mirrors"][mirror]["command_scale_m"],
+    scale = Float32(
+        declaration.instrument.document["deformable_mirrors"][mirror]["command_scale_m"]
     )
-    isfinite(scale) && scale>0 && scale==Float32(simulation["command_scale"]) || throw(
+    isfinite(scale) && scale > 0 && scale == Float32(simulation["command_scale"]) || throw(
         ArgumentError(
-            "calibration wire-to-plant scale differs from the simulation command scale",
+            "calibration wire-to-plant scale differs from the simulation command scale"
         ),
     )
     return scale
@@ -36,15 +36,15 @@ end
 
 # Match acquisition settings when checking source identity during replay/staging.
 function calibration_settings(application, recipe, declaration)
-    kind=IC.sensor_kind(
-        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]],
+    kind = IC.sensor_kind(
+        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
     )
     return calibration_settings(kind, application, recipe, declaration)
 end
 calibration_settings(::Val, application, recipe, declaration) =
     IC.settings(declaration, get(recipe, "settings", Dict()))
 function calibration_settings(::Val{:shack_hartmann}, application, recipe, declaration)
-    simulation=PipeWireAORTC.DeploymentConfiguration.decode(
+    simulation = PipeWireAORTC.DeploymentConfiguration.decode(
         joinpath(application, "simulation.conf"),
         get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     )
@@ -63,11 +63,13 @@ function Calibration._calibrate_system(
         K, Instruments = Calibration, IC
         C, D = PipeWireAORTC.Common, PipeWireAORTC.DeploymentConfiguration
         calibrator_sha256 = K.digest(@__FILE__)
-        preparation_path =
-            joinpath(pkgdir(PipeWireAORTC), "src", "instrument_calibration.jl")
+        preparation_path = joinpath(
+            pkgdir(PipeWireAORTC), "src", "instrument_calibration.jl"
+        )
         preparation_sha256 = K.digest(preparation_path)
-        extension_path =
-            joinpath(pkgdir(PipeWireAORTC), "ext", "PipeWireAORTCCalibrationExt.jl")
+        extension_path = joinpath(
+            pkgdir(PipeWireAORTC), "ext", "PipeWireAORTCCalibrationExt.jl"
+        )
         extension_sha256 = K.digest(extension_path)
         simulation = D.decode(
             joinpath(source, "simulation.conf"),
@@ -82,15 +84,11 @@ function Calibration._calibrate_system(
         parameters = K.read_parameters(source)
         mirror_name = get(specification, "mirror", nothing)
         mirror_name === nothing && (
-            mirror_name =
-                only(keys(declaration.instrument.document["deformable_mirrors"]))
+            mirror_name = only(keys(declaration.instrument.document["deformable_mirrors"]))
         )
         mirror = Instruments.mirror(declaration, configured, mirror_name)
         system = Instruments.prepare_system(
-            declaration_path;
-            settings = configured,
-            calibration = true,
-            target,
+            declaration_path; settings = configured, calibration = true, target
         )
         config = K.shack_hartmann_configuration(system)
         obstruction = config.telescope.central_obstruction
@@ -114,13 +112,10 @@ function Calibration._calibrate_system(
         rtc = IC.load_rtc(joinpath(source, specification["rtc_configuration"]))
         limiter = rtc.controls["deformable_mirrors"][mirror_name]["limiter"]
         limits = K.checked_command_limits(
-            Float64,
-            limiter["lower"],
-            limiter["upper"],
-            physical_count,
+            Float64, limiter["lower"], limiter["upper"], physical_count
         )
-        poke, rtol =
-            Float32(specification["poke_m"] / scale), Float32(specification["tsvd_rtol"])
+        poke, rtol = Float32(specification["poke_m"] / scale),
+        Float32(specification["tsvd_rtol"])
         parameters[Symbol("vdm-to-pdm")] ==
         Matrix{Float32}(I, physical_count, physical_count) ||
             throw(ArgumentError("nonidentity physical command projection"))
@@ -153,14 +148,16 @@ function Calibration._calibrate_system(
                 feedback_input = estimator["feedback_input"],
             )
             size(storage.raw) == Tuple(estimator["detector_shape"]) || throw(
-                DimensionMismatch("detector shape differs from estimator declaration"),
+                DimensionMismatch("detector shape differs from estimator declaration")
             )
             flat = copy(K.calibration_frame!(system, physical))
             flat_output = K.measure!(storage, graph, flat)
-            parameters[Symbol("reference-slopes")] =
-                copy(getproperty(flat_output, Symbol(estimator["slopes_output"])))
-            parameters[:active] =
-                copy(getproperty(flat_output, Symbol(estimator["validity_output"])))
+            parameters[Symbol("reference-slopes")] = copy(
+                getproperty(flat_output, Symbol(estimator["slopes_output"]))
+            )
+            parameters[:active] = copy(
+                getproperty(flat_output, Symbol(estimator["validity_output"]))
+            )
             flat_flux = copy(getproperty(flat_output, Symbol(estimator["flux_output"])))
         finally
             FilterGraphIsland.close_execution(graph)
@@ -181,7 +178,7 @@ function Calibration._calibrate_system(
                 feedback_input = estimator["feedback_input"],
             )
             responses = zeros(Float32, 2n, measurement_count)
-            for coordinate = 1:n
+            for coordinate in 1:n
                 for (side, sign) in enumerate((1.0f0, -1.0f0))
                     physical .= view(completion, :, coordinate) .* (sign * poke * scale)
                     frame = K.calibration_frame!(system, physical)
@@ -190,8 +187,7 @@ function Calibration._calibrate_system(
                         Symbol(estimator["slopes_output"]),
                     )
                     copyto!(
-                        view(responses, 2coordinate - 2 + side, :),
-                        vec(permutedims(slopes)),
+                        view(responses, 2coordinate - 2 + side, :), vec(permutedims(slopes))
                     )
                 end
                 coordinate % 32 == 0 &&
@@ -199,8 +195,7 @@ function Calibration._calibrate_system(
             end
             interaction = AdaptiveOpticsCalibration.process(
                 AdaptiveOpticsCalibration.prepare(
-                    ZonalPushPull(fill(poke, n)),
-                    ResponseSpecification(measurement_count),
+                    ZonalPushPull(fill(poke, n)), ResponseSpecification(measurement_count)
                 ),
                 responses,
             )
@@ -222,39 +217,45 @@ function Calibration._calibrate_system(
                 mirror = mirror_name,
             )
             diagnostics = Dict(
-                "interaction-matrix"=>interaction_values,
-                "controller-to-physical"=>completion,
-                "push-pull-responses"=>responses,
-                "singular-values"=>singular_values(inverse),
-                "flat-frame"=>flat,
-                "flat-flux"=>flat_flux,
+                "interaction-matrix" => interaction_values,
+                "controller-to-physical" => completion,
+                "push-pull-responses" => responses,
+                "singular-values" => singular_values(inverse),
+                "flat-frame" => flat,
+                "flat-flux" => flat_flux,
             )
             report = Dict(
-                "recipe"=>specification,
-                "source_prescription_identity"=>prescription,
-                "source_graph_sha256"=>source_graph_sha256,
-                "scope"=>"Finite simulation-local calibration; no physical device qualification",
-                "backend"=>string(typeof(target)),
-                "mode_count"=>n,
-                "measurement_count"=>measurement_count,
-                "dimensions"=>Dict("controller_command_count"=>n, "active_vdm_count"=>n),
-                "retained_rank"=>effective_rank(inverse),
-                "poke_m"=>specification["poke_m"],
-                "tsvd_rtol"=>specification["tsvd_rtol"],
-                "controlled_actuators"=>controlled,
-                "source_completion_sha256"=>original_spec["sha256"],
-                "generator_sha256"=>calibrator_sha256,
-                "preparation_sha256"=>preparation_sha256,
-                "extension_sha256"=>extension_sha256,
-                "relative_inverse_residual"=>norm(
-                    interaction_values*parameters[:reconstructor]*interaction_values-interaction_values,
-                )/norm(interaction_values),
+                "recipe" => specification,
+                "source_prescription_identity" => prescription,
+                "source_graph_sha256" => source_graph_sha256,
+                "scope" => "Finite simulation-local calibration; no physical device qualification",
+                "backend" => string(typeof(target)),
+                "mode_count" => n,
+                "measurement_count" => measurement_count,
+                "dimensions" =>
+                    Dict("controller_command_count" => n, "active_vdm_count" => n),
+                "retained_rank" => effective_rank(inverse),
+                "poke_m" => specification["poke_m"],
+                "tsvd_rtol" => specification["tsvd_rtol"],
+                "controlled_actuators" => controlled,
+                "source_completion_sha256" => original_spec["sha256"],
+                "generator_sha256" => calibrator_sha256,
+                "preparation_sha256" => preparation_sha256,
+                "extension_sha256" => extension_sha256,
+                "relative_inverse_residual" =>
+                    norm(
+                        interaction_values *
+                        parameters[:reconstructor] *
+                        interaction_values - interaction_values,
+                    ) / norm(interaction_values),
             )
-            IC.prescription_identity(IC.load_simulation(declaration.path), configured)==prescription ||
+            IC.prescription_identity(IC.load_simulation(declaration.path), configured) ==
+            prescription ||
                 throw(ArgumentError("source prescription changed during calibration"))
-            K.digest(joinpath(source, specification["graph_source"]))==source_graph_sha256 ||
+            K.digest(joinpath(source, specification["graph_source"])) ==
+            source_graph_sha256 ||
                 throw(ArgumentError("source graph changed during calibration"))
-            concrete=D.decode(
+            concrete = D.decode(
                 joinpath(working, "rtc/graph.conf"),
                 get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
             )
@@ -262,12 +263,7 @@ function Calibration._calibrate_system(
             # Seal that neutral value explicitly so the bundle covers every graph parameter.
             get!(parameters, Symbol("shape-offset"), zeros(Float32, physical_count))
             return K.write_bundle(
-                output,
-                report,
-                rtc.calibration,
-                concrete,
-                parameters;
-                diagnostics,
+                output, report, rtc.calibration, concrete, parameters; diagnostics
             )
         finally
             FilterGraphIsland.close_execution(graph)

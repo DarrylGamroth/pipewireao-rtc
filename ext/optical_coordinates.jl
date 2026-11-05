@@ -21,9 +21,7 @@ optical_coordinate_parameters!(::PhysicalCommandCoordinates, parameters, calibra
 function optical_coordinate_parameters!(::CompletedVDMCoordinates, parameters, calibration)
     parameters["active-to-full"] = calibration.completion
     parameters["vdm-to-pdm"] = Matrix{Float32}(
-        LA.I,
-        size(calibration.completion, 1),
-        size(calibration.completion, 1),
+        LA.I, size(calibration.completion, 1), size(calibration.completion, 1)
     )
     return nothing
 end
@@ -48,7 +46,7 @@ end
 optical_feedback_units!(units, ::Nothing, report) = nothing
 function optical_feedback_units!(units, inverse::AbstractMatrix, report)
     units["physical-to-modes"] =
-        "m OPD / "*get(
+        "m OPD / " * get(
             get(report["provenance"], "mirror_response", Dict()),
             "command_units",
             "native command",

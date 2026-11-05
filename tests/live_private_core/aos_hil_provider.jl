@@ -16,7 +16,7 @@ atmosphere_phase_2_request = joinpath(control_directory, "aos-hil-atmosphere-pha
 stop_file = joinpath(control_directory, "stop-aos-hil")
 
 include(
-    joinpath(pkgdir(AdaptiveOpticsSim), "examples", "support", "hil_reference_systems.jl"),
+    joinpath(pkgdir(AdaptiveOpticsSim), "examples", "support", "hil_reference_systems.jl")
 )
 using .HILReferenceSystems
 
@@ -27,7 +27,7 @@ function fgn_slopes(frame)
         x_moment = 0.0f0
         y_moment = 0.0f0
         flux = 0.0f0
-        for row = 0:7, column = 0:7
+        for row in 0:7, column in 0:7
             # The HIL adapter stages the logical Julia array into row-major
             # transport order before publication. This indexing reproduces
             # the FGN view of that staged frame.
@@ -50,8 +50,9 @@ function calibrate_reference!(prepared; poke = 2.0f-8)
     sequence = step_hil_frame!(boundary)
     aos_flat_signal = copy(graph_output(graph, Val(:wfs_signal)))
     flat_signal = fgn_slopes(hil_frame_buffer(boundary))
-    interaction_matrix =
-        Matrix{Float32}(undef, length(flat_signal), HILReferenceSystems.actuator_count())
+    interaction_matrix = Matrix{Float32}(
+        undef, length(flat_signal), HILReferenceSystems.actuator_count()
+    )
     positive_signal = similar(flat_signal)
 
     for command_index in axes(interaction_matrix, 2)
@@ -98,8 +99,9 @@ function subaperture_origins()
 end
 
 function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
-    origins =
-        join(("[ $(origin[1]) $(origin[2]) ]" for origin in subaperture_origins()), " ")
+    origins = join(
+        ("[ $(origin[1]) $(origin[2]) ]" for origin in subaperture_origins()), " "
+    )
     row_major_reconstructor = [
         reconstructor[row, column] for row in axes(reconstructor, 1) for
         column in axes(reconstructor, 2)
@@ -339,14 +341,10 @@ function mean_from(values, first_index)
 end
 
 atmospheric_reference = HILReferenceSystems.prepare_atmospheric_hil_reference_system(
-    :shack_hartmann;
-    atmosphere_step = 1.0e-3,
-    rng_seed = 1,
+    :shack_hartmann; atmosphere_step = 1.0e-3, rng_seed = 1
 )
 atmospheric_oracle = HILReferenceSystems.prepare_atmospheric_hil_reference_system(
-    :shack_hartmann;
-    atmosphere_step = 1.0e-3,
-    rng_seed = 1,
+    :shack_hartmann; atmosphere_step = 1.0e-3, rng_seed = 1
 )
 science_diagnostics = prepare_hil_science_diagnostics()
 pupil_mask = HILReferenceSystems.pupil_support(science_diagnostics)
@@ -359,8 +357,9 @@ atmospheric_configuration = PipeWireHILConfiguration(
     rate = SPA.Fraction(1_000, 1),
     exposure_duration_ns = 1_000_000,
 )
-atmospheric_hil =
-    prepare_pipewire_hil(atmospheric_reference.boundary, atmospheric_configuration)
+atmospheric_hil = prepare_pipewire_hil(
+    atmospheric_reference.boundary, atmospheric_configuration
+)
 atmospheric_oracle_sequence = Ref(step_hil_frame!(atmospheric_oracle.boundary))
 direct_command = zeros(Float32, HILReferenceSystems.actuator_count())
 open_loop_strehl = Float32[]

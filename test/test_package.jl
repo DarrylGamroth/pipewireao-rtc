@@ -96,12 +96,7 @@ end
 
 @testset "named deployment package and operational source closure" begin
     @test P.ScienceExport.Parameter(
-        "name",
-        "endpoint",
-        "F32_LE",
-        (2, 3),
-        "value",
-        "schema",
+        "name", "endpoint", "F32_LE", (2, 3), "value", "schema"
     ).shape == [2, 3]
     @test nameof(P) == :PipeWireAORTC
     @test Base.PkgId(P).uuid !== nothing
@@ -112,7 +107,7 @@ end
     @test_throws ArgumentError P.source_relative_path(dirname(P.package_root()))
     @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(P.package_root())
     @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(
-        joinpath(P.package_root(), "nested-output"),
+        joinpath(P.package_root(), "nested-output")
     )
     for directory in ("hil", "templates")
         rejected = tempname(joinpath(P.resource_root(), directory))
@@ -156,7 +151,7 @@ end
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCGraphExt.jl"))
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCAOSExt.jl"))
         @test sort(readdir(joinpath(sdk, "test"))) ==
-              sort(readdir(joinpath(P.package_root(), "test")))
+            sort(readdir(joinpath(P.package_root(), "test")))
         stage_test_dependencies!(sdk)
         before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.
@@ -169,9 +164,7 @@ end
             sdk,
         ]
         @test P.Common.run_checked(
-            command;
-            env = test_dependency_environment(),
-            timeout = 60,
+            command; env = test_dependency_environment(), timeout = 60
         ).returncode == 0
         relocated = joinpath(directory, "relocated SDK")
         mv(source, relocated)
@@ -224,12 +217,11 @@ end
         legacy = joinpath(directory, "legacy")
         mkpath(joinpath(legacy, "src"))
         write(
-            joinpath(legacy, "PipeWireAODeployment.jl"),
-            "module PipeWireAODeployment; end",
+            joinpath(legacy, "PipeWireAODeployment.jl"), "module PipeWireAODeployment; end"
         )
         identity = tree_identity(legacy)
         @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(
-            legacy,
+            legacy
         )
         @test tree_identity(legacy) == identity
         copied = joinpath(directory, "package")
@@ -241,14 +233,15 @@ end
         chmod(project_path, 0o444)
         @test stat(project_path).mode & 0o222 == 0
         project = read(project_path, String)
-        corrupted =
-            replace(project, "version = \"$(Base.pkgversion(P))\"" => "version = \"9.0.0\"")
+        corrupted = replace(
+            project, "version = \"$(Base.pkgversion(P))\"" => "version = \"9.0.0\""
+        )
         @test corrupted != project
         # Grant write access only to this temporary copy for deliberate tampering.
         chmod(project_path, stat(project_path).mode | 0o200)
         write(project_path, corrupted)
         @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(
-            sdk,
+            sdk
         )
     end
 end

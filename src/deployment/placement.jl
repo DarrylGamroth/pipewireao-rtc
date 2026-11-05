@@ -77,9 +77,7 @@ function placement_deadline(clock::Clocks.AbstractNanoClock, timeout::Real)
 end
 
 function placement_remaining(
-    clock::Clocks.AbstractNanoClock,
-    previous::Int64,
-    deadline::Int64,
+    clock::Clocks.AbstractNanoClock, previous::Int64, deadline::Int64
 )
     current = Clocks.time_nanos(clock)
     current >= previous || fail("native loop placement clock regressed")
@@ -98,7 +96,7 @@ durations/deadlines and clock regressions fail before further affinity work.
 function pin_loop!(
     loop::PipeWireAO.ThreadLoop,
     cpu::Int;
-    check = ()->nothing,
+    check = () -> nothing,
     timeout::Real = 5.0,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
@@ -110,11 +108,10 @@ function pin_loop!(
     tid = Threads.Atomic{Int}(0)
     check()
     event = PipeWireAO.EventSource(
-        loop,
-        (_source, _count) -> begin
+        loop, (_source, _count) -> begin
             tid[] = Int(ccall(:gettid, Cint, ()))
             nothing
-        end,
+        end
     )
     errors = Any[]
     placement = nothing
@@ -205,7 +202,7 @@ function credentials(priority::Integer, locked_bytes::Integer, latency_us)
             end
         catch
             fail(
-                "cpu_dma_latency access requested but unavailable to effective credentials",
+                "cpu_dma_latency access requested but unavailable to effective credentials"
             )
         end
     end
@@ -281,7 +278,7 @@ function snapshot(pid::Integer, contract::AbstractDict)
     locked_kb = parse(Int, split(proc_field("/proc/$pid/status", "VmLck"))[1])
     locked = locked_kb * 1024
     locked >= contract["locked-bytes"] || fail(
-        "process $pid locked $locked bytes, below requested $(contract["locked-bytes"])",
+        "process $pid locked $locked bytes, below requested $(contract["locked-bytes"])"
     )
     Dict{String,Any}("pid" => pid, "threads" => threads, "locked_bytes" => locked)
 end

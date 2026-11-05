@@ -21,11 +21,7 @@ filter.graph = {
 
 function loop_command(closed, token)
     command = Commands.parse([
-        "property",
-        "arbitrary-controller",
-        "correction:closed",
-        "bool",
-        string(closed),
+        "property", "arbitrary-controller", "correction:closed", "bool", string(closed)
     ])
     header = Envelope.RequestHeader(
         Envelope.ControllerIdentity(UInt32(1), UInt64(2), Int64(3)),
@@ -62,16 +58,16 @@ end
         correction, state = zeros(Float32, 2), zeros(Float32, 2)
         outputs = (; correction, var"controller-state" = state)
         @test JFG.process!(outputs, graph, inputs) ==
-              (correction = true, var"controller-state" = true)
+            (correction = true, var"controller-state" = true)
         @test correction == Float32[0.5, -1]
         held_correction, held_state = copy(correction), copy(state)
 
         adopt_loop_command!(graph, loop_command(false, 1))
         residual .= 100
         feedback .= 0.125
-        for _ = 1:8
+        for _ in 1:8
             @test JFG.process!(outputs, graph, inputs) ==
-                  (correction = true, var"controller-state" = true)
+                (correction = true, var"controller-state" = true)
             @test correction == held_correction
             @test state == held_state
         end
@@ -81,7 +77,7 @@ end
         residual .= Float32[2, -4]
         feedback .= Float32[0.125, -0.25]
         @test JFG.process!(outputs, graph, inputs) ==
-              (correction = true, var"controller-state" = true)
+            (correction = true, var"controller-state" = true)
         @test correction == Float32[0.875, -1.75]
         @test state == Float32[0.375, -0.75]
         @test FGA.property_values(only(graph.nodes).prepared.plan).closed === true

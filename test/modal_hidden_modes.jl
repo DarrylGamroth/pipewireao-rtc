@@ -21,14 +21,14 @@ function saved_calibration(directory; rtol = 0.05f0)
     artifacts = mkdir(joinpath(directory, "artifacts"))
     mode_rms = Float32[0.5, 2, 4]
     vectors = Matrix(qr(Float32[1 2 3; 2 -1 1; 1 1 -1]).Q)
-    weighted =
-        vcat(Diagonal(Float32[4, 1, 0.02]) * transpose(vectors), zeros(Float32, 1, 3))
+    weighted = vcat(
+        Diagonal(Float32[4, 1, 0.02]) * transpose(vectors), zeros(Float32, 1, 3)
+    )
     interaction = weighted .* transpose(mode_rms)
     weights = inv.(mode_rms)
     inverse = AdaptiveOpticsCalibration.process(
         AdaptiveOpticsCalibration.prepare(
-            R.TSVDInverse(; rtol),
-            R.ReconstructorSpecification(4, 3, Float32),
+            R.TSVDInverse(; rtol), R.ReconstructorSpecification(4, 3, Float32)
         ),
         R.SVDReconstructorInputs(interaction .* transpose(weights)),
     )
@@ -81,36 +81,36 @@ end
         H = read_matrix(output, "shape-to-hidden.fits", (1, 3))
         B = read_matrix(output, "hidden-to-shape.fits", (3, 1))
         @test eltype(H) == eltype(B) == Float32
-        @test H * B ≈ ones(Float32, 1, 1) atol=2e-6
-        @test (B * H)^2 ≈ B * H atol=2e-6
+        @test H * B ≈ ones(Float32, 1, 1) atol = 2e-6
+        @test (B * H)^2 ≈ B * H atol = 2e-6
         retained =
             inv.(saved.mode_rms) .* R.corrector_singular_vectors(saved.inverse)[:, 1:2]
-        @test H * retained ≈ zeros(Float32, 1, 2) atol=2e-6
-        @test H * (saved.reconstructor * saved.interaction) ≈ zeros(Float32, 1, 3) atol=2e-6
+        @test H * retained ≈ zeros(Float32, 1, 2) atol = 2e-6
+        @test H * (saved.reconstructor * saved.interaction) ≈ zeros(Float32, 1, 3) atol =
+            2e-6
         @test norm(saved.interaction * B) > 0.01 # Weak discarded component, no exact null claim.
-        @test norm((saved.interaction * B) ./ norm(saved.mode_rms .* B)) ≈ 0.02f0 atol=2e-6
+        @test norm((saved.interaction * B) ./ norm(saved.mode_rms .* B)) ≈ 0.02f0 atol =
+            2e-6
         @test report["hidden_mode_count"] == 1
         @test report["retained_rank"] == 2
         @test report["hidden_modes"] == ["tsvd-component-3"]
         @test report["parent_calibration_sha256"] ==
-              C.digest(joinpath(parent, "result.yaml"))
+            C.digest(joinpath(parent, "result.yaml"))
         @test report["source_prescription_identity"] ==
-              saved.receipt["source_prescription_identity"]
+            saved.receipt["source_prescription_identity"]
         @test report["projection_checks"]["discarded_measurement_relative_response"] > 0
         @test report["reconstructor_relative_error"] <=
-              report["reconstructor_relative_tolerance"]
+            report["reconstructor_relative_tolerance"]
         @test readdir(output) ==
-              ["hidden-to-shape.fits", "result.yaml", "shape-to-hidden.fits"]
+            ["hidden-to-shape.fits", "result.yaml", "shape-to-hidden.fits"]
         for (name, expected) in report["artifact_sha256"]
             @test C.digest(joinpath(output, name)) == expected
         end
         @test Common.read_yaml(joinpath(output, "result.yaml"))["hidden_modes"] ==
-              report["hidden_modes"]
+            report["hidden_modes"]
         @test original_bytes(parent) == before
         @test_throws ArgumentError Base.invokelatest(
-            C.calibrate_hidden_modes,
-            parent,
-            output,
+            C.calibrate_hidden_modes, parent, output
         )
         @test original_bytes(parent) == before
     end
@@ -121,9 +121,10 @@ end
         H = read_matrix(output, "shape-to-hidden.fits", (2, 3))
         B = read_matrix(output, "hidden-to-shape.fits", (3, 2))
         @test report["hidden_modes"] == ["tsvd-component-2", "tsvd-component-3"]
-        @test H * B ≈ Matrix{Float32}(I, 2, 2) atol=2e-6
-        @test (B * H)^2 ≈ B * H atol=2e-6
-        @test H * (saved.reconstructor * saved.interaction) ≈ zeros(Float32, 2, 3) atol=2e-6
+        @test H * B ≈ Matrix{Float32}(I, 2, 2) atol = 2e-6
+        @test (B * H)^2 ≈ B * H atol = 2e-6
+        @test H * (saved.reconstructor * saved.interaction) ≈ zeros(Float32, 2, 3) atol =
+            2e-6
     end
 end
 
@@ -175,9 +176,7 @@ end
                 # Deliberately malformed receipts bypass the finite writer.
                 C.YAML.write_file(joinpath(parent, "result.yaml"), saved.receipt)
                 @test_throws exception Base.invokelatest(
-                    C.calibrate_hidden_modes,
-                    parent,
-                    output,
+                    C.calibrate_hidden_modes, parent, output
                 )
                 @test !ispath(output)
             end
@@ -189,9 +188,7 @@ end
             saved_calibration(parent)
             open(io -> write(io, UInt8(0)), joinpath(parent, name), "a")
             @test_throws ArgumentError Base.invokelatest(
-                C.calibrate_hidden_modes,
-                parent,
-                output,
+                C.calibrate_hidden_modes, parent, output
             )
             @test !ispath(output)
         end
@@ -208,9 +205,7 @@ end
             saved.receipt["artifact_sha256"][name] = C.digest(path)
             Common.write_yaml(joinpath(parent, "result.yaml"), saved.receipt)
             @test_throws exception Base.invokelatest(
-                C.calibrate_hidden_modes,
-                parent,
-                output,
+                C.calibrate_hidden_modes, parent, output
             )
             @test !ispath(output)
         end
@@ -219,9 +214,7 @@ end
         parent, output = joinpath(directory, "modal"), joinpath(directory, "hidden")
         saved_calibration(parent; rtol = 0.001f0)
         @test_throws ArgumentError Base.invokelatest(
-            C.calibrate_hidden_modes,
-            parent,
-            output,
+            C.calibrate_hidden_modes, parent, output
         )
         @test !ispath(output)
     end
@@ -243,9 +236,7 @@ end
                 @test report["reconstructor_relative_tolerance"] == 1e-5
             else
                 @test_throws ArgumentError Base.invokelatest(
-                    C.calibrate_hidden_modes,
-                    parent,
-                    output,
+                    C.calibrate_hidden_modes, parent, output
                 )
                 @test !ispath(output)
             end

@@ -14,7 +14,7 @@ using PipeWireAORTC.Artifacts
         (Bool, UInt8),
     )
         for shape in ((5,), (2, 3), (2, 3, 4), (2, 1, 3, 2))
-            values = T === Bool ? Bool[isodd(i) for i = 1:prod(shape)] : T.(1:prod(shape))
+            values = T === Bool ? Bool[isodd(i) for i in 1:prod(shape)] : T.(1:prod(shape))
             data = reshape(values, shape)
             original = copy(data)
             # Lexicographic logical coordinates put the last index contiguous.
@@ -31,17 +31,17 @@ using PipeWireAORTC.Artifacts
     for count in (65536, 65537, 131073)
         artifact = PreparedArtifact(fill(1.0f0, count), Dict{String,Any}())
         calls = Ref(0)
-        @test length(pack(artifact; check = ()->(calls[] += 1))) == 4count
+        @test length(pack(artifact; check = () -> (calls[] += 1))) == 4count
         # Initial check, chunk starts (including the first), and final check.
         @test calls[] == 2 + cld(count, 65536)
-        for phase = 1:calls[]
+        for phase in 1:calls[]
             attempts = Ref(0)
             cancellation = ErrorException("cancel artifact packing")
             published = Ref{Any}(nothing)
             caught = try
                 published[] = pack(
                     artifact;
-                    check = ()->begin
+                    check = () -> begin
                         attempts[] += 1
                         attempts[] == phase && throw(cancellation)
                     end,
@@ -159,7 +159,9 @@ end
         files = readdir(directory)
         selected = FITSArtifact(path)
         calls = Ref(0)
-        prepared = prepare(selected, UInt8, (1024 * 1024 + 17,); check = ()->(calls[] += 1))
+        prepared = prepare(
+            selected, UInt8, (1024 * 1024 + 17,); check = () -> (calls[] += 1)
+        )
         @test all(isone, prepared.data)
         for phase in (1, 4, calls[])
             attempts = Ref(0)
@@ -170,7 +172,7 @@ end
                     selected,
                     UInt8,
                     (1024 * 1024 + 17,);
-                    check = ()->begin
+                    check = () -> begin
                         attempts[] += 1
                         attempts[] == phase && throw(cancellation)
                     end,
@@ -191,7 +193,7 @@ end
             selected,
             UInt8,
             (1024 * 1024 + 17,);
-            check = ()->begin
+            check = () -> begin
                 checks[] += 1
                 if checks[] == 6
                     FITS(path, "w"; extendedparser = false) do fits
@@ -224,8 +226,9 @@ end
         @test_throws ArgumentError prepare(image(Float64[0.0, 0.5]), Bool, (2,))
         @test_throws ArgumentError prepare(image(Float64[1, 1.5]), UInt32, (2,))
         @test_throws ArgumentError prepare(image(Int16[-1, 1]), UInt16, (2,))
-        signed =
-            prepare(image(Int64[typemin(Int32), -1, 0, 1, typemax(Int32)]), Int32, (5,))
+        signed = prepare(
+            image(Int64[typemin(Int32), -1, 0, 1, typemax(Int32)]), Int32, (5,)
+        )
         @test signed.data == Int32[typemin(Int32), -1, 0, 1, typemax(Int32)]
         @test pack(signed) == UInt8[
             0x00,
@@ -250,14 +253,10 @@ end
             0x7f,
         ]
         @test_throws ArgumentError prepare(
-            image(Int64[typemin(Int32)-Int64(1)]),
-            Int32,
-            (1,),
+            image(Int64[typemin(Int32)-Int64(1)]), Int32, (1,)
         )
         @test_throws ArgumentError prepare(
-            image(Int64[typemax(Int32)+Int64(1)]),
-            Int32,
-            (1,),
+            image(Int64[typemax(Int32)+Int64(1)]), Int32, (1,)
         )
         @test_throws ArgumentError prepare(image(Float64[-1.5]), Int32, (1,))
         @test_throws ArgumentError prepare(image(Float64[Inf]), Int32, (1,))
@@ -270,9 +269,7 @@ end
             @test_throws ArgumentError prepare(image(Float64[nonfinite]), T, (1,))
         end
         @test_throws ArgumentError prepare(
-            image(Float64[Float64(floatmax(Float32))*2]),
-            Float32,
-            (1,),
+            image(Float64[Float64(floatmax(Float32))*2]), Float32, (1,)
         )
         rounded = prepare(image(Float64[1/3, -0.0]), Float32, (2,))
         @test rounded.data[1] === Float32(1 / 3)

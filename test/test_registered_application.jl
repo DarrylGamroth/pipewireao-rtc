@@ -70,8 +70,7 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
             Dict("kind" => "registered", "project" => ".", "unknown" => true),
         )
             @test_throws D.DeploymentError D.application_environment(
-                Dict("runtime" => runtime),
-                directory,
+                Dict("runtime" => runtime), directory
             )
         end
         seal!()
@@ -94,8 +93,7 @@ end
 @testset "session unit pins its leader within the placement envelope" begin
     template = read(
         joinpath(
-            PipeWireAORTC.package_root(),
-            "assets/deployment/pipewireao-session@.service.in",
+            PipeWireAORTC.package_root(), "assets/deployment/pipewireao-session@.service.in"
         ),
         String,
     )
@@ -119,7 +117,7 @@ end
         executable = "/sdk/bin/rtc",
     )
     @test filter(line -> startswith(line, "CPUAffinity="), split(unit, '\n')) ==
-          ["CPUAffinity=3"]
+        ["CPUAffinity=3"]
     @test spec == original
     @test "TimeoutStartSec=120.0" in split(unit, '\n')
     @test occursin("ExecStart=\"/sdk/bin/rtc\" -c \${RTC_CONFIG}", unit)

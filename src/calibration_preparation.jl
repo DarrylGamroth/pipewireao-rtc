@@ -61,8 +61,9 @@ struct Request
             throw(ArgumentError("serial must be a nonzero UInt64"))
         stage = _text(stage, "stage", 256)
         condition = _text(condition, "condition", 256)
-        configuration_identity =
-            _text(configuration_identity, "configuration identity", 256)
+        configuration_identity = _text(
+            configuration_identity, "configuration identity", 256
+        )
         kind in (:manual, :simulated, :service) ||
             throw(ArgumentError("unsupported evidence kind"))
         issued_at = _time(issued_at, "issued_at")
@@ -82,23 +83,9 @@ struct Request
 end
 
 Request(;
-    run,
-    serial,
-    stage,
-    condition,
-    configuration_identity,
-    kind,
-    issued_at,
-    deadline,
+    run, serial, stage, condition, configuration_identity, kind, issued_at, deadline
 ) = Request(
-    run,
-    serial,
-    stage,
-    condition,
-    configuration_identity,
-    kind,
-    issued_at,
-    deadline,
+    run, serial, stage, condition, configuration_identity, kind, issued_at, deadline
 )
 
 Base.:(==)(a::Request, b::Request) =
@@ -124,9 +111,7 @@ struct Confirmation
     witness::String
     function Confirmation(request::Request, observed_at::Real, witness::AbstractString)
         return new(
-            request,
-            _time(observed_at, "observed_at"),
-            _text(witness, "witness", 1024),
+            request, _time(observed_at, "observed_at"), _text(witness, "witness", 1024)
         )
     end
 end
@@ -184,12 +169,16 @@ end
         Hsm.transition!(p, :Expired)
         throw(ArgumentError(p.reason))
     end
-    reason =
-        confirmation.request != p.request ? "Preparation request mismatch" :
-        !(
-            p.request.issued_at <= confirmation.observed_at <= at &&
-            confirmation.observed_at < p.request.deadline
-        ) ? "Preparation observation is outside the current window" : nothing
+    reason = if confirmation.request != p.request
+        "Preparation request mismatch"
+    elseif !(
+        p.request.issued_at <= confirmation.observed_at <= at &&
+        confirmation.observed_at < p.request.deadline
+    )
+        "Preparation observation is outside the current window"
+    else
+        nothing
+    end
     if reason !== nothing
         p.reason = reason
         Hsm.transition!(p, :Invalidated)

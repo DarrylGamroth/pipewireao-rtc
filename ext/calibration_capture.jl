@@ -81,7 +81,7 @@ function _usable(capture)
     capture.phase == CLOSED &&
         throw(InvalidStateException("calibration capture is closed", :closed))
     capture.failure === :none || throw(
-        InvalidStateException("calibration capture failed: $(capture.failure)", :failed),
+        InvalidStateException("calibration capture failed: $(capture.failure)", :failed)
     )
     return nothing
 end
@@ -89,7 +89,13 @@ end
 function _slot(spec, ::Type{T}, rank) where {T}
     format = spec.format
     validate_capture_format(format)
-    expected = T === UInt16 ? NdArray.U16_LE : T === Bool ? NdArray.BOOL8 : NdArray.F32_LE
+    expected = if T === UInt16
+        NdArray.U16_LE
+    elseif T === Bool
+        NdArray.BOOL8
+    else
+        NdArray.F32_LE
+    end
     format.element_type == expected && length(format.shape) == rank || throw(
         ArgumentError("capture stream element type or rank differs from its declared role"),
     )
@@ -136,7 +142,7 @@ function _slots(declarations::NamedTuple)
             return _slot(spec, Bool, rank)
         end
         throw(
-            ArgumentError("capture outputs require Float32 rank one/two or Bool rank one"),
+            ArgumentError("capture outputs require Float32 rank one/two or Bool rank one")
         )
     end
     return NamedTuple{keys(declarations)}(slots)
@@ -333,7 +339,7 @@ function Capture(
         NamedTuple(),
         condition,
         wakeup_lock,
-        wakeup===nothing,
+        wakeup === nothing,
         IDLE,
         :none,
         nothing,
@@ -354,10 +360,10 @@ function Capture(
                     core,
                     spec.name;
                     properties = Dict(
-                        "node.name"=>String(spec.name),
-                        "media.type"=>"Application",
-                        "media.category"=>"Filter",
-                        "node.reliable"=>"true",
+                        "node.name" => String(spec.name),
+                        "media.type" => "Application",
+                        "media.category" => "Filter",
+                        "node.reliable" => "true",
                     ),
                     on_process = stream -> _process!(capture, slot, stream),
                     on_param_changed = (stream, id, parameter) ->
@@ -377,7 +383,8 @@ function Capture(
                 connect!(
                     stream,
                     :input;
-                    flags = STREAM_MAP_BUFFERS|STREAM_INACTIVE|STREAM_DONT_RECONNECT|STREAM_NO_CONVERT,
+                    flags = STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT |
+                            STREAM_NO_CONVERT,
                     params = (
                         ndarray_format(slot.format; schema = slot.schema),
                         _buffer_parameters(slot)...,
@@ -385,7 +392,7 @@ function Capture(
                 )
                 # Keep capture on the main ThreadLoop while participating in
                 # graph-synchronous delivery. Set this before creating links.
-                update_properties!(stream, Dict("node.async"=>"false"))
+                update_properties!(stream, Dict("node.async" => "false"))
                 properties = stream_properties(stream)
                 get(properties, "node.async", nothing) == "false" ||
                     error("calibration capture requires node.async=false")
@@ -441,16 +448,17 @@ function arm!(capture::Capture, exposure)
                 identity.generation > prior.generation || (
                     identity.generation == prior.generation &&
                     prior.sequence < typemax(UInt64) &&
-                    identity.sequence == prior.sequence+1
+                    identity.sequence == prior.sequence + 1
                 )
             ) || throw(
                 ArgumentError(
-                    "capture identity must advance within its acquisition domain",
+                    "capture identity must advance within its acquisition domain"
                 ),
             )
         end
-        capture.expected, capture.model_start_ns, capture.duration_ns =
-            identity, start, duration
+        capture.expected, capture.model_start_ns, capture.duration_ns = identity,
+        start,
+        duration
         for slot in values(capture.slots)
             slot.phase, slot.receipt = ARMED, nothing
         end
@@ -482,7 +490,7 @@ function snapshot(capture::Capture)
 end
 
 "Wait on the owner task until completion/deadline; `check` must throw on owner loss."
-function await!(capture::Capture; deadline::Real, check = ()->nothing)
+function await!(capture::Capture; deadline::Real, check = () -> nothing)
     isfinite(deadline) || throw(ArgumentError("capture deadline must be finite"))
     now = PipeWireAORTC.ControlClient.monotonic
     _locked(capture) do
@@ -493,7 +501,7 @@ function await!(capture::Capture; deadline::Real, check = ()->nothing)
     end
     timer = nothing
     try
-        timer = Timer(_ -> _signal(capture), max(0.0, Float64(deadline)-now()))
+        timer = Timer(_ -> _signal(capture), max(0.0, Float64(deadline) - now()))
         while true
             check()
             result = _locked(capture) do
@@ -502,8 +510,7 @@ function await!(capture::Capture; deadline::Real, check = ()->nothing)
                     _fail!(capture, :deadline)
                     throw(
                         InvalidStateException(
-                            "calibration capture deadline expired",
-                            :deadline,
+                            "calibration capture deadline expired", :deadline
                         ),
                     )
                 end
@@ -576,16 +583,16 @@ validate_capture_identity(identity) =
     throw(ArgumentError("capture requires a full positive acquisition identity"))
 
 function validate_capture_window(start, duration::UInt64)
-    start >= 0 && duration > 0 && duration <= UInt64(typemax(Int64)-start) || throw(
+    start >= 0 && duration > 0 && duration <= UInt64(typemax(Int64) - start) || throw(
         ArgumentError(
-            "capture exposure model start/end must fit nonnegative Int64 nanoseconds",
+            "capture exposure model start/end must fit nonnegative Int64 nanoseconds"
         ),
     )
     return nothing
 end
 validate_capture_window(start, duration) = throw(
     ArgumentError(
-        "capture exposure model start/end must fit nonnegative Int64 nanoseconds",
+        "capture exposure model start/end must fit nonnegative Int64 nanoseconds"
     ),
 )
 

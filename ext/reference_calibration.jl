@@ -19,10 +19,7 @@ function reference_counts(recipe)
         value = spec[name]
         validate_reference_stage(value, name)
         IC.fields(
-            value,
-            ("samples", "discard_exposures"),
-            ("samples", "discard_exposures"),
-            name,
+            value, ("samples", "discard_exposures"), ("samples", "discard_exposures"), name
         )
         samples, discard = value["samples"], value["discard_exposures"]
         validate_reference_samples(samples, name)
@@ -31,7 +28,7 @@ function reference_counts(recipe)
     end
     counts[3].discard >= counts[2].discard + counts[2].samples || throw(
         ArgumentError(
-            "qualification must exclude the reset simulator's complete training window",
+            "qualification must exclude the reset simulator's complete training window"
         ),
     )
     return NamedTuple{(:dark, :lamp, :qualification)}(counts)
@@ -40,11 +37,10 @@ end
 function reference_geometry(application, parameters)
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     document = PipeWireAORTC.DeploymentConfiguration.decode(
-        joinpath(application, "rtc", "graph.conf"),
-        prefix,
+        joinpath(application, "rtc", "graph.conf"), prefix
     )
     node = only(
-        filter(node -> node["name"] == "shack-hartmann", document["filter.graph"]["nodes"]),
+        filter(node -> node["name"] == "shack-hartmann", document["filter.graph"]["nodes"])
     )
     node["label"] == "shack-hartmann-image-f32" || throw(
         ArgumentError("reference procedure requires the declared image centroid estimator"),
@@ -60,40 +56,40 @@ function reference_geometry(application, parameters)
     size(parameters[:active]) == (count,) &&
     size(parameters[:thresholds]) == (count, 2) || throw(
         DimensionMismatch(
-            "reference parameters differ from declared detector/ROI geometry",
+            "reference parameters differ from declared detector/ROI geometry"
         ),
     )
     expected = Float32[
-        (column-(roi_columns-1)/2) for row = 0:(roi_rows-1) for column = 0:(roi_columns-1)
+        (column - (roi_columns - 1) / 2) for row in 0:(roi_rows-1) for
+        column in 0:(roi_columns-1)
     ]
     expected_y = Float32[
-        (row-(roi_rows-1)/2) for row = 0:(roi_rows-1) for column = 0:(roi_columns-1)
+        (row - (roi_rows - 1) / 2) for row in 0:(roi_rows-1) for column in 0:(roi_columns-1)
     ]
     parameters[:coordinates] == hcat(expected, expected_y) || throw(
         ArgumentError(
-            "centroid coordinates must be the declared centered detector-pixel axes",
+            "centroid coordinates must be the declared centered detector-pixel axes"
         ),
     )
     return (; rows, columns, count)
 end
 
 function reference_source!(directory, name, values; artifacts = nothing)
-    path = joinpath(directory, name*".fits")
+    path = joinpath(directory, name * ".fits")
     Calibration.write_fits(path, values)
     if artifacts !== nothing
         artifacts[name] = Dict(
-            "path"=>basename(path),
-            "hdu"=>1,
-            "axes"=>collect(ndims(values) == 1 ? (1,) : (2, 1)),
-            "target_type"=>string(eltype(values)),
-            "target_shape"=>collect(size(values)),
-            "sha256"=>Calibration.digest(path),
-            "storage_order"=>"row-major",
+            "path" => basename(path),
+            "hdu" => 1,
+            "axes" => collect(ndims(values) == 1 ? (1,) : (2, 1)),
+            "target_type" => string(eltype(values)),
+            "target_shape" => collect(size(values)),
+            "sha256" => Calibration.digest(path),
+            "storage_order" => "row-major",
         )
     end
     return PipeWireAORTC.Artifacts.FITSArtifact(
-        path;
-        axes = ndims(values) == 1 ? nothing : (2, 1),
+        path; axes = ndims(values) == 1 ? nothing : (2, 1)
     )
 end
 
@@ -117,7 +113,7 @@ function reference_lamp_update!(state, plan, sample, indices, reference)
     centroids = reshape(
         vec(
             permutedims(
-                Float64.(arrays.slopes[indices, :]) .+ Float64.(reference[indices, :]),
+                Float64.(arrays.slopes[indices, :]) .+ Float64.(reference[indices, :])
             ),
         ),
         2length(indices),
@@ -136,14 +132,12 @@ end
 
 function reference_restoration!(client, reference, deadline)
     restored = ReferenceClient.complete!(
-        client,
-        Actions.Restore(reference, Actions.Immediate());
-        deadline,
-        record = false,
+        client, Actions.Restore(reference, Actions.Immediate()); deadline, record = false
     )
     confirm_reference_restoration(restored, reference)
-    released =
-        ReferenceClient.complete!(client, Actions.Release(); deadline, record = false)
+    released = ReferenceClient.complete!(
+        client, Actions.Release(); deadline, record = false
+    )
     confirm_reference_release(released)
     return nothing
 end
@@ -252,11 +246,8 @@ function reference_stage(
                                 configuration.reference_figure_sha256,
                             ],
                             [
-                                "$(port):$(frontend.parameter_sha256[port])" for
-                                port in sort!(
-                                    collect(keys(frontend.parameter_sha256));
-                                    by = string,
-                                )
+                                "$(port):$(frontend.parameter_sha256[port])" for port in
+                                sort!(collect(keys(frontend.parameter_sha256)); by = string)
                             ],
                         ),
                         "\n",
@@ -269,7 +260,7 @@ function reference_stage(
             serial,
             stage,
             condition,
-            configuration_identity = "sha256:"*identity,
+            configuration_identity = "sha256:" * identity,
             kind = :simulated,
             issued_at = start,
             deadline,
@@ -287,10 +278,10 @@ function reference_stage(
                 exposure.domain == after.domain &&
                 exposure.generation == after.generation &&
                 exposure.sequence ==
-                (previous === nothing ? after.sequence : previous.sequence)+1 &&
+                (previous === nothing ? after.sequence : previous.sequence) + 1 &&
                 exposure.start_model_ns >= (
                     previous === nothing ? after.model_ns :
-                    previous.start_model_ns+previous.duration_ns
+                    previous.start_model_ns + previous.duration_ns
                 ) || error(
                     "reference exposure does not follow its correlated acquisition boundary",
                 )
@@ -328,7 +319,7 @@ function reference_stage(
         client = ReferenceClient.connect(
             ReferenceClient.Binding(remote, name, getpid(), instance),
             run,
-            Int64(round(timeout_s*1e9));
+            Int64(round(timeout_s * 1e9));
             command_count = length(selected_reference),
             deadline,
         )
@@ -356,10 +347,7 @@ function reference_stage(
         cancelled() && throw(InterruptException())
         response = action(
             Actions.Collect(
-                UInt32(0),
-                settled.cursor,
-                UInt32(measurement_count),
-                UInt32(counts.samples),
+                UInt32(0), settled.cursor, UInt32(measurement_count), UInt32(counts.samples)
             ),
         )
         # Dark/diagnostic lamp data may have false WFS validity. Their scientific
@@ -369,29 +357,29 @@ function reference_stage(
         delivered[] == counts.samples &&
         length(response.exposures) == counts.samples &&
         length(response.values) == measurement_count || error(
-            "reference collection differs from its declared sample/measurement counts",
+            "reference collection differs from its declared sample/measurement counts"
         )
         Preparation.check_current!(gate)
         cancelled() && throw(InterruptException())
         last = something(observed[])
         report = Dict{String,Any}(
-            "stage"=>stage,
-            "condition"=>condition,
-            "run"=>run,
-            "serial"=>serial,
-            "samples"=>delivered[],
-            "discard_exposures"=>counts.discard,
-            "witness"=>evidence.witness,
-            "configuration_identity"=>request.configuration_identity,
-            "observed_at"=>evidence.observed_at,
-            "deadline"=>deadline,
-            "acquisition_domain"=>acquisition_domain,
-            "generation"=>last.generation,
-            "first_sequence"=>first(response.exposures).sequence,
-            "last_sequence"=>last.sequence,
-            "first_start_ns"=>first(response.exposures).start_model_ns,
-            "last_end_ns"=>last.start_model_ns+last.duration_ns,
-            "parameter_sha256"=>Dict(string(port)=>hash for (port, hash) in hashes),
+            "stage" => stage,
+            "condition" => condition,
+            "run" => run,
+            "serial" => serial,
+            "samples" => delivered[],
+            "discard_exposures" => counts.discard,
+            "witness" => evidence.witness,
+            "configuration_identity" => request.configuration_identity,
+            "observed_at" => evidence.observed_at,
+            "deadline" => deadline,
+            "acquisition_domain" => acquisition_domain,
+            "generation" => last.generation,
+            "first_sequence" => first(response.exposures).sequence,
+            "last_sequence" => last.sequence,
+            "first_start_ns" => first(response.exposures).start_model_ns,
+            "last_end_ns" => last.start_model_ns + last.duration_ns,
+            "parameter_sha256" => Dict(string(port) => hash for (port, hash) in hashes),
         )
         reference_restoration!(client, selected_reference, cleanup_deadline)
         released = true
@@ -458,7 +446,7 @@ reference_remotes(remote::AbstractString) =
     reference_remotes((; dark = remote, lamp = remote, qualification = remote))
 function reference_remotes(remotes::NamedTuple)
     Set(keys(remotes)) == Set((:dark, :lamp, :qualification)) || throw(
-        ArgumentError("remote must identify the private core for each reference stage"),
+        ArgumentError("remote must identify the private core for each reference stage")
     )
     return map(Control.private_remote, remotes)
 end
@@ -495,7 +483,7 @@ function Calibration.calibrate_references(
     reference,
     run::Integer = 1,
     timeout_s::Real = 300,
-    cancelled = ()->false,
+    cancelled = () -> false,
     confirm = nothing,
 )
     output = Calibration._calibration_output((application,), output)
@@ -506,7 +494,8 @@ function Calibration.calibrate_references(
     isfinite(timeout_s) && 0 < timeout_s <= 3600 ||
         throw(ArgumentError("reference timeout must be in (0,3600] seconds"))
     timeout_s = Float64(timeout_s)
-    timeout_s*1e9 >= 1 || throw(ArgumentError("reference timeout is below one nanosecond"))
+    timeout_s * 1e9 >= 1 ||
+        throw(ArgumentError("reference timeout is below one nanosecond"))
     remotes = reference_remotes(remote)
     recipe = Calibration.read_recipe(application)
     counts = reference_counts(recipe)
@@ -558,32 +547,27 @@ function Calibration.calibrate_references(
         prescription_identity = IC.prescription_identity(declaration, configured),
         simulation_sha256 = Calibration.digest(joinpath(application, "simulation.conf")),
         reference_figure_sha256 = bytes2hex(
-            Calibration.sha256(PipeWireAORTC.Artifacts.packed_bytes(reference)),
+            Calibration.sha256(PipeWireAORTC.Artifacts.packed_bytes(reference))
         ),
     )
     production = IC.graph_document(declaration, configured)
     detector = only(filter(node -> node["type"] == "detector", production["nodes"]))
     bits = detector["config"]["bits"]
     validate_reference_adc_bits(bits)
-    rail = UInt32(1)<<bits
+    rail = UInt32(1) << bits
     rail -= UInt32(1)
     thresholds = copy(parameters[:thresholds][:, 2])
     dark_plan = AdaptiveOpticsCalibration.prepare(
         ReferenceFrames.DarkFrameMoments(),
         ReferenceFrames.DarkFrameSpecification(
-            geometry.rows,
-            geometry.columns,
-            counts.dark.samples,
+            geometry.rows, geometry.columns, counts.dark.samples
         ),
     )
     dark_state = ReferenceFrames.DarkFrameState(dark_plan)
     lamp_plan = AdaptiveOpticsCalibration.prepare(
         ReferenceFrames.LampReference(thresholds, rail),
         ReferenceFrames.LampReferenceSpecification(
-            geometry.rows,
-            geometry.columns,
-            geometry.count,
-            counts.lamp.samples,
+            geometry.rows, geometry.columns, geometry.count, counts.lamp.samples
         ),
     )
     lamp_state = ReferenceFrames.LampReferenceState(lamp_plan)
@@ -611,10 +595,8 @@ function Calibration.calibrate_references(
                 confirm,
                 configuration,
                 check_application,
-                (sample, exposure)->AdaptiveOpticsCalibration.process!(
-                    dark_state,
-                    dark_plan,
-                    sample.arrays.raw,
+                (sample, exposure) -> AdaptiveOpticsCalibration.process!(
+                    dark_state, dark_plan, sample.arrays.raw
                 ),
             ),
         )
@@ -622,11 +604,10 @@ function Calibration.calibrate_references(
         dark.status == ReferenceFrames.Valid || error("dark reduction is invalid")
         background = Float32.(dark.mean)
         sources = Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(
-            :background=>write_candidate("background", background),
-            :active=>write_candidate("training-active", fill(true, geometry.count)),
-            Symbol("reference-slopes")=>write_candidate(
-                "training-reference-slopes",
-                zeros(Float32, geometry.count, 2),
+            :background => write_candidate("background", background),
+            :active => write_candidate("training-active", fill(true, geometry.count)),
+            Symbol("reference-slopes") => write_candidate(
+                "training-reference-slopes", zeros(Float32, geometry.count, 2)
             ),
         )
         zero_reference = zeros(Float32, geometry.count, 2)
@@ -648,22 +629,20 @@ function Calibration.calibrate_references(
                 confirm,
                 configuration,
                 check_application,
-                (sample, exposure)->reference_lamp_update!(
-                    lamp_state,
-                    lamp_plan,
-                    sample,
-                    universe,
-                    zero_reference,
+                (sample, exposure) -> reference_lamp_update!(
+                    lamp_state, lamp_plan, sample, universe, zero_reference
                 ),
             ),
         )
         lamp = reference_product(lamp_plan, lamp_state)
         active = copy(lamp.eligible)
-        frozen_reference =
-            permutedims(reshape(Float32.(lamp.reference_centroids), 2, geometry.count))
+        frozen_reference = permutedims(
+            reshape(Float32.(lamp.reference_centroids), 2, geometry.count)
+        )
         sources[:active] = write_candidate("active", active)
-        sources[Symbol("reference-slopes")] =
-            write_candidate("reference-slopes", frozen_reference)
+        sources[Symbol("reference-slopes")] = write_candidate(
+            "reference-slopes", frozen_reference
+        )
         indices = findall(active)
         qualification = nothing
         comparison_indices = Int[]
@@ -696,7 +675,7 @@ function Calibration.calibrate_references(
                     confirm,
                     configuration,
                     check_application,
-                    (sample, exposure)->reference_lamp_update!(
+                    (sample, exposure) -> reference_lamp_update!(
                         qualification_state,
                         qualification_plan,
                         sample,
@@ -707,12 +686,11 @@ function Calibration.calibrate_references(
             )
             qualification = reference_product(qualification_plan, qualification_state)
             write_candidate(
-                "qualification-reference-centroids",
-                qualification.reference_centroids,
+                "qualification-reference-centroids", qualification.reference_centroids
             )
             compared = findall(qualification.eligible)
             comparison_indices = indices[compared]
-            for position in compared, coordinate = 1:2
+            for position in compared, coordinate in 1:2
                 push!(
                     difference,
                     qualification.reference_centroids[2position-2+coordinate] -
@@ -733,54 +711,46 @@ function Calibration.calibrate_references(
             qualification.status == ReferenceFrames.Valid &&
             all(qualification.eligible)
         report = Dict{String,Any}(
-            "version"=>1,
-            "product"=>"reference-candidate",
-            "application_graph_sha256"=>Calibration.digest(
-                joinpath(application, "rtc", "graph.conf"),
-            ),
-            "recipe_sha256"=>Calibration.digest(
-                joinpath(application, "calibration", "recipe.conf"),
-            ),
-            "configuration"=>Dict(
-                string(key)=>value for (key, value) in pairs(configuration)
-            ),
-            "application_files_sha256"=>application_hashes,
-            "aoc_version"=>string(pkgversion(AdaptiveOpticsCalibration)),
-            "run"=>UInt64(run),
-            "reference_figure"=>reference,
-            "detector"=>detector,
-            "adc_upper_rail"=>rail,
-            "dark_status"=>string(dark.status),
-            "lamp_status"=>string(lamp.status),
-            "declared_roi_count"=>geometry.count,
-            "eligible_roi_count"=>length(indices),
-            "active_roi_indices"=>indices,
-            "lamp_adc_maximum"=>lamp.adc_maximum,
-            "qualification_status"=>(
-                qualification === nothing ? "NoEligible" : string(qualification.status)
-            ),
-            "qualification_eligible"=>(
-                qualification === nothing ? Bool[] : qualification.eligible
-            ),
-            "qualification_minimum_flux"=>(
-                qualification === nothing ? Float64[] : qualification.minimum_flux
-            ),
-            "qualification_adc_maximum"=>(
-                qualification === nothing ? 0.0 : qualification.adc_maximum
-            ),
-            "qualification_eligibility_passed"=>qualified,
-            "qualification_centroid_comparison_roi_indices"=>comparison_indices,
-            "qualification_reference_difference_rms_pixels"=>(
+            "version" => 1,
+            "product" => "reference-candidate",
+            "application_graph_sha256" =>
+                Calibration.digest(joinpath(application, "rtc", "graph.conf")),
+            "recipe_sha256" =>
+                Calibration.digest(joinpath(application, "calibration", "recipe.conf")),
+            "configuration" =>
+                Dict(string(key) => value for (key, value) in pairs(configuration)),
+            "application_files_sha256" => application_hashes,
+            "aoc_version" => string(pkgversion(AdaptiveOpticsCalibration)),
+            "run" => UInt64(run),
+            "reference_figure" => reference,
+            "detector" => detector,
+            "adc_upper_rail" => rail,
+            "dark_status" => string(dark.status),
+            "lamp_status" => string(lamp.status),
+            "declared_roi_count" => geometry.count,
+            "eligible_roi_count" => length(indices),
+            "active_roi_indices" => indices,
+            "lamp_adc_maximum" => lamp.adc_maximum,
+            "qualification_status" =>
+                (qualification === nothing ? "NoEligible" : string(qualification.status)),
+            "qualification_eligible" =>
+                (qualification === nothing ? Bool[] : qualification.eligible),
+            "qualification_minimum_flux" =>
+                (qualification === nothing ? Float64[] : qualification.minimum_flux),
+            "qualification_adc_maximum" =>
+                (qualification === nothing ? 0.0 : qualification.adc_maximum),
+            "qualification_eligibility_passed" => qualified,
+            "qualification_centroid_comparison_roi_indices" => comparison_indices,
+            "qualification_reference_difference_rms_pixels" => (
                 isempty(difference) ? nothing :
-                sqrt(sum(abs2, difference)/length(difference))
+                sqrt(sum(abs2, difference) / length(difference))
             ),
-            "qualification_reference_difference_maximum_pixels"=>(
-                isempty(difference) ? nothing : maximum(abs, difference)
-            ),
-            "interaction_matrix_accepted"=>false,
-            "activation"=>"candidate-only",
-            "stages"=>reports,
-            "artifacts"=>artifacts,
+            "qualification_reference_difference_maximum_pixels" =>
+                (isempty(difference) ? nothing : maximum(abs, difference)),
+            "interaction_matrix_accepted" => false,
+            "activation" => "candidate-only",
+            "stages" => reports,
+            "artifacts" => artifacts,
         )
         PipeWireAORTC.Common.write_yaml(
             joinpath(temporary, "result.yaml"),

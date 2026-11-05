@@ -31,9 +31,7 @@ function assert_payload(payload::ProofSPA.Struct, adoptions::Int64, applied::Boo
 end
 
 function run_native_control_envelope_proof(
-    socket::String,
-    directory::String,
-    _daemon::Base.Process,
+    socket::String, directory::String, _daemon::Base.Process
 )
     binary = get(ENV, "NATIVE_CONTROL_PROOF_OWNER", "")
     isempty(binary) && error(
@@ -83,9 +81,7 @@ function run_native_control_envelope_proof(
     try
         owner = run(
             pipeline(
-                Cmd([binary, socket, directory]);
-                stdout = owner_log,
-                stderr = owner_log,
+                Cmd([binary, socket, directory]); stdout = owner_log, stderr = owner_log
             );
             wait = false,
         )
@@ -183,7 +179,7 @@ function run_native_control_envelope_proof(
         metadata = something(node_info[])
         @test metadata.id == global_object.id
         @test metadata.properties["object.serial"] ==
-              global_object.properties["object.serial"]
+            global_object.properties["object.serial"]
         @test metadata.properties["test.control.version"] == "1"
         @test metadata.properties["test.control.instance"] == string(PROOF_INSTANCE)
         @test metadata.properties["test.control.owner-pid"] == string(owner_pid)
@@ -218,11 +214,7 @@ function run_native_control_envelope_proof(
         @test cap_values[] == (Int32(1), PROOF_INSTANCE)
 
         apply_header = RequestHeader(
-            controller,
-            PROOF_INSTANCE,
-            Int64(1),
-            PROOF_APPLY,
-            Int64(5_000_000_000),
+            controller, PROOF_INSTANCE, Int64(1), PROOF_APPLY, Int64(5_000_000_000)
         )
         apply_payload = ProofSPA.Struct(PipeWireAO.Pod(Int32(7)))
         apply_pod = encode_request(apply_header, apply_payload)
@@ -256,7 +248,7 @@ function run_native_control_envelope_proof(
             something(completion[])
         end
         @test applied_header ==
-              ReplyHeader(controller, PROOF_INSTANCE, Int64(1), PROOF_APPLY, Int32(0))
+            ReplyHeader(controller, PROOF_INSTANCE, Int64(1), PROOF_APPLY, Int32(0))
         assert_payload(applied_payload, Int64(1), true)
 
         # Replaying a completed request must return the retained completion and
@@ -267,11 +259,7 @@ function run_native_control_envelope_proof(
 
         other_controller = ControllerIdentity(UInt32(43), UInt64(1), Int64(10))
         collision = RequestHeader(
-            other_controller,
-            PROOF_INSTANCE,
-            Int64(1),
-            PROOF_APPLY,
-            Int64(5_000_000_000),
+            other_controller, PROOF_INSTANCE, Int64(1), PROOF_APPLY, Int64(5_000_000_000)
         )
         with_thread_loop_lock(loop) do _
             set_param!(node, ProofSPA.PARAM_PROPS, encode_request(collision, apply_payload))
@@ -300,33 +288,22 @@ function run_native_control_envelope_proof(
             )
         end
         @test collision_reply[1] == ReplyHeader(
-            other_controller,
-            PROOF_INSTANCE,
-            Int64(1),
-            PROOF_APPLY,
-            Int32(-114),
+            other_controller, PROOF_INSTANCE, Int64(1), PROOF_APPLY, Int32(-114)
         )
         @test isempty(collision_reply[2].values)
         @test with_thread_loop_lock(loop) do _
             completion[] == (applied_header, applied_payload)
         end
         @test !any(
-            record -> record[1].controller == controller && record[1].token == 1,
-            rejections,
+            record -> record[1].controller == controller && record[1].token == 1, rejections
         )
 
         query_header = RequestHeader(
-            controller,
-            PROOF_INSTANCE,
-            Int64(2),
-            PROOF_QUERY,
-            Int64(5_000_000_000),
+            controller, PROOF_INSTANCE, Int64(2), PROOF_QUERY, Int64(5_000_000_000)
         )
         with_thread_loop_lock(loop) do _
             set_param!(
-                node,
-                ProofSPA.PARAM_PROPS,
-                encode_request(query_header, ProofSPA.Struct()),
+                node, ProofSPA.PARAM_PROPS, encode_request(query_header, ProofSPA.Struct())
             )
         end
         wait_proof(
@@ -341,24 +318,18 @@ function run_native_control_envelope_proof(
             something(completion[])
         end
         @test query_reply[1] ==
-              ReplyHeader(controller, PROOF_INSTANCE, Int64(2), PROOF_QUERY, Int32(0))
+            ReplyHeader(controller, PROOF_INSTANCE, Int64(2), PROOF_QUERY, Int32(0))
         assert_payload(query_reply[2], Int64(1), true)
         @test with_thread_loop_lock(loop) do _
             completion[] == query_reply
         end
 
         unsupported = RequestHeader(
-            controller,
-            PROOF_INSTANCE,
-            Int64(3),
-            UInt32(999),
-            Int64(5_000_000_000),
+            controller, PROOF_INSTANCE, Int64(3), UInt32(999), Int64(5_000_000_000)
         )
         with_thread_loop_lock(loop) do _
             set_param!(
-                node,
-                ProofSPA.PARAM_PROPS,
-                encode_request(unsupported, ProofSPA.Struct()),
+                node, ProofSPA.PARAM_PROPS, encode_request(unsupported, ProofSPA.Struct())
             )
         end
         wait_proof(
@@ -378,26 +349,22 @@ function run_native_control_envelope_proof(
         unsupported_reply = with_thread_loop_lock(loop) do _
             only(
                 filter(
-                    record ->
-                        record[1].controller == controller && record[1].token == 3,
+                    record -> record[1].controller == controller && record[1].token == 3,
                     rejections,
                 ),
             )
         end
         @test unsupported_reply[1] ==
-              ReplyHeader(controller, PROOF_INSTANCE, Int64(3), UInt32(999), Int32(-22))
+            ReplyHeader(controller, PROOF_INSTANCE, Int64(3), UInt32(999), Int32(-22))
         @test isempty(unsupported_reply[2].values)
         @test with_thread_loop_lock(loop) do _
             completion[] == query_reply
         end
 
         write(joinpath(directory, "owner-quit"), "")
-        wait_proof(() -> removed[], 10, "native Filter removal"; check = ()->nothing)
+        wait_proof(() -> removed[], 10, "native Filter removal"; check = () -> nothing)
         wait_proof(
-            () -> Base.process_exited(owner),
-            5,
-            "native owner exit";
-            check = ()->nothing,
+            () -> Base.process_exited(owner), 5, "native owner exit"; check = () -> nothing
         )
         wait(owner)
         @test owner.exitcode == 0

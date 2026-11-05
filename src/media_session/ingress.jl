@@ -205,9 +205,10 @@ function _capability(gate)
         Pod(gate.last_token),
         Pod(SPA.Struct(rows)),
     ]
-    pod =
-        Pod(props_param(SPA.Props([PREFIX*names[i]=>values[i] for i in eachindex(names)])))
-    sizeof(pod) <= 64*1024 ||
+    pod = Pod(
+        props_param(SPA.Props([PREFIX * names[i] => values[i] for i in eachindex(names)]))
+    )
+    sizeof(pod) <= 64 * 1024 ||
         throw(ArgumentError("session capability exceeds native reply bound"))
     return pod
 end
@@ -215,13 +216,9 @@ _publish!(gate) =
     _emit!(gate, PublishRecords(_capability(gate), gate.completion, gate.rejection))
 _reply_header(gate, ::Nothing, result) = Envelope.ReplyHeader(gate.instance, Int32(result))
 _reply_header(gate, header::Envelope.RequestHeader, result) = Envelope.ReplyHeader(
-    header.controller,
-    gate.instance,
-    header.token,
-    header.operation,
-    Int32(result),
+    header.controller, gate.instance, header.token, header.operation, Int32(result)
 )
-_message(value) = first(replace(String(value), '\0'=>'?'), 2048)
+_message(value) = first(replace(String(value), '\0' => '?'), 2048)
 _error_payload(gate, message) =
     _struct(Pod("session"), Pod(_message(message)), Pod(SPA.Id(UInt32(gate.lifecycle))))
 function _reject!(gate, header, result, message)
@@ -343,7 +340,7 @@ end
 function _publish_terminal!(gate, attempt, pod)
     ticket = attempt.ticket
     if gate.terminal_request === nothing ||
-       ticket.header.token > gate.terminal_request.header.token
+        ticket.header.token > gate.terminal_request.header.token
         gate.terminal_request = ticket
         gate.completion = pod
     end
@@ -368,7 +365,7 @@ function _cancel!(gate, attempt, message; authority = true)
     unknown = attempt.dispatched
     unknown &&
         authority &&
-        _emit!(gate, AuthorityFailed(message*"; effect outcome unknown"))
+        _emit!(gate, AuthorityFailed(message * "; effect outcome unknown"))
     # Fence any original append before staging the replacement terminal record.
     attempt.job = 0
     attempt.record = nothing
@@ -378,9 +375,8 @@ function _cancel!(gate, attempt, message; authority = true)
         _failure(
             gate,
             attempt.ticket,
-            message*(
-                unknown ? "; effect outcome unknown" : "; no scientific effect issued"
-            ),
+            message *
+            (unknown ? "; effect outcome unknown" : "; no scientific effect issued"),
         );
         unknown,
     )
@@ -413,8 +409,7 @@ function _update_controllers!(gate, observed::Vector{Controller})
         throw(ArgumentError("duplicate controller global ID"))
     for record in gate.controllers
         index = findfirst(
-            facts -> _same_incarnation(facts.identity, record.facts.identity),
-            observed,
+            facts -> _same_incarnation(facts.identity, record.facts.identity), observed
         )
         if index === nothing || !_same_facts(record.facts, observed[index])
             record.retired = true
@@ -443,8 +438,9 @@ end
     ticket = _candidate!(gate, event.pod, event.received)
     ticket === nothing && return Hsm.EventHandled
     accepted = _accept!(gate, ticket)
-    nextstate =
-        _state_after(gate; closing = accepted && ticket.header.operation == QUIT_OPERATION)
+    nextstate = _state_after(
+        gate; closing = accepted && ticket.header.operation == QUIT_OPERATION
+    )
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
@@ -587,9 +583,9 @@ end
     _check!(gate)
     attempt = _locate(gate, event.ticket)
     if attempt !== nothing &&
-       attempt.dispatched &&
-       !attempt.cancelled &&
-       attempt.record === nothing
+        attempt.dispatched &&
+        !attempt.cancelled &&
+        attempt.record === nothing
         header, _ = Envelope.decode_completion(event.pod; endpoint = :lifecycle)
         request = attempt.ticket.header
         header.endpoint_instance == request.endpoint_instance &&
@@ -644,7 +640,8 @@ end
                     _failure(
                         gate,
                         attempt.ticket,
-                        "Journal failed before dispatch; no scientific effect issued: "*event.message,
+                        "Journal failed before dispatch; no scientific effect issued: " *
+                        event.message,
                     ),
                 )
             end
@@ -655,7 +652,7 @@ end
                 _emit!(
                     gate,
                     AuthorityFailed(
-                        "Journal persistence failed after dispatch; effect outcome unknown",
+                        "Journal persistence failed after dispatch; effect outcome unknown"
                     ),
                 )
             end
@@ -664,9 +661,7 @@ end
                 "Journal persistence failed; effect outcome unknown: " :
                 "Journal persistence failed before dispatch: "
             _publish_terminal!(
-                gate,
-                attempt,
-                _failure(gate, attempt.ticket, message*event.message),
+                gate, attempt, _failure(gate, attempt.ticket, message * event.message)
             )
         end
         break

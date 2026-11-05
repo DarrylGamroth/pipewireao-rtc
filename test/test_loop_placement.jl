@@ -11,14 +11,12 @@ const LoopPlacement = PipeWireAORTC.Placement
     @test (previous, deadline) === (Int64(-100), Int64(-97))
     Clocks.update!(clock, Int64(-98))
     @test LoopPlacement.placement_remaining(clock, previous, deadline) ===
-          (Int64(-98), Int64(1))
+        (Int64(-98), Int64(1))
     Clocks.update!(clock, deadline)
     @test LoopPlacement.placement_remaining(clock, -98, deadline) === (deadline, Int64(0))
     Clocks.update!(clock, Int64(-99))
     @test_throws LoopPlacement.PlacementError LoopPlacement.placement_remaining(
-        clock,
-        -98,
-        deadline,
+        clock, -98, deadline
     )
 
     # Adjacent ticks above Float64's exact-integer range stay distinct.
@@ -33,12 +31,10 @@ const LoopPlacement = PipeWireAORTC.Placement
     Clocks.update!(clock, typemax(Int64))
     @test_throws OverflowError LoopPlacement.placement_deadline(clock, 1//1_000_000_000)
     @test LoopPlacement.placement_remaining(clock, Int64(-100), Int64(-97)) ===
-          (typemax(Int64), Int64(0))
+        (typemax(Int64), Int64(0))
     Clocks.update!(clock, typemin(Int64))
     @test_throws OverflowError LoopPlacement.placement_remaining(
-        clock,
-        typemin(Int64),
-        typemax(Int64),
+        clock, typemin(Int64), typemax(Int64)
     )
 
     # Block event dispatch, then advance the injected clock at the first poll.
@@ -56,11 +52,7 @@ const LoopPlacement = PipeWireAORTC.Placement
             end
             with_thread_loop_lock(loop) do _
                 @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(
-                    loop,
-                    2;
-                    timeout = 3//1_000_000_000,
-                    clock,
-                    check,
+                    loop, 2; timeout = 3//1_000_000_000, clock, check
                 )
             end
             @test checks[] == 3
@@ -76,7 +68,7 @@ end
 function calling_thread_affinity()
     tid = Int(ccall(:gettid, Cint, ()))
     cpus = LoopPlacement.cpus_from_list(
-        LoopPlacement.proc_field("/proc/self/task/$tid/status", "Cpus_allowed_list"),
+        LoopPlacement.proc_field("/proc/self/task/$tid/status", "Cpus_allowed_list")
     )
     return tid, cpus
 end
@@ -94,8 +86,7 @@ end
         @test report["cpus"] == [cpu]
         observed = LoopPlacement.cpus_from_list(
             LoopPlacement.proc_field(
-                "/proc/self/task/$(report["tid"])/status",
-                "Cpus_allowed_list",
+                "/proc/self/task/$(report["tid"])/status", "Cpus_allowed_list"
             ),
         )
         @test observed == [cpu]
@@ -130,8 +121,7 @@ end
         @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout = 0)
         @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout = Inf)
         @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(
-            loop,
-            typemax(Int),
+            loop, typemax(Int)
         )
 
         checks = Ref(0)
@@ -146,9 +136,7 @@ end
         # the event cannot dispatch before the bounded wait gives up.
         with_thread_loop_lock(loop) do _
             @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(
-                loop,
-                cpu;
-                timeout = 0.005,
+                loop, cpu; timeout = 0.005
             )
         end
         @test LoopPlacement.pin_loop!(loop, cpu)["tid"] == report["tid"]

@@ -11,10 +11,7 @@ struct Binding
     owner_pid::UInt32
     instance::Int64
     function Binding(
-        remote::AbstractString,
-        node::AbstractString,
-        pid::Integer,
-        instance::Integer,
+        remote::AbstractString, node::AbstractString, pid::Integer, instance::Integer
     )
         _check_pid(pid)
         _check_instance(instance)
@@ -46,18 +43,15 @@ struct Connection{C<:Client.Client}
     client::C
 end
 request!(
-    connection::Connection,
-    operation::Symbol;
-    deadline::Float64,
-    check = ()->nothing,
+    connection::Connection, operation::Symbol; deadline::Float64, check = () -> nothing
 ) = Client.request!(connection.client, Codec.Command(operation); deadline, check)
-function status(connection::Connection; deadline::Float64, check = ()->nothing)
+function status(connection::Connection; deadline::Float64, check = () -> nothing)
     reply = request!(connection, :status; deadline, check)
     _require_status(reply)
     return reply
 end
 """Bind exact PID/incarnation and require fresh Status, including Preparing."""
-function connect(binding::Binding; deadline::Float64, check = ()->nothing)
+function connect(binding::Binding; deadline::Float64, check = () -> nothing)
     Client.deadline_check(deadline, check)
     client = Client.connect(
         Codec.PROFILE,
@@ -87,12 +81,12 @@ function connect(
     pid::Integer,
     instance::Integer;
     deadline::Float64,
-    check = ()->nothing,
+    check = () -> nothing,
 )
     Client.deadline_check(deadline, check)
     return connect(Binding(remote, node, pid, instance); deadline, check)
 end
-function connect_owner!(connection::Connection; deadline::Float64, check = ()->nothing)
+function connect_owner!(connection::Connection; deadline::Float64, check = () -> nothing)
     while true
         reply = status(connection; deadline, check)
         reply.lifecycle === Codec.Prepared && break
@@ -105,7 +99,7 @@ function connect_owner!(connection::Connection; deadline::Float64, check = ()->n
     _require_connected(reply)
     return reply
 end
-function quit!(connection::Connection; deadline::Float64, check = ()->nothing)
+function quit!(connection::Connection; deadline::Float64, check = () -> nothing)
     reply = request!(connection, :quit; deadline, check)
     _require_stopped(reply)
     return reply

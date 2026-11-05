@@ -17,8 +17,9 @@ const COMPONENT_TEMPLATES = (
     "proper_optical_train_f32",
 )
 const MIRROR_PROFILES = ("coordinate_gaussian", "grid_gaussian", "measured")
-const PREPARED_OPTICAL_CONFIG =
-    ("resolution", "pupil_resolution", "diameter_m", "wavelength_um", "temperature_c")
+const PREPARED_OPTICAL_CONFIG = (
+    "resolution", "pupil_resolution", "diameter_m", "wavelength_um", "temperature_c"
+)
 const OPTIONAL_OPTICAL_CONFIG = (
     "pupil_opd_schema",
     "pupil_amplitude_schema",
@@ -34,7 +35,7 @@ function component_preparation(selection, instrument, directory)
     selection["template"] in ("proper_optical_train_f32", "proper_optical_train_f64") ||
         throw(
             ArgumentError(
-                "Zemax component preparation requires a PROPER optical train template",
+                "Zemax component preparation requires a PROPER optical train template"
             ),
         )
     preparation = fields(
@@ -47,7 +48,7 @@ function component_preparation(selection, instrument, directory)
         throw(ArgumentError("unsupported component preparation kind"))
     get(get(instrument, "optical_prescription", Dict()), "format", nothing) == "zemax" ||
         throw(
-            ArgumentError("Zemax component requires a physical Zemax optical prescription"),
+            ArgumentError("Zemax component requires a physical Zemax optical prescription")
         )
     _declaration_identifier(preparation["branch"], "Zemax component branch")
     recipe = _declaration_text(preparation["recipe"], "component preparation recipe")
@@ -63,7 +64,7 @@ function component_preparation(selection, instrument, directory)
         throw(ArgumentError("component preparation recipe must be an existing file"))
     resolved = D.relative_asset(directory, recipe)
     "generated" in splitpath(relpath(resolved, realpath(directory))) && throw(
-        ArgumentError("component preparation recipe must be authored outside generated"),
+        ArgumentError("component preparation recipe must be authored outside generated")
     )
     prepared_component_config(selection["config"])
     return preparation
@@ -105,8 +106,7 @@ function component_template(name, templates)
         _declaration_text(result["detector"], "AOS detector model")
     _declaration_object(result["config"], "AOS component config")
     _declaration_object(
-        get(result, "optional_config", Dict()),
-        "AOS optional component config",
+        get(result, "optional_config", Dict()), "AOS optional component config"
     )
     return result
 end
@@ -127,7 +127,7 @@ function component_reference(value::AbstractDict, selection)
             haskey(selection, key) ||
                 throw(ArgumentError("component template requires $key"))
             return reference(
-                base * pointer_key(selection[key]) * "/" * pointer[(length(prefix)+1):end],
+                base * pointer_key(selection[key]) * "/" * pointer[(length(prefix)+1):end]
             )
         end
         if startswith(pointer, "/schemas/") || startswith(pointer, "/values/")
@@ -185,8 +185,7 @@ function validate_component(selection, instrument, document)
             throw(ArgumentError("invalid mirror binding name"))
         if haskey(selection, "influence_functions")
             path = _declaration_text(
-                selection["influence_functions"],
-                "influence function setting",
+                selection["influence_functions"], "influence function setting"
             )
             all(part -> InstrumentDefinition.identifier(String(part)), split(path, '.')) ||
                 throw(ArgumentError("invalid influence function setting path"))
@@ -200,7 +199,7 @@ function validate_component(selection, instrument, document)
             template != "pixel_mtf" &&
             throw(
                 ArgumentError(
-                    "component bindings require a pixel MTF or deformable mirror component",
+                    "component bindings require a pixel MTF or deformable mirror component"
                 ),
             )
     end
@@ -222,13 +221,11 @@ function validate_component(selection, instrument, document)
             throw(ArgumentError("Pyramid component requires a pyramid sensor"))
         for key in ("pupil_shape", "pupil_separation_pixels", "pupil_edge_pixels")
             pair = sensor_pixel_pair(
-                sensor[key],
-                "Pyramid $key";
-                positive = key == "pupil_shape",
+                sensor[key], "Pyramid $key"; positive = key == "pupil_shape"
             )
             pair[1] == pair[2] || throw(
                 ArgumentError(
-                    "Pyramid optical component requires equal row and column $key",
+                    "Pyramid optical component requires equal row and column $key"
                 ),
             )
         end
@@ -301,8 +298,7 @@ function component_node(name, selection, model, templates)
         ]
         if !isempty(missing)
             defaults = _declaration_object(
-                get(aos_node_defaults(), model, Dict()),
-                "AOS $model node defaults",
+                get(aos_node_defaults(), model, Dict()), "AOS $model node defaults"
             )
             for key in missing
                 haskey(defaults, key) && (config[key] = deepcopy(defaults[key]))
@@ -331,8 +327,9 @@ function component_node(name, selection, model, templates)
     prepared && (node["preparation"] = deepcopy(selection["preparation"]))
     haskey(template, "detector") && (node["detector"] = template["detector"])
     if haskey(template, "binding_roles")
-        bindings =
-            _declaration_object(get(selection, "bindings", Dict()), "component bindings")
+        bindings = _declaration_object(
+            get(selection, "bindings", Dict()), "component bindings"
+        )
         Set(keys(bindings)) == Set(template["binding_roles"]) || throw(
             ArgumentError(
                 "component requires explicit construction bindings $(template["binding_roles"])",
@@ -358,19 +355,27 @@ end
 
 function mirror_parameters!(bindings, name, selection, model)
     mirror = selection["mirror"]
-    ports =
-        model == "grid_gaussian" ? ("actuator_grid_indices",) :
-        model == "measured" ? ("actuator_coordinates", "influence_functions") :
+    ports = if model == "grid_gaussian"
+        ("actuator_grid_indices",)
+    elseif model == "measured"
+        ("actuator_coordinates", "influence_functions")
+    else
         ("actuator_coordinates",)
+    end
     return map(collect(ports)) do port
-        kind =
-            port == "actuator_coordinates" ? "mirror_coordinates" :
-            port == "actuator_grid_indices" ? "mirror_grid_indices" : "measured_influences"
+        kind = if port == "actuator_coordinates"
+            "mirror_coordinates"
+        elseif port == "actuator_grid_indices"
+            "mirror_grid_indices"
+        else
+            "measured_influences"
+        end
         spec = Dict{String,Any}("kind" => kind, "mirror" => mirror)
         port == "influence_functions" &&
             (spec["setting"] = get(selection, "influence_functions", "influence_functions"))
-        alias =
-            add_component_binding!(bindings, component_binding(name, selection, port), spec)
+        alias = add_component_binding!(
+            bindings, component_binding(name, selection, port), spec
+        )
         return Dict("binding" => alias, "destination" => name * "." * port)
     end
 end
@@ -422,8 +427,9 @@ simulation_graph_source(directory, source) =
 
 function expand_simulation_components!(document, instrument, directory)
     templates = Set{String}()
-    components =
-        _declaration_object(get(document, "components", Dict()), "simulation components")
+    components = _declaration_object(
+        get(document, "components", Dict()), "simulation components"
+    )
     length(components) <= 64 ||
         throw(ArgumentError("simulation components exceed 64 entries"))
     for (name, selection) in components
@@ -443,7 +449,7 @@ function expand_simulation_components!(document, instrument, directory)
                 end
             end
             if !haskey(config, "exposure_duration_s") &&
-               haskey(get(sensor, "acquisition", Dict()), "exposure_duration_s")
+                haskey(get(sensor, "acquisition", Dict()), "exposure_duration_s")
                 config["exposure_duration_s"] = reference(
                     "/instrument/wavefront_sensors/" *
                     pointer_key(selection["sensor"]) *
@@ -454,21 +460,19 @@ function expand_simulation_components!(document, instrument, directory)
         component_preparation(selection, instrument, directory)
     end
     bindings = _declaration_object(
-        get!(document, "bindings", Dict{String,Any}()),
-        "simulation bindings",
+        get!(document, "bindings", Dict{String,Any}()), "simulation bindings"
     )
-    settings_bindings =
-        _declaration_array(get!(document, "settings_bindings", Any[]), "settings_bindings")
+    settings_bindings = _declaration_array(
+        get!(document, "settings_bindings", Any[]), "settings_bindings"
+    )
     _declaration_object(document["defaults"], "simulation defaults")
     profiles = _declaration_object(document["profiles"], "simulation profiles")
     1 <= length(profiles) <= 16 || throw(ArgumentError("simulation requires 1:16 profiles"))
     graph_sources = simulation_graph_sources(document)
     profile_models = Dict(
-        name => get(
-            _declaration_object(profile, "simulation profile"),
-            "template",
-            nothing,
-        ) for (name, profile) in profiles
+        name =>
+            get(_declaration_object(profile, "simulation profile"), "template", nothing) for
+        (name, profile) in profiles
     )
     mirror_components = Dict(
         name => selection for
@@ -503,11 +507,11 @@ function expand_simulation_components!(document, instrument, directory)
                 haskey(profile, "settings_schema") ?
                 resolve_profile_settings_schema(profile["settings_schema"]) :
                 Dict{String,Any}()
-            influence =
-                resolve_profile_settings_schema("measured_influences")["influence_functions"]
+            influence = resolve_profile_settings_schema("measured_influences")["influence_functions"]
             for selection in values(mirror_components)
-                path =
-                    split(get(selection, "influence_functions", "influence_functions"), '.')
+                path = split(
+                    get(selection, "influence_functions", "influence_functions"), '.'
+                )
                 properties = schema
                 for key in path[1:(end-1)]
                     field = get!(
@@ -516,7 +520,7 @@ function expand_simulation_components!(document, instrument, directory)
                         Dict("type" => "object", "properties" => Dict{String,Any}()),
                     )
                     get(field, "type", nothing) == "object" || throw(
-                        ArgumentError("influence setting traverses a non-object schema"),
+                        ArgumentError("influence setting traverses a non-object schema")
                     )
                     properties = get!(field, "properties", Dict{String,Any}())
                 end
@@ -526,8 +530,8 @@ function expand_simulation_components!(document, instrument, directory)
         end
     end
     gaussian_profiles = sort!([
-        name for (name, model) in profile_models if
-        model in ("grid_gaussian", "coordinate_gaussian")
+        name for
+        (name, model) in profile_models if model in ("grid_gaussian", "coordinate_gaussian")
     ])
     if !isempty(gaussian_profiles)
         for (name, selection) in mirror_components
@@ -566,16 +570,13 @@ function expand_simulation_components!(document, instrument, directory)
             name = node["name"]
             if !haskey(node, "type")
                 fields(
-                    node,
-                    ("name", "config", "props"),
-                    ("name",),
-                    "component node reference",
+                    node, ("name", "config", "props"), ("name",), "component node reference"
                 )
                 haskey(components, name) ||
                     throw(ArgumentError("graph references absent component $name"))
                 selection = components[name]
                 if selection["template"] == "deformable_mirror" &&
-                   (haskey(node, "config") || haskey(node, "props"))
+                    (haskey(node, "config") || haskey(node, "props"))
                     throw(
                         ArgumentError(
                             "mirror graph nodes cannot override component/profile config or props",
@@ -587,12 +588,11 @@ function expand_simulation_components!(document, instrument, directory)
                     selected_profile = get(document["defaults"], "profile", nothing)
                     haskey(profiles, selected_profile) || throw(
                         ArgumentError(
-                            "component graph requires a declared default profile",
+                            "component graph requires a declared default profile"
                         ),
                     )
                     replacements = [
-                        node for
-                        node in get(profiles[selected_profile], "nodes", []) if
+                        node for node in get(profiles[selected_profile], "nodes", []) if
                         node["name"] == name
                     ]
                     length(replacements) == 1 || throw(
@@ -606,8 +606,7 @@ function expand_simulation_components!(document, instrument, directory)
                 end
                 if haskey(node, "config")
                     overrides = _declaration_object(
-                        node["config"],
-                        "component node config overrides",
+                        node["config"], "component node config overrides"
                     )
                     allowed =
                         haskey(selection, "preparation") ?
@@ -638,15 +637,14 @@ function expand_simulation_components!(document, instrument, directory)
                     ),
                 ]
             elseif haskey(components, name) &&
-                   components[name]["template"] == "pupil_opd_composition_f32" &&
-                   port == "uncompensated_opd"
-                resolution =
-                    only(node for node in graph["nodes"] if node["name"] == name)["config"]["resolution"]
+                components[name]["template"] == "pupil_opd_composition_f32" &&
+                port == "uncompensated_opd"
+                resolution = only(node for node in graph["nodes"] if node["name"] == name)["config"]["resolution"]
                 [deepcopy(resolution), deepcopy(resolution)]
             else
                 throw(
                     ArgumentError(
-                        "graph input requires explicit binding $(input["binding"])",
+                        "graph input requires explicit binding $(input["binding"])"
                     ),
                 )
             end
@@ -683,7 +681,7 @@ function expand_simulation_components!(document, instrument, directory)
                 entry in graph["outputs"] if entry["source"] == hil["frame"]
             ]
             length(frames) == 1 || throw(
-                ArgumentError("HIL frame endpoint must name exactly one graph output"),
+                ArgumentError("HIL frame endpoint must name exactly one graph output")
             )
             push!(inputs, collect(commands))
             push!(outputs, only(frames))

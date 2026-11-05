@@ -24,36 +24,33 @@ end
 @testset "cold projections retain regular Classic scientific authority" begin
     before = application_hashes(application)
     original = Deployment.decode(joinpath(application, "rtc", "graph.conf"), prefix)
-    original_nodes = Dict(node["name"]=>node for node in original["filter.graph"]["nodes"])
+    original_nodes = Dict(
+        node["name"] => node for node in original["filter.graph"]["nodes"]
+    )
     parameters = Calibration.read_parameters(application)
     frontend = command = nothing
     try
         frontend = Calibration.calibration_graph(
-            application;
-            inputs = frontend_inputs,
-            outputs = frontend_outputs,
+            application; inputs = frontend_inputs, outputs = frontend_outputs
         )
         command = Calibration.calibration_graph(
-            application;
-            inputs = command_inputs,
-            outputs = command_outputs,
+            application; inputs = command_inputs, outputs = command_outputs
         )
         @test frontend isa
-              Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).GraphProjection
+            Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).GraphProjection
         @test command isa
-              Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).GraphProjection
+            Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).GraphProjection
         @test frontend.provenance === nothing && command.provenance === nothing
         @test Set(node["name"] for node in frontend.document["filter.graph"]["nodes"]) ==
-              Set(("pixel-calibration", "shack-hartmann"))
+            Set(("pixel-calibration", "shack-hartmann"))
         @test only(command.document["filter.graph"]["nodes"]) ==
-              original_nodes["pdm-command"]
+            original_nodes["pdm-command"]
         @test all(
             node == original_nodes[node["name"]] for
             node in frontend.document["filter.graph"]["nodes"]
         )
         @test only(frontend.document["filter.graph"]["links"]) == Dict(
-            "input"=>"shack-hartmann:image",
-            "output"=>"pixel-calibration:calibrated",
+            "input" => "shack-hartmann:image", "output" => "pixel-calibration:calibrated"
         )
         @test isempty(command.document["filter.graph"]["links"])
         @test Set(keys(frontend.parameters)) == Set(
@@ -75,7 +72,7 @@ end
                 filter(
                     original -> original.port == entry.port,
                     PipeWireAORTC.GraphOwner.bindings(
-                        joinpath(application, "rtc", "parameters.conf"),
+                        joinpath(application, "rtc", "parameters.conf")
                     ),
                 ),
             ).source.path for entry in frontend.bindings
@@ -84,11 +81,11 @@ end
         @test raw.element_type === UInt16 && raw.shape == (352, 352)
         measurements = JuliaFilterGraph.output_formats(frontend.graph)
         @test measurements.slopes.element_type === Float32 &&
-              measurements.slopes.shape == (188, 2)
+            measurements.slopes.shape == (188, 2)
         @test measurements.flux.element_type === Float32 &&
-              measurements.flux.shape == (188,)
+            measurements.flux.shape == (188,)
         @test measurements.validity.element_type === Bool &&
-              measurements.validity.shape == (188,)
+            measurements.validity.shape == (188,)
         requested = JuliaFilterGraph.input_formats(command.graph).requested
         demanded = JuliaFilterGraph.output_formats(command.graph).demanded
         @test requested.element_type === Float32 && requested.shape == (277,)
@@ -107,8 +104,8 @@ end
             FilterGraphIsland.close_execution(authority)
         end
         @test frontend.source_graph_sha256 ==
-              command.source_graph_sha256 ==
-              Calibration.digest(joinpath(application, "rtc", "graph.conf"))
+            command.source_graph_sha256 ==
+            Calibration.digest(joinpath(application, "rtc", "graph.conf"))
         @test_throws ArgumentError Calibration.calibration_graph(
             application;
             inputs = (requested = "pdm-command:missing",),
@@ -120,9 +117,7 @@ end
             outputs = frontend_outputs,
         )
         @test_throws ArgumentError Calibration.calibration_graph(
-            application;
-            inputs = frontend_inputs,
-            outputs = (:missing,),
+            application; inputs = frontend_inputs, outputs = (:missing,)
         )
         @test_throws ArgumentError Calibration.calibration_graph(
             application;
@@ -132,8 +127,7 @@ end
         @test_throws ArgumentError Calibration.calibration_graph(
             application;
             inputs = (
-                requested = "pdm-command:requested",
-                duplicate = "pdm-command:requested",
+                requested = "pdm-command:requested", duplicate = "pdm-command:requested"
             ),
             outputs = command_outputs,
         )
@@ -145,20 +139,18 @@ end
             ),
         )
             aliased = Calibration.calibration_graph(
-                application;
-                inputs = command_inputs,
-                outputs = selection,
+                application; inputs = command_inputs, outputs = selection
             )
             try
                 @test only(aliased.document["filter.graph"]["nodes"]) ==
-                      original_nodes["pdm-command"]
+                    original_nodes["pdm-command"]
                 @test isempty(aliased.document["filter.graph"]["links"])
-                formats=JuliaFilterGraph.output_formats(aliased.graph)
+                formats = JuliaFilterGraph.output_formats(aliased.graph)
                 @test keys(formats) == (:physical, :residual)
                 @test formats.physical == demanded
                 @test formats.residual ==
-                      JuliaFilterGraph.output_formats(command.graph)[Symbol(
-                    "constraint-feedback",
+                    JuliaFilterGraph.output_formats(command.graph)[Symbol(
+                    "constraint-feedback"
                 )]
                 @test [
                     port["endpoint"] for port in aliased.document["filter.graph"]["outputs"]
@@ -174,16 +166,12 @@ end
             (physical = :demanded, duplicate = "pdm-command:demanded"),
         )
             @test_throws ArgumentError Calibration.calibration_graph(
-                application;
-                inputs = command_inputs,
-                outputs = selection,
+                application; inputs = command_inputs, outputs = selection
             )
         end
         for endpoint in ("pdm-command:missing", "pdm-command:requested")
             @test_throws Exception Calibration.calibration_graph(
-                application;
-                inputs = command_inputs,
-                outputs = (physical = endpoint,),
+                application; inputs = command_inputs, outputs = (physical = endpoint,)
             )
         end
         @test_throws Exception Calibration.calibration_graph(
@@ -203,8 +191,7 @@ end
                 joinpath(directory, "instrument.json"),
             )
             symlink(
-                joinpath(application, "calibration"),
-                joinpath(directory, "calibration"),
+                joinpath(application, "calibration"), joinpath(directory, "calibration")
             )
             path = joinpath(directory, "rtc", "parameters.conf")
             bindings = Deployment.decode(path, prefix)
@@ -212,9 +199,7 @@ end
             PipeWireAORTC.ScienceExport.write_spa_config(path, bindings)
             error = try
                 Calibration.calibration_graph(
-                    directory;
-                    inputs = frontend_inputs,
-                    outputs = frontend_outputs,
+                    directory; inputs = frontend_inputs, outputs = frontend_outputs
                 )
                 nothing
             catch caught

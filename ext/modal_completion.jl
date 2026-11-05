@@ -77,29 +77,29 @@ function modal_completion(
         Matrix{Float64}(coordinates)
     size(coordinates) == (2, count) && all(isfinite, coordinates) || throw(
         ArgumentError(
-            "registered actuator coordinates must be finite [x,y] by physical command",
+            "registered actuator coordinates must be finite [x,y] by physical command"
         ),
     )
     radii = map(index -> hypot(coordinates[1, index], coordinates[2, index]), 1:count)
     controlled = findall(
         index ->
-            healthy[index] && obstruction*outer_radius <= radii[index] <= outer_radius,
+            healthy[index] && obstruction * outer_radius <= radii[index] <= outer_radius,
         1:count,
     )
     length(controlled) >= 3 || throw(
-        ArgumentError("annulus requires at least three directly controlled coordinates"),
+        ArgumentError("annulus requires at least three directly controlled coordinates")
     )
     support = permutedims(coordinates[:, controlled])
     centered = support .- sum(support; dims = 1) ./ length(controlled)
     scale = maximum(abs, centered)
     scale > 0 && LA.rank(hcat(ones(length(controlled)), centered ./ scale)) == 3 || throw(
         ArgumentError(
-            "directly controlled coordinates must span a two-dimensional affine basis",
+            "directly controlled coordinates must span a two-dimensional affine basis"
         ),
     )
     supported = findall(index -> healthy[index] && radii[index] <= guard_radius, 1:count)
     modal_completion_extent(count, length(controlled), sizeof(Float64))
-    modal_completion_extent(length(controlled)+3, length(controlled)+3, sizeof(Float64))
+    modal_completion_extent(length(controlled) + 3, length(controlled) + 3, sizeof(Float64))
     roles = zeros(UInt8, count)
     roles[supported] .= 2
     roles[controlled] .= 1
@@ -109,15 +109,13 @@ function modal_completion(
         roles[index] == 1 ? FGA.ControlledVdmActuator : FGA.ExtrapolatedVdmActuator for
         index in supported
     ])
-    calibration =
-        FGA.VdmCompletionCalibration(partition, permutedims(coordinates[:, supported]))
+    calibration = FGA.VdmCompletionCalibration(
+        partition, permutedims(coordinates[:, supported])
+    )
     plan = FGA.ThinPlateVdmCompletionPlan{Float64}()
     artifacts = FGA.VdmCompletionArtifacts(plan, calibration)
     FGA.process!(
-        artifacts,
-        FGA.VdmCompletionWorkspace(plan, calibration),
-        plan,
-        calibration,
+        artifacts, FGA.VdmCompletionWorkspace(plan, calibration), plan, calibration
     )
     completion = zeros(Float32, count, length(controlled))
     selector = zeros(Float32, length(controlled), count)

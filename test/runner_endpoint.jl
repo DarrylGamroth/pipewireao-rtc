@@ -114,7 +114,7 @@ function close_runner_connection(client)
     return nothing
 end
 
-function runner_wait(predicate, clients, deadline, label; check = ()->nothing)
+function runner_wait(predicate, clients, deadline, label; check = () -> nothing)
     stop = min(deadline, time_ns() / 1e9 + 15)
     while time_ns() / 1e9 < stop
         check()
@@ -255,7 +255,7 @@ function export_runner_controller!(client, suffix, instance, deadline)
     )
 end
 
-function bind_runner_owner!(client, owner_pid, deadline; check = ()->nothing)
+function bind_runner_owner!(client, owner_pid, deadline; check = () -> nothing)
     runner_wait(
         () -> runner_global(client, RUNNER_NAME) !== nothing,
         (client,),
@@ -346,14 +346,10 @@ function runner_reply!(
     deadline;
     endpoint_instance = RUNNER_INSTANCE,
     rejection = false,
-    check = ()->nothing,
+    check = () -> nothing,
 )
     header = RequestHeader(
-        identity,
-        endpoint_instance,
-        Int64(token),
-        UInt32(operation),
-        Int64(10_000_000_000),
+        identity, endpoint_instance, Int64(token), UInt32(operation), Int64(10_000_000_000)
     )
     before = runner_read(client) do _
         length(rejection ? client.rejections : client.completions)
@@ -383,7 +379,7 @@ end
 function runner_success(reply, identity, token, operation, lifecycle, outcome)
     header, payload = reply
     @test header ==
-          ReplyHeader(identity, RUNNER_INSTANCE, Int64(token), UInt32(operation), Int32(0))
+        ReplyHeader(identity, RUNNER_INSTANCE, Int64(token), UInt32(operation), Int32(0))
     if header.result < 0
         error(
             "expected successful operation $operation token $token; got result $(header.result), field=$(pod_value(String, payload.values[1])), message=$(pod_value(String, payload.values[2])), lifecycle=$(pod_value(RunnerSPA.Id, payload.values[3]).value)",
@@ -446,9 +442,7 @@ links = [
 """
 
 function run_native_runner_endpoint(
-    socket::String,
-    directory::String,
-    _daemon::Base.Process,
+    socket::String, directory::String, _daemon::Base.Process
 )
     binary = get(ENV, "NATIVE_RUNNER_BINARY", "")
     isfile(binary) && isexecutable(binary) ||
@@ -460,9 +454,7 @@ function run_native_runner_endpoint(
     # Native admission uses the runner's existing private-runtime guard.
     chmod(dirname(socket), 0o700)
     evidence_root = get(
-        ENV,
-        "NATIVE_RUNNER_EVIDENCE",
-        "/home/dgamroth/.cache/rtc-live-controls-20261005",
+        ENV, "NATIVE_RUNNER_EVIDENCE", "/home/dgamroth/.cache/rtc-live-controls-20261005"
     )
     evidence = mkpath(joinpath(evidence_root, "native-runner-endpoint-$(time_ns())"))
     write(joinpath(evidence, "binary.sha256"), "$binary_sha256  $binary\n")
@@ -542,8 +534,9 @@ function run_native_runner_endpoint(
         second_client = runner_connection(socket, "controller-two")
         push!(connections, second_client)
         first_identity = export_runner_controller!(first_client, "fixture-one", 9, deadline)
-        second_identity =
-            export_runner_controller!(second_client, "fixture-two", 10, deadline)
+        second_identity = export_runner_controller!(
+            second_client, "fixture-two", 10, deadline
+        )
         @test first_identity.global_id != second_identity.global_id
         @test first_identity.serial != second_identity.serial
 
@@ -570,13 +563,15 @@ function run_native_runner_endpoint(
         check_owner() =
             Base.process_exited(owner) ?
             error("runner exited before requested observations") : nothing
-        owner_global =
-            bind_runner_owner!(first_client, owner_pid, deadline; check = check_owner)
-        other_global =
-            bind_runner_owner!(second_client, owner_pid, deadline; check = check_owner)
+        owner_global = bind_runner_owner!(
+            first_client, owner_pid, deadline; check = check_owner
+        )
+        other_global = bind_runner_owner!(
+            second_client, owner_pid, deadline; check = check_owner
+        )
         @test owner_global.id == other_global.id
         @test owner_global.properties["object.serial"] ==
-              other_global.properties["object.serial"]
+            other_global.properties["object.serial"]
         for client in (first_client, second_client)
             runner_wait(
                 () -> runner_read(client) do _
@@ -653,7 +648,7 @@ function run_native_runner_endpoint(
         )
         started = runner_success(start_reply, first_identity, 3, 10, 4, 4)
         @test length(started.values) == 1 &&
-              pod_value(RunnerSPA.Id, only(started.values)).value == 4
+            pod_value(RunnerSPA.Id, only(started.values)).value == 4
         @test all(isrunning, endpoints)
         # A second dispatch of Start while Running would fail lifecycle
         # validation. A matching successful retained reply proves suppression.
@@ -687,31 +682,19 @@ function run_native_runner_endpoint(
             4,
         )
         @test length(stopped.values) == 1 &&
-              pod_value(RunnerSPA.Id, only(stopped.values)).value == 3
+            pod_value(RunnerSPA.Id, only(stopped.values)).value == 3
         @test all(isrunning, endpoints)
 
         missing_graph = RunnerSPA.Struct(Pod("fixture.missing-graph"))
         failed = runner_reply!(
-            first_client,
-            first_identity,
-            5,
-            4,
-            missing_graph,
-            deadline;
-            check = check_owner,
+            first_client, first_identity, 5, 4, missing_graph, deadline; check = check_owner
         )
         @test failed[1].controller == first_identity &&
-              failed[1].token == 5 &&
-              failed[1].operation == 4
+            failed[1].token == 5 &&
+            failed[1].operation == 4
         runner_error(failed, 3)
         duplicate = runner_reply!(
-            first_client,
-            first_identity,
-            5,
-            4,
-            missing_graph,
-            deadline;
-            check = check_owner,
+            first_client, first_identity, 5, 4, missing_graph, deadline; check = check_owner
         )
         @test duplicate == failed
         collision = runner_reply!(
@@ -740,13 +723,7 @@ function run_native_runner_endpoint(
         end
 
         fresh = runner_reply!(
-            first_client,
-            first_identity,
-            6,
-            3,
-            empty_payload,
-            deadline;
-            check = check_owner,
+            first_client, first_identity, 6, 3, empty_payload, deadline; check = check_owner
         )
         runner_status(fresh, first_identity, 6)
         runner_error(
@@ -825,7 +802,7 @@ function run_native_runner_endpoint(
             check = check_owner,
         )
         @test runner_global(second_client, "pipewireao.rtc.controller.fixture-one") ===
-              nothing
+            nothing
         runner_error(
             runner_reply!(
                 second_client,
@@ -874,10 +851,7 @@ function run_native_runner_endpoint(
             "actual runner node removal after quit",
         )
         runner_wait(
-            () -> Base.process_exited(owner),
-            (),
-            deadline,
-            "production runner exit",
+            () -> Base.process_exited(owner), (), deadline, "production runner exit"
         )
         wait(owner)
         @test owner.exitcode == 0

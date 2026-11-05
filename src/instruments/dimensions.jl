@@ -5,17 +5,13 @@ function controller_dimensions(authoring, instrument)
     derived = Dict{String,Any}()
     if haskey(authoring, "controller")
         _declaration_fields(
-            controller,
-            ("command_count", "hidden_modes"),
-            ("command_count",),
-            "controller",
+            controller, ("command_count", "hidden_modes"), ("command_count",), "controller"
         )
         count = controller["command_count"]
         ispositive_integer(count) && count <= typemax(Int) ||
             throw(ArgumentError("controller command_count must be a positive Int"))
         modes = _declaration_array(
-            get(controller, "hidden_modes", []),
-            "controller hidden_modes",
+            get(controller, "hidden_modes", []), "controller hidden_modes"
         )
         all(InstrumentDefinition.bounded_text, modes) &&
         length(unique(modes)) == length(modes) || throw(
@@ -31,18 +27,17 @@ function controller_dimensions(authoring, instrument)
         name => merge(
             Dict{String,Any}(mirror),
             Dict(
-                "actuator_count"=>command_count(
+                "actuator_count" => command_count(
                     read_mirror_description(
                         mirror_description_path(
-                            instrument.directory,
-                            mirror["description"],
+                            instrument.directory, mirror["description"]
                         ),
                     ),
                 ),
             ),
         ) for (name, mirror) in instrument.document["deformable_mirrors"]
     )
-    context = Dict("instrument"=>physical, "rtc"=>Dict("controller"=>controller))
+    context = Dict("instrument" => physical, "rtc" => Dict("controller" => controller))
     resolved = Dict{String,Any}(Common.configuration_value(declared, context))
     merge!(resolved, derived)
     _validate_dimensions(resolved)

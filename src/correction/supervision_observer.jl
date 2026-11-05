@@ -118,10 +118,7 @@ end
 feedback_count(::FeedbackObservation{Name,Shape}) where {Name,Shape} = only(Shape)
 
 function Observer(
-    formats::NamedTuple,
-    policies::NamedTuple;
-    owner_instance,
-    clock = time_ns,
+    formats::NamedTuple, policies::NamedTuple; owner_instance, clock = time_ns
 )
     owner(owner_instance) ||
         throw(ArgumentError("owner incarnation must be positive and fit Int64"))
@@ -140,15 +137,12 @@ function Observer(
         format.element_type === Float32 ||
             throw(ArgumentError("feedback must have Float32 elements"))
         shape = Artifacts.checked_shape(format.shape, sizeof(Float32))
-        policy.shape == format.shape && length(shape) == 1 || throw(
-            ArgumentError("feedback must match the declared nonempty rank-one shape"),
-        )
+        policy.shape == format.shape && length(shape) == 1 ||
+            throw(ArgumentError("feedback must match the declared nonempty rank-one shape"))
         isequal(policy.layout, format.layout) ||
             throw(ArgumentError("feedback layout/order differs from the public format"))
         FeedbackObservation{name,shape}(
-            Supervisor(configuration, owner_instance),
-            tolerance,
-            PublishedObservation(),
+            Supervisor(configuration, owner_instance), tolerance, PublishedObservation()
         )
     end
     # Reuse the repository's decoded-array bound for aggregate callback work;
@@ -157,17 +151,13 @@ function Observer(
     for binding in bindings
         feedback_count(binding) <= remaining || throw(
             ArgumentError(
-                "combined supervision feedback exceeds the decoded-array byte bound",
+                "combined supervision feedback exceeds the decoded-array byte bound"
             ),
         )
         remaining -= feedback_count(binding)
     end
     observer = Observer(
-        bindings,
-        Int64(owner_instance),
-        clock,
-        RearmMailbox(),
-        Threads.Atomic{Bool}(false),
+        bindings, Int64(owner_instance), clock, RearmMailbox(), Threads.Atomic{Bool}(false)
     )
     foreach(binding -> publish!(binding, Recommendation(:none, :none, false)), bindings)
     return observer
@@ -196,7 +186,7 @@ end
 
 function snapshot(binding::FeedbackObservation)
     published = binding.published
-    for _ = 1:3
+    for _ in 1:3
         before = @atomic published.version
         isodd(before) && continue
         s = @atomic published.state
@@ -234,9 +224,7 @@ unavailable evidence, not permission to act; retry only on a later ordinary poll
 snapshot(observer::Observer) = map(snapshot, observer.bindings)
 
 @inline function feedback_fraction(
-    values::AbstractVector{Float32},
-    ::Val{Shape},
-    tolerance,
+    values::AbstractVector{Float32}, ::Val{Shape}, tolerance
 ) where {Shape}
     size(values) == Shape || return nothing
     clipped = 0
@@ -351,8 +339,7 @@ function (observer::Observer)(::Val{:reset})
 end
 function invalidate_observations!(observer::Observer, cause::Symbol)
     foreach(
-        binding -> publish!(binding, reject!(binding.supervisor, cause)),
-        observer.bindings,
+        binding -> publish!(binding, reject!(binding.supervisor, cause)), observer.bindings
     )
     return nothing
 end
@@ -440,7 +427,7 @@ end
 "Read bounded coherent frame-writer rearm acknowledgement, or nothing if busy."
 function rearm_status(observer::Observer)
     mailbox = observer.rearm
-    for _ = 1:3
+    for _ in 1:3
         before = @atomic mailbox.version
         isodd(before) && continue
         token = @atomic mailbox.acknowledged_token
@@ -451,7 +438,13 @@ function rearm_status(observer::Observer)
             return (;
                 requested_token = request == typemax(UInt64) ? UInt64(0) : request,
                 acknowledged_token = token,
-                result = token == 0 ? :none : accepted ? :rearmed : :refused,
+                result = if token == 0
+                    :none
+                elseif accepted
+                    :rearmed
+                else
+                    :refused
+                end,
             )
         end
     end
@@ -473,10 +466,7 @@ function property_info(observer::Observer)
     flags = PipeWireAO.SPA.PROPERTY_READONLY
     infos = PipeWireAO.SPA.PropInfo[
         PipeWireAO.SPA.PropInfo(
-            OBSERVATION_PREFIX * "version",
-            PipeWireAO.Pod(Int32(1));
-            flags,
-            params = true,
+            OBSERVATION_PREFIX * "version", PipeWireAO.Pod(Int32(1)); flags, params = true
         ),
         PipeWireAO.SPA.PropInfo(
             OBSERVATION_PREFIX * "owner-instance",
@@ -493,10 +483,7 @@ function property_info(observer::Observer)
         push!(
             infos,
             PipeWireAO.SPA.PropInfo(
-                OBSERVATION_PREFIX * name,
-                PipeWireAO.Pod(value);
-                flags,
-                params = true,
+                OBSERVATION_PREFIX * name, PipeWireAO.Pod(value); flags, params = true
             ),
         )
     end
@@ -519,10 +506,7 @@ function property_info(observer::Observer)
             push!(
                 infos,
                 PipeWireAO.SPA.PropInfo(
-                    prefix * field,
-                    PipeWireAO.Pod(value);
-                    flags,
-                    params = true,
+                    prefix * field, PipeWireAO.Pod(value); flags, params = true
                 ),
             )
         end
@@ -560,9 +544,13 @@ function (observer::Observer)(graphprops::PipeWireAO.SPA.Props, available::Bool)
             isfinite(value.fraction) &&
             now >= value.observed_ns &&
             now - value.observed_ns <= binding.supervisor.configuration.max_gap_ns
-        current =
-            value === nothing ? :Unknown :
-            value.state in (:Disabled, :Tripped) || fresh ? value.state : :Unknown
+        current = if value === nothing
+            :Unknown
+        elseif value.state in (:Disabled, :Tripped) || fresh
+            value.state
+        else
+            :Unknown
+        end
         prefix = OBSERVATION_PREFIX * string(output_name(binding)) * "."
         for (field, entry) in (
             ("state", string(current)),

@@ -11,7 +11,7 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
 @testset "generated HIL metadata precedes science, provenance precedes execution" begin
     length(ARGS) == 1 || throw(
         ArgumentError(
-            "usage: aos_generated_owner_loading.jl BUILT_VERSION_3_CONFIGURATION",
+            "usage: aos_generated_owner_loading.jl BUILT_VERSION_3_CONFIGURATION"
         ),
     )
     configuration = realpath(only(ARGS))
@@ -68,13 +68,13 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
             @test system.target isa aos.Backends.HostComputeDevice
             @test size(hil.hil_frame_buffer(system.boundary)) == admitted.frame_shape
             @test IC.prescription_identity(system.declaration, system.configured) ==
-                  admitted.prescription_identity
+                admitted.prescription_identity
             reached[] = true
         end,
     ) == 0
     @test reached[]
     @test Base.invokelatest(IC.load_simulation, options.plant.definition).path ==
-          options.plant.definition
+        options.plant.definition
 
     # Deliberate corruption is confined to a temporary copy of the generated
     # application. Metadata can still load, but execution must never be reached.
@@ -104,8 +104,7 @@ loaded(name) = any(id -> id.name == name, keys(Base.loaded_modules))
             sprint(showerror, failure),
         )
         @test_throws ArgumentError Base.invokelatest(
-            IC.load_simulation,
-            corrupt_options.plant.definition,
+            IC.load_simulation, corrupt_options.plant.definition
         )
     end
     @test all(!loaded, ("CUDA", "AMDGPU"))

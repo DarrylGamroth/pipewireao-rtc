@@ -6,20 +6,14 @@ struct InstrumentOpticalPathsFactory{F}
 end
 
 AlgorithmGraphs.graph_node_configuration(
-    factory::InstrumentOpticalPathsFactory,
-    config::NamedTuple,
-    bindings::NamedTuple,
+    factory::InstrumentOpticalPathsFactory, config::NamedTuple, bindings::NamedTuple
 ) = AlgorithmGraphs.graph_node_configuration(factory.factory, config, bindings)
 AlgorithmGraphs.graph_node_bindings(
-    factory::InstrumentOpticalPathsFactory,
-    config::NamedTuple,
+    factory::InstrumentOpticalPathsFactory, config::NamedTuple
 ) = AlgorithmGraphs.graph_node_bindings(factory.factory, config)
 
 function (factory::InstrumentOpticalPathsFactory)(
-    name::Symbol,
-    config::NamedTuple,
-    props::NamedTuple,
-    bindings::NamedTuple = NamedTuple(),
+    name::Symbol, config::NamedTuple, props::NamedTuple, bindings::NamedTuple = NamedTuple()
 )
     path = config.model_path
     validate_optical_model_path(path)
@@ -34,10 +28,8 @@ function instrument_optical_factories(factories, directory)
         name in (:compiled_optical_paths_f32, :compiled_optical_paths_f64)
     )
     wrappers = map(
-        name -> InstrumentOpticalPathsFactory(
-            getproperty(factories, name),
-            String(directory),
-        ),
+        name ->
+            InstrumentOpticalPathsFactory(getproperty(factories, name), String(directory)),
         names,
     )
     return merge(factories, NamedTuple{names}(wrappers))

@@ -29,7 +29,8 @@ export SessionRecord,
     list_sessions,
     select_session
 
-@enum Verification::UInt8 Unverified=1 Verified=2 Inaccessible=3 Replaced=4 Malformed=5
+@enum Verification::UInt8 Unverified = 1 Verified = 2 Inaccessible = 3 Replaced = 4 Malformed =
+    5
 
 "Identity and locator hints published by one live deployment session."
 struct SessionRecord
@@ -245,7 +246,7 @@ function _check_directory(path::AbstractString)
     st = lstat(path)
     isdir(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o700 || throw(
         ArgumentError(
-            "discovery directory must be an owned, private, non-symlink directory",
+            "discovery directory must be an owned, private, non-symlink directory"
         ),
     )
     return String(path)
@@ -262,7 +263,7 @@ function _ensure_private_child(parent::String, name::String)
     st = lstat(path)
     isdir(st) && st.uid == _uid() && (st.mode & 0o7777) == 0o700 || throw(
         ArgumentError(
-            "discovery path component must be an owned, private directory: $path",
+            "discovery path component must be an owned, private directory: $path"
         ),
     )
     return path
@@ -279,7 +280,7 @@ end
 
 "Validate an existing registry without creating directories or lock files."
 function existing_registry_directory(
-    runtime_dir::AbstractString = get(ENV, "XDG_RUNTIME_DIR", ""),
+    runtime_dir::AbstractString = get(ENV, "XDG_RUNTIME_DIR", "")
 )
     isempty(runtime_dir) &&
         throw(ArgumentError("XDG_RUNTIME_DIR is required for local session discovery"))
@@ -446,9 +447,7 @@ end
 
 function _selected_result(record::SessionRecord, status::FreshSessionStatus)
     status.authority === :rtc_session || return DiscoveryEntry(
-        record,
-        Replaced,
-        "verified endpoint is not a session authority",
+        record, Replaced, "verified endpoint is not a session authority"
     )
     _matches(record, status) || return DiscoveryEntry(
         record,
@@ -458,9 +457,7 @@ function _selected_result(record::SessionRecord, status::FreshSessionStatus)
     return SelectedSession(record, status)
 end
 _selected_result(record::SessionRecord, status) = DiscoveryEntry(
-    record,
-    Inaccessible,
-    "verifier did not return a fresh session identity and status",
+    record, Inaccessible, "verifier did not return a fresh session identity and status"
 )
 
 end # module SessionDiscovery

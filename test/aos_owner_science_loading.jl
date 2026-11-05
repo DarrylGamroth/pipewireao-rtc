@@ -20,7 +20,7 @@ const Owner = PipeWireAORTC.AOSOwner
     )
     length(ARGS) == 1 || throw(
         ArgumentError(
-            "usage: aos_owner_science_loading.jl BUILT_EXTERNAL_PUPIL_CONFIGURATION",
+            "usage: aos_owner_science_loading.jl BUILT_EXTERNAL_PUPIL_CONFIGURATION"
         ),
     )
     configuration = realpath(only(ARGS))
@@ -42,12 +42,12 @@ const Owner = PipeWireAORTC.AOSOwner
     prepared = Ref(false)
     with_owner =
         (f, admitted) ->
-            f(merge(admitted, (; backend = :cpu, device = 0, owner_check = ()->nothing)))
+            f(merge(admitted, (; backend = :cpu, device = 0, owner_check = () -> nothing)))
     @test Owner._main(
         arguments;
         with_owner,
-        load_cuda = ()->error("CPU preparation must not load CUDA"),
-        load_amdgpu = ()->error("CPU preparation must not load AMDGPU"),
+        load_cuda = () -> error("CPU preparation must not load CUDA"),
+        load_amdgpu = () -> error("CPU preparation must not load AMDGPU"),
         run = admitted -> begin
             @test admitted.backend === :cpu && admitted.device == 0
             science = Owner.prepare_external_pupil_science(admitted)

@@ -106,7 +106,7 @@ function worker_trials(remote, directory, daemon)
     condition, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = CalibrationEndpoint.wake!(condition, guard)
     await(predicate) =
-        CalibrationEndpoint.await(predicate, condition, guard, Control.monotonic()+30)
+        CalibrationEndpoint.await(predicate, condition, guard, Control.monotonic() + 30)
     try
         @testset "controller tasks submit one stop under queue contention" begin
             commands = Channel{Workers.StopGraph}(1)
@@ -184,17 +184,14 @@ function worker_trials(remote, directory, daemon)
             queued_before_run(remote, condition, guard)
         end
         @testset "worker messages preserve affinity, cancellation and cleanup" begin
-            for trial = 1:12
-                projection =
-                    CalibrationNamedCommandTests.prepare_command(2, "test.worker-race/1")
+            for trial in 1:12
+                projection = CalibrationNamedCommandTests.prepare_command(
+                    2, "test.worker-race/1"
+                )
                 worker = nothing
                 try
                     worker = Ext.start_calibration_graph(
-                        projection,
-                        remote,
-                        "test.worker.$trial",
-                        500//1;
-                        notify,
+                        projection, remote, "test.worker.$trial", 500//1; notify
                     )
                     if iseven(trial)
                         await(
@@ -210,9 +207,9 @@ function worker_trials(remote, directory, daemon)
                     await(() -> istaskdone(worker.task))
                     status = Ext.finish_calibration_graph!(worker)
                     @test status.done &&
-                          status.released &&
-                          !status.ready &&
-                          status.error === nothing
+                        status.released &&
+                        !status.ready &&
+                        status.error === nothing
                     @test status.control_thread != Threads.threadid()
                     @test isempty(worker.receipts) && isempty(worker.preparation_commands)
                     @test fetch(Threads.@spawn try
@@ -263,8 +260,9 @@ function worker_trials(remote, directory, daemon)
             @test_throws CompositeException Ext.finish_calibration_graph!(worker)
         end
         @testset "startup failure still transfers cleanup acknowledgement" begin
-            projection =
-                CalibrationNamedCommandTests.prepare_command(2, "test.worker-failure/1")
+            projection = CalibrationNamedCommandTests.prepare_command(
+                2, "test.worker-failure/1"
+            )
             worker = Ext.start_calibration_graph(
                 projection,
                 joinpath(directory, "absent"),

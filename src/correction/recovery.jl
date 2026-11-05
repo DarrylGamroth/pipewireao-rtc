@@ -137,9 +137,13 @@ end
         return Hsm.transition!(sm, :Unverified)
     end
     matching_observation(sm, observation) || return Hsm.EventNotHandled
-    reason =
-        !same_scope(sm, observation) ? :loop_scope_mismatch :
-        !generations_match(observation) ? :initial_generation_mismatch : nothing
+    reason = if !same_scope(sm, observation)
+        :loop_scope_mismatch
+    elseif !generations_match(observation)
+        :initial_generation_mismatch
+    else
+        nothing
+    end
     if reason !== nothing
         latch_failure!(sm, reason)
         return Hsm.transition!(sm, :Unverified)
@@ -147,9 +151,13 @@ end
     sm.serial = observation_serial(observation)
     sm.loop_generation = active_generation(observation)
     sm.target_closed = closed(observation)
-    return all_open(observation) ? Hsm.transition!(sm, :Open) :
-           all_closed(observation) ? Hsm.transition!(sm, :Closed) :
-           Hsm.transition!(sm, :PartiallyClosed)
+    return if all_open(observation)
+        Hsm.transition!(sm, :Open)
+    elseif all_closed(observation)
+        Hsm.transition!(sm, :Closed)
+    else
+        Hsm.transition!(sm, :PartiallyClosed)
+    end
 end
 @on_event function (sm::Coordinator{C}, ::Open, ::Protect, request) where {C}
     accept_protection!(sm, request) || return Hsm.EventNotHandled
@@ -172,10 +180,7 @@ end
     return Hsm.transition!(sm, :Unverified)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::ProtectiveOpen,
-    ::LoopObserved,
-    observation,
+    sm::Coordinator{C}, ::ProtectiveOpen, ::LoopObserved, observation
 ) where {C}
     matching_observation(sm, observation) || return Hsm.EventHandled
     reason = monitor_open_loop!(sm, observation)
@@ -184,10 +189,7 @@ end
     return Hsm.transition!(sm, :Unverified)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::RestoringReference,
-    ::RecoveryObserved,
-    observation,
+    sm::Coordinator{C}, ::RestoringReference, ::RecoveryObserved, observation
 ) where {C}
     matching_observation(sm, observation) || return Hsm.EventHandled
     outcome = recovery_outcome(sm, observation)
@@ -201,40 +203,28 @@ end
            Hsm.transition!(sm, :Unverified)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::Verifying,
-    ::ReferenceObserved,
-    observation,
+    sm::Coordinator{C}, ::Verifying, ::ReferenceObserved, observation
 ) where {C}
     matching_reference(sm, observation) || return Hsm.EventHandled
     record_reference!(sm, observation) || return Hsm.EventHandled
     return Hsm.transition!(sm, :Holding)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::Holding,
-    ::ReferenceObserved,
-    observation,
+    sm::Coordinator{C}, ::Holding, ::ReferenceObserved, observation
 ) where {C}
     matching_reference(sm, observation) || return Hsm.EventHandled
     record_reference!(sm, observation)
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::PartiallyClosed,
-    ::ReferenceObserved,
-    observation,
+    sm::Coordinator{C}, ::PartiallyClosed, ::ReferenceObserved, observation
 ) where {C}
     matching_reference(sm, observation) || return Hsm.EventHandled
     record_reference!(sm, observation)
     return Hsm.EventHandled
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::Releasing,
-    ::ReferenceObserved,
-    observation,
+    sm::Coordinator{C}, ::Releasing, ::ReferenceObserved, observation
 ) where {C}
     matching_reference(sm, observation) || return Hsm.EventHandled
     if !record_reference!(sm, observation)
@@ -248,10 +238,7 @@ end
     return Hsm.transition!(sm, :Releasing)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::Releasing,
-    ::ReleaseObserved,
-    observation,
+    sm::Coordinator{C}, ::Releasing, ::ReleaseObserved, observation
 ) where {C}
     matching_reference(sm, observation) && observation.released ||
         return Hsm.EventNotHandled
@@ -270,15 +257,16 @@ end
         latch_failure!(sm, outcome)
         return Hsm.transition!(sm, :Unverified)
     end
-    return all_open(sm) ? Hsm.transition!(sm, :Open) :
-           all_closed(sm) ? Hsm.transition!(sm, :Closed) :
-           Hsm.transition!(sm, :PartiallyClosed)
+    return if all_open(sm)
+        Hsm.transition!(sm, :Open)
+    elseif all_closed(sm)
+        Hsm.transition!(sm, :Closed)
+    else
+        Hsm.transition!(sm, :PartiallyClosed)
+    end
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::PartiallyClosed,
-    ::CloseRemaining,
-    request,
+    sm::Coordinator{C}, ::PartiallyClosed, ::CloseRemaining, request
 ) where {C}
     accept_close!(sm, request) || return Hsm.EventNotHandled
     return Hsm.transition!(sm, :Closing)
@@ -317,10 +305,7 @@ end
     return Hsm.transition!(sm, :Unverified)
 end
 @on_event function (
-    sm::Coordinator{C},
-    ::RestoringReference,
-    ::DeadlineChecked,
-    now,
+    sm::Coordinator{C}, ::RestoringReference, ::DeadlineChecked, now
 ) where {C}
     deadline_expired!(sm, now) || return Hsm.EventHandled
     return Hsm.transition!(sm, :Unverified)
@@ -426,23 +411,18 @@ adds_closure(::CoupledControllers{N}, sm::Coordinator, selected::NTuple{N,Bool})
     all(map((after, before) -> !before || after, selected, sm.target_closed))
 
 generation_scope_matches(sm::Coordinator, generation) = same_scope(
-    controller_scope(sm),
-    _controller_scope(generation, generation, sm.target_closed),
+    controller_scope(sm), _controller_scope(generation, generation, sm.target_closed)
 )
 staging_advances(::SingleController, sm::Coordinator, generation::UInt64) =
     generation > sm.loop_generation
 staging_advances(
-    ::CoupledControllers{N},
-    sm::Coordinator,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, sm::Coordinator, generation::NTuple{N,UInt64}
 ) where {N} =
     generation != sm.loop_generation && all(map(>=, generation, sm.loop_generation))
 recovery_staging_advances(::SingleController, sm::Coordinator, generation::UInt64) =
     generation > sm.loop_generation
 recovery_staging_advances(
-    ::CoupledControllers{N},
-    sm::Coordinator,
-    generation::NTuple{N,UInt64},
+    ::CoupledControllers{N}, sm::Coordinator, generation::NTuple{N,UInt64}
 ) where {N} = all(map(>, generation, sm.loop_generation))
 
 _check_timeout(::Bool) = throw(ArgumentError("timeout_ms must be between 1 and 60000"))
@@ -575,7 +555,7 @@ function accept_close!(sm, request)
     sm.reference_serial > 0 &&
     clock_ns(sm.clock) - sm.reference_since_ns < sm.timeout_ns || return false
     adds_closure(sm, request.closed) || throw(
-        ArgumentError("close requires a nonempty scope-compatible controller selection"),
+        ArgumentError("close requires a nonempty scope-compatible controller selection")
     )
     sm.target_closed = request.closed
     return true
@@ -667,15 +647,12 @@ end
 
 """Admit one protective operation. `:saturation` is a reason, not a threshold policy."""
 function request_protection!(
-    sm::Coordinator,
-    owner_instance::Int64,
-    token::UInt64;
-    reason::Symbol = :operator,
+    sm::Coordinator, owner_instance::Int64, token::UInt64; reason::Symbol = :operator
 )
     check_timeout!(sm)
     Hsm.dispatch!(sm, :Protect, (; owner_instance, token, reason)) == Hsm.EventHandled ||
         throw(
-            ArgumentError("recovery requires a qualified owner and a new operation token"),
+            ArgumentError("recovery requires a qualified owner and a new operation token")
         )
     # One atomic recovery stage inhibits closure, forces open and resets the
     # declared scientific scope. An ordinary open must never precede it.
@@ -714,10 +691,7 @@ Invalid scope or generation transitions latch a coordinator failure. Returns
 `nothing`.
 """
 function recovery_staged!(
-    sm::Coordinator,
-    effect::StageRecovery,
-    generation::UInt64;
-    loop_generation,
+    sm::Coordinator, effect::StageRecovery, generation::UInt64; loop_generation
 )
     check_timeout!(sm)
     Hsm.dispatch!(sm, :RecoveryStaged, (; effect, generation, loop_generation))

@@ -4,59 +4,60 @@ const D = PipeWireAORTC.DeploymentConfiguration
 function execution_group_document()
     branches = ("llowfs", "scc")
     graphs = [
-        Dict("node.name"=>name, "ownership"=>"external", "run-control"=>"session") for
+        Dict("node.name" => name, "ownership" => "external", "run-control" => "session") for
         name in ("gpi2-jfg-frame-graph", "cal2-llowfs-controller", "cal2-scc-controller")
     ]
     sources = [
-        Dict("node.name"=>name, "ownership"=>"external") for
+        Dict("node.name" => name, "ownership" => "external") for
         name in ("simulator-wfs", "simulator-pupil-output", "cal2-llowfs", "cal2-scc")
     ]
     sinks = [
-        Dict("node.name"=>name, "ownership"=>"external") for
+        Dict("node.name" => name, "ownership" => "external") for
         name in ("cal2-pupil-input", "gpi2-cal2-llowfs-offset", "gpi2-cal2-scc-offset")
     ]
     groups = [
-        Dict("name"=>graph["node.name"], "nodes"=>[graph["node.name"]]) for graph in graphs
+        Dict("name" => graph["node.name"], "nodes" => [graph["node.name"]]) for
+        graph in graphs
     ]
     links = [
         Dict{String,Any}(
-            "output"=>"simulator-wfs:out_$i",
-            "input"=>"gpi2-jfg-frame-graph:in_$i",
-            "passive"=>true,
-        ) for i = 1:31
+            "output" => "simulator-wfs:out_$i",
+            "input" => "gpi2-jfg-frame-graph:in_$i",
+            "passive" => true,
+        ) for i in 1:31
     ]
     append!(
         links,
         [
             Dict(
-                "output"=>"cal2-$branch:output_1",
-                "input"=>"cal2-$branch-controller:image",
-                "passive"=>true,
+                "output" => "cal2-$branch:output_1",
+                "input" => "cal2-$branch-controller:image",
+                "passive" => true,
             ) for branch in branches
         ],
     )
     push!(
         links,
         Dict(
-            "output"=>"simulator-pupil-output:output_1",
-            "input"=>"cal2-pupil-input:input_1",
+            "output" => "simulator-pupil-output:output_1",
+            "input" => "cal2-pupil-input:input_1",
         ),
     )
     append!(
         links,
         [
             Dict(
-                "output"=>"cal2-$branch-controller:physical-offset",
-                "input"=>"gpi2-cal2-$branch-offset:input_1",
+                "output" => "cal2-$branch-controller:physical-offset",
+                "input" => "gpi2-cal2-$branch-offset:input_1",
             ) for branch in branches
         ],
     )
     return Dict{String,Any}(
-        "sources"=>sources,
-        "graphs"=>graphs,
-        "sinks"=>sinks,
-        "links"=>links,
-        "execution-groups"=>groups,
+        "sources" => sources,
+        "graphs" => graphs,
+        "sinks" => sinks,
+        "links" => links,
+        "execution-groups" => groups,
     )
 end
 
@@ -64,7 +65,7 @@ end
     document = execution_group_document()
     @test D.validate_execution_groups(document) === nothing
     @test length(document["links"]) == 36 && length(document["execution-groups"]) == 3
-    @test D.validate_execution_groups(Dict("graphs"=>[], "links"=>[])) === nothing
+    @test D.validate_execution_groups(Dict("graphs" => [], "links" => [])) === nothing
     invalid = deepcopy(document)
     resize!(invalid["execution-groups"], 1)
     failure = try
@@ -86,23 +87,23 @@ end
     @test failure isa D.DeploymentError
     @test occursin("passive boundary: cal2-llowfs:output_1", sprint(showerror, failure))
     for mutate! in (
-        d->empty!(d["execution-groups"]),
-        d->(d["execution-groups"][2]["name"]=d["execution-groups"][1]["name"]),
-        d->push!(d["execution-groups"][2]["nodes"], "absent"),
-        d->push!(d["execution-groups"][2]["nodes"], "gpi2-jfg-frame-graph"),
-        d->push!(d["execution-groups"][2]["nodes"], "cal2-pupil-input"),
-        d->empty!(d["execution-groups"][2]["nodes"]),
-        d->delete!(d["graphs"][2], "run-control"),
-        d->(d["graphs"][2]["run-control"]="application"),
-        d->(d["sources"][1]["run-control"]="session"),
-        d->(d["graphs"][2]["ownership"]="other"),
-        d->(d["links"][1]["passive"]=false),
-        d->(d["links"][34]["passive"]=true),
-        d->push!(
+        d -> empty!(d["execution-groups"]),
+        d -> (d["execution-groups"][2]["name"] = d["execution-groups"][1]["name"]),
+        d -> push!(d["execution-groups"][2]["nodes"], "absent"),
+        d -> push!(d["execution-groups"][2]["nodes"], "gpi2-jfg-frame-graph"),
+        d -> push!(d["execution-groups"][2]["nodes"], "cal2-pupil-input"),
+        d -> empty!(d["execution-groups"][2]["nodes"]),
+        d -> delete!(d["graphs"][2], "run-control"),
+        d -> (d["graphs"][2]["run-control"] = "application"),
+        d -> (d["sources"][1]["run-control"] = "session"),
+        d -> (d["graphs"][2]["ownership"] = "other"),
+        d -> (d["links"][1]["passive"] = false),
+        d -> (d["links"][34]["passive"] = true),
+        d -> push!(
             d["links"],
             Dict(
-                "output"=>"gpi2-jfg-frame-graph:out",
-                "input"=>"cal2-scc-controller:image",
+                "output" => "gpi2-jfg-frame-graph:out",
+                "input" => "cal2-scc-controller:image",
             ),
         ),
     )

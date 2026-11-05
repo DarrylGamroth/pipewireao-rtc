@@ -59,10 +59,7 @@ function Capture(
     capture_integer(capacity, 1, 65_536, "capacity must be in 1:65536")
     capture_integer(period_ns, 0, typemax(UInt64), "period_ns must be nonnegative")
     capture_integer(
-        bootstrap_instance,
-        1,
-        typemax(Int64),
-        "bootstrap_instance must be positive",
+        bootstrap_instance, 1, typemax(Int64), "bootstrap_instance must be positive"
     )
     return Capture(
         String(directory),
@@ -123,7 +120,7 @@ function save!(capture::Capture)
     temporary, io = mktemp(capture.directory)
     try
         close(io)
-        rows = [collect(capture.rows[index]) for index = 1:capture.used]
+        rows = [collect(capture.rows[index]) for index in 1:capture.used]
         document = (
             version = 1,
             owner_pid = getpid(),

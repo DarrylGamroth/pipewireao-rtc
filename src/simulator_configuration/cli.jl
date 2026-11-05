@@ -49,9 +49,9 @@ function respond(line::AbstractString)
         result = request_result(C.parse_json(line))
         ncodeunits(JSON.json(result)) <= MAX_REPLY_BYTES ||
             throw(ArgumentError("reply exceeds 1 MiB"))
-        return Dict("ok"=>true, "result"=>result)
+        return Dict("ok" => true, "result" => result)
     catch error
-        return Dict("ok"=>false, "error"=>sprint(showerror, error))
+        return Dict("ok" => false, "error" => sprint(showerror, error))
     end
 end
 

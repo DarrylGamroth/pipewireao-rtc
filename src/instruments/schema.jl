@@ -68,11 +68,7 @@ function _validate_optical_planes(value)
 end
 
 function _validate_optical_asset(
-    value,
-    directory,
-    label;
-    prescription = false,
-    check_hash = true,
+    value, directory, label; prescription = false, check_hash = true
 )
     required = prescription ? ("format", "path", "sha256") : ("path", "sha256")
     allowed = prescription ? (required..., "catalog_archive") : required
@@ -100,9 +96,7 @@ end
 function _validate_optical_prescription(value, directory)
     _validate_optical_asset(value, directory, "optical prescription"; prescription = true)
     haskey(value, "catalog_archive") && _validate_optical_asset(
-        value["catalog_archive"],
-        directory,
-        "optical catalog archive",
+        value["catalog_archive"], directory, "optical catalog archive"
     )
     return nothing
 end
@@ -132,14 +126,12 @@ function _validate_optical_paths(value, sensors, filters = Dict())
             installed = _declaration_array(path["filters"], "optical path $name filters")
             length(installed) <= 64 && length(unique(installed)) == length(installed) ||
                 throw(
-                    ArgumentError(
-                        "optical path $name requires at most 64 distinct filters",
-                    ),
+                    ArgumentError("optical path $name requires at most 64 distinct filters")
                 )
             for filter in installed
                 _declaration_identifier(filter, "optical path filter")
                 haskey(filters, filter) || throw(
-                    ArgumentError("optical path $name names an unknown filter $filter"),
+                    ArgumentError("optical path $name names an unknown filter $filter")
                 )
             end
         end
@@ -203,13 +195,13 @@ function validate_simulation_common(document, instrument)
         gain = response["post_readout_gain"]
         isfinite_positive(gain) && isfinite_positive(Float32(gain)) || throw(
             ArgumentError(
-                "simulation post_readout_gain must be positive and finite in Float32",
+                "simulation post_readout_gain must be positive and finite in Float32"
             ),
         )
         haskey(response, "diffraction_padding") &&
             !isfinite_positive(response["diffraction_padding"]) &&
             throw(
-                ArgumentError("simulation diffraction_padding must be positive and finite"),
+                ArgumentError("simulation diffraction_padding must be positive and finite")
             )
         for key in ("half_pixel_shift", "shannon_sampling")
             haskey(response, key) &&
@@ -242,7 +234,7 @@ function validate_simulation_common(document, instrument)
             ),
         ) && isfinite_positive(source["source_wavelength_m"]) || throw(
             ArgumentError(
-                "simulation source requires finite photometry and positive wavelength",
+                "simulation source requires finite photometry and positive wavelength"
             ),
         )
     end
@@ -254,8 +246,9 @@ end
 function validate_simulation(document, instrument, directory, graphs)
     validate_simulation_common(document, instrument)
     defaults, settings_schema = document["defaults"], document["settings_schema"]
-    mirrors, profiles, bindings =
-        instrument["deformable_mirrors"], document["profiles"], document["bindings"]
+    mirrors, profiles, bindings = instrument["deformable_mirrors"],
+    document["profiles"],
+    document["bindings"]
     graph_paths = simulation_graph_sources(document)
     graph_nodes = Dict{String,Set{String}}()
     graph_inputs = Dict{String,Set{String}}()
@@ -285,19 +278,14 @@ function validate_simulation(document, instrument, directory, graphs)
     end
     _validate_bindings(bindings, mirrors, defaults, settings_schema, profiles, directory)
     _validate_settings_bindings(
-        document["settings_bindings"],
-        profiles,
-        defaults,
-        settings_schema,
-        all_graph_nodes,
+        document["settings_bindings"], profiles, defaults, settings_schema, all_graph_nodes
     )
     if haskey(document, "hil")
         _validate_hil(document["hil"], graph_inputs, graph_outputs)
         validate_responses(document, graph_inputs["production"])
         for contract in document["wire_contracts"]
             validate_boundary_contract(
-                document["hil"]["command_input"],
-                contract["command_schema"],
+                document["hil"]["command_input"], contract["command_schema"]
             )
         end
     else
@@ -314,7 +302,7 @@ function simulation_graph_sources(document)
     foreach(name -> _declaration_identifier(name, "simulation graph name"), keys(graphs))
     if haskey(document, "hil")
         all(name -> haskey(graphs, name), ("production", "calibration")) || throw(
-            ArgumentError("HIL simulation requires production and calibration graphs"),
+            ArgumentError("HIL simulation requires production and calibration graphs")
         )
     end
     return graphs
@@ -335,7 +323,7 @@ _declaration_array(value, label; nonempty = false) =
     InstrumentDefinition.array_value(value) && (!nonempty || !isempty(value)) ? value :
     throw(
         ArgumentError(
-            "$label must be an array$(nonempty ? " with at least one entry" : "")",
+            "$label must be an array$(nonempty ? " with at least one entry" : "")"
         ),
     )
 
@@ -384,10 +372,7 @@ end
 
 function _validate_limiter(value)
     limiter = _declaration_fields(
-        value,
-        ("kind", "lower", "upper"),
-        ("kind", "lower", "upper"),
-        "mirror limiter",
+        value, ("kind", "lower", "upper"), ("kind", "lower", "upper"), "mirror limiter"
     )
     limiter["kind"] == "amplitude" ||
         throw(ArgumentError("mirror limiter kind must be amplitude"))
@@ -410,10 +395,7 @@ isfinite_real(value) = false
 
 function _validate_shape_control(value, units, directory)
     shape = _declaration_fields(
-        value,
-        ("bases", "controlled_actuators"),
-        ("bases",),
-        "shape_control",
+        value, ("bases", "controlled_actuators"), ("bases",), "shape_control"
     )
     if haskey(shape, "controlled_actuators")
         selection = _declaration_fields(
@@ -424,8 +406,7 @@ function _validate_shape_control(value, units, directory)
         )
         for key in ("graph", "bindings")
             D.relative_asset(
-                directory,
-                _declaration_text(selection[key], "controlled actuator $key"),
+                directory, _declaration_text(selection[key], "controlled actuator $key")
             )
         end
         for key in ("active_to_full", "pdm_to_vdm")
@@ -449,16 +430,14 @@ function _validate_shape_control(value, units, directory)
             length(shape) == 2 ||
                 throw(ArgumentError("sampled basis artifact must have rank 2"))
             names = _declaration_array(
-                definition["names"],
-                "sampled mode names";
-                nonempty = true,
+                definition["names"], "sampled mode names"; nonempty = true
             )
             length(names) == shape[2] &&
             length(names) <= 64 &&
             all(InstrumentDefinition.bounded_text, names) &&
             length(unique(names)) == length(names) || throw(
                 ArgumentError(
-                    "sampled modes require 1:64 unique names matching artifact columns",
+                    "sampled modes require 1:64 unique names matching artifact columns"
                 ),
             )
         end
@@ -477,18 +456,22 @@ end
 
 sensor_kind(spec::AbstractDict) = sensor_kind(get(spec, "kind", "shack_hartmann"))
 sensor_kind(kind::AbstractString) =
-    kind == "shack_hartmann" ? Val(:shack_hartmann) :
-    kind == "pyramid" ? Val(:pyramid) :
-    kind == "scc" ? Val(:scc) :
-    kind == "llowfs" ? Val(:llowfs) : throw(ArgumentError("unsupported sensor kind"))
+    if kind == "shack_hartmann"
+        Val(:shack_hartmann)
+    elseif kind == "pyramid"
+        Val(:pyramid)
+    elseif kind == "scc"
+        Val(:scc)
+    elseif kind == "llowfs"
+        Val(:llowfs)
+    else
+        throw(ArgumentError("unsupported sensor kind"))
+    end
 sensor_kind(kind) =
     throw(ArgumentError("sensor kind must be shack_hartmann, pyramid, scc or llowfs"))
 
 function _validate_sensor_declaration(
-    ::Union{Val{:scc},Val{:llowfs}},
-    spec,
-    directory,
-    name,
+    ::Union{Val{:scc},Val{:llowfs}}, spec, directory, name
 )
     required = ("kind", "detector")
     sensor = _declaration_fields(
@@ -568,8 +551,9 @@ function _validate_sensor_declaration(::Val{:pyramid}, spec, directory, name)
         "pupil_edge_pixels",
         "expected_schema",
     )
-    sensor =
-        _declaration_fields(spec, (required..., "acquisition"), required, "sensor $name")
+    sensor = _declaration_fields(
+        spec, (required..., "acquisition"), required, "sensor $name"
+    )
     pyramid_geometry(sensor)
     return nothing
 end
@@ -587,15 +571,13 @@ end
 
 function pyramid_geometry(sensor)
     detector_shape = sensor_pixel_pair(
-        sensor["detector_shape"],
-        "sensor detector_shape";
-        positive = true,
+        sensor["detector_shape"], "sensor detector_shape"; positive = true
     )
-    pupil_shape =
-        sensor_pixel_pair(sensor["pupil_shape"], "sensor pupil_shape"; positive = true)
+    pupil_shape = sensor_pixel_pair(
+        sensor["pupil_shape"], "sensor pupil_shape"; positive = true
+    )
     separation = sensor_pixel_pair(
-        sensor["pupil_separation_pixels"],
-        "sensor pupil_separation_pixels",
+        sensor["pupil_separation_pixels"], "sensor pupil_separation_pixels"
     )
     edge = sensor_pixel_pair(sensor["pupil_edge_pixels"], "sensor pupil_edge_pixels")
     # Subtract each extent before adding origins, so even Int-sized inputs
@@ -610,8 +592,9 @@ function pyramid_geometry(sensor)
         1:2,
     ) || throw(ArgumentError("pyramid pupil region lies outside the detector"))
     far = ntuple(axis -> edge[axis] + pupil_shape[axis] + separation[axis], 2)
-    pupil_origins =
-        ((edge[1], edge[2]), (far[1], edge[2]), (edge[1], far[2]), (far[1], far[2]))
+    pupil_origins = (
+        (edge[1], edge[2]), (far[1], edge[2]), (edge[1], far[2]), (far[1], far[2])
+    )
     return (; detector_shape, pupil_shape, pupil_origins)
 end
 
@@ -795,12 +778,11 @@ function _validate_profiles(profiles, bindings, graph_nodes)
                 "profile $name parameter",
             )
             _declaration_text(
-                parameter["destination"],
-                "profile $name parameter destination",
+                parameter["destination"], "profile $name parameter destination"
             )
             haskey(bindings, parameter["binding"]) || throw(
                 ArgumentError(
-                    "profile $name references absent binding $(parameter["binding"])",
+                    "profile $name references absent binding $(parameter["binding"])"
                 ),
             )
         end
@@ -838,8 +820,7 @@ function validate_command_contract(schemas::AbstractDict, scales::AbstractDict)
     for name in keys(schemas)
         _declaration_identifier(name, "wire command name")
         validate_command_contract(
-            _declaration_text(schemas[name], "wire command schema"),
-            scales[name],
+            _declaration_text(schemas[name], "wire command schema"), scales[name]
         )
     end
     return nothing
@@ -854,16 +835,11 @@ function validate_boundary_contract(names::AbstractVector, schemas::AbstractDict
     return nothing
 end
 validate_boundary_contract(names, schemas) = throw(
-    ArgumentError("wire command contracts must match the scalar or named HIL boundary"),
+    ArgumentError("wire command contracts must match the scalar or named HIL boundary")
 )
 
 function _validate_bindings(
-    bindings,
-    mirrors,
-    defaults,
-    settings_schema,
-    profiles,
-    directory,
+    bindings, mirrors, defaults, settings_schema, profiles, directory
 )
     for (name, binding_value) in bindings
         _declaration_identifier(name, "binding name")
@@ -877,8 +853,9 @@ function _validate_bindings(
                 ("kind", "shape", "type"),
                 "zero binding $name",
             )
-            shape =
-                _declaration_array(binding["shape"], "zero binding shape"; nonempty = true)
+            shape = _declaration_array(
+                binding["shape"], "zero binding shape"; nonempty = true
+            )
             all(
                 extent -> _valid_zero_extent(extent, defaults, settings_schema, profiles),
                 shape,
@@ -893,16 +870,10 @@ function _validate_bindings(
                 kind == "pupil_amplitude" ? ("kind", "resolution", "type") :
                 ("kind", "resolution")
             binding = _declaration_fields(
-                binding_value,
-                required,
-                required,
-                "pupil binding $name",
+                binding_value, required, required, "pupil binding $name"
             )
             _valid_zero_extent(
-                binding["resolution"],
-                defaults,
-                settings_schema,
-                profiles,
+                binding["resolution"], defaults, settings_schema, profiles
             ) || throw(
                 ArgumentError(
                     "pupil binding resolution must be a positive extent or existing setting",
@@ -911,9 +882,7 @@ function _validate_bindings(
             kind == "pupil_amplitude" &&
                 !(binding["type"] in ("Float32", "Float64")) &&
                 throw(
-                    ArgumentError(
-                        "pupil amplitude binding type must be Float32 or Float64",
-                    ),
+                    ArgumentError("pupil amplitude binding type must be Float32 or Float64")
                 )
         elseif kind in ("mirror_coordinates", "mirror_grid_indices")
             binding = _declaration_fields(
@@ -946,10 +915,7 @@ function _validate_bindings(
                 "FITS binding $name",
             )
             _validate_artifact_values(
-                binding,
-                directory,
-                "FITS binding $name";
-                check_file = false,
+                binding, directory, "FITS binding $name"; check_file = false
             )
             haskey(binding, "sha256") &&
                 !(valid_sha256(binding["sha256"])) &&
@@ -965,11 +931,7 @@ _valid_zero_extent(value::Integer, defaults, settings_schema, profiles) =
     ispositive_integer(value)
 function _valid_zero_extent(value::AbstractString, defaults, settings_schema, profiles)
     _validate_setting_reference(
-        value,
-        defaults,
-        settings_schema,
-        profiles,
-        "zero shape setting",
+        value, defaults, settings_schema, profiles, "zero shape setting"
     )
     return true
 end
@@ -987,11 +949,7 @@ function _validate_mirror_reference(name, mirrors)
 end
 
 function _validate_settings_bindings(
-    entries,
-    profiles,
-    defaults,
-    settings_schema,
-    graph_nodes,
+    entries, profiles, defaults, settings_schema, graph_nodes
 )
     for entry_value in _declaration_array(entries, "settings_bindings")
         entry = _declaration_fields(
@@ -1009,8 +967,9 @@ function _validate_settings_bindings(
             profiles,
             "settings binding setting",
         )
-        nodes =
-            _declaration_array(entry["nodes"], "settings binding nodes"; nonempty = true)
+        nodes = _declaration_array(
+            entry["nodes"], "settings binding nodes"; nonempty = true
+        )
         for node in nodes
             _declaration_text(node, "settings binding target")
             node in graph_nodes ||
@@ -1020,14 +979,12 @@ function _validate_settings_bindings(
             throw(ArgumentError("settings binding repeats a target node"))
         if haskey(entry, "profiles")
             selected = _declaration_array(
-                entry["profiles"],
-                "settings binding profiles";
-                nonempty = true,
+                entry["profiles"], "settings binding profiles"; nonempty = true
             )
             for profile in selected
                 _declaration_text(profile, "settings binding profile")
                 haskey(profiles, profile) || throw(
-                    ArgumentError("settings binding references absent profile $profile"),
+                    ArgumentError("settings binding references absent profile $profile")
                 )
             end
             length(Set(selected)) == length(selected) ||
@@ -1042,21 +999,19 @@ function _validate_settings_bindings(
                 haskey(entry, "coupling") &&
                 throw(
                     ArgumentError(
-                        "settings binding coupling requires gaussian_width transform",
+                        "settings binding coupling requires gaussian_width transform"
                     ),
                 )
             if entry["transform"] == "gaussian_width"
                 haskey(entry, "coupling") && _valid_coupling(entry["coupling"]) || throw(
                     ArgumentError(
-                        "gaussian_width transform requires a finite coupling in (0,1)",
+                        "gaussian_width transform requires a finite coupling in (0,1)"
                     ),
                 )
             end
         elseif haskey(entry, "coupling")
             throw(
-                ArgumentError(
-                    "settings binding coupling requires gaussian_width transform",
-                ),
+                ArgumentError("settings binding coupling requires gaussian_width transform")
             )
         end
     end
@@ -1159,10 +1114,7 @@ end
 function validate_imaging(document)
     haskey(document, "imaging") || return nothing
     imaging = fields(
-        document["imaging"],
-        ("source", "zero_padding"),
-        ("source",),
-        "simulation imaging",
+        document["imaging"], ("source", "zero_padding"), ("source",), "simulation imaging"
     )
     source = _declaration_identifier(imaging["source"], "imaging source")
     haskey(get(document, "sources", Dict()), source) ||

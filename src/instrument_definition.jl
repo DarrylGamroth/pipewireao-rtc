@@ -17,7 +17,7 @@ published_pupil_registration(value::AbstractDict) =
     haskey(value, "rotation_deg") ? value : nothing
 
 function read_object(json)
-    document=Common.parse_json(json)
+    document = Common.parse_json(json)
     object_value(document) || throw(ArgumentError("expected exactly one JSON object"))
     return document
 end
@@ -32,15 +32,15 @@ end
 function bound_value(value::AbstractDict, remaining, depth)
     for (key, item) in value
         valid_field_name(key) || throw(ArgumentError("invalid instrument field name"))
-        bounded(item, remaining, depth+1)
+        bounded(item, remaining, depth + 1)
     end
 end
 function bound_value(value::AbstractVector, remaining, depth)
-    length(value)<=16384 || throw(ArgumentError("instrument array exceeds limit"))
-    foreach(item -> bounded(item, remaining, depth+1), value)
+    length(value) <= 16384 || throw(ArgumentError("instrument array exceeds limit"))
+    foreach(item -> bounded(item, remaining, depth + 1), value)
 end
 function bound_value(value::String, remaining, depth)
-    isvalid(value) && ncodeunits(value)<=16384 && !occursin('\0', value) ||
+    isvalid(value) && ncodeunits(value) <= 16384 && !occursin('\0', value) ||
         throw(ArgumentError("invalid instrument text"))
 end
 bound_value(value::Union{Bool,Nothing}, remaining, depth) = nothing
@@ -49,7 +49,7 @@ function bound_value(value::Real, remaining, depth)
 end
 bound_value(value, remaining, depth) =
     throw(ArgumentError("instrument values must be finite JSON data"))
-valid_field_name(key::String) = ncodeunits(key)<=128
+valid_field_name(key::String) = ncodeunits(key) <= 128
 valid_field_name(key) = false
 object_value(value::AbstractDict) = true
 object_value(value) = false
@@ -69,12 +69,12 @@ sha_identity(value::String) = occursin(r"^sha256:[0-9a-f]{64}$", value)
 sha_identity(value) = false
 absolute_package(value::String) = isabspath(value)
 absolute_package(value) = false
-sealed_hash(value::String, expected) = value==expected
+sealed_hash(value::String, expected) = value == expected
 sealed_hash(value, expected) = false
 
 function validate(document)
     object_value(document) &&
-    Set(keys(document))==Set((
+    Set(keys(document)) == Set((
         "schema_version",
         "id",
         "calibration_identity",
@@ -82,22 +82,22 @@ function validate(document)
         "deformable_mirrors",
         "wavefront_sensors",
     )) &&
-    get(document, "schema_version", nothing)===2 ||
+    get(document, "schema_version", nothing) === 2 ||
         throw(ArgumentError("expected instrument definition schema version 2"))
     bounded(document)
     ncodeunits(JSON.json(document)) <= MAX_BYTES ||
         throw(ArgumentError("instrument definition exceeds 1 MiB"))
     identifier(document["id"]) || throw(ArgumentError("invalid instrument identifier"))
     for field in ("calibration_identity", "scientific_identity")
-        value=document[field]
+        value = document[field]
         sha_identity(value) ||
             throw(ArgumentError("instrument $field must be a SHA-256 identity"))
     end
     for family in ("deformable_mirrors", "wavefront_sensors")
-        components=document[family]
+        components = document[family]
         minimum = family == "deformable_mirrors" ? 0 : 1
         object_value(components) &&
-        minimum<=length(components)<=16 &&
+        minimum <= length(components) <= 16 &&
         all(name -> occursin(r"^[a-z][a-z0-9_.-]{0,127}$", name), keys(components)) ||
             throw(ArgumentError("instrument requires bounded named components"))
     end
@@ -130,17 +130,16 @@ function validate(document)
             )
             declaration = getproperty(parentmodule(@__MODULE__), :InstrumentConfiguration)
             registration = declaration._pupil_registration(
-                declaration._instrument_seal(mirror["pupil_registration"]),
+                declaration._instrument_seal(mirror["pupil_registration"])
             )
             declaration._require_pupil_geometry(
-                (; layout = declaration._instrument_seal(layout)),
-                registration,
+                (; layout = declaration._instrument_seal(layout)), registration
             )
         end
         if haskey(mirror, "pupil")
             haskey(mirror, "pupil_coordinates") || throw(
                 ArgumentError(
-                    "instrument optical pupil requires registered pupil coordinates",
+                    "instrument optical pupil requires registered pupil coordinates"
                 ),
             )
             validate_pupil(mirror["pupil"])
@@ -148,7 +147,7 @@ function validate(document)
         if haskey(mirror, "clear_aperture")
             haskey(mirror, "pupil_coordinates") || throw(
                 ArgumentError(
-                    "mirror clear aperture requires registered pupil coordinates",
+                    "mirror clear aperture requires registered pupil coordinates"
                 ),
             )
             validate_clear_aperture(mirror["clear_aperture"])
@@ -157,9 +156,7 @@ function validate(document)
         nonempty_text(units) ||
             throw(ArgumentError("instrument mirror requires command units"))
         validate_shape_control(
-            get(mirror, "shape_control", nothing),
-            units,
-            length(positions),
+            get(mirror, "shape_control", nothing), units, length(positions)
         )
         limiter = get(mirror, "limiter", nothing)
         object_value(limiter) && get(limiter, "kind", nothing) == "amplitude" ||
@@ -172,7 +169,7 @@ function validate(document)
             finite_bound(lo) && finite_bound(hi) && lo < hi
         end || throw(
             ArgumentError(
-                "instrument amplitude bounds must be finite, ordered and command-sized",
+                "instrument amplitude bounds must be finite, ordered and command-sized"
             ),
         )
     end
@@ -208,7 +205,7 @@ function validate_clear_aperture(aperture)
     radius = aperture["radius"]
     renderable_pupil_value(radius) && radius > 0 || throw(
         ArgumentError(
-            "mirror clear aperture radius must be positive and renderable in Float32",
+            "mirror clear aperture radius must be positive and renderable in Float32"
         ),
     )
     return nothing
@@ -230,7 +227,7 @@ function validate_pupil_coordinates(coordinates, count)
         all(renderable_pupil_value, position)
     end || throw(
         ArgumentError(
-            "pupil coordinates must be finite Float32 x/y pairs in command order",
+            "pupil coordinates must be finite Float32 x/y pairs in command order"
         ),
     )
     return nothing
@@ -257,9 +254,15 @@ function basis_header(basis, units)
     definition = basis["definition"]
     object_value(definition) || throw(ArgumentError("basis definition must be an object"))
     kind = get(definition, "kind", nothing)
-    normalization =
-        kind == "zernike" ? "sampled_peak" :
-        kind == "fourier" ? "sampled_rms" : kind == "sampled" ? "supplied" : nothing
+    normalization = if kind == "zernike"
+        "sampled_peak"
+    elseif kind == "fourier"
+        "sampled_rms"
+    elseif kind == "sampled"
+        "supplied"
+    else
+        nothing
+    end
     normalization !== nothing && basis["normalization"] == normalization ||
         throw(ArgumentError("invalid basis kind or normalization"))
     return definition
@@ -288,7 +291,7 @@ function zernike_modes(modes)
         integer_value(m) &&
         0 <= n <= 12 &&
         -n <= m <= n &&
-        iseven(n-m) || throw(ArgumentError("invalid Zernike radial or azimuthal order"))
+        iseven(n - m) || throw(ArgumentError("invalid Zernike radial or azimuthal order"))
         (n, m) in orders && throw(ArgumentError("duplicate Zernike order"))
         push!(orders, (n, m))
     end
@@ -319,9 +322,9 @@ function validate_shape_control(shape, units, count)
     if haskey(shape, "controlled_actuators")
         mask = shape["controlled_actuators"]
         array_value(mask) &&
-        length(mask)==count &&
+        length(mask) == count &&
         all(value -> value === true || value === false, mask) || throw(
-            ArgumentError("controlled_actuators must be a command-sized boolean mask"),
+            ArgumentError("controlled_actuators must be a command-sized boolean mask")
         )
     end
     bases = shape["bases"]
@@ -368,9 +371,7 @@ function validate_shape_control(shape, units, count)
             end
         else
             exact_fields(
-                definition,
-                ("kind", "modes", "artifact_sha256"),
-                "sampled definition",
+                definition, ("kind", "modes", "artifact_sha256"), "sampled definition"
             )
             hash = definition["artifact_sha256"]
             nonempty_text(hash) && occursin(r"^[0-9a-f]{64}$", hash) ||
@@ -384,7 +385,7 @@ function validate_shape_control(shape, units, count)
                 all(x -> finite_bound(x) && isfinite(Float32(x)), values) &&
                 any(x -> Float32(x) != 0, values) || throw(
                     ArgumentError(
-                        "sampled modes must be finite, nonzero and command-sized",
+                        "sampled modes must be finite, nonzero and command-sized"
                     ),
                 )
             end
@@ -394,60 +395,62 @@ function validate_shape_control(shape, units, count)
 end
 
 function load(path::AbstractString)
-    isfile(path) && filesize(path)<=MAX_BYTES ||
+    isfile(path) && filesize(path) <= MAX_BYTES ||
         throw(ArgumentError("instrument definition exceeds 1 MiB or is absent"))
-    json=read(path, String)
+    json = read(path, String)
     isvalid(json) && !occursin('\0', json) ||
         throw(ArgumentError("instrument definition is not valid UTF-8 JSON"))
-    document=read_object(json)
+    document = read_object(json)
     validate(document)
     return (; json, sha256 = digest(json), document)
 end
 
 function publication(spec, bindings)
     haskey(spec, "instrument") || return Dict{String,String}()
-    package=get(bindings, "PACKAGE", nothing)
+    package = get(bindings, "PACKAGE", nothing)
     absolute_package(package) ||
         throw(ArgumentError("instrument publication requires the installed application"))
-    path=D.relative_asset(package, spec["instrument"])
-    expected=get(get(spec, "artifacts", Dict()), spec["instrument"], nothing)
-    definition=load(path)
+    path = D.relative_asset(package, spec["instrument"])
+    expected = get(get(spec, "artifacts", Dict()), spec["instrument"], nothing)
+    definition = load(path)
     sealed_hash(expected, definition.sha256) ||
         throw(ArgumentError("instrument publication is not sealed"))
-    return Dict(PROPERTY=>definition.json, HASH_PROPERTY=>definition.sha256)
+    return Dict(PROPERTY => definition.json, HASH_PROPERTY => definition.sha256)
 end
 
-grid_index(value::Integer, upper) = 1<=value<=upper
+grid_index(value::Integer, upper) = 1 <= value <= upper
 grid_index(::Bool, upper) = false
 grid_index(value, upper) = false
 function grid_pair(value::AbstractVector, bounds)
-    length(value)==2 && all(grid_index.(value, bounds)) ||
+    length(value) == 2 && all(grid_index.(value, bounds)) ||
         throw(ArgumentError("mirror grid coordinates must be bounded positive integers"))
     return (Int(value[1]), Int(value[2]))
 end
 grid_pair(value, bounds) = throw(ArgumentError("mirror grid coordinates require a pair"))
 function mirror_layout(layout::AbstractDict, count)
-    Set(keys(layout))==Set((
+    Set(keys(layout)) == Set((
         "schema_version",
         "name",
         "grid_shape",
         "axis_labels",
         "command_positions",
         "command_order",
-    )) && layout["schema_version"]===1 ||
+    )) && layout["schema_version"] === 1 ||
         throw(ArgumentError("expected mirror layout schema version 1"))
     for key in ("name", "command_order")
         nonempty_text(layout[key]) || throw(ArgumentError("invalid mirror layout $key"))
     end
-    labels=layout["axis_labels"]
-    array_value(labels) && length(labels)==2 && all(nonempty_text, labels) ||
+    labels = layout["axis_labels"]
+    array_value(labels) && length(labels) == 2 && all(nonempty_text, labels) ||
         throw(ArgumentError("mirror layout requires two axis labels"))
-    shape=grid_pair(layout["grid_shape"], (4096, 4096))
-    positions=layout["command_positions"]
-    array_value(positions) && 1<=length(positions)<=16384 && length(positions)==count ||
+    shape = grid_pair(layout["grid_shape"], (4096, 4096))
+    positions = layout["command_positions"]
+    array_value(positions) &&
+    1 <= length(positions) <= 16384 &&
+    length(positions) == count ||
         throw(ArgumentError("mirror layout command count differs"))
-    coordinates=map(position->grid_pair(position, shape), positions)
-    length(Set(coordinates))==count ||
+    coordinates = map(position -> grid_pair(position, shape), positions)
+    length(Set(coordinates)) == count ||
         throw(ArgumentError("duplicate mirror command positions"))
     return nothing
 end
@@ -477,7 +480,7 @@ function validate_mirror_description(description; command_count = nothing)
         diameter = description["clear_aperture_diameter_m"]
         positive_scale(diameter) && positive_scale(Float64(diameter)) || throw(
             ArgumentError(
-                "clear_aperture_diameter_m must be finite and positive in metres",
+                "clear_aperture_diameter_m must be finite and positive in metres"
             ),
         )
     end
@@ -536,26 +539,26 @@ mirror_description_json(path::AbstractString) = _mirror_description(path).json
 "Read the selected device description for ordinary simulated-mirror NodeInfo."
 function mirror_properties(options)
     path = get(options, :mirror_description, nothing)
-    path===nothing && return Dict{String,String}()
+    path === nothing && return Dict{String,String}()
     (; json, document) = _mirror_description(path)
     description = document
     validate_mirror_description(description; command_count = options.command_count)
-    if options.instrument!==nothing
+    if options.instrument !== nothing
         instrument = load(options.instrument).document
         mirrors = instrument["deformable_mirrors"]
-        length(mirrors)==1 ||
+        length(mirrors) == 1 ||
             throw(ArgumentError("this transport requires one mirror description"))
-        description["layout"]==only(values(mirrors))["layout"] ||
+        description["layout"] == only(values(mirrors))["layout"] ||
             throw(ArgumentError("mirror and instrument layouts differ"))
     end
-    return Dict(MIRROR_PROPERTY=>json)
+    return Dict(MIRROR_PROPERTY => json)
 end
 
 "Publish the intrinsic description for a named physical mirror command."
 function mirror_properties(options, name::Symbol)
     options.version in (3, 5) || return Dict{String,String}()
-    options.version==5 &&
-        string(name)!=options.mirror &&
+    options.version == 5 &&
+        string(name) != options.mirror &&
         throw(ArgumentError("pupil source observes only its controlled physical mirror"))
     declaration = getproperty(parentmodule(@__MODULE__), :InstrumentConfiguration)
     rtc = declaration.load_rtc(options.rtc_configuration)
@@ -565,7 +568,7 @@ function mirror_properties(options, name::Symbol)
     (; json, document) = _mirror_description(path)
     validate_mirror_description(
         document;
-        command_count = options.version==5 ? options.command_count :
+        command_count = options.version == 5 ? options.command_count :
                         options.command_count[name],
     )
     instrument = load(options.instrument).document
@@ -576,68 +579,69 @@ end
 
 "Validate the scientific package and one-DM/one-WFS transport before execution."
 function verify_plant(options, plant_module)
-    options.instrument===nothing && return nothing
-    definition=load(options.instrument).document
+    options.instrument === nothing && return nothing
+    definition = load(options.instrument).document
     isdefined(plant_module, :instrument_definition) ||
         throw(ArgumentError("selected plant has no instrument definition API"))
-    scientific=Base.invokelatest(
-        getproperty(plant_module, :instrument_definition),
-        options.plant.settings,
+    scientific = Base.invokelatest(
+        getproperty(plant_module, :instrument_definition), options.plant.settings
     )
-    definition["scientific_identity"]==scientific_identity(scientific) || throw(
-        ArgumentError("scientific instrument definition differs from the selected RTC"),
+    definition["scientific_identity"] == scientific_identity(scientific) || throw(
+        ArgumentError("scientific instrument definition differs from the selected RTC")
     )
-    definition["id"]==scientific.id ||
+    definition["id"] == scientific.id ||
         throw(ArgumentError("instrument identity differs from the selected plant"))
-    definition["calibration_identity"]==options.calibration_identity || throw(
-        ArgumentError("instrument calibration identity differs from the selected plant"),
+    definition["calibration_identity"] == options.calibration_identity || throw(
+        ArgumentError("instrument calibration identity differs from the selected plant")
     )
-    mirrors, sensors=definition["deformable_mirrors"], definition["wavefront_sensors"]
-    length(mirrors)==length(sensors)==1 ||
+    mirrors, sensors = definition["deformable_mirrors"], definition["wavefront_sensors"]
+    length(mirrors) == length(sensors) == 1 ||
         throw(ArgumentError("this AOS boundary requires one DM and one WFS"))
-    dm, wfs=only(values(mirrors)), only(values(sensors))
-    length(dm["layout"]["command_positions"])==options.command_count ||
+    dm, wfs = only(values(mirrors)), only(values(sensors))
+    length(dm["layout"]["command_positions"]) == options.command_count ||
         throw(DimensionMismatch("instrument DM command count differs"))
-    Tuple(wfs["layout"]["detector_shape"])==options.frame_shape ||
+    Tuple(wfs["layout"]["detector_shape"]) == options.frame_shape ||
         throw(DimensionMismatch("instrument WFS detector shape differs"))
-    wfs["layout"]["expected_schema"]==options.frame_schema ||
+    wfs["layout"]["expected_schema"] == options.frame_schema ||
         throw(ArgumentError("instrument WFS schema differs"))
-    Float32(dm["command_scale_m"])==options.command_scale ||
+    Float32(dm["command_scale_m"]) == options.command_scale ||
         throw(ArgumentError("instrument DM command scale differs"))
     # Compare actual scientific fields as well as the fingerprint: a valid
     # identity must not authorize independently changed operational geometry.
-    source=Common.parse_json(JSON.json(scientific))
+    source = Common.parse_json(JSON.json(scientific))
     for (name, mirror) in mirrors
-        original=source["deformable_mirrors"][name]
-        mirror["layout"]==original["layout"] ||
+        original = source["deformable_mirrors"][name]
+        mirror["layout"] == original["layout"] ||
             throw(ArgumentError("instrument DM source-grid layout differs"))
-        mirror["shape_control"]==get(original, "shape_control", nothing) ||
+        mirror["shape_control"] == get(original, "shape_control", nothing) ||
             throw(ArgumentError("instrument DM basis declaration differs"))
-        get(mirror, "pupil_coordinates", nothing)==get(
-            original,
-            "pupil_coordinates",
-            nothing,
-        ) || throw(ArgumentError("instrument pupil coordinates differ"))
+        get(mirror, "pupil_coordinates", nothing) ==
+        get(original, "pupil_coordinates", nothing) ||
+            throw(ArgumentError("instrument pupil coordinates differ"))
         registration = get(original, "pupil_registration", nothing)
         published_registration = published_pupil_registration(registration)
-        get(mirror, "pupil_registration", nothing)==published_registration ||
+        get(mirror, "pupil_registration", nothing) == published_registration ||
             throw(ArgumentError("instrument pupil registration differs"))
-        get(mirror, "clear_aperture", nothing)==get(original, "clear_aperture", nothing) ||
+        get(mirror, "clear_aperture", nothing) ==
+        get(original, "clear_aperture", nothing) ||
             throw(ArgumentError("instrument mirror clear aperture differs"))
         telescope = get(source, "telescope", Dict())
-        pupil =
-            haskey(original, "pupil") ? original["pupil"] :
-            haskey(telescope, "central_obstruction_ratio") ?
+        pupil = if haskey(original, "pupil")
+            original["pupil"]
+        elseif haskey(telescope, "central_obstruction_ratio")
             Dict(
-                "outer_radius"=>1.0,
-                "inner_radius"=>telescope["central_obstruction_ratio"],
-            ) : nothing
-        get(mirror, "pupil", nothing)==pupil ||
+                "outer_radius" => 1.0,
+                "inner_radius" => telescope["central_obstruction_ratio"],
+            )
+        else
+            nothing
+        end
+        get(mirror, "pupil", nothing) == pupil ||
             throw(ArgumentError("instrument optical pupil differs"))
     end
     for (name, sensor) in sensors
-        original=source["wavefront_sensors"][name]["layout"]
-        all(get(sensor["layout"], key, nothing)==value for (key, value) in original) ||
+        original = source["wavefront_sensors"][name]["layout"]
+        all(get(sensor["layout"], key, nothing) == value for (key, value) in original) ||
             throw(ArgumentError("instrument WFS geometry differs"))
     end
     mirror_properties(options)
@@ -663,13 +667,13 @@ function verify_declaration(options)
         ArgumentError("simulator calibration identity differs from the RTC configuration"),
     )
     simulation.instrument.path == rtc.instrument.path || throw(
-        ArgumentError("simulator and RTC must reference the same physical instrument"),
+        ArgumentError("simulator and RTC must reference the same physical instrument")
     )
     configured = declaration.settings(simulation, options.plant.settings)
     options.prescription_identity ==
     declaration.prescription_identity(simulation, configured) ||
         throw(ArgumentError("simulation prescription differs from its prepared identity"))
-    mirrors, sensors=actual["deformable_mirrors"], actual["wavefront_sensors"]
+    mirrors, sensors = actual["deformable_mirrors"], actual["wavefront_sensors"]
     length(sensors) == 1 || throw(ArgumentError("this AOS boundary requires one WFS"))
     wfs = only(values(sensors))
     verify_mirror_commands(mirrors, options.command_count, options.command_scale)
@@ -693,7 +697,7 @@ function verify_mirror_commands(mirrors, counts::NamedTuple, scales::NamedTuple)
     # Other named correctors (for example a tip/tilt OPD basis) are validated
     # against the typed scientific HIL boundary rather than invented DM geometry.
     all(name -> Symbol(name) in keys(counts), keys(mirrors)) || throw(
-        ArgumentError("every instrument mirror must have a matching named AOS command"),
+        ArgumentError("every instrument mirror must have a matching named AOS command")
     )
     for (name, mirror) in mirrors
         key = Symbol(name)

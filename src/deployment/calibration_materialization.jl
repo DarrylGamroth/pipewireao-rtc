@@ -4,8 +4,7 @@ function calibration_physical_instrument(directory)
     document = Common.read_yaml(joinpath(directory, "instrument.yaml"))
     for mirror in values(document["deformable_mirrors"])
         path = InstrumentConfiguration.mirror_description_path(
-            directory,
-            mirror["description"],
+            directory, mirror["description"]
         )
         mirror["description"] = Common.sha256_file(path)
     end
@@ -26,19 +25,20 @@ function validate_chopped_calibration(report, simulation)
     get(provenance, "chopping", Dict()) == chopping ||
         throw(ArgumentError("calibrated optical chopping differs from selected execution"))
     for name in keys(chopping)
-        measurements[name] == Dict("kind"=>"chopped-pixel-residual") &&
+        measurements[name] == Dict("kind" => "chopped-pixel-residual") &&
         get(report["branches"][name], "measurement_kind", nothing) ==
         "chopped-pixel-residual" || throw(
             ArgumentError(
-                "chopped execution requires newly calibrated signed pixel residuals",
+                "chopped execution requires newly calibrated signed pixel residuals"
             ),
         )
-        identity =
-            get(get(provenance, "measurement_frontend_identity", Dict()), name, nothing)
+        identity = get(
+            get(provenance, "measurement_frontend_identity", Dict()), name, nothing
+        )
         validate_chopped_frontend_identity(identity)
         if get(report, "branch", nothing) == name
-            filename = name*"-reference-difference.fits"
-            get(report["parameter_files"], name*"-reference-difference", nothing) ==
+            filename = name * "-reference-difference.fits"
+            get(report["parameter_files"], name * "-reference-difference", nothing) ==
             filename && haskey(report["artifact_sha256"], filename) || throw(
                 ArgumentError(
                     "chopped calibration requires its real reference-difference FITS parameter",
@@ -52,12 +52,14 @@ end
 "Retain compact FITS declarations relative to the copied bundle directory."
 function rebase_calibration_context(document::AbstractDict, prefix)
     if get(document, "kind", nothing) == "fits"
-        return merge(document, Dict("path"=>joinpath(prefix, document["path"])))
+        return merge(document, Dict("path" => joinpath(prefix, document["path"])))
     end
-    return Dict(key=>rebase_calibration_context(value, prefix) for (key, value) in document)
+    return Dict(
+        key => rebase_calibration_context(value, prefix) for (key, value) in document
+    )
 end
 rebase_calibration_context(document::AbstractVector, prefix) =
-    map(value->rebase_calibration_context(value, prefix), document)
+    map(value -> rebase_calibration_context(value, prefix), document)
 rebase_calibration_context(document, prefix) = deepcopy(document)
 
 """
@@ -99,7 +101,7 @@ function materialize_calibration(
     indexpath = D.relative_asset(bundles, "calibration.yaml")
     index = Common.read_yaml(indexpath)
     get(index, "version", nothing) === 1 &&
-    get(index, "kind", nothing)=="optical-calibration-index" ||
+    get(index, "kind", nothing) == "optical-calibration-index" ||
         throw(ArgumentError("expected optical calibration index version 1"))
     branch_index = index["branches"]
     validate_calibration_branch_index(branch_index)
@@ -112,18 +114,18 @@ function materialize_calibration(
     optical = recipe_document["optical_simulation"]
     Common.sha256_file(D.relative_asset(root, optical)) ==
     Common.sha256_file(D.relative_asset(built, optical)) || throw(
-        ArgumentError("authored optical execution differs from calibrated application"),
+        ArgumentError("authored optical execution differs from calibrated application")
     )
     provenancepath = D.relative_asset(built, provenance)
-    Common.sha256_file(D.relative_asset(root, provenance))==Common.sha256_file(
-        provenancepath,
-    ) || throw(
-        ArgumentError("authored optical provenance differs from calibrated application"),
+    Common.sha256_file(D.relative_asset(root, provenance)) ==
+    Common.sha256_file(provenancepath) || throw(
+        ArgumentError("authored optical provenance differs from calibrated application")
     )
     receipt = Common.read_yaml(provenancepath)
     for entry in vcat(receipt["sources"], receipt["graphs"], [receipt["execution"]])
         for directory in (root, built)
-            Common.sha256_file(D.relative_asset(directory, entry["path"]))==entry["sha256"] ||
+            Common.sha256_file(D.relative_asset(directory, entry["path"])) ==
+            entry["sha256"] ||
                 throw(ArgumentError("optical provenance input changed: $(entry["path"])"))
         end
     end
@@ -136,10 +138,11 @@ function materialize_calibration(
     validate_materialized_calibration_identity(identity)
     rtcpath = D.relative_asset(root, rtc_configuration)
     authored_rtc = Common.read_yaml(rtcpath)
-    builtin_rtc =
-        InstrumentConfiguration.load_rtc(D.relative_asset(built, rtc_configuration))
+    builtin_rtc = InstrumentConfiguration.load_rtc(
+        D.relative_asset(built, rtc_configuration)
+    )
     for key in ("controller", "dimensions", "mirror_controls", "instrument")
-        get(authored_rtc, key, nothing)==get(builtin_rtc.authoring, key, nothing) ||
+        get(authored_rtc, key, nothing) == get(builtin_rtc.authoring, key, nothing) ||
             throw(ArgumentError("authored RTC $key differs from calibrated application"))
     end
     # Export localizes shared mirror paths. Compare all authored fields and the
@@ -147,7 +150,7 @@ function materialize_calibration(
     calibration_physical_instrument(root) == calibration_physical_instrument(built) ||
         throw(
             ArgumentError(
-                "authored physical instrument differs from calibrated application",
+                "authored physical instrument differs from calibrated application"
             ),
         )
     reports = Dict{String,Any}()
@@ -156,54 +159,55 @@ function materialize_calibration(
     resolved_context = nothing
     for name in sort!(collect(keys(graphs)))
         entry = branch_index[name]
-        entry["path"]==name || throw(
+        entry["path"] == name || throw(
             ArgumentError("indexed branches must use their own standard bundle directory"),
         )
         branch_path = D.relative_asset(bundles, joinpath(entry["path"], "result.yaml"))
-        Common.sha256_file(branch_path)==entry["result_sha256"] ||
+        Common.sha256_file(branch_path) == entry["result_sha256"] ||
             throw(ArgumentError("indexed branch result hash mismatch"))
         branch_root = dirname(branch_path)
         bundle = Calibration.read_bundle(branch_root)
         report = bundle.report
         validate_chopped_calibration(report, simulation)
-        get(report, "status", nothing)=="accepted" &&
-        get(report, "built_application_calibration", false)===true &&
-        get(report, "deployable", false)===true &&
-        get(report, "diagnostic", true)===false &&
-        get(get(report, "held_out", Dict()), "accepted", false)===true &&
-        get(report, "calibration_identity", nothing)==identity &&
-        get(report, "branch", nothing)==name || throw(
+        get(report, "status", nothing) == "accepted" &&
+        get(report, "built_application_calibration", false) === true &&
+        get(report, "deployable", false) === true &&
+        get(report, "diagnostic", true) === false &&
+        get(get(report, "held_out", Dict()), "accepted", false) === true &&
+        get(report, "calibration_identity", nothing) == identity &&
+        get(report, "branch", nothing) == name || throw(
             ArgumentError(
-                "branch must be an accepted matched built-application calibration",
+                "branch must be an accepted matched built-application calibration"
             ),
         )
-        report["recipe"]==recipe_document &&
-        report["recipe_sha256"]==Common.sha256_file(recipepath) ||
+        report["recipe"] == recipe_document &&
+        report["recipe_sha256"] == Common.sha256_file(recipepath) ||
             throw(ArgumentError("branch recipe differs from calibrated application"))
-        report["source_graph_sha256"]==Common.sha256_file(
-            D.relative_asset(built, optical),
-        ) && report["source_prescription_identity"]==simulation["prescription_identity"] ||
+        report["source_graph_sha256"] ==
+        Common.sha256_file(D.relative_asset(built, optical)) &&
+        report["source_prescription_identity"] == simulation["prescription_identity"] ||
             throw(
                 ArgumentError(
-                    "branch optical prescription differs from calibrated application",
+                    "branch optical prescription differs from calibrated application"
                 ),
             )
-        report["branches"][name]["accepted"]===true ||
+        report["branches"][name]["accepted"] === true ||
             throw(ArgumentError("branch numerical gates failed"))
         candidate = bundle.context
         mask = candidate["pixel_selection_mask"]
         validate_calibration_selection_binding(mask)
-        resolved_candidate =
-            InstrumentConfiguration.calibration_context(candidate, branch_root)
+        resolved_candidate = InstrumentConfiguration.calibration_context(
+            candidate, branch_root
+        )
         selected_mask = resolved_candidate["pixel_selection_mask"]
         validate_calibration_selection_mask(selected_mask)
         if haskey(resolved_candidate, name) &&
-           haskey(resolved_candidate[name], "pixel_selection_mask")
+            haskey(resolved_candidate[name], "pixel_selection_mask")
             resolved_candidate[name]["pixel_selection_mask"] == selected_mask &&
             get(resolved_candidate[name], "selected_pixel_count", nothing) ==
             count(selected_mask) || throw(
                 ArgumentError(
-                    "branch-specific selection differs from its measured FITS mask",
+                    "branch-specific selection differs from its measured FITS mask"
                 ),
             )
         end
@@ -233,7 +237,7 @@ function materialize_calibration(
             for (key, value) in resolved_candidate
                 key == "pixel_selection_mask" && continue
                 haskey(resolved_context, key) &&
-                    resolved_context[key]!=value &&
+                    resolved_context[key] != value &&
                     throw(ArgumentError("branch calibration contexts conflict"))
                 if !haskey(context, key)
                     context[key] = rebased[key]
@@ -249,19 +253,20 @@ function materialize_calibration(
         Set(["command-projection", "vdm-to-modes", "active-to-full", "vdm-to-pdm"]) :
         Set(["command-projection", "physical-to-modes"])
     if haskey(recipe_document, "command_completion") &&
-       get(recipe_document, "tip_tilt", false) === true
+        get(recipe_document, "tip_tilt", false) === true
         push!(required_projection, "physical-to-modes")
     end
     haskey(recipe_document, "upstream_reference") &&
         push!(required_projection, "modes-to-reference")
-    Set(keys(index["physical_projection"]))==required_projection ||
+    Set(keys(index["physical_projection"])) == required_projection ||
         throw(ArgumentError("indexed physical mappings are incomplete"))
     for (name, descriptor) in index["physical_projection"]
         path = D.relative_asset(bundles, descriptor["path"])
-        Common.sha256_file(path)==descriptor["sha256"] ||
+        Common.sha256_file(path) == descriptor["sha256"] ||
             throw(ArgumentError("shared projection hash mismatch"))
         for report in values(reports)
-            get(report["artifact_sha256"], name*".fits", nothing)==descriptor["sha256"] ||
+            get(report["artifact_sha256"], name * ".fits", nothing) ==
+            descriptor["sha256"] ||
                 throw(ArgumentError("branches do not share the indexed projection"))
         end
     end
@@ -290,7 +295,7 @@ function materialize_calibration(
         resolved = InstrumentConfiguration.calibration_context(context, staged)
         graphcontext = graph_context(
             InstrumentConfiguration.json_value(
-                InstrumentConfiguration.physical_definition(builtin_rtc.instrument),
+                InstrumentConfiguration.physical_definition(builtin_rtc.instrument)
             );
             dimensions = builtin_rtc.document["dimensions"],
             mirror_controls = builtin_rtc.controls["deformable_mirrors"],
@@ -300,26 +305,26 @@ function materialize_calibration(
         for (name, graph) in graphs
             sourcegraph = D.relative_asset(root, graph)
             calibrated = joinpath(branch_paths[name], "graph.conf")
-            authored_graph =
-                resolve_graph_configuration(D.decode(sourcegraph, prefix), graphcontext)
+            authored_graph = resolve_graph_configuration(
+                D.decode(sourcegraph, prefix), graphcontext
+            )
             added = calibrated_graph_exports(
                 calibrated_centroid_references(authored_graph, resolved),
                 D.decode(calibrated, prefix),
             )
             exports[name] = Dict(
-                "calibrated_graph_sha256"=>Common.sha256_file(calibrated),
-                "authored_graph_sha256"=>Common.sha256_file(sourcegraph),
-                "added_outputs"=>added,
+                "calibrated_graph_sha256" => Common.sha256_file(calibrated),
+                "authored_graph_sha256" => Common.sha256_file(sourcegraph),
+                "added_outputs" => added,
             )
         end
         updated = deepcopy(authored_rtc)
         physical = InstrumentConfiguration.referenced_instrument(
-            rtcpath,
-            authored_rtc["instrument"],
+            rtcpath, authored_rtc["instrument"]
         ).path
         D.relative_asset(root, relpath(physical, root))
         updated["instrument"] = relpath(physical, selected)
-        updated["calibration"] = destination*"/context.yaml"
+        updated["calibration"] = destination * "/context.yaml"
         updated["calibration_identity"] = identity
         Common.write_yaml(
             joinpath(staged, "rtc.yaml"),
@@ -329,27 +334,26 @@ function materialize_calibration(
         Common.write_yaml(
             joinpath(staged, "selection.yaml"),
             Dict(
-                "version"=>1,
-                "calibration_identity"=>identity,
-                "calibration_index_sha256"=>Common.sha256_file(indexpath),
-                "source_application_deployment_sha256"=>Common.sha256_file(
-                    joinpath(built, "deployment.conf"),
+                "version" => 1,
+                "calibration_identity" => identity,
+                "calibration_index_sha256" => Common.sha256_file(indexpath),
+                "source_application_deployment_sha256" =>
+                    Common.sha256_file(joinpath(built, "deployment.conf")),
+                "recipe_sha256" => Common.sha256_file(recipepath),
+                "graphs" => Dict(graphs),
+                "graph_exports" => exports,
+                "rtc_configuration" => Dict(
+                    "path" => "rtc.yaml",
+                    "sha256" => Common.sha256_file(joinpath(staged, "rtc.yaml")),
                 ),
-                "recipe_sha256"=>Common.sha256_file(recipepath),
-                "graphs"=>Dict(graphs),
-                "graph_exports"=>exports,
-                "rtc_configuration"=>Dict(
-                    "path"=>"rtc.yaml",
-                    "sha256"=>Common.sha256_file(joinpath(staged, "rtc.yaml")),
+                "zero_command" => Dict(
+                    "path" => zero_command,
+                    "sha256" => Common.sha256_file(joinpath(staged, zero_command)),
+                    "shape" => [command_count],
+                    "type" => "Float32",
+                    "units" => mirror_units,
                 ),
-                "zero_command"=>Dict(
-                    "path"=>zero_command,
-                    "sha256"=>Common.sha256_file(joinpath(staged, zero_command)),
-                    "shape"=>[command_count],
-                    "type"=>"Float32",
-                    "units"=>mirror_units,
-                ),
-                "application_accepted"=>false,
+                "application_accepted" => false,
             );
             header = "Generated accepted simulation calibration selection; application and hardware qualification remain separate.",
         )
@@ -375,13 +379,13 @@ function validate_selected_rtc(application, calibration, selection, index, simul
     get(simulation, "calibration_identity", nothing) ==
     index["calibration_identity"] || throw(
         ArgumentError(
-            "selected RTC and source execution identities differ from calibration index",
+            "selected RTC and source execution identities differ from calibration index"
         ),
     )
     get(rtc, "calibration", nothing) == normpath(joinpath(calibration, "context.yaml")) ||
         throw(
             ArgumentError(
-                "selected RTC configuration must use its generated calibration context",
+                "selected RTC configuration must use its generated calibration context"
             ),
         )
     return name
@@ -389,7 +393,7 @@ end
 
 function validate_chopped_frontend_identity(identity::String)
     occursin(r"^sha256:[0-9a-f]{64}$", identity) || throw(
-        ArgumentError("chopped calibration must bind its executed measurement prefix"),
+        ArgumentError("chopped calibration must bind its executed measurement prefix")
     )
     return nothing
 end
@@ -398,10 +402,10 @@ validate_chopped_frontend_identity(identity) =
 
 function validate_calibration_destination(destination::String)
     startswith(destination, "generated/") &&
-    normpath(destination)==destination &&
+    normpath(destination) == destination &&
     !outside(destination) || throw(
         ArgumentError(
-            "calibration destination must be an explicit generated source directory",
+            "calibration destination must be an explicit generated source directory"
         ),
     )
     return nothing
@@ -417,7 +421,7 @@ function validate_calibration_zero_command(zero_command::String)
     return nothing
 end
 validate_calibration_zero_command(zero_command) = throw(
-    ArgumentError("zero command must name a FITS artifact in the generated selection"),
+    ArgumentError("zero command must name a FITS artifact in the generated selection")
 )
 
 function validate_materialized_calibration_identity(identity::String)
@@ -442,9 +446,9 @@ validate_calibration_selection_mask(selected_mask) =
 
 function validate_calibration_command_count(command_count::Int, reports)
     1 <= command_count <= 16384 &&
-    all(report -> report["command_count"]==command_count, values(reports)) || throw(
+    all(report -> report["command_count"] == command_count, values(reports)) || throw(
         ArgumentError(
-            "accepted branches must declare the same bounded physical command count",
+            "accepted branches must declare the same bounded physical command count"
         ),
     )
     return nothing

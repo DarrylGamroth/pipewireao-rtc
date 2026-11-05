@@ -24,10 +24,7 @@ BLAS.set_num_threads(1)
 const GPUAdapterExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 
 function gpu_layout_definition(
-    input;
-    range = nothing,
-    rounding = "none",
-    output_element_type = "float32",
+    input; range = nothing, rounding = "none", output_element_type = "float32"
 )
     config = Dict{String,Any}(
         "input_size" => [2, 3],
@@ -79,16 +76,15 @@ end
         input = AdapterGPUArray(first)
         target = AdaptiveOpticsSim.Backends.compute_device(input)
         definition = gpu_layout_definition(input; options...)
-        stream =
-            prepare_algorithm_graph(definition; target, execution = StreamGraphExecution())
+        stream = prepare_algorithm_graph(
+            definition; target, execution = StreamGraphExecution()
+        )
         captured = prepare_algorithm_graph(
-            definition;
-            target,
-            execution = CapturedGraphExecution(),
+            definition; target, execution = CapturedGraphExecution()
         )
         owner = AlgorithmGraphs.prepared_graph_node(captured, Val(:layout))
         @test AlgorithmGraphs.graph_node_capture_capability(owner) isa
-              AlgorithmGraphs.GraphNodeCaptureSafe
+            AlgorithmGraphs.GraphNodeCaptureSafe
         @test captured_graph_node_count(captured) == 1
         @test all(isconcretetype, fieldtypes(typeof(owner)))
         addresses = (pointer(owner.detector_frame), pointer(owner.frame))

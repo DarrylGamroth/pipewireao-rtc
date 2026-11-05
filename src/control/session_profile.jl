@@ -29,13 +29,10 @@ ControlClient.operation_id(::Profile, command::Codec.RunnerCommand) =
 ControlClient.encode_request(::Profile, header, command::Codec.RunnerCommand) =
     Codec.encode_request(header, command)
 ControlClient.operation_id(
-    ::Profile,
-    command::Union{Codec.WarmupCommand,Codec.AdmitCommand},
+    ::Profile, command::Union{Codec.WarmupCommand,Codec.AdmitCommand}
 ) = Codec.operation_id(command)
 ControlClient.encode_request(
-    ::Profile,
-    header,
-    command::Union{Codec.WarmupCommand,Codec.AdmitCommand},
+    ::Profile, header, command::Union{Codec.WarmupCommand,Codec.AdmitCommand}
 ) = Codec.encode_request(header, command)
 
 function ControlClient.node_identity(::Profile, properties, previous)

@@ -40,12 +40,14 @@ function terminal_owner(remote, directory, daemon; mode)
     runtime = R.Runtime(remote, "test.terminal.$mode", Int64(81))
     connection = driver = nothing
     try
-        connection =
-            B.connect(remote, "test.terminal.$mode", getpid(), 81; deadline = deadline())
+        connection = B.connect(
+            remote, "test.terminal.$mode", getpid(), 81; deadline = deadline()
+        )
         client = connection.client
         R.prepared!(runtime)
-        connecting =
-            ThreadPinning.@spawnat 2 B.connect_owner!(connection; deadline = deadline())
+        connecting = ThreadPinning.@spawnat 2 B.connect_owner!(
+            connection; deadline = deadline()
+        )
         ticket = R.take_connect!(runtime)
         R.connected!(runtime, ticket)
         R.await_connected!(runtime, ticket)
@@ -155,7 +157,7 @@ function terminal_owner(remote, directory, daemon; mode)
                 @test client.observation.rejection.value.header.result == -108
                 @test runtime.transport.endpoint.pending === nothing
                 @test runtime.transport.endpoint.terminal_request.header.token ==
-                      request.token
+                    request.token
                 @test !istaskdone(driver)
             end
             with_thread_loop_lock(client.loop) do _
@@ -177,9 +179,7 @@ function terminal_owner(remote, directory, daemon; mode)
             end
             with_thread_loop_lock(client.loop) do _
                 enum_params!(
-                    something(client.node),
-                    PipeWireAO.SPA.PARAM_PROPS;
-                    count = UInt32(8),
+                    something(client.node), PipeWireAO.SPA.PARAM_PROPS; count = UInt32(8)
                 )
             end
             wait_proof(

@@ -15,8 +15,10 @@ const D = R.DeploymentConfiguration
 const SOURCE_SHA256 = C.sha256_file(@__FILE__)
 
 function request(handle, stage, name, fields)
-    reply = W.control!(handle, R.RunnerCommands.parse(fields); deadline = W.monotonic()+30)
-    C.write_json(joinpath(stage, name*".json"), reply)
+    reply = W.control!(
+        handle, R.RunnerCommands.parse(fields); deadline = W.monotonic() + 30
+    )
+    C.write_json(joinpath(stage, name * ".json"), reply)
     Faults.checked(reply["ok"] === true, "native lifecycle request rejected: $name")
     return reply
 end
@@ -26,9 +28,9 @@ function dump_graph(handle, prefix)
     paths = D.installed_paths(prefix)
     result = C.run_checked(
         [joinpath(prefix, "bin/pwao-dump"), "-N", "-r", ledger["remote"]];
-        env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH"=>paths["library"])),
+        env = merge(Dict(ENV), Dict("LD_LIBRARY_PATH" => paths["library"])),
         timeout = 20,
-        maximum_output_bytes = 16*1024*1024,
+        maximum_output_bytes = 16 * 1024 * 1024,
     )
     result.returncode == 0 ||
         error("exact cohort graph inspection failed: $(result.stderr)")
@@ -42,7 +44,8 @@ function inspect_source(handle, application, prefix, stage, name)
     graph = dump_graph(handle, prefix)
     node = only(
         filter(graph) do object
-            get(get(get(object, "info", Dict()), "props", Dict()), "node.name", nothing) == source["control-node"]
+            get(get(get(object, "info", Dict()), "props", Dict()), "node.name", nothing) ==
+            source["control-node"]
         end,
     )
     identity = (;
@@ -50,17 +53,14 @@ function inspect_source(handle, application, prefix, stage, name)
         serial = parse(UInt64, string(node["info"]["props"]["object.serial"])),
     )
     value = Faults.decode_aos_source(
-        graph,
-        source,
-        ledger["owners"][spec["source-owner"]],
-        identity,
+        graph, source, ledger["owners"][spec["source-owner"]], identity
     )
     report = C.read_json(
-        joinpath(dirname(ledger["remote"]), source["control-node"]*"-report.json"),
+        joinpath(dirname(ledger["remote"]), source["control-node"] * "-report.json")
     )
     Faults.validate_source_report(report, value)
     value["report"] = report
-    C.write_json(joinpath(stage, name*"-source.json"), value)
+    C.write_json(joinpath(stage, name * "-source.json"), value)
     return value
 end
 
@@ -78,11 +78,15 @@ function observation_spec(application, session, queue_input, name, prefix)
     sink = only(filter(item -> item["node.name"] == queue_input, session["sinks"]))
     port = only(sink["ports"])
     wire = getproperty(NdArray, Symbol(port["element-type"]))
-    element =
-        port["element-type"] == "U16_LE" ? UInt16 :
-        port["element-type"] == "U8" ? UInt8 :
-        port["element-type"] == "F32_LE" ? Float32 :
+    element = if port["element-type"] == "U16_LE"
+        UInt16
+    elseif port["element-type"] == "U8"
+        UInt8
+    elseif port["element-type"] == "F32_LE"
+        Float32
+    else
         error("unsupported observation element type")
+    end
     rate = if haskey(port, "rate")
         fraction = parse.(UInt32, split(port["rate"], '/'))
         SPA.Fraction(fraction...)
@@ -112,19 +116,11 @@ function observation_specs(application, prefix)
     spec = D.profile(joinpath(application, "deployment.conf"), prefix)
     session = D.decode(D.relative_asset(application, spec["session"]), prefix)
     detector = observation_spec(
-        application,
-        session,
-        "simulator-detector-queue-input",
-        "detector",
-        prefix,
+        application, session, "simulator-detector-queue-input", "detector", prefix
     )
     commands = map(sort!(collect(keys(configuration["command_count"])))) do key
         product = observation_spec(
-            application,
-            session,
-            "rtc-"*key*"-command-queue-input",
-            key,
-            prefix,
+            application, session, "rtc-" * key * "-command-queue-input", key, prefix
         )
         product.shape == (configuration["command_count"][key],) ||
             error("command queue extent differs from plant declaration")
@@ -144,16 +140,11 @@ function common_identity(captures; after_sequence = 0)
     end
     common = reduce(intersect, groups)
     return isempty(common) ? nothing :
-           last(sort!(collect(common); by = identity->identity.sequence))
+           last(sort!(collect(common); by = identity -> identity.sequence))
 end
 
 function observe_progress(
-    handle,
-    application,
-    prefix,
-    stage;
-    start = false,
-    after_sequence = 0,
+    handle, application, prefix, stage; start = false, after_sequence = 0
 )
     specs = observation_specs(application, prefix)
     common = Ref{Union{Nothing,AcquisitionIdentity}}(nothing)
@@ -166,10 +157,7 @@ function observe_progress(
                    () -> begin
             Faults.checked(
                 request(
-                    handle,
-                    stage,
-                    "start-"*string(after_sequence),
-                    ["session-start"],
+                    handle, stage, "start-" * string(after_sequence), ["session-start"]
                 )["state"] == "Running",
                 "session Start did not reach Running",
             )
@@ -181,48 +169,52 @@ function observe_progress(
     )
     record["coherent_identity"] = Observation._classic_identity_record(something(common[]))
     record["scope"] = "Finite delivery through unchanged capacity-one queues; no cadence, latency or optical-performance claim"
-    C.write_json(joinpath(stage, "progress-"*string(after_sequence)*".json"), record)
+    C.write_json(joinpath(stage, "progress-" * string(after_sequence) * ".json"), record)
     return record
 end
 
 function shutdown(handle, stage)
     started = time_ns()
-    final = W.shutdown!(handle; deadline = W.monotonic()+320)
+    final = W.shutdown!(handle; deadline = W.monotonic() + 320)
     Faults.checked(handle.shutdown_accepted, "native Quit was not acknowledged")
     Faults.observe_cleanup!(handle, stage; failed = false)
     return Dict(
-        "elapsed_seconds"=>(time_ns()-started)/1e9,
-        "quit_deadline_seconds"=>320,
-        "native_quit_accepted"=>true,
-        "final"=>final,
+        "elapsed_seconds" => (time_ns() - started) / 1e9,
+        "quit_deadline_seconds" => 320,
+        "native_quit_accepted" => true,
+        "final" => final,
     )
 end
 
 function lifecycle_case(application, stage, prefix; running)
     spec = D.profile(joinpath(application, "deployment.conf"), prefix)
     handle = nothing
-    cohort = Faults.runtime_cohort(application,spec,prefix)
+    cohort = Faults.runtime_cohort(application, spec, prefix)
     receipt = Dict{String,Any}(
-        "completed"=>false,
-        "running_case"=>running,
-        "deployment_sha256"=>C.sha256_file(joinpath(application, "deployment.conf")),
-        "manifest_sha256"=>cohort["project"]["sha256"]["Manifest.toml"],
-        "harness_sha256"=>SOURCE_SHA256,
-        "prefix"=>abspath(prefix),
-        "startup_budget_seconds"=>Faults.startup_budget(spec),
-        "rtc_runtime"=>cohort,
-        "scope"=>"Private functional lifecycle and complete named-command delivery; no optical, cadence, latency, or hardware qualification",
+        "completed" => false,
+        "running_case" => running,
+        "deployment_sha256" => C.sha256_file(joinpath(application, "deployment.conf")),
+        "manifest_sha256" => cohort["project"]["sha256"]["Manifest.toml"],
+        "harness_sha256" => SOURCE_SHA256,
+        "prefix" => abspath(prefix),
+        "startup_budget_seconds" => Faults.startup_budget(spec),
+        "rtc_runtime" => cohort,
+        "scope" => "Private functional lifecycle and complete named-command delivery; no optical, cadence, latency, or hardware qualification",
     )
     try
         handle = W.start!(
             application,
             stage;
             prefix,
-            deadline = W.monotonic()+Faults.startup_budget(spec),
+            deadline = W.monotonic() + Faults.startup_budget(spec),
         )
         ledger = W._ledger(handle)
-        receipt["rtc_runtime"] = Faults.runtime_cohort(application,spec,prefix;
-            process=(pid=handle.main_pid,binding=ledger["session_process"]))
+        receipt["rtc_runtime"] = Faults.runtime_cohort(
+            application,
+            spec,
+            prefix;
+            process = (pid = handle.main_pid, binding = ledger["session_process"]),
+        )
         Faults.checked(
             request(handle, stage, "ready", ["status"])["state"] == "Ready",
             "session is not Ready",
@@ -233,8 +225,9 @@ function lifecycle_case(application, stage, prefix; running)
             "new source was not held at sequence zero",
         )
         if running
-            receipt["first_progress"] =
-                observe_progress(handle, application, prefix, stage; start = true)
+            receipt["first_progress"] = observe_progress(
+                handle, application, prefix, stage; start = true
+            )
             before = inspect_source(handle, application, prefix, stage, "before-stop")
             Faults.checked(
                 request(handle, stage, "stop", ["session-stop"])["state"] == "Ready",
@@ -255,8 +248,9 @@ function lifecycle_case(application, stage, prefix; running)
                 start = true,
                 after_sequence = held["snapshot"]["sequence"],
             )
-            restarted =
-                inspect_source(handle, application, prefix, stage, "before-second-stop")
+            restarted = inspect_source(
+                handle, application, prefix, stage, "before-second-stop"
+            )
             Faults.checked(
                 request(handle, stage, "second-stop", ["session-stop"])["state"] == "Ready",
                 "second Stop did not reach Ready",
@@ -310,16 +304,10 @@ function main(application, stage, prefix; controller_node, command = nothing, ca
     mkpath(stage; mode = 0o700)
     @testset "private managed application lifecycle: $case" begin
         case in ("all", "ready-quit") && lifecycle_case(
-            application,
-            joinpath(stage, "ready-quit"),
-            prefix;
-            running = false,
+            application, joinpath(stage, "ready-quit"), prefix; running = false
         )
         case in ("all", "stop-start") && lifecycle_case(
-            application,
-            joinpath(stage, "stop-start"),
-            prefix;
-            running = true,
+            application, joinpath(stage, "stop-start"), prefix; running = true
         )
         for fault in ("link-removal", "controller-exit")
             case in ("all", fault) || continue
@@ -345,6 +333,8 @@ if abspath(PROGRAM_FILE) == (@__FILE__)
     length(ARGS) in (4, 5) || error(
         "usage: managed_session_lifecycle.jl APPLICATION FRESH_STAGE PREFIX CONTROLLER_NODE [CASE]",
     )
-    main(ARGS[1:3]...; controller_node = ARGS[4], case = length(ARGS)==5 ? ARGS[5] : "all")
+    main(
+        ARGS[1:3]...; controller_node = ARGS[4], case = length(ARGS) == 5 ? ARGS[5] : "all"
+    )
 end
 end

@@ -38,7 +38,13 @@ function resolve_basis_definition(basis)
     validate_basis_definition(definition)
     overrides = get(basis, "definition", Dict{String,Any}())
     kind = definition["kind"]
-    allowed = kind == "zernike" ? ("modes",) : kind == "fourier" ? ("max_frequency",) : ()
+    allowed = if kind == "zernike"
+        ("modes",)
+    elseif kind == "fourier"
+        ("max_frequency",)
+    else
+        ()
+    end
     isempty(allowed) && throw(ArgumentError("unsupported shared basis kind $kind"))
     fields(overrides, allowed, (), "basis definition overrides")
     merge!(definition, deepcopy(overrides))
@@ -91,14 +97,15 @@ function validate_basis_definition(definition)
         _validate_element_type(artifact["type"], "sampled basis")
         definition["command_order"] == "mirror" ||
             throw(ArgumentError("sampled command_order must be mirror"))
-        names =
-            _declaration_array(definition["names"], "sampled mode names"; nonempty = true)
+        names = _declaration_array(
+            definition["names"], "sampled mode names"; nonempty = true
+        )
         length(names) == artifact["shape"][2] &&
         length(names) <= 64 &&
         all(InstrumentDefinition.bounded_text, names) &&
         length(unique(names)) == length(names) || throw(
             ArgumentError(
-                "sampled modes require 1:64 unique names matching artifact columns",
+                "sampled modes require 1:64 unique names matching artifact columns"
             ),
         )
     else
@@ -130,8 +137,9 @@ function resolve_settings_schema(selection::AbstractDict)
             haskey(selection, key) && (result[key] = deepcopy(selection[key]))
         end
         if haskey(selection, "properties")
-            properties =
-                _declaration_object(selection["properties"], "settings schema properties")
+            properties = _declaration_object(
+                selection["properties"], "settings schema properties"
+            )
             merge!(result["properties"], deepcopy(properties))
         end
     end
@@ -157,9 +165,7 @@ function validate_settings_schema(schema)
             haskey(schema, key) && _declaration_text(schema[key], "settings schema $key")
         end
         alternatives = _declaration_array(
-            schema["oneOf"],
-            "settings schema alternatives";
-            nonempty = true,
+            schema["oneOf"], "settings schema alternatives"; nonempty = true
         )
         length(alternatives) <= 16 ||
             throw(ArgumentError("settings schema allows at most 16 alternatives"))
@@ -177,14 +183,19 @@ function validate_settings_schema(schema)
         "x-display-title",
     )
     kind = get(schema, "type", nothing)
-    specific =
-        kind == "object" ? ("properties", "additionalProperties", "required") :
-        kind == "array" ? ("items", "minItems", "maxItems", "uniqueItems") :
-        kind in ("number", "integer") ?
-        ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum") :
-        kind == "string" ? ("minLength", "maxLength") :
-        kind == "boolean" ? () :
+    specific = if kind == "object"
+        ("properties", "additionalProperties", "required")
+    elseif kind == "array"
+        ("items", "minItems", "maxItems", "uniqueItems")
+    elseif kind in ("number", "integer")
+        ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
+    elseif kind == "string"
+        ("minLength", "maxLength")
+    elseif kind == "boolean"
+        ()
+    else
         throw(ArgumentError("unsupported settings schema type $kind"))
+    end
     fields(schema, (common..., specific...), ("type",), "settings schema")
     for key in ("\$schema", "title", "description", "x-display-title")
         haskey(schema, key) && _declaration_text(schema[key], "settings schema $key")
@@ -209,8 +220,7 @@ function validate_settings_schema(schema)
         _declaration_array(schema["enum"], "settings schema enum"; nonempty = true)
     if kind == "object"
         properties = _declaration_object(
-            get(schema, "properties", nothing),
-            "settings schema properties",
+            get(schema, "properties", nothing), "settings schema properties"
         )
         for (name, property) in properties
             _declaration_text(name, "settings schema property name")
@@ -220,7 +230,7 @@ function validate_settings_schema(schema)
             required = _declaration_array(schema["required"], "required settings")
             all(name -> haskey(properties, name), required) &&
             length(unique(required)) == length(required) || throw(
-                ArgumentError("required settings must name unique declared properties"),
+                ArgumentError("required settings must name unique declared properties")
             )
         end
     elseif kind == "array"

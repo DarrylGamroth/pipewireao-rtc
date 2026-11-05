@@ -34,8 +34,9 @@ function replay(application, frames, adopted)
         raw = zeros(UInt16, 352, 352)
         feedback = zeros(Float32, getproperty(graph.input_formats, FEEDBACK_IN).shape)
         inputs = NamedTuple{(:raw, FEEDBACK_IN)}((raw, feedback))
-        outputs =
-            map(format -> zeros(format.element_type, format.shape), graph.output_formats)
+        outputs = map(
+            format -> zeros(format.element_type, format.shape), graph.output_formats
+        )
         load_frame!(raw, frames, 1)
         JuliaFilterGraph.process!(outputs, graph, inputs)
         JuliaFilterGraph.reset!(graph)
@@ -47,7 +48,7 @@ function replay(application, frames, adopted)
             @test all(values(result))
             @test all(isfinite, outputs.demanded)
             for actuator in axes(predicted, 1)
-                predicted[actuator, index] = outputs.demanded[actuator]*SCALE
+                predicted[actuator, index] = outputs.demanded[actuator] * SCALE
             end
             copyto!(feedback, getproperty(outputs, FEEDBACK_OUT))
         end

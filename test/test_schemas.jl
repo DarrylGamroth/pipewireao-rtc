@@ -20,10 +20,10 @@ const C = PipeWireAORTC.Common
     @test S.validate(resolved) === nothing
     @test_throws ArgumentError S.validate(merge(resolved, Dict("element-type" => "F64_LE")))
     @test S.validate(
-        Dict("schema" => "external/custom-f64/1", "element-type" => "F64_LE"),
+        Dict("schema" => "external/custom-f64/1", "element-type" => "F64_LE")
     ) === nothing
     @test S.resolve(Dict("\$ref" => "/instrument/custom/dimension")) ==
-          Dict("\$ref" => "/instrument/custom/dimension")
+        Dict("\$ref" => "/instrument/custom/dimension")
     @test_throws Exception S.resolve(Dict("\$ref" => "/schemas/missing/id"))
     for contract in values(S.CATALOG)
         @test startswith(contract["id"], "pipewireao/")
@@ -47,11 +47,7 @@ end
         C.write_json(joinpath(directory, "core.conf"), Dict())
         spec = Dict("session" => "session.conf", "core" => "core.conf")
         @test_throws ArgumentError PipeWireAORTC.InstrumentExport.prepare_session_configuration!(
-            directory,
-            spec,
-            [],
-            "unused.json",
-            ENV["PIPEWIREAO_PREFIX"],
+            directory, spec, [], "unused.json", ENV["PIPEWIREAO_PREFIX"]
         )
         C.write_json(
             joinpath(directory, "session.conf"),
@@ -65,11 +61,7 @@ end
             ),
         )
         @test PipeWireAORTC.InstrumentExport.prepare_session_configuration!(
-            directory,
-            spec,
-            [],
-            "unused.json",
-            ENV["PIPEWIREAO_PREFIX"],
+            directory, spec, [], "unused.json", ENV["PIPEWIREAO_PREFIX"]
         ) === nothing
     end
 end

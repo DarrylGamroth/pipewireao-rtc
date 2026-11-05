@@ -29,18 +29,13 @@ function retained_authority(remote, directory, daemon)
         @test B.status(client; deadline = remaining()).lifecycle === P.Connected
         before = globals(something(runtime.transport.endpoint.registry))
         @test_throws C.UnknownOutcome B.connect(
-            remote,
-            "test.bootstrap.retained",
-            getpid(),
-            52;
-            deadline = C.monotonic() + 0.3,
+            remote, "test.bootstrap.retained", getpid(), 52; deadline = C.monotonic() + 0.3
         )
         @test length(runtime.transport.endpoint.controllers) == 1
         @test runtime.transport.endpoint.retained_controller == client.client.identity
         @test !R.cancelled(runtime)
         @test map(
-            object -> object.id,
-            globals(something(runtime.transport.endpoint.registry)),
+            object -> object.id, globals(something(runtime.transport.endpoint.registry))
         ) == map(object -> object.id, before)
         @test B.status(client; deadline = remaining()).lifecycle === P.Connected
         # Isolate the cold client listener while measuring owner methods, as in

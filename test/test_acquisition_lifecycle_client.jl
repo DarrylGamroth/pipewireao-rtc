@@ -6,15 +6,7 @@ const Identity = Envelope.ControllerIdentity(UInt32(7), typemax(UInt64), Int64(1
 header(result = Int32(0); operation = UInt32(5)) =
     Envelope.ReplyHeader(Identity, Int64(42), Int64(19), operation, result)
 const Snapshot = Codec.Snapshot(
-    Codec.Classic,
-    nothing,
-    nothing,
-    false,
-    false,
-    "initial",
-    false,
-    false,
-    nothing,
+    Codec.Classic, nothing, nothing, false, false, "initial", false, false, nothing
 )
 
 function failure_text(f, reply)
@@ -80,10 +72,7 @@ end
     end
     for phase in (Codec.Preparing, Codec.Fault, Codec.Stopped)
         reply = Codec.Completion(
-            header(; operation = UInt32(1)),
-            phase,
-            Snapshot,
-            "readiness changed",
+            header(; operation = UInt32(1)), phase, Snapshot, "readiness changed"
         )
         @test AcquisitionLifecycleClient._require_status(reply) === reply
         text = failure_text(AcquisitionLifecycleClient._require_ready, reply)

@@ -7,19 +7,9 @@ const RECOVERY_OWNER = Int64(801)
 const RECOVERY_TOKEN = UInt64(17)
 
 loop_observation(
-    serial,
-    requested,
-    active,
-    closed;
-    owner = RECOVERY_OWNER,
-    token = RECOVERY_TOKEN,
+    serial, requested, active, closed; owner = RECOVERY_OWNER, token = RECOVERY_TOKEN
 ) = CR.LoopObservation(
-    owner,
-    token,
-    UInt64(serial),
-    UInt64(requested),
-    UInt64(active),
-    closed,
+    owner, token, UInt64(serial), UInt64(requested), UInt64(active), closed
 )
 recovery_observation(
     serial;
@@ -30,13 +20,7 @@ recovery_observation(
     status = :applied,
     inhibited = true,
 ) = CR.RecoveryObservation(
-    owner,
-    token,
-    UInt64(serial),
-    UInt64(requested),
-    UInt64(active),
-    status,
-    inhibited,
+    owner, token, UInt64(serial), UInt64(requested), UInt64(active), status, inhibited
 )
 reference_observation(
     serial;
@@ -47,13 +31,7 @@ reference_observation(
     coherent = true,
     ready = true,
 ) = CR.ReferenceObservation(
-    owner,
-    token,
-    UInt64(serial),
-    UInt64(generation),
-    reached,
-    coherent,
-    ready,
+    owner, token, UInt64(serial), UInt64(generation), reached, coherent, ready
 )
 release_observation(
     serial;
@@ -84,8 +62,9 @@ function qualified_recovery(; now = Ref(UInt64(100)), closed = true, timeout_ms 
 end
 function restoring_recovery(; kwargs...)
     sm, now = qualified_recovery(; kwargs...)
-    effect =
-        CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason = :saturation)
+    effect = CR.request_protection!(
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason = :saturation
+    )
     CR.recovery_staged!(sm, effect, UInt64(11); loop_generation = UInt64(4))
     CR.observe_loop!(sm, loop_observation(2, 4, 4, false))
     return sm, now
@@ -126,8 +105,9 @@ end
     Hsm.dispatch!(sm, :Qualified, initial)
     @test CR.state(sm) === :Closed
     @test (sm.serial, sm.loop_generation, sm.target_closed) == (1, 3, true)
-    request =
-        (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN, reason = :saturation)
+    request = (;
+        owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN, reason = :saturation
+    )
     Hsm.dispatch!(sm, :Protect, request)
     @test CR.state(sm) === :Opening
     @test (sm.token, sm.reason, sm.target_closed) == (RECOVERY_TOKEN, :saturation, false)
@@ -152,7 +132,7 @@ end
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(51))
     @test CR.state(sm) === :Unverified && sm.failure === :uncertain_outcome
     @test (sm.serial, sm.loop_generation, sm.target_closed, sm.reference_since_ns) ==
-          retained
+        retained
 end
 
 @testset "Reference refresh events preserve release deadlines and reject stale facts" begin
@@ -176,9 +156,7 @@ end
     Hsm.dispatch!(sm, :Release, request)
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(6))
     Hsm.dispatch!(
-        sm,
-        :ReferenceObserved,
-        reference_observation(7; owner = RECOVERY_OWNER + 1),
+        sm, :ReferenceObserved, reference_observation(7; owner = RECOVERY_OWNER + 1)
     )
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(7; generation = 10))
     @test sm.serial == 6 && sm.reference_serial == 6 && sm.reference_since_ns == refreshed
@@ -206,7 +184,7 @@ end
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(50))
     @test CR.state(sm) === :RestoringReference && sm.failure === nothing
     @test (sm.serial, sm.reference_serial, sm.reference_since_ns, sm.pending_since_ns) ==
-          before
+        before
     CR.observe_recovery!(sm, recovery_observation(3))
     deadline = sm.pending_since_ns
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(4; coherent = false))
@@ -218,8 +196,9 @@ end
     sm, now = qualified_recovery()
     @test CR.state(sm) === :Closed
     @test Hsm.ancestor(sm, :Closed) === :Operational
-    effect =
-        CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason = :saturation)
+    effect = CR.request_protection!(
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; reason = :saturation
+    )
     @test effect === CR.StageRecovery(RECOVERY_OWNER, RECOVERY_TOKEN)
     @test CR.state(sm) === :Opening
     @test Hsm.ancestor(sm, CR.state(sm)) === :ProtectiveOpen
@@ -254,16 +233,14 @@ end
     @test sm.pending_since_ns == 0
     @test_throws ArgumentError CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     @test CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN + UInt64(1)) isa
-          CR.StageRecovery
+        CR.StageRecovery
 end
 
 @testset "Early, stale and mismatched observations cannot close" begin
     sm, now = restoring_recovery()
     @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     @test_throws ArgumentError CR.request_protection!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN + UInt64(1),
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN + UInt64(1)
     )
     CR.observe_reference!(sm, reference_observation(100)) # before scope adoption
     @test CR.state(sm) === :RestoringReference
@@ -282,9 +259,7 @@ end
     @test CR.state(sm) === :Holding
     @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER + 1, RECOVERY_TOKEN)
     @test_throws ArgumentError CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN - UInt64(1),
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN - UInt64(1)
     )
     now[] += UInt64(5_000_000)
     @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
@@ -345,9 +320,7 @@ end
         @test CR.state(sm) === :Unverified
         @test CR.observe_recovery!(sm, recovery_observation(52)) === nothing
         @test_throws ArgumentError CR.request_protection!(
-            sm,
-            RECOVERY_OWNER,
-            RECOVERY_TOKEN + UInt64(1),
+            sm, RECOVERY_OWNER, RECOVERY_TOKEN + UInt64(1)
         )
     end
 end
@@ -448,8 +421,9 @@ end
 
 function coupled_recovery()
     now = Ref(UInt64(100))
-    sm =
-        CR.Coordinator(RECOVERY_OWNER; clock = () -> now[], timeout_ms = 5, controllers = 2)
+    sm = CR.Coordinator(
+        RECOVERY_OWNER; clock = () -> now[], timeout_ms = 5, controllers = 2
+    )
     observation(serial, requested, active, closed; token = RECOVERY_TOKEN) =
         CR.LoopObservation(
             RECOVERY_OWNER,
@@ -478,10 +452,7 @@ end
     CR.observe_reference!(sm, reference_observation(5))
     @test CR.state(sm) === :Holding
     @test_throws ArgumentError CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN;
-        closed = (false, false),
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (false, false)
     )
     release = CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (false, true))
     @test release isa CR.ReleaseRecovery
@@ -494,33 +465,18 @@ end
     @test CR.state(sm) === :PartiallyClosed
     @test sm.loop_generation == (4, 11)
     @test_throws ArgumentError CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN;
-        closed = (true, true),
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (true, true)
     )
     @test_throws ArgumentError CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN;
-        closed = (true, false),
-        released = true,
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (true, false), released = true
     )
     CR.observe_reference!(sm, reference_observation(9; ready = false))
     @test_throws ArgumentError CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN;
-        closed = (true, true),
-        released = true,
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (true, true), released = true
     )
     CR.observe_reference!(sm, reference_observation(10))
     remaining = CR.request_close!(
-        sm,
-        RECOVERY_OWNER,
-        RECOVERY_TOKEN;
-        closed = (true, true),
-        released = true,
+        sm, RECOVERY_OWNER, RECOVERY_TOKEN; closed = (true, true), released = true
     )
     @test remaining isa CR.CloseLoop # no second release or recovery effect
     CR.staged!(sm, remaining, (UInt64(5), UInt64(11)))
@@ -534,10 +490,7 @@ end
         sm, _, observation = coupled_recovery()
         effect = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
         CR.recovery_staged!(
-            sm,
-            effect,
-            UInt64(11);
-            loop_generation = (UInt64(4), UInt64(10)),
+            sm, effect, UInt64(11); loop_generation = (UInt64(4), UInt64(10))
         )
         CR.observe_loop!(sm, observation(2, requested, active, (false, false)))
         @test sm.failure === :conflicting_loop_generation
@@ -610,9 +563,7 @@ end
     sm, _ = restoring_recovery()
     deadline = sm.pending_since_ns
     Hsm.dispatch!(
-        sm,
-        :RecoveryObserved,
-        recovery_observation(3; requested = 10, active = 10),
+        sm, :RecoveryObserved, recovery_observation(3; requested = 10, active = 10)
     )
     @test CR.state(sm) === :RestoringReference && sm.serial == 2
     @test sm.pending_since_ns == deadline && sm.failure === nothing
@@ -655,23 +606,17 @@ end
     @test sm.pending_since_ns == 0
     Hsm.dispatch!(sm, :RecoveryStaged, merge(staged, (; generation = UInt64(12))))
     Hsm.dispatch!(
-        sm,
-        :Cancelled,
-        (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN),
+        sm, :Cancelled, (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN)
     )
     @test sm.recovery_generation == 11 && sm.failure === :operation_timeout
 
     sm, _ = holding_recovery()
     Hsm.dispatch!(
-        sm,
-        :Cancelled,
-        (; owner_instance = RECOVERY_OWNER + 1, token = RECOVERY_TOKEN),
+        sm, :Cancelled, (; owner_instance = RECOVERY_OWNER + 1, token = RECOVERY_TOKEN)
     )
     @test CR.state(sm) === :Holding && sm.failure === nothing
     Hsm.dispatch!(
-        sm,
-        :Cancelled,
-        (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN),
+        sm, :Cancelled, (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN)
     )
     @test CR.state(sm) === :Unverified && sm.failure === :operation_cancelled
 end

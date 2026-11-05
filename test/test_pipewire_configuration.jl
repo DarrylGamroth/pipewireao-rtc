@@ -35,8 +35,7 @@ function pipewire_configuration_input(directory)
                 "core" => Dict(
                     "rt-priority" => 12,
                     "data-loops" => Dict(
-                        "rtc-data-loop" => [2, 3],
-                        "telemetry-loop" => [4],
+                        "rtc-data-loop" => [2, 3], "telemetry-loop" => [4]
                     ),
                 ),
                 "reconstructor" => Dict(
@@ -94,8 +93,7 @@ end
         @test core["context.objects"] == template_core["context.objects"]
         queue = only(
             filter(
-                item -> item["name"] == "libpipewire-module-queue",
-                core["context.modules"],
+                item -> item["name"] == "libpipewire-module-queue", core["context.modules"]
             ),
         )
         @test queue["args"]["schema"]["shape"] == [2, 3]
@@ -109,8 +107,7 @@ end
         @test read(joinpath(directory, "rtc", "core.conf")) == scientific
         analysis = ND.decode(joinpath(directory, spec["client"]["analysis"]), prefix)
         @test analysis == ND.decode(
-            NE.native_template("shared-runtime/client-analysis.conf.in"),
-            prefix,
+            NE.native_template("shared-runtime/client-analysis.conf.in"), prefix
         )
         @test_throws ArgumentError NE.render_templates!(directory, spec, profile, prefix)
     end
@@ -124,13 +121,13 @@ end
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
     for mutate in (
         (_, profile) -> delete!(
-            profile["scheduling"]["processes"]["core"]["data-loops"],
-            "telemetry-loop",
+            profile["scheduling"]["processes"]["core"]["data-loops"], "telemetry-loop"
         ),
         (spec, _) -> (spec["client"]["core"] = "shared-runtime/client-julia.conf.in"),
         (_, profile) -> (
-            profile["scheduling"]["processes"]["wavefront"]["data-loops"]["extra-loop"] =
-                [7]
+            profile["scheduling"]["processes"]["wavefront"]["data-loops"]["extra-loop"] = [
+                7
+            ]
         ),
         (spec, _) -> (spec["client"]["../escape"] = "shared-runtime/client-julia.conf.in"),
         (spec, _) -> (spec["client"]["wavefront"] = "../client-julia.conf.in"),
@@ -140,23 +137,16 @@ end
             spec, profile = pipewire_configuration_input(directory)
             mutate(spec, profile)
             @test_throws ArgumentError NE.render_templates!(
-                directory,
-                spec,
-                profile,
-                prefix,
+                directory, spec, profile, prefix
             )
             @test !ispath(joinpath(directory, "shared-runtime"))
         end
     end
     mktempdir() do directory
         spec, profile = pipewire_configuration_input(directory)
-        profile["scheduling"]["processes"]["wavefront"]["data-loops"]["julia-data-loop"] =
-            Int[]
+        profile["scheduling"]["processes"]["wavefront"]["data-loops"]["julia-data-loop"] = Int[]
         @test_throws PipeWireAORTC.Placement.PlacementError NE.render_templates!(
-            directory,
-            spec,
-            profile,
-            prefix,
+            directory, spec, profile, prefix
         )
         @test !ispath(joinpath(directory, "shared-runtime"))
     end

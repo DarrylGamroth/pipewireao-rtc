@@ -23,8 +23,7 @@ function _checked(connection::Connection, reply::Codec.Completion)
         if reply.snapshot.instrument !== connection.instrument
             with_thread_loop_lock(connection.client.loop) do _
                 Client.fail!(
-                    connection.client.observation,
-                    "acquisition owner instrument changed",
+                    connection.client.observation, "acquisition owner instrument changed"
                 )
             end
             throw(Client.UnknownOutcome("acquisition owner instrument changed"))
@@ -35,18 +34,12 @@ end
 
 """Send one typed operation through the bound owner incarnation, without retry."""
 function request!(
-    connection::Connection,
-    operation::Symbol;
-    deadline::Float64,
-    check = ()->nothing,
+    connection::Connection, operation::Symbol; deadline::Float64, check = () -> nothing
 )
     return _checked(
         connection,
         Client.request!(
-            connection.client,
-            Codec.LifecycleCommand(operation);
-            deadline,
-            check,
+            connection.client, Codec.LifecycleCommand(operation); deadline, check
         ),
     )
 end
@@ -89,7 +82,7 @@ _require_connected(reply::Codec.Rejection) =
     _reply_failure("acquisition owner Connect did not complete", reply)
 
 """Return a fresh successful status completion from this exact owner."""
-function status(connection::Connection; deadline::Float64, check = ()->nothing)
+function status(connection::Connection; deadline::Float64, check = () -> nothing)
     reply = request!(connection, :status; deadline, check)
     return _require_status(reply)
 end
@@ -103,7 +96,7 @@ function connect(
     instance::Integer,
     instrument::Codec.Instrument;
     deadline::Float64,
-    check = ()->nothing,
+    check = () -> nothing,
 ) where {P<:Profile}
     client = Client.connect(profile, remote, node, pid, instance; deadline, check)
     connection = Connection(profile, client, instrument)
@@ -130,7 +123,7 @@ function connect(
 end
 
 """Apply Connect and require a truthful Connected completion."""
-function connect_owner!(connection::Connection; deadline::Float64, check = ()->nothing)
+function connect_owner!(connection::Connection; deadline::Float64, check = () -> nothing)
     reply = request!(connection, :connect; deadline, check)
     return _require_connected(reply)
 end

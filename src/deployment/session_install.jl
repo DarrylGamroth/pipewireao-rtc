@@ -91,7 +91,7 @@ function validate_sealed_wrappers(source, source_spec, wrappers)
             get(command, "implementation", nothing) == "julia" || continue
         end
         read(joinpath(source, relative), String) == script || throw(
-            ArgumentError("sealed $relative differs from the selected Julia executable"),
+            ArgumentError("sealed $relative differs from the selected Julia executable")
         )
     end
     return nothing
@@ -135,7 +135,7 @@ function install(options)
     session_assets(source_spec, source, prefix)
     executable = D.session_executable(source_spec, abspath(options.destination), prefix)
     julia = D.selected_julia_executable(
-        get(options, :julia_executable, Base.julia_cmd().exec[1]),
+        get(options, :julia_executable, Base.julia_cmd().exec[1])
     )
     wrappers = D.installed_wrappers(julia)
     validate_sealed_wrappers(source, source_spec, wrappers)
@@ -165,22 +165,18 @@ function install(options)
     if haskey(source_spec["artifacts"], "bin/pipewireao-rtc-session")
         read(launcher, String) == script || throw(
             ArgumentError(
-                "sealed session launcher differs from the selected Julia executable",
+                "sealed session launcher differs from the selected Julia executable"
             ),
         )
     else
         write(launcher, script)
     end
     chmod(launcher, 0o755)
-    template =
-        read(joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String)
+    template = read(
+        joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String
+    )
     unit = installed_unit(
-        template,
-        installed_spec;
-        launcher,
-        package = destination,
-        prefix,
-        executable,
+        template, installed_spec; launcher, package = destination, prefix, executable
     )
     systemd = joinpath(destination, "systemd")
     mkpath(systemd)

@@ -20,8 +20,8 @@ capture_provenance(value) = throw(
     ),
 )
 function capture_provenance(value::AbstractDict)
-    fields=Set(String.(fieldnames(CaptureProvenance)))
-    Set(keys(value))==fields || throw(
+    fields = Set(String.(fieldnames(CaptureProvenance)))
+    Set(keys(value)) == fields || throw(
         ArgumentError(
             "capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities",
         ),
@@ -29,22 +29,19 @@ function capture_provenance(value::AbstractDict)
     sha = capture_sha256
     text = capture_text
     for key in (
-        "acquisition_receipt_sha256",
-        "graph_sha256",
-        "source_graph_sha256",
-        "recipe_sha256",
+        "acquisition_receipt_sha256", "graph_sha256", "source_graph_sha256", "recipe_sha256"
     )
         sha(value[key]) || throw(ArgumentError("invalid capture provenance SHA-256: $key"))
     end
-    value["fits_bindings_sha256"]===nothing ||
+    value["fits_bindings_sha256"] === nothing ||
         sha(value["fits_bindings_sha256"]) ||
         throw(ArgumentError("invalid capture FITS bindings SHA-256"))
-    identity=value["calibration_identity"]
+    identity = value["calibration_identity"]
     capture_calibration_identity(identity) ||
         throw(ArgumentError("capture provenance requires a SHA-256 calibration identity"))
     text(value["operation"], 64) && text(value["reference_space"], 2048) ||
         throw(ArgumentError("invalid capture reference-space declaration"))
-    value["source_stage"]===nothing || endpoint(value["source_stage"])
+    value["source_stage"] === nothing || endpoint(value["source_stage"])
     hashes(key) = capture_parameter_hashes(value[key])
     return CaptureProvenance(
         value["acquisition_receipt_sha256"],
@@ -61,8 +58,9 @@ function capture_provenance(value::AbstractDict)
     )
 end
 
-provenance_metadata(provenance::CaptureProvenance) =
-    Dict(String(name)=>getfield(provenance, name) for name in fieldnames(CaptureProvenance))
+provenance_metadata(provenance::CaptureProvenance) = Dict(
+    String(name) => getfield(provenance, name) for name in fieldnames(CaptureProvenance)
+)
 
 struct CaptureConfig
     label::String
@@ -83,13 +81,7 @@ capture_configuration(value) = throw(
 )
 function capture_configuration(value::AbstractDict)
     fields = Set([
-        "label",
-        "scope",
-        "products",
-        "units",
-        "sample-count",
-        "complete",
-        "variance-valid",
+        "label", "scope", "products", "units", "sample-count", "complete", "variance-valid"
     ])
     fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields, Set(["provenance"])) ||
         throw(
@@ -120,8 +112,8 @@ function capture_configuration(value::AbstractDict)
     return CaptureConfig(
         value["label"],
         Dict{String,String}(scope),
-        Dict(Symbol(k)=>Symbol(v) for (k, v) in products),
-        Dict(Symbol(k)=>v for (k, v) in units),
+        Dict(Symbol(k) => Symbol(v) for (k, v) in products),
+        Dict(Symbol(k) => v for (k, v) in units),
         Symbol(value["sample-count"]),
         Symbol(value["complete"]),
         Symbol(value["variance-valid"]),
@@ -157,10 +149,10 @@ function capture_contract(config::CaptureConfig, document::AbstractDict)
         parts = split(exports[name], ':'; limit = 2)
         length(parts) == 2 && last(parts) == product || throw(
             ArgumentError(
-                "capture output $name must export the statistics $product Port directly",
+                "capture output $name must export the statistics $product Port directly"
             ),
         )
-        owner === nothing && (owner=first(parts))
+        owner === nothing && (owner = first(parts))
         first(parts) == owner ||
             throw(ArgumentError("capture products must come from one statistics node"))
     end
@@ -225,8 +217,7 @@ function prepare_capture(configuration::CaptureConfig, formats::NamedTuple)
     products = Tuple(sort!(collect(keys(configuration.products))))
     selected = map(products) do product
         name = configuration.products[product]
-        hasproperty(formats, name) ||
-            throw(ArgumentError("capture output $name is absent"))
+        hasproperty(formats, name) || throw(ArgumentError("capture output $name is absent"))
         format = getproperty(formats, name)
         format.element_type === Float32 ||
             throw(ArgumentError("capture products must be Float32"))
@@ -241,8 +232,9 @@ function prepare_capture(configuration::CaptureConfig, formats::NamedTuple)
         throw(ArgumentError("capture snapshot exceeds 64 MiB"))
     buffers = NamedTuple{products}(map(format -> zeros(Float32, format.shape), selected))
     schemas = NamedTuple{products}(map(format -> String(format.schema), selected))
-    ports =
-        NamedTuple{products}(map(product -> Val(configuration.products[product]), products))
+    ports = NamedTuple{products}(
+        map(product -> Val(configuration.products[product]), products)
+    )
     return Capture{
         typeof(buffers),
         typeof(schemas),
@@ -285,9 +277,7 @@ end
 capture_output(outputs, ::Val{Name}) where {Name} = getproperty(outputs, Name)
 
 function (capture::Capture{B,S,P,Count,Complete,Valid})(
-    ::Val{:frame},
-    outputs::NamedTuple,
-    metadata::NamedTuple,
+    ::Val{:frame}, outputs::NamedTuple, metadata::NamedTuple
 ) where {B,S,P,Count,Complete,Valid}
     capture.ready[] == 0 || return nothing
     config = capture.configuration
@@ -327,7 +317,7 @@ function (capture::Capture{B,S,P,Count,Complete,Valid})(
         return fail_capture!(capture, :completion)
     complete || return nothing
     if (haskey(config.products, :variance) || haskey(config.products, :stddev)) &&
-       !getproperty(outputs, Valid)[1]
+        !getproperty(outputs, Valid)[1]
         return fail_capture!(capture, :variance_unavailable)
     end
     for product in keys(capture.buffers)
@@ -355,31 +345,31 @@ function register_capture!(
     capture::Capture;
     source,
     graph_sha256,
-    check = ()->nothing,
+    check = () -> nothing,
     records = Dict{String,Any}(),
 )
     capture.ready[] == 1 || throw(ArgumentError("analysis capture is not complete"))
-    provenance=capture.configuration.provenance
-    provenance===nothing ||
-        provenance.graph_sha256==graph_sha256 ||
+    provenance = capture.configuration.provenance
+    provenance === nothing ||
+        provenance.graph_sha256 == graph_sha256 ||
         throw(ArgumentError("registration graph differs from acquisition provenance"))
     for product in keys(capture.buffers)
         check()
         metadata = Dict(
-            "statistic"=>String(product),
-            "units"=>capture.configuration.units[product],
-            "sample_count"=>capture.count,
-            "first_sequence"=>capture.first_sequence,
-            "last_sequence"=>capture.last_sequence,
-            "source_sequence_gaps"=>capture.sequence_gaps,
-            "source"=>source,
-            "graph_sha256"=>graph_sha256,
-            "variance_convention"=>"sample (N-1)",
-            "acquisition_identity_available"=>capture.has_identity,
+            "statistic" => String(product),
+            "units" => capture.configuration.units[product],
+            "sample_count" => capture.count,
+            "first_sequence" => capture.first_sequence,
+            "last_sequence" => capture.last_sequence,
+            "source_sequence_gaps" => capture.sequence_gaps,
+            "source" => source,
+            "graph_sha256" => graph_sha256,
+            "variance_convention" => "sample (N-1)",
+            "acquisition_identity_available" => capture.has_identity,
         )
         if capture.configuration.provenance !== nothing
-            metadata["acquisition_provenance"]=provenance_metadata(
-                capture.configuration.provenance,
+            metadata["acquisition_provenance"] = provenance_metadata(
+                capture.configuration.provenance
             )
         end
         if capture.has_identity
@@ -415,12 +405,12 @@ function capture_artifacts(
     while capture.ready[] == 0 && !finished[]
         pause(0.05)
     end
-    record = Dict{String,Any}("analysis"=>config.name, "state"=>"incomplete")
+    record = Dict{String,Any}("analysis" => config.name, "state" => "incomplete")
     try
         state = capture.ready[]
         if state == 1
             source = [
-                Dict("node"=>link.output.node, "port"=>link.output.port) for
+                Dict("node" => link.output.node, "port" => link.output.port) for
                 link in config.links if link.input.node == config.name
             ]
             record["artifacts"] = Dict{String,Any}()
@@ -439,16 +429,13 @@ function capture_artifacts(
     catch error
         record["state"] = "registration_failed"
         record["error"] = sprint(showerror, error)
-        @error "Analysis artifact registration failed" analysis=config.name exception=(
-            error,
-            catch_backtrace(),
+        @error "Analysis artifact registration failed" analysis = config.name exception = (
+            error, catch_backtrace()
         )
     end
     if !isempty(runtime)
         Common.write_json(
-            joinpath(runtime, config.name * "-capture.json"),
-            record;
-            atomic = true,
+            joinpath(runtime, config.name * "-capture.json"), record; atomic = true
         )
     end
     return record
@@ -469,7 +456,7 @@ end
 
 capture_products(value) = throw(
     ArgumentError(
-        "capture products require mean and optional variance/stddev output Ports",
+        "capture products require mean and optional variance/stddev output Ports"
     ),
 )
 function capture_products(value::AbstractDict)

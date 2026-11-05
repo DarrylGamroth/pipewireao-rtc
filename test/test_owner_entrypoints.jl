@@ -23,7 +23,7 @@ arguments(options = OPTIONS) = reduce(
     admitted = Parameters._owner_options(arguments())
     @test Dict(pairs(admitted)) == Dict(
         pairs(
-            merge(OPTIONS, (; bootstrap_instance = Int64(7), control_instance = Int64(9))),
+            merge(OPTIONS, (; bootstrap_instance = Int64(7), control_instance = Int64(9)))
         ),
     )
     @test Parameters._owner_options([
@@ -55,7 +55,7 @@ arguments(options = OPTIONS) = reduce(
         (; control_instance = "1.0"),
     )
         @test_throws ArgumentError Parameters._owner_options(
-            arguments(merge(OPTIONS, changed)),
+            arguments(merge(OPTIONS, changed))
         )
     end
     maximal = Parameters._owner_options(
@@ -87,12 +87,7 @@ OwnerRuntime(;
     finish_failure = nothing,
     close_failure = nothing,
 ) = OwnerRuntime(
-    Symbol[],
-    cancelled,
-    preparation_failure,
-    finish_failure,
-    close_failure,
-    nothing,
+    Symbol[], cancelled, preparation_failure, finish_failure, close_failure, nothing
 )
 Bootstrap.cancelled(runtime::OwnerRuntime) = runtime.cancelled
 function Bootstrap.preparation_check!(runtime::OwnerRuntime)
@@ -138,8 +133,9 @@ caught(f) =
     @test runtime.events == [:cold, :check, :finish, :close]
     @test runtime.fault === nothing
 
-    primary, finishing, closing =
-        ErrorException.(["preparation failed", "finish failed", "close failed"])
+    primary, finishing, closing = ErrorException.([
+        "preparation failed", "finish failed", "close failed"
+    ])
     runtime = OwnerRuntime(; finish_failure = finishing, close_failure = closing)
     failure = caught() do
         Bootstrap._with_owner(options, runtime) do admitted
@@ -154,8 +150,7 @@ caught(f) =
 
     runtime = OwnerRuntime(; preparation_failure = primary)
     failure = caught(
-        () ->
-            Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime),
+        () -> Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime)
     )
     @test failure === primary
     @test runtime.fault === primary
@@ -173,7 +168,7 @@ end
     options = merge(OPTIONS, (; bootstrap_instance = Int64(7)))
     runtime = OwnerRuntime(; cancelled = true)
     @test Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime) ===
-          nothing
+        nothing
     @test runtime.fault === nothing
     @test runtime.events == [:check, :finish, :close]
 
@@ -187,8 +182,7 @@ end
     closing = ErrorException("close failed after cancellation")
     runtime = OwnerRuntime(; cancelled = true, close_failure = closing)
     failure = caught(
-        () ->
-            Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime),
+        () -> Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime)
     )
     @test failure === closing
     @test runtime.fault === nothing
@@ -204,7 +198,7 @@ mutable struct MonitorTransport
 end
 Bootstrap.lifecycle!(transport::MonitorTransport, lifecycle) =
     (push!(transport.publications, lifecycle); nothing)
-Bootstrap.flush_terminal!(transport::MonitorTransport, deadline; check = ()->nothing) =
+Bootstrap.flush_terminal!(transport::MonitorTransport, deadline; check = () -> nothing) =
     (push!(transport.flushes, deadline); nothing)
 function Bootstrap._poll_ready!(transport::MonitorTransport)
     transport.failure === nothing || throw(transport.failure)
@@ -219,7 +213,7 @@ end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
 function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
     runtime = Bootstrap.Runtime(
-        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Float64[], nothing),
+        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Float64[], nothing)
     )
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
@@ -308,7 +302,7 @@ end
     # a full ordinary mailbox rejected before acceptance rather than blocked.
     tasks = [
         @async caught(() -> Bootstrap.prepared!(runtime)) for
-        _ = 1:(Bootstrap.MAILBOX_CAPACITY+1)
+        _ in 1:(Bootstrap.MAILBOX_CAPACITY+1)
     ]
     yield()
     @test Base.n_avail(runtime.mailbox.owner) == Bootstrap.MAILBOX_CAPACITY
@@ -324,16 +318,13 @@ end
     @test all(task -> fetch(task) isa InvalidStateException, tasks)
     close(invoker)
     @test_throws InvalidStateException Bootstrap._enqueue!(
-        runtime.mailbox,
-        Bootstrap.OwnerPrepared(reply()),
+        runtime.mailbox, Bootstrap.OwnerPrepared(reply())
     )
 
     runtime, monitor, invoker = monitor_runtime()
-    for _ = 1:Bootstrap.MAILBOX_CAPACITY
+    for _ in 1:Bootstrap.MAILBOX_CAPACITY
         Bootstrap._enqueue!(
-            runtime.mailbox,
-            Bootstrap.HooksExcluded(reply());
-            cleanup = true,
+            runtime.mailbox, Bootstrap.HooksExcluded(reply()); cleanup = true
         )
     end
     waiting = @async caught(() -> Bootstrap.cancel!(runtime))

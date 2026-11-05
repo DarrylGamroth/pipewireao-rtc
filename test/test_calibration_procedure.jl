@@ -31,17 +31,19 @@ function response(s, a::C.Adopt)
 end
 function response(s, a::C.Settle)
     c = s.cursor
-    s.cursor = C.AcquisitionCursor(c.domain, c.generation, c.sequence+1, c.model_ns+10)
+    s.cursor = C.AcquisitionCursor(c.domain, c.generation, c.sequence + 1, c.model_ns + 10)
     C.Settled(s.cursor)
 end
 function response(s, a::C.Collect)
     exposures = C.Exposure[]
-    for _ = 1:a.frames
+    for _ in 1:a.frames
         c = s.cursor
-        push!(exposures, C.Exposure(c.domain, c.generation, c.sequence+1, c.model_ns, 10))
-        s.cursor = C.AcquisitionCursor(c.domain, c.generation, c.sequence+1, c.model_ns+10)
+        push!(exposures, C.Exposure(c.domain, c.generation, c.sequence + 1, c.model_ns, 10))
+        s.cursor = C.AcquisitionCursor(
+            c.domain, c.generation, c.sequence + 1, c.model_ns + 10
+        )
     end
-    C.Responses(D*s.figure, exposures, true)
+    C.Responses(D * s.figure, exposures, true)
 end
 response(s, a::C.Restore) = (s.figure .= a.figure; C.Restored(copy(s.figure), false))
 response(s, ::C.Release) = C.Released()
@@ -89,7 +91,7 @@ end
 end
 
 @testset "Acquisition events use shared active, recovery and terminal handlers" begin
-    p = A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     @test Hsm.current(p) === :Holding
     @test Hsm.ancestor(p, :Holding) === :Acquiring
     @test Hsm.ancestor(p, :Acquiring) === :Active
@@ -114,7 +116,7 @@ end
     @test A.expire!(p) === nothing
     @test p.command === nothing && p.result === terminal
     @test_throws ArgumentError A.fail!(p, "late"; known = true)
-    initially_cancelled = A.Procedure(plan(); clock = ()->0.0, cancelled = ()->true)
+    initially_cancelled = A.Procedure(plan(); clock = () -> 0.0, cancelled = () -> true)
     @test Hsm.current(initially_cancelled) === :Restoring
     @test initially_cancelled.command.action isa C.Restore
     @test initially_cancelled.command.serial == 1
@@ -130,7 +132,7 @@ end
         (C.Release, "Releasing"),
     )
         now = Ref(0.0)
-        p, sensor = procedure_at(action; clock = ()->now[])
+        p, sensor = procedure_at(action; clock = () -> now[])
         command = p.command
         now[] = p.deadline
         next = A.complete!(
@@ -151,7 +153,7 @@ end
             @test Hsm.current(p) === :Restoring
         end
         now[] = 0.0
-        p, _ = procedure_at(action; clock = ()->now[])
+        p, _ = procedure_at(action; clock = () -> now[])
         serial = p.command.serial
         now[] = p.deadline
         @test A.expire!(p) === nothing
@@ -167,9 +169,7 @@ end
     for valid in (true, false)
         consumed = Ref(0)
         p, sensor = procedure_at(
-            C.Collect;
-            clock = ()->0.0,
-            consume = (_i, _batch)->(consumed[] += 1),
+            C.Collect; clock = () -> 0.0, consume = (_i, _batch) -> (consumed[] += 1)
         )
         A.cancel!(p)
         batch = response(sensor, p.command.action)
@@ -192,7 +192,7 @@ end
             A.cancel!(something(holder[]))
             consumer_error && error("consumer failed after cancellation")
         end
-        p = A.Procedure(plan(); clock = ()->0.0, consume)
+        p = A.Procedure(plan(); clock = () -> 0.0, consume)
         holder[] = p
         sensor = Sensor()
         while !(p.command.action isa C.Collect)
@@ -210,28 +210,24 @@ end
 end
 
 @testset "Failure precedence and command ownership survive event dispatch" begin
-    p = A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     @test A.fail!(p, "First"; known = true) === p.command
     serial = p.command.serial
     @test A.fail!(p, "Second"; known = true) === nothing
     @test p.serial == serial && p.result.failure == "First"
     @test p.result.recovery_failure == "Second" && Hsm.current(p) === :Fault
-    p = A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     A.complete!(p, UInt64(92), p.command.serial, C.Held(Sensor().cursor); at = NaN)
     @test p.result.failure == "Endpoint"
-    p = A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     command = p.command
     @test_throws ArgumentError A.complete!(
-        p,
-        command.run,
-        command.serial,
-        C.Held(Sensor().cursor);
-        at = NaN,
+        p, command.run, command.serial, C.Held(Sensor().cursor); at = NaN
     )
     @test p.command === command && Hsm.current(p) === :Holding
     @test p.failure === nothing
     input = plan()
-    p = A.Procedure(input; clock = ()->0.0)
+    p = A.Procedure(input; clock = () -> 0.0)
     expected = copy(input.probes[1])
     fill!(input.reference, 99)
     fill!(input.probes[1], 99)
@@ -251,11 +247,11 @@ end
         push!(processed, probe)
         rows[probe, :] .= batch.values
         if iseven(probe)
-            interaction[:, probe÷2] .= (rows[probe-1, :]-rows[probe, :])/0.2f0
+            interaction[:, probe÷2] .= (rows[probe-1, :] - rows[probe, :]) / 0.2f0
         end
         fill!(batch.values, NaN) # Consumer-owned storage cannot corrupt the receipt.
     end
-    p = A.Procedure(plan(); clock = ()->0.0, consume)
+    p = A.Procedure(plan(); clock = () -> 0.0, consume)
     sensor = Sensor()
     events = []
     while p.command !== nothing
@@ -264,114 +260,114 @@ end
         push!(events, (c.run, c.serial, batch))
         deliver!(p, batch)
         if c.action isa C.Collect
-            @test last(processed)==Int(c.action.probe)+1
+            @test last(processed) == Int(c.action.probe) + 1
             @test p.command.action isa Union{C.Adopt,C.Restore}
         end
     end
     @test interaction ≈ D
-    @test processed==1:4
-    @test p.result.phase=="complete" && p.result.resume_permitted
-    @test all(b->all(isfinite, b.values), p.result.responses)
-    @test sensor.figure==zeros(Float32, 2)
+    @test processed == 1:4
+    @test p.result.phase == "complete" && p.result.resume_permitted
+    @test all(b -> all(isfinite, b.values), p.result.responses)
+    @test sensor.figure == zeros(Float32, 2)
     replay_rows = zeros(Float32, 4, 3)
     replay = A.Procedure(
         plan();
-        clock = ()->0.0,
-        consume = (i, b)->copyto!(view(replay_rows, i, :), b.values),
+        clock = () -> 0.0,
+        consume = (i, b) -> copyto!(view(replay_rows, i, :), b.values),
     )
     for (run, serial, result) in events
         A.complete!(replay, run, serial, result)
     end
-    @test replay_rows==rows
-    @test A.document(replay.result)==A.document(p.result)
+    @test replay_rows == rows
+    @test A.document(replay.result) == A.document(p.result)
     @test_throws ArgumentError A.complete!(replay, UInt64(91), UInt64(1), C.Released())
 end
 
 @testset "event correlation, timer and cancellation boundaries" begin
     for corrupt in (:run, :serial, :operation)
-        p=A.Procedure(plan(); clock = ()->0.0)
-        result=corrupt==:operation ? C.Released() : C.Held(Sensor().cursor)
+        p = A.Procedure(plan(); clock = () -> 0.0)
+        result = corrupt == :operation ? C.Released() : C.Held(Sensor().cursor)
         deliver!(
             p,
             result;
-            run = UInt64(corrupt==:run ? 92 : 91),
-            serial = UInt64(corrupt==:serial ? 2 : 1),
+            run = UInt64(corrupt == :run ? 92 : 91),
+            serial = UInt64(corrupt == :serial ? 2 : 1),
         )
-        @test p.command===nothing && p.result.phase=="fault"
+        @test p.command === nothing && p.result.phase == "fault"
         @test !p.result.resume_permitted
     end
-    p=A.Procedure(plan(); clock = ()->0.0)
-    old=p.command
+    p = A.Procedure(plan(); clock = () -> 0.0)
+    old = p.command
     deliver!(p, C.Held(Sensor().cursor))
     A.complete!(p, old.run, old.serial, C.Held(Sensor().cursor))
-    @test p.result.phase=="fault" # Duplicate completion cannot advance a probe.
+    @test p.result.phase == "fault" # Duplicate completion cannot advance a probe.
 
-    clock=Ref(0.0)
-    p=A.Procedure(plan(); clock = ()->clock[])
-    @test A.expire!(p)===nothing && p.command.action isa C.Hold
-    clock[]=1.0
+    clock = Ref(0.0)
+    p = A.Procedure(plan(); clock = () -> clock[])
+    @test A.expire!(p) === nothing && p.command.action isa C.Hold
+    clock[] = 1.0
     A.expire!(p)
-    @test p.result.phase=="fault" && p.result.failure=="TimedOut(Holding)"
+    @test p.result.phase == "fault" && p.result.failure == "TimedOut(Holding)"
     @test !p.result.restoration_confirmed
 
-    clock[]=0.0
-    p=A.Procedure(plan(); clock = ()->clock[])
-    clock[]=1.0
+    clock[] = 0.0
+    p = A.Procedure(plan(); clock = () -> clock[])
+    clock[] = 1.0
     deliver!(p, C.Held(Sensor().cursor)) # Known late outcome permits restoration.
     @test p.command.action isa C.Restore
     run!(p)
-    @test p.result.phase=="aborted" && p.result.resume_permitted
+    @test p.result.phase == "aborted" && p.result.resume_permitted
 
-    p=A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     A.cancel!(p)
     @test p.command.action isa C.Hold # Do not overlap an in-flight action.
     deliver!(p, C.Held(Sensor().cursor))
     @test p.command.action isa C.Restore
     run!(p)
-    @test p.result.failure=="Cancelled" && p.result.resume_permitted
+    @test p.result.failure == "Cancelled" && p.result.resume_permitted
 
-    cancel=Ref(false)
-    p=A.Procedure(
+    cancel = Ref(false)
+    p = A.Procedure(
         plan();
-        clock = ()->0.0,
-        cancelled = ()->cancel[],
-        consume = (i, b)->(cancel[]=true),
+        clock = () -> 0.0,
+        cancelled = () -> cancel[],
+        consume = (i, b) -> (cancel[] = true),
     )
-    events=run!(p)
-    @test count(e->e[3] isa C.Adopted, events)==1
-    @test p.result.failure=="Cancelled" && p.result.resume_permitted
+    events = run!(p)
+    @test count(e -> e[3] isa C.Adopted, events) == 1
+    @test p.result.failure == "Cancelled" && p.result.resume_permitted
 end
 
 @testset "invalid batches and consumer failure restore exactly once" begin
     for fault in (:invalid, :processing)
-        count=Ref(0)
-        p=A.Procedure(
+        count = Ref(0)
+        p = A.Procedure(
             plan();
-            clock = ()->0.0,
-            consume = (i, b)->begin
-                count[]+=1
+            clock = () -> 0.0,
+            consume = (i, b) -> begin
+                count[] += 1
                 error("numerical worker rejected response")
             end,
         )
-        s=Sensor()
+        s = Sensor()
         while !(p.command.action isa C.Collect)
             deliver!(p, response(s, p.command.action))
         end
-        batch=response(s, p.command.action)
-        fault==:invalid && (batch=C.Responses(batch.values, batch.exposures, false))
+        batch = response(s, p.command.action)
+        fault == :invalid && (batch = C.Responses(batch.values, batch.exposures, false))
         deliver!(p, batch)
-        @test count[]==(fault==:invalid ? 0 : 1)
+        @test count[] == (fault == :invalid ? 0 : 1)
         @test p.command.action isa C.Restore
-        events=run!(p, s)
-        @test length(events)==2
-        @test p.result.phase=="aborted" && isempty(p.result.responses)
-        @test p.result.failure==(fault==:invalid ? "InvalidEvidence" : "Processing")
+        events = run!(p, s)
+        @test length(events) == 2
+        @test p.result.phase == "aborted" && isempty(p.result.responses)
+        @test p.result.failure == (fault == :invalid ? "InvalidEvidence" : "Processing")
         @test p.result.resume_permitted
     end
-    p=A.Procedure(plan(); clock = ()->0.0)
+    p = A.Procedure(plan(); clock = () -> 0.0)
     A.fail!(p, "Endpoint"; known = true)
     deliver!(p, C.Restored(zeros(Float32, 2), true))
-    @test p.command===nothing && p.result.phase=="fault"
-    @test !p.result.resume_permitted && p.result.recovery_failure=="InvalidEvidence"
+    @test p.command === nothing && p.result.phase == "fault"
+    @test !p.result.resume_permitted && p.result.recovery_failure == "InvalidEvidence"
 end
 end

@@ -184,7 +184,7 @@ _invalid() = throw(AcquisitionFailure("InvalidEvidence"))
 _terminal(result::Codec.AbstractResult) = result
 _terminal(result::Codec.Failed) = throw(
     AcquisitionFailure(
-        ("Cancelled", "Endpoint", "InvalidEvidence", "ProbeClipped")[Int(result.reason)],
+        ("Cancelled", "Endpoint", "InvalidEvidence", "ProbeClipped")[Int(result.reason)]
     ),
 )
 _timeout(::Union{Codec.Hold,Codec.Release}, t) = t.ownership
@@ -275,20 +275,20 @@ function document(result::Result)
         result.phase == "complete" ?
         [
             Dict(
-                "values"=>batch.values,
-                "exposures"=>ActionClient.document(batch)["exposures"],
-                "valid"=>batch.valid,
+                "values" => batch.values,
+                "exposures" => ActionClient.document(batch)["exposures"],
+                "valid" => batch.valid,
             ) for batch in result.responses
         ] : nothing
     return Dict(
-        "version"=>1,
-        "run"=>result.run,
-        "phase"=>result.phase,
-        "restoration_confirmed"=>result.restoration_confirmed,
-        "resume_permitted"=>result.resume_permitted,
-        "failure"=>result.failure,
-        "recovery_failure"=>result.recovery_failure,
-        "responses"=>responses,
+        "version" => 1,
+        "run" => result.run,
+        "phase" => result.phase,
+        "restoration_confirmed" => result.restoration_confirmed,
+        "resume_permitted" => result.resume_permitted,
+        "failure" => result.failure,
+        "recovery_failure" => result.recovery_failure,
+        "responses" => responses,
     )
 end
 
@@ -297,10 +297,7 @@ include("calibration_procedure.jl")
 # Enter the prepared exchange before starting the action's budget. Compiling a
 # consumer/procedure specialization is cold preparation, not endpoint latency.
 @noinline function _exchange!(
-    connection,
-    procedure,
-    action::T,
-    check,
+    connection, procedure, action::T, check
 ) where {T<:Codec.AbstractAction}
     budget = _timeout(action, procedure.plan.timeouts)
     deadline = Float64(Common.monotonic_seconds(procedure.clock)) + budget / 1e9
@@ -319,11 +316,11 @@ Unknown transport outcomes retire the connection without another submission.
 function acquire!(
     connection::ActionClient.Connection,
     input::Plan;
-    cancelled = ()->false,
+    cancelled = () -> false,
     check = Client.NO_CHECK,
     clock = Common.MONOTONIC_CLOCK,
-    observe = (_...)->nothing,
-    consume = (_...)->nothing,
+    observe = (_...) -> nothing,
+    consume = (_...) -> nothing,
 )
     connection.run == input.run &&
     connection.serial == 0 &&
@@ -352,10 +349,7 @@ end
 "Prove an explicit native binding, acquire, and always close that controller."
 function acquire(binding::ActionClient.Binding, plan::Plan; kwargs...)
     connection = ActionClient.connect(
-        binding,
-        plan.run,
-        plan.timeouts.ownership;
-        command_count = length(plan.reference),
+        binding, plan.run, plan.timeouts.ownership; command_count = length(plan.reference)
     )
     try
         return acquire!(connection, plan; kwargs...)

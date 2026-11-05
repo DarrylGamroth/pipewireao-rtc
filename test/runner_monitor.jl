@@ -191,9 +191,7 @@ function run_native_monitor_fixture(mode::Symbol)
                 )
             end
             wait_proof(
-                () -> Base.process_exited(child),
-                15,
-                "monitor fault and late result fence",
+                () -> Base.process_exited(child), 15, "monitor fault and late result fence"
             )
             wait(child)
             @test success(child)

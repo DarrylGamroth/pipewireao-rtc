@@ -10,7 +10,7 @@ read_mirror_description(path) =
 # Keep this cold parser's owned tree separate from InstrumentDefinition's JSON
 # publication representation. Objects become named tuples; arrays become tuples.
 _instrument_seal(value::AbstractDict) = NamedTuple{Tuple(Symbol.(collect(keys(value))))}(
-    Tuple(_instrument_seal(item) for item in values(value)),
+    Tuple(_instrument_seal(item) for item in values(value))
 )
 _instrument_seal(value::AbstractVector) = Tuple(_instrument_seal(item) for item in value)
 _instrument_seal(value) = value
@@ -41,7 +41,7 @@ function _pupil_registration(registration::NamedTuple)
     pitch = registration.actuator_pitch_pupil_radius
     _valid_pitch(pitch) || throw(
         ArgumentError(
-            "pupil registration actuator_pitch_pupil_radius must be finite and positive",
+            "pupil registration actuator_pitch_pupil_radius must be finite and positive"
         ),
     )
     owned_pitch = Float64(pitch)
@@ -54,7 +54,7 @@ function _pupil_registration(registration::NamedTuple)
     rotation = get(registration, :rotation_deg, 0.0)
     InstrumentDefinition.finite_bound(rotation) && isfinite(Float64(rotation)) || throw(
         ArgumentError(
-            "pupil registration rotation_deg must be a finite Float64 real number",
+            "pupil registration rotation_deg must be a finite Float64 real number"
         ),
     )
     rotation_deg = rem(Float64(rotation), 360.0)
@@ -69,10 +69,7 @@ function _pupil_registration(registration::NamedTuple)
         all(iszero, offset_actuators) &&
         return (; actuator_pitch_pupil_radius = owned_pitch)
     return (;
-        actuator_pitch_pupil_radius = owned_pitch,
-        rotation_deg,
-        flip_y,
-        offset_actuators,
+        actuator_pitch_pupil_radius = owned_pitch, rotation_deg, flip_y, offset_actuators
     )
 end
 
@@ -103,8 +100,8 @@ function _require_pupil_geometry(description::NamedTuple, registration::NamedTup
             extent64,
             dx,
             dy,
-            half_width + abs(cosine*dx - sine*reflected_dy),
-            half_width + abs(sine*dx + cosine*reflected_dy),
+            half_width + abs(cosine * dx - sine * reflected_dy),
+            half_width + abs(sine * dx + cosine * reflected_dy),
         )
         all(InstrumentDefinition.renderable_pupil_value, bounds) || throw(
             ArgumentError(
@@ -145,9 +142,7 @@ right and y upward; registration subtracts the pupil-center offset, reflects y
 when requested, then rotates counterclockwise. Command order is unchanged.
 """
 function actuator_coordinates(
-    description::NamedTuple,
-    ::Type{T} = Float32;
-    pupil_registration,
+    description::NamedTuple, ::Type{T} = Float32; pupil_registration
 ) where {T<:AbstractFloat}
     registration = _pupil_registration(pupil_registration)
     _require_pupil_geometry(description, registration)
@@ -164,8 +159,8 @@ function actuator_coordinates(
             x = (column - centre) * pitch - dx
             y = (centre - source_row) * pitch - dy
             registration.flip_y && (y = -y)
-            coordinates[1, command_index] = T(cosine*x - sine*y)
-            coordinates[2, command_index] = T(sine*x + cosine*y)
+            coordinates[1, command_index] = T(cosine * x - sine * y)
+            coordinates[2, command_index] = T(sine * x + cosine * y)
         end
         return coordinates
     end
@@ -190,8 +185,7 @@ second in y; source description rows are reversed to obtain increasing y.
 Unoccupied grid positions contribute no command entry.
 """
 function actuator_grid_indices(
-    description::NamedTuple,
-    ::Type{T} = Int32,
+    description::NamedTuple, ::Type{T} = Int32
 ) where {T<:Integer}
     axis_count = _mirror_axis_count(description)
     index_map = actuator_index_map(description)

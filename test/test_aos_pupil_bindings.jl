@@ -26,19 +26,15 @@ const IC = PipeWireAORTC.InstrumentConfiguration
     schema = Dict("properties" => Dict("pupil_resolution" => Dict("type" => "integer")))
     reference = Dict("\$ref" => "/settings/pupil_resolution")
     coordinates = Float32[-7, -5, -3, -1, 1, 3, 5, 7] ./ 8.0f0
-    expected_support =
-        [0.25f0^2 <= x^2 + y^2 <= 1.0f0 for x in coordinates, y in coordinates]
+    expected_support = [
+        0.25f0^2 <= x^2 + y^2 <= 1.0f0 for x in coordinates, y in coordinates
+    ]
 
     for kind in ("pupil_coordinates", "pupil_support")
         for resolution in (8, "pupil_resolution", reference)
             binding = Dict("kind" => kind, "resolution" => resolution)
             @test IC._validate_bindings(
-                Dict("pupil" => binding),
-                Dict(),
-                configured,
-                schema,
-                Dict(),
-                @__DIR__
+                Dict("pupil" => binding), Dict(), configured, schema, Dict(), @__DIR__
             ) === nothing
             prepared = IC.binding_values(declaration, configured, binding)
             if kind == "pupil_coordinates"
@@ -57,21 +53,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             for resolution in (invalid, "pupil_resolution", reference)
                 binding = Dict("kind" => kind, "resolution" => resolution)
                 @test_throws ArgumentError IC.binding_values(
-                    declaration,
-                    Dict("pupil_resolution" => invalid),
-                    binding,
+                    declaration, Dict("pupil_resolution" => invalid), binding
                 )
             end
         end
         for resolution in (true, 0, -1)
             binding = Dict("kind" => kind, "resolution" => resolution)
             @test_throws ArgumentError IC._validate_bindings(
-                Dict("pupil" => binding),
-                Dict(),
-                configured,
-                schema,
-                Dict(),
-                @__DIR__
+                Dict("pupil" => binding), Dict(), configured, schema, Dict(), @__DIR__
             )
         end
         for binding in (
@@ -79,12 +68,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             Dict("kind" => kind, "resolution" => 8, "type" => "Float32"),
         )
             @test_throws ArgumentError IC._validate_bindings(
-                Dict("pupil" => binding),
-                Dict(),
-                configured,
-                schema,
-                Dict(),
-                @__DIR__
+                Dict("pupil" => binding), Dict(), configured, schema, Dict(), @__DIR__
             )
         end
     end
@@ -92,17 +76,10 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         resolution in (8, "pupil_resolution", reference)
 
         binding = Dict(
-            "kind" => "pupil_amplitude",
-            "resolution" => resolution,
-            "type" => datatype,
+            "kind" => "pupil_amplitude", "resolution" => resolution, "type" => datatype
         )
         @test IC._validate_bindings(
-            Dict("amplitude" => binding),
-            Dict(),
-            configured,
-            schema,
-            Dict(),
-            @__DIR__
+            Dict("amplitude" => binding), Dict(), configured, schema, Dict(), @__DIR__
         ) === nothing
         amplitude = IC.binding_values(declaration, configured, binding)
         @test eltype(amplitude) === T
@@ -117,12 +94,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         )...,
     )
         @test_throws ArgumentError IC._validate_bindings(
-            Dict("amplitude" => binding),
-            Dict(),
-            configured,
-            schema,
-            Dict(),
-            @__DIR__
+            Dict("amplitude" => binding), Dict(), configured, schema, Dict(), @__DIR__
         )
     end
     @test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))

@@ -17,7 +17,7 @@ end
 function status_value(props, suffix)
     name = Loops.STATUS_PREFIX * suffix
     return PipeWireAO.pod_value(
-        only(last(pair) for pair in props.values if first(pair) == name),
+        only(last(pair) for pair in props.values if first(pair) == name)
     )
 end
 
@@ -42,8 +42,7 @@ function correction_graph()
         )
         flush(io)
         return JuliaFilterGraph.prepare_graph(
-            path;
-            algorithms = FilterGraphAlgorithms.algorithms(),
+            path; algorithms = FilterGraphAlgorithms.algorithms()
         )
     end
 end
@@ -62,8 +61,7 @@ end
         @test status_value(initial, "correction:closed.state") == "Closed"
         @test status_value(initial, "correction:closed.fault") == ""
         callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:closed" => false),
+            node.filter, PipeWireAO.SPA.Props("correction:closed" => false)
         )
         @test Loops.state(sm) === :Opening
         pending = callbacks.on_get_properties(node.filter)
@@ -72,8 +70,7 @@ end
         @test Loops.prop_value(Bool, pending, "correction:closed") === true
         @test Loops.state(sm) === :Opening
         @test_throws FilterGraphAlgorithms.PropertyUpdateBusy callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:closed" => true),
+            node.filter, PipeWireAO.SPA.Props("correction:closed" => true)
         )
         @test Loops.state(sm) === :Opening
         @test FilterGraphPipeWire._adopt_pending_properties!(node.owner)
@@ -82,15 +79,13 @@ end
         callbacks.on_get_properties(node.filter)
         @test Loops.state(sm) === :Open
         callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:closed" => true),
+            node.filter, PipeWireAO.SPA.Props("correction:closed" => true)
         )
         @test Loops.state(sm) === :Closing
         @test FilterGraphPipeWire._adopt_pending_properties!(node.owner)
         # Accept an opposite write before the queued readback for Close.
         callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:closed" => false),
+            node.filter, PipeWireAO.SPA.Props("correction:closed" => false)
         )
         @test Loops.state(sm) === :Opening
         @test FilterGraphPipeWire._adopt_pending_properties!(node.owner)
@@ -99,8 +94,7 @@ end
         @test sm.failure === nothing
         @test sm.requested_generation == sm.active_generation == 3
         callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:gain" => -0.2f0),
+            node.filter, PipeWireAO.SPA.Props("correction:gain" => -0.2f0)
         )
         @test Loops.state(sm) === :Open
         @test FilterGraphPipeWire._adopt_pending_properties!(node.owner)
@@ -111,8 +105,7 @@ end
         @test_throws ArgumentError callbacks.on_properties(
             node.filter,
             PipeWireAO.SPA.Props(
-                Loops.STATUS_PREFIX * "version" => Int32(2),
-                "correction:gain" => -0.3f0,
+                Loops.STATUS_PREFIX * "version" => Int32(2), "correction:gain" => -0.3f0
             ),
         )
         @test sm.requested_generation == sm.active_generation == 4
@@ -122,9 +115,7 @@ end
     for target in ("missing:closed", "correction:gain")
         observer = Loops.Observer([target], Int64(18))
         node = FilterGraphPipeWire.PipeWireNode(
-            correction_graph();
-            connect = false,
-            property_observer = observer,
+            correction_graph(); connect = false, property_observer = observer
         )
         try
             @test_throws ArgumentError Loops.check_ready(observer)
@@ -138,17 +129,13 @@ end
 @testset "RTC correction status expires before late adoption" begin
     now = Ref(UInt64(0))
     observer = Loops.Observer(
-        ["correction:closed"],
-        Int64(19);
-        timeout_ms = 1,
-        clock = () -> now[],
+        ["correction:closed"], Int64(19); timeout_ms = 1, clock = () -> now[]
     )
     node = observed_node(observer)
     callbacks = node.filter.callbacks
     try
         callbacks.on_properties(
-            node.filter,
-            PipeWireAO.SPA.Props("correction:closed" => false),
+            node.filter, PipeWireAO.SPA.Props("correction:closed" => false)
         )
         now[] = UInt64(999_999)
         pending = callbacks.on_get_properties(node.filter)

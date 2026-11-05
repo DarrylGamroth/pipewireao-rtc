@@ -27,10 +27,10 @@ function Journal(path, probes)
         header =
             JSON.json(
                 Dict(
-                    "event"=>"header",
-                    "version"=>2,
-                    "probe_count"=>probes,
-                    "max_charged_bytes"=>MAX_EVIDENCE_BYTES,
+                    "event" => "header",
+                    "version" => 2,
+                    "probe_count" => probes,
+                    "max_charged_bytes" => MAX_EVIDENCE_BYTES,
                 ),
             ) * "\n"
         write(file, header)
@@ -60,11 +60,11 @@ end
 function observe!(journal::Journal, action, result, run, serial)
     record!(journal, 8192 + _figure_charge(action) + _result_charge(result)) do
         Dict(
-            "event"=>"completion",
-            "run"=>run,
-            "serial"=>serial,
-            "action"=>ActionClient._action_document(action),
-            "result"=>ActionClient.document(result),
+            "event" => "completion",
+            "run" => run,
+            "serial" => serial,
+            "action" => ActionClient._action_document(action),
+            "result" => ActionClient.document(result),
         )
     end
 end
@@ -74,8 +74,8 @@ function finish!(journal::Journal, result)
     try
         record!(journal, 8192) do
             Dict(
-                "event"=>"acquisition",
-                "result"=>Dict(k=>v for (k, v) in result if k != "responses"),
+                "event" => "acquisition",
+                "result" => Dict(k => v for (k, v) in result if k != "responses"),
             )
         end
         for record in journal.records
@@ -84,7 +84,7 @@ function finish!(journal::Journal, result)
         if journal.error !== nothing
             write(
                 journal.file,
-                JSON.json(Dict("event"=>"evidence_error", "reason"=>journal.error)),
+                JSON.json(Dict("event" => "evidence_error", "reason" => journal.error)),
                 '\n',
             )
         end
@@ -115,7 +115,7 @@ function run(argv = ARGS; acquire = Acquisition.acquire)
         acquired = if journal === nothing
             acquire(binding, plan)
         else
-            acquire(binding, plan; observe = (a, r, s)->observe!(journal, a, r, plan.run, s))
+            acquire(binding, plan; observe = (a, r, s) -> observe!(journal, a, r, plan.run, s))
         end
         result = Acquisition.document(acquired)
         # Emit the report even when evidence finalization later fails.

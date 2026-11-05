@@ -301,6 +301,44 @@ it: a new Quit may preempt emergency cleanup and owns the replacement effect.
 Terminal host logs are `/tmp/rtc-media-session-host-before.log` and
 `/tmp/rtc-media-session-host-after.log`.
 
+## Package formatting and verification — 2026-11-05
+
+The shared formatter is JuliaFormatter 2.14.8 BlueStyle with the explicit
+repository configuration, four-space indentation, a 92-column margin and up to
+three iterations to reach a fixed layout. DefaultStyle 2.14.8 preserves mixed
+operator spacing; the earlier DefaultStyle pass did not resolve that inconsistency.
+The final profile normalizes operators and `for ... in` while disabling optional
+syntax rewrites, keyword restructuring and implicit `Any` field annotations.
+Ten bare early returns in seven authored files now explicitly return `nothing`.
+Their scopes were reviewed; no `nothing` binding is shadowed.
+
+The initial final-profile cohort checks 406 authored Julia files, with 384
+changed and conditional layouts expanded in 32 files. Every output is
+idempotent. Comparison against the committed source plus the ten explicit early
+returns preserves branch conditions/results, call order, quoted expressions
+and literal values. This comparison normalizes single-expression condition/
+branch blocks and `if`/`elseif` layout; it is branch-structure equivalence,
+not a claim of byte-identical ASTs. Generated files and immutable evidence are
+excluded. No scientific coefficient, threshold or declaration was retuned.
+
+After formatting, the session machine/control/effect/ingress/transport/object
+cohort passes 1,179 assertions. The warmed Hsm selector passes 17 checks and
+measures zero heap bytes for each 1,000-cycle nominal loop, recovery, coupled
+recovery and preparation path. This is scoped allocation evidence; the cold
+MediaSession host is not an allocation-free/GC-independent real-time callback.
+Logs: `/tmp/rtc-spacing-apply-20261105.log` and
+`/tmp/rtc-formatted-hsm-cohort-20261105.log`.
+
+The official core command exits zero. Its log prints 486 passing summary rows
+and 10,806 assertions including the separate journal child selector. The first
+run stopped on an obsolete `wireplumber.components` expectation in the
+instrument-publication test; that test now checks the direct policy publication
+and exclusion from other nodes. Its focused selector and the complete rerun
+pass. Logs: `/tmp/rtc-core-suite-20261105.log`,
+`/tmp/rtc-instrument-publication-20261105.log` and
+`/tmp/rtc-core-suite-rerun-20261105.log`. This full run predates the subsequent
+private-ledger version migration, which has its own focused checks.
+
 ## Remaining integration gate
 
 Full graph Ready/Run/Stop/Reset and fault qualification on newly built sealed

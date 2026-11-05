@@ -78,9 +78,7 @@ end
 end
 @on_event function (sm::Lifecycle, ::Constructed, ::Prepare, _)
     FilterGraphPipeWire.prepare!(
-        sm.node;
-        execution = :complete_frame,
-        required_outputs = sm.outputs,
+        sm.node; execution = :complete_frame, required_outputs = sm.outputs
     )
     return Hsm.transition!(sm, :Prepared)
 end
@@ -90,10 +88,7 @@ end
 end
 @on_event function (sm::Lifecycle, ::Connected, ::Publish, _)
     sm.receiver = FilterGraphPipeWire.command_endpoint(
-        sm.node,
-        command -> dispatch!(sm, :StopRequested, command),
-        StopGraph;
-        capacity = 1,
+        sm.node, command -> dispatch!(sm, :StopRequested, command), StopGraph; capacity = 1
     )
     # This queue transaction also serializes the preparation/native handoff
     # with quit_calibration_graph!. A controller either queues a cold stop or
@@ -181,14 +176,7 @@ function dispatch_preparation_commands!(sm::Lifecycle)
 end
 
 function run_graph(
-    descriptor,
-    remote,
-    name,
-    rate,
-    reference_clock,
-    commands,
-    receipts,
-    notify,
+    descriptor, remote, name, rate, reference_clock, commands, receipts, notify
 )
     current_task().sticky = true
     owner_thread = Threads.threadid()
@@ -255,24 +243,12 @@ end
 
 "Lend a prepared graph to one sticky owner task; receive lifecycle facts as messages."
 function start_calibration_graph(
-    descriptor,
-    remote,
-    name,
-    rate;
-    notify,
-    reference_clock = PW.METADATA_CLOCK_REALTIME,
+    descriptor, remote, name, rate; notify, reference_clock = PW.METADATA_CLOCK_REALTIME
 )
     commands = Channel{StopGraph}(1)
     receipts = Channel{AbstractGraphReceipt}(2)
     task = Threads.@spawn run_graph(
-        descriptor,
-        remote,
-        name,
-        rate,
-        reference_clock,
-        commands,
-        receipts,
-        notify,
+        descriptor, remote, name, rate, reference_clock, commands, receipts, notify
     )
     @async begin
         try
@@ -282,20 +258,13 @@ function start_calibration_graph(
         end
     end
     return CalibrationGraphWorker(
-        task,
-        receipts,
-        commands,
-        Threads.threadid(),
-        nothing,
-        nothing,
-        nothing,
-        false,
+        task, receipts, commands, Threads.threadid(), nothing, nothing, nothing, false
     )
 end
 
 function controller!(worker::CalibrationGraphWorker)
     Threads.threadid() == worker.controller_thread || throw(
-        ArgumentError("calibration graph handle belongs to another controller thread"),
+        ArgumentError("calibration graph handle belongs to another controller thread")
     )
     return nothing
 end
@@ -340,8 +309,7 @@ function quit_calibration_graph!(worker::CalibrationGraphWorker)
             if worker.sender === nothing
                 isopen(worker.preparation_commands) || throw(
                     InvalidStateException(
-                        "calibration preparation mailbox is closed",
-                        :closed,
+                        "calibration preparation mailbox is closed", :closed
                     ),
                 )
                 Base.isfull(worker.preparation_commands) && throw(

@@ -191,7 +191,7 @@ function calibration_simulation(directory)
     write_image(joinpath(directory, "transfer.fits"), permutedims(transfer))
     write_image(
         joinpath(directory, "basis.fits"),
-        reshape(Float32[(i - 4.5) / 4 for i = 1:8, j = 1:8], 8, 8, 1),
+        reshape(Float32[(i - 4.5) / 4 for i in 1:8, j in 1:8], 8, 8, 1),
     )
     fits(path, shape; axes = collect(1:length(shape))) = Dict(
         "kind" => "fits",
@@ -223,9 +223,8 @@ function calibration_simulation(directory)
             "basic" => Dict("nodes" => [], "parameters" => []),
             "unused" => Dict(
                 "nodes" => [],
-                "parameters" => [
-                    Dict("binding" => "unused", "destination" => "modal.basis"),
-                ],
+                "parameters" =>
+                    [Dict("binding" => "unused", "destination" => "modal.basis")],
             ),
         ),
         "bindings" => Dict(
@@ -253,13 +252,13 @@ end
         declaration = IC.load_simulation(case.path)
         configured = IC.settings(declaration)
         @test IC.artifact_paths(declaration, configured) ==
-              Set(["mirror.json", "origins.fits", "basis.fits", "transfer.fits"])
+            Set(["mirror.json", "origins.fits", "basis.fits", "transfer.fits"])
         identity = IC.prescription_identity(declaration, configured)
         basis_path = joinpath(directory, "basis.fits")
         basis_bytes = read(basis_path)
         rm(basis_path)
         @test PipeWireAORTC.InstrumentExport.simulator_port_contracts(case.path) ==
-              contracts
+            contracts
         write(basis_path, basis_bytes)
         system = IC.prepare_system(case.path)
         @test graph_step_sequence(system.graph) == 0
@@ -271,15 +270,16 @@ end
         rate = graph_output(system.graph, :rate)
         native = Detectors.prepare_pixel_mtf(copy(rate), case.transfer; padding = 2)
         expected = copy(Detectors.apply_pixel_mtf!(native))
-        @test graph_output(system.graph, :filtered) ≈ expected rtol=2.0f-6 atol=2.0f-5
-        @test hil_frame_buffer(system.boundary) ≈ expected .* 0.0015f0 rtol=2.0f-6 atol=2.0f-7
+        @test graph_output(system.graph, :filtered) ≈ expected rtol = 2.0f-6 atol = 2.0f-5
+        @test hil_frame_buffer(system.boundary) ≈ expected .* 0.0015f0 rtol = 2.0f-6 atol =
+            2.0f-7
         first = copy(hil_frame_buffer(system.boundary))
         # Native and declared graph owners retain independent calibration snapshots.
         fill!(case.transfer, 0)
         write_image(joinpath(directory, "transfer.fits"), zeros(Float32, 14, 12))
         @test IC.prescription_identity(declaration, configured) != identity
         @test any(!iszero, response.config.transfer)
-        @test Detectors.apply_pixel_mtf!(native) ≈ expected rtol=2.0f-6 atol=2.0f-5
+        @test Detectors.apply_pixel_mtf!(native) ≈ expected rtol = 2.0f-6 atol = 2.0f-5
         reset_hil_boundary!(system.boundary, system.driver)
         @test graph_step_sequence(system.graph) == 0
         @test all(iszero, graph_output(system.graph, :filtered))
@@ -287,7 +287,7 @@ end
         step_hil_frame_at!(system.boundary, system.driver)
         @test hil_frame_buffer(system.boundary) == first
         @test_throws AlgorithmGraphs.AlgorithmGraphError PipeWireAORTC.InstrumentExport.simulator_port_contracts(
-            case.path,
+            case.path
         )
         @test_throws AlgorithmGraphs.AlgorithmGraphError IC.prepare_system(case.path)
     end
@@ -317,12 +317,17 @@ end
                 write_image(joinpath(directory, "transfer.fits"), permutedims(values))
             end
             C.write_yaml(case.path, case.document)
-            error_type =
-                failure in (:shape, :axes) ? DimensionMismatch :
-                failure in (:dc, :graph_shape) ? AlgorithmGraphs.AlgorithmGraphError :
-                failure === :missing ? Base.IOError : ArgumentError
+            error_type = if failure in (:shape, :axes)
+                DimensionMismatch
+            elseif failure in (:dc, :graph_shape)
+                AlgorithmGraphs.AlgorithmGraphError
+            elseif failure === :missing
+                Base.IOError
+            else
+                ArgumentError
+            end
             @test_throws error_type PipeWireAORTC.InstrumentExport.simulator_port_contracts(
-                case.path,
+                case.path
             )
             @test_throws error_type IC.prepare_system(case.path)
         end
@@ -342,7 +347,7 @@ AlgorithmGraphs.graph_node_bindings(::typeof(calibrated_node), config::NamedTupl
                 "type" => "custom",
                 "config" => Dict(),
                 "bindings" => Dict("calibration" => "gain"),
-            ) for _ = 1:2
+            ) for _ in 1:2
         ],
     )
     @test E.configuration_binding_names(document, (; custom = calibrated_node)) == [:gain]

@@ -49,10 +49,7 @@ end
 frames = variant == "a" ? FRAMES_A : FRAMES_B
 source = SteppedSource(frames, Atomic{Int}(0), Atomic{Int}(0), Atomic{Bool}(false))
 format = NdArrayFormat(
-    NdArray.F32_LE,
-    (2,);
-    layout = NdArray.ROW_MAJOR,
-    rate = SPA.Fraction(1_000, 1),
+    NdArray.F32_LE, (2,); layout = NdArray.ROW_MAJOR, rate = SPA.Fraction(1_000, 1)
 )
 filter = NdArrayFilter(
     node_name,
@@ -76,24 +73,24 @@ monitor = Threads.@spawn begin
         while !finished[] && !isfile(step)
             Base.Libc.systemsleep(0.001)
         end
-        finished[] && return
+        finished[] && return nothing
         source.requested[] = index
         while !finished[] && source.published[] != index
             Base.Libc.systemsleep(0.001)
         end
-        finished[] && return
+        finished[] && return nothing
         write(joinpath(control, "step-$index.ack"), "published $index\n")
         if index == 4
             while !finished[] && !isfile(joinpath(control, "source-end"))
                 Base.Libc.systemsleep(0.001)
             end
-            finished[] && return
+            finished[] && return nothing
             source.ended[] = true
             write(joinpath(control, "source-end.ack"), "quiescent\n")
             while !finished[] && !isfile(joinpath(control, "source-resume"))
                 Base.Libc.systemsleep(0.001)
             end
-            finished[] && return
+            finished[] && return nothing
             source.ended[] = false
             write(joinpath(control, "source-resume.ack"), "resumed\n")
         end

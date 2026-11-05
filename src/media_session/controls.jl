@@ -54,7 +54,7 @@ end
 function next_control_token!(runtime, minimum::Int64 = Int64(0))
     token = max(runtime.token, minimum)
     token < typemax(Int64) || throw(ArgumentError("owner control token space exhausted"))
-    runtime.token = token+1
+    runtime.token = token + 1
     return runtime.token
 end
 function identity_integer(runtime, handle, key)
@@ -87,12 +87,7 @@ mutable struct Owner{P<:ControlClient.AbstractProfile,O<:ControlClient.Observati
     connected_observed::Bool
 end
 Owner(
-    profile::P,
-    observation::O,
-    handle::UInt64,
-    pid::UInt32,
-    instance::Int64,
-    retired::Bool,
+    profile::P, observation::O, handle::UInt64, pid::UInt32, instance::Int64, retired::Bool
 ) where {P,O} = Owner{P,O}(profile, observation, handle, pid, instance, retired, false)
 function check_owner!(runtime, owner::Owner)
     owner.retired && throw(ArgumentError("owner is retired"))
@@ -137,11 +132,7 @@ owner_profile(::Val{Symbol("pipewireao.rtc.parameter-source")}) = ParameterSourc
 owner_profile(::Val{N}) where {N} =
     throw(ArgumentError("unsupported owner control profile: $N"))
 capture_owner(
-    runtime,
-    handle::UInt64,
-    namespace::AbstractString,
-    instance::Integer,
-    pid::Integer,
+    runtime, handle::UInt64, namespace::AbstractString, instance::Integer, pid::Integer
 ) = capture_owner(runtime, handle, owner_profile(Val(Symbol(namespace))), instance, pid)
 function observe_owner!(runtime, job, owner::Owner)
     check_owner!(runtime, owner)
@@ -151,17 +142,22 @@ function observe_owner!(runtime, job, owner::Owner)
     for pod in records
         values = named_values(pod)
         names = ControlClient.capability_names(owner.profile)
-        kind =
-            haskey(values, names[1]) ? "capability" :
-            haskey(values, "pipewireao.rtc.control.completion.header") ? "completion" :
-            haskey(values, "pipewireao.rtc.control.rejection.header") ? "rejection" :
+        kind = if haskey(values, names[1])
+            "capability"
+        elseif haskey(values, "pipewireao.rtc.control.completion.header")
+            "completion"
+        elseif haskey(values, "pipewireao.rtc.control.rejection.header")
+            "rejection"
+        else
             throw(ArgumentError("unrecognized owner Props record"))
+        end
         kind in kinds && throw(ArgumentError("duplicate owner Props record"))
         push!(kinds, kind)
         # ControlClient's existing observation API declares seconds.
-        ControlClient.observe!(owner.observation, pod; at = now(runtime)/1.0e9)
-        owner.connected_observed |=
-            _connected_observed(owner.profile, owner.observation.capability)
+        ControlClient.observe!(owner.observation, pod; at = now(runtime) / 1.0e9)
+        owner.connected_observed |= _connected_observed(
+            owner.profile, owner.observation.capability
+        )
     end
     "capability" in kinds || throw(ArgumentError("owner capability is unavailable"))
     check_owner!(runtime, owner)
@@ -234,10 +230,10 @@ function request_owner!(runtime, job, owner::Owner, command)
                 throw(ControlClient.UnknownOutcome("owner control deadline expired"))
             if submitted
                 # Keep nanoseconds in policy; convert at the seconds-based client API.
-                reply = ControlClient.matching_reply(observation, deadline/1.0e9)
+                reply = ControlClient.matching_reply(observation, deadline / 1.0e9)
                 reply === nothing && return nothing
                 reply.header.result == 0 || throw(
-                    ArgumentError("owner rejected operation ($(reply.header.result))"),
+                    ArgumentError("owner rejected operation ($(reply.header.result))")
                 )
                 return reply
             end
@@ -245,7 +241,7 @@ function request_owner!(runtime, job, owner::Owner, command)
             token = next_control_token!(runtime, observation.max_accepted)
             budget = Base.Checked.checked_sub(deadline, now(runtime))
             budget > 0 || throw(
-                ControlClient.UnknownOutcome("owner request expired before submission"),
+                ControlClient.UnknownOutcome("owner request expired before submission")
             )
             header = ControlCodec.RequestHeader(
                 runtime.controller,
@@ -333,16 +329,15 @@ struct InitialSourceHold
         header.token > 0 &&
         header.result == 0 &&
         header.operation == ControlClient.operation_id(
-            profile,
-            AcquisitionLifecycleCodec.LifecycleCommand(:status),
+            profile, AcquisitionLifecycleCodec.LifecycleCommand(:status)
         ) || throw(
             ArgumentError(
-                "initial acquisition Hold requires a correlated successful Status",
+                "initial acquisition Hold requires a correlated successful Status"
             ),
         )
         completion.lifecycle in
         (AcquisitionLifecycleCodec.Preparing, AcquisitionLifecycleCodec.Prepared) || throw(
-            ArgumentError("initial acquisition Hold requires an unconnected lifecycle"),
+            ArgumentError("initial acquisition Hold requires an unconnected lifecycle")
         )
         snapshot = completion.snapshot
         snapshot !== nothing &&
@@ -355,7 +350,7 @@ struct InitialSourceHold
         !snapshot.held &&
         !snapshot.restored &&
         isempty(completion.message) || throw(
-            ArgumentError("acquisition Status has no untouched initial ingress proof"),
+            ArgumentError("acquisition Status has no untouched initial ingress proof")
         )
         return new(completion)
     end
@@ -397,16 +392,19 @@ function source(runtime, handle::UInt64, declaration)
         pid,
     )
     instrument = get(declaration, "instrument", nothing)
-    normalized =
-        instrument === nothing ? nothing :
-        instrument in ("classic", "Classic", 1) ? AcquisitionLifecycleCodec.Classic :
-        instrument in ("copper", "Copper", 2) ? AcquisitionLifecycleCodec.Copper :
+    normalized = if instrument === nothing
+        nothing
+    elseif instrument in ("classic", "Classic", 1)
+        AcquisitionLifecycleCodec.Classic
+    elseif instrument in ("copper", "Copper", 2)
+        AcquisitionLifecycleCodec.Copper
+    else
         throw(ArgumentError("invalid acquisition instrument"))
+    end
     return AcquisitionBinding(owner, normalized, nothing)
 end
 function source_snapshot!(
-    source::AcquisitionBinding,
-    reply::AcquisitionLifecycleCodec.Completion,
+    source::AcquisitionBinding, reply::AcquisitionLifecycleCodec.Completion
 )
     snapshot = reply.snapshot
     snapshot === nothing && throw(ArgumentError("acquisition snapshot unavailable"))
@@ -432,10 +430,7 @@ end
 function prepare_source!(runtime, job, source::AcquisitionBinding)
     wait_prepared!(runtime, job, source.owner)
     reply = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(:status),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(:status)
     )
     reply.lifecycle == AcquisitionLifecycleCodec.Prepared ||
         throw(ArgumentError("acquisition owner changed Prepared readiness"))
@@ -444,31 +439,28 @@ function prepare_source!(runtime, job, source::AcquisitionBinding)
 end
 function connect_source!(runtime, job, source::AcquisitionBinding)
     reply = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(:connect),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(:connect)
     )
     reply.lifecycle == AcquisitionLifecycleCodec.Connected ||
         throw(ArgumentError("acquisition Connect did not complete Connected"))
     return source_snapshot!(source, reply)
 end
 function source_operation!(
-    runtime,
-    job,
-    source::AcquisitionBinding,
-    kind::Symbol;
-    running = false,
+    runtime, job, source::AcquisitionBinding, kind::Symbol; running = false
 )
     kind in (:run, :query, :reset) || throw(ArgumentError("invalid acquisition operation"))
     kind === :run && !running && return _hold_acquisition!(runtime, job, source)
-    operation =
-        kind === :query ? :status : kind === :reset ? :reset : running ? :resume : :pause
+    operation = if kind === :query
+        :status
+    elseif kind === :reset
+        :reset
+    elseif running
+        :resume
+    else
+        :pause
+    end
     reply = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(operation),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(operation)
     )
     return _acquisition_result!(source, reply, kind, running)
 end
@@ -487,10 +479,7 @@ function _acquisition_result!(
 end
 function _hold_acquisition!(runtime, job, source::AcquisitionBinding)
     status = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(:status),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(:status)
     )
     return _hold_acquisition!(runtime, job, source, Val(status.lifecycle), status)
 end
@@ -503,10 +492,7 @@ function _hold_acquisition!(
 )
     source_snapshot!(source, status)
     reply = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(:pause),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(:pause)
     )
     return _acquisition_result!(source, reply, :run, false)
 end
@@ -527,8 +513,7 @@ _hold_acquisition!(
 _hold_acquisition!(runtime, job, source::AcquisitionBinding, ::Val, status) =
     throw(ArgumentError("acquisition lifecycle cannot establish Hold"))
 function _initial_source_hold(
-    source::AcquisitionBinding,
-    status::AcquisitionLifecycleCodec.Completion,
+    source::AcquisitionBinding, status::AcquisitionLifecycleCodec.Completion
 )
     !source.owner.connected_observed && source.previous === nothing ||
         throw(ArgumentError("connected acquisition regressed to a cold lifecycle"))
@@ -551,10 +536,7 @@ function validate_source_operation(snapshot::SourceSnapshot, kind, running)
 end
 function shutdown_source!(runtime, job, source::AcquisitionBinding)
     reply = request_owner!(
-        runtime,
-        job,
-        source.owner,
-        AcquisitionLifecycleCodec.LifecycleCommand(:shutdown),
+        runtime, job, source.owner, AcquisitionLifecycleCodec.LifecycleCommand(:shutdown)
     )
     snapshot = source_snapshot!(source, reply)
     details = reply.snapshot
@@ -630,12 +612,15 @@ function source_control_snapshot(values, instance::Int64; rejection = false)
         (report_generation == generation && report_sequence <= sequence)
     ) &&
     !(running && completed) || throw(ArgumentError("invalid source snapshot cursor"))
-    valid =
-        kind == SourceControl.INITIAL ? token == 0 && result == 0 :
-        rejection && kind == SourceControl.INVALID ? token == 0 && result < 0 :
+    valid = if kind == SourceControl.INITIAL
+        token == 0 && result == 0
+    elseif rejection && kind == SourceControl.INVALID
+        token == 0 && result < 0
+    else
         kind in (SourceControl.RUN, SourceControl.RESET, SourceControl.QUERY) &&
-        token > 0 &&
-        (rejection ? result < 0 : result <= 0)
+            token > 0 &&
+            (rejection ? result < 0 : result <= 0)
+    end
     valid || throw(ArgumentError("invalid source snapshot result"))
     return SourceSnapshot(
         running,
@@ -715,7 +700,7 @@ function control_request(::Val{:query}, token::Int64, argument, instance::Int64)
     return PolicyPod(
         PipeWireAO.props_param(
             PolicySPA.Props([
-                SourceControl.QUERY_NAMES[i]=>PolicyPod(values[i]) for
+                SourceControl.QUERY_NAMES[i] => PolicyPod(values[i]) for
                 i in eachindex(values)
             ]),
         ),
@@ -744,16 +729,16 @@ function matching_control_record(records::ControlRecords, kind::Symbol, token::I
     return record
 end
 function matching_source_control_record(
-    records::ControlRecords,
-    kind::Symbol,
-    token::Int64,
-    state,
-    previous::SourceSnapshot,
+    records::ControlRecords, kind::Symbol, token::Int64, state, previous::SourceSnapshot
 )
     snapshot = records.snapshot
-    expected =
-        kind === :run ? SourceControl.RUN :
-        kind === :reset ? SourceControl.RESET : SourceControl.QUERY
+    expected = if kind === :run
+        SourceControl.RUN
+    elseif kind === :reset
+        SourceControl.RESET
+    else
+        SourceControl.QUERY
+    end
     snapshot.details.token > token &&
         throw(ArgumentError("source advanced past requested completion"))
     if snapshot.details.token != token
@@ -763,7 +748,7 @@ function matching_source_control_record(
             rejected.details.token == token &&
             throw(
                 ArgumentError(
-                    "source rejected control operation ($(rejected.details.result))",
+                    "source rejected control operation ($(rejected.details.result))"
                 ),
             )
         return nothing
@@ -784,11 +769,11 @@ function matching_source_control_record(
         ) ||
         throw(ArgumentError("source cursor moved backwards"))
     snapshot.details.result == 0 || throw(
-        ArgumentError("source rejected control operation ($(snapshot.details.result))"),
+        ArgumentError("source rejected control operation ($(snapshot.details.result))")
     )
     if kind === :reset
         previous.generation < typemax(Int64) &&
-        snapshot.generation == previous.generation+1 &&
+        snapshot.generation == previous.generation + 1 &&
         snapshot.sequence == 0 &&
         !snapshot.running &&
         !snapshot.completed ||
@@ -839,11 +824,7 @@ function node_operation!(runtime, job, handle::UInt64, kind::Symbol, argument = 
     end
 end
 function source_control_operation!(
-    runtime,
-    job,
-    source::SourceControlBinding,
-    kind::Symbol,
-    state = "",
+    runtime, job, source::SourceControlBinding, kind::Symbol, state = ""
 )
     check_source_control!(runtime, source)
     records = control_records!(runtime, job, source.handle, source.instance)
@@ -871,34 +852,18 @@ function source_control_operation!(
     return snapshot
 end
 send_source_control_request!(
-    runtime,
-    job,
-    source::SourceControlBinding,
-    ::Val,
-    pod::PolicyPod,
+    runtime, job, source::SourceControlBinding, ::Val, pod::PolicyPod
 ) = setparam!(runtime, job, source.handle, "Props", pod)
 send_source_control_request!(
-    runtime,
-    job,
-    source::SourceControlBinding,
-    ::Val{:query},
-    pod::PolicyPod,
+    runtime, job, source::SourceControlBinding, ::Val{:query}, pod::PolicyPod
 ) = queryparam!(runtime, job, source.handle, "Props", pod)
 function source_operation!(
-    runtime,
-    job,
-    source::SourceControlBinding,
-    kind::Symbol;
-    running = false,
+    runtime, job, source::SourceControlBinding, kind::Symbol; running = false
 )
     kind in (:run, :query, :reset) || throw(ArgumentError("invalid acquisition operation"))
     if kind !== :query
         source_control_operation!(
-            runtime,
-            job,
-            source,
-            kind,
-            running ? "running" : "stopped",
+            runtime, job, source, kind, running ? "running" : "stopped"
         )
     end
     snapshot = source_control_operation!(runtime, job, source, :query)

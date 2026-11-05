@@ -15,8 +15,7 @@ node_name = length(ARGS) >= 4 ? ARGS[4] : "pipewireao-rtc-revolt-controller"
 expected_disconnect = length(ARGS) == 5 ? ARGS[5] : nothing
 
 graph = JuliaFilterGraph.prepare_graph(
-    graph_configuration;
-    algorithms = FilterGraphAlgorithms.algorithms(),
+    graph_configuration; algorithms = FilterGraphAlgorithms.algorithms()
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;

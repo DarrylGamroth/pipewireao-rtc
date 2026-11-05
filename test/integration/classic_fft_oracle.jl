@@ -25,8 +25,7 @@ function plans(value, path = "graph", depth = 0)
     end
     for field in fieldnames(typeof(value))
         append!(
-            result,
-            plans(getfield(value, field), path * "." * string(field), depth + 1),
+            result, plans(getfield(value, field), path * "." * string(field), depth + 1)
         )
     end
     return result
@@ -58,7 +57,7 @@ end
 function record_native!(directory)
     @assert F.get_num_threads() == 1
     @eval PipeWireAORTC.AOSOwner begin
-        function prepare_science(options::NamedTuple; check = ()->nothing)
+        function prepare_science(options::NamedTuple; check = () -> nothing)
             options.backend === :cpu || throw(ArgumentError("FFT oracle requires CPU"))
             science = invoke(prepare_science, Tuple{Any}, options; check)
             Main.ClassicFFTOracle.record(science, $directory)
@@ -79,20 +78,17 @@ function restore!(directory)
     F.import_wisdom(joinpath(directory, "wisdom"))
     @eval B begin
         function plan_repeated_fft_backend!(
-            a::Array{T,N},
-            dims,
+            a::Array{T,N}, dims
         ) where {T<:Union{ComplexF32,ComplexF64},N}
             FFTW.plan_fft!(a, dims; flags = FFTW.WISDOM_ONLY)
         end
         function plan_repeated_ifft_backend!(
-            a::Array{T,N},
-            dims,
+            a::Array{T,N}, dims
         ) where {T<:Union{ComplexF32,ComplexF64},N}
             FFTW.plan_ifft!(a, dims; flags = FFTW.WISDOM_ONLY)
         end
         function plan_repeated_bfft_backend!(
-            a::Array{T,N},
-            dims,
+            a::Array{T,N}, dims
         ) where {T<:Union{ComplexF32,ComplexF64},N}
             FFTW.plan_bfft!(a, dims; flags = FFTW.WISDOM_ONLY)
         end
@@ -104,7 +100,7 @@ function verify(science, provenance)
     actual = Dict(plans(science.graph))
     isempty(actual) && throw(ArgumentError("CPU oracle found no retained FFT plans"))
     actual == provenance["plans"] || throw(
-        ArgumentError("CPU oracle FFT plans differ from the native owner's saved plans"),
+        ArgumentError("CPU oracle FFT plans differ from the native owner's saved plans")
     )
     return true
 end

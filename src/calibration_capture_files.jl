@@ -33,8 +33,7 @@ _capture_int(value) = throw(ArgumentError("invalid signed capture integer"))
 _capture_int(value::Bool) = throw(ArgumentError("invalid signed capture integer"))
 function _capture_int(value::Integer)
     _capture_require(
-        typemin(Int64) <= value <= typemax(Int64),
-        "invalid signed capture integer",
+        typemin(Int64) <= value <= typemax(Int64), "invalid signed capture integer"
     )
     return Int64(value)
 end
@@ -77,8 +76,7 @@ _capture_same_json(left::Bool, right::Bool) = left === right
 function _capture_settings(value, budget = Ref(CAPTURE_HEADER_BYTES), depth = 0)
     budget[] -= 1
     _capture_require(
-        budget[] >= 0 && depth <= 32,
-        "capture settings exceed structural bound",
+        budget[] >= 0 && depth <= 32, "capture settings exceed structural bound"
     )
     _capture_setting!(value, budget, depth)
     _capture_require(budget[] >= 0, "capture settings exceed structural bound")
@@ -90,7 +88,7 @@ _capture_setting!(value::Union{Nothing,Real}, budget, depth) = nothing
 function _capture_setting!(value::AbstractDict, budget, depth)
     for (key, item) in value
         _capture_setting_key!(key, budget)
-        _capture_settings(item, budget, depth+1)
+        _capture_settings(item, budget, depth + 1)
     end
     return nothing
 end
@@ -98,7 +96,7 @@ _capture_setting_key!(key, budget) =
     throw(ArgumentError("capture settings require string keys"))
 _capture_setting_key!(key::AbstractString, budget) = (budget[] -= ncodeunits(key); nothing)
 _capture_setting!(value::Union{AbstractVector,Tuple}, budget, depth) =
-    foreach(item -> _capture_settings(item, budget, depth+1), value)
+    foreach(item -> _capture_settings(item, budget, depth + 1), value)
 _capture_setting!(value::AbstractString, budget, depth) =
     (budget[] -= ncodeunits(value); nothing)
 _capture_snapshot(settings) = throw(ArgumentError("capture settings must be an object"))
@@ -106,8 +104,7 @@ function _capture_snapshot(settings::AbstractDict)
     _capture_settings(settings)
     encoded = _capture_json(settings)
     _capture_require(
-        ncodeunits(encoded) <= CAPTURE_HEADER_BYTES,
-        "capture settings exceed 16 KiB",
+        ncodeunits(encoded) <= CAPTURE_HEADER_BYTES, "capture settings exceed 16 KiB"
     )
     return Common.parse_json(encoded)
 end
@@ -194,10 +191,10 @@ function CaptureStore(
 end
 
 _capture_cursor(cursor) = Dict(
-    "domain"=>cursor.domain,
-    "generation"=>cursor.generation,
-    "sequence"=>cursor.sequence,
-    "model_ns"=>cursor.model_ns,
+    "domain" => cursor.domain,
+    "generation" => cursor.generation,
+    "sequence" => cursor.sequence,
+    "model_ns" => cursor.model_ns,
 )
 function _capture_read_cursor(value)
     _capture_fields(value, ("domain", "generation", "sequence", "model_ns"))
@@ -215,8 +212,7 @@ function _capture_read_cursor(value)
 end
 function _capture_exposure(value, cursor)
     _capture_fields(
-        value,
-        ("domain", "generation", "sequence", "start_model_ns", "duration_ns"),
+        value, ("domain", "generation", "sequence", "start_model_ns", "duration_ns")
     )
     result = CalibrationActionCodec.Exposure(
         (
@@ -228,52 +224,52 @@ function _capture_exposure(value, cursor)
         result.domain == cursor.domain &&
             result.generation == cursor.generation &&
             cursor.sequence < typemax(UInt64) &&
-            result.sequence == cursor.sequence+1 &&
+            result.sequence == cursor.sequence + 1 &&
             cursor.model_ns <= result.start_model_ns <= typemax(Int64) &&
             result.duration_ns > 0 &&
-            result.duration_ns <= typemax(Int64)-result.start_model_ns,
+            result.duration_ns <= typemax(Int64) - result.start_model_ns,
         "capture exposure is stale or discontinuous",
     )
     return result
 end
 _capture_exposure_dict(value) = Dict(
-    string(key)=>getproperty(value, key) for
+    string(key) => getproperty(value, key) for
     key in (:domain, :generation, :sequence, :start_model_ns, :duration_ns)
 )
 _capture_end(value) = CalibrationActionCodec.AcquisitionCursor(
     value.domain,
     value.generation,
     value.sequence,
-    value.start_model_ns+value.duration_ns,
+    value.start_model_ns + value.duration_ns,
 )
 
 function _capture_timing(value)
     value === nothing && return nothing
     return Dict(
-        "start_nanoseconds"=>value.has_start ? value.start_nanoseconds : nothing,
-        "clock"=>value.has_start ? UInt32(value.clock) : nothing,
-        "duration_nanoseconds"=>value.has_duration ? value.duration_nanoseconds : nothing,
+        "start_nanoseconds" => value.has_start ? value.start_nanoseconds : nothing,
+        "clock" => value.has_start ? UInt32(value.clock) : nothing,
+        "duration_nanoseconds" => value.has_duration ? value.duration_nanoseconds : nothing,
     )
 end
 function _capture_reference(value)
     value === nothing && return nothing
     return Dict(
-        "timestamp_nanoseconds"=>value.timestamp_nanoseconds,
-        "clock"=>UInt32(value.clock),
-        "duration_nanoseconds"=>value.has_duration ? value.duration_nanoseconds : nothing,
+        "timestamp_nanoseconds" => value.timestamp_nanoseconds,
+        "clock" => UInt32(value.clock),
+        "duration_nanoseconds" => value.has_duration ? value.duration_nanoseconds : nothing,
     )
 end
-_capture_recording_policy(store) = Dict("clock"=>UInt32(store.recording_clock))
+_capture_recording_policy(store) = Dict("clock" => UInt32(store.recording_clock))
 function _capture_recording_time(store)
-    value=PipeWireAO.reference_timestamp_now(store.recording_clock)
+    value = PipeWireAO.reference_timestamp_now(store.recording_clock)
     return Dict(
-        "clock"=>UInt32(value.clock),
-        "timestamp_nanoseconds"=>value.timestamp_nanoseconds,
+        "clock" => UInt32(value.clock),
+        "timestamp_nanoseconds" => value.timestamp_nanoseconds,
     )
 end
 function _capture_check_recording_policy(value)
     _capture_fields(value, ("clock",))
-    clock=_capture_uint(value["clock"], UInt32)
+    clock = _capture_uint(value["clock"], UInt32)
     _capture_require(
         clock in
         UInt32.((PipeWireAO.METADATA_CLOCK_REALTIME, PipeWireAO.METADATA_CLOCK_TAI)),
@@ -284,13 +280,13 @@ end
 function _capture_check_recording(value, policy)
     _capture_fields(value, ("received", "payload_written"))
     for key in ("received", "payload_written")
-        time=_capture_fields(value[key], ("clock", "timestamp_nanoseconds"))
+        time = _capture_fields(value[key], ("clock", "timestamp_nanoseconds"))
         _capture_require(
-            _capture_uint(time["clock"], UInt32)==policy["clock"],
+            _capture_uint(time["clock"], UInt32) == policy["clock"],
             "recorder clock differs",
         )
         _capture_require(
-            _capture_uint(time["timestamp_nanoseconds"])<typemax(UInt64),
+            _capture_uint(time["timestamp_nanoseconds"]) < typemax(UInt64),
             "invalid recorder timestamp",
         )
     end
@@ -298,37 +294,39 @@ function _capture_check_recording(value, policy)
 end
 function _capture_record_storage(snapshot)
     return GC.@preserve snapshot Dict(
-        "abi"=>CAPTURE_METADATA_ABI,
-        "byte_order"=>CAPTURE_BYTE_ORDER,
-        "entries"=>[
+        "abi" => CAPTURE_METADATA_ABI,
+        "byte_order" => CAPTURE_BYTE_ORDER,
+        "entries" => [
             Dict(
-                "type"=>PipeWireAO.metadata_type(snapshot, i),
-                "data"=>bytes2hex(collect(PipeWireAO.metadata_bytes(snapshot, i))),
-            ) for i = 1:PipeWireAO.metadata_count(snapshot)
+                "type" => PipeWireAO.metadata_type(snapshot, i),
+                "data" => bytes2hex(collect(PipeWireAO.metadata_bytes(snapshot, i))),
+            ) for i in 1:PipeWireAO.metadata_count(snapshot)
         ],
     )
 end
 function _capture_receipt(receipt)
     header = receipt.header
     return Dict(
-        "identity"=>Dict(
-            "domain"=>bytes2hex(collect(receipt.identity.domain.bytes)),
-            "generation"=>receipt.identity.generation,
-            "sequence"=>receipt.identity.sequence,
+        "identity" => Dict(
+            "domain" => bytes2hex(collect(receipt.identity.domain.bytes)),
+            "generation" => receipt.identity.generation,
+            "sequence" => receipt.identity.sequence,
         ),
-        "model_start_ns"=>receipt.model_start_ns,
-        "duration_ns"=>receipt.duration_ns,
-        "header"=>Dict(
-            string(key)=>getproperty(header, key) for
+        "model_start_ns" => receipt.model_start_ns,
+        "duration_ns" => receipt.duration_ns,
+        "header" => Dict(
+            string(key) => getproperty(header, key) for
             key in (:flags, :offset, :pts, :dts_offset, :sequence)
         ),
-        "optical_classification"=>receipt.optical_classification === nothing ? nothing :
-                                  UInt32(receipt.optical_classification),
-        "trigger_classification"=>receipt.trigger_classification === nothing ? nothing :
-                                  UInt32(receipt.trigger_classification),
-        "exposure_timing"=>_capture_timing(receipt.exposure_timing),
-        "reference_timestamp"=>_capture_reference(receipt.reference_timestamp),
-        "records"=>_capture_record_storage(receipt.records),
+        "optical_classification" =>
+            receipt.optical_classification === nothing ? nothing :
+            UInt32(receipt.optical_classification),
+        "trigger_classification" =>
+            receipt.trigger_classification === nothing ? nothing :
+            UInt32(receipt.trigger_classification),
+        "exposure_timing" => _capture_timing(receipt.exposure_timing),
+        "reference_timestamp" => _capture_reference(receipt.reference_timestamp),
+        "records" => _capture_record_storage(receipt.records),
     )
 end
 _capture_metadata_entries(entries) =
@@ -360,31 +358,29 @@ function _capture_read_record_storage(value)
         value["abi"] === CAPTURE_METADATA_ABI && value["byte_order"] == CAPTURE_BYTE_ORDER,
         "capture metadata ABI or native byte order is incompatible",
     )
-    entries=value["entries"]
+    entries = value["entries"]
     _capture_metadata_entries(entries)
-    used=0
-    decoded=Pair{UInt32,Vector{UInt8}}[]
+    used = 0
+    decoded = Pair{UInt32,Vector{UInt8}}[]
     for entry in entries
         _capture_fields(entry, ("type", "data"))
-        type=_capture_uint(entry["type"], UInt32)
-        hex=entry["data"]
+        type = _capture_uint(entry["type"], UInt32)
+        hex = entry["data"]
         _capture_metadata_hex(hex)
-        bytes=div(ncodeunits(hex), 2)
-        used += (bytes+7)&~7
+        bytes = div(ncodeunits(hex), 2)
+        used += (bytes + 7) & ~7
         _capture_require(used <= 4096, "capture metadata exceeds native byte budget")
-        push!(decoded, type=>hex2bytes(hex))
+        push!(decoded, type => hex2bytes(hex))
     end
     return PipeWireAO.MetadataSnapshot(decoded)
 end
 const CAPTURE_RECORD_REQUIREMENTS = (
     PipeWireAO.MetadataRequirement(
-        PipeWireAO.SPA.META_ACQUISITION_IDENTITY;
-        required = true,
+        PipeWireAO.SPA.META_ACQUISITION_IDENTITY; required = true
     ),
     PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING; required = true),
     PipeWireAO.MetadataRequirement(
-        PipeWireAO.SPA.META_REFERENCE_TIMESTAMP;
-        required = true,
+        PipeWireAO.SPA.META_REFERENCE_TIMESTAMP; required = true
     ),
 )
 function _capture_check_receipt(value, exposure, domain)
@@ -402,13 +398,13 @@ function _capture_check_receipt(value, exposure, domain)
             "records",
         ),
     )
-    snapshot=_capture_read_record_storage(value["records"])
+    snapshot = _capture_read_record_storage(value["records"])
     PipeWireAO.metadata_records_valid(snapshot, CAPTURE_RECORD_REQUIREMENTS) ||
         throw(ArgumentError("capture lacks required independent records"))
-    identity=PipeWireAO.acquisition_identity(snapshot)
-    header=PipeWireAO.buffer_header(snapshot)
-    timing=PipeWireAO.exposure_timing(snapshot)
-    reference=PipeWireAO.reference_timestamp(snapshot)
+    identity = PipeWireAO.acquisition_identity(snapshot)
+    header = PipeWireAO.buffer_header(snapshot)
+    timing = PipeWireAO.exposure_timing(snapshot)
+    reference = PipeWireAO.reference_timestamp(snapshot)
     _capture_require(
         header !== nothing &&
             identity !== nothing &&
@@ -416,7 +412,7 @@ function _capture_check_receipt(value, exposure, domain)
             reference !== nothing,
         "capture record facts are incomplete",
     )
-    full=bytes2hex(collect(identity.domain.bytes))
+    full = bytes2hex(collect(identity.domain.bytes))
     _capture_require(
         (domain === nothing || full == domain) &&
             identity.generation == exposure.generation &&
@@ -433,7 +429,7 @@ function _capture_check_receipt(value, exposure, domain)
         0,
         "capture header is corrupted or a gap",
     )
-    canonical=_capture_receipt((;
+    canonical = _capture_receipt((;
         identity,
         model_start_ns = exposure.start_model_ns,
         duration_ns = exposure.duration_ns,
@@ -463,9 +459,9 @@ function _capture_arrays(arrays)
     return arrays
 end
 _capture_quality(arrays) = Dict(
-    "finite_slopes"=>all(isfinite, arrays.slopes),
-    "finite_flux"=>all(isfinite, arrays.flux),
-    "valid_rois"=>count(arrays.validity),
+    "finite_slopes" => all(isfinite, arrays.slopes),
+    "finite_flux" => all(isfinite, arrays.flux),
+    "valid_rois" => count(arrays.validity),
 )
 function _capture_encode(array)
     dense = collect(array)
@@ -479,8 +475,7 @@ function _capture_decode(bytes, contract)
     _capture_require(length(bytes) == contract.bytes, "capture payload byte length differs")
     if contract.type === Bool
         _capture_require(
-            all(value -> value in (0, 1), bytes),
-            "invalid BOOL8 capture payload",
+            all(value -> value in (0, 1), bytes), "invalid BOOL8 capture payload"
         )
         return Bool.(bytes)
     end
@@ -489,8 +484,7 @@ function _capture_decode(bytes, contract)
     values = contract.type === Float32 ? collect(reinterpret(Float32, bits)) : collect(bits)
     return length(contract.shape) == 1 ? values :
            permutedims(
-        reshape(values, reverse(contract.shape)),
-        reverse(1:length(contract.shape)),
+        reshape(values, reverse(contract.shape)), reverse(1:length(contract.shape))
     )
 end
 _capture_name(index, role) =
@@ -504,8 +498,7 @@ function _capture_write(path, bytes, check)
     file = Base.Filesystem.open(path, flags, 0o600)
     try
         _capture_require(
-            write(file, bytes) == length(bytes),
-            "incomplete capture file write",
+            write(file, bytes) == length(bytes), "incomplete capture file write"
         )
         check()
     finally
@@ -532,7 +525,7 @@ function capture_preflight(
     cursor,
     frames::UInt32,
     deadline::Float64,
-    check = ()->nothing,
+    check = () -> nothing,
 )
     _capture_require(
         run > 0 && serial > 0 && probe <= 16383 && 1 <= frames <= 4096,
@@ -547,8 +540,7 @@ function capture_preflight(
     checked()
     after = _capture_read_cursor(_capture_cursor(cursor))
     _capture_require(
-        store.run in (0, run) && serial > store.serial,
-        "capture run/serial is stale",
+        store.run in (0, run) && serial > store.serial, "capture run/serial is stale"
     )
     if store.cursor !== nothing
         last = store.cursor
@@ -562,38 +554,36 @@ function capture_preflight(
             "capture cursor is stale",
         )
     end
-    bytes = UInt64(frames)*UInt64(CLASSIC_CAPTURE_BYTES)
+    bytes = UInt64(frames) * UInt64(CLASSIC_CAPTURE_BYTES)
     _capture_require(
-        bytes <= store.maximum_bytes-store.used_bytes,
-        "capture payload budget exhausted",
+        bytes <= store.maximum_bytes - store.used_bytes, "capture payload budget exhausted"
     )
     _capture_path(store.directory; directory = true)
     request = _capture_request(run, serial)
     directory = joinpath(store.directory, request)
     _capture_require(
-        !ispath(directory) && !islink(directory),
-        "capture request directory already exists",
+        !ispath(directory) && !islink(directory), "capture request directory already exists"
     )
     header = Dict{String,Any}(
-        "schema_version"=>4,
-        "profile"=>"classic",
-        "run"=>run,
-        "serial"=>serial,
-        "probe"=>probe,
-        "stage"=>store.stage,
-        "illumination"=>store.illumination,
-        "settings"=>store.settings,
-        "after"=>_capture_cursor(after),
-        "cursor"=>_capture_cursor(after),
-        "payload_bytes"=>bytes,
-        "domain_mapping"=>Dict(
-            "coordinator"=>after.domain,
-            "wire"=>something(store.domain, repeat("0", 32)),
+        "schema_version" => 4,
+        "profile" => "classic",
+        "run" => run,
+        "serial" => serial,
+        "probe" => probe,
+        "stage" => store.stage,
+        "illumination" => store.illumination,
+        "settings" => store.settings,
+        "after" => _capture_cursor(after),
+        "cursor" => _capture_cursor(after),
+        "payload_bytes" => bytes,
+        "domain_mapping" => Dict(
+            "coordinator" => after.domain,
+            "wire" => something(store.domain, repeat("0", 32)),
         ),
-        "recording"=>_capture_recording_policy(store),
+        "recording" => _capture_recording_policy(store),
     )
     _capture_require(
-        ncodeunits(_capture_json(header))+32 <= CAPTURE_HEADER_BYTES,
+        ncodeunits(_capture_json(header)) + 32 <= CAPTURE_HEADER_BYTES,
         "capture header exceeds 16 KiB",
     )
     return (; after, bytes, directory, header, request, checked)
@@ -622,19 +612,20 @@ function capture!(
     cursor,
     frames::UInt32,
     deadline::Float64,
-    check = ()->nothing,
+    check = () -> nothing,
 )
-    (; after, bytes, directory, header, request, checked) =
-        capture_preflight(store; run, serial, probe, cursor, frames, deadline, check)
+    (; after, bytes, directory, header, request, checked) = capture_preflight(
+        store; run, serial, probe, cursor, frames, deadline, check
+    )
     # Reserve the complete request before any exposure. Interrupted work stays charged.
     store.used_bytes += bytes
     store.run, store.serial = run, serial
     mkdir(directory; mode = 0o700)
     records = Dict{String,Any}[]
-    for index = 1:Int(frames)
+    for index in 1:Int(frames)
         checked()
         sample, supplied = acquire()
-        received=_capture_recording_time(store)
+        received = _capture_recording_time(store)
         checked()
         exposure = _capture_exposure(_capture_exposure_dict(supplied), after)
         arrays = _capture_arrays(sample.arrays)
@@ -653,26 +644,26 @@ function capture!(
             name = _capture_name(index, role)
             _capture_write(joinpath(directory, name), encoded, checked)
             payloads[string(role)] = Dict(
-                "path"=>name,
-                "encoding"=>contract.encoding,
-                "layout"=>"ROW_MAJOR",
-                "shape"=>collect(contract.shape),
-                "bytes"=>contract.bytes,
-                "sha256"=>bytes2hex(sha256(encoded)),
+                "path" => name,
+                "encoding" => contract.encoding,
+                "layout" => "ROW_MAJOR",
+                "shape" => collect(contract.shape),
+                "bytes" => contract.bytes,
+                "sha256" => bytes2hex(sha256(encoded)),
             )
         end
         record = Dict{String,Any}(
-            "exposure"=>_capture_exposure_dict(exposure),
-            "metadata"=>metadata,
-            "payloads"=>payloads,
-            "quality"=>_capture_quality(arrays),
-            "recording"=>Dict(
-                "received"=>received,
-                "payload_written"=>_capture_recording_time(store),
+            "exposure" => _capture_exposure_dict(exposure),
+            "metadata" => metadata,
+            "payloads" => payloads,
+            "quality" => _capture_quality(arrays),
+            "recording" => Dict(
+                "received" => received,
+                "payload_written" => _capture_recording_time(store),
             ),
         )
         _capture_require(
-            ncodeunits(_capture_json(record))+1 <= CAPTURE_EXPOSURE_BYTES,
+            ncodeunits(_capture_json(record)) + 1 <= CAPTURE_EXPOSURE_BYTES,
             "capture exposure metadata exceeds 4096 bytes",
         )
         push!(records, record)
@@ -682,13 +673,13 @@ function capture!(
     header["cursor"] = _capture_cursor(after)
     header["domain_mapping"]["wire"] = something(store.domain)
     _capture_require(
-        ncodeunits(_capture_json(header))+32 <= CAPTURE_HEADER_BYTES,
+        ncodeunits(_capture_json(header)) + 32 <= CAPTURE_HEADER_BYTES,
         "capture header exceeds 16 KiB",
     )
     header["exposures"] = records
-    encoded = Vector{UInt8}(codeunits(_capture_json(header)*"\n"))
+    encoded = Vector{UInt8}(codeunits(_capture_json(header) * "\n"))
     _capture_require(
-        length(encoded) <= CAPTURE_HEADER_BYTES+CAPTURE_EXPOSURE_BYTES*Int(frames),
+        length(encoded) <= CAPTURE_HEADER_BYTES + CAPTURE_EXPOSURE_BYTES * Int(frames),
         "capture metadata exceeds bound",
     )
     temporary = joinpath(directory, "manifest.partial")
@@ -705,7 +696,7 @@ function capture!(
     end
     return CalibrationActionCodec.Captured(
         after,
-        request*"/manifest.json",
+        request * "/manifest.json",
         bytes2hex(sha256(encoded)),
         frames,
         bytes,
@@ -787,17 +778,16 @@ function read_capture(
     settings = _capture_snapshot(expected_settings)
     _capture_require(
         1 <= descriptor.frames <= 4096 &&
-            descriptor.bytes == UInt64(descriptor.frames)*CLASSIC_CAPTURE_BYTES &&
+            descriptor.bytes == UInt64(descriptor.frames) * CLASSIC_CAPTURE_BYTES &&
             0 <
             descriptor.metadata_bytes <=
-            CAPTURE_HEADER_BYTES+CAPTURE_EXPOSURE_BYTES*UInt64(descriptor.frames),
+            CAPTURE_HEADER_BYTES + CAPTURE_EXPOSURE_BYTES * UInt64(descriptor.frames),
         "capture descriptor bounds differ",
     )
     _capture_hash(descriptor.sha256)
     _capture_require(
         occursin(
-            r"^run-[1-9][0-9]*-serial-[1-9][0-9]*/manifest\.json$",
-            descriptor.manifest,
+            r"^run-[1-9][0-9]*-serial-[1-9][0-9]*/manifest\.json$", descriptor.manifest
         ),
         "capture manifest path is not canonical",
     )
@@ -811,8 +801,9 @@ function read_capture(
     )
     text = String(encoded)
     _capture_require(isvalid(text), "capture manifest is not UTF-8")
-    manifest =
-        Common.json_number(Common.JSON.parse(text; dicttype = CaptureObject, maxdepth = 64))
+    manifest = Common.json_number(
+        Common.JSON.parse(text; dicttype = CaptureObject, maxdepth = 64)
+    )
     fields = (
         "schema_version",
         "profile",
@@ -843,16 +834,16 @@ function read_capture(
         run > 0 &&
             serial > 0 &&
             _capture_uint(manifest["probe"], UInt32) <= 16383 &&
-            descriptor.manifest == _capture_request(run, serial)*"/manifest.json" &&
+            descriptor.manifest == _capture_request(run, serial) * "/manifest.json" &&
             _capture_uint(manifest["payload_bytes"]) == descriptor.bytes,
         "capture request identity or size differs",
     )
-    recording_policy=_capture_check_recording_policy(manifest["recording"])
+    recording_policy = _capture_check_recording_policy(manifest["recording"])
     records = manifest["exposures"]
     _capture_exposure_records(records, descriptor.frames)
     header = filter(pair -> first(pair) != "exposures", manifest)
     _capture_require(
-        ncodeunits(_capture_json(header))+32 <= CAPTURE_HEADER_BYTES,
+        ncodeunits(_capture_json(header)) + 32 <= CAPTURE_HEADER_BYTES,
         "capture header exceeds 16 KiB",
     )
     cursor = _capture_read_cursor(manifest["after"])
@@ -865,12 +856,11 @@ function read_capture(
     samples = NamedTuple[]
     for (index, record) in enumerate(records)
         _capture_fields(
-            record,
-            ("exposure", "metadata", "payloads", "quality", "recording"),
+            record, ("exposure", "metadata", "payloads", "quality", "recording")
         )
         _capture_check_recording(record["recording"], recording_policy)
         _capture_require(
-            ncodeunits(_capture_json(record))+1 <= CAPTURE_EXPOSURE_BYTES,
+            ncodeunits(_capture_json(record)) + 1 <= CAPTURE_EXPOSURE_BYTES,
             "capture exposure metadata exceeds bound",
         )
         exposure = _capture_exposure(record["exposure"], cursor)

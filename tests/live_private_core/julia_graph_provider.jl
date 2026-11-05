@@ -13,8 +13,7 @@ rate = parse(Int, rate_text)
 rate > 0 || error("RATE must be positive")
 
 graph = JuliaFilterGraph.prepare_graph(
-    graph_configuration;
-    algorithms = FilterGraphAlgorithms.algorithms(),
+    graph_configuration; algorithms = FilterGraphAlgorithms.algorithms()
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;

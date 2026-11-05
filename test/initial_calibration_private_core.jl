@@ -43,7 +43,7 @@ end
     @test simulation["command_scale"] == 1.0e-6
     @test simulation["frame_encoding"] == "uint16"
     declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(
-        joinpath(application, simulation["plant"]["definition"]),
+        joinpath(application, simulation["plant"]["definition"])
     )
     # Validate the selected resolved model, including scientific defaults that
     # the authored component may omit.
@@ -91,23 +91,21 @@ end
                             outputs = (:demanded, Symbol("constraint-feedback")),
                         )
                         name = "test.classic.initial.$(getpid()).$scenario"
-                        instance = Int64(70+index)
+                        instance = Int64(70 + index)
                         if index == 1
                             @test_throws ArgumentError Calibration.prepare_initial_calibration(
                                 application,
                                 remote,
                                 Base.get_extension(
-                                    PipeWireAORTC,
-                                    :PipeWireAORTCCalibrationExt,
+                                    PipeWireAORTC, :PipeWireAORTCCalibrationExt
                                 ).GraphProjection(
-                                    frontend;
-                                    source_graph_sha256 = repeat("0", 64),
+                                    frontend; source_graph_sha256 = repeat("0", 64)
                                 ),
                                 command;
                                 reference,
                                 name,
                                 instance,
-                                deadline = ControlClient.monotonic()+120,
+                                deadline = ControlClient.monotonic() + 120,
                             )
                         end
                         progress("preparing actual Classic endpoint for $scenario")
@@ -119,7 +117,7 @@ end
                             reference,
                             name,
                             instance,
-                            deadline = ControlClient.monotonic()+300,
+                            deadline = ControlClient.monotonic() + 300,
                         )
                         # Descriptor ownership transferred to the endpoint.
                         frontend = command = nothing
@@ -134,7 +132,7 @@ end
                             )
                         end
                         capture_module = parentmodule(typeof(owner.capture))
-                        serve_deadline = ControlClient.monotonic()+120
+                        serve_deadline = ControlClient.monotonic() + 120
                         serving = @async try
                             Server.serve!(server; deadline = serve_deadline)
                         catch error
@@ -160,7 +158,7 @@ end
                             held = ActionClient.complete!(
                                 client,
                                 Actions.Hold();
-                                deadline = ControlClient.monotonic()+120,
+                                deadline = ControlClient.monotonic() + 120,
                                 record = false,
                             )
                             @test held isa Actions.Held
@@ -175,15 +173,15 @@ end
                             # Hold adopted the reference once. A hidden Restore
                             # would advance its token; no exposure was admitted.
                             @test owner.closed &&
-                                  owner.token == 1 &&
-                                  owner.probe === nothing
+                                owner.token == 1 &&
+                                owner.probe === nothing
                             @test owner.cursor.sequence == 0
                             @test all(
                                 slot -> slot.receipt === nothing,
                                 values(owner.capture.slots),
                             )
                             @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                                  nothing
+                                nothing
                         else
                             actions = DataType[]
                             serials = UInt64[]
@@ -198,9 +196,9 @@ end
                                 if action isa Actions.Adopt
                                     @test answer isa Actions.Adopted
                                     @test answer.figure == probes[Int(action.probe)+1] &&
-                                          !answer.clipped
+                                        !answer.clipped
                                     @test Wire.pipewire_probe_values(owner.hil) ==
-                                          answer.figure
+                                        answer.figure
                                 elseif action isa Actions.Collect
                                     @test answer isa Actions.Responses
                                     captured = capture_module.snapshot(owner.capture)
@@ -209,8 +207,7 @@ end
                                             owner.active[i] && !captured.arrays.validity[i],
                                         eachindex(owner.active),
                                     )
-                                    thresholds =
-                                        owner.graphs.frontend.parameters[:thresholds]
+                                    thresholds = owner.graphs.frontend.parameters[:thresholds]
                                     finite = all(isfinite, answer.values)
                                     expected =
                                         all(
@@ -236,21 +233,21 @@ end
                                     @test eltype(captured.arrays.raw) === UInt16
                                     @test size(captured.arrays.raw) == (352, 352)
                                     @test answer.values ==
-                                          vec(permutedims(captured.arrays.slopes))
+                                        vec(permutedims(captured.arrays.slopes))
                                     exposure = only(answer.exposures)
                                     @test exposure.domain == UInt64(1)
                                     for receipt in values(captured.metadata)
                                         @test receipt.identity.domain ==
-                                              owner.acquisition_domain
+                                            owner.acquisition_domain
                                         @test (
                                             receipt.identity.generation,
                                             receipt.identity.sequence,
                                         ) == (exposure.generation, exposure.sequence)
                                         @test receipt.model_start_ns ==
-                                              exposure.start_model_ns
+                                            exposure.start_model_ns
                                         @test receipt.duration_ns ==
-                                              exposure.duration_ns ==
-                                              simulation["exposure_ns"]
+                                            exposure.duration_ns ==
+                                            simulation["exposure_ns"]
                                         @test receipt.header == captured.metadata.raw.header
                                     end
                                     push!(observed, exposure)
@@ -266,11 +263,7 @@ end
                             cancelled() = scenario === :cancel_before_hold
                             progress("starting $scenario acquisition")
                             result = Acquisition.acquire!(
-                                client,
-                                plan;
-                                observe,
-                                consume,
-                                cancelled,
+                                client, plan; observe, consume, cancelled
                             )
                             expected_failure =
                                 scenario === :under_threshold ? "InvalidEvidence" :
@@ -300,7 +293,7 @@ end
                                 )
                             end
                             @test result.phase == "aborted" &&
-                                  result.failure == expected_failure
+                                result.failure == expected_failure
                             @test result.restoration_confirmed && result.resume_permitted
                             @test result.recovery_failure === nothing
                             expected_actions =
@@ -318,7 +311,7 @@ end
                                 (actual, expected) in zip(actions, expected_actions)
                             )
                             @test serials == UInt64.(1:length(expected_actions)) &&
-                                  client.serial == length(expected_actions)
+                                client.serial == length(expected_actions)
                             @test isempty(client.records) && isempty(consumed)
                             if scenario === :under_threshold
                                 @test length(observed) == 1
@@ -332,7 +325,7 @@ end
                             end
                             @test owner.capture.failure === :none
                             @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
-                                  nothing
+                                nothing
                             # Aborted candidate evidence does not promote responses;
                             # this test publishes no calibration bundle or activation.
                             @test Acquisition.document(result)["responses"] === nothing
@@ -347,10 +340,9 @@ end
                             worker ->
                                 istaskdone(worker.task) &&
                                 Base.get_extension(
-                                    PipeWireAORTC,
-                                    :PipeWireAORTCCalibrationExt,
+                                    PipeWireAORTC, :PipeWireAORTCCalibrationExt
                                 ).finish_calibration_graph!(
-                                    worker,
+                                    worker
                                 ).error === nothing,
                             owner.workers,
                         )

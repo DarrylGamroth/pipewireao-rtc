@@ -38,14 +38,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         @test read(path) == original
         @test readdir(directory) == ["pupil-mask.fits"]
 
-        float_reference =
-            merge(reference, Dict("type" => "Float32", "axes" => [2, 1], "shape" => [3, 2]))
+        float_reference = merge(
+            reference, Dict("type" => "Float32", "axes" => [2, 1], "shape" => [3, 2])
+        )
         values = IC.calibration_context(float_reference, directory)
         @test values isa Vector{Float32}
         @test values == Float32[1, 0, 0, 1, 1, 0]
         vector_reference = merge(
-            reference,
-            Dict("hdu" => 2, "axes" => [1], "shape" => [2], "type" => "Int32"),
+            reference, Dict("hdu" => 2, "axes" => [1], "shape" => [2], "type" => "Int32")
         )
         @test IC.calibration_context(vector_reference, directory) == Int32[4, 7]
 
@@ -53,7 +53,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         # bytes and two Int32 values, across nested mappings and a list.
         references = [Dict("mask" => reference), Dict("values" => vector_reference)]
         @test IC._calibration_context(references, directory, Ref(14)) ==
-              [Dict("mask" => Bool[1, 0, 1, 0, 1, 0]), Dict("values" => Int32[4, 7])]
+            [Dict("mask" => Bool[1, 0, 1, 0, 1, 0]), Dict("values" => Int32[4, 7])]
         @test_throws ArgumentError IC._calibration_context(references, directory, Ref(13))
 
         for key in keys(reference)
@@ -85,37 +85,30 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             Dict("shape" => "2,3"),
         )
             @test_throws ArgumentError IC.calibration_context(
-                merge(reference, replacement),
-                directory,
+                merge(reference, replacement), directory
             )
         end
         @test_throws DimensionMismatch IC.calibration_context(
-            merge(reference, Dict("shape" => [3, 2])),
-            directory,
+            merge(reference, Dict("shape" => [3, 2])), directory
         )
         @test_throws ArgumentError IC.calibration_context(
-            merge(reference, Dict("axes" => [1])),
-            directory,
+            merge(reference, Dict("axes" => [1])), directory
         )
         @test_throws Base.IOError IC.calibration_context(
-            merge(reference, Dict("path" => "absent.fits")),
-            directory,
+            merge(reference, Dict("path" => "absent.fits")), directory
         )
         @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.calibration_context(
-            merge(reference, Dict("path" => abspath(path))),
-            directory,
+            merge(reference, Dict("path" => abspath(path))), directory
         )
         mktempdir() do outside
             escaped = joinpath(outside, "pupil-mask.fits")
             write(escaped, original)
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.calibration_context(
-                merge(reference, Dict("path" => relpath(escaped, directory))),
-                directory,
+                merge(reference, Dict("path" => relpath(escaped, directory))), directory
             )
             symlink(escaped, joinpath(directory, "outside.fits"))
             @test_throws PipeWireAORTC.DeploymentConfiguration.DeploymentError IC.calibration_context(
-                merge(reference, Dict("path" => "outside.fits")),
-                directory,
+                merge(reference, Dict("path" => "outside.fits")), directory
             )
         end
         @test read(path) == original

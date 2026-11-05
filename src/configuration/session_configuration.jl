@@ -176,7 +176,7 @@ function auxiliary_source_role(role::String, declarations, source)
 end
 auxiliary_source_roles(roles, declarations, source) = fail(AUXILIARY_ROLES_ERROR)
 function auxiliary_source_roles(roles::AbstractVector, declarations, source)
-    length(roles) <= D.MAX_EXTERNAL_OWNERS-1 || fail(AUXILIARY_ROLES_ERROR)
+    length(roles) <= D.MAX_EXTERNAL_OWNERS - 1 || fail(AUXILIARY_ROLES_ERROR)
     foreach(role -> auxiliary_source_role(role, declarations, source), roles)
     length(unique(roles)) == length(roles) || fail(AUXILIARY_ROLES_ERROR)
     return roles
@@ -221,8 +221,7 @@ function session_configuration(
     source_role = declared_source_role(get(spec, "source-owner", nothing))
     verified_pid(records, source_role)
     runtime, remote_name = private_remote_bindings(
-        get(bindings, "RUNTIME", nothing),
-        get(bindings, "REMOTE", nothing),
+        get(bindings, "RUNTIME", nothing), get(bindings, "REMOTE", nothing)
     )
     uuid = session_uuid(get(bindings, "SESSION_UUID", nothing))
     public_instance = positive_instance(bindings, "SESSION_CONTROL_INSTANCE")
@@ -248,9 +247,7 @@ function session_configuration(
         haskey(source, field) || fail("source owner is missing $field")
     end
     auxiliary_roles = auxiliary_source_roles(
-        get(spec, "auxiliary-source-owners", String[]),
-        declarations,
-        source_role,
+        get(spec, "auxiliary-source-owners", String[]), declarations, source_role
     )
     auxiliary = map(auxiliary_roles) do role
         declaration = declarations[role]
@@ -259,8 +256,9 @@ function session_configuration(
             fail("auxiliary source requires native SourceControl and owner bootstrap")
         owner_record(role, declaration, records, bindings)
     end
-    source_nodes =
-        [source["control-node"], [entry["control-node"] for entry in auxiliary]...]
+    source_nodes = [
+        source["control-node"], [entry["control-node"] for entry in auxiliary]...
+    ]
     length(unique(source_nodes)) == length(source_nodes) ||
         fail("primary and auxiliary sources require distinct control node names")
     policy = Dict{String,Any}(
@@ -321,12 +319,7 @@ function write_session_config(
     get(bindings, "RUNTIME", nothing) == runtime ||
         fail("configuration runtime differs from launch binding")
     config = session_configuration(
-        spec,
-        session,
-        bindings,
-        records;
-        node_owners,
-        configuration_store_root,
+        spec, session, bindings, records; node_owners, configuration_store_root
     )
     directory = joinpath(runtime, "rtc")
     mkpath(directory)
