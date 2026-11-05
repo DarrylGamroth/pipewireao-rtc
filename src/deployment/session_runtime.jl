@@ -6,6 +6,7 @@ and checks live native identities. It does not coordinate session effects.
 module SessionRuntime
 
 using UUIDs
+import Clocks
 import ..Analysis
 import ..Common
 import ..DeploymentConfiguration
@@ -63,17 +64,27 @@ mutable struct Handle
     stage_root::Union{Nothing,String}
 end
 
-monotonic() = Common.monotonic_seconds()
-remaining(deadline::Real, limit::Real) = begin
-    seconds = min(Float64(deadline) - monotonic(), Float64(limit))
-    isfinite(seconds) && seconds > 0 ||
-        throw(ArgumentError("session operation deadline expired"))
-    seconds
+# Public absolute Float64 deadlines retain their historical seconds input;
+# internal calls carry signed Int64 nanoseconds.
+function remaining(deadline::Int64, limit::Real, current::Int64)
+    isfinite(limit) && limit > 0 ||
+        throw(ArgumentError("session operation limit must be positive and finite"))
+    available = Base.checked_sub(deadline, current)
+    available > 0 || throw(ArgumentError("session operation deadline expired"))
+    limit_ns = S.duration_ns(limit)
+    limit_ns > 0 ||
+        throw(ArgumentError("session operation limit is below clock resolution"))
+    return min(available, limit_ns) / 1.0e9
 end
+remaining(
+    deadline, limit::Real; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+) = remaining(S.deadline_ns(deadline), limit, Clocks.time_nanos(clock))
 
-function checked(argv, deadline; limit = 20)
+function checked(
+    argv, deadline; limit = 20, clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     result = Common.run_checked(
-        argv; timeout = remaining(deadline, limit), maximum_output_bytes = 64 * 1024
+        argv; timeout = remaining(deadline, limit; clock), maximum_output_bytes = 64 * 1024
     )
     result.returncode == 0 || throw(
         ArgumentError(
@@ -95,15 +106,19 @@ function _owned_link(unit, unit_file)
     return true
 end
 
-function _unlink_owned_link!(unit, unit_file, deadline)
+function _unlink_owned_link!(
+    unit, unit_file, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     _owned_link(unit, unit_file) || return nothing
-    checked(["systemctl", "--user", "disable", "--runtime", unit], deadline)
+    checked(["systemctl", "--user", "disable", "--runtime", unit], deadline; clock)
     !(ispath(_unit_link(unit)) || islink(_unit_link(unit))) ||
         throw(ArgumentError("stopped session unit link remains installed"))
     return nothing
 end
 
-function _unit_has_jobs(unit, deadline)
+function _unit_has_jobs(
+    unit, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     result = checked(
         [
             "systemctl",
@@ -114,7 +129,8 @@ function _unit_has_jobs(unit, deadline)
             "--no-legend",
             "--no-pager",
         ],
-        deadline,
+        deadline;
+        clock,
     )
     any(split(result.stdout, '\n'; keepempty = false)) do line
         fields = split(strip(line))
@@ -137,14 +153,17 @@ function _unrun_fields(values, root)
            isfile(fragment)
 end
 
-_unrun_instance(values, unit, root, deadline) =
-    _unrun_fields(values, root) && !_unit_has_jobs(unit, deadline)
+_unrun_instance(
+    values, unit, root, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+) = _unrun_fields(values, root) && !_unit_has_jobs(unit, deadline; clock)
 
 _exact_fragment(fragment, unit_file) =
     isfile(fragment) && isfile(unit_file) && realpath(fragment) == realpath(unit_file)
 
-function _no_exact_unit_file!(unit, deadline)
-    result = checked(["systemd-analyze", "--user", "unit-paths"], deadline)
+function _no_exact_unit_file!(
+    unit, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    result = checked(["systemd-analyze", "--user", "unit-paths"], deadline; clock)
     paths = split(strip(result.stdout), '\n'; keepempty = false)
     isempty(paths) && throw(ArgumentError("user systemd unit search paths are unavailable"))
     for directory in paths
@@ -157,18 +176,26 @@ function _no_exact_unit_file!(unit, deadline)
     return nothing
 end
 
-function _assert_fresh_instance!(unit, root, deadline)
-    values = S.properties(unit; extra = "FragmentPath", deadline)
-    _unrun_instance(values, unit, root, deadline) ||
+function _assert_fresh_instance!(
+    unit, root, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    values = S.properties(unit; extra = "FragmentPath", deadline, clock)
+    _unrun_instance(values, unit, root, deadline; clock) ||
         throw(ArgumentError("fresh session unit has an existing instance or execution"))
-    _no_exact_unit_file!(unit, deadline)
+    _no_exact_unit_file!(unit, deadline; clock)
     return nothing
 end
 
-function _assert_installed_instance!(unit, root, unit_file, deadline)
+function _assert_installed_instance!(
+    unit,
+    root,
+    unit_file,
+    deadline;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     _owned_link(unit, unit_file) ||
         throw(ArgumentError("fresh session exact instance link is unavailable"))
-    values = S.properties(unit; extra = "FragmentPath", deadline)
+    values = S.properties(unit; extra = "FragmentPath", deadline, clock)
     fragment = values["FragmentPath"]
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "inactive" &&
@@ -176,7 +203,7 @@ function _assert_installed_instance!(unit, root, unit_file, deadline)
     isempty(values["InvocationID"]) &&
     isempty(values["ControlGroup"]) &&
     !(ispath(root) || islink(root)) &&
-    !_unit_has_jobs(unit, deadline) &&
+    !_unit_has_jobs(unit, deadline; clock) &&
     _exact_fragment(fragment, unit_file) || throw(
         ArgumentError("fresh session manager did not load the exact installed instance")
     )
@@ -192,8 +219,13 @@ function runtime_directory(unit::AbstractString)
     return joinpath(user_runtime, "pipewireao-session-" * matched.captures[1])
 end
 
-function _identity(unit, runtime_root; deadline = monotonic() + 8)
-    values = S.properties(unit; extra = "Type,Restart,KillMode", deadline)
+function _identity(
+    unit,
+    runtime_root;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
+)
+    values = S.properties(unit; extra = "Type,Restart,KillMode", deadline, clock)
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "active" &&
     values["Type"] == "exec" &&
@@ -297,7 +329,15 @@ function _failed_start_record(root, unit, invocation)
     return record
 end
 
-function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted, primary)
+function _reconcile_failed_start!(
+    target,
+    unit,
+    root,
+    unit_file,
+    start_attempted,
+    primary;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     # Unreadable launch evidence must not prevent the exact unit stop and its
     # ExecStopPost ingress revocation. A readable old layout still refuses
     # before any manager change; the strict post-stop identity read remains below.
@@ -307,13 +347,14 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
         nothing
     end
     retained === nothing || PipeWireAORTC.SessionLaunch.validate_ledger(last(retained))
-    deadline = monotonic() + 320
+    previous = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(previous, Int64(320_000_000_000))
     _owned_link(unit, unit_file) # Reject a same-name replacement before stopping.
-    before = S.properties(unit; extra = "FragmentPath", deadline)
-    if !start_attempted && _unrun_instance(before, unit, root, deadline)
+    before = S.properties(unit; extra = "FragmentPath", deadline, clock)
+    if !start_attempted && _unrun_instance(before, unit, root, deadline; clock)
         # Link/daemon-reload failed before Start. The manager still exposes
         # only an unrun inherited template (or no unit), so no stop is owed.
-        _unlink_owned_link!(unit, unit_file, deadline)
+        _unlink_owned_link!(unit, unit_file, deadline; clock)
         Common.write_json(
             joinpath(target, "start-failure.json"),
             Dict(
@@ -340,9 +381,9 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
     stop_error = nothing
     if before["LoadState"] != "not-found" ||
         start_attempted ||
-        _unit_has_jobs(unit, deadline)
+        _unit_has_jobs(unit, deadline; clock)
         stop_error = try
-            checked(["systemctl", "--user", "stop", unit], deadline; limit = 300)
+            checked(["systemctl", "--user", "stop", unit], deadline; limit = 300, clock)
             nothing
         catch error
             error # A timeout may have completed the stop; observe before deciding.
@@ -350,8 +391,13 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
     end
     quiet_rounds = 0
     while true
-        remaining(deadline, 5)
-        values = S.properties(unit; extra = "FragmentPath", deadline)
+        current = Clocks.time_nanos(clock)
+        previous === nothing ||
+            current >= previous ||
+            throw(ArgumentError("session clock regressed"))
+        previous = current
+        remaining(deadline, 5, current)
+        values = S.properties(unit; extra = "FragmentPath", deadline, clock)
         if values["LoadState"] != "not-found"
             fragment = values["FragmentPath"]
             _exact_fragment(fragment, unit_file) ||
@@ -378,12 +424,12 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
                 values["ActiveState"] in ("inactive", "failed")
             )
         quiet &=
-            !_unit_has_jobs(unit, deadline) &&
+            !_unit_has_jobs(unit, deadline; clock) &&
             (ticks === nothing || !S.old_process_exists(pid, ticks)) &&
             (isempty(group) || S.cgroup_empty(group))
         quiet_rounds = quiet ? quiet_rounds + 1 : 0
         quiet_rounds >= 3 && break
-        sleep(min(0.05, remaining(deadline, 0.05)))
+        sleep(remaining(deadline, 0.05, current))
     end
     record = _failed_start_record(root, unit, invocation)
     if record === nothing
@@ -391,9 +437,14 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
             throw(ArgumentError("failed session start has no verifiable cleanup ledger"))
     else
         while get(record, "cleanup_complete", false) !== true
+            current = Clocks.time_nanos(clock)
+            previous === nothing ||
+                current >= previous ||
+                throw(ArgumentError("session clock regressed"))
+            previous = current
             isempty(get(record, "cleanup_errors", [])) ||
                 throw(ArgumentError("failed session start retained owner cleanup errors"))
-            sleep(min(0.05, remaining(deadline, 0.05)))
+            sleep(remaining(deadline, 0.05, current))
             record = _failed_start_record(root, unit, invocation)
             record === nothing &&
                 throw(ArgumentError("failed session cleanup ledger disappeared"))
@@ -401,9 +452,10 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
         isempty(get(record, "cleanup_errors", [])) ||
             throw(ArgumentError("failed session start retained owner cleanup errors"))
         id = record["invocation"]
-        isempty(S.listed_jobs(id; deadline)) &&
-        all(name -> S.quiescent_unit(name; deadline), S.listed_units(id; deadline)) ||
-            throw(ArgumentError("failed session retained a live owner or start job"))
+        isempty(S.listed_jobs(id; deadline, clock)) && all(
+            name -> S.quiescent_unit(name; deadline, clock),
+            S.listed_units(id; deadline, clock),
+        ) || throw(ArgumentError("failed session retained a live owner or start job"))
         for item in Base.values(record["owners"])
             get(item, "pid", 0) > 0 &&
                 haskey(item, "start-ticks") &&
@@ -421,7 +473,7 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
             throw(ArgumentError("failed session retained the RTC process"))
         Common.write_json(joinpath(target, "final-launch.json"), record; atomic = true)
     end
-    _unlink_owned_link!(unit, unit_file, deadline)
+    _unlink_owned_link!(unit, unit_file, deadline; clock)
     Common.write_json(
         joinpath(target, "start-failure.json"),
         Dict(
@@ -444,8 +496,10 @@ function start!(
     package::AbstractString,
     base::AbstractString;
     prefix::AbstractString = "/opt/pipewireao",
-    deadline = monotonic() + 430,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(430_000_000_000)),
 )
+    deadline = S.deadline_ns(deadline)
     source = realpath(package)
     spec = DeploymentConfiguration.profile(joinpath(source, "deployment.conf"), prefix)
     haskey(spec, "session-runtime") && haskey(spec, "node-owners") ||
@@ -484,12 +538,13 @@ function start!(
             String(prefix),
         ],
         deadline;
+        clock,
         limit = 120,
     )
     suffix = first(replace(string(uuid4()), "-" => ""), 12)
     unit = "pipewireao-session@" * suffix * ".service"
     root = runtime_directory(unit)
-    _assert_fresh_instance!(unit, root, deadline)
+    _assert_fresh_instance!(unit, root, deadline; clock)
     unit_file = joinpath(installed, "systemd", unit)
     write(
         unit_file,
@@ -502,16 +557,17 @@ function start!(
     )
     start_attempted = false
     try
-        checked(["systemctl", "--user", "link", "--runtime", unit_file], deadline)
-        checked(["systemctl", "--user", "daemon-reload"], deadline)
-        _assert_installed_instance!(unit, root, unit_file, deadline)
+        checked(["systemctl", "--user", "link", "--runtime", unit_file], deadline; clock)
+        checked(["systemctl", "--user", "daemon-reload"], deadline; clock)
+        _assert_installed_instance!(unit, root, unit_file, deadline; clock)
         start_attempted = true
         checked(
             ["systemctl", "--user", "start", unit],
             deadline;
+            clock,
             limit = DeploymentConfiguration.startup_timeout_ms(spec) / 1000,
         )
-        handle = _identity(unit, root; deadline)
+        handle = _identity(unit, root; deadline, clock)
         launch_record = _ledger(handle)
         launch_record["phase"] == "prepared" ||
             throw(ArgumentError("RTC session did not retain prepared launch evidence"))
@@ -522,15 +578,25 @@ function start!(
             launch_record,
             unit;
             prefix,
-            deadline = min(deadline, monotonic() + 20),
-            ready = () ->
-                _analysis_ready(handle, launch_record, min(deadline, monotonic() + 10)),
+            deadline = min(
+                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(20_000_000_000))
+            ),
+            clock,
+            ready = () -> _analysis_ready(
+                handle,
+                launch_record,
+                min(
+                    deadline,
+                    Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000)),
+                );
+                clock,
+            ),
         )
         return handle
     catch primary
         try
             _reconcile_failed_start!(
-                target, unit, root, unit_file, start_attempted, primary
+                target, unit, root, unit_file, start_attempted, primary; clock
             )
         catch cleanup
             Common.write_json(
@@ -550,12 +616,17 @@ function start!(
 end
 
 "Attach to an exact installed session unit or a stage receipt."
-function attach(path::AbstractString; deadline = monotonic() + 8)
+function attach(
+    path::AbstractString;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
+)
+    deadline = S.deadline_ns(deadline)
     root = abspath(path)
     receipt = joinpath(root, "session.json")
     if isfile(receipt)
         saved = Common.read_json(receipt; maximum = 4096)
-        handle = _identity(saved["unit"], saved["runtime_root"]; deadline)
+        handle = _identity(saved["unit"], saved["runtime_root"]; deadline, clock)
         (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) == (
             saved["invocation"],
             saved["main_pid"],
@@ -578,7 +649,7 @@ function attach(path::AbstractString; deadline = monotonic() + 8)
     matched === nothing &&
         throw(ArgumentError("runtime is not a session stage or systemd runtime root"))
     unit = "pipewireao-session@" * matched.captures[1] * ".service"
-    return _identity(unit, root; deadline)
+    return _identity(unit, root; deadline, clock)
 end
 
 _direct_connection(connection) =
@@ -593,7 +664,9 @@ _stopped_identity(unit, invocation) =
     throw(ArgumentError("stopped systemd runtime needs its captured unit and invocation"))
 _stopped_identity(::AbstractString, ::AbstractString) = nothing
 
-function _selected(record, deadline)
+function _selected(
+    record, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     directory = Discovery.existing_registry_directory()
     directory === nothing && throw(ArgumentError("no local RTC session registry exists"))
     entries = filter(Discovery.list_sessions(directory)) do entry
@@ -601,19 +674,31 @@ function _selected(record, deadline)
     end
     length(entries) == 1 ||
         throw(ArgumentError("published session UUID is absent or ambiguous"))
-    connection = Session.select_direct_session(only(entries); deadline = Float64(deadline))
+    connection = Session.select_direct_session(
+        only(entries); deadline = S.deadline_ns(deadline), clock
+    )
     _direct_connection(connection)
     return connection
 end
 
 # Optional graphs are submitted only after a fresh native Ready/Running status.
 # This bounded wait belongs to optional startup and never changes RTC readiness.
-function _analysis_ready(handle, record, deadline)
+function _analysis_ready(
+    handle, record, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     last_error = nothing
-    while monotonic() < deadline
+    deadline = S.deadline_ns(deadline)
+    previous = nothing
+    while true
+        current = Clocks.time_nanos(clock)
+        previous === nothing ||
+            current >= previous ||
+            throw(ArgumentError("session clock regressed"))
+        previous = current
+        current < deadline || break
         connection = nothing
         try
-            connection = _selected(record, deadline)
+            connection = _selected(record, deadline; clock)
             status = connection.selected.status
             status.lifecycle in (:ready, :running) &&
             status.owner_pid == UInt32(handle.main_pid) &&
@@ -626,16 +711,22 @@ function _analysis_ready(handle, record, deadline)
         finally
             connection === nothing || close(connection)
         end
-        sleep(min(0.05, max(0, deadline - monotonic())))
+        sleep(min(Int64(50_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
     end
     throw(
         ArgumentError(
-            "RTC was not ready for optional analysis: " * sprint(showerror, last_error)
+            "RTC was not ready for optional analysis: " *
+            (last_error === nothing ? "deadline expired" : sprint(showerror, last_error)),
         ),
     )
 end
 
-function _verify_owners(handle::Handle, record, deadline)
+function _verify_owners(
+    handle::Handle,
+    record,
+    deadline;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     coordinator = S.Coordinator(handle.unit, handle.invocation, handle.cgroup)
     for (role, item) in record["owners"]
         item["state"] == "running" ||
@@ -648,7 +739,7 @@ function _verify_owners(handle::Handle, record, deadline)
         service.start_ticks = UInt64(item["start-ticks"])
         service.cgroup = String(item["cgroup"])
         S.running!(service)
-        values = S.properties(service.unit; deadline)
+        values = S.properties(service.unit; deadline, clock)
         values["LoadState"] == "loaded" &&
         values["ActiveState"] == "active" &&
         S.same_incarnation(service, values) &&
@@ -679,15 +770,20 @@ function _source_endpoint(source)
 end
 
 "Return a compatibility view built from a live direct Status and exact launch ledger."
-function ready(handle::Handle; deadline = monotonic() + 30)
-    live = _identity(handle.unit, handle.runtime_root; deadline)
+function ready(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000)),
+)
+    deadline = S.deadline_ns(deadline)
+    live = _identity(handle.unit, handle.runtime_root; deadline, clock)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC session unit incarnation changed"))
     record = _ledger(handle)
     record["phase"] == "prepared" || throw(ArgumentError("RTC launch is not prepared"))
-    _verify_owners(handle, record, deadline)
-    connection = _selected(record, deadline)
+    _verify_owners(handle, record, deadline; clock)
+    connection = _selected(record, deadline; clock)
     lifecycle = nothing
     try
         status = connection.selected.status
@@ -700,7 +796,7 @@ function ready(handle::Handle; deadline = monotonic() + 30)
     finally
         close(connection)
     end
-    _verify_owners(handle, record, deadline)
+    _verify_owners(handle, record, deadline; clock)
     source_role = String(record["source_role"])
     source = record["owners"][source_role]
     endpoint = _source_endpoint(source)
@@ -727,17 +823,26 @@ function ready(handle::Handle; deadline = monotonic() + 30)
         "admitted" => true,
     )
 end
-ready(path::AbstractString; deadline = monotonic() + 30) =
-    ready(attach(path; deadline); deadline)
+ready(
+    path::AbstractString;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000)),
+) = ready(attach(path; deadline, clock); deadline, clock)
 
 "Start a held Ready session once, then require a fresh native Running Status."
-function running!(handle::Handle; deadline = monotonic() + 30)
-    observed = ready(handle; deadline)
+function running!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000)),
+)
+    observed = ready(handle; deadline, clock)
     if observed["phase"] == "ready"
-        completion = control!(handle, SessionCodec.RunnerCommand(:session_start); deadline)
+        completion = control!(
+            handle, SessionCodec.RunnerCommand(:session_start); deadline, clock
+        )
         completion["ok"] === true && completion["state"] == "Running" ||
             throw(ArgumentError("RTC session Start did not complete Running"))
-        observed = ready(handle; deadline)
+        observed = ready(handle; deadline, clock)
     end
     observed["phase"] == "running" ||
         throw(ArgumentError("RTC session did not retain Running"))
@@ -746,14 +851,19 @@ end
 
 "Send one typed native session command on the verified direct connection."
 function control!(
-    handle::Handle, command; deadline = monotonic() + 8, before_request = () -> nothing
+    handle::Handle,
+    command;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
+    before_request = () -> nothing,
 )
-    live = _identity(handle.unit, handle.runtime_root; deadline)
+    deadline = S.deadline_ns(deadline)
+    live = _identity(handle.unit, handle.runtime_root; deadline, clock)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC unit incarnation changed before control"))
     record = _ledger(handle)
-    connection = _selected(record, deadline)
+    connection = _selected(record, deadline; clock)
     try
         status = connection.selected.status
         status.owner_pid == UInt32(handle.main_pid) &&
@@ -761,7 +871,7 @@ function control!(
         status.remote == record["remote"] ||
             throw(ArgumentError("direct control selected a different RTC session"))
         before_request()
-        reply = Session.request!(connection, command; deadline = Float64(deadline))
+        reply = Session.request!(connection, command; deadline = S.deadline_ns(deadline))
         return Session.render_direct(connection, reply)
     finally
         close(connection)
@@ -769,7 +879,12 @@ function control!(
 end
 
 "Query the acquisition owner directly after public Release."
-function source_status(ready_record, instrument::AbstractString; deadline = monotonic() + 8)
+function source_status(
+    ready_record,
+    instrument::AbstractString;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
+)
     kind = if instrument == "classic"
         AcquisitionCodec.Classic
     elseif instrument == "copper"
@@ -788,10 +903,11 @@ function source_status(ready_record, instrument::AbstractString; deadline = mono
         ready_record["processes"][role]["pid"],
         source["instance"],
         kind;
-        deadline = Float64(deadline),
+        deadline = S.deadline_ns(deadline),
+        clock,
     )
     try
-        reply = Acquisition.status(connection; deadline = Float64(deadline))
+        reply = Acquisition.status(connection; deadline = S.deadline_ns(deadline))
         snapshot = reply.snapshot
         snapshot === nothing && throw(ArgumentError("source Status has no live snapshot"))
         return Dict{String,Any}(
@@ -817,10 +933,19 @@ function source_status(ready_record, instrument::AbstractString; deadline = mono
 end
 
 "Read-only observation after an uncertain stop; never sends another stop."
-function _stopped_record(handle::Handle, deadline)
+function _stopped_record(
+    handle::Handle, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    deadline = S.deadline_ns(deadline)
+    previous = nothing
     while true
-        remaining(deadline, 5)
-        values = S.properties(handle.unit; deadline)
+        current = Clocks.time_nanos(clock)
+        previous === nothing ||
+            current >= previous ||
+            throw(ArgumentError("session clock regressed"))
+        previous = current
+        remaining(deadline, 5, current)
+        values = S.properties(handle.unit; deadline, clock)
         invocation = values["InvocationID"]
         isempty(invocation) ||
             S.valid_invocation(invocation) == handle.invocation ||
@@ -835,7 +960,7 @@ function _stopped_record(handle::Handle, deadline)
                 values["ActiveState"] in ("inactive", "failed")
             )
         if quiet &&
-            !_unit_has_jobs(handle.unit, deadline) &&
+            !_unit_has_jobs(handle.unit, deadline; clock) &&
             !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
             S.cgroup_empty(handle.cgroup)
             # The exact old process is already gone. Validate its retained
@@ -847,12 +972,14 @@ function _stopped_record(handle::Handle, deadline)
                 return record
             end
         end
-        sleep(min(0.05, remaining(deadline, 0.05)))
+        sleep(remaining(deadline, 0.05, current))
     end
 end
 
-function _retain_stopped!(handle::Handle, deadline)
-    record = _stopped_record(handle, deadline)
+function _retain_stopped!(
+    handle::Handle, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    record = _stopped_record(handle, deadline; clock)
     handle.stage_root === nothing || Common.write_json(
         joinpath(handle.stage_root, "final-launch.json"), record; atomic = true
     )
@@ -861,24 +988,33 @@ function _retain_stopped!(handle::Handle, deadline)
     handle.stage_root === nothing || _unlink_owned_link!(
         handle.unit,
         joinpath(handle.stage_root, "installed", "systemd", handle.unit),
-        deadline,
+        deadline;
+        clock,
     )
     return record
 end
 
 "Read-only cleanup after an attempted native Quit, including an unknown reply."
-function reconcile_cleanup!(handle::Handle; deadline = monotonic() + 320)
+function reconcile_cleanup!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
+)
     handle.shutdown_attempted ||
         handle.stop_attempted ||
         throw(ArgumentError("session cleanup has not been attempted"))
-    return _retain_stopped!(handle, deadline)
+    return _retain_stopped!(handle, deadline; clock)
 end
 
 "Confirm cleanup only after a successful native Quit completion proved Offline."
-function reconcile_shutdown!(handle::Handle; deadline = monotonic() + 320)
+function reconcile_shutdown!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
+)
     handle.shutdown_accepted ||
         throw(ArgumentError("native Quit has no accepted Offline completion"))
-    return _retain_stopped!(handle, deadline)
+    return _retain_stopped!(handle, deadline; clock)
 end
 
 "Send one public native Quit, then observe the unit and ExecStopPost cleanup."
@@ -916,42 +1052,60 @@ function _native_quit!(send, handle::Handle)
 end
 
 """
-    shutdown!(handle; deadline=monotonic()+320)
+    shutdown!(handle; deadline, clock=Clocks.SystemNanoClock())
 
 Send one native Quit to the retained session incarnation and wait for its
 correlated Offline completion and exact service/owner cleanup. Returns the
-retained cleanup record. `deadline` is an absolute monotonic time in seconds.
+retained cleanup record. `deadline` accepts signed Int64 nanoseconds or the existing Float64 seconds input.
 If the request outcome is uncertain or cleanup is incomplete, this throws and
 the handle records the attempt; do not call `shutdown!` again. Use
 [`reconcile_cleanup!`](@ref) to inspect cleanup without replaying Quit.
 """
-function shutdown!(handle::Handle; deadline = monotonic() + 320)
+function shutdown!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
+)
     _native_quit!(handle) do mark_attempt!
         control!(
             handle,
             SessionCodec.RunnerCommand(:quit);
-            deadline = min(deadline, monotonic() + 8),
+            deadline = min(
+                S.deadline_ns(deadline),
+                Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
+            ),
+            clock,
             before_request = mark_attempt!,
         )
     end
-    return reconcile_shutdown!(handle; deadline)
+    return reconcile_shutdown!(handle; deadline, clock)
 end
 
 "Reconcile a submitted stop without repeating its effect."
-function reconcile_stop!(handle::Handle; deadline = monotonic() + 320)
+function reconcile_stop!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
+)
+    deadline = S.deadline_ns(deadline)
     handle.stop_attempted || throw(ArgumentError("session stop has not been submitted"))
-    return _retain_stopped!(handle, deadline)
+    return _retain_stopped!(handle, deadline; clock)
 end
 
 "Stop only the retained unit incarnation; verify ExecStopPost's cleanup receipt."
-function stop!(handle::Handle; deadline = monotonic() + 320)
+function stop!(
+    handle::Handle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
+)
     handle.stop_attempted && throw(ArgumentError("session stop was already attempted"))
     _retained_ledger(handle)
-    live = _identity(handle.unit, handle.runtime_root; deadline)
+    deadline = S.deadline_ns(deadline)
+    live = _identity(handle.unit, handle.runtime_root; deadline, clock)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
     (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC unit incarnation changed before stop"))
-    timeout = remaining(deadline, 320)
+    timeout = remaining(deadline, 320; clock)
     handle.stop_attempted = true # This command may have an unknown effect.
     command_error = try
         result = Common.run_checked(
@@ -967,7 +1121,7 @@ function stop!(handle::Handle; deadline = monotonic() + 320)
         error
     end
     try
-        return reconcile_stop!(handle; deadline)
+        return reconcile_stop!(handle; deadline, clock)
     catch observation_error
         command_error === nothing && rethrow()
         throw(CompositeException([command_error, observation_error]))

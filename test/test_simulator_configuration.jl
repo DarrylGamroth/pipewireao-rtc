@@ -191,12 +191,12 @@ function fake_rebuild(request, directory, events; fail = nothing, changed = fals
         joinpath(d, "candidate")
     end
     select =
-        id -> begin
+        (id; clock) -> begin
             push!(events, :select)
             (; handle, identity, application = "/saved/application", prefix = "/prefix")
         end
     shutdown =
-        (h; deadline) -> begin
+        (h; deadline, clock) -> begin
             push!(events, :quit)
             @test h.stage_root == "/original/stage"
             C.write_json(
@@ -207,7 +207,7 @@ function fake_rebuild(request, directory, events; fail = nothing, changed = fals
             h.shutdown_accepted = true
         end
     start =
-        (candidate, stage; prefix, deadline) -> begin
+        (candidate, stage; prefix, deadline, clock) -> begin
             push!(events, :start)
             mkpath(joinpath(stage, "installed"))
             write(joinpath(stage, "installed", "simulation.conf"), "{}")
@@ -221,7 +221,7 @@ function fake_rebuild(request, directory, events; fail = nothing, changed = fals
             handle
         end
     control =
-        (h, command; deadline) -> begin
+        (h, command; deadline, clock) -> begin
             push!(events, operation(command))
             Dict(
                 "ok" => true,

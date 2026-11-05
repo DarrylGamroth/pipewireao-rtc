@@ -4,6 +4,7 @@ using ..Common
 import ..Placement
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
+import Clocks
 
 export Coordinator,
     Service, pid, alive, failure, record, verify!, stop!, launching!, running!, uncertain!
@@ -13,7 +14,24 @@ const NONCE = r"^[0-9a-f]{32}$"
 cohort_name(invocation) = PREFIX * valid_invocation(invocation) * "-cohort.target"
 const ROLE = r"^[a-z][a-z0-9-]{0,31}$"
 const SHOW_FIELDS = "Id,LoadState,ActiveState,MainPID,InvocationID,ControlGroup"
-monotonic() = Common.monotonic_seconds()
+# Compatibility for one-shot callers whose public deadlines still use seconds.
+monotonic() = Clocks.time_nanos(Clocks.SystemNanoClock()) / 1.0e9
+
+# Existing one-shot callers may supply absolute seconds. New internal callers
+# retain Clocks' signed nanoseconds until subprocess/sleep boundaries.
+deadline_ns(value::Int64) = value
+function deadline_ns(value::Real)
+    nanos = value * 1.0e9
+    isfinite(nanos) && typemin(Int64) <= nanos < Float64(typemax(Int64)) ||
+        fail("systemd deadline must fit signed nanoseconds")
+    return floor(Int64, nanos)
+end
+function duration_ns(value::Real)
+    isfinite(value) && value >= 0 || fail("invalid systemd timeout")
+    nanos = value * 1.0e9
+    nanos < Float64(typemax(Int64)) || fail("systemd timeout exceeds signed nanoseconds")
+    return floor(Int64, nanos)
+end
 
 struct OwnerError <: Exception
     message::String
@@ -92,8 +110,8 @@ end
 @on_event function (service::Service, ::Stopped, ::Stop, _)
     return Hsm.EventHandled
 end
-@on_event function (service::Service, ::Root, ::Stop, grace)
-    if stop_result(service, grace) === :uncertain
+@on_event function (service::Service, ::Root, ::Stop, timing)
+    if stop_result(service, timing.grace; clock = timing.clock) === :uncertain
         Hsm.transition!(service, :Uncertain)
         fail("owner launch identity was never retained; refusing to stop uncertain unit")
     end
@@ -183,21 +201,33 @@ function Service(owner::Coordinator, role::AbstractString)
     )
 end
 
-function checked(argv; timeout = 5, deadline = nothing)
+function checked(
+    argv;
+    timeout = 5,
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     if deadline !== nothing
-        remaining = deadline - monotonic()
+        current = Clocks.time_nanos(clock)
+        remaining = Base.checked_sub(deadline_ns(deadline), current)
         remaining > 0 || fail("systemd owner operation exceeded its deadline")
-        timeout = min(timeout, remaining)
+        timeout = min(timeout, remaining / 1.0e9)
     end
     Common.run_checked(argv; timeout, maximum_output_bytes = 64 * 1024)
 end
 
-function properties(unit::AbstractString; extra = "", deadline = nothing)
+function properties(
+    unit::AbstractString;
+    extra = "",
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     base = endswith(unit, ".target") ? "Id,LoadState,ActiveState,InvocationID" : SHOW_FIELDS
     fields = isempty(extra) ? base : base * "," * extra
     result = checked(
         ["systemctl", "--user", "show", "--no-pager", "--property=" * fields, String(unit)];
         deadline,
+        clock,
     )
     result.returncode == 0 ||
         fail("cannot query systemd unit $unit: $(strip(result.stderr))")
@@ -397,24 +427,41 @@ function cgroup_empty(group::AbstractString)
     return !parse_populated(read(path, String))
 end
 
-function wait_empty(group, deadline)
-    while monotonic() < deadline
+function wait_empty(
+    group, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    deadline = deadline_ns(deadline)
+    previous = nothing
+    while true
+        current = Clocks.time_nanos(clock)
+        previous === nothing || current >= previous || fail("systemd owner clock regressed")
+        previous = current
+        current < deadline || return cgroup_empty(group)
         cgroup_empty(group) && return true
-        sleep(min(0.05, max(0, deadline - monotonic())))
+        sleep(min(Int64(50_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
     end
-    return cgroup_empty(group)
 end
 
-function stop_result(service::Service, grace::Real)
-    deadline = monotonic() + grace
-    while alive(service) && monotonic() < deadline
-        sleep(min(0.05, max(0, deadline - monotonic())))
+function stop_result(
+    service::Service,
+    grace::Real;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    previous = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(previous, duration_ns(grace))
+    while true
+        current = Clocks.time_nanos(clock)
+        current >= previous || fail("systemd owner clock regressed")
+        previous = current
+        alive(service) && current < deadline || break
+        sleep(min(Int64(50_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
     end
-    values = properties(service.unit)
+    values = properties(service.unit; clock)
     if isempty(service.invocation)
-        if quiescent_unit(service.unit) &&
+        if quiescent_unit(service.unit; clock) &&
             !any(
-            pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation)
+            pair -> pair.second == service.unit,
+            listed_jobs(service.coordinator.invocation; clock),
         )
             return :stopped
         end
@@ -434,7 +481,7 @@ function stop_result(service::Service, grace::Real)
             cgroup_empty(service.cgroup) &&
             !any(
                 pair -> pair.second == service.unit,
-                listed_jobs(service.coordinator.invocation),
+                listed_jobs(service.coordinator.invocation; clock),
             )
             return :stopped
         end
@@ -444,30 +491,45 @@ function stop_result(service::Service, grace::Real)
     end
     same_incarnation(service, values) ||
         fail("owner unit incarnation changed; refusing to stop it")
-    result = checked(["systemctl", "--user", "stop", service.unit]; timeout = 20)
+    result = checked(["systemctl", "--user", "stop", service.unit]; timeout = 20, clock)
     result.returncode == 0 || fail("systemd failed to stop owner $(service.unit)")
-    wait_empty(service.cgroup, monotonic() + 16) ||
-        fail("owner cgroup remains populated after stop")
+    wait_empty(
+        service.cgroup,
+        Base.checked_add(Clocks.time_nanos(clock), Int64(16_000_000_000));
+        clock,
+    ) || fail("owner cgroup remains populated after stop")
     old_process_exists(service.main_pid, service.start_ticks) &&
         fail("owner MainPID survived outside the retained cgroup")
     return :stopped
 end
-function stop_impl!(service::Service, grace::Real)
+function stop_impl!(
+    service::Service,
+    grace::Real;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     isfinite(grace) && grace >= 0 || fail("invalid owner exit grace")
-    Hsm.dispatch!(service, :Stop, grace)
+    Hsm.dispatch!(service, :Stop, (; grace, clock))
     return nothing
 end
 
-function stop!(service::Service, grace::Real = 0)
+function stop!(
+    service::Service,
+    grace::Real = 0;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     try
-        return stop_impl!(service, grace)
+        return stop_impl!(service, grace; clock)
     catch error
         Hsm.dispatch!(service, :StopFailed, error)
         rethrow()
     end
 end
 
-function listed_units(invocation; deadline = nothing)
+function listed_units(
+    invocation;
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     result = checked(
         [
             "systemctl",
@@ -480,6 +542,7 @@ function listed_units(invocation; deadline = nothing)
             PREFIX * invocation * "-*.service",
         ];
         deadline,
+        clock,
     )
     result.returncode == 0 || fail("cannot list invocation owner units")
     return parse_units(result.stdout, invocation)
@@ -499,7 +562,11 @@ function parse_units(output, invocation)
     return unique(units)
 end
 
-function listed_jobs(invocation; deadline = nothing)
+function listed_jobs(
+    invocation;
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     result = checked(
         [
             "systemctl",
@@ -511,6 +578,7 @@ function listed_jobs(invocation; deadline = nothing)
             "--no-pager",
         ];
         deadline,
+        clock,
     )
     result.returncode == 0 || fail("cannot list invocation start jobs")
     return parse_jobs(result.stdout, invocation)
@@ -536,8 +604,10 @@ function parse_jobs(output, invocation)
     return jobs
 end
 
-function cancel_job(job; deadline = nothing)
-    result = checked(["systemctl", "--user", "cancel", job]; timeout = 5, deadline)
+function cancel_job(
+    job; deadline = nothing, clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    result = checked(["systemctl", "--user", "cancel", job]; timeout = 5, deadline, clock)
     result.returncode == 0 && return nothing
     # A job can finish between listing and cancellation.
     current = checked(
@@ -551,6 +621,7 @@ function cancel_job(job; deadline = nothing)
             "--no-pager",
         ];
         deadline,
+        clock,
     )
     current.returncode == 0 || fail("cannot recheck owner start job $job")
     any(line -> startswith(strip(line), job * " "), split(current.stdout, '\n')) &&
@@ -558,8 +629,10 @@ function cancel_job(job; deadline = nothing)
     return nothing
 end
 
-function cleanup_unit(unit; deadline = nothing)
-    values = properties(unit; deadline)
+function cleanup_unit(
+    unit; deadline = nothing, clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    values = properties(unit; deadline, clock)
     values["LoadState"] == "not-found" && return nothing
     group = values["ControlGroup"]
     if values["ActiveState"] in ("inactive", "failed") &&
@@ -568,9 +641,11 @@ function cleanup_unit(unit; deadline = nothing)
         return nothing
     end
     if isempty(group) && values["MainPID"] == "0"
-        result = checked(["systemctl", "--user", "stop", unit]; timeout = 20, deadline)
+        result = checked(
+            ["systemctl", "--user", "stop", unit]; timeout = 20, deadline, clock
+        )
         result.returncode == 0 || fail("cleanup could not stop $unit")
-        quiescent_unit(unit; deadline) ||
+        quiescent_unit(unit; deadline, clock) ||
             fail("cleanup cannot establish quiescence for $unit")
         return nothing
     end
@@ -579,18 +654,26 @@ function cleanup_unit(unit; deadline = nothing)
     last(splitpath(group)) == unit || fail("cleanup found an unexpected cgroup for $unit")
     main = tryparse(Int, values["MainPID"])
     ticks = main === nothing ? nothing : maybe_start_ticks(main)
-    result = checked(["systemctl", "--user", "stop", unit]; timeout = 20, deadline)
+    result = checked(["systemctl", "--user", "stop", unit]; timeout = 20, deadline, clock)
     result.returncode == 0 || fail("cleanup could not stop $unit")
-    wait_empty(group, min(monotonic() + 16, something(deadline, Inf))) ||
-        fail("cleanup found populated cgroup for $unit")
+    wait_empty(
+        group,
+        min(
+            Base.checked_add(Clocks.time_nanos(clock), Int64(16_000_000_000)),
+            deadline === nothing ? typemax(Int64) : deadline_ns(deadline),
+        );
+        clock,
+    ) || fail("cleanup found populated cgroup for $unit")
     ticks === nothing ||
         !old_process_exists(main, ticks) ||
         fail("cleanup found surviving MainPID for $unit")
     return nothing
 end
 
-function quiescent_unit(unit; deadline = nothing)
-    values = properties(unit; deadline)
+function quiescent_unit(
+    unit; deadline = nothing, clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    values = properties(unit; deadline, clock)
     values["LoadState"] == "not-found" && return true
     values["ActiveState"] in ("inactive", "failed") && values["MainPID"] == "0" ||
         return false

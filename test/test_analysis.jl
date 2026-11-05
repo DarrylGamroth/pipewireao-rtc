@@ -381,6 +381,8 @@ end
 # remover is loaded with deterministic manager observations and recorded commands.
 module FragmentRemovalProof
 import PipeWireAORTC
+import Clocks
+const deadline_ns = PipeWireAORTC.SystemdOwners.deadline_ns
 const Placement = PipeWireAORTC.Placement
 const Common = PipeWireAORTC.Common
 const PREFIX = PipeWireAORTC.SystemdOwners.PREFIX
@@ -491,6 +493,7 @@ end
 end
 
 module RequiredCleanupProof
+import Clocks
 import PipeWireAORTC.SessionLaunch: validate_ledger
 const events = String[]
 const invocation = "0123456789abcdef0123456789abcdef"
@@ -502,18 +505,19 @@ const ROLE = r"^[a-z][a-z0-9-]*$"
 name(role) = PREFIX * invocation * "-" * role * ".service"
 listed_units(args...; kwargs...) = name.(["core", "simulator", "julia", "analysis-wfs"])
 listed_jobs(args...; kwargs...) = Pair{String,String}[]
-cancel_start_jobs!(args...) = nothing
+cancel_start_jobs!(args...; kwargs...) = nothing
 quiescent_unit(unit; kwargs...) = unit != name("analysis-wfs")
-remove_fragments!(args...) = push!(events, "required fragments removed")
+remove_fragments!(args...; kwargs...) = push!(events, "required fragments removed")
 end
 module PipeWireAORTC
 module Analysis
 import ...events
-verify_cleanup!(args...) = error("optional receipt invalid")
-cleanup!(args...) = (push!(events, "optional cleanup"); error("optional receipt invalid"))
+verify_cleanup!(args...; kwargs...) = error("optional receipt invalid")
+cleanup!(args...; kwargs...) =
+    (push!(events, "optional cleanup"); error("optional receipt invalid"))
 end
 end
-cleanup_role!(record, role, deadline) = push!(events, role)
+cleanup_role!(record, role, deadline; kwargs...) = push!(events, role)
 monotonic() = (clock[] += 50.0)
 fail(message) = error(message)
 launch_record!(args...) = nothing
@@ -539,4 +543,53 @@ end
     )
     @test RequiredCleanupProof.events ==
         ["core", "simulator", "julia", "required fragments removed", "optional cleanup"]
+end
+
+import Clocks
+mutable struct AnalysisClock <: Clocks.AbstractNanoClock
+    value::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::AnalysisClock)
+    clock.reads += 1
+    return clock.value
+end
+
+@testset "analysis lifecycle lock uses signed decision ticks" begin
+    mktempdir() do runtime
+        for origin in (Int64(-10), Int64(2)^53 + 1)
+            clock = AnalysisClock(origin, 0)
+            @test A.with_lifecycle_lock(() -> :acquired, runtime, origin + 1; clock) ===
+                :acquired
+            @test clock.reads == 1
+            @test_throws ArgumentError A.with_lifecycle_lock(
+                () -> error("expired lock acquired"), runtime, origin; clock
+            )
+            @test clock.reads == 2
+        end
+        @test_throws S.OwnerError A.with_lifecycle_lock(() -> nothing, runtime, Inf)
+        held, release = Channel{Nothing}(1), Channel{Nothing}(1)
+        owner = @async A.with_lifecycle_lock(runtime, S.monotonic() + 5) do
+            put!(held, nothing)
+            take!(release)
+        end
+        take!(held)
+        clock = AnalysisClock(10, 0)
+        waiting = @async A.with_lifecycle_lock(
+            () -> error("contended lock acquired"), runtime, Int64(100); clock
+        )
+        try
+            yield()
+            @test clock.reads == 1
+            clock.value = 9
+            @test_throws TaskFailedException wait(waiting)
+            @test clock.reads == 2
+        finally
+            put!(release, nothing)
+            wait(owner)
+        end
+        @test A.with_lifecycle_lock(
+            () -> :released, runtime, Int64(11); clock = Clocks.CachedNanoClock(10)
+        ) === :released
+    end
 end

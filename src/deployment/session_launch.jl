@@ -11,6 +11,8 @@ Observed retained PID, invocation, or cgroup mismatches fence cleanup.
 """
 module SessionLaunch
 
+import Clocks
+
 import ..PipeWireAORTC
 using Sockets
 using UUIDs
@@ -38,7 +40,6 @@ struct LaunchError <: Exception
 end
 Base.showerror(io::IO, error::LaunchError) = print(io, error.message)
 fail(message) = throw(LaunchError(message))
-monotonic() = C.monotonic_seconds()
 
 struct Request
     package::String
@@ -388,10 +389,17 @@ _rendered_session_configuration(config::AbstractString, runtime) =
     isfile(config) &&
     startswith(realpath(config), realpath(runtime) * "/") ||
     fail("session generator did not return a private invocation configuration")
-_unretained_launch_outcome(item, unit, deadline) = nothing
-function _unretained_launch_outcome(item::AbstractDict, unit, deadline)
+_unretained_launch_outcome(
+    item, unit, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+) = nothing
+function _unretained_launch_outcome(
+    item::AbstractDict,
+    unit,
+    deadline;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     if get(item, "state", "") in ("launching", "uncertain") &&
-        S.properties(unit; deadline)["LoadState"] == "not-found"
+        S.properties(unit; deadline, clock)["LoadState"] == "not-found"
         fail("owner launch outcome remains uncertain for $unit")
     end
     return nothing
@@ -410,9 +418,19 @@ function reserve_owner!(coordinator, role, placement, record)
     return service
 end
 
-function wait_core!(service, socket; seconds = 15)
-    deadline = monotonic() + seconds
-    while monotonic() < deadline
+function wait_core!(
+    service,
+    socket;
+    seconds = 15,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    previous = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(previous, S.duration_ns(seconds))
+    while true
+        current = Clocks.time_nanos(clock)
+        current >= previous || fail("private core wait clock regressed")
+        previous = current
+        current < deadline || break
         S.alive(service) || fail("private core exited before its socket was available")
         if ispath(socket)
             try
@@ -823,22 +841,24 @@ function _retained_service(record, role, item::AbstractDict)
     return service
 end
 
-function cleanup_role!(record, role, deadline)
+function cleanup_role!(
+    record, role, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     validate_ledger(record)
     invocation = record["invocation"]
     unit = S.PREFIX * invocation * "-" * role * ".service"
-    for job in S.listed_jobs(invocation; deadline)
-        job.second == unit && S.cancel_job(job.first; deadline)
+    for job in S.listed_jobs(invocation; deadline, clock)
+        job.second == unit && S.cancel_job(job.first; deadline, clock)
     end
     retained = retained_service(record, role)
     if retained === nothing
         item = get(record["owners"], role, nothing)
-        _unretained_launch_outcome(item, unit, deadline)
-        S.cleanup_unit(unit; deadline)
+        _unretained_launch_outcome(item, unit, deadline; clock)
+        S.cleanup_unit(unit; deadline, clock)
     else
         # A retained PID/start time and cgroup fence a replaced unit. This
         # query/stop pair is not atomic; unit-name exclusivity is required.
-        S.stop!(retained, 0)
+        S.stop!(retained, 0; clock)
     end
     return nothing
 end
@@ -848,7 +868,10 @@ consumer; each stop must confirm its cgroup is empty. A failed core/source
 stop fences later cleanup and leaves diagnostics for operator recovery.
 """
 function cleanup_invocation!(
-    runtime_root::AbstractString, id::AbstractString; source_role::AbstractString
+    runtime_root::AbstractString,
+    id::AbstractString;
+    source_role::AbstractString,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     invocation = S.valid_invocation(id)
     S.valid_invocation(get(ENV, "INVOCATION_ID", "")) == invocation ||
@@ -860,14 +883,14 @@ function cleanup_invocation!(
     catch error
         # If the ledger is unreadable, only ingress can be safely revoked by
         # the exact invocation names. Consumer cleanup remains fenced.
-        deadline = monotonic() + 45
-        S.cancel_start_jobs!(invocation, deadline)
+        deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(45_000_000_000))
+        S.cancel_start_jobs!(invocation, deadline; clock)
         for role in ("core", String(source_role))
             unit = S.PREFIX * invocation * "-" * role * ".service"
-            for job in S.listed_jobs(invocation; deadline)
-                job.second == unit && S.cancel_job(job.first; deadline)
+            for job in S.listed_jobs(invocation; deadline, clock)
+                job.second == unit && S.cancel_job(job.first; deadline, clock)
             end
-            S.cleanup_unit(unit; deadline)
+            S.cleanup_unit(unit; deadline, clock)
         end
         fail(
             "owner ledger unavailable after core/source revocation: " *
@@ -880,7 +903,7 @@ function cleanup_invocation!(
     record["invocation"] == invocation && record["source_role"] == source_role ||
         fail("invocation launch ledger identity differs from cleanup request")
     try
-        cleanup_record!(runtime, record, invocation, source_role)
+        cleanup_record!(runtime, record, invocation, source_role; clock)
     catch error
         record["phase"] = "failed"
         record["error"] === nothing && (record["error"] = sprint(showerror, error))
@@ -891,12 +914,19 @@ function cleanup_invocation!(
     return nothing
 end
 
-function cleanup_record!(runtime, record, invocation, source_role)
+function cleanup_record!(
+    runtime,
+    record,
+    invocation,
+    source_role;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     validate_ledger(record)
-    deadline = monotonic() + 240
-    S.cancel_start_jobs!(invocation, deadline)
-    units = S.listed_units(invocation; deadline)
-    jobs = S.listed_jobs(invocation; deadline)
+    previous = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(previous, Int64(240_000_000_000))
+    S.cancel_start_jobs!(invocation, deadline; clock)
+    units = S.listed_units(invocation; deadline, clock)
+    jobs = S.listed_jobs(invocation; deadline, clock)
     names = Set(vcat(units, last.(jobs)))
     roles = Set{String}()
     prefix = S.PREFIX * invocation * "-"
@@ -908,43 +938,49 @@ function cleanup_record!(runtime, record, invocation, source_role)
     union!(roles, String.(keys(record["owners"])))
     for role in ("core", String(source_role))
         role in roles || continue
-        cleanup_role!(record, role, deadline)
+        cleanup_role!(record, role, deadline; clock)
     end
     optional(role) = startswith(role, "analysis-") && !haskey(record["owners"], role)
     for role in sort!(collect(setdiff(roles, Set(["core", String(source_role)]))))
         optional(role) && continue
-        cleanup_role!(record, role, deadline)
+        cleanup_role!(record, role, deadline; clock)
     end
     # Start requests may materialize after the first enumeration. Repeat the
     # exact-prefix sweep; never accept a single empty listing as completion.
     quiet = 0
-    while monotonic() < deadline
-        units = filter(S.listed_units(invocation; deadline)) do unit
+    while true
+        current = Clocks.time_nanos(clock)
+        previous === nothing ||
+            current >= previous ||
+            fail("invocation cleanup clock regressed")
+        previous = current
+        current < deadline || break
+        units = filter(S.listed_units(invocation; deadline, clock)) do unit
             role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             !optional(role)
         end
-        jobs = filter(S.listed_jobs(invocation; deadline)) do job
+        jobs = filter(S.listed_jobs(invocation; deadline, clock)) do job
             unit = job.second
             endswith(unit, ".service") || return true
             role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             !optional(role)
         end
-        if isempty(jobs) && all(unit -> S.quiescent_unit(unit; deadline), units)
+        if isempty(jobs) && all(unit -> S.quiescent_unit(unit; deadline, clock), units)
             quiet += 1
             quiet >= 3 && break
             sleep(0.05)
             continue
         end
         quiet = 0
-        S.cancel_start_jobs!(invocation, deadline)
+        S.cancel_start_jobs!(invocation, deadline; clock)
         for role in ("core", String(source_role))
-            cleanup_role!(record, role, deadline)
+            cleanup_role!(record, role, deadline; clock)
         end
         for unit in units
             startswith(unit, prefix) && endswith(unit, ".service") || continue
             role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             role in ("core", source_role) && continue
-            occursin(S.ROLE, role) && cleanup_role!(record, role, deadline)
+            occursin(S.ROLE, role) && cleanup_role!(record, role, deadline; clock)
         end
     end
     quiet >= 3 || fail("RTC invocation cleanup exceeded its deadline")
@@ -953,11 +989,11 @@ function cleanup_record!(runtime, record, invocation, source_role)
     if haskey(record, "cohort_unit")
         record["cohort_unit"] == S.cohort_name(invocation) ||
             fail("cleanup cohort identity differs")
-        S.cleanup_unit(record["cohort_unit"]; deadline)
+        S.cleanup_unit(record["cohort_unit"]; deadline, clock)
     end
     get(record, "unit_files_removed", false) ||
-        S.remove_fragments!(runtime, record, deadline)
-    PipeWireAORTC.Analysis.cleanup!(runtime, record, deadline)
+        S.remove_fragments!(runtime, record, deadline; clock)
+    PipeWireAORTC.Analysis.cleanup!(runtime, record, deadline; clock)
     result = get(ENV, "SERVICE_RESULT", "")
     record["service_result"] = result
     record["cleanup_complete"] = true

@@ -20,13 +20,19 @@ function runtime_unit_directory()
 end
 
 function install_fragment!(
-    unit, text, runtime, record; save = save_unit_record!, deadline = nothing
+    unit,
+    text,
+    runtime,
+    record;
+    save = save_unit_record!,
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     path = joinpath(runtime, "units", unit)
     link = joinpath(runtime_unit_directory(), unit)
     ispath(path) || islink(path) || ispath(link) || islink(link) ?
     fail("invocation unit name is already reserved: $unit") : nothing
-    properties(unit; deadline)["LoadState"] == "not-found" ||
+    properties(unit; deadline, clock)["LoadState"] == "not-found" ||
         fail("unit name is already loaded: $unit")
     mkpath(dirname(path); mode = 0o700)
     temporary, io = mktemp(dirname(path); cleanup = false)
@@ -46,7 +52,12 @@ function install_fragment!(
 end
 
 function verify_fragment!(
-    unit, record; placement = nothing, ordinary = false, deadline = nothing
+    unit,
+    record;
+    placement = nothing,
+    ordinary = false,
+    deadline = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     entry = record["unit_files"][unit]
     path = entry["path"]
@@ -55,7 +66,7 @@ function verify_fragment!(
     service &&
         (extra *= ",Type,Restart,KillMode,CPUAffinity,LimitRTPRIO,LimitMEMLOCK,UMask")
     ordinary && (extra *= ",RestrictRealtime,Nice")
-    values = properties(unit; extra, deadline)
+    values = properties(unit; extra, deadline, clock)
     values["LoadState"] == "loaded" &&
     isempty(values["DropInPaths"]) &&
     isfile(values["FragmentPath"]) &&
@@ -130,19 +141,32 @@ function start_services!(services, unit, runtime, record)
     return nothing
 end
 
-function cancel_start_jobs!(invocation, deadline)
-    while monotonic() < deadline
-        jobs = listed_jobs(invocation; deadline)
+function cancel_start_jobs!(
+    invocation, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    deadline = deadline_ns(deadline)
+    previous = nothing
+    while true
+        current = Clocks.time_nanos(clock)
+        previous === nothing || current >= previous || fail("systemd owner clock regressed")
+        previous = current
+        current < deadline || break
+        jobs = listed_jobs(invocation; deadline, clock)
         isempty(jobs) && return nothing
         for job in jobs
-            cancel_job(job.first; deadline)
+            cancel_job(job.first; deadline, clock)
         end
     end
     fail("invocation start jobs did not quiesce")
 end
 
 function remove_fragments!(
-    runtime, record, deadline; roles = keys(record["owners"]), save = save_unit_record!
+    runtime,
+    record,
+    deadline;
+    roles = keys(record["owners"]),
+    save = save_unit_record!,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     files = get(record, "unit_files", Dict())
     isempty(files) && return nothing # Older launch records have transient services.
@@ -167,13 +191,13 @@ function remove_fragments!(
         (islink(link) && readlink(link) == path) ||
             (!ispath(link) && !islink(link)) ||
             fail("cleanup unit link differs: $unit")
-        values = properties(unit; extra = "FragmentPath,DropInPaths", deadline)
+        values = properties(unit; extra = "FragmentPath,DropInPaths", deadline, clock)
         isempty(values["DropInPaths"]) && (
             values["LoadState"] == "not-found" ||
             (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
             (removing && !ispath(path) && values["FragmentPath"] in (path, link))
         ) || fail("cleanup loaded unit definition differs: $unit")
-        quiescent_unit(unit; deadline) || fail("cleanup unit remains active: $unit")
+        quiescent_unit(unit; deadline, clock) || fail("cleanup unit remains active: $unit")
     end
     record["unit_file_removal_started"] = true
     save(runtime, record) # Recovery can recognize our own partial removal.
@@ -182,7 +206,9 @@ function remove_fragments!(
         islink(link) && rm(link)
         isfile(entry["path"]) && rm(entry["path"])
     end
-    result = checked(["systemctl", "--user", "daemon-reload"]; timeout = 20, deadline)
+    result = checked(
+        ["systemctl", "--user", "daemon-reload"]; timeout = 20, deadline, clock
+    )
     result.returncode == 0 || fail("cannot unload invocation service definitions")
     record["unit_files_removed"] = true
     return nothing

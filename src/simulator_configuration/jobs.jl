@@ -259,10 +259,11 @@ function rebuild(
     start = R.start!,
     control = R.control!,
     ledger = R._ledger,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     save_state(directory, "preparing")
     candidate = prepare(request, directory)
-    selected = select(request["identity"]["session_id"])
+    selected = select(request["identity"]["session_id"]; clock)
     check_identity(request["identity"], selected.identity)
     handle = selected.handle
     # Retain the actual installation stage: shutdown! uses it for both its
@@ -279,14 +280,31 @@ function rebuild(
         atomic = true,
     )
     save_state(directory, "stopping"; previous_application = selected.application)
-    shutdown(handle; deadline = R.monotonic() + 320)
+    shutdown(
+        handle;
+        deadline = Base.Checked.checked_add(
+            Clocks.time_nanos(clock), Int64(320_000_000_000)
+        ),
+        clock,
+    )
     save_state(directory, "starting"; previous_application = selected.application)
     stage = joinpath(directory, "replacement")
     replacement = start(
-        candidate, stage; prefix = selected.prefix, deadline = R.monotonic() + 1050
+        candidate,
+        stage;
+        prefix = selected.prefix,
+        deadline = Base.Checked.checked_add(
+            Clocks.time_nanos(clock), Int64(1_050_000_000_000)
+        ),
+        clock,
     )
     status = control(
-        replacement, SessionCodec.RunnerCommand(:status); deadline = R.monotonic() + 15
+        replacement,
+        SessionCodec.RunnerCommand(:status);
+        deadline = Base.Checked.checked_add(
+            Clocks.time_nanos(clock), Int64(15_000_000_000)
+        ),
+        clock,
     )
     status["ok"] === true && status["state"] == "Ready" ||
         throw(ArgumentError("replacement native admission did not confirm Ready"))
@@ -294,7 +312,10 @@ function rebuild(
         running = control(
             replacement,
             SessionCodec.RunnerCommand(:session_start);
-            deadline = R.monotonic() + 30,
+            deadline = Base.Checked.checked_add(
+                Clocks.time_nanos(clock), Int64(30_000_000_000)
+            ),
+            clock,
         )
         running["ok"] === true && running["state"] == "Running" ||
             throw(ArgumentError("replacement native Start did not confirm Running"))

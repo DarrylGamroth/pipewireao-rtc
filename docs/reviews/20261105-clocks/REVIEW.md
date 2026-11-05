@@ -221,3 +221,40 @@ Local logs include `/tmp/rtc-clk03-server-pure-bounds.log`,
 `/tmp/rtc-root-capture-review-probe-after-20261105.log`, and
 `/tmp/rtc-root-capture-review-after-20261105.log`. Native tests use explicitly
 selected private cores/artifact SDKs and change no existing services or devices.
+
+## CLK-08: deployment waits and optional analysis lifecycle
+
+SystemdOwners, its unit-file helpers, SessionRuntime/Launch and SessionCLI now
+forward AbstractNanoClock and signed deadlines through their caller chains.
+Each owned polling loop samples once at its beginning and reuses that decision
+tick for expiry/sleep. Native clients and subprocess submissions retain separate
+fresh guards. Duration conversion/addition/subtraction is checked; regression is
+refused. Grace/timeout keywords and subprocess/sleep budgets retain seconds.
+Existing public seconds inputs normalize at the SystemdOwners entry boundary;
+its compatibility `monotonic()` helper reads Clocks directly.
+
+Analysis lifecycle-lock/start/cleanup and simulator replacement now forward the
+same clock and signed deadline, including optional service operations and recovery
+receipts. The Analysis lock samples once per locked-attempt decision and releases
+flock in `finally`. Simulator callers of the removed Runtime seconds helper were
+found during primary caller review and migrated before integration. No new
+supervisor, authority, fallback or shared clock wrapper was introduced.
+
+Observed verification: the primary aggregate passes 597 assertions across 39
+testsets (systemd, runtime, configuration, stop, Analysis and simulator).
+The worker's focused run passes 370 and final runtime rerun 87. These overlap and
+are not additive. New deterministic clock coverage includes 82 worker assertions
+plus 13 Analysis lock assertions: negative origins, >2⁵³ adjacent ticks, exact
+expiry, regression, overflow, subprocess refusal, cleanup order and lock release.
+The first Analysis run used the wrong expected error family for an invalid
+deadline; the assertion now uses the existing SystemdOwners.OwnerError contract.
+Source-copy test modules import Clocks and forward the new keywords. Formatting
+is idempotent with parsed syntax/literal equality; whitespace checks pass.
+
+Local logs: `/tmp/rtc-clk08-focused-20261105.log`,
+`/tmp/rtc-clk08-runtime-final-20261105.log`,
+`/tmp/rtc-clk08-root-final-20261105.log`, and
+`/tmp/rtc-clk08-simulator-20261105.log`. Verification uses temporary files,
+fake process-manager observations and local process checks. It performs no live
+systemd, affinity, priority, device, deployment or hardware changes. Actual
+manager behavior and target-host timing remain separate qualification.

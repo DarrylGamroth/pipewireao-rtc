@@ -5,6 +5,7 @@ module SessionCLI
 import ..PipeWireAORTC
 using PipeWireAO: with_thread_loop_lock
 using JSON
+import Clocks
 
 import ..SessionConfiguration
 import ..SessionLaunch
@@ -200,7 +201,7 @@ function _placement_snapshot(
     return snapshots
 end
 
-function publish!(args)
+function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
@@ -225,31 +226,40 @@ function publish!(args)
     uuid = String(record["session_uuid"])
     remote = String(record["remote"])
     node = "pipewireao.rtc.session." * name
-    deadline =
-        Client.monotonic() +
-        (haskey(package, "startup-timeout-ms") ? D.startup_timeout_ms(package) / 1000 : 240)
+    previous = Clocks.time_nanos(clock)
+    startup_ns =
+        haskey(package, "startup-timeout-ms") ?
+        Base.checked_mul(Int64(D.startup_timeout_ms(package)), Int64(1_000_000)) :
+        Int64(240_000_000_000)
+    deadline = Base.checked_add(previous, startup_ns)
     client = Client.connect(
         Profile.Profile(),
         remote,
         node,
         UInt32(pid),
         expected;
-        deadline = min(deadline, Client.monotonic() + 30),
+        deadline = min(
+            deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000))
+        ),
+        clock,
         controller_instance = Int64(record["admission_controller_instance"]),
     )
     snapshots = nothing
     try
         while true
-            Client.monotonic() < deadline || throw(
+            current = Clocks.time_nanos(clock)
+            current >= previous || throw(ArgumentError("session warmup clock regressed"))
+            previous = current
+            current < deadline || throw(
                 ArgumentError("direct session did not warm before publication deadline")
             )
             warm = Client.request!(
                 client,
                 Session.WarmupCommand();
-                deadline = min(deadline, Client.monotonic() + 10),
+                deadline = min(deadline, Base.checked_add(current, Int64(10_000_000_000))),
             )
             warmup_complete(warm) && break
-            sleep(min(0.1, max(0.0, deadline - Client.monotonic())))
+            sleep(min(Int64(100_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
         end
         latest_pid, latest_ticks, latest_group = _unit_identity(
             args.unit, invocation, args.runtime_root, launcher, source_role
@@ -275,13 +285,17 @@ function publish!(args)
         admit = Client.request!(
             client,
             Session.AdmitCommand();
-            deadline = min(deadline, Client.monotonic() + 10),
+            deadline = min(
+                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
+            ),
         )
         confirm_admission(admit)
         completion = Client.request!(
             client,
             Session.RunnerCommand(:status);
-            deadline = min(deadline, Client.monotonic() + 10),
+            deadline = min(
+                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000))
+            ),
         )
         confirm_ready(completion)
         with_thread_loop_lock(client.loop) do _
@@ -350,10 +364,13 @@ function retire_record!(record, path::String)
 end
 
 "Run only as this invocation's ExecStop, before systemd revokes RTC."
-function stop!(args)
+function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
-    deadline = Client.monotonic() + 30
-    values = S.properties(args.unit; extra = "ControlPID,Type,Restart,KillMode", deadline)
+    previous = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(previous, Int64(30_000_000_000))
+    values = S.properties(
+        args.unit; extra = "ControlPID,Type,Restart,KillMode", deadline, clock
+    )
     values["LoadState"] == "loaded" &&
     values["ActiveState"] == "deactivating" &&
     values["Type"] == "exec" &&
@@ -394,6 +411,7 @@ function stop!(args)
         UInt32(pid),
         Int64(record["session_control_instance"]);
         deadline,
+        clock,
     )
     try
         status = Client.request!(client, Session.RunnerCommand(:status); deadline)
@@ -410,7 +428,9 @@ function stop!(args)
         completion = Client.request!(
             client,
             Session.RunnerCommand(:quit);
-            deadline = min(deadline, Client.monotonic() + 8),
+            deadline = min(
+                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000))
+            ),
         )
         confirm_shutdown(completion)
         record["systemd_quit"]["accepted"] = true
@@ -421,8 +441,12 @@ function stop!(args)
     # A terminal native reply proves session cleanup. Give the same exact
     # RTC process time to finish its publication fence and exit before
     # returning to systemd's signal phase, within this helper's original budget.
-    while Client.monotonic() < deadline
-        current = S.properties(args.unit; deadline)
+    while true
+        sampled = Clocks.time_nanos(clock)
+        sampled >= previous || throw(ArgumentError("session stop clock regressed"))
+        previous = sampled
+        sampled < deadline || break
+        current = S.properties(args.unit; deadline, clock)
         S.valid_invocation(current["InvocationID"]) == invocation ||
             throw(ArgumentError("session incarnation changed after native Quit"))
         current["MainPID"] == "0" && return nothing
@@ -434,7 +458,7 @@ function stop!(args)
         current_ticks === nothing ||
             current_ticks == UInt64(record["session_start_ticks"]) ||
             throw(ArgumentError("RTC PID was reused after native Quit"))
-        sleep(min(0.005, max(0.0, deadline - Client.monotonic())))
+        sleep(min(Int64(5_000_000), Base.checked_sub(deadline, sampled)) / 1.0e9)
     end
     throw(ArgumentError("RTC did not exit after native Quit before the stop deadline"))
 end
@@ -468,10 +492,12 @@ end
 
 "Retain the exact direct connection used to prove the selected session's Status."
 function select_direct_session(
-    session_id::AbstractString; deadline = Client.monotonic() + 30
+    session_id::AbstractString;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000)),
 )
     result = SessionClient.select_direct_session(
-        _session_entry(session_id); deadline = Float64(deadline)
+        _session_entry(session_id); deadline = S.deadline_ns(deadline), clock
     )
     return selected_connection(result)
 end
@@ -500,12 +526,17 @@ function session_status(connection::SessionClient.Connection)
     )
 end
 
-function control_session(session_id::AbstractString, argv; timeout = 30)
+function control_session(
+    session_id::AbstractString,
+    argv;
+    timeout = 30,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     isfinite(timeout) && timeout > 0 ||
         throw(ArgumentError("control timeout must be finite and positive"))
     command = Commands.parse(argv)
-    deadline = Client.monotonic() + timeout
-    connection = select_direct_session(session_id; deadline)
+    deadline = Base.checked_add(Clocks.time_nanos(clock), S.duration_ns(timeout))
+    connection = select_direct_session(session_id; deadline, clock)
     try
         completion = SessionClient.request!(connection, command; deadline)
         return SessionClient.render_direct(connection, completion)

@@ -59,6 +59,9 @@ checks, optional reference checks and the existing warmed allocation gates pass.
 Correction/recovery/supervision host times now use the same signed clock contract,
 with once-per-cycle sampling and fail-closed regression/overflow behavior; pure
 and private-core timer checks pass.
+Deployment/systemd waits, session CLI, optional Analysis lifecycle and simulator
+replacement now forward signed deadlines and the same injected clock; 597
+combined software assertions pass without modifying services or placement.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

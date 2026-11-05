@@ -52,7 +52,7 @@ const S = SystemdOwners
     const test_jobs = Pair{String,String}[]
     const test_stop_code = Ref(0)
     const test_group = "/test.slice/retained.service"
-    function properties(unit::String; extra = "", deadline = nothing)
+    function properties(unit::String; extra = "", deadline = nothing, clock = nothing)
         push!(test_calls, (:properties, unit, extra))
         return copy(test_values[])
     end
@@ -76,19 +76,19 @@ const S = SystemdOwners
         push!(test_calls, (:cgroup_empty, group))
         return test_empty[]
     end
-    function listed_jobs(invocation::String; deadline = nothing)
+    function listed_jobs(invocation::String; deadline = nothing, clock = nothing)
         push!(test_calls, (:listed_jobs, invocation))
         return copy(test_jobs)
     end
-    function quiescent_unit(unit::String; deadline = nothing)
+    function quiescent_unit(unit::String; deadline = nothing, clock = nothing)
         push!(test_calls, (:quiescent_unit, unit))
         return test_quiet[]
     end
-    function checked(argv::Vector{String}; timeout = 5, deadline = nothing)
+    function checked(argv::Vector{String}; timeout = 5, deadline = nothing, clock = nothing)
         push!(test_calls, (:command, copy(argv)))
         return (; returncode = test_stop_code[], stderr = "")
     end
-    function wait_empty(group::String, deadline::Float64)
+    function wait_empty(group::String, deadline::Int64; clock = nothing)
         push!(test_calls, (:wait_empty, group))
         return test_empty[]
     end
@@ -409,4 +409,83 @@ end
     @test SO.parse_properties("Id=unit.service\nExecStopPost=argv[]=x=y\n")["ExecStopPost"] ==
         "argv[]=x=y"
     @test_throws SO.OwnerError SO.parse_properties("Id=a\nId=b\n")
+end
+
+module OwnerClockBoundary
+import Clocks
+import PipeWireAORTC
+const deadline_ns = PipeWireAORTC.SystemdOwners.deadline_ns
+const fail = PipeWireAORTC.SystemdOwners.fail
+const empty = Ref(false)
+const probes = Ref(0)
+cgroup_empty(group) = (probes[] += 1; empty[])
+module Common
+const calls = Any[]
+run_checked(argv; kwargs...) = (push!(calls, (; argv, kwargs...)); (; returncode = 0))
+end
+for name in ("checked", "wait_empty")
+    source = read(
+        joinpath(pkgdir(PipeWireAORTC), "src/deployment/systemd_owners.jl"), String
+    )
+    position = first(findfirst("function " * name * "(", source))
+    expression, _ = Meta.parse(source, position)
+    Core.eval(@__MODULE__, expression)
+end
+end
+
+import Clocks
+mutable struct OwnerClock <: Clocks.AbstractNanoClock
+    ticks::Vector{Int64}
+    reads::Int
+end
+OwnerClock(ticks::Int64...) = OwnerClock(collect(ticks), 0)
+function Clocks.time_nanos(clock::OwnerClock)
+    clock.reads += 1
+    return clock.ticks[min(clock.reads, length(clock.ticks))]
+end
+
+@testset "Signed owner waits and subprocess budgets preserve clock boundaries" begin
+    B = OwnerClockBoundary
+    for origin in (Int64(-10), Int64(0), Int64(2)^53 + 1)
+        clock = OwnerClock(origin, origin + 1)
+        B.empty[] = false
+        B.probes[] = 0
+        @test !B.wait_empty("unused", origin + 1; clock)
+        @test clock.reads == 2 && B.probes[] == 2
+        clock = OwnerClock(origin)
+        B.empty[] = true
+        @test B.wait_empty("unused", origin + 1; clock)
+        @test clock.reads == 1
+        empty!(B.Common.calls)
+        clock = OwnerClock(origin)
+        @test B.checked(["unused"]; deadline = origin + 1, clock).returncode == 0
+        @test only(B.Common.calls).timeout === 1.0e-9 && clock.reads == 1
+        empty!(B.Common.calls)
+        @test_throws SO.OwnerError B.checked(["unused"]; deadline = origin, clock)
+        @test isempty(B.Common.calls)
+    end
+    B.empty[] = false
+    clock = OwnerClock(Int64(-10), Int64(-11))
+    @test_throws SO.OwnerError B.wait_empty("unused", Int64(-9); clock)
+    @test clock.reads == 2
+    empty!(B.Common.calls)
+    @test_throws OverflowError B.checked(
+        ["unused"];
+        deadline = typemax(Int64),
+        clock = Clocks.CachedNanoClock(typemin(Int64)),
+    )
+    @test isempty(B.Common.calls)
+    @test SO.deadline_ns(1.25) === Int64(1_250_000_000)
+    @test SO.deadline_ns(Int64(2)^53 + 1) === Int64(2)^53 + 1
+    for invalid in (Inf, -Inf, NaN)
+        @test_throws SO.OwnerError SO.deadline_ns(invalid)
+        @test_throws SO.OwnerError SO.duration_ns(invalid)
+    end
+    service = ServiceBoundary.service()
+    ServiceBoundary.S.running!(service)
+    @test_throws OverflowError ServiceBoundary.S.stop!(
+        service, 1; clock = Clocks.CachedNanoClock(typemax(Int64))
+    )
+    @test service.state === :stop_failed
+    @test isempty(ServiceBoundary.S.test_calls)
 end

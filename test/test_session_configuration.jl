@@ -348,18 +348,19 @@ end
 end
 
 module LaunchLedgerCleanupTests
+import Clocks
 using PipeWireAORTC
 import PipeWireAORTC.SessionLaunch: _read_ledger, validate_ledger, fail
 const events = String[]
 module S
 import PipeWireAORTC.SystemdOwners: valid_invocation, ROLE, PREFIX
 import ..events
-cancel_start_jobs!(args...) = push!(events, "cancel")
+cancel_start_jobs!(args...; kwargs...) = push!(events, "cancel")
 listed_jobs(args...; kwargs...) = Pair{String,String}[]
 cleanup_unit(unit; kwargs...) = push!(events, unit)
 end
 monotonic() = 0.0
-cleanup_record!(args...) =
+cleanup_record!(args...; kwargs...) =
     (push!(events, "consumers"); error("unexpected consumer cleanup"))
 launch_record!(args...) = push!(events, "write")
 end
@@ -409,6 +410,7 @@ end
 end
 
 module FailedStartPreflightTests
+import Clocks
 import PipeWireAORTC
 const Common = PipeWireAORTC.Common
 const Runtime = PipeWireAORTC.SessionRuntime
@@ -436,7 +438,7 @@ monotonic() = 0.0
 remaining(args...) = 1.0
 _owned_link(args...) = nothing
 _exact_fragment(args...) = true
-_unrun_instance(args...) = false
+_unrun_instance(args...; kwargs...) = false
 checked(args...; kwargs...) = push!(events, "stop")
 end
 

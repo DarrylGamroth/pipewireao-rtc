@@ -121,28 +121,31 @@ function config_asset(spec)
     return String(relative)
 end
 
-function selected_session(session_id)
-    connection = SessionCLI.select_direct_session(session_id)
+function selected_session(
+    session_id; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    connection = SessionCLI.select_direct_session(session_id; clock)
     try
         selected = connection.selected
         status = selected.status
         status.lifecycle in (:ready, :running) ||
             throw(ArgumentError("simulator replacement requires Ready or Running"))
         runtime = dirname(status.remote)
-        handle = R.attach(dirname(runtime))
+        handle = R.attach(dirname(runtime); clock)
         ledger = R._ledger(handle)
         ledger["runtime"] == runtime &&
         ledger["session_uuid"] == session_id &&
         handle.main_pid == status.owner_pid &&
         ledger["session_control_instance"] == status.incarnation ||
             throw(ArgumentError("native session and managed invocation differ"))
-        R._verify_owners(handle, ledger, R.monotonic() + 15)
-        properties = SystemdOwners.properties(handle.unit; extra = "FragmentPath")
+        deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), Int64(15_000_000_000))
+        R._verify_owners(handle, ledger, deadline; clock)
+        properties = SystemdOwners.properties(handle.unit; extra = "FragmentPath", clock)
         application = dirname(dirname(realpath(properties["FragmentPath"])))
         basename(application) == "installed" &&
         isfile(joinpath(dirname(application), "session.json")) ||
             throw(ArgumentError("managed simulator has no retained installation receipt"))
-        installed = R.attach(dirname(application))
+        installed = R.attach(dirname(application); clock)
         (installed.unit, installed.invocation, installed.main_pid, installed.start_ticks) ==
         (handle.unit, handle.invocation, handle.main_pid, handle.start_ticks) ||
             throw(ArgumentError("installation receipt and selected session differ"))

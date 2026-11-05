@@ -1,5 +1,6 @@
 """Optional CPU analysis graphs, independent of required RTC readiness and owners."""
 module Analysis
+import Clocks
 
 import ..Common
 import ..DeploymentConfiguration
@@ -327,7 +328,10 @@ end
 
 # The optional installer and ExecStopPost run in different processes. flock
 # releases on process death and prevents a late fragment from escaping cleanup.
-function with_lifecycle_lock(action, runtime, deadline)
+function with_lifecycle_lock(
+    action, runtime, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    deadline = S.deadline_ns(deadline)
     path = joinpath(runtime, "analysis.lock")
     islink(path) && throw(ArgumentError("optional analysis lock must not be a symlink"))
     open(path, "a+") do io
@@ -335,16 +339,22 @@ function with_lifecycle_lock(action, runtime, deadline)
             throw(ArgumentError("optional analysis lock belongs to another user"))
         chmod(path, 0o600)
         locked = false
+        previous = nothing
         try
             while !locked
-                S.monotonic() < deadline || throw(
+                current = Clocks.time_nanos(clock)
+                previous === nothing ||
+                    current >= previous ||
+                    throw(ArgumentError("optional analysis clock regressed"))
+                previous = current
+                current < deadline || throw(
                     ArgumentError("optional analysis lifecycle lock deadline expired")
                 )
                 locked = ccall(:flock, Cint, (Cint, Cint), fd(io), 2 | 4) == 0
                 locked && break
                 Base.Libc.errno() in (4, 11) ||
                     throw(SystemError("optional analysis flock", Base.Libc.errno()))
-                sleep(min(0.02, max(0, deadline - S.monotonic())))
+                sleep(Float64(min(Int128(20_000_000), Int128(deadline) - current)) / 1e9)
             end
             return action()
         finally
@@ -353,9 +363,11 @@ function with_lifecycle_lock(action, runtime, deadline)
     end
 end
 
-function _same_session(record, unit, deadline)
+function _same_session(
+    record, unit, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     PipeWireAORTC.SessionLaunch.validate_ledger(record)
-    values = S.properties(unit; deadline)
+    values = S.properties(unit; deadline, clock)
     values["ActiveState"] == "active" &&
     values["InvocationID"] == record["invocation"] &&
     tryparse(Int, values["MainPID"]) == record["session_pid"] ||
@@ -369,9 +381,11 @@ function start!(
     launch_record,
     session_unit;
     prefix = "/opt/pipewireao",
-    deadline = S.monotonic() + 20,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    deadline = Base.Checked.checked_add(Clocks.time_nanos(clock), Int64(20_000_000_000)),
     ready = () -> nothing,
 )
+    deadline = S.deadline_ns(deadline)
     PipeWireAORTC.SessionLaunch.validate_ledger(launch_record)
     runtime = launch_record["runtime"]
     if ispath(joinpath(runtime, "analysis.json"))
@@ -391,9 +405,9 @@ function start!(
         isempty(entries) && return nothing
         save_receipt!(runtime, receipt)
         ready()
-        with_lifecycle_lock(runtime, deadline) do
+        with_lifecycle_lock(runtime, deadline; clock) do
             # Recheck while locked: cleanup may have completed during readiness.
-            _same_session(launch_record, session_unit, deadline)
+            _same_session(launch_record, session_unit, deadline; clock)
             paths = D.installed_paths(prefix)
             project =
                 D.registered_application(spec) ?
@@ -459,29 +473,38 @@ function start!(
                     ordinary = true,
                 )
                 S.install_fragment!(
-                    service.unit, text, runtime, receipt; save = save_receipt!, deadline
+                    service.unit,
+                    text,
+                    runtime,
+                    receipt;
+                    save = save_receipt!,
+                    deadline,
+                    clock,
                 )
             end
-            result = S.checked(["systemctl", "--user", "daemon-reload"]; deadline)
+            result = S.checked(["systemctl", "--user", "daemon-reload"]; deadline, clock)
             result.returncode == 0 ||
                 throw(ArgumentError("optional analysis unit reload failed"))
             for (role, item) in receipt["analysis"]
-                _same_session(launch_record, session_unit, deadline)
+                _same_session(launch_record, session_unit, deadline; clock)
                 S.verify_fragment!(
                     item["unit"],
                     receipt;
                     placement = item["placement"],
                     ordinary = true,
                     deadline,
+                    clock,
                 )
                 item["state"] = "submitted"
                 save_receipt!(runtime, receipt)
                 result = S.checked(
-                    ["systemctl", "--user", "start", "--no-block", item["unit"]]; deadline
+                    ["systemctl", "--user", "start", "--no-block", item["unit"]];
+                    deadline,
+                    clock,
                 )
                 result.returncode == 0 ||
                     throw(ArgumentError("optional analysis submission failed for $role"))
-                values = S.properties(item["unit"]; extra = "Result", deadline)
+                values = S.properties(item["unit"]; extra = "Result", deadline, clock)
                 item["active_state"] = values["ActiveState"]
                 item["result"] = values["Result"]
                 item["invocation"] = values["InvocationID"]
@@ -505,7 +528,11 @@ function start!(
             error, catch_backtrace()
         )
         try
-            with_lifecycle_lock(runtime, max(deadline, S.monotonic() + 1)) do
+            cleanup_deadline = max(
+                deadline,
+                Base.Checked.checked_add(Clocks.time_nanos(clock), Int64(1_000_000_000)),
+            )
+            with_lifecycle_lock(runtime, cleanup_deadline; clock) do
                 path = joinpath(runtime, "analysis.json")
                 saved =
                     isfile(path) ? Common.read_json(path; maximum = 1024 * 1024) : receipt
@@ -537,7 +564,13 @@ function cleanup_receipt(runtime, launch_record)
     return receipt
 end
 
-function verify_cleanup!(runtime, launch_record, deadline)
+function verify_cleanup!(
+    runtime,
+    launch_record,
+    deadline;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    deadline = S.deadline_ns(deadline)
     receipt = cleanup_receipt(runtime, launch_record)
     receipt === nothing && return nothing
     for (unit, entry) in receipt["unit_files"]
@@ -552,7 +585,7 @@ function verify_cleanup!(runtime, launch_record, deadline)
             (isfile(path) && Common.sha256_file(path) == entry["sha256"]) ||
             (get(receipt, "unit_file_removal_started", false) && !ispath(path))
         ) || throw(ArgumentError("optional analysis fragment changed before cleanup"))
-        values = S.properties(unit; extra = "FragmentPath,DropInPaths", deadline)
+        values = S.properties(unit; extra = "FragmentPath,DropInPaths", deadline, clock)
         isempty(values["DropInPaths"]) && (
             values["LoadState"] == "not-found" ||
             (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
@@ -568,13 +601,19 @@ function verify_cleanup!(runtime, launch_record, deadline)
     return nothing
 end
 
-function cleanup!(runtime, launch_record, deadline)
+function cleanup!(
+    runtime,
+    launch_record,
+    deadline;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    deadline = S.deadline_ns(deadline)
     PipeWireAORTC.SessionLaunch.validate_ledger(launch_record)
-    with_lifecycle_lock(runtime, deadline) do
+    with_lifecycle_lock(runtime, deadline; clock) do
         receipt = cleanup_receipt(runtime, launch_record)
         if receipt === nothing
-            units = S.listed_units(launch_record["invocation"]; deadline)
-            jobs = S.listed_jobs(launch_record["invocation"]; deadline)
+            units = S.listed_units(launch_record["invocation"]; deadline, clock)
+            jobs = S.listed_jobs(launch_record["invocation"]; deadline, clock)
             prefix = S.PREFIX * launch_record["invocation"] * "-analysis-"
             required = Set(
                 get(owner, "unit", "") for owner in Base.values(launch_record["owners"])
@@ -589,17 +628,17 @@ function cleanup!(runtime, launch_record, deadline)
             )
             return nothing
         end
-        verify_cleanup!(runtime, launch_record, deadline)
+        verify_cleanup!(runtime, launch_record, deadline; clock)
         files = Set(keys(receipt["unit_files"]))
         # Only the separately retained, exactly verified definitions authorize
         # optional stops; a matching name by itself is insufficient.
-        for job in S.listed_jobs(receipt["invocation"]; deadline)
-            job.second in files && S.cancel_job(job.first; deadline)
+        for job in S.listed_jobs(receipt["invocation"]; deadline, clock)
+            job.second in files && S.cancel_job(job.first; deadline, clock)
         end
         for (role, item) in receipt["analysis"]
             unit = item["unit"]
             unit in files || continue
-            values = S.properties(unit; deadline)
+            values = S.properties(unit; deadline, clock)
             retained_id = get(item, "invocation", "")
             isempty(retained_id) ||
                 isempty(values["InvocationID"]) ||
@@ -619,12 +658,12 @@ function cleanup!(runtime, launch_record, deadline)
                 service.invocation = retained_id
                 service.cgroup = item["cgroup"]
                 S.running!(service)
-                S.stop!(service, 0)
+                S.stop!(service, 0; clock)
             else
-                S.cleanup_unit(unit; deadline)
+                S.cleanup_unit(unit; deadline, clock)
             end
         end
-        for unit in S.listed_units(receipt["invocation"]; deadline)
+        for unit in S.listed_units(receipt["invocation"]; deadline, clock)
             startswith(unit, S.PREFIX * receipt["invocation"] * "-analysis-") &&
                 !(unit in files) &&
                 !(
@@ -638,8 +677,9 @@ function cleanup!(runtime, launch_record, deadline)
                 )
         end
         roles = keys(receipt["analysis"])
-        get(receipt, "unit_files_removed", false) ||
-            S.remove_fragments!(runtime, receipt, deadline; roles, save = save_receipt!)
+        get(receipt, "unit_files_removed", false) || S.remove_fragments!(
+            runtime, receipt, deadline; roles, save = save_receipt!, clock
+        )
         receipt["cleanup_complete"] = true
         save_receipt!(runtime, receipt)
         return nothing
