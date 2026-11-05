@@ -25,7 +25,10 @@ retired session executable, plugins or scripts.
 credentials, descriptor transfer, durable receipts and private worker lifetime.
 It is a cold control process and does not run scientific frame callbacks or
 coordinate the session lifecycle. Its JSON utility dependency is json-c;
-no session-manager library is needed.
+no session-manager library is needed. systemd owns activation and process
+lifetime; accepted rebuild jobs use their existing independent units. See the
+[endpoint contract](../docs/MANAGEMENT_ENDPOINT.md) for installation,
+request/descriptor/receipt bounds and the source/installed validation boundary.
 
 Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO development files
 with Unix support, and json-c 0.18 or newer development files. Build and test
@@ -71,43 +74,17 @@ and cursor before clearing graph histories. QUIT uses existing SourceControl
 and owner bootstrap shutdown. Primary source-end reporting remains tied to the
 primary cursor. No additional session authority or source protocol is created.
 
-## Provenance and validation scope
+## Retired session sources and historical tests
 
-The relocated policy, plugins and tests originated in the WirePlumberAO
-checkout at `0f64f9ef9d7f080a2668470f3904aa3d0ebf92af`, including the existing
-2026-10-21 working changes to ndarray connections and event-hook policy.
-Their MIT SPDX and attribution notices are retained; the upstream license is
-included here. `main.c` is an RTC application host rather than a copy or wrapper
-of the WirePlumber daemon entrypoint.
+The previous native WirePlumber host, RTC modules, Lua policy and their
+implementation-specific C/Lua tests were retired when the selected session
+implementation moved to Julia `MediaSession` and PipeWireAO.jl. These sources
+are no longer selected, built or installed. Their implementation and test
+history remains available in Git; historical results retain the scope of the
+older implementation and do not qualify the current migration.
 
-The focused tests cover native journal ordering/bounds/worker behavior, Lua
-owner/acquisition/connections/journal policy, native event-hook lifecycle races,
-and actual native-host configuration failure, clean termination and server
-loss. An additional isolated two-process test loads production `ao/session.lua`
-and both real control endpoints in the RTC host, holds scientific admission by
-leaving its declared owners absent, then uses a separate native controller to
-read public Props and complete native Status while Configuring. It verifies the
-public profile, endpoint incarnation and actual host PID through production
-`ao-owner`/`ao-control` helpers. It does not claim native public Start/Stop/Reset/
-Quit coverage with scientific owners; lifecycle operations remain covered by
-the separate production-policy event-hook tests. Host tests also exercise fixed profile/identity, ordinary-client mode,
-initial Quit-marker clearing, ignored configuration fragments and an absolute
-entrypoint with a hostile current-directory script. Policy tests distinguish a
-successful Quit publication fence from failure. These are CPU functional checks;
-they do not qualify GPUs, physical hardware, deadlines or production release.
-
-## Local management companion
-
-`pipewireao-management` is a separate per-user management executable, built by
-this native project. It reuses GIO and libwireplumber JSON utilities but does not
-connect to or schedule a PipeWire graph. It owns bounded local IPC and a shared
-on-demand owner worker; it is not another RTC supervisor. systemd owns activation
-and process lifetime, and accepted rebuild jobs use their existing independent
-units. See [the endpoint contract](../docs/MANAGEMENT_ENDPOINT.md) for installation,
-request/FD/receipt bounds and the explicit source/installed validation boundary.
-
-Build it with `meson compile -C BUILD pipewireao-management`. Its socket-activation
-acceptance and fault tests are in `test/management_endpoint.jl`, selected with
-`PIPEWIREAO_MANAGEMENT_BINARY=/absolute/path/to/pipewireao-management`. These tests
-start only their own endpoint and workers and require Julia 1.13; they do not
-restart any installed RTC.
+The current session migration remains under integration, not release or
+real-time qualification. See the [migration contract and gates](../docs/SESSION_POLICY_MIGRATION.md)
+and [current roadmap](../docs/roadmap.md#current-work). The management
+companion tests remain selected independently by Meson; the session policy is
+covered by the package's Julia tests and opt-in private-core checks.

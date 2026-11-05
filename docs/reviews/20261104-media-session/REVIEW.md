@@ -148,6 +148,13 @@ established failure of the currently consumed RTC fields.
 
 ## Management companion dependency removal
 
+The selected source tree now retires 31 files belonging exclusively to the old
+WirePlumber host, modules, Lua policy and their implementation-specific tests.
+Git retains their implementation history. Generated build outputs, frozen
+evidence, protocol inputs and scientific integration selectors are preserved.
+The independent management-only Meson build and its native JSON test still pass
+after source retirement. Old policy unit receipts do not qualify the replacement.
+
 Observed: the independent C management helper used libwireplumber only for its
 JSON utility. It now uses json-c 0.18 or newer and the existing GLib/GIO Unix
 interfaces. The selected Meson build creates only the management companion and
