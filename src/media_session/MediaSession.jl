@@ -25,5 +25,7 @@ abstract type Event end
 include("machine.jl")
 include("controls.jl")
 include("correction.jl")
+include("journal.jl")
+include("ingress.jl")
 
 end
