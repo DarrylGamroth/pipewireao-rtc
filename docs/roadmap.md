@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Lua session policy replacement — 2026-11-04
+
+Implementation is underway on `codex/julia-session-policy-20261104`. The
+[migration plan and requirement closure](SESSION_POLICY_MIGRATION.md) retain
+one RTC session authority with a Julia/Hsm owner and C libwireplumber boundary.
+The separate scientific graph processes and native control contracts remain.
+The replacement is not yet qualified or deployed; verified slices are committed
+as they complete.
+
 ### Naming and Julia type dispatch — 2026-11-04
 
 The [completion record](reviews/20261104-naming-cleanup/REVIEW.md) covers the

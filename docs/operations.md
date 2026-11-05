@@ -126,8 +126,9 @@ complete owned-object cleanup, and preservation of unrelated objects.
 ### RTC-DEV-004 — Basic lifecycle
 
 The session authority MUST serialize the following stable states and
-transitions. Under RTC-ARCH-026, the headless RTC application is that authority; its Lua
-policy reuses libwireplumber. Julia and Rust runtime coordinators remain retired.
+transitions. Under RTC-ARCH-026, the headless RTC application is that authority;
+its policy reuses libwireplumber. The former Julia DeploymentRunner and Rust
+runtime coordinators remain retired.
 
 ```mermaid
 stateDiagram-v2
@@ -174,7 +175,7 @@ and verify that invalid commands leave the state and owned objects coherent.
 
 RTC-ARCH-026 retains the retirement of Statig and the former Rust dispatcher.
 The headless RTC MUST be the sole serialized lifecycle and admission authority.
-Its RTC-owned Lua state transitions MUST preserve RTC-DEV-004
+Its RTC-owned policy state transitions MUST preserve RTC-DEV-004
 states, legal transitions, unload behavior, typed operation identity and
 completion fencing. The authority MAY have at most one internal session or
 group effect in flight. Its token MUST be unique within the manager incarnation
@@ -183,13 +184,13 @@ originating transition and session incarnation. Stop, unload, reset, required
 loss or superseding operation MUST cancel or fence pending work; late results
 MUST be discarded and MUST NOT mutate a later state. Potentially blocking
 PipeWire work MUST use asynchronous PipeWire operations through the bounded
-native typed endpoint and C transport shim. Lua and native handlers MUST NOT
+native typed endpoint and C transport shim. Policy and native handlers MUST NOT
 perform blocking PipeWire roundtrips, filesystem/configuration work or science
 work. External owner operations MUST have bounded deadlines. The shim and
 clients MUST NOT own lifecycle state. Existing Statig evidence is historical
 and does not qualify the current headless implementation.
 
-Verification intent (informative): verify one authoritative Lua state writer,
+Verification intent (informative): verify one authoritative session state writer,
 serialized order, bounded effects, exact completion correlation, stale
 completion rejection and coherent retry/unload across a fresh incarnation.
 
@@ -715,7 +716,7 @@ finite bounds; name-based stop MUST NOT be treated as an atomic incarnation
 fence. Operation and cleanup deadlines MUST be finite; unknown revocation or
 cleanup MUST remain a fault.
 
-If the headless RTC service dies abruptly while Lua is unavailable, its installed
+If the headless RTC service dies abruptly while its policy is unavailable, its installed
 systemd emergency cleanup hook MUST revoke ingress before tearing down
 consumers. Service activation MUST NOT authorize ingress. Foreground and
 user-service modes MUST use the same session contract. User units MUST NOT
@@ -735,7 +736,7 @@ with systemd-supervised processes.
 
 The public native PipeWire endpoint MUST dispatch typed requests to the sole
 the headless RTC lifecycle owner. A narrow C transport shim MAY expose PipeWire
-operations to Lua but MUST NOT duplicate lifecycle policy or serve as another
+operations to the session policy but MUST NOT duplicate lifecycle policy or serve as another
 command endpoint. FGN/JFG scientific changes MUST use their owner-local public
 controls. The headless RTC MUST order those updates against reset, stop and reload,
 while the owner applies the scientific value and reports adoption. Parameter
@@ -1190,7 +1191,7 @@ or graph-authoring contract is introduced.
 
 The headless RTC's session endpoint MUST use bounded native typed Props
 requests and completions. A narrow PipeWireAO C transport shim MAY expose the required
-PipeWire operations to Lua, but MUST NOT own session state or implement
+PipeWire operations to the session policy, but MUST NOT own session state or implement
 connection/admission policy. The endpoint MUST bind exact manager, runtime,
 endpoint and Link incarnations; stale manager replacement MUST NOT adopt an old
 session. Before success or a new generation, withdrawal MUST cancel/account for

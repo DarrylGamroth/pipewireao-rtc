@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Lua session policy replacement | RTC-ARCH-024/026; RTC-DEV-003/004/009/010/012/013/021/022/025/030 | [Implementation boundary and closure plan](SESSION_POLICY_MIGRATION.md) |
 | Naming cleanup and Julia type dispatch | Preserve protocol vocabulary, scientific behavior and RTC-ARCH-024/026 | [Migration and verification](reviews/20261104-naming-cleanup/REVIEW.md) |
 | Calibration worker messages and native command endpoint | RTC-ARCH-024/026, RTC-DEV-029/030; private graph/control state, bounded stop and explicit storage release | [Implementation, source cohort and verification](reviews/20261104-calibration-worker/REVIEW.md) |
 | Optical measurement kinds and calibration projections | RTC-DEV-029/030; preserve scientific values, graph provenance and cleanup | [Typed optical migration and ownership boundary](reviews/20261104-optical-types/REVIEW.md), [projection API migration](JULIA_CALIBRATION_ACQUISITION.md#cpu-initial-session-endpoint) |

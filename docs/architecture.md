@@ -424,9 +424,10 @@ executor such as AdaptiveOpticsSim.
 
 ## Implementation language and placement
 
-Under RTC-ARCH-026, RTC-owned Lua implements the session policy through
-libwireplumber, C supplies
-native PipeWire control boundaries, and Julia supplies deployment tools and
+Under RTC-ARCH-026, the headless RTC owns session policy through libwireplumber.
+The user selected replacement of its Lua policy on 2026-11-04: Julia/Hsm owns
+the serialized policy in the same RTC process, with C providing the native
+libwireplumber/PipeWire boundary. Julia also supplies deployment tools and
 scientific owners. systemd supervises the processes. These implementation
 languages are not part of the scientist-facing ABI; scientific Algorithms
 remain in their owning implementation language.
@@ -502,7 +503,7 @@ The private native PipeWire control endpoint and console share one typed command
 Reader/preparation/writer work stays outside the sole owner. Requests, clients,
 queues, parameter bytes and reply sizes have finite bounds. Replies distinguish
 submission, requested generation and observed active generation. The headless RTC
-coordinates asynchronous effects with finite deadlines; its Lua policy must
+coordinates asynchronous effects with finite deadlines; its session policy must
 not block on process, filesystem or scientific work. Health and stop must not
 claim a bound shorter than the effects they depend on. A client timeout or
 disconnect has an unknown mutation outcome until generations are observed.
@@ -555,7 +556,7 @@ bounded, acknowledged pause/resume/reset interface. The RTC releases
 that source only after stopped-session admission and acknowledged RTC start.
 The source completes its outstanding command before acknowledging pause; stop
 and reset then reach the graph owner. The native session endpoint admits
-client requests to the single Lua session policy; scientific commands use
+client requests to the single RTC session policy; scientific commands use
 the existing owner endpoints. It adds no data scheduler or second scientific parser.
 Unconfirmed source control fails the owned deployment; mutations are not retried.
 
