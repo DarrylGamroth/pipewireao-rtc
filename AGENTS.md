@@ -36,6 +36,10 @@
 
 ## Implementation
 
+- Follow the package-wide [Julia design conventions](docs/architecture.md#julia-design-conventions).
+  Reuse existing interfaces and codecs; document required interface methods and
+  trait results beside their definitions. Record consequential exceptions in the
+  current migration plan or evidence, with their verification boundary.
 - RTC-ARCH-026 supersedes RTC-ARCH-025's ownership allocation. The headless RTC
   application owns session lifecycle, admission and declared application links.
   The user selected removal of Lua and libwireplumber on 2026-11-04. The

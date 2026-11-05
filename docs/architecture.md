@@ -424,8 +424,8 @@ executor such as AdaptiveOpticsSim.
 
 ## Implementation language and placement
 
-Under RTC-ARCH-026, the headless RTC owns session policy through libwireplumber.
-The user selected replacement of both Lua and libwireplumber on 2026-11-04:
+RTC-ARCH-026 assigns session policy to the headless RTC. The user selected
+replacement of both Lua and libwireplumber on 2026-11-04:
 the `MediaSession` Julia module owns the serialized policy in the same RTC
 process, using public PipeWireAO.jl APIs. This updates the library selection
 under RTC-ARCH-026 without changing its single-authority allocation.
@@ -449,6 +449,55 @@ The selected deployment uses separate PipeWire, headless RTC and scientific
 owner processes. Device profiles may additionally use upstream WirePlumber with
 separately configured site/device policy. It does not require one process per
 graph operation.
+
+### Julia design conventions
+
+The user selected the following package-wide conventions on 2026-11-04.
+They guide implementation and review; recording them does not establish that
+every existing module has completed migration.
+
+- Define an interface by its operations, argument and result contracts,
+  invariants, failure behavior and ownership. Document required methods beside
+  the owning abstract type. Abstract type names start with `Abstract`.
+- Use concrete, parametric representations and multiple dispatch for different
+  domain kinds. Use a trait when a capability or property is independent of the
+  type hierarchy, such as observation scope or whether an effect has a deadline.
+  Document each trait's valid results and consuming methods. A trait must express
+  a real distinction; it must not conceal `isa` or field-presence selection.
+- Reuse the owning package's public interface and the RTC's existing codecs.
+  Share validation when its contract is identical. Keep genuinely different
+  protocol semantics explicit rather than introducing forwarding wrappers,
+  parallel codecs or a general framework for a single implementation.
+- Use Hsm.jl for Julia control state machines. Public functions dispatch typed
+  events; leaf and ancestor handlers decide state-dependent behavior. Handlers
+  produce typed effects, which the owner executes outside run-to-completion
+  dispatch. Loops deliver observations, ticks and effect results. Shared
+  ancestor handlers implement shared behavior without phase tests in the loop.
+- One task owns each machine and its mutable application state. Use Agent.jl
+  for a long-lived active object's duty cycle and bounded typed messages across
+  threads. Queue synchronization protects transport, not shared application
+  state. Existing single-task clients do not require an additional agent.
+- Use signed `Int64` nanoseconds returned by Clocks.jl for elapsed control time
+  and absolute monotonic deadlines. Inject `AbstractNanoClock` implementations;
+  update the owner's cached clock once at the beginning of a duty cycle. Preserve
+  producer receipt timestamps. Read fresh time at transport deadline validation;
+  convert units only at an interface that explicitly requires another unit.
+  Epoch timestamps and wire counters retain their own representations.
+- Use ordinary declarations and explicit methods for a fixed set of states and
+  protocol operations. Reserve `@eval` for a justified metaprogramming need;
+  repetitive handwriting alone does not establish one. Derive protocol constants
+  from the owning codecs and give policy limits names and documented units.
+- Follow upstream PipeWire/media-session concepts with Julia casing and mutation
+  suffixes. Names describe responsibilities and protocol versions rather than
+  implementation history. Keep instrument-specific adapters in their owning
+  packages. Preserve exact protocol vocabulary and immutable historical evidence.
+- Format maintained Julia consistently, with four-space indentation and readable
+  line lengths. Split long functions at meaningful operations. Generated files
+  are changed through their authoritative generator, never by a formatting pass.
+
+Apply these conventions to an affected interface and its callers together.
+Record temporary exceptions and verification boundaries in the current migration
+plan or evidence record; do not silently introduce a second design convention.
 
 ## Laboratory deployment profile
 

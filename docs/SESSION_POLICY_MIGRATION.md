@@ -45,6 +45,11 @@ application changes are part of implementation validation.
 
 ## Interfaces and ownership
 
+The package-wide [Julia design conventions](architecture.md#julia-design-conventions)
+record the user's consistency, interface, trait, Hsm, ownership and clock
+decisions. The implementation is being checked against those conventions as
+coherent interface changes, not as isolated spelling or formatting fixes.
+
 `MediaSession` names the session-management responsibility. Its Machine
 uses Hsm hierarchy for Configuring, admitted Ready/Running, transient operations,
 fault compensation and shutdown. Public mutation functions dispatch typed
