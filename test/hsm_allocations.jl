@@ -2,11 +2,21 @@
 # Nominal control HSM paths only: no native timer, core, transport or science.
 # Constructors and 128 warmup cycles precede the measured region. Immutable
 # observation/effect construction and the real correction clock are included.
-# Preparation includes a counted, deterministic clock call on each ready check.
+# Preparation includes a counted, concrete nanosecond clock read on each ready check.
 using PipeWireAORTC, Test
+import Clocks
 const CL = PipeWireAORTC.CorrectionLoops
 const CR = PipeWireAORTC.CorrectionRecovery
 const CP = PipeWireAORTC.CalibrationPreparation
+
+mutable struct PreparationReadClock <: Clocks.AbstractNanoClock
+    at::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::PreparationReadClock)
+    clock.reads += 1
+    return clock.at
+end
 
 function loop_cycle!(sm)
     generation = sm.requested_generation + 1
@@ -122,8 +132,7 @@ function measure()
             (true, true),
         ),
     )
-    clock_calls = Ref(0)
-    clock = () -> (clock_calls[] += 1; 11.0)
+    clock = PreparationReadClock(Int64(11_000_000_000), 0)
     request = CP.Request(;
         run = 1,
         serial = 1,
@@ -131,11 +140,13 @@ function measure()
         condition = "blocked",
         configuration_identity = "detector-epoch",
         kind = :manual,
-        issued_at = 10.0,
-        deadline = 20.0,
+        issued_at = Int64(10_000_000_000),
+        deadline = Int64(20_000_000_000),
     )
     preparation = CP.Procedure(request; clock)
-    confirmation = CP.Confirmation(request; observed_at = 11.0, witness = "operator")
+    confirmation = CP.Confirmation(
+        request; observed_at = Int64(11_000_000_000), witness = "operator"
+    )
     CP.complete!(preparation, confirmation)
     for _ in 1:128
         loop_cycle!(loop)
@@ -170,7 +181,7 @@ function measure()
     @test coupled.serial == 1 + 5 * 1128 && coupled.token == 1128
     @test coupled.loop_generation == (UInt64(2257), UInt64(2257))
     @test preparation_bytes == 0
-    @test clock_calls[] == 1130
+    @test clock.reads == 1130
     @test preparation.state === :ready && preparation.confirmation === confirmation
     println("Julia ", VERSION, "; default threads=", Threads.nthreads(:default))
     println("1,000 loop cycles, bytes=", loop_bytes)

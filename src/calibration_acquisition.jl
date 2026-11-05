@@ -4,6 +4,7 @@ module CalibrationAcquisition
 using JSON
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
+import Clocks
 
 import ..Common
 import ..CalibrationActionClient
@@ -297,15 +298,19 @@ include("calibration_procedure.jl")
 # Enter the prepared exchange before starting the action's budget. Compiling a
 # consumer/procedure specialization is cold preparation, not endpoint latency.
 @noinline function _exchange!(
-    connection, procedure, action::T, check
+    connection, procedure, action::T, check, clock::Clocks.AbstractNanoClock
 ) where {T<:Codec.AbstractAction}
     budget = _timeout(action, procedure.plan.timeouts)
-    deadline = Float64(Common.monotonic_seconds(procedure.clock)) + budget / 1e9
-    isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
+    at = Clocks.time_nanos(clock)::Int64
+    Clocks.update!(procedure.clock, at)
+    _now!(procedure, at) === nothing && throw(AcquisitionFailure("Invalid monotonic clock"))
+    deadline = Base.Checked.checked_add(at, budget)
     procedure.deadline = deadline
     connection.timeout_ns = budget
     answer = ActionClient.complete!(connection, action; deadline, check, record = false)
-    return answer, Float64(Common.monotonic_seconds(procedure.clock))
+    received = Clocks.time_nanos(clock)::Int64
+    Clocks.update!(procedure.clock, received)
+    return answer, received
 end
 
 """Acquire a plan using the event-driven `Procedure` on the caller's task.
@@ -318,7 +323,7 @@ function acquire!(
     input::Plan;
     cancelled = () -> false,
     check = Client.NO_CHECK,
-    clock = Common.MONOTONIC_CLOCK,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     observe = (_...) -> nothing,
     consume = (_...) -> nothing,
 )
@@ -326,19 +331,25 @@ function acquire!(
     connection.serial == 0 &&
     connection.command_count == length(input.reference) ||
         throw(ArgumentError("acquisition requires a fresh connection matching the plan"))
-    procedure = Procedure(input; clock, consume, cancelled)
+    cached = Clocks.CachedNanoClock(Clocks.time_nanos(clock))
+    procedure = Procedure(input; clock = cached, consume, cancelled)
     while procedure.command !== nothing
         command = procedure.command
         known = false
         try
-            answer, completed_at = _exchange!(connection, procedure, command.action, check)
+            answer, completed_at = _exchange!(
+                connection, procedure, command.action, check, clock
+            )
             known = true
             observe(command.action, answer, connection.serial)
             cancelled() && cancel!(procedure)
             complete!(procedure, command.run, command.serial, answer; at = completed_at)
         catch error
+            received =
+                known ? Clocks.time_nanos(cached)::Int64 : Clocks.time_nanos(clock)::Int64
+            Clocks.update!(cached, received)
             reason =
-                !known && Common.monotonic_seconds(clock) >= procedure.deadline ?
+                !known && received >= procedure.deadline ?
                 "TimedOut($(_phase(command.action)))" : _failure(error)
             fail!(procedure, reason; known)
         end

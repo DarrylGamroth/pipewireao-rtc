@@ -3,6 +3,7 @@
 const ReferenceFrames = AdaptiveOpticsCalibration.ReferenceFrames
 const Preparation = PipeWireAORTC.CalibrationPreparation
 const ReferenceClient = PipeWireAORTC.CalibrationActionClient
+import Clocks
 
 function reference_counts(recipe)
     spec = get(recipe, "references", nothing)
@@ -130,7 +131,7 @@ function reference_lamp_update!(state, plan, sample, indices, reference)
     return nothing
 end
 
-function reference_restoration!(client, reference, deadline)
+function reference_restoration!(client, reference, deadline::Int64)
     restored = ReferenceClient.complete!(
         client, Actions.Restore(reference, Actions.Immediate()); deadline, record = false
     )
@@ -165,9 +166,11 @@ function reference_stage(
 )
     cancelled() && throw(InterruptException())
     check_application()
-    start = Control.monotonic()
-    deadline = start + timeout_s
-    cleanup_deadline = deadline + timeout_s
+    clock = Clocks.SystemNanoClock()
+    start = Clocks.time_nanos(clock)
+    duration = round(Int64, timeout_s * 1e9)
+    deadline = Base.Checked.checked_add(start, duration)
+    cleanup_deadline = Base.Checked.checked_add(deadline, duration)
     frontend = command = server = client = serving = nothing
     selected_reference =
         probe_command === nothing ? reference : getproperty(reference, probe_command)
@@ -265,13 +268,13 @@ function reference_stage(
             issued_at = start,
             deadline,
         )
-        gate = Preparation.Procedure(request; clock = Control.monotonic)
+        gate = Preparation.Procedure(request; clock)
         gate.state == :pending ||
             throw(ArgumentError("reference preparation deadline expired"))
         function consume(sample, exposure)
             try
                 cancelled() && throw(InterruptException())
-                Control.monotonic() < deadline ||
+                Clocks.time_nanos(clock) < deadline ||
                     error("reference preparation expired during acquisition")
                 previous = observed[]
                 after = something(boundary[])
@@ -302,7 +305,7 @@ function reference_stage(
             reference,
             name,
             instance,
-            deadline,
+            deadline = deadline / 1e9,
             simulation_graph = condition,
             consume,
             probe_command,
@@ -311,7 +314,7 @@ function reference_stage(
         hashes = copy(frontend.parameter_sha256)
         frontend = command = nothing # ownership transferred to the native endpoint
         serving = @async try
-            Endpoint.serve!(server; deadline = cleanup_deadline)
+            Endpoint.serve!(server; deadline = cleanup_deadline / 1e9)
             nothing
         catch error
             error
@@ -319,7 +322,7 @@ function reference_stage(
         client = ReferenceClient.connect(
             ReferenceClient.Binding(remote, name, getpid(), instance),
             run,
-            Int64(round(timeout_s * 1e9));
+            duration;
             command_count = length(selected_reference),
             deadline,
         )
@@ -330,8 +333,9 @@ function reference_stage(
         witness = "$name/$instance/$acquisition_domain"
         evidence =
             confirm === nothing ?
-            Preparation.Confirmation(request; observed_at = Control.monotonic(), witness) :
-            confirm(request, witness)
+            Preparation.Confirmation(
+                request; observed_at = Clocks.time_nanos(clock), witness
+            ) : confirm(request, witness)
         confirm_reference_witness(evidence, witness)
         Preparation.complete!(gate, evidence)
         cancelled() && throw(InterruptException())
@@ -371,8 +375,8 @@ function reference_stage(
             "discard_exposures" => counts.discard,
             "witness" => evidence.witness,
             "configuration_identity" => request.configuration_identity,
-            "observed_at" => evidence.observed_at,
-            "deadline" => deadline,
+            "observed_at" => evidence.observed_at / 1e9,
+            "deadline" => deadline / 1e9,
             "acquisition_domain" => acquisition_domain,
             "generation" => last.generation,
             "first_sequence" => first(response.exposures).sequence,

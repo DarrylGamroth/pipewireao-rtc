@@ -78,6 +78,30 @@ function connection(transform = (a, r) -> r; run = typemax(UInt64))
 end
 ops(client) = C._operation.([c.action for c in client.client.commands])
 
+mutable struct AcquisitionClock <: Clocks.AbstractNanoClock
+    at::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::AcquisitionClock)
+    clock.reads += 1
+    return clock.at
+end
+
+@testset "exchange samples once before submission and retains its own receipt" begin
+    for origin in (-Int64(2)^60, Int64(2)^53 + 1), observer_failure in (false, true)
+        clock = AcquisitionClock(origin, 0)
+        client = connection()
+        observe =
+            (action, _result, _serial) ->
+                (observer_failure && _serial == 1 && error("observer failed"))
+        result = A.acquire!(client, plan(); clock, observe)
+        @test result.phase == (observer_failure ? "aborted" : "complete")
+        @test result.resume_permitted
+        @test clock.reads == 1 + 2 * length(client.client.commands)
+        @test ops(client) == (observer_failure ? [1, 6, 7] : [1, 2, 3, 4, 2, 3, 4, 6, 7])
+    end
+end
+
 @testset "Cached clock acquisition preserves exchange budget and knownness" begin
     for unknown in (false, true)
         clock = Clocks.CachedNanoClock(10_000_000_000)
@@ -104,7 +128,7 @@ end
     result = A.acquire!(
         client,
         plan();
-        clock = () -> 0.0,
+        clock = Clocks.CachedNanoClock(Int64(0)),
         observe = (action, _result, _serial) ->
             (action isa C.Hold && error("observer failed")),
     )
@@ -115,7 +139,7 @@ end
         (action, result) ->
             action isa C.Hold ? throw(G.UnknownOutcome("completion lost")) : result,
     )
-    result = A.acquire!(client, plan(); clock = () -> 0.0)
+    result = A.acquire!(client, plan(); clock = Clocks.CachedNanoClock(Int64(0)))
     @test ops(client) == [1]
     @test result.phase == "fault" && !result.resume_permitted
 end
@@ -280,12 +304,14 @@ end
     result = A.acquire!(client, plan(); cancelled = () -> true)
     @test result.phase == "aborted" && result.resume_permitted
     @test ops(client) == [6, 7]
-    clock = Ref(10.0)
-    client = connection((a, r) -> begin
-        C._operation(a) == 2 && (clock[] += 2)
-        r
-    end)
-    result = A.acquire!(client, plan(); clock = () -> clock[])
+    clock = Clocks.CachedNanoClock(Int64(10_000_000_000))
+    client = connection(
+        (a, r) -> begin
+            C._operation(a) == 2 && Clocks.advance!(clock, Int64(2_000_000_000))
+            r
+        end
+    )
+    result = A.acquire!(client, plan(); clock = clock)
     @test result.failure == "TimedOut(Adopting)" && result.phase == "aborted"
     @test result.resume_permitted && ops(client) == [1, 2, 6, 7]
 end

@@ -188,7 +188,11 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                     @info "Reference stage prepared" stage = request.stage witness
                     flush(stdout)
                     flush(stderr)
-                    P.Confirmation(request; observed_at = E.Control.monotonic(), witness)
+                    P.Confirmation(
+                        request;
+                        observed_at = E.Clocks.time_nanos(E.Clocks.SystemNanoClock()),
+                        witness,
+                    )
                 end
                 report = C.calibrate_references(
                     application, output; remote, reference, timeout_s = 600, confirm
@@ -265,7 +269,11 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                 cancelled_output = joinpath(directory, "cancelled")
                 cancel_confirmation = function (request, witness)
                     cancelled[] = true
-                    P.Confirmation(request; observed_at = E.Control.monotonic(), witness)
+                    P.Confirmation(
+                        request;
+                        observed_at = E.Clocks.time_nanos(E.Clocks.SystemNanoClock()),
+                        witness,
+                    )
                 end
                 @test_throws InterruptException C.calibrate_references(
                     application,
@@ -289,7 +297,11 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                         request.issued_at,
                         request.deadline,
                     )
-                    P.Confirmation(other; observed_at = E.Control.monotonic(), witness)
+                    P.Confirmation(
+                        other;
+                        observed_at = E.Clocks.time_nanos(E.Clocks.SystemNanoClock()),
+                        witness,
+                    )
                 end
                 @test_throws ArgumentError C.calibrate_references(
                     application,
@@ -304,7 +316,7 @@ if haskey(ENV, "PIPEWIREAORTC_REFERENCE_APPLICATION")
                 wrong_witness =
                     (request, witness) -> P.Confirmation(
                         request;
-                        observed_at = E.Control.monotonic(),
+                        observed_at = E.Clocks.time_nanos(E.Clocks.SystemNanoClock()),
                         witness = "other-owner",
                     )
                 @test_throws ArgumentError C.calibrate_references(

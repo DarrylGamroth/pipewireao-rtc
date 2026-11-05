@@ -94,3 +94,37 @@ Local logs: `/tmp/rtc-clk03-client-final-20261105.log`,
 explicit PipeWireAO artifact prefix from the package environment. No live daemon,
 device or deadline qualification is implied. Server tickets/endpoints are the
 next CLK-03 slice; this client commit does not claim their migration.
+
+## CLK-04: calibration preparation and acquisition
+
+Preparation requests/confirmations and acquisition procedure deadlines/completion
+events now store signed nanoseconds directly and require AbstractNanoClock.
+Each active event retains one decision sample. Completion events separately retain
+their producer receipt, accepting queued timely receipts while rejecting future
+receipts and regressing decision clocks. Deadline overflow faults before another
+command or serial is issued. Terminal preparation events do not sample the clock.
+
+The synchronous driver owns a CachedNanoClock. Its prepared exchange samples the
+source at entry and retains a separate receipt on return. The action budget still
+starts after cold method/JIT preparation, matching the previous behavior. Native
+action clients receive nanoseconds directly. Existing server compatibility
+entries and saved reference-report fields still have explicit seconds conversions.
+Run/serial, model time, cursors and scientific settling/exposure values are intact.
+
+Observed checks: preparation 239, pure acquisition procedure 219 and driver 268;
+optional CPU reference/pyramid 107 and reference cleanup 13. Warmed allocation
+checks pass 17, with zero bytes over each of four 1,000-cycle paths (loop,
+recovery, coupled recovery and ready preparation). Independent review found no
+material issue and verified the known/unknown outcome distinction, one restoration
+and release attempt, resumption admission and report units. Primary review also
+inspected source changes. These checks do not qualify transport latency or devices.
+
+Local logs: `/tmp/rtc-clk04-procedures-final.log`,
+`/tmp/rtc-clk04-driver-freeze.log`, `/tmp/rtc-clk04-allocations-final.log`,
+`/tmp/rtc-clk04-reference-cpu.log`, and
+`/tmp/rtc-clk04-reference-cleanup.log`. An aggregate rerun initially encountered
+an unfinished deployment-source edit before package loading; no calibration test
+executed in that attempt. After the edit was finished, the primary's aggregate
+rerun passed all 726 calibration assertions
+(`/tmp/rtc-clk04-root-final-20261105.log`). Formatting is idempotent with parsed
+syntax/literal equality, and whitespace checks pass.

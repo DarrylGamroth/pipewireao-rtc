@@ -370,7 +370,9 @@ if application !== nothing &&
                     @info "GPI reference stage prepared" stage = request.stage witness
                     flush(stdout)
                     PipeWireAORTC.CalibrationPreparation.Confirmation(
-                        request; observed_at = Ext.Control.monotonic(), witness
+                        request;
+                        observed_at = Ext.Clocks.time_nanos(Ext.Clocks.SystemNanoClock()),
+                        witness,
                     )
                 end
                 output = joinpath(directory, "candidate")
@@ -493,7 +495,9 @@ if application !== nothing &&
                 cancel_confirm = function (request, witness)
                     cancelled[] = true
                     PipeWireAORTC.CalibrationPreparation.Confirmation(
-                        request; observed_at = Ext.Control.monotonic(), witness
+                        request;
+                        observed_at = Ext.Clocks.time_nanos(Ext.Clocks.SystemNanoClock()),
+                        witness,
                     )
                 end
                 cancelled_output = joinpath(directory, "cancelled")

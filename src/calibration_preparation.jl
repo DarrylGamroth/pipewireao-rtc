@@ -8,13 +8,10 @@ module CalibrationPreparation
 
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
-import ..Common
+import Clocks
 
 export Request,
     Confirmation, Procedure, complete!, cancel!, expire!, invalidate!, check_current!
-
-# Retain the existing seconds callable without another clock-reading wrapper.
-const monotonic = Common.monotonic_seconds
 
 function _text(value::AbstractString, name, maximum)
     0 < ncodeunits(value) <= maximum &&
@@ -24,16 +21,19 @@ function _text(value::AbstractString, name, maximum)
     return String(value)
 end
 
-function _time(value::Real, name)
-    result = Float64(value)
-    isfinite(result) || throw(ArgumentError("$name must be finite"))
-    return result
+_time(value, name) = throw(ArgumentError("$name must be signed Int64 nanoseconds"))
+_time(value::Bool, name) = throw(ArgumentError("$name must be signed Int64 nanoseconds"))
+function _time(value::Integer, name)
+    typemin(Int64) <= value <= typemax(Int64) ||
+        throw(ArgumentError("$name must fit signed Int64 nanoseconds"))
+    return Int64(value)
 end
 
 """
     Request(; run, serial, stage, condition, configuration_identity, kind, issued_at, deadline)
 
-Identify one preparation window in a shared monotonic clock domain. `run` and
+Identify one preparation window in signed Int64 nanoseconds in a shared
+monotonic clock domain. Negative clock origins are valid. `run` and
 `serial` are nonzero UInt64 identifiers; text fields are at most 256 UTF-8 bytes.
 `kind` is `:manual`, `:simulated` or `:service` and `issued_at < deadline`.
 """
@@ -44,8 +44,8 @@ struct Request
     condition::String
     configuration_identity::String
     kind::Symbol
-    issued_at::Float64
-    deadline::Float64
+    issued_at::Int64
+    deadline::Int64
     function Request(
         run::Integer,
         serial::Integer,
@@ -101,13 +101,13 @@ Base.:(==)(a::Request, b::Request) =
 """
     Confirmation(request; observed_at, witness)
 
-Bind an observation to the exact request. `witness` names the operator or exact
+Bind a signed nanosecond observation to the exact request. `witness` names the operator or exact
 simulator/service incarnation (at most 1024 UTF-8 bytes). The adapter owns its
 authority checks and clock mapping; a witness string alone proves no authority.
 """
 struct Confirmation
     request::Request
-    observed_at::Float64
+    observed_at::Int64
     witness::String
     function Confirmation(request::Request, observed_at::Real, witness::AbstractString)
         return new(
@@ -120,22 +120,23 @@ Confirmation(request::Request; observed_at, witness) =
     Confirmation(request, observed_at, witness)
 
 """
-    Procedure(request; clock=Common.MONOTONIC_CLOCK)
+    Procedure(request; clock=Clocks.SystemNanoClock())
 
 One owning task advances `state` from `:pending` to `:ready`. Cancellation,
 expiry and invalidation are terminal and never ready. At most one confirmation
 and a bounded reason are retained. Every acquisition admission must call
 `check_current!`; callers invalidate observed condition/authority loss. The
 read-only `state` property projects the active HSM state as a lowercase symbol.
-`clock` accepts a Clocks nanosecond clock or an existing seconds callable.
+`clock` is a Clocks.AbstractNanoClock. Each active deadline or completion event
+samples it once; terminal events do not read it. The caller owns cached updates.
 """
-@hsmdef mutable struct Procedure{C}
+@hsmdef mutable struct Procedure{C<:Clocks.AbstractNanoClock}
     const request::Request
     const clock::C
     const owner::Task
     confirmation::Union{Nothing,Confirmation}
     reason::Union{Nothing,String}
-    last_at::Float64
+    last_at::Int64
 end
 
 @statedef Procedure :Active
@@ -146,10 +147,10 @@ end
 @statedef Procedure :Expired :Terminal
 @statedef Procedure :Invalidated :Terminal
 
-@on_initial function (p::Procedure{C}, ::Root) where {C}
+@on_initial function (p::Procedure, ::Root)
     return Hsm.transition!(p, :Pending)
 end
-@on_event function (p::Procedure{C}, ::Active, ::DeadlineObserved, at) where {C}
+@on_event function (p::Procedure, ::Active, ::DeadlineObserved, at)
     _owner(p)
     if at >= p.request.deadline
         p.reason = "Deadline expired"
@@ -157,7 +158,7 @@ end
     end
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Pending, ::Complete, confirmation) where {C}
+@on_event function (p::Procedure, ::Pending, ::Complete, confirmation)
     _owner(p)
     at = _now!(p)
     if at === nothing
@@ -187,22 +188,22 @@ end
     p.confirmation = confirmation
     return Hsm.transition!(p, :Ready)
 end
-@on_event function (p::Procedure{C}, ::Active, ::Complete, _) where {C}
+@on_event function (p::Procedure, ::Active, ::Complete, _)
     _owner(p)
     p.reason = "Preparation is not pending"
     Hsm.transition!(p, :Invalidated)
     throw(ArgumentError(p.reason))
 end
-@on_event function (p::Procedure{C}, ::Terminal, ::Complete, _) where {C}
+@on_event function (p::Procedure, ::Terminal, ::Complete, _)
     _owner(p)
     throw(ArgumentError("Preparation is not pending"))
 end
-@on_event function (p::Procedure{C}, ::Active, ::Cancel, _) where {C}
+@on_event function (p::Procedure, ::Active, ::Cancel, _)
     _owner(p)
     p.reason = "Cancelled"
     return Hsm.transition!(p, :Cancelled)
 end
-@on_event function (p::Procedure{C}, ::Active, ::Expire, _) where {C}
+@on_event function (p::Procedure, ::Active, ::Expire, _)
     _owner(p)
     at = _now!(p)
     if at === nothing
@@ -215,29 +216,29 @@ end
     end
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Active, ::Invalidate, reason) where {C}
+@on_event function (p::Procedure, ::Active, ::Invalidate, reason)
     _owner(p)
     p.reason = _text(reason, "reason", 1024)
     return Hsm.transition!(p, :Invalidated)
 end
-@on_event function (p::Procedure{C}, ::Terminal, ::Cancel, _) where {C}
+@on_event function (p::Procedure, ::Terminal, ::Cancel, _)
     _owner(p)
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Terminal, ::Expire, _) where {C}
+@on_event function (p::Procedure, ::Terminal, ::Expire, _)
     _owner(p)
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Terminal, ::Invalidate, reason) where {C}
+@on_event function (p::Procedure, ::Terminal, ::Invalidate, reason)
     _owner(p)
     _text(reason, "reason", 1024)
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Ready, ::CheckCurrent, _) where {C}
+@on_event function (p::Procedure, ::Ready, ::CheckCurrent, _)
     _owner(p)
     return Hsm.EventHandled
 end
-@on_event function (p::Procedure{C}, ::Root, ::CheckCurrent, _) where {C}
+@on_event function (p::Procedure, ::Root, ::CheckCurrent, _)
     _owner(p)
     throw(ArgumentError("Preparation is not ready ($(p.state))"))
 end
@@ -255,8 +256,10 @@ Base.propertynames(p::Procedure, private::Bool = false) =
     private ? (fieldnames(typeof(p))..., :state) :
     (:request, :clock, :owner, :state, :confirmation, :reason, :last_at)
 
-function Procedure(request::Request; clock = Common.MONOTONIC_CLOCK)
-    at = _time(Common.monotonic_seconds(clock), "clock")
+function Procedure(
+    request::Request; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    at = Clocks.time_nanos(clock)::Int64
     p = Procedure(request, clock, current_task(), nothing, nothing, at)
     Hsm.dispatch!(p, :DeadlineObserved, at)
     return p
@@ -270,11 +273,11 @@ end
 
 function _now!(p::Procedure)
     at = try
-        Float64(Common.monotonic_seconds(p.clock))
+        Clocks.time_nanos(p.clock)::Int64
     catch
         return nothing
     end
-    isfinite(at) && at >= p.last_at || return nothing
+    at >= p.last_at || return nothing
     p.last_at = at
     return at
 end

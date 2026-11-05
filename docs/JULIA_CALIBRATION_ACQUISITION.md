@@ -150,10 +150,11 @@ The Processing handler receives the consumption event, polls cancellation and
 selects the next command. Command submission and consumer work do not occur in
 state entry or exit behaviors.
 
-The `clock` keyword accepts Clocks.jl monotonic nanosecond clocks directly, as
-well as the existing callables that return seconds. Absolute `deadline` and
-completion `at` values remain seconds. A cached clock has one updating owner;
-tests can advance it explicitly without sleeping:
+The `clock` keyword accepts Clocks.jl `AbstractNanoClock` implementations directly.
+Absolute `deadline`, completion `at`, preparation `issued_at`/`observed_at` and
+the clock regression watermark are signed `Int64` nanoseconds. Negative origins
+are valid. Seconds callables are unsupported. A cached clock has one updating
+owner; tests can advance it explicitly without sleeping:
 
 ```julia
 using Clocks
@@ -163,10 +164,17 @@ advance!(clock, 1_000_000_000) # nanoseconds; choose the plan's action timeout
 Acquisition.expire!(procedure)
 ```
 
-Preparation accepts the same clock providers. A control agent samples its source
+Preparation accepts the same clock interface. A control agent samples its source
 once at the start of a duty cycle and updates its owned cache for that cycle's
 handlers. Producers retain their own event receipt timestamps. Advancing a test
 clock changes logical time; it does not run a timer or deliver a deadline event.
+The synchronous acquisition driver samples once at each prepared exchange start
+and retains a separate local receipt sample when that exchange returns. The
+action-client API receives nanosecond deadlines directly. The existing reference
+server preparation/serving APIs still receive explicit seconds conversions. Saved
+reference reports retain their `observed_at` and `deadline` fields in seconds;
+the report writer performs that conversion explicitly. Scientific model times,
+exposure durations, acquisition cursors and run/serial identities keep their units.
 
 For an external event loop, prepare `Procedure(plan; consume, clock)` and submit
 its `command`. After owner/controller validation, deliver
@@ -237,8 +245,8 @@ and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
 The shared Julia boundary is `CalibrationPreparation`. Its `Request` identifies
 one run, serial, stage, named condition, configuration identity, evidence kind
-and finite monotonic time window. `Confirmation` binds that exact request to a
-fresh observation and a named witness (operator or exact simulator/service
+and signed nanosecond monotonic time window. `Confirmation` binds that exact
+request to a fresh observation and a named witness (operator or exact simulator/service
 incarnation). `Procedure` owns one pending request and its confirmation;
 `complete!`, `cancel!`, `expire!`, `invalidate!` and `check_current!` are events
 and admission checks on its single owning control task. These names describe

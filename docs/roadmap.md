@@ -51,6 +51,9 @@ remains unqualified: the baseline reproduces the same pre-frame buffer failure.
 Native clients and MediaSession controls now retain signed receipt/deadline ticks;
 deterministic and private-core client checks pass. Server ticket/endpoint and
 remaining deployment/optical caller chains continue as separate slices.
+Calibration preparation/acquisition Hsms also retain signed deadlines and event
+times, with known/unknown recovery and saved-report seconds preserved; 726 pure
+checks, optional reference checks and the existing warmed allocation gates pass.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

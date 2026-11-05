@@ -2,10 +2,10 @@
 # Handlers select the next command; transport remains in the caller's driver.
 
 """
-    Procedure(plan; clock=Common.MONOTONIC_CLOCK, consume=(_...)->nothing)
+    Procedure(plan; clock=Clocks.SystemNanoClock(), consume=(_...)->nothing)
 
 Prepare a completion-driven interaction acquisition. `command` is the sole
-pending native command and `deadline` its absolute monotonic deadline. The
+pending native command and `deadline` its absolute signed nanosecond deadline. The
 caller submits it once, then calls `complete!`, `expire!` or `fail!`. Terminal
 procedures have `command === nothing` and a `result`.
 
@@ -24,15 +24,17 @@ before delivering completions; this object additionally checks run, serial and
 operation. Replay delivers the same typed commands/completions without devices.
 Hsm handlers own acquisition and recovery phases. Entry/exit behaviors perform
 no command submission or consumer work.
-`clock` accepts a Clocks nanosecond clock or an existing seconds callable.
+`clock` is a Clocks.AbstractNanoClock. Each clock-dependent event retains one
+decision sample; the clock's updating owner controls cached-clock publication.
 """
-@hsmdef mutable struct Procedure{P<:Plan,F,C,K}
+@hsmdef mutable struct Procedure{P<:Plan,F,C<:Clocks.AbstractNanoClock,K}
     plan::P
     consume::F
     clock::C
     cancellation::K
     command::Union{Nothing,Codec.Command}
-    deadline::Float64
+    deadline::Int64
+    last_at::Int64
     serial::UInt64
     probe::Int
     cursor::Union{Nothing,Codec.AcquisitionCursor}
@@ -68,10 +70,10 @@ end
 @on_event function (p::Procedure, ::Idle, ::Started, _)
     if p.cancellation()
         p.failure = "Cancelled"
-        _issue_restore!(p)
+        _issue_restore!(p) === nothing && return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
-    _issue!(p, Codec.Hold())
+    _issue!(p, Codec.Hold()) === nothing && return Hsm.transition!(p, :Fault)
     return Hsm.transition!(p, :Holding)
 end
 
@@ -82,14 +84,16 @@ end
         _valid(result.cursor) || _invalid()
         p.cursor = result.cursor
     catch error
-        _restore_after_failure!(p, _failure(error))
+        _restore_after_failure!(p, _failure(error)) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     if p.cancelled
-        _restore_after_failure!(p, "Cancelled")
+        _restore_after_failure!(p, "Cancelled") === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
-    _issue_probe!(p)
+    _issue_probe!(p) === nothing && return Hsm.transition!(p, :Fault)
     return Hsm.transition!(p, :Adopting)
 end
 
@@ -99,14 +103,17 @@ end
         result = _accepted_result!(p, completion)
         p.cursor = _adopted(result, something(p.cursor), p.plan.probes[p.probe])
     catch error
-        _restore_after_failure!(p, _failure(error))
+        _restore_after_failure!(p, _failure(error)) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     if p.cancelled
-        _restore_after_failure!(p, "Cancelled")
+        _restore_after_failure!(p, "Cancelled") === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
-    _issue!(p, Codec.Settle(UInt32(p.probe - 1), something(p.cursor), p.plan.settling))
+    _issue!(p, Codec.Settle(UInt32(p.probe - 1), something(p.cursor), p.plan.settling)) ===
+    nothing && return Hsm.transition!(p, :Fault)
     return Hsm.transition!(p, :Settling)
 end
 
@@ -117,14 +124,16 @@ end
         _settled(p.plan.settling, something(p.cursor), result.cursor) || _invalid()
         p.cursor = result.cursor
     catch error
-        _restore_after_failure!(p, _failure(error))
+        _restore_after_failure!(p, _failure(error)) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     if p.cancelled
-        _restore_after_failure!(p, "Cancelled")
+        _restore_after_failure!(p, "Cancelled") === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
-    _issue!(
+    issued = _issue!(
         p,
         Codec.Collect(
             UInt32(p.probe - 1),
@@ -133,6 +142,7 @@ end
             p.plan.frames_per_probe,
         ),
     )
+    issued === nothing && return Hsm.transition!(p, :Fault)
     return Hsm.transition!(p, :Collecting)
 end
 
@@ -145,33 +155,41 @@ end
         try
             p.delivery = _snapshot(result)
         catch
-            _restore_after_failure!(p, "Processing")
+            _restore_after_failure!(p, "Processing") === nothing &&
+                return Hsm.transition!(p, :Fault)
             return Hsm.transition!(p, :Restoring)
         end
     catch error
-        _restore_after_failure!(p, _failure(error))
+        _restore_after_failure!(p, _failure(error)) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     return Hsm.transition!(p, :Processing)
 end
 
 @on_event function (p::Procedure, ::Processing, ::Consumed, _)
+    if _now!(p) === nothing
+        _fault!(p, "Invalid monotonic clock", false)
+        return Hsm.transition!(p, :Fault)
+    end
     try
         p.cancelled = p.cancelled || p.cancellation()
     catch error
-        _restore_after_failure!(p, _failure(error))
+        _restore_after_failure!(p, _failure(error)) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     if p.cancelled
-        _restore_after_failure!(p, "Cancelled")
+        _restore_after_failure!(p, "Cancelled") === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     p.probe += 1
     if p.probe > length(p.plan.probes)
-        _issue_restore!(p)
+        _issue_restore!(p) === nothing && return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
-    _issue_probe!(p)
+    _issue_probe!(p) === nothing && return Hsm.transition!(p, :Fault)
     return Hsm.transition!(p, :Adopting)
 end
 
@@ -186,7 +204,7 @@ end
         result = _accepted_result!(p, completion)
         p.restoration_confirmed = _restored(result, p.plan.reference)
         p.cancelled && _record_failure!(p, "Cancelled")
-        _issue!(p, Codec.Release())
+        _issue!(p, Codec.Release()) === nothing && return Hsm.transition!(p, :Fault)
     catch error
         _fault!(p, _failure(error), true)
         return Hsm.transition!(p, :Fault)
@@ -209,12 +227,13 @@ end
 end
 
 # Invalid correlation/late delivery bubbles to the phase's shared failure rule.
-# The check is pure: it must not poll cancellation twice while propagating.
+# Propagation reuses the event sample and never polls cancellation or the clock twice.
 @on_event function (p::Procedure, ::Acquiring, ::Completed, completion)
     failure = _completion_error(p, completion)
     failure === nothing && return Hsm.EventNotHandled
     if failure.known
-        _restore_after_failure!(p, failure.reason)
+        _restore_after_failure!(p, failure.reason) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     _fault!(p, failure.reason, false)
@@ -229,8 +248,13 @@ end
 end
 
 @on_event function (p::Procedure, ::Acquiring, ::Failed, failure)
+    if _now!(p) === nothing
+        _fault!(p, "Invalid monotonic clock", false)
+        return Hsm.transition!(p, :Fault)
+    end
     if failure.known
-        _restore_after_failure!(p, failure.reason)
+        _restore_after_failure!(p, failure.reason) === nothing &&
+            return Hsm.transition!(p, :Fault)
         return Hsm.transition!(p, :Restoring)
     end
     _fault!(p, failure.reason, false)
@@ -238,6 +262,10 @@ end
 end
 
 @on_event function (p::Procedure, ::Recovery, ::Failed, failure)
+    if _now!(p) === nothing
+        _fault!(p, "Invalid monotonic clock", false)
+        return Hsm.transition!(p, :Fault)
+    end
     _fault!(p, failure.reason, failure.known)
     return Hsm.transition!(p, :Fault)
 end
@@ -248,7 +276,12 @@ end
 end
 
 @on_event function (p::Procedure, ::Active, ::Expired, _)
-    Common.monotonic_seconds(p.clock) < p.deadline && return Hsm.EventHandled
+    at = _now!(p)
+    if at === nothing
+        _fault!(p, "Invalid monotonic clock", false)
+        return Hsm.transition!(p, :Fault)
+    end
+    at < p.deadline && return Hsm.EventHandled
     _fault!(p, "TimedOut($(_phase(something(p.command).action)))", false)
     return Hsm.transition!(p, :Fault)
 end
@@ -268,7 +301,7 @@ end
 
 function Procedure(
     input::Plan;
-    clock = Common.MONOTONIC_CLOCK,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     consume = (_...) -> nothing,
     cancelled = () -> false,
 )
@@ -281,13 +314,15 @@ function Procedure(
         input.settling,
         input.timeouts,
     )
+    at = Clocks.time_nanos(clock)::Int64
     procedure = Procedure(
         plan,
         consume,
         clock,
         cancelled,
         nothing,
-        Inf,
+        at,
+        at,
         UInt64(0),
         1,
         nothing,
@@ -305,9 +340,12 @@ end
 
 # Handler helpers construct commands and update facts, never dispatch/transition.
 function _issue!(p::Procedure, action::Codec.AbstractAction)
-    deadline =
-        Float64(Common.monotonic_seconds(p.clock)) + _timeout(action, p.plan.timeouts) / 1e9
-    isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
+    deadline = try
+        Base.Checked.checked_add(p.last_at, _timeout(action, p.plan.timeouts))
+    catch
+        _fault!(p, "Clock deadline overflow", false)
+        return nothing
+    end
     p.serial = Base.Checked.checked_add(p.serial, UInt64(1))
     p.command = Codec.Command(p.plan.run, p.serial, action)
     p.deadline = deadline
@@ -326,8 +364,7 @@ end
 function _restore_after_failure!(p::Procedure, reason::AbstractString)
     _record_failure!(p, reason)
     p.delivery = nothing
-    _issue_restore!(p)
-    return nothing
+    return _issue_restore!(p)
 end
 function _fault!(p::Procedure, reason::AbstractString, known::Bool)
     _record_failure!(p, reason)
@@ -352,6 +389,20 @@ function _finish!(p::Procedure, released::Bool)
     return nothing
 end
 
+function _now!(p::Procedure, at::Int64)
+    at >= p.last_at || return nothing
+    p.last_at = at
+    return at
+end
+function _now!(p::Procedure)
+    at = try
+        Clocks.time_nanos(p.clock)::Int64
+    catch
+        return nothing
+    end
+    return _now!(p, at)
+end
+
 function _completion_error(p::Procedure, completion)
     command = something(p.command)
     if completion.run != command.run ||
@@ -359,7 +410,11 @@ function _completion_error(p::Procedure, completion)
         !ActionClient._valid_result(command.action, completion.result)
         return (; reason = "Endpoint", known = false)
     end
-    isfinite(completion.at) || throw(ArgumentError("completion time is not finite"))
+    if completion.current === nothing ||
+        _now!(p, completion.current) === nothing ||
+        completion.at > completion.current
+        return (; reason = "Invalid monotonic clock", known = false)
+    end
     if completion.at >= p.deadline
         return (; reason = "TimedOut($(_phase(command.action)))", known = true)
     end
@@ -385,7 +440,7 @@ function _dispatch_completion!(p::Procedure, completion)
         try
             p.consume(p.probe, batch)
         catch
-            Hsm.dispatch!(p, :Failed, (; reason = "Processing", known = true))
+            fail!(p, "Processing"; known = true)
             return p.command
         end
         Hsm.dispatch!(p, :Consumed)
@@ -422,19 +477,28 @@ function expire!(p::Procedure)
 end
 
 """
-    complete!(procedure, run, serial, result)
+    complete!(procedure, run, serial, result; at=nothing)
 
 Deliver one correlated terminal action result and return the next command, or
 `nothing` when terminal. Wrong run/serial/operation faults without recovery.
 Malformed scientific evidence with a known terminal action requests recovery.
 The transport adapter remains responsible for owner/controller correlation.
+`at` is the producer's signed Int64 nanosecond receipt, or the current clock
+sample when omitted. The event retains a separate current decision sample so
+queued timely receipts are not confused with clock regression or future data.
 """
 function complete!(
     p::Procedure,
     run::UInt64,
     serial::UInt64,
     result::Codec.AbstractResult;
-    at::Float64 = Float64(Common.monotonic_seconds(p.clock)),
+    at::Union{Nothing,Int64} = nothing,
 )
-    return _dispatch_completion!(p, (; run, serial, result, at))
+    current = try
+        Clocks.time_nanos(p.clock)::Int64
+    catch
+        nothing
+    end
+    received = at === nothing ? current : at
+    return _dispatch_completion!(p, (; run, serial, result, at = received, current))
 end
