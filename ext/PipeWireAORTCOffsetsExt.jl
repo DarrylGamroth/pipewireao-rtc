@@ -2,6 +2,7 @@ module PipeWireAORTCOffsetsExt
 
 using PipeWireAO
 import PipeWireAORTC
+import Clocks
 import AdaptiveOpticsSimPipeWireHIL as HIL
 import FilterGraphAlgorithms as FGA
 import FilterGraphPipeWire as FGP
@@ -157,7 +158,12 @@ function Offsets.prepare(path::AbstractString, graph)
 end
 
 function Offsets.with_receiver(
-    f, prepared::NamedTuple; node, remote, frame_clock::ClockObserver, clock = time_ns
+    f,
+    prepared::NamedTuple;
+    node,
+    remote,
+    frame_clock::ClockObserver,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     Threads.nthreads(:default) >= 3 || throw(
         ArgumentError(
@@ -177,6 +183,7 @@ function Offsets.with_receiver(
         reset_generation = UInt64(0)
         pump = ThreadPinning.@spawnat 3 try
             while !stop[]
+                now_ns = Clocks.time_nanos(clock)::Int64
                 sample = clock_sample(frame_clock.clock)
                 if sample !== nothing && sample.version != clock_version
                     clock_version = sample.version
@@ -265,13 +272,13 @@ function Offsets.with_receiver(
                         receipt.identity,
                         receipt.pts,
                         receipt.duration;
-                        now_ns = clock(),
+                        now_ns,
                         schema = calibrations[i].schema,
                         calibration_identity = d["calibration_identity"],
                         command_order = d["command_order"],
                     )
                 end
-                Offsets.expire!(receiver, clock())
+                Offsets.expire!(receiver, now_ns)
                 if receiver.revision != submitted_revision
                     Offsets.total!(total, receiver)
                     try

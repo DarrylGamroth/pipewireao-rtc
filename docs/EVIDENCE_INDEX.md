@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Signed control clocks — 2026-11-05
+
+The [migration evidence](reviews/20261105-clocks/REVIEW.md) records each verified
+signed-nanosecond slice, deterministic boundary checks, review and remaining
+qualification limits. The physical-offset graph's pre-frame buffer-allocation
+failure is preserved with its unchanged-baseline reproduction.
+
 ## Direct MediaSession replacement — 2026-11-04
 
 The [migration record](reviews/20261104-media-session/REVIEW.md) separates the

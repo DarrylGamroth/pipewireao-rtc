@@ -2,19 +2,25 @@ module PipeWireAORTCOffsetInputsExt
 
 using PipeWireAO
 import PipeWireAORTC
+import Clocks
 import AdaptiveOpticsSimPipeWireHIL as HIL
 const Offsets = PipeWireAORTC.PhysicalOffsets
 
-mutable struct StreamReceiver{P,T}
+mutable struct StreamReceiver{P,T,C<:Clocks.AbstractNanoClock}
     prepared::P
     transport::T
     initial::BitVector
     rejected::Vector{UInt64}
     applied_command::Int
+    clock::C
 end
 
 function Offsets.with_receiver(
-    f, prepared::Offsets.PreparedReceiver; remote, applied_command = nothing
+    f,
+    prepared::Offsets.PreparedReceiver;
+    remote,
+    applied_command = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     (; names, calibrations) = prepared.inputs
     options = map(eachindex(names)) do i
@@ -39,6 +45,7 @@ function Offsets.with_receiver(
             trues(length(names)),
             zeros(UInt64, length(names)),
             applied_command === nothing ? 0 : length(streams),
+            clock,
         )
         try
             return f(inputs)
@@ -65,7 +72,9 @@ end
 
 # Called only by the source task. Native callbacks own bounded staging buffers;
 # they never write receiver contributions, the command, or the scientific graph.
-function Offsets.poll!(inputs::StreamReceiver; now_ns::UInt64 = time_ns())
+function Offsets.poll!(
+    inputs::StreamReceiver; now_ns::Int64 = Clocks.time_nanos(inputs.clock)
+)
     (; receiver, names, calibrations, buffers, total, declaration) = inputs.prepared
     for i in eachindex(names)
         name = names[i]

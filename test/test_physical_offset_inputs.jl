@@ -23,6 +23,11 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "physical_offset_inputs_documents.j
         @test prepared.inputs.names == (:llowfs, :scc)
         @test all(iszero, prepared.inputs.total)
         @test all(!c.armed for c in values(prepared.inputs.receiver.branches))
+        @test prepared.inputs.receiver.host_ns === nothing
+        @test all(
+            c.calibration.silence_ns === Int64(1000) for
+            c in values(prepared.inputs.receiver.branches)
+        )
         @test !haskey(prepared.inputs.declaration, "reference")
         for change in (
             d -> (d["version"] = 1),

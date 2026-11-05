@@ -5,6 +5,13 @@ const HIL = AdaptiveOpticsSimPipeWireHIL
 const O = PipeWireAORTC.PhysicalOffsets
 const C = PipeWireAORTC.Common
 const A = PipeWireAORTC.InstrumentCalibration
+const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOffsetInputsExt)
+const Clocks = Ext.Clocks
+mutable struct PollClock <: Clocks.AbstractNanoClock
+    value::Int64
+    reads::Int
+end
+Clocks.time_nanos(clock::PollClock) = (clock.reads += 1; clock.value)
 Base.include(@__MODULE__, joinpath(@__DIR__, "physical_offset_inputs_documents.jl"))
 Base.include(@__MODULE__, joinpath(pkgdir(HIL), "test/private_core_helpers.jl"))
 
@@ -34,7 +41,8 @@ end
         )
         _with_private_core() do remote
             remote = joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], remote)
-            O.with_receiver(prepared; remote) do inputs
+            clock = PollClock(Int64(-1000), 0)
+            O.with_receiver(prepared; remote, clock) do inputs
                 options = Tuple(
                     HIL.PipeWireArrayStreamOptions(;
                         node_name = "send-" * string(name),
@@ -136,19 +144,23 @@ end
                             )
                             HIL.with_array_stream(trigger_process!, wire, i)
                         end
-                        function adopted(predicate; now = 100)
+                        function adopted(predicate; now = clock.value)
                             wait_until() do
                                 for i in 1:2
                                     HIL.with_array_stream(trigger_process!, wire, i)
                                 end
-                                O.poll!(inputs; now_ns = UInt64(now))
+                                O.poll!(inputs; now_ns = Int64(now))
                                 predicate()
                             end
                         end
+                        @test all(iszero, O.poll!(inputs))
+                        @test clock.reads == 1 && r.host_ns === Int64(-1000)
+                        @test_throws TypeError O.poll!(inputs; now_ns = UInt64(1))
                         source_clock(1)
-                        @test all(iszero, O.poll!(inputs; now_ns = UInt64(1))) # Controller priming/no output.
+                        @test all(iszero, O.poll!(inputs; now_ns = Int64(1))) # Controller priming/no output.
                         source_clock(2)
-                        @test all(iszero, O.poll!(inputs; now_ns = UInt64(2)))
+                        @test all(iszero, O.poll!(inputs; now_ns = Int64(2)))
+                        clock.value = Int64(100)
                         a = Float32[1e-9, 0, 1e-9, 1e-9]
                         b = Float32[0, 2e-9, 2e-9, -2e-9]
                         emit(1, a, 1)
@@ -158,20 +170,37 @@ end
                         adopted(() -> r.branches[:scc].present)
                         @test prepared.inputs.total ≈ a + b
                         @test r.branches[:scc].identity.generation == 1
+                        emit(1, a, 2; pts = 10)
+                        emit(2, b, 2; pts = 10)
+                        wait_until() do
+                            for i in 1:2
+                                HIL.with_array_stream(trigger_process!, wire, i)
+                            end
+                            all(
+                                i -> HIL.array_stream_status(inputs.transport, i).pending,
+                                1:2,
+                            )
+                        end
+                        reads = clock.reads
+                        @test O.poll!(inputs) ≈ a + b
+                        @test clock.reads == reads + 1
+                        @test all(c.arrived_ns === clock.value for c in values(r.branches))
                         source_clock(3)
-                        @test O.poll!(inputs; now_ns = UInt64(1000)) ≈ a + b # held absolute, no new output needed
-                        @test all(iszero, O.poll!(inputs; now_ns = UInt64(1101)))
+                        @test O.poll!(inputs; now_ns = Int64(1100)) ≈ a + b # Exact silence bound remains held.
+                        @test all(iszero, O.poll!(inputs; now_ns = Int64(1101)))
                         @test all(c.reason === :silence for c in values(r.branches))
                         O.reset_inputs!(inputs)
                         @test r.clock_identity === nothing && r.clock_end_ns == 0
+                        @test r.host_ns === Int64(1101)
+                        clock.value = Int64(1200)
                         @test all(iszero, prepared.inputs.total)
                         source_clock(1; generation = 2)
-                        emit(2, b, 2) # Old branch generation cannot cross reset.
+                        emit(2, b, 3) # Old generation, otherwise valid reset model interval.
                         wait_until() do
                             HIL.with_array_stream(trigger_process!, wire, 2)
                             HIL.array_stream_status(inputs.transport, 2).pending
                         end
-                        O.poll!(inputs; now_ns = UInt64(100))
+                        O.poll!(inputs; now_ns = clock.value)
                         @test !r.branches[:scc].present
                         emit(2, b, 1; generation = 2)
                         adopted(() -> r.branches[:scc].present)

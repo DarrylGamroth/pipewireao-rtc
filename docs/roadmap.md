@@ -43,6 +43,12 @@ historical reports are unchanged. The shared formatting profile now covers the
 selected 414 authored Julia files; clock migration exceptions remain explicit
 work in the inventory, rather than a completed package-wide clock claim.
 
+The [signed-clock evidence](reviews/20261105-clocks/REVIEW.md) records subsequent
+verified migrations. Physical-offset host receipt/silence timing now uses signed
+Clocks ticks and one sample per receiver cycle; model chronology remains separate.
+Core, CPU input and native receiver checks pass. Its graph private-core gate
+remains unqualified: the baseline reproduces the same pre-frame buffer failure.
+
 ### Naming and Julia type dispatch — 2026-11-04
 
 The [completion record](reviews/20261104-naming-cleanup/REVIEW.md) covers the

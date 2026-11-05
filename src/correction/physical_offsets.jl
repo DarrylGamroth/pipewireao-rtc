@@ -29,7 +29,7 @@ struct Calibration
     coefficient_limit_m::Float32
     span_rtol::Float64
     max_age_ns::Int64
-    silence_ns::UInt64
+    silence_ns::Int64
 end
 
 _calibration_identity(value) = throw(
@@ -95,7 +95,7 @@ function Calibration(;
     span_rtol < 1 ||
         throw(ArgumentError("physical offset limits must be finite positive values"))
     _calibration_time(max_age_ns, Int64)
-    _calibration_time(silence_ns, UInt64)
+    _calibration_time(silence_ns, Int64)
     norm(Float64.(Q) * Float64.(P) - I) <= span_rtol * sqrt(m) ||
         throw(ArgumentError("physical inverse does not recover calibrated modes"))
     limits = Float32.((command_limit_m, coefficient_limit_m))
@@ -111,7 +111,7 @@ function Calibration(;
         limits...,
         Float64(span_rtol),
         Int64(max_age_ns),
-        UInt64(silence_ns),
+        Int64(silence_ns),
     )
 end
 
@@ -121,7 +121,7 @@ mutable struct Contribution
     identity::Union{Nothing,AcquisitionIdentity}
     last_sequence::UInt64
     end_ns::Int64
-    arrived_ns::UInt64
+    arrived_ns::Int64
     armed::Bool
     present::Bool
     reason::Symbol
@@ -144,6 +144,7 @@ mutable struct Receiver
     const command_limit_m::Float32
     clock_identity::Union{Nothing,AcquisitionIdentity}
     clock_end_ns::Int64
+    host_ns::Union{Nothing,Int64}
     revision::UInt64
 end
 function Receiver(calibrations::NamedTuple; command_limit_m)
@@ -173,6 +174,7 @@ function Receiver(calibrations::NamedTuple; command_limit_m)
         limit,
         nothing,
         0,
+        nothing,
         0,
     )
 end
@@ -264,7 +266,23 @@ function observe_clock!(
     return true
 end
 
-"Validate and hold one complete absolute command. Rejection clears this branch and requires rearming."
+function _observe_host!(receiver::Receiver, now_ns::Int64)
+    previous = receiver.host_ns
+    if previous !== nothing && now_ns < previous
+        disarm!(receiver; reason = :monotonic_clock)
+        return false
+    end
+    receiver.host_ns = now_ns
+    return true
+end
+
+"""Validate and hold one complete absolute command using signed host nanoseconds.
+
+The caller passes one sampled host tick to every acceptance/expiry in a poll.
+A host regression clears all branches sharing that clock; model resets and
+rearming do not reset this host chronology. Model exposure timestamps retain
+their separate acquisition-time contract.
+"""
 function accept!(
     receiver::Receiver,
     branch::Symbol,
@@ -272,13 +290,14 @@ function accept!(
     identity::AcquisitionIdentity,
     pts::Int64,
     duration::UInt64;
-    now_ns::UInt64,
+    now_ns::Int64,
     schema::AbstractString,
     calibration_identity::AbstractString,
     command_order::AbstractString,
 )
     Base.require_one_based_indexing(values)
     c = receiver.branches[branch]
+    _observe_host!(receiver, now_ns) || return false
     c.armed || return false
     function reject(reason)
         disarm!(receiver, branch; reason)
@@ -300,7 +319,6 @@ function accept!(
     pts >= c.end_ns &&
     endpoint <= receiver.clock_end_ns &&
     receiver.clock_end_ns - endpoint <= calibration.max_age_ns || return reject(:model_age)
-    c.present && now_ns < c.arrived_ns && return reject(:monotonic_clock)
     coefficients = calibration.Q * values
     projected = calibration.P * coefficients
     scale = norm(Float64.(values))
@@ -330,11 +348,17 @@ function accept!(
     return true
 end
 
-"Clear stale branches using separate monotonic silence and upstream model-age limits."
-function expire!(receiver::Receiver, now_ns::UInt64)
+"""Clear stale branches using signed host silence and separate model-age limits.
+
+An exact silence limit remains held, preserving the existing strict `>` rule.
+The widened elapsed comparison handles the full signed tick range without
+wrapping: an interval larger than Int64 can hold is expired, never fresh.
+"""
+function expire!(receiver::Receiver, now_ns::Int64)
+    _observe_host!(receiver, now_ns) || return receiver
     for (branch, c) in receiver.branches
         c.armed && c.present || continue
-        if now_ns < c.arrived_ns || now_ns - c.arrived_ns > c.calibration.silence_ns
+        if widen(now_ns) - widen(c.arrived_ns) > c.calibration.silence_ns
             disarm!(receiver, branch; reason = :silence)
         elseif receiver.clock_end_ns - c.end_ns > c.calibration.max_age_ns
             disarm!(receiver, branch; reason = :model_age)

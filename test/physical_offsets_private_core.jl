@@ -13,6 +13,7 @@ const FGP = FilterGraphPipeWire
 const JFG = JuliaFilterGraph
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOffsetsExt)
+const Clocks = Ext.Clocks
 const Cal = PipeWireAORTC.InstrumentCalibration
 const ThreadPinning = PipeWireAORTC.OwnerBootstrapRuntime.ThreadPinning
 const Common = PipeWireAORTC.Common
@@ -38,7 +39,7 @@ include("physical_offsets_documents.jl")
             graph, config = physical_offset_fixture(directory; P, Q, C)
             declaration = Common.read_yaml(config)
             Common.write_yaml(config, declaration)
-            wall = Threads.Atomic{UInt64}(100)
+            wall = Clocks.CachedNanoClock(Int64(100))
             prepared = Offsets.prepare(config, graph)
             observer = Offsets.frame_observer(config, nothing, JFG.output_formats(graph))
             _with_private_core() do remote
@@ -295,7 +296,7 @@ include("physical_offsets_documents.jl")
                                     pending = FGP.parameter_status(node, :reference)
                                     @test pending.requested_parameter_sequence >
                                         pending.active_parameter_sequence
-                                    wall[] = UInt64(10000000101)
+                                    Clocks.update!(wall, Int64(10000000101))
                                     wait_until() do
                                         FGP.parameter_status(node, :reference).requested_parameter_sequence >
                                         pending.requested_parameter_sequence
@@ -331,7 +332,7 @@ include("physical_offsets_documents.jl")
                                     pending = FGP.parameter_status(node, :reference)
                                     @test pending.requested_parameter_sequence >
                                         pending.active_parameter_sequence
-                                    wall[] = UInt64(10000000101)
+                                    Clocks.update!(wall, Int64(10000000101))
                                     wait_until(() -> !PipeWireAO.isrunning(node))
                                     # No resumed primary frame can adopt the incompatible
                                     # pending transaction: the receiver quits its owner.
@@ -364,11 +365,7 @@ include("physical_offsets_documents.jl")
                 try
                     failure = try
                         Offsets.with_receiver(
-                            prepared;
-                            node,
-                            remote,
-                            frame_clock = observer,
-                            clock = () -> wall[],
+                            prepared; node, remote, frame_clock = observer, clock = wall
                         ) do
                             progress("receiver connected; run graph")
                             FGP.run!(node)

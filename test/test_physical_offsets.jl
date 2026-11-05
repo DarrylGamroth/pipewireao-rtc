@@ -1,4 +1,5 @@
 using Test, LinearAlgebra, PipeWireAO, PipeWireAORTC
+import Clocks
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const domain = AcquisitionDomain(ntuple(i -> UInt8(i), 16))
 const other_domain = AcquisitionDomain(ntuple(i -> UInt8(i + 1), 16))
@@ -46,7 +47,7 @@ accept(
     identity,
     Int64(pts),
     UInt64(duration);
-    now_ns = UInt64(now),
+    now_ns = Int64(now),
     schema,
     calibration_identity,
     command_order,
@@ -107,15 +108,15 @@ end
     a = P * Float32[1e-9, 0]
     r = receiver()
     @test accept(r, :llowfs, a)
-    Offsets.expire!(r, UInt64(1100))
+    Offsets.expire!(r, Int64(1100))
     @test r.branches[:llowfs].present
-    Offsets.expire!(r, UInt64(1101))
+    Offsets.expire!(r, Int64(1101))
     @test !r.branches[:llowfs].armed
     @test r.branches[:llowfs].reason == :silence
     r = receiver()
     @test accept(r, :llowfs, a)
     Offsets.observe_clock!(r, id(2), Int64(110), UInt64(10))
-    Offsets.expire!(r, UInt64(101))
+    Offsets.expire!(r, Int64(101))
     @test r.branches[:llowfs].reason == :model_age
     for identity in (id(2; generation = 2), id(2; domain = other_domain))
         r = receiver()
@@ -139,6 +140,81 @@ end
     @test_throws OverflowError Offsets.observe_clock!(
         receiver(), id(2), typemax(Int64), UInt64(1)
     )
+end
+
+@testset "signed physical host clock preserves exact silence and model chronology" begin
+    a, b = P * Float32[1e-9, 0], P * Float32[0, 2e-9]
+    clock = Clocks.CachedNanoClock(Int64(-5000))
+    r = receiver()
+    sampled = Clocks.time_nanos(clock)
+    @test accept(r, :llowfs, a; now = sampled)
+    @test accept(r, :scc, b; now = sampled)
+    @test r.host_ns === sampled
+    @test all(c.arrived_ns === sampled for c in values(r.branches))
+    @test r.clock_end_ns === Int64(10)
+    Clocks.update!(clock, Int64(-4000))
+    Offsets.expire!(r, Clocks.time_nanos(clock))
+    @test total(r) ≈ a + b # Exactly the silence limit remains held.
+    Clocks.advance!(clock, Int64(1))
+    Offsets.expire!(r, Clocks.time_nanos(clock))
+    @test all(!c.armed && c.reason === :silence for c in values(r.branches))
+    @test r.clock_end_ns === Int64(10) && r.clock_identity === id(1)
+
+    r = receiver()
+    @test accept(r, :llowfs, a; now = 100)
+    @test accept(r, :scc, b; now = 100)
+    Offsets.expire!(r, Int64(200))
+    Offsets.expire!(r, Int64(150)) # Above arrival, but behind the last host poll.
+    @test all(!c.armed && c.reason === :monotonic_clock for c in values(r.branches))
+    @test all(iszero, total(r)) && r.host_ns === Int64(200)
+    @test Offsets.observe_clock!(r, id(1; generation = 2), Int64(0), UInt64(10))
+    Offsets.arm!(r, :llowfs, id(0; generation = 2))
+    @test !accept(r, :llowfs, a, id(1; generation = 2); now = 199)
+    @test r.branches[:llowfs].reason === :monotonic_clock && r.host_ns === Int64(200)
+    Offsets.arm!(r, :llowfs, id(0; generation = 2))
+    @test accept(r, :llowfs, a, id(1; generation = 2); now = 200)
+    @test r.branches[:llowfs].identity.generation === UInt64(2)
+    @test r.branches[:llowfs].last_sequence === UInt64(1)
+    @test r.branches[:llowfs].end_ns === Int64(10)
+end
+
+@testset "physical host ticks retain nanoseconds above 2^53 and across the signed range" begin
+    a = P * Float32[1e-9, 0]
+    function single_branch(silence)
+        r = Offsets.Receiver(
+            (llowfs = calibration([1]; silence_ns = silence),); command_limit_m = 1e-6
+        )
+        Offsets.observe_clock!(r, id(1), Int64(0), UInt64(10))
+        Offsets.arm!(r, :llowfs, id(0))
+        return r
+    end
+    clock = Clocks.CachedNanoClock((Int64(1) << 53) + Int64(10))
+    r = single_branch(Int64(1))
+    @test accept(r, :llowfs, a; now = Clocks.time_nanos(clock))
+    Clocks.advance!(clock, Int64(1))
+    Offsets.expire!(r, Clocks.time_nanos(clock))
+    @test r.branches[:llowfs].present
+    Clocks.advance!(clock, Int64(1))
+    Offsets.expire!(r, Clocks.time_nanos(clock))
+    @test !r.branches[:llowfs].armed && r.branches[:llowfs].reason === :silence
+
+    r = single_branch(typemax(Int64))
+    @test accept(r, :llowfs, a; now = typemin(Int64))
+    Offsets.expire!(r, Int64(-1))
+    @test r.branches[:llowfs].present # Signed elapsed == typemax(Int64).
+    Offsets.expire!(r, Int64(0))
+    @test r.branches[:llowfs].reason === :silence # Elapsed exceeds Int64, without wrap.
+    r = single_branch(Int64(1000))
+    @test accept(r, :llowfs, a; now = typemax(Int64) - Int64(1))
+    Offsets.expire!(r, typemax(Int64))
+    @test r.branches[:llowfs].present
+    Offsets.expire!(r, typemin(Int64))
+    @test r.branches[:llowfs].reason === :monotonic_clock
+    @test_throws ArgumentError calibration(
+        [1]; silence_ns = UInt64(typemax(Int64)) + UInt64(1)
+    )
+    @test_throws ArgumentError calibration([1]; silence_ns = true)
+    @test_throws MethodError Offsets.expire!(r, UInt64(1))
 end
 
 @testset "combined physical offset retains every branch coefficient limit" begin
