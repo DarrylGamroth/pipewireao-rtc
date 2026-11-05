@@ -2,6 +2,74 @@
 using Test, PipeWireAORTC, PipeWireAO
 using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
 const E=Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
+const Clocks = E.Clocks
+
+mutable struct UnpublishedAnalysisNode
+    clock::Clocks.CachedNanoClock
+    ticks::Vector{Int64}
+    polls::Int
+end
+
+function PipeWireAO.isrunning(node::UnpublishedAnalysisNode)
+    node.polls += 1
+    Clocks.update!(node.clock, node.ticks[node.polls])
+    return false
+end
+
+@testset "signed analysis setup deadlines without a core" begin
+    clock = Clocks.CachedNanoClock(Int64(-100))
+    previous, deadline = E.analysis_setup_deadline(clock, 3//1_000_000_000)
+    @test (previous, deadline) === (Int64(-100), Int64(-97))
+    Clocks.update!(clock, Int64(-98))
+    @test E.analysis_setup_time(clock, previous, deadline, "expired") === Int64(-98)
+    Clocks.update!(clock, deadline)
+    @test_throws ErrorException("expired") E.analysis_setup_time(
+        clock,
+        -98,
+        deadline,
+        "expired",
+    )
+    Clocks.update!(clock, Int64(-99))
+    @test_throws ErrorException("Analysis setup clock regressed") E.analysis_setup_time(
+        clock,
+        -98,
+        deadline,
+        "expired",
+    )
+    origin = Int64(2)^53 + 1
+    Clocks.update!(clock, origin)
+    @test E.analysis_setup_deadline(clock, 1//1_000_000_000) === (origin, origin + 1)
+    for timeout in (0, -1, Inf, NaN)
+        @test_throws ArgumentError E.analysis_setup_deadline(clock, timeout)
+    end
+    @test_throws InexactError E.analysis_setup_deadline(clock, typemax(Int))
+    @test_throws InexactError E.analysis_setup_deadline(clock, floatmax(Float64))
+    Clocks.update!(clock, typemax(Int64))
+    @test_throws OverflowError E.analysis_setup_deadline(clock, 1//1_000_000_000)
+
+    finished = Threads.Atomic{Bool}(false)
+    for (ticks, message) in (
+        (Int64[-99, -97], "Analysis node publication timed out"),
+        (Int64[-101], "Analysis setup clock regressed"),
+    )
+        Clocks.update!(clock, Int64(-100))
+        node = UnpublishedAnalysisNode(clock, ticks, 0)
+        @test_throws ErrorException(message) E.analysis_connections(
+            node,
+            nothing,
+            "unused",
+            finished;
+            timeout = 3//1_000_000_000,
+            clock,
+        )
+        @test node.polls == length(ticks)
+    end
+    # Cancellation leaves publication and native connection untouched.
+    finished[] = true
+    node = UnpublishedAnalysisNode(clock, Int64[], 0)
+    @test E.analysis_connections(node, nothing, "unused", finished; clock) === nothing
+    @test node.polls == 0
+end
 
 function prepared_analysis_flux_graph()
     mktempdir() do root
@@ -48,41 +116,31 @@ end
 
 function analysis_native_buffer(data; header = nothing, output = false)
     native = PipeWireAO.LibPipeWire
-    storage = [
-        native.pw_ndarray_filter_buffer(
-            ntuple(_ -> UInt8(0), sizeof(native.pw_ndarray_filter_buffer)),
-        ),
-    ]
-    header_metadata = native.PW_NDARRAY_FILTER_METADATA_HEADER
-    GC.@preserve storage data begin
-        buffer = pointer(storage)
-        unsafe_store!(buffer.struct_size, UInt32(sizeof(native.pw_ndarray_filter_buffer)))
-        unsafe_store!(
-            buffer.flags,
-            output ? native.PW_NDARRAY_FILTER_BUFFER_FLAG_OUTPUT_UNAVAILABLE : UInt32(0),
-        )
-        unsafe_store!(buffer.data, Ptr{Cvoid}(pointer(data)))
-        unsafe_store!(buffer.size, UInt32(sizeof(eltype(data)) * length(data)))
-        unsafe_store!(buffer.capacity, UInt32(sizeof(eltype(data)) * length(data)))
-        unsafe_store!(buffer.metadata_available, header_metadata)
-        unsafe_store!(
-            buffer.metadata_valid,
-            isnothing(header) ? UInt32(0) : header_metadata,
-        )
-        if !isnothing(header)
-            unsafe_store!(
-                buffer.header,
-                native.spa_meta_header(
-                    header.flags,
-                    header.offset,
-                    header.pts,
-                    header.dts_offset,
-                    header.sequence,
-                ),
-            )
-        end
+    metadata = PipeWireAO.MetadataSnapshot((
+        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_HEADER),
+    ))
+    isnothing(header) || PipeWireAO.set_buffer_header!(
+        PipeWireAO.writable_metadata_records(metadata),
+        header,
+    )
+    GC.@preserve data metadata begin
+        records = PipeWireAO.metadata_records(metadata)
+        buffers = [
+            native.pw_ndarray_filter_buffer(
+                UInt32(sizeof(native.pw_ndarray_filter_buffer)),
+                output ? native.PW_NDARRAY_FILTER_BUFFER_FLAG_OUTPUT_UNAVAILABLE :
+                UInt32(0),
+                Ptr{Cvoid}(pointer(data)),
+                UInt32(sizeof(data)),
+                UInt32(sizeof(data)),
+                records.count,
+                UInt32(0),
+                records.data,
+            ),
+        ]
+        # Keep the canonical descriptor storage alive with its borrowed buffer.
+        return (; buffers, metadata)
     end
-    return storage
 end
 
 @testset "single-input analysis keeps the ordinary graph boundary and Header" begin
@@ -106,6 +164,9 @@ end
 
             raw = reshape(UInt16.(1:24), 4, 6)
             pupil_flux = zeros(Float64, 4)
+            @test size(raw) == only(values(JuliaFilterGraph.input_formats(graph))).shape
+            @test size(pupil_flux) ==
+                  only(values(JuliaFilterGraph.output_formats(graph))).shape
             header = PipeWireAO.BufferHeader(
                 PipeWireAO.SPA.META_HEADER_FLAG_DISCONT,
                 UInt32(7),
@@ -117,13 +178,18 @@ end
             output_storage = analysis_native_buffer(pupil_flux; output = true)
             GC.@preserve raw pupil_flux input_storage output_storage begin
                 inputs = PipeWireAO.NdArrayFilterBuffers{false}(
-                    Ptr{Cvoid}(pointer(input_storage)),
+                    Ptr{Cvoid}(pointer(input_storage.buffers)),
                     UInt32(1),
                 )
                 outputs = PipeWireAO.NdArrayFilterBuffers{true}(
-                    Ptr{Cvoid}(pointer(output_storage)),
+                    Ptr{Cvoid}(pointer(output_storage.buffers)),
                     UInt32(1),
                 )
+                @test PipeWireAO.data_pointer(inputs[1]) == Ptr{UInt8}(pointer(raw))
+                @test PipeWireAO.data_pointer(outputs[1]) == Ptr{UInt8}(pointer(pupil_flux))
+                @test PipeWireAO.payload_size(inputs[1]) == sizeof(raw)
+                @test PipeWireAO.payload_size(outputs[1]) == sizeof(pupil_flux)
+                @test PipeWireAO.buffer_header(inputs[1]) == header
                 FilterGraphPipeWire._process_graph_buffers!(
                     node.owner,
                     nothing,
@@ -131,6 +197,7 @@ end
                     outputs,
                 )
                 @test pupil_flux == Float64[33, 105, 45, 117]
+                @test PipeWireAO.buffer_header(inputs[1]) == header
                 @test PipeWireAO.buffer_header(outputs[1]) == header
             end
         finally

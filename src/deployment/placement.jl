@@ -2,6 +2,7 @@ module Placement
 
 using ..Common
 import PipeWireAO
+import Clocks
 
 export PlacementError, cpu_set, credentials, snapshot, inherited_cpus, pin_supervisor
 
@@ -66,26 +67,46 @@ function pin_supervisor(cpu::Integer)
     Dict("pid" => getpid(), "threads" => before, "cpus" => [cpu])
 end
 
+function placement_deadline(clock::Clocks.AbstractNanoClock, timeout::Real)
+    isfinite(timeout) && timeout > 0 ||
+        throw(ArgumentError("loop placement timeout must be positive and finite"))
+    duration = ceil(Int64, BigFloat(timeout) * 1_000_000_000)
+    duration > 0 || throw(ArgumentError("loop placement timeout is below clock resolution"))
+    started = Clocks.time_nanos(clock)
+    return started, Base.Checked.checked_add(started, duration)
+end
+
+function placement_remaining(
+    clock::Clocks.AbstractNanoClock,
+    previous::Int64,
+    deadline::Int64,
+)
+    current = Clocks.time_nanos(clock)
+    current >= previous || fail("native loop placement clock regressed")
+    remaining = current >= deadline ? Int64(0) : Base.Checked.checked_sub(deadline, current)
+    return current, remaining
+end
+
 """Pin one running, caller-owned native loop during cold preparation.
 
 An event dispatched by the exact loop publishes its Linux TID. The caller must
 retain the loop and serialize its lifetime until this operation returns. Call
 outside its native callback and without holding its loop lock.
+`timeout` is seconds; `clock` supplies signed monotonic nanoseconds. Unrepresentable
+durations/deadlines and clock regressions fail before further affinity work.
 """
 function pin_loop!(
     loop::PipeWireAO.ThreadLoop,
     cpu::Int;
     check = ()->nothing,
     timeout::Real = 5.0,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     cpu >= 2 || fail("native loop CPU must exclude CPUs 0 and 1")
-    isfinite(timeout) && timeout > 0 ||
-        throw(ArgumentError("loop placement timeout must be positive and finite"))
+    previous, deadline = placement_deadline(clock, timeout)
     PipeWireAO.isrunning(loop) || fail("native loop must be running before placement")
     PipeWireAO.in_thread(loop) &&
         fail("native loop placement must run outside its callback")
-    started = time_ns()
-    remaining() = Float64(timeout) - (time_ns() - started) / 1e9
     tid = Threads.Atomic{Int}(0)
     check()
     event = PipeWireAO.EventSource(
@@ -100,11 +121,13 @@ function pin_loop!(
     try
         check()
         PipeWireAO.signal!(event)
-        while tid[] == 0
+        while true
             check()
-            remaining() > 0 || fail(
+            previous, available = placement_remaining(clock, previous, deadline)
+            available > 0 || fail(
                 "native loop did not publish its thread ID before the placement deadline",
             )
+            tid[] != 0 && break
             GC.safepoint()
             yield()
         end
@@ -115,25 +138,26 @@ function pin_loop!(
         parse(Int, proc_field(status, "Pid")) == thread ||
             fail("native loop thread $thread does not belong to the owner process")
         check()
-        available = remaining()
+        previous, available = placement_remaining(clock, previous, deadline)
         available > 0 ||
             fail("native loop placement deadline expired before affinity assignment")
         result = Common.run_checked(
             ["taskset", "-pc", string(cpu), string(thread)];
-            timeout = available,
+            timeout = available / 1_000_000_000,
             maximum_output_bytes = 64 * 1024,
         )
         result.returncode == 0 ||
             fail("cannot pin native loop thread $thread on CPU $cpu: $(result.stderr)")
         check()
-        remaining() > 0 ||
+        previous, available = placement_remaining(clock, previous, deadline)
+        available > 0 ||
             fail("native loop placement deadline expired during affinity assignment")
         observed = cpus_from_list(proc_field(status, "Cpus_allowed_list"))
         observed == [cpu] ||
             fail("native loop thread $thread affinity $observed differs from CPU $cpu")
         check()
-        remaining() > 0 ||
-            fail("native loop placement deadline expired during verification")
+        previous, available = placement_remaining(clock, previous, deadline)
+        available > 0 || fail("native loop placement deadline expired during verification")
         placement = Dict("pid" => getpid(), "tid" => thread, "cpus" => [cpu])
     catch error
         push!(errors, error)

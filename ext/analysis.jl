@@ -1,4 +1,28 @@
 const Analysis = PipeWireAORTC.Analysis
+import Clocks
+
+# Cold setup uses one absolute deadline across publication, discovery and linking.
+# The timeout keyword is seconds; all local clock samples and deadlines are ns.
+function analysis_setup_deadline(clock::Clocks.AbstractNanoClock, timeout::Real)
+    isfinite(timeout) && timeout > 0 ||
+        throw(ArgumentError("analysis setup timeout must be positive and finite"))
+    duration = ceil(Int64, BigFloat(timeout) * 1_000_000_000)
+    duration > 0 || throw(ArgumentError("analysis setup timeout is below clock resolution"))
+    started = Clocks.time_nanos(clock)
+    return started, Base.Checked.checked_add(started, duration)
+end
+
+function analysis_setup_time(
+    clock::Clocks.AbstractNanoClock,
+    previous::Int64,
+    deadline::Int64,
+    message::AbstractString,
+)
+    current = Clocks.time_nanos(clock)
+    current >= previous || error("Analysis setup clock regressed")
+    current < deadline || error(message)
+    return current
+end
 
 function analysis_link_observer(state, output, input)
     return (_, info) -> begin
@@ -80,13 +104,32 @@ function analysis_source_loop(nodes)
     return isempty(names) ? nothing : only(names)
 end
 
-function analysis_connections(node, config, remote, finished; output_names = ())
-    deadline = time_ns() + UInt64(120_000_000_000)
+"""Maintain optional analysis links after cold setup bounded by `timeout` seconds.
+
+`clock` supplies signed monotonic nanoseconds. Each setup poll samples it once;
+native creation checks it again after acquiring the loop lock. Clock regressions
+and unrepresentable durations/deadlines fail without retrying setup effects.
+"""
+function analysis_connections(
+    node,
+    config,
+    remote,
+    finished;
+    output_names = (),
+    timeout::Real = 120.0,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    previous, deadline = analysis_setup_deadline(clock, timeout)
     # Wait for this filter's loop to register it before a monitor can request
     # Quit. No monitor failure may race ahead of the owner's native Run call.
-    while !finished[] &&
-          !(PipeWireAO.isrunning(node) && FilterGraphPipeWire.node_id(node) !== nothing)
-        time_ns() < deadline || error("Analysis node publication timed out")
+    while !finished[]
+        previous = analysis_setup_time(
+            clock,
+            previous,
+            deadline,
+            "Analysis node publication timed out",
+        )
+        PipeWireAO.isrunning(node) && FilterGraphPipeWire.node_id(node) !== nothing && break
         FilterGraphIsland.deployment_sleep(0.01)
     end
     finished[] && return nothing
@@ -113,6 +156,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
     check_native_error() = failed[] ? throw(something(failure[])) : nothing
     try
         context, core, registry = PipeWireAO.with_thread_loop_lock(loop) do _
+            previous = analysis_setup_time(
+                clock,
+                previous,
+                deadline,
+                "Analysis connection setup timed out",
+            )
             context = PipeWireAO.Context(loop)
             core = PipeWireAO.CoreConnection(
                 context;
@@ -132,6 +181,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
                 link.output for link in config.links if link.input.node == config.name
             )
             while !finished[]
+                previous = analysis_setup_time(
+                    clock,
+                    previous,
+                    deadline,
+                    "Analysis source discovery timed out",
+                )
                 check_native_error()
                 candidates = map(
                     endpoint -> analysis_endpoint(registry, endpoint, "out"),
@@ -141,13 +196,18 @@ function analysis_connections(node, config, remote, finished; output_names = ())
                     sources = candidates
                     break
                 end
-                time_ns() < deadline || error("Analysis source discovery timed out")
                 FilterGraphIsland.deployment_sleep(0.02)
             end
             finished[] && return nothing
             source_info = Dict{UInt32,PipeWireAO.NodeInfo}()
             PipeWireAO.with_thread_loop_lock(loop) do _
                 for (original, _) in sources
+                    previous = analysis_setup_time(
+                        clock,
+                        previous,
+                        deadline,
+                        "Analysis source binding timed out",
+                    )
                     # Full properties arrive on Node info, not registry globals.
                     # Capture the first copied snapshot under this loop's lock.
                     id = original.id
@@ -170,6 +230,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
                 end
             end
             while !finished[]
+                previous = analysis_setup_time(
+                    clock,
+                    previous,
+                    deadline,
+                    "Analysis source info discovery timed out",
+                )
                 check_native_error()
                 discovered = PipeWireAO.with_thread_loop_lock(loop) do _
                     all(endpoint -> haskey(source_info, endpoint[1].id), sources) ||
@@ -187,7 +253,6 @@ function analysis_connections(node, config, remote, finished; output_names = ())
                     true
                 end
                 discovered && break
-                time_ns() < deadline || error("Analysis source info discovery timed out")
                 FilterGraphIsland.deployment_sleep(0.02)
             end
             finished[] && return nothing
@@ -208,6 +273,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
             )
             source_loop === nothing || (properties["node.loop.name"] = source_loop)
             sinks[name] = PipeWireAO.with_thread_loop_lock(loop) do _
+                previous = analysis_setup_time(
+                    clock,
+                    previous,
+                    deadline,
+                    "Analysis discard creation timed out",
+                )
                 PipeWireAO.create_object(
                     core,
                     "spa-node-factory",
@@ -228,6 +299,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
         # Discovery is asynchronous: a dead server cannot strand this task in
         # a synchronous core roundtrip. Startup and teardown remain bounded.
         while !finished[]
+            previous = analysis_setup_time(
+                clock,
+                previous,
+                deadline,
+                "Analysis endpoint discovery timed out",
+            )
             check_native_error()
             candidates = map(specifications) do link
                 (
@@ -239,7 +316,6 @@ function analysis_connections(node, config, remote, finished; output_names = ())
                 endpoints = candidates
                 break
             end
-            time_ns() < deadline || error("Analysis endpoint discovery timed out")
             FilterGraphIsland.deployment_sleep(0.02)
         end
         finished[] && return nothing
@@ -264,6 +340,12 @@ function analysis_connections(node, config, remote, finished; output_names = ())
         for (output, input) in endpoints
             link_state = Threads.Atomic{Int}(Int(PipeWireAO.LINK_STATE_INIT))
             link = PipeWireAO.with_thread_loop_lock(loop) do _
+                previous = analysis_setup_time(
+                    clock,
+                    previous,
+                    deadline,
+                    "Analysis link creation timed out",
+                )
                 all(
                     original -> analysis_incarnation_present(registry, original),
                     (original for endpoint in sources for original in endpoint),
@@ -293,17 +375,28 @@ function analysis_connections(node, config, remote, finished; output_names = ())
             id = PipeWireAO.bound_id(link)
             id !== nothing && PipeWireAO.find_global(registry, id) !== nothing
         end
-        while !finished[] && (
-            !all(published, links) ||
-            !all(state -> state[] >= Int(PipeWireAO.LINK_STATE_PAUSED), states)
-        )
+        while !finished[]
+            previous = analysis_setup_time(
+                clock,
+                previous,
+                deadline,
+                "Analysis link publication timed out",
+            )
             check_native_error()
             any(state -> state[] == Int(PipeWireAO.LINK_STATE_ERROR), states) &&
                 error("Analysis link negotiation failed")
-            time_ns() < deadline || error("Analysis link publication timed out")
+            all(published, links) &&
+                all(state -> state[] >= Int(PipeWireAO.LINK_STATE_PAUSED), states) &&
+                break
             FilterGraphIsland.deployment_sleep(0.02)
         end
         finished[] && return nothing
+        previous = analysis_setup_time(
+            clock,
+            previous,
+            deadline,
+            "Analysis link verification timed out",
+        )
         all(
             original -> analysis_incarnation_present(registry, original),
             (original for pair in endpoints for endpoint in pair for original in endpoint),

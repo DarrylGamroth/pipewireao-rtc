@@ -78,6 +78,54 @@ components and Lua plugins are removed. Export stages the generated Julia
 launcher and package; installed launchers select their pinned Julia/project paths.
 Existing sealed applications are not rewritten.
 
+### Clock consistency audit — 2026-11-05
+
+This is a source inventory and migration order, not implementation completion.
+The inspected baseline is `0fb7403f8570ef3a908f0240784f8eeeb6e14534` plus the
+current formatting/integration worktree. The initial audit read runtime files
+only; subsequently verified implementation slices are identified in the table. The
+[Julia clock convention](architecture.md#julia-design-conventions) requires direct
+signed `Clocks.time_nanos` control time, one cached sample per Agent cycle and
+fresh validation at native submission. Search matches are not equivalent tasks:
+they include compatibility APIs, scientific model time, wire identities and
+measurement counters.
+
+| Slice | Observed contract and affected source | Smallest coherent change and required checks |
+| --- | --- | --- |
+| CLK-01 — session owner | [Session](../src/media_session/session.jl) samples its cache at `Agent.do_work`; Machine/Ingress tickets already use signed `Int64` ns. [Transport](../src/media_session/transport.jl) checks the fresh source clock. [Controls](../src/media_session/controls.jl) converts `observe!` timestamps to seconds for the existing ControlClient API. | Preserve these separate cached-decision, producer-receipt and fresh-submission clocks. Count cache updates per cycle; advance the source during a cycle and prove expired native work is refused. Keep the explicit seconds conversion until CLK-03 changes that interface. |
+| CLK-02 — shared adapters | [Common](../src/common.jl) returns `Int64` for cached clocks, reinterprets SystemNanoClock as `UInt64`, and accepts unit-dependent callable fallbacks. `test_common.jl` explicitly tests this mixed contract. | Remove these representations/fallbacks after migrating their consumers, rather than changing the default underneath unsigned observers. Use concrete `AbstractNanoClock` arguments and direct reads; no replacement clock-wrapper hierarchy. Test negative origins, regression and exact ns above 2⁵³. |
+| CLK-03 — native clients and owner control | [ControlClient](../src/control/control_client.jl) publishes `ObservedReply.at`/failure time and accepts absolute `deadline::Float64` seconds. ControlEndpoint tickets, bootstrap/client/lifecycle/calibration/parameter endpoints and recovery clients depend on it. [Bootstrap Monitor](../src/control/owner_bootstrap_runtime.jl) caches once per Agent cycle but projects its cleanup deadline back to seconds. | Migrate correlated receipts, tickets and internal deadlines together, including their callers and tests. Existing public seconds signatures remain compatibility boundaries until explicitly changed; Timer/sleep still require seconds. Preserve nanosecond POD budgets, saturation, cancellation, late-result ordering and fresh lock-boundary checks. Test callback receipt time versus later consumption, one cache update, terminal release and expiry during cold encoding. |
+| CLK-04 — calibration Hsms | [Preparation](../src/calibration_preparation.jl) stores public `issued_at`, `deadline`, confirmation `observed_at` and `last_at` as seconds. [Acquisition Procedure](../src/calibration_procedure.jl) stores seconds deadlines/completion `at`; [exchange](../src/calibration_acquisition.jl) bridges integer action budgets to the Float64 action-client API. The [guide](JULIA_CALIBRATION_ACQUISITION.md#event-driven-procedures-and-online-numerical-consumers) explicitly preserves seconds, and [reference calibration](../ext/reference_calibration.jl) saves these fields in reports. | Change pure procedure storage, clock injection and completion events as one slice, then coordinate CLK-03 and reference-calibration callers. Preserve existing report/API units at explicit boundaries unless that contract is deliberately revised. Retain run/serial/model-time values. Convert callable tests to CachedNanoClock; cover every action deadline, regressing clocks, known/unknown outcomes and one restoration/release attempt. |
+| CLK-05 — correction control and freshness | [Loops](../src/correction/loops.jl) and [Recovery](../src/correction/recovery.jl) wrap Common with UInt64 validators and unsigned elapsed arithmetic. Supervision, its observer and [recovery client](../src/correction/recovery_client.jl) likewise use unsigned host observation times; published monotonic fields use decimal strings/native records. Existing loop tests explicitly exercise UInt64 wraparound. | Migrate these correlated host-time fields, clocks, timer callbacks and readers together. Keep public `timeout_ms` units and wire generation/sequence/token widths. Define overflow/regression handling before replacing modular subtraction; update the old wraparound expectation deliberately. Test signed origins, exact freshness boundaries, future samples, controller scope and native publication/readback. |
+| CLK-06 — physical-offset receiver | [PhysicalOffsets](../src/correction/physical_offsets.jl) separates UInt64 host `arrived_ns`/silence expiry from signed model `end_ns`/`clock_end_ns`. The [receiver extension](../ext/PipeWireAORTCOffsetInputsExt.jl) and [owner composition](../ext/PipeWireAORTCOffsetsExt.jl) inject `time_ns` callables. | Migrate only host arrival/silence timing with its receiver caller. Preserve acquisition identity, model-time PTS, exposure duration and model-age comparisons. Test host regression and silence independently of model-clock reset, ordering and stale-model rejection; rerun the optional CPU receiver/private-core selectors. |
+| CLK-07 — optical pacing and native timing | [AOS owner](../ext/PipeWireAORTCAOSExt.jl), pupil/external-pupil owners and output workers use UInt64 host deadlines. [SourceControl.apply!](../src/control/source_control.jl) explicitly accepts UInt64 `now`/period. [PhaseTiming.Row](../src/diagnostics/phase_timing.jl) is a saved `NTuple{17,UInt64}` mixing timestamps with identities, counts and cumulative GC/allocation measurements; public HIL timing records also contribute values. | Separate cold preparation/publication timeouts from frame pacing. A pacing change must include OwnerState, SourceControl callers, checked period arithmetic and explicit diagnostic-format boundaries. Preserve fixed-step scientific chronology, zero-pacing behavior, missed-period reporting and public upstream timing contracts. Recheck Pause/Run/Reset continuity, held samples, timing rows and affected allocation/cadence gates; do not edit strict RT or vendor code mechanically. |
+| CLK-08 — cold tools and setup waits | **Cold placement/analysis setup slice verified 2026-11-05:** [Placement](../src/deployment/placement.jl) and [analysis setup](../ext/analysis.jl) now accept `AbstractNanoClock`, read signed ns directly, check duration conversion/deadline arithmetic and reject clock regression or exact expiry. Timeout keywords and the subprocess boundary retain seconds. SystemdOwners, session runtime/launch, CLI, other capture/simulator/optical waits remain separate caller chains. | Cached-clock coverage passes 21 placement checks without affinity changes and 18 analysis checks: negative origins, adjacent ticks above 2⁵³, finite limits, exact timeout, regression, overflow and event cleanup/cancellation. Existing fake/proc deployment checks pass 116. The full [CPU analysis selector](../test/analysis_links.jl) passes 54 checks, including the 18 clock checks, on the local PipeWireAO/JuliaFilterGraph command-endpoint sources and native4 SDK cohort; synchronized-input checks pass 3. The pre-change test reproduced an existing `analysis_native_buffer` constructor mismatch against this cohort's eight-field native buffer ABI. Its authored helper now uses public `MetadataSnapshot`/Header APIs and the published native struct constructor; shape, payload aliases and input/output Header PTS/sequence are checked. No generated bindings or payload byte packing were changed. No live placement, priority, GPU or hardware qualification was performed. Remaining caller chains must preserve their public seconds/`timeout-ms`/Timer/sleep contracts and migrate private deadlines together. Journal's cold wait already uses direct signed Clocks ticks and checked addition. |
+| CLK-09 — identities and measurements | `ControlClient.next_instance` seeds an identity from `time_ns` before incrementing it under a lock. [Modal validation](../ext/modal_validation.jl) reports elapsed milliseconds; phase timing also records `Base.gc_time_ns()`. | These are not interchangeable control deadlines. Keep instance range/non-reuse behavior and diagnostic units. Any clock-source replacement must preserve those contracts; cumulative GC time is a measurement counter, not a Clocks read. |
+
+Epoch/reference recording is a separate boundary: `Common.prepare_reference_clock`
+selects native REALTIME/TAI, and [capture files](../src/calibration_capture_files.jl)
+retain that clock identifier with reference timestamps. SQLite `recorded_at` is
+calendar history. Acquisition domains, run/serial/generation/sequence counters,
+PTS/model chronology and exposure durations retain their declared native/science
+representations. They must not be renamed or retyped by a host-clock search.
+
+Confirmed consistency gaps are the Common representation split, remaining
+seconds-based internal control/procedure state and unsigned host-time observers.
+There is no demonstrated deadline or scientific failure from this audit.
+Derived risks are Float64 losing individual-nanosecond distinctions, signed
+addition/subtraction overflow, altered zero sentinels and accidentally comparing
+different clock domains. Each migration needs checked arithmetic and deterministic
+CachedNanoClock tests before its old callable/unsigned contract is removed.
+
+Start with isolated cold setup loops and the already typed session checks, then
+CLK-03/04 and CLK-05/06 with their dependency chains. Treat optical pacing as a
+separate measured change. Retire Common's adapters last. Reuse the existing
+common, calibration, correction, physical-offset, bootstrap and MediaSession
+selectors; extend their assertions rather than treating an existing green count
+as signed-clock coverage. The initial source audit ran no runtime or hardware
+gates. The software checks recorded in the table do not establish package-wide
+clock migration, allocation bounds or RT qualification.
+
 ## Requirement closure and delivery gates
 
 Each row is initially planned / evidence missing. Completion requires the normal,
