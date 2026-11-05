@@ -1,35 +1,6 @@
 module Common
 
 import PipeWireAO
-import Clocks
-
-const MONOTONIC_CLOCK = Clocks.SystemNanoClock()
-
-"""Read elapsed nanosecond ticks from a Clocks clock or an existing callable.
-
-`AbstractNanoClock` reads preserve signed values, including invalid/regressing
-cached test clocks, for the consuming owner's validation. Only `SystemNanoClock`
-restores `time_ns()`'s unsigned bit representation to preserve existing wrap-safe
-correction elapsed arithmetic. Callable clocks retain their nanosecond units and
-return values. The default reads the system clock on every call; it is not cached.
-"""
-@inline monotonic_ns(clock::Clocks.AbstractNanoClock = MONOTONIC_CLOCK) =
-    Clocks.time_nanos(clock)
-@inline monotonic_ns(clock::Clocks.SystemNanoClock) =
-    reinterpret(UInt64, Clocks.time_nanos(clock))
-@inline monotonic_ns(clock) = clock()
-
-"""Read elapsed seconds without changing existing absolute-deadline APIs.
-
-Clocks nanosecond objects are converted to Float64 seconds. Existing callable
-clocks already return seconds and are read unchanged, leaving validation with
-their owner. Cached clocks must be explicitly supplied and advanced by their
-owner; production native deadlines use the fresh default system clock.
-"""
-@inline monotonic_seconds(clock::Clocks.AbstractNanoClock = MONOTONIC_CLOCK) =
-    monotonic_ns(clock) / 1.0e9
-@inline monotonic_seconds(clock) = clock()
-
 # Optional scientific facts preserved by RTC graph and observation boundaries.
 # Required acquisition facts remain the consuming algorithm/profile's contract.
 const TELEMETRY_METADATA = Tuple(

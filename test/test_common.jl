@@ -2,30 +2,6 @@ using Test
 using PipeWireAORTC.Common
 using PipeWireAORTC.Common: finite_json
 using YAML
-import Clocks
-
-clock_reads(clock) = (Common.monotonic_ns(clock), Common.monotonic_seconds(clock))
-
-@testset "Elapsed clock adapters preserve callable units and cached ticks" begin
-    clock = Clocks.CachedNanoClock(1_500_000_000)
-    @test clock_reads(clock) === (Int64(1_500_000_000), 1.5)
-    Clocks.advance!(clock, 500_000_000)
-    @test clock_reads(clock) === (Int64(2_000_000_000), 2.0)
-    Clocks.update!(clock, -1)
-    @test Common.monotonic_ns(clock) === Int64(-1)
-    @test Common.monotonic_seconds(clock) == -1.0e-9
-    @test Common.monotonic_ns(() -> typemax(UInt64)) === typemax(UInt64)
-    @test Common.monotonic_ns(() -> -1) === -1
-    @test Common.monotonic_seconds(() -> 3) === 3
-    @test isnan(Common.monotonic_seconds(() -> NaN))
-    before = reinterpret(UInt64, Clocks.time_nanos(Clocks.SystemNanoClock()))
-    observed = Common.monotonic_ns()
-    after = reinterpret(UInt64, Clocks.time_nanos(Clocks.SystemNanoClock()))
-    @test observed isa UInt64 && before <= observed <= after
-    clock_reads(clock) # Warm the concrete object read/conversion path.
-    @test @allocated(clock_reads(clock)) == 0
-end
-
 @testset "generated numeric YAML sequences" begin
     mktempdir() do directory
         path = joinpath(directory, "coordinates.yaml")

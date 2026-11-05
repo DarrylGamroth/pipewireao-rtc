@@ -258,3 +258,19 @@ Local logs: `/tmp/rtc-clk08-focused-20261105.log`,
 fake process-manager observations and local process checks. It performs no live
 systemd, affinity, priority, device, deployment or hardware changes. Actual
 manager behavior and target-host timing remain separate qualification.
+
+## CLK-02: retire shared clock adapters
+
+After source search confirmed no remaining runtime/extension consumers, Common's
+clock constant, signed/unsigned nanosecond adapters and unit-dependent callable
+fallbacks were removed. Owners use Clocks directly. Tests for the retired adapter
+contract were removed; no replacement wrappers or tests of Clocks internals were
+added. The remaining Common utility selector passes 70 assertions, both alone
+and in the primary deployment aggregate. Formatting preserves parsed syntax and
+literals and is idempotent. Local log:
+`/tmp/rtc-clk02-common-final-20261105.log`.
+
+ControlClient/SystemdOwners retain their existing public seconds compatibility
+helpers, implemented directly with Clocks; maintained runtime callers use signed
+deadlines. Epoch/reference timestamps and scientific/model chronology remain
+outside this removal.
