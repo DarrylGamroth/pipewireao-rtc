@@ -29,6 +29,10 @@ progress(message) = (println("offset private: ", message); flush(stdout))
 const P = Float32[1 0; 0 1; 1 1; 1 -1]
 const Q = Float32.(pinv(Float64.(P)))
 const C = Float32[1 0.2; 0.3 1]
+const SCC_METADATA = (
+    Common.ACQUISITION_METADATA...,
+    MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER; required = true),
+)
 
 include("physical_offsets_documents.jl")
 
@@ -41,6 +45,23 @@ include("physical_offsets_documents.jl")
             Common.write_yaml(config, declaration)
             wall = Clocks.CachedNanoClock(Int64(100))
             prepared = Offsets.prepare(config, graph)
+            # The SCC tap also observes its independent electrical classification.
+            options = map(prepared.names, prepared.options) do name, option
+                name === :scc || return option
+                HIL.PipeWireArrayStreamOptions(;
+                    node_name = option.node_name,
+                    media_name = option.media_name,
+                    schema = option.schema,
+                    format = option.format,
+                    properties = option.properties,
+                    buffers = option.buffers,
+                    reference_clock = option.reference_clock,
+                    metadata = (
+                        option.metadata..., MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)
+                    ),
+                )
+            end
+            prepared = merge(prepared, (; options))
             observer = Offsets.frame_observer(config, nothing, JFG.output_formats(graph))
             _with_private_core() do remote
                 remote = joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], remote)
@@ -53,6 +74,16 @@ include("physical_offsets_documents.jl")
                     connect = false,
                     boundary_layout = RowMajorLayout(),
                     frame_observer = observer,
+                    input_metadata = Common.telemetry_metadata_ports(
+                        (:residual,); required = (; residual = Common.ACQUISITION_METADATA)
+                    ),
+                    output_metadata = Common.telemetry_metadata_ports(
+                        (:compensated, :physical);
+                        required = (
+                            compensated = Common.ACQUISITION_METADATA,
+                            physical = Common.ACQUISITION_METADATA,
+                        ),
+                    ),
                 )
                 FGP.prepare!(
                     node;
@@ -66,19 +97,43 @@ include("physical_offsets_documents.jl")
                         wait_until(() -> PipeWireAO.isrunning(node))
                         progress("exchange ready on thread $(Threads.threadid())")
                         specs = (
-                            ("send-residual", CONTROLLER_RESIDUAL_ERROR_V1, 2, false, 2),
-                            ("send-llowfs", REQUESTED_PDM_COMMAND_V1, 4, false, 2),
-                            ("send-scc", REQUESTED_PDM_COMMAND_V1, 4, false, 3),
-                            ("read-compensated", CONTROLLER_RESIDUAL_ERROR_V1, 2, true, 2),
-                            ("read-physical", REQUESTED_PDM_COMMAND_V1, 4, true, 2),
-                            ("read-scc", REQUESTED_PDM_COMMAND_V1, 4, true, 3),
+                            (
+                                "send-residual",
+                                CONTROLLER_RESIDUAL_ERROR_V1,
+                                2,
+                                false,
+                                Common.ACQUISITION_METADATA,
+                            ),
+                            (
+                                "send-llowfs",
+                                REQUESTED_PDM_COMMAND_V1,
+                                4,
+                                false,
+                                Common.ACQUISITION_METADATA,
+                            ),
+                            ("send-scc", REQUESTED_PDM_COMMAND_V1, 4, false, SCC_METADATA),
+                            (
+                                "read-compensated",
+                                CONTROLLER_RESIDUAL_ERROR_V1,
+                                2,
+                                true,
+                                Common.ACQUISITION_METADATA,
+                            ),
+                            (
+                                "read-physical",
+                                REQUESTED_PDM_COMMAND_V1,
+                                4,
+                                true,
+                                Common.ACQUISITION_METADATA,
+                            ),
+                            ("read-scc", REQUESTED_PDM_COMMAND_V1, 4, true, SCC_METADATA),
                         )
-                        options = map(specs) do (name, schema, count, input, version)
+                        options = map(specs) do (name, schema, count, input, metadata)
                             HIL.PipeWireArrayStreamOptions(;
                                 node_name = name,
                                 media_name = name,
                                 schema,
-                                metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
+                                metadata,
                                 format = NdArrayFormat(
                                     NdArray.F32_LE,
                                     (count,);

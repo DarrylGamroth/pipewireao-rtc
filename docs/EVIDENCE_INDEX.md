@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Physical-offset graph buffer negotiation — 2026-11-05
+
+The [investigation and verification](reviews/20261105-graph-buffers/REVIEW.md)
+confirms missing graph acquisition metadata and SCC trigger declarations in the
+private-core test. Matching explicit profiles preserve all original assertions:
+147 pass with each selected daemon. Original failures and the independent SDK
+selector correction are recorded; hardware and RT qualification remain separate.
+
 ## Signed control clocks — 2026-11-05
 
 The [migration evidence](reviews/20261105-clocks/REVIEW.md) records each verified
