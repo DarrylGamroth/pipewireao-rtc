@@ -6,8 +6,9 @@ const LoopPlacement = PipeWireAORTC.Placement
 
 function calling_thread_affinity()
     tid = Int(ccall(:gettid, Cint, ()))
-    cpus = LoopPlacement.cpus_from_list(LoopPlacement.proc_field(
-        "/proc/self/task/$tid/status", "Cpus_allowed_list"))
+    cpus = LoopPlacement.cpus_from_list(
+        LoopPlacement.proc_field("/proc/self/task/$tid/status", "Cpus_allowed_list"),
+    )
     return tid, cpus
 end
 
@@ -22,27 +23,34 @@ end
         @test report["pid"] == getpid()
         @test report["tid"] != caller_tid
         @test report["cpus"] == [cpu]
-        observed = LoopPlacement.cpus_from_list(LoopPlacement.proc_field(
-            "/proc/self/task/$(report["tid"])/status", "Cpus_allowed_list"))
+        observed = LoopPlacement.cpus_from_list(
+            LoopPlacement.proc_field(
+                "/proc/self/task/$(report["tid"])/status",
+                "Cpus_allowed_list",
+            ),
+        )
         @test observed == [cpu]
         @test calling_thread_affinity() == (caller_tid, caller_cpus)
         @test isrunning(loop)
 
         rejected = Threads.Atomic{Bool}(false)
         completed = Threads.Atomic{Bool}(false)
-        self_check = EventSource(loop, (_source, _count) -> begin
-            try
-                LoopPlacement.pin_loop!(loop, cpu)
-            catch error
-                rejected[] = error isa LoopPlacement.PlacementError
-            finally
-                completed[] = true
-            end
-            nothing
-        end)
+        self_check = EventSource(
+            loop,
+            (_source, _count) -> begin
+                try
+                    LoopPlacement.pin_loop!(loop, cpu)
+                catch error
+                    rejected[] = error isa LoopPlacement.PlacementError
+                finally
+                    completed[] = true
+                end
+                nothing
+            end,
+        )
         try
             signal!(self_check)
-            @test Base.timedwait(() -> completed[], 5; pollint=0.001) === :ok
+            @test Base.timedwait(() -> completed[], 5; pollint = 0.001) === :ok
             @test rejected[]
         finally
             close(self_check)
@@ -50,9 +58,12 @@ end
 
         @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(loop, -1)
         @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(loop, 0)
-        @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout=0)
-        @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout=Inf)
-        @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(loop, typemax(Int))
+        @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout = 0)
+        @test_throws ArgumentError LoopPlacement.pin_loop!(loop, cpu; timeout = Inf)
+        @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(
+            loop,
+            typemax(Int),
+        )
 
         checks = Ref(0)
         cancel = () -> begin
@@ -60,12 +71,16 @@ end
             checks[] == 2 && throw(InterruptException())
             nothing
         end
-        @test_throws InterruptException LoopPlacement.pin_loop!(loop, cpu; check=cancel)
+        @test_throws InterruptException LoopPlacement.pin_loop!(loop, cpu; check = cancel)
         @test checks[] == 2
         # Hold the native lock only to make this timeout test deterministic:
         # the event cannot dispatch before the bounded wait gives up.
         with_thread_loop_lock(loop) do _
-            @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(loop, cpu; timeout=0.005)
+            @test_throws LoopPlacement.PlacementError LoopPlacement.pin_loop!(
+                loop,
+                cpu;
+                timeout = 0.005,
+            )
         end
         @test LoopPlacement.pin_loop!(loop, cpu)["tid"] == report["tid"]
         @test calling_thread_affinity() == (caller_tid, caller_cpus)

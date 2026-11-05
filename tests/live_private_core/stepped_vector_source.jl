@@ -51,14 +51,14 @@ source = SteppedSource(frames, Atomic{Int}(0), Atomic{Int}(0), Atomic{Bool}(fals
 format = NdArrayFormat(
     NdArray.F32_LE,
     (2,);
-    layout=NdArray.ROW_MAJOR,
-    rate=SPA.Fraction(1_000, 1),
+    layout = NdArray.ROW_MAJOR,
+    rate = SPA.Fraction(1_000, 1),
 )
 filter = NdArrayFilter(
     node_name,
     (NdArrayFilterPort("output", PipeWireAO.DIRECTION_OUTPUT, format; schema),);
-    remote=core_name,
-    on_process=source,
+    remote = core_name,
+    on_process = source,
 )
 finished = Atomic{Bool}(false)
 

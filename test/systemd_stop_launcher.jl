@@ -9,10 +9,10 @@ source_path = joinpath(PipeWireAORTC.package_root(), "src", "session_cli.jl")
 source = read(source_path, String)
 first_byte = findfirst("function stop!(args)", source)
 last_byte = findnext("\n\"List local POD hints", source, last(first_byte))
-body = source[first(first_byte):first(last_byte)-1]
+body = source[first(first_byte):(first(last_byte)-1)]
 function insert_once(body, before, after)
     length(findall(before, body)) == 1 || error("stop timing source changed: $before")
-    return replace(body, before => after; count=1)
+    return replace(body, before => after; count = 1)
 end
 for (before, after) in [
     "    deadline = Client.monotonic() + 30" => "    Main.stop_test_event(\"helper-budget-start\")\n    deadline = Client.monotonic() + 30",
@@ -26,7 +26,7 @@ for (before, after) in [
 ]
     global body = insert_once(body, before, after)
 end
-source = source[1:first(first_byte)-1] * body * source[first(last_byte):end]
+source = source[1:(first(first_byte)-1)] * body * source[first(last_byte):end]
 sandbox = Module(:InstrumentedStopCLI)
 for name in (:PipeWireAORTC, :SessionConfiguration, :SessionLaunch, :SessionInstall)
     value = name === :PipeWireAORTC ? PipeWireAORTC : getproperty(PipeWireAORTC, name)

@@ -10,24 +10,25 @@ rate > 0 || error("RATE must be positive")
 
 graph = JuliaFilterGraph.prepare_graph(
     graph_configuration;
-    algorithms=FilterGraphAlgorithms.algorithms(),
+    algorithms = FilterGraphAlgorithms.algorithms(),
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;
-    name="pipewireao-rtc-external-graph",
-    remote=core_name,
-    rate=(rate, 1),
-    boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
-    run_control=true,
+    name = "pipewireao-rtc-external-graph",
+    remote = core_name,
+    rate = (rate, 1),
+    boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
+    run_control = true,
 )
 
 finished = Threads.Atomic{Bool}(false)
 monitor = Threads.@spawn begin
     while !finished[] && !isfile(stop_file)
         state = FilterGraphPipeWire.node_state(node)
-        if PipeWireAO.isrunning(node) &&
-           (state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
-            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING)
+        if PipeWireAO.isrunning(node) && (
+            state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
+            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING
+        )
             Base.Libc.systemsleep(0.1)
             println("JULIA_GRAPH_READY state=$state")
             flush(stdout)
@@ -47,9 +48,11 @@ try
 catch error
     # The runner has already unloaded and removed its source link before this
     # marker is written. Preserve callback failures and every other run error.
-    if !(error isa PipeWireAO.PipeWireError &&
-         error.operation === :pw_ndarray_filter_run &&
-         error.code == -Base.Libc.EPIPE)
+    if !(
+        error isa PipeWireAO.PipeWireError &&
+        error.operation === :pw_ndarray_filter_run &&
+        error.code == -Base.Libc.EPIPE
+    )
         rethrow()
     end
     finished[] = true

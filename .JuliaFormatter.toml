@@ -1,0 +1,15 @@
+style = "default"
+ignore = [
+    "test/data/**",
+    "docs/evidence/**",
+    "docs/archive/**",
+    "docs/validation/**",
+    "docs/reviews/**",
+    "**/generated/**",
+    "**/build/**",
+    "**/dist/**",
+]
+indent = 4
+margin = 92
+format_docstrings = false
+format_markdown = false

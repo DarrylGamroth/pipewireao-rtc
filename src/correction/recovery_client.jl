@@ -15,8 +15,10 @@ abstract type AbstractRecoveryTransport end
 struct SessionTransport{C<:SessionClient.Connection} <: AbstractRecoveryTransport
     connection::C
 end
-transport_instance(transport::SessionTransport) = transport.connection.selected.status.incarnation
-transport_initial_token(transport::SessionTransport) = transport.connection.selected.status.query_token
+transport_instance(transport::SessionTransport) =
+    transport.connection.selected.status.incarnation
+transport_initial_token(transport::SessionTransport) =
+    transport.connection.selected.status.query_token
 transport_clock_ns(::AbstractRecoveryTransport) = time_ns()
 transport_pause!(::AbstractRecoveryTransport, seconds::Float64) = sleep(seconds)
 request_native!(transport::SessionTransport, command; deadline::Float64, check) =
@@ -52,7 +54,8 @@ struct RecoveryError{O} <: Exception
     operation::O
     message::String
 end
-Base.showerror(io::IO, error::RecoveryError) = print(io, "protective recovery failed: ", error.message)
+Base.showerror(io::IO, error::RecoveryError) =
+    print(io, "protective recovery failed: ", error.message)
 
 "Exact indexed first-close readiness reported by a version-2 recovery owner."
 struct ControllerReadiness
@@ -70,8 +73,14 @@ struct ControllerReadback{R<:Union{Nothing,ControllerReadiness}}
     active_generation::UInt64
     state::Symbol
     readiness::R
-    function ControllerReadback(name::String, closed::Bool, requested::UInt64,
-            active::UInt64, state::Symbol, readiness::R) where {R<:Union{Nothing,ControllerReadiness}}
+    function ControllerReadback(
+        name::String,
+        closed::Bool,
+        requested::UInt64,
+        active::UInt64,
+        state::Symbol,
+        readiness::R,
+    ) where {R<:Union{Nothing,ControllerReadiness}}
         isempty(name) && throw(ArgumentError("recovery controller is absent"))
         state in (:Open, :Closed, :Opening, :Closing) ||
             throw(ArgumentError("invalid controller adoption state"))
@@ -87,8 +96,10 @@ adoption_matches(readback::ControllerReadback) =
 function validate_readbacks(::SingleController, ::ControllerReadback{Nothing})
     return nothing
 end
-function validate_readbacks(::CoupledControllers{N},
-        readbacks::NTuple{N,ControllerReadback{ControllerReadiness}}) where {N}
+function validate_readbacks(
+    ::CoupledControllers{N},
+    readbacks::NTuple{N,ControllerReadback{ControllerReadiness}},
+) where {N}
     1 <= N <= 16 || throw(ArgumentError("invalid recovery controller count"))
     names = map(readback -> readback.name, readbacks)
     all(name -> occursin(r"^[a-zA-Z0-9_.-]{1,128}$", name), names) ||
@@ -122,15 +133,40 @@ struct RecoverySnapshot{S<:AbstractControllerScope,R} <: AbstractLoopObservation
     source_sequence::UInt64
     source_ns::UInt64
     reference_timeout_ns::UInt64
-    function RecoverySnapshot(scope::S, serial::UInt64, owner::Int64, readbacks::R,
-            request_token::Int64, release_token::UInt64, requested::UInt64,
-            active::UInt64, recovery_generation::UInt64, recovery_state::Symbol,
-            inhibited::Bool, reference_reached::Bool, source_sequence::UInt64,
-            source_ns::UInt64, reference_timeout_ns::UInt64) where {S<:AbstractControllerScope,R}
+    function RecoverySnapshot(
+        scope::S,
+        serial::UInt64,
+        owner::Int64,
+        readbacks::R,
+        request_token::Int64,
+        release_token::UInt64,
+        requested::UInt64,
+        active::UInt64,
+        recovery_generation::UInt64,
+        recovery_state::Symbol,
+        inhibited::Bool,
+        reference_reached::Bool,
+        source_sequence::UInt64,
+        source_ns::UInt64,
+        reference_timeout_ns::UInt64,
+    ) where {S<:AbstractControllerScope,R}
         validate_readbacks(scope, readbacks)
-        return new{S,R}(serial, owner, readbacks, request_token, release_token,
-            requested, active, recovery_generation, recovery_state, inhibited,
-            reference_reached, source_sequence, source_ns, reference_timeout_ns)
+        return new{S,R}(
+            serial,
+            owner,
+            readbacks,
+            request_token,
+            release_token,
+            requested,
+            active,
+            recovery_generation,
+            recovery_state,
+            inhibited,
+            reference_reached,
+            source_sequence,
+            source_ns,
+            reference_timeout_ns,
+        )
     end
 end
 controller_scope(::RecoverySnapshot{S}) where {S} = S()
@@ -140,17 +176,24 @@ controller_readbacks(snapshot::RecoverySnapshot{<:CoupledControllers}) = snapsho
 controller_names(snapshot::RecoverySnapshot{SingleController}) = snapshot.readbacks.name
 controller_names(snapshot::RecoverySnapshot{<:CoupledControllers}) =
     map(readback -> readback.name, snapshot.readbacks)
-requested_generation(snapshot::RecoverySnapshot{SingleController}) = requested_generation(snapshot.readbacks)
-requested_generation(snapshot::RecoverySnapshot{<:CoupledControllers}) = map(requested_generation, snapshot.readbacks)
-active_generation(snapshot::RecoverySnapshot{SingleController}) = active_generation(snapshot.readbacks)
-active_generation(snapshot::RecoverySnapshot{<:CoupledControllers}) = map(active_generation, snapshot.readbacks)
+requested_generation(snapshot::RecoverySnapshot{SingleController}) =
+    requested_generation(snapshot.readbacks)
+requested_generation(snapshot::RecoverySnapshot{<:CoupledControllers}) =
+    map(requested_generation, snapshot.readbacks)
+active_generation(snapshot::RecoverySnapshot{SingleController}) =
+    active_generation(snapshot.readbacks)
+active_generation(snapshot::RecoverySnapshot{<:CoupledControllers}) =
+    map(active_generation, snapshot.readbacks)
 closed(snapshot::RecoverySnapshot{SingleController}) = closed(snapshot.readbacks)
 closed(snapshot::RecoverySnapshot{<:CoupledControllers}) = map(closed, snapshot.readbacks)
-adoption_matches(snapshot::RecoverySnapshot) = all(adoption_matches, controller_readbacks(snapshot))
+adoption_matches(snapshot::RecoverySnapshot) =
+    all(adoption_matches, controller_readbacks(snapshot))
 controller_states(snapshot::RecoverySnapshot{SingleController}) = snapshot.readbacks.state
-controller_states(snapshot::RecoverySnapshot{<:CoupledControllers}) = map(readback -> readback.state, snapshot.readbacks)
+controller_states(snapshot::RecoverySnapshot{<:CoupledControllers}) =
+    map(readback -> readback.state, snapshot.readbacks)
 controller_readiness(::RecoverySnapshot{SingleController}) = nothing
-controller_readiness(snapshot::RecoverySnapshot{<:CoupledControllers}) = map(readback -> readback.readiness, snapshot.readbacks)
+controller_readiness(snapshot::RecoverySnapshot{<:CoupledControllers}) =
+    map(readback -> readback.readiness, snapshot.readbacks)
 
 # Compatibility reads are projections, never separately stored tuple columns.
 function Base.getproperty(snapshot::RecoverySnapshot, name::Symbol)
@@ -162,15 +205,29 @@ function Base.getproperty(snapshot::RecoverySnapshot, name::Symbol)
     name === :controller_readiness && return controller_readiness(snapshot)
     return getfield(snapshot, name)
 end
-Base.propertynames(snapshot::RecoverySnapshot, private::Bool=false) =
-    (fieldnames(typeof(snapshot))..., :controller, :closed, :loop_requested,
-        :loop_active, :loop_state, :controller_readiness)
+Base.propertynames(snapshot::RecoverySnapshot, private::Bool = false) = (
+    fieldnames(typeof(snapshot))...,
+    :controller,
+    :closed,
+    :loop_requested,
+    :loop_active,
+    :loop_state,
+    :controller_readiness,
+)
 controller_scope(operation::Operation) = controller_scope(operation.coordinator)
 
-Coordinator(::SingleController, owner::Int64; clock=Common.MONOTONIC_CLOCK,
-    timeout_ms::Integer=5000) = Coordinator(owner; clock, timeout_ms)
-Coordinator(::CoupledControllers{N}, owner::Int64; clock=Common.MONOTONIC_CLOCK,
-    timeout_ms::Integer=5000) where {N} = Coordinator(owner; controllers=N, clock, timeout_ms)
+Coordinator(
+    ::SingleController,
+    owner::Int64;
+    clock = Common.MONOTONIC_CLOCK,
+    timeout_ms::Integer = 5000,
+) = Coordinator(owner; clock, timeout_ms)
+Coordinator(
+    ::CoupledControllers{N},
+    owner::Int64;
+    clock = Common.MONOTONIC_CLOCK,
+    timeout_ms::Integer = 5000,
+) where {N} = Coordinator(owner; controllers = N, clock, timeout_ms)
 
 function control_check!(channel::RecoveryChannel, deadline::Float64, check)
     isfinite(deadline) || throw(ArgumentError("recovery deadline must be finite"))
@@ -188,15 +245,18 @@ function native_reply!(channel::RecoveryChannel, command, reply::RecoveryRunner.
     reply.header.endpoint_instance == channel.instance ||
         throw(ControlClient.UnknownOutcome("session owner incarnation changed"))
     reply.header.operation == RecoveryRunner.operation_id(command) &&
-        reply.header.token > channel.reply_token ||
+    reply.header.token > channel.reply_token ||
         throw(ControlClient.UnknownOutcome("native reply is stale or uncorrelated"))
     channel.reply_token = reply.header.token
-    reply.header.result == 0 && reply.result !== nothing && reply.lifecycle == RecoveryRunner.Running ||
+    reply.header.result == 0 &&
+    reply.result !== nothing &&
+    reply.lifecycle == RecoveryRunner.Running ||
         throw(ControlClient.UnknownOutcome(native_failure(reply.error)))
     return reply
 end
-native_reply!(::RecoveryChannel, command, reply::RecoveryRunner.Rejection) =
-    throw(ControlClient.UnknownOutcome("native command was rejected: " * reply.error.message))
+native_reply!(::RecoveryChannel, command, reply::RecoveryRunner.Rejection) = throw(
+    ControlClient.UnknownOutcome("native command was rejected: " * reply.error.message),
+)
 
 function native_request!(channel::RecoveryChannel, command; deadline::Float64, check)
     control_check!(channel, deadline, check)
@@ -206,7 +266,8 @@ function native_request!(channel::RecoveryChannel, command; deadline::Float64, c
 end
 function running!(channel::RecoveryChannel; deadline::Float64, check)
     reply = native_request!(channel, RecoveryRunner.RunnerCommand(:status); deadline, check)
-    reply.result.details.running || throw(ControlClient.UnknownOutcome("session stopped running"))
+    reply.result.details.running ||
+        throw(ControlClient.UnknownOutcome("session stopped running"))
     return nothing
 end
 
@@ -229,15 +290,25 @@ function controller_snapshot(properties, controller)
     loop_state in (:Open, :Closed, :Opening, :Closing) ||
         throw(ControlClient.UnknownOutcome("correction adoption is unverified"))
     scalar_value(properties, control * "requested", :bool, Bool)
-    return ControllerReadback(controller,
+    return ControllerReadback(
+        controller,
         scalar_value(properties, controller * ":closed", :bool, Bool),
         property_long(properties, controller * ":requested-generation"),
-        property_long(properties, controller * ":active-generation"), loop_state, nothing)
+        property_long(properties, controller * ":active-generation"),
+        loop_state,
+        nothing,
+    )
 end
 
 function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Float64, check)
-    reply = native_request!(channel, RecoveryRunner.RunnerCommand(:properties, graph); deadline, check)
-    reply.result.details.graph == graph || throw(ArgumentError("native graph readback changed"))
+    reply = native_request!(
+        channel,
+        RecoveryRunner.RunnerCommand(:properties, graph);
+        deadline,
+        check,
+    )
+    reply.result.details.graph == graph ||
+        throw(ArgumentError("native graph readback changed"))
     properties = reply.result.details.properties
     p = RECOVERY_PREFIX
     version = scalar_value(properties, p * "version", :int, Int32)
@@ -264,11 +335,17 @@ function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Flo
                 scalar_value(properties, key * "close-guarded", :bool, Bool),
                 scalar_value(properties, key * "ready", :bool, Bool),
                 property_long(properties, key * "observation-sequence"),
-                property_long(properties, key * "observation-monotonic-nanoseconds"))
+                property_long(properties, key * "observation-monotonic-nanoseconds"),
+            )
             observation = observations[index]
-            ControllerReadback(observation.name, closed(observation),
-                requested_generation(observation), active_generation(observation),
-                observation.state, readiness)
+            ControllerReadback(
+                observation.name,
+                closed(observation),
+                requested_generation(observation),
+                active_generation(observation),
+                observation.state,
+                readiness,
+            )
         end
     else
         throw(ArgumentError("unsupported recovery property version"))
@@ -280,55 +357,90 @@ function native_snapshot!(channel::RecoveryChannel, graph::String; deadline::Flo
     1 <= timeout_ms <= 60_000 || throw(ArgumentError("invalid owner reference timeout"))
     request_token = scalar_value(properties, p * "request-token", :long, Int64)
     request_token >= 0 || throw(ArgumentError("negative recovery request token"))
-    return RecoverySnapshot(scope, UInt64(reply.header.token),
-        scalar_value(properties, "pipewireao.correction-control.owner-instance", :long, Int64),
+    return RecoverySnapshot(
+        scope,
+        UInt64(reply.header.token),
+        scalar_value(
+            properties,
+            "pipewireao.correction-control.owner-instance",
+            :long,
+            Int64,
+        ),
         readbacks,
-        request_token, property_long(properties, p * "release-token"),
+        request_token,
+        property_long(properties, p * "release-token"),
         property_long(properties, p * "requested-generation"),
         property_long(properties, p * "active-generation"),
-        property_long(properties, p * "recovery-generation"), recovery_state,
+        property_long(properties, p * "recovery-generation"),
+        recovery_state,
         scalar_value(properties, p * "closure-inhibited", :bool, Bool),
         scalar_value(properties, p * "reference-reached", :bool, Bool),
         property_long(properties, p * "observation-sequence"),
         property_long(properties, p * "observation-monotonic-nanoseconds"),
-        UInt64(timeout_ms) * UInt64(1_000_000))
+        UInt64(timeout_ms) * UInt64(1_000_000),
+    )
 end
 
 function snapshot!(operation::Operation; deadline::Float64, check)
     snapshot = native_snapshot!(operation.channel, operation.graph; deadline, check)
     owner_instance(snapshot) == operation.coordinator.owner_instance &&
-        controller_names(snapshot) == operation.controller && same_scope(operation, snapshot) ||
-        throw(ControlClient.UnknownOutcome("scientific graph owner or recovery controller changed"))
+    controller_names(snapshot) == operation.controller &&
+    same_scope(operation, snapshot) || throw(
+        ControlClient.UnknownOutcome(
+            "scientific graph owner or recovery controller changed",
+        ),
+    )
     return snapshot
 end
 
 function generation_for(reply::RecoveryRunner.Completion, node::String)
-    matches = filter(generation -> generation.node == node, reply.result.details.generations)
-    length(matches) == 1 || throw(ArgumentError("native staging lacks one exact node generation"))
+    matches =
+        filter(generation -> generation.node == node, reply.result.details.generations)
+    length(matches) == 1 ||
+        throw(ArgumentError("native staging lacks one exact node generation"))
     return nonnegative(only(matches).requested::Int64)
 end
-function write_property!(operation::Operation, name::String, value::RecoveryRunner.RunnerScalar;
-        deadline::Float64, check)
-    return write_properties!(operation, Dict{String,RecoveryRunner.RunnerScalar}(name => value);
-        deadline, check)
+function write_property!(
+    operation::Operation,
+    name::String,
+    value::RecoveryRunner.RunnerScalar;
+    deadline::Float64,
+    check,
+)
+    return write_properties!(
+        operation,
+        Dict{String,RecoveryRunner.RunnerScalar}(name => value);
+        deadline,
+        check,
+    )
 end
-function write_properties!(operation::Operation, properties::Dict{String,RecoveryRunner.RunnerScalar};
-        deadline::Float64, check)
+function write_properties!(
+    operation::Operation,
+    properties::Dict{String,RecoveryRunner.RunnerScalar};
+    deadline::Float64,
+    check,
+)
     check_timeout!(operation.coordinator)
     operation.coordinator.failure === nothing ||
         throw(ControlClient.UnknownOutcome(string(operation.coordinator.failure)))
-    phase_deadline = operation.coordinator.pending_since_ns / 1e9 + operation.coordinator.timeout_ns / 1e9
+    phase_deadline =
+        operation.coordinator.pending_since_ns / 1e9 +
+        operation.coordinator.timeout_ns / 1e9
     effect_deadline = min(deadline, phase_deadline)
-    running!(operation.channel; deadline=effect_deadline, check)
+    running!(operation.channel; deadline = effect_deadline, check)
     # A successful readiness roundtrip can still exhaust the phase budget.
     # Recheck immediately before handing an effect to the native client.
     check_timeout!(operation.coordinator)
     operation.coordinator.failure === nothing ||
         throw(ControlClient.UnknownOutcome(string(operation.coordinator.failure)))
-    reply = native_request!(operation.channel,
+    reply = native_request!(
+        operation.channel,
         RecoveryRunner.RunnerCommand(:properties_set, operation.graph, properties);
-        deadline=effect_deadline, check)
-    reply.result.details.graph == operation.graph || throw(ArgumentError("native staging graph changed"))
+        deadline = effect_deadline,
+        check,
+    )
+    reply.result.details.graph == operation.graph ||
+        throw(ArgumentError("native staging graph changed"))
     return reply
 end
 
@@ -349,15 +461,22 @@ function require_open(snapshot::RecoverySnapshot)
 end
 function require_scope(operation::Operation, snapshot::RecoverySnapshot)
     snapshot.request_token == operation.request_token &&
-        snapshot.recovery_generation == operation.coordinator.recovery_generation ||
+    snapshot.recovery_generation == operation.coordinator.recovery_generation ||
         throw(ControlClient.UnknownOutcome("recovery operation identity changed"))
     return nothing
 end
-function fresh_reference(operation::Operation, snapshot::RecoverySnapshot, after_sequence::UInt64)
+function fresh_reference(
+    operation::Operation,
+    snapshot::RecoverySnapshot,
+    after_sequence::UInt64,
+)
     now = transport_clock_ns(operation.channel.transport)
-    return snapshot.reference_reached && snapshot.source_sequence > after_sequence &&
-        snapshot.source_ns > 0 && now >= snapshot.source_ns &&
-        now - snapshot.source_ns < min(operation.reference_timeout_ns, snapshot.reference_timeout_ns)
+    return snapshot.reference_reached &&
+           snapshot.source_sequence > after_sequence &&
+           snapshot.source_ns > 0 &&
+           now >= snapshot.source_ns &&
+           now - snapshot.source_ns <
+           min(operation.reference_timeout_ns, snapshot.reference_timeout_ns)
 end
 
 client_failure_reason(::InterruptException) = :operation_cancelled
@@ -378,55 +497,115 @@ and coherence are established by the scientific owner; physical settling is not.
 """
 protective_open!(connection::SessionClient.Connection, graph::AbstractString; kwargs...) =
     protective_open!(SessionTransport(connection), graph; kwargs...)
-function protective_open!(transport::AbstractRecoveryTransport, graph::AbstractString;
-        deadline::Float64, timeout_ms::Union{Nothing,Integer}=nothing,
-        reason::Symbol=:operator, check=ControlClient.NO_CHECK,
-        expected_owner::Union{Nothing,Int64}=nothing,
-        admission_deadline::Float64=deadline)
-    channel = RecoveryChannel(transport, transport_instance(transport), transport_initial_token(transport))
+function protective_open!(
+    transport::AbstractRecoveryTransport,
+    graph::AbstractString;
+    deadline::Float64,
+    timeout_ms::Union{Nothing,Integer} = nothing,
+    reason::Symbol = :operator,
+    check = ControlClient.NO_CHECK,
+    expected_owner::Union{Nothing,Int64} = nothing,
+    admission_deadline::Float64 = deadline,
+)
+    channel = RecoveryChannel(
+        transport,
+        transport_instance(transport),
+        transport_initial_token(transport),
+    )
     admission_deadline = min(deadline, admission_deadline)
-    running!(channel; deadline=admission_deadline, check)
-    initial = native_snapshot!(channel, String(graph); deadline=admission_deadline, check)
-    expected_owner === nothing || expected_owner == initial.owner_instance ||
-        throw(ControlClient.UnknownOutcome("protective recovery owner replaced before admission"))
-    initial.recovery_state in (:idle, :released) && !initial.inhibited &&
-        initial.requested_generation == initial.active_generation ||
+    running!(channel; deadline = admission_deadline, check)
+    initial = native_snapshot!(channel, String(graph); deadline = admission_deadline, check)
+    expected_owner === nothing ||
+        expected_owner == initial.owner_instance ||
+        throw(
+            ControlClient.UnknownOutcome(
+                "protective recovery owner replaced before admission",
+            ),
+        )
+    initial.recovery_state in (:idle, :released) &&
+    !initial.inhibited &&
+    initial.requested_generation == initial.active_generation ||
         throw(ArgumentError("another recovery transaction is pending"))
-    timeout = timeout_ms === nothing ? Int(initial.reference_timeout_ns ÷ UInt64(1_000_000)) : timeout_ms
-    coordinator = Coordinator(controller_scope(initial), owner_instance(initial);
-        clock=() -> transport_clock_ns(transport), timeout_ms=timeout)
-    initial.request_token < typemax(Int64) || throw(ArgumentError("recovery request tokens exhausted"))
-    operation = Operation(channel, coordinator, String(graph), controller_names(initial),
-        initial.request_token + 1, initial.requested_generation,
-        initial.recovery_generation, initial.source_sequence,
-        min(coordinator.timeout_ns, initial.reference_timeout_ns), initial.source_sequence)
+    timeout =
+        timeout_ms === nothing ? Int(initial.reference_timeout_ns ÷ UInt64(1_000_000)) :
+        timeout_ms
+    coordinator = Coordinator(
+        controller_scope(initial),
+        owner_instance(initial);
+        clock = () -> transport_clock_ns(transport),
+        timeout_ms = timeout,
+    )
+    initial.request_token < typemax(Int64) ||
+        throw(ArgumentError("recovery request tokens exhausted"))
+    operation = Operation(
+        channel,
+        coordinator,
+        String(graph),
+        controller_names(initial),
+        initial.request_token + 1,
+        initial.requested_generation,
+        initial.recovery_generation,
+        initial.source_sequence,
+        min(coordinator.timeout_ns, initial.reference_timeout_ns),
+        initial.source_sequence,
+    )
     try
-        qualify!(coordinator, LoopObservation(initial.owner_instance, UInt64(0), initial.serial,
-            requested_generation(initial), active_generation(initial), closed(initial)))
-        effect = request_protection!(coordinator, initial.owner_instance, UInt64(operation.request_token); reason)
+        qualify!(
+            coordinator,
+            LoopObservation(
+                initial.owner_instance,
+                UInt64(0),
+                initial.serial,
+                requested_generation(initial),
+                active_generation(initial),
+                closed(initial),
+            ),
+        )
+        effect = request_protection!(
+            coordinator,
+            initial.owner_instance,
+            UInt64(operation.request_token);
+            reason,
+        )
         return restore_reference!(operation, effect; deadline, check, admission_deadline)
     catch error
         throw(recovery_error(operation, error))
     end
 end
 
-function restore_reference!(operation::Operation, effect::StageRecovery;
-        deadline::Float64, check, admission_deadline::Float64=deadline)
+function restore_reference!(
+    operation::Operation,
+    effect::StageRecovery;
+    deadline::Float64,
+    check,
+    admission_deadline::Float64 = deadline,
+)
     coordinator = operation.coordinator
-    reply = write_property!(operation, RECOVERY_PREFIX * "request-token",
-        RecoveryRunner.RunnerScalar(:long, operation.request_token); deadline=admission_deadline, check)
+    reply = write_property!(
+        operation,
+        RECOVERY_PREFIX * "request-token",
+        RecoveryRunner.RunnerScalar(:long, operation.request_token);
+        deadline = admission_deadline,
+        check,
+    )
     virtual_generation = generation_for(reply, RECOVERY_NODE)
-    virtual_generation > operation.virtual_generation || throw(ArgumentError("recovery transaction did not advance"))
+    virtual_generation > operation.virtual_generation ||
+        throw(ArgumentError("recovery transaction did not advance"))
     bound = false
     while state(coordinator) !== :Holding
         snapshot = snapshot!(operation; deadline, check)
         snapshot.request_token == operation.request_token ||
             throw(ControlClient.UnknownOutcome("recovery request token changed"))
-        snapshot.requested_generation == virtual_generation && snapshot.active_generation <= virtual_generation ||
+        snapshot.requested_generation == virtual_generation &&
+        snapshot.active_generation <= virtual_generation ||
             throw(ControlClient.UnknownOutcome("recovery transaction generation changed"))
         if !bound && snapshot.recovery_generation > operation.previous_recovery_generation
-            recovery_staged!(coordinator, effect, snapshot.recovery_generation;
-                loop_generation=requested_generation(snapshot))
+            recovery_staged!(
+                coordinator,
+                effect,
+                snapshot.recovery_generation;
+                loop_generation = requested_generation(snapshot),
+            )
             bound = true
             # The same atomic recovery transaction owns forced-open adoption.
             # Pending evidence may still show the old closed active generation.
@@ -436,26 +615,53 @@ function restore_reference!(operation::Operation, effect::StageRecovery;
         elseif bound && state(coordinator) === :RestoringReference
             observe_loop!(coordinator, snapshot)
             # Scope application needs a separate authority-processed reply token.
-            if snapshot.active_generation == virtual_generation && snapshot.recovery_state === :applied
+            if snapshot.active_generation == virtual_generation &&
+               snapshot.recovery_state === :applied
                 applied = snapshot!(operation; deadline, check)
                 require_open(applied)
                 require_scope(operation, applied)
-                applied.requested_generation == applied.active_generation == virtual_generation &&
-                    applied.recovery_state === :applied && applied.inhibited ||
+                applied.requested_generation ==
+                applied.active_generation ==
+                virtual_generation &&
+                applied.recovery_state === :applied &&
+                applied.inhibited ||
                     throw(ControlClient.UnknownOutcome("recovery application changed"))
                 generation = coordinator.recovery_generation
-                observe_recovery!(coordinator, RecoveryObservation(applied.owner_instance,
-                    coordinator.token, applied.serial, generation, generation, :applied, true))
+                observe_recovery!(
+                    coordinator,
+                    RecoveryObservation(
+                        applied.owner_instance,
+                        coordinator.token,
+                        applied.serial,
+                        generation,
+                        generation,
+                        :applied,
+                        true,
+                    ),
+                )
             end
         elseif bound && state(coordinator) === :Verifying
             require_open(snapshot)
             require_scope(operation, snapshot)
-            snapshot.recovery_state === :applied && snapshot.inhibited ||
-                throw(ControlClient.UnknownOutcome("reference verification lost recovery inhibition"))
-            observe_reference!(coordinator, ReferenceObservation(snapshot.owner_instance,
-                coordinator.token, snapshot.serial, snapshot.recovery_generation,
-                fresh_reference(operation, snapshot, operation.baseline_sequence), true, true))
-            state(coordinator) === :Holding && (operation.reference_sequence = snapshot.source_sequence)
+            snapshot.recovery_state === :applied && snapshot.inhibited || throw(
+                ControlClient.UnknownOutcome(
+                    "reference verification lost recovery inhibition",
+                ),
+            )
+            observe_reference!(
+                coordinator,
+                ReferenceObservation(
+                    snapshot.owner_instance,
+                    coordinator.token,
+                    snapshot.serial,
+                    snapshot.recovery_generation,
+                    fresh_reference(operation, snapshot, operation.baseline_sequence),
+                    true,
+                    true,
+                ),
+            )
+            state(coordinator) === :Holding &&
+                (operation.reference_sequence = snapshot.source_sequence)
         end
         state(coordinator) === :Holding && return operation
         pause_control!(operation; deadline, check)
@@ -473,14 +679,26 @@ later on the same partially closed operation, using their own fresh evidence.
 That later call does not repeat recovery or release. A controller already closed
 by this operation is never reopened by selecting another controller.
 """
-function resume!(operation::Operation; deadline::Float64, check=ControlClient.NO_CHECK,
-        controllers=nothing)
+function resume!(
+    operation::Operation;
+    deadline::Float64,
+    check = ControlClient.NO_CHECK,
+    controllers = nothing,
+)
     return resume!(controller_scope(operation), operation; deadline, check, controllers)
 end
 resume!(::CoupledControllers, operation::Operation; deadline::Float64, check, controllers) =
     resume_controllers!(operation; deadline, check, controllers)
-function resume!(::SingleController, operation::Operation; deadline::Float64, check, controllers)
-    controllers === nothing || selected_controllers((operation.controller,), controllers) == (operation.controller,) ||
+function resume!(
+    ::SingleController,
+    operation::Operation;
+    deadline::Float64,
+    check,
+    controllers,
+)
+    controllers === nothing ||
+        selected_controllers((operation.controller,), controllers) ==
+        (operation.controller,) ||
         throw(ArgumentError("resume selection differs from the singular recovery scope"))
     coordinator = operation.coordinator
     coordinator.failure === nothing && state(coordinator) === :Holding ||
@@ -495,37 +713,74 @@ function resume!(::SingleController, operation::Operation; deadline::Float64, ch
             before.recovery_state === :applied && before.inhibited ||
                 throw(ControlClient.UnknownOutcome("held recovery inhibition changed"))
             fresh_reference(operation, before, operation.reference_sequence) && break
-            transport_clock_ns(operation.channel.transport) - wait_started < coordinator.timeout_ns ||
+            transport_clock_ns(operation.channel.transport) - wait_started <
+            coordinator.timeout_ns ||
                 throw(ControlClient.UnknownOutcome("fresh held reference did not arrive"))
             pause_control!(operation; deadline, check)
             before = snapshot!(operation; deadline, check)
         end
-        observe_reference!(coordinator, ReferenceObservation(before.owner_instance,
-            coordinator.token, before.serial, before.recovery_generation, true, true, true))
+        observe_reference!(
+            coordinator,
+            ReferenceObservation(
+                before.owner_instance,
+                coordinator.token,
+                before.serial,
+                before.recovery_generation,
+                true,
+                true,
+                true,
+            ),
+        )
         release = request_close!(coordinator, before.owner_instance, coordinator.token)
-        reply = write_property!(operation, RECOVERY_PREFIX * "release-token",
-            RecoveryRunner.RunnerScalar(:long, Int64(release.generation)); deadline, check)
+        reply = write_property!(
+            operation,
+            RECOVERY_PREFIX * "release-token",
+            RecoveryRunner.RunnerScalar(:long, Int64(release.generation));
+            deadline,
+            check,
+        )
         virtual_generation = generation_for(reply, RECOVERY_NODE)
-        virtual_generation > before.requested_generation || throw(ArgumentError("release transaction did not advance"))
+        virtual_generation > before.requested_generation ||
+            throw(ArgumentError("release transaction did not advance"))
         while state(coordinator) === :Releasing
             snapshot = snapshot!(operation; deadline, check)
             require_open(snapshot)
             require_scope(operation, snapshot)
-            snapshot.requested_generation == virtual_generation && snapshot.active_generation <= virtual_generation ||
-                throw(ControlClient.UnknownOutcome("release transaction generation changed"))
-            if snapshot.recovery_state === :released && snapshot.active_generation == virtual_generation
+            snapshot.requested_generation == virtual_generation &&
+            snapshot.active_generation <= virtual_generation || throw(
+                ControlClient.UnknownOutcome("release transaction generation changed"),
+            )
+            if snapshot.recovery_state === :released &&
+               snapshot.active_generation == virtual_generation
                 snapshot.release_token == coordinator.recovery_generation ||
                     throw(ControlClient.UnknownOutcome("release generation changed"))
                 if !fresh_reference(operation, snapshot, before.source_sequence)
                     pause_control!(operation; deadline, check)
                     continue
                 end
-                close = observe_release!(coordinator, ReleaseObservation(snapshot.owner_instance,
-                    coordinator.token, snapshot.serial, snapshot.recovery_generation, !snapshot.inhibited,
-                    closed(snapshot), fresh_reference(operation, snapshot, before.source_sequence), true, true))
-                close === nothing && throw(ControlClient.UnknownOutcome("release prerequisites changed"))
-                reply = write_property!(operation, operation.controller * ":closed",
-                    RecoveryRunner.RunnerScalar(:bool, true); deadline, check)
+                close = observe_release!(
+                    coordinator,
+                    ReleaseObservation(
+                        snapshot.owner_instance,
+                        coordinator.token,
+                        snapshot.serial,
+                        snapshot.recovery_generation,
+                        !snapshot.inhibited,
+                        closed(snapshot),
+                        fresh_reference(operation, snapshot, before.source_sequence),
+                        true,
+                        true,
+                    ),
+                )
+                close === nothing &&
+                    throw(ControlClient.UnknownOutcome("release prerequisites changed"))
+                reply = write_property!(
+                    operation,
+                    operation.controller * ":closed",
+                    RecoveryRunner.RunnerScalar(:bool, true);
+                    deadline,
+                    check,
+                )
                 staged!(coordinator, close, generation_for(reply, operation.controller))
             else
                 pause_control!(operation; deadline, check)
@@ -534,10 +789,16 @@ function resume!(::SingleController, operation::Operation; deadline::Float64, ch
         while state(coordinator) === :Closing
             snapshot = snapshot!(operation; deadline, check)
             require_scope(operation, snapshot)
-            snapshot.recovery_state === :released && !snapshot.inhibited &&
-                snapshot.release_token == coordinator.recovery_generation &&
-                snapshot.requested_generation == snapshot.active_generation == virtual_generation ||
-                throw(ControlClient.UnknownOutcome("recovery release changed during close adoption"))
+            snapshot.recovery_state === :released &&
+            !snapshot.inhibited &&
+            snapshot.release_token == coordinator.recovery_generation &&
+            snapshot.requested_generation ==
+            snapshot.active_generation ==
+            virtual_generation || throw(
+                ControlClient.UnknownOutcome(
+                    "recovery release changed during close adoption",
+                ),
+            )
             observe_loop!(coordinator, snapshot)
             state(coordinator) === :Closed && return operation
             pause_control!(operation; deadline, check)

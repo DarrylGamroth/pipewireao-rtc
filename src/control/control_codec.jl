@@ -10,9 +10,15 @@ const _MAX_CALIBRATION_REPLY = 128 * 1024
 const _VERSION = Int32(1)
 const _INVALID_ID = typemax(UInt32)
 
-export ControllerIdentity, RequestHeader, ReplyHeader,
-    encode_request, decode_request, encode_completion, decode_completion,
-    encode_rejection, decode_rejection
+export ControllerIdentity,
+    RequestHeader,
+    ReplyHeader,
+    encode_request,
+    decode_request,
+    encode_completion,
+    decode_completion,
+    encode_rejection,
+    decode_rejection
 
 struct ControllerIdentity
     global_id::UInt32
@@ -34,9 +40,14 @@ struct RequestHeader
     token::Int64
     operation::UInt32
     budget_ns::Int64
-    function RequestHeader(version::Int32, endpoint_instance::Int64,
-            controller::ControllerIdentity, token::Int64,
-            operation::UInt32, budget_ns::Int64)
+    function RequestHeader(
+        version::Int32,
+        endpoint_instance::Int64,
+        controller::ControllerIdentity,
+        token::Int64,
+        operation::UInt32,
+        budget_ns::Int64,
+    )
         version == _VERSION || throw(ArgumentError("unsupported control version"))
         endpoint_instance > 0 || throw(ArgumentError("endpoint instance must be positive"))
         token > 0 || throw(ArgumentError("request token must be positive"))
@@ -45,9 +56,13 @@ struct RequestHeader
         new(version, endpoint_instance, controller, token, operation, budget_ns)
     end
 end
-RequestHeader(controller::ControllerIdentity, endpoint_instance::Int64,
-    token::Int64, operation::UInt32, budget_ns::Int64) =
-    RequestHeader(_VERSION, endpoint_instance, controller, token, operation, budget_ns)
+RequestHeader(
+    controller::ControllerIdentity,
+    endpoint_instance::Int64,
+    token::Int64,
+    operation::UInt32,
+    budget_ns::Int64,
+) = RequestHeader(_VERSION, endpoint_instance, controller, token, operation, budget_ns)
 
 struct ReplyHeader
     version::Int32
@@ -56,9 +71,14 @@ struct ReplyHeader
     token::Int64
     operation::UInt32
     result::Int32
-    function ReplyHeader(version::Int32, endpoint_instance::Int64,
-            controller::Union{Nothing,ControllerIdentity}, token::Int64,
-            operation::UInt32, result::Int32)
+    function ReplyHeader(
+        version::Int32,
+        endpoint_instance::Int64,
+        controller::Union{Nothing,ControllerIdentity},
+        token::Int64,
+        operation::UInt32,
+        result::Int32,
+    )
         version == _VERSION || throw(ArgumentError("unsupported control version"))
         endpoint_instance > 0 || throw(ArgumentError("endpoint instance must be positive"))
         token >= 0 || throw(ArgumentError("reply token must be nonnegative"))
@@ -72,16 +92,32 @@ struct ReplyHeader
         new(version, endpoint_instance, controller, token, operation, result)
     end
 end
-ReplyHeader(controller::ControllerIdentity, endpoint_instance::Int64,
-    token::Int64, operation::UInt32, result::Int32) =
-    ReplyHeader(_VERSION, endpoint_instance, controller, token, operation, result)
+ReplyHeader(
+    controller::ControllerIdentity,
+    endpoint_instance::Int64,
+    token::Int64,
+    operation::UInt32,
+    result::Int32,
+) = ReplyHeader(_VERSION, endpoint_instance, controller, token, operation, result)
 ReplyHeader(endpoint_instance::Int64, result::Int32) =
     ReplyHeader(_VERSION, endpoint_instance, nothing, 0, UInt32(0), result)
 
 const _KINDS = (
-    (:request, "pipewireao.rtc.control.request.header", "pipewireao.rtc.control.request.payload"),
-    (:completion, "pipewireao.rtc.control.completion.header", "pipewireao.rtc.control.completion.payload"),
-    (:rejection, "pipewireao.rtc.control.rejection.header", "pipewireao.rtc.control.rejection.payload"),
+    (
+        :request,
+        "pipewireao.rtc.control.request.header",
+        "pipewireao.rtc.control.request.payload",
+    ),
+    (
+        :completion,
+        "pipewireao.rtc.control.completion.header",
+        "pipewireao.rtc.control.completion.payload",
+    ),
+    (
+        :rejection,
+        "pipewireao.rtc.control.rejection.header",
+        "pipewireao.rtc.control.rejection.payload",
+    ),
 )
 _names(kind::Symbol) = begin
     for entry in _KINDS
@@ -90,15 +126,16 @@ _names(kind::Symbol) = begin
     throw(ArgumentError("unknown control record kind"))
 end
 
-_limit(::Val{:request}, endpoint) = endpoint === nothing ? _MAX_REQUEST :
+_limit(::Val{:request}, endpoint) =
+    endpoint === nothing ? _MAX_REQUEST :
     throw(ArgumentError("request records do not accept a reply endpoint"))
 function _limit(::Val{:reply}, endpoint)
     endpoint === :lifecycle && return _MAX_LIFECYCLE_REPLY
     endpoint === :calibration && return _MAX_CALIBRATION_REPLY
     throw(ArgumentError("reply endpoint must be :lifecycle or :calibration"))
 end
-_check_size(pod::PipeWireAO.Pod, limit::Int) = sizeof(pod) <= limit ||
-    throw(ArgumentError("control POD exceeds its byte limit"))
+_check_size(pod::PipeWireAO.Pod, limit::Int) =
+    sizeof(pod) <= limit || throw(ArgumentError("control POD exceeds its byte limit"))
 
 function _strict_pod(pod::PipeWireAO.Pod, limit::Int)
     _check_size(pod, limit)
@@ -121,7 +158,7 @@ function _owned_exact_pod(bytes::AbstractVector{UInt8}, limit::Int)
     length(bytes) <= limit || throw(ArgumentError("control POD exceeds its byte limit"))
     length(bytes) >= 8 || throw(ArgumentError("incomplete SPA POD header"))
     start = firstindex(bytes)
-    declared = only(reinterpret(UInt32, @view bytes[start:(start + 3)]))
+    declared = only(reinterpret(UInt32, @view bytes[start:(start+3)]))
     Int(declared) + 8 == length(bytes) ||
         throw(ArgumentError("SPA POD has trailing or truncated bytes"))
     return PipeWireAO.Pod(bytes)
@@ -185,10 +222,14 @@ end
 function _header_values(header::RequestHeader)
     c = header.controller
     return PipeWireAO.Pod[
-        PipeWireAO.Pod(header.version), PipeWireAO.Pod(header.endpoint_instance),
-        PipeWireAO.Pod(SPA.Id(c.global_id)), PipeWireAO.Pod(reinterpret(Int64, c.serial)),
-        PipeWireAO.Pod(c.instance), PipeWireAO.Pod(header.token),
-        PipeWireAO.Pod(SPA.Id(header.operation)), PipeWireAO.Pod(header.budget_ns),
+        PipeWireAO.Pod(header.version),
+        PipeWireAO.Pod(header.endpoint_instance),
+        PipeWireAO.Pod(SPA.Id(c.global_id)),
+        PipeWireAO.Pod(reinterpret(Int64, c.serial)),
+        PipeWireAO.Pod(c.instance),
+        PipeWireAO.Pod(header.token),
+        PipeWireAO.Pod(SPA.Id(header.operation)),
+        PipeWireAO.Pod(header.budget_ns),
     ]
 end
 function _header_values(header::ReplyHeader)
@@ -198,17 +239,22 @@ function _header_values(header::ReplyHeader)
     instance = c === nothing ? Int64(0) : c.instance
     operation = c === nothing ? UInt32(0) : header.operation
     return PipeWireAO.Pod[
-        PipeWireAO.Pod(header.version), PipeWireAO.Pod(header.endpoint_instance),
-        PipeWireAO.Pod(SPA.Id(global_id)), PipeWireAO.Pod(reinterpret(Int64, serial)),
-        PipeWireAO.Pod(instance), PipeWireAO.Pod(header.token),
-        PipeWireAO.Pod(SPA.Id(operation)), PipeWireAO.Pod(header.result),
+        PipeWireAO.Pod(header.version),
+        PipeWireAO.Pod(header.endpoint_instance),
+        PipeWireAO.Pod(SPA.Id(global_id)),
+        PipeWireAO.Pod(reinterpret(Int64, serial)),
+        PipeWireAO.Pod(instance),
+        PipeWireAO.Pod(header.token),
+        PipeWireAO.Pod(SPA.Id(operation)),
+        PipeWireAO.Pod(header.result),
     ]
 end
 
 _padded_size(size::Int) = (size + 7) & -8
 
 function _bounded_add(total::Int, amount::Int, limit::Int)
-    amount >= 0 && total <= limit || throw(ArgumentError("control POD exceeds its byte limit"))
+    amount >= 0 && total <= limit ||
+        throw(ArgumentError("control POD exceeds its byte limit"))
     amount <= limit - total || throw(ArgumentError("control POD exceeds its byte limit"))
     padded = _padded_size(amount)
     padded <= limit - total || throw(ArgumentError("control POD exceeds its byte limit"))
@@ -233,7 +279,12 @@ function _validate_payload(value::SPA.Struct)
     return nothing
 end
 
-function _envelope_size(kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int)
+function _envelope_size(
+    kind::Symbol,
+    header_values::Vector{PipeWireAO.Pod},
+    payload::SPA.Struct,
+    limit::Int,
+)
     hname, pname = _names(kind)
     headersize = _pod_struct_size(header_values, limit)
     payloadsize = _pod_struct_size(payload, limit)
@@ -246,18 +297,31 @@ function _envelope_size(kind::Symbol, header_values::Vector{PipeWireAO.Pod}, pay
     return total
 end
 
-function _envelope(kind::Symbol, header_values::Vector{PipeWireAO.Pod}, payload::SPA.Struct, limit::Int)
+function _envelope(
+    kind::Symbol,
+    header_values::Vector{PipeWireAO.Pod},
+    payload::SPA.Struct,
+    limit::Int,
+)
     _envelope_size(kind, header_values, payload, limit) <= limit ||
         throw(ArgumentError("control POD exceeds its byte limit"))
     _validate_payload(payload)
     hname, pname = _names(kind)
-    value = SPA.Struct(PipeWireAO.Pod[
-        PipeWireAO.Pod(hname), PipeWireAO.Pod(SPA.Struct(header_values)),
-        PipeWireAO.Pod(pname), PipeWireAO.Pod(payload),
-    ])
-    pod = PipeWireAO.Pod(SPA.Parameter(
-        SPA.OBJECT_PROPS, SPA.PARAM_PROPS, SPA.Property(SPA.PROP_PARAMS, value),
-    ))
+    value = SPA.Struct(
+        PipeWireAO.Pod[
+            PipeWireAO.Pod(hname),
+            PipeWireAO.Pod(SPA.Struct(header_values)),
+            PipeWireAO.Pod(pname),
+            PipeWireAO.Pod(payload),
+        ],
+    )
+    pod = PipeWireAO.Pod(
+        SPA.Parameter(
+            SPA.OBJECT_PROPS,
+            SPA.PARAM_PROPS,
+            SPA.Property(SPA.PROP_PARAMS, value),
+        ),
+    )
     _strict_pod(pod, limit)
     return pod
 end
@@ -267,19 +331,26 @@ function encode_request(header::RequestHeader, payload::SPA.Struct)
     return _envelope(:request, _header_values(header), payload, _MAX_REQUEST)
 end
 
-function _encode_reply(kind::Symbol, header::ReplyHeader, payload::SPA.Struct, endpoint::Symbol)
+function _encode_reply(
+    kind::Symbol,
+    header::ReplyHeader,
+    payload::SPA.Struct,
+    endpoint::Symbol,
+)
     if kind === :completion
-        header.result <= 0 || throw(ArgumentError("completion result must be zero or negative"))
-        header.controller === nothing && header.result != 0 &&
+        header.result <= 0 ||
+            throw(ArgumentError("completion result must be zero or negative"))
+        header.controller === nothing &&
+            header.result != 0 &&
             throw(ArgumentError("initial completion sentinel must have result zero"))
     else
         header.result < 0 || throw(ArgumentError("rejection result must be negative"))
     end
     return _envelope(kind, _header_values(header), payload, _limit(Val(:reply), endpoint))
 end
-encode_completion(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol=:lifecycle) =
+encode_completion(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol = :lifecycle) =
     _encode_reply(:completion, header, payload, endpoint)
-encode_rejection(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol=:lifecycle) =
+encode_rejection(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol = :lifecycle) =
     _encode_reply(:rejection, header, payload, endpoint)
 
 function _decode(kind::Symbol, pod::PipeWireAO.Pod, limit::Int)
@@ -287,7 +358,8 @@ function _decode(kind::Symbol, pod::PipeWireAO.Pod, limit::Int)
     obj = PipeWireAO.pod_value(SPA.Object, pod)
     obj.type == SPA.OBJECT_PROPS && obj.id == SPA.PARAM_PROPS ||
         throw(ArgumentError("expected SPA Props parameter object"))
-    length(obj.properties) == 1 || throw(ArgumentError("expected exactly one Props property"))
+    length(obj.properties) == 1 ||
+        throw(ArgumentError("expected exactly one Props property"))
     prop = only(obj.properties)
     prop.key == SPA.PROP_PARAMS && prop.flags == 0 ||
         throw(ArgumentError("expected one flags-zero params property"))
@@ -309,7 +381,11 @@ function _decode_identity(values)
     instance = _long(values[5])
     token = _long(values[6])
     operation = _id(values[7])
-    if iszero(gid) && iszero(serial) && iszero(instance) && iszero(token) && iszero(operation)
+    if iszero(gid) &&
+       iszero(serial) &&
+       iszero(instance) &&
+       iszero(token) &&
+       iszero(operation)
         return nothing, token, operation
     end
     controller = ControllerIdentity(gid, serial, instance)
@@ -319,34 +395,51 @@ end
 
 function decode_request(pod::PipeWireAO.Pod)
     values, payload = _decode(:request, pod, _MAX_REQUEST)
-    version = _int(values[1]); endpoint = _long(values[2]); gid = _id(values[3])
-    serial = reinterpret(UInt64, _long(values[4])); instance = _long(values[5])
-    token = _long(values[6]); operation = _id(values[7]); budget = _long(values[8])
-    header = RequestHeader(version, endpoint,
-        ControllerIdentity(gid, serial, instance), token, operation, budget)
+    version = _int(values[1])
+    endpoint = _long(values[2])
+    gid = _id(values[3])
+    serial = reinterpret(UInt64, _long(values[4]))
+    instance = _long(values[5])
+    token = _long(values[6])
+    operation = _id(values[7])
+    budget = _long(values[8])
+    header = RequestHeader(
+        version,
+        endpoint,
+        ControllerIdentity(gid, serial, instance),
+        token,
+        operation,
+        budget,
+    )
     return header, payload
 end
 
 function _decode_reply(kind::Symbol, pod::PipeWireAO.Pod, endpoint::Symbol)
     values, payload = _decode(kind, pod, _limit(Val(:reply), endpoint))
-    version = _int(values[1]); instance = _long(values[2]); result = _int(values[8])
+    version = _int(values[1])
+    instance = _long(values[2])
+    result = _int(values[8])
     controller, token, operation = _decode_identity(values)
     header = ReplyHeader(version, instance, controller, token, operation, result)
     if kind === :completion
         result <= 0 || throw(ArgumentError("completion result must be zero or negative"))
-        controller === nothing && result != 0 &&
+        controller === nothing &&
+            result != 0 &&
             throw(ArgumentError("initial completion sentinel must have result zero"))
     else
         result < 0 || throw(ArgumentError("rejection result must be negative"))
     end
     return header, payload
 end
-decode_completion(pod::PipeWireAO.Pod; endpoint::Symbol=:lifecycle) = _decode_reply(:completion, pod, endpoint)
-decode_rejection(pod::PipeWireAO.Pod; endpoint::Symbol=:lifecycle) = _decode_reply(:rejection, pod, endpoint)
-decode_request(bytes::AbstractVector{UInt8}) = decode_request(_owned_exact_pod(bytes, _MAX_REQUEST))
-decode_completion(bytes::AbstractVector{UInt8}; endpoint::Symbol=:lifecycle) =
+decode_completion(pod::PipeWireAO.Pod; endpoint::Symbol = :lifecycle) =
+    _decode_reply(:completion, pod, endpoint)
+decode_rejection(pod::PipeWireAO.Pod; endpoint::Symbol = :lifecycle) =
+    _decode_reply(:rejection, pod, endpoint)
+decode_request(bytes::AbstractVector{UInt8}) =
+    decode_request(_owned_exact_pod(bytes, _MAX_REQUEST))
+decode_completion(bytes::AbstractVector{UInt8}; endpoint::Symbol = :lifecycle) =
     decode_completion(_owned_exact_pod(bytes, _limit(Val(:reply), endpoint)); endpoint)
-decode_rejection(bytes::AbstractVector{UInt8}; endpoint::Symbol=:lifecycle) =
+decode_rejection(bytes::AbstractVector{UInt8}; endpoint::Symbol = :lifecycle) =
     decode_rejection(_owned_exact_pod(bytes, _limit(Val(:reply), endpoint)); endpoint)
 
 end # module ControlCodec

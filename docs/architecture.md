@@ -491,9 +491,18 @@ every existing module has completed migration.
   suffixes. Names describe responsibilities and protocol versions rather than
   implementation history. Keep instrument-specific adapters in their owning
   packages. Preserve exact protocol vocabulary and immutable historical evidence.
-- Format maintained Julia consistently, with four-space indentation and readable
-  line lengths. Split long functions at meaningful operations. Generated files
-  are changed through their authoritative generator, never by a formatting pass.
+- Format maintained Julia with JuliaFormatter 2.14.8 DefaultStyle, four-space
+  indentation and a 92-character margin. `.JuliaFormatter.toml` is authoritative.
+  Keep the formatter in an isolated tooling environment, not the package
+  dependencies. The reproducible formatting command is:
+
+  ```sh
+  julia --project=/path/to/isolated-juliaformatter -e 'using JuliaFormatter; format("."; throw_on_error=true)'
+  ```
+
+  Generated files are changed through their authoritative generator, never by
+  a formatting pass. Historical evidence is excluded by the formatter
+  configuration.
 
 Apply these conventions to an affected interface and its callers together.
 Record temporary exceptions and verification boundaries in the current migration

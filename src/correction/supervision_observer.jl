@@ -6,10 +6,24 @@ public Observer, snapshot, property_info, request_rearm!, rearm_status
 const OBSERVATION_PREFIX = "pipewireao.correction-supervision."
 const FEEDBACK_SCHEMA = Schemas.identifier("pdm_constraint_feedback")
 const OBSERVATION_STATES = (:Disabled, :Unknown, :Clear, :Pending, :Tripped)
-const OBSERVATION_REASONS = (:none, :disabled, :clear, :pending, :persistent_clipping,
-    :already_tripped, :missing_feedback, :malformed_feedback, :malformed_sample,
-    :stale_sample, :future_sample, :wrong_owner, :invalidated, :reset,
-    :discontinuity, :corrupted)
+const OBSERVATION_REASONS = (
+    :none,
+    :disabled,
+    :clear,
+    :pending,
+    :persistent_clipping,
+    :already_tripped,
+    :missing_feedback,
+    :malformed_feedback,
+    :malformed_sample,
+    :stale_sample,
+    :future_sample,
+    :wrong_owner,
+    :invalidated,
+    :reset,
+    :discontinuity,
+    :corrupted,
+)
 const OBSERVATION_ACTIONS = (:none, :monitor_only, :hold, :restore_reference)
 
 # All concurrently accessed payload fields are atomic, including the seqlock
@@ -83,14 +97,17 @@ end
 
 function observation_clock(clock)
     now = clock()
-    unsigned(now) || throw(ArgumentError("supervision clock must return nonnegative UInt64 nanoseconds"))
+    unsigned(now) ||
+        throw(ArgumentError("supervision clock must return nonnegative UInt64 nanoseconds"))
     return UInt64(now)
 end
 
 validated_configuration(configuration::Configuration) = configuration
 validated_configuration(_) = throw(ArgumentError("supervision requires Configuration"))
-validated_tolerance(_) = throw(ArgumentError("feedback tolerance must be finite and nonnegative"))
-validated_tolerance(::Bool) = throw(ArgumentError("feedback tolerance must be finite and nonnegative"))
+validated_tolerance(_) =
+    throw(ArgumentError("feedback tolerance must be finite and nonnegative"))
+validated_tolerance(::Bool) =
+    throw(ArgumentError("feedback tolerance must be finite and nonnegative"))
 function validated_tolerance(tolerance::Real)
     isfinite(tolerance) && tolerance >= 0 ||
         throw(ArgumentError("feedback tolerance must be finite and nonnegative"))
@@ -100,39 +117,64 @@ function validated_tolerance(tolerance::Real)
 end
 feedback_count(::FeedbackObservation{Name,Shape}) where {Name,Shape} = only(Shape)
 
-function Observer(formats::NamedTuple, policies::NamedTuple; owner_instance, clock=time_ns)
-    owner(owner_instance) || throw(ArgumentError("owner incarnation must be positive and fit Int64"))
-    1 <= length(policies) <= 64 || throw(ArgumentError("supervision requires 1:64 feedback outputs"))
+function Observer(
+    formats::NamedTuple,
+    policies::NamedTuple;
+    owner_instance,
+    clock = time_ns,
+)
+    owner(owner_instance) ||
+        throw(ArgumentError("owner incarnation must be positive and fit Int64"))
+    1 <= length(policies) <= 64 ||
+        throw(ArgumentError("supervision requires 1:64 feedback outputs"))
     observation_clock(clock)
     bindings = map(keys(policies)) do name
-        hasproperty(formats, name) || throw(ArgumentError("unknown supervision feedback output $name"))
+        hasproperty(formats, name) ||
+            throw(ArgumentError("unknown supervision feedback output $name"))
         format, policy = getproperty(formats, name), getproperty(policies, name)
         configuration = validated_configuration(policy.configuration)
         tolerance = validated_tolerance(policy.tolerance)
-        policy.schema == format.schema == FEEDBACK_SCHEMA ||
-            throw(ArgumentError("supervision requires the exact PDM constraint-feedback schema"))
-        format.element_type === Float32 || throw(ArgumentError("feedback must have Float32 elements"))
+        policy.schema == format.schema == FEEDBACK_SCHEMA || throw(
+            ArgumentError("supervision requires the exact PDM constraint-feedback schema"),
+        )
+        format.element_type === Float32 ||
+            throw(ArgumentError("feedback must have Float32 elements"))
         shape = Artifacts.checked_shape(format.shape, sizeof(Float32))
-        policy.shape == format.shape && length(shape) == 1 ||
-            throw(ArgumentError("feedback must match the declared nonempty rank-one shape"))
-        isequal(policy.layout, format.layout) || throw(ArgumentError("feedback layout/order differs from the public format"))
-        FeedbackObservation{name,shape}(Supervisor(configuration, owner_instance),
-            tolerance, PublishedObservation())
+        policy.shape == format.shape && length(shape) == 1 || throw(
+            ArgumentError("feedback must match the declared nonempty rank-one shape"),
+        )
+        isequal(policy.layout, format.layout) ||
+            throw(ArgumentError("feedback layout/order differs from the public format"))
+        FeedbackObservation{name,shape}(
+            Supervisor(configuration, owner_instance),
+            tolerance,
+            PublishedObservation(),
+        )
     end
     # Reuse the repository's decoded-array bound for aggregate callback work;
     # the configured sum, not just an individual output, is bounded cold.
     remaining = Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32)
     for binding in bindings
-        feedback_count(binding) <= remaining || throw(ArgumentError("combined supervision feedback exceeds the decoded-array byte bound"))
+        feedback_count(binding) <= remaining || throw(
+            ArgumentError(
+                "combined supervision feedback exceeds the decoded-array byte bound",
+            ),
+        )
         remaining -= feedback_count(binding)
     end
-    observer = Observer(bindings, Int64(owner_instance), clock, RearmMailbox(),
-        Threads.Atomic{Bool}(false))
+    observer = Observer(
+        bindings,
+        Int64(owner_instance),
+        clock,
+        RearmMailbox(),
+        Threads.Atomic{Bool}(false),
+    )
     foreach(binding -> publish!(binding, Recommendation(:none, :none, false)), bindings)
     return observer
 end
 
-@inline code(values::Tuple, value::Symbol) = UInt8(something(findfirst(==(value), values), 1))
+@inline code(values::Tuple, value::Symbol) =
+    UInt8(something(findfirst(==(value), values), 1))
 
 function publish!(binding::FeedbackObservation, result::Recommendation)
     sm, published = binding.supervisor, binding.published
@@ -154,7 +196,7 @@ end
 
 function snapshot(binding::FeedbackObservation)
     published = binding.published
-    for _ in 1:3
+    for _ = 1:3
         before = @atomic published.version
         isodd(before) && continue
         s = @atomic published.state
@@ -168,9 +210,18 @@ function snapshot(binding::FeedbackObservation)
         rearm_sequence = @atomic published.rearm_sequence
         rearm_ns = @atomic published.rearm_ns
         after = @atomic published.version
-        before == after && return (;state=OBSERVATION_STATES[s],
-            reason=OBSERVATION_REASONS[r], fraction, sequence, observed_ns,
-            trip_sequence, trip_ns, action=OBSERVATION_ACTIONS[action], rearm_sequence, rearm_ns)
+        before == after && return (;
+            state = OBSERVATION_STATES[s],
+            reason = OBSERVATION_REASONS[r],
+            fraction,
+            sequence,
+            observed_ns,
+            trip_sequence,
+            trip_ns,
+            action = OBSERVATION_ACTIONS[action],
+            rearm_sequence,
+            rearm_ns,
+        )
     end
     return nothing
 end
@@ -182,7 +233,11 @@ unavailable evidence, not permission to act; retry only on a later ordinary poll
 """
 snapshot(observer::Observer) = map(snapshot, observer.bindings)
 
-@inline function feedback_fraction(values::AbstractVector{Float32}, ::Val{Shape}, tolerance) where {Shape}
+@inline function feedback_fraction(
+    values::AbstractVector{Float32},
+    ::Val{Shape},
+    tolerance,
+) where {Shape}
     size(values) == Shape || return nothing
     clipped = 0
     finite = true
@@ -202,30 +257,48 @@ end
 # specializes on that concrete isbits type at the extension boundary.
 @inline metadata_reason(::Nothing) = :missing_feedback
 @inline function metadata_reason(metadata)
-    hasproperty(metadata, :sequence) && hasproperty(metadata, :offset) &&
-        hasproperty(metadata, :corrupted) && hasproperty(metadata, :discontinuity) || return :malformed_sample
+    hasproperty(metadata, :sequence) &&
+    hasproperty(metadata, :offset) &&
+    hasproperty(metadata, :corrupted) &&
+    hasproperty(metadata, :discontinuity) || return :malformed_sample
     unsigned(metadata.sequence) && metadata.offset == 0 || return :malformed_sample
     metadata.corrupted === false || return :corrupted
     metadata.discontinuity === false || return :discontinuity
     return :none
 end
 
-@inline function observe_header!(binding::FeedbackObservation{Name,Shape}, observer::Observer,
-        outputs::NamedTuple, header, now::UInt64) where {Name,Shape}
+@inline function observe_header!(
+    binding::FeedbackObservation{Name,Shape},
+    observer::Observer,
+    outputs::NamedTuple,
+    header,
+    now::UInt64,
+) where {Name,Shape}
     cause = metadata_reason(header)
     if cause !== :none
         publish!(binding, reject!(binding.supervisor, cause))
         return nothing
     end
     fraction = feedback_fraction(getproperty(outputs, Name), Val(Shape), binding.tolerance)
-    result = observe!(binding.supervisor, observer.owner_instance, header.sequence, now,
-        fraction; now_ns=now)
+    result = observe!(
+        binding.supervisor,
+        observer.owner_instance,
+        header.sequence,
+        now,
+        fraction;
+        now_ns = now,
+    )
     publish!(binding, result)
     return nothing
 end
 
-function observe_frame!(binding::FeedbackObservation{Name}, observer::Observer,
-        outputs::NamedTuple, metadata::NamedTuple, now::UInt64) where {Name}
+function observe_frame!(
+    binding::FeedbackObservation{Name},
+    observer::Observer,
+    outputs::NamedTuple,
+    metadata::NamedTuple,
+    now::UInt64,
+) where {Name}
     if !hasproperty(outputs, Name) || !hasproperty(metadata, Name)
         publish!(binding, reject!(binding.supervisor, :missing_feedback))
         return nothing
@@ -249,13 +322,19 @@ function (observer::Observer)(::Val{:frame}, outputs::NamedTuple, metadata::Name
     request = @atomic observer.rearm.request_token
     now = observer.clock()
     if !unsigned(now)
-        foreach(binding -> publish!(binding, reject!(binding.supervisor, :malformed_sample)), observer.bindings)
+        foreach(
+            binding -> publish!(binding, reject!(binding.supervisor, :malformed_sample)),
+            observer.bindings,
+        )
         return nothing
     end
     if observer.reset_unverified[]
         invalidate_observations!(observer, :reset)
     else
-        foreach(binding -> observe_frame!(binding, observer, outputs, metadata, UInt64(now)), observer.bindings)
+        foreach(
+            binding -> observe_frame!(binding, observer, outputs, metadata, UInt64(now)),
+            observer.bindings,
+        )
     end
     adopt_rearm!(observer, request, UInt64(now))
     return nothing
@@ -271,7 +350,10 @@ function (observer::Observer)(::Val{:reset})
     return invalidate_observations!(observer, :reset)
 end
 function invalidate_observations!(observer::Observer, cause::Symbol)
-    foreach(binding -> publish!(binding, reject!(binding.supervisor, cause)), observer.bindings)
+    foreach(
+        binding -> publish!(binding, reject!(binding.supervisor, cause)),
+        observer.bindings,
+    )
     return nothing
 end
 
@@ -304,53 +386,61 @@ end
 
 function can_rearm(binding::FeedbackObservation, now::UInt64)
     sm = binding.supervisor
-    return !sm.tripped || (sm.has_sample && sm.last_observed_ns == now &&
-        sm.last_fraction !== nothing && sm.last_fraction <= sm.configuration.clear_fraction &&
-        now >= sm.last_sample_ns && now - sm.last_sample_ns <= sm.configuration.max_gap_ns)
+    return !sm.tripped || (
+        sm.has_sample &&
+        sm.last_observed_ns == now &&
+        sm.last_fraction !== nothing &&
+        sm.last_fraction <= sm.configuration.clear_fraction &&
+        now >= sm.last_sample_ns &&
+        now - sm.last_sample_ns <= sm.configuration.max_gap_ns
+    )
 end
 
 function adopt_rearm!(observer::Observer, token::UInt64, now::UInt64)
-    token == 0 || token == typemax(UInt64) || begin
-        # Clock and successful-frame observation are shared by every binding.
-        # Rejected/replayed observations clear last_fraction, preventing reuse.
-        accepted = !observer.reset_unverified[] &&
-            any(binding -> binding.supervisor.tripped, observer.bindings) &&
-            all(binding -> can_rearm(binding, now), observer.bindings)
-        if accepted
-            foreach(observer.bindings) do binding
-                sm = binding.supervisor
-                if sm.tripped
-                    rearm!(sm, observer.owner_instance, sm.last_sequence; now_ns=now)
-                    # Explicit rearm is the only operation that clears intent.
-                    published = binding.published
-                    publication_version = @atomic published.version
-                    @atomic published.version = publication_version + UInt64(1)
-                    @atomic published.action = UInt8(1)
-                    @atomic published.trip_sequence = UInt64(0)
-                    @atomic published.trip_ns = UInt64(0)
-                    @atomic published.rearm_sequence = sm.last_sequence
-                    @atomic published.rearm_ns = now
-                    @atomic published.state = code(OBSERVATION_STATES, state(sm))
-                    @atomic published.reason = code(OBSERVATION_REASONS, :clear)
-                    @atomic published.version = publication_version + UInt64(2)
+    token == 0 ||
+        token == typemax(UInt64) ||
+        begin
+            # Clock and successful-frame observation are shared by every binding.
+            # Rejected/replayed observations clear last_fraction, preventing reuse.
+            accepted =
+                !observer.reset_unverified[] &&
+                any(binding -> binding.supervisor.tripped, observer.bindings) &&
+                all(binding -> can_rearm(binding, now), observer.bindings)
+            if accepted
+                foreach(observer.bindings) do binding
+                    sm = binding.supervisor
+                    if sm.tripped
+                        rearm!(sm, observer.owner_instance, sm.last_sequence; now_ns = now)
+                        # Explicit rearm is the only operation that clears intent.
+                        published = binding.published
+                        publication_version = @atomic published.version
+                        @atomic published.version = publication_version + UInt64(1)
+                        @atomic published.action = UInt8(1)
+                        @atomic published.trip_sequence = UInt64(0)
+                        @atomic published.trip_ns = UInt64(0)
+                        @atomic published.rearm_sequence = sm.last_sequence
+                        @atomic published.rearm_ns = now
+                        @atomic published.state = code(OBSERVATION_STATES, state(sm))
+                        @atomic published.reason = code(OBSERVATION_REASONS, :clear)
+                        @atomic published.version = publication_version + UInt64(2)
+                    end
                 end
             end
+            mailbox = observer.rearm
+            mailbox_version = @atomic mailbox.version
+            @atomic mailbox.version = mailbox_version + UInt64(1)
+            @atomic mailbox.accepted = accepted
+            @atomic mailbox.acknowledged_token = token
+            @atomic mailbox.version = mailbox_version + UInt64(2)
+            @atomic mailbox.request_token = UInt64(0)
         end
-        mailbox = observer.rearm
-        mailbox_version = @atomic mailbox.version
-        @atomic mailbox.version = mailbox_version + UInt64(1)
-        @atomic mailbox.accepted = accepted
-        @atomic mailbox.acknowledged_token = token
-        @atomic mailbox.version = mailbox_version + UInt64(2)
-        @atomic mailbox.request_token = UInt64(0)
-    end
     return nothing
 end
 
 "Read bounded coherent frame-writer rearm acknowledgement, or nothing if busy."
 function rearm_status(observer::Observer)
     mailbox = observer.rearm
-    for _ in 1:3
+    for _ = 1:3
         before = @atomic mailbox.version
         isodd(before) && continue
         token = @atomic mailbox.acknowledged_token
@@ -358,8 +448,11 @@ function rearm_status(observer::Observer)
         after = @atomic mailbox.version
         if before == after
             request = @atomic mailbox.request_token
-            return (; requested_token=request == typemax(UInt64) ? UInt64(0) : request,
-                acknowledged_token=token, result=token == 0 ? :none : accepted ? :rearmed : :refused)
+            return (;
+                requested_token = request == typemax(UInt64) ? UInt64(0) : request,
+                acknowledged_token = token,
+                result = token == 0 ? :none : accepted ? :rearmed : :refused,
+            )
         end
     end
     return nothing
@@ -379,18 +472,59 @@ This allocates control-plane PODs; call it outside frame processing.
 function property_info(observer::Observer)
     flags = PipeWireAO.SPA.PROPERTY_READONLY
     infos = PipeWireAO.SPA.PropInfo[
-        PipeWireAO.SPA.PropInfo(OBSERVATION_PREFIX * "version", PipeWireAO.Pod(Int32(1)); flags, params=true),
-        PipeWireAO.SPA.PropInfo(OBSERVATION_PREFIX * "owner-instance", PipeWireAO.Pod(observer.owner_instance); flags, params=true)]
-    for (name, value) in (("rearm-request-token", "0"), ("rearm-acknowledged-token", "0"), ("rearm-result", "none"))
-        push!(infos, PipeWireAO.SPA.PropInfo(OBSERVATION_PREFIX * name, PipeWireAO.Pod(value); flags, params=true))
+        PipeWireAO.SPA.PropInfo(
+            OBSERVATION_PREFIX * "version",
+            PipeWireAO.Pod(Int32(1));
+            flags,
+            params = true,
+        ),
+        PipeWireAO.SPA.PropInfo(
+            OBSERVATION_PREFIX * "owner-instance",
+            PipeWireAO.Pod(observer.owner_instance);
+            flags,
+            params = true,
+        ),
+    ]
+    for (name, value) in (
+        ("rearm-request-token", "0"),
+        ("rearm-acknowledged-token", "0"),
+        ("rearm-result", "none"),
+    )
+        push!(
+            infos,
+            PipeWireAO.SPA.PropInfo(
+                OBSERVATION_PREFIX * name,
+                PipeWireAO.Pod(value);
+                flags,
+                params = true,
+            ),
+        )
     end
     for binding in observer.bindings
         prefix = OBSERVATION_PREFIX * string(output_name(binding)) * "."
-        for (field, value) in (("state", "Unknown"), ("reason", "none"),
-                ("fraction", NaN), ("sequence", "0"), ("observed-ns", "0"),
-                ("trip-sequence", "0"), ("trip-ns", "0"), ("rearm-sequence", "0"), ("rearm-ns", "0"), ("action", "none"), ("fresh", false),
-                ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)))
-            push!(infos, PipeWireAO.SPA.PropInfo(prefix * field, PipeWireAO.Pod(value); flags, params=true))
+        for (field, value) in (
+            ("state", "Unknown"),
+            ("reason", "none"),
+            ("fraction", NaN),
+            ("sequence", "0"),
+            ("observed-ns", "0"),
+            ("trip-sequence", "0"),
+            ("trip-ns", "0"),
+            ("rearm-sequence", "0"),
+            ("rearm-ns", "0"),
+            ("action", "none"),
+            ("fresh", false),
+            ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)),
+        )
+            push!(
+                infos,
+                PipeWireAO.SPA.PropInfo(
+                    prefix * field,
+                    PipeWireAO.Pod(value);
+                    flags,
+                    params = true,
+                ),
+            )
         end
     end
     return infos
@@ -402,33 +536,48 @@ output_names(observer::Observer) = map(output_name, observer.bindings)
 function (observer::Observer)(graphprops::PipeWireAO.SPA.Props, available::Bool)
     now = observer.clock()
     extras = Pair{String,PipeWireAO.Pod}[
-        OBSERVATION_PREFIX * "version" => PipeWireAO.Pod(Int32(1)),
-        OBSERVATION_PREFIX * "owner-instance" => PipeWireAO.Pod(observer.owner_instance)]
+        OBSERVATION_PREFIX*"version"=>PipeWireAO.Pod(Int32(1)),
+        OBSERVATION_PREFIX*"owner-instance"=>PipeWireAO.Pod(observer.owner_instance),
+    ]
     ack = rearm_status(observer)
-    for (field, entry) in (("rearm-request-token", ack === nothing ? "0" : string(ack.requested_token)),
-            ("rearm-acknowledged-token", ack === nothing ? "0" : string(ack.acknowledged_token)),
-            ("rearm-result", ack === nothing ? "unavailable" : string(ack.result)))
+    for (field, entry) in (
+        ("rearm-request-token", ack === nothing ? "0" : string(ack.requested_token)),
+        (
+            "rearm-acknowledged-token",
+            ack === nothing ? "0" : string(ack.acknowledged_token),
+        ),
+        ("rearm-result", ack === nothing ? "unavailable" : string(ack.result)),
+    )
         push!(extras, OBSERVATION_PREFIX * field => PipeWireAO.Pod(entry))
     end
     for binding in observer.bindings
         value = snapshot(binding)
-        fresh = value !== nothing && available && unsigned(now) &&
-            value.state in (:Clear, :Pending, :Tripped) && isfinite(value.fraction) &&
-            now >= value.observed_ns && now - value.observed_ns <= binding.supervisor.configuration.max_gap_ns
-        current = value === nothing ? :Unknown :
+        fresh =
+            value !== nothing &&
+            available &&
+            unsigned(now) &&
+            value.state in (:Clear, :Pending, :Tripped) &&
+            isfinite(value.fraction) &&
+            now >= value.observed_ns &&
+            now - value.observed_ns <= binding.supervisor.configuration.max_gap_ns
+        current =
+            value === nothing ? :Unknown :
             value.state in (:Disabled, :Tripped) || fresh ? value.state : :Unknown
         prefix = OBSERVATION_PREFIX * string(output_name(binding)) * "."
-        for (field, entry) in (("state", string(current)),
-                ("reason", value === nothing ? "unavailable" : string(value.reason)),
-                ("fraction", value === nothing ? NaN : value.fraction),
-                ("sequence", value === nothing ? "0" : string(value.sequence)),
-                ("observed-ns", value === nothing ? "0" : string(value.observed_ns)),
-                ("trip-sequence", value === nothing ? "0" : string(value.trip_sequence)),
-                ("trip-ns", value === nothing ? "0" : string(value.trip_ns)),
-                ("rearm-sequence", value === nothing ? "0" : string(value.rearm_sequence)),
-                ("rearm-ns", value === nothing ? "0" : string(value.rearm_ns)),
-                ("action", value === nothing ? "none" : string(value.action)), ("fresh", fresh),
-                ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)))
+        for (field, entry) in (
+            ("state", string(current)),
+            ("reason", value === nothing ? "unavailable" : string(value.reason)),
+            ("fraction", value === nothing ? NaN : value.fraction),
+            ("sequence", value === nothing ? "0" : string(value.sequence)),
+            ("observed-ns", value === nothing ? "0" : string(value.observed_ns)),
+            ("trip-sequence", value === nothing ? "0" : string(value.trip_sequence)),
+            ("trip-ns", value === nothing ? "0" : string(value.trip_ns)),
+            ("rearm-sequence", value === nothing ? "0" : string(value.rearm_sequence)),
+            ("rearm-ns", value === nothing ? "0" : string(value.rearm_ns)),
+            ("action", value === nothing ? "none" : string(value.action)),
+            ("fresh", fresh),
+            ("max-gap-ns", string(binding.supervisor.configuration.max_gap_ns)),
+        )
             push!(extras, prefix * field => PipeWireAO.Pod(entry))
         end
     end

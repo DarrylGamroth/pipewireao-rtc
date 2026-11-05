@@ -10,36 +10,39 @@ function idle_window()
     before = Base.gc_num()
     @ccall gc_safe=true usleep(Cuint(500_000)::Cuint)::Cint
     after = Base.gc_num()
-    Base.GC_Diff(after,before)
+    Base.GC_Diff(after, before)
 end
 function measured(remote, directory, daemon)
-    chmod(dirname(remote),0o700)
+    chmod(dirname(remote), 0o700)
     # Warm the measurement without owner monitor activity.
     idle_window()
     baseline = idle_window()
     @test baseline.allocd == 0
-    println("BASELINE bytes=",baseline.allocd," pool=",baseline.poolalloc)
-    runtime = R.Runtime(remote,"review.bootstrap",Int64(91))
-    client = B.connect(remote,"review.bootstrap",getpid(),91;deadline=C.monotonic()+20)
+    println("BASELINE bytes=", baseline.allocd, " pool=", baseline.poolalloc)
+    runtime = R.Runtime(remote, "review.bootstrap", Int64(91))
+    client =
+        B.connect(remote, "review.bootstrap", getpid(), 91; deadline = C.monotonic()+20)
     try
         R.prepared!(runtime)
-        request = ThreadPinning.@spawnat 2 B.connect_owner!(client;deadline=C.monotonic()+20)
+        request =
+            ThreadPinning.@spawnat 2 B.connect_owner!(client; deadline = C.monotonic()+20)
         ticket = R.take_connect!(runtime)
-        R.connected!(runtime,ticket)
-        R.await_connected!(runtime,ticket)
+        R.connected!(runtime, ticket)
+        R.await_connected!(runtime, ticket)
         fetch(request)
         idle_window()
         first = idle_window()
         second = idle_window()
-        println("CONNECTED first bytes=",first.allocd," pool=",first.poolalloc)
-        println("CONNECTED second bytes=",second.allocd," pool=",second.poolalloc)
+        println("CONNECTED first bytes=", first.allocd, " pool=", first.poolalloc)
+        println("CONNECTED second bytes=", second.allocd, " pool=", second.poolalloc)
         # Exclude monitor duty cycles to attribute the registry work directly.
         gate = pause_bootstrap_monitor(runtime)
         try
-            for _ in 1:5
+            for _ = 1:5
                 PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
             end
-            poll_bytes = @allocated PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
+            poll_bytes =
+                @allocated PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
             # Poll/take cannot erase a wake produced after the consumed hint.
             runtime.transport.wake[] = true
             R.poll!(runtime.transport)
@@ -47,7 +50,7 @@ function measured(remote, directory, daemon)
             @test R.take!(runtime.transport) === nothing
             @test runtime.transport.wake[]
             @test R._poll_ready!(runtime.transport)
-            for _ in 1:5
+            for _ = 1:5
                 R._poll_ready!(runtime.transport)
                 R._facts(runtime)
             end
@@ -57,7 +60,7 @@ function measured(remote, directory, daemon)
                 endpoint = runtime.transport.endpoint
                 saved_failure = endpoint.failure
                 endpoint.failure = "injected quiet health failure"
-                Base.Threads.atomic_xchg!(runtime.transport.wake,false)
+                Base.Threads.atomic_xchg!(runtime.transport.wake, false)
                 try
                     @test_throws InvalidStateException R._poll_ready!(runtime.transport)
                 finally
@@ -67,7 +70,14 @@ function measured(remote, directory, daemon)
             cancel_bytes = @allocated R.cancelled(runtime)
             R.preparation_check!(runtime)
             check_bytes = @allocated R.preparation_check!(runtime)
-            println("DIRECT poll_bytes=",poll_bytes," cancel_bytes=",cancel_bytes," owner_check_bytes=",check_bytes)
+            println(
+                "DIRECT poll_bytes=",
+                poll_bytes,
+                " cancel_bytes=",
+                cancel_bytes,
+                " owner_check_bytes=",
+                check_bytes,
+            )
         finally
             resume_bootstrap_monitor(gate)
         end

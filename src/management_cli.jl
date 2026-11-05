@@ -43,7 +43,8 @@ function registration(request, arguments, path::AbstractString, parent)
             end
             flush(output)
             after = stat(input)
-            (before.size, before.mtime, before.ctime) == (after.size, after.mtime, after.ctime) ||
+            (before.size, before.mtime, before.ctime) ==
+            (after.size, after.mtime, after.ctime) ||
                 throw(ArgumentError("registration input changed during transfer"))
             owned = copy(request)
             owned["arguments"] = merge(arguments, Dict("path" => temporary))
@@ -57,7 +58,8 @@ function respond(line::AbstractString)
     try
         # The companion enforces 64 KiB on the wire; trusted root/descriptor
         # substitution can add bounded path bytes before this worker sees it.
-        ncodeunits(line) <= 80 * 1024 || throw(ArgumentError("expanded management request exceeds byte limit"))
+        ncodeunits(line) <= 80 * 1024 ||
+            throw(ArgumentError("expanded management request exceeds byte limit"))
         request = JSON.parse(line, Dict{String,Any})
         return request_response(request, line)
     catch error
@@ -65,15 +67,17 @@ function respond(line::AbstractString)
     end
 end
 
-request_response(request, line) = throw(ArgumentError("management request must be an object"))
+request_response(request, line) =
+    throw(ArgumentError("management request must be an object"))
 function request_response(request::AbstractDict, line)
     protocol = get(request, "protocol", nothing)
     if protocol == ConfigurationStore.PROTOCOL
         # The companion supplies the selected root and, for registration,
         # substitutes its retained input descriptor. CLI tools retain their
         # own unchanged direct-file interface in ConfigurationStoreCLI.
-        result = get(request, "op", nothing) == "register" ?
-            registration(request) : ConfigurationStoreCLI.request_result(request)
+        result =
+            get(request, "op", nothing) == "register" ? registration(request) :
+            ConfigurationStoreCLI.request_result(request)
         response = Dict("ok" => true, "result" => result)
         ncodeunits(JSON.json(response)) <= ConfigurationStoreCLI.MAX_REPLY_BYTES ||
             throw(ArgumentError("configuration reply exceeds byte limit"))
@@ -82,7 +86,11 @@ function request_response(request::AbstractDict, line)
         if get(request, "op", nothing) == "start_rebuild"
             id = pop!(request, "id", nothing)
             id = rebuild_request_id(id)
-            result = Base.invokelatest(SimulatorConfiguration.request_result, request; request_id=id)
+            result = Base.invokelatest(
+                SimulatorConfiguration.request_result,
+                request;
+                request_id = id,
+            )
             response = Dict("ok" => true, "result" => result)
             ncodeunits(JSON.json(response)) <= SimulatorConfiguration.MAX_REPLY_BYTES ||
                 throw(ArgumentError("simulator reply exceeds byte limit"))
@@ -93,20 +101,22 @@ function request_response(request::AbstractDict, line)
     throw(ArgumentError("unsupported management request domain"))
 end
 
-rebuild_request_id(value) = throw(ArgumentError("rebuild requires its owner management request identity"))
+rebuild_request_id(value) =
+    throw(ArgumentError("rebuild requires its owner management request identity"))
 function rebuild_request_id(value::AbstractString)
     occursin(r"^[0-9a-f]{32}$", value) || return rebuild_request_id(nothing)
     return value
 end
 
 "Serve the companion's bounded stdio worker; this is not a socket listener."
-serve(input::IO=stdin, output::IO=stdout) =
-    ConfigurationStoreCLI.serve(input, output; responder=respond)
+serve(input::IO = stdin, output::IO = stdout) =
+    ConfigurationStoreCLI.serve(input, output; responder = respond)
 
-absolute_path(value, field) = throw(ArgumentError("$field must be an absolute path without control characters"))
+absolute_path(value, field) =
+    throw(ArgumentError("$field must be an absolute path without control characters"))
 function absolute_path(value::AbstractString, field)
-    isabspath(value) && isvalid(value) &&
-        !any(iscntrl, value) || throw(ArgumentError("$field must be an absolute path without control characters"))
+    isabspath(value) && isvalid(value) && !any(iscntrl, value) ||
+        throw(ArgumentError("$field must be an absolute path without control characters"))
     return String(value)
 end
 
@@ -118,7 +128,8 @@ end
 
 function active_project()
     project = Base.active_project()
-    project === nothing && throw(ArgumentError("management installation requires a tooling project"))
+    project === nothing &&
+        throw(ArgumentError("management installation requires a tooling project"))
     return dirname(project)
 end
 
@@ -127,9 +138,13 @@ end
 unit_value(value) = String(JSON.json(replace(String(value), "%" => "%%")))
 unit_argument(value) = unit_value(replace(String(value), "\$" => "\$\$"))
 
-function unit_texts(prefix; project=active_project(),
-        configuration_root=ConfigurationStore.default_root(), root=state_root(),
-        simulator_root=SimulatorConfiguration.default_root())
+function unit_texts(
+    prefix;
+    project = active_project(),
+    configuration_root = ConfigurationStore.default_root(),
+    root = state_root(),
+    simulator_root = SimulatorConfiguration.default_root(),
+)
     prefix = absolute_path(prefix, "prefix")
     project = absolute_path(project, "project")
     configuration_root = absolute_path(configuration_root, "configuration root")
@@ -137,19 +152,33 @@ function unit_texts(prefix; project=active_project(),
     simulator_root = absolute_path(simulator_root, "simulator root")
     # Management is cold, bounded tooling. Collect temporary compiler/validation
     # allocations promptly without changing compilation of artifact packing or jobs.
-    argv = [Base.julia_cmd().exec[1], "--startup-file=no", "--heap-size-hint=256M",
-        "--project=$project", "-e",
-        "using PipeWireAORTC; PipeWireAORTC.ManagementCLI.serve()"]
+    argv = [
+        Base.julia_cmd().exec[1],
+        "--startup-file=no",
+        "--heap-size-hint=256M",
+        "--project=$project",
+        "-e",
+        "using PipeWireAORTC; PipeWireAORTC.ManagementCLI.serve()",
+    ]
     # systemd resolves the executable word without argv environment expansion.
     executable = unit_value(joinpath(prefix, "bin", "pipewireao-management"))
-    arguments = unit_argument.(["--worker-argv", String(JSON.json(argv)),
-        "--configuration-root", configuration_root, "--state-root", root])
+    arguments = unit_argument.([
+        "--worker-argv",
+        String(JSON.json(argv)),
+        "--configuration-root",
+        configuration_root,
+        "--state-root",
+        root,
+    ])
     command = executable * " " * join(arguments, " ")
-    environment = ["PIPEWIREAO_PREFIX" => prefix, "LD_LIBRARY_PATH" => joinpath(prefix, "lib"),
+    environment = [
+        "PIPEWIREAO_PREFIX" => prefix,
+        "LD_LIBRARY_PATH" => joinpath(prefix, "lib"),
         "PIPEWIREAO_SPA_PLUGIN_DIR" => joinpath(prefix, "lib", "spa-ao-0.2"),
         "PIPEWIREAO_MODULE_DIR" => joinpath(prefix, "lib", "pipewire-ao-0.3"),
         "PIPEWIREAO_CONFIG_DIR" => joinpath(prefix, "share", "pipewire-ao"),
-        "PIPEWIREAO_SIMULATOR_ROOT" => simulator_root]
+        "PIPEWIREAO_SIMULATOR_ROOT" => simulator_root,
+    ]
     service = """
     # Generated by PipeWireAORTC.ManagementCLI.install; regenerate with the selected tooling project.
     [Unit]
@@ -181,7 +210,10 @@ function unit_texts(prefix; project=active_project(),
     [Install]
     WantedBy=sockets.target
     """
-    return Dict("pipewireao-management.service" => service, "pipewireao-management.socket" => socket)
+    return Dict(
+        "pipewireao-management.service" => service,
+        "pipewireao-management.socket" => socket,
+    )
 end
 
 """Install owner activation units without activating or restarting any service.
@@ -190,22 +222,37 @@ The caller selects the installed native prefix and pinned management tooling
 project. Existing units are not overwritten; the operator owns replacement and
 activation. GUI processes never call this function.
 """
-function install(prefix::AbstractString; project=active_project(),
-        unit_directory=joinpath(get(ENV, "XDG_CONFIG_HOME", joinpath(homedir(), ".config")), "systemd", "user"),
-        configuration_root=ConfigurationStore.default_root(), root=state_root(),
-        simulator_root=SimulatorConfiguration.default_root())
+function install(
+    prefix::AbstractString;
+    project = active_project(),
+    unit_directory = joinpath(
+        get(ENV, "XDG_CONFIG_HOME", joinpath(homedir(), ".config")),
+        "systemd",
+        "user",
+    ),
+    configuration_root = ConfigurationStore.default_root(),
+    root = state_root(),
+    simulator_root = SimulatorConfiguration.default_root(),
+)
     prefix = realpath(prefix)
     executable = joinpath(prefix, "bin", "pipewireao-management")
     isfile(executable) && (filemode(executable) & 0o111) != 0 ||
         throw(ArgumentError("install the native pipewireao-management executable first"))
-    isfile(joinpath(project, "Project.toml")) || throw(ArgumentError("management tooling Project.toml is missing"))
+    isfile(joinpath(project, "Project.toml")) ||
+        throw(ArgumentError("management tooling Project.toml is missing"))
     units = unit_texts(prefix; project, configuration_root, root, simulator_root)
     directory = absolute_path(unit_directory, "unit directory")
     paths = Dict(name => joinpath(directory, name) for name in keys(units))
-    any(ispath, values(paths)) && throw(ArgumentError("management units already exist; explicit owner replacement is required"))
-    mkpath(directory; mode=0o700)
+    any(ispath, values(paths)) && throw(
+        ArgumentError(
+            "management units already exist; explicit owner replacement is required",
+        ),
+    )
+    mkpath(directory; mode = 0o700)
     for (name, text) in units
-        flags = Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT | Base.Filesystem.JL_O_EXCL
+        flags =
+            Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT |
+            Base.Filesystem.JL_O_EXCL
         output = Base.Filesystem.open(paths[name], flags, 0o600)
         try
             write(output, text)

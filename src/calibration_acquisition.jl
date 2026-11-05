@@ -62,8 +62,15 @@ struct Plan{R<:Codec.AbstractRule}
     frames_per_probe::UInt32
     settling::R
     timeouts::Timeouts
-    function Plan(run, reference::AbstractVector, probes::AbstractVector,
-            measurements, frames_per_probe, settling::R, timeouts::Timeouts) where {R<:Codec.AbstractRule}
+    function Plan(
+        run,
+        reference::AbstractVector,
+        probes::AbstractVector,
+        measurements,
+        frames_per_probe,
+        settling::R,
+        timeouts::Timeouts,
+    ) where {R<:Codec.AbstractRule}
         identity = ActionClient._integer(run, 1, typemax(UInt64))
         count = Int(ActionClient._integer(length(probes), 1, 16384))
         measurements = UInt32(ActionClient._integer(measurements, 1, 131072))
@@ -75,12 +82,15 @@ struct Plan{R<:Codec.AbstractRule}
         command_count = length(reference)
         # A conservative retained-payload budget, including per-probe metadata.
         # This is not a Julia heap/RSS limit or a frame-path allocation contract.
-        charge = BigInt(count + 1) * command_count * 4 +
+        charge =
+            BigInt(count + 1) * command_count * 4 +
             BigInt(count) * (256 + BigInt(measurements) * 4 + BigInt(frames) * 40)
-        charge <= MAX_RECORD_BYTES || throw(ArgumentError("calibration record exceeds 512 MiB"))
+        charge <= MAX_RECORD_BYTES ||
+            throw(ArgumentError("calibration record exceeds 512 MiB"))
         figures = Vector{Vector{Float32}}(undef, count)
         for (index, probe) in enumerate(probes)
-            length(probe) == command_count || throw(ArgumentError("probe command dimension differs"))
+            length(probe) == command_count ||
+                throw(ArgumentError("probe command dimension differs"))
             figures[index] = _figure(probe, 24)
         end
         new{R}(identity, reference, figures, measurements, frames, settling, timeouts)
@@ -91,14 +101,38 @@ function _figure(values::AbstractVector, overhead)
     return Float32[value for value in converted]
 end
 function Plan(value::AbstractDict)
-    ActionClient._fields(value, ("version", "run", "reference", "probes", "measurements",
-        "frames_per_probe", "settling", "timeouts_ns"))
+    ActionClient._fields(
+        value,
+        (
+            "version",
+            "run",
+            "reference",
+            "probes",
+            "measurements",
+            "frames_per_probe",
+            "settling",
+            "timeouts_ns",
+        ),
+    )
     ActionClient._integer(value["version"], 1, 1)
-    t = ActionClient._fields(value["timeouts_ns"],
-        ("ownership", "adoption", "settling", "collection", "restoration"))
-    return Plan(value["run"], value["reference"], value["probes"], value["measurements"],
-        value["frames_per_probe"], ActionClient._rule(value["settling"]),
-        Timeouts((t[k] for k in ("ownership", "adoption", "settling", "collection", "restoration"))...))
+    t = ActionClient._fields(
+        value["timeouts_ns"],
+        ("ownership", "adoption", "settling", "collection", "restoration"),
+    )
+    return Plan(
+        value["run"],
+        value["reference"],
+        value["probes"],
+        value["measurements"],
+        value["frames_per_probe"],
+        ActionClient._rule(value["settling"]),
+        Timeouts(
+            (
+                t[k] for
+                k in ("ownership", "adoption", "settling", "collection", "restoration")
+            )...,
+        ),
+    )
 end
 """
     read_plan(path)
@@ -117,7 +151,7 @@ function read_plan(path::AbstractString)
     # Preserve rejection of duplicate fields before adopting a plan; eager
     # JSON objects otherwise retain only the final value of each repeated key.
     try
-        JSON.parse(text; duplicate_keys=:error, maxdepth=64)
+        JSON.parse(text; duplicate_keys = :error, maxdepth = 64)
     catch exception
         _plan_parse_error(exception)
     end
@@ -148,8 +182,11 @@ _failure(e::AcquisitionFailure) = e.reason
 _failure(::Exception) = "Endpoint"
 _invalid() = throw(AcquisitionFailure("InvalidEvidence"))
 _terminal(result::Codec.AbstractResult) = result
-_terminal(result::Codec.Failed) = throw(AcquisitionFailure(
-    ("Cancelled", "Endpoint", "InvalidEvidence", "ProbeClipped")[Int(result.reason)]))
+_terminal(result::Codec.Failed) = throw(
+    AcquisitionFailure(
+        ("Cancelled", "Endpoint", "InvalidEvidence", "ProbeClipped")[Int(result.reason)],
+    ),
+)
 _timeout(::Union{Codec.Hold,Codec.Release}, t) = t.ownership
 _timeout(::Codec.Adopt, t) = t.adoption
 _timeout(::Codec.Settle, t) = t.settling
@@ -162,28 +199,46 @@ _phase(::Codec.Collect) = "Collecting"
 _phase(::Codec.Restore) = "Restoring"
 _phase(::Codec.Release) = "Releasing"
 
-_valid(c::Codec.AcquisitionCursor) = c.domain > 0 && c.generation > 0 &&
-    c.sequence < typemax(UInt64) && c.model_ns <= typemax(Int64)
+_valid(c::Codec.AcquisitionCursor) =
+    c.domain > 0 &&
+    c.generation > 0 &&
+    c.sequence < typemax(UInt64) &&
+    c.model_ns <= typemax(Int64)
 function _follows(previous, next)
-    return _valid(next) && next.domain == previous.domain &&
-        next.generation == previous.generation && next.sequence >= previous.sequence &&
-        next.model_ns >= previous.model_ns
+    return _valid(next) &&
+           next.domain == previous.domain &&
+           next.generation == previous.generation &&
+           next.sequence >= previous.sequence &&
+           next.model_ns >= previous.model_ns
 end
 _settled(::Codec.Immediate, previous, next) = _follows(previous, next)
-_settled(r::Codec.DiscardExposures, previous, next) = _follows(previous, next) &&
-    previous.sequence <= typemax(UInt64) - r.frames && next.sequence == previous.sequence + r.frames
-_settled(r::Codec.ModelTime, previous, next) = _follows(previous, next) &&
-    previous.model_ns <= typemax(UInt64) - r.duration_ns && next.model_ns >= previous.model_ns + r.duration_ns
+_settled(r::Codec.DiscardExposures, previous, next) =
+    _follows(previous, next) &&
+    previous.sequence <= typemax(UInt64) - r.frames &&
+    next.sequence == previous.sequence + r.frames
+_settled(r::Codec.ModelTime, previous, next) =
+    _follows(previous, next) &&
+    previous.model_ns <= typemax(UInt64) - r.duration_ns &&
+    next.model_ns >= previous.model_ns + r.duration_ns
 function _batch_cursor(batch::Codec.Responses, cursor, plan)
-    batch.valid && length(batch.values) == plan.measurements && all(isfinite, batch.values) &&
-        length(batch.exposures) == plan.frames_per_probe || _invalid()
+    batch.valid &&
+    length(batch.values) == plan.measurements &&
+    all(isfinite, batch.values) &&
+    length(batch.exposures) == plan.frames_per_probe || _invalid()
     for exposure in batch.exposures
-        exposure.domain == cursor.domain && exposure.generation == cursor.generation &&
-            cursor.sequence < typemax(UInt64) && exposure.sequence == cursor.sequence + 1 &&
-            exposure.start_model_ns >= cursor.model_ns && exposure.duration_ns > 0 &&
-            exposure.start_model_ns <= typemax(UInt64) - exposure.duration_ns || _invalid()
-        cursor = Codec.AcquisitionCursor(exposure.domain, exposure.generation,
-            exposure.sequence, exposure.start_model_ns + exposure.duration_ns)
+        exposure.domain == cursor.domain &&
+        exposure.generation == cursor.generation &&
+        cursor.sequence < typemax(UInt64) &&
+        exposure.sequence == cursor.sequence + 1 &&
+        exposure.start_model_ns >= cursor.model_ns &&
+        exposure.duration_ns > 0 &&
+        exposure.start_model_ns <= typemax(UInt64) - exposure.duration_ns || _invalid()
+        cursor = Codec.AcquisitionCursor(
+            exposure.domain,
+            exposure.generation,
+            exposure.sequence,
+            exposure.start_model_ns + exposure.duration_ns,
+        )
     end
     _valid(cursor) || _invalid()
     return cursor
@@ -216,26 +271,43 @@ acquisition; it is `nothing` for other phases. A report does not establish
 endpoint readiness or resume permission beyond the recorded Boolean fields.
 """
 function document(result::Result)
-    responses = result.phase == "complete" ? [Dict("values"=>batch.values,
-        "exposures"=>ActionClient.document(batch)["exposures"], "valid"=>batch.valid)
-        for batch in result.responses] : nothing
-    return Dict("version"=>1, "run"=>result.run, "phase"=>result.phase,
+    responses =
+        result.phase == "complete" ?
+        [
+            Dict(
+                "values"=>batch.values,
+                "exposures"=>ActionClient.document(batch)["exposures"],
+                "valid"=>batch.valid,
+            ) for batch in result.responses
+        ] : nothing
+    return Dict(
+        "version"=>1,
+        "run"=>result.run,
+        "phase"=>result.phase,
         "restoration_confirmed"=>result.restoration_confirmed,
-        "resume_permitted"=>result.resume_permitted, "failure"=>result.failure,
-        "recovery_failure"=>result.recovery_failure, "responses"=>responses)
+        "resume_permitted"=>result.resume_permitted,
+        "failure"=>result.failure,
+        "recovery_failure"=>result.recovery_failure,
+        "responses"=>responses,
+    )
 end
 
 include("calibration_procedure.jl")
 
 # Enter the prepared exchange before starting the action's budget. Compiling a
 # consumer/procedure specialization is cold preparation, not endpoint latency.
-@noinline function _exchange!(connection, procedure, action::T, check) where {T<:Codec.AbstractAction}
+@noinline function _exchange!(
+    connection,
+    procedure,
+    action::T,
+    check,
+) where {T<:Codec.AbstractAction}
     budget = _timeout(action, procedure.plan.timeouts)
     deadline = Float64(Common.monotonic_seconds(procedure.clock)) + budget / 1e9
     isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
     procedure.deadline = deadline
     connection.timeout_ns = budget
-    answer = ActionClient.complete!(connection, action; deadline, check, record=false)
+    answer = ActionClient.complete!(connection, action; deadline, check, record = false)
     return answer, Float64(Common.monotonic_seconds(procedure.clock))
 end
 
@@ -244,11 +316,18 @@ end
 Native callbacks wake the task; no frame-count sleep advances the procedure.
 Unknown transport outcomes retire the connection without another submission.
 """
-function acquire!(connection::ActionClient.Connection, input::Plan;
-        cancelled=()->false, check=Client.NO_CHECK, clock=Common.MONOTONIC_CLOCK,
-        observe=(_...)->nothing, consume=(_...)->nothing)
-    connection.run == input.run && connection.serial == 0 &&
-        connection.command_count == length(input.reference) ||
+function acquire!(
+    connection::ActionClient.Connection,
+    input::Plan;
+    cancelled = ()->false,
+    check = Client.NO_CHECK,
+    clock = Common.MONOTONIC_CLOCK,
+    observe = (_...)->nothing,
+    consume = (_...)->nothing,
+)
+    connection.run == input.run &&
+    connection.serial == 0 &&
+    connection.command_count == length(input.reference) ||
         throw(ArgumentError("acquisition requires a fresh connection matching the plan"))
     procedure = Procedure(input; clock, consume, cancelled)
     while procedure.command !== nothing
@@ -259,9 +338,10 @@ function acquire!(connection::ActionClient.Connection, input::Plan;
             known = true
             observe(command.action, answer, connection.serial)
             cancelled() && cancel!(procedure)
-            complete!(procedure, command.run, command.serial, answer; at=completed_at)
+            complete!(procedure, command.run, command.serial, answer; at = completed_at)
         catch error
-            reason = !known && Common.monotonic_seconds(clock) >= procedure.deadline ?
+            reason =
+                !known && Common.monotonic_seconds(clock) >= procedure.deadline ?
                 "TimedOut($(_phase(command.action)))" : _failure(error)
             fail!(procedure, reason; known)
         end
@@ -271,8 +351,12 @@ end
 
 "Prove an explicit native binding, acquire, and always close that controller."
 function acquire(binding::ActionClient.Binding, plan::Plan; kwargs...)
-    connection = ActionClient.connect(binding, plan.run, plan.timeouts.ownership;
-        command_count=length(plan.reference))
+    connection = ActionClient.connect(
+        binding,
+        plan.run,
+        plan.timeouts.ownership;
+        command_count = length(plan.reference),
+    )
     try
         return acquire!(connection, plan; kwargs...)
     finally

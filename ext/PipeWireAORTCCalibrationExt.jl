@@ -15,20 +15,37 @@ const HIL = AdaptiveOpticsSim.AlgorithmGraphs
 shack_hartmann_configuration(config) = nothing
 shack_hartmann_configuration(config::HIL.ShackHartmannRateNodeConfig) = config
 function Calibration.shack_hartmann_configuration(system)
-    return only(filter(!isnothing,
-        map(node -> shack_hartmann_configuration(node.config), system.definition.nodes)))
+    return only(
+        filter(
+            !isnothing,
+            map(node -> shack_hartmann_configuration(node.config), system.definition.nodes),
+        ),
+    )
 end
 
-function Calibration.controller_graph(application; overrides=Dict())
+function Calibration.controller_graph(application; overrides = Dict())
     options = FilterGraphIsland.parse_arguments([
-        "--graph", joinpath(application, "rtc", "graph.conf"), "--check", "--execution", "complete-frame"])
+        "--graph",
+        joinpath(application, "rtc", "graph.conf"),
+        "--check",
+        "--execution",
+        "complete-frame",
+    ])
     entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    return FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats ->
-        [port => get(overrides, port, data) for (port, data) in
-            GraphOwner.prepare_bindings(entries, formats)])
+    return FilterGraphIsland.prepare_service_graph(
+        options;
+        initial_parameters = formats -> [
+            port => get(overrides, port, data) for
+            (port, data) in GraphOwner.prepare_bindings(entries, formats)
+        ],
+    )
 end
 
-function Calibration.controller_storage(graph; raw_input=:raw, feedback_input=Symbol("constraint-feedback"))
+function Calibration.controller_storage(
+    graph;
+    raw_input = :raw,
+    feedback_input = Symbol("constraint-feedback"),
+)
     raw_name, feedback_name = Symbol(raw_input), Symbol(feedback_input)
     raw_format = getproperty(graph.input_formats, raw_name)
     raw = zeros(raw_format.element_type, raw_format.shape)
@@ -52,7 +69,8 @@ function Calibration.calibration_frame!(system, physical)
     boundary = system.boundary
     sequence = HIL.hil_boundary_status(boundary).frame_sequence
     if sequence == 0
-        all(iszero, physical) || throw(ArgumentError("first calibration frame must be flat"))
+        all(iszero, physical) ||
+            throw(ArgumentError("first calibration frame must be flat"))
     else
         copyto!(HIL.hil_command_buffer(boundary), physical)
         HIL.adopt_hil_command!(boundary, sequence)

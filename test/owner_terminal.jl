@@ -12,16 +12,22 @@ deadline() = Client.monotonic() + 10.0
 function client_fence(client)
     done = Ref{Cint}(-1)
     listener = with_thread_loop_lock(client.loop) do _
-        add_listener!(something(client.core);
-            on_done=(core, id, seq) -> (id == 0 && (done[] = seq); nothing))
+        add_listener!(
+            something(client.core);
+            on_done = (core, id, seq) -> (id == 0 && (done[] = seq); nothing),
+        )
     end
     try
         seq = with_thread_loop_lock(client.loop) do _
             sync!(something(client.core))
         end
-        wait_proof(() -> with_thread_loop_lock(client.loop) do _
-            done[] == seq
-        end, 5, "cold client publication fence")
+        wait_proof(
+            () -> with_thread_loop_lock(client.loop) do _
+                done[] == seq
+            end,
+            5,
+            "cold client publication fence",
+        )
     finally
         with_thread_loop_lock(client.loop) do _
             close(listener)
@@ -34,10 +40,12 @@ function terminal_owner(remote, directory, daemon; mode)
     runtime = R.Runtime(remote, "test.terminal.$mode", Int64(81))
     connection = driver = nothing
     try
-        connection = B.connect(remote, "test.terminal.$mode", getpid(), 81; deadline=deadline())
+        connection =
+            B.connect(remote, "test.terminal.$mode", getpid(), 81; deadline = deadline())
         client = connection.client
         R.prepared!(runtime)
-        connecting = ThreadPinning.@spawnat 2 B.connect_owner!(connection; deadline=deadline())
+        connecting =
+            ThreadPinning.@spawnat 2 B.connect_owner!(connection; deadline = deadline())
         ticket = R.take_connect!(runtime)
         R.connected!(runtime, ticket)
         R.await_connected!(runtime, ticket)
@@ -53,10 +61,18 @@ function terminal_owner(remote, directory, daemon; mode)
         sent_at = Client.monotonic()
         request = with_thread_loop_lock(client.loop) do _
             token = max(client.last_token, client.observation.max_accepted) + 1
-            header = Envelope.RequestHeader(something(client.identity), Int64(81), token,
-                UInt32(3), Int64(round(budget * 1e9)))
-            set_param!(something(client.node), PipeWireAO.SPA.PARAM_PROPS,
-                Client.encode_request(C.PROFILE, header, C.Command(:quit)))
+            header = Envelope.RequestHeader(
+                something(client.identity),
+                Int64(81),
+                token,
+                UInt32(3),
+                Int64(round(budget * 1e9)),
+            )
+            set_param!(
+                something(client.node),
+                PipeWireAO.SPA.PARAM_PROPS,
+                Client.encode_request(C.PROFILE, header, C.Command(:quit)),
+            )
             header
         end
         wait_proof(() -> R.cancelled(runtime), 5, "accepted terminal Quit")
@@ -67,11 +83,16 @@ function terminal_owner(remote, directory, daemon; mode)
             R.finish!(runtime)
             close(runtime)
         end
-        wait_proof(() -> runtime.transport.closed ||
-            with_thread_loop_lock(runtime.transport.loop) do _
-                terminal = runtime.transport.endpoint.terminal_request
-                terminal !== nothing && terminal.header.token == request.token
-            end, 5, "terminal published after scientific cleanup")
+        wait_proof(
+            () ->
+                runtime.transport.closed ||
+                with_thread_loop_lock(runtime.transport.loop) do _
+                    terminal = runtime.transport.endpoint.terminal_request
+                    terminal !== nothing && terminal.header.token == request.token
+                end,
+            5,
+            "terminal published after scientific cleanup",
+        )
         @test science_closed
         sleep(0.1) # Deliberately defer peer observation beyond many Lua polls.
         @test !runtime.transport.closed
@@ -84,8 +105,13 @@ function terminal_owner(remote, directory, daemon; mode)
             @test runtime.transport.closed
         elseif mode === :proof
             with_thread_loop_lock(client.loop) do _
-                update_properties!(something(client.marker),
-                    Dict("pipewireao.rtc-control.instance" => string(client.marker_instance + 1)))
+                update_properties!(
+                    something(client.marker),
+                    Dict(
+                        "pipewireao.rtc-control.instance" =>
+                            string(client.marker_instance + 1),
+                    ),
+                )
             end
             wait_proof(() -> istaskdone(driver), 5, "terminal proof mutation rejected")
             @test istaskfailed(driver)
@@ -95,28 +121,49 @@ function terminal_owner(remote, directory, daemon; mode)
         else
             saved_terminal = runtime.transport.endpoint.terminal_request
             for (offset, operation) in ((1, :status), (2, :quit))
-                denied = Envelope.RequestHeader(request.controller, Int64(81), request.token + offset,
-                    Client.operation_id(C.PROFILE, C.Command(operation)), Int64(1_000_000_000))
+                denied = Envelope.RequestHeader(
+                    request.controller,
+                    Int64(81),
+                    request.token + offset,
+                    Client.operation_id(C.PROFILE, C.Command(operation)),
+                    Int64(1_000_000_000),
+                )
                 with_thread_loop_lock(client.loop) do _
-                    set_param!(something(client.node), PipeWireAO.SPA.PARAM_PROPS,
-                        Client.encode_request(C.PROFILE, denied, C.Command(operation)))
+                    set_param!(
+                        something(client.node),
+                        PipeWireAO.SPA.PARAM_PROPS,
+                        Client.encode_request(C.PROFILE, denied, C.Command(operation)),
+                    )
                 end
                 client_fence(client)
                 with_thread_loop_lock(client.loop) do _
-                    enum_params!(something(client.node), PipeWireAO.SPA.PARAM_PROPS; count=UInt32(8))
+                    enum_params!(
+                        something(client.node),
+                        PipeWireAO.SPA.PARAM_PROPS;
+                        count = UInt32(8),
+                    )
                 end
-                wait_proof(() -> with_thread_loop_lock(client.loop) do _
-                    observed = client.observation.rejection
-                    observed !== nothing && observed.value.header.token == denied.token
-                end, 5, "new terminal work rejected")
+                wait_proof(
+                    () -> with_thread_loop_lock(client.loop) do _
+                        observed = client.observation.rejection
+                        observed !== nothing &&
+                            observed.value.header.token == denied.token
+                    end,
+                    5,
+                    "new terminal work rejected",
+                )
                 @test client.observation.rejection.value.header.result == -108
                 @test runtime.transport.endpoint.pending === nothing
-                @test runtime.transport.endpoint.terminal_request.header.token == request.token
+                @test runtime.transport.endpoint.terminal_request.header.token ==
+                      request.token
                 @test !istaskdone(driver)
             end
             with_thread_loop_lock(client.loop) do _
-                set_param!(something(client.node), PipeWireAO.SPA.PARAM_PROPS,
-                    Client.encode_request(C.PROFILE, request, C.Command(:quit)))
+                set_param!(
+                    something(client.node),
+                    PipeWireAO.SPA.PARAM_PROPS,
+                    Client.encode_request(C.PROFILE, request, C.Command(:quit)),
+                )
             end
             client_fence(client)
             with_thread_loop_lock(runtime.transport.loop) do _
@@ -129,12 +176,21 @@ function terminal_owner(remote, directory, daemon; mode)
                 @test rejected.token == request.token + 2
             end
             with_thread_loop_lock(client.loop) do _
-                enum_params!(something(client.node), PipeWireAO.SPA.PARAM_PROPS; count=UInt32(8))
+                enum_params!(
+                    something(client.node),
+                    PipeWireAO.SPA.PARAM_PROPS;
+                    count = UInt32(8),
+                )
             end
-            wait_proof(() -> with_thread_loop_lock(client.loop) do _
-                observed = client.observation.completion
-                observed !== nothing && observed.value.header.token == request.token
-            end, 5, "delayed exact terminal enumeration")
+            wait_proof(
+                () -> with_thread_loop_lock(client.loop) do _
+                    observed = client.observation.completion
+                    observed !== nothing &&
+                        observed.value.header.token == request.token
+                end,
+                5,
+                "delayed exact terminal enumeration",
+            )
             reply = client.observation.completion.value
             @test reply.lifecycle === C.Stopped && reply.header.result == 0
             @test reply.header.controller == request.controller
@@ -151,7 +207,10 @@ function terminal_owner(remote, directory, daemon; mode)
         if driver !== nothing
             wait_proof(() -> istaskdone(driver), 10, "bounded terminal driver cleanup")
         else
-            try R.finish!(runtime) catch end
+            try
+                R.finish!(runtime)
+            catch
+            end
         end
         close(runtime)
     end

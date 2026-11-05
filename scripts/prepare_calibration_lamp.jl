@@ -17,20 +17,29 @@ function verify_seals(package, specification)
 end
 
 function calibration_owner(specification)
-    specification["source-owner"] == "simulator" || error("fixture requires simulator source owner")
-    owner = only(filter(item -> item["role"] == specification["source-owner"], specification["owners"]))
+    specification["source-owner"] == "simulator" ||
+        error("fixture requires simulator source owner")
+    owner = only(
+        filter(
+            item -> item["role"] == specification["source-owner"],
+            specification["owners"],
+        ),
+    )
     owner["control-protocol"] == "pipewireao.rtc.calibration-lifecycle/1" ||
         error("fixture requires the native calibration lifecycle owner")
     argv = owner["argv"]
     option(name) = begin
         positions = findall(==(name), argv)
-        length(positions) == 1 && only(positions) < length(argv) || error("owner is missing one $name argument")
-        argv[only(positions) + 1]
+        length(positions) == 1 && only(positions) < length(argv) ||
+            error("owner is missing one $name argument")
+        argv[only(positions)+1]
     end
     option("--profile") == "classic" || error("owner is not configured for Classic")
     option("--rate") == "500" || error("owner rate is not 500 Hz")
-    option("--illumination") == "lamp" || error("owner is not configured for lamp illumination")
-    option("--graph") == "@PACKAGE@/hil/plant.toml" || error("owner graph is not the sealed plant")
+    option("--illumination") == "lamp" ||
+        error("owner is not configured for lamp illumination")
+    option("--graph") == "@PACKAGE@/hil/plant.toml" ||
+        error("owner graph is not the sealed plant")
     return owner, argv
 end
 
@@ -49,8 +58,13 @@ function main(args)
     source, stage, recipe_path = abspath.(args)
     installed = stage * "-installed"
     proof_path = stage * "-coldproof.json"
-    !ispath(stage) && !islink(stage) && !ispath(installed) && !islink(installed) &&
-        !ispath(proof_path) && !islink(proof_path) || error("stage, installed package and coldproof paths must be fresh")
+    !ispath(stage) &&
+    !islink(stage) &&
+    !ispath(installed) &&
+    !islink(installed) &&
+    !ispath(proof_path) &&
+    !islink(proof_path) ||
+        error("stage, installed package and coldproof paths must be fresh")
 
     source_descriptor_path = joinpath(source, "deployment.conf")
     source_provenance_path = joinpath(source, "provenance.json")
@@ -60,8 +74,10 @@ function main(args)
     verify_seals(source, descriptor)
     owner, owner_argv = calibration_owner(specification)
     provenance = C.read_json(source_provenance_path)
-    provenance["profile"] == "classic" && provenance["mode"] == "frame" &&
-        provenance["engine"] == "fgn" && provenance["rate"] == "500/1" ||
+    provenance["profile"] == "classic" &&
+    provenance["mode"] == "frame" &&
+    provenance["engine"] == "fgn" &&
+    provenance["rate"] == "500/1" ||
         error("source provenance is not the sealed Classic FGN frame source at 500 Hz")
 
     recipe = C.read_json(recipe_path)
@@ -71,9 +87,11 @@ function main(args)
 
     source_artifacts = H._package_artifacts(source)
     GENERATED_UNIT in keys(source_artifacts) || error("source generated unit is absent")
-    GENERATED_UNIT ∉ keys(descriptor["artifacts"]) || error("source generated unit must remain installer-owned and unsealed")
+    GENERATED_UNIT ∉ keys(descriptor["artifacts"]) ||
+        error("source generated unit must remain installer-owned and unsealed")
     source_unit_path = joinpath(source, GENERATED_UNIT)
-    isfile(source_unit_path) && !islink(source_unit_path) || error("source generated unit is linked or absent")
+    isfile(source_unit_path) && !islink(source_unit_path) ||
+        error("source generated unit is linked or absent")
     old_unit_hash = C.sha256_file(source_unit_path)
     source_file_hashes = copy(source_artifacts)
     old_plant_hash = C.sha256_file(source_plant_path)
@@ -84,25 +102,34 @@ function main(args)
     cp(source, stage)
     rm(joinpath(stage, GENERATED_UNIT))
     stage_plant_path = joinpath(stage, "hil", "plant.toml")
-    updated_text = Campaign.set_model_setting(source_text, "shwfs", "source_magnitude", magnitude)
+    updated_text =
+        Campaign.set_model_setting(source_text, "shwfs", "source_magnitude", magnitude)
     write(stage_plant_path, updated_text)
     updated_model = TOML.parse(updated_text)
     updated_wfs = only(filter(node -> node["name"] == "shwfs", updated_model["nodes"]))
-    updated_detector = only(filter(node -> node["name"] == "detector", updated_model["nodes"]))
+    updated_detector =
+        only(filter(node -> node["name"] == "detector", updated_model["nodes"]))
     expected_model = deepcopy(source_model)
-    only(filter(node -> node["name"] == "shwfs", expected_model["nodes"]))["config"]["source_magnitude"] = magnitude
-    updated_model == expected_model || error("plant change was not limited to shwfs source_magnitude")
-    updated_detector["config"]["rng_seed"] == detector_seed || error("detector RNG seed changed")
-    updated_wfs["config"]["source_magnitude"] == magnitude || error("recipe lamp magnitude was not applied")
+    only(filter(node -> node["name"] == "shwfs", expected_model["nodes"]))["config"]["source_magnitude"] =
+        magnitude
+    updated_model == expected_model ||
+        error("plant change was not limited to shwfs source_magnitude")
+    updated_detector["config"]["rng_seed"] == detector_seed ||
+        error("detector RNG seed changed")
+    updated_wfs["config"]["source_magnitude"] == magnitude ||
+        error("recipe lamp magnitude was not applied")
 
     changed_model_hash = C.sha256_file(stage_plant_path)
     changed_model_hash != old_plant_hash || error("recipe did not change the plant bytes")
     staged_artifacts = H._package_artifacts(stage)
-    protected_files = Dict(path => hash for (path, hash) in source_file_hashes
-        if path ∉ ("hil/plant.toml", "provenance.json", GENERATED_UNIT))
+    protected_files = Dict(
+        path => hash for (path, hash) in source_file_hashes if
+        path ∉ ("hil/plant.toml", "provenance.json", GENERATED_UNIT)
+    )
     all(get(staged_artifacts, path, nothing) == hash for (path, hash) in protected_files) ||
         error("a protected package file changed during fixture preparation")
-    Set(keys(staged_artifacts)) == setdiff(Set(keys(source_artifacts)), Set([GENERATED_UNIT])) ||
+    Set(keys(staged_artifacts)) ==
+    setdiff(Set(keys(source_artifacts)), Set([GENERATED_UNIT])) ||
         error("package file inventory changed beyond the installer-owned generated unit")
 
     fixture_receipt = Dict{String,Any}(
@@ -129,45 +156,65 @@ function main(args)
         "protected_files" => protected_files,
         "protected_files_unchanged" => true,
         "descriptor_updates" => ["name", "artifacts"],
-        "provenance_artifact_map_excludes" => ["deployment.conf", "provenance.json"])
+        "provenance_artifact_map_excludes" => ["deployment.conf", "provenance.json"],
+    )
 
     staged_provenance = C.read_json(joinpath(stage, "provenance.json"))
     staged_provenance["calibration_illumination_fixture"] = fixture_receipt
-    staged_provenance["artifacts"] = Dict(path => hash for (path, hash) in staged_artifacts
-        if path ∉ ("deployment.conf", "provenance.json"))
+    staged_provenance["artifacts"] = Dict(
+        path => hash for (path, hash) in staged_artifacts if
+        path ∉ ("deployment.conf", "provenance.json")
+    )
     C.write_json(joinpath(stage, "provenance.json"), staged_provenance)
 
     final_artifacts = H._package_artifacts(stage)
-    removed_files = sort!(collect(setdiff(Set(keys(source_artifacts)), Set(keys(final_artifacts)))))
-    removed_files == [GENERATED_UNIT] || error("unexpected package files removed: $removed_files")
-    changed_files = sort!([path for path in keys(final_artifacts)
-        if get(source_artifacts, path, nothing) != final_artifacts[path]])
-    changed_files == ["hil/plant.toml", "provenance.json"] || error("unexpected package file changes: $changed_files")
+    removed_files =
+        sort!(collect(setdiff(Set(keys(source_artifacts)), Set(keys(final_artifacts)))))
+    removed_files == [GENERATED_UNIT] ||
+        error("unexpected package files removed: $removed_files")
+    changed_files = sort!([
+        path for path in keys(final_artifacts) if
+        get(source_artifacts, path, nothing) != final_artifacts[path]
+    ])
+    changed_files == ["hil/plant.toml", "provenance.json"] ||
+        error("unexpected package file changes: $changed_files")
     descriptor["name"] = basename(stage)
     descriptor["artifacts"] = final_artifacts
     C.write_json(joinpath(stage, "deployment.conf"), descriptor)
     D.profile(joinpath(stage, "deployment.conf"), "/opt/pipewireao")
     verify_seals(stage, descriptor)
-    H._package_artifacts(stage)["provenance.json"] == C.sha256_file(joinpath(stage, "provenance.json")) ||
+    H._package_artifacts(stage)["provenance.json"] ==
+    C.sha256_file(joinpath(stage, "provenance.json")) ||
         error("updated provenance is not included in the descriptor seal")
 
-    installed_package = D.install((; package=stage, destination=installed, pipewire_prefix="/opt/pipewireao"))
+    installed_package = D.install((;
+        package = stage,
+        destination = installed,
+        pipewire_prefix = "/opt/pipewireao",
+    ))
     installed_descriptor = C.read_json(joinpath(installed_package, "deployment.conf"))
     D.profile(joinpath(installed_package, "deployment.conf"), "/opt/pipewireao")
     verify_seals(installed_package, installed_descriptor)
     installed_unit_path = joinpath(installed_package, GENERATED_UNIT)
-    isfile(installed_unit_path) && !islink(installed_unit_path) || error("installer did not generate its unit")
-    all(C.sha256_file(joinpath(installed_package, path)) == hash for (path, hash) in protected_files) ||
-        error("installed protected file differs from the source")
+    isfile(installed_unit_path) && !islink(installed_unit_path) ||
+        error("installer did not generate its unit")
+    all(
+        C.sha256_file(joinpath(installed_package, path)) == hash for
+        (path, hash) in protected_files
+    ) || error("installed protected file differs from the source")
     verify_seals(source, C.read_json(source_descriptor_path))
     source_provenance_hash_after = C.sha256_file(source_provenance_path)
-    source_provenance_hash_after == old_provenance_hash || error("source provenance changed")
-    C.sha256_file(source_descriptor_path) == old_descriptor_hash || error("source descriptor changed")
+    source_provenance_hash_after == old_provenance_hash ||
+        error("source provenance changed")
+    C.sha256_file(source_descriptor_path) == old_descriptor_hash ||
+        error("source descriptor changed")
     H._package_artifacts(source) == source_artifacts || error("source package changed")
 
     fixture_receipt["installed_package"] = installed_package
-    fixture_receipt["installed_descriptor_sha256"] = C.sha256_file(joinpath(installed_package, "deployment.conf"))
-    fixture_receipt["installed_provenance_sha256"] = C.sha256_file(joinpath(installed_package, "provenance.json"))
+    fixture_receipt["installed_descriptor_sha256"] =
+        C.sha256_file(joinpath(installed_package, "deployment.conf"))
+    fixture_receipt["installed_provenance_sha256"] =
+        C.sha256_file(joinpath(installed_package, "provenance.json"))
     fixture_receipt["installed_seal_count"] = length(installed_descriptor["artifacts"])
     fixture_receipt["installed_generated_unit_sha256"] = C.sha256_file(installed_unit_path)
     C.write_json(proof_path, fixture_receipt)

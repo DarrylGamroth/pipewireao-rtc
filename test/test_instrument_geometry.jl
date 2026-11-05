@@ -2,7 +2,11 @@ using Test, JSON, PipeWireAORTC
 
 const IC = PipeWireAORTC.InstrumentConfiguration
 
-function mirror_document(; id="generic-test-mirror", positions=[[3, 4], [2, 2], [4, 1]], shape=[4, 4])
+function mirror_document(;
+    id = "generic-test-mirror",
+    positions = [[3, 4], [2, 2], [4, 1]],
+    shape = [4, 4],
+)
     return Dict{String,Any}(
         "schema_version" => 1,
         "id" => id,
@@ -38,169 +42,298 @@ end
             0 0 0 0
             0 0 1 0
         ]
-        default_registration = (; actuator_pitch_pupil_radius=0.125)
-        @test_throws ArgumentError IC._pupil_registration((;actuator_pitch=0.125))
+        default_registration = (; actuator_pitch_pupil_radius = 0.125)
+        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch = 0.125))
         mechanical = mirror_document()
         mechanical["actuator_pitch_m"] = 0.0015
-        with_pitch = write_mirror(path,mechanical)
+        with_pitch = write_mirror(path, mechanical)
         @test with_pitch.actuator_pitch_m == 0.0015
-        @test IC.actuator_coordinates(with_pitch; pupil_registration=default_registration) ==
-            IC.actuator_coordinates(description; pupil_registration=default_registration)
+        @test IC.actuator_coordinates(
+            with_pitch;
+            pupil_registration = default_registration,
+        ) == IC.actuator_coordinates(
+            description;
+            pupil_registration = default_registration,
+        )
         for pitch in (0, -1, Inf, NaN, true, "0.0015", nothing)
             invalid = deepcopy(mechanical)
             invalid["actuator_pitch_m"] = pitch
-            @test_throws Exception write_mirror(path,invalid)
+            @test_throws Exception write_mirror(path, invalid)
         end
-        @test IC.actuator_coordinates(description; pupil_registration=default_registration) == Float32[
+        @test IC.actuator_coordinates(
+            description;
+            pupil_registration = default_registration,
+        ) == Float32[
             0.0625 -0.0625 0.1875
             -0.1875 0.0625 0.1875
         ]
         @test IC.actuator_grid_indices(description) == Int32[3, 10, 16]
         @test IC.source_grid_coordinates(description) == (
-            zernike_positions=((0.25, 0.75), (-0.25, -0.25), (0.75, -0.75)),
-            fourier_positions=((Float64(Float32(1 / 6)), Float64(Float32(1 / 2))),
+            zernike_positions = ((0.25, 0.75), (-0.25, -0.25), (0.75, -0.75)),
+            fourier_positions = (
+                (Float64(Float32(1 / 6)), Float64(Float32(1 / 2))),
                 (Float64(Float32(-1 / 6)), Float64(Float32(-1 / 6))),
-                (Float64(Float32(1 / 2)), Float64(Float32(-1 / 2)))),
+                (Float64(Float32(1 / 2)), Float64(Float32(-1 / 2))),
+            ),
         )
-        singleton = merge(description,(;layout=merge(description.layout,
-            (;grid_shape=(3,1),command_positions=((1,1),(2,1),(3,1))))))
-        @test IC.source_grid_coordinates(singleton).fourier_positions == ((-0.5,0.0),(0.0,0.0),(0.5,0.0))
-        basis = Dict("id"=>"fourier","name"=>"Fourier","units"=>"m","coefficient_limit"=>1.0,
+        singleton = merge(
+            description,
+            (;
+                layout = merge(
+                    description.layout,
+                    (; grid_shape = (3, 1), command_positions = ((1, 1), (2, 1), (3, 1))),
+                )
+            ),
+        )
+        @test IC.source_grid_coordinates(singleton).fourier_positions ==
+              ((-0.5, 0.0), (0.0, 0.0), (0.5, 0.0))
+        basis = Dict(
+            "id"=>"fourier",
+            "name"=>"Fourier",
+            "units"=>"m",
+            "coefficient_limit"=>1.0,
             "normalization"=>"sampled_rms",
-            "definition"=>Dict("kind"=>"fourier","max_frequency"=>64))
+            "definition"=>Dict("kind"=>"fourier", "max_frequency"=>64),
+        )
         # A 3-point source axis has only the Nyquist frequency: do not publish
         # its identically-zero sine quadrature. Singleton axes carry no modes.
-        @test_throws ArgumentError IC.resolve_basis(nothing,basis,singleton,IC.source_grid_coordinates(singleton))
-        odd_grid = merge(description,(;layout=merge(description.layout,
-            (;grid_shape=(5,1),command_positions=Tuple((i,1) for i in 1:5)))))
-        resolved = IC.resolve_basis(nothing,basis,odd_grid,IC.source_grid_coordinates(odd_grid))
-        @test resolved.definition.frequencies == ((1,0),)
-        @test all(p -> p[2] == 0.0,resolved.definition.positions)
-        large_grid = merge(description,(;layout=merge(description.layout,(;grid_shape=(65,65)))))
-        @test_throws ArgumentError IC.resolve_basis(nothing,basis,large_grid,IC.source_grid_coordinates(large_grid))
-        registered = IC.actuator_coordinates(description, Float64;
-            pupil_registration=(; actuator_pitch_pupil_radius=0.2))
+        @test_throws ArgumentError IC.resolve_basis(
+            nothing,
+            basis,
+            singleton,
+            IC.source_grid_coordinates(singleton),
+        )
+        odd_grid = merge(
+            description,
+            (;
+                layout = merge(
+                    description.layout,
+                    (; grid_shape = (5, 1), command_positions = Tuple((i, 1) for i = 1:5)),
+                )
+            ),
+        )
+        resolved =
+            IC.resolve_basis(nothing, basis, odd_grid, IC.source_grid_coordinates(odd_grid))
+        @test resolved.definition.frequencies == ((1, 0),)
+        @test all(p -> p[2] == 0.0, resolved.definition.positions)
+        large_grid = merge(
+            description,
+            (; layout = merge(description.layout, (; grid_shape = (65, 65)))),
+        )
+        @test_throws ArgumentError IC.resolve_basis(
+            nothing,
+            basis,
+            large_grid,
+            IC.source_grid_coordinates(large_grid),
+        )
+        registered = IC.actuator_coordinates(
+            description,
+            Float64;
+            pupil_registration = (; actuator_pitch_pupil_radius = 0.2),
+        )
         @test registered[:, 1] ≈ [0.1, -0.3]
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=0))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=NaN))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=1e-100))
-        @test_throws ArgumentError IC._pupil_registration((; actuator_pitch_pupil_radius=0.1, extra=1))
-        @test_throws ArgumentError IC._mirror_axis_count(merge(description,
-            (; layout=merge(description.layout, (; grid_shape=(4, 3))))))
+        @test_throws ArgumentError IC._pupil_registration((;
+            actuator_pitch_pupil_radius = 0
+        ))
+        @test_throws ArgumentError IC._pupil_registration((;
+            actuator_pitch_pupil_radius = NaN
+        ))
+        @test_throws ArgumentError IC._pupil_registration((;
+            actuator_pitch_pupil_radius = 1e-100
+        ))
+        @test_throws ArgumentError IC._pupil_registration((;
+            actuator_pitch_pupil_radius = 0.1,
+            extra = 1,
+        ))
+        @test_throws ArgumentError IC._mirror_axis_count(
+            merge(
+                description,
+                (; layout = merge(description.layout, (; grid_shape = (4, 3)))),
+            ),
+        )
 
         # A 19 × 19 physical map with 277 positions checks command-order preservation.
-        row_widths = (7, 9, 11, 13, 15, 17, 19, 19, 19, 19, 19, 19, 19,
-            17, 15, 13, 11, 9, 7)
-        positions = Tuple((column, row) for row in 19:-1:1 for width in (row_widths[row],)
-            for column in ((20 - width) ÷ 2 + 1):((20 + width) ÷ 2))
-        canonical = merge(description, (; layout=merge(description.layout,
-            (; grid_shape=(19, 19), command_positions=positions))))
+        row_widths =
+            (7, 9, 11, 13, 15, 17, 19, 19, 19, 19, 19, 19, 19, 17, 15, 13, 11, 9, 7)
+        positions = Tuple(
+            (column, row) for row = 19:-1:1 for width in (row_widths[row],) for
+            column = ((20-width)÷2+1):((20+width)÷2)
+        )
+        canonical = merge(
+            description,
+            (;
+                layout = merge(
+                    description.layout,
+                    (; grid_shape = (19, 19), command_positions = positions),
+                )
+            ),
+        )
         @test IC.command_count(canonical) == 277
         @test IC.actuator_index_map(canonical)[19, 7:13] == UInt16.(1:7)
         @test IC.actuator_index_map(canonical)[1, 7:13] == UInt16.(271:277)
-        @test IC.actuator_coordinates(canonical; pupil_registration=default_registration)[:, [1, 139, 277]] ==
-            Float32[-0.375 0 0.375; -1.125 0 1.125]
+        @test IC.actuator_coordinates(canonical; pupil_registration = default_registration)[
+            :,
+            [1, 139, 277],
+        ] == Float32[-0.375 0 0.375; -1.125 0 1.125]
     end
 end
 
 @testset "pupil registration maps native mirror coordinates without reordering commands" begin
     mktempdir() do directory
-        description = write_mirror(joinpath(directory,"mirror.json"),mirror_document())
+        description = write_mirror(joinpath(directory, "mirror.json"), mirror_document())
         pitch = 0.125
-        original = (;actuator_pitch_pupil_radius=pitch)
-        defaults = (;actuator_pitch_pupil_radius=pitch,rotation_deg=0.0,
-            flip_y=false,offset_actuators=(0.0,0.0))
-        for rotation_deg in (0.0,-0.0,360.0,-720.0)
-            registration = merge(defaults,(;rotation_deg))
+        original = (; actuator_pitch_pupil_radius = pitch)
+        defaults = (;
+            actuator_pitch_pupil_radius = pitch,
+            rotation_deg = 0.0,
+            flip_y = false,
+            offset_actuators = (0.0, 0.0),
+        )
+        for rotation_deg in (0.0, -0.0, 360.0, -720.0)
+            registration = merge(defaults, (; rotation_deg))
             @test IC._pupil_registration(registration) === original
-            for T in (Float32,Float64)
-                baseline = IC.actuator_coordinates(description,T;pupil_registration=original)
-                @test isequal(IC.actuator_coordinates(description,T;pupil_registration=registration),baseline)
+            for T in (Float32, Float64)
+                baseline =
+                    IC.actuator_coordinates(description, T; pupil_registration = original)
+                @test isequal(
+                    IC.actuator_coordinates(
+                        description,
+                        T;
+                        pupil_registration = registration,
+                    ),
+                    baseline,
+                )
             end
         end
-        native = IC.actuator_coordinates(description,Float64;pupil_registration=original)
-        @test IC.actuator_coordinates(description,Float64;
-            pupil_registration=merge(original,(;rotation_deg=90.0))) == [-native[2,:]'; native[1,:]']
-        @test IC.actuator_coordinates(description,Float64;
-            pupil_registration=merge(original,(;flip_y=true))) == [native[1,:]'; -native[2,:]']
-        @test IC.actuator_coordinates(description,Float64;
-            pupil_registration=merge(original,(;offset_actuators=(1.0,-2.0)))) ==
-            native .- pitch .* [1.0,-2.0]
-        offsets = [0.73,0.37]
-        registered = IC._pupil_registration(merge(original,(;rotation_deg=31.2,flip_y=true,
-            offset_actuators=offsets)))
+        native =
+            IC.actuator_coordinates(description, Float64; pupil_registration = original)
+        @test IC.actuator_coordinates(
+            description,
+            Float64;
+            pupil_registration = merge(original, (; rotation_deg = 90.0)),
+        ) == [-native[2, :]'; native[1, :]']
+        @test IC.actuator_coordinates(
+            description,
+            Float64;
+            pupil_registration = merge(original, (; flip_y = true)),
+        ) == [native[1, :]'; -native[2, :]']
+        @test IC.actuator_coordinates(
+            description,
+            Float64;
+            pupil_registration = merge(original, (; offset_actuators = (1.0, -2.0))),
+        ) == native .- pitch .* [1.0, -2.0]
+        offsets = [0.73, 0.37]
+        registered = IC._pupil_registration(
+            merge(
+                original,
+                (; rotation_deg = 31.2, flip_y = true, offset_actuators = offsets),
+            ),
+        )
         offsets .= 9
-        @test registered.offset_actuators === (0.73,0.37)
+        @test registered.offset_actuators === (0.73, 0.37)
         @test registered.rotation_deg === 31.2
-        sine,cosine = sincosd(registered.rotation_deg)
+        sine, cosine = sincosd(registered.rotation_deg)
         rotation = [cosine -sine; sine cosine]
         reflection = [1.0 0.0; 0.0 -1.0]
         offset = pitch .* collect(registered.offset_actuators)
         expected = rotation * reflection * (native .- offset)
-        for T in (Float32,Float64)
-            coordinates = IC.actuator_coordinates(description,T;pupil_registration=registered)
+        for T in (Float32, Float64)
+            coordinates =
+                IC.actuator_coordinates(description, T; pupil_registration = registered)
             @test coordinates ≈ expected atol=5e-8
             @test reflection * rotation' * coordinates .+ offset ≈ native atol=5e-8
         end
-        @test IC.actuator_index_map(description) == UInt16[0 0 0 3; 0 2 0 0; 0 0 0 0; 0 0 1 0]
+        @test IC.actuator_index_map(description) ==
+              UInt16[0 0 0 3; 0 2 0 0; 0 0 0 0; 0 0 1 0]
         for invalid in (
-            (;rotation_deg=0.0),
-            merge(original,(;rotation_deg=true)), merge(original,(;rotation_deg="31.2")),
-            merge(original,(;rotation_deg=Inf)), merge(original,(;rotation_deg=NaN)),
-            merge(original,(;rotation_deg=big"1e1000")),
-            merge(original,(;flip_y=1)), merge(original,(;flip_y="false")),
-            merge(original,(;offset_actuators=1.0)), merge(original,(;offset_actuators=(0.0,))),
-            merge(original,(;offset_actuators=(0.0,0.0,0.0))),
-            merge(original,(;offset_actuators=(true,0.0))),
-            merge(original,(;offset_actuators=("0",0.0))),
-            merge(original,(;offset_actuators=(NaN,0.0))),
-            merge(original,(;offset_actuators=(0.0,Inf))),
-            merge(original,(;offset_actuators=(big"1e1000",0.0))),
-            merge(original,(;unknown=0)),
+            (; rotation_deg = 0.0),
+            merge(original, (; rotation_deg = true)),
+            merge(original, (; rotation_deg = "31.2")),
+            merge(original, (; rotation_deg = Inf)),
+            merge(original, (; rotation_deg = NaN)),
+            merge(original, (; rotation_deg = big"1e1000")),
+            merge(original, (; flip_y = 1)),
+            merge(original, (; flip_y = "false")),
+            merge(original, (; offset_actuators = 1.0)),
+            merge(original, (; offset_actuators = (0.0,))),
+            merge(original, (; offset_actuators = (0.0, 0.0, 0.0))),
+            merge(original, (; offset_actuators = (true, 0.0))),
+            merge(original, (; offset_actuators = ("0", 0.0))),
+            merge(original, (; offset_actuators = (NaN, 0.0))),
+            merge(original, (; offset_actuators = (0.0, Inf))),
+            merge(original, (; offset_actuators = (big"1e1000", 0.0))),
+            merge(original, (; unknown = 0)),
         )
             @test_throws ArgumentError IC._pupil_registration(invalid)
         end
         for registration in (
-            merge(original,(;offset_actuators=(1e308,0.0))),
-            (;actuator_pitch_pupil_radius=1e38,rotation_deg=45.0),
+            merge(original, (; offset_actuators = (1e308, 0.0))),
+            (; actuator_pitch_pupil_radius = 1e38, rotation_deg = 45.0),
         )
-            @test_throws ArgumentError IC.actuator_coordinates(description;pupil_registration=registration)
+            @test_throws ArgumentError IC.actuator_coordinates(
+                description;
+                pupil_registration = registration,
+            )
         end
         # Finite coordinates on a small grid must not hide a pitch outside
         # the published registration's shared Float32 viewport headroom.
-        small = merge(description,(;layout=merge(description.layout,
-            (;grid_shape=(2,2),command_positions=((1,1),(1,2),(2,1))))))
-        @test_throws ArgumentError IC.actuator_coordinates(small;
-            pupil_registration=(;actuator_pitch_pupil_radius=1e38,rotation_deg=90.0))
-        @test isfinite(IC._pupil_registration(merge(original,(;rotation_deg=1e308))).rotation_deg)
+        small = merge(
+            description,
+            (;
+                layout = merge(
+                    description.layout,
+                    (; grid_shape = (2, 2), command_positions = ((1, 1), (1, 2), (2, 1))),
+                )
+            ),
+        )
+        @test_throws ArgumentError IC.actuator_coordinates(
+            small;
+            pupil_registration = (;
+                actuator_pitch_pupil_radius = 1e38,
+                rotation_deg = 90.0,
+            ),
+        )
+        @test isfinite(
+            IC._pupil_registration(merge(original, (; rotation_deg = 1e308))).rotation_deg,
+        )
     end
 end
 
 @testset "physical clear aperture resolves without rescaling actuator coordinates" begin
     mktempdir() do directory
-        path = joinpath(directory,"mirror.json")
+        path = joinpath(directory, "mirror.json")
         document = mirror_document()
-        registration = (;actuator_pitch_pupil_radius=0.125)
-        original = write_mirror(path,document)
-        @test IC.clear_aperture(original,registration) == NamedTuple()
+        registration = (; actuator_pitch_pupil_radius = 0.125)
+        original = write_mirror(path, document)
+        @test IC.clear_aperture(original, registration) == NamedTuple()
         document["actuator_pitch_m"] = 0.0015
         document["clear_aperture_diameter_m"] = 0.0245
-        description = write_mirror(path,document)
-        @test IC.clear_aperture(description,registration).clear_aperture.radius ≈ 1.0208333333333333
-        @test IC.actuator_coordinates(description;pupil_registration=registration) ==
-            IC.actuator_coordinates(original;pupil_registration=registration)
-        @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(original)
-        for diameter in (true,false,0.0,-0.1,Inf,NaN)
+        description = write_mirror(path, document)
+        @test IC.clear_aperture(description, registration).clear_aperture.radius ≈
+              1.0208333333333333
+        @test IC.actuator_coordinates(description; pupil_registration = registration) ==
+              IC.actuator_coordinates(original; pupil_registration = registration)
+        @test IC.source_grid_coordinates(description) ==
+              IC.source_grid_coordinates(original)
+        for diameter in (true, false, 0.0, -0.1, Inf, NaN)
             invalid = deepcopy(document)
             invalid["clear_aperture_diameter_m"] = diameter
-            @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(invalid)
+            @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(
+                invalid,
+            )
         end
         missing = deepcopy(document)
-        delete!(missing,"actuator_pitch_m")
-        @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(missing)
-        for (diameter,pitch) in ((1e308,1e-300),(1e-300,1e308),(1e100,0.0015),(1e-100,0.0015))
-            invalid = merge(description,(;clear_aperture_diameter_m=diameter,actuator_pitch_m=pitch))
-            @test_throws ArgumentError IC.clear_aperture(invalid,registration)
+        delete!(missing, "actuator_pitch_m")
+        @test_throws ArgumentError PipeWireAORTC.InstrumentDefinition.validate_mirror_description(
+            missing,
+        )
+        for (diameter, pitch) in
+            ((1e308, 1e-300), (1e-300, 1e308), (1e100, 0.0015), (1e-100, 0.0015))
+            invalid = merge(
+                description,
+                (; clear_aperture_diameter_m = diameter, actuator_pitch_m = pitch),
+            )
+            @test_throws ArgumentError IC.clear_aperture(invalid, registration)
         end
     end
 end
@@ -209,11 +342,11 @@ end
     mktempdir() do directory
         path = joinpath(directory, "mirror.json")
         for invalid in (
-            mirror_document(; positions=[[3, 4], [3, 4]]),
-            mirror_document(; positions=[[5, 4]]),
-            mirror_document(; positions=[Any[true, 4]]),
-            mirror_document(; positions=Any[]),
-            mirror_document(; id=""),
+            mirror_document(; positions = [[3, 4], [3, 4]]),
+            mirror_document(; positions = [[5, 4]]),
+            mirror_document(; positions = [Any[true, 4]]),
+            mirror_document(; positions = Any[]),
+            mirror_document(; id = ""),
         )
             write(path, JSON.json(invalid))
             @test_throws ArgumentError IC.read_mirror_description(path)
@@ -222,7 +355,9 @@ end
         @test_throws ArgumentError IC.read_mirror_description(path)
         write(path, JSON.json(mirror_document()))
         @test_throws ArgumentError IC.read_mirror_description(1)
-        @test_throws ArgumentError IC.read_mirror_description(joinpath(directory, "missing.json"))
+        @test_throws ArgumentError IC.read_mirror_description(
+            joinpath(directory, "missing.json"),
+        )
         write(path, repeat(" ", 64 * 1024 + 1))
         @test_throws ArgumentError IC.read_mirror_description(path)
     end
@@ -235,17 +370,19 @@ end
         document["clear_aperture_diameter_m"] = 0.0245
         json_path = joinpath(directory, "mirror.json")
         baseline = write_mirror(json_path, document)
-        registration = (; actuator_pitch_pupil_radius=0.125)
+        registration = (; actuator_pitch_pupil_radius = 0.125)
         for suffix in (".yaml", ".yml")
             path = joinpath(directory, "mirror" * suffix)
             PipeWireAORTC.Common.write_yaml(path, document)
             description = IC.read_mirror_description(path)
             @test IC.json_value(description) == IC.json_value(baseline)
             @test description.layout.command_positions == baseline.layout.command_positions
-            @test IC.actuator_coordinates(description; pupil_registration=registration) ==
-                IC.actuator_coordinates(baseline; pupil_registration=registration)
-            @test IC.source_grid_coordinates(description) == IC.source_grid_coordinates(baseline)
-            @test IC.clear_aperture(description,registration) == IC.clear_aperture(baseline,registration)
+            @test IC.actuator_coordinates(description; pupil_registration = registration) ==
+                  IC.actuator_coordinates(baseline; pupil_registration = registration)
+            @test IC.source_grid_coordinates(description) ==
+                  IC.source_grid_coordinates(baseline)
+            @test IC.clear_aperture(description, registration) ==
+                  IC.clear_aperture(baseline, registration)
         end
     end
 end
@@ -270,8 +407,13 @@ end
         end
         PipeWireAORTC.Common.write_yaml(path, mirror_document())
         yaml = read(path, String)
-        for suffix in ("model: duplicate\n", "unknown: .inf\n", "unknown: .nan\n",
-                "---\nschema_version: 1\n", "1: integer key\n")
+        for suffix in (
+            "model: duplicate\n",
+            "unknown: .inf\n",
+            "unknown: .nan\n",
+            "---\nschema_version: 1\n",
+            "1: integer key\n",
+        )
             write(path, yaml * suffix)
             @test_throws ArgumentError IC.read_mirror_description(path)
         end

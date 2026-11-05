@@ -41,16 +41,18 @@ links = [
 function run_native_monitor_fixture(mode::Symbol)
     loss = mode in (:loss, :queued_loss)
     test_names = (
-        loss="pending_preparation_is_fenced_by_required_object_loss",
-        queued_loss="queued_request_is_fenced_by_required_object_loss",
-        budget="accepted_runner_request_inherits_stalled_core_budget",
-        queued_budget="queued_request_bounds_due_monitor",
-        arriving_budget="arriving_request_bounds_already_running_monitor",
+        loss = "pending_preparation_is_fenced_by_required_object_loss",
+        queued_loss = "queued_request_is_fenced_by_required_object_loss",
+        budget = "accepted_runner_request_inherits_stalled_core_budget",
+        queued_budget = "queued_request_bounds_due_monitor",
+        arriving_budget = "arriving_request_bounds_already_running_monitor",
     )
     with_control_private_core() do socket, directory, daemon
         binary = ENV["NATIVE_RUNNER_BIN_TEST_BINARY"]
-        evidence = mkpath(mode == :loss ? ENV["NATIVE_RUNNER_MONITOR_EVIDENCE"] :
-            joinpath(ENV["NATIVE_RUNNER_MONITOR_EVIDENCE"], String(mode)))
+        evidence = mkpath(
+            mode == :loss ? ENV["NATIVE_RUNNER_MONITOR_EVIDENCE"] :
+            joinpath(ENV["NATIVE_RUNNER_MONITOR_EVIDENCE"], String(mode)),
+        )
         config = joinpath(directory, "monitor.conf")
         write(config, MONITOR_FIXTURE_CONFIG)
         thread_loop = ThreadLoop("fixture.runner-monitor")
@@ -63,36 +65,96 @@ function run_native_monitor_fixture(mode::Symbol)
         try
             with_thread_loop_lock(thread_loop) do _
                 context = Context(thread_loop)
-                core = CoreConnection(context; properties=Dict("remote.name" => socket))
+                core = CoreConnection(context; properties = Dict("remote.name" => socket))
             end
             start!(thread_loop)
-            frame = NdArrayFormat(NdArray.U16_LE, (2,); layout=NdArray.ROW_MAJOR,
-                rate=PipeWireAO.SPA.Fraction(100, 1))
-            command = NdArrayFormat(NdArray.F32_LE, (2,); layout=NdArray.ROW_MAJOR,
-                rate=PipeWireAO.SPA.Fraction(100, 1))
-            push!(endpoints, NdArraySource(core, "fixture.monitor-frame-source",
-                zeros(UInt16, 2), frame; schema="org.test.frame/1"))
-            push!(endpoints, NdArraySink(core, "fixture.monitor-frame-sink",
-                zeros(UInt16, 2), frame; schema="org.test.frame/1"))
-            push!(endpoints, NdArraySource(core, "fixture.monitor-command-source",
-                zeros(Float32, 2), command; schema="org.test.command/1"))
-            push!(endpoints, NdArraySink(core, "fixture.monitor-command-sink",
-                zeros(Float32, 2), command; schema="org.test.command/1"))
-            wait_proof(() -> all(endpoint -> node_id(endpoint) != typemax(UInt32), endpoints),
-                10, "four held diagnostic nodes")
+            frame = NdArrayFormat(
+                NdArray.U16_LE,
+                (2,);
+                layout = NdArray.ROW_MAJOR,
+                rate = PipeWireAO.SPA.Fraction(100, 1),
+            )
+            command = NdArrayFormat(
+                NdArray.F32_LE,
+                (2,);
+                layout = NdArray.ROW_MAJOR,
+                rate = PipeWireAO.SPA.Fraction(100, 1),
+            )
+            push!(
+                endpoints,
+                NdArraySource(
+                    core,
+                    "fixture.monitor-frame-source",
+                    zeros(UInt16, 2),
+                    frame;
+                    schema = "org.test.frame/1",
+                ),
+            )
+            push!(
+                endpoints,
+                NdArraySink(
+                    core,
+                    "fixture.monitor-frame-sink",
+                    zeros(UInt16, 2),
+                    frame;
+                    schema = "org.test.frame/1",
+                ),
+            )
+            push!(
+                endpoints,
+                NdArraySource(
+                    core,
+                    "fixture.monitor-command-source",
+                    zeros(Float32, 2),
+                    command;
+                    schema = "org.test.command/1",
+                ),
+            )
+            push!(
+                endpoints,
+                NdArraySink(
+                    core,
+                    "fixture.monitor-command-sink",
+                    zeros(Float32, 2),
+                    command;
+                    schema = "org.test.command/1",
+                ),
+            )
+            wait_proof(
+                () -> all(endpoint -> node_id(endpoint) != typemax(UInt32), endpoints),
+                10,
+                "four held diagnostic nodes",
+            )
             @test all(endpoint -> !isrunning(endpoint), endpoints)
             test_name = test_names[mode]
-            child = run(pipeline(addenv(Cmd([binary,
-                "native_runner_endpoint::tests::$test_name",
-                "--exact", "--ignored", "--nocapture"]),
-                "PIPEWIREAO_MONITOR_PROOF_REMOTE" => socket,
-                "PIPEWIREAO_MONITOR_PROOF_CONFIG" => config,
-                "PIPEWIREAO_MONITOR_PROOF_DIRECTORY" => directory);
-                stdout=log, stderr=log); wait=false)
+            child = run(
+                pipeline(
+                    addenv(
+                        Cmd([
+                            binary,
+                            "native_runner_endpoint::tests::$test_name",
+                            "--exact",
+                            "--ignored",
+                            "--nocapture",
+                        ]),
+                        "PIPEWIREAO_MONITOR_PROOF_REMOTE" => socket,
+                        "PIPEWIREAO_MONITOR_PROOF_CONFIG" => config,
+                        "PIPEWIREAO_MONITOR_PROOF_DIRECTORY" => directory,
+                    );
+                    stdout = log,
+                    stderr = log,
+                );
+                wait = false,
+            )
             ready = loss ? "monitor-ready" : "budget-ready"
-            wait_proof(() -> isfile(joinpath(directory, ready)),
-                15, "pending preparation";
-                check=() -> Base.process_exited(child) && error("Rust monitor test exited before readiness"))
+            wait_proof(
+                () -> isfile(joinpath(directory, ready)),
+                15,
+                "pending preparation";
+                check = () ->
+                    Base.process_exited(child) &&
+                    error("Rust monitor test exited before readiness"),
+            )
             # These files synchronize this private diagnostic only. They are
             # not deployment request, reply or status files.
             if loss
@@ -102,19 +164,37 @@ function run_native_monitor_fixture(mode::Symbol)
             else
                 kill(daemon, MONITOR_SIGSTOP)
                 daemon_paused = true
-                wait_proof(() -> occursin(r"(?m)^State:\s+T",
-                        read("/proc/$(getpid(daemon))/status", String)),
-                    2, "private daemon stopped")
+                wait_proof(
+                    () -> occursin(
+                        r"(?m)^State:\s+T",
+                        read("/proc/$(getpid(daemon))/status", String),
+                    ),
+                    2,
+                    "private daemon stopped",
+                )
                 write(joinpath(directory, "go-budget"), "")
-                wait_proof(() -> isfile(joinpath(directory, "budget-observed")),
-                    3, "250 ms owner budget";
-                    check=() -> Base.process_exited(child) && error("Rust budget test exited before observation"))
+                wait_proof(
+                    () -> isfile(joinpath(directory, "budget-observed")),
+                    3,
+                    "250 ms owner budget";
+                    check = () ->
+                        Base.process_exited(child) &&
+                        error("Rust budget test exited before observation"),
+                )
                 kill(daemon, MONITOR_SIGCONT)
                 daemon_paused = false
                 write(joinpath(directory, "budget-release"), "")
-                cp(joinpath(directory, "budget-elapsed-ns"), joinpath(evidence, "elapsed-ns"); force=true)
+                cp(
+                    joinpath(directory, "budget-elapsed-ns"),
+                    joinpath(evidence, "elapsed-ns");
+                    force = true,
+                )
             end
-            wait_proof(() -> Base.process_exited(child), 15, "monitor fault and late result fence")
+            wait_proof(
+                () -> Base.process_exited(child),
+                15,
+                "monitor fault and late result fence",
+            )
             wait(child)
             @test success(child)
         finally
@@ -159,9 +239,14 @@ function run_native_monitor_fixture(mode::Symbol)
             catch error
                 push!(failures, sprint(showerror, error))
             end
-            cp(config, joinpath(evidence, "monitor.conf"); force=true)
-            cp(joinpath(directory, "private-core.log"), joinpath(evidence, "private-core.log"); force=true)
-            isempty(failures) || error("monitor fixture cleanup failed: $(join(failures, "; "))")
+            cp(config, joinpath(evidence, "monitor.conf"); force = true)
+            cp(
+                joinpath(directory, "private-core.log"),
+                joinpath(evidence, "private-core.log");
+                force = true,
+            )
+            isempty(failures) ||
+                error("monitor fixture cleanup failed: $(join(failures, "; "))")
         end
     end
 end

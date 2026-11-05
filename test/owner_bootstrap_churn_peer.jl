@@ -7,16 +7,16 @@ const B = PipeWireAORTC.OwnerBootstrapClient
 const C = PipeWireAORTC.ControlClient
 
 function primary(remote, name, pid, instance)
-    client = B.connect(remote, name, pid, instance; deadline=C.monotonic() + 20)
+    client = B.connect(remote, name, pid, instance; deadline = C.monotonic() + 20)
     try
         println("READY")
         flush(stdout)
         readline(stdin) == "connect" || error("phase")
-        B.connect_owner!(client; deadline=C.monotonic() + 20)
+        B.connect_owner!(client; deadline = C.monotonic() + 20)
         println("CONNECTED")
         flush(stdout)
         readline(stdin) == "quit" || error("phase")
-        B.quit!(client; deadline=C.monotonic() + 20)
+        B.quit!(client; deadline = C.monotonic() + 20)
         println("STOPPED")
         flush(stdout)
     finally
@@ -30,13 +30,20 @@ function foreign(remote)
     try
         with_thread_loop_lock(loop) do _
             context = Context(loop)
-            core = CoreConnection(context; properties=Dict("remote.name" => remote))
+            core = CoreConnection(context; properties = Dict("remote.name" => remote))
             registry = Registry(core)
-            marker = Filter(core, name; properties=Dict("node.name" => name,
-                "media.class" => "Control", "pipewireao.rtc-control.protocol" => C.PROTOCOL,
-                "pipewireao.rtc-control.profile" => C.CONTROLLER_PROFILE,
-                "pipewireao.rtc-control.instance" => "1",
-                "pipewireao.rtc-control.owner-pid" => string(getpid())))
+            marker = Filter(
+                core,
+                name;
+                properties = Dict(
+                    "node.name" => name,
+                    "media.class" => "Control",
+                    "pipewireao.rtc-control.protocol" => C.PROTOCOL,
+                    "pipewireao.rtc-control.profile" => C.CONTROLLER_PROFILE,
+                    "pipewireao.rtc-control.instance" => "1",
+                    "pipewireao.rtc-control.owner-pid" => string(getpid()),
+                ),
+            )
         end
         start!(loop)
         println("READY")
@@ -44,12 +51,18 @@ function foreign(remote)
         readline(stdin) == "publish" || error("phase")
         @ccall gc_safe=true usleep(Cuint(200_000)::Cuint)::Cint
         with_thread_loop_lock(loop) do _
-            connect!(marker; flags=FILTER_INACTIVE | FILTER_ASYNC)
+            connect!(marker; flags = FILTER_INACTIVE | FILTER_ASYNC)
         end
         roundtrip(core)
-        found = only(find_globals(registry; properties=("node.name" => name,)))
-        println("PUBLISHED ", found.id, " ", get(found.properties, "object.serial", "missing"),
-            " ", time_ns())
+        found = only(find_globals(registry; properties = ("node.name" => name,)))
+        println(
+            "PUBLISHED ",
+            found.id,
+            " ",
+            get(found.properties, "object.serial", "missing"),
+            " ",
+            time_ns(),
+        )
         flush(stdout)
         @ccall gc_safe=true usleep(Cuint(1_000_000)::Cuint)::Cint
         with_thread_loop_lock(loop) do _

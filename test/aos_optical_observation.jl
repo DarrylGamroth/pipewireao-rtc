@@ -3,10 +3,14 @@
 using Test, Statistics, Libdl
 using PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
-using AdaptiveOpticsSim.AlgorithmGraphs: try_snapshot_graph_output!,
-    poll_graph_output_snapshot!, snapshot_metadata, release_graph_output_snapshot!
+using AdaptiveOpticsSim.AlgorithmGraphs:
+    try_snapshot_graph_output!,
+    poll_graph_output_snapshot!,
+    snapshot_metadata,
+    release_graph_output_snapshot!
 
-const Observation = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).OpticalObservation
+const Observation =
+    Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).OpticalObservation
 
 include("aos_wavefront_presentation.jl")
 
@@ -24,11 +28,19 @@ end
     owner = PipeWireAORTC.AOSOwner
     base = owner.configuration(abspath(only(ARGS)))
     instrument = owner.load_instrument(base.plant.package)
-    options = merge(base, (; backend=:cpu, device=0, plant_module=instrument,
-        remote="/tmp/unused-optical-observation", control_node="simulator-wfs"))
+    options = merge(
+        base,
+        (;
+            backend = :cpu,
+            device = 0,
+            plant_module = instrument,
+            remote = "/tmp/unused-optical-observation",
+            control_node = "simulator-wfs",
+        ),
+    )
     science = owner.prepare_science(options)
     observation = Observation.prepare(science.definition, science.graph)
-    display_pupil = reverse(permutedims(observation.pupil); dims=1)
+    display_pupil = reverse(permutedims(observation.pupil); dims = 1)
     try
         sources = Observation.source_options(observation)
         @test length(sources) == 3
@@ -41,16 +53,19 @@ end
         @test length(sources[3].channels) == 2
         @test getproperty.(sources[3].channels, :index) == (0, 1)
         @test getproperty.(sources[3].channels, :name) ==
-            ("uncorrected_atmosphere_rms", "corrected_pupil_rms")
+              ("uncorrected_atmosphere_rms", "corrected_pupil_rms")
         @test getproperty.(sources[3].channels, :title) ==
-            ("Uncorrected atmosphere RMS", "Corrected pupil RMS")
+              ("Uncorrected atmosphere RMS", "Corrected pupil RMS")
         @test getproperty.(sources[3].channels, :units) == ("nm OPD", "nm OPD")
         @test isempty(Observation.rms_source_options(nothing, Dict{String,String}()))
-        for index in 1:4
+        for index = 1:4
             stamp = step_hil_frame_at!(science.boundary, science.driver)
-            @test Observation.submit!(observation;
-                generation=UInt64(3), pts=Int64(index * 2_000_000))
-            @test !Observation.submit!(observation; generation=UInt64(3))
+            @test Observation.submit!(
+                observation;
+                generation = UInt64(3),
+                pts = Int64(index * 2_000_000),
+            )
+            @test !Observation.submit!(observation; generation = UInt64(3))
             @test Observation.poll!(observation)
             try
                 metadata = snapshot_metadata(observation.snapshot)
@@ -65,12 +80,17 @@ end
                 @test all(isfinite, observation.wavefront[display_pupil])
                 @test all(isnan, observation.wavefront[.!display_pupil])
                 values = Float64.(before[observation.pupil])
-                expected = std(values; corrected=false) * 1e9
+                expected = std(values; corrected = false) * 1e9
                 actual = sqrt(mean(abs2, Float64.(observation.wavefront[display_pupil])))
                 @test actual ≈ expected atol=1e-4
                 @test observation.rms[1, 2] ≈ actual atol=1e-4
-                @test observation.rms[1, 1] ≈ std(Float64.(graph_output(science.graph,
-                    :atmosphere_opd)[observation.pupil]); corrected=false)*1e9 atol=1e-4
+                @test observation.rms[1, 1] ≈
+                      std(
+                    Float64.(
+                        graph_output(science.graph, :atmosphere_opd)[observation.pupil],
+                    );
+                    corrected = false,
+                )*1e9 atol=1e-4
                 @test abs(mean(Float64.(observation.wavefront[display_pupil]))) < 1e-4
             finally
                 Observation.release!(observation)
@@ -79,26 +99,32 @@ end
         end
         # Force a partial admission through the public snapshot seam. Neither
         # member may be silently reused; cold drain must recover both slots.
-        @test try_snapshot_graph_output!(observation.atmosphere_snapshot; generation=UInt64(3))
-        @test_throws ArgumentError Observation.submit!(observation; generation=UInt64(3))
+        @test try_snapshot_graph_output!(
+            observation.atmosphere_snapshot;
+            generation = UInt64(3),
+        )
+        @test_throws ArgumentError Observation.submit!(observation; generation = UInt64(3))
         @test observation.busy[]
-        @test !try_snapshot_graph_output!(observation.snapshot; generation=UInt64(4))
+        @test !try_snapshot_graph_output!(observation.snapshot; generation = UInt64(4))
         Observation.drain!(observation)
         @test !observation.busy[]
-        @test Observation.submit!(observation; generation=UInt64(4))
+        @test Observation.submit!(observation; generation = UInt64(4))
         @test Observation.poll!(observation)
-        @test snapshot_metadata(observation.snapshot) == snapshot_metadata(observation.atmosphere_snapshot)
+        @test snapshot_metadata(observation.snapshot) ==
+              snapshot_metadata(observation.atmosphere_snapshot)
         Observation.release!(observation)
         # The public calibration path has no atmosphere; ordinary optical
         # images still prepare, with no invented reference measurement.
-        flat = instrument.prepare_calibration_system(; pupil_resolution=size(observation.pupil, 1))
+        flat = instrument.prepare_calibration_system(;
+            pupil_resolution = size(observation.pupil, 1),
+        )
         flat_observation = Observation.prepare(flat.definition, flat.graph)
         try
             @test flat_observation.atmosphere_snapshot === nothing
             flat_sources = Observation.source_options(flat_observation)
             @test length(flat_sources) == 2
             @test all(isempty(source.channels) for source in flat_sources)
-            @test Observation.submit!(flat_observation; generation=UInt64(1))
+            @test Observation.submit!(flat_observation; generation = UInt64(1))
             @test Observation.poll!(flat_observation)
             Observation.form_products!(flat_observation)
             Observation.release!(flat_observation)
@@ -108,6 +134,17 @@ end
     finally
         Observation.close!(observation)
     end
-    @test !any(id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"), keys(Base.loaded_modules))
-    @test isempty(filter(path -> occursin(r"(?i)(libcuda|libcudart|libcublas|libcufft|libamdhip|libhsa-runtime)", path), Libdl.dllist()))
+    @test !any(
+        id -> id.name in ("CUDA", "AMDGPU", "GPUCompiler"),
+        keys(Base.loaded_modules),
+    )
+    @test isempty(
+        filter(
+            path -> occursin(
+                r"(?i)(libcuda|libcudart|libcublas|libcufft|libamdhip|libhsa-runtime)",
+                path,
+            ),
+            Libdl.dllist(),
+        ),
+    )
 end

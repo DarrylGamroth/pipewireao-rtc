@@ -61,11 +61,11 @@ end
 @statedef Procedure :Aborted :Terminal
 @statedef Procedure :Fault :Terminal
 
-@on_initial function(p::Procedure, ::Root)
+@on_initial function (p::Procedure, ::Root)
     return Hsm.transition!(p, :Idle)
 end
 
-@on_event function(p::Procedure, ::Idle, ::Started, _)
+@on_event function (p::Procedure, ::Idle, ::Started, _)
     if p.cancellation()
         p.failure = "Cancelled"
         _issue_restore!(p)
@@ -75,7 +75,7 @@ end
     return Hsm.transition!(p, :Holding)
 end
 
-@on_event function(p::Procedure, ::Holding, ::Completed, completion)
+@on_event function (p::Procedure, ::Holding, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         result = _accepted_result!(p, completion)
@@ -93,7 +93,7 @@ end
     return Hsm.transition!(p, :Adopting)
 end
 
-@on_event function(p::Procedure, ::Adopting, ::Completed, completion)
+@on_event function (p::Procedure, ::Adopting, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         result = _accepted_result!(p, completion)
@@ -110,7 +110,7 @@ end
     return Hsm.transition!(p, :Settling)
 end
 
-@on_event function(p::Procedure, ::Settling, ::Completed, completion)
+@on_event function (p::Procedure, ::Settling, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         result = _accepted_result!(p, completion)
@@ -124,12 +124,19 @@ end
         _restore_after_failure!(p, "Cancelled")
         return Hsm.transition!(p, :Restoring)
     end
-    _issue!(p, Codec.Collect(UInt32(p.probe - 1), something(p.cursor),
-        p.plan.measurements, p.plan.frames_per_probe))
+    _issue!(
+        p,
+        Codec.Collect(
+            UInt32(p.probe - 1),
+            something(p.cursor),
+            p.plan.measurements,
+            p.plan.frames_per_probe,
+        ),
+    )
     return Hsm.transition!(p, :Collecting)
 end
 
-@on_event function(p::Procedure, ::Collecting, ::Completed, completion)
+@on_event function (p::Procedure, ::Collecting, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         result = _accepted_result!(p, completion)
@@ -148,7 +155,7 @@ end
     return Hsm.transition!(p, :Processing)
 end
 
-@on_event function(p::Procedure, ::Processing, ::Consumed, _)
+@on_event function (p::Procedure, ::Processing, ::Consumed, _)
     try
         p.cancelled = p.cancelled || p.cancellation()
     catch error
@@ -168,12 +175,12 @@ end
     return Hsm.transition!(p, :Adopting)
 end
 
-@on_event function(p::Procedure, ::Processing, ::Completed, _)
+@on_event function (p::Procedure, ::Processing, ::Completed, _)
     _fault!(p, "Endpoint", false)
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Restoring, ::Completed, completion)
+@on_event function (p::Procedure, ::Restoring, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         result = _accepted_result!(p, completion)
@@ -187,7 +194,7 @@ end
     return Hsm.transition!(p, :Releasing)
 end
 
-@on_event function(p::Procedure, ::Releasing, ::Completed, completion)
+@on_event function (p::Procedure, ::Releasing, ::Completed, completion)
     _completion_error(p, completion) === nothing || return Hsm.EventNotHandled
     try
         _accepted_result!(p, completion)
@@ -197,12 +204,13 @@ end
         _fault!(p, _failure(error), true)
         return Hsm.transition!(p, :Fault)
     end
-    return p.failure === nothing ? Hsm.transition!(p, :Complete) : Hsm.transition!(p, :Aborted)
+    return p.failure === nothing ? Hsm.transition!(p, :Complete) :
+           Hsm.transition!(p, :Aborted)
 end
 
 # Invalid correlation/late delivery bubbles to the phase's shared failure rule.
 # The check is pure: it must not poll cancellation twice while propagating.
-@on_event function(p::Procedure, ::Acquiring, ::Completed, completion)
+@on_event function (p::Procedure, ::Acquiring, ::Completed, completion)
     failure = _completion_error(p, completion)
     failure === nothing && return Hsm.EventNotHandled
     if failure.known
@@ -213,14 +221,14 @@ end
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Recovery, ::Completed, completion)
+@on_event function (p::Procedure, ::Recovery, ::Completed, completion)
     failure = _completion_error(p, completion)
     failure === nothing && return Hsm.EventNotHandled
     _fault!(p, failure.reason, failure.known)
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Acquiring, ::Failed, failure)
+@on_event function (p::Procedure, ::Acquiring, ::Failed, failure)
     if failure.known
         _restore_after_failure!(p, failure.reason)
         return Hsm.transition!(p, :Restoring)
@@ -229,48 +237,76 @@ end
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Recovery, ::Failed, failure)
+@on_event function (p::Procedure, ::Recovery, ::Failed, failure)
     _fault!(p, failure.reason, failure.known)
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Active, ::Cancelled, _)
+@on_event function (p::Procedure, ::Active, ::Cancelled, _)
     p.cancelled = true
     return Hsm.EventHandled
 end
 
-@on_event function(p::Procedure, ::Active, ::Expired, _)
+@on_event function (p::Procedure, ::Active, ::Expired, _)
     Common.monotonic_seconds(p.clock) < p.deadline && return Hsm.EventHandled
     _fault!(p, "TimedOut($(_phase(something(p.command).action)))", false)
     return Hsm.transition!(p, :Fault)
 end
 
-@on_event function(p::Procedure, ::Terminal, ::Completed, _)
+@on_event function (p::Procedure, ::Terminal, ::Completed, _)
     throw(ArgumentError("calibration procedure is terminal"))
 end
-@on_event function(p::Procedure, ::Terminal, ::Failed, _)
+@on_event function (p::Procedure, ::Terminal, ::Failed, _)
     throw(ArgumentError("calibration procedure is terminal"))
 end
-@on_event function(p::Procedure, ::Terminal, ::Cancelled, _)
+@on_event function (p::Procedure, ::Terminal, ::Cancelled, _)
     return Hsm.EventHandled
 end
-@on_event function(p::Procedure, ::Terminal, ::Expired, _)
+@on_event function (p::Procedure, ::Terminal, ::Expired, _)
     return Hsm.EventHandled
 end
 
-function Procedure(input::Plan; clock=Common.MONOTONIC_CLOCK, consume=(_...)->nothing,
-        cancelled=()->false)
-    plan = Plan(input.run, input.reference, input.probes, input.measurements,
-        input.frames_per_probe, input.settling, input.timeouts)
-    procedure = Procedure(plan, consume, clock, cancelled, nothing, Inf, UInt64(0), 1,
-        nothing, Codec.Responses[], nothing, false, false, nothing, nothing, nothing)
+function Procedure(
+    input::Plan;
+    clock = Common.MONOTONIC_CLOCK,
+    consume = (_...)->nothing,
+    cancelled = ()->false,
+)
+    plan = Plan(
+        input.run,
+        input.reference,
+        input.probes,
+        input.measurements,
+        input.frames_per_probe,
+        input.settling,
+        input.timeouts,
+    )
+    procedure = Procedure(
+        plan,
+        consume,
+        clock,
+        cancelled,
+        nothing,
+        Inf,
+        UInt64(0),
+        1,
+        nothing,
+        Codec.Responses[],
+        nothing,
+        false,
+        false,
+        nothing,
+        nothing,
+        nothing,
+    )
     Hsm.dispatch!(procedure, :Started)
     return procedure
 end
 
 # Handler helpers construct commands and update facts, never dispatch/transition.
 function _issue!(p::Procedure, action::Codec.AbstractAction)
-    deadline = Float64(Common.monotonic_seconds(p.clock)) + _timeout(action, p.plan.timeouts) / 1e9
+    deadline =
+        Float64(Common.monotonic_seconds(p.clock)) + _timeout(action, p.plan.timeouts) / 1e9
     isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
     p.serial = Base.Checked.checked_add(p.serial, UInt64(1))
     p.command = Codec.Command(p.plan.run, p.serial, action)
@@ -280,7 +316,8 @@ end
 
 _issue_probe!(p::Procedure) =
     _issue!(p, Codec.Adopt(UInt32(p.probe - 1), copy(p.plan.probes[p.probe])))
-_issue_restore!(p::Procedure) = _issue!(p, Codec.Restore(copy(p.plan.reference), p.plan.settling))
+_issue_restore!(p::Procedure) =
+    _issue!(p, Codec.Restore(copy(p.plan.reference), p.plan.settling))
 
 function _record_failure!(p::Procedure, reason::AbstractString)
     p.failure === nothing && (p.failure = String(reason))
@@ -302,22 +339,29 @@ end
 
 function _finish!(p::Procedure, released::Bool)
     phase = released ? (p.failure === nothing ? "complete" : "aborted") : "fault"
-    p.result = Result(p.plan.run, phase, p.restoration_confirmed,
-        p.restoration_confirmed && released, p.failure, p.recovery_failure,
-        phase == "complete" ? p.responses : Codec.Responses[])
+    p.result = Result(
+        p.plan.run,
+        phase,
+        p.restoration_confirmed,
+        p.restoration_confirmed && released,
+        p.failure,
+        p.recovery_failure,
+        phase == "complete" ? p.responses : Codec.Responses[],
+    )
     p.command = nothing
     return nothing
 end
 
 function _completion_error(p::Procedure, completion)
     command = something(p.command)
-    if completion.run != command.run || completion.serial != command.serial ||
-            !ActionClient._valid_result(command.action, completion.result)
-        return (; reason="Endpoint", known=false)
+    if completion.run != command.run ||
+       completion.serial != command.serial ||
+       !ActionClient._valid_result(command.action, completion.result)
+        return (; reason = "Endpoint", known = false)
     end
     isfinite(completion.at) || throw(ArgumentError("completion time is not finite"))
     if completion.at >= p.deadline
-        return (; reason="TimedOut($(_phase(command.action)))", known=true)
+        return (; reason = "TimedOut($(_phase(command.action)))", known = true)
     end
     return nothing
 end
@@ -327,7 +371,8 @@ function _accepted_result!(p::Procedure, completion)
     return _terminal(completion.result)
 end
 
-_snapshot(batch::Codec.Responses) = Codec.Responses(copy(batch.values), copy(batch.exposures), batch.valid)
+_snapshot(batch::Codec.Responses) =
+    Codec.Responses(copy(batch.values), copy(batch.exposures), batch.valid)
 
 # Deliver the single owned batch outside run-to-completion dispatch, so a
 # consumer can call cancel! without recursively dispatching the same machine.
@@ -340,7 +385,7 @@ function _dispatch_completion!(p::Procedure, completion)
         try
             p.consume(p.probe, batch)
         catch
-            Hsm.dispatch!(p, :Failed, (; reason="Processing", known=true))
+            Hsm.dispatch!(p, :Failed, (; reason = "Processing", known = true))
             return p.command
         end
         Hsm.dispatch!(p, :Consumed)
@@ -355,7 +400,7 @@ Report an endpoint or consumer failure. An unknown in-flight outcome faults
 without another submission. A known outcome permits one restoration/release
 attempt, unless that recovery is already in progress. No automatic retry.
 """
-function fail!(p::Procedure, reason::AbstractString; known::Bool=false)
+function fail!(p::Procedure, reason::AbstractString; known::Bool = false)
     Hsm.dispatch!(p, :Failed, (; reason, known))
     return p.command
 end
@@ -384,7 +429,12 @@ Deliver one correlated terminal action result and return the next command, or
 Malformed scientific evidence with a known terminal action requests recovery.
 The transport adapter remains responsible for owner/controller correlation.
 """
-function complete!(p::Procedure, run::UInt64, serial::UInt64, result::Codec.AbstractResult;
-        at::Float64=Float64(Common.monotonic_seconds(p.clock)))
+function complete!(
+    p::Procedure,
+    run::UInt64,
+    serial::UInt64,
+    result::Codec.AbstractResult;
+    at::Float64 = Float64(Common.monotonic_seconds(p.clock)),
+)
     return _dispatch_completion!(p, (; run, serial, result, at))
 end

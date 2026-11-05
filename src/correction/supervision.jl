@@ -22,8 +22,10 @@ function duration(value::Integer, name)
         throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
     return UInt64(value)
 end
-duration(value, name) = throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
-duration(::Bool, name) = throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
+duration(value, name) =
+    throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
+duration(::Bool, name) =
+    throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
 
 """Explicit clipping thresholds and monotonic-time limits.
 
@@ -46,15 +48,28 @@ struct Configuration
     enabled::Bool
     action::Symbol
 
-    function Configuration(; trip_fraction, clear_fraction, persistence_ns,
-            max_gap_ns, enabled::Bool=true, action::Symbol=:monitor_only)
+    function Configuration(;
+        trip_fraction,
+        clear_fraction,
+        persistence_ns,
+        max_gap_ns,
+        enabled::Bool = true,
+        action::Symbol = :monitor_only,
+    )
         trip, clear = fraction(trip_fraction), fraction(clear_fraction)
         trip !== nothing && clear !== nothing && clear < trip ||
             throw(ArgumentError("clipping fractions must satisfy 0 ≤ clear < trip ≤ 1"))
-        action in (:monitor_only, :hold, :restore_reference) ||
-            throw(ArgumentError("action must be :monitor_only, :hold or :restore_reference"))
-        return new(trip, clear, duration(persistence_ns, "persistence_ns"),
-            duration(max_gap_ns, "max_gap_ns"), enabled, action)
+        action in (:monitor_only, :hold, :restore_reference) || throw(
+            ArgumentError("action must be :monitor_only, :hold or :restore_reference"),
+        )
+        return new(
+            trip,
+            clear,
+            duration(persistence_ns, "persistence_ns"),
+            duration(max_gap_ns, "max_gap_ns"),
+            enabled,
+            action,
+        )
     end
 end
 
@@ -91,16 +106,29 @@ mutable struct Supervisor
     trip_reason::Union{Nothing,Symbol}
 
     function Supervisor(configuration::Configuration, owner_instance)
-        owner(owner_instance) || throw(ArgumentError("owner incarnation must be positive and fit Int64"))
-        return new(configuration, Int64(owner_instance), false, 0, 0, 0, nothing,
-            false, 0, false, nothing)
+        owner(owner_instance) ||
+            throw(ArgumentError("owner incarnation must be positive and fit Int64"))
+        return new(
+            configuration,
+            Int64(owner_instance),
+            false,
+            0,
+            0,
+            0,
+            nothing,
+            false,
+            0,
+            false,
+            nothing,
+        )
     end
 end
 
 """Return `:Disabled`, `:Unknown`, `:Clear`, `:Pending` or retained `:Tripped`."""
-state(supervisor::Supervisor) = !supervisor.configuration.enabled ? :Disabled :
-    supervisor.tripped ? :Tripped : supervisor.last_fraction === nothing ? :Unknown :
-    supervisor.pending ? :Pending : :Clear
+state(supervisor::Supervisor) =
+    !supervisor.configuration.enabled ? :Disabled :
+    supervisor.tripped ? :Tripped :
+    supervisor.last_fraction === nothing ? :Unknown : supervisor.pending ? :Pending : :Clear
 
 """Return the latched trip cause, or `nothing` before a trip/after explicit rearm."""
 reason(supervisor::Supervisor) = supervisor.trip_reason
@@ -126,8 +154,14 @@ invalid headers preserve the last trusted sequence/time. A gap starts a new
 persistence interval using the current valid sample. While tripped, valid
 observations only update evidence for explicit rearm and return `:none`.
 """
-function observe!(supervisor::Supervisor, owner_instance, sequence, sample_ns,
-        clipping_fraction; now_ns)
+function observe!(
+    supervisor::Supervisor,
+    owner_instance,
+    sequence,
+    sample_ns,
+    clipping_fraction;
+    now_ns,
+)
     configuration = supervisor.configuration
     configuration.enabled || return Recommendation(:none, :disabled, false)
     owner(owner_instance) && owner_instance == supervisor.owner_instance ||
@@ -136,23 +170,30 @@ function observe!(supervisor::Supervisor, owner_instance, sequence, sample_ns,
         return reject!(supervisor, :malformed_sample)
     sequence, sample_ns, now_ns = UInt64(sequence), UInt64(sample_ns), UInt64(now_ns)
     sample_ns <= now_ns || return reject!(supervisor, :future_sample)
-    if supervisor.has_sample && (sequence <= supervisor.last_sequence ||
-            sample_ns <= supervisor.last_sample_ns || now_ns < supervisor.last_observed_ns)
+    if supervisor.has_sample && (
+        sequence <= supervisor.last_sequence ||
+        sample_ns <= supervisor.last_sample_ns ||
+        now_ns < supervisor.last_observed_ns
+    )
         return reject!(supervisor, :stale_sample)
     end
     now_ns - sample_ns <= configuration.max_gap_ns ||
         return reject!(supervisor, :stale_sample)
-    contiguous = !supervisor.has_sample ||
-        (sequence - supervisor.last_sequence == 1 &&
-         sample_ns - supervisor.last_sample_ns <= configuration.max_gap_ns &&
-         now_ns - supervisor.last_observed_ns <= configuration.max_gap_ns)
+    contiguous =
+        !supervisor.has_sample || (
+            sequence - supervisor.last_sequence == 1 &&
+            sample_ns - supervisor.last_sample_ns <= configuration.max_gap_ns &&
+            now_ns - supervisor.last_observed_ns <= configuration.max_gap_ns
+        )
     supervisor.has_sample = true
     supervisor.last_sequence = sequence
     supervisor.last_sample_ns = sample_ns
     supervisor.last_observed_ns = now_ns
     supervisor.last_fraction = fraction(clipping_fraction)
-    supervisor.last_fraction === nothing && return reject!(supervisor,
-        clipping_fraction === nothing ? :missing_feedback : :malformed_feedback)
+    supervisor.last_fraction === nothing && return reject!(
+        supervisor,
+        clipping_fraction === nothing ? :missing_feedback : :malformed_feedback,
+    )
     if !contiguous
         supervisor.pending = false
         supervisor.pending_since_ns = 0
@@ -165,7 +206,8 @@ function observe!(supervisor::Supervisor, owner_instance, sequence, sample_ns,
         supervisor.pending = true
         supervisor.pending_since_ns = sample_ns
     end
-    if supervisor.pending && sample_ns - supervisor.pending_since_ns >= configuration.persistence_ns
+    if supervisor.pending &&
+       sample_ns - supervisor.pending_since_ns >= configuration.persistence_ns
         supervisor.tripped = true
         supervisor.trip_reason = :persistent_clipping
         return Recommendation(configuration.action, supervisor.trip_reason, true)
@@ -182,14 +224,17 @@ This clears only supervision's latch; it neither closes the scientific loop nor
 establishes that coordinator recovery or device settling actually completed.
 """
 function rearm!(supervisor::Supervisor, owner_instance, sequence; now_ns)
-    supervisor.tripped && owner(owner_instance) &&
-        owner_instance == supervisor.owner_instance && unsigned(sequence) &&
-        sequence == supervisor.last_sequence && unsigned(now_ns) || return false
+    supervisor.tripped &&
+    owner(owner_instance) &&
+    owner_instance == supervisor.owner_instance &&
+    unsigned(sequence) &&
+    sequence == supervisor.last_sequence &&
+    unsigned(now_ns) || return false
     now_ns = UInt64(now_ns)
     now_ns >= supervisor.last_observed_ns &&
-        now_ns - supervisor.last_sample_ns <= supervisor.configuration.max_gap_ns &&
-        supervisor.last_fraction !== nothing &&
-        supervisor.last_fraction <= supervisor.configuration.clear_fraction || return false
+    now_ns - supervisor.last_sample_ns <= supervisor.configuration.max_gap_ns &&
+    supervisor.last_fraction !== nothing &&
+    supervisor.last_fraction <= supervisor.configuration.clear_fraction || return false
     supervisor.tripped = false
     supervisor.trip_reason = nothing
     supervisor.pending = false

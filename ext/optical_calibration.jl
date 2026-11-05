@@ -10,89 +10,133 @@ include("optical_measurements.jl")
 include("optical_coordinates.jl")
 
 "Prepare only the declared physical mirror response, with its exact bindings."
-function physical_mirror_response(upstream,upstream_configuration,mirror;simulation_graph="calibration",
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
-    geometry = IC.mirror(upstream,upstream_configuration,mirror)
-    document = IC.graph_document(upstream,upstream_configuration;simulation_graph)
-    nodes = filter(node -> node["name"] == mirror,document["nodes"])
-    length(nodes) == 1 || throw(ArgumentError("calibration must select one declared upstream mirror component"))
+function physical_mirror_response(
+    upstream,
+    upstream_configuration,
+    mirror;
+    simulation_graph = "calibration",
+    target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
+)
+    geometry = IC.mirror(upstream, upstream_configuration, mirror)
+    document = IC.graph_document(upstream, upstream_configuration; simulation_graph)
+    nodes = filter(node -> node["name"] == mirror, document["nodes"])
+    length(nodes) == 1 || throw(
+        ArgumentError("calibration must select one declared upstream mirror component"),
+    )
     node = only(nodes)
     # Select the existing typed node unchanged, including its construction and
     # parameter bindings. This preserves grid/coordinate/measured response and
     # physical command order instead of recreating an influence-function model.
-    inputs = filter(entry -> entry["destination"] == mirror*".pdm_command",document["inputs"])
-    length(inputs) == 1 || throw(ArgumentError("mirror must have one complete physical command input"))
-    selected_input = merge(only(inputs),Dict("name"=>"command"))
-    parameters = filter(entry -> startswith(entry["destination"],mirror*"."),get(document,"parameters",[]))
-    response_document = Dict("schema_version"=>1,"name"=>"optical_calibration_mirror",
-        "nodes"=>[node],"inputs"=>[selected_input],"parameters"=>parameters,
-        "outputs"=>[Dict("name"=>"opd","source"=>mirror*".surface_opd")])
-    owner = Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt)
-    owner === nothing && throw(ArgumentError("AOS optical preparation extension is unavailable"))
+    inputs =
+        filter(entry -> entry["destination"] == mirror*".pdm_command", document["inputs"])
+    length(inputs) == 1 ||
+        throw(ArgumentError("mirror must have one complete physical command input"))
+    selected_input = merge(only(inputs), Dict("name"=>"command"))
+    parameters = filter(
+        entry -> startswith(entry["destination"], mirror*"."),
+        get(document, "parameters", []),
+    )
+    response_document = Dict(
+        "schema_version"=>1,
+        "name"=>"optical_calibration_mirror",
+        "nodes"=>[node],
+        "inputs"=>[selected_input],
+        "parameters"=>parameters,
+        "outputs"=>[Dict("name"=>"opd", "source"=>mirror*".surface_opd")],
+    )
+    owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    owner === nothing &&
+        throw(ArgumentError("AOS optical preparation extension is unavailable"))
     factories = owner.configured_graph_node_types()
-    names = unique(vcat([Symbol(selected_input["binding"])],
-        Symbol[Symbol(entry["binding"]) for entry in parameters],
-        owner.configuration_binding_names(response_document,factories)))
-    bindings = owner.prepare_bindings(upstream,upstream_configuration,names;target,target_names=names)
-    definition = HIL.load_algorithm_graph(response_document;bindings,node_types=factories)
-    execution = owner.instrument_execution(target,nothing)
-    mirror_graph = HIL.prepare_algorithm_graph(definition;target,execution)
+    names = unique(
+        vcat(
+            [Symbol(selected_input["binding"])],
+            Symbol[Symbol(entry["binding"]) for entry in parameters],
+            owner.configuration_binding_names(response_document, factories),
+        ),
+    )
+    bindings = owner.prepare_bindings(
+        upstream,
+        upstream_configuration,
+        names;
+        target,
+        target_names = names,
+    )
+    definition =
+        HIL.load_algorithm_graph(response_document; bindings, node_types = factories)
+    execution = owner.instrument_execution(target, nothing)
+    mirror_graph = HIL.prepare_algorithm_graph(definition; target, execution)
 
-    surface = command -> begin
-        HIL._with_prepared_device_execution_context(mirror_graph.context) do
-            copyto!(HIL.graph_input(mirror_graph,:command),command)
+    surface =
+        command -> begin
+            HIL._with_prepared_device_execution_context(mirror_graph.context) do
+                copyto!(HIL.graph_input(mirror_graph, :command), command)
+            end
+            HIL.step_graph!(mirror_graph)
+            HIL._with_prepared_device_execution_context(mirror_graph.context) do
+                Array(HIL.graph_output(mirror_graph, :opd))
+            end
         end
-        HIL.step_graph!(mirror_graph)
-        HIL._with_prepared_device_execution_context(mirror_graph.context) do
-            Array(HIL.graph_output(mirror_graph,:opd))
-        end
-    end
-    return (;geometry,node,mirror_graph,surface)
+    return (; geometry, node, mirror_graph, surface)
 end
 
-function optical_selection_binding(binding,directory,label)
-    required = ("kind","path","hdu","axes","type","shape","sha256")
+function optical_selection_binding(binding, directory, label)
+    required = ("kind", "path", "hdu", "axes", "type", "shape", "sha256")
     if Set(keys(binding)) == Set(("binding",))
-        validate_optical_binding_name(binding["binding"],label)
+        validate_optical_binding_name(binding["binding"], label)
         return nothing
     end
-    IC.fields(binding,required,required,label)
-    validate_optical_binding_digest(binding["kind"],binding["sha256"],label)
-    IC._validate_artifact_values(binding,directory,label)
+    IC.fields(binding, required, required, label)
+    validate_optical_binding_digest(binding["kind"], binding["sha256"], label)
+    IC._validate_artifact_values(binding, directory, label)
     return nothing
 end
 
 "An authored selected detector rectangle; inclusive one-based row and column bounds."
-function optical_rectangle_mask(selection, shape=nothing)
-    IC.fields(selection,("kind","rows","columns"),("kind","rows","columns"),"optical pixel rectangle")
-    selection["kind"] == "rectangle" || throw(ArgumentError("unsupported optical pixel rectangle"))
-    for key in ("rows","columns")
+function optical_rectangle_mask(selection, shape = nothing)
+    IC.fields(
+        selection,
+        ("kind", "rows", "columns"),
+        ("kind", "rows", "columns"),
+        "optical pixel rectangle",
+    )
+    selection["kind"] == "rectangle" ||
+        throw(ArgumentError("unsupported optical pixel rectangle"))
+    for key in ("rows", "columns")
         bounds = selection[key]
         validate_optical_rectangle_bounds(bounds)
     end
     shape === nothing && return nothing
-    length(shape) == 2 && selection["rows"][2] <= shape[1] && selection["columns"][2] <= shape[2] ||
+    length(shape) == 2 &&
+    selection["rows"][2] <= shape[1] &&
+    selection["columns"][2] <= shape[2] ||
         throw(ArgumentError("optical pixel rectangle exceeds the prepared detector image"))
     mask = falses(shape)
-    mask[selection["rows"][1]:selection["rows"][2],selection["columns"][1]:selection["columns"][2]] .= true
+    mask[
+        selection["rows"][1]:selection["rows"][2],
+        selection["columns"][1]:selection["columns"][2],
+    ] .= true
     return mask
 end
 
 "Load an explicitly typed, hashed binary selection without inferring its geometry."
-function optical_binary_binding(declaration,configured,binding,label; rank=nothing)
+function optical_binary_binding(declaration, configured, binding, label; rank = nothing)
     if Set(keys(binding)) == Set(("binding",))
         bindings = declaration.document["bindings"]
-        haskey(bindings,binding["binding"]) || throw(ArgumentError("$label names an unknown simulation binding"))
+        haskey(bindings, binding["binding"]) ||
+            throw(ArgumentError("$label names an unknown simulation binding"))
         binding = bindings[binding["binding"]]
-        optical_selection_binding(binding,declaration.directory,label)
+        optical_selection_binding(binding, declaration.directory, label)
     end
     if rank !== nothing
-        binding["kind"] == "fits" && length(binding["shape"]) == rank &&
-            get(binding,"axes",nothing) == collect(1:rank) ||
-            throw(ArgumentError("$label requires an explicitly ordered rank-$rank FITS binding"))
+        binding["kind"] == "fits" &&
+        length(binding["shape"]) == rank &&
+        get(binding, "axes", nothing) == collect(1:rank) || throw(
+            ArgumentError("$label requires an explicitly ordered rank-$rank FITS binding"),
+        )
     end
-    values = IC.binding_values(declaration,configured,binding)
-    all(value -> value == 0 || value == 1,values) && any(!iszero,values) ||
+    values = IC.binding_values(declaration, configured, binding)
+    all(value -> value == 0 || value == 1, values) && any(!iszero, values) ||
         throw(ArgumentError("$label must contain a nonempty binary selection"))
     return values .!= 0
 end
@@ -101,267 +145,572 @@ end
 function verify_optical_mirror_identity(source, calibration, mirror)
     function mirror_contract(document)
         nodes = filter(node -> node["name"] == mirror, document["nodes"])
-        length(nodes) == 1 || throw(ArgumentError("source and calibration require one physical mirror node"))
-        parameters = filter(row -> startswith(row["destination"], mirror * "."), get(document,"parameters",[]))
-        inputs = filter(row -> row["destination"] == mirror * ".pdm_command", document["inputs"])
-        length(inputs) == 1 || throw(ArgumentError("physical mirror requires one complete command input"))
-        return (;node=only(nodes), parameters=sort(parameters;by=row->row["destination"]),
-            command_binding=only(inputs)["binding"])
+        length(nodes) == 1 ||
+            throw(ArgumentError("source and calibration require one physical mirror node"))
+        parameters = filter(
+            row -> startswith(row["destination"], mirror * "."),
+            get(document, "parameters", []),
+        )
+        inputs =
+            filter(row -> row["destination"] == mirror * ".pdm_command", document["inputs"])
+        length(inputs) == 1 ||
+            throw(ArgumentError("physical mirror requires one complete command input"))
+        return (;
+            node = only(nodes),
+            parameters = sort(parameters; by = row->row["destination"]),
+            command_binding = only(inputs)["binding"],
+        )
     end
     mirror_contract(source) == mirror_contract(calibration) ||
         throw(ArgumentError("calibration mirror differs from executed physical mirror"))
     return nothing
 end
 
-function verify_clocked_calibration_inputs(response,options,optical_simulation,calibration_settings,owner_settings,branches,paths)
+function verify_clocked_calibration_inputs(
+    response,
+    options,
+    optical_simulation,
+    calibration_settings,
+    owner_settings,
+    branches,
+    paths,
+)
     validate_clocked_response(response, options)
-    optical_simulation == options.plant.definition || throw(ArgumentError("calibration optical model differs from owner"))
-    calibration_settings == owner_settings || throw(ArgumentError("calibration optical settings differ from owner"))
-    Set(string.(keys(branches))) ⊆ Set(keys(paths)) && all(name -> getproperty(branches,name) == string(name),keys(branches)) ||
+    optical_simulation == options.plant.definition ||
+        throw(ArgumentError("calibration optical model differs from owner"))
+    calibration_settings == owner_settings ||
+        throw(ArgumentError("calibration optical settings differ from owner"))
+    Set(string.(keys(branches))) ⊆ Set(keys(paths)) &&
+    all(name -> getproperty(branches, name) == string(name), keys(branches)) ||
         throw(ArgumentError("calibration branches differ from owner optical paths"))
     return nothing
 end
 
 "Validate the physical completion and its direct actuator order before calibration."
-validate_optical_completion(matrix,direct,healthy) = throw(DimensionMismatch("completion must map declared direct commands to the complete physical mirror"))
-function validate_optical_completion(matrix::AbstractMatrix{Float32},direct::AbstractVector{Bool},healthy::AbstractVector{Bool})
-        size(matrix,1) == length(direct) == length(healthy) && count(direct) == size(matrix,2) && any(direct) ||
-        throw(DimensionMismatch("completion must map declared direct commands to the complete physical mirror"))
-    all(isfinite,matrix) && all(healthy[direct]) && all(iszero,matrix[.!healthy,:]) ||
-        throw(ArgumentError("completion must be finite and leave unhealthy actuators uncommanded"))
+validate_optical_completion(matrix, direct, healthy) = throw(
+    DimensionMismatch(
+        "completion must map declared direct commands to the complete physical mirror",
+    ),
+)
+function validate_optical_completion(
+    matrix::AbstractMatrix{Float32},
+    direct::AbstractVector{Bool},
+    healthy::AbstractVector{Bool},
+)
+    size(matrix, 1) == length(direct) == length(healthy) &&
+    count(direct) == size(matrix, 2) &&
+    any(direct) || throw(
+        DimensionMismatch(
+            "completion must map declared direct commands to the complete physical mirror",
+        ),
+    )
+    all(isfinite, matrix) && all(healthy[direct]) && all(iszero, matrix[.!healthy, :]) || throw(
+        ArgumentError(
+            "completion must be finite and leave unhealthy actuators uncommanded",
+        ),
+    )
     indices = findall(direct)
-    matrix[indices,:] == Matrix{Float32}(LA.I,length(indices),length(indices)) ||
+    matrix[indices, :] == Matrix{Float32}(LA.I, length(indices), length(indices)) ||
         throw(ArgumentError("completion direct rows must preserve physical command order"))
     return indices
 end
 
-function optical_completion_binding(declaration,configured,selection,healthy)
+function optical_completion_binding(declaration, configured, selection, healthy)
     binding = declaration.document["bindings"][selection["binding"]]
-    get(binding,"kind",nothing) == "fits" && get(binding,"type",nothing) == "Float32" &&
-        length(get(binding,"shape",[])) == 2 && get(binding,"axes",nothing) == [1,2] ||
-        throw(ArgumentError("completion requires a typed rank-2 FITS binding with explicit axes"))
-    optical_selection_binding(binding,declaration.directory,"command completion")
-    matrix = Matrix{Float32}(IC.binding_values(declaration,configured,binding))
-    direct = vec(optical_binary_binding(declaration,configured,Dict("binding"=>selection["controlled"]),"direct actuator selection";rank=1))
-    indices = validate_optical_completion(matrix,direct,healthy)
-    return (;matrix,indices,binding, direct_binding=declaration.document["bindings"][selection["controlled"]])
+    get(binding, "kind", nothing) == "fits" &&
+    get(binding, "type", nothing) == "Float32" &&
+    length(get(binding, "shape", [])) == 2 &&
+    get(binding, "axes", nothing) == [1, 2] || throw(
+        ArgumentError("completion requires a typed rank-2 FITS binding with explicit axes"),
+    )
+    optical_selection_binding(binding, declaration.directory, "command completion")
+    matrix = Matrix{Float32}(IC.binding_values(declaration, configured, binding))
+    direct = vec(
+        optical_binary_binding(
+            declaration,
+            configured,
+            Dict("binding"=>selection["controlled"]),
+            "direct actuator selection";
+            rank = 1,
+        ),
+    )
+    indices = validate_optical_completion(matrix, direct, healthy)
+    return (;
+        matrix,
+        indices,
+        binding,
+        direct_binding = declaration.document["bindings"][selection["controlled"]],
+    )
 end
 
-node_parameters(declaration,configured,response,mirror) = get(IC.graph_document(declaration,configured;
-    simulation_graph=get(response,"graph","calibration")),"parameters",[])
+node_parameters(declaration, configured, response, mirror) = get(
+    IC.graph_document(
+        declaration,
+        configured;
+        simulation_graph = get(response, "graph", "calibration"),
+    ),
+    "parameters",
+    [],
+)
 
 "Prepare existing native mirror and optical graph owners without a core or service."
-function optical_callbacks(upstream_simulation::AbstractString, optical_simulation::AbstractString;
-        mirror::AbstractString, branches::NamedTuple, upstream_settings=Dict(), settings=Dict(),
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice(), chopping=NamedTuple(), publication_plan=nothing,
-        mirror_response=nothing, pixel_selections=nothing)
+function optical_callbacks(
+    upstream_simulation::AbstractString,
+    optical_simulation::AbstractString;
+    mirror::AbstractString,
+    branches::NamedTuple,
+    upstream_settings = Dict(),
+    settings = Dict(),
+    target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
+    chopping = NamedTuple(),
+    publication_plan = nothing,
+    mirror_response = nothing,
+    pixel_selections = nothing,
+)
     validate_optical_target(target)
     upstream = IC.load_simulation(upstream_simulation)
     optical = IC.load_simulation(optical_simulation)
-    upstream_configuration = IC.settings(upstream,upstream_settings)
-    output = get(upstream.instrument.document,"optical_output",nothing)
-    input = get(optical.instrument.document,"optical_input",nothing)
+    upstream_configuration = IC.settings(upstream, upstream_settings)
+    output = get(upstream.instrument.document, "optical_output", nothing)
+    input = get(optical.instrument.document, "optical_input", nothing)
     mirror_response !== nothing || (validate_optical_pupil_interfaces(output, input))
-    response=physical_mirror_response(upstream,upstream_configuration,mirror;target,
-        simulation_graph=mirror_response === nothing ? "calibration" : get(mirror_response,"graph","calibration"))
-    (;geometry,node,mirror_graph,surface)=response
+    response=physical_mirror_response(
+        upstream,
+        upstream_configuration,
+        mirror;
+        target,
+        simulation_graph = mirror_response === nothing ? "calibration" :
+                           get(mirror_response, "graph", "calibration"),
+    )
+    (; geometry, node, mirror_graph, surface)=response
     observations = get(optical.document, "observations", Dict())
     # Declared detector observations must use the same exposure owner as the
     # clocked simulator. Legacy intensity-only references retain their path.
-    exposure_plant = isempty(observations) ? nothing :
+    exposure_plant =
+        isempty(observations) ? nothing :
         IC.prepare_external_pupil(optical_simulation; settings, target, chopping)
     observation_units = Dict(string(name)=>"1" for name in keys(branches))
     observation_schemas = Dict{String,String}()
     if exposure_plant !== nothing
-        all(name -> getproperty(branches,name) == string(name), keys(branches)) ||
+        all(name -> getproperty(branches, name) == string(name), keys(branches)) ||
             throw(ArgumentError("detector calibration must select physical optical paths"))
         for (name, entry) in observations
-            hasproperty(branches,Symbol(name)) || continue
-            graph = IC.graph_document(optical,IC.settings(optical,settings);simulation_graph=entry["graph"])
-            detector = only(node for node in graph["nodes"] if node["name"] == entry["detector"])
+            hasproperty(branches, Symbol(name)) || continue
+            graph = IC.graph_document(
+                optical,
+                IC.settings(optical, settings);
+                simulation_graph = entry["graph"],
+            )
+            detector =
+                only(node for node in graph["nodes"] if node["name"] == entry["detector"])
             config = detector["config"]
-            observation_units[name] = get(config,"bits",nothing) === nothing ? "electron" : "adu"
+            observation_units[name] =
+                get(config, "bits", nothing) === nothing ? "electron" : "adu"
             observation_schemas[name] = config["frame_schema"]
-            get(config,"photon_noise",true) === false && get(config,"readout_noise",false) === false &&
-                all(key -> get(config,key,0) == 0, ("dark_current_e_per_pixel_s","glow_e_per_pixel_s")) ||
-                throw(ArgumentError("optical reference calibration requires noise-free detector observations"))
+            get(config, "photon_noise", true) === false &&
+            get(config, "readout_noise", false) === false &&
+            all(
+                key -> get(config, key, 0) == 0,
+                ("dark_current_e_per_pixel_s", "glow_e_per_pixel_s"),
+            ) || throw(
+                ArgumentError(
+                    "optical reference calibration requires noise-free detector observations",
+                ),
+            )
         end
     end
-    systems = exposure_plant === nothing ? map(branch -> IC.prepare_system(optical_simulation;settings,
-        simulation_graph=String(branch),target),branches) :
-        map(name -> (;graph=getproperty(exposure_plant.graphs,Symbol(name))), branches)
-    unfringed_systems = exposure_plant === nothing ? map(selection ->
-        IC.prepare_system(optical_simulation;settings,simulation_graph=selection.unfringed_graph,target), chopping) :
-        NamedTuple{keys(chopping)}(map(name -> (;graph=getproperty(exposure_plant.observations,name).chopping.unfringed), keys(chopping)))
-    amplitude_binding = mirror_response === nothing ? nothing : get(mirror_response,"pupil_amplitude",nothing)
+    systems =
+        exposure_plant === nothing ?
+        map(
+            branch -> IC.prepare_system(
+                optical_simulation;
+                settings,
+                simulation_graph = String(branch),
+                target,
+            ),
+            branches,
+        ) :
+        map(name -> (; graph = getproperty(exposure_plant.graphs, Symbol(name))), branches)
+    unfringed_systems =
+        exposure_plant === nothing ?
+        map(
+            selection -> IC.prepare_system(
+                optical_simulation;
+                settings,
+                simulation_graph = selection.unfringed_graph,
+                target,
+            ),
+            chopping,
+        ) :
+        NamedTuple{keys(chopping)}(
+            map(
+                name -> (;
+                    graph = getproperty(exposure_plant.observations, name).chopping.unfringed
+                ),
+                keys(chopping),
+            ),
+        )
+    amplitude_binding =
+        mirror_response === nothing ? nothing :
+        get(mirror_response, "pupil_amplitude", nothing)
     amplitude = if amplitude_binding === nothing
-        Matrix{Float32}(IC.binding_values(upstream,upstream_configuration,
-            Dict("kind"=>"pupil_amplitude","resolution"=>"pupil_resolution","type"=>"Float32")))
+        Matrix{Float32}(
+            IC.binding_values(
+                upstream,
+                upstream_configuration,
+                Dict(
+                    "kind"=>"pupil_amplitude",
+                    "resolution"=>"pupil_resolution",
+                    "type"=>"Float32",
+                ),
+            ),
+        )
     else
         binding = upstream.document["bindings"][amplitude_binding]
         # The declared optical amplitude is [y,x]; pack! expects native [x,y].
-        permutedims(Matrix{Float32}(IC.binding_values(upstream,upstream_configuration,binding)))
+        permutedims(
+            Matrix{Float32}(IC.binding_values(upstream, upstream_configuration, binding)),
+        )
     end
-    support = mirror_response === nothing ? IC.binding_values(upstream,upstream_configuration,
-        Dict("kind"=>"pupil_support","resolution"=>"pupil_resolution")) .!= 0 :
-        optical_binary_binding(upstream,upstream_configuration,mirror_response["support"],"mirror normalization support";rank=2)
-    response_input = mirror_response === nothing ? :pupil_opd : Symbol(mirror_response["input"])
+    support =
+        mirror_response === nothing ?
+        IC.binding_values(
+            upstream,
+            upstream_configuration,
+            Dict("kind"=>"pupil_support", "resolution"=>"pupil_resolution"),
+        ) .!= 0 :
+        optical_binary_binding(
+            upstream,
+            upstream_configuration,
+            mirror_response["support"],
+            "mirror normalization support";
+            rank = 2,
+        )
+    response_input =
+        mirror_response === nothing ? :pupil_opd : Symbol(mirror_response["input"])
     pixel_masks = map(keys(branches)) do name
         pixel_selections === nothing && return nothing
         selection = pixel_selections[string(name)]
-        get(selection,"kind",nothing) == "rectangle" ?
-            optical_rectangle_mask(selection,size(HIL.graph_output(getproperty(systems,name).graph,:intensity))) :
-            optical_binary_binding(optical,IC.settings(optical,settings),selection,"optical pixel selection";rank=2)
+        get(selection, "kind", nothing) == "rectangle" ?
+        optical_rectangle_mask(
+            selection,
+            size(HIL.graph_output(getproperty(systems, name).graph, :intensity)),
+        ) :
+        optical_binary_binding(
+            optical,
+            IC.settings(optical, settings),
+            selection,
+            "optical pixel selection";
+            rank = 2,
+        )
     end
     pixel_masks = NamedTuple{keys(branches)}(pixel_masks)
-    packet = zeros(Float32,2,size(amplitude,2),size(amplitude,1))
-    for system in (values(systems)...,values(unfringed_systems)...)
-        size(HIL.graph_input(system.graph,:pupil_opd)) == size(packet)[2:3] ||
+    packet = zeros(Float32, 2, size(amplitude, 2), size(amplitude, 1))
+    for system in (values(systems)..., values(unfringed_systems)...)
+        size(HIL.graph_input(system.graph, :pupil_opd)) == size(packet)[2:3] ||
             throw(DimensionMismatch("upstream and optical pupil grids differ"))
         HIL._with_prepared_device_execution_context(system.graph.context) do
-            optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
-                HIL.graph_input(system.graph,:pupil_amplitude),packet,zeros(Float32,size(amplitude)),amplitude)
+            optical_pupil_inputs!(
+                HIL.graph_input(system.graph, :pupil_opd),
+                HIL.graph_input(system.graph, :pupil_amplitude),
+                packet,
+                zeros(Float32, size(amplitude)),
+                amplitude,
+            )
         end
     end
-    observe_system = (system,opd) -> begin
-        HIL._with_prepared_device_execution_context(system.graph.context) do
-            optical_pupil_inputs!(HIL.graph_input(system.graph,:pupil_opd),
-                HIL.graph_input(system.graph,:pupil_amplitude),packet,
-                response_input === :pupil_opd ? opd : zeros(Float32,size(amplitude)),amplitude)
+    observe_system =
+        (system, opd) -> begin
+            HIL._with_prepared_device_execution_context(system.graph.context) do
+                optical_pupil_inputs!(
+                    HIL.graph_input(system.graph, :pupil_opd),
+                    HIL.graph_input(system.graph, :pupil_amplitude),
+                    packet,
+                    response_input === :pupil_opd ? opd : zeros(Float32, size(amplitude)),
+                    amplitude,
+                )
+                if response_input !== :pupil_opd
+                    destination = HIL.graph_input(system.graph, response_input)
+                    size(destination) == size(opd) || throw(
+                        DimensionMismatch(
+                            "physical mirror input differs from measured OPD raster",
+                        ),
+                    )
+                    copyto!(destination, opd)
+                end
+            end
+            HIL.step_graph!(system.graph)
+            HIL._with_prepared_device_execution_context(system.graph.context) do
+                Array(HIL.graph_output(system.graph, :intensity))
+            end
+        end
+    observe_pairs =
+        opd -> begin
+            if exposure_plant === nothing
+                return NamedTuple{keys(systems)}(
+                    map(keys(systems)) do name
+                        fringed = observe_system(getproperty(systems, name), opd)
+                        unfringed =
+                            hasproperty(chopping, name) ?
+                            observe_system(getproperty(unfringed_systems, name), opd) :
+                            nothing
+                        (; fringed, unfringed)
+                    end,
+                )
+            end
+            AG = AdaptiveOpticsSim.AlgorithmGraphs
+            AG.reset_external_pupil!(exposure_plant)
+            optical_pupil_inputs!(
+                view(packet, 1, :, :),
+                view(packet, 2, :, :),
+                packet,
+                response_input === :pupil_opd ? opd : zeros(Float32, size(amplitude)),
+                amplitude,
+            )
             if response_input !== :pupil_opd
-                destination = HIL.graph_input(system.graph,response_input)
-                size(destination) == size(opd) || throw(DimensionMismatch("physical mirror input differs from measured OPD raster"))
-                copyto!(destination,opd)
-            end
-        end
-        HIL.step_graph!(system.graph)
-        HIL._with_prepared_device_execution_context(system.graph.context) do
-            Array(HIL.graph_output(system.graph,:intensity))
-        end
-    end
-    observe_pairs = opd -> begin
-        if exposure_plant === nothing
-            return NamedTuple{keys(systems)}(map(keys(systems)) do name
-                fringed = observe_system(getproperty(systems,name),opd)
-                unfringed = hasproperty(chopping,name) ? observe_system(getproperty(unfringed_systems,name),opd) : nothing
-                (;fringed,unfringed)
-            end)
-        end
-        AG = AdaptiveOpticsSim.AlgorithmGraphs
-        AG.reset_external_pupil!(exposure_plant)
-        optical_pupil_inputs!(view(packet,1,:,:),view(packet,2,:,:),packet,
-            response_input === :pupil_opd ? opd : zeros(Float32,size(amplitude)),amplitude)
-        if response_input !== :pupil_opd
-            for system in (values(systems)...,values(unfringed_systems)...)
-                HIL._with_prepared_device_execution_context(system.graph.context) do
-                    destination = HIL.graph_input(system.graph,response_input)
-                    size(destination) == size(opd) || throw(DimensionMismatch("physical mirror input differs from measured OPD raster"))
-                    copyto!(destination,opd)
+                for system in (values(systems)..., values(unfringed_systems)...)
+                    HIL._with_prepared_device_execution_context(system.graph.context) do
+                        destination = HIL.graph_input(system.graph, response_input)
+                        size(destination) == size(opd) || throw(
+                            DimensionMismatch(
+                                "physical mirror input differs from measured OPD raster",
+                            ),
+                        )
+                        copyto!(destination, opd)
+                    end
                 end
             end
-        end
-        frames = Dict{Tuple{Symbol,Symbol},Any}()
-        durations = map(exposure -> exposure.duration_ns, values(exposure_plant.exposures))
-        interval = minimum(durations)
-        steps = cld(2maximum(durations),interval)
-        0 < steps <= 4096 || throw(ArgumentError("static optical calibration exceeds 4096 exposure samples"))
-        emit = (name,image,metadata) -> begin
-            hasproperty(branches,name) || return
-            role = get(metadata,:chopped_image_kind,:fringed)
-            get!(frames,(name,role)) do
-                HIL._with_prepared_device_execution_context(getproperty(exposure_plant.graphs,name).context) do
-                    Array(image)
+            frames = Dict{Tuple{Symbol,Symbol},Any}()
+            durations =
+                map(exposure -> exposure.duration_ns, values(exposure_plant.exposures))
+            interval = minimum(durations)
+            steps = cld(2maximum(durations), interval)
+            0 < steps <= 4096 || throw(
+                ArgumentError("static optical calibration exceeds 4096 exposure samples"),
+            )
+            emit =
+                (name, image, metadata) -> begin
+                    hasproperty(branches, name) || return
+                    role = get(metadata, :chopped_image_kind, :fringed)
+                    get!(frames, (name, role)) do
+                        HIL._with_prepared_device_execution_context(
+                            getproperty(exposure_plant.graphs, name).context,
+                        ) do
+                            Array(image)
+                        end
+                    end
                 end
+            for index = 1:steps
+                accepted = AG.step_external_pupil!(
+                    emit,
+                    exposure_plant,
+                    view(packet, 1, :, :),
+                    view(packet, 2, :, :),
+                    AG.ModelTimestamp((index-1)*interval),
+                    AG.ModelDuration(interval);
+                    domain = ntuple(_ -> UInt8(1), 16),
+                    generation = UInt64(1),
+                    sequence = UInt64(index),
+                )
+                accepted || throw(
+                    ArgumentError("static optical calibration pupil sample rejected"),
+                )
+                all(
+                    name ->
+                        haskey(frames, (name, :fringed)) && (
+                            !hasproperty(chopping, name) ||
+                            haskey(frames, (name, :unfringed))
+                        ),
+                    keys(branches),
+                ) && break
             end
+            return NamedTuple{keys(branches)}(
+                map(keys(branches)) do name
+                    (;
+                        fringed = frames[(name, :fringed)],
+                        unfringed = hasproperty(chopping, name) ?
+                                    frames[(name, :unfringed)] : nothing,
+                    )
+                end,
+            )
         end
-        for index in 1:steps
-            accepted = AG.step_external_pupil!(emit,exposure_plant,view(packet,1,:,:),view(packet,2,:,:),
-                AG.ModelTimestamp((index-1)*interval),AG.ModelDuration(interval);
-                domain=ntuple(_ -> UInt8(1),16),generation=UInt64(1),sequence=UInt64(index))
-            accepted || throw(ArgumentError("static optical calibration pupil sample rejected"))
-            all(name -> haskey(frames,(name,:fringed)) &&
-                (!hasproperty(chopping,name) || haskey(frames,(name,:unfringed))),keys(branches)) && break
-        end
-        return NamedTuple{keys(branches)}(map(keys(branches)) do name
-            (;fringed=frames[(name,:fringed)],
-                unfringed=hasproperty(chopping,name) ? frames[(name,:unfringed)] : nothing)
-        end)
-    end
     frontends = NamedTuple()
     chopped_references = NamedTuple()
     if !isempty(chopping)
-        publication_plan === nothing && throw(ArgumentError("chopped calibration requires retained authored measurement graphs"))
-        flat_opd = surface(zeros(Float32,length(HIL.graph_input(mirror_graph,:command))))
+        publication_plan === nothing && throw(
+            ArgumentError(
+                "chopped calibration requires retained authored measurement graphs",
+            ),
+        )
+        flat_opd = surface(zeros(Float32, length(HIL.graph_input(mirror_graph, :command))))
         flat_pairs = observe_pairs(flat_opd)
         flats = map(keys(chopping)) do name
-            fringed = optical_image(getproperty(flat_pairs,name).fringed)
-            unfringed = optical_image(getproperty(flat_pairs,name).unfringed)
-            size(fringed) == size(unfringed) || throw(DimensionMismatch("chopped optical variants differ in image shape"))
+            fringed = optical_image(getproperty(flat_pairs, name).fringed)
+            unfringed = optical_image(getproperty(flat_pairs, name).unfringed)
+            size(fringed) == size(unfringed) || throw(
+                DimensionMismatch("chopped optical variants differ in image shape"),
+            )
             difference = fringed .- unfringed
-            all(isfinite,difference) || throw(ArgumentError("chopped reference difference must remain finite Float32"))
-            (;fringed,unfringed,difference)
+            all(isfinite, difference) || throw(
+                ArgumentError("chopped reference difference must remain finite Float32"),
+            )
+            (; fringed, unfringed, difference)
         end
         chopped_references = NamedTuple{keys(chopping)}(flats)
-        frontends = NamedTuple{keys(chopping)}(map(keys(chopping)) do name
-            physical = optical.instrument.document["optical_paths"][string(name)]["sensor"]
-            duration = round(Int64,optical.instrument.document["wavefront_sensors"][physical]["acquisition"]["exposure_duration_s"]*1e9)
-            document = optical_chopped_template(publication_plan,name;mask=getproperty(pixel_masks,name))
-            prepare_optical_chopped_frontend(document,name,getproperty(chopped_references,name).difference,
-                duration,getproperty(chopping,name).trigger_high_is_fringed;mask=getproperty(pixel_masks,name))
-        end)
+        frontends = NamedTuple{keys(chopping)}(
+            map(keys(chopping)) do name
+                physical =
+                    optical.instrument.document["optical_paths"][string(name)]["sensor"]
+                duration = round(
+                    Int64,
+                    optical.instrument.document["wavefront_sensors"][physical]["acquisition"]["exposure_duration_s"]*1e9,
+                )
+                document = optical_chopped_template(
+                    publication_plan,
+                    name;
+                    mask = getproperty(pixel_masks, name),
+                )
+                prepare_optical_chopped_frontend(
+                    document,
+                    name,
+                    getproperty(chopped_references, name).difference,
+                    duration,
+                    getproperty(chopping, name).trigger_high_is_fringed;
+                    mask = getproperty(pixel_masks, name),
+                )
+            end,
+        )
     end
-    observe = opd -> begin
-        images = observe_pairs(opd)
-        NamedTuple{keys(systems)}(map(keys(systems)) do name
-            pair = getproperty(images,name)
-            hasproperty(frontends,name) ? optical_chopped_measurement!(getproperty(frontends,name),pair.fringed,pair.unfringed) : pair.fringed
-        end)
-    end
-    coordinates = if mirror_response !== nothing && haskey(mirror_response,"coordinates")
+    observe =
+        opd -> begin
+            images = observe_pairs(opd)
+            NamedTuple{keys(systems)}(
+                map(keys(systems)) do name
+                    pair = getproperty(images, name)
+                    hasproperty(frontends, name) ?
+                    optical_chopped_measurement!(
+                        getproperty(frontends, name),
+                        pair.fringed,
+                        pair.unfringed,
+                    ) : pair.fringed
+                end,
+            )
+        end
+    coordinates = if mirror_response !== nothing && haskey(mirror_response, "coordinates")
         name = mirror_response["coordinates"]
-        parameter = only(filter(row -> row["destination"] == mirror*".actuator_coordinates",node_parameters(upstream,upstream_configuration,mirror_response,mirror)))
-        parameter["binding"] == name || throw(ArgumentError("calibration coordinates differ from the physical mirror binding"))
+        parameter = only(
+            filter(
+                row -> row["destination"] == mirror*".actuator_coordinates",
+                node_parameters(upstream, upstream_configuration, mirror_response, mirror),
+            ),
+        )
+        parameter["binding"] == name || throw(
+            ArgumentError(
+                "calibration coordinates differ from the physical mirror binding",
+            ),
+        )
         binding = upstream.document["bindings"][name]
-        optical_selection_binding(binding,upstream.directory,"registered actuator coordinates")
-        get(binding,"type",nothing) == "Float32" && get(binding,"shape",nothing) == [2,length(HIL.graph_input(mirror_graph,:command))] && get(binding,"axes",nothing) == [1,2] ||
-            throw(ArgumentError("registered coordinates require Float32 [x,y] by physical command"))
-        permutedims(Matrix{Float32}(IC.binding_values(upstream,upstream_configuration,binding))) ./ Float32(mirror_response["coordinate_radius"])
+        optical_selection_binding(
+            binding,
+            upstream.directory,
+            "registered actuator coordinates",
+        )
+        get(binding, "type", nothing) == "Float32" &&
+        get(binding, "shape", nothing) ==
+        [2, length(HIL.graph_input(mirror_graph, :command))] &&
+        get(binding, "axes", nothing) == [1, 2] || throw(
+            ArgumentError(
+                "registered coordinates require Float32 [x,y] by physical command",
+            ),
+        )
+        permutedims(
+            Matrix{Float32}(IC.binding_values(upstream, upstream_configuration, binding)),
+        ) ./ Float32(mirror_response["coordinate_radius"])
     else
-        permutedims(IC.actuator_coordinates(geometry.description; pupil_registration=geometry.registration))
+        permutedims(
+            IC.actuator_coordinates(
+                geometry.description;
+                pupil_registration = geometry.registration,
+            ),
+        )
     end
-    provenance = Dict("upstream_prescription_identity"=>IC.prescription_identity(upstream,upstream_configuration),
-        "optical_prescription_identity"=>IC.prescription_identity(optical,IC.settings(optical,settings)),
-        "mirror_component"=>String(mirror),"mirror_node_type"=>node["type"],
-        "branches"=>Dict(string(name)=>String(branch) for (name,branch) in pairs(branches)),
-        "pupil_registration"=>IC.json_value(geometry.registration),"backend"=>string(typeof(target)),
+    provenance = Dict(
+        "upstream_prescription_identity"=>IC.prescription_identity(
+            upstream,
+            upstream_configuration,
+        ),
+        "optical_prescription_identity"=>IC.prescription_identity(
+            optical,
+            IC.settings(optical, settings),
+        ),
+        "mirror_component"=>String(mirror),
+        "mirror_node_type"=>node["type"],
+        "branches"=>Dict(
+            string(name)=>String(branch) for (name, branch) in pairs(branches)
+        ),
+        "pupil_registration"=>IC.json_value(geometry.registration),
+        "backend"=>string(typeof(target)),
         "pupil_coordinates"=>"upstream[x,y] via native PupilOutput.pack! to packet[quantity,y,x] and optical input[y,x]",
-        "mirror_opd_element_type"=>string(eltype(HIL.graph_output(mirror_graph,:opd))),
+        "mirror_opd_element_type"=>string(eltype(HIL.graph_output(mirror_graph, :opd))),
         "mirror_response_input"=>String(response_input),
-        "mirror_response"=>mirror_response === nothing ? Dict("input"=>"pupil_opd") : IC.json_value(mirror_response),
-        "observation_quantity"=>Dict(string(name)=>haskey(observations,string(name)) ?
-            "declared_detector_output" : "relative_intensity" for name in keys(branches)),
-        "observation_units"=>observation_units,"observation_frame_schema"=>observation_schemas,
-        "optical_intensity_element_type"=>Dict(string(name)=>string(eltype(HIL.graph_output(system.graph,:intensity)))
-            for (name,system) in pairs(systems)))
+        "mirror_response"=>mirror_response === nothing ? Dict("input"=>"pupil_opd") :
+                           IC.json_value(mirror_response),
+        "observation_quantity"=>Dict(
+            string(name)=>haskey(observations, string(name)) ?
+                          "declared_detector_output" : "relative_intensity" for
+            name in keys(branches)
+        ),
+        "observation_units"=>observation_units,
+        "observation_frame_schema"=>observation_schemas,
+        "optical_intensity_element_type"=>Dict(
+            string(name)=>string(eltype(HIL.graph_output(system.graph, :intensity))) for
+            (name, system) in pairs(systems)
+        ),
+    )
     if !isempty(chopping)
         provenance["chopping"] = IC.json_value(chopping)
-        provenance["measurement_frontend_identity"] = Dict(string(name)=>optical_frontend_identity(frontend.document)
-            for (name,frontend) in pairs(frontends))
-        provenance["chopped_reference_identity"] = Dict(string(name)=>
-            PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(reference.difference))
-            for (name,reference) in pairs(chopped_references))
+        provenance["measurement_frontend_identity"] = Dict(
+            string(name)=>optical_frontend_identity(frontend.document) for
+            (name, frontend) in pairs(frontends)
+        )
+        provenance["chopped_reference_identity"] = Dict(
+            string(name) => PipeWireAORTC.InstrumentDefinition.scientific_identity(
+                IC.canonical(reference.difference),
+            ) for (name, reference) in pairs(chopped_references)
+        )
         provenance["measurement_scope"] = "matched static F/U pairs; no exposure-command feedforward or concurrent-loop qualification"
     end
-    return (;surface,observe,mirror_graph,systems,unfringed_systems,
-        actuator_coordinates=coordinates,pupil_support=support,pixel_masks,provenance,chopped_references,exposure_plant)
+    return (;
+        surface,
+        observe,
+        mirror_graph,
+        systems,
+        unfringed_systems,
+        actuator_coordinates = coordinates,
+        pupil_support = support,
+        pixel_masks,
+        provenance,
+        chopped_references,
+        exposure_plant,
+    )
 end
 
-function optical_pupil_inputs!(opd_destination,amplitude_destination,packet,opd,amplitude)
-    owner = Base.get_extension(PipeWireAORTC,:PipeWireAORTCAOSExt)
-    owner === nothing && throw(ArgumentError("native scientific pupil publisher is unavailable"))
-    owner.PupilOutput.pack!(packet,Matrix{Float32}(opd),amplitude)
-    copyto!(opd_destination,Matrix{eltype(opd_destination)}(view(packet,1,:,:)))
-    copyto!(amplitude_destination,Matrix{eltype(amplitude_destination)}(view(packet,2,:,:)))
+function optical_pupil_inputs!(
+    opd_destination,
+    amplitude_destination,
+    packet,
+    opd,
+    amplitude,
+)
+    owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    owner === nothing &&
+        throw(ArgumentError("native scientific pupil publisher is unavailable"))
+    owner.PupilOutput.pack!(packet, Matrix{Float32}(opd), amplitude)
+    copyto!(opd_destination, Matrix{eltype(opd_destination)}(view(packet, 1, :, :)))
+    copyto!(
+        amplitude_destination,
+        Matrix{eltype(amplitude_destination)}(view(packet, 2, :, :)),
+    )
     return nothing
 end
 
@@ -369,49 +718,78 @@ end
 # Encode finite Float32 calibration arrays in a fixed little-endian representation.
 function optical_identity(projection, physical_to_modes, branches)
     io = IOBuffer()
-    for (name,array) in (("command-projection",projection),("physical-to-modes",physical_to_modes),
-            ((string(name)*"-"*field,getproperty(branch,Symbol(field)))
-                for (name,branch) in pairs(branches) for field in optical_identity_fields(branch.measurement_kind))...)
-        write(io,string(name,":",join(size(array),","),"\n"))
+    for (name, array) in (
+        ("command-projection", projection),
+        ("physical-to-modes", physical_to_modes),
+        (
+            (string(name)*"-"*field, getproperty(branch, Symbol(field))) for
+            (name, branch) in pairs(branches) for
+            field in optical_identity_fields(branch.measurement_kind)
+        )...,
+    )
+        write(io, string(name, ":", join(size(array), ","), "\n"))
         if eltype(array) === Bool
-            write(io,UInt8.(vec(array)))
+            write(io, UInt8.(vec(array)))
         else
-            write(io,reinterpret(UInt8,htol.(reinterpret(UInt32,vec(Float32.(array))))))
+            write(io, reinterpret(UInt8, htol.(reinterpret(UInt32, vec(Float32.(array))))))
         end
     end
     return "sha256:"*bytes2hex(Calibration.sha256(take!(io)))
 end
 
-optical_image(image; signed::Bool=false) = throw(ArgumentError("optical observation must be finite, and intensity observations must be nonnegative"))
-function optical_image(image::AbstractMatrix{<:AbstractFloat}; signed::Bool=false)
-    !isempty(image) &&
-        all(isfinite,image) && (signed || all(>=(0),image)) || throw(ArgumentError(
-        "optical observation must be finite, and intensity observations must be nonnegative"))
+optical_image(image; signed::Bool = false) = throw(
+    ArgumentError(
+        "optical observation must be finite, and intensity observations must be nonnegative",
+    ),
+)
+function optical_image(image::AbstractMatrix{<:AbstractFloat}; signed::Bool = false)
+    !isempty(image) && all(isfinite, image) && (signed || all(>=(0), image)) || throw(
+        ArgumentError(
+            "optical observation must be finite, and intensity observations must be nonnegative",
+        ),
+    )
     converted = Matrix{Float32}(image)
-    all(isfinite,converted) || throw(ArgumentError("optical intensity must remain finite Float32"))
+    all(isfinite, converted) ||
+        throw(ArgumentError("optical intensity must remain finite Float32"))
     return converted
 end
 
 function optical_pixels(image, mask)
-    size(image) == size(mask) || throw(DimensionMismatch("optical pixel mask differs from image"))
-    return Float32[image[row,column] for row in axes(image,1) for column in axes(image,2) if mask[row,column]]
+    size(image) == size(mask) ||
+        throw(DimensionMismatch("optical pixel mask differs from image"))
+    return Float32[
+        image[row, column] for row in axes(image, 1) for
+        column in axes(image, 2) if mask[row, column]
+    ]
 end
 
 "Selected pixel coordinates in the same row-major order as optical_pixels."
 function optical_centroid_coordinates(mask)
-    return reduce(vcat, (reshape(Float32[column,row],1,2)
-        for row in axes(mask,1) for column in axes(mask,2) if mask[row,column]))
+    return reduce(
+        vcat,
+        (
+            reshape(Float32[column, row], 1, 2) for row in axes(mask, 1) for
+            column in axes(mask, 2) if mask[row, column]
+        ),
+    )
 end
 
 "Measure the same Float32 accumulation and validity as center-of-gravity-f32."
-function optical_centroid(image, mask, coordinates=optical_centroid_coordinates(mask))
-    pixels = optical_pixels(optical_image(image),mask)
-    size(coordinates) == (length(pixels),2) || throw(DimensionMismatch("centroid coordinates differ from selected pixels"))
-    prepared = FGA.prepare_algorithm(FGA.CenterOfGravityF32,
-        FGA.CenterOfGravityF32Configuration(pixel_count=length(pixels),
-            initial_coordinates=[collect(row) for row in eachrow(coordinates)]))
-    centroid = zeros(Float32,2); flux = zeros(Float32,1); validity = zeros(Bool,1)
-    FGA.process!(centroid,flux,validity,prepared,pixels)
+function optical_centroid(image, mask, coordinates = optical_centroid_coordinates(mask))
+    pixels = optical_pixels(optical_image(image), mask)
+    size(coordinates) == (length(pixels), 2) ||
+        throw(DimensionMismatch("centroid coordinates differ from selected pixels"))
+    prepared = FGA.prepare_algorithm(
+        FGA.CenterOfGravityF32,
+        FGA.CenterOfGravityF32Configuration(
+            pixel_count = length(pixels),
+            initial_coordinates = [collect(row) for row in eachrow(coordinates)],
+        ),
+    )
+    centroid = zeros(Float32, 2)
+    flux = zeros(Float32, 1)
+    validity = zeros(Bool, 1)
+    FGA.process!(centroid, flux, validity, prepared, pixels)
     only(validity) && isfinite(only(flux)) && only(flux)>0 ||
         throw(ArgumentError("optical centroid requires finite positive selected flux"))
     return centroid
@@ -423,63 +801,93 @@ function optical_surface(surface, command, support)
     return Matrix{Float64}(opd)
 end
 
-optical_authority(branch_modes,mode_count) = throw(ArgumentError("branch_modes must explicitly name the optical branches"))
-function optical_authority(branch_modes::NamedTuple,mode_count)
+optical_authority(branch_modes, mode_count) =
+    throw(ArgumentError("branch_modes must explicitly name the optical branches"))
+function optical_authority(branch_modes::NamedTuple, mode_count)
     !isempty(branch_modes) ||
         throw(ArgumentError("branch_modes must explicitly name the optical branches"))
     selections = map(branch_modes) do modes
         values = collect(modes)
         !isempty(values) || throw(ArgumentError("invalid branch mode selection"))
-        foreach(i -> validate_optical_mode_index(i,mode_count),values)
-        length(unique(values)) == length(values) || throw(ArgumentError("invalid branch mode selection"))
+        foreach(i -> validate_optical_mode_index(i, mode_count), values)
+        length(unique(values)) == length(values) ||
+            throw(ArgumentError("invalid branch mode selection"))
         return Int.(values)
     end
     combined = vcat(values(selections)...)
-    sort(combined) == collect(1:mode_count) || throw(ArgumentError(
-        "branch mode selections must form an explicit disjoint complete partition"))
+    sort(combined) == collect(1:mode_count) || throw(
+        ArgumentError(
+            "branch mode selections must form an explicit disjoint complete partition",
+        ),
+    )
     return selections
 end
 
 "Subtract measured owned-mode components, then bound each native probe column."
 function optical_nulling_projection(calibration, name::Symbol; tsvd_rtol::Real)
-    hasproperty(calibration.branches,name) || throw(ArgumentError("unknown measurement nulling branch"))
-    branch = getproperty(calibration.branches,name)
+    hasproperty(calibration.branches, name) ||
+        throw(ArgumentError("unknown measurement nulling branch"))
+    branch = getproperty(calibration.branches, name)
     require_optical_centroid(branch.measurement_kind)
-    isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 || throw(ArgumentError("invalid measurement nulling TSVD cutoff"))
+    isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 ||
+        throw(ArgumentError("invalid measurement nulling TSVD cutoff"))
     P = Matrix{Float32}(calibration.projection)
     D = branch.interaction
     owned = branch.modes
-    unowned = setdiff(1:size(P,2),owned)
-    isempty(unowned) && throw(ArgumentError("measurement nulling requires unowned command modes"))
-    inverse = AdaptiveOpticsCalibration.process(AdaptiveOpticsCalibration.prepare(
-        AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol=Float32(tsvd_rtol)),
-        AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(size(D,1),length(owned),Float32)),
-        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:,owned]))
-    AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) == size(D,1) ||
-        throw(ArgumentError("owned centroid response must retain full row rank for measurement nulling"))
-    coefficients = Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)) * D[:,unowned]
-    P[:,unowned] .-= P[:,owned] * coefficients
-    scales = [maximum(abs,column) for column in eachcol(P)]
-    all(scale -> isfinite(scale) && scale > 0,scales) && all(isfinite,P) ||
-        throw(ArgumentError("measurement nulling produced null or nonfinite command columns"))
+    unowned = setdiff(1:size(P, 2), owned)
+    isempty(unowned) &&
+        throw(ArgumentError("measurement nulling requires unowned command modes"))
+    inverse = AdaptiveOpticsCalibration.process(
+        AdaptiveOpticsCalibration.prepare(
+            AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol = Float32(tsvd_rtol)),
+            AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
+                size(D, 1),
+                length(owned),
+                Float32,
+            ),
+        ),
+        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:, owned]),
+    )
+    AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) == size(D, 1) || throw(
+        ArgumentError(
+            "owned centroid response must retain full row rank for measurement nulling",
+        ),
+    )
+    coefficients =
+        Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)) *
+        D[:, unowned]
+    P[:, unowned] .-= P[:, owned] * coefficients
+    scales = [maximum(abs, column) for column in eachcol(P)]
+    all(scale -> isfinite(scale) && scale > 0, scales) && all(isfinite, P) || throw(
+        ArgumentError("measurement nulling produced null or nonfinite command columns"),
+    )
     P ./= permutedims(scales)
-    residual = LA.norm(D[:,unowned]-D[:,owned]*coefficients)
-    response_norm = LA.norm(D[:,unowned])
-    relative_null_residual = iszero(response_norm) ? (iszero(residual) ? 0.0 : Inf) : residual/response_norm
-    record = Dict{String,Any}("branch"=>string(name),"owned_modes"=>collect(owned),"unowned_modes"=>unowned,
+    residual = LA.norm(D[:, unowned]-D[:, owned]*coefficients)
+    response_norm = LA.norm(D[:, unowned])
+    relative_null_residual =
+        iszero(response_norm) ? (iszero(residual) ? 0.0 : Inf) : residual/response_norm
+    record = Dict{String,Any}(
+        "branch"=>string(name),
+        "owned_modes"=>collect(owned),
+        "unowned_modes"=>unowned,
         "source_calibration_identity"=>calibration.report["calibration_identity"],
-        "source_status"=>calibration.report["status"],"source_cross_talk"=>branch.cross_talk,
-        "source_held_out"=>deepcopy(calibration.report["held_out"]),"tsvd_rtol"=>tsvd_rtol,
+        "source_status"=>calibration.report["status"],
+        "source_cross_talk"=>branch.cross_talk,
+        "source_held_out"=>deepcopy(calibration.report["held_out"]),
+        "tsvd_rtol"=>tsvd_rtol,
         "retained_rank"=>AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
         "response_units"=>calibration.report["branches"][string(name)]["measurement_units"]*" / m OPD",
-        "owned_response"=>[collect(row) for row in eachrow(D[:,owned])],
-        "unowned_response"=>[collect(row) for row in eachrow(D[:,unowned])],
-        "coefficients"=>[collect(row) for row in eachrow(coefficients)],"coefficient_units"=>"1",
+        "owned_response"=>[collect(row) for row in eachrow(D[:, owned])],
+        "unowned_response"=>[collect(row) for row in eachrow(D[:, unowned])],
+        "coefficients"=>[collect(row) for row in eachrow(coefficients)],
+        "coefficient_units"=>"1",
         "relative_null_residual"=>relative_null_residual,
-        "column_scales"=>scales,"column_scale_units"=>calibration.report["physical_projection"]["command_projection_units"],
+        "column_scales"=>scales,
+        "column_scale_units"=>calibration.report["physical_projection"]["command_projection_units"],
         "construction_order"=>"source basis, measurement nulling, unit-maximum command columns, remeasured pupil RMS normalization",
-        "final_basis"=>"unowned modes include compensating owned components; pupil tip/tilt orthogonality is not imposed after measurement nulling")
-    return (;projection=P,record)
+        "final_basis"=>"unowned modes include compensating owned components; pupil tip/tilt orthogonality is not imposed after measurement nulling",
+    )
+    return (; projection = P, record)
 end
 
 """
@@ -512,242 +920,492 @@ commands; built-application preparation selects completed VDM coordinates when
 its recipe supplies command completion. Manually assembled results must retain
 these tags rather than relying on incidental diagnostic fields to select behavior.
 """
-function Calibration.calibrate_optical(surface, observe, command_projection::AbstractMatrix;
-        pupil_support::AbstractMatrix{Bool}, branch_modes::NamedTuple, pixel_masks::NamedTuple,
-        poke_m::Real, tsvd_rtol::Real, derivative_tolerance::Real=0.05,
-        reconstruction_tolerance::Real=0.05, require_observable::Bool=true,
-        provenance::AbstractDict=Dict{String,Any}(), held_out_coefficients=nothing,
-        signed_measurements::Tuple{Vararg{Symbol}}=(), centroid_measurements::Tuple{Vararg{Symbol}}=(),
-        measurement_nulling::Tuple{Vararg{Symbol}}=(), normalization_probe::Real=poke_m,
-        command_coordinates::AbstractOpticalCommandCoordinates=PhysicalCommandCoordinates())
-    Base.require_one_based_indexing(command_projection,pupil_support)
-    !isempty(command_projection) && all(isfinite,command_projection) && any(pupil_support) ||
-        throw(ArgumentError("optical command projection and pupil support must be finite and nonempty"))
+function Calibration.calibrate_optical(
+    surface,
+    observe,
+    command_projection::AbstractMatrix;
+    pupil_support::AbstractMatrix{Bool},
+    branch_modes::NamedTuple,
+    pixel_masks::NamedTuple,
+    poke_m::Real,
+    tsvd_rtol::Real,
+    derivative_tolerance::Real = 0.05,
+    reconstruction_tolerance::Real = 0.05,
+    require_observable::Bool = true,
+    provenance::AbstractDict = Dict{String,Any}(),
+    held_out_coefficients = nothing,
+    signed_measurements::Tuple{Vararg{Symbol}} = (),
+    centroid_measurements::Tuple{Vararg{Symbol}} = (),
+    measurement_nulling::Tuple{Vararg{Symbol}} = (),
+    normalization_probe::Real = poke_m,
+    command_coordinates::AbstractOpticalCommandCoordinates = PhysicalCommandCoordinates(),
+)
+    Base.require_one_based_indexing(command_projection, pupil_support)
+    !isempty(command_projection) &&
+    all(isfinite, command_projection) &&
+    any(pupil_support) || throw(
+        ArgumentError(
+            "optical command projection and pupil support must be finite and nonempty",
+        ),
+    )
     h = Float32(poke_m)
-    isfinite(h) && h > 0 && h/2 > 0 || throw(ArgumentError("poke_m must be finite positive Float32"))
-    isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 || throw(ArgumentError("invalid optical TSVD cutoff"))
-    all(x -> isfinite(x) && 0 < x < 1,(derivative_tolerance,reconstruction_tolerance)) ||
+    isfinite(h) && h > 0 && h/2 > 0 ||
+        throw(ArgumentError("poke_m must be finite positive Float32"))
+    isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 ||
+        throw(ArgumentError("invalid optical TSVD cutoff"))
+    all(x -> isfinite(x) && 0 < x < 1, (derivative_tolerance, reconstruction_tolerance)) ||
         throw(ArgumentError("optical tolerances must be finite and between zero and one"))
     projection = Matrix{Float32}(command_projection)
-    n = size(projection,2)
-    authority = optical_authority(branch_modes,n)
+    n = size(projection, 2)
+    authority = optical_authority(branch_modes, n)
     length(unique(signed_measurements)) == length(signed_measurements) &&
-        all(name -> haskey(authority,name),signed_measurements) ||
-        throw(ArgumentError("signed optical measurements must name distinct declared branches"))
-    length(unique(centroid_measurements)) == length(centroid_measurements) &&
-        all(name -> haskey(authority,name) && !(name in signed_measurements),centroid_measurements) ||
-        throw(ArgumentError("centroid measurements must name distinct unsigned optical branches"))
-    keys(pixel_masks) == keys(authority) || throw(ArgumentError("pixel masks must name every branch in order"))
-    length(measurement_nulling) <= 1 && all(name -> name in centroid_measurements,measurement_nulling) ||
+    all(name -> haskey(authority, name), signed_measurements) || throw(
+        ArgumentError("signed optical measurements must name distinct declared branches"),
+    )
+    length(unique(centroid_measurements)) == length(centroid_measurements) && all(
+        name -> haskey(authority, name) && !(name in signed_measurements),
+        centroid_measurements,
+    ) || throw(
+        ArgumentError("centroid measurements must name distinct unsigned optical branches"),
+    )
+    keys(pixel_masks) == keys(authority) ||
+        throw(ArgumentError("pixel masks must name every branch in order"))
+    length(measurement_nulling) <= 1 &&
+    all(name -> name in centroid_measurements, measurement_nulling) ||
         throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
     if !isempty(measurement_nulling)
-        options = (;pupil_support,branch_modes,pixel_masks,poke_m,tsvd_rtol,derivative_tolerance,
-            reconstruction_tolerance,held_out_coefficients,signed_measurements,centroid_measurements,normalization_probe,command_coordinates)
-        candidate = Calibration.calibrate_optical(surface,observe,command_projection;
-            options...,provenance,require_observable=false)
-        proposed = optical_nulling_projection(candidate,only(measurement_nulling);tsvd_rtol)
+        options = (;
+            pupil_support,
+            branch_modes,
+            pixel_masks,
+            poke_m,
+            tsvd_rtol,
+            derivative_tolerance,
+            reconstruction_tolerance,
+            held_out_coefficients,
+            signed_measurements,
+            centroid_measurements,
+            normalization_probe,
+            command_coordinates,
+        )
+        candidate = Calibration.calibrate_optical(
+            surface,
+            observe,
+            command_projection;
+            options...,
+            provenance,
+            require_observable = false,
+        )
+        proposed =
+            optical_nulling_projection(candidate, only(measurement_nulling); tsvd_rtol)
         provenance = deepcopy(Dict{String,Any}(provenance))
         provenance["measurement_nulling"] = proposed.record
-        basis = get(provenance,"basis",nothing)
+        basis = get(provenance, "basis", nothing)
         record_optical_nulling_order!(basis)
-        return Calibration.calibrate_optical(surface,observe,proposed.projection;
-            options...,provenance,require_observable)
+        return Calibration.calibrate_optical(
+            surface,
+            observe,
+            proposed.projection;
+            options...,
+            provenance,
+            require_observable,
+        )
     end
-    command = zeros(Float32,size(projection,1))
-    flat_opd = optical_surface(surface,command,pupil_support)
+    command = zeros(Float32, size(projection, 1))
+    flat_opd = optical_surface(surface, command, pupil_support)
     reference_images = observe(flat_opd)
     validate_optical_reference_branches(reference_images, authority)
-    signed = NamedTuple{keys(authority)}(map(name -> name in signed_measurements, keys(authority)))
-    references = map((image,allowed)->optical_image(image;signed=allowed),reference_images,signed)
-    masks = map(pixel_masks,references) do mask,image
+    signed = NamedTuple{keys(authority)}(
+        map(name -> name in signed_measurements, keys(authority)),
+    )
+    references = map(
+        (image, allowed)->optical_image(image; signed = allowed),
+        reference_images,
+        signed,
+    )
+    masks = map(pixel_masks, references) do mask, image
         validate_optical_pixel_mask(mask, image)
         Matrix{Bool}(mask)
     end
     probe = Float32(normalization_probe)
-    isfinite(probe) && probe > 0 || throw(ArgumentError("normalization probe must remain finite positive Float32"))
-    pupil_modes = zeros(Float64,count(pupil_support),n)
-    normalization = zeros(Float64,n)
-    for j in 1:n
-        command .= probe .* view(projection,:,j)
-        response = (optical_surface(surface,command,pupil_support) .- flat_opd)[pupil_support] ./ probe
+    isfinite(probe) && probe > 0 ||
+        throw(ArgumentError("normalization probe must remain finite positive Float32"))
+    pupil_modes = zeros(Float64, count(pupil_support), n)
+    normalization = zeros(Float64, n)
+    for j = 1:n
+        command .= probe .* view(projection, :, j)
+        response =
+            (optical_surface(surface, command, pupil_support) .- flat_opd)[pupil_support] ./
+            probe
         response .-= sum(response)/length(response)
-        rms = sqrt(sum(abs2,response)/length(response))
-        isfinite(rms) && rms > 0 || throw(ArgumentError("optical mode $j has null mirror response"))
+        rms = sqrt(sum(abs2, response)/length(response))
+        isfinite(rms) && rms > 0 ||
+            throw(ArgumentError("optical mode $j has null mirror response"))
         normalization[j] = rms
-        projection[:,j] ./= rms
-        pupil_modes[:,j] .= response ./ rms
+        projection[:, j] ./= rms
+        pupil_modes[:, j] .= response ./ rms
     end
-    all(isfinite,projection) || throw(ArgumentError("normalized optical projection overflowed Float32"))
+    all(isfinite, projection) ||
+        throw(ArgumentError("normalized optical projection overflowed Float32"))
     projection_inverse = AdaptiveOpticsCalibration.process(
         AdaptiveOpticsCalibration.prepare(
-            AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol=Float32(tsvd_rtol)),
-            AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(size(projection,1),n,Float32)),
-        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(projection))
+            AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol = Float32(tsvd_rtol)),
+            AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
+                size(projection, 1),
+                n,
+                Float32,
+            ),
+        ),
+        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(projection),
+    )
     AdaptiveOpticsCalibration.Reconstructors.effective_rank(projection_inverse) == n ||
-        throw(ArgumentError("physical command projection does not retain every declared mode"))
-    physical_to_modes = Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(projection_inverse))
-    measurement_kinds = NamedTuple{keys(authority)}(map(name -> name in centroid_measurements ?
-        CenterOfGravity() : SelectedPixels(),keys(authority)))
-    coordinates = map(optical_measurement_coordinates,measurement_kinds,masks)
-    measure = (image,name) -> optical_measurement(getproperty(measurement_kinds,name),image,
-        getproperty(masks,name),getproperty(coordinates,name),getproperty(signed,name))
-    reference_measurements = NamedTuple{keys(authority)}(map(name -> measure(getproperty(references,name),name),keys(authority)))
-    interactions = map(reference -> zeros(Float32,length(reference),n),reference_measurements)
-    half_interactions = map(similar,interactions)
-    for (amplitude,matrices) in ((h,interactions),(h/2,half_interactions)), j in 1:n
-        measurements = map((1f0,-1f0)) do sign
-            command .= (sign*amplitude) .* view(projection,:,j)
-            images = observe(optical_surface(surface,command,pupil_support))
+        throw(
+            ArgumentError(
+                "physical command projection does not retain every declared mode",
+            ),
+        )
+    physical_to_modes =
+        Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(projection_inverse))
+    measurement_kinds = NamedTuple{keys(authority)}(
+        map(
+            name ->
+                name in centroid_measurements ? CenterOfGravity() : SelectedPixels(),
+            keys(authority),
+        ),
+    )
+    coordinates = map(optical_measurement_coordinates, measurement_kinds, masks)
+    measure =
+        (image, name) -> optical_measurement(
+            getproperty(measurement_kinds, name),
+            image,
+            getproperty(masks, name),
+            getproperty(coordinates, name),
+            getproperty(signed, name),
+        )
+    reference_measurements = NamedTuple{keys(authority)}(
+        map(name -> measure(getproperty(references, name), name), keys(authority)),
+    )
+    interactions =
+        map(reference -> zeros(Float32, length(reference), n), reference_measurements)
+    half_interactions = map(similar, interactions)
+    for (amplitude, matrices) in ((h, interactions), (h/2, half_interactions)), j = 1:n
+        measurements = map((1.0f0, -1.0f0)) do sign
+            command .= (sign*amplitude) .* view(projection, :, j)
+            images = observe(optical_surface(surface, command, pupil_support))
             validate_optical_probe_branches(images, authority)
-            NamedTuple{keys(authority)}(map(name -> measure(getproperty(images,name),name),keys(authority)))
+            NamedTuple{keys(authority)}(
+                map(name -> measure(getproperty(images, name), name), keys(authority)),
+            )
         end
         for name in keys(authority)
-            getproperty(matrices,name)[:,j] .=
-                (getproperty(measurements[1],name) .- getproperty(measurements[2],name)) ./ (2amplitude)
+            getproperty(matrices, name)[:, j] .=
+                (getproperty(measurements[1], name) .- getproperty(measurements[2], name)) ./
+                (2amplitude)
         end
     end
     branches = map(keys(authority)) do name
-        D = getproperty(interactions,name)
-        half = getproperty(half_interactions,name)
-        selected = getproperty(authority,name)
+        D = getproperty(interactions, name)
+        half = getproperty(half_interactions, name)
+        selected = getproperty(authority, name)
         # A two-coordinate centroid estimates only its owned tip/tilt columns.
         # Other columns remain measured, so their cross-talk stays observable.
-        kind = getproperty(measurement_kinds,name)
-        fitted = optical_fitted_modes(kind,selected,n)
+        kind = getproperty(measurement_kinds, name)
+        fitted = optical_fitted_modes(kind, selected, n)
         inverse = AdaptiveOpticsCalibration.process(
             AdaptiveOpticsCalibration.prepare(
-                AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol=Float32(tsvd_rtol)),
-                AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(size(D,1),length(fitted),Float32)),
-            AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:,fitted]))
-        reconstructor = zeros(Float32,n,size(D,1))
-        reconstructor[fitted,:] .= AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)
-        selection = zeros(Float32,n,n)
+                AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(
+                    rtol = Float32(tsvd_rtol),
+                ),
+                AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
+                    size(D, 1),
+                    length(fitted),
+                    Float32,
+                ),
+            ),
+            AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:, fitted]),
+        )
+        reconstructor = zeros(Float32, n, size(D, 1))
+        reconstructor[fitted, :] .=
+            AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)
+        selection = zeros(Float32, n, n)
         for j in selected
-            selection[j,j] = 1
+            selection[j, j] = 1
         end
-        for j in setdiff(1:n,selected)
-            reconstructor[j,:] .= 0
+        for j in setdiff(1:n, selected)
+            reconstructor[j, :] .= 0
         end
         recovery = reconstructor*D
-        recovery_error = optical_recovery_error(kind,recovery,selection,selected)
-        derivative_error = LA.norm(D-half)/max(LA.norm(half),eps(Float32))
-        unowned = setdiff(1:n,selected)
-        cross_talk = isempty(unowned) ? 0.0 : LA.norm(recovery[selected,unowned])/sqrt(length(selected))
-        accepted = recovery_error <= reconstruction_tolerance && derivative_error <= derivative_tolerance
-        branch = (;reference=getproperty(references,name),mask=getproperty(masks,name),
-            interaction=D,half_interaction=half,reconstructor,selection,recovery,
-            modes=selected,retained_rank=AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
-            singular_values=AdaptiveOpticsCalibration.Reconstructors.singular_values(inverse),
-            recovery_error,derivative_error,cross_talk,accepted)
-        return optical_branch(kind,branch,getproperty(coordinates,name),getproperty(reference_measurements,name))
+        recovery_error = optical_recovery_error(kind, recovery, selection, selected)
+        derivative_error = LA.norm(D-half)/max(LA.norm(half), eps(Float32))
+        unowned = setdiff(1:n, selected)
+        cross_talk =
+            isempty(unowned) ? 0.0 :
+            LA.norm(recovery[selected, unowned])/sqrt(length(selected))
+        accepted =
+            recovery_error <= reconstruction_tolerance &&
+            derivative_error <= derivative_tolerance
+        branch = (;
+            reference = getproperty(references, name),
+            mask = getproperty(masks, name),
+            interaction = D,
+            half_interaction = half,
+            reconstructor,
+            selection,
+            recovery,
+            modes = selected,
+            retained_rank = AdaptiveOpticsCalibration.Reconstructors.effective_rank(
+                inverse,
+            ),
+            singular_values = AdaptiveOpticsCalibration.Reconstructors.singular_values(
+                inverse,
+            ),
+            recovery_error,
+            derivative_error,
+            cross_talk,
+            accepted,
+        )
+        return optical_branch(
+            kind,
+            branch,
+            getproperty(coordinates, name),
+            getproperty(reference_measurements, name),
+        )
     end
     branches = NamedTuple{keys(authority)}(branches)
-    accepted = all(branch -> branch.accepted,branches)
-    report = Dict{String,Any}("status"=>accepted ? "accepted" : "rejected",
+    accepted = all(branch -> branch.accepted, branches)
+    report = Dict{String,Any}(
+        "status"=>accepted ? "accepted" : "rejected",
         "scope"=>"simulation-local optical response calibration; not hardware calibration",
-        "normalization"=>"piston-removed pupil RMS OPD", "coefficient_units"=>"m OPD",
-        "measurement_element_type"=>"Float32","reconstructor_element_type"=>"Float32",
-        "command_count"=>size(projection,1),"mode_count"=>n,"poke_m"=>h,"normalization_probe"=>probe,
-        "tsvd_rtol"=>tsvd_rtol,"derivative_tolerance"=>derivative_tolerance,
-        "reconstruction_tolerance"=>reconstruction_tolerance,"provenance"=>Dict(provenance),
-        "branches"=>Dict(string(name)=>Dict("modes"=>branch.modes,"retained_rank"=>branch.retained_rank,
-            "recovery_error"=>branch.recovery_error,"derivative_error"=>branch.derivative_error,
-            "cross_talk"=>branch.cross_talk,"accepted"=>branch.accepted)
-            for (name,branch) in pairs(branches)))
-    for (name,branch) in pairs(branches)
+        "normalization"=>"piston-removed pupil RMS OPD",
+        "coefficient_units"=>"m OPD",
+        "measurement_element_type"=>"Float32",
+        "reconstructor_element_type"=>"Float32",
+        "command_count"=>size(projection, 1),
+        "mode_count"=>n,
+        "poke_m"=>h,
+        "normalization_probe"=>probe,
+        "tsvd_rtol"=>tsvd_rtol,
+        "derivative_tolerance"=>derivative_tolerance,
+        "reconstruction_tolerance"=>reconstruction_tolerance,
+        "provenance"=>Dict(provenance),
+        "branches"=>Dict(
+            string(name)=>Dict(
+                "modes"=>branch.modes,
+                "retained_rank"=>branch.retained_rank,
+                "recovery_error"=>branch.recovery_error,
+                "derivative_error"=>branch.derivative_error,
+                "cross_talk"=>branch.cross_talk,
+                "accepted"=>branch.accepted,
+            ) for (name, branch) in pairs(branches)
+        ),
+    )
+    for (name, branch) in pairs(branches)
         report["branches"][string(name)]["image_shape"] = collect(size(branch.reference))
-        report["branches"][string(name)]["measurement_units"] = get(get(provenance,"observation_units",Dict()),string(name),"1")
-        schemas = get(provenance,"observation_frame_schema",Dict())
-        haskey(schemas,string(name)) && (report["branches"][string(name)]["frame_schema"] = schemas[string(name)])
-        report["branches"][string(name)]["measurement_kind"] = optical_measurement_name(branch.measurement_kind,name in signed_measurements)
-        report["branches"][string(name)]["measurement_count"] = size(branch.interaction,1)
-        optical_measurement_report!(branch.measurement_kind,report["branches"][string(name)])
+        report["branches"][string(name)]["measurement_units"] =
+            get(get(provenance, "observation_units", Dict()), string(name), "1")
+        schemas = get(provenance, "observation_frame_schema", Dict())
+        haskey(schemas, string(name)) &&
+            (report["branches"][string(name)]["frame_schema"] = schemas[string(name)])
+        report["branches"][string(name)]["measurement_kind"] =
+            optical_measurement_name(branch.measurement_kind, name in signed_measurements)
+        report["branches"][string(name)]["measurement_count"] = size(branch.interaction, 1)
+        optical_measurement_report!(
+            branch.measurement_kind,
+            report["branches"][string(name)],
+        )
         report["branches"][string(name)]["selected_pixel_count"] = count(branch.mask)
         report["branches"][string(name)]["pixel_order"] = "row-major"
         report["branches"][string(name)]["singular_values"] = branch.singular_values
-        report["branches"][string(name)]["condition_number"] = maximum(branch.singular_values)/max(minimum(branch.singular_values),eps(Float32))
+        report["branches"][string(name)]["condition_number"] =
+            maximum(branch.singular_values)/max(
+                minimum(branch.singular_values),
+                eps(Float32),
+            )
     end
-    command_units = get(get(provenance,"mirror_response",Dict()),"command_units","m OPD")
-    report["physical_projection"] = Dict("command_projection_units"=>command_units*" / m OPD",
-        "physical_to_modes_units"=>"m OPD / "*command_units, "command_projection"=>"artifacts/command-projection.fits",
-        "physical_to_modes"=>"artifacts/physical-to-modes.fits","axes"=>[2,1],"type"=>"Float32",
-        "storage_order"=>"row-major","command_projection_shape"=>collect(size(projection)),
+    command_units =
+        get(get(provenance, "mirror_response", Dict()), "command_units", "m OPD")
+    report["physical_projection"] = Dict(
+        "command_projection_units"=>command_units*" / m OPD",
+        "physical_to_modes_units"=>"m OPD / "*command_units,
+        "command_projection"=>"artifacts/command-projection.fits",
+        "physical_to_modes"=>"artifacts/physical-to-modes.fits",
+        "axes"=>[2, 1],
+        "type"=>"Float32",
+        "storage_order"=>"row-major",
+        "command_projection_shape"=>collect(size(projection)),
         "physical_to_modes_shape"=>collect(size(physical_to_modes)),
-        "relative_inverse_residual"=>LA.norm(physical_to_modes*projection-Matrix{Float32}(LA.I,n,n))/sqrt(n))
-    report["calibration_identity"] = "sha256:"*bytes2hex(Calibration.sha256(join((
-        optical_identity(projection,physical_to_modes,branches),
-        PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(Dict(provenance)))),"\n")))
-    candidate = (;projection,physical_to_modes,pupil_modes,normalization,pupil_support=Matrix{Bool}(pupil_support),branches,report,command_coordinates)
-    coefficients = held_out_coefficients === nothing ?
-        Float32[h/(4sqrt(n)) * (column == 1 ? 1 : column == 2 ? (-1)^j : cos(j))
-            for j in 1:n,column in 1:3] : held_out_coefficients
-    validation = Calibration.validate_optical(surface,observe,candidate;
-        coefficients,reconstruction_tolerance)
-    report["validated_operating_domain"] = Dict("kind"=>"finite-held-out-mixtures",
-        "coefficient_units"=>"m OPD","probe_amplitudes_m"=>[h,h/2],
+        "relative_inverse_residual"=>LA.norm(
+            physical_to_modes*projection-Matrix{Float32}(LA.I, n, n),
+        )/sqrt(n),
+    )
+    report["calibration_identity"] =
+        "sha256:"*bytes2hex(
+            Calibration.sha256(
+                join(
+                    (
+                        optical_identity(projection, physical_to_modes, branches),
+                        PipeWireAORTC.InstrumentDefinition.scientific_identity(
+                            IC.canonical(Dict(provenance)),
+                        ),
+                    ),
+                    "\n",
+                ),
+            ),
+        )
+    candidate = (;
+        projection,
+        physical_to_modes,
+        pupil_modes,
+        normalization,
+        pupil_support = Matrix{Bool}(pupil_support),
+        branches,
+        report,
+        command_coordinates,
+    )
+    coefficients =
+        held_out_coefficients === nothing ?
+        Float32[
+            h/(4sqrt(n)) * (column == 1 ? 1 : column == 2 ? (-1)^j : cos(j)) for
+            j = 1:n, column = 1:3
+        ] : held_out_coefficients
+    validation = Calibration.validate_optical(
+        surface,
+        observe,
+        candidate;
+        coefficients,
+        reconstruction_tolerance,
+    )
+    report["validated_operating_domain"] = Dict(
+        "kind"=>"finite-held-out-mixtures",
+        "coefficient_units"=>"m OPD",
+        "probe_amplitudes_m"=>[h, h/2],
         "held_out_coefficients_m"=>[collect(row) for row in eachrow(coefficients)],
-        "held_out_coefficient_norms_m"=>[LA.norm(column) for column in eachcol(coefficients)],
-        "held_out_maximum_absolute_coefficient_m"=>maximum(abs,coefficients),
-        "scope"=>"only the listed finite mixtures; no complete coefficient box or concurrent-loop qualification")
-    report["held_out"] = Dict("accepted"=>validation.accepted,
-        "reconstruction_errors"=>validation.reconstruction_errors,"pupil_rms_ratios"=>validation.pupil_rms_ratios,
-        "scope"=>validation.scope)
+        "held_out_coefficient_norms_m"=>[
+            LA.norm(column) for column in eachcol(coefficients)
+        ],
+        "held_out_maximum_absolute_coefficient_m"=>maximum(abs, coefficients),
+        "scope"=>"only the listed finite mixtures; no complete coefficient box or concurrent-loop qualification",
+    )
+    report["held_out"] = Dict(
+        "accepted"=>validation.accepted,
+        "reconstruction_errors"=>validation.reconstruction_errors,
+        "pupil_rms_ratios"=>validation.pupil_rms_ratios,
+        "scope"=>validation.scope,
+    )
     accepted &= validation.accepted
     report["status"] = accepted ? "accepted" : "rejected"
-    require_observable && !accepted && throw(ArgumentError(
-        "optical calibration rejected: " * join(("$name rank=$(getproperty(branches,name).retained_rank) recovery=$(getproperty(branches,name).recovery_error) derivative=$(getproperty(branches,name).derivative_error)" for name in keys(branches)),"; ") *
-        "; held-out errors=$(validation.reconstruction_errors), pupil RMS ratios=$(validation.pupil_rms_ratios)"))
-    return merge(candidate,(;held_out_coefficients=Matrix{Float32}(coefficients),validation))
+    require_observable &&
+        !accepted &&
+        throw(
+            ArgumentError(
+                "optical calibration rejected: " *
+                join(
+                    (
+                        "$name rank=$(getproperty(branches,name).retained_rank) recovery=$(getproperty(branches,name).recovery_error) derivative=$(getproperty(branches,name).derivative_error)"
+                        for name in keys(branches)
+                    ),
+                    "; ",
+                ) *
+                "; held-out errors=$(validation.reconstruction_errors), pupil RMS ratios=$(validation.pupil_rms_ratios)",
+            ),
+        )
+    return merge(
+        candidate,
+        (; held_out_coefficients = Matrix{Float32}(coefficients), validation),
+    )
 end
 
 "Construct the explicit AOC sinusoidal physical-command basis before calibration."
-function Calibration.calibrate_optical(surface, observe;
-        actuator_coordinates::AbstractMatrix, controlled_actuators::AbstractVector{Bool},
-        spatial_frequencies::AbstractMatrix, provenance::AbstractDict=Dict{String,Any}(),
-        tip_tilt::Bool=false, command_coordinates::AbstractOpticalCommandCoordinates=PhysicalCommandCoordinates(), kwargs...)
-    size(actuator_coordinates,1) == length(controlled_actuators) && size(actuator_coordinates,2) == 2 ||
-        throw(DimensionMismatch("actuator coordinates require physical-command rows and x,y columns"))
-    any(controlled_actuators) || throw(ArgumentError("optical calibration requires controlled physical actuators"))
-    count = 2size(spatial_frequencies,1)
-    method = AdaptiveOpticsCalibration.ProbeBases.SpatialSinusoidalPushPull(ones(Float32,count);
-        normalization=:peak,minimum_sampled_peak=1e-6)
-    plan = AdaptiveOpticsCalibration.prepare(method,
-        AdaptiveOpticsCalibration.ProbeBases.SpatialSinusoidalSpecification(actuator_coordinates,spatial_frequencies))
+function Calibration.calibrate_optical(
+    surface,
+    observe;
+    actuator_coordinates::AbstractMatrix,
+    controlled_actuators::AbstractVector{Bool},
+    spatial_frequencies::AbstractMatrix,
+    provenance::AbstractDict = Dict{String,Any}(),
+    tip_tilt::Bool = false,
+    command_coordinates::AbstractOpticalCommandCoordinates = PhysicalCommandCoordinates(),
+    kwargs...,
+)
+    size(actuator_coordinates, 1) == length(controlled_actuators) &&
+    size(actuator_coordinates, 2) == 2 || throw(
+        DimensionMismatch(
+            "actuator coordinates require physical-command rows and x,y columns",
+        ),
+    )
+    any(controlled_actuators) ||
+        throw(ArgumentError("optical calibration requires controlled physical actuators"))
+    count = 2size(spatial_frequencies, 1)
+    method = AdaptiveOpticsCalibration.ProbeBases.SpatialSinusoidalPushPull(
+        ones(Float32, count);
+        normalization = :peak,
+        minimum_sampled_peak = 1e-6,
+    )
+    plan = AdaptiveOpticsCalibration.prepare(
+        method,
+        AdaptiveOpticsCalibration.ProbeBases.SpatialSinusoidalSpecification(
+            actuator_coordinates,
+            spatial_frequencies,
+        ),
+    )
     projection = Matrix{Float32}(transpose(plan.basis))
-    tip_tilt && (projection = hcat(Float32.(actuator_coordinates),projection))
-    projection[.!controlled_actuators,:] .= 0
-    tip_tilt_coefficients = zeros(Float32,2,count)
+    tip_tilt && (projection = hcat(Float32.(actuator_coordinates), projection))
+    projection[.!controlled_actuators, :] .= 0
+    tip_tilt_coefficients = zeros(Float32, 2, count)
     if tip_tilt
         support = kwargs[:pupil_support]
-        probe = Float32(get(kwargs,:normalization_probe,kwargs[:poke_m]))
-        isfinite(probe) && probe > 0 || throw(ArgumentError("normalization probe must remain finite positive Float32"))
-        flat = optical_surface(surface,zeros(Float32,size(projection,1)),support)
+        probe = Float32(get(kwargs, :normalization_probe, kwargs[:poke_m]))
+        isfinite(probe) && probe > 0 ||
+            throw(ArgumentError("normalization probe must remain finite positive Float32"))
+        flat = optical_surface(surface, zeros(Float32, size(projection, 1)), support)
         responses = map(eachcol(projection)) do column
-            response = (optical_surface(surface,probe .* column,support).-flat)[support] ./ probe
+            response =
+                (optical_surface(surface, probe .* column, support) .- flat)[support] ./
+                probe
             response .- sum(response)/length(response)
         end
         pupil_tip_tilt = hcat(responses[1:2]...)
-        LA.rank(pupil_tip_tilt) == 2 || throw(ArgumentError("physical tip and tilt must be independent"))
+        LA.rank(pupil_tip_tilt) == 2 ||
+            throw(ArgumentError("physical tip and tilt must be independent"))
         # Remove the actual mirror's pupil-OPD tip/tilt, including completion,
         # rather than assuming actuator-coordinate orthogonality is physical.
-        for j in 3:size(projection,2)
-            tip_tilt_coefficients[:,j-2] .= pupil_tip_tilt \ responses[j]
-            projection[:,j] .-= projection[:,1:2] * view(tip_tilt_coefficients,:,j-2)
+        for j = 3:size(projection, 2)
+            tip_tilt_coefficients[:, j-2] .= pupil_tip_tilt \ responses[j]
+            projection[:, j] .-= projection[:, 1:2] * view(tip_tilt_coefficients, :, j-2)
         end
     end
     controlled_key = optical_controlled_key(command_coordinates)
-    provenance = merge(Dict{String,Any}(provenance),Dict("basis"=>Dict(
-        "kind"=>tip_tilt ? "tip-tilt-and-sinusoidal" : "spatial-sinusoidal","spatial_frequencies"=>[collect(row) for row in eachrow(spatial_frequencies)],
-        "coordinate_units"=>"normalized pupil radius","mode_order"=>tip_tilt ?
-            "tip X, tilt Y, then sine, cosine per frequency; Fourier modes have measured pupil tip/tilt removed" : "sine, cosine per frequency",
-        controlled_key=>findall(controlled_actuators))))
+    provenance = merge(
+        Dict{String,Any}(provenance),
+        Dict(
+            "basis"=>Dict(
+                "kind"=>tip_tilt ? "tip-tilt-and-sinusoidal" : "spatial-sinusoidal",
+                "spatial_frequencies"=>[
+                    collect(row) for row in eachrow(spatial_frequencies)
+                ],
+                "coordinate_units"=>"normalized pupil radius",
+                "mode_order"=>tip_tilt ?
+                              "tip X, tilt Y, then sine, cosine per frequency; Fourier modes have measured pupil tip/tilt removed" :
+                              "sine, cosine per frequency",
+                controlled_key=>findall(controlled_actuators),
+            ),
+        ),
+    )
     if tip_tilt
         provenance["basis"]["tip_tilt_removal"] = Dict(
             "inner_product"=>"piston-removed pupil OPD over pupil_support",
             "coefficients"=>[collect(row) for row in eachrow(tip_tilt_coefficients)],
-            "coefficient_order"=>"tip X, tilt Y by sine, cosine per frequency")
+            "coefficient_order"=>"tip X, tilt Y by sine, cosine per frequency",
+        )
     end
-    return Calibration.calibrate_optical(surface,observe,projection;provenance,command_coordinates,kwargs...)
+    return Calibration.calibrate_optical(
+        surface,
+        observe,
+        projection;
+        provenance,
+        command_coordinates,
+        kwargs...,
+    )
 end
 
 """
@@ -756,48 +1414,72 @@ Validate held-out modal mixtures with a fresh forward observation. Each column o
 must recover it, and applying its negative physical command must reduce pupil RMS.
 This finite model test does not validate concurrent fast-loop reference handling.
 """
-function Calibration.validate_optical(surface, observe, calibration;
-        coefficients::AbstractMatrix, reconstruction_tolerance::Real=0.1)
+function Calibration.validate_optical(
+    surface,
+    observe,
+    calibration;
+    coefficients::AbstractMatrix,
+    reconstruction_tolerance::Real = 0.1,
+)
     P = calibration.projection
-    size(coefficients,1) == size(P,2) && size(coefficients,2)>0 && all(isfinite,coefficients) ||
+    size(coefficients, 1) == size(P, 2) &&
+    size(coefficients, 2)>0 &&
+    all(isfinite, coefficients) ||
         throw(ArgumentError("held-out coefficients must be finite mode-by-mixture values"))
     isfinite(reconstruction_tolerance) && 0 < reconstruction_tolerance < 1 ||
         throw(ArgumentError("invalid held-out reconstruction tolerance"))
     support = calibration.pupil_support
-    flat = optical_surface(surface,zeros(Float32,size(P,1)),support)
-    errors = Float64[]; ratios = Float64[]
+    flat = optical_surface(surface, zeros(Float32, size(P, 1)), support)
+    errors = Float64[]
+    ratios = Float64[]
     for column in eachcol(coefficients)
         LA.norm(column)>0 || throw(ArgumentError("held-out mixture must be nonzero"))
         command = P*Float32.(column)
-        opd = optical_surface(surface,command,support)
+        opd = optical_surface(surface, command, support)
         images = observe(opd)
-        keys(images) == keys(calibration.branches) || throw(ArgumentError("held-out optical branches differ"))
-        estimate = zeros(Float32,size(P,2))
-        for (name,branch) in pairs(calibration.branches)
-            signed = get(calibration.report["branches"][string(name)],"measurement_kind","intensity") == "chopped-pixel-residual"
-            residual = optical_measurement(optical_image(getproperty(images,name);signed),branch) .-
-                optical_measurement(branch.reference,branch)
+        keys(images) == keys(calibration.branches) ||
+            throw(ArgumentError("held-out optical branches differ"))
+        estimate = zeros(Float32, size(P, 2))
+        for (name, branch) in pairs(calibration.branches)
+            signed =
+                get(
+                    calibration.report["branches"][string(name)],
+                    "measurement_kind",
+                    "intensity",
+                ) == "chopped-pixel-residual"
+            residual =
+                optical_measurement(
+                    optical_image(getproperty(images, name); signed),
+                    branch,
+                ) .- optical_measurement(branch.reference, branch)
             estimate .+= branch.reconstructor*residual
         end
-        push!(errors,LA.norm(estimate-column)/LA.norm(column))
-        corrected = optical_surface(surface,command-P*estimate,support)
-        before = (opd-flat)[support]; after = (corrected-flat)[support]
-        before .-= sum(before)/length(before); after .-= sum(after)/length(after)
-        push!(ratios,LA.norm(after)/max(LA.norm(before),eps(Float64)))
+        push!(errors, LA.norm(estimate-column)/LA.norm(column))
+        corrected = optical_surface(surface, command-P*estimate, support)
+        before = (opd-flat)[support]
+        after = (corrected-flat)[support]
+        before .-= sum(before)/length(before)
+        after .-= sum(after)/length(after)
+        push!(ratios, LA.norm(after)/max(LA.norm(before), eps(Float64)))
     end
     accepted = maximum(errors) <= reconstruction_tolerance && maximum(ratios) < 1
-    return (;accepted,reconstruction_errors=errors,pupil_rms_ratios=ratios,
-        scope="held-out optical simulation with upstream fast loop held; no timing or hardware qualification")
+    return (;
+        accepted,
+        reconstruction_errors = errors,
+        pupil_rms_ratios = ratios,
+        scope = "held-out optical simulation with upstream fast loop held; no timing or hardware qualification",
+    )
 end
 
 function optical_reference_measurement!(outputs, frontend, inputs, frame)
-    eltype(frame) === UInt16 || throw(ArgumentError("upstream optical reference must retain raw UInt16 ADC frames"))
-    copyto!(inputs.raw,Array(frame))
+    eltype(frame) === UInt16 ||
+        throw(ArgumentError("upstream optical reference must retain raw UInt16 ADC frames"))
+    copyto!(inputs.raw, Array(frame))
     JuliaFilterGraph.reset!(frontend.graph)
     # The deployed pyramid uses its previous successful frame's flux. Two
     # evaluations of the same held acquisition reach its declared held-flux state.
-    for _ in 1:2
-        status = JuliaFilterGraph.process!(outputs,frontend.graph,inputs)
+    for _ = 1:2
+        status = JuliaFilterGraph.process!(outputs, frontend.graph, inputs)
         confirm_upstream_frame(status)
     end
     return copy(outputs.residual)
@@ -812,119 +1494,208 @@ end
 
 function optical_flat_parameters(application)
     hashes = Dict{String,String}()
-    for binding in PipeWireAORTC.GraphOwner.bindings(joinpath(application,"rtc","parameters.conf"))
+    for binding in
+        PipeWireAORTC.GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
         name = string(binding.port)
-        (endswith(name,"-offset") || endswith(name,"-system-flat")) || continue
-        bytes = PipeWireAORTC.Artifacts.snapshot(binding.source.path;check=()->nothing)
-        PipeWireAORTC.Artifacts.FITSIO.FITS(bytes,"r") do file
-            all(iszero,read(file[binding.source.hdu])) || throw(ArgumentError(
-                "flat upstream reference calibration requires zero deployed $name"))
+        (endswith(name, "-offset") || endswith(name, "-system-flat")) || continue
+        bytes = PipeWireAORTC.Artifacts.snapshot(binding.source.path; check = ()->nothing)
+        PipeWireAORTC.Artifacts.FITSIO.FITS(bytes, "r") do file
+            all(iszero, read(file[binding.source.hdu])) || throw(
+                ArgumentError(
+                    "flat upstream reference calibration requires zero deployed $name",
+                ),
+            )
         end
         hashes[name] = bytes2hex(Calibration.sha256(bytes))
     end
     return hashes
 end
 
-function optical_upstream_execution(application,simulation,overrides)
-    path = PipeWireAORTC.DeploymentConfiguration.relative_asset(application,"simulation.conf")
-    execution = PipeWireAORTC.DeploymentConfiguration.decode(path,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
+function optical_upstream_execution(application, simulation, overrides)
+    path =
+        PipeWireAORTC.DeploymentConfiguration.relative_asset(application, "simulation.conf")
+    execution = PipeWireAORTC.DeploymentConfiguration.decode(
+        path,
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+    )
     plant = execution["plant"]
-    selected = PipeWireAORTC.DeploymentConfiguration.relative_asset(application,plant["definition"])
-    selected == simulation || throw(ArgumentError("upstream reference simulation differs from the executed plant"))
+    selected = PipeWireAORTC.DeploymentConfiguration.relative_asset(
+        application,
+        plant["definition"],
+    )
+    selected == simulation || throw(
+        ArgumentError("upstream reference simulation differs from the executed plant"),
+    )
     declaration = IC.load_simulation(simulation)
-    effective = IC.settings(declaration,plant["settings"])
+    effective = IC.settings(declaration, plant["settings"])
     schema = deepcopy(declaration.document["settings_schema"])
-    merge!(schema["properties"],get(declaration.document["profiles"][effective["profile"]],"settings_schema",Dict()))
-    requested = IC.settings(declaration,IC.merge_settings(effective,overrides,schema))
-    requested == effective || throw(ArgumentError("upstream calibration settings differ from the executed plant"))
-    identity(value) = PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(value))
-    graph = String(get(execution,"version",nothing) == 6 ? execution["source_graph"] : plant["graph"])
-    document = IC.graph_document(declaration,effective;simulation_graph=graph)
-    return (;declaration,effective,graph,execution,execution_graph=document,configuration_sha256=Calibration.digest(path),
-        effective_settings_identity=identity(effective),execution_graph_identity=identity(document))
+    merge!(
+        schema["properties"],
+        get(
+            declaration.document["profiles"][effective["profile"]],
+            "settings_schema",
+            Dict(),
+        ),
+    )
+    requested = IC.settings(declaration, IC.merge_settings(effective, overrides, schema))
+    requested == effective ||
+        throw(ArgumentError("upstream calibration settings differ from the executed plant"))
+    identity(value) =
+        PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(value))
+    graph = String(
+        get(execution, "version", nothing) == 6 ? execution["source_graph"] :
+        plant["graph"],
+    )
+    document = IC.graph_document(declaration, effective; simulation_graph = graph)
+    return (;
+        declaration,
+        effective,
+        graph,
+        execution,
+        execution_graph = document,
+        configuration_sha256 = Calibration.digest(path),
+        effective_settings_identity = identity(effective),
+        execution_graph_identity = identity(document),
+    )
 end
 
 function optical_sensor_configuration(document)
-    return Dict(node["name"]=>node["config"] for node in document["nodes"]
-        if haskey(node["config"],"source_magnitude") || node["type"] == "detector" || haskey(node["config"],"rounding"))
+    return Dict(
+        node["name"]=>node["config"] for
+        node in document["nodes"] if haskey(node["config"], "source_magnitude") ||
+            node["type"] == "detector" ||
+            haskey(node["config"], "rounding")
+    )
 end
 
 # Shared acquisition/reduction for a prepared native upstream plant and the exact
 # deployed frontend. Diagnostic callers may supply an explicitly altered native
 # graph without changing built files. Holdouts always retain the optical domain.
-function optical_reference_response(system,frontend,calibration,commands,name,amplitudes,derivative_tolerance)
-    keys(frontend.graph.input_formats) == (:raw,) || throw(ArgumentError("upstream frontend must have one explicit raw input"))
+function optical_reference_response(
+    system,
+    frontend,
+    calibration,
+    commands,
+    name,
+    amplitudes,
+    derivative_tolerance,
+)
+    keys(frontend.graph.input_formats) == (:raw,) ||
+        throw(ArgumentError("upstream frontend must have one explicit raw input"))
     frontend.graph.input_formats.raw.element_type === UInt16 ||
         throw(ArgumentError("upstream frontend must consume UInt16 ADC pixels"))
-    inputs = map(format -> zeros(format.element_type,format.shape),frontend.graph.input_formats)
-    outputs = map(format -> zeros(format.element_type,format.shape),frontend.graph.output_formats)
-    measure = command -> begin
-        getproperty(commands,name) .= command
-        frame = Array(modal_frame!(system,commands))
-        (;frame,residual=optical_reference_measurement!(outputs,frontend,inputs,frame))
-    end
-    return optical_reference_response(measure,calibration,amplitudes,derivative_tolerance)
+    inputs = map(
+        format -> zeros(format.element_type, format.shape),
+        frontend.graph.input_formats,
+    )
+    outputs = map(
+        format -> zeros(format.element_type, format.shape),
+        frontend.graph.output_formats,
+    )
+    measure =
+        command -> begin
+            getproperty(commands, name) .= command
+            frame = Array(modal_frame!(system, commands))
+            (;
+                frame,
+                residual = optical_reference_measurement!(outputs, frontend, inputs, frame),
+            )
+        end
+    return optical_reference_response(
+        measure,
+        calibration,
+        amplitudes,
+        derivative_tolerance,
+    )
 end
 
-function optical_reference_response(measure,calibration,amplitudes,derivative_tolerance)
-    reference = measure(zeros(Float32,size(calibration.projection,1)))
-    flat_frame,flat = reference.frame,reference.residual
-    eltype(flat_frame) === UInt16 || throw(ArgumentError("upstream reference must retain UInt16 ADC exposures"))
-    count = size(calibration.projection,2)
+function optical_reference_response(measure, calibration, amplitudes, derivative_tolerance)
+    reference = measure(zeros(Float32, size(calibration.projection, 1)))
+    flat_frame, flat = reference.frame, reference.residual
+    eltype(flat_frame) === UInt16 ||
+        throw(ArgumentError("upstream reference must retain UInt16 ADC exposures"))
+    count = size(calibration.projection, 2)
     trials = Dict{String,Any}[]
     responses = []
     chosen = nothing
     for h in amplitudes
-        matrices = (zeros(Float32,length(flat),count),zeros(Float32,length(flat),count))
-        changed_pixels = zeros(Int,2,count)
-        peak_difference_adu = zeros(Int,2,count)
-        raw_peaks = zeros(Int,2,count,2)
-        for (index,amplitude) in enumerate((h,h/2)),j in 1:count
-            measurements = map((1f0,-1f0)) do sign
-                measure((sign*amplitude) .* view(calibration.projection,:,j))
+        matrices =
+            (zeros(Float32, length(flat), count), zeros(Float32, length(flat), count))
+        changed_pixels = zeros(Int, 2, count)
+        peak_difference_adu = zeros(Int, 2, count)
+        raw_peaks = zeros(Int, 2, count, 2)
+        for (index, amplitude) in enumerate((h, h/2)), j = 1:count
+            measurements = map((1.0f0, -1.0f0)) do sign
+                measure((sign*amplitude) .* view(calibration.projection, :, j))
             end
-            raw = map(measurement -> measurement.frame,measurements)
-            all(frame->eltype(frame)===UInt16,raw) || throw(ArgumentError("upstream reference exposure type changed"))
-            matrices[index][:,j] .= (measurements[1].residual.-measurements[2].residual)./(2amplitude)
+            raw = map(measurement -> measurement.frame, measurements)
+            all(frame->eltype(frame)===UInt16, raw) ||
+                throw(ArgumentError("upstream reference exposure type changed"))
+            matrices[index][:, j] .=
+                (measurements[1].residual .- measurements[2].residual) ./ (2amplitude)
             difference = Int32.(raw[1]) .- Int32.(raw[2])
-            for side in 1:2
-                raw_peaks[index,j,side] = maximum(raw[side])
+            for side = 1:2
+                raw_peaks[index, j, side] = maximum(raw[side])
             end
-            changed_pixels[index,j] = Base.count(!iszero,difference)
-            peak_difference_adu[index,j] = maximum(abs,difference)
+            changed_pixels[index, j] = Base.count(!iszero, difference)
+            peak_difference_adu[index, j] = maximum(abs, difference)
         end
-        C,half = matrices
-        derivative_error = optical_reference_prediction_error(half,C)
+        C, half = matrices
+        derivative_error = optical_reference_prediction_error(half, C)
         holdouts = calibration.held_out_coefficients
-        errors = Float64[]; before = Float64[]; after = Float64[]; held_out_raw_peaks = Int[]
+        errors = Float64[]
+        before = Float64[]
+        after = Float64[]
+        held_out_raw_peaks = Int[]
         for coefficients in eachcol(holdouts)
             measured = measure(calibration.projection*coefficients)
-            eltype(measured.frame) === UInt16 || throw(ArgumentError("upstream reference exposure type changed"))
-            push!(held_out_raw_peaks,maximum(measured.frame))
+            eltype(measured.frame) === UInt16 ||
+                throw(ArgumentError("upstream reference exposure type changed"))
+            push!(held_out_raw_peaks, maximum(measured.frame))
             residual = measured.residual .- flat
             correction = C*coefficients
-            push!(before,LA.norm(residual))
-            push!(after,LA.norm(residual-correction))
-            push!(errors,optical_reference_prediction_error(residual,correction))
+            push!(before, LA.norm(residual))
+            push!(after, LA.norm(residual-correction))
+            push!(errors, optical_reference_prediction_error(residual, correction))
         end
-        accepted = isfinite(derivative_error) && LA.norm(C)>0 &&
-            derivative_error <= derivative_tolerance && maximum(errors) <= derivative_tolerance
-        trial = Dict{String,Any}("poke_m"=>h,"derivative_error"=>derivative_error,
-            "held_out_errors"=>errors,"held_out_coefficients_m"=>[collect(row) for row in eachrow(holdouts)],
+        accepted =
+            isfinite(derivative_error) &&
+            LA.norm(C)>0 &&
+            derivative_error <= derivative_tolerance &&
+            maximum(errors) <= derivative_tolerance
+        trial = Dict{String,Any}(
+            "poke_m"=>h,
+            "derivative_error"=>derivative_error,
+            "held_out_errors"=>errors,
+            "held_out_coefficients_m"=>[collect(row) for row in eachrow(holdouts)],
             "uncompensated_residual_norm"=>before,
-            "compensated_residual_norm"=>after,"changed_raw_pixel_count"=>[collect(row) for row in eachrow(changed_pixels)],
-            "peak_raw_difference_adu"=>[collect(row) for row in eachrow(peak_difference_adu)],
-            "peak_raw_adu"=>[[collect(raw_peaks[index,:,side]) for side in 1:2] for index in 1:2],
-            "held_out_peak_raw_adu"=>held_out_raw_peaks,"accepted"=>accepted)
-        push!(trials,trial)
-        push!(responses,(;interaction=C,half_interaction=half,poke_m=h))
+            "compensated_residual_norm"=>after,
+            "changed_raw_pixel_count"=>[collect(row) for row in eachrow(changed_pixels)],
+            "peak_raw_difference_adu"=>[
+                collect(row) for row in eachrow(peak_difference_adu)
+            ],
+            "peak_raw_adu"=>[
+                [collect(raw_peaks[index, :, side]) for side = 1:2] for index = 1:2
+            ],
+            "held_out_peak_raw_adu"=>held_out_raw_peaks,
+            "accepted"=>accepted,
+        )
+        push!(trials, trial)
+        push!(responses, (; interaction = C, half_interaction = half, poke_m = h))
         if accepted
-            chosen = (;interaction=C,half_interaction=half,flat_frame,flat_residual=flat,
-                reference_sign=-1f0,poke_m=h,trial)
+            chosen = (;
+                interaction = C,
+                half_interaction = half,
+                flat_frame,
+                flat_residual = flat,
+                reference_sign = -1.0f0,
+                poke_m = h,
+                trial,
+            )
             break
         end
     end
-    return (;chosen,trials,responses,flat_frame,flat_residual=flat)
+    return (; chosen, trials, responses, flat_frame, flat_residual = flat)
 end
 
 """
@@ -946,108 +1717,225 @@ contribute to the unchanged gate. The reported three-vector-standard-error
 bounds are statistical estimates under the declared ideal independent
 Poisson/Gaussian simulation law, not finite-PRNG or hardware certificates.
 """
-function Calibration.calibrate_optical_reference(upstream_application::AbstractString, calibration;
-        simulation="simulation/definition.yaml",settings=Dict(),mirror="tweeter",
-        raw_endpoint="pixel-calibration:raw",residual_endpoint="reconstruction:reconstructed",
-        poke_amplitudes_m=[5e-9,1e-8,2e-8],derivative_tolerance=0.05,
-        method="held-frame",samples=512,rounding_samples=128,
-        training_seed=200002,validation_seed=400002,
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
-    calibration.report["status"] == "accepted" || throw(ArgumentError("upstream reference requires an accepted optical calibration"))
+function Calibration.calibrate_optical_reference(
+    upstream_application::AbstractString,
+    calibration;
+    simulation = "simulation/definition.yaml",
+    settings = Dict(),
+    mirror = "tweeter",
+    raw_endpoint = "pixel-calibration:raw",
+    residual_endpoint = "reconstruction:reconstructed",
+    poke_amplitudes_m = [5e-9, 1e-8, 2e-8],
+    derivative_tolerance = 0.05,
+    method = "held-frame",
+    samples = 512,
+    rounding_samples = 128,
+    training_seed = 200002,
+    validation_seed = 400002,
+    target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
+)
+    calibration.report["status"] == "accepted" ||
+        throw(ArgumentError("upstream reference requires an accepted optical calibration"))
     validate_optical_reference_target(target)
-    method in ("held-frame","host-expectation") || throw(ArgumentError("unsupported upstream reference method"))
+    method in ("held-frame", "host-expectation") ||
+        throw(ArgumentError("unsupported upstream reference method"))
     if method == "host-expectation"
-        optical_expectation_options(samples,rounding_samples,training_seed,validation_seed)
+        optical_expectation_options(
+            samples,
+            rounding_samples,
+            training_seed,
+            validation_seed,
+        )
         validate_optical_expectation_target(target)
-        length(poke_amplitudes_m)==1 ||
-            throw(ArgumentError("host expectation requires one explicit probe amplitude and independent validation"))
+        length(poke_amplitudes_m)==1 || throw(
+            ArgumentError(
+                "host expectation requires one explicit probe amplitude and independent validation",
+            ),
+        )
     end
     application = optical_application(upstream_application)
     Calibration.require_prepared_application(application)
     baseline_hashes = optical_flat_parameters(application)
     amplitudes = Float32.(poke_amplitudes_m)
-    1 <= length(amplitudes) <= 8 && all(h -> isfinite(h) && h/2>0,amplitudes) ||
-        throw(ArgumentError("upstream reference requires bounded positive finite amplitudes"))
-    isfinite(derivative_tolerance) && 0 < derivative_tolerance < 1 ||
-        throw(ArgumentError("upstream reference derivative tolerance must be between zero and one"))
-    path = PipeWireAORTC.DeploymentConfiguration.relative_asset(application,simulation)
-    execution = optical_upstream_execution(application,path,settings)
+    1 <= length(amplitudes) <= 8 && all(h -> isfinite(h) && h/2>0, amplitudes) || throw(
+        ArgumentError("upstream reference requires bounded positive finite amplitudes"),
+    )
+    isfinite(derivative_tolerance) && 0 < derivative_tolerance < 1 || throw(
+        ArgumentError(
+            "upstream reference derivative tolerance must be between zero and one",
+        ),
+    )
+    path = PipeWireAORTC.DeploymentConfiguration.relative_asset(application, simulation)
+    execution = optical_upstream_execution(application, path, settings)
     declaration = execution.declaration
     configured = execution.effective
-    prescription = IC.prescription_identity(declaration,configured)
-    graph = IC.graph_document(declaration,configured;calibration=true)
-    chain = method == "host-expectation" ? optical_expectation_chain(execution.execution_graph,graph,
-        declaration.document["hil"]["frame_output"]) : nothing
-    system = IC.prepare_system(path;settings=configured,calibration=true,target)
-    commands = map(command -> zeros(eltype(command),size(command)),HIL.hil_command_buffer(system.boundary))
+    prescription = IC.prescription_identity(declaration, configured)
+    graph = IC.graph_document(declaration, configured; calibration = true)
+    chain =
+        method == "host-expectation" ?
+        optical_expectation_chain(
+            execution.execution_graph,
+            graph,
+            declaration.document["hil"]["frame_output"],
+        ) : nothing
+    system = IC.prepare_system(path; settings = configured, calibration = true, target)
+    commands = map(
+        command -> zeros(eltype(command), size(command)),
+        HIL.hil_command_buffer(system.boundary),
+    )
     name = Symbol(mirror)
-    hasproperty(commands,name) && length(getproperty(commands,name)) == size(calibration.projection,1) ||
-        throw(DimensionMismatch("upstream mirror commands differ from the optical physical projection"))
+    hasproperty(commands, name) &&
+    length(getproperty(commands, name)) == size(calibration.projection, 1) || throw(
+        DimensionMismatch(
+            "upstream mirror commands differ from the optical physical projection",
+        ),
+    )
     # Establish sign from the declared composition, not from an assumed DM convention.
-    linked = any(get(graph,"links",[])) do link
-        link["source"] == mirror*".surface_opd" && endswith(link["destination"],".surface_opd") || return false
-        destination = first(split(link["destination"],'.'))
-        any(node -> node["name"] == destination && node["type"] == "pupil_opd_composition_f32",graph["nodes"])
+    linked = any(get(graph, "links", [])) do link
+        link["source"] == mirror*".surface_opd" &&
+        endswith(link["destination"], ".surface_opd") || return false
+        destination = first(split(link["destination"], '.'))
+        any(
+            node ->
+                node["name"] == destination && node["type"] == "pupil_opd_composition_f32",
+            graph["nodes"],
+        )
     end
-    linked ||
-        throw(ArgumentError("upstream reference needs the declared additive pupil OPD composition"))
-    frontend = Calibration.calibration_graph(application;
-        inputs=(raw=String(raw_endpoint),),outputs=(residual=String(residual_endpoint),))
+    linked || throw(
+        ArgumentError(
+            "upstream reference needs the declared additive pupil OPD composition",
+        ),
+    )
+    frontend = Calibration.calibration_graph(
+        application;
+        inputs = (raw = String(raw_endpoint),),
+        outputs = (residual = String(residual_endpoint),),
+    )
     try
-        acquired = method == "held-frame" ?
-            optical_reference_response(system,frontend,calibration,commands,name,amplitudes,derivative_tolerance) :
-            optical_expected_reference((;plant=system,application),frontend,calibration,commands,name,
-                only(amplitudes),execution.execution_graph;samples,rounding_samples,
-                training_seed,validation_seed,tolerance=derivative_tolerance)
-        chosen,trials = acquired.chosen,acquired.trials
-        chosen === nothing && throw(ArgumentError("upstream optical reference rejected every explicit amplitude: "*repr(trials)))
-        current_execution = optical_upstream_execution(application,path,settings)
+        acquired =
+            method == "held-frame" ?
+            optical_reference_response(
+                system,
+                frontend,
+                calibration,
+                commands,
+                name,
+                amplitudes,
+                derivative_tolerance,
+            ) :
+            optical_expected_reference(
+                (; plant = system, application),
+                frontend,
+                calibration,
+                commands,
+                name,
+                only(amplitudes),
+                execution.execution_graph;
+                samples,
+                rounding_samples,
+                training_seed,
+                validation_seed,
+                tolerance = derivative_tolerance,
+            )
+        chosen, trials = acquired.chosen, acquired.trials
+        chosen === nothing && throw(
+            ArgumentError(
+                "upstream optical reference rejected every explicit amplitude: "*repr(
+                    trials,
+                ),
+            ),
+        )
+        current_execution = optical_upstream_execution(application, path, settings)
         current = current_execution.declaration
-        IC.prescription_identity(current,current_execution.effective) == prescription &&
-            current_execution.configuration_sha256 == execution.configuration_sha256 &&
-            current_execution.effective_settings_identity == execution.effective_settings_identity &&
-            current_execution.execution_graph_identity == execution.execution_graph_identity ||
-            throw(ArgumentError("upstream prescription changed during reference calibration"))
-        parameter_hashes = Dict(string(name)=>hash for (name,hash) in frontend.parameter_sha256)
-        optical_flat_parameters(application) == baseline_hashes ||
-            throw(ArgumentError("upstream static command parameters changed during reference calibration"))
-        provenance = Dict("upstream_prescription_identity"=>prescription,
-            "source_graph_sha256"=>frontend.source_graph_sha256,"parameter_sha256"=>parameter_hashes,
-            "raw_endpoint"=>raw_endpoint,"residual_endpoint"=>residual_endpoint,
-            "raw_element_type"=>"UInt16","normalization"=>"deployed frontend, twice at held exposure",
+        IC.prescription_identity(current, current_execution.effective) == prescription &&
+        current_execution.configuration_sha256 == execution.configuration_sha256 &&
+        current_execution.effective_settings_identity ==
+        execution.effective_settings_identity &&
+        current_execution.execution_graph_identity == execution.execution_graph_identity ||
+            throw(
+                ArgumentError("upstream prescription changed during reference calibration"),
+            )
+        parameter_hashes =
+            Dict(string(name)=>hash for (name, hash) in frontend.parameter_sha256)
+        optical_flat_parameters(application) == baseline_hashes || throw(
+            ArgumentError(
+                "upstream static command parameters changed during reference calibration",
+            ),
+        )
+        provenance = Dict(
+            "upstream_prescription_identity"=>prescription,
+            "source_graph_sha256"=>frontend.source_graph_sha256,
+            "parameter_sha256"=>parameter_hashes,
+            "raw_endpoint"=>raw_endpoint,
+            "residual_endpoint"=>residual_endpoint,
+            "raw_element_type"=>"UInt16",
+            "normalization"=>"deployed frontend, twice at held exposure",
             "baseline"=>"flat simulator commands; deployed static command offsets and system flats verified zero",
             "baseline_parameter_sha256"=>baseline_hashes,
-            "adc_settings"=>get(configured,"adc",Dict()),"reference_sign"=>-1,
-            "effective_settings"=>configured,"effective_settings_identity"=>execution.effective_settings_identity,
-            "simulation_configuration_sha256"=>execution.configuration_sha256,"execution_graph"=>execution.graph,
+            "adc_settings"=>get(configured, "adc", Dict()),
+            "reference_sign"=>-1,
+            "effective_settings"=>configured,
+            "effective_settings_identity"=>execution.effective_settings_identity,
+            "simulation_configuration_sha256"=>execution.configuration_sha256,
+            "execution_graph"=>execution.graph,
             "execution_graph_identity"=>execution.execution_graph_identity,
-            "calibration_graph_identity"=>PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(graph)),
+            "calibration_graph_identity"=>PipeWireAORTC.InstrumentDefinition.scientific_identity(
+                IC.canonical(graph),
+            ),
             "native_sensor_configuration"=>optical_sensor_configuration(graph),
-            "modes_to_reference"=>"artifacts/modes-to-reference.fits","shape"=>collect(size(chosen.interaction)),
-            "axes"=>[2,1],"type"=>"Float32","storage_order"=>"row-major",
-            "trials"=>trials,"scope"=>"finite upstream reference response; upstream controller held")
+            "modes_to_reference"=>"artifacts/modes-to-reference.fits",
+            "shape"=>collect(size(chosen.interaction)),
+            "axes"=>[2, 1],
+            "type"=>"Float32",
+            "storage_order"=>"row-major",
+            "trials"=>trials,
+            "scope"=>"finite upstream reference response; upstream controller held",
+        )
         if method == "host-expectation"
-            merge!(provenance,acquired.report)
-            provenance["native_sensor_configuration"] = optical_sensor_configuration(execution.execution_graph)
+            merge!(provenance, acquired.report)
+            provenance["native_sensor_configuration"] =
+                optical_sensor_configuration(execution.execution_graph)
             provenance["sensor_chain"] = chain
         else
             provenance["method"] = method
         end
         io = IOBuffer()
-        write(io,calibration.report["calibration_identity"],"\n",prescription,"\n",frontend.source_graph_sha256,"\n")
-        write(io,execution.effective_settings_identity,"\n",execution.execution_graph_identity,"\n",
-            provenance["calibration_graph_identity"],"\n")
-        write(io,PipeWireAORTC.InstrumentDefinition.scientific_identity(IC.canonical(provenance)),"\n")
+        write(
+            io,
+            calibration.report["calibration_identity"],
+            "\n",
+            prescription,
+            "\n",
+            frontend.source_graph_sha256,
+            "\n",
+        )
+        write(
+            io,
+            execution.effective_settings_identity,
+            "\n",
+            execution.execution_graph_identity,
+            "\n",
+            provenance["calibration_graph_identity"],
+            "\n",
+        )
+        write(
+            io,
+            PipeWireAORTC.InstrumentDefinition.scientific_identity(
+                IC.canonical(provenance),
+            ),
+            "\n",
+        )
         for name in sort!(collect(keys(parameter_hashes)))
-            write(io,name,":",parameter_hashes[name],"\n")
+            write(io, name, ":", parameter_hashes[name], "\n")
         end
         for name in sort!(collect(keys(baseline_hashes)))
-            write(io,name,":",baseline_hashes[name],"\n")
+            write(io, name, ":", baseline_hashes[name], "\n")
         end
-        write(io,reinterpret(UInt8,htol.(reinterpret(UInt32,vec(chosen.interaction)))))
-        calibration.report["calibration_identity"] = "sha256:"*bytes2hex(Calibration.sha256(take!(io)))
+        write(io, reinterpret(UInt8, htol.(reinterpret(UInt32, vec(chosen.interaction)))))
+        calibration.report["calibration_identity"] =
+            "sha256:"*bytes2hex(Calibration.sha256(take!(io)))
         calibration.report["upstream_reference"] = provenance
-        return merge(calibration,(;fast_reference=chosen))
+        return merge(calibration, (; fast_reference = chosen))
     finally
         FilterGraphIsland.close_execution(frontend.graph)
     end
@@ -1056,58 +1944,93 @@ end
 "Describe the exact Bool FITS artifact that the bundle writer will publish."
 function optical_mask_binding(mask, filename)
     return mktempdir() do directory
-        path = joinpath(directory,filename)
-        Calibration.write_fits(path,mask)
-        Dict("kind"=>"fits","path"=>"artifacts/"*filename,"hdu"=>1,"axes"=>[2,1],
-            "shape"=>collect(size(mask)),"type"=>"Bool","sha256"=>Calibration.digest(path),"storage_order"=>"row-major")
+        path = joinpath(directory, filename)
+        Calibration.write_fits(path, mask)
+        Dict(
+            "kind"=>"fits",
+            "path"=>"artifacts/"*filename,
+            "hdu"=>1,
+            "axes"=>[2, 1],
+            "shape"=>collect(size(mask)),
+            "type"=>"Bool",
+            "sha256"=>Calibration.digest(path),
+            "storage_order"=>"row-major",
+        )
     end
 end
 
 "Write an accepted optical result using the existing row-major FITS bundle writer."
-function Calibration.calibrate_optical(calibration, output::AbstractString;
-        report::AbstractDict, context::AbstractDict, concrete_graph::AbstractDict, branch::Union{Nothing,Symbol}=nothing)
-    calibration.report["status"] == "accepted" || throw(ArgumentError("cannot publish a rejected optical calibration"))
+function Calibration.calibrate_optical(
+    calibration,
+    output::AbstractString;
+    report::AbstractDict,
+    context::AbstractDict,
+    concrete_graph::AbstractDict,
+    branch::Union{Nothing,Symbol} = nothing,
+)
+    calibration.report["status"] == "accepted" ||
+        throw(ArgumentError("cannot publish a rejected optical calibration"))
     context = deepcopy(context)
     parameters = Dict{String,Any}("command-projection"=>calibration.projection)
-    graph_inputs = Set(optical_input_name(port)
-        for port in get(concrete_graph["filter.graph"],"inputs",[]))
+    graph_inputs = Set(
+        optical_input_name(port) for
+        port in get(concrete_graph["filter.graph"], "inputs", [])
+    )
     inverse_name = optical_inverse_name(calibration.command_coordinates)
-    optical_coordinate_parameters!(calibration.command_coordinates,parameters,calibration)
-    diagnostics = Dict{String,Any}("pupil-modes"=>calibration.pupil_modes,
-        "pupil-support"=>calibration.pupil_support,"mirror-response-rms"=>calibration.normalization,
-        "held-out-coefficients"=>calibration.held_out_coefficients,inverse_name=>calibration.physical_to_modes)
-    feedback_inverse = get(calibration,:physical_feedback_to_modes,nothing)
-    optical_feedback_diagnostic!(diagnostics,feedback_inverse)
-    for name in ("command-projection","active-to-full","vdm-to-pdm")
-        if !isempty(graph_inputs) && !(name in graph_inputs) && haskey(parameters,name)
-            diagnostics[name] = pop!(parameters,name)
+    optical_coordinate_parameters!(calibration.command_coordinates, parameters, calibration)
+    diagnostics = Dict{String,Any}(
+        "pupil-modes"=>calibration.pupil_modes,
+        "pupil-support"=>calibration.pupil_support,
+        "mirror-response-rms"=>calibration.normalization,
+        "held-out-coefficients"=>calibration.held_out_coefficients,
+        inverse_name=>calibration.physical_to_modes,
+    )
+    feedback_inverse = get(calibration, :physical_feedback_to_modes, nothing)
+    optical_feedback_diagnostic!(diagnostics, feedback_inverse)
+    for name in ("command-projection", "active-to-full", "vdm-to-pdm")
+        if !isempty(graph_inputs) && !(name in graph_inputs) && haskey(parameters, name)
+            diagnostics[name] = pop!(parameters, name)
         end
     end
-    for name in (inverse_name,"physical-to-modes")
-        if name in graph_inputs && haskey(diagnostics,name)
-            parameters[name] = pop!(diagnostics,name)
+    for name in (inverse_name, "physical-to-modes")
+        if name in graph_inputs && haskey(diagnostics, name)
+            parameters[name] = pop!(diagnostics, name)
         end
     end
-    if hasproperty(calibration,:fast_reference)
+    if hasproperty(calibration, :fast_reference)
         reference = calibration.fast_reference
         diagnostics["modes-to-reference"] = reference.interaction
         diagnostics["half-modes-to-reference"] = reference.half_interaction
         diagnostics["upstream-flat-frame"] = reference.flat_frame
         diagnostics["upstream-flat-residual"] = reference.flat_residual
     end
-    branch === nothing || hasproperty(calibration.branches,branch) || throw(ArgumentError("unknown optical bundle branch"))
-    for (name,measurement) in pairs(calibration.branches)
+    branch === nothing ||
+        hasproperty(calibration.branches, branch) ||
+        throw(ArgumentError("unknown optical bundle branch"))
+    for (name, measurement) in pairs(calibration.branches)
         prefix = string(name)*"-"
         if branch === nothing || name === branch
             parameters[prefix*"reconstructor"] = measurement.reconstructor
             # CoG subtracts the flat centroid before reconstruction, avoiding
             # Float32 cancellation between two large reconstructed centroids.
-            parameters[prefix*"modal-reference"] = optical_modal_reference(measurement.measurement_kind,measurement)
-            optical_measurement_parameters!(measurement.measurement_kind,parameters,prefix,measurement)
-            if hasproperty(calibration,:chopped_references) && hasproperty(calibration.chopped_references,name)
-                all(iszero,measurement.reference) || throw(ArgumentError("chopped frontend must subtract its exact flat reference before reconstruction"))
-                reference = getproperty(calibration.chopped_references,name)
-                parameters[prefix*"reference-difference"] = optical_pixels(reference.difference,measurement.mask)
+            parameters[prefix*"modal-reference"] =
+                optical_modal_reference(measurement.measurement_kind, measurement)
+            optical_measurement_parameters!(
+                measurement.measurement_kind,
+                parameters,
+                prefix,
+                measurement,
+            )
+            if hasproperty(calibration, :chopped_references) &&
+               hasproperty(calibration.chopped_references, name)
+                all(iszero, measurement.reference) || throw(
+                    ArgumentError(
+                        "chopped frontend must subtract its exact flat reference before reconstruction",
+                    ),
+                )
+                reference = getproperty(calibration.chopped_references, name)
+                parameters[prefix*"reference-difference"] =
+                    optical_pixels(reference.difference, measurement.mask)
                 diagnostics[prefix*"flat-fringed"] = reference.fringed
                 diagnostics[prefix*"flat-unfringed"] = reference.unfringed
                 diagnostics[prefix*"flat-difference"] = reference.difference
@@ -1121,11 +2044,18 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
         else
             diagnostics[prefix*"feedback-selection"] = measurement.selection
         end
-        optical_measurement_diagnostics!(measurement.measurement_kind,diagnostics,prefix,measurement)
+        optical_measurement_diagnostics!(
+            measurement.measurement_kind,
+            diagnostics,
+            prefix,
+            measurement,
+        )
         diagnostics[prefix*"reference-image"] = measurement.reference
         diagnostics[prefix*"pixel-mask"] = measurement.mask
-        if haskey(context,string(name)) && haskey(context[string(name)],"pixel_selection_mask")
-            context[string(name)]["pixel_selection_mask"] = optical_mask_binding(measurement.mask,prefix*"pixel-mask.fits")
+        if haskey(context, string(name)) &&
+           haskey(context[string(name)], "pixel_selection_mask")
+            context[string(name)]["pixel_selection_mask"] =
+                optical_mask_binding(measurement.mask, prefix*"pixel-mask.fits")
         end
         diagnostics[prefix*"interaction-matrix"] = measurement.interaction
         diagnostics[prefix*"half-interaction-matrix"] = measurement.half_interaction
@@ -1133,21 +2063,30 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
         diagnostics[prefix*"singular-values"] = measurement.singular_values
     end
     if branch !== nothing
-        mask = getproperty(calibration.branches,branch).mask
+        mask = getproperty(calibration.branches, branch).mask
         diagnostics["selection-mask"] = mask
-        context["pixel_selection_mask"] = optical_mask_binding(mask,"selection-mask.fits")
+        context["pixel_selection_mask"] = optical_mask_binding(mask, "selection-mask.fits")
     end
-    merged = merge(Dict{String,Any}(report),calibration.report)
+    merged = merge(Dict{String,Any}(report), calibration.report)
     projection = calibration.report["physical_projection"]
-    units = Dict("command-projection"=>projection["command_projection_units"],
-        inverse_name=>projection["physical_to_modes_units"])
+    units = Dict(
+        "command-projection"=>projection["command_projection_units"],
+        inverse_name=>projection["physical_to_modes_units"],
+    )
     for name in keys(calibration.branches)
         prefix = string(name)*"-"
-        measurement_units = get(calibration.report["branches"][string(name)],"measurement_units","1")
-        for artifact in ("reference-image","reference-difference","flat-fringed","flat-unfringed","flat-difference")
+        measurement_units =
+            get(calibration.report["branches"][string(name)], "measurement_units", "1")
+        for artifact in (
+            "reference-image",
+            "reference-difference",
+            "flat-fringed",
+            "flat-unfringed",
+            "flat-difference",
+        )
             units[prefix*artifact] = measurement_units
         end
-        for artifact in ("interaction-matrix","half-interaction-matrix","singular-values")
+        for artifact in ("interaction-matrix", "half-interaction-matrix", "singular-values")
             units[prefix*artifact] = measurement_units*" / m OPD"
         end
         units[prefix*"reconstructor"] = "m OPD / "*measurement_units
@@ -1156,149 +2095,291 @@ function Calibration.calibrate_optical(calibration, output::AbstractString;
         units[prefix*"feedback-selection"] = "1"
         units[prefix*"coordinates"] = "px"
         units[prefix*"reference-centroid"] = "px"
-        units[prefix*"reference-image"] = optical_reference_image_units(getproperty(calibration.branches,name).measurement_kind,name,calibration.report)
+        units[prefix*"reference-image"] = optical_reference_image_units(
+            getproperty(calibration.branches, name).measurement_kind,
+            name,
+            calibration.report,
+        )
         units[prefix*"recovery"] = "1"
     end
-    optical_feedback_units!(units,feedback_inverse,calibration.report)
-    optical_coordinate_units!(calibration.command_coordinates,units)
-    return Calibration.write_bundle(output,merged,context,concrete_graph,parameters;diagnostics,artifact_units=units)
+    optical_feedback_units!(units, feedback_inverse, calibration.report)
+    optical_coordinate_units!(calibration.command_coordinates, units)
+    return Calibration.write_bundle(
+        output,
+        merged,
+        context,
+        concrete_graph,
+        parameters;
+        diagnostics,
+        artifact_units = units,
+    )
 end
 
 function optical_recipe(application, recipe)
     validate_optical_recipe_path(recipe)
-    path = PipeWireAORTC.DeploymentConfiguration.relative_asset(application,recipe)
+    path = PipeWireAORTC.DeploymentConfiguration.relative_asset(application, recipe)
     document = PipeWireAORTC.Common.read_yaml(path)
-    required = ("version","kind","upstream_simulation","optical_simulation","mirror","branches",
-        "spatial_frequencies","branch_modes","controlled_actuators","pixels","poke_m","tsvd_rtol",
-        "derivative_tolerance","reconstruction_tolerance")
-    optional = ("upstream_settings","settings","held_out_coefficients","upstream_reference","measurements","mirror_response","command_completion","tip_tilt","measurement_nulling")
-    IC.fields(document,(required...,optional...),required,"optical calibration recipe")
-    document["version"] === 1 && document["kind"] == "relative-intensity-optical" ||
-        throw(ArgumentError("optical recipe requires version 1 and kind relative-intensity-optical"))
-    for key in ("upstream_simulation","optical_simulation","mirror")
-        validate_optical_recipe_text(document[key],key)
+    required = (
+        "version",
+        "kind",
+        "upstream_simulation",
+        "optical_simulation",
+        "mirror",
+        "branches",
+        "spatial_frequencies",
+        "branch_modes",
+        "controlled_actuators",
+        "pixels",
+        "poke_m",
+        "tsvd_rtol",
+        "derivative_tolerance",
+        "reconstruction_tolerance",
+    )
+    optional = (
+        "upstream_settings",
+        "settings",
+        "held_out_coefficients",
+        "upstream_reference",
+        "measurements",
+        "mirror_response",
+        "command_completion",
+        "tip_tilt",
+        "measurement_nulling",
+    )
+    IC.fields(document, (required..., optional...), required, "optical calibration recipe")
+    document["version"] === 1 && document["kind"] == "relative-intensity-optical" || throw(
+        ArgumentError(
+            "optical recipe requires version 1 and kind relative-intensity-optical",
+        ),
+    )
+    for key in ("upstream_simulation", "optical_simulation", "mirror")
+        validate_optical_recipe_text(document[key], key)
     end
     branches = document["branches"]
     validate_optical_recipe_branches(branches)
     names = Tuple(Symbol.(sort!(collect(keys(branches)))))
     branch_selection = NamedTuple{names}(Tuple(branches[string(name)] for name in names))
-    measurements = get(document,"measurements",Dict())
+    measurements = get(document, "measurements", Dict())
     validate_optical_measurement_names(measurements, branches)
     for row in values(measurements)
-        IC.fields(row,("kind",),("kind",),"optical measurement")
-        row["kind"] in ("chopped-pixel-residual","center-of-gravity") || throw(ArgumentError("unsupported optical measurement kind"))
+        IC.fields(row, ("kind",), ("kind",), "optical measurement")
+        row["kind"] in ("chopped-pixel-residual", "center-of-gravity") ||
+            throw(ArgumentError("unsupported optical measurement kind"))
     end
-    nulling = get(document,"measurement_nulling",[])
-    validate_optical_nulling_selection(nulling,branches,measurements)
+    nulling = get(document, "measurement_nulling", [])
+    validate_optical_nulling_selection(nulling, branches, measurements)
     rows = document["spatial_frequencies"]
     validate_optical_frequencies(rows)
-    frequencies = reduce(vcat,permutedims.(Float64.(row) for row in rows))
-    all(isfinite,frequencies) && all(row -> any(!iszero,row),eachrow(frequencies)) ||
-        throw(ArgumentError("optical spatial frequencies must remain finite Float64 and exclude DC"))
-    tip_tilt = get(document,"tip_tilt",false)
+    frequencies = reduce(vcat, permutedims.(Float64.(row) for row in rows))
+    all(isfinite, frequencies) && all(row -> any(!iszero, row), eachrow(frequencies)) ||
+        throw(
+            ArgumentError(
+                "optical spatial frequencies must remain finite Float64 and exclude DC",
+            ),
+        )
+    tip_tilt = get(document, "tip_tilt", false)
     validate_optical_tip_tilt(tip_tilt)
     mode_count = 2length(rows) + (tip_tilt ? 2 : 0)
     modes = document["branch_modes"]
     validate_optical_mode_branches(modes, branches)
-    foreach(validate_optical_mode_vector,values(modes))
-    authority = optical_authority(NamedTuple{names}(Tuple(modes[string(name)] for name in names)),mode_count)
+    foreach(validate_optical_mode_vector, values(modes))
+    authority = optical_authority(
+        NamedTuple{names}(Tuple(modes[string(name)] for name in names)),
+        mode_count,
+    )
     controls = document["controlled_actuators"]
-    if get(controls,"kind",nothing) == "fits"
-        IC.fields(controls,("kind","binding"),("kind","binding"),"controlled actuators")
-        optical_selection_binding(controls["binding"],application,"controlled actuator mask")
+    if get(controls, "kind", nothing) == "fits"
+        IC.fields(
+            controls,
+            ("kind", "binding"),
+            ("kind", "binding"),
+            "controlled actuators",
+        )
+        optical_selection_binding(
+            controls["binding"],
+            application,
+            "controlled actuator mask",
+        )
     else
-        IC.fields(controls,("kind",),("kind",),"controlled actuators")
-        controls["kind"] == "declared-pupil" || throw(ArgumentError("unsupported controlled actuator selection"))
+        IC.fields(controls, ("kind",), ("kind",), "controlled actuators")
+        controls["kind"] == "declared-pupil" ||
+            throw(ArgumentError("unsupported controlled actuator selection"))
     end
     pixels = document["pixels"]
-    if get(pixels,"kind",nothing) == "fits"
-        IC.fields(pixels,("kind","branches"),("kind","branches"),"optical pixels")
-        Set(keys(pixels["branches"])) == Set(keys(branches)) || throw(ArgumentError("pixel masks must name every branch"))
+    if get(pixels, "kind", nothing) == "fits"
+        IC.fields(pixels, ("kind", "branches"), ("kind", "branches"), "optical pixels")
+        Set(keys(pixels["branches"])) == Set(keys(branches)) ||
+            throw(ArgumentError("pixel masks must name every branch"))
         for binding in values(pixels["branches"])
-            if get(binding,"kind",nothing) == "rectangle"
+            if get(binding, "kind", nothing) == "rectangle"
                 optical_rectangle_mask(binding)
             else
-                optical_selection_binding(binding,application,"optical pixel mask")
+                optical_selection_binding(binding, application, "optical pixel mask")
             end
         end
     else
-        IC.fields(pixels,("kind",),("kind",),"optical pixels")
-        pixels["kind"] == "full-image" || throw(ArgumentError("unsupported optical pixel selection"))
+        IC.fields(pixels, ("kind",), ("kind",), "optical pixels")
+        pixels["kind"] == "full-image" ||
+            throw(ArgumentError("unsupported optical pixel selection"))
     end
-    if haskey(document,"mirror_response")
+    if haskey(document, "mirror_response")
         response = document["mirror_response"]
-        IC.fields(response,("input","command_units","normalization_probe","support","graph","pupil_amplitude","coordinates","coordinate_radius"),
-            ("input","command_units","normalization_probe","support"),"mirror response")
+        IC.fields(
+            response,
+            (
+                "input",
+                "command_units",
+                "normalization_probe",
+                "support",
+                "graph",
+                "pupil_amplitude",
+                "coordinates",
+                "coordinate_radius",
+            ),
+            ("input", "command_units", "normalization_probe", "support"),
+            "mirror response",
+        )
         validate_optical_response_input(response["input"])
         validate_optical_command_units(response["command_units"])
         probe = response["normalization_probe"]
-        IC.isfinite_real(probe) && isfinite(Float32(probe)) && Float32(probe)>0 ||
-            throw(ArgumentError("mirror response requires a finite positive native normalization probe"))
-        optical_selection_binding(response["support"],application,"mirror normalization support")
-        haskey(response,"coordinates") == haskey(response,"coordinate_radius") ||
-            throw(ArgumentError("registered coordinates and pupil radius must be declared together"))
-        if haskey(response,"coordinate_radius")
-            IC.isfinite_real(response["coordinate_radius"]) && response["coordinate_radius"] > 0 ||
+        IC.isfinite_real(probe) && isfinite(Float32(probe)) && Float32(probe)>0 || throw(
+            ArgumentError(
+                "mirror response requires a finite positive native normalization probe",
+            ),
+        )
+        optical_selection_binding(
+            response["support"],
+            application,
+            "mirror normalization support",
+        )
+        haskey(response, "coordinates") == haskey(response, "coordinate_radius") || throw(
+            ArgumentError(
+                "registered coordinates and pupil radius must be declared together",
+            ),
+        )
+        if haskey(response, "coordinate_radius")
+            IC.isfinite_real(response["coordinate_radius"]) &&
+            response["coordinate_radius"] > 0 ||
                 throw(ArgumentError("coordinate radius must be finite and positive"))
         end
-        for key in ("graph","pupil_amplitude","coordinates")
-            haskey(response,key) && validate_optical_response_name(response[key],key)
+        for key in ("graph", "pupil_amplitude", "coordinates")
+            haskey(response, key) && validate_optical_response_name(response[key], key)
         end
     end
-    if haskey(document,"command_completion")
+    if haskey(document, "command_completion")
         completion = document["command_completion"]
-        IC.fields(completion,("binding","controlled"),("binding","controlled"),"command completion")
-        foreach(key -> validate_optical_completion_name(completion[key]),("binding","controlled"))
-        haskey(document,"mirror_response") || throw(ArgumentError("command completion requires a physical mirror response"))
+        IC.fields(
+            completion,
+            ("binding", "controlled"),
+            ("binding", "controlled"),
+            "command completion",
+        )
+        foreach(
+            key -> validate_optical_completion_name(completion[key]),
+            ("binding", "controlled"),
+        )
+        haskey(document, "mirror_response") ||
+            throw(ArgumentError("command completion requires a physical mirror response"))
     end
-    for key in ("poke_m","tsvd_rtol","derivative_tolerance","reconstruction_tolerance")
+    for key in ("poke_m", "tsvd_rtol", "derivative_tolerance", "reconstruction_tolerance")
         value = document[key]
-        IC.isfinite_real(value) && value > 0 && isfinite(Float32(value)) && Float32(value)>0 ||
+        IC.isfinite_real(value) &&
+        value > 0 &&
+        isfinite(Float32(value)) &&
+        Float32(value)>0 ||
             throw(ArgumentError("optical $key must be finite positive Float32"))
-        key == "poke_m" || value < 1 || throw(ArgumentError("optical $key must be below one"))
+        key == "poke_m" ||
+            value < 1 ||
+            throw(ArgumentError("optical $key must be below one"))
     end
-    Float32(document["poke_m"])/2 > 0 || throw(ArgumentError("optical half-poke must remain positive Float32"))
-    for key in ("settings","upstream_settings")
-        validate_optical_settings(get(document,key,Dict()),key)
+    Float32(document["poke_m"])/2 > 0 ||
+        throw(ArgumentError("optical half-poke must remain positive Float32"))
+    for key in ("settings", "upstream_settings")
+        validate_optical_settings(get(document, key, Dict()), key)
     end
     held_out = nothing
-    if haskey(document,"held_out_coefficients")
+    if haskey(document, "held_out_coefficients")
         rows = document["held_out_coefficients"]
-        validate_optical_held_out(rows,mode_count)
-        held_out = reduce(vcat,permutedims.(Float32.(row) for row in rows))
-        all(isfinite,held_out) && all(column -> any(!iszero,column),eachcol(held_out)) ||
+        validate_optical_held_out(rows, mode_count)
+        held_out = reduce(vcat, permutedims.(Float32.(row) for row in rows))
+        all(isfinite, held_out) && all(column -> any(!iszero, column), eachcol(held_out)) ||
             throw(ArgumentError("held-out mixtures must remain finite nonzero Float32"))
     end
-    if haskey(document,"upstream_reference")
+    if haskey(document, "upstream_reference")
         reference = document["upstream_reference"]
-        IC.fields(reference,("raw_endpoint","residual_endpoint","poke_amplitudes_m","derivative_tolerance",
-                "method","samples","rounding_samples","training_seed","validation_seed"),
-            ("raw_endpoint","residual_endpoint","poke_amplitudes_m","derivative_tolerance"),"upstream optical reference")
-        foreach(key -> validate_optical_reference_endpoint(reference[key]),("raw_endpoint","residual_endpoint"))
+        IC.fields(
+            reference,
+            (
+                "raw_endpoint",
+                "residual_endpoint",
+                "poke_amplitudes_m",
+                "derivative_tolerance",
+                "method",
+                "samples",
+                "rounding_samples",
+                "training_seed",
+                "validation_seed",
+            ),
+            (
+                "raw_endpoint",
+                "residual_endpoint",
+                "poke_amplitudes_m",
+                "derivative_tolerance",
+            ),
+            "upstream optical reference",
+        )
+        foreach(
+            key -> validate_optical_reference_endpoint(reference[key]),
+            ("raw_endpoint", "residual_endpoint"),
+        )
         amplitudes = reference["poke_amplitudes_m"]
         validate_optical_reference_amplitudes(amplitudes)
         tolerance = reference["derivative_tolerance"]
-        IC.isfinite_real(tolerance) && 0 < tolerance < 1 || throw(ArgumentError("invalid upstream derivative tolerance"))
-        method = get(reference,"method","held-frame")
-        method in ("held-frame","host-expectation") || throw(ArgumentError("unsupported upstream reference method"))
+        IC.isfinite_real(tolerance) && 0 < tolerance < 1 ||
+            throw(ArgumentError("invalid upstream derivative tolerance"))
+        method = get(reference, "method", "held-frame")
+        method in ("held-frame", "host-expectation") ||
+            throw(ArgumentError("unsupported upstream reference method"))
         if method == "host-expectation"
-            length(amplitudes)==1 || throw(ArgumentError("host expectation requires one explicit probe amplitude"))
-            optical_expectation_options(get(reference,"samples",512),get(reference,"rounding_samples",128),
-                get(reference,"training_seed",200002),get(reference,"validation_seed",400002))
+            length(amplitudes)==1 || throw(
+                ArgumentError("host expectation requires one explicit probe amplitude"),
+            )
+            optical_expectation_options(
+                get(reference, "samples", 512),
+                get(reference, "rounding_samples", 128),
+                get(reference, "training_seed", 200002),
+                get(reference, "validation_seed", 400002),
+            )
         else
-            any(key->haskey(reference,key),("samples","rounding_samples","training_seed","validation_seed")) &&
-                throw(ArgumentError("sampling controls require the host-expectation reference method"))
+            any(
+                key->haskey(reference, key),
+                ("samples", "rounding_samples", "training_seed", "validation_seed"),
+            ) && throw(
+                ArgumentError(
+                    "sampling controls require the host-expectation reference method",
+                ),
+            )
         end
     end
-    return (;path,document,branches=branch_selection,branch_modes=authority,frequencies,held_out)
+    return (;
+        path,
+        document,
+        branches = branch_selection,
+        branch_modes = authority,
+        frequencies,
+        held_out,
+    )
 end
 
 function optical_application(application)
     path = PipeWireAORTC.InstrumentExport.checked_path(application)
-    for name in ("deployment.conf","instrument.json")
-        isfile(joinpath(path,name)) || throw(ArgumentError(
-            "optical calibration requires a built application (missing $name)"))
-        PipeWireAORTC.DeploymentConfiguration.relative_asset(path,name)
+    for name in ("deployment.conf", "instrument.json")
+        isfile(joinpath(path, name)) || throw(
+            ArgumentError(
+                "optical calibration requires a built application (missing $name)",
+            ),
+        )
+        PipeWireAORTC.DeploymentConfiguration.relative_asset(path, name)
     end
     return path
 end
@@ -1314,177 +2395,365 @@ The recipe selects native graphs, explicit declared-pupil physical commands and,
 when declared, the retained chopped pixel-residual measurement prefix. Chopped
 calibration evaluates matched static F/U roles, not a live acquisition or session.
 """
-function Calibration.calibrate_optical(upstream_application::AbstractString,
-        optical_application_path::AbstractString; recipe="calibration/optical.yaml",
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice(),diagnostic::Bool=false,publication_plan=nothing)
+function Calibration.calibrate_optical(
+    upstream_application::AbstractString,
+    optical_application_path::AbstractString;
+    recipe = "calibration/optical.yaml",
+    target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
+    diagnostic::Bool = false,
+    publication_plan = nothing,
+)
     upstream = optical_application(upstream_application)
     optical = optical_application(optical_application_path)
-    simulation_path = joinpath(upstream,"simulation.conf")
-    isfile(simulation_path) || throw(ArgumentError("optical calibration requires a built simulation configuration"))
-    upstream_document = PipeWireAORTC.DeploymentConfiguration.decode(simulation_path,get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
-    if get(upstream_document,"version",nothing) == 6
-        for path in ("deployment.conf","instrument.json")
-            isfile(joinpath(upstream,path)) || throw(ArgumentError("optical calibration requires a built application (missing $path)"))
+    simulation_path = joinpath(upstream, "simulation.conf")
+    isfile(simulation_path) || throw(
+        ArgumentError("optical calibration requires a built simulation configuration"),
+    )
+    upstream_document = PipeWireAORTC.DeploymentConfiguration.decode(
+        simulation_path,
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+    )
+    if get(upstream_document, "version", nothing) == 6
+        for path in ("deployment.conf", "instrument.json")
+            isfile(joinpath(upstream, path)) || throw(
+                ArgumentError(
+                    "optical calibration requires a built application (missing $path)",
+                ),
+            )
         end
     else
         Calibration.require_prepared_application(upstream)
     end
-    selected = optical_recipe(optical,recipe)
+    selected = optical_recipe(optical, recipe)
     document = selected.document
-    options = PipeWireAORTC.AOSOwner.configuration(joinpath(optical,"simulation.conf"))
+    options = PipeWireAORTC.AOSOwner.configuration(joinpath(optical, "simulation.conf"))
     chopping = options.plant.chopping
-    measurements = get(document,"measurements",Dict())
-    Set(name for (name,row) in measurements if row["kind"] == "chopped-pixel-residual") == Set(string.(keys(chopping))) ||
-        throw(ArgumentError("chopped optical execution requires exactly matching chopped measurement selections"))
-    all(name -> getproperty(selected.branches,name) == string(name),keys(chopping)) ||
-        throw(ArgumentError("chopped measurements must select their declared physical optical path"))
+    measurements = get(document, "measurements", Dict())
+    Set(name for (name, row) in measurements if row["kind"] == "chopped-pixel-residual") ==
+    Set(string.(keys(chopping))) || throw(
+        ArgumentError(
+            "chopped optical execution requires exactly matching chopped measurement selections",
+        ),
+    )
+    all(name -> getproperty(selected.branches, name) == string(name), keys(chopping)) ||
+        throw(
+            ArgumentError(
+                "chopped measurements must select their declared physical optical path",
+            ),
+        )
     if !isempty(chopping) && publication_plan === nothing
-        publication_plan = optical_publication_plan(optical,selected;graphs=nothing,
-            configuration="calibration/materialize.yaml",prefix=get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"))
+        publication_plan = optical_publication_plan(
+            optical,
+            selected;
+            graphs = nothing,
+            configuration = "calibration/materialize.yaml",
+            prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+        )
     end
-    upstream_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(upstream,document["upstream_simulation"])
-    optical_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(optical,document["optical_simulation"])
+    upstream_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(
+        upstream,
+        document["upstream_simulation"],
+    )
+    optical_simulation = PipeWireAORTC.DeploymentConfiguration.relative_asset(
+        optical,
+        document["optical_simulation"],
+    )
     recipe_sha256 = Calibration.digest(selected.path)
-    haskey(document,"upstream_reference") && optical_flat_parameters(upstream)
-    execution = optical_upstream_execution(upstream,upstream_simulation,get(document,"upstream_settings",Dict()))
-    if get(execution.execution,"version",nothing) == 6
-        response = get(document,"mirror_response",nothing)
-        response === nothing && throw(ArgumentError("clocked optical calibration requires an explicit mirror response"))
-        options.version == 6 || throw(ArgumentError("optical owner version differs from upstream execution"))
+    haskey(document, "upstream_reference") && optical_flat_parameters(upstream)
+    execution = optical_upstream_execution(
+        upstream,
+        upstream_simulation,
+        get(document, "upstream_settings", Dict()),
+    )
+    if get(execution.execution, "version", nothing) == 6
+        response = get(document, "mirror_response", nothing)
+        response === nothing && throw(
+            ArgumentError(
+                "clocked optical calibration requires an explicit mirror response",
+            ),
+        )
+        options.version == 6 ||
+            throw(ArgumentError("optical owner version differs from upstream execution"))
         optical_declaration = IC.load_simulation(optical_simulation)
-        verify_clocked_calibration_inputs(response,options,optical_simulation,
-            IC.settings(optical_declaration,get(document,"settings",Dict())),
-            IC.settings(optical_declaration,options.plant.settings),selected.branches,
-            optical_declaration.instrument.document["optical_paths"])
-        calibration_graph = IC.graph_document(execution.declaration,execution.effective;
-            simulation_graph=get(response,"graph","calibration"))
-        verify_optical_mirror_identity(execution.execution_graph,calibration_graph,document["mirror"])
+        verify_clocked_calibration_inputs(
+            response,
+            options,
+            optical_simulation,
+            IC.settings(optical_declaration, get(document, "settings", Dict())),
+            IC.settings(optical_declaration, options.plant.settings),
+            selected.branches,
+            optical_declaration.instrument.document["optical_paths"],
+        )
+        calibration_graph = IC.graph_document(
+            execution.declaration,
+            execution.effective;
+            simulation_graph = get(response, "graph", "calibration"),
+        )
+        verify_optical_mirror_identity(
+            execution.execution_graph,
+            calibration_graph,
+            document["mirror"],
+        )
     end
-    callbacks = optical_callbacks(upstream_simulation,optical_simulation;
-        mirror=document["mirror"],branches=selected.branches,
-        upstream_settings=execution.effective,settings=get(document,"settings",Dict()),target,chopping,publication_plan,mirror_response=get(document,"mirror_response",nothing),
-        pixel_selections=document["pixels"]["kind"] == "fits" ? document["pixels"]["branches"] : nothing)
+    callbacks = optical_callbacks(
+        upstream_simulation,
+        optical_simulation;
+        mirror = document["mirror"],
+        branches = selected.branches,
+        upstream_settings = execution.effective,
+        settings = get(document, "settings", Dict()),
+        target,
+        chopping,
+        publication_plan,
+        mirror_response = get(document, "mirror_response", nothing),
+        pixel_selections = document["pixels"]["kind"] == "fits" ?
+                           document["pixels"]["branches"] : nothing,
+    )
     declaration = execution.declaration
     mirror = declaration.instrument.document["deformable_mirrors"][document["mirror"]]
-    response = get(document,"mirror_response",nothing)
+    response = get(document, "mirror_response", nothing)
     units = response === nothing ? "m OPD" : response["command_units"]
-    get(mirror,"units",nothing) == units || throw(ArgumentError("optical mirror command units differ from the explicit response model"))
+    get(mirror, "units", nothing) == units || throw(
+        ArgumentError(
+            "optical mirror command units differ from the explicit response model",
+        ),
+    )
     controlled = if document["controlled_actuators"]["kind"] == "fits"
-        vec(optical_binary_binding(execution.declaration,IC.settings(execution.declaration,execution.effective),
-            document["controlled_actuators"]["binding"],"controlled actuator selection";rank=1))
+        vec(
+            optical_binary_binding(
+                execution.declaration,
+                IC.settings(execution.declaration, execution.effective),
+                document["controlled_actuators"]["binding"],
+                "controlled actuator selection";
+                rank = 1,
+            ),
+        )
     else
-        pupil = get(mirror,"pupil",nothing)
+        pupil = get(mirror, "pupil", nothing)
         validate_optical_declared_pupil(pupil)
-        radius_squared = vec(sum(abs2,callbacks.actuator_coordinates;dims=2))
-        (pupil["inner_radius"]^2 .< radius_squared) .& (radius_squared .<= pupil["outer_radius"]^2)
+        radius_squared = vec(sum(abs2, callbacks.actuator_coordinates; dims = 2))
+        (pupil["inner_radius"]^2 .< radius_squared) .&
+        (radius_squared .<= pupil["outer_radius"]^2)
     end
-    domain = response === nothing ? nothing : optical_native_command_domain(upstream,
-        document["mirror"],size(callbacks.actuator_coordinates,1),callbacks.surface)
-    domain === nothing || (callbacks = merge(callbacks,(;surface=domain.surface)))
-    completion = if haskey(document,"command_completion")
-        domain === nothing && throw(ArgumentError("completion requires checked physical command limits"))
-        selected_completion = optical_completion_binding(declaration,IC.settings(declaration,execution.effective),
-            document["command_completion"],controlled)
+    domain =
+        response === nothing ? nothing :
+        optical_native_command_domain(
+            upstream,
+            document["mirror"],
+            size(callbacks.actuator_coordinates, 1),
+            callbacks.surface,
+        )
+    domain === nothing || (callbacks = merge(callbacks, (; surface = domain.surface)))
+    completion = if haskey(document, "command_completion")
+        domain === nothing &&
+            throw(ArgumentError("completion requires checked physical command limits"))
+        selected_completion = optical_completion_binding(
+            declaration,
+            IC.settings(declaration, execution.effective),
+            document["command_completion"],
+            controlled,
+        )
         rtc = IC.load_rtc(options.rtc_configuration)
-        get(rtc.document["dimensions"],"active_vdm_count",nothing) == length(selected_completion.indices) ||
-            throw(DimensionMismatch("completion direct count differs from RTC active VDM dimension"))
+        get(rtc.document["dimensions"], "active_vdm_count", nothing) ==
+        length(selected_completion.indices) || throw(
+            DimensionMismatch(
+                "completion direct count differs from RTC active VDM dimension",
+            ),
+        )
         selected_completion
     else
         nothing
     end
-    surface = completion === nothing ? callbacks.surface : command -> callbacks.surface(completion.matrix * command)
-    coordinates = completion === nothing ? callbacks.actuator_coordinates : callbacks.actuator_coordinates[completion.indices,:]
+    surface =
+        completion === nothing ? callbacks.surface :
+        command -> callbacks.surface(completion.matrix * command)
+    coordinates =
+        completion === nothing ? callbacks.actuator_coordinates :
+        callbacks.actuator_coordinates[completion.indices, :]
     active = completion === nothing ? controlled : trues(length(completion.indices))
     provenance = deepcopy(callbacks.provenance)
     if completion !== nothing
-        provenance["command_completion"] = Dict("binding"=>document["command_completion"]["binding"],
-            "sha256"=>completion.binding["sha256"],"shape"=>collect(size(completion.matrix)),
-            "direct_binding"=>document["command_completion"]["controlled"],"direct_sha256"=>completion.direct_binding["sha256"],
-            "command_domain"=>"active VDM native command")
+        provenance["command_completion"] = Dict(
+            "binding"=>document["command_completion"]["binding"],
+            "sha256"=>completion.binding["sha256"],
+            "shape"=>collect(size(completion.matrix)),
+            "direct_binding"=>document["command_completion"]["controlled"],
+            "direct_sha256"=>completion.direct_binding["sha256"],
+            "command_domain"=>"active VDM native command",
+        )
     end
-    images = callbacks.observe(zeros(Float32,size(callbacks.pupil_support)))
-    command_coordinates = completion === nothing ? PhysicalCommandCoordinates() : CompletedVDMCoordinates()
-    calibration = Calibration.calibrate_optical(surface,callbacks.observe;
-        actuator_coordinates=coordinates,controlled_actuators=active,spatial_frequencies=selected.frequencies,
+    images = callbacks.observe(zeros(Float32, size(callbacks.pupil_support)))
+    command_coordinates =
+        completion === nothing ? PhysicalCommandCoordinates() : CompletedVDMCoordinates()
+    calibration = Calibration.calibrate_optical(
+        surface,
+        callbacks.observe;
+        actuator_coordinates = coordinates,
+        controlled_actuators = active,
+        spatial_frequencies = selected.frequencies,
         command_coordinates,
-        tip_tilt=get(document,"tip_tilt",false),
-        measurement_nulling=Tuple(Symbol.(get(document,"measurement_nulling",[]))),
-        pupil_support=callbacks.pupil_support,branch_modes=selected.branch_modes,
-        pixel_masks=map((mask,image)->mask === nothing ? trues(size(image)) : mask,callbacks.pixel_masks,images),
-        normalization_probe=response === nothing ? document["poke_m"] : response["normalization_probe"],
-        poke_m=document["poke_m"],tsvd_rtol=document["tsvd_rtol"],
-        derivative_tolerance=document["derivative_tolerance"],reconstruction_tolerance=document["reconstruction_tolerance"],
-        held_out_coefficients=selected.held_out,provenance,require_observable=!diagnostic,
-        signed_measurements=keys(chopping),
-        centroid_measurements=Tuple(name for name in keys(selected.branches) if
-            get(get(measurements,string(name),Dict()),"kind",nothing) == "center-of-gravity"))
+        tip_tilt = get(document, "tip_tilt", false),
+        measurement_nulling = Tuple(Symbol.(get(document, "measurement_nulling", []))),
+        pupil_support = callbacks.pupil_support,
+        branch_modes = selected.branch_modes,
+        pixel_masks = map(
+            (mask, image)->mask === nothing ? trues(size(image)) : mask,
+            callbacks.pixel_masks,
+            images,
+        ),
+        normalization_probe = response === nothing ? document["poke_m"] :
+                              response["normalization_probe"],
+        poke_m = document["poke_m"],
+        tsvd_rtol = document["tsvd_rtol"],
+        derivative_tolerance = document["derivative_tolerance"],
+        reconstruction_tolerance = document["reconstruction_tolerance"],
+        held_out_coefficients = selected.held_out,
+        provenance,
+        require_observable = !diagnostic,
+        signed_measurements = keys(chopping),
+        centroid_measurements = Tuple(
+            name for name in keys(selected.branches) if
+            get(get(measurements, string(name), Dict()), "kind", nothing) ==
+            "center-of-gravity"
+        ),
+    )
     if completion !== nothing
         calibration.report["physical_projection"]["physical_to_modes"] = "artifacts/vdm-to-modes.fits"
         calibration.report["physical_projection"]["command_domain"] = "active VDM native command"
-        calibration = merge(calibration,(;completion=completion.matrix))
-        if get(document,"tip_tilt",false)
+        calibration = merge(calibration, (; completion = completion.matrix))
+        if get(document, "tip_tilt", false)
             completed_projection = completion.matrix * calibration.projection
-            inverse = AdaptiveOpticsCalibration.process(AdaptiveOpticsCalibration.prepare(
-                AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol=Float32(document["tsvd_rtol"])),
-                AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
-                    size(completed_projection,1),size(completed_projection,2),Float32)),
-                AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(completed_projection))
-            AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) == size(completed_projection,2) ||
-                throw(ArgumentError("completed physical projection must retain every calibrated mode"))
-            physical_feedback_to_modes = Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse))
+            inverse = AdaptiveOpticsCalibration.process(
+                AdaptiveOpticsCalibration.prepare(
+                    AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(
+                        rtol = Float32(document["tsvd_rtol"]),
+                    ),
+                    AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
+                        size(completed_projection, 1),
+                        size(completed_projection, 2),
+                        Float32,
+                    ),
+                ),
+                AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(
+                    completed_projection,
+                ),
+            )
+            AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) ==
+            size(completed_projection, 2) || throw(
+                ArgumentError(
+                    "completed physical projection must retain every calibrated mode",
+                ),
+            )
+            physical_feedback_to_modes =
+                Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse))
             calibration.report["physical_projection"]["completed_physical_to_modes"] = "artifacts/physical-to-modes.fits"
             calibration.report["physical_projection"]["completed_relative_inverse_residual"] =
-                LA.norm(physical_feedback_to_modes*completed_projection-Matrix{Float32}(LA.I,size(completed_projection,2),size(completed_projection,2)))/sqrt(size(completed_projection,2))
-            calibration = merge(calibration,(;physical_feedback_to_modes))
+                LA.norm(
+                    physical_feedback_to_modes*completed_projection-Matrix{Float32}(
+                        LA.I,
+                        size(completed_projection, 2),
+                        size(completed_projection, 2),
+                    ),
+                )/sqrt(size(completed_projection, 2))
+            calibration = merge(calibration, (; physical_feedback_to_modes))
         end
     end
-    calibration = merge(calibration,(;chopped_references=callbacks.chopped_references))
+    calibration = merge(calibration, (; chopped_references = callbacks.chopped_references))
     domain === nothing || (calibration.report["command_domain"] = deepcopy(domain.record))
-    if !diagnostic && calibration.report["status"] == "accepted" && haskey(document,"upstream_reference")
+    if !diagnostic &&
+       calibration.report["status"] == "accepted" &&
+       haskey(document, "upstream_reference")
         reference = document["upstream_reference"]
-        method = get(reference,"method","held-frame")
-        calibration = Calibration.calibrate_optical_reference(upstream,calibration;
-            simulation=document["upstream_simulation"],settings=execution.effective,
-            mirror=document["mirror"],raw_endpoint=reference["raw_endpoint"],
-            residual_endpoint=reference["residual_endpoint"],poke_amplitudes_m=reference["poke_amplitudes_m"],
-            derivative_tolerance=reference["derivative_tolerance"],method,
-            samples=get(reference,"samples",512),rounding_samples=get(reference,"rounding_samples",128),
-            training_seed=get(reference,"training_seed",200002),validation_seed=get(reference,"validation_seed",400002),
-            target=method=="host-expectation" ? AdaptiveOpticsSim.Backends.HostComputeDevice() : target)
+        method = get(reference, "method", "held-frame")
+        calibration = Calibration.calibrate_optical_reference(
+            upstream,
+            calibration;
+            simulation = document["upstream_simulation"],
+            settings = execution.effective,
+            mirror = document["mirror"],
+            raw_endpoint = reference["raw_endpoint"],
+            residual_endpoint = reference["residual_endpoint"],
+            poke_amplitudes_m = reference["poke_amplitudes_m"],
+            derivative_tolerance = reference["derivative_tolerance"],
+            method,
+            samples = get(reference, "samples", 512),
+            rounding_samples = get(reference, "rounding_samples", 128),
+            training_seed = get(reference, "training_seed", 200002),
+            validation_seed = get(reference, "validation_seed", 400002),
+            target = method=="host-expectation" ?
+                     AdaptiveOpticsSim.Backends.HostComputeDevice() : target,
+        )
     end
     if diagnostic
         calibration.report["deployable"] = false
         calibration.report["upstream_reference_status"] = "not acquired in optical-only diagnostic mode"
     end
-    Calibration.digest(selected.path) == recipe_sha256 || throw(ArgumentError("optical recipe changed during calibration"))
-    current_execution = optical_upstream_execution(upstream,upstream_simulation,get(document,"upstream_settings",Dict()))
+    Calibration.digest(selected.path) == recipe_sha256 ||
+        throw(ArgumentError("optical recipe changed during calibration"))
+    current_execution = optical_upstream_execution(
+        upstream,
+        upstream_simulation,
+        get(document, "upstream_settings", Dict()),
+    )
     current_execution.configuration_sha256 == execution.configuration_sha256 &&
-        current_execution.effective_settings_identity == execution.effective_settings_identity &&
-        current_execution.execution_graph_identity == execution.execution_graph_identity ||
-        throw(ArgumentError("upstream executed configuration changed during optical acquisition"))
-    for (path,key,settings_key) in ((upstream_simulation,"upstream_prescription_identity","upstream_settings"),
-            (optical_simulation,"optical_prescription_identity","settings"))
+    current_execution.effective_settings_identity ==
+    execution.effective_settings_identity &&
+    current_execution.execution_graph_identity == execution.execution_graph_identity ||
+        throw(
+            ArgumentError(
+                "upstream executed configuration changed during optical acquisition",
+            ),
+        )
+    for (path, key, settings_key) in (
+        (upstream_simulation, "upstream_prescription_identity", "upstream_settings"),
+        (optical_simulation, "optical_prescription_identity", "settings"),
+    )
         current = IC.load_simulation(path)
-        overrides = settings_key == "upstream_settings" ? execution.effective : get(document,settings_key,Dict())
-        IC.prescription_identity(current,IC.settings(current,overrides)) == callbacks.provenance[key] ||
-            throw(ArgumentError("optical calibration prescription changed during acquisition"))
+        overrides =
+            settings_key == "upstream_settings" ? execution.effective :
+            get(document, settings_key, Dict())
+        IC.prescription_identity(current, IC.settings(current, overrides)) ==
+        callbacks.provenance[key] || throw(
+            ArgumentError("optical calibration prescription changed during acquisition"),
+        )
     end
     # Bind the matrix content identity to both prepared prescriptions and the
     # retained exact recipe. Arrays themselves have independent FITS-byte hashes.
     content = calibration.report["calibration_identity"]
-    identity = "sha256:"*bytes2hex(Calibration.sha256(join((content,recipe_sha256,
-        callbacks.provenance["upstream_prescription_identity"],callbacks.provenance["optical_prescription_identity"],
-        execution.effective_settings_identity,execution.execution_graph_identity),"\n")))
+    identity =
+        "sha256:"*bytes2hex(
+            Calibration.sha256(
+                join(
+                    (
+                        content,
+                        recipe_sha256,
+                        callbacks.provenance["upstream_prescription_identity"],
+                        callbacks.provenance["optical_prescription_identity"],
+                        execution.effective_settings_identity,
+                        execution.execution_graph_identity,
+                    ),
+                    "\n",
+                ),
+            ),
+        )
     calibration.report["calibration_identity"] = identity
-    report = merge(Dict{String,Any}("recipe"=>document,"recipe_sha256"=>recipe_sha256,
-        "source_prescription_identity"=>callbacks.provenance["optical_prescription_identity"],
-        "upstream_prescription_identity"=>callbacks.provenance["upstream_prescription_identity"],
-        "upstream_effective_settings_identity"=>execution.effective_settings_identity,
-        "upstream_execution_graph_identity"=>execution.execution_graph_identity,
-        "source_graph_sha256"=>Calibration.digest(optical_simulation),
-        "built_application_calibration"=>true,"application_accepted"=>false,
-        "diagnostic"=>diagnostic,"deployable"=>!diagnostic),calibration.report)
-    return (;calibration,report,callbacks)
+    report = merge(
+        Dict{String,Any}(
+            "recipe"=>document,
+            "recipe_sha256"=>recipe_sha256,
+            "source_prescription_identity"=>callbacks.provenance["optical_prescription_identity"],
+            "upstream_prescription_identity"=>callbacks.provenance["upstream_prescription_identity"],
+            "upstream_effective_settings_identity"=>execution.effective_settings_identity,
+            "upstream_execution_graph_identity"=>execution.execution_graph_identity,
+            "source_graph_sha256"=>Calibration.digest(optical_simulation),
+            "built_application_calibration"=>true,
+            "application_accepted"=>false,
+            "diagnostic"=>diagnostic,
+            "deployable"=>!diagnostic,
+        ),
+        calibration.report,
+    )
+    return (; calibration, report, callbacks)
 end
 
 """
@@ -1499,147 +2768,218 @@ callers may still supply both `concrete_graphs` and `contexts` NamedTuples.
 Neither preparation nor publication starts a service. Numerical acceptance remains
 separate from application and physical-loop qualification.
 """
-function Calibration.calibrate_optical(upstream_application::AbstractString,
-        optical_application_path::AbstractString, output::AbstractString;
-        concrete_graphs=nothing, contexts=nothing, graphs=nothing,
-        configuration="calibration/materialize.yaml", recipe="calibration/optical.yaml",
-        prefix=get(ENV,"PIPEWIREAO_PREFIX","/opt/pipewireao"),
-        target=AdaptiveOpticsSim.Backends.HostComputeDevice())
-    destination = Calibration._calibration_output((upstream_application,optical_application_path),output)
+function Calibration.calibrate_optical(
+    upstream_application::AbstractString,
+    optical_application_path::AbstractString,
+    output::AbstractString;
+    concrete_graphs = nothing,
+    contexts = nothing,
+    graphs = nothing,
+    configuration = "calibration/materialize.yaml",
+    recipe = "calibration/optical.yaml",
+    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+    target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
+)
+    destination = Calibration._calibration_output(
+        (upstream_application, optical_application_path),
+        output,
+    )
     Export = PipeWireAORTC.InstrumentExport
-    upstream, _ = Export.sealed_application(upstream_application,prefix)
-    optical, _ = Export.sealed_application(optical_application_path,prefix)
-    selected = optical_recipe(optical,recipe)
+    upstream, _ = Export.sealed_application(upstream_application, prefix)
+    optical, _ = Export.sealed_application(optical_application_path, prefix)
+    selected = optical_recipe(optical, recipe)
     explicit = concrete_graphs !== nothing || contexts !== nothing
     plan = if explicit
-        graphs === nothing || throw(ArgumentError("choose concrete graphs or authored templates"))
-        validate_optical_graphs(concrete_graphs,contexts,keys(selected.branches))
+        graphs === nothing ||
+            throw(ArgumentError("choose concrete graphs or authored templates"))
+        validate_optical_graphs(concrete_graphs, contexts, keys(selected.branches))
         nothing
     else
-        optical_publication_plan(optical,selected;graphs,configuration,prefix)
+        optical_publication_plan(optical, selected; graphs, configuration, prefix)
     end
-    snapshots = map(path->Calibration.digest(joinpath(path,"deployment.conf")),(upstream,optical))
-    result = Calibration.calibrate_optical(upstream,optical;recipe,target,publication_plan=plan)
-    for (path,snapshot) in zip((upstream,optical),snapshots)
-        Export.sealed_application(path,prefix)
-        Calibration.digest(joinpath(path,"deployment.conf")) == snapshot ||
+    snapshots = map(
+        path->Calibration.digest(joinpath(path, "deployment.conf")),
+        (upstream, optical),
+    )
+    result = Calibration.calibrate_optical(
+        upstream,
+        optical;
+        recipe,
+        target,
+        publication_plan = plan,
+    )
+    for (path, snapshot) in zip((upstream, optical), snapshots)
+        Export.sealed_application(path, prefix)
+        Calibration.digest(joinpath(path, "deployment.conf")) == snapshot ||
             throw(ArgumentError("built application changed during optical calibration"))
     end
     if !explicit
-        prepared = optical_publication_graphs(plan,result.calibration)
+        prepared = optical_publication_graphs(plan, result.calibration)
         concrete_graphs, contexts = prepared.graphs, prepared.contexts
     end
-    return publish_optical_bundles(result,destination,concrete_graphs,contexts)
+    return publish_optical_bundles(result, destination, concrete_graphs, contexts)
 end
 
 function validate_optical_binding_name(name::String, label)
-    occursin(r"^[a-z][a-z0-9_]*$",name) || throw(ArgumentError("$label must name one declared simulation binding"))
+    occursin(r"^[a-z][a-z0-9_]*$", name) ||
+        throw(ArgumentError("$label must name one declared simulation binding"))
     return nothing
 end
-validate_optical_binding_name(name, label) = throw(ArgumentError("$label must name one declared simulation binding"))
+validate_optical_binding_name(name, label) =
+    throw(ArgumentError("$label must name one declared simulation binding"))
 
 function validate_optical_binding_digest(kind, digest::String, label)
-    kind == "fits" && occursin(r"^[0-9a-f]{64}$",digest) || throw(ArgumentError("$label requires a FITS binding with an exact SHA-256"))
+    kind == "fits" && occursin(r"^[0-9a-f]{64}$", digest) ||
+        throw(ArgumentError("$label requires a FITS binding with an exact SHA-256"))
     return nothing
 end
-validate_optical_binding_digest(kind, digest, label) = throw(ArgumentError("$label requires a FITS binding with an exact SHA-256"))
+validate_optical_binding_digest(kind, digest, label) =
+    throw(ArgumentError("$label requires a FITS binding with an exact SHA-256"))
 
 function validate_clocked_response(response::AbstractDict, options)
-    get(response,"input",nothing) == "dm_opd" && get(response,"pupil_amplitude",nothing) == options.source_amplitude_binding || throw(ArgumentError("calibration physical inputs differ from clocked optical owner"))
+    get(response, "input", nothing) == "dm_opd" &&
+    get(response, "pupil_amplitude", nothing) == options.source_amplitude_binding || throw(
+        ArgumentError("calibration physical inputs differ from clocked optical owner"),
+    )
     return nothing
 end
-validate_clocked_response(response, options) = throw(ArgumentError("calibration physical inputs differ from clocked optical owner"))
+validate_clocked_response(response, options) =
+    throw(ArgumentError("calibration physical inputs differ from clocked optical owner"))
 
 function validate_optical_pupil_interfaces(output::AbstractDict, input::AbstractDict)
-    all(key -> haskey(output,key) && haskey(input,key) && output[key] == input[key],("plane","diameter_m","curvature","registration")) || throw(ArgumentError("upstream and optical instrument pupil interfaces must explicitly match"))
+    all(
+        key -> haskey(output, key) && haskey(input, key) && output[key] == input[key],
+        ("plane", "diameter_m", "curvature", "registration"),
+    ) || throw(
+        ArgumentError(
+            "upstream and optical instrument pupil interfaces must explicitly match",
+        ),
+    )
     return nothing
 end
-validate_optical_pupil_interfaces(output, input) = throw(ArgumentError("upstream and optical instrument pupil interfaces must explicitly match"))
+validate_optical_pupil_interfaces(output, input) = throw(
+    ArgumentError("upstream and optical instrument pupil interfaces must explicitly match"),
+)
 
 function validate_optical_surface(opd::AbstractMatrix{<:AbstractFloat}, support)
-    size(opd) == size(support) && all(isfinite,opd) || throw(ArgumentError("mirror response must be a finite pupil OPD image"))
+    size(opd) == size(support) && all(isfinite, opd) ||
+        throw(ArgumentError("mirror response must be a finite pupil OPD image"))
     return nothing
 end
-validate_optical_surface(opd, support) = throw(ArgumentError("mirror response must be a finite pupil OPD image"))
+validate_optical_surface(opd, support) =
+    throw(ArgumentError("mirror response must be a finite pupil OPD image"))
 
 function validate_optical_reference_branches(reference_images::NamedTuple, authority)
-    keys(reference_images) == keys(authority) || throw(ArgumentError("optical observation branches differ from branch_modes"))
+    keys(reference_images) == keys(authority) ||
+        throw(ArgumentError("optical observation branches differ from branch_modes"))
     return nothing
 end
-validate_optical_reference_branches(reference_images, authority) = throw(ArgumentError("optical observation branches differ from branch_modes"))
+validate_optical_reference_branches(reference_images, authority) =
+    throw(ArgumentError("optical observation branches differ from branch_modes"))
 
 function validate_optical_pixel_mask(mask::AbstractMatrix{Bool}, image)
-    size(mask) == size(image) && any(mask) || throw(ArgumentError("each branch requires a nonempty explicit image pixel mask"))
+    size(mask) == size(image) && any(mask) ||
+        throw(ArgumentError("each branch requires a nonempty explicit image pixel mask"))
     return nothing
 end
-validate_optical_pixel_mask(mask, image) = throw(ArgumentError("each branch requires a nonempty explicit image pixel mask"))
+validate_optical_pixel_mask(mask, image) =
+    throw(ArgumentError("each branch requires a nonempty explicit image pixel mask"))
 
 function validate_optical_probe_branches(images::NamedTuple, authority)
-    keys(images) == keys(authority) || throw(ArgumentError("optical branches changed during calibration"))
+    keys(images) == keys(authority) ||
+        throw(ArgumentError("optical branches changed during calibration"))
     return nothing
 end
-validate_optical_probe_branches(images, authority) = throw(ArgumentError("optical branches changed during calibration"))
+validate_optical_probe_branches(images, authority) =
+    throw(ArgumentError("optical branches changed during calibration"))
 
 function validate_optical_recipe_path(recipe::AbstractString)
-    !isabspath(recipe) && !PipeWireAORTC.InstrumentExport.outside(normpath(recipe)) || throw(ArgumentError("optical recipe must remain inside its built application"))
+    !isabspath(recipe) && !PipeWireAORTC.InstrumentExport.outside(normpath(recipe)) ||
+        throw(ArgumentError("optical recipe must remain inside its built application"))
     return nothing
 end
-validate_optical_recipe_path(recipe) = throw(ArgumentError("optical recipe must remain inside its built application"))
+validate_optical_recipe_path(recipe) =
+    throw(ArgumentError("optical recipe must remain inside its built application"))
 
 function validate_optical_recipe_text(text::AbstractString, key)
-    !isempty(strip(text)) || throw(ArgumentError("optical recipe $key must be nonempty text"))
+    !isempty(strip(text)) ||
+        throw(ArgumentError("optical recipe $key must be nonempty text"))
     return nothing
 end
-validate_optical_recipe_text(text, key) = throw(ArgumentError("optical recipe $key must be nonempty text"))
+validate_optical_recipe_text(text, key) =
+    throw(ArgumentError("optical recipe $key must be nonempty text"))
 
 function validate_optical_measurement_names(measurements::AbstractDict, branches)
-    Set(keys(measurements)) ⊆ Set(keys(branches)) || throw(ArgumentError("measurements must name declared optical branches"))
+    Set(keys(measurements)) ⊆ Set(keys(branches)) ||
+        throw(ArgumentError("measurements must name declared optical branches"))
     return nothing
 end
-validate_optical_measurement_names(measurements, branches) = throw(ArgumentError("measurements must name declared optical branches"))
+validate_optical_measurement_names(measurements, branches) =
+    throw(ArgumentError("measurements must name declared optical branches"))
 
 validate_optical_tip_tilt(tip_tilt::Bool) = nothing
 validate_optical_tip_tilt(tip_tilt) = throw(ArgumentError("tip_tilt must be a boolean"))
 
 function validate_optical_mode_branches(modes::AbstractDict, branches)
-    Set(keys(modes)) == Set(keys(branches)) || throw(ArgumentError("optical branch_modes must name exactly the selected branches"))
+    Set(keys(modes)) == Set(keys(branches)) ||
+        throw(ArgumentError("optical branch_modes must name exactly the selected branches"))
     return nothing
 end
-validate_optical_mode_branches(modes, branches) = throw(ArgumentError("optical branch_modes must name exactly the selected branches"))
+validate_optical_mode_branches(modes, branches) =
+    throw(ArgumentError("optical branch_modes must name exactly the selected branches"))
 
 validate_optical_mode_vector(selection::AbstractVector) = nothing
-validate_optical_mode_vector(selection) = throw(ArgumentError("each optical branch_modes selection must be a vector"))
+validate_optical_mode_vector(selection) =
+    throw(ArgumentError("each optical branch_modes selection must be a vector"))
 
 function validate_optical_response_input(name::String)
-    occursin(r"^[a-z][a-z0-9_]*$",name) || throw(ArgumentError("mirror response requires an explicit optical input name"))
+    occursin(r"^[a-z][a-z0-9_]*$", name) ||
+        throw(ArgumentError("mirror response requires an explicit optical input name"))
     return nothing
 end
-validate_optical_response_input(name) = throw(ArgumentError("mirror response requires an explicit optical input name"))
+validate_optical_response_input(name) =
+    throw(ArgumentError("mirror response requires an explicit optical input name"))
 
 function validate_optical_command_units(units::String)
-    !isempty(strip(units)) || throw(ArgumentError("mirror response requires explicit command units"))
+    !isempty(strip(units)) ||
+        throw(ArgumentError("mirror response requires explicit command units"))
     return nothing
 end
-validate_optical_command_units(units) = throw(ArgumentError("mirror response requires explicit command units"))
+validate_optical_command_units(units) =
+    throw(ArgumentError("mirror response requires explicit command units"))
 
 validate_optical_settings(settings::AbstractDict, key) = nothing
-validate_optical_settings(settings, key) = throw(ArgumentError("optical $key must be a mapping"))
+validate_optical_settings(settings, key) =
+    throw(ArgumentError("optical $key must be a mapping"))
 
 function validate_optical_declared_pupil(pupil::AbstractDict)
-    all(key -> haskey(pupil,key) && IC.isfinite_real(pupil[key]),("outer_radius","inner_radius")) && 0 <= pupil["inner_radius"] < pupil["outer_radius"] || throw(ArgumentError("declared-pupil calibration requires explicit inner and outer mirror pupil radii"))
+    all(
+        key -> haskey(pupil, key) && IC.isfinite_real(pupil[key]),
+        ("outer_radius", "inner_radius"),
+    ) && 0 <= pupil["inner_radius"] < pupil["outer_radius"] || throw(
+        ArgumentError(
+            "declared-pupil calibration requires explicit inner and outer mirror pupil radii",
+        ),
+    )
     return nothing
 end
-validate_optical_declared_pupil(pupil) = throw(ArgumentError("declared-pupil calibration requires explicit inner and outer mirror pupil radii"))
+validate_optical_declared_pupil(pupil) = throw(
+    ArgumentError(
+        "declared-pupil calibration requires explicit inner and outer mirror pupil radii",
+    ),
+)
 
-function validate_optical_mode_index(index::Integer,count)
+function validate_optical_mode_index(index::Integer, count)
     1 <= index <= count || throw(ArgumentError("invalid branch mode selection"))
     return nothing
 end
-validate_optical_mode_index(index::Bool,count) = throw(ArgumentError("invalid branch mode selection"))
-validate_optical_mode_index(index,count) = throw(ArgumentError("invalid branch mode selection"))
+validate_optical_mode_index(index::Bool, count) =
+    throw(ArgumentError("invalid branch mode selection"))
+validate_optical_mode_index(index, count) =
+    throw(ArgumentError("invalid branch mode selection"))
 
 function record_optical_nulling_order!(basis::AbstractDict)
-    if haskey(basis,"mode_order")
+    if haskey(basis, "mode_order")
         basis["source_mode_order"] = basis["mode_order"]
         basis["mode_order"] = "owned modes retain their order; unowned modes include measured owned-mode compensation"
     end
@@ -1647,97 +2987,167 @@ function record_optical_nulling_order!(basis::AbstractDict)
 end
 record_optical_nulling_order!(basis) = nothing
 
-optical_input_name(port::AbstractString) = String(last(split(port,':')))
+optical_input_name(port::AbstractString) = String(last(split(port, ':')))
 optical_input_name(port) = String(port["name"])
 
 function confirm_upstream_frame(status::NamedTuple)
-    all(values(status)) || throw(ArgumentError("deployed upstream reconstruction rejected a held UInt16 frame"))
+    all(values(status)) || throw(
+        ArgumentError("deployed upstream reconstruction rejected a held UInt16 frame"),
+    )
     return nothing
 end
-confirm_upstream_frame(status) = throw(ArgumentError("deployed upstream reconstruction rejected a held UInt16 frame"))
+confirm_upstream_frame(status) =
+    throw(ArgumentError("deployed upstream reconstruction rejected a held UInt16 frame"))
 
 function validate_optical_rectangle_bounds(bounds::AbstractVector)
-    length(bounds) == 2 || throw(ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"))
-    foreach(validate_optical_rectangle_index,bounds)
-    1 <= bounds[1] <= bounds[2] || throw(ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"))
+    length(bounds) == 2 || throw(
+        ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"),
+    )
+    foreach(validate_optical_rectangle_index, bounds)
+    1 <= bounds[1] <= bounds[2] || throw(
+        ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"),
+    )
     return nothing
 end
-validate_optical_rectangle_bounds(bounds) = throw(ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"))
+validate_optical_rectangle_bounds(bounds) = throw(
+    ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"),
+)
 validate_optical_rectangle_index(index::Integer) = nothing
-validate_optical_rectangle_index(index::Bool) = throw(ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"))
-validate_optical_rectangle_index(index) = throw(ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"))
+validate_optical_rectangle_index(index::Bool) = throw(
+    ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"),
+)
+validate_optical_rectangle_index(index) = throw(
+    ArgumentError("optical pixel rectangle requires positive inclusive integer bounds"),
+)
 
 function validate_optical_recipe_branches(branches::AbstractDict)
-    1 <= length(branches) <= 8 || throw(ArgumentError("optical recipe branches must explicitly name at most eight graph selections"))
-    foreach(pair -> validate_optical_branch_selection(pair.first,pair.second),pairs(branches))
+    1 <= length(branches) <= 8 || throw(
+        ArgumentError(
+            "optical recipe branches must explicitly name at most eight graph selections",
+        ),
+    )
+    foreach(
+        pair -> validate_optical_branch_selection(pair.first, pair.second),
+        pairs(branches),
+    )
     return nothing
 end
-validate_optical_recipe_branches(branches) = throw(ArgumentError("optical recipe branches must explicitly name at most eight graph selections"))
-function validate_optical_branch_selection(name::String,selection::String)
-    occursin(r"^[a-z][a-z0-9_]*$",name) && !isempty(strip(selection)) || throw(ArgumentError("optical recipe branches must explicitly name at most eight graph selections"))
+validate_optical_recipe_branches(branches) = throw(
+    ArgumentError(
+        "optical recipe branches must explicitly name at most eight graph selections",
+    ),
+)
+function validate_optical_branch_selection(name::String, selection::String)
+    occursin(r"^[a-z][a-z0-9_]*$", name) && !isempty(strip(selection)) || throw(
+        ArgumentError(
+            "optical recipe branches must explicitly name at most eight graph selections",
+        ),
+    )
     return nothing
 end
-validate_optical_branch_selection(name,selection) = throw(ArgumentError("optical recipe branches must explicitly name at most eight graph selections"))
+validate_optical_branch_selection(name, selection) = throw(
+    ArgumentError(
+        "optical recipe branches must explicitly name at most eight graph selections",
+    ),
+)
 
-function validate_optical_nulling_selection(nulling::AbstractVector,branches,measurements)
-    length(nulling) <= 1 || throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
-    foreach(name -> validate_optical_nulling_branch(name,branches,measurements),nulling)
+function validate_optical_nulling_selection(nulling::AbstractVector, branches, measurements)
+    length(nulling) <= 1 ||
+        throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
+    foreach(name -> validate_optical_nulling_branch(name, branches, measurements), nulling)
     return nothing
 end
-validate_optical_nulling_selection(nulling,branches,measurements) = throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
-function validate_optical_nulling_branch(name::String,branches,measurements)
-    haskey(branches,name) && get(get(measurements,name,Dict()),"kind",nothing) == "center-of-gravity" || throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
+validate_optical_nulling_selection(nulling, branches, measurements) =
+    throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
+function validate_optical_nulling_branch(name::String, branches, measurements)
+    haskey(branches, name) &&
+    get(get(measurements, name, Dict()), "kind", nothing) == "center-of-gravity" ||
+        throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
     return nothing
 end
-validate_optical_nulling_branch(name,branches,measurements) = throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
+validate_optical_nulling_branch(name, branches, measurements) =
+    throw(ArgumentError("measurement_nulling supports one declared centroid branch"))
 
 function validate_optical_frequencies(rows::AbstractVector)
-    1 <= length(rows) <= 32 || throw(ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"))
-    foreach(validate_optical_frequency,rows)
+    1 <= length(rows) <= 32 || throw(
+        ArgumentError(
+            "optical recipe requires 1:32 finite two-coordinate spatial frequencies",
+        ),
+    )
+    foreach(validate_optical_frequency, rows)
     return nothing
 end
-validate_optical_frequencies(rows) = throw(ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"))
+validate_optical_frequencies(rows) = throw(
+    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
+)
 
 function validate_optical_frequency(row::AbstractVector)
-    length(row) == 2 && all(IC.isfinite_real,row) || throw(ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"))
+    length(row) == 2 && all(IC.isfinite_real, row) || throw(
+        ArgumentError(
+            "optical recipe requires 1:32 finite two-coordinate spatial frequencies",
+        ),
+    )
     return nothing
 end
-validate_optical_frequency(row) = throw(ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"))
+validate_optical_frequency(row) = throw(
+    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
+)
 
 function validate_optical_response_name(name::String, key)
-    occursin(r"^[a-z][a-z0-9_]*$",name) || throw(ArgumentError("mirror response $key must be a declared name"))
+    occursin(r"^[a-z][a-z0-9_]*$", name) ||
+        throw(ArgumentError("mirror response $key must be a declared name"))
     return nothing
 end
-validate_optical_response_name(name, key) = throw(ArgumentError("mirror response $key must be a declared name"))
+validate_optical_response_name(name, key) =
+    throw(ArgumentError("mirror response $key must be a declared name"))
 
 function validate_optical_completion_name(name::String)
-    occursin(r"^[a-z][a-z0-9_]*$",name) || throw(ArgumentError("command completion must name typed simulation bindings"))
+    occursin(r"^[a-z][a-z0-9_]*$", name) ||
+        throw(ArgumentError("command completion must name typed simulation bindings"))
     return nothing
 end
-validate_optical_completion_name(name) = throw(ArgumentError("command completion must name typed simulation bindings"))
+validate_optical_completion_name(name) =
+    throw(ArgumentError("command completion must name typed simulation bindings"))
 
-function validate_optical_held_out(rows::AbstractVector,mode_count)
-    length(rows) == mode_count || throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
-    foreach(validate_optical_held_out_row,rows)
-    length(unique(length.(rows))) == 1 || throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
+function validate_optical_held_out(rows::AbstractVector, mode_count)
+    length(rows) == mode_count || throw(
+        ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"),
+    )
+    foreach(validate_optical_held_out_row, rows)
+    length(unique(length.(rows))) == 1 || throw(
+        ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"),
+    )
     return nothing
 end
-validate_optical_held_out(rows,mode_count) = throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
+validate_optical_held_out(rows, mode_count) =
+    throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
 
 function validate_optical_held_out_row(row::AbstractVector)
-    1 <= length(row) <= 32 && all(IC.isfinite_real,row) || throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
+    1 <= length(row) <= 32 && all(IC.isfinite_real, row) || throw(
+        ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"),
+    )
     return nothing
 end
-validate_optical_held_out_row(row) = throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
+validate_optical_held_out_row(row) =
+    throw(ArgumentError("held_out_coefficients must be finite mode rows by 1:32 mixtures"))
 
 function validate_optical_reference_endpoint(endpoint::String)
-    !isempty(strip(endpoint)) || throw(ArgumentError("upstream reference requires exact frontend endpoints"))
+    !isempty(strip(endpoint)) ||
+        throw(ArgumentError("upstream reference requires exact frontend endpoints"))
     return nothing
 end
-validate_optical_reference_endpoint(endpoint) = throw(ArgumentError("upstream reference requires exact frontend endpoints"))
+validate_optical_reference_endpoint(endpoint) =
+    throw(ArgumentError("upstream reference requires exact frontend endpoints"))
 
 function validate_optical_reference_amplitudes(amplitudes::AbstractVector)
-    1 <= length(amplitudes) <= 8 && all(h -> IC.isfinite_real(h) && isfinite(Float32(h)) && Float32(h)/2>0,amplitudes) || throw(ArgumentError("upstream reference requires 1:8 positive finite poke amplitudes"))
+    1 <= length(amplitudes) <= 8 &&
+    all(h -> IC.isfinite_real(h) && isfinite(Float32(h)) && Float32(h)/2>0, amplitudes) ||
+        throw(
+            ArgumentError(
+                "upstream reference requires 1:8 positive finite poke amplitudes",
+            ),
+        )
     return nothing
 end
-validate_optical_reference_amplitudes(amplitudes) = throw(ArgumentError("upstream reference requires 1:8 positive finite poke amplitudes"))
+validate_optical_reference_amplitudes(amplitudes) =
+    throw(ArgumentError("upstream reference requires 1:8 positive finite poke amplitudes"))

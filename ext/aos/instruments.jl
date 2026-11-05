@@ -1,6 +1,9 @@
-function PipeWireAORTC.InstrumentExport.localize_optical_preparation!(source::AbstractString, destination::AbstractString)
+function PipeWireAORTC.InstrumentExport.localize_optical_preparation!(
+    source::AbstractString,
+    destination::AbstractString,
+)
     AdaptiveOpticsSim.Optics.Zemax.validate_provenance(source)
-    AdaptiveOpticsSim.Optics.Zemax.prepare(destination; yamlfmt=nothing)
+    AdaptiveOpticsSim.Optics.Zemax.prepare(destination; yamlfmt = nothing)
     return nothing
 end
 
@@ -11,19 +14,32 @@ function Instruments.validate_prepared_optics(declaration::NamedTuple)
     return nothing
 end
 
-function Instruments.prepare_optical_components!(graph::AbstractDict, declaration::NamedTuple,
-        configured::AbstractDict)
+function Instruments.prepare_optical_components!(
+    graph::AbstractDict,
+    declaration::NamedTuple,
+    configured::AbstractDict,
+)
     for node in graph["nodes"]
         haskey(node, "preparation") || continue
         preparation = node["preparation"]
         preparation["kind"] == "ideal_pupil_relay" && continue
-        preparation["kind"] == "zemax" || throw(ArgumentError("unsupported optical component preparation"))
+        preparation["kind"] == "zemax" ||
+            throw(ArgumentError("unsupported optical component preparation"))
         config = Instruments.prepared_component_config(node["config"])
-        settings = Dict(key => config[key] for key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c"))
-        prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(declaration.instrument.directory,
-            preparation["recipe"], preparation["branch"]; settings, diameter_m=config["diameter_m"],
-            frozen=haskey(declaration.document, "optical_model"),
-            phase_screens=get(config, "phase_screens", ()), pupil_grid=get(config, "pupil_grid", nothing))
+        settings = Dict(
+            key => config[key] for
+            key in ("resolution", "pupil_resolution", "wavelength_um", "temperature_c")
+        )
+        prepared = AdaptiveOpticsSim.Optics.Zemax.prepare_component(
+            declaration.instrument.directory,
+            preparation["recipe"],
+            preparation["branch"];
+            settings,
+            diameter_m = config["diameter_m"],
+            frozen = haskey(declaration.document, "optical_model"),
+            phase_screens = get(config, "phase_screens", ()),
+            pupil_grid = get(config, "pupil_grid", nothing),
+        )
         concrete = Instruments.json_value(prepared.config)
         for key in Instruments.OPTIONAL_OPTICAL_CONFIG
             key in ("phase_screens", "pupil_grid") && continue
@@ -42,45 +58,81 @@ end
 # A relay's source and receiver declarations own their grids and wavelength.
 # Resolve these once while cold rather than copying geometry into authoring files.
 function prepare_ideal_pupil_relay!(node, graph)
-    preparation = Instruments.fields(node["preparation"], ("kind", "source", "destination"),
-        ("kind", "source", "destination"), "ideal pupil relay preparation")
-    preparation["kind"] == "ideal_pupil_relay" || throw(ArgumentError("unsupported pupil relay preparation"))
-    config = Instruments.fields(node["config"], ("axes",), ("axes",), "derived pupil relay config")
+    preparation = Instruments.fields(
+        node["preparation"],
+        ("kind", "source", "destination"),
+        ("kind", "source", "destination"),
+        "ideal pupil relay preparation",
+    )
+    preparation["kind"] == "ideal_pupil_relay" ||
+        throw(ArgumentError("unsupported pupil relay preparation"))
+    config = Instruments.fields(
+        node["config"],
+        ("axes",),
+        ("axes",),
+        "derived pupil relay config",
+    )
     source = only(filter(n -> n["name"] == preparation["source"], graph["nodes"]))
     destination = only(filter(n -> n["name"] == preparation["destination"], graph["nodes"]))
     source["type"] in ("proper_optical_train_f32", "proper_optical_train_f64") ||
         throw(ArgumentError("ideal pupil relay source must declare a PROPER field"))
-    expected_type = source["type"] == "proper_optical_train_f32" ? "ideal_pupil_relay_f32" : "ideal_pupil_relay_f64"
-    node["type"] == expected_type && destination["type"] == "pyramid_rate_f32" && expected_type == "ideal_pupil_relay_f32" ||
-        throw(ArgumentError("derived pupil relay requires matching supported field precision"))
+    expected_type =
+        source["type"] == "proper_optical_train_f32" ? "ideal_pupil_relay_f32" :
+        "ideal_pupil_relay_f64"
+    node["type"] == expected_type &&
+    destination["type"] == "pyramid_rate_f32" &&
+    expected_type == "ideal_pupil_relay_f32" || throw(
+        ArgumentError("derived pupil relay requires matching supported field precision"),
+    )
     sc, dc = source["config"], destination["config"]
     get(sc, "output_quantity", nothing) == "electric_field" &&
-        get(dc, "input_quantity", nothing) == "electric_field" ||
+    get(dc, "input_quantity", nothing) == "electric_field" ||
         throw(ArgumentError("ideal pupil relay requires complex field source and receiver"))
     wavelength = sc["wavelength_um"] * 1e-6
-    isapprox(wavelength, dc["source_wavelength_m"]; rtol=8eps(Float32), atol=0) ||
+    isapprox(wavelength, dc["source_wavelength_m"]; rtol = 8eps(Float32), atol = 0) ||
         throw(ArgumentError("ideal pupil relay source and PWFS wavelengths differ"))
-    source_link = Dict("source"=>source["name"] * ".output", "destination"=>node["name"] * ".input")
-    destination_link = Dict("source"=>node["name"] * ".output", "destination"=>destination["name"] * ".electric_field")
+    source_link =
+        Dict("source"=>source["name"] * ".output", "destination"=>node["name"] * ".input")
+    destination_link = Dict(
+        "source"=>node["name"] * ".output",
+        "destination"=>destination["name"] * ".electric_field",
+    )
     source_link in graph["links"] && destination_link in graph["links"] ||
         throw(ArgumentError("ideal pupil relay preparation must match actual graph links"))
     Owner.load_instrument(:Proper)
-    factory = AlgorithmGraphs.proper_optical_train_node_factory(T=Float32)
-    definition = Base.invokelatest(factory, Symbol(source["name"]), Instruments._instrument_seal(sc), (;), (;))
+    factory = AlgorithmGraphs.proper_optical_train_node_factory(T = Float32)
+    definition = Base.invokelatest(
+        factory,
+        Symbol(source["name"]),
+        Instruments._instrument_seal(sc),
+        (;),
+        (;),
+    )
     pitch = Base.invokelatest(AlgorithmGraphs.optical_sampling_m, definition.config)
     receiver_pitch = dc["telescope_diameter_m"] / dc["resolution"]
-    node["config"] = Dict("input_size"=>[sc["resolution"],sc["resolution"]],
-        "output_size"=>[dc["resolution"],dc["resolution"]], "axes"=>config["axes"],
-        "input_sampling_m"=>[pitch,pitch], "output_sampling_m"=>[receiver_pitch,receiver_pitch],
-        "wavelength_m"=>wavelength, "input_schema"=>definition.config.schemas[3], "output_schema"=>dc["field_schema"])
+    node["config"] = Dict(
+        "input_size"=>[sc["resolution"], sc["resolution"]],
+        "output_size"=>[dc["resolution"], dc["resolution"]],
+        "axes"=>config["axes"],
+        "input_sampling_m"=>[pitch, pitch],
+        "output_sampling_m"=>[receiver_pitch, receiver_pitch],
+        "wavelength_m"=>wavelength,
+        "input_schema"=>definition.config.schemas[3],
+        "output_schema"=>dc["field_schema"],
+    )
     delete!(node, "preparation")
     return node
 end
 
-function Instruments.optical_graph_document(declaration::NamedTuple, configured::AbstractDict,
-        mode::AbstractString)
-    graphs = AdaptiveOpticsSim.Optics.Zemax.execution_graphs(declaration.instrument.directory;
-        settings=configured)
+function Instruments.optical_graph_document(
+    declaration::NamedTuple,
+    configured::AbstractDict,
+    mode::AbstractString,
+)
+    graphs = AdaptiveOpticsSim.Optics.Zemax.execution_graphs(
+        declaration.instrument.directory;
+        settings = configured,
+    )
     haskey(graphs, mode) || throw(ArgumentError("unknown prepared optical path $mode"))
     # AOS freezes bounded generator documents. RTC's cold component/profile
     # expansion uses its ordinary mutable JSON document shape before sealing.
@@ -90,13 +142,21 @@ function Instruments.optical_graph_document(declaration::NamedTuple, configured:
     branch = haskey(variants, mode) ? variants[mode]["branch"] : mode
     if haskey(observations, branch)
         selection = observations[branch]
-        response = Instruments.graph_document(declaration, configured;
-            simulation_graph=selection["graph"])
-        detector = only(node for node in response["nodes"] if node["name"] == selection["detector"])
+        response = Instruments.graph_document(
+            declaration,
+            configured;
+            simulation_graph = selection["graph"],
+        )
+        detector = only(
+            node for node in response["nodes"] if node["name"] == selection["detector"]
+        )
         sampling = get(detector["config"], "pixel_sampling_m", nothing)
         validate_optical_sampling(sampling)
-        isapprox(sampling[1], sampling[2]; rtol=8eps(Float32), atol=0) ||
-            throw(ArgumentError("PROPER spectral output currently requires square detector pixels"))
+        isapprox(sampling[1], sampling[2]; rtol = 8eps(Float32), atol = 0) || throw(
+            ArgumentError(
+                "PROPER spectral output currently requires square detector pixels",
+            ),
+        )
         # The selected central wavelength changes the native diffraction grid;
         # the physical camera pitch remains fixed across cold replacements.
         only(document["nodes"])["config"]["output_sampling_m"] = sampling[1]
@@ -108,40 +168,57 @@ function configuration_binding_names(document, factories)
     names = Symbol[]
     for entry in document["nodes"]
         factory = getproperty(factories, Symbol(entry["type"]))
-        config = AlgorithmGraphs.graph_node_configuration(factory,
+        config = AlgorithmGraphs.graph_node_configuration(
+            factory,
             Instruments._instrument_seal(entry["config"]),
-            Instruments._instrument_seal(get(entry, "bindings", Dict())))
+            Instruments._instrument_seal(get(entry, "bindings", Dict())),
+        )
         append!(names, AlgorithmGraphs.graph_node_bindings(factory, config))
     end
     return unique!(names)
 end
 
-function prepare_bindings(declaration, configured, names;
-        target=Backends.HostComputeDevice(), target_names=())
+function prepare_bindings(
+    declaration,
+    configured,
+    names;
+    target = Backends.HostComputeDevice(),
+    target_names = (),
+)
     specs = declaration.document["bindings"]
     all(name -> haskey(specs, string(name)), names) ||
         throw(ArgumentError("instrument graph names an undeclared array binding"))
     retained = Ref(0)
-    arrays = Tuple(map(names) do name
-        source = Instruments.binding_values(declaration, configured, specs[string(name)])
-        bytes = Base.checked_mul(sizeof(eltype(source)), length(source))
-        bytes <= Owner.MAX_RETAINED_BYTES - retained[] ||
-            throw(ArgumentError("instrument bindings exceed 512 MiB"))
-        retained[] += bytes
-        name in target_names ? copy_to_target(target, source) : source
-    end)
+    arrays = Tuple(
+        map(names) do name
+            source = Instruments.binding_values(declaration, configured, specs[string(name)])
+            bytes = Base.checked_mul(sizeof(eltype(source)), length(source))
+            bytes <= Owner.MAX_RETAINED_BYTES - retained[] ||
+                throw(ArgumentError("instrument bindings exceed 512 MiB"))
+            retained[] += bytes
+            name in target_names ? copy_to_target(target, source) : source
+        end,
+    )
     return NamedTuple{Tuple(names)}(arrays)
 end
 
-function PipeWireAORTC.InstrumentExport.simulator_port_contracts(path::AbstractString;
-        settings=Dict(), simulation_graph="production")
+function PipeWireAORTC.InstrumentExport.simulator_port_contracts(
+    path::AbstractString;
+    settings = Dict(),
+    simulation_graph = "production",
+)
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
     if Instruments.graph_requires_proper(declaration, configured; simulation_graph)
         Owner.load_instrument(:Proper)
     end
     # Loading Proper extends native node factories in a newer world.
-    return Base.invokelatest(simulator_port_contracts, declaration, configured, simulation_graph)
+    return Base.invokelatest(
+        simulator_port_contracts,
+        declaration,
+        configured,
+        simulation_graph,
+    )
 end
 
 function simulator_port_contracts(declaration, configured, simulation_graph)
@@ -151,23 +228,29 @@ function simulator_port_contracts(declaration, configured, simulation_graph)
     factories = configured_graph_node_types(declaration.directory)
     names = configuration_binding_names(document, factories)
     bindings = prepare_bindings(declaration, configured, names)
-    nodes = Tuple(map(document["nodes"]) do entry
-        factory = getproperty(factories, Symbol(entry["type"]))
-        name = Symbol(entry["name"])
-        config = AlgorithmGraphs.graph_node_configuration(factory,
-            Instruments._instrument_seal(entry["config"]),
-            Instruments._instrument_seal(get(entry, "bindings", Dict())))
-        props = Instruments._instrument_seal(get(entry, "props", Dict()))
-        keywords = haskey(entry, "detector") ? (; detector=Symbol(entry["detector"])) : (;)
-        if !isempty(keywords)
-            factory(name, config, props; keywords...)
-        elseif applicable(factory, name, config, props, bindings)
-            factory(name, config, props, bindings)
-        else
-            factory(name, config, props)
-        end
-    end)
-    atmosphere = any(entry -> entry["name"] == "atmosphere_opd", get(document, "outputs", []))
+    nodes = Tuple(
+        map(document["nodes"]) do entry
+            factory = getproperty(factories, Symbol(entry["type"]))
+            name = Symbol(entry["name"])
+            config = AlgorithmGraphs.graph_node_configuration(
+                factory,
+                Instruments._instrument_seal(entry["config"]),
+                Instruments._instrument_seal(get(entry, "bindings", Dict())),
+            )
+            props = Instruments._instrument_seal(get(entry, "props", Dict()))
+            keywords =
+                haskey(entry, "detector") ? (; detector = Symbol(entry["detector"])) : (;)
+            if !isempty(keywords)
+                factory(name, config, props; keywords...)
+            elseif applicable(factory, name, config, props, bindings)
+                factory(name, config, props, bindings)
+            else
+                factory(name, config, props)
+            end
+        end,
+    )
+    atmosphere =
+        any(entry -> entry["name"] == "atmosphere_opd", get(document, "outputs", []))
     imaging = OpticalObservation.imaging_configuration(declaration)
     return OpticalObservation.port_contracts(nodes; atmosphere, imaging)
 end
@@ -195,103 +278,187 @@ Without an HIL declaration, an explicitly named graph uses that same compiler
 and bindings, and returns `boundary=nothing` and `driver=nothing`. No RTC control
 or lifecycle owner is created. The result retains `declaration` and `configured`.
 """
-function Instruments.prepare_system(path::AbstractString;settings=NamedTuple(),calibration=false,
-        simulation_graph=calibration ? "calibration" : "production",
-        target=Backends.HostComputeDevice(),execution=nothing)
+function Instruments.prepare_system(
+    path::AbstractString;
+    settings = NamedTuple(),
+    calibration = false,
+    simulation_graph = calibration ? "calibration" : "production",
+    target = Backends.HostComputeDevice(),
+    execution = nothing,
+)
     execution = instrument_execution(target, execution)
     declaration = Instruments.load_simulation(path)
-    configured = Instruments.settings(declaration,settings)
-    document = Instruments.graph_document(declaration,configured;calibration,simulation_graph)
+    configured = Instruments.settings(declaration, settings)
+    document =
+        Instruments.graph_document(declaration, configured; calibration, simulation_graph)
     factories = configured_graph_node_types(declaration.directory)
     runtime_names = Symbol[]
-    for (section,field) in (("inputs","binding"),("parameters","binding"),("delayed_links","initial"))
-        for entry in get(document,section,[])
+    for (section, field) in
+        (("inputs", "binding"), ("parameters", "binding"), ("delayed_links", "initial"))
+        for entry in get(document, section, [])
             push!(runtime_names, Symbol(entry[field]))
         end
     end
     unique!(runtime_names)
     names = unique(vcat(runtime_names, configuration_binding_names(document, factories)))
-    bindings = prepare_bindings(declaration, configured, names; target, target_names=runtime_names)
-    definition = load_algorithm_graph(document;bindings,node_types=factories)
+    bindings = prepare_bindings(
+        declaration,
+        configured,
+        names;
+        target,
+        target_names = runtime_names,
+    )
+    definition = load_algorithm_graph(document; bindings, node_types = factories)
     for node in definition.nodes
         validate_sample_period(node.config, declaration.document["frame_period_s"])
     end
-    graph = prepare_algorithm_graph(definition;target,execution)
+    graph = prepare_algorithm_graph(definition; target, execution)
     boundary = if haskey(declaration.document, "hil")
         hil = declaration.document["hil"]
-        Instruments.fields(hil,("command_input","frame_output"),("command_input","frame_output"),"instrument HIL boundary")
-        prepare_graph_hil_boundary(graph;
-            command_input=configured_command_inputs(hil["command_input"]),frame_output=Symbol(hil["frame_output"]))
+        Instruments.fields(
+            hil,
+            ("command_input", "frame_output"),
+            ("command_input", "frame_output"),
+            "instrument HIL boundary",
+        )
+        prepare_graph_hil_boundary(
+            graph;
+            command_input = configured_command_inputs(hil["command_input"]),
+            frame_output = Symbol(hil["frame_output"]),
+        )
     else
         nothing
     end
     frame_period_s = Float32(declaration.document["frame_period_s"])
-    isfinite(frame_period_s) && frame_period_s>0 || throw(ArgumentError("invalid instrument frame period"))
-    period_ns = round(UInt64,Float64(frame_period_s)*1e9)
-    driver = boundary === nothing ? nothing : FixedStepModelTimeDriver(PeriodicSchedule(;period_ns))
-    mirror_names = Tuple(Symbol.(collect(keys(declaration.instrument.document["deformable_mirrors"]))))
-    mirror_descriptions = NamedTuple{mirror_names}(Tuple(
-        Instruments.mirror(declaration,configured,name).description
-        for name in keys(declaration.instrument.document["deformable_mirrors"])))
-    return (;definition,graph,boundary,target,frame_period_s,driver,mirror_descriptions,declaration,configured,
-        settings=Instruments._instrument_seal(configured))
+    isfinite(frame_period_s) && frame_period_s>0 ||
+        throw(ArgumentError("invalid instrument frame period"))
+    period_ns = round(UInt64, Float64(frame_period_s)*1e9)
+    driver =
+        boundary === nothing ? nothing :
+        FixedStepModelTimeDriver(PeriodicSchedule(; period_ns))
+    mirror_names =
+        Tuple(Symbol.(collect(keys(declaration.instrument.document["deformable_mirrors"]))))
+    mirror_descriptions = NamedTuple{mirror_names}(
+        Tuple(
+            Instruments.mirror(declaration, configured, name).description for
+            name in keys(declaration.instrument.document["deformable_mirrors"])
+        ),
+    )
+    return (;
+        definition,
+        graph,
+        boundary,
+        target,
+        frame_period_s,
+        driver,
+        mirror_descriptions,
+        declaration,
+        configured,
+        settings = Instruments._instrument_seal(configured),
+    )
 end
 
 configured_command_inputs(value::AbstractString) = Symbol(value)
 configured_command_inputs(value::AbstractVector) = Tuple(Symbol.(value))
 
-function prepare_configured_science(options,device;check=()->nothing)
+function prepare_configured_science(options, device; check = ()->nothing)
     execution = options.backend===:cpu ? StreamGraphExecution() : CapturedGraphExecution()
-    system = Instruments.prepare_system(options.plant.definition;
-        settings=options.plant.settings,simulation_graph=get(options.plant, :graph, "production"),target=device,execution)
+    system = Instruments.prepare_system(
+        options.plant.definition;
+        settings = options.plant.settings,
+        simulation_graph = get(options.plant, :graph, "production"),
+        target = device,
+        execution,
+    )
     check()
-    AdaptiveOpticsSimPipeWireHIL.validate_hil_system(system;
-        command_input=options.command_input,frame_output=options.frame_output,
-        command_shape=Owner.command_shapes(options.command_count),frame_shape=options.frame_shape)
+    AdaptiveOpticsSimPipeWireHIL.validate_hil_system(
+        system;
+        command_input = options.command_input,
+        frame_output = options.frame_output,
+        command_shape = Owner.command_shapes(options.command_count),
+        frame_shape = options.frame_shape,
+    )
     declaration = Instruments.load_simulation(options.plant.definition)
-    contracts = Tuple((;frame_encoding=Symbol(entry["frame_encoding"]),
-        frame_schema=entry["frame_schema"],command_schema=Instruments._instrument_seal(entry["command_schema"]),
-        command_scale=configured_command_scales(Instruments._instrument_seal(entry["command_scale"]))) for entry in declaration.document["wire_contracts"])
-    AdaptiveOpticsSimPipeWireHIL.validate_wire_contract(options.frame_encoding,
-        options.frame_schema,options.command_schema,options.command_scale,contracts)
+    contracts = Tuple(
+        (;
+            frame_encoding = Symbol(entry["frame_encoding"]),
+            frame_schema = entry["frame_schema"],
+            command_schema = Instruments._instrument_seal(entry["command_schema"]),
+            command_scale = configured_command_scales(
+                Instruments._instrument_seal(entry["command_scale"]),
+            ),
+        ) for entry in declaration.document["wire_contracts"]
+    )
+    AdaptiveOpticsSimPipeWireHIL.validate_wire_contract(
+        options.frame_encoding,
+        options.frame_schema,
+        options.command_schema,
+        options.command_scale,
+        contracts,
+    )
     configuration = wire_configuration(options)
-    validate_configuration(configuration,options)
-    round(UInt64,Float64(system.frame_period_s)*1e9)==options.period_ns ||
+    validate_configuration(configuration, options)
+    round(UInt64, Float64(system.frame_period_s)*1e9)==options.period_ns ||
         throw(ArgumentError("instrument cadence differs from the application"))
     # Validate actual node timing, independently of declaration metadata.
     for node in system.definition.nodes
-        validate_node_timing(node.config,options)
+        validate_node_timing(node.config, options)
     end
-    return (;system.definition,system.graph,system.boundary,target=device,artifacts=(),configuration)
+    return (;
+        system.definition,
+        system.graph,
+        system.boundary,
+        target = device,
+        artifacts = (),
+        configuration,
+    )
 end
 
 configured_command_scales(value::Real) = Float32(value)
-configured_command_scales(values::NamedTuple) = map(Float32,values)
+configured_command_scales(values::NamedTuple) = map(Float32, values)
 
-validate_node_timing(config,options) = nothing
+validate_node_timing(config, options) = nothing
 validate_sample_period(config, period) = nothing
 if isdefined(AlgorithmGraphs, :SecondOrderResponseNodeConfig)
-    function validate_sample_period(config::AlgorithmGraphs.SecondOrderResponseNodeConfig, period)
-        config.sample_period_s == period ||
-            throw(ArgumentError("response sample period differs from the simulation frame period"))
+    function validate_sample_period(
+        config::AlgorithmGraphs.SecondOrderResponseNodeConfig,
+        period,
+    )
+        config.sample_period_s == period || throw(
+            ArgumentError(
+                "response sample period differs from the simulation frame period",
+            ),
+        )
         return nothing
     end
-    function validate_node_timing(config::AlgorithmGraphs.SecondOrderResponseNodeConfig,options)
-        round(UInt64,config.sample_period_s*1e9)==options.period_ns ||
+    function validate_node_timing(
+        config::AlgorithmGraphs.SecondOrderResponseNodeConfig,
+        options,
+    )
+        round(UInt64, config.sample_period_s*1e9)==options.period_ns ||
             throw(ArgumentError("response sample period differs from configured cadence"))
         return nothing
     end
 end
-function validate_node_timing(config::AlgorithmGraphs.MultiLayerAtmosphereOPDNodeConfig,options)
-    round(UInt64,Float64(config.atmosphere_step)*1e9)==options.period_ns ||
+function validate_node_timing(
+    config::AlgorithmGraphs.MultiLayerAtmosphereOPDNodeConfig,
+    options,
+)
+    round(UInt64, Float64(config.atmosphere_step)*1e9)==options.period_ns ||
         throw(ArgumentError("atmosphere step differs from configured cadence"))
 end
-function validate_node_timing(config::AlgorithmGraphs.CMOSDetectorAcquisitionNodeConfig,options)
-    round(UInt64,Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
+function validate_node_timing(
+    config::AlgorithmGraphs.CMOSDetectorAcquisitionNodeConfig,
+    options,
+)
+    round(UInt64, Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
         throw(ArgumentError("detector exposure differs from configured acquisition"))
 end
-function validate_node_timing(config::AlgorithmGraphs.EMCCDDetectorAcquisitionNodeConfig,options)
-    round(UInt64,Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
+function validate_node_timing(
+    config::AlgorithmGraphs.EMCCDDetectorAcquisitionNodeConfig,
+    options,
+)
+    round(UInt64, Float64(config.exposure_duration_s)*1e9)==options.exposure_ns ||
         throw(ArgumentError("detector exposure differs from configured acquisition"))
 end
 
@@ -299,8 +466,10 @@ end
 # convention. The coefficients of the coordinate basis are metres of OPD;
 # neither a physical stage angle nor a mirror reflection factor is inferred.
 function pupil_binding_resolution(declaration, configured, binding)
-    value = Instruments.Common.configuration_value(binding["resolution"],
-        Instruments.configuration_context(declaration, configured))
+    value = Instruments.Common.configuration_value(
+        binding["resolution"],
+        Instruments.configuration_context(declaration, configured),
+    )
     resolution = Instruments.dimension(configured, value)
     Instruments.Artifacts.checked_shape((resolution, resolution, 2), sizeof(Float32))
     return Int(resolution)
@@ -311,10 +480,15 @@ function configured_telescope(declaration, configured, binding)
     spec = declaration.instrument.document["telescope"]
     return AdaptiveOpticsSim.Optics.prepare_telescope(
         AdaptiveOpticsSim.Optics.TelescopeDefinition(;
-            resolution, diameter=spec["telescope_diameter_m"],
-            central_obstruction=spec["central_obstruction_ratio"],
-            pupil_reflectivity=spec["pupil_reflectivity"],
-            revision=spec["aperture_revision"], T=Float32), Backends.HostComputeDevice())
+            resolution,
+            diameter = spec["telescope_diameter_m"],
+            central_obstruction = spec["central_obstruction_ratio"],
+            pupil_reflectivity = spec["pupil_reflectivity"],
+            revision = spec["aperture_revision"],
+            T = Float32,
+        ),
+        Backends.HostComputeDevice(),
+    )
 end
 
 function Instruments.binding_values(::Val{:pupil_support}, declaration, configured, binding)
@@ -322,20 +496,32 @@ function Instruments.binding_values(::Val{:pupil_support}, declaration, configur
     return copy(AdaptiveOpticsSim.Optics.pupil_mask(telescope))
 end
 
-function Instruments.binding_values(::Val{:pupil_amplitude}, declaration, configured, binding)
+function Instruments.binding_values(
+    ::Val{:pupil_amplitude},
+    declaration,
+    configured,
+    binding,
+)
     T = get(Dict("Float32" => Float32, "Float64" => Float64), binding["type"], nothing)
-    T === nothing && throw(ArgumentError("pupil amplitude binding type must be Float32 or Float64"))
-    support = Instruments.binding_values(Val(:pupil_support), declaration, configured, binding)
+    T === nothing &&
+        throw(ArgumentError("pupil amplitude binding type must be Float32 or Float64"))
+    support =
+        Instruments.binding_values(Val(:pupil_support), declaration, configured, binding)
     return T.(support)
 end
 
-function Instruments.binding_values(::Val{:pupil_coordinates}, declaration, configured, binding)
+function Instruments.binding_values(
+    ::Val{:pupil_coordinates},
+    declaration,
+    configured,
+    binding,
+)
     n = pupil_binding_resolution(declaration, configured, binding)
     basis = Array{Float32}(undef, n, n, 2)
     center, radius = Float32((n + 1) / 2), Float32(n / 2)
     for j in axes(basis, 2), i in axes(basis, 1)
-        basis[i,j,1] = (i-center)/radius
-        basis[i,j,2] = (j-center)/radius
+        basis[i, j, 1] = (i-center)/radius
+        basis[i, j, 2] = (j-center)/radius
     end
     return basis
 end
@@ -352,101 +538,180 @@ The selected target and execution policy apply to every optical and response gra
 CPU defaults to stream execution; accelerators require captured execution. Explicit
 non-captured accelerator policies are rejected, with no stream fallback.
 """
-function Instruments.prepare_external_pupil(path::AbstractString; settings=NamedTuple(),
-        target=Backends.HostComputeDevice(), execution=nothing, chopping=NamedTuple())
+function Instruments.prepare_external_pupil(
+    path::AbstractString;
+    settings = NamedTuple(),
+    target = Backends.HostComputeDevice(),
+    execution = nothing,
+    chopping = NamedTuple(),
+)
     declaration = Instruments.load_simulation(path)
     execution = instrument_execution(target, execution)
-    haskey(declaration.document, "hil") &&
-        throw(ArgumentError("external-pupil preparation requires standalone optical graphs"))
+    haskey(declaration.document, "hil") && throw(
+        ArgumentError("external-pupil preparation requires standalone optical graphs"),
+    )
     configured = Instruments.settings(declaration, settings)
     paths = get(declaration.instrument.document, "optical_paths", Dict())
-    isempty(paths) && throw(ArgumentError("external-pupil preparation requires physical optical_paths"))
+    isempty(paths) &&
+        throw(ArgumentError("external-pupil preparation requires physical optical_paths"))
     observations = get(declaration.document, "observations", Dict())
     optical = Dict{Symbol,Any}()
     durations = Dict{Symbol,ModelDuration}()
     selections = Dict{Symbol,Any}()
     for (name, physical_path) in paths
-        haskey(declaration.graphs, name) || throw(ArgumentError("physical optical path has no execution graph $name"))
-        optical[Symbol(name)] = Instruments.prepare_system(path; settings,
-            simulation_graph=name, target, execution).graph
-        sensor = declaration.instrument.document["wavefront_sensors"][physical_path["sensor"]]
+        haskey(declaration.graphs, name) ||
+            throw(ArgumentError("physical optical path has no execution graph $name"))
+        optical[Symbol(name)] = Instruments.prepare_system(
+            path;
+            settings,
+            simulation_graph = name,
+            target,
+            execution,
+        ).graph
+        sensor =
+            declaration.instrument.document["wavefront_sensors"][physical_path["sensor"]]
         acquisition = get(sensor, "acquisition", Dict())
         seconds = get(acquisition, "exposure_duration_s", nothing)
-        Instruments.isfinite_positive(seconds) || throw(ArgumentError("physical optical path requires a sensor exposure duration"))
+        Instruments.isfinite_positive(seconds) || throw(
+            ArgumentError("physical optical path requires a sensor exposure duration"),
+        )
         durations[Symbol(name)] = ModelDuration(round(UInt64, seconds * 1e9))
-        graph_document = Instruments.graph_document(declaration,configured;simulation_graph=name)
-        intensity_outputs = filter(output -> output["name"] == "intensity",graph_document["outputs"])
-        length(intensity_outputs) == 1 || throw(ArgumentError("optical branch requires one intensity output"))
-        sampling_node = Symbol(first(split(only(intensity_outputs)["source"],'.')))
-        observation = (; output=:intensity, sampling_node)
+        graph_document =
+            Instruments.graph_document(declaration, configured; simulation_graph = name)
+        intensity_outputs =
+            filter(output -> output["name"] == "intensity", graph_document["outputs"])
+        length(intensity_outputs) == 1 ||
+            throw(ArgumentError("optical branch requires one intensity output"))
+        sampling_node = Symbol(first(split(only(intensity_outputs)["source"], '.')))
+        observation = (; output = :intensity, sampling_node)
         if haskey(observations, name)
             entry = observations[name]
             key = entry["graph"]
-            document = Instruments.graph_document(declaration, configured; simulation_graph=key)
+            document =
+                Instruments.graph_document(declaration, configured; simulation_graph = key)
             output = only(filter(output -> output["name"] == "frame", document["outputs"]))
-            output["source"] == entry["detector"] * ".frame" ||
-                throw(ArgumentError("resolved observation frame must come from its declared detector"))
-            node = only(filter(node -> node["name"] == entry["detector"], document["nodes"]))
-            node["type"] == "detector" && get(node, "detector", nothing) ==
-                declaration.document["components"][entry["detector"]]["template"] ||
-                throw(ArgumentError("resolved observation detector differs from its component"))
+            output["source"] == entry["detector"] * ".frame" || throw(
+                ArgumentError(
+                    "resolved observation frame must come from its declared detector",
+                ),
+            )
+            node =
+                only(filter(node -> node["name"] == entry["detector"], document["nodes"]))
+            node["type"] == "detector" &&
+            get(node, "detector", nothing) ==
+            declaration.document["components"][entry["detector"]]["template"] || throw(
+                ArgumentError("resolved observation detector differs from its component"),
+            )
             config = node["config"]
-            haskey(sensor, "expected_schema") && sensor["expected_schema"] != config["frame_schema"] &&
-                throw(ArgumentError("observation detector frame_schema differs from its physical sensor expected_schema"))
+            haskey(sensor, "expected_schema") &&
+                sensor["expected_schema"] != config["frame_schema"] &&
+                throw(
+                    ArgumentError(
+                        "observation detector frame_schema differs from its physical sensor expected_schema",
+                    ),
+                )
             sampling = config["pixel_sampling_m"]
             validate_observation_sampling(sampling)
             exposure = config["exposure_duration_s"]
-            Instruments.isfinite_positive(exposure) && isapprox(exposure, seconds; rtol=8eps(Float32), atol=0) ||
-                throw(ArgumentError("observation detector exposure differs from its physical sensor acquisition"))
+            Instruments.isfinite_positive(exposure) &&
+            isapprox(exposure, seconds; rtol = 8eps(Float32), atol = 0) || throw(
+                ArgumentError(
+                    "observation detector exposure differs from its physical sensor acquisition",
+                ),
+            )
             shape = (config["rows"], config["columns"])
             physical_detector = sensor["detector"]
-            if haskey(physical_detector,"rows")
-                physical_shape = (physical_detector["rows"],physical_detector["columns"])
-                all(axis -> 0 < shape[axis] <= physical_shape[axis], 1:2) &&
-                    all(isapprox.(sampling,physical_detector["pixel_sampling_m"];rtol=8eps(Float32),atol=0)) ||
-                    throw(ArgumentError("observation ROI or pixel pitch differs from its physical camera"))
+            if haskey(physical_detector, "rows")
+                physical_shape = (physical_detector["rows"], physical_detector["columns"])
+                all(axis -> 0 < shape[axis] <= physical_shape[axis], 1:2) && all(
+                    isapprox.(
+                        sampling,
+                        physical_detector["pixel_sampling_m"];
+                        rtol = 8eps(Float32),
+                        atol = 0,
+                    ),
+                ) || throw(
+                    ArgumentError(
+                        "observation ROI or pixel pitch differs from its physical camera",
+                    ),
+                )
                 if haskey(acquisition, "roi_origin")
                     origin = acquisition["roi_origin"]
                     all(axis -> origin[axis] <= physical_shape[axis] - shape[axis], 1:2) ||
-                        throw(ArgumentError("observation ROI origin and shape exceed its physical camera"))
+                        throw(
+                            ArgumentError(
+                                "observation ROI origin and shape exceed its physical camera",
+                            ),
+                        )
                 end
             end
-            haskey(sensor, "detector_shape") && Tuple(sensor["detector_shape"]) != shape &&
-                throw(ArgumentError("observation detector shape differs from its physical sensor"))
-            response = (;graph=Instruments.prepare_system(path; settings, simulation_graph=key,
-                    target, execution).graph,
-                input=:photon_rate, output=:frame,
-                normalized_to_photon_rate=entry["normalized_to_photon_rate"],
-                frame_schema=config["frame_schema"],
-                pixel_sampling_m=(sampling[1], sampling[2]), exposure_duration_s=exposure)
-            observation = (;observation..., response)
+            haskey(sensor, "detector_shape") &&
+                Tuple(sensor["detector_shape"]) != shape &&
+                throw(
+                    ArgumentError(
+                        "observation detector shape differs from its physical sensor",
+                    ),
+                )
+            response = (;
+                graph = Instruments.prepare_system(
+                    path;
+                    settings,
+                    simulation_graph = key,
+                    target,
+                    execution,
+                ).graph,
+                input = :photon_rate,
+                output = :frame,
+                normalized_to_photon_rate = entry["normalized_to_photon_rate"],
+                frame_schema = config["frame_schema"],
+                pixel_sampling_m = (sampling[1], sampling[2]),
+                exposure_duration_s = exposure,
+            )
+            observation = (; observation..., response)
         end
         if hasproperty(chopping, Symbol(name))
             selected = getproperty(chopping, Symbol(name))
-            unfringed = Instruments.prepare_system(path; settings,
-                simulation_graph=selected.unfringed_graph, target, execution).graph
-            observation = (; observation..., chopping=(; unfringed,
-                initial_phase=Symbol(selected.initial_phase)))
+            unfringed = Instruments.prepare_system(
+                path;
+                settings,
+                simulation_graph = selected.unfringed_graph,
+                target,
+                execution,
+            ).graph
+            observation = (;
+                observation...,
+                chopping = (; unfringed, initial_phase = Symbol(selected.initial_phase)),
+            )
         end
         selections[Symbol(name)] = observation
     end
     names = Tuple(Symbol.(sort!(collect(keys(paths)))))
     named(values) = NamedTuple{names}(Tuple(values[name] for name in names))
-    return AlgorithmGraphs.prepare_external_pupil(named(optical);
-        exposure_durations=named(durations), observations=named(selections))
+    return AlgorithmGraphs.prepare_external_pupil(
+        named(optical);
+        exposure_durations = named(durations),
+        observations = named(selections),
+    )
 end
 
 validate_accelerator_execution(::Union{Nothing,CapturedGraphExecution}) = nothing
-validate_accelerator_execution(execution) = throw(ArgumentError("RTC accelerator preparation requires CapturedGraphExecution"))
+validate_accelerator_execution(execution) =
+    throw(ArgumentError("RTC accelerator preparation requires CapturedGraphExecution"))
 
 function validate_optical_sampling(sampling::AbstractVector)
-    length(sampling) == 2 && all(Instruments.isfinite_positive,sampling) || throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+    length(sampling) == 2 && all(Instruments.isfinite_positive, sampling) || throw(
+        ArgumentError("optical detector requires positive row/column pixel_sampling_m"),
+    )
     return nothing
 end
-validate_optical_sampling(sampling) = throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
+validate_optical_sampling(sampling) =
+    throw(ArgumentError("optical detector requires positive row/column pixel_sampling_m"))
 
 function validate_observation_sampling(sampling::AbstractVector)
-    length(sampling) == 2 && all(Instruments.isfinite_positive,sampling) || throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+    length(sampling) == 2 && all(Instruments.isfinite_positive, sampling) || throw(
+        ArgumentError("observation detector requires metric row/column pixel_sampling_m"),
+    )
     return nothing
 end
-validate_observation_sampling(sampling) = throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+validate_observation_sampling(sampling) =
+    throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))

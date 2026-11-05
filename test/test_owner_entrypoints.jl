@@ -6,34 +6,69 @@ import Clocks
 const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
 const Parameters = PipeWireAORTC.ParameterSource
 
-const OPTIONS = (; config="/tmp/parameters.conf", remote="/tmp/rtc-core",
-    bootstrap_node="parameters.bootstrap", bootstrap_instance="7",
-    control_node="parameters.control", control_instance="9")
-arguments(options=OPTIONS) = reduce(vcat,
-    (["--" * replace(string(key), "_" => "-"), value] for (key, value) in pairs(options)))
+const OPTIONS = (;
+    config = "/tmp/parameters.conf",
+    remote = "/tmp/rtc-core",
+    bootstrap_node = "parameters.bootstrap",
+    bootstrap_instance = "7",
+    control_node = "parameters.control",
+    control_instance = "9",
+)
+arguments(options = OPTIONS) = reduce(
+    vcat,
+    (["--" * replace(string(key), "_" => "-"), value] for (key, value) in pairs(options)),
+)
 
 @testset "parameter owner arguments preserve endpoint contract" begin
     admitted = Parameters._owner_options(arguments())
-    @test Dict(pairs(admitted)) == Dict(pairs(merge(OPTIONS,
-        (; bootstrap_instance=Int64(7), control_instance=Int64(9)))))
-    @test Parameters._owner_options(["--" * replace(string(key), "_" => "-") * "=" * value
-        for (key, value) in pairs(OPTIONS)]) == admitted
+    @test Dict(pairs(admitted)) == Dict(
+        pairs(
+            merge(OPTIONS, (; bootstrap_instance = Int64(7), control_instance = Int64(9))),
+        ),
+    )
+    @test Parameters._owner_options([
+        "--" * replace(string(key), "_" => "-") * "=" * value for
+        (key, value) in pairs(OPTIONS)
+    ]) == admitted
     for key in keys(OPTIONS)
         missing = (; (name => value for (name, value) in pairs(OPTIONS) if name != key)...)
         @test_throws ArgumentError Parameters._owner_options(arguments(missing))
     end
-    for extra in (["--unknown", "value"], ["--config", "/tmp/other.conf"], ["positional"], ["--control-node"])
+    for extra in (
+        ["--unknown", "value"],
+        ["--config", "/tmp/other.conf"],
+        ["positional"],
+        ["--control-node"],
+    )
         @test_throws ArgumentError Parameters._owner_options(vcat(arguments(), extra))
     end
-    for changed in ((; config="relative.conf"), (; remote="relative-core"),
-                    (; bootstrap_node="invalid/name"), (; control_node=""),
-                    (; control_node=repeat("n",129)), (; control_node=OPTIONS.bootstrap_node),
-                    (; bootstrap_instance="0"), (; bootstrap_instance="-1"),
-                    (; bootstrap_instance="9223372036854775808"), (; control_instance="1.0"))
-        @test_throws ArgumentError Parameters._owner_options(arguments(merge(OPTIONS, changed)))
+    for changed in (
+        (; config = "relative.conf"),
+        (; remote = "relative-core"),
+        (; bootstrap_node = "invalid/name"),
+        (; control_node = ""),
+        (; control_node = repeat("n", 129)),
+        (; control_node = OPTIONS.bootstrap_node),
+        (; bootstrap_instance = "0"),
+        (; bootstrap_instance = "-1"),
+        (; bootstrap_instance = "9223372036854775808"),
+        (; control_instance = "1.0"),
+    )
+        @test_throws ArgumentError Parameters._owner_options(
+            arguments(merge(OPTIONS, changed)),
+        )
     end
-    maximal = Parameters._owner_options(arguments(merge(OPTIONS,
-        (; bootstrap_instance=string(typemax(Int64)), control_instance=string(typemax(Int64))))))
+    maximal = Parameters._owner_options(
+        arguments(
+            merge(
+                OPTIONS,
+                (;
+                    bootstrap_instance = string(typemax(Int64)),
+                    control_instance = string(typemax(Int64)),
+                ),
+            ),
+        ),
+    )
     @test maximal.bootstrap_instance == maximal.control_instance == typemax(Int64)
     @test_throws ArgumentError Parameters.main(["--unknown", "value"])
 end
@@ -46,9 +81,19 @@ mutable struct OwnerRuntime
     close_failure::Union{Nothing,Exception}
     fault::Union{Nothing,Exception}
 end
-OwnerRuntime(; cancelled=false, preparation_failure=nothing, finish_failure=nothing,
-    close_failure=nothing) = OwnerRuntime(Symbol[], cancelled, preparation_failure,
-        finish_failure, close_failure, nothing)
+OwnerRuntime(;
+    cancelled = false,
+    preparation_failure = nothing,
+    finish_failure = nothing,
+    close_failure = nothing,
+) = OwnerRuntime(
+    Symbol[],
+    cancelled,
+    preparation_failure,
+    finish_failure,
+    close_failure,
+    nothing,
+)
 Bootstrap.cancelled(runtime::OwnerRuntime) = runtime.cancelled
 function Bootstrap.preparation_check!(runtime::OwnerRuntime)
     push!(runtime.events, :check)
@@ -71,11 +116,17 @@ function Base.close(runtime::OwnerRuntime)
     runtime.close_failure === nothing || throw(runtime.close_failure)
     return nothing
 end
-caught(f) = try f(); nothing catch error; error end
+caught(f) =
+    try
+        f()
+        nothing
+    catch error
+        error
+    end
 
 @testset "cold owner options and deterministic cleanup" begin
     runtime = OwnerRuntime()
-    options = merge(OPTIONS, (; bootstrap_instance=Int64(7)))
+    options = merge(OPTIONS, (; bootstrap_instance = Int64(7)))
     result = Bootstrap._with_owner(options, runtime) do admitted
         push!(runtime.events, :cold)
         @test admitted.bootstrap_runtime === runtime
@@ -87,8 +138,9 @@ caught(f) = try f(); nothing catch error; error end
     @test runtime.events == [:cold, :check, :finish, :close]
     @test runtime.fault === nothing
 
-    primary, finishing, closing = ErrorException.(["preparation failed", "finish failed", "close failed"])
-    runtime = OwnerRuntime(; finish_failure=finishing, close_failure=closing)
+    primary, finishing, closing =
+        ErrorException.(["preparation failed", "finish failed", "close failed"])
+    runtime = OwnerRuntime(; finish_failure = finishing, close_failure = closing)
     failure = caught() do
         Bootstrap._with_owner(options, runtime) do admitted
             push!(runtime.events, :cold)
@@ -100,13 +152,16 @@ caught(f) = try f(); nothing catch error; error end
     @test runtime.fault === primary
     @test runtime.events == [:cold, :fault, :finish, :close]
 
-    runtime = OwnerRuntime(; preparation_failure=primary)
-    failure = caught(() -> Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime))
+    runtime = OwnerRuntime(; preparation_failure = primary)
+    failure = caught(
+        () ->
+            Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime),
+    )
     @test failure === primary
     @test runtime.fault === primary
     @test runtime.events == [:check, :fault, :finish, :close]
 
-    runtime = OwnerRuntime(; finish_failure=finishing, close_failure=closing)
+    runtime = OwnerRuntime(; finish_failure = finishing, close_failure = closing)
     failure = caught(() -> Bootstrap._with_owner(_ -> nothing, options, runtime))
     @test failure isa CompositeException
     @test failure.exceptions == [finishing, closing]
@@ -115,9 +170,10 @@ caught(f) = try f(); nothing catch error; error end
 end
 
 @testset "cooperative cancellation preserves cleanup failures" begin
-    options = merge(OPTIONS, (; bootstrap_instance=Int64(7)))
-    runtime = OwnerRuntime(; cancelled=true)
-    @test Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime) === nothing
+    options = merge(OPTIONS, (; bootstrap_instance = Int64(7)))
+    runtime = OwnerRuntime(; cancelled = true)
+    @test Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime) ===
+          nothing
     @test runtime.fault === nothing
     @test runtime.events == [:check, :finish, :close]
 
@@ -129,8 +185,11 @@ end
     @test runtime.events == [:fault, :finish, :close]
 
     closing = ErrorException("close failed after cancellation")
-    runtime = OwnerRuntime(; cancelled=true, close_failure=closing)
-    failure = caught(() -> Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime))
+    runtime = OwnerRuntime(; cancelled = true, close_failure = closing)
+    failure = caught(
+        () ->
+            Bootstrap._with_owner(admitted -> admitted.owner_check(), options, runtime),
+    )
     @test failure === closing
     @test runtime.fault === nothing
     @test runtime.events == [:check, :finish, :close]
@@ -145,7 +204,7 @@ mutable struct MonitorTransport
 end
 Bootstrap.lifecycle!(transport::MonitorTransport, lifecycle) =
     (push!(transport.publications, lifecycle); nothing)
-Bootstrap.flush_terminal!(transport::MonitorTransport, deadline; check=()->nothing) =
+Bootstrap.flush_terminal!(transport::MonitorTransport, deadline; check = ()->nothing) =
     (push!(transport.flushes, deadline); nothing)
 function Bootstrap._poll_ready!(transport::MonitorTransport)
     transport.failure === nothing || throw(transport.failure)
@@ -158,9 +217,10 @@ mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
     reads::Int
 end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
-function monitor_runtime(; clock=Clocks.CachedNanoClock(10_000_000_000))
-    runtime = Bootstrap.Runtime(MonitorTransport(
-        PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Float64[], nothing))
+function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
+    runtime = Bootstrap.Runtime(
+        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Float64[], nothing),
+    )
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
     Agent.start(invoker)
@@ -171,20 +231,27 @@ function bootstrap_ticket(operation)
     codec = PipeWireAORTC.OwnerBootstrapCodec
     controller = envelope.ControllerIdentity(UInt32(7), UInt64(8), Int64(9))
     command = codec.Command(operation)
-    header = envelope.RequestHeader(controller, Int64(1), Int64(1),
-        PipeWireAORTC.ControlClient.operation_id(codec.PROFILE, command), Int64(1_000_000_000))
+    header = envelope.RequestHeader(
+        controller,
+        Int64(1),
+        Int64(1),
+        PipeWireAORTC.ControlClient.operation_id(codec.PROFILE, command),
+        Int64(1_000_000_000),
+    )
     PipeWireAORTC.ControlEndpoint.Ticket{Bootstrap.Commands}(header, command, UInt8[], Inf)
 end
 function owner_message(f, monitor)
     task = @async f()
     yield()
     Bootstrap._drain_owner!(monitor)
-    @test timedwait(() -> istaskdone(task), 1; pollint=0.001) === :ok
+    @test timedwait(() -> istaskdone(task), 1; pollint = 0.001) === :ok
     return fetch(task)
 end
 reply() = Channel{Bootstrap.OwnerReply}(1)
-status_read_allocations(runtime) = ((@allocated Bootstrap.preparation_check!(runtime)),
-    (@allocated Bootstrap.cancelled(runtime)))
+status_read_allocations(runtime) = (
+    (@allocated Bootstrap.preparation_check!(runtime)),
+    (@allocated Bootstrap.cancelled(runtime)),
+)
 
 @testset "bootstrap Active Object facts and hierarchy" begin
     codec = PipeWireAORTC.OwnerBootstrapCodec
@@ -239,33 +306,42 @@ end
     runtime, monitor, invoker = monitor_runtime()
     # Several owner tasks share thread 1. Check+enqueue must remain atomic, with
     # a full ordinary mailbox rejected before acceptance rather than blocked.
-    tasks = [@async caught(() -> Bootstrap.prepared!(runtime))
-        for _ in 1:(Bootstrap.MAILBOX_CAPACITY + 1)]
+    tasks = [
+        @async caught(() -> Bootstrap.prepared!(runtime)) for
+        _ = 1:(Bootstrap.MAILBOX_CAPACITY+1)
+    ]
     yield()
     @test Base.n_avail(runtime.mailbox.owner) == Bootstrap.MAILBOX_CAPACITY
     @test count(istaskdone, tasks) == 1
     failure = only(fetch(task) for task in tasks if istaskdone(task))
     @test failure isa InvalidStateException && failure.state === :full
     exclusion = Bootstrap.HooksExcluded(reply())
-    Bootstrap._enqueue!(runtime.mailbox, exclusion; cleanup=true)
+    Bootstrap._enqueue!(runtime.mailbox, exclusion; cleanup = true)
     @test Bootstrap._drain_owner!(monitor) == Bootstrap.MAILBOX_CAPACITY + 1
     @test take!(exclusion.reply).error === nothing
     @test Bootstrap._status(runtime).hooks_excluded
-    @test all(task -> timedwait(() -> istaskdone(task), 1; pollint=0.001) === :ok, tasks)
+    @test all(task -> timedwait(() -> istaskdone(task), 1; pollint = 0.001) === :ok, tasks)
     @test all(task -> fetch(task) isa InvalidStateException, tasks)
     close(invoker)
-    @test_throws InvalidStateException Bootstrap._enqueue!(runtime.mailbox, Bootstrap.OwnerPrepared(reply()))
+    @test_throws InvalidStateException Bootstrap._enqueue!(
+        runtime.mailbox,
+        Bootstrap.OwnerPrepared(reply()),
+    )
 
     runtime, monitor, invoker = monitor_runtime()
-    for _ in 1:Bootstrap.MAILBOX_CAPACITY
-        Bootstrap._enqueue!(runtime.mailbox, Bootstrap.HooksExcluded(reply()); cleanup=true)
+    for _ = 1:Bootstrap.MAILBOX_CAPACITY
+        Bootstrap._enqueue!(
+            runtime.mailbox,
+            Bootstrap.HooksExcluded(reply());
+            cleanup = true,
+        )
     end
     waiting = @async caught(() -> Bootstrap.cancel!(runtime))
     yield()
     @test !istaskdone(waiting)
     @test Base.n_avail(runtime.mailbox.cleanup) == Bootstrap.MAILBOX_CAPACITY
     close(invoker)
-    @test timedwait(() -> istaskdone(waiting), 1; pollint=0.001) === :ok
+    @test timedwait(() -> istaskdone(waiting), 1; pollint = 0.001) === :ok
     @test fetch(waiting) === nothing
     @test Bootstrap._status(runtime).done
 end
@@ -277,7 +353,7 @@ end
     registration = Bootstrap.ConnectionRegistered(reply(), ticket, hooks)
     exclusion = Bootstrap.HooksExcluded(reply())
     Bootstrap._enqueue!(runtime.mailbox, registration)
-    Bootstrap._enqueue!(runtime.mailbox, exclusion; cleanup=true)
+    Bootstrap._enqueue!(runtime.mailbox, exclusion; cleanup = true)
     @test Bootstrap._drain_owner!(monitor) == 2
     @test take!(exclusion.reply).error === nothing
     @test take!(registration.reply).error isa InvalidStateException
@@ -315,7 +391,7 @@ end
     first = ErrorException("monitor failure before owner reply")
     Hsm.dispatch!(monitor, :MonitorFailed, first)
     close(invoker)
-    @test timedwait(() -> istaskdone(task), 1; pollint=0.001) === :ok
+    @test timedwait(() -> istaskdone(task), 1; pollint = 0.001) === :ok
     @test fetch(task) === first
     @test runtime.failure === first
     @test Bootstrap._status(runtime).hooks_excluded
@@ -326,7 +402,7 @@ end
     task = @async caught(() -> Bootstrap.prepared!(runtime))
     yield()
     close(invoker)
-    @test timedwait(() -> istaskdone(task), 1; pollint=0.001) === :ok
+    @test timedwait(() -> istaskdone(task), 1; pollint = 0.001) === :ok
     @test fetch(task) isa InvalidStateException
     @test Bootstrap.fault!(runtime, first) === nothing
     @test Bootstrap.finishing!(runtime) === nothing
@@ -334,7 +410,7 @@ end
 
 @testset "bootstrap samples its source clock once per duty cycle" begin
     source = CountingNanoClock(10_000_000_000, 0)
-    runtime, monitor, invoker = monitor_runtime(; clock=source)
+    runtime, monitor, invoker = monitor_runtime(; clock = source)
     @test source.reads == 0
     task = @async Bootstrap.prepared!(runtime)
     yield()
@@ -366,7 +442,7 @@ end
     close(invoker)
 
     source = Clocks.CachedNanoClock(20_000_000_000)
-    runtime, monitor, invoker = monitor_runtime(; clock=source)
+    runtime, monitor, invoker = monitor_runtime(; clock = source)
     Agent.invoke_unchecked(invoker)
     @test Bootstrap._now(monitor) == 20.0
     Clocks.advance!(source, 1_000_000_000)

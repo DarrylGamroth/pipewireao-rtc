@@ -14,9 +14,17 @@ function prepare_phase_timing(options)
     # before admission without writing a report or consuming capture samples.
     precompile(PhaseTiming.save!, (PhaseTiming.Capture,)) ||
         error("cannot compile prepared phase timing cleanup before admission")
-    return OwnerPhaseTiming(PhaseTiming.Capture(directory, options.phase_timing_warmup,
-        options.phase_timing_frames, options.pacing_period_ns, options.bootstrap_instance),
-        PipeWireExchangeTiming(), Ref{Int64}(0))
+    return OwnerPhaseTiming(
+        PhaseTiming.Capture(
+            directory,
+            options.phase_timing_warmup,
+            options.phase_timing_frames,
+            options.pacing_period_ns,
+            options.bootstrap_instance,
+        ),
+        PipeWireExchangeTiming(),
+        Ref{Int64}(0),
+    )
 end
 
 exchange_timing(::Nothing) = nothing
@@ -29,19 +37,40 @@ reset_phase_timing!(::Nothing, generation) = nothing
 reset_phase_timing!(timing::OwnerPhaseTiming, generation) =
     PhaseTiming.reset!(timing.capture, UInt64(generation))
 
-function record_phase_timing!(owner::OwnerPhaseTiming, timing::PipeWireExchangeTiming,
-        frame::PipeWireFrameCommandTiming, deadline::UInt64, optical_finished::UInt64,
-        next_deadline::UInt64)
-    timing.sequence == frame.sequence || error("phase timing sequence differs from completed exchange")
+function record_phase_timing!(
+    owner::OwnerPhaseTiming,
+    timing::PipeWireExchangeTiming,
+    frame::PipeWireFrameCommandTiming,
+    deadline::UInt64,
+    optical_finished::UInt64,
+    next_deadline::UInt64,
+)
+    timing.sequence == frame.sequence ||
+        error("phase timing sequence differs from completed exchange")
     period = owner.capture.period_ns
-    missed = period == 0 ? UInt64(0) :
+    missed =
+        period == 0 ? UInt64(0) :
         (next_deadline - Base.checked_add(deadline, period)) ÷ period
     Base.gc_bytes(owner.allocated_bytes)
-    row = (timing.generation, timing.sequence, deadline, timing.started_ns,
-        timing.ready_ns, timing.step_started_ns, timing.step_finished_ns, timing.staged_ns,
-        UInt64(frame.source_published_nanoseconds), UInt64(frame.command_received_nanoseconds),
-        timing.adoption_started_ns, timing.finished_ns, optical_finished, next_deadline,
-        missed, Base.gc_time_ns(), UInt64(owner.allocated_bytes[]))
+    row = (
+        timing.generation,
+        timing.sequence,
+        deadline,
+        timing.started_ns,
+        timing.ready_ns,
+        timing.step_started_ns,
+        timing.step_finished_ns,
+        timing.staged_ns,
+        UInt64(frame.source_published_nanoseconds),
+        UInt64(frame.command_received_nanoseconds),
+        timing.adoption_started_ns,
+        timing.finished_ns,
+        optical_finished,
+        next_deadline,
+        missed,
+        Base.gc_time_ns(),
+        UInt64(owner.allocated_bytes[]),
+    )
     PhaseTiming.record!(owner.capture, row)
     return nothing
 end

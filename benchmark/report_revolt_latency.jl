@@ -5,8 +5,7 @@ using JSON
 using Pkg
 using TOML
 
-const HEADER =
-    "implementation,phase,observation,sequence,source_published_ns,command_received_ns,latency_ns"
+const HEADER = "implementation,phase,observation,sequence,source_published_ns,command_received_ns,latency_ns"
 const MAX_LATENCY_NS = 10_000_000_000
 const SIGNIFICANT_FIGURES = 3
 const PERCENTILES = Float64[50.0, 90.0, 99.0, 99.9]
@@ -16,9 +15,9 @@ function parse_arguments(arguments)
     output = nothing
     for argument in arguments
         if startswith(argument, "--input=")
-            push!(inputs, split(argument, '='; limit=2)[2])
+            push!(inputs, split(argument, '='; limit = 2)[2])
         elseif startswith(argument, "--output=")
-            output = split(argument, '='; limit=2)[2]
+            output = split(argument, '='; limit = 2)[2]
         else
             throw(ArgumentError("unknown argument: $argument"))
         end
@@ -38,7 +37,7 @@ function parse_latency_csv(path::String, run::Int)
     counters = Dict{String,Dict{String,Int}}()
     for (record_index, line) in enumerate(lines[2:end])
         line_number = record_index + 1
-        fields = split(line, ','; keepempty=true)
+        fields = split(line, ','; keepempty = true)
         length(fields) == 7 || error("$path:$line_number has $(length(fields)) fields")
         implementation, phase = fields[1], fields[2]
         implementation in ("native", "julia") ||
@@ -51,13 +50,15 @@ function parse_latency_csv(path::String, run::Int)
         received = parse(Int64, fields[6])
         latency = parse(UInt64, fields[7])
         source >= 0 || error("$path:$line_number has a negative source timestamp")
-        received >= source || error("$path:$line_number command receipt precedes publication")
+        received >= source ||
+            error("$path:$line_number command receipt precedes publication")
         latency == UInt64(received - source) ||
             error("$path:$line_number latency does not equal receipt minus publication")
         expected = get(expected_observation, implementation, 1)
         observation == expected ||
             error("$path:$line_number has non-contiguous $implementation observation index")
-        haskey(prior_sequence, implementation) && sequence <= prior_sequence[implementation] &&
+        haskey(prior_sequence, implementation) &&
+            sequence <= prior_sequence[implementation] &&
             error("$path:$line_number has non-increasing $implementation sequence")
         prior_sequence[implementation] = sequence
         expected_observation[implementation] = expected + 1
@@ -65,7 +66,19 @@ function parse_latency_csv(path::String, run::Int)
             Dict("warmup" => 0, "measurement" => 0)
         end
         implementation_counters[phase] += 1
-        push!(observations, (; run, implementation, phase, observation, sequence, source, received, latency))
+        push!(
+            observations,
+            (;
+                run,
+                implementation,
+                phase,
+                observation,
+                sequence,
+                source,
+                received,
+                latency,
+            ),
+        )
     end
     return observations, counters
 end
@@ -103,8 +116,9 @@ end
 function git_record(repository)
     try
         return Dict(
-            "revision" => readchomp(Cmd(`git rev-parse HEAD`; dir=repository)),
-            "dirty" => !isempty(read(Cmd(`git status --porcelain`; dir=repository), String)),
+            "revision" => readchomp(Cmd(`git rev-parse HEAD`; dir = repository)),
+            "dirty" =>
+                !isempty(read(Cmd(`git status --porcelain`; dir = repository), String)),
         )
     catch
         return Dict("revision" => "unavailable", "dirty" => nothing)
@@ -137,10 +151,7 @@ function component_builds()
     for variable in ("PIPEWIREAO_RTC_PIPEWIRE_BUILD", "PIPEWIREAO_SPA_PLUGINS_BUILD")
         path = get(ENV, variable, nothing)
         isnothing(path) && continue
-        builds[variable] = Dict(
-            "path" => abspath(path),
-            "git" => git_record(dirname(path)),
-        )
+        builds[variable] = Dict("path" => abspath(path), "git" => git_record(dirname(path)))
     end
     return builds
 end
@@ -194,21 +205,22 @@ function main(arguments)
         )
         isempty(measurement_observations) && error("no $implementation measurement records")
         runs[implementation] = [
-            histogram_summary(filter(
-                observation ->
-                    observation.implementation == implementation &&
-                    observation.phase == "measurement" && observation.run == run,
-                all_observations,
-            )) for run in eachindex(options.inputs)
+            histogram_summary(
+                filter(
+                    observation ->
+                        observation.implementation == implementation &&
+                        observation.phase == "measurement" &&
+                        observation.run == run,
+                    all_observations,
+                ),
+            ) for run in eachindex(options.inputs)
         ]
         combined[implementation] = histogram_summary(measurement_observations)
     end
     result = Dict(
         "format_version" => 1,
-        "operation_boundary" =>
-            "same-process monotonic Header-PTS at WFS frame publication through receipt of the matching correction command callback",
-        "load_model" =>
-            "single-frame completion-paced simulated HIL exchange; not a fixed-arrival-rate, open-loop, or physical-device measurement",
+        "operation_boundary" => "same-process monotonic Header-PTS at WFS frame publication through receipt of the matching correction command callback",
+        "load_model" => "single-frame completion-paced simulated HIL exchange; not a fixed-arrival-rate, open-loop, or physical-device measurement",
         "warmup_policy" => "raw warmup records retained and excluded from histograms",
         "repetitions" => length(options.inputs),
         "raw_csv" => abspath.(options.inputs),
@@ -221,15 +233,20 @@ function main(arguments)
         summary = combined[implementation]
         println(
             implementation,
-            " samples=", summary["samples"],
-            " p50_ns=", summary["p50_ns"],
-            " p99_ns=", summary["p99_ns"],
-            " p99_9_ns=", summary["p99_9_ns"],
-            " max_ns=", summary["max_ns"],
+            " samples=",
+            summary["samples"],
+            " p50_ns=",
+            summary["p50_ns"],
+            " p99_ns=",
+            summary["p99_ns"],
+            " p99_9_ns=",
+            summary["p99_9_ns"],
+            " max_ns=",
+            summary["max_ns"],
         )
     end
     open(options.output, "w") do io
-        JSON.json(io, result; pretty=true)
+        JSON.json(io, result; pretty = true)
         println(io)
     end
     println("wrote ", abspath(options.output))

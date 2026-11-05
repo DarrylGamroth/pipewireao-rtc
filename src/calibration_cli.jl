@@ -20,11 +20,19 @@ mutable struct Journal{F}
 end
 function Journal(path, probes)
     # Never truncate old evidence or follow an existing symlink.
-    flags = Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT | Base.Filesystem.JL_O_EXCL
+    flags =
+        Base.Filesystem.JL_O_WRONLY | Base.Filesystem.JL_O_CREAT | Base.Filesystem.JL_O_EXCL
     file = Base.Filesystem.open(path, flags, 0o600)
     try
-        header = JSON.json(Dict("event"=>"header", "version"=>2,
-            "probe_count"=>probes, "max_charged_bytes"=>MAX_EVIDENCE_BYTES)) * "\n"
+        header =
+            JSON.json(
+                Dict(
+                    "event"=>"header",
+                    "version"=>2,
+                    "probe_count"=>probes,
+                    "max_charged_bytes"=>MAX_EVIDENCE_BYTES,
+                ),
+            ) * "\n"
         write(file, header)
         return Journal(file, ncodeunits(header), Dict{String,Any}[], nothing)
     catch
@@ -51,8 +59,13 @@ function record!(journal::Journal, charge, build)
 end
 function observe!(journal::Journal, action, result, run, serial)
     record!(journal, 8192 + _figure_charge(action) + _result_charge(result)) do
-        Dict("event"=>"completion", "run"=>run, "serial"=>serial,
-            "action"=>ActionClient._action_document(action), "result"=>ActionClient.document(result))
+        Dict(
+            "event"=>"completion",
+            "run"=>run,
+            "serial"=>serial,
+            "action"=>ActionClient._action_document(action),
+            "result"=>ActionClient.document(result),
+        )
     end
 end
 # do-block function goes first.
@@ -60,13 +73,20 @@ record!(build, journal::Journal, charge) = record!(journal, charge, build)
 function finish!(journal::Journal, result)
     try
         record!(journal, 8192) do
-            Dict("event"=>"acquisition", "result"=>Dict(k=>v for (k,v) in result if k != "responses"))
+            Dict(
+                "event"=>"acquisition",
+                "result"=>Dict(k=>v for (k, v) in result if k != "responses"),
+            )
         end
         for record in journal.records
             write(journal.file, JSON.json(record), '\n')
         end
         if journal.error !== nothing
-            write(journal.file, JSON.json(Dict("event"=>"evidence_error", "reason"=>journal.error)), '\n')
+            write(
+                journal.file,
+                JSON.json(Dict("event"=>"evidence_error", "reason"=>journal.error)),
+                '\n',
+            )
         end
     finally
         close(journal.file)
@@ -75,18 +95,27 @@ function finish!(journal::Journal, result)
     return nothing
 end
 
-function run(argv=ARGS; acquire=Acquisition.acquire)
-    args = Common.cli_arguments(argv; required=["remote", "node", "owner-pid", "owner-instance", "plan"],
-        allowed=["evidence"])
-    binding = ActionClient.Binding(args.remote, args.node, parse(UInt32, args.owner_pid), parse(Int64, args.owner_instance))
+function run(argv = ARGS; acquire = Acquisition.acquire)
+    args = Common.cli_arguments(
+        argv;
+        required = ["remote", "node", "owner-pid", "owner-instance", "plan"],
+        allowed = ["evidence"],
+    )
+    binding = ActionClient.Binding(
+        args.remote,
+        args.node,
+        parse(UInt32, args.owner_pid),
+        parse(Int64, args.owner_instance),
+    )
     plan = Acquisition.read_plan(args.plan)
-    journal = hasproperty(args, :evidence) ? Journal(args.evidence, length(plan.probes)) : nothing
+    journal =
+        hasproperty(args, :evidence) ? Journal(args.evidence, length(plan.probes)) : nothing
     result = nothing
     try
         acquired = if journal === nothing
             acquire(binding, plan)
         else
-            acquire(binding, plan; observe=(a,r,s)->observe!(journal,a,r,plan.run,s))
+            acquire(binding, plan; observe = (a, r, s)->observe!(journal, a, r, plan.run, s))
         end
         result = Acquisition.document(acquired)
         # Emit the report even when evidence finalization later fails.
@@ -107,7 +136,7 @@ with `--evidence`. Print the acquisition report to stdout. Return `0` for a
 completed acquisition, `1` for another reported phase, or `2` after printing an
 exception to stderr. Keyword arguments pass to the one-shot acquisition driver.
 """
-function main(argv=ARGS; kwargs...)
+function main(argv = ARGS; kwargs...)
     try
         return run(argv; kwargs...)
     catch error

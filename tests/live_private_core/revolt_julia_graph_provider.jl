@@ -12,24 +12,25 @@ expected_disconnect = length(ARGS) == 5 ? ARGS[5] : nothing
 
 graph = JuliaFilterGraph.prepare_graph(
     graph_configuration;
-    algorithms=FilterGraphAlgorithms.algorithms(),
+    algorithms = FilterGraphAlgorithms.algorithms(),
 )
 node = FilterGraphPipeWire.PipeWireNode(
     graph;
-    name=node_name,
-    remote=core_name,
-    rate=(500, 1),
-    boundary_layout=FilterGraphAlgorithms.RowMajorLayout(),
-    run_control=true,
+    name = node_name,
+    remote = core_name,
+    rate = (500, 1),
+    boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
+    run_control = true,
 )
 
 finished = Threads.Atomic{Bool}(false)
 monitor = Threads.@spawn begin
     while !finished[] && !isfile(stop_file)
         state = FilterGraphPipeWire.node_state(node)
-        if PipeWireAO.isrunning(node) &&
-           (state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
-            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING)
+        if PipeWireAO.isrunning(node) && (
+            state == PipeWireAO.NDARRAY_FILTER_STATE_PAUSED ||
+            state == PipeWireAO.NDARRAY_FILTER_STATE_STREAMING
+        )
             Base.Libc.systemsleep(0.1)
             println("REVOLT_JULIA_GRAPH_READY state=$state")
             flush(stdout)
@@ -50,10 +51,11 @@ catch error
     # RTC unload removes its owned parameter source. An external graph can
     # report EPIPE as that link disappears. Accept it only after the RTC has
     # completed unload; callback errors are raised before run! reports EPIPE.
-    if isnothing(expected_disconnect) ||
-       !(error isa PipeWireAO.PipeWireError &&
-         error.operation === :pw_ndarray_filter_run &&
-         error.code == -Base.Libc.EPIPE)
+    if isnothing(expected_disconnect) || !(
+        error isa PipeWireAO.PipeWireError &&
+        error.operation === :pw_ndarray_filter_run &&
+        error.code == -Base.Libc.EPIPE
+    )
         rethrow()
     end
     finished[] = true

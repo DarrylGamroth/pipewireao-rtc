@@ -11,13 +11,35 @@ const MAX_PROPERTIES = 42
 const MAX_PARAMETER_BYTES = 512 * 1024 * 1024
 const MAX_ROWS = (64 * 1024) ÷ 40
 const OPERATIONS = (
-    :quit, :groups, :status, :properties, :property_generation,
-    :parameter_generation, :stop_group, :start_group, :session_stop,
-    :session_start, :source_ended, :reset, :properties_set, :parameter,
+    :quit,
+    :groups,
+    :status,
+    :properties,
+    :property_generation,
+    :parameter_generation,
+    :stop_group,
+    :start_group,
+    :session_stop,
+    :session_start,
+    :source_ended,
+    :reset,
+    :properties_set,
+    :parameter,
 )
 
-export RunnerCommand, RunnerScalar, RunnerResult, RunnerError, Completion, Rejection,
-    Lifecycle, Outcome, GroupState, operation_id, encode_request, decode_completion, decode_rejection
+export RunnerCommand,
+    RunnerScalar,
+    RunnerResult,
+    RunnerError,
+    Completion,
+    Rejection,
+    Lifecycle,
+    Outcome,
+    GroupState,
+    operation_id,
+    encode_request,
+    decode_completion,
+    decode_rejection
 
 @enum Lifecycle::UInt32 Offline=1 Configuring=2 Ready=3 Running=4 Fault=5
 @enum Outcome::UInt32 Accepted=1 Observed=2 Requested=3 Completed=4 Active=5 Submitted=6
@@ -33,14 +55,19 @@ struct RunnerScalar{T<:Union{Bool,Int32,Int64,UInt32,UInt64,String}}
     end
 end
 _check_scalar_kind(kind, value) = throw(ArgumentError("invalid runner scalar kind/value"))
-_check_scalar_kind(kind, value::Bool) = kind === :bool || throw(ArgumentError("invalid runner scalar kind/value"))
-_check_scalar_kind(kind, value::Int32) = kind === :int || throw(ArgumentError("invalid runner scalar kind/value"))
-_check_scalar_kind(kind, value::Int64) = kind === :long || throw(ArgumentError("invalid runner scalar kind/value"))
-_check_scalar_kind(kind, value::UInt32) = kind in (:float, :id) || throw(ArgumentError("invalid runner scalar kind/value"))
-_check_scalar_kind(kind, value::UInt64) = kind === :double || throw(ArgumentError("invalid runner scalar kind/value"))
+_check_scalar_kind(kind, value::Bool) =
+    kind === :bool || throw(ArgumentError("invalid runner scalar kind/value"))
+_check_scalar_kind(kind, value::Int32) =
+    kind === :int || throw(ArgumentError("invalid runner scalar kind/value"))
+_check_scalar_kind(kind, value::Int64) =
+    kind === :long || throw(ArgumentError("invalid runner scalar kind/value"))
+_check_scalar_kind(kind, value::UInt32) =
+    kind in (:float, :id) || throw(ArgumentError("invalid runner scalar kind/value"))
+_check_scalar_kind(kind, value::UInt64) =
+    kind === :double || throw(ArgumentError("invalid runner scalar kind/value"))
 function _check_scalar_kind(kind, value::String)
     kind === :string || throw(ArgumentError("invalid runner scalar kind/value"))
-    _string_check(value; empty=true)
+    _string_check(value; empty = true)
     return nothing
 end
 
@@ -73,21 +100,22 @@ struct Rejection
     error::RunnerError
 end
 
-_op(::RunnerCommand{O}) where O = UInt32(findfirst(==(O), OPERATIONS)::Int)
+_op(::RunnerCommand{O}) where {O} = UInt32(findfirst(==(O), OPERATIONS)::Int)
 operation_id(command::RunnerCommand) = _op(command)
 _pod(x) = Pod(x)
 _struct(fields::AbstractVector{Pod}) = SPA.Struct(fields)
 _struct(fields::Pod...) = SPA.Struct(Pod[fields...])
 _fields(value::SPA.Struct) = value.values
 function _fields(pod::Pod)
-    PipeWireAO.pod_type(pod) == SPA.POD_STRUCT || throw(ArgumentError("expected runner Struct"))
+    PipeWireAO.pod_type(pod) == SPA.POD_STRUCT ||
+        throw(ArgumentError("expected runner Struct"))
     return PipeWireAO.pod_value(SPA.Struct, pod).values
 end
 function _arity(fields, count)
     length(fields) == count || throw(ArgumentError("wrong runner field arity"))
     return fields
 end
-function _scalar(pod::Pod, type::UInt32, ::Type{T}) where T
+function _scalar(pod::Pod, type::UInt32, ::Type{T}) where {T}
     PipeWireAO.pod_type(pod) == type || throw(ArgumentError("wrong runner scalar POD type"))
     sizeof(pod) == 8 + (type == SPA.POD_BOOL ? 4 : sizeof(T)) ||
         throw(ArgumentError("wrong runner scalar POD width"))
@@ -97,15 +125,17 @@ _id(pod) = _scalar(pod, SPA.POD_ID, SPA.Id).value
 _long(pod) = _scalar(pod, SPA.POD_LONG, Int64)
 _bool(pod) = _scalar(pod, SPA.POD_BOOL, Bool)
 function _string(pod)
-    PipeWireAO.pod_type(pod) == SPA.POD_STRING || throw(ArgumentError("expected String POD"))
+    PipeWireAO.pod_type(pod) == SPA.POD_STRING ||
+        throw(ArgumentError("expected String POD"))
     value = PipeWireAO.pod_value(String, pod)
-    _string_check(value; empty=true)
+    _string_check(value; empty = true)
     return value
 end
-function _string_check(value::AbstractString; empty::Bool=false, limit::Int=64 * 1024)
-    (empty || !isempty(value)) && ncodeunits(value) <= limit &&
-        !occursin('\0', value) && isvalid(value) ||
-        throw(ArgumentError("invalid runner string or name"))
+function _string_check(value::AbstractString; empty::Bool = false, limit::Int = 64 * 1024)
+    (empty || !isempty(value)) &&
+    ncodeunits(value) <= limit &&
+    !occursin('\0', value) &&
+    isvalid(value) || throw(ArgumentError("invalid runner string or name"))
     return String(value)
 end
 _name(pod) = _string_check(_string(pod))
@@ -114,7 +144,7 @@ function _rows(pod)
     length(rows) <= MAX_ROWS || throw(ArgumentError("runner catalog cannot fit reply"))
     return rows
 end
-function _unique_rows(parse, ::Type{T}, rows) where T
+function _unique_rows(parse, ::Type{T}, rows) where {T}
     output = Dict{String,T}()
     for row in rows
         key, value = parse(row)
@@ -123,9 +153,24 @@ function _unique_rows(parse, ::Type{T}, rows) where T
     end
     return output
 end
-_lifecycle(pod) = try Lifecycle(_id(pod)) catch; throw(ArgumentError("unknown lifecycle Id")) end
-_outcome(pod) = try Outcome(_id(pod)) catch; throw(ArgumentError("unknown outcome Id")) end
-_group(pod) = try GroupState(_id(pod)) catch; throw(ArgumentError("unknown group Id")) end
+_lifecycle(pod) =
+    try
+        Lifecycle(_id(pod))
+    catch
+        throw(ArgumentError("unknown lifecycle Id"))
+    end
+_outcome(pod) =
+    try
+        Outcome(_id(pod))
+    catch
+        throw(ArgumentError("unknown outcome Id"))
+    end
+_group(pod) =
+    try
+        GroupState(_id(pod))
+    catch
+        throw(ArgumentError("unknown group Id"))
+    end
 function _optional_long(pod)
     _is_none(pod) && return nothing
     return _long(pod)
@@ -159,9 +204,11 @@ function _scalar_value(pod; finite::Bool)
         throw(ArgumentError("property must be a native scalar"))
     end
     if finite && scalar.kind === :float
-        isfinite(reinterpret(Float32, scalar.value::UInt32)) || throw(ArgumentError("nonfinite property request"))
+        isfinite(reinterpret(Float32, scalar.value::UInt32)) ||
+            throw(ArgumentError("nonfinite property request"))
     elseif finite && scalar.kind === :double
-        isfinite(reinterpret(Float64, scalar.value::UInt64)) || throw(ArgumentError("nonfinite property request"))
+        isfinite(reinterpret(Float64, scalar.value::UInt64)) ||
+            throw(ArgumentError("nonfinite property request"))
     end
     return scalar
 end
@@ -178,7 +225,9 @@ function _scalar_pod(value::RunnerScalar; finite::Bool)
     elseif k === :id
         return _pod(SPA.Id(v::UInt32))
     elseif k === :string
-        return _pod(_string_check(v::String; empty=true, limit=finite ? 16 * 1024 : 64 * 1024))
+        return _pod(
+            _string_check(v::String; empty = true, limit = finite ? 16 * 1024 : 64 * 1024),
+        )
     end
     return _pod(v)
 end
@@ -188,7 +237,8 @@ function _parameter_shape(shape::AbstractVector{UInt32})
     bytes = 4
     for axis in shape
         axis > 0 || throw(ArgumentError("zero parameter dimension"))
-        bytes <= MAX_PARAMETER_BYTES ÷ Int(axis) || throw(ArgumentError("parameter extent exceeds 512 MiB"))
+        bytes <= MAX_PARAMETER_BYTES ÷ Int(axis) ||
+            throw(ArgumentError("parameter extent exceeds 512 MiB"))
         bytes *= Int(axis)
     end
     return shape
@@ -202,17 +252,19 @@ function _checked_add(total::Int, amount::Int, limit::Int)
     return total + amount
 end
 _pod_size(body::Int) = (body + 15) & -8
-_string_size(value; empty::Bool=false) = throw(ArgumentError("runner field must be a String"))
-function _string_size(value::AbstractString; empty::Bool=false)
-    (empty || !isempty(value)) && ncodeunits(value) <= 16 * 1024 &&
-        !occursin('\0', value) && isvalid(value) ||
-        throw(ArgumentError("invalid runner string or name"))
+_string_size(value; empty::Bool = false) =
+    throw(ArgumentError("runner field must be a String"))
+function _string_size(value::AbstractString; empty::Bool = false)
+    (empty || !isempty(value)) &&
+    ncodeunits(value) <= 16 * 1024 &&
+    !occursin('\0', value) &&
+    isvalid(value) || throw(ArgumentError("invalid runner string or name"))
     return _pod_size(ncodeunits(value) + 1)
 end
 _scalar_size(value) = throw(ArgumentError("property must be RunnerScalar"))
 function _scalar_size(value::RunnerScalar)
     if value.kind === :string
-        return _string_size(value.value; empty=true)
+        return _string_size(value.value; empty = true)
     elseif value.kind === :float
         isfinite(reinterpret(Float32, value.value::UInt32)) ||
             throw(ArgumentError("nonfinite property request"))
@@ -222,9 +274,10 @@ function _scalar_size(value::RunnerScalar)
     end
     return 16
 end
-_check_properties(properties) = throw(ArgumentError("properties must be a typed String=>RunnerScalar dictionary"))
+_check_properties(properties) =
+    throw(ArgumentError("properties must be a typed String=>RunnerScalar dictionary"))
 _check_properties(properties::AbstractDict{String,<:RunnerScalar}) = nothing
-function _preflight_request(command::RunnerCommand{O}, base::Int) where O
+function _preflight_request(command::RunnerCommand{O}, base::Int) where {O}
     args = command.args
     total = base
     if O in (:quit, :groups, :status, :session_stop, :session_start, :source_ended, :reset)
@@ -242,23 +295,32 @@ function _preflight_request(command::RunnerCommand{O}, base::Int) where O
         graph, properties = args
         total = _checked_add(total, _string_size(graph), 16 * 1024)
         _check_properties(properties)
-        1 <= length(properties) <= MAX_PROPERTIES || throw(ArgumentError("invalid property count"))
+        1 <= length(properties) <= MAX_PROPERTIES ||
+            throw(ArgumentError("invalid property count"))
         rows = 0
         for (name, value) in properties
-            row = _pod_size(_checked_add(_string_size(name), _scalar_size(value), 16 * 1024))
+            row =
+                _pod_size(_checked_add(_string_size(name), _scalar_size(value), 16 * 1024))
             rows = _checked_add(rows, row, 16 * 1024)
         end
         total = _checked_add(total, _pod_size(rows), 16 * 1024)
     elseif O === :parameter
         _arity(args, 6)
         graph, parameter, element_type, shape, schema, path = args
-        element_type == "F32_LE" || throw(ArgumentError("unsupported parameter element type"))
+        element_type == "F32_LE" ||
+            throw(ArgumentError("unsupported parameter element type"))
         _parameter_shape(shape)
-        length(shape) <= (16 * 1024) ÷ 4 || throw(ArgumentError("parameter rank exceeds request"))
+        length(shape) <= (16 * 1024) ÷ 4 ||
+            throw(ArgumentError("parameter rank exceeds request"))
         array_bytes = _pod_size(8 + 4 * length(shape))
         total = _checked_add(total, array_bytes, 16 * 1024)
-        for (value, empty) in ((graph, false), (parameter, false),
-                (element_type, true), (schema, true), (path, false))
+        for (value, empty) in (
+            (graph, false),
+            (parameter, false),
+            (element_type, true),
+            (schema, true),
+            (path, false),
+        )
             total = _checked_add(total, _string_size(value; empty), 16 * 1024)
         end
     else
@@ -266,47 +328,66 @@ function _preflight_request(command::RunnerCommand{O}, base::Int) where O
     end
     return total
 end
-function _request_fields(::RunnerCommand{O}, args) where O
+function _request_fields(::RunnerCommand{O}, args) where {O}
     if O in (:quit, :groups, :status, :session_stop, :session_start, :source_ended, :reset)
         _arity(args, 0)
         return _struct()
     elseif O in (:properties, :stop_group, :start_group)
         _arity(args, 1)
-        return _struct(_pod(_string_check(args[1]; limit=16 * 1024)))
+        return _struct(_pod(_string_check(args[1]; limit = 16 * 1024)))
     elseif O in (:property_generation, :parameter_generation)
         _arity(args, 2)
-        return _struct(_pod(_string_check(args[1]; limit=16 * 1024)),
-            _pod(_string_check(args[2]; limit=16 * 1024)))
+        return _struct(
+            _pod(_string_check(args[1]; limit = 16 * 1024)),
+            _pod(_string_check(args[2]; limit = 16 * 1024)),
+        )
     elseif O === :properties_set
         _arity(args, 2)
         graph, properties = args
-        _string_check(graph; limit=16 * 1024)
+        _string_check(graph; limit = 16 * 1024)
         _check_properties(properties)
-        1 <= length(properties) <= MAX_PROPERTIES || throw(ArgumentError("invalid property count"))
+        1 <= length(properties) <= MAX_PROPERTIES ||
+            throw(ArgumentError("invalid property count"))
         rows = Pod[]
         for name in sort!(collect(keys(properties)))
-            push!(rows, _pod(_struct(_pod(_string_check(name; limit=16 * 1024)),
-                _scalar_pod(properties[name]; finite=true))))
+            push!(
+                rows,
+                _pod(
+                    _struct(
+                        _pod(_string_check(name; limit = 16 * 1024)),
+                        _scalar_pod(properties[name]; finite = true),
+                    ),
+                ),
+            )
         end
         return _struct(_pod(String(graph)), _pod(_struct(rows)))
     elseif O === :parameter
         _arity(args, 6)
         graph, parameter, element_type, shape, schema, path = args
-        _string_check(graph; limit=16 * 1024); _string_check(parameter; limit=16 * 1024)
-        _string_check(path; limit=16 * 1024)
-        _string_check(element_type; empty=true, limit=16 * 1024)
-        _string_check(schema; empty=true, limit=16 * 1024)
-        element_type == "F32_LE" || throw(ArgumentError("unsupported parameter element type"))
+        _string_check(graph; limit = 16 * 1024)
+        _string_check(parameter; limit = 16 * 1024)
+        _string_check(path; limit = 16 * 1024)
+        _string_check(element_type; empty = true, limit = 16 * 1024)
+        _string_check(schema; empty = true, limit = 16 * 1024)
+        element_type == "F32_LE" ||
+            throw(ArgumentError("unsupported parameter element type"))
         _parameter_shape(shape)
-        return _struct(_pod(String(graph)), _pod(String(parameter)), _pod(String(element_type)),
-            _pod(SPA.Array(SPA.Id.(shape))), _pod(String(schema)), _pod(String(path)))
+        return _struct(
+            _pod(String(graph)),
+            _pod(String(parameter)),
+            _pod(String(element_type)),
+            _pod(SPA.Array(SPA.Id.(shape))),
+            _pod(String(schema)),
+            _pod(String(path)),
+        )
     end
     throw(ArgumentError("unknown runner operation"))
 end
 
 """Encode one exact runner command under the common 16 KiB request envelope."""
 function encode_request(header::RequestHeader, command::RunnerCommand)
-    header.operation == _op(command) || throw(ArgumentError("header/command operation mismatch"))
+    header.operation == _op(command) ||
+        throw(ArgumentError("header/command operation mismatch"))
     base = sizeof(Envelope.encode_request(header, _struct()))
     _preflight_request(command, base)
     return Envelope.encode_request(header, _request_fields(command, command.args))
@@ -319,29 +400,42 @@ function decode_request(header::RequestHeader, payload::SPA.Struct)
     operation = OPERATIONS[op]
     f = payload.values
     command = if op in (1, 2, 3, 9, 10, 11, 12)
-        _arity(f, 0); RunnerCommand(operation)
+        _arity(f, 0)
+        RunnerCommand(operation)
     elseif op in (4, 7, 8)
-        _arity(f, 1); RunnerCommand(operation, _name(f[1]))
+        _arity(f, 1)
+        RunnerCommand(operation, _name(f[1]))
     elseif op in (5, 6)
-        _arity(f, 2); RunnerCommand(operation, _name(f[1]), _name(f[2]))
+        _arity(f, 2)
+        RunnerCommand(operation, _name(f[1]), _name(f[2]))
     elseif op == 13
         _arity(f, 2)
         rows = _fields(f[2])
-        1 <= length(rows) <= MAX_PROPERTIES || throw(ArgumentError("invalid property count"))
+        1 <= length(rows) <= MAX_PROPERTIES ||
+            throw(ArgumentError("invalid property count"))
         properties = Dict{String,RunnerScalar}()
         for row in rows
-            r = _arity(_fields(row), 2); name = _name(r[1])
+            r = _arity(_fields(row), 2)
+            name = _name(r[1])
             haskey(properties, name) && throw(ArgumentError("duplicate property name"))
-            properties[name] = _scalar_value(r[2]; finite=true)
+            properties[name] = _scalar_value(r[2]; finite = true)
         end
         RunnerCommand(operation, _name(f[1]), properties)
     else
         _arity(f, 6)
-        PipeWireAO.pod_type(f[4]) == SPA.POD_ARRAY || throw(ArgumentError("expected dimension Array"))
+        PipeWireAO.pod_type(f[4]) == SPA.POD_ARRAY ||
+            throw(ArgumentError("expected dimension Array"))
         array = PipeWireAO.pod_value(SPA.Array{SPA.Id}, f[4])
         shape = UInt32[x.value for x in array.values]
-        RunnerCommand(operation, _name(f[1]), _name(f[2]), _string(f[3]), shape,
-            _string(f[5]), _name(f[6]))
+        RunnerCommand(
+            operation,
+            _name(f[1]),
+            _name(f[2]),
+            _string(f[3]),
+            shape,
+            _string(f[5]),
+            _name(f[6]),
+        )
     end
     # Share the request bounds, exact scalar and parameter checks with encoding.
     _preflight_request(command, sizeof(Envelope.encode_request(header, _struct())))
@@ -364,76 +458,136 @@ end
 function _decode_details(operation::UInt32, fields, state::Lifecycle)
     1 <= operation <= length(OPERATIONS) || throw(ArgumentError("unknown runner operation"))
     if operation == 1
-        _arity(fields, 1); _bool(fields[1]) === true || throw(ArgumentError("quit must be true"))
-        return _result(operation, Accepted, (shutdown=true,))
+        _arity(fields, 1)
+        _bool(fields[1]) === true || throw(ArgumentError("quit must be true"))
+        return _result(operation, Accepted, (shutdown = true,))
     elseif operation == 2
         _arity(fields, 1)
         groups = _unique_rows(GroupState, _rows(fields[1])) do row
-            r = _arity(_fields(row), 2); (_name(r[1]), _group(r[2]))
+            r = _arity(_fields(row), 2)
+            (_name(r[1]), _group(r[2]))
         end
-        return _result(operation, Observed, (groups=groups,))
+        return _result(operation, Observed, (groups = groups,))
     elseif operation == 3
         _arity(fields, 5)
         sinks = _unique_rows(UInt64, _rows(fields[5])) do row
-            r = _arity(_fields(row), 2); (_name(r[1]), reinterpret(UInt64, _long(r[2])))
+            r = _arity(_fields(row), 2)
+            (_name(r[1]), reinterpret(UInt64, _long(r[2])))
         end
-        return _result(operation, Observed, (running=_bool(fields[1]),
-            owned_nodes=reinterpret(UInt64, _long(fields[2])),
-            owned_links=reinterpret(UInt64, _long(fields[3])),
-            discarded_buffers=reinterpret(UInt64, _long(fields[4])), discarded_by_sink=sinks))
+        return _result(
+            operation,
+            Observed,
+            (
+                running = _bool(fields[1]),
+                owned_nodes = reinterpret(UInt64, _long(fields[2])),
+                owned_links = reinterpret(UInt64, _long(fields[3])),
+                discarded_buffers = reinterpret(UInt64, _long(fields[4])),
+                discarded_by_sink = sinks,
+            ),
+        )
     elseif operation == 4
         _arity(fields, 2)
         properties = _unique_rows(RunnerScalar, _rows(fields[2])) do row
-            r = _arity(_fields(row), 2); (_name(r[1]), _scalar_value(r[2]; finite=false))
+            r = _arity(_fields(row), 2)
+            (_name(r[1]), _scalar_value(r[2]; finite = false))
         end
-        return _result(operation, Observed, (graph=_name(fields[1]), properties=properties))
+        return _result(
+            operation,
+            Observed,
+            (graph = _name(fields[1]), properties = properties),
+        )
     elseif operation == 5
         _arity(fields, 4)
-        return _result(operation, Observed, (graph=_name(fields[1]), node=_name(fields[2]),
-            requested=_long(fields[3]), active=_optional_long(fields[4])))
+        return _result(
+            operation,
+            Observed,
+            (
+                graph = _name(fields[1]),
+                node = _name(fields[2]),
+                requested = _long(fields[3]),
+                active = _optional_long(fields[4]),
+            ),
+        )
     elseif operation == 6
         _arity(fields, 4)
-        return _result(operation, Observed, (graph=_name(fields[1]), node=_name(fields[2]),
-            requested=_long(fields[3]), active=_long(fields[4])))
+        return _result(
+            operation,
+            Observed,
+            (
+                graph = _name(fields[1]),
+                node = _name(fields[2]),
+                requested = _long(fields[3]),
+                active = _long(fields[4]),
+            ),
+        )
     elseif operation in (7, 8)
         _arity(fields, 3)
         requested = _group(fields[2])
         requested == (operation == 7 ? Stopped : GroupRunning) ||
             throw(ArgumentError("requested group state mismatches operation"))
-        return _result(operation, Requested, (group=_name(fields[1]),
-            requested=requested, observed=_optional_group(fields[3])))
+        return _result(
+            operation,
+            Requested,
+            (
+                group = _name(fields[1]),
+                requested = requested,
+                observed = _optional_group(fields[3]),
+            ),
+        )
     elseif operation in (9, 10, 11, 12)
         _arity(fields, 1)
         expected = operation == 10 ? Running : Ready
         _lifecycle(fields[1]) == expected == state ||
             throw(ArgumentError("completed lifecycle mismatches operation/header"))
-        return _result(operation, Completed, (state=state,))
+        return _result(operation, Completed, (state = state,))
     elseif operation == 13
         _arity(fields, 3)
-        rows = _rows(fields[2]); names = Set{String}()
+        rows = _rows(fields[2])
+        names = Set{String}()
         generations = NamedTuple[]
         for row in rows
             r = _arity(_fields(row), 3)
-            name = _name(r[1]); name in names && throw(ArgumentError("duplicate generation node"))
+            name = _name(r[1])
+            name in names && throw(ArgumentError("duplicate generation node"))
             push!(names, name)
-            requested = _optional_long(r[2]); active = _optional_long(r[3])
-            requested === nothing && active !== nothing && throw(ArgumentError("partial absent generation"))
-            push!(generations, (node=name, requested=requested, active=active))
+            requested = _optional_long(r[2])
+            active = _optional_long(r[3])
+            requested === nothing &&
+                active !== nothing &&
+                throw(ArgumentError("partial absent generation"))
+            push!(generations, (node = name, requested = requested, active = active))
         end
         adopted = _bool(fields[3])
         if adopted
-            state == Running && !isempty(generations) &&
-                all(g -> g.requested !== nothing && g.active == g.requested, generations) ||
+            state == Running &&
+            !isempty(generations) &&
+            all(g -> g.requested !== nothing && g.active == g.requested, generations) ||
                 throw(ArgumentError("active adoption lacks Running observations"))
         end
-        return _result(operation, adopted ? Active : Submitted,
-            (graph=_name(fields[1]), generations=generations, active_adoption_observed=adopted))
+        return _result(
+            operation,
+            adopted ? Active : Submitted,
+            (
+                graph = _name(fields[1]),
+                generations = generations,
+                active_adoption_observed = adopted,
+            ),
+        )
     elseif operation == 14
         _arity(fields, 4)
         generation = _is_none(fields[3]) ? nothing : _generation_pair(fields[3])
-        _bool(fields[4]) === false || throw(ArgumentError("parameter adoption flag must be false"))
-        return _result(operation, Submitted, (graph=_name(fields[1]),
-            parameter=_name(fields[2]), generation=generation, active_adoption_observed=false))
+        _bool(fields[4]) === false ||
+            throw(ArgumentError("parameter adoption flag must be false"))
+        return _result(
+            operation,
+            Submitted,
+            (
+                graph = _name(fields[1]),
+                parameter = _name(fields[2]),
+                generation = generation,
+                active_adoption_observed = false,
+            ),
+        )
     end
     throw(ArgumentError("unknown runner operation"))
 end
@@ -444,24 +598,28 @@ end
 
 """Decode an exact typed successful or failed runner completion."""
 function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
-    header, payload = Envelope.decode_completion(input; endpoint=:lifecycle)
-    header.controller === nothing && throw(ArgumentError("initial sentinel is not a fresh completion"))
-    1 <= header.operation <= length(OPERATIONS) || throw(ArgumentError("unknown runner operation"))
+    header, payload = Envelope.decode_completion(input; endpoint = :lifecycle)
+    header.controller === nothing &&
+        throw(ArgumentError("initial sentinel is not a fresh completion"))
+    1 <= header.operation <= length(OPERATIONS) ||
+        throw(ArgumentError("unknown runner operation"))
     fields = _fields(payload)
     if header.result < 0
         error, state = _error(fields)
         return Completion(header, state, nothing, error)
     end
     _arity(fields, 3)
-    state = _lifecycle(fields[1]); outcome = _outcome(fields[2])
+    state = _lifecycle(fields[1])
+    outcome = _outcome(fields[2])
     result = _decode_details(header.operation, _fields(fields[3]), state)
-    result.outcome == outcome || throw(ArgumentError("runner outcome mismatches operation/details"))
+    result.outcome == outcome ||
+        throw(ArgumentError("runner outcome mismatches operation/details"))
     return Completion(header, state, result, nothing)
 end
 
 """Decode an independent admission rejection, including the zero sentinel."""
 function decode_rejection(input::Union{Pod,AbstractVector{UInt8}})
-    header, payload = Envelope.decode_rejection(input; endpoint=:lifecycle)
+    header, payload = Envelope.decode_rejection(input; endpoint = :lifecycle)
     error, state = _error(_fields(payload))
     return Rejection(header, state, error)
 end

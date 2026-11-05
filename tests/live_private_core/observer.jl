@@ -29,40 +29,37 @@ end
 
 context = Context()
 try
-    core = CoreConnection(context; properties=Dict("remote.name" => core_name))
+    core = CoreConnection(context; properties = Dict("remote.name" => core_name))
     try
         process = ObservationProcess(StreamBuffer(), false)
         stream = Stream(
             core,
             "RTC bounded observation client";
-            properties=Dict(
+            properties = Dict(
                 "node.name" => node_name,
                 "media.type" => "Application",
                 "media.category" => "Capture",
                 "media.role" => "Analysis",
             ),
-            on_process=process,
+            on_process = process,
         )
         try
             format = ndarray_format(
                 NdArrayFormat(
                     NdArray.F32_LE,
                     (2,);
-                    layout=NdArray.ROW_MAJOR,
-                    rate=SPA.Fraction(rate, 1),
+                    layout = NdArray.ROW_MAJOR,
+                    rate = SPA.Fraction(rate, 1),
                 );
-                schema="org.calculon.ao.docrime-excitation/1",
+                schema = "org.calculon.ao.docrime-excitation/1",
             )
             connect!(
                 stream,
                 :input;
-                flags=STREAM_MAP_BUFFERS | STREAM_NO_CONVERT,
-                params=[
+                flags = STREAM_MAP_BUFFERS | STREAM_NO_CONVERT,
+                params = [
                     format,
-                    buffers_param(
-                        buffers=3,
-                        data_types=Int32(1 << SPA.DATA_MEM_FD),
-                    ),
+                    buffers_param(buffers = 3, data_types = Int32(1 << SPA.DATA_MEM_FD)),
                     header_metadata_param(),
                 ],
             )

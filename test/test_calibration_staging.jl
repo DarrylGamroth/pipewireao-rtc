@@ -4,25 +4,34 @@ using Test, SHA, PipeWireAORTC
 using FilterGraphAlgorithms, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsCalibration, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
 
-length(ARGS) == 4 || error("usage: test_calibration_staging.jl SOURCE APPLICATION BUNDLE FRESH_OUTPUT")
+length(ARGS) == 4 ||
+    error("usage: test_calibration_staging.jl SOURCE APPLICATION BUNDLE FRESH_OUTPUT")
 source, application, calibration, destination = abspath.(ARGS)
 const C = PipeWireAORTC.InstrumentCalibration
 const E = PipeWireAORTC.InstrumentExport
 const Common = PipeWireAORTC.Common
 
-snapshot(path) = Dict(relpath(joinpath(root, file), path) => bytes2hex(sha256(read(joinpath(root, file))))
-    for (root, _, files) in walkdir(path) for file in files)
+snapshot(path) = Dict(
+    relpath(joinpath(root, file), path) =>
+        bytes2hex(sha256(read(joinpath(root, file)))) for
+    (root, _, files) in walkdir(path) for file in files
+)
 
 @testset "Calibration staging retains the current selection and uses Git for history" begin
     original = snapshot(source)
     mktempdir() do temporary
-        authored = E.copy_source(source, joinpath(temporary, "instrument"); runtime_configurations=false)
+        authored = E.copy_source(
+            source,
+            joinpath(temporary, "instrument");
+            runtime_configurations = false,
+        )
         history = joinpath(authored, "calibration", "history")
         mkpath(history)
         write(joinpath(history, "obsolete.yaml"), "obsolete: true\n")
         before = snapshot(authored)
         incoming = C.read_bundle(calibration)
-        @test C.stage_calibration(authored, application, calibration, destination) == destination
+        @test C.stage_calibration(authored, application, calibration, destination) ==
+              destination
         selected = C.read_bundle(joinpath(destination, "calibration"))
         @test !ispath(joinpath(destination, "calibration", "history"))
         @test !ispath(joinpath(destination, "rtc", "calibration.yaml"))
@@ -32,7 +41,9 @@ snapshot(path) = Dict(relpath(joinpath(root, file), path) => bytes2hex(sha256(re
         @test C.read_recipe(application) == selected.report["recipe"]
         rtc = Common.read_yaml(joinpath(destination, "rtc", "configuration.yaml"))
         @test rtc["calibration"] == "calibration/context.yaml"
-        @test rtc["calibration_identity"] == "sha256:" * Common.sha256_file(joinpath(destination, "calibration", "result.yaml"))
+        @test rtc["calibration_identity"] ==
+              "sha256:" *
+              Common.sha256_file(joinpath(destination, "calibration", "result.yaml"))
         @test snapshot(authored) == before
     end
     @test snapshot(source) == original

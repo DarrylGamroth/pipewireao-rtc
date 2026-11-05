@@ -1,6 +1,10 @@
 using Test, PipeWireAORTC, JSON, TOML
 const P = PipeWireAORTC
-tree_identity(root) = Dict(relpath(joinpath(parent, file), root) => P.Common.sha256_file(joinpath(parent, file)) for (parent, _, files) in walkdir(root) for file in files)
+tree_identity(root) = Dict(
+    relpath(joinpath(parent, file), root) =>
+        P.Common.sha256_file(joinpath(parent, file)) for
+    (parent, _, files) in walkdir(root) for file in files
+)
 
 function stage_test_dependencies!(sdk)
     # Source validation can use an isolated environment with unreleased packages.
@@ -26,11 +30,14 @@ function stage_test_dependencies!(sdk)
                 entry["path"] = abspath(dirname(source), path)
             end
             open(joinpath(sdk, name), "w") do io
-                println(io, "# Generated validation manifest from the active dependency environment.")
-                TOML.print(io, manifest; sorted=true)
+                println(
+                    io,
+                    "# Generated validation manifest from the active dependency environment.",
+                )
+                TOML.print(io, manifest; sorted = true)
             end
         else
-            cp(source, joinpath(sdk, name); force=true)
+            cp(source, joinpath(sdk, name); force = true)
         end
     end
     return sdk
@@ -48,22 +55,39 @@ end
 @testset "callable package modules and operational scripts" begin
     @test Base.PkgId(P).uuid == Base.UUID("a3e2c7da-f73f-4284-8482-36ac422b34e6")
     manifest = TOML.parsefile(joinpath(P.package_root(), "Manifest.toml"))
-    self = filter(row -> row["uuid"] == string(Base.PkgId(P).uuid),
-        [merge(item, Dict("name" => name)) for (name, rows) in manifest["deps"] for item in rows])
+    self = filter(
+        row -> row["uuid"] == string(Base.PkgId(P).uuid),
+        [
+            merge(item, Dict("name" => name)) for (name, rows) in manifest["deps"] for
+            item in rows
+        ],
+    )
     @test only(self)["name"] == "PipeWireAORTC"
     @test P.SessionCLI.SessionConfiguration === P.SessionConfiguration
     @test P.SessionCLI.SessionLaunch === P.SessionLaunch
     @test P.SessionCLI.SessionInstall === P.SessionInstall
-    for name in (:SessionConfiguration, :SessionInstall, :SessionRuntime,
-                 :SessionClient, :CalibrationEndpoint, :CalibrationAcquisition, :CalibrationCLI,
-                 :SessionCLI, :OwnerBootstrapRuntime, :ParameterSource,
-                 :SourceControl)
+    for name in (
+        :SessionConfiguration,
+        :SessionInstall,
+        :SessionRuntime,
+        :SessionClient,
+        :CalibrationEndpoint,
+        :CalibrationAcquisition,
+        :CalibrationCLI,
+        :SessionCLI,
+        :OwnerBootstrapRuntime,
+        :ParameterSource,
+        :SourceControl,
+    )
         @test Base.ispublic(P, name)
         @test parentmodule(getproperty(P, name)) === P
     end
-    for (script, name) in (("configuration", :SessionConfiguration),
-                           ("launch", :SessionLaunch),
-                           ("install", :SessionInstall), ("cli", :SessionCLI))
+    for (script, name) in (
+        ("configuration", :SessionConfiguration),
+        ("launch", :SessionLaunch),
+        ("install", :SessionInstall),
+        ("cli", :SessionCLI),
+    )
         sandbox = Module(gensym(:OperationalScript))
         Base.include(sandbox, joinpath(P.package_root(), "session_" * script * ".jl"))
         @test Base.invokelatest(getproperty, sandbox, name) === getproperty(P, name)
@@ -71,7 +95,14 @@ end
 end
 
 @testset "named deployment package and operational source closure" begin
-    @test P.ScienceExport.Parameter("name", "endpoint", "F32_LE", (2, 3), "value", "schema").shape == [2, 3]
+    @test P.ScienceExport.Parameter(
+        "name",
+        "endpoint",
+        "F32_LE",
+        (2, 3),
+        "value",
+        "schema",
+    ).shape == [2, 3]
     @test nameof(P) == :PipeWireAORTC
     @test Base.PkgId(P).uuid !== nothing
     @test isfile(joinpath(P.package_root(), "src", "PipeWireAORTC.jl"))
@@ -80,7 +111,9 @@ end
     @test haskey(inventory, joinpath(P.resource_root(), "hil", "parameter_source.jl"))
     @test_throws ArgumentError P.source_relative_path(dirname(P.package_root()))
     @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(P.package_root())
-    @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(joinpath(P.package_root(), "nested-output"))
+    @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(
+        joinpath(P.package_root(), "nested-output"),
+    )
     for directory in ("hil", "templates")
         rejected = tempname(joinpath(P.resource_root(), directory))
         @test_throws ArgumentError P.ScienceExport.copy_deployment_runtime(rejected)
@@ -97,7 +130,9 @@ end
         end
     end
     @test isfile(joinpath(P.package_root(), "src", "PipeWireAORTC.jl"))
-    @test all(!occursin("/test/", path) && !endswith(path, ".py") for path in keys(inventory))
+    @test all(
+        !occursin("/test/", path) && !endswith(path, ".py") for path in keys(inventory)
+    )
     for path in keys(inventory)
         relative = P.source_relative_path(path)
         @test !isabspath(relative)
@@ -107,45 +142,80 @@ end
         source = joinpath(directory, "export")
         mkdir(source)
         sdk = P.ScienceExport.copy_deployment_runtime(source)
-        @test !isfile(joinpath(sdk,"Manifest.toml"))
+        @test !isfile(joinpath(sdk, "Manifest.toml"))
         @test isfile(joinpath(sdk, "assets/deployment/pipewireao-session@.service.in"))
         @test !ispath(joinpath(sdk, "src/deploy.jl"))
         @test !ispath(joinpath(sdk, "src/native_supervisor_client.jl"))
         @test !ispath(joinpath(sdk, "deploy_cli.jl"))
-        @test !haskey(P.DeploymentConfiguration.installed_wrappers(Base.julia_cmd().exec[1]),
-            "pipewireao-rtc-deploy")
+        @test !haskey(
+            P.DeploymentConfiguration.installed_wrappers(Base.julia_cmd().exec[1]),
+            "pipewireao-rtc-deploy",
+        )
         @test isfile(joinpath(sdk, "test", "Project.toml"))
         @test isfile(joinpath(sdk, "test", "runtests.jl"))
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCGraphExt.jl"))
         @test isfile(joinpath(sdk, "ext", "PipeWireAORTCAOSExt.jl"))
-        @test sort(readdir(joinpath(sdk, "test"))) == sort(readdir(joinpath(P.package_root(), "test")))
+        @test sort(readdir(joinpath(sdk, "test"))) ==
+              sort(readdir(joinpath(P.package_root(), "test")))
         stage_test_dependencies!(sdk)
         before = tree_identity(sdk)
         # Compile at the original location, then load from a renamed SDK.
-        command = [Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
-            "-e", "using PipeWireAORTC; @assert startswith(PipeWireAORTC.package_root(), ARGS[1])", sdk]
-        @test P.Common.run_checked(command; env=test_dependency_environment(), timeout=60).returncode == 0
+        command = [
+            Base.julia_cmd().exec[1],
+            "--startup-file=no",
+            "--project=" * sdk,
+            "-e",
+            "using PipeWireAORTC; @assert startswith(PipeWireAORTC.package_root(), ARGS[1])",
+            sdk,
+        ]
+        @test P.Common.run_checked(
+            command;
+            env = test_dependency_environment(),
+            timeout = 60,
+        ).returncode == 0
         relocated = joinpath(directory, "relocated SDK")
         mv(source, relocated)
         sdk = joinpath(relocated, "julia")
-        code = "using PipeWireAORTC; P=PipeWireAORTC; " *
+        code =
+            "using PipeWireAORTC; P=PipeWireAORTC; " *
             "@assert P.package_root()==ARGS[1]; " *
             "@assert P.resource_root()==joinpath(ARGS[1],\"assets/deployment\"); " *
             "@assert all(isfile, keys(P.ScienceExport.orchestration_sources())); " *
             "P.ScienceExport.copy_deployment_runtime(ARGS[2])"
         copied = joinpath(directory, "second export")
         mkdir(copied)
-        @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no", "--project=" * sdk,
-            "-e", code, sdk, copied]; env=test_dependency_environment(), timeout=60).returncode == 0
+        @test P.Common.run_checked(
+            [
+                Base.julia_cmd().exec[1],
+                "--startup-file=no",
+                "--project=" * sdk,
+                "-e",
+                code,
+                sdk,
+                copied,
+            ];
+            env = test_dependency_environment(),
+            timeout = 60,
+        ).returncode == 0
         @test tree_identity(sdk) == before
         @test isfile(joinpath(copied, "julia", "src", "common.jl"))
         # Missing declared entrypoints must not silently disappear from provenance.
-        missing = "using PipeWireAORTC; P=PipeWireAORTC; " *
+        missing =
+            "using PipeWireAORTC; P=PipeWireAORTC; " *
             "rm(joinpath(P.package_root(), \"session_cli.jl\")); " *
             "try P.ScienceExport.orchestration_sources(); error(\"missing entry accepted\") " *
             "catch e; @assert e isa ArgumentError end"
-        @test P.Common.run_checked([Base.julia_cmd().exec[1], "--startup-file=no",
-            "--project=" * sdk, "-e", missing]; env=test_dependency_environment(), timeout=60).returncode == 0
+        @test P.Common.run_checked(
+            [
+                Base.julia_cmd().exec[1],
+                "--startup-file=no",
+                "--project=" * sdk,
+                "-e",
+                missing,
+            ];
+            env = test_dependency_environment(),
+            timeout = 60,
+        ).returncode == 0
     end
 end
 
@@ -153,9 +223,14 @@ end
     mktempdir() do directory
         legacy = joinpath(directory, "legacy")
         mkpath(joinpath(legacy, "src"))
-        write(joinpath(legacy, "PipeWireAODeployment.jl"), "module PipeWireAODeployment; end")
+        write(
+            joinpath(legacy, "PipeWireAODeployment.jl"),
+            "module PipeWireAODeployment; end",
+        )
         identity = tree_identity(legacy)
-        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(legacy)
+        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(
+            legacy,
+        )
         @test tree_identity(legacy) == identity
         copied = joinpath(directory, "package")
         mkdir(copied)
@@ -166,11 +241,14 @@ end
         chmod(project_path, 0o444)
         @test stat(project_path).mode & 0o222 == 0
         project = read(project_path, String)
-        corrupted = replace(project, "version = \"$(Base.pkgversion(P))\"" => "version = \"9.0.0\"")
+        corrupted =
+            replace(project, "version = \"$(Base.pkgversion(P))\"" => "version = \"9.0.0\"")
         @test corrupted != project
         # Grant write access only to this temporary copy for deliberate tampering.
         chmod(project_path, stat(project_path).mode | 0o200)
         write(project_path, corrupted)
-        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(sdk)
+        @test_throws P.DeploymentConfiguration.DeploymentError P.DeploymentConfiguration.validate_runtime(
+            sdk,
+        )
     end
 end

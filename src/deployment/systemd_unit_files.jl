@@ -1,28 +1,40 @@
 # One-shot ordinary unit installation, startup reconciliation and removal.
 # This code does not admit a session or release scientific ingress.
-save_unit_record!(runtime, record) = Common.write_json(joinpath(runtime, "launch.json"), record; atomic=true)
+save_unit_record!(runtime, record) =
+    Common.write_json(joinpath(runtime, "launch.json"), record; atomic = true)
 
 function runtime_unit_directory()
     root = get(ENV, "XDG_RUNTIME_DIR", "")
-    isabspath(root) && isdir(root) && !islink(root) &&
-        stat(root).uid == ccall(:getuid, Cuint, ()) || fail("user runtime directory is unavailable")
+    isabspath(root) &&
+    isdir(root) &&
+    !islink(root) &&
+    stat(root).uid == ccall(:getuid, Cuint, ()) ||
+        fail("user runtime directory is unavailable")
     directory = joinpath(root, "systemd", "user")
     mkpath(directory)
     islink(dirname(directory)) || islink(directory) ?
-        fail("runtime systemd unit directory must not be a symlink") : nothing
+    fail("runtime systemd unit directory must not be a symlink") : nothing
     stat(directory).uid == ccall(:getuid, Cuint, ()) ||
         fail("runtime systemd unit directory belongs to another user")
     return directory
 end
 
-function install_fragment!(unit, text, runtime, record; save=save_unit_record!, deadline=nothing)
+function install_fragment!(
+    unit,
+    text,
+    runtime,
+    record;
+    save = save_unit_record!,
+    deadline = nothing,
+)
     path = joinpath(runtime, "units", unit)
     link = joinpath(runtime_unit_directory(), unit)
     ispath(path) || islink(path) || ispath(link) || islink(link) ?
-        fail("invocation unit name is already reserved: $unit") : nothing
-    properties(unit;deadline)["LoadState"] == "not-found" || fail("unit name is already loaded: $unit")
-    mkpath(dirname(path); mode=0o700)
-    temporary, io = mktemp(dirname(path); cleanup=false)
+    fail("invocation unit name is already reserved: $unit") : nothing
+    properties(unit; deadline)["LoadState"] == "not-found" ||
+        fail("unit name is already loaded: $unit")
+    mkpath(dirname(path); mode = 0o700)
+    temporary, io = mktemp(dirname(path); cleanup = false)
     try
         chmod(temporary, 0o600)
         write(io, text)
@@ -38,29 +50,44 @@ function install_fragment!(unit, text, runtime, record; save=save_unit_record!, 
     return path
 end
 
-function verify_fragment!(unit, record; placement=nothing, ordinary=false, deadline=nothing)
+function verify_fragment!(
+    unit,
+    record;
+    placement = nothing,
+    ordinary = false,
+    deadline = nothing,
+)
     entry = record["unit_files"][unit]
     path = entry["path"]
     extra = "FragmentPath,DropInPaths"
     service = endswith(unit, ".service")
-    service && (extra *= ",Type,Restart,KillMode,CPUAffinity,LimitRTPRIO,LimitMEMLOCK,UMask")
+    service &&
+        (extra *= ",Type,Restart,KillMode,CPUAffinity,LimitRTPRIO,LimitMEMLOCK,UMask")
     ordinary && (extra *= ",RestrictRealtime,Nice")
     values = properties(unit; extra, deadline)
-    values["LoadState"] == "loaded" && isempty(values["DropInPaths"]) &&
-        isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == realpath(path) &&
-        Common.sha256_file(path) == entry["sha256"] || fail("loaded unit definition differs: $unit")
+    values["LoadState"] == "loaded" &&
+    isempty(values["DropInPaths"]) &&
+    isfile(values["FragmentPath"]) &&
+    realpath(values["FragmentPath"]) == realpath(path) &&
+    Common.sha256_file(path) == entry["sha256"] ||
+        fail("loaded unit definition differs: $unit")
     if service
-        role = unit[ncodeunits(PREFIX * record["invocation"] * "-")+1:end-8]
+        role = unit[(ncodeunits(PREFIX*record["invocation"]*"-")+1):(end-8)]
         placement === nothing && (placement = record["owners"][role]["placement"])
         if ordinary
             _unit_cpus(values["CPUAffinity"]) == sort(placement["cpus"]) &&
-                values["LimitRTPRIO"] == "0" && values["RestrictRealtime"] == "yes" &&
-                values["Nice"] == "10" || fail("loaded optional analysis resource policy differs: $unit")
+            values["LimitRTPRIO"] == "0" &&
+            values["RestrictRealtime"] == "yes" &&
+            values["Nice"] == "10" ||
+                fail("loaded optional analysis resource policy differs: $unit")
         end
-        values["Type"] == "exec" && values["Restart"] == "no" &&
-            values["KillMode"] == "control-group" && values["UMask"] == "0077" &&
-            (ordinary || values["CPUAffinity"] == string(placement["leader-cpu"])) &&
-            (ordinary || values["LimitRTPRIO"] == "95") && values["LimitMEMLOCK"] == "4294967296" ||
+        values["Type"] == "exec" &&
+        values["Restart"] == "no" &&
+        values["KillMode"] == "control-group" &&
+        values["UMask"] == "0077" &&
+        (ordinary || values["CPUAffinity"] == string(placement["leader-cpu"])) &&
+        (ordinary || values["LimitRTPRIO"] == "95") &&
+        values["LimitMEMLOCK"] == "4294967296" ||
             fail("loaded owner resource/lifetime policy differs: $unit")
     end
     return nothing
@@ -73,7 +100,7 @@ function _unit_cpus(value)
 end
 
 function reload_fragments!(record)
-    result = checked(["systemctl", "--user", "daemon-reload"]; timeout=20)
+    result = checked(["systemctl", "--user", "daemon-reload"]; timeout = 20)
     result.returncode == 0 || fail("cannot load invocation service definitions")
     for unit in keys(record["unit_files"])
         verify_fragment!(unit, record)
@@ -88,7 +115,7 @@ function start_services!(services, unit, runtime, record)
     save_unit_record!(runtime, record) # All roles retained before a single submission.
     errors = String[]
     try
-        result = checked(["systemctl", "--user", "start", unit]; timeout=20)
+        result = checked(["systemctl", "--user", "start", unit]; timeout = 20)
         result.returncode == 0 || push!(errors, "systemd start failed for $unit")
     catch error
         push!(errors, "systemd start outcome uncertain: " * sprint(showerror, error))
@@ -123,8 +150,13 @@ function cancel_start_jobs!(invocation, deadline)
     fail("invocation start jobs did not quiesce")
 end
 
-function remove_fragments!(runtime, record, deadline;
-        roles=keys(record["owners"]), save=save_unit_record!)
+function remove_fragments!(
+    runtime,
+    record,
+    deadline;
+    roles = keys(record["owners"]),
+    save = save_unit_record!,
+)
     files = get(record, "unit_files", Dict())
     isempty(files) && return nothing # Older launch records have transient services.
     directory = runtime_unit_directory()
@@ -133,22 +165,27 @@ function remove_fragments!(runtime, record, deadline;
     # Validate the entire set before removing any file. The ledger alone is
     # insufficient: links, contents and manager definitions must still match.
     for (unit, entry) in files
-        (unit == cohort_name(record["invocation"]) ||
-            unit in (prefix * role * ".service" for role in roles)) ||
-            fail("cleanup ledger names a foreign unit")
+        (
+            unit == cohort_name(record["invocation"]) ||
+            unit in (prefix * role * ".service" for role in roles)
+        ) || fail("cleanup ledger names a foreign unit")
         path = joinpath(runtime, "units", unit)
-        entry["path"] == path && !islink(path) &&
-            ((isfile(path) && Common.sha256_file(path) == entry["sha256"]) ||
-                (removing && !ispath(path))) || fail("cleanup unit fragment differs: $unit")
+        entry["path"] == path &&
+        !islink(path) &&
+        (
+            (isfile(path) && Common.sha256_file(path) == entry["sha256"]) ||
+            (removing && !ispath(path))
+        ) || fail("cleanup unit fragment differs: $unit")
         link = joinpath(directory, unit)
         (islink(link) && readlink(link) == path) ||
-            (!ispath(link) && !islink(link)) || fail("cleanup unit link differs: $unit")
-        values = properties(unit; extra="FragmentPath,DropInPaths", deadline)
-        isempty(values["DropInPaths"]) &&
-            (values["LoadState"] == "not-found" ||
-                (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
-                (removing && !ispath(path) && values["FragmentPath"] in (path, link))) ||
-            fail("cleanup loaded unit definition differs: $unit")
+            (!ispath(link) && !islink(link)) ||
+            fail("cleanup unit link differs: $unit")
+        values = properties(unit; extra = "FragmentPath,DropInPaths", deadline)
+        isempty(values["DropInPaths"]) && (
+            values["LoadState"] == "not-found" ||
+            (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
+            (removing && !ispath(path) && values["FragmentPath"] in (path, link))
+        ) || fail("cleanup loaded unit definition differs: $unit")
         quiescent_unit(unit; deadline) || fail("cleanup unit remains active: $unit")
     end
     record["unit_file_removal_started"] = true
@@ -158,9 +195,8 @@ function remove_fragments!(runtime, record, deadline;
         islink(link) && rm(link)
         isfile(entry["path"]) && rm(entry["path"])
     end
-    result = checked(["systemctl", "--user", "daemon-reload"]; timeout=20, deadline)
+    result = checked(["systemctl", "--user", "daemon-reload"]; timeout = 20, deadline)
     result.returncode == 0 || fail("cannot unload invocation service definitions")
     record["unit_files_removed"] = true
     return nothing
 end
-

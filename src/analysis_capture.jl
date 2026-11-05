@@ -14,32 +14,55 @@ struct CaptureProvenance
     source_parameter_sha256::Dict{String,String}
 end
 
-capture_provenance(value) = throw(ArgumentError("capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities"))
+capture_provenance(value) = throw(
+    ArgumentError(
+        "capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities",
+    ),
+)
 function capture_provenance(value::AbstractDict)
     fields=Set(String.(fieldnames(CaptureProvenance)))
-    Set(keys(value))==fields ||
-        throw(ArgumentError("capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities"))
+    Set(keys(value))==fields || throw(
+        ArgumentError(
+            "capture provenance requires exact acquisition, graph, recipe, calibration, reference-space and parameter identities",
+        ),
+    )
     sha = capture_sha256
     text = capture_text
-    for key in ("acquisition_receipt_sha256","graph_sha256","source_graph_sha256","recipe_sha256")
+    for key in (
+        "acquisition_receipt_sha256",
+        "graph_sha256",
+        "source_graph_sha256",
+        "recipe_sha256",
+    )
         sha(value[key]) || throw(ArgumentError("invalid capture provenance SHA-256: $key"))
     end
-    value["fits_bindings_sha256"]===nothing || sha(value["fits_bindings_sha256"]) ||
+    value["fits_bindings_sha256"]===nothing ||
+        sha(value["fits_bindings_sha256"]) ||
         throw(ArgumentError("invalid capture FITS bindings SHA-256"))
     identity=value["calibration_identity"]
     capture_calibration_identity(identity) ||
         throw(ArgumentError("capture provenance requires a SHA-256 calibration identity"))
-    text(value["operation"],64) && text(value["reference_space"],2048) ||
+    text(value["operation"], 64) && text(value["reference_space"], 2048) ||
         throw(ArgumentError("invalid capture reference-space declaration"))
     value["source_stage"]===nothing || endpoint(value["source_stage"])
     hashes(key) = capture_parameter_hashes(value[key])
-    return CaptureProvenance(value["acquisition_receipt_sha256"],value["graph_sha256"],value["fits_bindings_sha256"],
-        value["source_graph_sha256"],value["recipe_sha256"],identity,value["operation"],
-        value["reference_space"],value["source_stage"],hashes("parameter_sha256"),hashes("source_parameter_sha256"))
+    return CaptureProvenance(
+        value["acquisition_receipt_sha256"],
+        value["graph_sha256"],
+        value["fits_bindings_sha256"],
+        value["source_graph_sha256"],
+        value["recipe_sha256"],
+        identity,
+        value["operation"],
+        value["reference_space"],
+        value["source_stage"],
+        hashes("parameter_sha256"),
+        hashes("source_parameter_sha256"),
+    )
 end
 
-provenance_metadata(provenance::CaptureProvenance)=Dict(String(name)=>getfield(provenance,name)
-    for name in fieldnames(CaptureProvenance))
+provenance_metadata(provenance::CaptureProvenance) =
+    Dict(String(name)=>getfield(provenance, name) for name in fieldnames(CaptureProvenance))
 
 struct CaptureConfig
     label::String
@@ -53,11 +76,27 @@ struct CaptureConfig
     provenance::Union{Nothing,CaptureProvenance}
 end
 
-capture_configuration(value) = throw(ArgumentError("analysis capture requires label, scope, products, units, sample-count, complete and variance-valid"))
+capture_configuration(value) = throw(
+    ArgumentError(
+        "analysis capture requires label, scope, products, units, sample-count, complete and variance-valid",
+    ),
+)
 function capture_configuration(value::AbstractDict)
-    fields = Set(["label", "scope", "products", "units", "sample-count", "complete", "variance-valid"])
-    fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields,Set(["provenance"])) ||
-        throw(ArgumentError("analysis capture requires label, scope, products, units, sample-count, complete and variance-valid"))
+    fields = Set([
+        "label",
+        "scope",
+        "products",
+        "units",
+        "sample-count",
+        "complete",
+        "variance-valid",
+    ])
+    fields ⊆ Set(keys(value)) && Set(keys(value)) ⊆ union(fields, Set(["provenance"])) ||
+        throw(
+            ArgumentError(
+                "analysis capture requires label, scope, products, units, sample-count, complete and variance-valid",
+            ),
+        )
     text(x) = capture_text(x, 255)
     port(x) = text(x) && occursin(r"^[A-Za-z0-9_.-]+$", x)
     text(value["label"]) || throw(ArgumentError("invalid capture label"))
@@ -70,13 +109,25 @@ function capture_configuration(value::AbstractDict)
     foreach(ConfigurationStore.fits_units, values(units))
     all(key -> port(value[key]), ("sample-count", "complete", "variance-valid")) ||
         throw(ArgumentError("invalid capture status output Port"))
-    names = [values(products)..., value["sample-count"], value["complete"], value["variance-valid"]]
-    length(unique(names)) == length(names) || throw(ArgumentError("capture output Ports must be distinct"))
-    return CaptureConfig(value["label"], Dict{String,String}(scope),
-        Dict(Symbol(k)=>Symbol(v) for (k,v) in products),
-        Dict(Symbol(k)=>v for (k,v) in units), Symbol(value["sample-count"]),
-        Symbol(value["complete"]), Symbol(value["variance-valid"]), 0,
-        haskey(value,"provenance") ? capture_provenance(value["provenance"]) : nothing)
+    names = [
+        values(products)...,
+        value["sample-count"],
+        value["complete"],
+        value["variance-valid"],
+    ]
+    length(unique(names)) == length(names) ||
+        throw(ArgumentError("capture output Ports must be distinct"))
+    return CaptureConfig(
+        value["label"],
+        Dict{String,String}(scope),
+        Dict(Symbol(k)=>Symbol(v) for (k, v) in products),
+        Dict(Symbol(k)=>v for (k, v) in units),
+        Symbol(value["sample-count"]),
+        Symbol(value["complete"]),
+        Symbol(value["variance-valid"]),
+        0,
+        haskey(value, "provenance") ? capture_provenance(value["provenance"]) : nothing,
+    )
 end
 
 # Qualify all captured products against one directly exported finite statistics
@@ -90,30 +141,52 @@ function capture_contract(config::CaptureConfig, document::AbstractDict)
         haskey(exports, name) && throw(ArgumentError("duplicate capture Graph output"))
         exports[name] = endpoint
     end
-    expected = [(port, String(product)) for (product,port) in config.products]
-    append!(expected, [(config.count,"sample-count"), (config.complete,"complete"),
-        (config.variance_valid,"variance-valid")])
+    expected = [(port, String(product)) for (product, port) in config.products]
+    append!(
+        expected,
+        [
+            (config.count, "sample-count"),
+            (config.complete, "complete"),
+            (config.variance_valid, "variance-valid"),
+        ],
+    )
     owner = nothing
     for (name, product) in expected
-        haskey(exports,name) || throw(ArgumentError("capture output $name is not exported"))
-        parts = split(exports[name], ':'; limit=2)
-        length(parts) == 2 && last(parts) == product ||
-            throw(ArgumentError("capture output $name must export the statistics $product Port directly"))
+        haskey(exports, name) ||
+            throw(ArgumentError("capture output $name is not exported"))
+        parts = split(exports[name], ':'; limit = 2)
+        length(parts) == 2 && last(parts) == product || throw(
+            ArgumentError(
+                "capture output $name must export the statistics $product Port directly",
+            ),
+        )
         owner === nothing && (owner=first(parts))
-        first(parts) == owner || throw(ArgumentError("capture products must come from one statistics node"))
+        first(parts) == owner ||
+            throw(ArgumentError("capture products must come from one statistics node"))
     end
-    nodes = filter(node -> get(node,"name",nothing) == owner, get(graph,"nodes",[]))
-    length(nodes) == 1 || throw(ArgumentError("capture statistics node is missing or ambiguous"))
+    nodes = filter(node -> get(node, "name", nothing) == owner, get(graph, "nodes", []))
+    length(nodes) == 1 ||
+        throw(ArgumentError("capture statistics node is missing or ambiguous"))
     node = only(nodes)
-    get(node,"label",nothing) == "array-statistics-f32" ||
+    get(node, "label", nothing) == "array-statistics-f32" ||
         throw(ArgumentError("capture requires the array-statistics-f32 Algorithm"))
-    settings = get(node,"config",Dict())
-    get(settings,"mode",nothing) == "finite" || throw(ArgumentError("artifact capture requires finite statistics"))
-    window = get(settings,"window_samples",nothing)
+    settings = get(node, "config", Dict())
+    get(settings, "mode", nothing) == "finite" ||
+        throw(ArgumentError("artifact capture requires finite statistics"))
+    window = get(settings, "window_samples", nothing)
     capture_window(window) ||
         throw(ArgumentError("capture requires a positive finite window_samples"))
-    return CaptureConfig(config.label, config.scope, config.products, config.units,
-        config.count,config.complete,config.variance_valid,UInt64(window),config.provenance)
+    return CaptureConfig(
+        config.label,
+        config.scope,
+        config.products,
+        config.units,
+        config.count,
+        config.complete,
+        config.variance_valid,
+        UInt64(window),
+        config.provenance,
+    )
 end
 
 # State 0: the single frame writer owns buffers/counters. State 1: immutable
@@ -136,9 +209,13 @@ mutable struct Capture{B,S,P,Count,Complete,Valid}
 end
 
 function prepare_capture(configuration::CaptureConfig, formats::NamedTuple)
-    configuration.window_samples > 0 || throw(ArgumentError("capture must qualify a finite statistics Graph"))
-    status = ((configuration.count, UInt64), (configuration.complete, Bool),
-        (configuration.variance_valid, Bool))
+    configuration.window_samples > 0 ||
+        throw(ArgumentError("capture must qualify a finite statistics Graph"))
+    status = (
+        (configuration.count, UInt64),
+        (configuration.complete, Bool),
+        (configuration.variance_valid, Bool),
+    )
     for (name, type) in status
         hasproperty(formats, name) || throw(ArgumentError("capture output $name is absent"))
         format = getproperty(formats, name)
@@ -148,11 +225,14 @@ function prepare_capture(configuration::CaptureConfig, formats::NamedTuple)
     products = Tuple(sort!(collect(keys(configuration.products))))
     selected = map(products) do product
         name = configuration.products[product]
-        hasproperty(formats, name) || throw(ArgumentError("capture output $name is absent"))
+        hasproperty(formats, name) ||
+            throw(ArgumentError("capture output $name is absent"))
         format = getproperty(formats, name)
-        format.element_type === Float32 || throw(ArgumentError("capture products must be Float32"))
+        format.element_type === Float32 ||
+            throw(ArgumentError("capture products must be Float32"))
         Artifacts.checked_shape(format.shape, sizeof(Float32))
-        !isempty(format.schema) || throw(ArgumentError("capture products require declared schemas"))
+        !isempty(format.schema) ||
+            throw(ArgumentError("capture products require declared schemas"))
         format
     end
     all(format -> format.shape == first(selected).shape, selected) ||
@@ -161,11 +241,30 @@ function prepare_capture(configuration::CaptureConfig, formats::NamedTuple)
         throw(ArgumentError("capture snapshot exceeds 64 MiB"))
     buffers = NamedTuple{products}(map(format -> zeros(Float32, format.shape), selected))
     schemas = NamedTuple{products}(map(format -> String(format.schema), selected))
-    ports = NamedTuple{products}(map(product -> Val(configuration.products[product]), products))
-    return Capture{typeof(buffers),typeof(schemas),typeof(ports),configuration.count,
-        configuration.complete,configuration.variance_valid}(
-        configuration, buffers, schemas, ports, Threads.Atomic{UInt8}(0), :none,
-        0, 0, 0, 0, false, ntuple(_ -> UInt8(0), 16), 0)
+    ports =
+        NamedTuple{products}(map(product -> Val(configuration.products[product]), products))
+    return Capture{
+        typeof(buffers),
+        typeof(schemas),
+        typeof(ports),
+        configuration.count,
+        configuration.complete,
+        configuration.variance_valid,
+    }(
+        configuration,
+        buffers,
+        schemas,
+        ports,
+        Threads.Atomic{UInt8}(0),
+        :none,
+        0,
+        0,
+        0,
+        0,
+        false,
+        ntuple(_ -> UInt8(0), 16),
+        0,
+    )
 end
 prepare_capture(::Nothing, formats) = nothing
 
@@ -183,10 +282,13 @@ function capture_header(record)
     return record
 end
 
-capture_output(outputs, ::Val{Name}) where Name = getproperty(outputs, Name)
+capture_output(outputs, ::Val{Name}) where {Name} = getproperty(outputs, Name)
 
-function (capture::Capture{B,S,P,Count,Complete,Valid})(::Val{:frame},
-        outputs::NamedTuple, metadata::NamedTuple) where {B,S,P,Count,Complete,Valid}
+function (capture::Capture{B,S,P,Count,Complete,Valid})(
+    ::Val{:frame},
+    outputs::NamedTuple,
+    metadata::NamedTuple,
+) where {B,S,P,Count,Complete,Valid}
     capture.ready[] == 0 || return nothing
     config = capture.configuration
     count = getproperty(outputs, Count)[1]
@@ -213,7 +315,7 @@ function (capture::Capture{B,S,P,Count,Complete,Valid})(::Val{:frame},
         identity == capture.has_identity || return fail_capture!(capture, :identity)
         if identity
             header.acquisition_identity.domain == capture.domain &&
-                header.acquisition_identity.generation == capture.generation ||
+            header.acquisition_identity.generation == capture.generation ||
                 return fail_capture!(capture, :identity)
         end
         capture.sequence_gaps += header.sequence - capture.last_sequence - UInt64(1)
@@ -225,7 +327,7 @@ function (capture::Capture{B,S,P,Count,Complete,Valid})(::Val{:frame},
         return fail_capture!(capture, :completion)
     complete || return nothing
     if (haskey(config.products, :variance) || haskey(config.products, :stddev)) &&
-            !getproperty(outputs, Valid)[1]
+       !getproperty(outputs, Valid)[1]
         return fail_capture!(capture, :variance_unavailable)
     end
     for product in keys(capture.buffers)
@@ -237,7 +339,7 @@ function (capture::Capture{B,S,P,Count,Complete,Valid})(::Val{:frame},
     return nothing
 end
 
-function (capture::Capture)(::Val{Event}) where Event
+function (capture::Capture)(::Val{Event}) where {Event}
     capture.ready[] == 0 && capture.count > 0 && fail_capture!(capture, Event)
     return nothing
 end
@@ -248,31 +350,51 @@ Registration creates catalog candidates only. It does not apply, negate, or
 convert a reference, change an RTC parameter, or select a startup calibration.
 Each product is an independent existing Git/SQLite registration, not a transaction.
 """
-function register_capture!(store::ConfigurationStore.Store, capture::Capture;
-        source, graph_sha256, check=()->nothing, records=Dict{String,Any}())
+function register_capture!(
+    store::ConfigurationStore.Store,
+    capture::Capture;
+    source,
+    graph_sha256,
+    check = ()->nothing,
+    records = Dict{String,Any}(),
+)
     capture.ready[] == 1 || throw(ArgumentError("analysis capture is not complete"))
     provenance=capture.configuration.provenance
-    provenance===nothing || provenance.graph_sha256==graph_sha256 ||
+    provenance===nothing ||
+        provenance.graph_sha256==graph_sha256 ||
         throw(ArgumentError("registration graph differs from acquisition provenance"))
     for product in keys(capture.buffers)
         check()
-        metadata = Dict("statistic"=>String(product), "units"=>capture.configuration.units[product],
-            "sample_count"=>capture.count, "first_sequence"=>capture.first_sequence,
-            "last_sequence"=>capture.last_sequence, "source_sequence_gaps"=>capture.sequence_gaps,
-            "source"=>source, "graph_sha256"=>graph_sha256,
+        metadata = Dict(
+            "statistic"=>String(product),
+            "units"=>capture.configuration.units[product],
+            "sample_count"=>capture.count,
+            "first_sequence"=>capture.first_sequence,
+            "last_sequence"=>capture.last_sequence,
+            "source_sequence_gaps"=>capture.sequence_gaps,
+            "source"=>source,
+            "graph_sha256"=>graph_sha256,
             "variance_convention"=>"sample (N-1)",
-            "acquisition_identity_available"=>capture.has_identity)
+            "acquisition_identity_available"=>capture.has_identity,
+        )
         if capture.configuration.provenance !== nothing
-            metadata["acquisition_provenance"]=provenance_metadata(capture.configuration.provenance)
+            metadata["acquisition_provenance"]=provenance_metadata(
+                capture.configuration.provenance,
+            )
         end
         if capture.has_identity
             metadata["acquisition_domain"] = bytes2hex(collect(capture.domain))
             metadata["acquisition_generation"] = capture.generation
         end
-        record = ConfigurationStore.register!(store, getproperty(capture.buffers, product);
-            label=capture.configuration.label * " · " * String(product),
-            scope=capture.configuration.scope, metadata, schema=getproperty(capture.schemas, product),
-            units=capture.configuration.units[product])
+        record = ConfigurationStore.register!(
+            store,
+            getproperty(capture.buffers, product);
+            label = capture.configuration.label * " · " * String(product),
+            scope = capture.configuration.scope,
+            metadata,
+            schema = getproperty(capture.schemas, product),
+            units = capture.configuration.units[product],
+        )
         records[String(product)] = record
     end
     return records
@@ -281,10 +403,15 @@ end
 # Registration follows native processing and consumer cleanup. There are no
 # file, Git, database, lock or sleep operations in the frame observer. A failed
 # registration is recorded once; neither registration nor any scientific update is automatically retried.
-function capture_artifacts(config, capture::Capture, finished;
-        root=ConfigurationStore.default_root(),
-        runtime=get(ENV, "PIPEWIREAO_RUNTIME_DIR", ""), pause=sleep,
-        graph_sha256=D.digest(config.graph))
+function capture_artifacts(
+    config,
+    capture::Capture,
+    finished;
+    root = ConfigurationStore.default_root(),
+    runtime = get(ENV, "PIPEWIREAO_RUNTIME_DIR", ""),
+    pause = sleep,
+    graph_sha256 = D.digest(config.graph),
+)
     while capture.ready[] == 0 && !finished[]
         pause(0.05)
     end
@@ -292,11 +419,18 @@ function capture_artifacts(config, capture::Capture, finished;
     try
         state = capture.ready[]
         if state == 1
-            source = [Dict("node"=>link.output.node, "port"=>link.output.port)
-                for link in config.links if link.input.node == config.name]
+            source = [
+                Dict("node"=>link.output.node, "port"=>link.output.port) for
+                link in config.links if link.input.node == config.name
+            ]
             record["artifacts"] = Dict{String,Any}()
-            register_capture!(ConfigurationStore.Store(root), capture;
-                source, graph_sha256, records=record["artifacts"])
+            register_capture!(
+                ConfigurationStore.Store(root),
+                capture;
+                source,
+                graph_sha256,
+                records = record["artifacts"],
+            )
             record["state"] = "registered"
         elseif state == 2
             record["state"] = "rejected"
@@ -305,51 +439,79 @@ function capture_artifacts(config, capture::Capture, finished;
     catch error
         record["state"] = "registration_failed"
         record["error"] = sprint(showerror, error)
-        @error "Analysis artifact registration failed" analysis=config.name exception=(error, catch_backtrace())
+        @error "Analysis artifact registration failed" analysis=config.name exception=(
+            error,
+            catch_backtrace(),
+        )
     end
     if !isempty(runtime)
-        Common.write_json(joinpath(runtime, config.name * "-capture.json"), record; atomic=true)
+        Common.write_json(
+            joinpath(runtime, config.name * "-capture.json"),
+            record;
+            atomic = true,
+        )
     end
     return record
 end
 
-capture_scope(value) = throw(ArgumentError("capture scope must declare session_label, graph and parameter for the artifact interface"))
+capture_scope(value) = throw(
+    ArgumentError(
+        "capture scope must declare session_label, graph and parameter for the artifact interface",
+    ),
+)
 function capture_scope(value::AbstractDict)
-    Set(keys(value)) == Set(["session_label", "graph", "parameter"]) && all(pair -> capture_text(first(pair), 255) && capture_text(last(pair), 255), pairs(value)) || return capture_scope(nothing)
+    Set(keys(value)) == Set(["session_label", "graph", "parameter"]) && all(
+        pair -> capture_text(first(pair), 255) && capture_text(last(pair), 255),
+        pairs(value),
+    ) || return capture_scope(nothing)
     return value
 end
 
-capture_products(value) = throw(ArgumentError("capture products require mean and optional variance/stddev output Ports"))
+capture_products(value) = throw(
+    ArgumentError(
+        "capture products require mean and optional variance/stddev output Ports",
+    ),
+)
 function capture_products(value::AbstractDict)
-    "mean" in keys(value) && Set(keys(value)) ⊆ Set(["mean", "variance", "stddev"]) && all(capture_port, values(value)) || return capture_products(nothing)
+    "mean" in keys(value) &&
+    Set(keys(value)) ⊆ Set(["mean", "variance", "stddev"]) &&
+    all(capture_port, values(value)) || return capture_products(nothing)
     return value
 end
 
-capture_units(value, products) = throw(ArgumentError("capture units must name each product explicitly"))
+capture_units(value, products) =
+    throw(ArgumentError("capture units must name each product explicitly"))
 function capture_units(value::AbstractDict, products)
-    Set(keys(value)) == Set(keys(products)) && all(unit -> capture_text(unit, 255) && all(isascii, unit), values(value)) || return capture_units(nothing, products)
+    Set(keys(value)) == Set(keys(products)) &&
+    all(unit -> capture_text(unit, 255) && all(isascii, unit), values(value)) ||
+        return capture_units(nothing, products)
     return value
 end
 
 capture_sha256(value::String) = occursin(r"^[0-9a-f]{64}$", value)
 capture_sha256(value) = false
-capture_text(value::String, limit) = isvalid(value) && 0 < ncodeunits(value) <= limit && !any(iscntrl, value)
+capture_text(value::String, limit) =
+    isvalid(value) && 0 < ncodeunits(value) <= limit && !any(iscntrl, value)
 capture_text(value, limit) = false
 capture_port(value) = capture_text(value, 255) && occursin(r"^[A-Za-z0-9_.-]+$", value)
-capture_calibration_identity(value::String) = occursin(r"^sha256:[0-9a-f]{64}$",value)
+capture_calibration_identity(value::String) = occursin(r"^sha256:[0-9a-f]{64}$", value)
 capture_calibration_identity(value) = false
-capture_parameter_name(value::String) = occursin(r"^[A-Za-z0-9_.-]{1,128}$",value)
+capture_parameter_name(value::String) = occursin(r"^[A-Za-z0-9_.-]{1,128}$", value)
 capture_parameter_name(value) = false
-capture_parameter_hashes(value) = throw(ArgumentError("invalid capture parameter SHA-256 mapping"))
+capture_parameter_hashes(value) =
+    throw(ArgumentError("invalid capture parameter SHA-256 mapping"))
 function capture_parameter_hashes(value::AbstractDict)
-    length(value) <= 64 && all(pair -> capture_parameter_name(first(pair)) && capture_sha256(last(pair)), pairs(value)) ||
-        return capture_parameter_hashes(nothing)
+    length(value) <= 64 && all(
+        pair -> capture_parameter_name(first(pair)) && capture_sha256(last(pair)),
+        pairs(value),
+    ) || return capture_parameter_hashes(nothing)
     return Dict{String,String}(value)
 end
 capture_export(output) = throw(ArgumentError("invalid capture Graph output"))
 function capture_export(output::AbstractString)
-    parts = split(output, ':'; limit=2)
-    length(parts) == 2 || throw(ArgumentError("capture exports must identify exact node:port endpoints"))
+    parts = split(output, ':'; limit = 2)
+    length(parts) == 2 ||
+        throw(ArgumentError("capture exports must identify exact node:port endpoints"))
     return String(output), Symbol(last(parts))
 end
 function capture_export(output::AbstractDict)

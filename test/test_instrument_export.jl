@@ -6,34 +6,67 @@ const D = PipeWireAORTC.DeploymentConfiguration
 
 @testset "application modes select graph sources without editing the source" begin
     mktempdir() do application
-        C.write_json(joinpath(application, "instrument.json"),
-            Dict("deformable_mirrors"=>Dict(), "wavefront_sensors"=>Dict()))
-        original = Dict("filter.graph"=>Dict("nodes"=>[Dict("name"=>"control", "config"=>Dict{String,Any}("count"=>1))]))
+        C.write_json(
+            joinpath(application, "instrument.json"),
+            Dict("deformable_mirrors"=>Dict(), "wavefront_sensors"=>Dict()),
+        )
+        original = Dict(
+            "filter.graph"=>Dict(
+                "nodes"=>[Dict("name"=>"control", "config"=>Dict{String,Any}("count"=>1))],
+            ),
+        )
         selected = deepcopy(original)
-        selected["filter.graph"]["nodes"][1]["config"]["count"] = Dict("\$ref"=>"/rtc/dimensions/count")
-        C.write_json(joinpath(application,"graph.conf"),original)
-        C.write_json(joinpath(application,"heart.conf"),selected)
-        bytes = read(joinpath(application,"heart.conf"))
+        selected["filter.graph"]["nodes"][1]["config"]["count"] =
+            Dict("\$ref"=>"/rtc/dimensions/count")
+        C.write_json(joinpath(application, "graph.conf"), original)
+        C.write_json(joinpath(application, "heart.conf"), selected)
+        bytes = read(joinpath(application, "heart.conf"))
         declarations = [Dict("path"=>"graph.conf", "source"=>"heart.conf")]
-        E.prepare_graph_configurations!(application,declarations,"instrument.json","/opt/pipewireao";
-            dimensions=Dict("count"=>3))
-        @test only(D.decode(joinpath(application,"graph.conf"),"/opt/pipewireao")["filter.graph"]["nodes"])["config"]["count"] == 3
-        @test read(joinpath(application,"heart.conf")) == bytes
-        @test occursin("heart.conf",read(joinpath(application,"graph.conf"),String))
-        before = read(joinpath(application,"graph.conf"))
-        @test_throws ArgumentError E.prepare_graph_configurations!(application,
-            vcat(declarations,declarations),"instrument.json","/opt/pipewireao")
-        @test read(joinpath(application,"graph.conf")) == before
-        @test_throws ArgumentError E.prepare_graph_configurations!(application,
-            vcat(declarations,[Dict("path"=>"heart.conf")]),"instrument.json","/opt/pipewireao";
-            dimensions=Dict("count"=>3))
-        @test read(joinpath(application,"graph.conf")) == before
-        @test read(joinpath(application,"heart.conf")) == bytes
-        @test_throws D.DeploymentError E.prepare_graph_configurations!(application,
-            [Dict("path"=>"graph.conf","source"=>joinpath(application,"heart.conf"))],"instrument.json","/opt/pipewireao")
-        @test read(joinpath(application,"graph.conf")) == before
-        E.prepare_graph_configurations!(application,[Dict("path"=>"graph.conf")],"instrument.json","/opt/pipewireao")
-        @test only(D.decode(joinpath(application,"graph.conf"),"/opt/pipewireao")["filter.graph"]["nodes"])["config"]["count"] == 3
+        E.prepare_graph_configurations!(
+            application,
+            declarations,
+            "instrument.json",
+            "/opt/pipewireao";
+            dimensions = Dict("count"=>3),
+        )
+        @test only(
+            D.decode(joinpath(application, "graph.conf"), "/opt/pipewireao")["filter.graph"]["nodes"],
+        )["config"]["count"] == 3
+        @test read(joinpath(application, "heart.conf")) == bytes
+        @test occursin("heart.conf", read(joinpath(application, "graph.conf"), String))
+        before = read(joinpath(application, "graph.conf"))
+        @test_throws ArgumentError E.prepare_graph_configurations!(
+            application,
+            vcat(declarations, declarations),
+            "instrument.json",
+            "/opt/pipewireao",
+        )
+        @test read(joinpath(application, "graph.conf")) == before
+        @test_throws ArgumentError E.prepare_graph_configurations!(
+            application,
+            vcat(declarations, [Dict("path"=>"heart.conf")]),
+            "instrument.json",
+            "/opt/pipewireao";
+            dimensions = Dict("count"=>3),
+        )
+        @test read(joinpath(application, "graph.conf")) == before
+        @test read(joinpath(application, "heart.conf")) == bytes
+        @test_throws D.DeploymentError E.prepare_graph_configurations!(
+            application,
+            [Dict("path"=>"graph.conf", "source"=>joinpath(application, "heart.conf"))],
+            "instrument.json",
+            "/opt/pipewireao",
+        )
+        @test read(joinpath(application, "graph.conf")) == before
+        E.prepare_graph_configurations!(
+            application,
+            [Dict("path"=>"graph.conf")],
+            "instrument.json",
+            "/opt/pipewireao",
+        )
+        @test only(
+            D.decode(joinpath(application, "graph.conf"), "/opt/pipewireao")["filter.graph"]["nodes"],
+        )["config"]["count"] == 3
     end
 end
 
@@ -51,25 +84,43 @@ end
         nested = joinpath(source, "gui", "layouts", "other.yaml")
         C.write_yaml(nested, Dict("colormap_files" => ["../../../colormaps/default.yaml"]))
         original = read(path)
-        output = E.copy_source(source, joinpath(repository, "application"); runtime_configurations=false)
+        output = E.copy_source(
+            source,
+            joinpath(repository, "application");
+            runtime_configurations = false,
+        )
         @test read(path) == original
         @test read(shared, String) == bytes
-        @test C.read_yaml(joinpath(output, "gui", "operator-views.yaml"))["colormap_files"] == ["colormaps/default.yaml"]
-        @test C.read_yaml(joinpath(output, "gui", "layouts", "other.yaml"))["colormap_files"] == ["../colormaps/default.yaml"]
-        @test startswith(read(joinpath(output, "gui", "operator-views.yaml"), String), "# Generated by PipeWireAORTC")
+        @test C.read_yaml(joinpath(output, "gui", "operator-views.yaml"))["colormap_files"] ==
+              ["colormaps/default.yaml"]
+        @test C.read_yaml(joinpath(output, "gui", "layouts", "other.yaml"))["colormap_files"] ==
+              ["../colormaps/default.yaml"]
+        @test startswith(
+            read(joinpath(output, "gui", "operator-views.yaml"), String),
+            "# Generated by PipeWireAORTC",
+        )
         rm(shared)
         @test read(joinpath(output, "gui", "colormaps", "default.yaml"), String) == bytes
 
         write(shared, bytes)
         mkpath(joinpath(source, "gui", "colormaps"))
         write(joinpath(source, "gui", "colormaps", "default.yaml"), "different bytes")
-        @test_throws ArgumentError E.copy_source(source, joinpath(repository, "conflict"); runtime_configurations=false)
-        rm(joinpath(source, "gui", "colormaps"); recursive=true)
+        @test_throws ArgumentError E.copy_source(
+            source,
+            joinpath(repository, "conflict");
+            runtime_configurations = false,
+        )
+        rm(joinpath(source, "gui", "colormaps"); recursive = true)
         symlink(shared, joinpath(dirname(shared), "linked.yaml"))
-        for bad in ("../../colormaps/linked.yaml", "../../outside.yaml", "/absolute.yaml", 42)
+        for bad in
+            ("../../colormaps/linked.yaml", "../../outside.yaml", "/absolute.yaml", 42)
             write(joinpath(repository, "outside.yaml"), bytes)
             C.write_yaml(path, Dict("colormap_files" => [bad]))
-            @test_throws ArgumentError E.copy_source(source, joinpath(repository, "bad-" * string(hash(bad))); runtime_configurations=false)
+            @test_throws ArgumentError E.copy_source(
+                source,
+                joinpath(repository, "bad-" * string(hash(bad)));
+                runtime_configurations = false,
+            )
         end
     end
 end
@@ -82,9 +133,14 @@ end
         mkpath(dirname(shared))
         bytes = "schema_version: 1\nid: retained source\n"
         write(shared, bytes)
-        document = Dict("deformable_mirrors" => Dict(name =>
-            Dict("description" => "../mirrors/vendor/mirror.yaml",
-                "pupil" => Dict("outer_radius"=>1.0,"inner_radius"=>0.3)) for name in ("dm1", "dm2")))
+        document = Dict(
+            "deformable_mirrors" => Dict(
+                name => Dict(
+                    "description" => "../mirrors/vendor/mirror.yaml",
+                    "pupil" => Dict("outer_radius"=>1.0, "inner_radius"=>0.3),
+                ) for name in ("dm1", "dm2")
+            ),
+        )
         path = joinpath(source, "instrument.yaml")
         C.write_yaml(path, document)
         before = read(path)
@@ -92,15 +148,24 @@ end
         @test read(path) == before
         @test read(shared, String) == bytes
         copied = C.read_yaml(joinpath(output, "instrument.yaml"))
-        @test all(mirror["description"] == "mirrors/vendor/mirror.yaml"
-            for mirror in values(copied["deformable_mirrors"]))
-        @test all(mirror["pupil"] == Dict("outer_radius"=>1.0,"inner_radius"=>0.3)
-            for mirror in values(copied["deformable_mirrors"]))
+        @test all(
+            mirror["description"] == "mirrors/vendor/mirror.yaml" for
+            mirror in values(copied["deformable_mirrors"])
+        )
+        @test all(
+            mirror["pupil"] == Dict("outer_radius"=>1.0, "inner_radius"=>0.3) for
+            mirror in values(copied["deformable_mirrors"])
+        )
         @test read(D.relative_asset(output, "mirrors/vendor/mirror.yaml"), String) == bytes
         # Removing the source cannot break the exported application's local reference.
         rm(shared)
-        @test read(PipeWireAORTC.InstrumentConfiguration.mirror_description_path(output,
-            copied["deformable_mirrors"]["dm1"]["description"]), String) == bytes
+        @test read(
+            PipeWireAORTC.InstrumentConfiguration.mirror_description_path(
+                output,
+                copied["deformable_mirrors"]["dm1"]["description"],
+            ),
+            String,
+        ) == bytes
         @test_throws Base.IOError E.copy_source(source, joinpath(repository, "missing"))
         @test !ispath(joinpath(repository, "missing"))
         write(shared, bytes)
@@ -108,14 +173,17 @@ end
         write(joinpath(source, "mirrors", "vendor", "mirror.yaml"), "conflict")
         @test_throws ArgumentError E.copy_source(source, joinpath(repository, "conflict"))
         @test !ispath(joinpath(repository, "conflict"))
-        rm(joinpath(source, "mirrors"); recursive=true)
+        rm(joinpath(source, "mirrors"); recursive = true)
         write(joinpath(repository, "outside.json"), bytes)
         for name in ("../mirrors/../outside.json", "../outside.json")
             for mirror in values(document["deformable_mirrors"])
                 mirror["description"] = name
             end
             C.write_yaml(path, document)
-            @test_throws D.DeploymentError E.copy_source(source, joinpath(repository, "escape"))
+            @test_throws D.DeploymentError E.copy_source(
+                source,
+                joinpath(repository, "escape"),
+            )
             @test !ispath(joinpath(repository, "escape"))
         end
         for mirror in values(document["deformable_mirrors"])
@@ -133,65 +201,142 @@ end
     mktempdir() do directory
         source = joinpath(directory, "source")
         mkpath(joinpath(source, "rtc"))
-        C.write_yaml(joinpath(source, "rtc", "application.yaml"), Dict("runtime-configurations" =>
-            [Dict("source" => "rtc/parameters.yaml", "path" => "rtc/parameters.conf", "format" => "json")]))
-        output = E.copy_source(source, joinpath(directory, "staged"); runtime_configurations=false)
+        C.write_yaml(
+            joinpath(source, "rtc", "application.yaml"),
+            Dict(
+                "runtime-configurations" => [
+                    Dict(
+                        "source" => "rtc/parameters.yaml",
+                        "path" => "rtc/parameters.conf",
+                        "format" => "json",
+                    ),
+                ],
+            ),
+        )
+        output = E.copy_source(
+            source,
+            joinpath(directory, "staged");
+            runtime_configurations = false,
+        )
         @test isfile(joinpath(output, "rtc", "application.yaml"))
         @test !ispath(joinpath(output, "rtc", "application.conf"))
         C.write_yaml(joinpath(output, "rtc", "parameters.yaml"), Dict("parameters" => []))
         E.prepare_runtime_configurations!(output)
-        @test C.read_json(joinpath(output, "rtc", "parameters.conf")) == Dict("parameters" => [])
+        @test C.read_json(joinpath(output, "rtc", "parameters.conf")) ==
+              Dict("parameters" => [])
     end
 end
 
 @testset "derived YAML and calibration files share the export reference contract" begin
     mktempdir() do directory
-        C.write_json(joinpath(directory, "instrument.json"),
-            Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict("sensor" =>
-                Dict("layout" => Dict("detector_shape" => [3, 7], "subaperture_origins" => [])))))
+        C.write_json(
+            joinpath(directory, "instrument.json"),
+            Dict(
+                "deformable_mirrors" => Dict(),
+                "wavefront_sensors" => Dict(
+                    "sensor" => Dict(
+                        "layout" => Dict(
+                            "detector_shape" => [3, 7],
+                            "subaperture_origins" => [],
+                        ),
+                    ),
+                ),
+            ),
+        )
         spec = Dict("session" => "session.conf", "core" => "core.conf")
         for field in values(spec)
             C.write_json(joinpath(directory, field), Dict("nodes" => []))
         end
         reference(pointer) = Dict("\$ref" => pointer)
-        declarations = [Dict("path" => "views.yaml", "format" => "yaml"),
-            Dict("path" => "recipe.conf", "format" => "spa-json")]
+        declarations = [
+            Dict("path" => "views.yaml", "format" => "yaml"),
+            Dict("path" => "recipe.conf", "format" => "spa-json"),
+        ]
         recipe = Dict("measurement_count" => reference("/rtc/dimensions/measurements"))
         prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
-        write(joinpath(directory, "views.yaml"), "parameter:\n  - shape: {\"\$ref\": /rtc/dimensions/shape}\nslope_to_image: {\"\$ref\": /instrument/wavefront_sensors/sensor/pixel_to_image}\n")
+        write(
+            joinpath(directory, "views.yaml"),
+            "parameter:\n  - shape: {\"\$ref\": /rtc/dimensions/shape}\nslope_to_image: {\"\$ref\": /instrument/wavefront_sensors/sensor/pixel_to_image}\n",
+        )
         C.write_json(joinpath(directory, "recipe.conf"), recipe)
-        E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix;
-            configurations=declarations, dimensions=Dict("shape" => [5, 9], "measurements" => 18))
-        @test C.read_yaml(joinpath(directory, "views.yaml")) ==
-            Dict("parameter" => [Dict("shape" => [5, 9])], "slope_to_image" => [1 / 7, 1 / 3])
-        @test D.decode(joinpath(directory, "recipe.conf"), prefix)["measurement_count"] == 18
+        E.prepare_session_configuration!(
+            directory,
+            spec,
+            [],
+            "instrument.json",
+            prefix;
+            configurations = declarations,
+            dimensions = Dict("shape" => [5, 9], "measurements" => 18),
+        )
+        @test C.read_yaml(joinpath(directory, "views.yaml")) == Dict(
+            "parameter" => [Dict("shape" => [5, 9])],
+            "slope_to_image" => [1 / 7, 1 / 3],
+        )
+        @test D.decode(joinpath(directory, "recipe.conf"), prefix)["measurement_count"] ==
+              18
         for path in ("views.yaml", "recipe.conf")
-            @test startswith(read(joinpath(directory, path), String), "# Generated by PipeWireAORTC")
+            @test startswith(
+                read(joinpath(directory, path), String),
+                "# Generated by PipeWireAORTC",
+            )
             @test !occursin("\$ref", read(joinpath(directory, path), String))
         end
         # Unknown references in a later document cannot rewrite earlier files.
-        C.write_json(joinpath(directory, "recipe.conf"), Dict("value" => reference("/absent")))
-        before = Dict(path => read(joinpath(directory, path)) for path in
-            ("session.conf", "core.conf", "views.yaml", "recipe.conf"))
-        @test_throws ArgumentError E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix;
-            configurations=declarations)
+        C.write_json(
+            joinpath(directory, "recipe.conf"),
+            Dict("value" => reference("/absent")),
+        )
+        before = Dict(
+            path => read(joinpath(directory, path)) for
+            path in ("session.conf", "core.conf", "views.yaml", "recipe.conf")
+        )
+        @test_throws ArgumentError E.prepare_session_configuration!(
+            directory,
+            spec,
+            [],
+            "instrument.json",
+            prefix;
+            configurations = declarations,
+        )
         @test all(read(joinpath(directory, path)) == bytes for (path, bytes) in before)
-        for invalid in ([declarations[1], declarations[1]],
-                [Dict("path" => "views.yaml", "format" => "unknown")],
-                [Dict("path" => "views.yaml")])
-            @test_throws ArgumentError E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix;
-                configurations=invalid)
+        for invalid in (
+            [declarations[1], declarations[1]],
+            [Dict("path" => "views.yaml", "format" => "unknown")],
+            [Dict("path" => "views.yaml")],
+        )
+            @test_throws ArgumentError E.prepare_session_configuration!(
+                directory,
+                spec,
+                [],
+                "instrument.json",
+                prefix;
+                configurations = invalid,
+            )
         end
-        @test_throws D.DeploymentError E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix;
-            configurations=[Dict("path" => "/escape.yaml", "format" => "yaml")])
+        @test_throws D.DeploymentError E.prepare_session_configuration!(
+            directory,
+            spec,
+            [],
+            "instrument.json",
+            prefix;
+            configurations = [Dict("path" => "/escape.yaml", "format" => "yaml")],
+        )
     end
 end
 
 function export_profile()
-    placement() = Dict("cpus" => [2, 3], "leader-cpu" => 3,
-        "rt-priority" => 0, "locked-bytes" => 0, "threads" => [])
-    Dict("placement" => Dict(role => placement() for role in ("core", "rtc", "session", "julia")),
-        "bindings" => Dict{String,Any}("DEVICE_NODE" => "camera"))
+    placement() = Dict(
+        "cpus" => [2, 3],
+        "leader-cpu" => 3,
+        "rt-priority" => 0,
+        "locked-bytes" => 0,
+        "threads" => [],
+    )
+    Dict(
+        "placement" =>
+            Dict(role => placement() for role in ("core", "rtc", "session", "julia")),
+        "bindings" => Dict{String,Any}("DEVICE_NODE" => "camera"),
+    )
 end
 
 @testset "session references resolve the whole composed document before sealing" begin
@@ -201,25 +346,55 @@ end
         instrument = Dict("deformable_mirrors" => Dict(), "wavefront_sensors" => Dict())
         C.write_json(joinpath(directory, "instrument.json"), instrument)
         spec = Dict("session" => "session.conf.in", "core" => "core.conf.in")
-        session = Dict("graphs" => [Dict("node.name" => "arbitrary-science",
-            "ports" => [Dict("shape" => reference("/rtc/dimensions/image"),
-                "element-type" => "F32_LE", "schema" => "test.quantity/1", "layout" => "row-major")])],
-            "policy" => Dict("rate" => "500/1", "nested" => [Dict("shape" =>
-                reference("/rtc/dimensions/command"))]))
-        core = Dict("context.modules" => [Dict("args" => Dict("shape" =>
-            reference("/rtc/dimensions/image"), "schema" => "test.applied/1"))])
+        session = Dict(
+            "graphs" => [
+                Dict(
+                    "node.name" => "arbitrary-science",
+                    "ports" => [
+                        Dict(
+                            "shape" => reference("/rtc/dimensions/image"),
+                            "element-type" => "F32_LE",
+                            "schema" => "test.quantity/1",
+                            "layout" => "row-major",
+                        ),
+                    ],
+                ),
+            ],
+            "policy" => Dict(
+                "rate" => "500/1",
+                "nested" => [Dict("shape" => reference("/rtc/dimensions/command"))],
+            ),
+        )
+        core = Dict(
+            "context.modules" => [
+                Dict(
+                    "args" => Dict(
+                        "shape" => reference("/rtc/dimensions/image"),
+                        "schema" => "test.applied/1",
+                    ),
+                ),
+            ],
+        )
         C.write_json(joinpath(directory, spec["session"]), session)
         C.write_json(joinpath(directory, spec["core"]), core)
         dimensions = Dict("image" => [3, 7], "command" => [11])
-        E.prepare_session_configuration!(directory, spec, [], "instrument.json", prefix; dimensions)
+        E.prepare_session_configuration!(
+            directory,
+            spec,
+            [],
+            "instrument.json",
+            prefix;
+            dimensions,
+        )
         prepared = D.decode(joinpath(directory, spec["session"]), prefix)
         @test only(only(prepared["graphs"])["ports"])["shape"] == [3, 7]
         @test prepared["policy"]["nested"][1]["shape"] == [11]
         @test prepared["policy"]["rate"] == "500/1"
         @test only(only(prepared["graphs"])["ports"])["schema"] == "test.quantity/1"
         @test only(only(prepared["graphs"])["ports"])["layout"] == "row-major"
-        @test only(D.decode(joinpath(directory, spec["core"]), prefix)["context.modules"])["args"] ==
-            Dict("shape" => [3, 7], "schema" => "test.applied/1")
+        @test only(
+            D.decode(joinpath(directory, spec["core"]), prefix)["context.modules"],
+        )["args"] == Dict("shape" => [3, 7], "schema" => "test.applied/1")
         for field in ("session", "core")
             text = read(joinpath(directory, spec[field]), String)
             @test startswith(text, "# Generated by PipeWireAORTC")
@@ -228,71 +403,127 @@ end
         C.write_json(joinpath(directory, "deployment.conf"), spec)
         E.seal!(directory)
         @test C.read_json(joinpath(directory, "deployment.conf"))["artifacts"][spec["session"]] ==
-            C.sha256_file(joinpath(directory, spec["session"]))
+              C.sha256_file(joinpath(directory, spec["session"]))
 
         # A later invalid core reference must leave both authored files intact.
-        for invalid in (reference("/missing"), reference("/rtc/dimensions/missing"),
-                reference(7), reference(reference("/instrument")),
-                Dict("\$ref" => "/instrument", "extra" => true))
+        for invalid in (
+            reference("/missing"),
+            reference("/rtc/dimensions/missing"),
+            reference(7),
+            reference(reference("/instrument")),
+            Dict("\$ref" => "/instrument", "extra" => true),
+        )
             C.write_json(joinpath(directory, spec["session"]), session)
             C.write_json(joinpath(directory, spec["core"]), Dict("invalid" => invalid))
-            before = Dict(field => read(joinpath(directory, spec[field])) for field in ("session", "core"))
-            @test_throws ArgumentError E.prepare_session_configuration!(directory, spec, [],
-                "instrument.json", prefix; dimensions)
-            @test all(read(joinpath(directory, spec[field])) == before[field] for field in ("session", "core"))
+            before = Dict(
+                field => read(joinpath(directory, spec[field])) for
+                field in ("session", "core")
+            )
+            @test_throws ArgumentError E.prepare_session_configuration!(
+                directory,
+                spec,
+                [],
+                "instrument.json",
+                prefix;
+                dimensions,
+            )
+            @test all(
+                read(joinpath(directory, spec[field])) == before[field] for
+                field in ("session", "core")
+            )
         end
         # Concrete applications do not need an instrument file or science packages.
         C.write_json(joinpath(directory, spec["session"]), Dict("sources" => []))
         C.write_json(joinpath(directory, spec["core"]), Dict("context.modules" => []))
-        @test E.prepare_session_configuration!(directory, spec, [], "absent.json", prefix) === nothing
+        @test E.prepare_session_configuration!(
+            directory,
+            spec,
+            [],
+            "absent.json",
+            prefix,
+        ) === nothing
     end
-    @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
-        "FilterGraphIsland", "JuliaFilterGraph", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+    @test !any(
+        id -> id.name in (
+            "AdaptiveOpticsSim",
+            "AdaptiveOpticsSimPipeWireHIL",
+            "FilterGraphIsland",
+            "JuliaFilterGraph",
+            "CUDA",
+            "AMDGPU",
+        ),
+        keys(Base.loaded_modules),
+    )
 end
 
 @testset "session wire element types preserve Boolean and integer representations" begin
     @test E.wire_element_type(Bool) == "BOOL8"
     @test E.wire_element_type(UInt8) == "U8"
     @test E.wire_element_type(Bool) != E.wire_element_type(UInt8)
-    for (type, spelling) in ((Int8, "I8"), (Int16, "I16_LE"), (UInt16, "U16_LE"),
-            (Int32, "I32_LE"), (UInt32, "U32_LE"), (Int64, "I64_LE"), (UInt64, "U64_LE"),
-            (Float32, "F32_LE"), (Float64, "F64_LE"))
+    for (type, spelling) in (
+        (Int8, "I8"),
+        (Int16, "I16_LE"),
+        (UInt16, "U16_LE"),
+        (Int32, "I32_LE"),
+        (UInt32, "U32_LE"),
+        (Int64, "I64_LE"),
+        (UInt64, "U64_LE"),
+        (Float32, "F32_LE"),
+        (Float64, "F64_LE"),
+    )
         @test E.wire_element_type(type) == spelling
     end
     @test_throws ArgumentError E.wire_element_type(ComplexF64)
 end
 
 function application_spec()
-    Dict("owners" => [Dict("role" => "julia", "environment" => Dict())],
+    Dict(
+        "owners" => [Dict("role" => "julia", "environment" => Dict())],
         "session-runtime" => Dict("environment" => Dict()),
-        "analysis" => [Dict("name" => "wfs", "config" => "analysis/analysis.conf", "cpus" => [2])])
+        "analysis" =>
+            [Dict("name" => "wfs", "config" => "analysis/analysis.conf", "cpus" => [2])],
+    )
 end
 
 @testset "instrument exporter profile bindings" begin
     profile = export_profile()
     bindings = E.profile_bindings(profile, "/julia/bin/julia")
     @test E.substitute("@JULIA@ --node @DEVICE_NODE@ @REMOTE@", bindings) ==
-        "/julia/bin/julia --node camera @REMOTE@"
-    @test E.substitute("@BOOTSTRAP_INSTANCE_JULIA@", bindings) == "@BOOTSTRAP_INSTANCE_JULIA@"
+          "/julia/bin/julia --node camera @REMOTE@"
+    @test E.substitute("@BOOTSTRAP_INSTANCE_JULIA@", bindings) ==
+          "@BOOTSTRAP_INSTANCE_JULIA@"
     @test_throws ArgumentError E.substitute("@UNDECLARED@", bindings)
     @test E.substitute(Dict("argv" => ["@JULIA@", "@PACKAGE@"]), bindings) ==
-        Dict("argv" => ["/julia/bin/julia", "@PACKAGE@"])
-    for (key, value) in (("CORE_CPU", 1), ("RT_PRIORITY", 100), ("CORE_CPU", true),
-            ("PREFIX", "/wrong"), ("JULIA", "/wrong"), ("BOOTSTRAP_INSTANCE_JULIA", "wrong"),
-            ("OTHER", 1.5), ("other", "bad"))
+          Dict("argv" => ["/julia/bin/julia", "@PACKAGE@"])
+    for (key, value) in (
+        ("CORE_CPU", 1),
+        ("RT_PRIORITY", 100),
+        ("CORE_CPU", true),
+        ("PREFIX", "/wrong"),
+        ("JULIA", "/wrong"),
+        ("BOOTSTRAP_INSTANCE_JULIA", "wrong"),
+        ("OTHER", 1.5),
+        ("other", "bad"),
+    )
         invalid = deepcopy(profile)
         invalid["bindings"][key] = value
         @test_throws ArgumentError E.profile_bindings(invalid, "julia")
     end
-    @test E.profile!(application_spec(), profile, bindings)["placement"] == profile["placement"]
-    for invalid in (merge(profile, Dict("unknown" => true)),
-            merge(profile, Dict("placement" => Dict("missing" => Dict()))),
-            merge(profile, Dict("environment" => Dict("missing" => Dict("A" => "B")))),
-            merge(profile, Dict("analysis" => Dict("missing" => [2]))))
+    @test E.profile!(application_spec(), profile, bindings)["placement"] ==
+          profile["placement"]
+    for invalid in (
+        merge(profile, Dict("unknown" => true)),
+        merge(profile, Dict("placement" => Dict("missing" => Dict()))),
+        merge(profile, Dict("environment" => Dict("missing" => Dict("A" => "B")))),
+        merge(profile, Dict("analysis" => Dict("missing" => [2]))),
+    )
         @test_throws ArgumentError E.profile!(application_spec(), invalid, bindings)
     end
     valid = deepcopy(profile)
-    valid["environment"] = Dict("julia" => Dict("TEST_ENV" => "ok"), "session" => Dict("TEST_SESSION" => "yes"))
+    valid["environment"] = Dict(
+        "julia" => Dict("TEST_ENV" => "ok"),
+        "session" => Dict("TEST_SESSION" => "yes"),
+    )
     valid["analysis"] = Dict("wfs" => [3])
     authoring = application_spec()
     delete!(authoring["analysis"][1], "cpus")
@@ -311,41 +542,79 @@ end
         E.seal!(source)
         sealed = C.read_json(joinpath(source, "deployment.conf"))
         @test Set(keys(sealed["artifacts"])) == Set(["nested/data.json"])
-        @test sealed["artifacts"]["nested/data.json"] == C.sha256_file(joinpath(source, "nested", "data.json"))
+        @test sealed["artifacts"]["nested/data.json"] ==
+              C.sha256_file(joinpath(source, "nested", "data.json"))
         write(joinpath(source, "nested", "data.json"), "{\"data\":2}\n")
-        @test sealed["artifacts"]["nested/data.json"] != C.sha256_file(joinpath(source, "nested", "data.json"))
-        @test_throws ArgumentError E.prepare(source, joinpath(source, "output"); profile=export_profile())
-        @test_throws ArgumentError E.prepare(source, directory; profile=export_profile())
+        @test sealed["artifacts"]["nested/data.json"] !=
+              C.sha256_file(joinpath(source, "nested", "data.json"))
+        @test_throws ArgumentError E.prepare(
+            source,
+            joinpath(source, "output");
+            profile = export_profile(),
+        )
+        @test_throws ArgumentError E.prepare(source, directory; profile = export_profile())
         @test !ispath(joinpath(source, "output"))
         linked = joinpath(directory, "linked")
         symlink(source, linked)
-        @test_throws ArgumentError E.prepare(linked, joinpath(directory, "output"); profile=export_profile())
-        @test_throws ArgumentError E.prepare(source, joinpath(linked, "output"); profile=export_profile())
+        @test_throws ArgumentError E.prepare(
+            linked,
+            joinpath(directory, "output");
+            profile = export_profile(),
+        )
+        @test_throws ArgumentError E.prepare(
+            source,
+            joinpath(linked, "output");
+            profile = export_profile(),
+        )
         symlink(joinpath(source, "nested"), joinpath(source, "linked-data"))
         @test_throws ArgumentError E.seal!(source)
-        @test_throws ArgumentError E.prepare(source, joinpath(directory, "output"); profile=export_profile())
+        @test_throws ArgumentError E.prepare(
+            source,
+            joinpath(directory, "output");
+            profile = export_profile(),
+        )
     end
 end
 
 @testset "simulation profile changes only deployment fields" begin
     mktempdir() do directory
         path = joinpath(directory, "simulation.conf")
-        simulation = Dict("backend" => "cuda", "device" => 0, "pacing_rate_hz" => 500,
-            "rate" => 500, "plant" => Dict("settings" => Dict("seed" => 17)))
+        simulation = Dict(
+            "backend" => "cuda",
+            "device" => 0,
+            "pacing_rate_hz" => 500,
+            "rate" => 500,
+            "plant" => Dict("settings" => Dict("seed" => 17)),
+        )
         C.write_json(path, simulation)
-        E.simulation_override!(directory, Dict("simulation" => Dict("backend" => "cpu", "pacing_rate_hz" => 10)))
+        E.simulation_override!(
+            directory,
+            Dict("simulation" => Dict("backend" => "cpu", "pacing_rate_hz" => 10)),
+        )
         prepared = C.read_json(path)
         @test prepared["backend"] == "cpu"
         @test prepared["pacing_rate_hz"] == 10
         @test prepared["plant"] == simulation["plant"]
-        for overrides in (Dict("rate" => 10), Dict("plant" => Dict()), Dict("backend" => "unknown"),
-                Dict("device" => -1), Dict("device" => true), Dict("pacing_rate_hz" => 501),
-                Dict("backend" => "amdgpu", "device" => 0))
+        for overrides in (
+            Dict("rate" => 10),
+            Dict("plant" => Dict()),
+            Dict("backend" => "unknown"),
+            Dict("device" => -1),
+            Dict("device" => true),
+            Dict("pacing_rate_hz" => 501),
+            Dict("backend" => "amdgpu", "device" => 0),
+        )
             before = read(path)
-            @test_throws ArgumentError E.simulation_override!(directory, Dict("simulation" => overrides))
+            @test_throws ArgumentError E.simulation_override!(
+                directory,
+                Dict("simulation" => overrides),
+            )
             @test read(path) == before
         end
-        E.simulation_override!(directory, Dict("simulation" => Dict("backend" => "amdgpu", "device" => 1)))
+        E.simulation_override!(
+            directory,
+            Dict("simulation" => Dict("backend" => "amdgpu", "device" => 1)),
+        )
         amd = C.read_json(path)
         @test amd["backend"] == "amdgpu"
         @test amd["device"] == 1
@@ -356,7 +625,7 @@ end
 Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"))
 @testset "retired host optical metadata opt-in is rejected" begin
     mktempdir() do directory
-        (;document, config) = external_pupil_owner_documents(directory)
+        (; document, config) = external_pupil_owner_documents(directory)
         authored = read(joinpath(directory, "simulation", "definition.yaml"))
         for version in (4, 6)
             simulation = deepcopy(document)
@@ -370,13 +639,20 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"
             @test C.read_json(config) == simulation
             for invalid in (true, false, 1, 0, "true", nothing, 1.0)
                 before = read(config)
-                @test_throws ArgumentError E.simulation_override!(directory,
-                    Dict("simulation" => Dict("sensor_buffer_properties" => invalid)))
+                @test_throws ArgumentError E.simulation_override!(
+                    directory,
+                    Dict("simulation" => Dict("sensor_buffer_properties" => invalid)),
+                )
                 @test read(config) == before
             end
             before = read(config)
-            @test_throws ArgumentError E.simulation_override!(directory,
-                Dict("simulation" => Dict("sensor_buffer_properties" => true, "plant" => Dict())))
+            @test_throws ArgumentError E.simulation_override!(
+                directory,
+                Dict(
+                    "simulation" =>
+                        Dict("sensor_buffer_properties" => true, "plant" => Dict()),
+                ),
+            )
             @test read(config) == before
         end
         for version in (1, 2, 3, 5, 7, 6.0, nothing)
@@ -384,8 +660,10 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "external_pupil_owner_documents.jl"
             C.write_json(config, simulation)
             before = read(config)
             for enabled in (true, false)
-                @test_throws ArgumentError E.simulation_override!(directory,
-                    Dict("simulation" => Dict("sensor_buffer_properties" => enabled)))
+                @test_throws ArgumentError E.simulation_override!(
+                    directory,
+                    Dict("simulation" => Dict("sensor_buffer_properties" => enabled)),
+                )
                 @test read(config) == before
             end
         end
@@ -397,39 +675,94 @@ end
     bindings = E.profile_bindings(export_profile(), "julia")
     mktempdir() do directory
         mkpath(joinpath(directory, "rtc"))
-        C.write_json(joinpath(directory, "rtc", "core.conf"), Dict("context.modules" =>
-            [Dict("name" => "libpipewire-module-queue", "args" => Dict(
-                "node.name" => "test-data-queue", "queue.storage" => "copy",
-                "queue.overflow" => "drop-oldest")),
-             Dict("name" => "libpipewire-module-queue", "args" => Dict(
-                "node.name" => "retained-data-queue", "queue.storage" => "lease",
-                "queue.overflow" => "backpressure", "playback.props" => Dict(
-                    "queue.storage" => "copy", "queue.overflow" => "drop-oldest"))),
-             Dict("name" => "libpipewire-module-queue", "args" => Dict(
-                "node.name" => "explicit-data-queue", "queue.storage" => "copy",
-                "queue.overflow" => "drop-oldest", "playback.props" => Dict(
-                    "queue.storage" => "copy", "queue.overflow" => "drop-oldest",
-                    "node.group" => "explicit-clock"))),
-             Dict("name" => "libpipewire-module-queue", "args" => Dict(
-                "node.name" => "mixed-data-queue", "queue.storage" => "copy",
-                "queue.overflow" => "drop-oldest", "playback.props" => Dict(
-                    "queue.overflow" => "backpressure")))]))
-        spec=Dict("core"=>"shared-runtime/core.conf.in","client"=>Dict("rtc"=>"shared-runtime/client-rtc.conf.in"))
-        process(cpus)=Dict("rt-priority"=>0,"data-loops"=>cpus)
-        profile=Dict("scheduling"=>Dict("processes"=>Dict("core"=>process(Dict("rtc-data-loop"=>[2],"telemetry-loop"=>[3])),
-            "rtc"=>process(Dict("rtc-data-loop"=>[2])))))
+        C.write_json(
+            joinpath(directory, "rtc", "core.conf"),
+            Dict(
+                "context.modules" => [
+                    Dict(
+                        "name" => "libpipewire-module-queue",
+                        "args" => Dict(
+                            "node.name" => "test-data-queue",
+                            "queue.storage" => "copy",
+                            "queue.overflow" => "drop-oldest",
+                        ),
+                    ),
+                    Dict(
+                        "name" => "libpipewire-module-queue",
+                        "args" => Dict(
+                            "node.name" => "retained-data-queue",
+                            "queue.storage" => "lease",
+                            "queue.overflow" => "backpressure",
+                            "playback.props" => Dict(
+                                "queue.storage" => "copy",
+                                "queue.overflow" => "drop-oldest",
+                            ),
+                        ),
+                    ),
+                    Dict(
+                        "name" => "libpipewire-module-queue",
+                        "args" => Dict(
+                            "node.name" => "explicit-data-queue",
+                            "queue.storage" => "copy",
+                            "queue.overflow" => "drop-oldest",
+                            "playback.props" => Dict(
+                                "queue.storage" => "copy",
+                                "queue.overflow" => "drop-oldest",
+                                "node.group" => "explicit-clock",
+                            ),
+                        ),
+                    ),
+                    Dict(
+                        "name" => "libpipewire-module-queue",
+                        "args" => Dict(
+                            "node.name" => "mixed-data-queue",
+                            "queue.storage" => "copy",
+                            "queue.overflow" => "drop-oldest",
+                            "playback.props" =>
+                                Dict("queue.overflow" => "backpressure"),
+                        ),
+                    ),
+                ],
+            ),
+        )
+        spec=Dict(
+            "core"=>"shared-runtime/core.conf.in",
+            "client"=>Dict("rtc"=>"shared-runtime/client-rtc.conf.in"),
+        )
+        process(cpus) = Dict("rt-priority"=>0, "data-loops"=>cpus)
+        profile=Dict(
+            "scheduling"=>Dict(
+                "processes"=>Dict(
+                    "core"=>process(Dict("rtc-data-loop"=>[2], "telemetry-loop"=>[3])),
+                    "rtc"=>process(Dict("rtc-data-loop"=>[2])),
+                ),
+            ),
+        )
         E.render_templates!(directory, spec, profile, prefix)
         core = D.decode(joinpath(directory, "shared-runtime", "core.conf.in"), prefix)
-        @test count(module_ -> module_["name"] == "libpipewire-module-queue", core["context.modules"]) == 4
+        @test count(
+            module_ -> module_["name"] == "libpipewire-module-queue",
+            core["context.modules"],
+        ) == 4
         @test length(core["context.objects"]) == 4
-        queues = Dict(module_["args"]["node.name"] => module_["args"] for module_ in core["context.modules"]
-            if module_["name"] == "libpipewire-module-queue")
+        queues = Dict(
+            module_["args"]["node.name"] => module_["args"] for
+            module_ in core["context.modules"] if
+            module_["name"] == "libpipewire-module-queue"
+        )
         @test !haskey(queues["retained-data-queue"]["playback.props"], "node.group")
-        @test queues["mixed-data-queue"]["playback.props"]["node.group"] == "pipewireao-telemetry"
-        @test queues["explicit-data-queue"]["playback.props"]["node.group"] == "explicit-clock"
+        @test queues["mixed-data-queue"]["playback.props"]["node.group"] ==
+              "pipewireao-telemetry"
+        @test queues["explicit-data-queue"]["playback.props"]["node.group"] ==
+              "explicit-clock"
         queue = Dict("args" => queues["test-data-queue"])
         group = queue["args"]["playback.props"]["node.group"]
-        driver = only(filter(object -> object["args"]["node.group"] == group, core["context.objects"]))
+        driver = only(
+            filter(
+                object -> object["args"]["node.group"] == group,
+                core["context.objects"],
+            ),
+        )
         @test driver["args"]["factory.name"] == "support.node.driver"
         @test driver["args"]["node.loop.name"] == "telemetry-loop"
         @test !haskey(queue["args"], "capture.props")
@@ -439,9 +772,14 @@ end
         custom["args"]["node.group"] = "explicit-clock"
         push!(core["context.objects"], custom)
         @test E.validate_telemetry_groups(core) === nothing
-        added = Dict("name" => "libpipewire-module-queue", "args" => Dict{String,Any}(
-            "node.name" => "mode-data-queue", "queue.storage" => "copy",
-            "queue.overflow" => "drop-oldest"))
+        added = Dict(
+            "name" => "libpipewire-module-queue",
+            "args" => Dict{String,Any}(
+                "node.name" => "mode-data-queue",
+                "queue.storage" => "copy",
+                "queue.overflow" => "drop-oldest",
+            ),
+        )
         push!(core["context.modules"], added)
         E.telemetry_queues!(core)
         @test added["args"]["playback.props"]["node.group"] == group
@@ -458,8 +796,11 @@ end
     for mutate in (
         value -> delete!(value["placement"]["core"], "rt-priority"),
         value -> (value["placement"]["core"]["locked-bytes"] = -1),
-        value -> (value["placement"]["core"]["threads"] = [Dict(
-            "cpus" => [4], "policy" => "other", "priority" => 0, "count" => 1)]),
+        value -> (
+            value["placement"]["core"]["threads"] = [
+                Dict("cpus" => [4], "policy" => "other", "priority" => 0, "count" => 1),
+            ]
+        ),
     )
         invalid = deepcopy(profile)
         mutate(invalid)
@@ -469,27 +810,50 @@ end
 end
 
 @testset "generic application mode composition" begin
-    shared = Dict{String,Any}("owners"=>[Dict("role"=>"controller")],
-        "node-owners"=>Dict("controller"=>"controller"),"rate"=>"500/1")
-    fragment = Dict("owners"=>[Dict("role"=>"camera")],
-        "node-owners"=>Dict("@CAMERA_NODE@"=>"camera"))
-    merged = E.merge_configuration(shared,fragment)
+    shared = Dict{String,Any}(
+        "owners"=>[Dict("role"=>"controller")],
+        "node-owners"=>Dict("controller"=>"controller"),
+        "rate"=>"500/1",
+    )
+    fragment = Dict(
+        "owners"=>[Dict("role"=>"camera")],
+        "node-owners"=>Dict("@CAMERA_NODE@"=>"camera"),
+    )
+    merged = E.merge_configuration(shared, fragment)
     @test length(merged["owners"]) == 2
     @test length(shared["owners"]) == 1
     @test merged["rate"] == "500/1"
-    bound = E.substitute(merged,Dict("CAMERA_NODE"=>"arbitrary-instrument-camera"))
+    bound = E.substitute(merged, Dict("CAMERA_NODE"=>"arbitrary-instrument-camera"))
     @test bound["node-owners"]["arbitrary-instrument-camera"] == "camera"
-    @test_throws ArgumentError E.substitute(Dict("@NODE@"=>1,"camera"=>2),Dict("NODE"=>"camera"))
+    @test_throws ArgumentError E.substitute(
+        Dict("@NODE@"=>1, "camera"=>2),
+        Dict("NODE"=>"camera"),
+    )
     mktempdir() do directory
-        mkpath(joinpath(directory,"rtc"))
-        mode = Dict("application"=>Dict(),"requires"=>["devices","calibration"])
-        C.write_yaml(joinpath(directory,"rtc/modes.yaml"),Dict("default"=>"synthetic", "modes"=>Dict("synthetic"=>mode)))
-        @test_throws ArgumentError E.selected_mode(directory,Dict())
-        @test_throws ArgumentError E.selected_mode(directory,Dict("mode"=>"unknown"))
-        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[],"calibration"=>Dict()))
-        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>nothing))
-        @test_throws ArgumentError E.selected_mode(directory,Dict("devices"=>nothing,"calibration"=>Dict()))
-        @test E.selected_mode(directory,Dict("devices"=>[Dict("role"=>"camera")],"calibration"=>Dict())) == mode
+        mkpath(joinpath(directory, "rtc"))
+        mode = Dict("application"=>Dict(), "requires"=>["devices", "calibration"])
+        C.write_yaml(
+            joinpath(directory, "rtc/modes.yaml"),
+            Dict("default"=>"synthetic", "modes"=>Dict("synthetic"=>mode)),
+        )
+        @test_throws ArgumentError E.selected_mode(directory, Dict())
+        @test_throws ArgumentError E.selected_mode(directory, Dict("mode"=>"unknown"))
+        @test_throws ArgumentError E.selected_mode(
+            directory,
+            Dict("devices"=>[], "calibration"=>Dict()),
+        )
+        @test_throws ArgumentError E.selected_mode(
+            directory,
+            Dict("devices"=>[Dict("role"=>"camera")], "calibration"=>nothing),
+        )
+        @test_throws ArgumentError E.selected_mode(
+            directory,
+            Dict("devices"=>nothing, "calibration"=>Dict()),
+        )
+        @test E.selected_mode(
+            directory,
+            Dict("devices"=>[Dict("role"=>"camera")], "calibration"=>Dict()),
+        ) == mode
     end
 end
 
@@ -497,7 +861,8 @@ end
     mktempdir() do directory
         path = joinpath(directory, "Project.toml")
         source = "[deps]\nJSON = \"682c06a0-de6a-54ab-a142-c8b1cf79cde6\"\n[weakdeps]\nCUDA = \"052768ef-5323-5732-b1bb-66c8b64840ba\"\nAMDGPU = \"21141c5a-9bdb-4563-92ae-f87d6854732e\"\n[compat]\nCUDA = \"=6.4.2\"\nAMDGPU = \"=2.8.0\"\n"
-        for (backend, selected) in (("cpu", nothing), ("cuda", "CUDA"), ("amdgpu", "AMDGPU"))
+        for (backend, selected) in
+            (("cpu", nothing), ("cuda", "CUDA"), ("amdgpu", "AMDGPU"))
             write(path, source)
             E.prepare_backend_environment!(directory, backend)
             project = TOML.parsefile(path)
@@ -505,90 +870,159 @@ end
             @test haskey(project["deps"], "AMDGPU") == (selected == "AMDGPU")
             @test project["compat"] == Dict("CUDA" => "=6.4.2", "AMDGPU" => "=2.8.0")
             selected === nothing ? (@test read(path, String) == source) :
-                (@test startswith(read(path, String), "# Generated"))
+            (@test startswith(read(path, String), "# Generated"))
         end
     end
 end
 
 @testset "explicit runtime backend requires declared package metadata" begin
     mktempdir() do directory
-        source=joinpath(directory,"source");mkpath(source)
-        project=Dict("deps"=>Dict("JSON"=>"682c06a0-de6a-54ab-a142-c8b1cf79cde6"),
+        source=joinpath(directory, "source")
+        mkpath(source)
+        project=Dict(
+            "deps"=>Dict("JSON"=>"682c06a0-de6a-54ab-a142-c8b1cf79cde6"),
             "weakdeps"=>Dict("AMDGPU"=>"21141c5a-9bdb-4563-92ae-f87d6854732e"),
-            "compat"=>Dict("AMDGPU"=>"=2.9.2"))
-        path=joinpath(source,"Project.toml")
-        open(io->TOML.print(io,project),path,"w")
-        C.write_json(joinpath(source,"simulation.conf"),Dict("backend"=>"cpu","device"=>0,"pacing_rate_hz"=>1,"rate"=>2000))
-        original=Dict(name=>read(joinpath(source,name)) for name in ("Project.toml","simulation.conf"))
-        application=E.copy_source(source,joinpath(directory,"application"))
-        E.prepare_backend_environment!(application,"amdgpu";required=true)
-        generated=TOML.parsefile(joinpath(application,"Project.toml"))
+            "compat"=>Dict("AMDGPU"=>"=2.9.2"),
+        )
+        path=joinpath(source, "Project.toml")
+        open(io->TOML.print(io, project), path, "w")
+        C.write_json(
+            joinpath(source, "simulation.conf"),
+            Dict("backend"=>"cpu", "device"=>0, "pacing_rate_hz"=>1, "rate"=>2000),
+        )
+        original=Dict(
+            name=>read(joinpath(source, name)) for
+            name in ("Project.toml", "simulation.conf")
+        )
+        application=E.copy_source(source, joinpath(directory, "application"))
+        E.prepare_backend_environment!(application, "amdgpu"; required = true)
+        generated=TOML.parsefile(joinpath(application, "Project.toml"))
         @test generated["deps"]["AMDGPU"]==project["weakdeps"]["AMDGPU"]
         @test generated["compat"]["AMDGPU"]=="=2.9.2"
-        @test startswith(read(joinpath(application,"Project.toml"),String),"# Generated")
-        @test C.read_json(joinpath(application,"simulation.conf"))["backend"]=="cpu"
-        @test all(read(joinpath(source,name))==bytes for (name,bytes) in original)
-        before=read(joinpath(application,"Project.toml"))
-        E.prepare_backend_environment!(application,"amdgpu";required=true) # Already direct.
-        @test read(joinpath(application,"Project.toml"))==before
-        for invalid in (Dict("deps"=>Dict()),
-                merge(project,Dict("weakdeps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba"))),
-                merge(project,Dict("deps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba"))),
-                merge(project,Dict("compat"=>Dict())),merge(project,Dict("compat"=>Dict("AMDGPU"=>""))))
-            open(io->TOML.print(io,invalid),joinpath(application,"Project.toml"),"w")
-            before=read(joinpath(application,"Project.toml"))
-            @test_throws ArgumentError E.prepare_backend_environment!(application,"amdgpu";required=true)
-            @test read(joinpath(application,"Project.toml"))==before
+        @test startswith(read(joinpath(application, "Project.toml"), String), "# Generated")
+        @test C.read_json(joinpath(application, "simulation.conf"))["backend"]=="cpu"
+        @test all(read(joinpath(source, name))==bytes for (name, bytes) in original)
+        before=read(joinpath(application, "Project.toml"))
+        E.prepare_backend_environment!(application, "amdgpu"; required = true) # Already direct.
+        @test read(joinpath(application, "Project.toml"))==before
+        for invalid in (
+            Dict("deps"=>Dict()),
+            merge(
+                project,
+                Dict("weakdeps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba")),
+            ),
+            merge(
+                project,
+                Dict("deps"=>Dict("AMDGPU"=>"052768ef-5323-5732-b1bb-66c8b64840ba")),
+            ),
+            merge(project, Dict("compat"=>Dict())),
+            merge(project, Dict("compat"=>Dict("AMDGPU"=>""))),
+        )
+            open(io->TOML.print(io, invalid), joinpath(application, "Project.toml"), "w")
+            before=read(joinpath(application, "Project.toml"))
+            @test_throws ArgumentError E.prepare_backend_environment!(
+                application,
+                "amdgpu";
+                required = true,
+            )
+            @test read(joinpath(application, "Project.toml"))==before
         end
-        @test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+        @test !any(id->id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
     end
 end
 
 @testset "prepared graph defaults retain port identity and external schemas" begin
-    contract=Dict("shape"=>[3],"element-type"=>"F32_LE","schema"=>"test.parameter/1")
-    contracts=Dict("science"=>Dict("parameters"=>Dict("bias"=>contract),
-        "inputs"=>Dict("raw"=>merge(contract,Dict("schema"=>"test.raw/1"))),
-        "outputs"=>Dict("result"=>merge(contract,Dict("schema"=>"test.result/1")))))
-    ports=[Dict{String,Any}("name"=>"bias","direction"=>"output","parameter"=>true),
-        Dict{String,Any}("name"=>"raw","direction"=>"input"),
-        Dict{String,Any}("name"=>"result","direction"=>"output")]
-    external=Dict("node.name"=>"external","ports"=>[Dict("schema"=>"test.physical/1")])
-    session=Dict("graphs"=>[Dict("node.name"=>"science","ports"=>ports),external])
-    E.validate_session_graph_contracts(session,contracts)
-    @test ports[1]==merge(Dict("name"=>"bias","direction"=>"output","parameter"=>true),contract)
+    contract=Dict("shape"=>[3], "element-type"=>"F32_LE", "schema"=>"test.parameter/1")
+    contracts=Dict(
+        "science"=>Dict(
+            "parameters"=>Dict("bias"=>contract),
+            "inputs"=>Dict("raw"=>merge(contract, Dict("schema"=>"test.raw/1"))),
+            "outputs"=>Dict("result"=>merge(contract, Dict("schema"=>"test.result/1"))),
+        ),
+    )
+    ports=[
+        Dict{String,Any}("name"=>"bias", "direction"=>"output", "parameter"=>true),
+        Dict{String,Any}("name"=>"raw", "direction"=>"input"),
+        Dict{String,Any}("name"=>"result", "direction"=>"output"),
+    ]
+    external=Dict("node.name"=>"external", "ports"=>[Dict("schema"=>"test.physical/1")])
+    session=Dict("graphs"=>[Dict("node.name"=>"science", "ports"=>ports), external])
+    E.validate_session_graph_contracts(session, contracts)
+    @test ports[1]==merge(
+        Dict("name"=>"bias", "direction"=>"output", "parameter"=>true),
+        contract,
+    )
     @test ports[2]["schema"]=="test.raw/1"
     @test ports[3]["schema"]=="test.result/1"
-    @test external==Dict("node.name"=>"external","ports"=>[Dict("schema"=>"test.physical/1")])
-    for (field,value) in (("shape",nothing),("element-type","U16_LE"),("schema","test.other/1"))
+    @test external==Dict(
+        "node.name"=>"external",
+        "ports"=>[Dict("schema"=>"test.physical/1")],
+    )
+    for (field, value) in
+        (("shape", nothing), ("element-type", "U16_LE"), ("schema", "test.other/1"))
         invalid=deepcopy(session)
         invalid["graphs"][1]["ports"][1][field]=value
-        @test_throws ArgumentError E.validate_session_graph_contracts(invalid,contracts)
+        @test_throws ArgumentError E.validate_session_graph_contracts(invalid, contracts)
     end
 end
 
 @testset "declared GUI session labels default to the deployment name" begin
     mktempdir() do application
-        C.write_json(joinpath(application,"session.conf"),Dict("sources"=>[]))
-        C.write_json(joinpath(application,"core.conf"),Dict())
-        path=joinpath(application,"gui/views.yaml")
-        gui=Dict{String,Any}("schema_version"=>11,"view"=>[],
-            "session"=>Dict{String,Any}("instrument"=>"science","graphs"=>[]))
-        spec=Dict("name"=>"science-application","session"=>"session.conf","core"=>"core.conf")
-        configuration=[Dict("path"=>"gui/views.yaml","format"=>"yaml")]
-        C.write_yaml(path,gui)
-        E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+        C.write_json(joinpath(application, "session.conf"), Dict("sources"=>[]))
+        C.write_json(joinpath(application, "core.conf"), Dict())
+        path=joinpath(application, "gui/views.yaml")
+        gui=Dict{String,Any}(
+            "schema_version"=>11,
+            "view"=>[],
+            "session"=>Dict{String,Any}("instrument"=>"science", "graphs"=>[]),
+        )
+        spec=Dict(
+            "name"=>"science-application",
+            "session"=>"session.conf",
+            "core"=>"core.conf",
+        )
+        configuration=[Dict("path"=>"gui/views.yaml", "format"=>"yaml")]
+        C.write_yaml(path, gui)
+        E.prepare_session_configuration!(
+            application,
+            spec,
+            [],
+            "absent.json",
+            "/opt/pipewireao";
+            configurations = configuration,
+        )
         resolved=C.read_yaml(path)
-        @test resolved==merge(gui,Dict("session"=>merge(gui["session"],Dict("label"=>spec["name"]))))
-        for label in (spec["name"],"external-application")
-            explicit=deepcopy(gui);explicit["session"]["label"]=label
-            C.write_yaml(path,explicit)
-            E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+        @test resolved==merge(
+            gui,
+            Dict("session"=>merge(gui["session"], Dict("label"=>spec["name"]))),
+        )
+        for label in (spec["name"], "external-application")
+            explicit=deepcopy(gui)
+            explicit["session"]["label"]=label
+            C.write_yaml(path, explicit)
+            E.prepare_session_configuration!(
+                application,
+                spec,
+                [],
+                "absent.json",
+                "/opt/pipewireao";
+                configurations = configuration,
+            )
             @test C.read_yaml(path)==explicit
         end
-        for label in (nothing,"",7)
-            invalid=deepcopy(gui);invalid["session"]["label"]=label
-            C.write_yaml(path,invalid);before=read(path)
-            @test_throws ArgumentError E.prepare_session_configuration!(application,spec,[],"absent.json","/opt/pipewireao";configurations=configuration)
+        for label in (nothing, "", 7)
+            invalid=deepcopy(gui)
+            invalid["session"]["label"]=label
+            C.write_yaml(path, invalid)
+            before=read(path)
+            @test_throws ArgumentError E.prepare_session_configuration!(
+                application,
+                spec,
+                [],
+                "absent.json",
+                "/opt/pipewireao";
+                configurations = configuration,
+            )
             @test read(path)==before
         end
     end

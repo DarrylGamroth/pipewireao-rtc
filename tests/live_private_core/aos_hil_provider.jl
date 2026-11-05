@@ -5,25 +5,19 @@ using LinearAlgebra
 using PipeWireAO
 using Printf
 
-length(ARGS) == 4 || error(
-    "expected CORE_NAME CONTROL_DIRECTORY GRAPH_CONFIGURATION FGN_BUNDLE",
-)
+length(ARGS) == 4 ||
+    error("expected CORE_NAME CONTROL_DIRECTORY GRAPH_CONFIGURATION FGN_BUNDLE")
 core_name, control_directory, graph_configuration, fgn_bundle = ARGS
 phase_1_request = joinpath(control_directory, "aos-hil-phase-1")
 phase_2_request = joinpath(control_directory, "aos-hil-phase-2")
 atmosphere_request = joinpath(control_directory, "aos-hil-atmosphere")
-atmosphere_phase_1_request =
-    joinpath(control_directory, "aos-hil-atmosphere-phase-1")
-atmosphere_phase_2_request =
-    joinpath(control_directory, "aos-hil-atmosphere-phase-2")
+atmosphere_phase_1_request = joinpath(control_directory, "aos-hil-atmosphere-phase-1")
+atmosphere_phase_2_request = joinpath(control_directory, "aos-hil-atmosphere-phase-2")
 stop_file = joinpath(control_directory, "stop-aos-hil")
 
-include(joinpath(
-    pkgdir(AdaptiveOpticsSim),
-    "examples",
-    "support",
-    "hil_reference_systems.jl",
-))
+include(
+    joinpath(pkgdir(AdaptiveOpticsSim), "examples", "support", "hil_reference_systems.jl"),
+)
 using .HILReferenceSystems
 
 function fgn_slopes(frame)
@@ -33,35 +27,31 @@ function fgn_slopes(frame)
         x_moment = 0.0f0
         y_moment = 0.0f0
         flux = 0.0f0
-        for row in 0:7, column in 0:7
+        for row = 0:7, column = 0:7
             # The HIL adapter stages the logical Julia array into row-major
             # transport order before publication. This indexing reproduces
             # the FGN view of that staged frame.
-            value = frame[row_origin + row + 1, column_origin + column + 1]
+            value = frame[row_origin+row+1, column_origin+column+1]
             x_moment += value * Float32(column - 3.5)
             y_moment += value * Float32(row - 3.5)
             flux += value
         end
-        isfinite(flux) && flux > 0.0f0 || error(
-            "FGN calibration subaperture $subaperture has invalid flux $flux",
-        )
-        slopes[2 * subaperture - 1] = x_moment / flux
-        slopes[2 * subaperture] = y_moment / flux
+        isfinite(flux) && flux > 0.0f0 ||
+            error("FGN calibration subaperture $subaperture has invalid flux $flux")
+        slopes[2*subaperture-1] = x_moment / flux
+        slopes[2*subaperture] = y_moment / flux
     end
     return slopes
 end
 
-function calibrate_reference!(prepared; poke=2.0f-8)
+function calibrate_reference!(prepared; poke = 2.0f-8)
     graph = prepared.graph
     boundary = prepared.boundary
     sequence = step_hil_frame!(boundary)
     aos_flat_signal = copy(graph_output(graph, Val(:wfs_signal)))
     flat_signal = fgn_slopes(hil_frame_buffer(boundary))
-    interaction_matrix = Matrix{Float32}(
-        undef,
-        length(flat_signal),
-        HILReferenceSystems.actuator_count(),
-    )
+    interaction_matrix =
+        Matrix{Float32}(undef, length(flat_signal), HILReferenceSystems.actuator_count())
     positive_signal = similar(flat_signal)
 
     for command_index in axes(interaction_matrix, 2)
@@ -108,10 +98,8 @@ function subaperture_origins()
 end
 
 function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
-    origins = join(
-        ("[ $(origin[1]) $(origin[2]) ]" for origin in subaperture_origins()),
-        " ",
-    )
+    origins =
+        join(("[ $(origin[1]) $(origin[2]) ]" for origin in subaperture_origins()), " ")
     row_major_reconstructor = [
         reconstructor[row, column] for row in axes(reconstructor, 1) for
         column in axes(reconstructor, 2)
@@ -183,19 +171,10 @@ function write_fgn_graph(path, plugin, remote, reference_slopes, reconstructor)
     write(path, configuration)
 end
 
-prepared_reference = HILReferenceSystems.prepare_hil_reference_system(
-    :shack_hartmann,
-)
-aos_flat_signal, flat_signal, interaction_matrix =
-    calibrate_reference!(prepared_reference)
-control_matrix = pinv(interaction_matrix; rtol=1.0f-4)
-write_fgn_graph(
-    graph_configuration,
-    fgn_bundle,
-    core_name,
-    flat_signal,
-    control_matrix,
-)
+prepared_reference = HILReferenceSystems.prepare_hil_reference_system(:shack_hartmann)
+aos_flat_signal, flat_signal, interaction_matrix = calibrate_reference!(prepared_reference)
+control_matrix = pinv(interaction_matrix; rtol = 1.0f-4)
+write_fgn_graph(graph_configuration, fgn_bundle, core_name, flat_signal, control_matrix)
 
 disturbance_command = zeros(Float32, HILReferenceSystems.actuator_count())
 disturbance_command[8] = 3.0f-8
@@ -207,41 +186,33 @@ sequence = step_hil_frame!(prepared_reference.boundary)
 copyto!(hil_command_buffer(prepared_reference.boundary), disturbance_command)
 adopt_hil_command!(prepared_reference.boundary, sequence)
 sequence = step_hil_frame!(prepared_reference.boundary)
-disturbance_opd = copy(graph_output(
-    prepared_reference.graph,
-    Val(:dm_surface_opd),
-))
+disturbance_opd = copy(graph_output(prepared_reference.graph, Val(:dm_surface_opd)))
 fill!(hil_command_buffer(prepared_reference.boundary), 0.0f0)
 adopt_hil_command!(prepared_reference.boundary, sequence)
 reset_hil_boundary!(prepared_reference.boundary)
 copyto!(prepared_reference.uncompensated_opd, disturbance_opd)
 sequence = step_hil_frame!(prepared_reference.boundary)
-direct_reconstruction = control_matrix *
+direct_reconstruction =
+    control_matrix *
     (fgn_slopes(hil_frame_buffer(prepared_reference.boundary)) - flat_signal)
-isapprox(
-    direct_reconstruction,
-    disturbance_command;
-    rtol=5.0f-3,
-    atol=5.0f-11,
-) || error("prepared FGN calibration does not reconstruct the disturbance")
+isapprox(direct_reconstruction, disturbance_command; rtol = 5.0f-3, atol = 5.0f-11) ||
+    error("prepared FGN calibration does not reconstruct the disturbance")
 fill!(hil_command_buffer(prepared_reference.boundary), 0.0f0)
 adopt_hil_command!(prepared_reference.boundary, sequence)
 reset_hil_boundary!(prepared_reference.boundary)
 
 configuration = PipeWireHILConfiguration(
-    remote=core_name,
-    frame_node_name="pipewireao-aos-hil-wfs",
-    command_node_name="pipewireao-aos-hil-command",
-    frame_schema="org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
-    command_schema="org.adaptiveopticssim.hil-reference.dm-command-surface-opd-m.f32/1",
-    rate=SPA.Fraction(1_000, 1),
-    exposure_duration_ns=1_000_000,
+    remote = core_name,
+    frame_node_name = "pipewireao-aos-hil-wfs",
+    command_node_name = "pipewireao-aos-hil-command",
+    frame_schema = "org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
+    command_schema = "org.adaptiveopticssim.hil-reference.dm-command-surface-opd-m.f32/1",
+    rate = SPA.Fraction(1_000, 1),
+    exposure_duration_ns = 1_000_000,
 )
 
 pipewire_hil = prepare_pipewire_hil(prepared_reference.boundary, configuration)
-causality_reference = HILReferenceSystems.prepare_hil_reference_system(
-    :shack_hartmann,
-)
+causality_reference = HILReferenceSystems.prepare_hil_reference_system(:shack_hartmann)
 causality_sequence = Ref(step_hil_frame!(causality_reference.boundary))
 residual_norms = Float32[]
 fgn_residual_norms = Float32[]
@@ -249,40 +220,23 @@ fgn_residual_norms = Float32[]
 function exchange_range!(pipewire_hil, sequences)
     for expected_sequence in sequences
         completed_sequence = exchange_frame!(pipewire_hil)
-        completed_sequence == expected_sequence || error(
-            "expected SCAO sequence $expected_sequence, received $completed_sequence",
-        )
+        completed_sequence == expected_sequence ||
+            error("expected SCAO sequence $expected_sequence, received $completed_sequence")
         causality_sequence[] == expected_sequence || error(
             "causality oracle expected sequence $(causality_sequence[]), received $expected_sequence",
         )
-        dm_surface_opd = graph_output(
-            prepared_reference.graph,
-            Val(:dm_surface_opd),
-        )
-        oracle_surface_opd = graph_output(
-            causality_reference.graph,
-            Val(:dm_surface_opd),
-        )
-        isapprox(
-            dm_surface_opd,
-            oracle_surface_opd;
-            rtol=1.0f-6,
-            atol=1.0f-15,
-        ) || error(
-            "command/frame causality mismatch at frame $expected_sequence",
-        )
+        dm_surface_opd = graph_output(prepared_reference.graph, Val(:dm_surface_opd))
+        oracle_surface_opd = graph_output(causality_reference.graph, Val(:dm_surface_opd))
+        isapprox(dm_surface_opd, oracle_surface_opd; rtol = 1.0f-6, atol = 1.0f-15) ||
+            error("command/frame causality mismatch at frame $expected_sequence")
         command = hil_command_buffer(prepared_reference.boundary)
         if expected_sequence == UInt64(1)
-            all(iszero, dm_surface_opd) || error(
-                "command 1 affected frame 1 instead of frame 2",
-            )
-            norm(command) > 0.0f0 || error(
-                "command 1 is zero and cannot prove next-frame causality",
-            )
+            all(iszero, dm_surface_opd) ||
+                error("command 1 affected frame 1 instead of frame 2")
+            norm(command) > 0.0f0 ||
+                error("command 1 is zero and cannot prove next-frame causality")
         elseif expected_sequence == UInt64(2)
-            norm(dm_surface_opd) > 0.0f0 || error(
-                "command 1 did not affect frame 2",
-            )
+            norm(dm_surface_opd) > 0.0f0 || error("command 1 did not affect frame 2")
             println("AOS_HIL_CAUSALITY_DONE command_sequence=1 frame_sequence=2")
             flush(stdout)
         end
@@ -291,14 +245,10 @@ function exchange_range!(pipewire_hil, sequences)
         if expected_sequence < UInt64(15)
             causality_sequence[] = step_hil_frame!(causality_reference.boundary)
         end
-        residual_signal = graph_output(
-            prepared_reference.graph,
-            Val(:wfs_signal),
-        )
+        residual_signal = graph_output(prepared_reference.graph, Val(:wfs_signal))
         push!(residual_norms, norm(residual_signal - aos_flat_signal))
-        fgn_residual = fgn_slopes(
-            hil_frame_buffer(prepared_reference.boundary),
-        ) - flat_signal
+        fgn_residual =
+            fgn_slopes(hil_frame_buffer(prepared_reference.boundary)) - flat_signal
         push!(fgn_residual_norms, norm(fgn_residual))
     end
 end
@@ -317,12 +267,10 @@ try
             phase_1_done[] = true
         elseif phase_1_done[] && !phase_2_done[] && isfile(phase_2_request)
             exchange_range!(pipewire_hil, UInt64(8):UInt64(15))
-            all(isfinite, residual_norms) || error(
-                "SCAO residual history contains a non-finite value",
-            )
-            all(isfinite, fgn_residual_norms) || error(
-                "FGN residual history contains a non-finite value",
-            )
+            all(isfinite, residual_norms) ||
+                error("SCAO residual history contains a non-finite value")
+            all(isfinite, fgn_residual_norms) ||
+                error("FGN residual history contains a non-finite value")
             last(residual_norms) < first(residual_norms) * 1.0f-2 || error(
                 "SCAO residual did not converge: $(first(residual_norms)) -> $(last(residual_norms))",
             )
@@ -330,12 +278,8 @@ try
                 "FGN residual did not converge: $(first(fgn_residual_norms)) -> $(last(fgn_residual_norms))",
             )
             command = hil_command_buffer(prepared_reference.boundary)
-            isapprox(
-                command,
-                -disturbance_command;
-                rtol=5.0f-2,
-                atol=5.0f-10,
-            ) || error("SCAO command does not cancel the declared disturbance")
+            isapprox(command, -disturbance_command; rtol = 5.0f-2, atol = 5.0f-10) ||
+                error("SCAO command does not cancel the declared disturbance")
             @printf(
                 "AOS_HIL_CLOSED_LOOP_DONE sequence=15 residual_ratio=%.9g\n",
                 last(residual_norms) / first(residual_norms),
@@ -373,9 +317,8 @@ function require_close(field, sequence, actual, expected; rtol, atol)
 end
 
 function pupil_opd_rms(opd, support)
-    axes(opd) == axes(support) || error(
-        "pupil_opd and pupil_support must have identical axes",
-    )
+    axes(opd) == axes(support) ||
+        error("pupil_opd and pupil_support must have identical axes")
     sample_count = 0
     mean_opd = 0.0
     sum_squared_difference = 0.0
@@ -395,28 +338,26 @@ function mean_from(values, first_index)
     return sum(@view values[first_index:end]) / (length(values) - first_index + 1)
 end
 
-atmospheric_reference =
-    HILReferenceSystems.prepare_atmospheric_hil_reference_system(
-        :shack_hartmann;
-        atmosphere_step=1.0e-3,
-        rng_seed=1,
-    )
-atmospheric_oracle =
-    HILReferenceSystems.prepare_atmospheric_hil_reference_system(
-        :shack_hartmann;
-        atmosphere_step=1.0e-3,
-        rng_seed=1,
-    )
+atmospheric_reference = HILReferenceSystems.prepare_atmospheric_hil_reference_system(
+    :shack_hartmann;
+    atmosphere_step = 1.0e-3,
+    rng_seed = 1,
+)
+atmospheric_oracle = HILReferenceSystems.prepare_atmospheric_hil_reference_system(
+    :shack_hartmann;
+    atmosphere_step = 1.0e-3,
+    rng_seed = 1,
+)
 science_diagnostics = prepare_hil_science_diagnostics()
 pupil_mask = HILReferenceSystems.pupil_support(science_diagnostics)
 atmospheric_configuration = PipeWireHILConfiguration(
-    remote=core_name,
-    frame_node_name="pipewireao-aos-hil-atmosphere-wfs",
-    command_node_name="pipewireao-aos-hil-atmosphere-command",
-    frame_schema="org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
-    command_schema="org.adaptiveopticssim.hil-reference.dm-command-surface-opd-m.f32/1",
-    rate=SPA.Fraction(1_000, 1),
-    exposure_duration_ns=1_000_000,
+    remote = core_name,
+    frame_node_name = "pipewireao-aos-hil-atmosphere-wfs",
+    command_node_name = "pipewireao-aos-hil-atmosphere-command",
+    frame_schema = "org.adaptiveopticssim.hil-reference.shack-hartmann-frame.f32/1",
+    command_schema = "org.adaptiveopticssim.hil-reference.dm-command-surface-opd-m.f32/1",
+    rate = SPA.Fraction(1_000, 1),
+    exposure_duration_ns = 1_000_000,
 )
 atmospheric_hil =
     prepare_pipewire_hil(atmospheric_reference.boundary, atmospheric_configuration)
@@ -445,8 +386,8 @@ function exchange_atmospheric_range!(pipewire_hil, sequences)
             expected_sequence,
             hil_frame_buffer(atmospheric_reference.boundary),
             hil_frame_buffer(atmospheric_oracle.boundary);
-            rtol=1.0f-6,
-            atol=1.0f-7,
+            rtol = 1.0f-6,
+            atol = 1.0f-7,
         )
         for field in (:atmosphere_opd, :dm_surface_opd, :pupil_opd)
             require_close(
@@ -454,8 +395,8 @@ function exchange_atmospheric_range!(pipewire_hil, sequences)
                 expected_sequence,
                 graph_output(graph, Val(field)),
                 graph_output(oracle_graph, Val(field));
-                rtol=1.0f-6,
-                atol=1.0f-15,
+                rtol = 1.0f-6,
+                atol = 1.0f-15,
             )
         end
 
@@ -469,33 +410,22 @@ function exchange_atmospheric_range!(pipewire_hil, sequences)
             expected_sequence,
             transported_command,
             direct_command;
-            rtol=2.0f-4,
-            atol=2.0f-11,
+            rtol = 2.0f-4,
+            atol = 2.0f-11,
         )
 
         atmosphere_opd = graph_output(graph, Val(:atmosphere_opd))
         pupil_opd = graph_output(graph, Val(:pupil_opd))
-        update_hil_science_diagnostics!(
-            science_diagnostics,
-            atmosphere_opd,
-            pupil_opd,
-        )
+        update_hil_science_diagnostics!(science_diagnostics, atmosphere_opd, pupil_opd)
         push!(open_loop_strehl, open_loop_on_axis_strehl(science_diagnostics))
         push!(closed_loop_strehl, closed_loop_on_axis_strehl(science_diagnostics))
         push!(uncompensated_opd_rms, pupil_opd_rms(atmosphere_opd, pupil_mask))
         push!(residual_opd_rms, pupil_opd_rms(pupil_opd, pupil_mask))
 
-        copyto!(
-            hil_command_buffer(atmospheric_oracle.boundary),
-            transported_command,
-        )
-        adopt_hil_command!(
-            atmospheric_oracle.boundary,
-            atmospheric_oracle_sequence[],
-        )
+        copyto!(hil_command_buffer(atmospheric_oracle.boundary), transported_command)
+        adopt_hil_command!(atmospheric_oracle.boundary, atmospheric_oracle_sequence[])
         if expected_sequence < UInt64(20)
-            atmospheric_oracle_sequence[] =
-                step_hil_frame!(atmospheric_oracle.boundary)
+            atmospheric_oracle_sequence[] = step_hil_frame!(atmospheric_oracle.boundary)
         end
     end
 end
@@ -512,25 +442,21 @@ try
             println("AOS_HIL_ATMOSPHERE_PHASE_1_DONE sequence=10")
             flush(stdout)
             phase_1_done[] = true
-        elseif phase_1_done[] && !phase_2_done[] &&
-                isfile(atmosphere_phase_2_request)
+        elseif phase_1_done[] && !phase_2_done[] && isfile(atmosphere_phase_2_request)
             exchange_atmospheric_range!(atmospheric_hil, UInt64(11):UInt64(20))
             first_steady_frame = 11
             mean_open_loop = mean_from(open_loop_strehl, first_steady_frame)
             mean_closed_loop = mean_from(closed_loop_strehl, first_steady_frame)
-            mean_uncompensated =
-                mean_from(uncompensated_opd_rms, first_steady_frame)
+            mean_uncompensated = mean_from(uncompensated_opd_rms, first_steady_frame)
             mean_residual = mean_from(residual_opd_rms, first_steady_frame)
             improvement = mean_closed_loop / mean_open_loop
-            all(isfinite, direct_command) || error(
-                "atmospheric correction_command contains a non-finite value",
-            )
+            all(isfinite, direct_command) ||
+                error("atmospheric correction_command contains a non-finite value")
             mean_closed_loop > 0.5 || error(
                 "atmospheric closed_loop_on_axis_strehl is $mean_closed_loop; expected > 0.5",
             )
-            improvement > 3.0 || error(
-                "atmospheric Strehl improvement is $improvement; expected > 3.0",
-            )
+            improvement > 3.0 ||
+                error("atmospheric Strehl improvement is $improvement; expected > 3.0")
             mean_residual < mean_uncompensated || error(
                 "atmospheric pupil_opd_rms did not improve: " *
                 "$mean_uncompensated -> $mean_residual",

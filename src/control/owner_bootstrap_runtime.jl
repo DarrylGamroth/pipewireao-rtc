@@ -18,12 +18,26 @@ const Client = ControlClient
 const Endpoint = ControlEndpoint
 const Codec = OwnerBootstrapCodec
 const Profile = Codec.Profile
-const Commands = Union{Codec.Command{:status}, Codec.Command{:connect}, Codec.Command{:quit}}
+const Commands = Union{Codec.Command{:status},Codec.Command{:connect},Codec.Command{:quit}}
 const POLL_SECONDS = 0.005
 
-export Runtime, validate_threads, preparation_check!, prepared!, take_connect!,
-    check_connect!, connecting!, connected!, await_connected!, cancelled,
-    cancel!, finishing!, fault!, finish!, clean_cancel, flush_terminal!, with_owner
+export Runtime,
+    validate_threads,
+    preparation_check!,
+    prepared!,
+    take_connect!,
+    check_connect!,
+    connecting!,
+    connected!,
+    await_connected!,
+    cancelled,
+    cancel!,
+    finishing!,
+    fault!,
+    finish!,
+    clean_cancel,
+    flush_terminal!,
+    with_owner
 
 mutable struct Transport{P<:Profile,C,E,L}
     profile::P
@@ -38,8 +52,13 @@ mutable struct Transport{P<:Profile,C,E,L}
 end
 
 """Publish Preparing before the existing owner prepares its science or plant."""
-function Transport(profile::P, remote::AbstractString, name::AbstractString,
-        instance::Int64; application_name::AbstractString=name) where {P<:Profile}
+function Transport(
+    profile::P,
+    remote::AbstractString,
+    name::AbstractString,
+    instance::Int64;
+    application_name::AbstractString = name,
+) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc-bootstrap")
     context = core = endpoint = registry_listener = nothing
@@ -49,47 +68,77 @@ function Transport(profile::P, remote::AbstractString, name::AbstractString,
     connection_failure = Ref{Union{Nothing,String}}(nothing)
     try
         with_thread_loop_lock(loop) do _
-            context = Context(loop; properties=Dict("application.name" => application_name))
-            core = CoreConnection(context; properties=Dict("remote.name" => path),
-                on_done=(core, id, sequence) -> begin
+            context =
+                Context(loop; properties = Dict("application.name" => application_name))
+            core = CoreConnection(
+                context;
+                properties = Dict("remote.name" => path),
+                on_done = (core, id, sequence) -> begin
                     id == 0 && (acknowledged_sequence[] = sequence)
                     nothing
                 end,
-                on_error=(core, id, sequence, error) -> begin
+                on_error = (core, id, sequence, error) -> begin
                     connection_failure[] = sprint(showerror, error)
                     current = endpoint_ref[]
                     current === nothing || (current.failure = connection_failure[])
                     wake[] = true
                     nothing
-                end)
-            endpoint = Endpoint.Endpoint(profile, Commands, loop, core,
-                name, instance, Codec.Preparing;
-                publisher=(filter, params) -> begin
+                end,
+            )
+            endpoint = Endpoint.Endpoint(
+                profile,
+                Commands,
+                loop,
+                core,
+                name,
+                instance,
+                Codec.Preparing;
+                publisher = (filter, params) -> begin
                     wake[] = true
                     update_params!(filter, params)
-                end)
-            registry_listener = add_listener!(something(endpoint.registry);
-                on_global_added=(registry, global_object) -> (wake[] = true; nothing),
-                on_global_removed=(registry, id) -> (wake[] = true; nothing))
+                end,
+            )
+            registry_listener = add_listener!(
+                something(endpoint.registry);
+                on_global_added = (registry, global_object) -> (wake[] = true; nothing),
+                on_global_removed = (registry, id) -> (wake[] = true; nothing),
+            )
             endpoint_ref[] = endpoint
             connection_failure[] === nothing || (endpoint.failure = connection_failure[])
         end
         start!(loop)
-        return Transport(profile, loop, context, core, endpoint, registry_listener,
-            acknowledged_sequence, wake, false)
+        return Transport(
+            profile,
+            loop,
+            context,
+            core,
+            endpoint,
+            registry_listener,
+            acknowledged_sequence,
+            wake,
+            false,
+        )
     catch primary
         failures = Exception[primary]
         try
             with_thread_loop_lock(loop) do _
                 for resource in (registry_listener, endpoint, core, context)
                     resource === nothing && continue
-                    try close(resource) catch cleanup; push!(failures, cleanup) end
+                    try
+                        close(resource)
+                    catch cleanup
+                        push!(failures, cleanup)
+                    end
                 end
             end
         catch cleanup
             push!(failures, cleanup)
         end
-        try close(loop) catch cleanup; push!(failures, cleanup) end
+        try
+            close(loop)
+        catch cleanup
+            push!(failures, cleanup)
+        end
         length(failures) == 1 && rethrow()
         throw(CompositeException(failures))
     end
@@ -107,7 +156,8 @@ function _poll_ready!(runtime::Transport)
     pending = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
         retained = runtime.endpoint.retained_controller
-        retained === nothing || Endpoint.controller_present(runtime.endpoint, retained) ||
+        retained === nothing ||
+            Endpoint.controller_present(runtime.endpoint, retained) ||
             error("retained native bootstrap controller was revoked")
         runtime.endpoint.pending !== nothing
     end
@@ -123,18 +173,28 @@ function lifecycle!(runtime::Transport, lifecycle::Codec.Lifecycle)
 end
 
 """Publish the result of an accepted ticket after the sole owner has applied it."""
-function complete!(runtime::Transport, ticket::Endpoint.Ticket,
-        lifecycle::Codec.Lifecycle; result::Int32=Int32(0), message::AbstractString="",
-        terminal::Bool=false)
-    header = Envelope.ReplyHeader(ticket.header.controller, runtime.endpoint.instance,
-        ticket.header.token, ticket.header.operation, result)
+function complete!(
+    runtime::Transport,
+    ticket::Endpoint.Ticket,
+    lifecycle::Codec.Lifecycle;
+    result::Int32 = Int32(0),
+    message::AbstractString = "",
+    terminal::Bool = false,
+)
+    header = Envelope.ReplyHeader(
+        ticket.header.controller,
+        runtime.endpoint.instance,
+        ticket.header.token,
+        ticket.header.operation,
+        result,
+    )
     completion = Client.encode_completion(runtime.profile, header, lifecycle, message)
     Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
     return nothing
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Transport, deadline::Float64; check=()->nothing)
+function flush_terminal!(runtime::Transport, deadline::Float64; check = ()->nothing)
     Client.deadline_check(deadline, check)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
@@ -159,15 +219,23 @@ function Base.close(runtime::Transport)
     failures = Exception[]
     try
         with_thread_loop_lock(runtime.loop) do _
-            for resource in (runtime.registry_listener, runtime.endpoint,
-                    runtime.core, runtime.context)
-                try close(resource) catch error; push!(failures, error) end
+            for resource in
+                (runtime.registry_listener, runtime.endpoint, runtime.core, runtime.context)
+                try
+                    close(resource)
+                catch error
+                    push!(failures, error)
+                end
             end
         end
     catch error
         push!(failures, error)
     end
-    try close(runtime.loop) catch error; push!(failures, error) end
+    try
+        close(runtime.loop)
+    catch error
+        push!(failures, error)
+    end
     isempty(failures) || throw(CompositeException(failures))
     return nothing
 end
@@ -193,8 +261,19 @@ struct Status
     hooks_excluded::Bool
     done::Bool
 end
-Status() = Status(false, false, false, nothing, false, false, false,
-    nothing, nothing, false, false)
+Status() = Status(
+    false,
+    false,
+    false,
+    nothing,
+    false,
+    false,
+    false,
+    nothing,
+    nothing,
+    false,
+    false,
+)
 
 struct OwnerReply
     ticket::Union{Nothing,Endpoint.Ticket}
@@ -248,8 +327,10 @@ struct Mailbox
     owner::Channel{AbstractOwnerMessage}
     cleanup::Channel{AbstractOwnerMessage}
 end
-Mailbox() = Mailbox(Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY),
-    Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY))
+Mailbox() = Mailbox(
+    Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY),
+    Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY),
+)
 
 """Owner proxy; science stays on thread 1 and mutable handshakes on monitor 2.
 
@@ -272,7 +353,7 @@ _status(runtime::Runtime) = @atomic :acquire runtime.status
 Base.getproperty(runtime::Runtime, name::Symbol) =
     name in (:failure, :main_error, :connect_ticket) ? getproperty(_status(runtime), name) :
     getfield(runtime, name)
-Base.propertynames(runtime::Runtime, private::Bool=false) =
+Base.propertynames(runtime::Runtime, private::Bool = false) =
     (fieldnames(typeof(runtime))..., :failure, :main_error, :connect_ticket)
 
 """
@@ -284,15 +365,23 @@ must originate on thread 1; multiple tasks there use the Channel's synchronizati
 """
 function validate_threads()
     VERSION >= v"1.12" || throw(ArgumentError("native bootstrap requires Julia >= 1.12"))
-    Base.Threads.threadid() == 1 || throw(ArgumentError("native owner must construct on Julia thread 1"))
-    ids = ThreadPinning.threadids(; threadpool=:default)
-    length(ids) >= 2 && ids == collect(1:length(ids)) ||
-        throw(ArgumentError("native owner requires --threads=N,0 with N >= 2; thread 2 is the cold monitor"))
+    Base.Threads.threadid() == 1 ||
+        throw(ArgumentError("native owner must construct on Julia thread 1"))
+    ids = ThreadPinning.threadids(; threadpool = :default)
+    length(ids) >= 2 && ids == collect(1:length(ids)) || throw(
+        ArgumentError(
+            "native owner requires --threads=N,0 with N >= 2; thread 2 is the cold monitor",
+        ),
+    )
     return nothing
 end
-function Runtime(remote::AbstractString, name::AbstractString, instance::Int64;
-        application_name::AbstractString=name,
-        clock::Clocks.AbstractNanoClock=Clocks.SystemNanoClock())
+function Runtime(
+    remote::AbstractString,
+    name::AbstractString,
+    instance::Int64;
+    application_name::AbstractString = name,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     validate_threads()
     transport = Transport(Codec.PROFILE, remote, name, instance; application_name)
     runtime = Runtime(transport)
@@ -311,12 +400,30 @@ function Runtime(remote::AbstractString, name::AbstractString, instance::Int64;
     catch primary
         if runtime.monitor !== nothing
             # Shutdown is a message too; never mutate monitor-owned handshakes.
-            try _enqueue!(runtime.mailbox, OwnerClosed(Channel{OwnerReply}(1)); cleanup=true) catch end
-            timedwait(() -> istaskdone(runtime.monitor), 2.0; pollint=POLL_SECONDS) == :ok ||
-                throw(CompositeException([primary, ErrorException("bootstrap monitor did not terminate; resources retained for finite process cleanup")]))
+            try
+                _enqueue!(
+                    runtime.mailbox,
+                    OwnerClosed(Channel{OwnerReply}(1));
+                    cleanup = true,
+                )
+            catch
+            end
+            timedwait(() -> istaskdone(runtime.monitor), 2.0; pollint = POLL_SECONDS) ==
+            :ok || throw(
+                CompositeException([
+                    primary,
+                    ErrorException(
+                        "bootstrap monitor did not terminate; resources retained for finite process cleanup",
+                    ),
+                ]),
+            )
             wait(runtime.monitor)
         end
-        try close(transport) catch cleanup; throw(CompositeException([primary, cleanup])) end
+        try
+            close(transport)
+        catch cleanup
+            throw(CompositeException([primary, cleanup]))
+        end
         rethrow()
     end
 end
@@ -326,11 +433,12 @@ function _owner_thread()
         throw(ArgumentError("bootstrap owner messages require constructing thread 1"))
     return nothing
 end
-function _enqueue!(mailbox::Mailbox, message::AbstractOwnerMessage; cleanup::Bool=false)
+function _enqueue!(mailbox::Mailbox, message::AbstractOwnerMessage; cleanup::Bool = false)
     channel = cleanup ? mailbox.cleanup : mailbox.owner
     lock(channel) do
         isopen(channel) || throw(InvalidStateException("bootstrap mailbox closed", :closed))
-        Base.isfull(channel) && throw(InvalidStateException("bootstrap mailbox full", :full))
+        Base.isfull(channel) &&
+            throw(InvalidStateException("bootstrap mailbox full", :full))
         # Check and acceptance are one Channel transaction even with several
         # owner tasks. No blocked Channel producer can make isready report a
         # waiting sender instead of a buffered message to the monitor consumer.
@@ -341,9 +449,10 @@ end
 _mailbox_full(error) = false
 _mailbox_full(error::InvalidStateException) = error.state === :full
 
-function _request!(runtime::Runtime, message::AbstractOwnerMessage; cleanup::Bool=false)
+function _request!(runtime::Runtime, message::AbstractOwnerMessage; cleanup::Bool = false)
     _owner_thread()
-    _status(runtime).done && throw(InvalidStateException("bootstrap monitor closed", :closed))
+    _status(runtime).done &&
+        throw(InvalidStateException("bootstrap monitor closed", :closed))
     while true
         try
             _enqueue!(runtime.mailbox, message; cleanup)
@@ -359,7 +468,8 @@ function _request!(runtime::Runtime, message::AbstractOwnerMessage; cleanup::Boo
     while !isready(message.reply)
         status = _status(runtime)
         status.done && status.failure !== nothing && throw(status.failure)
-        status.done && throw(InvalidStateException("bootstrap monitor closed before reply", :closed))
+        status.done &&
+            throw(InvalidStateException("bootstrap monitor closed before reply", :closed))
         if runtime.monitor !== nothing && istaskdone(runtime.monitor)
             wait(runtime.monitor)
             error("bootstrap monitor stopped before reply")
@@ -397,7 +507,10 @@ function take_connect!(runtime::Runtime)
         preparation_check!(runtime)
         status = _status(runtime)
         if status.connect_ticket !== nothing && !status.connect_taken
-            ticket = _request!(runtime, ConnectTaken(Channel{OwnerReply}(1), status.connect_ticket))
+            ticket = _request!(
+                runtime,
+                ConnectTaken(Channel{OwnerReply}(1), status.connect_ticket),
+            )
             ticket === nothing || return ticket
         end
         status.done && error("bootstrap monitor stopped before Connect")
@@ -419,7 +532,10 @@ before the owner closes its scientific node.
 """
 function connecting!(runtime::Runtime, ticket::Endpoint.Ticket; ready, quit)
     preparation_check!(runtime)
-    _request!(runtime, ConnectionRegistered(Channel{OwnerReply}(1), ticket, Hooks(ready, quit)))
+    _request!(
+        runtime,
+        ConnectionRegistered(Channel{OwnerReply}(1), ticket, Hooks(ready, quit)),
+    )
     return nothing
 end
 "Signal completed connection facts; only the monitor completes the native ticket."
@@ -444,7 +560,7 @@ function _cleanup_request!(runtime::Runtime, message::AbstractOwnerMessage)
     _owner_thread()
     _status(runtime).done && return nothing
     try
-        _request!(runtime, message; cleanup=true)
+        _request!(runtime, message; cleanup = true)
     catch error
         # Monitor close publishes exclusion before closing/draining its channels.
         # Once done, no further hook invocation can race scientific close.
@@ -500,22 +616,44 @@ end
 function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
     error = _facts(runtime).error
     try
-        complete!(runtime.transport, ticket, lifecycle; message=error === nothing ? "" : _message(error))
+        complete!(
+            runtime.transport,
+            ticket,
+            lifecycle;
+            message = error === nothing ? "" : _message(error),
+        )
     catch failure
         endpoint = runtime.transport.endpoint
         neutral = with_thread_loop_lock(runtime.transport.loop) do _
             Endpoint.operational(endpoint)
-            Client.monotonic() >= ticket.deadline || !Endpoint.controller_present(endpoint, ticket.header.controller)
+            Client.monotonic() >= ticket.deadline ||
+                !Endpoint.controller_present(endpoint, ticket.header.controller)
         end
         neutral || rethrow()
-        complete!(runtime.transport, ticket, lifecycle; result=Int32(-110), message="Status expired or controller removed")
+        complete!(
+            runtime.transport,
+            ticket,
+            lifecycle;
+            result = Int32(-110),
+            message = "Status expired or controller removed",
+        )
     end
     return nothing
 end
 _fault_reply!(runtime, ticket, command::Codec.Command{:status}, lifecycle) =
     _apply!(runtime, ticket, command, lifecycle)
-_fault_reply!(runtime, ticket, command::Union{Codec.Command{:connect},Codec.Command{:quit}}, lifecycle) =
-    complete!(runtime.transport, ticket, lifecycle; result=Int32(-5), message="owner cleanup after failure")
+_fault_reply!(
+    runtime,
+    ticket,
+    command::Union{Codec.Command{:connect},Codec.Command{:quit}},
+    lifecycle,
+) = complete!(
+    runtime.transport,
+    ticket,
+    lifecycle;
+    result = Int32(-5),
+    message = "owner cleanup after failure",
+)
 
 """Reserved-monitor state only; owner threads publish the bounded Runtime facts."""
 @hsmdef mutable struct Monitor{R,N<:Clocks.AbstractNanoClock}
@@ -561,20 +699,51 @@ end
 @finaldef Monitor :Stopped
 @finaldef Monitor :Done
 
-@on_initial function(sm::Monitor{R}, ::Root) where {R}
+@on_initial function (sm::Monitor{R}, ::Root) where {R}
     return Hsm.transition!(sm, :Preparing)
 end
-Monitor(runtime; clock::Clocks.AbstractNanoClock=Clocks.SystemNanoClock()) =
-    Monitor(runtime, current_task(), clock, Clocks.CachedNanoClock(), false, nothing, false, false,
-    nothing, false, false, nothing, nothing, false, false, false,
-    nothing, nothing, false, Codec.Preparing, 0.0)
+Monitor(runtime; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()) = Monitor(
+    runtime,
+    current_task(),
+    clock,
+    Clocks.CachedNanoClock(),
+    false,
+    nothing,
+    false,
+    false,
+    nothing,
+    false,
+    false,
+    nothing,
+    nothing,
+    false,
+    false,
+    false,
+    nothing,
+    nothing,
+    false,
+    Codec.Preparing,
+    0.0,
+)
 
 _facts(sm::Monitor) = Facts(sm.prepare_done, sm.main_finished, sm.main_error)
 _now(sm::Monitor) = Common.monotonic_seconds(sm.clock)
 function _observe!(sm::Monitor)
-    snapshot = Status(sm.ready, sm.cancel, sm.prepare_done, sm.connect_ticket,
-        sm.connect_taken, sm.lifecycle === Codec.Connected && sm.active === nothing && sm.main_error === nothing,
-        sm.main_finished, sm.main_error, sm.failure, sm.finishing, sm.done)
+    snapshot = Status(
+        sm.ready,
+        sm.cancel,
+        sm.prepare_done,
+        sm.connect_ticket,
+        sm.connect_taken,
+        sm.lifecycle === Codec.Connected &&
+            sm.active === nothing &&
+            sm.main_error === nothing,
+        sm.main_finished,
+        sm.main_error,
+        sm.failure,
+        sm.finishing,
+        sm.done,
+    )
     @atomic :release sm.runtime.status = snapshot
     return nothing
 end
@@ -586,8 +755,8 @@ function _stop!(sm::Monitor)
     sm.hooks === nothing || Base.invokelatest(sm.hooks.quit)
     return nothing
 end
-_ready(sm::Monitor) = sm.connect_done ||
-    (sm.hooks !== nothing && Base.invokelatest(sm.hooks.ready))
+_ready(sm::Monitor) =
+    sm.connect_done || (sm.hooks !== nothing && Base.invokelatest(sm.hooks.ready))
 
 function _publish!(sm::Monitor, lifecycle::Codec.Lifecycle)
     sm.lifecycle = lifecycle
@@ -600,12 +769,12 @@ function _owner_fault!(sm::Monitor)
     return nothing
 end
 
-@on_event function(sm::Monitor{R}, ::Healthy, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::Healthy, ::OwnerObserved, facts) where {R}
     facts.error === nothing && return Hsm.EventHandled
     _owner_fault!(sm)
     return Hsm.transition!(sm, :Fault)
 end
-@on_event function(sm::Monitor{R}, ::Preparing, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::Preparing, ::OwnerObserved, facts) where {R}
     facts.error === nothing || return Hsm.EventNotHandled
     if facts.prepared && !sm.cancel && !sm.finishing
         _publish!(sm, Codec.Prepared)
@@ -613,38 +782,44 @@ end
     end
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::ConnectPending, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::ConnectPending, ::OwnerObserved, facts) where {R}
     facts.error === nothing && return Hsm.EventHandled
     _owner_fault!(sm)
     return Hsm.transition!(sm, :FaultConnectPending)
 end
-@on_event function(sm::Monitor{R}, ::QuitPending, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::QuitPending, ::OwnerObserved, facts) where {R}
     facts.error === nothing && return Hsm.EventHandled
     _owner_fault!(sm)
     return Hsm.transition!(sm, :QuitFault)
 end
-@on_event function(sm::Monitor{R}, ::QuitFault, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::QuitFault, ::OwnerObserved, facts) where {R}
     return Hsm.EventHandled
 end
 
-@on_event function(sm::Monitor{R}, ::Monitoring, ::PollTransport, arg) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::PollTransport, arg) where {R}
     sm.ingress = _poll_ready!(sm.runtime.transport)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::TakeIngress, arg) where {R}
-    sm.incoming = sm.active === nothing && sm.ingress ? take!(sm.runtime.transport) : nothing
+@on_event function (sm::Monitor{R}, ::Monitoring, ::TakeIngress, arg) where {R}
+    sm.incoming =
+        sm.active === nothing && sm.ingress ? take!(sm.runtime.transport) : nothing
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::StatusRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::StatusRequested, ticket) where {R}
     _apply!(sm.runtime, ticket, ticket.command, sm.lifecycle)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectRequested, ticket) where {R}
-    complete!(sm.runtime.transport, ticket, sm.lifecycle;
-        result=Int32(-22), message="Connect requires Prepared")
+@on_event function (sm::Monitor{R}, ::Monitoring, ::ConnectRequested, ticket) where {R}
+    complete!(
+        sm.runtime.transport,
+        ticket,
+        sm.lifecycle;
+        result = Int32(-22),
+        message = "Connect requires Prepared",
+    )
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Prepared, ::ConnectRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Prepared, ::ConnectRequested, ticket) where {R}
     sm.connect_ticket = ticket
     _observe!(sm)
     sm.active = ticket
@@ -656,29 +831,34 @@ function _quit!(sm::Monitor, ticket)
     sm.active = ticket
     return nothing
 end
-@on_event function(sm::Monitor{R}, ::Preparing, ::QuitRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Preparing, ::QuitRequested, ticket) where {R}
     _quit!(sm, ticket)
     return Hsm.transition!(sm, :QuitPreparing)
 end
-@on_event function(sm::Monitor{R}, ::Prepared, ::QuitRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Prepared, ::QuitRequested, ticket) where {R}
     _quit!(sm, ticket)
     return Hsm.transition!(sm, :QuitPrepared)
 end
-@on_event function(sm::Monitor{R}, ::Connected, ::QuitRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Connected, ::QuitRequested, ticket) where {R}
     _quit!(sm, ticket)
     return Hsm.transition!(sm, :QuitConnected)
 end
-@on_event function(sm::Monitor{R}, ::Fault, ::QuitRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Fault, ::QuitRequested, ticket) where {R}
     _quit!(sm, ticket)
     return Hsm.transition!(sm, :QuitFault)
 end
 
-@on_event function(sm::Monitor{R}, ::ConnectPending, ::TicketObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::ConnectPending, ::TicketObserved, facts) where {R}
     ticket = something(sm.active)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
     if facts.finished
-        complete!(sm.runtime.transport, ticket, sm.lifecycle; result=Int32(-5),
-            message="owner stopped before Connect registered")
+        complete!(
+            sm.runtime.transport,
+            ticket,
+            sm.lifecycle;
+            result = Int32(-5),
+            message = "owner stopped before Connect registered",
+        )
         sm.active = nothing
         return Hsm.transition!(sm, :Prepared)
     elseif _ready(sm)
@@ -697,15 +877,25 @@ end
     end
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::FaultConnectPending, ::TicketObserved, facts) where {R}
+@on_event function (
+    sm::Monitor{R},
+    ::FaultConnectPending,
+    ::TicketObserved,
+    facts,
+) where {R}
     ticket = something(sm.active)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
-    complete!(sm.runtime.transport, ticket, sm.lifecycle; result=Int32(-5),
-        message=_message(something(facts.error)))
+    complete!(
+        sm.runtime.transport,
+        ticket,
+        sm.lifecycle;
+        result = Int32(-5),
+        message = _message(something(facts.error)),
+    )
     sm.active = nothing
     return Hsm.transition!(sm, :Fault)
 end
-@on_event function(sm::Monitor{R}, ::QuitPending, ::TicketObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::QuitPending, ::TicketObserved, facts) where {R}
     runtime = sm.runtime
     ticket = something(sm.active)
     Endpoint.check_ticket(runtime.transport.endpoint, ticket)
@@ -714,8 +904,14 @@ end
         lifecycle = result == 0 ? Codec.Stopped : Codec.Fault
         _publish!(sm, lifecycle)
         result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
-        complete!(runtime.transport, ticket, lifecycle; result,
-            message=facts.error === nothing ? "" : _message(facts.error), terminal=result == 0)
+        complete!(
+            runtime.transport,
+            ticket,
+            lifecycle;
+            result,
+            message = facts.error === nothing ? "" : _message(facts.error),
+            terminal = result == 0,
+        )
         flush_terminal!(runtime.transport, ticket.deadline)
         result == 0 && Endpoint.wait_terminal_release!(runtime.transport.endpoint, ticket)
         sm.active = nothing
@@ -727,7 +923,7 @@ end
     _stop!(sm)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::FinishedObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::FinishedObserved, facts) where {R}
     facts.finished && sm.active === nothing || return Hsm.EventHandled
     _publish!(sm, facts.error === nothing ? Codec.Stopped : Codec.Fault)
     flush_terminal!(sm.runtime.transport, _now(sm) + 5.0)
@@ -740,13 +936,14 @@ function _record_cleanup_failure!(sm::Monitor, cleanup)
     _observe!(sm)
     return nothing
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::MonitorFailed, error) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::MonitorFailed, error) where {R}
     runtime = sm.runtime
     sm.failure === nothing && (sm.failure = error)
     _observe!(sm)
     # Preserve actual completed scientific cleanup when terminal transport fails.
     facts = _facts(sm)
-    failed_lifecycle = facts.finished && facts.error === nothing ? Codec.Stopped : Codec.Fault
+    failed_lifecycle =
+        facts.finished && facts.error === nothing ? Codec.Stopped : Codec.Fault
     try
         _publish!(sm, failed_lifecycle)
     catch publication
@@ -757,10 +954,16 @@ end
         _stop!(sm)
         if sm.active !== nothing
             pending = with_thread_loop_lock(runtime.transport.loop) do _
-                runtime.transport.endpoint.pending === sm.active && runtime.transport.endpoint.applying
+                runtime.transport.endpoint.pending === sm.active &&
+                    runtime.transport.endpoint.applying
             end
-            pending && complete!(runtime.transport, sm.active, failed_lifecycle;
-                result=Int32(-5), message=_message(error))
+            pending && complete!(
+                runtime.transport,
+                sm.active,
+                failed_lifecycle;
+                result = Int32(-5),
+                message = _message(error),
+            )
         end
         sm.active = nothing
         sm.incoming = nothing
@@ -773,49 +976,57 @@ end
     end
     return Hsm.transition!(sm, :Cleanup)
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::MonitorFailed, error) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::MonitorFailed, error) where {R}
     _record_cleanup_failure!(sm, error)
     return Hsm.transition!(sm, :Done)
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::OwnerObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::OwnerObserved, facts) where {R}
     if facts.finished || _now(sm) >= sm.cleanup_deadline
         flush_terminal!(sm.runtime.transport, sm.cleanup_deadline)
         return Hsm.transition!(sm, :Done)
     end
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::PollTransport, arg) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::PollTransport, arg) where {R}
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::TakeIngress, arg) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::TakeIngress, arg) where {R}
     _stop!(sm)
     poll!(sm.runtime.transport)
     sm.incoming = take!(sm.runtime.transport)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::ConnectRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::ConnectRequested, ticket) where {R}
     _fault_reply!(sm.runtime, ticket, ticket.command, sm.lifecycle)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::QuitRequested, ticket) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::QuitRequested, ticket) where {R}
     _fault_reply!(sm.runtime, ticket, ticket.command, sm.lifecycle)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Cleanup, ::FinishedObserved, facts) where {R}
+@on_event function (sm::Monitor{R}, ::Cleanup, ::FinishedObserved, facts) where {R}
     return Hsm.EventHandled
 end
 
 _dispatch_request!(sm::Monitor, ::Nothing) = nothing
 _dispatch_request!(sm::Monitor, ticket::Endpoint.Ticket) =
     _dispatch_request!(sm, ticket, ticket.command)
-_dispatch_request!(sm, ticket, ::Codec.Command{:status}) = Hsm.dispatch!(sm, :StatusRequested, ticket)
-_dispatch_request!(sm, ticket, ::Codec.Command{:connect}) = Hsm.dispatch!(sm, :ConnectRequested, ticket)
-_dispatch_request!(sm, ticket, ::Codec.Command{:quit}) = Hsm.dispatch!(sm, :QuitRequested, ticket)
+_dispatch_request!(sm, ticket, ::Codec.Command{:status}) =
+    Hsm.dispatch!(sm, :StatusRequested, ticket)
+_dispatch_request!(sm, ticket, ::Codec.Command{:connect}) =
+    Hsm.dispatch!(sm, :ConnectRequested, ticket)
+_dispatch_request!(sm, ticket, ::Codec.Command{:quit}) =
+    Hsm.dispatch!(sm, :QuitRequested, ticket)
 
 function _health(sm::Monitor)
     sm.failure === nothing || throw(sm.failure)
     sm.cancel && throw(InterruptException())
-    sm.finishing && throw(InvalidStateException("bootstrap owner finished admitting connection work", :closed))
+    sm.finishing && throw(
+        InvalidStateException(
+            "bootstrap owner finished admitting connection work",
+            :closed,
+        ),
+    )
     return nothing
 end
 function _connection_health(sm::Monitor, ticket)
@@ -823,18 +1034,23 @@ function _connection_health(sm::Monitor, ticket)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
     return nothing
 end
-function _reply!(sm::Monitor, message::AbstractOwnerMessage; ticket=nothing, error=nothing)
+function _reply!(
+    sm::Monitor,
+    message::AbstractOwnerMessage;
+    ticket = nothing,
+    error = nothing,
+)
     _observe!(sm)
     put!(message.reply, OwnerReply(ticket, error))
     return nothing
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::PreparedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::PreparedByOwner, message) where {R}
     _health(sm)
     sm.prepare_done = true
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectTakenByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::ConnectTakenByOwner, message) where {R}
     _health(sm)
     ticket = nothing
     if sm.connect_ticket === message.ticket && !sm.connect_taken
@@ -844,53 +1060,74 @@ end
     _reply!(sm, message; ticket)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectCheckedByOwner, message) where {R}
+@on_event function (
+    sm::Monitor{R},
+    ::Monitoring,
+    ::ConnectCheckedByOwner,
+    message,
+) where {R}
     _connection_health(sm, message.ticket)
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectAwaitedByOwner, message) where {R}
+@on_event function (
+    sm::Monitor{R},
+    ::Monitoring,
+    ::ConnectAwaitedByOwner,
+    message,
+) where {R}
     _connection_health(sm, message.ticket)
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Connected, ::ConnectAwaitedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Connected, ::ConnectAwaitedByOwner, message) where {R}
     _health(sm)
-    sm.connect_ticket === message.ticket || error("native Connect observation does not match its ticket")
-    _reply!(sm, message; ticket=message.ticket)
+    sm.connect_ticket === message.ticket ||
+        error("native Connect observation does not match its ticket")
+    _reply!(sm, message; ticket = message.ticket)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectionRegisteredByOwner, message) where {R}
+@on_event function (
+    sm::Monitor{R},
+    ::Monitoring,
+    ::ConnectionRegisteredByOwner,
+    message,
+) where {R}
     _connection_health(sm, message.ticket)
     sm.hooks = message.hooks
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ConnectCompletedByOwner, message) where {R}
+@on_event function (
+    sm::Monitor{R},
+    ::Monitoring,
+    ::ConnectCompletedByOwner,
+    message,
+) where {R}
     _connection_health(sm, message.ticket)
     sm.connect_done = true
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::HooksExcludedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::HooksExcludedByOwner, message) where {R}
     sm.hooks = nothing
     sm.finishing = true
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::FaultedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::FaultedByOwner, message) where {R}
     sm.main_error === nothing && (sm.main_error = message.error)
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::FinishedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::FinishedByOwner, message) where {R}
     sm.hooks = nothing
     sm.finishing = true
     sm.main_finished = true
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::ClosedByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::ClosedByOwner, message) where {R}
     sm.cancel || _stop!(sm)
     sm.hooks = nothing
     sm.finishing = true
@@ -898,12 +1135,12 @@ end
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::CancelledByOwner, message) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::CancelledByOwner, message) where {R}
     _stop!(sm)
     _reply!(sm, message)
     return Hsm.EventHandled
 end
-@on_event function(sm::Monitor{R}, ::Monitoring, ::CancellationObserved, arg) where {R}
+@on_event function (sm::Monitor{R}, ::Monitoring, ::CancellationObserved, arg) where {R}
     # An owner cancellation with no pending native Quit still needs repeated
     # public wake: its first wake may precede main entering native run!.
     sm.cancel && sm.active === nothing && !sm.main_finished && _stop!(sm)
@@ -911,23 +1148,40 @@ end
 end
 
 _dispatch_owner!(sm, message::OwnerPrepared) = Hsm.dispatch!(sm, :PreparedByOwner, message)
-_dispatch_owner!(sm, message::ConnectTaken) = Hsm.dispatch!(sm, :ConnectTakenByOwner, message)
-_dispatch_owner!(sm, message::ConnectChecked) = Hsm.dispatch!(sm, :ConnectCheckedByOwner, message)
-_dispatch_owner!(sm, message::ConnectAwaited) = Hsm.dispatch!(sm, :ConnectAwaitedByOwner, message)
-_dispatch_owner!(sm, message::ConnectionRegistered) = Hsm.dispatch!(sm, :ConnectionRegisteredByOwner, message)
-_dispatch_owner!(sm, message::ConnectCompleted) = Hsm.dispatch!(sm, :ConnectCompletedByOwner, message)
-_dispatch_owner!(sm, message::HooksExcluded) = Hsm.dispatch!(sm, :HooksExcludedByOwner, message)
+_dispatch_owner!(sm, message::ConnectTaken) =
+    Hsm.dispatch!(sm, :ConnectTakenByOwner, message)
+_dispatch_owner!(sm, message::ConnectChecked) =
+    Hsm.dispatch!(sm, :ConnectCheckedByOwner, message)
+_dispatch_owner!(sm, message::ConnectAwaited) =
+    Hsm.dispatch!(sm, :ConnectAwaitedByOwner, message)
+_dispatch_owner!(sm, message::ConnectionRegistered) =
+    Hsm.dispatch!(sm, :ConnectionRegisteredByOwner, message)
+_dispatch_owner!(sm, message::ConnectCompleted) =
+    Hsm.dispatch!(sm, :ConnectCompletedByOwner, message)
+_dispatch_owner!(sm, message::HooksExcluded) =
+    Hsm.dispatch!(sm, :HooksExcludedByOwner, message)
 _dispatch_owner!(sm, message::OwnerFault) = Hsm.dispatch!(sm, :FaultedByOwner, message)
 _dispatch_owner!(sm, message::OwnerFinished) = Hsm.dispatch!(sm, :FinishedByOwner, message)
 _dispatch_owner!(sm, message::OwnerClosed) = Hsm.dispatch!(sm, :ClosedByOwner, message)
-_dispatch_owner!(sm, message::OwnerCancelled) = Hsm.dispatch!(sm, :CancelledByOwner, message)
+_dispatch_owner!(sm, message::OwnerCancelled) =
+    Hsm.dispatch!(sm, :CancelledByOwner, message)
 function _precompile_owner_routes!(::Type{M}) where {M<:Monitor}
     # Channel erases the concrete message type at the consumer boundary. Warm
     # every bounded route before admission; first-use compilation of registration
     # must not consume an already accepted native ticket's deadline.
-    for message in (OwnerPrepared, ConnectTaken, ConnectChecked, ConnectAwaited,
-            ConnectionRegistered, ConnectCompleted, HooksExcluded, OwnerFault,
-            OwnerFinished, OwnerClosed, OwnerCancelled)
+    for message in (
+        OwnerPrepared,
+        ConnectTaken,
+        ConnectChecked,
+        ConnectAwaited,
+        ConnectionRegistered,
+        ConnectCompleted,
+        HooksExcluded,
+        OwnerFault,
+        OwnerFinished,
+        OwnerClosed,
+        OwnerCancelled,
+    )
         precompile(_dispatch_owner!, (M, message)) ||
             error("cannot compile native bootstrap owner message before startup")
     end
@@ -937,7 +1191,7 @@ function _drain_owner!(sm::Monitor)
     work = 0
     # A finite per-direction budget keeps native duties responsive under callers.
     for channel in (sm.runtime.mailbox.cleanup, sm.runtime.mailbox.owner)
-        for _ in 1:MAILBOX_CAPACITY
+        for _ = 1:MAILBOX_CAPACITY
             isready(channel) || break
             message = Base.take!(channel)
             try
@@ -983,8 +1237,16 @@ function Agent.on_close(sm::Monitor)
         close(channel)
         while isready(channel)
             message = Base.take!(channel)
-            put!(message.reply, OwnerReply(nothing,
-                something(sm.failure, InvalidStateException("bootstrap monitor closed", :closed))))
+            put!(
+                message.reply,
+                OwnerReply(
+                    nothing,
+                    something(
+                        sm.failure,
+                        InvalidStateException("bootstrap monitor closed", :closed),
+                    ),
+                ),
+            )
         end
     end
     return nothing
@@ -997,7 +1259,10 @@ function _idle!()
     yield()
     return nothing
 end
-function serve!(runtime::Runtime; clock::Clocks.AbstractNanoClock=Clocks.SystemNanoClock())
+function serve!(
+    runtime::Runtime;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     bind(runtime.mailbox.owner, current_task())
     bind(runtime.mailbox.cleanup, current_task())
     sm = Monitor(runtime; clock)
@@ -1033,9 +1298,13 @@ construction on the caller thread. Call `f` with `options` extended by
 cooperative cancellation. Retain primary and cleanup failures in order, and
 treat an interrupt after accepted cancellation as clean owner shutdown.
 """
-function with_owner(f, options; application_name::AbstractString=options.bootstrap_node)
-    runtime = Runtime(options.remote, options.bootstrap_node, options.bootstrap_instance;
-        application_name)
+function with_owner(f, options; application_name::AbstractString = options.bootstrap_node)
+    runtime = Runtime(
+        options.remote,
+        options.bootstrap_node,
+        options.bootstrap_instance;
+        application_name,
+    )
     return _with_owner(f, options, runtime)
 end
 
@@ -1053,17 +1322,28 @@ end
 
 function _with_owner(f, options, runtime)
     failures = Exception[]
-    admitted = merge(options, (; bootstrap_runtime=runtime,
-        owner_check=() -> preparation_check!(runtime)))
+    admitted = merge(
+        options,
+        (; bootstrap_runtime = runtime, owner_check = () -> preparation_check!(runtime)),
+    )
     try
         f(admitted)
     catch error
         _record_owner_failure!(failures, runtime, error)
     finally
-        try finish!(runtime) catch error; push!(failures, error) end
-        try close(runtime) catch error; push!(failures, error) end
+        try
+            finish!(runtime)
+        catch error
+            push!(failures, error)
+        end
+        try
+            close(runtime)
+        catch error
+            push!(failures, error)
+        end
     end
-    isempty(failures) || throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
+    isempty(failures) ||
+        throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
 end
 

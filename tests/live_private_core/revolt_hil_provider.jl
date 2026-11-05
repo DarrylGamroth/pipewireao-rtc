@@ -7,9 +7,7 @@ using Printf
 using REVOLTClassicSim
 using REVOLTClassicSimPipeWireHIL
 
-length(ARGS) == 4 || error(
-    "expected CORE_NAME CONTROL_DIRECTORY NATIVE_GRAPH JULIA_GRAPH",
-)
+length(ARGS) == 4 || error("expected CORE_NAME CONTROL_DIRECTORY NATIVE_GRAPH JULIA_GRAPH")
 core_name, control_directory, native_graph_path, julia_graph_path = ARGS
 native_phase_1 = joinpath(control_directory, "revolt-native-phase-1")
 native_phase_2 = joinpath(control_directory, "revolt-native-phase-2")
@@ -56,7 +54,8 @@ struct LockstepCommandProcess
 end
 
 function (process::LockstepCommandProcess)(stream::Stream)
-    process.state.ready[] == 0 || error("Julia command arrived while the prior command is pending")
+    process.state.ready[] == 0 ||
+        error("Julia command arrived while the prior command is pending")
     dequeue_buffer!(process.buffer, stream) || return nothing
     queued = false
     try
@@ -67,8 +66,10 @@ function (process::LockstepCommandProcess)(stream::Stream)
         data = buffer_data(process.buffer)
         chunk = chunk_info(data)
         bytes = sizeof(Float32) * length(process.state.values)
-        Int(chunk.size) == bytes || error("Julia command has $(chunk.size) bytes; expected $bytes")
-        Int(chunk.offset) + bytes <= capacity(data) || error("Julia command exceeds its buffer")
+        Int(chunk.size) == bytes ||
+            error("Julia command has $(chunk.size) bytes; expected $bytes")
+        Int(chunk.offset) + bytes <= capacity(data) ||
+            error("Julia command exceeds its buffer")
         copyto!(process.state.command_bytes, PipeWireAO.bytes(data))
         all(isfinite, process.state.values) || error("Julia command is non-finite")
         queue_buffer!(process.buffer, stream)
@@ -85,33 +86,33 @@ function prepare_lockstep_command_sink()
     state = LockstepCommandState(values, reinterpret(UInt8, values), Atomic{UInt64}(0))
     loop = ThreadLoop("REVOLTClassicLockstepCommand")
     context = Context(loop)
-    core = CoreConnection(context; properties=Dict("remote.name" => core_name))
+    core = CoreConnection(context; properties = Dict("remote.name" => core_name))
     stream = Stream(
         core,
         LOCKSTEP_JULIA_SINK;
-        properties=Dict(
+        properties = Dict(
             "node.name" => LOCKSTEP_JULIA_SINK,
             "media.type" => "Application",
             "media.category" => "Filter",
             "media.role" => "DSP",
         ),
-        on_process=LockstepCommandProcess(state, StreamBuffer()),
+        on_process = LockstepCommandProcess(state, StreamBuffer()),
     )
     format = NdArrayFormat(
         NdArray.F32_LE,
         (command_count(),);
-        layout=NdArray.ROW_MAJOR,
-        rate=SPA.Fraction(500, 1),
+        layout = NdArray.ROW_MAJOR,
+        rate = SPA.Fraction(500, 1),
     )
     params = Pod[
-        ndarray_format(format; schema=REVOLT_CLASSIC_COMMAND_SCHEMA),
-        Pod(buffers_param(size=payload_size(format), buffers=2)),
+        ndarray_format(format; schema = REVOLT_CLASSIC_COMMAND_SCHEMA),
+        Pod(buffers_param(size = payload_size(format), buffers = 2)),
         Pod(header_metadata_param()),
     ]
     connect!(
         stream,
         :input;
-        flags=STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT,
+        flags = STREAM_MAP_BUFFERS | STREAM_INACTIVE | STREAM_DONT_RECONNECT,
         params,
     )
     start!(loop)
@@ -188,10 +189,7 @@ function subaperture_origins()
     origins = Tuple{Int,Int}[]
     for column in axes(mask, 2), row in axes(mask, 1)
         mask[row, column] || continue
-        push!(
-            origins,
-            ((row - 1) * SUBAPERTURE_SIZE, (column - 1) * SUBAPERTURE_SIZE),
-        )
+        push!(origins, ((row - 1) * SUBAPERTURE_SIZE, (column - 1) * SUBAPERTURE_SIZE))
     end
     length(origins) == 188 || error(
         "REVOLT Classic valid-subaperture mask selected $(length(origins)); expected 188",
@@ -204,30 +202,27 @@ const SUBAPERTURE_ORIGINS = subaperture_origins()
 function controller_slopes(frame)
     slopes = Vector{Float32}(undef, 2 * length(SUBAPERTURE_ORIGINS))
     center = Float32(SUBAPERTURE_SIZE - 1) * 0.5f0
-    for (subaperture, (row_origin, column_origin)) in
-        enumerate(SUBAPERTURE_ORIGINS)
+    for (subaperture, (row_origin, column_origin)) in enumerate(SUBAPERTURE_ORIGINS)
         x_moment = 0.0f0
         y_moment = 0.0f0
         flux = 0.0f0
-        for row in 0:(SUBAPERTURE_SIZE - 1),
-            column in 0:(SUBAPERTURE_SIZE - 1)
-            value = frame[row_origin + row + 1, column_origin + column + 1]
+        for row = 0:(SUBAPERTURE_SIZE-1), column = 0:(SUBAPERTURE_SIZE-1)
+            value = frame[row_origin+row+1, column_origin+column+1]
             x_moment += value * (Float32(column) - center)
             y_moment += value * (Float32(row) - center)
             flux += value
         end
-        isfinite(flux) || error(
-            "REVOLT Classic subaperture $subaperture has non-finite flux $flux",
-        )
+        isfinite(flux) ||
+            error("REVOLT Classic subaperture $subaperture has non-finite flux $flux")
         if flux > 0.0f0
-            slopes[2 * subaperture - 1] = x_moment / flux
-            slopes[2 * subaperture] = y_moment / flux
+            slopes[2*subaperture-1] = x_moment / flux
+            slopes[2*subaperture] = y_moment / flux
         else
             # The four lenslets wholly behind the central obstruction are
             # retained by the instrument's 188-entry geometric mask. The FGN
             # declaration reports them invalid and publishes zero slopes.
-            slopes[2 * subaperture - 1] = 0.0f0
-            slopes[2 * subaperture] = 0.0f0
+            slopes[2*subaperture-1] = 0.0f0
+            slopes[2*subaperture] = 0.0f0
         end
     end
     return slopes
@@ -238,11 +233,7 @@ function calibrate_controller()
     boundary = calibration.boundary
     sequence = step_hil_frame!(boundary)
     flat_slopes = controller_slopes(hil_frame_buffer(boundary))
-    interaction = Matrix{Float32}(
-        undef,
-        length(flat_slopes),
-        command_count(),
-    )
+    interaction = Matrix{Float32}(undef, length(flat_slopes), command_count())
     positive_slopes = similar(flat_slopes)
     poke = 2.0f-8
 
@@ -262,16 +253,15 @@ function calibrate_controller()
             (positive_slopes - negative_slopes) / (2 * poke)
     end
 
-    all(isfinite, interaction) || error(
-        "REVOLT Classic interaction matrix contains a non-finite value",
-    )
+    all(isfinite, interaction) ||
+        error("REVOLT Classic interaction matrix contains a non-finite value")
     singular_values = svdvals(interaction)
     retained_threshold = maximum(singular_values) * CONTROL_RTOL
     retained_rank = count(>(retained_threshold), singular_values)
     retained_rank >= 221 || error(
         "REVOLT Classic interaction matrix retains $retained_rank directions; expected at least 221",
     )
-    control_matrix = pinv(interaction; rtol=CONTROL_RTOL)
+    control_matrix = pinv(interaction; rtol = CONTROL_RTOL)
     size(control_matrix) == (277, 376) || error(
         "REVOLT Classic control matrix has shape $(size(control_matrix)); expected (277, 376)",
     )
@@ -293,10 +283,7 @@ function parameter_values(control_matrix)
 end
 
 function graph_configuration(plugin, reference_slopes, control_matrix)
-    origins = join(
-        ("[ $(origin[1]) $(origin[2]) ]" for origin in SUBAPERTURE_ORIGINS),
-        " ",
-    )
+    origins = join(("[ $(origin[1]) $(origin[2]) ]" for origin in SUBAPERTURE_ORIGINS), " ")
     native_plugin = isnothing(plugin) ? "" : "plugin = \"$plugin\""
     native_rate = isnothing(plugin) ? "" : "rate = [ 500 1 ]"
     return """
@@ -383,19 +370,16 @@ function require_close(field, sequence, actual, expected; rtol, atol)
         "[$index]: actual $(actual[index]), expected $(expected[index]), " *
         "absolute difference $difference"
     end
-    error(
-        "REVOLT Classic mismatch at sequence $sequence for $field$detail",
-    )
+    error("REVOLT Classic mismatch at sequence $sequence for $field$detail")
 end
 
-arrays_close(actual, expected; rtol, atol) =
-    all(
-        index -> isapprox(actual[index], expected[index]; rtol, atol),
-        eachindex(actual, expected),
-    )
+arrays_close(actual, expected; rtol, atol) = all(
+    index -> isapprox(actual[index], expected[index]; rtol, atol),
+    eachindex(actual, expected),
+)
 
 function prepare_phase(control_matrix)
-    plant = prepare_revolt_classic_pipewire_hil(; remote=core_name)
+    plant = prepare_revolt_classic_pipewire_hil(; remote = core_name)
     oracle = prepare_hil_system()
     oracle_sequence = Ref(step_hil_frame!(oracle.boundary))
     direct_state = zeros(Float32, command_count())
@@ -427,8 +411,8 @@ function require_plant_oracle_frame!(phase, sequence)
         sequence,
         hil_frame_buffer(phase.plant.boundary),
         hil_frame_buffer(phase.oracle.boundary);
-        rtol=1.0f-6,
-        atol=1.0f-7,
+        rtol = 1.0f-6,
+        atol = 1.0f-7,
     )
     for field in (:atmosphere_opd, :pdm_surface_opd, :pupil_opd)
         require_close(
@@ -436,8 +420,8 @@ function require_plant_oracle_frame!(phase, sequence)
             sequence,
             graph_output(plant_graph, Val(field)),
             graph_output(oracle_graph, Val(field));
-            rtol=1.0f-6,
-            atol=1.0f-15,
+            rtol = 1.0f-6,
+            atol = 1.0f-15,
         )
     end
     return nothing
@@ -446,13 +430,13 @@ end
 function source_end_snapshot(phase)
     graph = phase.plant.graph
     return (
-        plant_sequence=graph_step_sequence(graph),
-        oracle_sequence=graph_step_sequence(phase.oracle.graph),
-        frame=copy(hil_frame_buffer(phase.plant.boundary)),
-        command=copy(hil_command_buffer(phase.plant.boundary)),
-        atmosphere=copy(graph_output(graph, Val(:atmosphere_opd))),
-        pdm=copy(graph_output(graph, Val(:pdm_surface_opd))),
-        pupil=copy(graph_output(graph, Val(:pupil_opd))),
+        plant_sequence = graph_step_sequence(graph),
+        oracle_sequence = graph_step_sequence(phase.oracle.graph),
+        frame = copy(hil_frame_buffer(phase.plant.boundary)),
+        command = copy(hil_command_buffer(phase.plant.boundary)),
+        atmosphere = copy(graph_output(graph, Val(:atmosphere_opd))),
+        pdm = copy(graph_output(graph, Val(:pdm_surface_opd))),
+        pupil = copy(graph_output(graph, Val(:pupil_opd))),
     )
 end
 
@@ -474,25 +458,29 @@ function exchange_range!(
     control_matrix,
     native_commands,
     implementation,
-    gain=CONTROLLER_GAIN,
-    reset_state=false,
-    alternate_control_matrix=nothing,
-    parameter_adopted=Ref(false),
-    compare_implementations=true;
-    pole=CONTROLLER_POLE,
+    gain = CONTROLLER_GAIN,
+    reset_state = false,
+    alternate_control_matrix = nothing,
+    parameter_adopted = Ref(false),
+    compare_implementations = true;
+    pole = CONTROLLER_POLE,
 )
     reset_state && fill!(phase.direct_state, 0.0f0)
     # The parameter may become active at any frame boundary in this window.
     # Keep an independent reference state for each monotone adoption history.
-    candidate_states = isnothing(alternate_control_matrix) ? nothing :
-                       [(copy(phase.direct_state), false)]
+    candidate_states =
+        isnothing(alternate_control_matrix) ? nothing : [(copy(phase.direct_state), false)]
     for expected_sequence in sequences
         require_stable_provider_nodes(phase, implementation, expected_sequence)
-        println("REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence")
+        println(
+            "REVOLT_HIL_FRAME_BEGIN implementation=$implementation sequence=$expected_sequence",
+        )
         flush(stdout)
         completed_sequence = exchange_frame!(phase.plant.pipewire)
         require_stable_provider_nodes(phase, implementation, expected_sequence)
-        println("REVOLT_HIL_FRAME_EXCHANGED implementation=$implementation sequence=$expected_sequence")
+        println(
+            "REVOLT_HIL_FRAME_EXCHANGED implementation=$implementation sequence=$expected_sequence",
+        )
         flush(stdout)
         completed_sequence == expected_sequence || error(
             "$implementation expected sequence $expected_sequence, received $completed_sequence",
@@ -518,8 +506,8 @@ function exchange_range!(
                 if arrays_close(
                     transported_command,
                     updated_state;
-                    rtol=COMMAND_RTOL,
-                    atol=COMMAND_ATOL,
+                    rtol = COMMAND_RTOL,
+                    atol = COMMAND_ATOL,
                 )
                     push!(next_states, (updated_state, true))
                 end
@@ -528,8 +516,8 @@ function exchange_range!(
                     if arrays_close(
                         transported_command,
                         alternate_state;
-                        rtol=COMMAND_RTOL,
-                        atol=COMMAND_ATOL,
+                        rtol = COMMAND_RTOL,
+                        atol = COMMAND_ATOL,
                     )
                         push!(next_states, (alternate_state, false))
                     end
@@ -558,8 +546,8 @@ function exchange_range!(
                 expected_sequence,
                 transported_command,
                 phase.direct_state;
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
+                rtol = COMMAND_RTOL,
+                atol = COMMAND_ATOL,
             )
         end
 
@@ -571,32 +559,26 @@ function exchange_range!(
                 expected_sequence,
                 transported_command,
                 native_commands[Int(expected_sequence)];
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
+                rtol = COMMAND_RTOL,
+                atol = COMMAND_ATOL,
             )
         end
 
         if expected_sequence == UInt64(1)
-            all(iszero, graph_output(plant_graph, Val(:pdm_surface_opd))) || error(
-                "$implementation command 1 affected frame 1",
-            )
-            norm(transported_command) > 0.0f0 || error(
-                "$implementation command 1 is zero and cannot prove causality",
-            )
+            all(iszero, graph_output(plant_graph, Val(:pdm_surface_opd))) ||
+                error("$implementation command 1 affected frame 1")
+            norm(transported_command) > 0.0f0 ||
+                error("$implementation command 1 is zero and cannot prove causality")
         elseif expected_sequence == UInt64(2)
-            norm(graph_output(plant_graph, Val(:pdm_surface_opd))) > 0.0f0 || error(
-                "$implementation command 1 did not affect frame 2",
-            )
+            norm(graph_output(plant_graph, Val(:pdm_surface_opd))) > 0.0f0 ||
+                error("$implementation command 1 did not affect frame 2")
             println(
                 "REVOLT_HIL_CAUSALITY implementation=$implementation command_sequence=1 frame_sequence=2",
             )
             flush(stdout)
         end
 
-        copyto!(
-            hil_command_buffer(phase.oracle.boundary),
-            transported_command,
-        )
+        copyto!(hil_command_buffer(phase.oracle.boundary), transported_command)
         adopt_hil_command!(phase.oracle.boundary, phase.oracle_sequence[])
         expected_sequence < UInt64(10) &&
             (phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary))
@@ -625,12 +607,17 @@ function exchange_latency_range!(
     # transitions.
     phase.oracle_sequence[] = step_hil_frame!(phase.oracle.boundary)
     first_sequence = phase.oracle_sequence[]
-    observations = Vector{NamedTuple{
-        (:phase, :observation, :sequence, :source, :received, :latency),
-        Tuple{String,Int,UInt64,Int64,Int64,UInt64},
-    }}(undef, total)
+    observations = Vector{
+        NamedTuple{
+            (:phase, :observation, :sequence, :source, :received, :latency),
+            Tuple{String,Int,UInt64,Int64,Int64,UInt64},
+        },
+    }(
+        undef,
+        total,
+    )
 
-    for observation in 1:total
+    for observation = 1:total
         expected_sequence = first_sequence + UInt64(observation - 1)
         completed_sequence = exchange_frame!(phase.plant.pipewire)
         completed_sequence == expected_sequence || error(
@@ -653,15 +640,15 @@ function exchange_latency_range!(
         # command a checked controller result rather than merely a callback.
         slopes = controller_slopes(hil_frame_buffer(phase.plant.boundary))
         residual_command = control_matrix * (slopes - reference_slopes)
-        expected_command =
-            @. FINAL_CONTROLLER_POLE * phase.direct_state + FINAL_CONTROLLER_GAIN * residual_command
+        expected_command = @. FINAL_CONTROLLER_POLE * phase.direct_state +
+           FINAL_CONTROLLER_GAIN * residual_command
         require_close(
             "latency_hsdm277_command",
             expected_sequence,
             hil_command_buffer(phase.plant.boundary),
             expected_command;
-            rtol=COMMAND_RTOL,
-            atol=COMMAND_ATOL,
+            rtol = COMMAND_RTOL,
+            atol = COMMAND_ATOL,
         )
         copyto!(phase.direct_state, expected_command)
         copyto!(hil_command_buffer(phase.oracle.boundary), expected_command)
@@ -710,11 +697,12 @@ function run_lockstep(reference_slopes, control_matrix)
         start_lockstep_command_sink!(sink)
         println("REVOLT_HIL_LOCKSTEP_READY")
         flush(stdout)
-        while !isfile(stop_file) && !isfile(joinpath(control_directory, "revolt-lockstep-run"))
+        while !isfile(stop_file) &&
+              !isfile(joinpath(control_directory, "revolt-lockstep-run"))
             sleep(0.01)
         end
         isfile(stop_file) && return nothing
-        for sequence in UInt64(1):UInt64(10)
+        for sequence = UInt64(1):UInt64(10)
             exchange_range!(
                 phase,
                 sequence:sequence,
@@ -729,16 +717,16 @@ function run_lockstep(reference_slopes, control_matrix)
                 sequence,
                 sink.state.values,
                 phase.direct_state;
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
+                rtol = COMMAND_RTOL,
+                atol = COMMAND_ATOL,
             )
             require_close(
                 "same_input_native_julia_command",
                 sequence,
                 sink.state.values,
                 native_commands[Int(sequence)];
-                rtol=COMMAND_RTOL,
-                atol=COMMAND_ATOL,
+                rtol = COMMAND_RTOL,
+                atol = COMMAND_ATOL,
             )
             println("REVOLT_HIL_LOCKSTEP_MATCH sequence=$sequence")
             flush(stdout)
@@ -774,10 +762,7 @@ function main()
             control_matrix,
         ),
     )
-    write(
-        julia_graph_path,
-        graph_configuration(nothing, reference_slopes, control_matrix),
-    )
+    write(julia_graph_path, graph_configuration(nothing, reference_slopes, control_matrix))
     if get(ENV, "PIPEWIREAO_RTC_REVOLT_LOCKSTEP", "0") == "1"
         write(
             native_graph_path,
@@ -843,14 +828,17 @@ function main()
                     :native,
                     UPDATED_CONTROLLER_GAIN,
                     true;
-                    pole=UPDATED_CONTROLLER_POLE,
+                    pole = UPDATED_CONTROLLER_POLE,
                 )
-                println("REVOLT_HIL_ADOPTION implementation=native sequence=5 parameter=previous")
+                println(
+                    "REVOLT_HIL_ADOPTION implementation=native sequence=5 parameter=previous",
+                )
                 flush(stdout)
                 println("REVOLT_HIL_NATIVE_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
                 native_second_first_done = true
-            elseif native_second_first_done && !native_second_done &&
+            elseif native_second_first_done &&
+                   !native_second_done &&
                    isfile(native_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
@@ -865,11 +853,10 @@ function main()
                     control_matrix,
                     parameter_adopted,
                     false;
-                    pole=UPDATED_CONTROLLER_POLE,
+                    pole = UPDATED_CONTROLLER_POLE,
                 )
-                parameter_adopted[] || error(
-                    "native reconstructor parameter was not adopted by sequence 8",
-                )
+                parameter_adopted[] ||
+                    error("native reconstructor parameter was not adopted by sequence 8")
                 println("REVOLT_HIL_NATIVE_PARAMETER_DONE sequence=8")
                 flush(stdout)
                 native_second_done = true
@@ -886,7 +873,7 @@ function main()
                     nothing,
                     Ref(false),
                     false;
-                    pole=FINAL_CONTROLLER_POLE,
+                    pole = FINAL_CONTROLLER_POLE,
                 )
                 println("REVOLT_HIL_NATIVE_DONE sequence=10")
                 flush(stdout)
@@ -908,16 +895,26 @@ function main()
                 println("REVOLT_HIL_NATIVE_LATENCY_DONE samples=$(latency.samples)")
                 flush(stdout)
                 native_latency_done = true
-            elseif native_third_done && native_latency_done && !native_end_done &&
+            elseif native_third_done &&
+                   native_latency_done &&
+                   !native_end_done &&
                    isfile(native_source_end)
-                isnothing(latency) || error("finite source-end check requires no latency extension")
-                length(native_commands) == 10 || error("native finite source ended with $(length(native_commands)) commands")
-                graph_step_sequence(phase.plant.graph) == UInt64(10) || error("native plant advanced past final frame")
-                graph_step_sequence(phase.oracle.graph) == UInt64(10) || error("native oracle advanced past final frame")
+                isnothing(latency) ||
+                    error("finite source-end check requires no latency extension")
+                length(native_commands) == 10 || error(
+                    "native finite source ended with $(length(native_commands)) commands",
+                )
+                graph_step_sequence(phase.plant.graph) == UInt64(10) ||
+                    error("native plant advanced past final frame")
+                graph_step_sequence(phase.oracle.graph) == UInt64(10) ||
+                    error("native oracle advanced past final frame")
                 require_close(
-                    "native_final_controller_state", UInt64(10),
-                    hil_command_buffer(phase.plant.boundary), phase.direct_state;
-                    rtol=COMMAND_RTOL, atol=COMMAND_ATOL,
+                    "native_final_controller_state",
+                    UInt64(10),
+                    hil_command_buffer(phase.plant.boundary),
+                    phase.direct_state;
+                    rtol = COMMAND_RTOL,
+                    atol = COMMAND_ATOL,
                 )
                 println("REVOLT_HIL_NATIVE_SOURCE_END sequence=10 commands=10")
                 flush(stdout)
@@ -933,9 +930,8 @@ function main()
         end
 
         isfile(stop_file) && exit()
-        native_third_done && native_latency_done || error(
-            "cannot switch to Julia before the native REVOLT sequence completes",
-        )
+        native_third_done && native_latency_done ||
+            error("cannot switch to Julia before the native REVOLT sequence completes")
         close(phase.plant.pipewire)
         phase = prepare_phase(control_matrix)
         println("REVOLT_HIL_JULIA_READY")
@@ -972,14 +968,17 @@ function main()
                     :julia,
                     UPDATED_CONTROLLER_GAIN,
                     true;
-                    pole=UPDATED_CONTROLLER_POLE,
+                    pole = UPDATED_CONTROLLER_POLE,
                 )
-                println("REVOLT_HIL_ADOPTION implementation=julia sequence=5 parameter=previous")
+                println(
+                    "REVOLT_HIL_ADOPTION implementation=julia sequence=5 parameter=previous",
+                )
                 flush(stdout)
                 println("REVOLT_HIL_JULIA_PHASE_2_FIRST_DONE sequence=5")
                 flush(stdout)
                 julia_second_first_done = true
-            elseif julia_second_first_done && !julia_second_done &&
+            elseif julia_second_first_done &&
+                   !julia_second_done &&
                    isfile(julia_phase_2_continue)
                 parameter_adopted = Ref(false)
                 exchange_range!(
@@ -994,11 +993,10 @@ function main()
                     control_matrix,
                     parameter_adopted,
                     false;
-                    pole=UPDATED_CONTROLLER_POLE,
+                    pole = UPDATED_CONTROLLER_POLE,
                 )
-                parameter_adopted[] || error(
-                    "Julia reconstructor parameter was not adopted by sequence 8",
-                )
+                parameter_adopted[] ||
+                    error("Julia reconstructor parameter was not adopted by sequence 8")
                 println("REVOLT_HIL_JULIA_PARAMETER_DONE sequence=8")
                 flush(stdout)
                 julia_second_done = true
@@ -1015,7 +1013,7 @@ function main()
                     nothing,
                     Ref(false),
                     false;
-                    pole=FINAL_CONTROLLER_POLE,
+                    pole = FINAL_CONTROLLER_POLE,
                 )
                 println("REVOLT_HIL_JULIA_DONE sequence=10")
                 flush(stdout)
@@ -1037,15 +1035,23 @@ function main()
                 println("REVOLT_HIL_JULIA_LATENCY_DONE samples=$(latency.samples)")
                 flush(stdout)
                 julia_latency_done = true
-            elseif julia_third_done && julia_latency_done && !julia_end_done &&
+            elseif julia_third_done &&
+                   julia_latency_done &&
+                   !julia_end_done &&
                    isfile(julia_source_end)
-                isnothing(latency) || error("finite source-end check requires no latency extension")
-                graph_step_sequence(phase.plant.graph) == UInt64(10) || error("Julia plant advanced past final frame")
-                graph_step_sequence(phase.oracle.graph) == UInt64(10) || error("Julia oracle advanced past final frame")
+                isnothing(latency) ||
+                    error("finite source-end check requires no latency extension")
+                graph_step_sequence(phase.plant.graph) == UInt64(10) ||
+                    error("Julia plant advanced past final frame")
+                graph_step_sequence(phase.oracle.graph) == UInt64(10) ||
+                    error("Julia oracle advanced past final frame")
                 require_close(
-                    "julia_final_controller_state", UInt64(10),
-                    hil_command_buffer(phase.plant.boundary), phase.direct_state;
-                    rtol=COMMAND_RTOL, atol=COMMAND_ATOL,
+                    "julia_final_controller_state",
+                    UInt64(10),
+                    hil_command_buffer(phase.plant.boundary),
+                    phase.direct_state;
+                    rtol = COMMAND_RTOL,
+                    atol = COMMAND_ATOL,
                 )
                 println("REVOLT_HIL_JULIA_SOURCE_END sequence=10 commands=10")
                 flush(stdout)

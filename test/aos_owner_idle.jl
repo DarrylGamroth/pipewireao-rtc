@@ -15,12 +15,19 @@ function idle_owner_polls!(options, mailbox, state, payload, count)
         return nothing
     end
     period = options.pacing_period_ns
-    for _ in 1:count
+    for _ = 1:count
         # The real transport specialization is large enough to keep this call
         # out of line. Enforce that boundary for the headless Nothing fixture;
         # otherwise inlining erases the unspecialized callback boxing defect.
-        @noinline IdleOwnerExtension.consume_control!(options, mailbox, nothing,
-            state, period, reset_owner!, nothing)
+        @noinline IdleOwnerExtension.consume_control!(
+            options,
+            mailbox,
+            nothing,
+            state,
+            period,
+            reset_owner!,
+            nothing,
+        )
     end
     return nothing
 end
@@ -29,10 +36,12 @@ function idle_owner_bytes(options, mailbox, state, payload, count)
     return @allocated idle_owner_polls!(options, mailbox, state, payload, count)
 end
 
-println("AOS_IDLE_OWNER julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) source=$(pathof(PipeWireAORTC))")
+println(
+    "AOS_IDLE_OWNER julia=$(VERSION) rtc=$(pkgversion(PipeWireAORTC)) source=$(pathof(PipeWireAORTC))",
+)
 
 @testset "idle AOS owner retains its locally captured reset callback" begin
-    options = (; pacing_period_ns=UInt64(2_000_000), owner_check=()->nothing)
+    options = (; pacing_period_ns = UInt64(2_000_000), owner_check = ()->nothing)
     mailbox = PipeWireAORTC.SourceControl.Mailbox(Int64(1))
     state = IdleOwnerExtension.OwnerState()
     payload = ntuple(index -> UInt64(index), 512)

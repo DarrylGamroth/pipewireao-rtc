@@ -1,5 +1,7 @@
-using AdaptiveOpticsSim.AlgorithmGraphs: MultiLayerAtmosphereOPDNodeConfig,
-    CMOSDetectorAcquisitionNodeConfig, EMCCDDetectorAcquisitionNodeConfig
+using AdaptiveOpticsSim.AlgorithmGraphs:
+    MultiLayerAtmosphereOPDNodeConfig,
+    CMOSDetectorAcquisitionNodeConfig,
+    EMCCDDetectorAcquisitionNodeConfig
 
 atmosphere_seed(config) = nothing
 atmosphere_seed(config::MultiLayerAtmosphereOPDNodeConfig) = config.rng_seed
@@ -13,9 +15,11 @@ function single_seed(definition::AlgorithmGraphDefinition, select)
 end
 
 # Read the prepared execution, never infer capture from a backend label.
-function execution_properties(graph; prefix="aos.simulation.")
-    return Dict(prefix * "execution" => string(nameof(typeof(graph_execution_policy(graph)))),
-        prefix * "captured-node-count" => string(captured_graph_node_count(graph)))
+function execution_properties(graph; prefix = "aos.simulation.")
+    return Dict(
+        prefix * "execution" => string(nameof(typeof(graph_execution_policy(graph)))),
+        prefix * "captured-node-count" => string(captured_graph_node_count(graph)),
+    )
 end
 
 """
@@ -44,21 +48,26 @@ function simulation_properties(options, science)
     properties = Dict{String,String}(
         "aos.simulation.backend" => string(options.backend),
         "aos.simulation.device" => string(options.device),
-        "aos.simulation.model-period-ns" => string(options.period_ns))
-    if get(options,:version,nothing)!=5
-        properties["aos.simulation.exposure-ns"]=string(science.configuration.exposure_duration_ns)
+        "aos.simulation.model-period-ns" => string(options.period_ns),
+    )
+    if get(options, :version, nothing)!=5
+        properties["aos.simulation.exposure-ns"]=string(
+            science.configuration.exposure_duration_ns,
+        )
     end
-    if get(options,:version,nothing) in (3,5)
-        declaration = PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
+    if get(options, :version, nothing) in (3, 5)
+        declaration =
+            PipeWireAORTC.InstrumentConfiguration.load_simulation(options.plant.definition)
         properties["aos.simulation.package"] = declaration.document["id"]
-        profile=get(options.plant.settings,:profile,nothing)
+        profile=get(options.plant.settings, :profile, nothing)
         profile===nothing || (properties["aos.simulation.profile"]=string(profile))
         properties["aos.simulation.graph"] = get(options.plant, :graph, "production")
     elseif options.plant !== nothing
         instrument = options.plant_module
         properties["aos.simulation.package"] = string(nameof(instrument))
         version = Base.pkgversion(instrument)
-        version === nothing || (properties["aos.simulation.package-version"] = string(version))
+        version === nothing ||
+            (properties["aos.simulation.package-version"] = string(version))
         profile = get(options.plant.settings, :profile, nothing)
         profile === nothing || (properties["aos.simulation.profile"] = string(profile))
     end
@@ -68,9 +77,11 @@ function simulation_properties(options, science)
     calibration_identity = get(options, :calibration_identity, nothing)
     calibration_identity === nothing ||
         (properties["aos.simulation.calibration-identity"] = calibration_identity)
-    for (name, seed) in (("atmosphere-rng-seed", single_seed(science.definition, atmosphere_seed)),
-            ("detector-rng-seed", single_seed(science.definition, detector_seed)))
-        seed === nothing || (properties["aos.simulation." * name] = string(seed))
+    for (name, seed) in (
+        ("atmosphere-rng-seed", single_seed(science.definition, atmosphere_seed)),
+        ("detector-rng-seed", single_seed(science.definition, detector_seed)),
+    )
+        seed === nothing || (properties["aos.simulation."*name] = string(seed))
     end
     hasproperty(science, :graph) && merge!(properties, execution_properties(science.graph))
     return properties

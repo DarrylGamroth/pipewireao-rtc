@@ -13,7 +13,7 @@ package_root() = pkgdir(@__MODULE__)
 function resource_root()
     root = joinpath(package_root(), "assets", "deployment")
     all(isdir(joinpath(root, name)) for name in ("hil", "templates")) &&
-        isfile(joinpath(root, "pipewireao-session@.service.in")) ||
+    isfile(joinpath(root, "pipewireao-session@.service.in")) ||
         throw(ArgumentError("deployment resources are incomplete: $root"))
     return root
 end
@@ -23,7 +23,10 @@ function source_relative_path(path::AbstractString)
     absolute = abspath(path)
     for (root, prefix) in ((package_root(), "julia"),)
         relative = relpath(absolute, root)
-        (relative == ".." || startswith(relative, ".." * string(Base.Filesystem.path_separator))) && continue
+        (
+            relative == ".." ||
+            startswith(relative, ".." * string(Base.Filesystem.path_separator))
+        ) && continue
         # SDK source evidence retains its Julia project prefix after relocation.
         return isempty(prefix) ? relative : joinpath(prefix, relative)
     end
@@ -85,10 +88,33 @@ include("instrument_calibration.jl")
 include("simulator_configuration.jl")
 include("management_cli.jl")
 
-public Analysis, InstrumentExport, InstrumentCalibration, InstrumentConfiguration, InstrumentDefinition, ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, ManagementCLI, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
-    SessionClient, CalibrationEndpoint, CalibrationAcquisition, CalibrationPreparation, CalibrationCLI, SessionCLI,
-    OwnerBootstrapRuntime, ParameterSource, SourceControl, GraphOwner,
-    CorrectionRecovery, CorrectionSupervision, MediaSession
+public Analysis,
+    InstrumentExport,
+    InstrumentCalibration,
+    InstrumentConfiguration,
+    InstrumentDefinition,
+    ConfigurationStore,
+    ConfigurationStoreCLI,
+    SimulatorConfiguration,
+    ManagementCLI,
+    AOSOwner,
+    Artifacts,
+    SessionConfiguration,
+    SessionInstall,
+    SessionRuntime,
+    SessionClient,
+    CalibrationEndpoint,
+    CalibrationAcquisition,
+    CalibrationPreparation,
+    CalibrationCLI,
+    SessionCLI,
+    OwnerBootstrapRuntime,
+    ParameterSource,
+    SourceControl,
+    GraphOwner,
+    CorrectionRecovery,
+    CorrectionSupervision,
+    MediaSession
 
 include("media_session/MediaSession.jl")
 

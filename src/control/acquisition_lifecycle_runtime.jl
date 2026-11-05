@@ -12,9 +12,14 @@ const Client = ControlClient
 const Endpoint = ControlEndpoint
 const Codec = AcquisitionLifecycleCodec
 const Profile = Codec.Profile
-const Commands = Union{Codec.LifecycleCommand{:status}, Codec.LifecycleCommand{:pause},
-    Codec.LifecycleCommand{:resume}, Codec.LifecycleCommand{:reset},
-    Codec.LifecycleCommand{:connect}, Codec.LifecycleCommand{:shutdown}}
+const Commands = Union{
+    Codec.LifecycleCommand{:status},
+    Codec.LifecycleCommand{:pause},
+    Codec.LifecycleCommand{:resume},
+    Codec.LifecycleCommand{:reset},
+    Codec.LifecycleCommand{:connect},
+    Codec.LifecycleCommand{:shutdown},
+}
 const POLL_SECONDS = 0.005
 
 export Runtime, has_pending, poll!, take!, lifecycle!, complete!, flush_terminal!
@@ -32,8 +37,12 @@ mutable struct Runtime{P<:Profile,C,E,L}
 end
 
 """Publish Preparing before the existing owner prepares its science or plant."""
-function Runtime(profile::P, remote::AbstractString, name::AbstractString,
-        instance::Int64) where {P<:Profile}
+function Runtime(
+    profile::P,
+    remote::AbstractString,
+    name::AbstractString,
+    instance::Int64,
+) where {P<:Profile}
     path = Client.private_remote(remote)
     loop = ThreadLoop("rtc.acquisition.lifecycle.owner")
     context = core = endpoint = registry_listener = nothing
@@ -44,46 +53,75 @@ function Runtime(profile::P, remote::AbstractString, name::AbstractString,
     try
         with_thread_loop_lock(loop) do _
             context = Context(loop)
-            core = CoreConnection(context; properties=Dict("remote.name" => path),
-                on_done=(core, id, sequence) -> begin
+            core = CoreConnection(
+                context;
+                properties = Dict("remote.name" => path),
+                on_done = (core, id, sequence) -> begin
                     id == 0 && (acknowledged_sequence[] = sequence)
                     nothing
                 end,
-                on_error=(core, id, sequence, error) -> begin
+                on_error = (core, id, sequence, error) -> begin
                     connection_failure[] = sprint(showerror, error)
                     current = endpoint_ref[]
                     current === nothing || (current.failure = connection_failure[])
                     wake[] = true
                     nothing
-                end)
-            endpoint = Endpoint.Endpoint(profile, Commands, loop, core,
-                name, instance, Codec.Preparing;
-                publisher=(filter, params) -> begin
+                end,
+            )
+            endpoint = Endpoint.Endpoint(
+                profile,
+                Commands,
+                loop,
+                core,
+                name,
+                instance,
+                Codec.Preparing;
+                publisher = (filter, params) -> begin
                     wake[] = true
                     update_params!(filter, params)
-                end)
-            registry_listener = add_listener!(something(endpoint.registry);
-                on_global_added=(registry, global_object) -> (wake[] = true; nothing),
-                on_global_removed=(registry, id) -> (wake[] = true; nothing))
+                end,
+            )
+            registry_listener = add_listener!(
+                something(endpoint.registry);
+                on_global_added = (registry, global_object) -> (wake[] = true; nothing),
+                on_global_removed = (registry, id) -> (wake[] = true; nothing),
+            )
             endpoint_ref[] = endpoint
             connection_failure[] === nothing || (endpoint.failure = connection_failure[])
         end
         start!(loop)
-        return Runtime(profile, loop, context, core, endpoint, registry_listener,
-            acknowledged_sequence, wake, false)
+        return Runtime(
+            profile,
+            loop,
+            context,
+            core,
+            endpoint,
+            registry_listener,
+            acknowledged_sequence,
+            wake,
+            false,
+        )
     catch primary
         failures = Exception[primary]
         try
             with_thread_loop_lock(loop) do _
                 for resource in (registry_listener, endpoint, core, context)
                     resource === nothing && continue
-                    try close(resource) catch cleanup; push!(failures, cleanup) end
+                    try
+                        close(resource)
+                    catch cleanup
+                        push!(failures, cleanup)
+                    end
                 end
             end
         catch cleanup
             push!(failures, cleanup)
         end
-        try close(loop) catch cleanup; push!(failures, cleanup) end
+        try
+            close(loop)
+        catch cleanup
+            push!(failures, cleanup)
+        end
         length(failures) == 1 && rethrow()
         throw(CompositeException(failures))
     end
@@ -107,18 +145,30 @@ function lifecycle!(runtime::Runtime, lifecycle::Codec.ColdLifecycle)
 end
 
 """Publish the result of an accepted ticket after the sole owner has applied it."""
-function complete!(runtime::Runtime, ticket::Endpoint.Ticket,
-        lifecycle::Codec.ColdLifecycle, snapshot::Union{Nothing,Codec.Snapshot};
-        result::Int32=Int32(0), message::AbstractString="", terminal::Bool=false)
-    header = Envelope.ReplyHeader(ticket.header.controller, runtime.endpoint.instance,
-        ticket.header.token, ticket.header.operation, result)
-    completion = Client.encode_completion(runtime.profile, header, lifecycle, snapshot, message)
+function complete!(
+    runtime::Runtime,
+    ticket::Endpoint.Ticket,
+    lifecycle::Codec.ColdLifecycle,
+    snapshot::Union{Nothing,Codec.Snapshot};
+    result::Int32 = Int32(0),
+    message::AbstractString = "",
+    terminal::Bool = false,
+)
+    header = Envelope.ReplyHeader(
+        ticket.header.controller,
+        runtime.endpoint.instance,
+        ticket.header.token,
+        ticket.header.operation,
+        result,
+    )
+    completion =
+        Client.encode_completion(runtime.profile, header, lifecycle, snapshot, message)
     Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
     return nothing
 end
 
 """Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(runtime::Runtime, deadline::Float64; check=()->nothing)
+function flush_terminal!(runtime::Runtime, deadline::Float64; check = ()->nothing)
     Client.deadline_check(deadline, check)
     sequence = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
@@ -143,15 +193,23 @@ function Base.close(runtime::Runtime)
     failures = Exception[]
     try
         with_thread_loop_lock(runtime.loop) do _
-            for resource in (runtime.registry_listener, runtime.endpoint,
-                    runtime.core, runtime.context)
-                try close(resource) catch error; push!(failures, error) end
+            for resource in
+                (runtime.registry_listener, runtime.endpoint, runtime.core, runtime.context)
+                try
+                    close(resource)
+                catch error
+                    push!(failures, error)
+                end
             end
         end
     catch error
         push!(failures, error)
     end
-    try close(runtime.loop) catch error; push!(failures, error) end
+    try
+        close(runtime.loop)
+    catch error
+        push!(failures, error)
+    end
     isempty(failures) || throw(CompositeException(failures))
     return nothing
 end

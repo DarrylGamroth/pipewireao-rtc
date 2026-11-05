@@ -9,14 +9,31 @@ with_control_private_core() do socket, directory, daemon
     log = open(joinpath(evidence, "rust.log"), "w")
     child = nothing
     try
-        child = run(pipeline(addenv(Cmd([binary,
-            "live::deadline_tests::dropped_clean_adapter_does_not_start_new_sync",
-            "--exact", "--ignored", "--nocapture"]),
-            "PIPEWIREAO_DROP_PROOF_REMOTE" => socket,
-            "PIPEWIREAO_DROP_PROOF_DIRECTORY" => directory);
-            stdout=log, stderr=log); wait=false)
-        wait_proof(() -> isfile(joinpath(directory, "ready")), 15, "clean adapter";
-            check=() -> Base.process_exited(child) && error("Rust test exited before readiness"))
+        child = run(
+            pipeline(
+                addenv(
+                    Cmd([
+                        binary,
+                        "live::deadline_tests::dropped_clean_adapter_does_not_start_new_sync",
+                        "--exact",
+                        "--ignored",
+                        "--nocapture",
+                    ]),
+                    "PIPEWIREAO_DROP_PROOF_REMOTE" => socket,
+                    "PIPEWIREAO_DROP_PROOF_DIRECTORY" => directory,
+                );
+                stdout = log,
+                stderr = log,
+            );
+            wait = false,
+        )
+        wait_proof(
+            () -> isfile(joinpath(directory, "ready")),
+            15,
+            "clean adapter";
+            check = () ->
+                Base.process_exited(child) && error("Rust test exited before readiness"),
+        )
         kill(daemon, 19)
         try
             write(joinpath(directory, "drop"), "")
@@ -24,7 +41,11 @@ with_control_private_core() do socket, directory, daemon
         finally
             kill(daemon, 18)
         end
-        cp(joinpath(directory, "elapsed-ns"), joinpath(evidence, "elapsed-ns"); force=true)
+        cp(
+            joinpath(directory, "elapsed-ns"),
+            joinpath(evidence, "elapsed-ns");
+            force = true,
+        )
         wait(child)
         @test success(child)
     finally

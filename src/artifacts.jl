@@ -27,7 +27,7 @@ struct FITSArtifact
     path::String
     hdu::Int
     axes::Union{Nothing,Tuple{Vararg{Int}}}
-    function FITSArtifact(path::AbstractString; hdu=1, axes=nothing)
+    function FITSArtifact(path::AbstractString; hdu = 1, axes = nothing)
         !isempty(path) && !occursin('\0', path) ||
             throw(ArgumentError("FITS artifact path must be nonempty and contain no NUL"))
         hdu = checked_hdu(hdu)
@@ -42,7 +42,8 @@ function checked_hdu(value::Integer)
     1 <= value <= typemax(Int) || return checked_hdu(nothing)
     return value
 end
-checked_dimension(value) = throw(ArgumentError("artifact dimensions must be positive integers"))
+checked_dimension(value) =
+    throw(ArgumentError("artifact dimensions must be positive integers"))
 checked_dimension(value::Bool) = checked_dimension(nothing)
 function checked_dimension(value::Integer)
     1 <= value <= typemax(Int) || return checked_dimension(nothing)
@@ -72,7 +73,8 @@ struct PreparedArtifact{T,N}
     provenance::Dict{String,Any}
 end
 
-checked_shape(shape, width::Int) = throw(ArgumentError("artifact shape must be a nonempty tuple or vector"))
+checked_shape(shape, width::Int) =
+    throw(ArgumentError("artifact shape must be a nonempty tuple or vector"))
 function checked_shape(shape::Union{Tuple,AbstractVector}, width::Int)
     !isempty(shape) ||
         throw(ArgumentError("artifact shape must be a nonempty tuple or vector"))
@@ -93,27 +95,36 @@ function snapshot(path::String; check)
     before = lstat(path)
     isfile(before) && before.size <= MAX_FITS_BYTES ||
         throw(ArgumentError("FITS artifact must be a regular file of at most 512 MiB"))
-    flags = Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW | Base.Filesystem.JL_O_NONBLOCK
+    flags =
+        Base.Filesystem.JL_O_RDONLY | Base.Filesystem.JL_O_NOFOLLOW |
+        Base.Filesystem.JL_O_NONBLOCK
     file = Base.Filesystem.open(path, flags)
     try
         opened = stat(file)
-        isfile(opened) && opened.device == before.device && opened.inode == before.inode &&
-            opened.size == before.size && opened.mtime == before.mtime && opened.ctime == before.ctime ||
+        isfile(opened) &&
+        opened.device == before.device &&
+        opened.inode == before.inode &&
+        opened.size == before.size &&
+        opened.mtime == before.mtime &&
+        opened.ctime == before.ctime ||
             throw(ArgumentError("FITS artifact changed before open"))
         bytes = Vector{UInt8}(undef, Int(opened.size))
         offset = 0
         while offset < length(bytes)
             check()
             count = min(1024 * 1024, length(bytes) - offset)
-            read!(file, view(bytes, (offset + 1):(offset + count)))
+            read!(file, view(bytes, (offset+1):(offset+count)))
             offset += count
         end
         after = stat(file)
-        after.size == opened.size && after.mtime == opened.mtime && after.ctime == opened.ctime ||
+        after.size == opened.size &&
+        after.mtime == opened.mtime &&
+        after.ctime == opened.ctime ||
             throw(ArgumentError("FITS artifact changed during capture"))
         check()
-        length(bytes) >= 9 && view(bytes, 1:9) == codeunits("SIMPLE  =") ||
-            throw(ArgumentError("artifact must be an uncompressed FITS file with a primary HDU"))
+        length(bytes) >= 9 && view(bytes, 1:9) == codeunits("SIMPLE  =") || throw(
+            ArgumentError("artifact must be an uncompressed FITS file with a primary HDU"),
+        )
         return bytes
     finally
         close(file)
@@ -123,7 +134,8 @@ end
 function image_axes(source::FITSArtifact, rank::Int)
     permutation = source.axes
     if permutation === nothing
-        rank == 1 || throw(ArgumentError("multidimensional FITS artifacts require explicit axes"))
+        rank == 1 ||
+            throw(ArgumentError("multidimensional FITS artifacts require explicit axes"))
         permutation = (1,)
     end
     length(permutation) == rank ||
@@ -165,7 +177,7 @@ unsigned_word(value::Int32) = reinterpret(UInt32, value)
 unsigned_word(value::Float32) = reinterpret(UInt32, value)
 unsigned_word(value::Float64) = reinterpret(UInt64, value)
 
-function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
+function packed_bytes(data::Array{T,N}; check = ()->nothing) where {T,N}
     check()
     checked_shape(size(data), sizeof(T))
     bytes = Vector{UInt8}(undef, length(data) * sizeof(T))
@@ -177,12 +189,12 @@ function packed_bytes(data::Array{T,N}; check=()->nothing) where {T,N}
 end
 
 # Specialize iteration on the concrete permutation selected during setup.
-function packed_bytes!(bytes::Vector{UInt8}, storage::AbstractArray{T}, check) where T
+function packed_bytes!(bytes::Vector{UInt8}, storage::AbstractArray{T}, check) where {T}
     position = 1
     for (index, value) in enumerate(storage)
         (index - 1) % 65536 == 0 && check()
         word = unsigned_word(value)
-        for shift in 0:8:(8 * sizeof(T) - 1)
+        for shift = 0:8:(8*sizeof(T)-1)
             bytes[position] = UInt8((word >> shift) & 0xff)
             position += 1
         end
@@ -196,7 +208,7 @@ end
 Return transient little-endian, row-major bytes of the artifact's current data.
 Bool values use zero/one bytes. This operation does not write files.
 """
-pack(artifact::PreparedArtifact; check=()->nothing) = packed_bytes(artifact.data; check)
+pack(artifact::PreparedArtifact; check = ()->nothing) = packed_bytes(artifact.data; check)
 
 """
     prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing)
@@ -210,7 +222,7 @@ conversion is performed. Both the source image and target are limited to 256 MiB
 The optional `check` callback can cancel preparation by throwing; its exception
 propagates, and no prepared result is returned. No file is written.
 """
-function prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing) where T
+function prepare(source::FITSArtifact, ::Type{T}, shape; check = ()->nothing) where {T}
     check()
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
     target_shape = checked_shape(shape, sizeof(T))
@@ -219,7 +231,7 @@ function prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing) wher
 end
 
 # Specialize conversion on the decoded array and selected logical permutation.
-function convert_values!(data::Array{T}, logical::AbstractArray, check) where T
+function convert_values!(data::Array{T}, logical::AbstractArray, check) where {T}
     for (position, index) in enumerate(CartesianIndices(logical))
         (position - 1) % 65536 == 0 && check()
         data[index] = convert_value(T, logical[index])
@@ -231,8 +243,13 @@ checked_image(image::ImageHDU) = image
 checked_image(image) = throw(ArgumentError("artifact HDU must contain an image"))
 
 # Internal shared preparation boundary: the catalog retains exactly these bytes.
-function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
-        original::Vector{UInt8}; check=()->nothing) where T
+function prepare_snapshot(
+    source::FITSArtifact,
+    ::Type{T},
+    shape,
+    original::Vector{UInt8};
+    check = ()->nothing,
+) where {T}
     check()
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
     target_shape = checked_shape(shape, sizeof(T))
@@ -240,31 +257,45 @@ function prepare_snapshot(source::FITSArtifact, ::Type{T}, shape,
     check()
     # A byte-vector FITS handle has no filename parser and cannot reopen the source.
     return FITS(original, "r") do fits
-        source.hdu <= length(fits) || throw(ArgumentError("FITS HDU does not exist: $(source.hdu)"))
+        source.hdu <= length(fits) ||
+            throw(ArgumentError("FITS HDU does not exist: $(source.hdu)"))
         image = fits[source.hdu]
         image = checked_image(image)
         header = read_header(image)
-        haskey(header, "BLANK") && throw(ArgumentError("FITS BLANK/null masks are not supported"))
-        haskey(header, "ZIMAGE") && throw(ArgumentError("compressed FITS images are not supported"))
+        haskey(header, "BLANK") &&
+            throw(ArgumentError("FITS BLANK/null masks are not supported"))
+        haskey(header, "ZIMAGE") &&
+            throw(ArgumentError("compressed FITS images are not supported"))
         source_shape = checked_shape(size(image), sizeof(eltype(image)))
         permutation = image_axes(source, length(source_shape))
         logical_shape = Tuple(source_shape[axis] for axis in permutation)
-        logical_shape == target_shape || throw(DimensionMismatch(
-            "FITS logical shape $logical_shape differs from target $target_shape"))
+        logical_shape == target_shape || throw(
+            DimensionMismatch(
+                "FITS logical shape $logical_shape differs from target $target_shape",
+            ),
+        )
         source_data = read(image)
         check()
         logical = PermutedDimsArray(source_data, permutation)
         data = Array{T}(undef, target_shape)
         convert_values!(data, logical, check)
         provenance = Dict{String,Any}(
-            "source" => source.path, "original_sha256" => original_hash,
+            "source" => source.path,
+            "original_sha256" => original_hash,
             "sha256" => bytes2hex(SHA.sha256(packed_bytes(data; check))),
-            "hdu" => source.hdu, "axes" => collect(permutation),
-            "source_type" => string(eltype(image)), "source_shape" => collect(source_shape),
-            "target_type" => string(T), "target_shape" => collect(target_shape),
-            "byte_order" => "little-endian", "storage_order" => "row-major",
-            "conversion" => T <: AbstractFloat ? "finite float conversion; target rounding allowed; overflow rejected" :
-                T === Bool ? "exact zero/one conversion" : "exact integer conversion")
+            "hdu" => source.hdu,
+            "axes" => collect(permutation),
+            "source_type" => string(eltype(image)),
+            "source_shape" => collect(source_shape),
+            "target_type" => string(T),
+            "target_shape" => collect(target_shape),
+            "byte_order" => "little-endian",
+            "storage_order" => "row-major",
+            "conversion" =>
+                T <: AbstractFloat ?
+                "finite float conversion; target rounding allowed; overflow rejected" :
+                T === Bool ? "exact zero/one conversion" : "exact integer conversion",
+        )
         for key in ("BSCALE", "BZERO", "BUNIT")
             haskey(header, key) && (provenance[key] = header[key])
         end

@@ -5,7 +5,8 @@ import ..Placement
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import Hsm
 
-export Coordinator, Service, pid, alive, failure, record, verify!, stop!, launching!, running!, uncertain!
+export Coordinator,
+    Service, pid, alive, failure, record, verify!, stop!, launching!, running!, uncertain!
 
 const PREFIX = "pipewireao-owner-"
 const NONCE = r"^[0-9a-f]{32}$"
@@ -26,7 +27,8 @@ struct Coordinator
     cgroup::String
     launcher::String
 end
-Coordinator(unit::String, invocation::String, cgroup::String) = Coordinator(unit, invocation, cgroup, "")
+Coordinator(unit::String, invocation::String, cgroup::String) =
+    Coordinator(unit, invocation, cgroup, "")
 
 """
     Service(coordinator, role)
@@ -54,62 +56,79 @@ end
 @statedef Service :Uncertain
 @statedef Service :StopFailed
 
-@on_initial function(service::Service, ::Root)
+@on_initial function (service::Service, ::Root)
     return Hsm.transition!(service, :Pending)
 end
-@on_event function(service::Service, ::Root, ::LaunchRequested, _)
+@on_event function (service::Service, ::Root, ::LaunchRequested, _)
     return Hsm.transition!(service, :Launching)
 end
-@on_event function(service::Service, ::Root, ::RunningRecorded, _)
+@on_event function (service::Service, ::Root, ::RunningRecorded, _)
     return Hsm.transition!(service, :Running)
 end
-@on_event function(service::Service, ::Root, ::LaunchUncertain, _)
+@on_event function (service::Service, ::Root, ::LaunchUncertain, _)
     return Hsm.transition!(service, :Uncertain)
 end
-@on_event function(service::Service, ::Root, ::IdentityRetained, values)
+@on_event function (service::Service, ::Root, ::IdentityRetained, values)
     retain_identity!(service, values)
     return Hsm.transition!(service, :Running)
 end
-@on_event function(service::Service, ::Running, ::Verified, _)
+@on_event function (service::Service, ::Running, ::Verified, _)
     verify_identity(service)
     return Hsm.EventHandled
 end
-@on_event function(service::Service, ::Root, ::Verified, _)
+@on_event function (service::Service, ::Root, ::Verified, _)
     fail("owner service has no retained running identity")
 end
-@on_event function(service::Service, ::Running, ::FailureChecked, _)
+@on_event function (service::Service, ::Running, ::FailureChecked, _)
     check_failure!(service)
     return Hsm.EventHandled
 end
-@on_event function(service::Service, ::Root, ::FailureChecked, _)
+@on_event function (service::Service, ::Root, ::FailureChecked, _)
     return Hsm.EventHandled
 end
-@on_event function(service::Service, ::Pending, ::Stop, _)
+@on_event function (service::Service, ::Pending, ::Stop, _)
     return Hsm.EventHandled
 end
-@on_event function(service::Service, ::Stopped, ::Stop, _)
+@on_event function (service::Service, ::Stopped, ::Stop, _)
     return Hsm.EventHandled
 end
-@on_event function(service::Service, ::Root, ::Stop, grace)
+@on_event function (service::Service, ::Root, ::Stop, grace)
     if stop_result(service, grace) === :uncertain
         Hsm.transition!(service, :Uncertain)
         fail("owner launch identity was never retained; refusing to stop uncertain unit")
     end
     return Hsm.transition!(service, :Stopped)
 end
-@on_event function(service::Service, ::Root, ::StopFailed, error)
+@on_event function (service::Service, ::Root, ::StopFailed, error)
     Hsm.transition!(service, :StopFailed)
     service.error = sprint(showerror, error)
     return Hsm.EventHandled
 end
 
-const SERVICE_STATES = (; Pending=:pending, Launching=:launching, Running=:running,
-    Stopped=:stopped, Uncertain=:uncertain, StopFailed=:stop_failed)
-Base.getproperty(service::Service, name::Symbol) = name === :state ?
-    getproperty(SERVICE_STATES, Hsm.current(service)) : getfield(service, name)
-Base.propertynames(service::Service, private::Bool=false) = private ?
-    (fieldnames(typeof(service))..., :state) :
-    (:coordinator, :role, :unit, :main_pid, :invocation, :start_ticks, :cgroup, :state, :error)
+const SERVICE_STATES = (;
+    Pending = :pending,
+    Launching = :launching,
+    Running = :running,
+    Stopped = :stopped,
+    Uncertain = :uncertain,
+    StopFailed = :stop_failed,
+)
+Base.getproperty(service::Service, name::Symbol) =
+    name === :state ? getproperty(SERVICE_STATES, Hsm.current(service)) :
+    getfield(service, name)
+Base.propertynames(service::Service, private::Bool = false) =
+    private ? (fieldnames(typeof(service))..., :state) :
+    (
+        :coordinator,
+        :role,
+        :unit,
+        :main_pid,
+        :invocation,
+        :start_ticks,
+        :cgroup,
+        :state,
+        :error,
+    )
 
 """
     launching!(service)
@@ -152,24 +171,36 @@ end
 
 function Service(owner::Coordinator, role::AbstractString)
     occursin(ROLE, role) || fail("invalid owner role")
-    Service(owner, String(role), PREFIX * owner.invocation * "-" * role * ".service",
-            0, "", 0, "", "")
+    Service(
+        owner,
+        String(role),
+        PREFIX * owner.invocation * "-" * role * ".service",
+        0,
+        "",
+        0,
+        "",
+        "",
+    )
 end
 
-function checked(argv; timeout=5, deadline=nothing)
+function checked(argv; timeout = 5, deadline = nothing)
     if deadline !== nothing
         remaining = deadline - monotonic()
         remaining > 0 || fail("systemd owner operation exceeded its deadline")
         timeout = min(timeout, remaining)
     end
-    Common.run_checked(argv; timeout, maximum_output_bytes=64 * 1024)
+    Common.run_checked(argv; timeout, maximum_output_bytes = 64 * 1024)
 end
 
-function properties(unit::AbstractString; extra="", deadline=nothing)
+function properties(unit::AbstractString; extra = "", deadline = nothing)
     base = endswith(unit, ".target") ? "Id,LoadState,ActiveState,InvocationID" : SHOW_FIELDS
     fields = isempty(extra) ? base : base * "," * extra
-    result = checked(["systemctl", "--user", "show", "--no-pager", "--property=" * fields, String(unit)]; deadline)
-    result.returncode == 0 || fail("cannot query systemd unit $unit: $(strip(result.stderr))")
+    result = checked(
+        ["systemctl", "--user", "show", "--no-pager", "--property=" * fields, String(unit)];
+        deadline,
+    )
+    result.returncode == 0 ||
+        fail("cannot query systemd unit $unit: $(strip(result.stderr))")
     values = parse_properties(result.stdout)
     for field in split(fields, ',')
         haskey(values, field) || fail("missing systemd property $field for $unit")
@@ -178,14 +209,15 @@ function properties(unit::AbstractString; extra="", deadline=nothing)
         values["MainPID"] = "0"
         values["ControlGroup"] = ""
     end
-    get(values, "Id", "") == unit || fail("systemd returned a different unit identity for $unit")
+    get(values, "Id", "") == unit ||
+        fail("systemd returned a different unit identity for $unit")
     return values
 end
 
 function parse_properties(output::AbstractString)
     values = Dict{String,String}()
-    for line in split(output, '\n'; keepempty=false)
-        pair = split(line, '='; limit=2)
+    for line in split(output, '\n'; keepempty = false)
+        pair = split(line, '='; limit = 2)
         length(pair) == 2 || fail("malformed systemd property output")
         haskey(values, pair[1]) && fail("duplicate systemd property $(pair[1])")
         values[pair[1]] = pair[2]
@@ -211,15 +243,16 @@ function start_ticks(pid::Integer)
     return value
 end
 
-_process_read_failure(error,fallback) = throw(error)
-_process_read_failure(error::Union{Base.IOError,Base.SystemError},fallback) = fallback
+_process_read_failure(error, fallback) = throw(error)
+_process_read_failure(error::Union{Base.IOError,Base.SystemError}, fallback) = fallback
 _owner_cpu(cpu) = fail("invalid owner CPU envelope or leader")
 _owner_cpu(cpu::Int) = cpu >= 2 || fail("invalid owner CPU envelope or leader")
-_owner_cpu_envelope(cpus,cpu) = fail("invalid owner CPU envelope or leader")
-function _owner_cpu_envelope(cpus::AbstractVector,cpu::Int)
+_owner_cpu_envelope(cpus, cpu) = fail("invalid owner CPU envelope or leader")
+function _owner_cpu_envelope(cpus::AbstractVector, cpu::Int)
     !isempty(cpus) || fail("invalid owner CPU envelope or leader")
-    foreach(_owner_cpu,cpus)
-    length(unique(cpus)) == length(cpus) && cpu in cpus || fail("invalid owner CPU envelope or leader")
+    foreach(_owner_cpu, cpus)
+    length(unique(cpus)) == length(cpus) && cpu in cpus ||
+        fail("invalid owner CPU envelope or leader")
     return nothing
 end
 
@@ -227,9 +260,10 @@ function process_identity(pid::Integer, ticks::UInt64, group::AbstractString)
     old_process_exists(pid, ticks) || return false
     try
         observed = proc_cgroup(pid)
-        return (observed == group || startswith(observed, group * "/")) && old_process_exists(pid, ticks)
+        return (observed == group || startswith(observed, group * "/")) &&
+               old_process_exists(pid, ticks)
     catch error
-        return _process_read_failure(error,false)
+        return _process_read_failure(error, false)
     end
 end
 
@@ -238,7 +272,7 @@ function old_process_exists(pid::Integer, ticks::UInt64)
     try
         return start_ticks(pid) == ticks
     catch error
-        return _process_read_failure(error,false)
+        return _process_read_failure(error, false)
     end
 end
 
@@ -247,7 +281,7 @@ function maybe_start_ticks(pid::Integer)
     try
         return start_ticks(pid)
     catch error
-        return _process_read_failure(error,nothing)
+        return _process_read_failure(error, nothing)
     end
 end
 
@@ -267,7 +301,8 @@ function retain_identity!(service::Service, values)
     main = parsed_pid(values)
     ticks = start_ticks(main)
     observed = proc_cgroup(main)
-    (observed == group || startswith(observed, group * "/")) || fail("owner MainPID lies outside its unit cgroup")
+    (observed == group || startswith(observed, group * "/")) ||
+        fail("owner MainPID lies outside its unit cgroup")
     service.main_pid = main
     service.start_ticks = ticks
     return nothing
@@ -281,7 +316,7 @@ validate_placement(placement) = fail("owner placement contract must be a mapping
 function validate_placement(placement::AbstractDict)
     cpus = get(placement, "cpus", nothing)
     cpu = get(placement, "leader-cpu", nothing)
-    _owner_cpu_envelope(cpus,cpu)
+    _owner_cpu_envelope(cpus, cpu)
     return cpu, sort(cpus)
 end
 
@@ -290,7 +325,7 @@ function check_failure!(service::Service)
     if isempty(service.error) && !alive(service)
         detail = "owner process identity exited or left its cgroup"
         try
-            values = properties(service.unit; extra="Result,ExecMainCode,ExecMainStatus")
+            values = properties(service.unit; extra = "Result,ExecMainCode,ExecMainStatus")
             detail *= "; Result=$(values["Result"]), ExecMainCode=$(values["ExecMainCode"]), ExecMainStatus=$(values["ExecMainStatus"])"
         catch error
             detail *= "; systemd result unavailable: " * sprint(showerror, error)
@@ -304,9 +339,15 @@ function failure(service::Service)
     return service.error
 end
 function record(service::Service)
-    Dict{String,Any}("unit" => service.unit, "pid" => service.main_pid,
-        "invocation" => service.invocation, "start-ticks" => service.start_ticks,
-        "cgroup" => service.cgroup, "state" => String(service.state), "error" => service.error)
+    Dict{String,Any}(
+        "unit" => service.unit,
+        "pid" => service.main_pid,
+        "invocation" => service.invocation,
+        "start-ticks" => service.start_ticks,
+        "cgroup" => service.cgroup,
+        "state" => String(service.state),
+        "error" => service.error,
+    )
 end
 
 function alive(service::Service)
@@ -316,10 +357,11 @@ end
 
 function verify_identity(service::Service)
     values = properties(service.unit)
-    values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
-        same_incarnation(service, values) && tryparse(Int, values["MainPID"]) == service.main_pid &&
-        alive(service) ||
-        fail("owner systemd identity differs from retained incarnation")
+    values["LoadState"] == "loaded" &&
+    values["ActiveState"] == "active" &&
+    same_incarnation(service, values) &&
+    tryparse(Int, values["MainPID"]) == service.main_pid &&
+    alive(service) || fail("owner systemd identity differs from retained incarnation")
     return nothing
 end
 function verify!(service::Service)
@@ -335,7 +377,7 @@ end
 
 function parse_populated(output::AbstractString)
     found = nothing
-    for line in split(output, '\n'; keepempty=false)
+    for line in split(output, '\n'; keepempty = false)
         parts = split(line)
         if length(parts) == 2 && parts[1] == "populated"
             found === nothing || fail("duplicate cgroup populated field")
@@ -371,26 +413,42 @@ function stop_result(service::Service, grace::Real)
     values = properties(service.unit)
     if isempty(service.invocation)
         if quiescent_unit(service.unit) &&
-                !any(pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation))
+           !any(
+            pair -> pair.second == service.unit,
+            listed_jobs(service.coordinator.invocation),
+        )
             return :stopped
         end
         return :uncertain
     end
-    quiet = values["LoadState"] == "not-found" ||
-        (values["ActiveState"] in ("inactive", "failed") && values["MainPID"] == "0" &&
-         (isempty(values["InvocationID"]) || lowercase(values["InvocationID"]) == service.invocation))
+    quiet =
+        values["LoadState"] == "not-found" || (
+            values["ActiveState"] in ("inactive", "failed") &&
+            values["MainPID"] == "0" &&
+            (
+                isempty(values["InvocationID"]) ||
+                lowercase(values["InvocationID"]) == service.invocation
+            )
+        )
     if quiet
-        if !old_process_exists(service.main_pid, service.start_ticks) && cgroup_empty(service.cgroup) &&
-                !any(pair -> pair.second == service.unit, listed_jobs(service.coordinator.invocation))
+        if !old_process_exists(service.main_pid, service.start_ticks) &&
+           cgroup_empty(service.cgroup) &&
+           !any(
+               pair -> pair.second == service.unit,
+               listed_jobs(service.coordinator.invocation),
+           )
             return :stopped
         end
-        fail("owner unit is inactive while its retained process, cgroup or start job remains")
+        fail(
+            "owner unit is inactive while its retained process, cgroup or start job remains",
+        )
     end
     same_incarnation(service, values) ||
         fail("owner unit incarnation changed; refusing to stop it")
-    result = checked(["systemctl", "--user", "stop", service.unit]; timeout=20)
+    result = checked(["systemctl", "--user", "stop", service.unit]; timeout = 20)
     result.returncode == 0 || fail("systemd failed to stop owner $(service.unit)")
-    wait_empty(service.cgroup, monotonic() + 16) || fail("owner cgroup remains populated after stop")
+    wait_empty(service.cgroup, monotonic() + 16) ||
+        fail("owner cgroup remains populated after stop")
     old_process_exists(service.main_pid, service.start_ticks) &&
         fail("owner MainPID survived outside the retained cgroup")
     return :stopped
@@ -401,7 +459,7 @@ function stop_impl!(service::Service, grace::Real)
     return nothing
 end
 
-function stop!(service::Service, grace::Real=0)
+function stop!(service::Service, grace::Real = 0)
     try
         return stop_impl!(service, grace)
     catch error
@@ -410,9 +468,20 @@ function stop!(service::Service, grace::Real=0)
     end
 end
 
-function listed_units(invocation; deadline=nothing)
-    result = checked(["systemctl", "--user", "list-units", "--all", "--plain", "--no-legend", "--no-pager",
-        PREFIX * invocation * "-*.service"]; deadline)
+function listed_units(invocation; deadline = nothing)
+    result = checked(
+        [
+            "systemctl",
+            "--user",
+            "list-units",
+            "--all",
+            "--plain",
+            "--no-legend",
+            "--no-pager",
+            PREFIX * invocation * "-*.service",
+        ];
+        deadline,
+    )
     result.returncode == 0 || fail("cannot list invocation owner units")
     return parse_units(result.stdout, invocation)
 end
@@ -420,19 +489,30 @@ end
 function parse_units(output, invocation)
     prefix = PREFIX * invocation * "-"
     units = String[]
-    for line in split(output, '\n'; keepempty=false)
+    for line in split(output, '\n'; keepempty = false)
         fields = split(strip(line))
         isempty(fields) && continue
         name = fields[1] == "●" && length(fields) > 1 ? fields[2] : fields[1]
         startswith(name, prefix) && endswith(name, ".service") || continue
-        role = name[length(prefix)+1:end-length(".service")]
+        role = name[(length(prefix)+1):(end-length(".service"))]
         occursin(ROLE, role) && push!(units, name)
     end
     return unique(units)
 end
 
-function listed_jobs(invocation; deadline=nothing)
-    result = checked(["systemctl", "--user", "list-jobs", "--all", "--plain", "--no-legend", "--no-pager"]; deadline)
+function listed_jobs(invocation; deadline = nothing)
+    result = checked(
+        [
+            "systemctl",
+            "--user",
+            "list-jobs",
+            "--all",
+            "--plain",
+            "--no-legend",
+            "--no-pager",
+        ];
+        deadline,
+    )
     result.returncode == 0 || fail("cannot list invocation start jobs")
     return parse_jobs(result.stdout, invocation)
 end
@@ -440,63 +520,81 @@ end
 function parse_jobs(output, invocation)
     prefix = PREFIX * invocation * "-"
     jobs = Pair{String,String}[]
-    for line in split(output, '\n'; keepempty=false)
+    for line in split(output, '\n'; keepempty = false)
         fields = split(strip(line))
         length(fields) >= 3 || continue
         job, name, operation = fields[1:3]
-        occursin(r"^[0-9]+$", job) && startswith(name, prefix) &&
-            (endswith(name, ".service") || name == cohort_name(invocation)) || continue
+        occursin(r"^[0-9]+$", job) &&
+        startswith(name, prefix) &&
+        (endswith(name, ".service") || name == cohort_name(invocation)) || continue
         if name == cohort_name(invocation)
             operation == "start" && push!(jobs, job => name)
         else
-            role = name[length(prefix)+1:end-length(".service")]
+            role = name[(length(prefix)+1):(end-length(".service"))]
             occursin(ROLE, role) && operation == "start" && push!(jobs, job => name)
         end
     end
     return jobs
 end
 
-function cancel_job(job; deadline=nothing)
-    result = checked(["systemctl", "--user", "cancel", job]; timeout=5, deadline)
+function cancel_job(job; deadline = nothing)
+    result = checked(["systemctl", "--user", "cancel", job]; timeout = 5, deadline)
     result.returncode == 0 && return nothing
     # A job can finish between listing and cancellation.
-    current = checked(["systemctl", "--user", "list-jobs", "--all", "--plain", "--no-legend", "--no-pager"]; deadline)
+    current = checked(
+        [
+            "systemctl",
+            "--user",
+            "list-jobs",
+            "--all",
+            "--plain",
+            "--no-legend",
+            "--no-pager",
+        ];
+        deadline,
+    )
     current.returncode == 0 || fail("cannot recheck owner start job $job")
     any(line -> startswith(strip(line), job * " "), split(current.stdout, '\n')) &&
         fail("cannot cancel owner start job $job")
     return nothing
 end
 
-function cleanup_unit(unit; deadline=nothing)
+function cleanup_unit(unit; deadline = nothing)
     values = properties(unit; deadline)
     values["LoadState"] == "not-found" && return nothing
     group = values["ControlGroup"]
-    if values["ActiveState"] in ("inactive", "failed") && isempty(group) && values["MainPID"] == "0"
+    if values["ActiveState"] in ("inactive", "failed") &&
+       isempty(group) &&
+       values["MainPID"] == "0"
         return nothing
     end
     if isempty(group) && values["MainPID"] == "0"
-        result = checked(["systemctl", "--user", "stop", unit]; timeout=20, deadline)
+        result = checked(["systemctl", "--user", "stop", unit]; timeout = 20, deadline)
         result.returncode == 0 || fail("cleanup could not stop $unit")
-        quiescent_unit(unit; deadline) || fail("cleanup cannot establish quiescence for $unit")
+        quiescent_unit(unit; deadline) ||
+            fail("cleanup cannot establish quiescence for $unit")
         return nothing
     end
-    startswith(group, "/") && group != "/" || fail("cleanup cannot establish cgroup for $unit")
+    startswith(group, "/") && group != "/" ||
+        fail("cleanup cannot establish cgroup for $unit")
     last(splitpath(group)) == unit || fail("cleanup found an unexpected cgroup for $unit")
     main = tryparse(Int, values["MainPID"])
     ticks = main === nothing ? nothing : maybe_start_ticks(main)
-    result = checked(["systemctl", "--user", "stop", unit]; timeout=20, deadline)
+    result = checked(["systemctl", "--user", "stop", unit]; timeout = 20, deadline)
     result.returncode == 0 || fail("cleanup could not stop $unit")
     wait_empty(group, min(monotonic() + 16, something(deadline, Inf))) ||
         fail("cleanup found populated cgroup for $unit")
-    ticks === nothing || !old_process_exists(main, ticks) ||
+    ticks === nothing ||
+        !old_process_exists(main, ticks) ||
         fail("cleanup found surviving MainPID for $unit")
     return nothing
 end
 
-function quiescent_unit(unit; deadline=nothing)
+function quiescent_unit(unit; deadline = nothing)
     values = properties(unit; deadline)
     values["LoadState"] == "not-found" && return true
-    values["ActiveState"] in ("inactive", "failed") && values["MainPID"] == "0" || return false
+    values["ActiveState"] in ("inactive", "failed") && values["MainPID"] == "0" ||
+        return false
     group = values["ControlGroup"]
     isempty(group) || cgroup_empty(group)
 end

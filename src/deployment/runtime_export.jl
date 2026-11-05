@@ -5,11 +5,15 @@ function copy_file(source::AbstractString, destination::AbstractString)
     isfile(source) && !islink(source) ||
         throw(ArgumentError("missing or symlinked export prerequisite: $source"))
     mkpath(dirname(destination))
-    cp(source, destination; force=true, follow_symlinks=true)
+    cp(source, destination; force = true, follow_symlinks = true)
     return destination
 end
 
-function copy_tree(source::AbstractString, destination::AbstractString; ignored=Set{String}())
+function copy_tree(
+    source::AbstractString,
+    destination::AbstractString;
+    ignored = Set{String}(),
+)
     isdir(source) && !islink(source) ||
         throw(ArgumentError("missing or symlinked export directory: $source"))
     !ispath(destination) && !islink(destination) ||
@@ -28,20 +32,28 @@ function copy_tree(source::AbstractString, destination::AbstractString; ignored=
     return destination
 end
 
-_export_entry(entry) = throw(ArgumentError("export entries must be contained relative paths"))
-_export_entry(entry::AbstractString) = !isempty(entry) && !isabspath(entry) &&
-    all(part -> !(part in (".","..")),splitpath(entry)) || throw(ArgumentError("export entries must be contained relative paths"))
+_export_entry(entry) =
+    throw(ArgumentError("export entries must be contained relative paths"))
+_export_entry(entry::AbstractString) =
+    !isempty(entry) &&
+    !isabspath(entry) &&
+    all(part -> !(part in (".", "..")), splitpath(entry)) ||
+    throw(ArgumentError("export entries must be contained relative paths"))
 
-_outside(relative) = relative == ".." ||
-    startswith(relative, ".." * string(Base.Filesystem.path_separator))
+_outside(relative) =
+    relative == ".." || startswith(relative, ".." * string(Base.Filesystem.path_separator))
 
 """Copy only declared relative entries into a new directory.
 
 Callers own the file list; this helper has no instrument or package selection
 policy. Listed directories are copied recursively with the requested exclusions.
 """
-function copy_entries(source::AbstractString, destination::AbstractString, entries;
-        ignored=Set{String}())
+function copy_entries(
+    source::AbstractString,
+    destination::AbstractString,
+    entries;
+    ignored = Set{String}(),
+)
     isdir(source) && !islink(source) ||
         throw(ArgumentError("missing or symlinked export directory: $source"))
     !ispath(destination) && !islink(destination) ||
@@ -56,8 +68,7 @@ function copy_entries(source::AbstractString, destination::AbstractString, entri
             path = joinpath(path, part)
             islink(path) && throw(ArgumentError("symlink in export entry: $entry"))
         end
-        isfile(path) || isdir(path) ||
-            throw(ArgumentError("missing export entry: $entry"))
+        isfile(path) || isdir(path) || throw(ArgumentError("missing export entry: $entry"))
         push!(selected, relative)
     end
     isempty(selected) && throw(ArgumentError("runtime export has no entries"))

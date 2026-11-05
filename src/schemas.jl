@@ -18,8 +18,11 @@ function validate_schema(schema::AbstractString, value)
     contract === nothing && return nothing
     for field in ("element-type", "element_type")
         haskey(value, field) || continue
-        value[field] in (contract["wire_type"], contract["element_type"]) ||
-            throw(ArgumentError("schema $schema requires $(contract["wire_type"]), received $(value[field])"))
+        value[field] in (contract["wire_type"], contract["element_type"]) || throw(
+            ArgumentError(
+                "schema $schema requires $(contract["wire_type"]), received $(value[field])",
+            ),
+        )
     end
     return nothing
 end
@@ -37,7 +40,7 @@ function resolve(value::AbstractDict)
     if haskey(value, "\$ref")
         pointer = Common.configuration_reference_pointer(value)
         return startswith(pointer, "/schemas/") ?
-            Common.configuration_value(value, context()) : deepcopy(value)
+               Common.configuration_value(value, context()) : deepcopy(value)
     end
     return Dict{String,Any}(key => resolve(item) for (key, item) in value)
 end

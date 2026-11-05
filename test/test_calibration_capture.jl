@@ -1,83 +1,146 @@
 using Test, PipeWireAO, AdaptiveOpticsSim, PipeWireAORTC
-include(joinpath(@__DIR__,"..","ext","calibration_capture.jl"))
+include(joinpath(@__DIR__, "..", "ext", "calibration_capture.jl"))
 const CC = CalibrationCapture
 const AG = AdaptiveOpticsSim.AlgorithmGraphs
 const PW = PipeWireAO.LibPipeWire
 
-function capture_declarations(prefix="test.capture")
-    descriptor(name,T,shape) = (;name="$prefix.$name",format=NdArrayFormat(T,shape;
-        layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(1000,1)),schema="test.capture.$name/1")
-    return (;raw=descriptor("raw",NdArray.U16_LE,(2,3)),
-        slopes=descriptor("slopes",NdArray.F32_LE,(2,2)),
-        flux=descriptor("flux",NdArray.F32_LE,(2,)),
-        validity=descriptor("validity",NdArray.BOOL8,(2,)))
+function capture_declarations(prefix = "test.capture")
+    descriptor(name, T, shape) = (;
+        name = "$prefix.$name",
+        format = NdArrayFormat(
+            T,
+            shape;
+            layout = NdArray.ROW_MAJOR,
+            rate = SPA.Fraction(1000, 1),
+        ),
+        schema = "test.capture.$name/1",
+    )
+    return (;
+        raw = descriptor("raw", NdArray.U16_LE, (2, 3)),
+        slopes = descriptor("slopes", NdArray.F32_LE, (2, 2)),
+        flux = descriptor("flux", NdArray.F32_LE, (2,)),
+        validity = descriptor("validity", NdArray.BOOL8, (2,)),
+    )
 end
 
 function capture_payload(::Type{T}, count) where {T}
-    memory = zeros(UInt8,count*sizeof(T))
-    chunk = Ref(PW.spa_chunk(UInt32(0),UInt32(length(memory)),Int32(sizeof(T)),Int32(0)))
-    records=MetadataSnapshot((MetadataRequirement(SPA.META_HEADER),
-        MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),MetadataRequirement(SPA.META_EXPOSURE_TIMING),
-        MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP),MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
-        MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER)))
+    memory = zeros(UInt8, count*sizeof(T))
+    chunk = Ref(PW.spa_chunk(UInt32(0), UInt32(length(memory)), Int32(sizeof(T)), Int32(0)))
+    records=MetadataSnapshot((
+        MetadataRequirement(SPA.META_HEADER),
+        MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),
+        MetadataRequirement(SPA.META_EXPOSURE_TIMING),
+        MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP),
+        MetadataRequirement(SPA.META_OPTICAL_CHOPPING),
+        MetadataRequirement(SPA.META_ELECTRICAL_TRIGGER),
+    ))
     metadata=records.descriptors
-    data = Ref(PW.spa_data(PW.SPA_DATA_MemPtr,SPA.DATA_FLAG_READWRITE,Int64(-1),UInt32(0),
-        UInt32(length(memory)),pointer(memory),Base.unsafe_convert(Ptr{PW.spa_chunk},chunk)))
-    spa_buffer = Ref(PW.spa_buffer(records.count,UInt32(1),pointer(metadata),Base.unsafe_convert(Ptr{PW.spa_data},data)))
-    native_buffer = Ref(PW.pw_buffer(Base.unsafe_convert(Ptr{PW.spa_buffer},spa_buffer),C_NULL,0,0,0))
-    buffer = StreamBuffer(Base.unsafe_convert(Ptr{PW.pw_buffer},native_buffer))
-    return (;memory,chunk,records,metadata,data,spa_buffer,native_buffer,buffer)
+    data = Ref(
+        PW.spa_data(
+            PW.SPA_DATA_MemPtr,
+            SPA.DATA_FLAG_READWRITE,
+            Int64(-1),
+            UInt32(0),
+            UInt32(length(memory)),
+            pointer(memory),
+            Base.unsafe_convert(Ptr{PW.spa_chunk}, chunk),
+        ),
+    )
+    spa_buffer = Ref(
+        PW.spa_buffer(
+            records.count,
+            UInt32(1),
+            pointer(metadata),
+            Base.unsafe_convert(Ptr{PW.spa_data}, data),
+        ),
+    )
+    native_buffer = Ref(
+        PW.pw_buffer(Base.unsafe_convert(Ptr{PW.spa_buffer}, spa_buffer), C_NULL, 0, 0, 0),
+    )
+    buffer = StreamBuffer(Base.unsafe_convert(Ptr{PW.pw_buffer}, native_buffer))
+    return (; memory, chunk, records, metadata, data, spa_buffer, native_buffer, buffer)
 end
 
-const DOMAIN = AcquisitionDomain(ntuple(UInt8,16))
-identity(sequence=1,generation=1) = AcquisitionIdentity(DOMAIN,UInt64(generation),UInt64(sequence))
-exposure(sequence=1,generation=1) = (;identity=identity(sequence,generation),
-    timestamp=AG.ModelTimestamp(100),exposure_duration_nanoseconds=UInt64(10))
+const DOMAIN = AcquisitionDomain(ntuple(UInt8, 16))
+identity(sequence = 1, generation = 1) =
+    AcquisitionIdentity(DOMAIN, UInt64(generation), UInt64(sequence))
+exposure(sequence = 1, generation = 1) = (;
+    identity = identity(sequence, generation),
+    timestamp = AG.ModelTimestamp(100),
+    exposure_duration_nanoseconds = UInt64(10),
+)
 
-function owned_test_capture(f; declarations=capture_declarations())
+function owned_test_capture(f; declarations = capture_declarations())
     loop = ThreadLoop("test.capture.owned")
-    context,core = with_thread_loop_lock(loop) do _
+    context, core = with_thread_loop_lock(loop) do _
         context=Context(loop)
-        context,CoreConnection(context;self=true)
+        context, CoreConnection(context; self = true)
     end
     slots=CC._slots(declarations)
-    capture=CC.Capture(core,slots,NamedTuple(),Base.AsyncCondition(),ReentrantLock(),true,CC.IDLE,:none,nothing,nothing,Int64(0),UInt64(0),nothing,true,false,METADATA_CLOCK_REALTIME)
+    capture=CC.Capture(
+        core,
+        slots,
+        NamedTuple(),
+        Base.AsyncCondition(),
+        ReentrantLock(),
+        true,
+        CC.IDLE,
+        :none,
+        nothing,
+        nothing,
+        Int64(0),
+        UInt64(0),
+        nothing,
+        true,
+        false,
+        METADATA_CLOCK_REALTIME,
+    )
     try
         f(capture)
     finally
         close(capture)
         with_thread_loop_lock(loop) do _
-            close(core);close(context)
+            close(core)
+            close(context)
         end
         close(loop)
     end
 end
 
 
-function initialize_payload!(fixture, id=identity();duration=10)
+function initialize_payload!(fixture, id = identity(); duration = 10)
     metadata=initialize_metadata!(fixture.buffer)
-    set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),id.sequence))
-    set_acquisition_identity!(metadata,id)
-    set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=UInt64(duration)))
-    set_reference_timestamp!(metadata,ReferenceTimestamp(1_730_000_000_000_000_123))
+    set_buffer_header!(
+        fixture.buffer,
+        BufferHeader(UInt32(0), UInt32(0), Int64(9000), Int64(0), id.sequence),
+    )
+    set_acquisition_identity!(metadata, id)
+    set_exposure_timing!(
+        metadata,
+        ExposureTiming(; duration_nanoseconds = UInt64(duration)),
+    )
+    set_reference_timestamp!(metadata, ReferenceTimestamp(1_730_000_000_000_000_123))
 
 end
 
 @testset "owned acquisition slots preserve row-major values and provenance" begin
     owned_test_capture() do capture
-        CC.arm!(capture,exposure())
-        @test_throws InvalidStateException CC.arm!(capture,exposure())
+        CC.arm!(capture, exposure())
+        @test_throws InvalidStateException CC.arm!(capture, exposure())
         @test_throws InvalidStateException CC.snapshot(capture)
         for name in keys(capture.slots)
-            slot=getproperty(capture.slots,name)
+            slot=getproperty(capture.slots, name)
             T=eltype(slot.wire)
-            fixture=capture_payload(T,length(slot.wire))
+            fixture=capture_payload(T, length(slot.wire))
             GC.@preserve fixture begin
                 initialize_payload!(fixture)
-                set_buffer_header!(fixture.buffer,BufferHeader(UInt32(0),UInt32(0),Int64(9000),Int64(0),UInt64(777)))
-                wire=T===Bool ? Bool[false,true] : T.(1:length(slot.wire))
-                fixture.memory .= reinterpret(UInt8,wire)
-                CC._read!(capture,slot,fixture.buffer)
+                set_buffer_header!(
+                    fixture.buffer,
+                    BufferHeader(UInt32(0), UInt32(0), Int64(9000), Int64(0), UInt64(777)),
+                )
+                wire=T===Bool ? Bool[false, true] : T.(1:length(slot.wire))
+                fixture.memory .= reinterpret(UInt8, wire)
+                CC._read!(capture, slot, fixture.buffer)
                 @test slot.phase == CC.COMPLETE
                 @test slot.receipt.identity == identity()
                 @test slot.receipt.model_start_ns == 100
@@ -88,96 +151,151 @@ end
                 @test slot.wire == wire
             end
         end
-        result=CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
-        @test result.arrays.raw == UInt16[1 2 3;4 5 6]
-        @test result.arrays.slopes == Float32[1 2;3 4]
-        @test result.arrays.validity == [false,true] # no implicit scientific policy
+        result=CC.await!(capture; deadline = PipeWireAORTC.ControlClient.monotonic()+1)
+        @test result.arrays.raw == UInt16[1 2 3; 4 5 6]
+        @test result.arrays.slopes == Float32[1 2; 3 4]
+        @test result.arrays.validity == [false, true] # no implicit scientific policy
         @test result.arrays.raw === capture.slots.raw.array
-        @test_throws ArgumentError CC.arm!(capture,exposure())
-        @test_throws ArgumentError CC.arm!(capture,exposure(3))
-        CC.arm!(capture,exposure(2))
+        @test_throws ArgumentError CC.arm!(capture, exposure())
+        @test_throws ArgumentError CC.arm!(capture, exposure(3))
+        CC.arm!(capture, exposure(2))
         @test capture.phase == CC.ARMED
     end
 end
 
 @testset "wrong, stale, duplicate and invalid wire records cannot complete" begin
-    for failure in (:identity,:duration,:gap,:corrupted,:payload,:duplicate,:missing_header,:missing_records,:missing_identity,:missing_duration,:missing_reference,:reference_clock)
+    for failure in (
+        :identity,
+        :duration,
+        :gap,
+        :corrupted,
+        :payload,
+        :duplicate,
+        :missing_header,
+        :missing_records,
+        :missing_identity,
+        :missing_duration,
+        :missing_reference,
+        :reference_clock,
+    )
         owned_test_capture() do capture
-            CC.arm!(capture,exposure())
-            fixture=capture_payload(UInt16,6)
+            CC.arm!(capture, exposure())
+            fixture=capture_payload(UInt16, 6)
             GC.@preserve fixture begin
                 initialize_payload!(fixture)
                 if failure===:missing_header || failure===:missing_records
                     failure===:missing_header && (fixture.metadata[1]=fixture.metadata[2])
-                    fixture.spa_buffer[]=PW.spa_buffer(UInt32(1),UInt32(1),pointer(fixture.metadata),Base.unsafe_convert(Ptr{PW.spa_data},fixture.data))
+                    fixture.spa_buffer[]=PW.spa_buffer(
+                        UInt32(1),
+                        UInt32(1),
+                        pointer(fixture.metadata),
+                        Base.unsafe_convert(Ptr{PW.spa_data}, fixture.data),
+                    )
                 elseif failure===:missing_identity || failure===:missing_duration
                     metadata=initialize_metadata!(fixture.buffer)
-                    set_buffer_header!(fixture.buffer,BufferHeader(0,0,9000,0,1))
-                    set_reference_timestamp!(metadata,ReferenceTimestamp(1_730_000_000_000_000_000))
+                    set_buffer_header!(fixture.buffer, BufferHeader(0, 0, 9000, 0, 1))
+                    set_reference_timestamp!(
+                        metadata,
+                        ReferenceTimestamp(1_730_000_000_000_000_000),
+                    )
                     if failure===:missing_duration
-                        set_acquisition_identity!(metadata,identity())
-                        set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_MODEL))
+                        set_acquisition_identity!(metadata, identity())
+                        set_exposure_timing!(
+                            metadata,
+                            ExposureTiming(123; clock = METADATA_CLOCK_MODEL),
+                        )
                     else
-                        set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=10))
+                        set_exposure_timing!(
+                            metadata,
+                            ExposureTiming(; duration_nanoseconds = 10),
+                        )
                     end
                 elseif failure===:missing_reference
                     metadata=initialize_metadata!(fixture.buffer)
-                    set_buffer_header!(metadata,BufferHeader(0,0,9000,0,1))
-                    set_acquisition_identity!(metadata,identity())
-                    set_exposure_timing!(metadata,ExposureTiming(;duration_nanoseconds=10))
+                    set_buffer_header!(metadata, BufferHeader(0, 0, 9000, 0, 1))
+                    set_acquisition_identity!(metadata, identity())
+                    set_exposure_timing!(
+                        metadata,
+                        ExposureTiming(; duration_nanoseconds = 10),
+                    )
                 elseif failure===:reference_clock
-                    set_reference_timestamp!(writable_metadata_records(fixture.buffer),
-                        ReferenceTimestamp(1_730_000_000_000_000_123;clock=METADATA_CLOCK_TAI))
+                    set_reference_timestamp!(
+                        writable_metadata_records(fixture.buffer),
+                        ReferenceTimestamp(
+                            1_730_000_000_000_000_123;
+                            clock = METADATA_CLOCK_TAI,
+                        ),
+                    )
                 elseif failure===:identity
-                    initialize_payload!(fixture,identity(1,2))
+                    initialize_payload!(fixture, identity(1, 2))
                 elseif failure===:duration
-                    initialize_payload!(fixture;duration=11)
-                elseif failure in (:gap,:corrupted)
-                    flags=failure===:gap ? SPA.META_HEADER_FLAG_GAP : SPA.META_HEADER_FLAG_CORRUPTED
-                    set_buffer_header!(fixture.buffer,BufferHeader(flags,UInt32(0),Int64(0),Int64(0),UInt64(1)))
+                    initialize_payload!(fixture; duration = 11)
+                elseif failure in (:gap, :corrupted)
+                    flags=failure===:gap ? SPA.META_HEADER_FLAG_GAP :
+                          SPA.META_HEADER_FLAG_CORRUPTED
+                    set_buffer_header!(
+                        fixture.buffer,
+                        BufferHeader(flags, UInt32(0), Int64(0), Int64(0), UInt64(1)),
+                    )
                 elseif failure===:payload
-                    set_chunk!(buffer_data(fixture.buffer);size=10,stride=2)
+                    set_chunk!(buffer_data(fixture.buffer); size = 10, stride = 2)
                 elseif failure===:duplicate
-                    CC._read!(capture,capture.slots.raw,fixture.buffer)
+                    CC._read!(capture, capture.slots.raw, fixture.buffer)
                 end
-                CC._read!(capture,capture.slots.raw,fixture.buffer)
+                CC._read!(capture, capture.slots.raw, fixture.buffer)
                 @test capture.failure !== :none
                 @test_throws InvalidStateException CC.snapshot(capture)
-                @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
+                @test_throws InvalidStateException CC.await!(
+                    capture;
+                    deadline = PipeWireAORTC.ControlClient.monotonic()+1,
+                )
             end
         end
     end
     owned_test_capture() do capture
-        CC.arm!(capture,exposure())
-        fixture=capture_payload(Bool,2)
+        CC.arm!(capture, exposure())
+        fixture=capture_payload(Bool, 2)
         GC.@preserve fixture begin
             initialize_payload!(fixture)
-            fixture.memory .= UInt8[0,2]
-            CC._read!(capture,capture.slots.validity,fixture.buffer)
+            fixture.memory .= UInt8[0, 2]
+            CC._read!(capture, capture.slots.validity, fixture.buffer)
             @test capture.failure===:boolean_encoding
         end
     end
     owned_test_capture() do capture
-        CC.arm!(capture,exposure())
-        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+0.01)
+        CC.arm!(capture, exposure())
+        @test_throws InvalidStateException CC.await!(
+            capture;
+            deadline = PipeWireAORTC.ControlClient.monotonic()+0.01,
+        )
         @test capture.failure===:deadline
     end
     owned_test_capture() do capture
-        @test_throws ArgumentError CC.arm!(capture,(;identity=identity(),timestamp=AG.ModelTimestamp(typemax(Int64)),exposure_duration_nanoseconds=UInt64(1)))
+        @test_throws ArgumentError CC.arm!(
+            capture,
+            (;
+                identity = identity(),
+                timestamp = AG.ModelTimestamp(typemax(Int64)),
+                exposure_duration_nanoseconds = UInt64(1),
+            ),
+        )
     end
 end
 
 @testset "close wakes an active capture waiter without closing borrowed wakeups" begin
     owned_test_capture() do capture
-        CC.arm!(capture,exposure())
+        CC.arm!(capture, exposure())
         waiter=@async try
-            CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+5)
+            CC.await!(capture; deadline = PipeWireAORTC.ControlClient.monotonic()+5)
         catch error
             error
         end
         yield()
         @test capture.waiting
-        @test_throws InvalidStateException CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
+        @test_throws InvalidStateException CC.await!(
+            capture;
+            deadline = PipeWireAORTC.ControlClient.monotonic()+1,
+        )
         close(capture)
         @test fetch(waiter) isa InvalidStateException
         @test !isopen(capture.wakeup)
@@ -186,75 +304,110 @@ end
 
 @testset "scientific rejection policy stays outside the collector" begin
     owned_test_capture() do capture
-        CC.arm!(capture,exposure())
-        fixture=capture_payload(Float32,2)
+        CC.arm!(capture, exposure())
+        fixture=capture_payload(Float32, 2)
         GC.@preserve fixture begin
             initialize_payload!(fixture)
-            fixture.memory .= reinterpret(UInt8,Float32[NaN,Inf])
-            CC._read!(capture,capture.slots.flux,fixture.buffer)
-            @test isequal(capture.slots.flux.array,Float32[NaN,Inf])
+            fixture.memory .= reinterpret(UInt8, Float32[NaN, Inf])
+            CC._read!(capture, capture.slots.flux, fixture.buffer)
+            @test isequal(capture.slots.flux.array, Float32[NaN, Inf])
             @test capture.failure===:none
         end
     end
 end
 @testset "typed sensor outputs retain exact names, layout and receipts" begin
-    descriptor(name,T,shape) = (;name,format=NdArrayFormat(T,shape;
-        layout=NdArray.ROW_MAJOR,rate=SPA.Fraction(1000,1)),schema="test.$name/1")
+    descriptor(name, T, shape) = (;
+        name,
+        format = NdArrayFormat(
+            T,
+            shape;
+            layout = NdArray.ROW_MAJOR,
+            rate = SPA.Fraction(1000, 1),
+        ),
+        schema = "test.$name/1",
+    )
     raw = capture_declarations().raw
-    declarations = (;raw, Symbol("reconstruction-pixels")=>descriptor("pixels",NdArray.F32_LE,(4,3)),
-        Symbol("mean-pupil-intensity")=>descriptor("intensity",NdArray.F32_LE,(1,)))
+    declarations = (;
+        raw,
+        Symbol("reconstruction-pixels")=>descriptor("pixels", NdArray.F32_LE, (4, 3)),
+        Symbol("mean-pupil-intensity")=>descriptor("intensity", NdArray.F32_LE, (1,)),
+    )
     slots=CC._slots(declarations)
     @test keys(slots) == keys(declarations)
     @test slots[Symbol("reconstruction-pixels")].array isa Matrix{Float32}
     @test slots[Symbol("mean-pupil-intensity")].array isa Vector{Float32}
-    @test_throws ArgumentError CC._slots((pixels=declarations[Symbol("reconstruction-pixels")],))
-    @test_throws ArgumentError CC._slots((pixels=declarations[Symbol("reconstruction-pixels")],raw=raw))
-    @test_throws ArgumentError CC._slots((;raw=descriptor("raw",NdArray.F32_LE,(2,3))))
-    for (T,shape) in ((NdArray.U16_LE,(2,)),(NdArray.F64_LE,(2,)),(NdArray.F32_LE,(2,2,2)),(NdArray.BOOL8,(2,2)))
-        @test_throws ArgumentError CC._slots((;raw,output=descriptor("bad",T,shape)))
+    @test_throws ArgumentError CC._slots((
+        pixels = declarations[Symbol("reconstruction-pixels")],
+    ))
+    @test_throws ArgumentError CC._slots((
+        pixels = declarations[Symbol("reconstruction-pixels")],
+        raw = raw,
+    ))
+    @test_throws ArgumentError CC._slots((;
+        raw = descriptor("raw", NdArray.F32_LE, (2, 3))
+    ))
+    for (T, shape) in (
+        (NdArray.U16_LE, (2,)),
+        (NdArray.F64_LE, (2,)),
+        (NdArray.F32_LE, (2, 2, 2)),
+        (NdArray.BOOL8, (2, 2)),
+    )
+        @test_throws ArgumentError CC._slots((; raw, output = descriptor("bad", T, shape)))
     end
-    owned_test_capture(;declarations) do capture
-        CC.arm!(capture,exposure())
+    owned_test_capture(; declarations) do capture
+        CC.arm!(capture, exposure())
         for slot in values(capture.slots)
             T=eltype(slot.wire)
-            payload=capture_payload(T,length(slot.wire))
+            payload=capture_payload(T, length(slot.wire))
             GC.@preserve payload begin
                 initialize_payload!(payload)
-                payload.memory .= reinterpret(UInt8,T.(1:length(slot.wire)))
-                CC._read!(capture,slot,payload.buffer)
+                payload.memory .= reinterpret(UInt8, T.(1:length(slot.wire)))
+                CC._read!(capture, slot, payload.buffer)
             end
         end
-        result=CC.await!(capture;deadline=PipeWireAORTC.ControlClient.monotonic()+1)
+        result=CC.await!(capture; deadline = PipeWireAORTC.ControlClient.monotonic()+1)
         @test keys(result.arrays) == keys(declarations)
-        @test result.arrays[Symbol("reconstruction-pixels")] == Float32[1 2 3;4 5 6;7 8 9;10 11 12]
+        @test result.arrays[Symbol("reconstruction-pixels")] ==
+              Float32[1 2 3; 4 5 6; 7 8 9; 10 11 12]
         @test result.arrays[Symbol("mean-pupil-intensity")] == Float32[1]
-        @test all(receipt->receipt.identity==identity(),values(result.metadata))
+        @test all(receipt->receipt.identity==identity(), values(result.metadata))
     end
 end
 
-@test !any(id->id.name in ("CUDA","AMDGPU"),keys(Base.loaded_modules))
+@test !any(id->id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
 
 @testset "capture copies independent optional facts under the buffer lease" begin
-    for (optical,trigger) in ((nothing,nothing),(OPTICAL_ABSENT,ACQUISITION_TRIGGER_ABSENT),
-            (OPTICAL_UNFRINGED,ACQUISITION_TRIGGER_LOW),(OPTICAL_FRINGED,ACQUISITION_TRIGGER_HIGH),
-            (OPTICAL_MIXED,ACQUISITION_TRIGGER_MIXED))
+    for (optical, trigger) in (
+        (nothing, nothing),
+        (OPTICAL_ABSENT, ACQUISITION_TRIGGER_ABSENT),
+        (OPTICAL_UNFRINGED, ACQUISITION_TRIGGER_LOW),
+        (OPTICAL_FRINGED, ACQUISITION_TRIGGER_HIGH),
+        (OPTICAL_MIXED, ACQUISITION_TRIGGER_MIXED),
+    )
         owned_test_capture() do capture
-            CC.arm!(capture,exposure())
-            storage=capture_payload(UInt16,6)
+            CC.arm!(capture, exposure())
+            storage=capture_payload(UInt16, 6)
             GC.@preserve storage begin
                 initialize_payload!(storage)
                 metadata=writable_metadata_records(storage.buffer)
-                optical===nothing || set_optical_classification!(metadata,optical)
-                trigger===nothing || set_trigger_classification!(metadata,trigger)
-                set_exposure_timing!(metadata,ExposureTiming(123;clock=METADATA_CLOCK_TAI,
-                    duration_nanoseconds=10))
-                CC._read!(capture,capture.slots.raw,storage.buffer)
+                optical===nothing || set_optical_classification!(metadata, optical)
+                trigger===nothing || set_trigger_classification!(metadata, trigger)
+                set_exposure_timing!(
+                    metadata,
+                    ExposureTiming(
+                        123;
+                        clock = METADATA_CLOCK_TAI,
+                        duration_nanoseconds = 10,
+                    ),
+                )
+                CC._read!(capture, capture.slots.raw, storage.buffer)
                 receipt=something(capture.slots.raw.receipt)
                 @test receipt.optical_classification === optical
                 @test receipt.trigger_classification === trigger
                 @test receipt.exposure_timing.start_nanoseconds == 123
                 @test receipt.exposure_timing.clock == METADATA_CLOCK_TAI
-                @test receipt.reference_timestamp.timestamp_nanoseconds == 1_730_000_000_000_000_123
+                @test receipt.reference_timestamp.timestamp_nanoseconds ==
+                      1_730_000_000_000_000_123
             end
         end
     end

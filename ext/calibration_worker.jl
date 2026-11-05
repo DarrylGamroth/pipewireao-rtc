@@ -73,21 +73,28 @@ end
 @statedef Lifecycle :Stopping
 @statedef Lifecycle :Stopped
 
-@on_initial function(sm::Lifecycle, ::Root)
+@on_initial function (sm::Lifecycle, ::Root)
     return Hsm.transition!(sm, :Constructed)
 end
-@on_event function(sm::Lifecycle, ::Constructed, ::Prepare, _)
-    FilterGraphPipeWire.prepare!(sm.node; execution=:complete_frame,
-        required_outputs=sm.outputs)
+@on_event function (sm::Lifecycle, ::Constructed, ::Prepare, _)
+    FilterGraphPipeWire.prepare!(
+        sm.node;
+        execution = :complete_frame,
+        required_outputs = sm.outputs,
+    )
     return Hsm.transition!(sm, :Prepared)
 end
-@on_event function(sm::Lifecycle, ::Prepared, ::Connect, _)
+@on_event function (sm::Lifecycle, ::Prepared, ::Connect, _)
     FilterGraphPipeWire.connect!(sm.node)
     return Hsm.transition!(sm, :Connected)
 end
-@on_event function(sm::Lifecycle, ::Connected, ::Publish, _)
-    sm.receiver = FilterGraphPipeWire.command_endpoint(sm.node,
-        command -> dispatch!(sm, :StopRequested, command), StopGraph; capacity=1)
+@on_event function (sm::Lifecycle, ::Connected, ::Publish, _)
+    sm.receiver = FilterGraphPipeWire.command_endpoint(
+        sm.node,
+        command -> dispatch!(sm, :StopRequested, command),
+        StopGraph;
+        capacity = 1,
+    )
     # This queue transaction also serializes the preparation/native handoff
     # with quit_calibration_graph!. A controller either queues a cold stop or
     # observes the native sender; there is no interval with neither route.
@@ -102,37 +109,37 @@ end
     sm.notify()
     return Hsm.EventHandled
 end
-@on_event function(sm::Lifecycle, ::Connected, ::Run, _)
+@on_event function (sm::Lifecycle, ::Connected, ::Run, _)
     sm.effect = RunGraphLoop(sm.node)
     return Hsm.transition!(sm, :Running)
 end
-@on_event function(sm::Lifecycle, ::Active, ::StopRequested, _)
+@on_event function (sm::Lifecycle, ::Active, ::StopRequested, _)
     return Hsm.transition!(sm, :Stopping)
 end
-@on_event function(sm::Lifecycle, ::Running, ::StopRequested, _)
+@on_event function (sm::Lifecycle, ::Running, ::StopRequested, _)
     FilterGraphPipeWire.quit!(sm.node)
     return Hsm.transition!(sm, :Stopping)
 end
-@on_event function(sm::Lifecycle, ::Stopping, ::StopRequested, _)
+@on_event function (sm::Lifecycle, ::Stopping, ::StopRequested, _)
     return Hsm.EventHandled
 end
-@on_event function(sm::Lifecycle, ::Stopping, ::Prepare, _)
+@on_event function (sm::Lifecycle, ::Stopping, ::Prepare, _)
     return Hsm.EventHandled
 end
-@on_event function(sm::Lifecycle, ::Stopping, ::Connect, _)
+@on_event function (sm::Lifecycle, ::Stopping, ::Connect, _)
     return Hsm.EventHandled
 end
-@on_event function(sm::Lifecycle, ::Stopping, ::Publish, _)
+@on_event function (sm::Lifecycle, ::Stopping, ::Publish, _)
     return Hsm.EventHandled
 end
-@on_event function(sm::Lifecycle, ::Stopping, ::Run, _)
+@on_event function (sm::Lifecycle, ::Stopping, ::Run, _)
     return Hsm.EventHandled
 end
 
 combine_errors(::Nothing, cleanup) = cleanup
 combine_errors(primary, cleanup) = CompositeException([primary, cleanup])
 
-@on_event function(sm::Lifecycle, ::Root, ::Finish, primary)
+@on_event function (sm::Lifecycle, ::Root, ::Finish, primary)
     failure = primary
     released = true
     for resource in (sm.receiver, sm.node)
@@ -153,7 +160,7 @@ end
 execute!(::Nothing) = nothing
 execute!(effect::RunGraphLoop) = (FilterGraphPipeWire.run!(effect.node); nothing)
 
-function dispatch!(sm::Lifecycle, event::Symbol, argument=nothing)
+function dispatch!(sm::Lifecycle, event::Symbol, argument = nothing)
     Threads.threadid() == sm.owner_thread ||
         throw(ArgumentError("calibration graph lifecycle belongs to another thread"))
     Hsm.dispatch!(sm, event, argument)
@@ -173,7 +180,16 @@ function dispatch_preparation_commands!(sm::Lifecycle)
     return nothing
 end
 
-function run_graph(descriptor, remote, name, rate, reference_clock, commands, receipts, notify)
+function run_graph(
+    descriptor,
+    remote,
+    name,
+    rate,
+    reference_clock,
+    commands,
+    receipts,
+    notify,
+)
     current_task().sticky = true
     owner_thread = Threads.threadid()
     node = machine = failure = nothing
@@ -182,17 +198,37 @@ function run_graph(descriptor, remote, name, rate, reference_clock, commands, re
             isready(commands) ? (take!(commands); true) : false
         end
         cancelled && return nothing
-        node = FilterGraphPipeWire.PipeWireNode(descriptor.graph;
-            remote, name, rate, connect=false, reference_clock,
-            input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(descriptor.graph));
-                required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
-            output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(descriptor.graph)),
-                keys(JuliaFilterGraph.input_formats(descriptor.graph)), JuliaFilterGraph.output_metadata_source_inputs(descriptor.graph);
-                required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
-            fifo_inputs=true, parameter_ports=false,
-            boundary_layout=FilterGraphAlgorithms.RowMajorLayout())
-        machine = Lifecycle(node, Tuple(keys(JuliaFilterGraph.output_formats(descriptor.graph))),
-            receipts, commands, notify, owner_thread, nothing, nothing)
+        node = FilterGraphPipeWire.PipeWireNode(
+            descriptor.graph;
+            remote,
+            name,
+            rate,
+            connect = false,
+            reference_clock,
+            input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
+                keys(JuliaFilterGraph.input_formats(descriptor.graph));
+                required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
+            ),
+            output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
+                keys(JuliaFilterGraph.output_formats(descriptor.graph)),
+                keys(JuliaFilterGraph.input_formats(descriptor.graph)),
+                JuliaFilterGraph.output_metadata_source_inputs(descriptor.graph);
+                required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
+            ),
+            fifo_inputs = true,
+            parameter_ports = false,
+            boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),
+        )
+        machine = Lifecycle(
+            node,
+            Tuple(keys(JuliaFilterGraph.output_formats(descriptor.graph))),
+            receipts,
+            commands,
+            notify,
+            owner_thread,
+            nothing,
+            nothing,
+        )
         for event in (:Prepare, :Connect, :Publish, :Run)
             dispatch_preparation_commands!(machine)
             dispatch!(machine, event)
@@ -218,12 +254,26 @@ function run_graph(descriptor, remote, name, rate, reference_clock, commands, re
 end
 
 "Lend a prepared graph to one sticky owner task; receive lifecycle facts as messages."
-function start_calibration_graph(descriptor, remote, name, rate;
-        notify, reference_clock=PW.METADATA_CLOCK_REALTIME)
+function start_calibration_graph(
+    descriptor,
+    remote,
+    name,
+    rate;
+    notify,
+    reference_clock = PW.METADATA_CLOCK_REALTIME,
+)
     commands = Channel{StopGraph}(1)
     receipts = Channel{AbstractGraphReceipt}(2)
-    task = Threads.@spawn run_graph(descriptor, remote, name, rate, reference_clock,
-        commands, receipts, notify)
+    task = Threads.@spawn run_graph(
+        descriptor,
+        remote,
+        name,
+        rate,
+        reference_clock,
+        commands,
+        receipts,
+        notify,
+    )
     @async begin
         try
             wait(task)
@@ -231,13 +281,22 @@ function start_calibration_graph(descriptor, remote, name, rate;
             notify()
         end
     end
-    return CalibrationGraphWorker(task, receipts, commands, Threads.threadid(),
-        nothing, nothing, nothing, false)
+    return CalibrationGraphWorker(
+        task,
+        receipts,
+        commands,
+        Threads.threadid(),
+        nothing,
+        nothing,
+        nothing,
+        false,
+    )
 end
 
 function controller!(worker::CalibrationGraphWorker)
-    Threads.threadid() == worker.controller_thread ||
-        throw(ArgumentError("calibration graph handle belongs to another controller thread"))
+    Threads.threadid() == worker.controller_thread || throw(
+        ArgumentError("calibration graph handle belongs to another controller thread"),
+    )
     return nothing
 end
 function receive!(worker::CalibrationGraphWorker, receipt::GraphReady)
@@ -260,10 +319,13 @@ function calibration_graph_status(worker::CalibrationGraphWorker)
             receive!(worker, take!(worker.receipts))
         end
         completion = worker.completion
-        return GraphStatus(worker.sender !== nothing && completion === nothing,
-            completion !== nothing, completion !== nothing && completion.released,
+        return GraphStatus(
+            worker.sender !== nothing && completion === nothing,
+            completion !== nothing,
+            completion !== nothing && completion.released,
             completion === nothing ? nothing : completion.error,
-            worker.control_thread)
+            worker.control_thread,
+        )
     end
 end
 
@@ -276,10 +338,15 @@ function quit_calibration_graph!(worker::CalibrationGraphWorker)
         status = calibration_graph_status(worker)
         if !status.done
             if worker.sender === nothing
-                isopen(worker.preparation_commands) ||
-                    throw(InvalidStateException("calibration preparation mailbox is closed", :closed))
-                Base.isfull(worker.preparation_commands) &&
-                    throw(InvalidStateException("calibration preparation mailbox is full", :full))
+                isopen(worker.preparation_commands) || throw(
+                    InvalidStateException(
+                        "calibration preparation mailbox is closed",
+                        :closed,
+                    ),
+                )
+                Base.isfull(worker.preparation_commands) && throw(
+                    InvalidStateException("calibration preparation mailbox is full", :full),
+                )
                 put!(worker.preparation_commands, StopGraph())
             else
                 result = PW.try_send!(worker.sender, StopGraph())
@@ -308,7 +375,10 @@ end
 function calibration_graph_released(worker::CalibrationGraphWorker)
     controller!(worker)
     status = calibration_graph_status(worker)
-    return istaskdone(worker.task) && !istaskfailed(worker.task) && status.done && status.released
+    return istaskdone(worker.task) &&
+           !istaskfailed(worker.task) &&
+           status.done &&
+           status.released
 end
 
 end

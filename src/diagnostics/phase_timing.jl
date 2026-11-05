@@ -47,15 +47,35 @@ function capture_integer(value::Integer, minimum, maximum, message)
     return value
 end
 
-function Capture(directory::AbstractString, warmup::Integer, capacity::Integer,
-        period_ns::Integer, bootstrap_instance::Integer)
+function Capture(
+    directory::AbstractString,
+    warmup::Integer,
+    capacity::Integer,
+    period_ns::Integer,
+    bootstrap_instance::Integer,
+)
     isabspath(directory) || throw(ArgumentError("phase timing directory must be absolute"))
     capture_integer(warmup, 0, nothing, "warmup must be a nonnegative integer")
     capture_integer(capacity, 1, 65_536, "capacity must be in 1:65536")
     capture_integer(period_ns, 0, typemax(UInt64), "period_ns must be nonnegative")
-    capture_integer(bootstrap_instance, 1, typemax(Int64), "bootstrap_instance must be positive")
-    return Capture(String(directory), Int(warmup), fill(ntuple(_ -> UInt64(0), Val(17)), Int(capacity)),
-        UInt64(period_ns), Int64(bootstrap_instance), threadid(), 0, 0, 0, -1)
+    capture_integer(
+        bootstrap_instance,
+        1,
+        typemax(Int64),
+        "bootstrap_instance must be positive",
+    )
+    return Capture(
+        String(directory),
+        Int(warmup),
+        fill(ntuple(_ -> UInt64(0), Val(17)), Int(capacity)),
+        UInt64(period_ns),
+        Int64(bootstrap_instance),
+        threadid(),
+        0,
+        0,
+        0,
+        -1,
+    )
 end
 
 wants_sample(::Nothing) = false
@@ -103,19 +123,19 @@ function save!(capture::Capture)
     temporary, io = mktemp(capture.directory)
     try
         close(io)
-        rows = [collect(capture.rows[index]) for index in 1:capture.used]
+        rows = [collect(capture.rows[index]) for index = 1:capture.used]
         document = (
-            version=1,
-            owner_pid=getpid(),
-            bootstrap_instance=capture.bootstrap_instance,
+            version = 1,
+            owner_pid = getpid(),
+            bootstrap_instance = capture.bootstrap_instance,
             generation,
-            period_ns=capture.period_ns,
-            pacing=capture.period_ns == 0 ? "unpaced" : "periodic",
-            warmup_frames=capture.warmup,
-            capacity=length(capture.rows),
-            record_count=capture.used,
-            capture_complete=capture.used == length(capture.rows),
-            columns=collect(String.(COLUMNS)),
+            period_ns = capture.period_ns,
+            pacing = capture.period_ns == 0 ? "unpaced" : "periodic",
+            warmup_frames = capture.warmup,
+            capacity = length(capture.rows),
+            record_count = capture.used,
+            capture_complete = capture.used == length(capture.rows),
+            columns = collect(String.(COLUMNS)),
             rows,
         )
         Common.write_json(temporary, document)

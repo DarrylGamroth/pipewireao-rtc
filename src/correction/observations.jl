@@ -110,7 +110,10 @@ the declared representation. Return `nothing` for malformed evidence. This is
 representation validation, not a claim of freshness, adoption or coherence.
 """
 controller_scope(observation::AbstractLoopObservation) = _controller_scope(
-    requested_generation(observation), active_generation(observation), closed(observation))
+    requested_generation(observation),
+    active_generation(observation),
+    closed(observation),
+)
 controller_scope(observation::ReleaseObservation) = _closure_scope(closed(observation))
 _controller_scope(::UInt64, ::UInt64, ::Bool) = SingleController()
 _controller_scope(::NTuple{N,UInt64}, ::NTuple{N,UInt64}, ::NTuple{N,Bool}) where {N} =
@@ -141,7 +144,8 @@ all_closed(::CoupledControllers, observation) = all(identity, closed(observation
 all_closed(::Nothing, observation) = false
 
 "Return whether all requested controller generations have been adopted."
-generations_match(observation::AbstractLoopObservation) = controller_scope(observation) !== nothing &&
+generations_match(observation::AbstractLoopObservation) =
+    controller_scope(observation) !== nothing &&
     requested_generation(observation) == active_generation(observation)
 
 """Return whether the requested generation precedes the bound generation.
@@ -154,7 +158,11 @@ requested_before(observation::AbstractLoopObservation, generation) =
     requested_before(controller_scope(observation), observation, generation)
 requested_before(::SingleController, observation, generation::UInt64) =
     requested_generation(observation) < generation
-function requested_before(::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}) where {N}
+function requested_before(
+    ::CoupledControllers{N},
+    observation,
+    generation::NTuple{N,UInt64},
+) where {N}
     requested = requested_generation(observation)
     return requested != generation && all(map(<=, requested, generation))
 end
@@ -164,7 +172,11 @@ active_before(observation::AbstractLoopObservation, generation) =
     active_before(controller_scope(observation), observation, generation)
 active_before(::SingleController, observation, generation::UInt64) =
     active_generation(observation) < generation
-function active_before(::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}) where {N}
+function active_before(
+    ::CoupledControllers{N},
+    observation,
+    generation::NTuple{N,UInt64},
+) where {N}
     active = active_generation(observation)
     return active != generation && all(map(<=, active, generation))
 end
@@ -174,13 +186,19 @@ active_at_most(observation::AbstractLoopObservation, generation) =
     active_at_most(controller_scope(observation), observation, generation)
 active_at_most(::SingleController, observation, generation::UInt64) =
     active_generation(observation) <= generation
-active_at_most(::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}) where {N} =
-    all(map(<=, active_generation(observation), generation))
+active_at_most(
+    ::CoupledControllers{N},
+    observation,
+    generation::NTuple{N,UInt64},
+) where {N} = all(map(<=, active_generation(observation), generation))
 
 "Return whether each applied controller generation is at least its baseline."
 active_at_least(observation::AbstractLoopObservation, generation) =
     active_at_least(controller_scope(observation), observation, generation)
 active_at_least(::SingleController, observation, generation::UInt64) =
     active_generation(observation) >= generation
-active_at_least(::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}) where {N} =
-    all(map(>=, active_generation(observation), generation))
+active_at_least(
+    ::CoupledControllers{N},
+    observation,
+    generation::NTuple{N,UInt64},
+) where {N} = all(map(>=, active_generation(observation), generation))

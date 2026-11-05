@@ -3,16 +3,29 @@ using PipeWireAO
 
 include(joinpath(@__DIR__, "control_private_core.jl"))
 
-function run_sync_proof(socket::String, directory::String, mode::String; label=mode)
+function run_sync_proof(socket::String, directory::String, mode::String; label = mode)
     binary = get(ENV, "NATIVE_SYNC_DEADLINE_PROOF", "")
-    isempty(binary) && error("set NATIVE_SYNC_DEADLINE_PROOF to the built native_sync_deadline_proof binary")
-    isfile(binary) && isexecutable(binary) || error("NATIVE_SYNC_DEADLINE_PROOF is not executable: $binary")
+    isempty(binary) && error(
+        "set NATIVE_SYNC_DEADLINE_PROOF to the built native_sync_deadline_proof binary",
+    )
+    isfile(binary) && isexecutable(binary) ||
+        error("NATIVE_SYNC_DEADLINE_PROOF is not executable: $binary")
     log = open(joinpath(directory, "sync-$label.log"), "w+")
     child = nothing
     try
-        child = run(pipeline(Cmd([binary, socket, directory, mode]); stdout=log, stderr=log); wait=false)
-        wait_proof(() -> isfile(joinpath(directory, "ready")), 10, "$label adapter ready";
-            check=()->(Base.process_exited(child) && error("$label proof child exited before ready")))
+        child = run(
+            pipeline(Cmd([binary, socket, directory, mode]); stdout = log, stderr = log);
+            wait = false,
+        )
+        wait_proof(
+            () -> isfile(joinpath(directory, "ready")),
+            10,
+            "$label adapter ready";
+            check = ()->(
+                Base.process_exited(child) &&
+                error("$label proof child exited before ready")
+            ),
+        )
         return child
     catch
         child === nothing || stop_proof_child!(child, "$label proof startup")
@@ -37,7 +50,7 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
 
     @testset "stopped core deadlines and fresh synchronization" begin
         with_control_private_core() do socket, directory, daemon
-            child = run_sync_proof(socket, directory, "stopped"; label="stopped")
+            child = run_sync_proof(socket, directory, "stopped"; label = "stopped")
             try
                 expired = read_sync_result(directory, "expired")
                 @test occursin("before submission", expired)
@@ -51,14 +64,18 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 bounded = read_sync_result(directory, "budget")
                 @test occursin("completion is unknown", bounded)
                 @test occursin("Err(", bounded)
-                @test 200_000_000 <= parse(Int, match(r"elapsed_ns=(\d+)", bounded)[1]) <= 2_000_000_000
+                @test 200_000_000 <=
+                      parse(Int, match(r"elapsed_ns=(\d+)", bounded)[1]) <=
+                      2_000_000_000
                 println("SYNC_BOUNDED $bounded")
                 write(joinpath(directory, "release-budget"), "")
 
                 default = read_sync_result(directory, "default")
                 @test occursin("Err(", default)
                 @test occursin("expired", lowercase(default))
-                @test 4_900_000_000 <= parse(Int, match(r"elapsed_ns=(\d+)", default)[1]) <= 5_500_000_000
+                @test 4_900_000_000 <=
+                      parse(Int, match(r"elapsed_ns=(\d+)", default)[1]) <=
+                      5_500_000_000
                 println("SYNC_DEFAULT $default")
                 run(`kill -CONT $(getpid(daemon))`)
                 sleep(0.25)
@@ -68,7 +85,9 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 stale = read_sync_result(directory, "stale")
                 @test occursin("completion is unknown", stale)
                 @test occursin("Err(", stale)
-                @test 200_000_000 <= parse(Int, match(r"elapsed_ns=(\d+)", stale)[1]) <= 2_000_000_000
+                @test 200_000_000 <=
+                      parse(Int, match(r"elapsed_ns=(\d+)", stale)[1]) <=
+                      2_000_000_000
                 println("SYNC_OLD_ACKS_DID_NOT_COMPLETE_FRESH_SYNC $stale")
                 write(joinpath(directory, "release-stale"), "")
 
@@ -84,41 +103,59 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                 @test child.exitcode == 0
             finally
                 Base.process_exited(daemon) || run(`kill -CONT $(getpid(daemon))`)
-                child === nothing || stop_proof_child!(child, "stopped synchronization proof")
+                child === nothing ||
+                    stop_proof_child!(child, "stopped synchronization proof")
             end
         end
     end
 
     @testset "core termination interrupts synchronization" begin
-        with_control_private_core(; check_running=false) do socket, directory, daemon
-            child = run_sync_proof(socket, directory, "termination"; label="termination")
+        with_control_private_core(; check_running = false) do socket, directory, daemon
+            child = run_sync_proof(socket, directory, "termination"; label = "termination")
             try
                 run(`kill -STOP $(getpid(daemon))`)
                 write(joinpath(directory, "go-termination"), "")
-                wait_proof(() -> isfile(joinpath(directory, "sync-entered")), 5, "termination sync entered")
+                wait_proof(
+                    () -> isfile(joinpath(directory, "sync-entered")),
+                    5,
+                    "termination sync entered",
+                )
                 run(`kill -KILL $(getpid(daemon))`)
-                wait_proof(() -> Base.process_exited(daemon), 5, "private daemon termination")
+                wait_proof(
+                    () -> Base.process_exited(daemon),
+                    5,
+                    "private daemon termination",
+                )
                 wait(daemon)
                 terminated = read_sync_result(directory, "termination")
                 @test occursin("Err(", terminated)
-                @test occursin("PipeWire operation failed:", terminated) || occursin("PipeWire sync failed:", terminated)
+                @test occursin("PipeWire operation failed:", terminated) ||
+                      occursin("PipeWire sync failed:", terminated)
                 @test !occursin("deadline expired", lowercase(terminated))
                 @test parse(Int, match(r"elapsed_ns=(\d+)", terminated)[1]) < 5_000_000_000
                 println("SYNC_TERMINATED $terminated")
                 write(joinpath(directory, "release-termination"), "")
-                wait_proof(() -> Base.process_exited(child), 6, "termination proof process exit after adapter cleanup")
+                wait_proof(
+                    () -> Base.process_exited(child),
+                    6,
+                    "termination proof process exit after adapter cleanup",
+                )
                 wait(child)
                 @test child.exitcode == 0
             finally
-                child === nothing || stop_proof_child!(child, "termination synchronization proof")
+                child === nothing ||
+                    stop_proof_child!(child, "termination synchronization proof")
             end
         end
     end
 
     @testset "stopped core bounds discovery and cleanup" begin
         test_binary = get(ENV, "NATIVE_SYNC_DEADLINE_TEST_BINARY", "")
-        isempty(test_binary) && error("set NATIVE_SYNC_DEADLINE_TEST_BINARY to the built ignored Rust test binary")
-        isfile(test_binary) && isexecutable(test_binary) || error("NATIVE_SYNC_DEADLINE_TEST_BINARY is not executable: $test_binary")
+        isempty(test_binary) && error(
+            "set NATIVE_SYNC_DEADLINE_TEST_BINARY to the built ignored Rust test binary",
+        )
+        isfile(test_binary) && isexecutable(test_binary) ||
+            error("NATIVE_SYNC_DEADLINE_TEST_BINARY is not executable: $test_binary")
         with_control_private_core() do socket, directory, daemon
             log = open(joinpath(directory, "sync-cleanup-test.log"), "w+")
             child = nothing
@@ -127,11 +164,25 @@ println("PipeWireAO_VERSION=$(Base.pkgversion(PipeWireAO)) private_core=true por
                     "PIPEWIREAO_SYNC_PROOF_REMOTE" => socket,
                     "PIPEWIREAO_SYNC_PROOF_DIRECTORY" => directory,
                 )
-                command = Cmd([test_binary, "--exact", "--ignored",
-                    "live::deadline_tests::stopped_core_bounds_discovery_and_cleanup"])
-                child = run(pipeline(addenv(command, env); stdout=log, stderr=log); wait=false)
-                wait_proof(() -> isfile(joinpath(directory, "ready")), 10, "cleanup test ready";
-                    check=()->(Base.process_exited(child) && error("cleanup test child exited before ready")))
+                command = Cmd([
+                    test_binary,
+                    "--exact",
+                    "--ignored",
+                    "live::deadline_tests::stopped_core_bounds_discovery_and_cleanup",
+                ])
+                child = run(
+                    pipeline(addenv(command, env); stdout = log, stderr = log);
+                    wait = false,
+                )
+                wait_proof(
+                    () -> isfile(joinpath(directory, "ready")),
+                    10,
+                    "cleanup test ready";
+                    check = ()->(
+                        Base.process_exited(child) &&
+                        error("cleanup test child exited before ready")
+                    ),
+                )
 
                 run(`kill -STOP $(getpid(daemon))`)
                 write(joinpath(directory, "go-discovery"), "")

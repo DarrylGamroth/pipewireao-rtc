@@ -2,7 +2,8 @@
 module CalibrationWorkerTests
 
 using Test, Hsm, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, JuliaFilterGraph
-using FilterGraphIsland, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
+using FilterGraphIsland,
+    AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 include("calibration_named_commands.jl")
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
@@ -14,16 +15,29 @@ struct FailedGraphCleanup end
 Base.close(::FailedGraphCleanup) = error("graph cleanup failed")
 
 function stopped_before_running(remote, phase, condition, guard)
-    projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-cold/1")
+    projection = CalibrationNamedCommandTests.prepare_command(2, "test.worker-cold/1")
     node = receiver = machine = nothing
     receipts = Channel{Workers.AbstractGraphReceipt}(2)
     commands = Channel{Workers.StopGraph}(1)
     notify() = CalibrationEndpoint.wake!(condition, guard)
     try
-        node = FilterGraphPipeWire.PipeWireNode(projection.graph;
-            remote, name="test.worker.$phase", rate=500//1, connect=false)
-        machine = Workers.Lifecycle(node, Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
-            receipts, commands, notify, Threads.threadid(), nothing, nothing)
+        node = FilterGraphPipeWire.PipeWireNode(
+            projection.graph;
+            remote,
+            name = "test.worker.$phase",
+            rate = 500//1,
+            connect = false,
+        )
+        machine = Workers.Lifecycle(
+            node,
+            Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
+            receipts,
+            commands,
+            notify,
+            Threads.threadid(),
+            nothing,
+            nothing,
+        )
         phase === :constructed || Workers.dispatch!(machine, :Prepare)
         phase === :connected && Workers.dispatch!(machine, :Connect)
         put!(commands, Workers.StopGraph())
@@ -46,15 +60,28 @@ function stopped_before_running(remote, phase, condition, guard)
 end
 
 function queued_before_run(remote, condition, guard)
-    projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-prerun/1")
+    projection = CalibrationNamedCommandTests.prepare_command(2, "test.worker-prerun/1")
     node = machine = nothing
     notify() = CalibrationEndpoint.wake!(condition, guard)
     receipts = Channel{Workers.AbstractGraphReceipt}(2)
     try
-        node = FilterGraphPipeWire.PipeWireNode(projection.graph;
-            remote, name="test.worker.prerun", rate=500//1, connect=false)
-        machine = Workers.Lifecycle(node, Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
-            receipts, Channel{Workers.StopGraph}(1), notify, Threads.threadid(), nothing, nothing)
+        node = FilterGraphPipeWire.PipeWireNode(
+            projection.graph;
+            remote,
+            name = "test.worker.prerun",
+            rate = 500//1,
+            connect = false,
+        )
+        machine = Workers.Lifecycle(
+            node,
+            Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
+            receipts,
+            Channel{Workers.StopGraph}(1),
+            notify,
+            Threads.threadid(),
+            nothing,
+            nothing,
+        )
         for event in (:Prepare, :Connect, :Publish)
             Workers.dispatch!(machine, event)
         end
@@ -78,13 +105,21 @@ end
 function worker_trials(remote, directory, daemon)
     condition, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = CalibrationEndpoint.wake!(condition, guard)
-    await(predicate) = CalibrationEndpoint.await(predicate, condition, guard, Control.monotonic()+30)
+    await(predicate) =
+        CalibrationEndpoint.await(predicate, condition, guard, Control.monotonic()+30)
     try
         @testset "controller tasks submit one stop under queue contention" begin
             commands = Channel{Workers.StopGraph}(1)
-            worker = Workers.CalibrationGraphWorker(Task(() -> nothing),
-                Channel{Workers.AbstractGraphReceipt}(2), commands, Threads.threadid(),
-                nothing, nothing, nothing, false)
+            worker = Workers.CalibrationGraphWorker(
+                Task(() -> nothing),
+                Channel{Workers.AbstractGraphReceipt}(2),
+                commands,
+                Threads.threadid(),
+                nothing,
+                nothing,
+                nothing,
+                false,
+            )
             lock(commands)
             first = @async Ext.quit_calibration_graph!(worker)
             second = @async Ext.quit_calibration_graph!(worker)
@@ -111,9 +146,16 @@ function worker_trials(remote, directory, daemon)
             put!(receipts, Workers.GraphCompleted(nothing, Threads.threadid(), true))
             task = Threads.@spawn nothing
             fetch(task)
-            worker = Workers.CalibrationGraphWorker(task, receipts,
-                Channel{Workers.StopGraph}(1), Threads.threadid(),
-                nothing, nothing, nothing, false)
+            worker = Workers.CalibrationGraphWorker(
+                task,
+                receipts,
+                Channel{Workers.StopGraph}(1),
+                Threads.threadid(),
+                nothing,
+                nothing,
+                nothing,
+                false,
+            )
             lock(receipts)
             first = @async Ext.calibration_graph_status(worker)
             second = @async Ext.calibration_graph_status(worker)
@@ -142,14 +184,24 @@ function worker_trials(remote, directory, daemon)
             queued_before_run(remote, condition, guard)
         end
         @testset "worker messages preserve affinity, cancellation and cleanup" begin
-            for trial in 1:12
-                projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-race/1")
+            for trial = 1:12
+                projection =
+                    CalibrationNamedCommandTests.prepare_command(2, "test.worker-race/1")
                 worker = nothing
                 try
-                    worker = Ext.start_calibration_graph(projection, remote,
-                        "test.worker.$trial", 500//1; notify)
+                    worker = Ext.start_calibration_graph(
+                        projection,
+                        remote,
+                        "test.worker.$trial",
+                        500//1;
+                        notify,
+                    )
                     if iseven(trial)
-                        await(() -> Ext.calibration_graph_status(worker).ready || istaskdone(worker.task))
+                        await(
+                            () ->
+                                Ext.calibration_graph_status(worker).ready ||
+                                istaskdone(worker.task),
+                        )
                         @test Ext.calibration_graph_status(worker).ready
                         GC.gc()
                     end
@@ -157,7 +209,10 @@ function worker_trials(remote, directory, daemon)
                     Ext.quit_calibration_graph!(worker)
                     await(() -> istaskdone(worker.task))
                     status = Ext.finish_calibration_graph!(worker)
-                    @test status.done && status.released && !status.ready && status.error === nothing
+                    @test status.done &&
+                          status.released &&
+                          !status.ready &&
+                          status.error === nothing
                     @test status.control_thread != Threads.threadid()
                     @test isempty(worker.receipts) && isempty(worker.preparation_commands)
                     @test fetch(Threads.@spawn try
@@ -177,13 +232,29 @@ function worker_trials(remote, directory, daemon)
         @testset "failed cleanup never releases scientific storage" begin
             receipts = Channel{Workers.AbstractGraphReceipt}(2)
             commands = Channel{Workers.StopGraph}(1)
-            machine = Workers.Lifecycle(FailedGraphCleanup(), (), receipts, commands,
-                notify, Threads.threadid(), nothing, nothing)
+            machine = Workers.Lifecycle(
+                FailedGraphCleanup(),
+                (),
+                receipts,
+                commands,
+                notify,
+                Threads.threadid(),
+                nothing,
+                nothing,
+            )
             Workers.dispatch!(machine, :Finish, ErrorException("graph failed"))
             task = Threads.@spawn nothing
             fetch(task)
-            worker = Workers.CalibrationGraphWorker(task, receipts, commands,
-                Threads.threadid(), nothing, nothing, nothing, false)
+            worker = Workers.CalibrationGraphWorker(
+                task,
+                receipts,
+                commands,
+                Threads.threadid(),
+                nothing,
+                nothing,
+                nothing,
+                false,
+            )
             status = Ext.calibration_graph_status(worker)
             @test status.done && !status.released && !status.ready
             @test status.error isa CompositeException
@@ -192,9 +263,15 @@ function worker_trials(remote, directory, daemon)
             @test_throws CompositeException Ext.finish_calibration_graph!(worker)
         end
         @testset "startup failure still transfers cleanup acknowledgement" begin
-            projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-failure/1")
-            worker = Ext.start_calibration_graph(projection, joinpath(directory,"absent"),
-                "test.worker.absent", 500//1; notify)
+            projection =
+                CalibrationNamedCommandTests.prepare_command(2, "test.worker-failure/1")
+            worker = Ext.start_calibration_graph(
+                projection,
+                joinpath(directory, "absent"),
+                "test.worker.absent",
+                500//1;
+                notify,
+            )
             try
                 await(() -> istaskdone(worker.task))
                 status = Ext.calibration_graph_status(worker)

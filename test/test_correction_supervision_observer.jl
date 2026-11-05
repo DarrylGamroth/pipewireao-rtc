@@ -8,22 +8,38 @@ mutable struct ObserverClock
     now::UInt64
 end
 (clock::ObserverClock)() = clock.now
-const OBS_FORMATS = (feedback=(element_type=Float32, shape=(4,),
-    layout=:row_major, schema=OBS_SCHEMA),)
-function observer_inputs(; tolerance=0.1, action=:monitor_only)
+const OBS_FORMATS = (
+    feedback = (
+        element_type = Float32,
+        shape = (4,),
+        layout = :row_major,
+        schema = OBS_SCHEMA,
+    ),
+)
+function observer_inputs(; tolerance = 0.1, action = :monitor_only)
     clock = ObserverClock(1000)
-    configuration = CSO.Configuration(; trip_fraction=0.5, clear_fraction=0.0,
-        persistence_ns=100, max_gap_ns=60, action)
-    policy = (; configuration, tolerance, schema=OBS_SCHEMA, shape=(4,), layout=:row_major)
-    observer = CSO.Observer(OBS_FORMATS, (; feedback=policy); owner_instance=701, clock)
+    configuration = CSO.Configuration(;
+        trip_fraction = 0.5,
+        clear_fraction = 0.0,
+        persistence_ns = 100,
+        max_gap_ns = 60,
+        action,
+    )
+    policy =
+        (; configuration, tolerance, schema = OBS_SCHEMA, shape = (4,), layout = :row_major)
+    observer = CSO.Observer(OBS_FORMATS, (; feedback = policy); owner_instance = 701, clock)
     return observer, clock, policy
 end
-header(sequence; offset=0, corrupted=false, discontinuity=false) =
-    (; sequence=UInt64(sequence), offset, corrupted, discontinuity,
-        timestamp_nanoseconds=Int64(-10)) # Model PTS is deliberately unusable.
-function frame!(observer, clock, sequence, now, feedback; metadata=header(sequence))
+header(sequence; offset = 0, corrupted = false, discontinuity = false) = (;
+    sequence = UInt64(sequence),
+    offset,
+    corrupted,
+    discontinuity,
+    timestamp_nanoseconds = Int64(-10),
+) # Model PTS is deliberately unusable.
+function frame!(observer, clock, sequence, now, feedback; metadata = header(sequence))
     clock.now = now
-    observer(Val(:frame), (; feedback), (; feedback=metadata))
+    observer(Val(:frame), (; feedback), (; feedback = metadata))
     return only(CSO.snapshot(observer))
 end
 
@@ -33,29 +49,57 @@ end
     for tolerance in (-1, NaN, Inf, true, "1")
         @test_throws ArgumentError observer_inputs(; tolerance)
     end
-    for replacement in ((schema="pipewireao/vdm-command-f32/1",), (shape=(2,),),
-            (layout=:column_major,), (element_type=Float64,))
-        formats = (feedback=merge(OBS_FORMATS.feedback, replacement),)
-        @test_throws ArgumentError CSO.Observer(formats, (; feedback=policy); owner_instance=701, clock)
+    for replacement in (
+        (schema = "pipewireao/vdm-command-f32/1",),
+        (shape = (2,),),
+        (layout = :column_major,),
+        (element_type = Float64,),
+    )
+        formats = (feedback = merge(OBS_FORMATS.feedback, replacement),)
+        @test_throws ArgumentError CSO.Observer(
+            formats,
+            (; feedback = policy);
+            owner_instance = 701,
+            clock,
+        )
     end
-    @test_throws ArgumentError CSO.Observer((;), (; feedback=policy); owner_instance=701, clock)
-    @test_throws ArgumentError CSO.Observer(OBS_FORMATS, (;); owner_instance=701, clock)
-    @test_throws ArgumentError CSO.Observer(OBS_FORMATS, (; feedback=policy); owner_instance=0, clock)
+    @test_throws ArgumentError CSO.Observer(
+        (;),
+        (; feedback = policy);
+        owner_instance = 701,
+        clock,
+    )
+    @test_throws ArgumentError CSO.Observer(OBS_FORMATS, (;); owner_instance = 701, clock)
+    @test_throws ArgumentError CSO.Observer(
+        OBS_FORMATS,
+        (; feedback = policy);
+        owner_instance = 0,
+        clock,
+    )
     for shape in ((true,), (0,), (-1,), ("4",), (typemax(Int),), (2, 2))
-        formats = (feedback=merge(OBS_FORMATS.feedback, (;shape)),)
-        bad = merge(policy, (;shape))
-        @test_throws ArgumentError CSO.Observer(formats, (;feedback=bad); owner_instance=701, clock)
+        formats = (feedback = merge(OBS_FORMATS.feedback, (; shape)),)
+        bad = merge(policy, (; shape))
+        @test_throws ArgumentError CSO.Observer(
+            formats,
+            (; feedback = bad);
+            owner_instance = 701,
+            clock,
+        )
     end
     large_shape = (PipeWireAORTC.Artifacts.MAX_IMAGE_BYTES ÷ sizeof(Float32),)
-    large_format = merge(OBS_FORMATS.feedback, (;shape=large_shape))
-    large_policy = merge(policy, (;shape=large_shape))
-    @test_throws ArgumentError CSO.Observer((;left=large_format, right=large_format),
-        (;left=large_policy, right=large_policy); owner_instance=701, clock)
+    large_format = merge(OBS_FORMATS.feedback, (; shape = large_shape))
+    large_policy = merge(policy, (; shape = large_shape))
+    @test_throws ArgumentError CSO.Observer(
+        (; left = large_format, right = large_format),
+        (; left = large_policy, right = large_policy);
+        owner_instance = 701,
+        clock,
+    )
 
 end
 
 @testset "Actual source sequence and owner time determine persistence" begin
-    observer, clock, _ = observer_inputs(; tolerance=0.125)
+    observer, clock, _ = observer_inputs(; tolerance = 0.125)
     # Includes negative feedback (slew/quantization); exactly tolerance is clear.
     first = frame!(observer, clock, 41, 1000, Float32[0.2, -0.2, 0.0, 0.125])
     @test first.state === :Pending && first.fraction == 0.5
@@ -67,7 +111,8 @@ end
     # A reader may miss the trip frame and many later frames without losing intent.
     frame!(observer, clock, 44, 1150, zeros(Float32, 4))
     frame!(observer, clock, 45, 1200, fill(NaN32, 4))
-    observer(Val(:reset)); observer(Val(:invalidated))
+    observer(Val(:reset))
+    observer(Val(:invalidated))
     retained = only(CSO.snapshot(observer))
     @test retained.state === :Tripped && retained.trip_sequence == 43
     @test retained.action === :monitor_only && retained.trip_ns == 1100
@@ -75,9 +120,13 @@ end
 end
 
 @testset "Missing, corrupt, repeated and discontinuous data break continuity" begin
-    cases = ((; metadata=nothing), (; metadata=header(2; corrupted=true)),
-        (; metadata=header(2; discontinuity=true)), (; metadata=header(2; offset=1)),
-        (; metadata=header(1)))
+    cases = (
+        (; metadata = nothing),
+        (; metadata = header(2; corrupted = true)),
+        (; metadata = header(2; discontinuity = true)),
+        (; metadata = header(2; offset = 1)),
+        (; metadata = header(1)),
+    )
     for kwargs in cases
         observer, clock, _ = observer_inputs()
         frame!(observer, clock, 1, 1000, fill(0.2f0, 4))
@@ -87,13 +136,15 @@ end
         @test value.state === :Pending
         @test frame!(observer, clock, 4, 1150, fill(0.2f0, 4)).state === :Pending
     end
-    for values in (Float32[NaN, 0, 0, 0], Float32[Inf, 0, 0, 0], zeros(Float32, 3), zeros(Float64, 4))
+    for values in
+        (Float32[NaN, 0, 0, 0], Float32[Inf, 0, 0, 0], zeros(Float32, 3), zeros(Float64, 4))
         observer, clock, _ = observer_inputs()
         @test frame!(observer, clock, 1, 1000, values).state === :Unknown
     end
     for event in (Val(:invalidated),)
         observer, clock, _ = observer_inputs()
-        frame!(observer, clock, 1, 1000, fill(0.2f0, 4)); observer(event)
+        frame!(observer, clock, 1, 1000, fill(0.2f0, 4))
+        observer(event)
         @test frame!(observer, clock, 2, 1050, fill(0.2f0, 4)).state === :Pending
         @test frame!(observer, clock, 3, 1100, fill(0.2f0, 4)).state === :Pending
     end
@@ -112,7 +163,8 @@ end
     @test only(CSO.snapshot(observer)) === nothing
     @atomic binding.published.version = UInt64(2)
     @test !isempty(CSO.property_info(observer))
-    @test observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), true) isa PipeWireAO.SPA.Props
+    @test observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), true) isa
+          PipeWireAO.SPA.Props
     frame!(observer, clock, 1, 1000, zeros(Float32, 4))
     # The control getter must never mutate the single-writer Supervisor.
     clock.now = 1061
@@ -126,7 +178,7 @@ function observer_allocation(observer, clock, outputs, metadata)
 end
 @testset "Warm callback allocation budget" begin
     observer, clock, _ = observer_inputs()
-    outputs, metadata = (feedback=zeros(Float32, 4),), (feedback=header(1),)
+    outputs, metadata = (feedback = zeros(Float32, 4),), (feedback = header(1),)
     observer_allocation(observer, clock, outputs, metadata)
     @test observer_allocation(observer, clock, outputs, metadata) == 0
     observer(Val(:reset))
@@ -152,7 +204,7 @@ end
         @test value.sequence == 1000
     end
     @test CSO.request_rearm!(observer, 701) == 0
-    outputs, metadata = (feedback=zeros(Float32, 4),), (feedback=header(1002),)
+    outputs, metadata = (feedback = zeros(Float32, 4),), (feedback = header(1002),)
     observer_allocation(observer, clock, outputs, metadata)
     @test observer_allocation(observer, clock, outputs, metadata) == 0
 
@@ -165,7 +217,7 @@ end
     @test value.trip_sequence == trip.trip_sequence && value.trip_ns == trip.trip_ns
     @test value.action === trip.action
     @test CSO.rearm_status(observer) ==
-        (requested_token=0, acknowledged_token=token, result=:refused)
+          (requested_token = 0, acknowledged_token = token, result = :refused)
     @test CSO.request_rearm!(observer, 701) == 0
 
     replacement, clock, _ = observer_inputs()
@@ -181,8 +233,8 @@ end
     @test CSO.rearm_status(observer).acknowledged_token == 0
     # Replayed clear data is not a NEW successful sample.
     frame!(observer, clock, 3, 1150, zeros(Float32, 4))
-    @test CSO.rearm_status(observer) == (requested_token=0,
-        acknowledged_token=token, result=:refused)
+    @test CSO.rearm_status(observer) ==
+          (requested_token = 0, acknowledged_token = token, result = :refused)
     @test only(CSO.snapshot(observer)).state === :Tripped
     frame!(observer, clock, 4, 1200, zeros(Float32, 4))
     @test only(CSO.snapshot(observer)).state === :Tripped # No automatic retry.
@@ -212,34 +264,52 @@ end
 
 @testset "Multiple-output rearm refuses atomically on any uncleared latch" begin
     _, clock, policy = observer_inputs()
-    formats = (; left=OBS_FORMATS.feedback, right=OBS_FORMATS.feedback)
-    observer = CSO.Observer(formats, (; left=policy, right=policy); owner_instance=701, clock)
-    high = fill(0.2f0, 4); clear = zeros(Float32, 4)
+    formats = (; left = OBS_FORMATS.feedback, right = OBS_FORMATS.feedback)
+    observer = CSO.Observer(
+        formats,
+        (; left = policy, right = policy);
+        owner_instance = 701,
+        clock,
+    )
+    high = fill(0.2f0, 4)
+    clear = zeros(Float32, 4)
     for (sequence, now) in ((1, 1000), (2, 1050), (3, 1100))
         clock.now = now
-        observer(Val(:frame), (;left=high, right=high), (;left=header(sequence), right=header(sequence)))
+        observer(
+            Val(:frame),
+            (; left = high, right = high),
+            (; left = header(sequence), right = header(sequence)),
+        )
     end
     @test all(s -> s.state === :Tripped, CSO.snapshot(observer))
     token = CSO.request_rearm!(observer, 701)
     clock.now = 1150
-    observer(Val(:frame), (;left=clear, right=high), (;left=header(4), right=header(4)))
+    observer(
+        Val(:frame),
+        (; left = clear, right = high),
+        (; left = header(4), right = header(4)),
+    )
     @test CSO.rearm_status(observer).result === :refused
     @test all(s -> s.state === :Tripped, CSO.snapshot(observer))
     @test CSO.request_rearm!(observer, 701) > token
     clock.now = 1200
-    observer(Val(:frame), (;left=clear, right=clear), (;left=header(5), right=header(5)))
+    observer(
+        Val(:frame),
+        (; left = clear, right = clear),
+        (; left = header(5), right = header(5)),
+    )
     @test CSO.rearm_status(observer).result === :rearmed
     @test all(s -> s.state === :Clear, CSO.snapshot(observer))
 end
 
 function successful_frame_allocation(observer, clock, outputs)
     clock.now += 1
-    metadata = (feedback=header(clock.now),)
+    metadata = (feedback = header(clock.now),)
     return @allocated observer(Val(:frame), outputs, metadata)
 end
 @testset "Successful and rearm callback allocation budgets" begin
     observer, clock, _ = observer_inputs()
-    outputs = (feedback=zeros(Float32, 4),)
+    outputs = (feedback = zeros(Float32, 4),)
     successful_frame_allocation(observer, clock, outputs)
     @test successful_frame_allocation(observer, clock, outputs) == 0
     observer, clock, _ = trip_observer!()
@@ -255,9 +325,9 @@ end
     values = zeros(Float32, 4)
     seen_first = Threads.Atomic{Bool}(false)
     writer = Threads.@spawn begin
-        for sequence in UInt64(1):UInt64(20000)
+        for sequence = UInt64(1):UInt64(20000)
             clock.now = sequence + 1000
-            observer(Val(:frame), (feedback=values,), (feedback=header(sequence),))
+            observer(Val(:frame), (feedback = values,), (feedback = header(sequence),))
             if sequence == 1
                 while !seen_first[]
                     yield()
@@ -285,7 +355,8 @@ struct ShiftedFeedback <: AbstractVector{Float32}
 end
 Base.size(values::ShiftedFeedback) = size(values.values)
 Base.axes(values::ShiftedFeedback) = (Base.IdentityUnitRange(-2:(length(values.values)-3)),)
-Base.getindex(values::ShiftedFeedback, index::Int) = (checkbounds(values, index); values.values[index+3])
+Base.getindex(values::ShiftedFeedback, index::Int) =
+    (checkbounds(values, index); values.values[index+3])
 
 function scalar_feedback_oracle(values, tolerance)
     clipped = 0
@@ -296,35 +367,56 @@ function scalar_feedback_oracle(values, tolerance)
     return clipped / length(values)
 end
 @testset "Finite/count reductions preserve IEEE comparisons and arbitrary axes" begin
-    cases = (Float32[0, -0.0, nextfloat(0f0), -nextfloat(0f0)],
+    cases = (
+        Float32[0, -0.0, nextfloat(0.0f0), -nextfloat(0.0f0)],
         Float32[prevfloat(0.125f0), 0.125, nextfloat(0.125f0), -0.125],
-        Float32[floatmax(Float32), -floatmax(Float32), floatmin(Float32), -floatmin(Float32)],
-        Float32[NaN, 0, 1, -1], Float32[Inf, 0, 1, -1], Float32[-Inf, 0, 1, -1])
-    for values in cases, tolerance in (0.0, Float64(nextfloat(0f0)), 0.125, floatmax(Float64))
+        Float32[
+            floatmax(Float32),
+            -floatmax(Float32),
+            floatmin(Float32),
+            -floatmin(Float32),
+        ],
+        Float32[NaN, 0, 1, -1],
+        Float32[Inf, 0, 1, -1],
+        Float32[-Inf, 0, 1, -1],
+    )
+    for values in cases,
+        tolerance in (0.0, Float64(nextfloat(0.0f0)), 0.125, floatmax(Float64))
+
         expected = scalar_feedback_oracle(values, tolerance)
         @test isequal(CSO.feedback_fraction(values, Val((4,)), tolerance), expected)
-        @test isequal(CSO.feedback_fraction(ShiftedFeedback(values), Val((4,)), tolerance), expected)
-        storage = repeat(values, inner=2)
-        @test isequal(CSO.feedback_fraction(view(storage, 1:2:length(storage)), Val((4,)), tolerance), expected)
+        @test isequal(
+            CSO.feedback_fraction(ShiftedFeedback(values), Val((4,)), tolerance),
+            expected,
+        )
+        storage = repeat(values, inner = 2)
+        @test isequal(
+            CSO.feedback_fraction(view(storage, 1:2:length(storage)), Val((4,)), tolerance),
+            expected,
+        )
     end
 end
 
 @testset "Concrete presence records preserve absent-header fencing" begin
     observer, clock, _ = observer_inputs()
-    outputs = (feedback=fill(0.2f0, 4), unrelated=zeros(Float32, 1))
+    outputs = (feedback = fill(0.2f0, 4), unrelated = zeros(Float32, 1))
     for (sequence, now, present) in ((1, 1000, true), (2, 1050, false), (3, 1100, true))
         clock.now = now
         # The absent value is deliberately a valid stale header: it must never
         # count as an observation or accidentally repair continuity.
-        metadata = (feedback=(;present, value=header(sequence)),
-            unrelated=(present=false, value=header(0)))
+        metadata = (
+            feedback = (; present, value = header(sequence)),
+            unrelated = (present = false, value = header(0)),
+        )
         observer(Val(:frame), outputs, metadata)
         value = only(CSO.snapshot(observer))
         @test value.state === (present ? :Pending : :Unknown)
         @test value.sequence == (present ? sequence : 1)
     end
-    metadata = (feedback=(present=true, value=header(4)),
-        unrelated=(present=false, value=header(0)))
+    metadata = (
+        feedback = (present = true, value = header(4)),
+        unrelated = (present = false, value = header(0)),
+    )
     observer(Val(:frame), outputs, metadata) # Same clock time rejects repetition.
     @test only(CSO.snapshot(observer)).state === :Unknown
     observer_allocation(observer, clock, outputs, metadata)
@@ -335,7 +427,7 @@ end
     observer, clock, _ = observer_inputs()
     props = observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), false)
     name = CSO.OBSERVATION_PREFIX * "feedback.max-gap-ns"
-    pod = only(value for (key,value) in props.values if key == name)
+    pod = only(value for (key, value) in props.values if key == name)
     @test PipeWireAO.pod_value(String, pod) == "60"
     info = only(info for info in CSO.property_info(observer) if info.name == name)
     @test !iszero(info.flags & PipeWireAO.SPA.PROPERTY_READONLY)

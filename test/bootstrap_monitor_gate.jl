@@ -5,15 +5,21 @@ struct BootstrapMonitorGate <: PipeWireAORTC.OwnerBootstrapRuntime.AbstractOwner
     entered::Channel{Nothing}
     release::Channel{Nothing}
 end
-function PipeWireAORTC.OwnerBootstrapRuntime._dispatch_owner!(sm, message::BootstrapMonitorGate)
+function PipeWireAORTC.OwnerBootstrapRuntime._dispatch_owner!(
+    sm,
+    message::BootstrapMonitorGate,
+)
     put!(message.entered, nothing)
     take!(message.release)
     put!(message.reply, PipeWireAORTC.OwnerBootstrapRuntime.OwnerReply(nothing, nothing))
     return nothing
 end
 function pause_bootstrap_monitor(runtime)
-    gate = BootstrapMonitorGate(Channel{PipeWireAORTC.OwnerBootstrapRuntime.OwnerReply}(1),
-        Channel{Nothing}(1), Channel{Nothing}(1))
+    gate = BootstrapMonitorGate(
+        Channel{PipeWireAORTC.OwnerBootstrapRuntime.OwnerReply}(1),
+        Channel{Nothing}(1),
+        Channel{Nothing}(1),
+    )
     PipeWireAORTC.OwnerBootstrapRuntime._enqueue!(runtime.mailbox, gate)
     take!(gate.entered)
     return gate

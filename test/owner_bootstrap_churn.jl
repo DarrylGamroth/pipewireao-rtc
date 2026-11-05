@@ -22,7 +22,7 @@ function peer(mode, remote)
     helper = joinpath(@__DIR__, "owner_bootstrap_churn_peer.jl")
     project = dirname(Base.active_project())
     command = `$(Base.julia_cmd()) --startup-file=no --compiled-modules=existing --project=$project $helper $(ARGS[1]) $(ARGS[2]) $mode $remote test.churn $(getpid()) 61`
-    process = open(pipeline(command; stderr=joinpath(OUTPUT, mode * ".stderr.log")), "r+")
+    process = open(pipeline(command; stderr = joinpath(OUTPUT, mode * ".stderr.log")), "r+")
     try
         readline(process) == "READY" || error("peer failed preparation")
         return process
@@ -59,11 +59,30 @@ function churn(remote, directory, daemon)
         removed = readline(foreign)
         @test startswith(published, "PUBLISHED ")
         @test startswith(removed, "REMOVED ")
-        @test started < parse(UInt64, split(published)[end]) <
-            parse(UInt64, split(removed)[end]) < finished
-        println("OWNER_CHURN bytes=", observed.allocd, " pool=", observed.poolalloc,
-            " malloc=", observed.malloc, " gc=", observed.pause, " quiet=", quiet.allocd,
-            " window=", started, ":", finished, " publisher=", published, " removal=", removed)
+        @test started <
+              parse(UInt64, split(published)[end]) <
+              parse(UInt64, split(removed)[end]) <
+              finished
+        println(
+            "OWNER_CHURN bytes=",
+            observed.allocd,
+            " pool=",
+            observed.poolalloc,
+            " malloc=",
+            observed.malloc,
+            " gc=",
+            observed.pause,
+            " quiet=",
+            quiet.allocd,
+            " window=",
+            started,
+            ":",
+            finished,
+            " publisher=",
+            published,
+            " removal=",
+            removed,
+        )
         flush(stdout)
         @test observed.allocd == 0
         @test observed.pause == 0

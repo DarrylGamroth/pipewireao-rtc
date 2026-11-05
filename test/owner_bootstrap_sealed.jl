@@ -9,9 +9,9 @@ const E = PipeWireAORTC.ControlEndpoint
 remaining() = C.monotonic() + 10.0
 function connected_owner(remote, name, instance)
     runtime = R.Runtime(remote, name, instance)
-    client = B.connect(remote, name, getpid(), instance; deadline=remaining())
+    client = B.connect(remote, name, getpid(), instance; deadline = remaining())
     R.prepared!(runtime)
-    request = ThreadPinning.@spawnat 2 B.connect_owner!(client; deadline=remaining())
+    request = ThreadPinning.@spawnat 2 B.connect_owner!(client; deadline = remaining())
     ticket = R.take_connect!(runtime)
     R.connected!(runtime, ticket)
     R.await_connected!(runtime, ticket)
@@ -26,16 +26,23 @@ function retained_authority(remote, directory, daemon)
     chmod(dirname(remote), 0o700)
     runtime, client = connected_owner(remote, "test.bootstrap.retained", Int64(52))
     try
-        @test B.status(client; deadline=remaining()).lifecycle === P.Connected
+        @test B.status(client; deadline = remaining()).lifecycle === P.Connected
         before = globals(something(runtime.transport.endpoint.registry))
-        @test_throws C.UnknownOutcome B.connect(remote, "test.bootstrap.retained", getpid(), 52;
-            deadline=C.monotonic() + 0.3)
+        @test_throws C.UnknownOutcome B.connect(
+            remote,
+            "test.bootstrap.retained",
+            getpid(),
+            52;
+            deadline = C.monotonic() + 0.3,
+        )
         @test length(runtime.transport.endpoint.controllers) == 1
         @test runtime.transport.endpoint.retained_controller == client.client.identity
         @test !R.cancelled(runtime)
-        @test map(object -> object.id, globals(something(runtime.transport.endpoint.registry))) ==
-            map(object -> object.id, before)
-        @test B.status(client; deadline=remaining()).lifecycle === P.Connected
+        @test map(
+            object -> object.id,
+            globals(something(runtime.transport.endpoint.registry)),
+        ) == map(object -> object.id, before)
+        @test B.status(client; deadline = remaining()).lifecycle === P.Connected
         # Isolate the cold client listener while measuring owner methods, as in
         # existing SDK microbenchmarks. This is not a process-wide SCI claim.
         with_thread_loop_lock(client.client.loop) do _
@@ -45,7 +52,7 @@ function retained_authority(remote, directory, daemon)
             end
         end
         quitting = ThreadPinning.@spawnat 2 begin
-            reply = B.quit!(client; deadline=remaining())
+            reply = B.quit!(client; deadline = remaining())
             close(client)
             reply
         end
@@ -65,8 +72,13 @@ function revoked_authority(remote, directory, daemon; mode)
     try
         with_thread_loop_lock(client.client.loop) do _
             if mode === :proof
-                update_properties!(something(client.client.marker),
-                    Dict("pipewireao.rtc-control.instance" => string(client.client.marker_instance + 1)))
+                update_properties!(
+                    something(client.client.marker),
+                    Dict(
+                        "pipewireao.rtc-control.instance" =>
+                            string(client.client.marker_instance + 1),
+                    ),
+                )
             elseif mode === :node
                 close(something(client.client.marker))
             end
@@ -87,7 +99,7 @@ function pending_quit_loss(remote, directory, daemon; remove)
     runtime, client = connected_owner(remote, "test.bootstrap.quit.$remove", Int64(54))
     try
         quitting = ThreadPinning.@spawnat 2 try
-            B.request!(client, :quit; deadline=C.monotonic() + (remove ? 10.0 : 0.5))
+            B.request!(client, :quit; deadline = C.monotonic() + (remove ? 10.0 : 0.5))
         catch error
             error
         end

@@ -42,7 +42,8 @@ function _adapter_integer(value::Integer, context)
     return Int(value)
 end
 _adapter_integer(value, context) = throw(_adapter_error("$context must be an integer"))
-_adapter_integer(value::Bool, context) = throw(_adapter_error("$context must be an integer"))
+_adapter_integer(value::Bool, context) =
+    throw(_adapter_error("$context must be an integer"))
 
 function _adapter_string(value::AbstractString, context)
     isempty(value) && throw(_adapter_error("$context must not be empty"))
@@ -83,21 +84,26 @@ _adapter_f32(value::Bool, context) = throw(_adapter_error("$context must be a re
 function _adapter_range(value::Tuple, context)
     _adapter_tuple(value, 2, context)
     lower, upper = map(bound -> _adapter_f32(bound, context), value)
-    value[1] <= value[2] || throw(_adapter_error("$context lower bound exceeds upper bound"))
+    value[1] <= value[2] ||
+        throw(_adapter_error("$context lower bound exceeds upper bound"))
     return (lower, upper)
 end
 _adapter_range(::Nothing, context) = nothing
-_adapter_range(value, context) = throw(_adapter_error("$context must contain two real bounds"))
+_adapter_range(value, context) =
+    throw(_adapter_error("$context must contain two real bounds"))
 
 function _adapter_rounding(value::AbstractString, context)
     value == "none" && return nothing
     value == "nearest_even" && return RoundNearest
     throw(_adapter_error("$context must be 'none' or 'nearest_even'"))
 end
-_adapter_rounding(value, context) = throw(_adapter_error("$context must be 'none' or 'nearest_even'"))
+_adapter_rounding(value, context) =
+    throw(_adapter_error("$context must be 'none' or 'nearest_even'"))
 
 function _adapter_rounding_range(range::Tuple, ::typeof(RoundNearest), context)
-    all(isinteger, range) || throw(_adapter_error("$context requires integral bounds with nearest_even rounding"))
+    all(isinteger, range) || throw(
+        _adapter_error("$context requires integral bounds with nearest_even rounding"),
+    )
     return nothing
 end
 _adapter_rounding_range(range, rounding, context) = nothing
@@ -105,20 +111,39 @@ _adapter_rounding_range(range, rounding, context) = nothing
 _adapter_output_type(value::AbstractString) = _adapter_output_type(Val(Symbol(value)))
 _adapter_output_type(::Val{:float32}) = Float32
 _adapter_output_type(::Val{:uint16}) = UInt16
-_adapter_output_type(value) = throw(_adapter_error("output_element_type must be 'float32' or 'uint16'"))
+_adapter_output_type(value) =
+    throw(_adapter_error("output_element_type must be 'float32' or 'uint16'"))
 _adapter_output_contract(::Type{Float32}, range, rounding) = nothing
 function _adapter_output_contract(::Type{UInt16}, range::Tuple, ::typeof(RoundNearest))
     0 <= range[1] <= range[2] <= typemax(UInt16) ||
         throw(_adapter_error("UInt16 camera output requires range within 0:65535"))
     return nothing
 end
-_adapter_output_contract(::Type{UInt16}, range, rounding) =
-    throw(_adapter_error("UInt16 camera output requires a bounded range and nearest_even rounding"))
+_adapter_output_contract(::Type{UInt16}, range, rounding) = throw(
+    _adapter_error(
+        "UInt16 camera output requires a bounded range and nearest_even rounding",
+    ),
+)
 
-function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props::NamedTuple)
-    fields = (:input_size, :output_size, :origin, :scale, :bias, :range, :rounding,
-        :input_schema, :output_schema, :output_element_type)
-    required = (:input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema)
+function _detector_frame_layout_f32_node(
+    name::Symbol,
+    config::NamedTuple,
+    props::NamedTuple,
+)
+    fields = (
+        :input_size,
+        :output_size,
+        :origin,
+        :scale,
+        :bias,
+        :range,
+        :rounding,
+        :input_schema,
+        :output_schema,
+        :output_element_type,
+    )
+    required =
+        (:input_size, :output_size, :origin, :scale, :bias, :input_schema, :output_schema)
     context = "node '$name' config"
     _adapter_fields(config, fields, required, context)
     _adapter_fields(props, (), (), "node '$name' props")
@@ -127,9 +152,11 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
     origin = map(_adapter_tuple(config.origin, 2, "$context.origin")) do index
         _adapter_integer(index, "$context.origin")
     end
-    all(d -> 0 <= origin[d] <= output_size[d] &&
-        input_size[d] <= output_size[d] - origin[d], 1:2) ||
-        throw(_adapter_error("input rectangle does not fit inside the output at origin"))
+    all(
+        d ->
+            0 <= origin[d] <= output_size[d] && input_size[d] <= output_size[d] - origin[d],
+        1:2,
+    ) || throw(_adapter_error("input rectangle does not fit inside the output at origin"))
     scale = _adapter_f32(config.scale, "$context.scale")
     bias = _adapter_f32(config.bias, "$context.bias")
     range = _adapter_range(get(config, :range, nothing), "$context.range")
@@ -139,9 +166,21 @@ function _detector_frame_layout_f32_node(name::Symbol, config::NamedTuple, props
     _adapter_output_contract(T, range, rounding)
     input_schema = _adapter_string(config.input_schema, "$context.input_schema")
     output_schema = _adapter_string(config.output_schema, "$context.output_schema")
-    return algorithm_node(name, DetectorFrameLayoutNode,
-        DetectorFrameLayoutConfig{T,typeof(range),typeof(rounding)}(input_size, output_size, origin, scale, bias,
-            range, rounding, input_schema, output_schema))
+    return algorithm_node(
+        name,
+        DetectorFrameLayoutNode,
+        DetectorFrameLayoutConfig{T,typeof(range),typeof(rounding)}(
+            input_size,
+            output_size,
+            origin,
+            scale,
+            bias,
+            range,
+            rounding,
+            input_schema,
+            output_schema,
+        ),
+    )
 end
 
 """
@@ -161,47 +200,91 @@ The node resets its output buffer to zero and requires one-based Float32
 input arrays and Float32 or UInt16 output arrays on the declared compute device. CUDA and AMDGPU owners support
 fixed-address command-graph capture; host owners retain stream execution.
 """
-function configured_graph_node_types(directory=nothing)
-    factories = merge(builtin_graph_node_types(), (
-        detector_frame_layout_f32=_detector_frame_layout_f32_node,))
-    return instrument_optical_factories(factories,directory)
+function configured_graph_node_types(directory = nothing)
+    factories = merge(
+        builtin_graph_node_types(),
+        (detector_frame_layout_f32 = _detector_frame_layout_f32_node,),
+    )
+    return instrument_optical_factories(factories, directory)
 end
 
-function AlgorithmGraphs.graph_node_ports(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T}) where {T}
+function AlgorithmGraphs.graph_node_ports(
+    ::Type{DetectorFrameLayoutNode},
+    config::DetectorFrameLayoutConfig{T},
+) where {T}
     return (
-        AlgorithmGraphs.graph_port_contract(:detector_frame, :input, :data, Float32,
-            config.input_size, config.input_schema, :column_major),
-        AlgorithmGraphs.graph_port_contract(:frame, :output, :data, T,
-            config.output_size, config.output_schema, :column_major))
+        AlgorithmGraphs.graph_port_contract(
+            :detector_frame,
+            :input,
+            :data,
+            Float32,
+            config.input_size,
+            config.input_schema,
+            :column_major,
+        ),
+        AlgorithmGraphs.graph_port_contract(
+            :frame,
+            :output,
+            :data,
+            T,
+            config.output_size,
+            config.output_schema,
+            :column_major,
+        ),
+    )
 end
 
-function _adapter_buffer(values::AbstractArray{T,N}, shape::NTuple{N,Int}, ::Type{T}=Float32) where {T,N}
+function _adapter_buffer(
+    values::AbstractArray{T,N},
+    shape::NTuple{N,Int},
+    ::Type{T} = Float32,
+) where {T,N}
     Base.require_one_based_indexing(values)
-    size(values) == shape || throw(DimensionMismatch("graph adapter buffer shape differs from declaration"))
+    size(values) == shape ||
+        throw(DimensionMismatch("graph adapter buffer shape differs from declaration"))
     return values
 end
-_adapter_buffer(values, shape, type=Float32) = throw(_adapter_error("graph adapter requires $type arrays of the declared rank"))
+_adapter_buffer(values, shape, type = Float32) =
+    throw(_adapter_error("graph adapter requires $type arrays of the declared rank"))
 
-function AlgorithmGraphs.prepare_graph_node(::Type{DetectorFrameLayoutNode}, config::DetectorFrameLayoutConfig{T},
-        ::NamedTuple{()}, inputs::NamedTuple{(:detector_frame,)}, outputs::NamedTuple{(:frame,)},
-        ::NamedTuple{()}, target::Backends.AbstractComputeDevice) where {T}
+function AlgorithmGraphs.prepare_graph_node(
+    ::Type{DetectorFrameLayoutNode},
+    config::DetectorFrameLayoutConfig{T},
+    ::NamedTuple{()},
+    inputs::NamedTuple{(:detector_frame,)},
+    outputs::NamedTuple{(:frame,)},
+    ::NamedTuple{()},
+    target::Backends.AbstractComputeDevice,
+) where {T}
     detector_frame = _adapter_buffer(inputs.detector_frame, config.input_size)
     frame = _adapter_buffer(outputs.frame, config.output_size, T)
-    Backends.compute_device(detector_frame) == target && Backends.compute_device(frame) == target ||
+    Backends.compute_device(detector_frame) == target &&
+    Backends.compute_device(frame) == target ||
         throw(_adapter_error("graph adapter buffers must use the declared compute device"))
     Base.mightalias(frame, detector_frame) &&
         throw(_adapter_error("frame output must not alias its detector input"))
-    rows = (config.origin[1] + 1):(config.origin[1] + config.input_size[1])
-    columns = (config.origin[2] + 1):(config.origin[2] + config.input_size[2])
-    return DetectorFrameLayoutOwner(detector_frame, view(frame, rows, columns), frame,
-        config.scale, config.bias, config.range, config.rounding)
+    rows = (config.origin[1]+1):(config.origin[1]+config.input_size[1])
+    columns = (config.origin[2]+1):(config.origin[2]+config.input_size[2])
+    return DetectorFrameLayoutOwner(
+        detector_frame,
+        view(frame, rows, columns),
+        frame,
+        config.scale,
+        config.bias,
+        config.range,
+        config.rounding,
+    )
 end
 
 # Device fill and fused broadcast retain input/output addresses and enqueue on
 # the graph's prepared context, without host scientific-state updates or waits.
-_adapter_capture_capability(::Backends.AbstractComputeDevice) = AlgorithmGraphs.GraphNodeCaptureUnsupported()
-_adapter_capture_capability(::Backends.AcceleratorComputeDevice{<:Union{Backends.CUDABackend,Backends.AMDGPUBackend}}) =
-    AlgorithmGraphs.GraphNodeCaptureSafe()
+_adapter_capture_capability(::Backends.AbstractComputeDevice) =
+    AlgorithmGraphs.GraphNodeCaptureUnsupported()
+_adapter_capture_capability(
+    ::Backends.AcceleratorComputeDevice{
+        <:Union{Backends.CUDABackend,Backends.AMDGPUBackend},
+    },
+) = AlgorithmGraphs.GraphNodeCaptureSafe()
 AlgorithmGraphs.graph_node_capture_capability(owner::DetectorFrameLayoutOwner) =
     _adapter_capture_capability(Backends.compute_device(owner.frame))
 
@@ -215,8 +298,13 @@ _layout_value(value, scale, bias, range, rounding) =
 
 function AlgorithmGraphs.step_graph_node!(owner::DetectorFrameLayoutOwner)
     fill!(owner.frame, zero(eltype(owner.frame)))
-    owner.science .= _layout_value.(owner.detector_frame, owner.scale, owner.bias,
-        Ref(owner.range), Ref(owner.rounding))
+    owner.science .= _layout_value.(
+        owner.detector_frame,
+        owner.scale,
+        owner.bias,
+        Ref(owner.range),
+        Ref(owner.rounding),
+    )
     return nothing
 end
 function AlgorithmGraphs.reset_graph_node!(owner::DetectorFrameLayoutOwner)

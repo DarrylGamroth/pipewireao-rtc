@@ -20,20 +20,33 @@ function read_chopped_warmup(path)
     filesize(path) <= 16 * 1024 || throw(ArgumentError("chopped warmup exceeds 16 KiB"))
     return chopped_warmup(Common.read_yaml(path))
 end
-chopped_warmup(value) = throw(ArgumentError("chopped warmup requires version, input, exposure_duration_ns and trigger_high_is_fringed"))
+chopped_warmup(value) = throw(
+    ArgumentError(
+        "chopped warmup requires version, input, exposure_duration_ns and trigger_high_is_fringed",
+    ),
+)
 function chopped_warmup(value::AbstractDict)
     Set(keys(value)) ==
-        Set(("version", "input", "exposure_duration_ns", "trigger_high_is_fringed")) ||
-        throw(ArgumentError("chopped warmup requires version, input, exposure_duration_ns and trigger_high_is_fringed"))
+    Set(("version", "input", "exposure_duration_ns", "trigger_high_is_fringed")) || throw(
+        ArgumentError(
+            "chopped warmup requires version, input, exposure_duration_ns and trigger_high_is_fringed",
+        ),
+    )
     value["version"] === 1 || throw(ArgumentError("unsupported chopped warmup version"))
     input = value["input"]
     warmup_input(input)
     duration = value["exposure_duration_ns"]
-    warmup_duration(duration) ||
-        throw(ArgumentError("chopped warmup exposure duration must be positive Int64 nanoseconds"))
+    warmup_duration(duration) || throw(
+        ArgumentError(
+            "chopped warmup exposure duration must be positive Int64 nanoseconds",
+        ),
+    )
     warmup_polarity(value["trigger_high_is_fringed"])
-    return (; input=Symbol(input), exposure_duration_ns=Int64(duration),
-        trigger_high_is_fringed=value["trigger_high_is_fringed"])
+    return (;
+        input = Symbol(input),
+        exposure_duration_ns = Int64(duration),
+        trigger_high_is_fringed = value["trigger_high_is_fringed"],
+    )
 end
 
 """Extract RTC bootstrap, correction and FITS settings; preserve graph arguments."""
@@ -42,16 +55,37 @@ function arguments(arguments)
     graph = String[]
     correction_properties = String[]
     recovery_nodes = String[]
-    forbidden = ("--prepared-event", "--connect-request", "--connect-reply", "--quit-request",
-        "--control-request", "--control-reply", "--check")
+    forbidden = (
+        "--prepared-event",
+        "--connect-request",
+        "--connect-reply",
+        "--quit-request",
+        "--control-request",
+        "--control-reply",
+        "--check",
+    )
     index = 1
     while index <= length(arguments)
         argument = arguments[index]
-        terms = split(argument, '='; limit=2)
+        terms = split(argument, '='; limit = 2)
         key = first(terms)
         key in forbidden && throw(ArgumentError("native graph owner forbids $key"))
-        if key in ("--bootstrap-node", "--bootstrap-instance", "--remote", "--fits-bindings", "--correction-property", "--correction-timeout-ms", "--recovery-node", "--supervision", "--physical-offsets", "--chopped-warmup", "--reference-clock")
-            key in ("--correction-property", "--recovery-node") || !haskey(values, key) || throw(ArgumentError("duplicate $key"))
+        if key in (
+            "--bootstrap-node",
+            "--bootstrap-instance",
+            "--remote",
+            "--fits-bindings",
+            "--correction-property",
+            "--correction-timeout-ms",
+            "--recovery-node",
+            "--supervision",
+            "--physical-offsets",
+            "--chopped-warmup",
+            "--reference-clock",
+        )
+            key in ("--correction-property", "--recovery-node") ||
+                !haskey(values, key) ||
+                throw(ArgumentError("duplicate $key"))
             value = if length(terms) == 2
                 terms[2]
             else
@@ -63,13 +97,15 @@ function arguments(arguments)
             if key == "--recovery-node"
                 occursin(r"^[a-zA-Z0-9_.-]{1,128}$", value) ||
                     throw(ArgumentError("invalid recovery node name"))
-                value in recovery_nodes && throw(ArgumentError("duplicate recovery node $value"))
+                value in recovery_nodes &&
+                    throw(ArgumentError("duplicate recovery node $value"))
                 push!(recovery_nodes, value)
             elseif key == "--correction-property"
-                terms = split(value, ':'; keepempty=true)
+                terms = split(value, ':'; keepempty = true)
                 length(terms) == 2 && all(!isempty, terms) && !occursin('\0', value) ||
                     throw(ArgumentError("correction property requires NODE:PROPERTY"))
-                value in correction_properties && throw(ArgumentError("duplicate correction property $value"))
+                value in correction_properties &&
+                    throw(ArgumentError("duplicate correction property $value"))
                 push!(correction_properties, value)
             else
                 values[key] = value
@@ -80,32 +116,68 @@ function arguments(arguments)
         end
         index += 1
     end
-    all(key -> haskey(values, key), ("--bootstrap-node", "--bootstrap-instance", "--remote")) ||
-        throw(ArgumentError("native graph owner requires explicit --bootstrap-node, --bootstrap-instance and --remote"))
+    all(
+        key -> haskey(values, key),
+        ("--bootstrap-node", "--bootstrap-instance", "--remote"),
+    ) || throw(
+        ArgumentError(
+            "native graph owner requires explicit --bootstrap-node, --bootstrap-instance and --remote",
+        ),
+    )
     remote = values["--remote"]
-    isabspath(remote) || throw(ArgumentError("native graph owner requires an absolute private remote"))
+    isabspath(remote) ||
+        throw(ArgumentError("native graph owner requires an absolute private remote"))
     node = values["--bootstrap-node"]
-    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node) || throw(ArgumentError("invalid bootstrap node name"))
+    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node) ||
+        throw(ArgumentError("invalid bootstrap node name"))
     instance = tryparse(Int64, values["--bootstrap-instance"])
-    instance !== nothing && instance > 0 || throw(ArgumentError("invalid bootstrap instance"))
+    instance !== nothing && instance > 0 ||
+        throw(ArgumentError("invalid bootstrap instance"))
     bindings = get(values, "--fits-bindings", nothing)
     timeout_ms = tryparse(Int, get(values, "--correction-timeout-ms", "5000"))
     timeout_ms !== nothing && 1 <= timeout_ms <= 60000 ||
         throw(ArgumentError("correction timeout must be 1–60000 milliseconds"))
-    haskey(values, "--correction-timeout-ms") && isempty(correction_properties) &&
+    haskey(values, "--correction-timeout-ms") &&
+        isempty(correction_properties) &&
         throw(ArgumentError("correction timeout requires a declared correction property"))
     if !isempty(recovery_nodes)
-        1 <= length(correction_properties) <= 16 && all(endswith(":closed"), correction_properties) ||
-            throw(ArgumentError("recovery requires 1:16 declared NODE:closed correction properties"))
-        any(property -> first(split(property, ':')) in recovery_nodes, correction_properties) &&
-            throw(ArgumentError("recovery controller is implicit; declare only participant nodes"))
+        1 <= length(correction_properties) <= 16 &&
+        all(endswith(":closed"), correction_properties) || throw(
+            ArgumentError(
+                "recovery requires 1:16 declared NODE:closed correction properties",
+            ),
+        )
+        any(
+            property -> first(split(property, ':')) in recovery_nodes,
+            correction_properties,
+        ) && throw(
+            ArgumentError(
+                "recovery controller is implicit; declare only participant nodes",
+            ),
+        )
     end
     supervision = get(values, "--supervision", nothing)
-    supervision === nothing || length(correction_properties) == 1 ||
+    supervision === nothing ||
+        length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
-    clock_policy=haskey(values,"--reference-clock") ?
-        (;reference_clock=Common.reference_clock_configuration(values["--reference-clock"])) : (;)
-    return (; remote, bootstrap_node=node, bootstrap_instance=instance,clock_policy...), graph, bindings, correction_properties, timeout_ms, recovery_nodes, supervision, get(values,"--physical-offsets",nothing), get(values,"--chopped-warmup",nothing)
+    clock_policy=haskey(values, "--reference-clock") ?
+                 (;
+        reference_clock = Common.reference_clock_configuration(values["--reference-clock"])
+    ) : (;)
+    return (;
+        remote,
+        bootstrap_node = node,
+        bootstrap_instance = instance,
+        clock_policy...,
+    ),
+    graph,
+    bindings,
+    correction_properties,
+    timeout_ms,
+    recovery_nodes,
+    supervision,
+    get(values, "--physical-offsets", nothing),
+    get(values, "--chopped-warmup", nothing)
 end
 
 struct FITSBinding
@@ -114,12 +186,16 @@ struct FITSBinding
 end
 
 function bindings(path::AbstractString)
-    document = DeploymentConfiguration.decode(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    return bindings(path,document)
+    document = DeploymentConfiguration.decode(
+        path,
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
+    )
+    return bindings(path, document)
 end
 
-bindings(path::AbstractString, document) = throw(ArgumentError("FITS bindings require only a parameters array"))
-function bindings(path::AbstractString,document::AbstractDict)
+bindings(path::AbstractString, document) =
+    throw(ArgumentError("FITS bindings require only a parameters array"))
+function bindings(path::AbstractString, document::AbstractDict)
     Set(keys(document)) == Set(["parameters"]) ||
         throw(ArgumentError("FITS bindings require only a parameters array"))
     entries = document["parameters"]
@@ -136,45 +212,60 @@ function bindings(path::AbstractString,document::AbstractDict)
         port in ports && throw(ArgumentError("duplicate FITS parameter $port"))
         push!(ports, port)
         axes = get(entry, "axes", nothing)
-        source = Artifacts.FITSArtifact(joinpath(dirname(abspath(path)), entry["path"]);
-            hdu=get(entry, "hdu", 1), axes)
+        source = Artifacts.FITSArtifact(
+            joinpath(dirname(abspath(path)), entry["path"]);
+            hdu = get(entry, "hdu", 1),
+            axes,
+        )
         push!(result, FITSBinding(port, source))
     end
     return result
 end
 
 """Validate every declaration before reading FITS; retain arrays and their snapshot provenance."""
-function prepare_artifacts(entries, formats; check=()->nothing)
+function prepare_artifacts(entries, formats; check = ()->nothing)
     total = 0
     ports = Set{Symbol}()
     for entry in entries
         check()
-        entry.port in ports && throw(ArgumentError("duplicate FITS parameter $(entry.port)"))
+        entry.port in ports &&
+            throw(ArgumentError("duplicate FITS parameter $(entry.port)"))
         push!(ports, entry.port)
-        haskey(formats, entry.port) || throw(ArgumentError("Graph has no external Parameter Port '$(entry.port)'"))
+        haskey(formats, entry.port) ||
+            throw(ArgumentError("Graph has no external Parameter Port '$(entry.port)'"))
         format = getproperty(formats, entry.port)
         T = format.element_type
-        T in Artifacts.TARGET_TYPES || throw(ArgumentError("unsupported FITS parameter type: $T"))
+        T in Artifacts.TARGET_TYPES ||
+            throw(ArgumentError("unsupported FITS parameter type: $T"))
         shape = Artifacts.checked_shape(format.shape, sizeof(T))
-        length(shape) > 1 && entry.source.axes === nothing &&
+        length(shape) > 1 &&
+            entry.source.axes === nothing &&
             throw(ArgumentError("multidimensional FITS binding requires axes"))
-        entry.source.axes === nothing || length(entry.source.axes) == length(shape) ||
+        entry.source.axes === nothing ||
+            length(entry.source.axes) == length(shape) ||
             throw(DimensionMismatch("FITS binding axes and graph parameter ranks differ"))
         total += prod(shape) * sizeof(T)
-        total <= MAX_RETAINED_BYTES || throw(ArgumentError("retained FITS parameters exceed 512 MiB"))
+        total <= MAX_RETAINED_BYTES ||
+            throw(ArgumentError("retained FITS parameters exceed 512 MiB"))
     end
     prepared = Artifacts.PreparedArtifact[]
     for entry in entries
         check()
         format = getproperty(formats, entry.port)
-        push!(prepared, Artifacts.prepare(entry.source, format.element_type, format.shape; check))
+        push!(
+            prepared,
+            Artifacts.prepare(entry.source, format.element_type, format.shape; check),
+        )
     end
     check()
     return [entry.port => artifact for (entry, artifact) in zip(entries, prepared)]
 end
 
-function prepare_bindings(entries, formats; check=()->nothing)
-    return [port => artifact.data for (port, artifact) in prepare_artifacts(entries, formats; check)]
+function prepare_bindings(entries, formats; check = ()->nothing)
+    return [
+        port => artifact.data for
+        (port, artifact) in prepare_artifacts(entries, formats; check)
+    ]
 end
 
 function run_owner end
@@ -182,18 +273,39 @@ function run_owner end
 """Read FITS startup arrays against a graph's typed parameter formats (optional JFG extension)."""
 function read_bindings end
 
-function _main(args; with_owner=Bootstrap.with_owner,
-        load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
-    binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path = arguments(args)
+function _main(
+    args;
+    with_owner = Bootstrap.with_owner,
+    load_science = () -> Base.require(Main, :FilterGraphIsland),
+    run = run_owner,
+)
+    binding,
+    graph_arguments,
+    fits_path,
+    correction_properties,
+    correction_timeout_ms,
+    recovery_nodes,
+    supervision_path,
+    offsets_path,
+    warmup_path = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
         island = load_science()
-        offsets_path === nothing || Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
+        offsets_path === nothing || Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         admitted.owner_check()
-        options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
-            (; correction_properties, correction_timeout_ms, recovery_nodes, physical_offsets=offsets_path,
-                supervision=supervision_path === nothing ? () : read_supervision(supervision_path),
-                chopped_warmup=warmup_path === nothing ? nothing : read_chopped_warmup(warmup_path)))
+        options = merge(
+            Base.invokelatest(island.parse_arguments, graph_arguments),
+            (;
+                correction_properties,
+                correction_timeout_ms,
+                recovery_nodes,
+                physical_offsets = offsets_path,
+                supervision = supervision_path === nothing ? () :
+                              read_supervision(supervision_path),
+                chopped_warmup = warmup_path === nothing ? nothing :
+                                 read_chopped_warmup(warmup_path),
+            ),
+        )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
         Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
@@ -250,7 +362,8 @@ binding_entries(value) = throw(ArgumentError("FITS parameters must be an array")
 
 binding_entry(value) = throw(ArgumentError("invalid FITS binding fields"))
 function binding_entry(value::AbstractDict)
-    all(key -> key in ("port", "path", "hdu", "axes"), keys(value)) || return binding_entry(nothing)
+    all(key -> key in ("port", "path", "hdu", "axes"), keys(value)) ||
+        return binding_entry(nothing)
     return value
 end
 

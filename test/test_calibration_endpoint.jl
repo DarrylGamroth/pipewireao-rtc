@@ -10,18 +10,22 @@ const RUN = typemax(UInt64)
 const SERIAL = UInt64(1) << 63
 
 function actions()
-    (A.Hold(), A.Adopt(UInt32(0), Float32[1]),
+    (
+        A.Hold(),
+        A.Adopt(UInt32(0), Float32[1]),
         A.Settle(UInt32(0), CURSOR, A.Immediate()),
         A.Collect(UInt32(0), CURSOR, UInt32(1), UInt32(1)),
         A.Capture(UInt32(0), CURSOR, UInt32(1)),
-        A.Restore(Float32[0], A.Immediate()), A.Release())
+        A.Restore(Float32[0], A.Immediate()),
+        A.Release(),
+    )
 end
 result(::A.Hold) = A.Held(CURSOR)
 result(action::A.Adopt) = A.Adopted(CURSOR, copy(action.figure), false)
 result(::A.Settle) = A.Settled(CURSOR)
 result(::A.Collect) = A.Responses(Float32[1], A.Exposure[], true)
-result(::A.Capture) = A.Captured(CURSOR, "/tmp/calibration-capture", "a"^64,
-    UInt32(1), UInt64(4), UInt64(8))
+result(::A.Capture) =
+    A.Captured(CURSOR, "/tmp/calibration-capture", "a"^64, UInt32(1), UInt64(4), UInt64(8))
 result(action::A.Restore) = A.Restored(copy(action.figure), false)
 result(::A.Release) = A.Released()
 
@@ -32,8 +36,17 @@ function at_phase(phase)
 end
 
 @testset "Calibration action/phase admission and result adoption" begin
-    phases = (:Prepared, :Held, :Adopted, :Settled, :Responses, :Captured,
-        :Restored, :Released, :Fault)
+    phases = (
+        :Prepared,
+        :Held,
+        :Adopted,
+        :Settled,
+        :Responses,
+        :Captured,
+        :Restored,
+        :Released,
+        :Fault,
+    )
     # Columns are Hold, Adopt, Settle, Collect, Capture, Restore and Release.
     # This is the retained native action contract, independently of the Hsm hierarchy.
     allowed = (
@@ -78,8 +91,11 @@ end
     @test Hsm.dispatch!(sm, :Accepted, hold) == Hsm.EventNotHandled
     @test Hsm.dispatch!(sm, :Completed, A.Failed(A.InvalidEvidence)) == Hsm.EventHandled
     @test Hsm.current(sm) === :Prepared && sm.command === nothing
-    for command in (hold, A.Command(RUN - UInt64(1), SERIAL + UInt64(1), A.Hold()),
-            A.Command(RUN, SERIAL - UInt64(1), A.Hold()))
+    for command in (
+        hold,
+        A.Command(RUN - UInt64(1), SERIAL + UInt64(1), A.Hold()),
+        A.Command(RUN, SERIAL - UInt64(1), A.Hold()),
+    )
         @test Hsm.dispatch!(sm, :Requested, command) == Hsm.EventNotHandled
         @test (sm.run, sm.serial, Hsm.current(sm)) == (RUN, SERIAL, :Prepared)
         @test sm.command === nothing
