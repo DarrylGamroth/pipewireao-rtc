@@ -32,9 +32,9 @@ function Journal(path, probes)
         rethrow()
     end
 end
-_figure_charge(::Codec.Action) = 0
+_figure_charge(::Codec.AbstractAction) = 0
 _figure_charge(a::Union{Codec.Adopt,Codec.Restore}) = 64 * length(a.figure)
-_result_charge(::Codec.Result) = 0
+_result_charge(::Codec.AbstractResult) = 0
 _result_charge(r::Union{Codec.Adopted,Codec.Restored}) = 64 * length(r.figure)
 _result_charge(r::Codec.Responses) = 64 * length(r.values) + 2048 * length(r.exposures)
 function record!(journal::Journal, charge, build)

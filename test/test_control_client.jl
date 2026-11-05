@@ -6,8 +6,8 @@ const SessionProfile = PipeWireAORTC.SessionProfile
 const SPA = PipeWireAO.SPA
 
 @enum TestState::UInt32 Preparing=17 Prepared=18
-struct TestProfile <: Client.Profile end
-struct CalibrationProfile <: Client.Profile end
+struct TestProfile <: Client.AbstractProfile end
+struct CalibrationProfile <: Client.AbstractProfile end
 struct TestReply
     header::Envelope.ReplyHeader
     payload::SPA.Struct

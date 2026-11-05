@@ -40,7 +40,7 @@ Hsm owns Idle/Staged/Applying and closed-admission phases. `pending` and
 completed requests for canonical replay. Read-only `applying` and `terminal`
 properties project the admission state. `closed` is the resource lifetime flag.
 """
-@hsmdef mutable struct Endpoint{P<:Client.Profile,C,L,F}
+@hsmdef mutable struct Endpoint{P<:Client.AbstractProfile,C,L,F}
     profile::P
     loop::ThreadLoop
     registry::Union{Nothing,Registry}
@@ -469,7 +469,7 @@ end
 "Create an inactive no-port endpoint on the owner's existing Core/ThreadLoop."
 function Endpoint(profile::P, ::Type{C}, loop::ThreadLoop, core::CoreConnection,
         name::AbstractString, instance::Int64, lifecycle::L;
-        publisher=update_params!, properties_extra=Dict{String,String}()) where {P<:Client.Profile,C,L}
+        publisher=update_params!, properties_extra=Dict{String,String}()) where {P<:Client.AbstractProfile,C,L}
     instance > 0 || throw(ArgumentError("native owner instance must be positive"))
     0 < ncodeunits(name) <= 128 && isvalid(name) && !occursin('\0', name) ||
         throw(ArgumentError("native owner name must be bounded nonempty UTF-8"))

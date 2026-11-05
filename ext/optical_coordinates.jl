@@ -1,11 +1,11 @@
 # Command-coordinate semantics are selected while preparing the calibration,
 # independently of optional diagnostic arrays attached to its result.
 "Command coordinates selected during preparation, independent of optional inverse diagnostics."
-abstract type OpticalCommandCoordinates end
+abstract type AbstractOpticalCommandCoordinates end
 "Projection rows follow physical mirror command order."
-struct PhysicalCommandCoordinates <: OpticalCommandCoordinates end
+struct PhysicalCommandCoordinates <: AbstractOpticalCommandCoordinates end
 "Projection rows follow active VDM order, with an explicit physical completion matrix."
-struct CompletedVDMCoordinates <: OpticalCommandCoordinates end
+struct CompletedVDMCoordinates <: AbstractOpticalCommandCoordinates end
 
 optical_inverse_name(::PhysicalCommandCoordinates) = "physical-to-modes"
 optical_inverse_name(::CompletedVDMCoordinates) = "vdm-to-modes"

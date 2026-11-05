@@ -1,6 +1,6 @@
 # Privileged test instrumentation: pause the sole mailbox consumer, while native
 # ingress remains live. This replaces tests borrowing the old application lock.
-struct BootstrapMonitorGate <: PipeWireAORTC.OwnerBootstrapRuntime.OwnerMessage
+struct BootstrapMonitorGate <: PipeWireAORTC.OwnerBootstrapRuntime.AbstractOwnerMessage
     reply::Channel{PipeWireAORTC.OwnerBootstrapRuntime.OwnerReply}
     entered::Channel{Nothing}
     release::Channel{Nothing}

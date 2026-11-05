@@ -16,8 +16,8 @@ export CalibrationLifecycleProfile, CorrectionLifecycleProfile,
     Instrument, Classic, Copper, AcquisitionCursor, Snapshot,
     LifecycleCommand, Completion, Rejection
 
-struct CalibrationLifecycleProfile <: Client.Profile end
-struct CorrectionLifecycleProfile <: Client.Profile end
+struct CalibrationLifecycleProfile <: Client.AbstractProfile end
+struct CorrectionLifecycleProfile <: Client.AbstractProfile end
 const CALIBRATION_PROFILE = CalibrationLifecycleProfile()
 const CORRECTION_PROFILE = CorrectionLifecycleProfile()
 

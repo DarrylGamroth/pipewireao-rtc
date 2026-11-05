@@ -54,7 +54,7 @@ selects the required cursor advance, and `timeouts` supplies per-action
 deadlines. The dictionary constructor accepts the version-1 plan fields used
 by [`read_plan`](@ref).
 """
-struct Plan{R<:Codec.Rule}
+struct Plan{R<:Codec.AbstractRule}
     run::UInt64
     reference::Vector{Float32}
     probes::Vector{Vector{Float32}}
@@ -63,7 +63,7 @@ struct Plan{R<:Codec.Rule}
     settling::R
     timeouts::Timeouts
     function Plan(run, reference::AbstractVector, probes::AbstractVector,
-            measurements, frames_per_probe, settling::R, timeouts::Timeouts) where {R<:Codec.Rule}
+            measurements, frames_per_probe, settling::R, timeouts::Timeouts) where {R<:Codec.AbstractRule}
         identity = ActionClient._integer(run, 1, typemax(UInt64))
         count = Int(ActionClient._integer(length(probes), 1, 16384))
         measurements = UInt32(ActionClient._integer(measurements, 1, 131072))
@@ -147,7 +147,7 @@ _failure(::Cancelled) = "Cancelled"
 _failure(e::AcquisitionFailure) = e.reason
 _failure(::Exception) = "Endpoint"
 _invalid() = throw(AcquisitionFailure("InvalidEvidence"))
-_terminal(result::Codec.Result) = result
+_terminal(result::Codec.AbstractResult) = result
 _terminal(result::Codec.Failed) = throw(AcquisitionFailure(
     ("Cancelled", "Endpoint", "InvalidEvidence", "ProbeClipped")[Int(result.reason)]))
 _timeout(::Union{Codec.Hold,Codec.Release}, t) = t.ownership
@@ -229,7 +229,7 @@ include("calibration_procedure.jl")
 
 # Enter the prepared exchange before starting the action's budget. Compiling a
 # consumer/procedure specialization is cold preparation, not endpoint latency.
-@noinline function _exchange!(connection, procedure, action::T, check) where {T<:Codec.Action}
+@noinline function _exchange!(connection, procedure, action::T, check) where {T<:Codec.AbstractAction}
     budget = _timeout(action, procedure.plan.timeouts)
     deadline = Float64(Common.monotonic_seconds(procedure.clock)) + budget / 1e9
     isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))

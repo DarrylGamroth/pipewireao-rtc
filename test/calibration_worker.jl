@@ -16,7 +16,7 @@ Base.close(::FailedGraphCleanup) = error("graph cleanup failed")
 function stopped_before_running(remote, phase, condition, guard)
     projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-cold/1")
     node = receiver = machine = nothing
-    receipts = Channel{Workers.GraphReceipt}(2)
+    receipts = Channel{Workers.AbstractGraphReceipt}(2)
     commands = Channel{Workers.StopGraph}(1)
     notify() = CalibrationEndpoint.wake!(condition, guard)
     try
@@ -49,7 +49,7 @@ function queued_before_run(remote, condition, guard)
     projection = CalibrationNamedCommandTests.prepare_command(2,"test.worker-prerun/1")
     node = machine = nothing
     notify() = CalibrationEndpoint.wake!(condition, guard)
-    receipts = Channel{Workers.GraphReceipt}(2)
+    receipts = Channel{Workers.AbstractGraphReceipt}(2)
     try
         node = FilterGraphPipeWire.PipeWireNode(projection.graph;
             remote, name="test.worker.prerun", rate=500//1, connect=false)
@@ -83,7 +83,7 @@ function worker_trials(remote, directory, daemon)
         @testset "controller tasks submit one stop under queue contention" begin
             commands = Channel{Workers.StopGraph}(1)
             worker = Workers.CalibrationGraphWorker(Task(() -> nothing),
-                Channel{Workers.GraphReceipt}(2), commands, Threads.threadid(),
+                Channel{Workers.AbstractGraphReceipt}(2), commands, Threads.threadid(),
                 nothing, nothing, nothing, false)
             lock(commands)
             first = @async Ext.quit_calibration_graph!(worker)
@@ -107,7 +107,7 @@ function worker_trials(remote, directory, daemon)
             @test_throws InvalidStateException Ext.quit_calibration_graph!(worker)
         end
         @testset "controller status tasks consume one completion without waiting" begin
-            receipts = Channel{Workers.GraphReceipt}(2)
+            receipts = Channel{Workers.AbstractGraphReceipt}(2)
             put!(receipts, Workers.GraphCompleted(nothing, Threads.threadid(), true))
             task = Threads.@spawn nothing
             fetch(task)
@@ -175,7 +175,7 @@ function worker_trials(remote, directory, daemon)
             end
         end
         @testset "failed cleanup never releases scientific storage" begin
-            receipts = Channel{Workers.GraphReceipt}(2)
+            receipts = Channel{Workers.AbstractGraphReceipt}(2)
             commands = Channel{Workers.StopGraph}(1)
             machine = Workers.Lifecycle(FailedGraphCleanup(), (), receipts, commands,
                 notify, Threads.threadid(), nothing, nothing)

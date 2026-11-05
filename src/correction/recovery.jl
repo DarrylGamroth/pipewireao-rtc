@@ -12,7 +12,7 @@ import Hsm
 import ..Common
 
 public Coordinator, StageRecovery, ReleaseRecovery, CloseLoop,
-    AbstractObservation, AbstractLoopObservation, ControllerScope,
+    AbstractObservation, AbstractLoopObservation, AbstractControllerScope,
     SingleController, CoupledControllers, controller_scope, same_scope,
     owner_instance, operation_token, observation_serial, requested_generation,
     active_generation, closed, all_open, all_closed, generations_match,

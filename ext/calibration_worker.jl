@@ -11,12 +11,12 @@ using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 "Request shutdown on the node lifecycle's control thread."
 struct StopGraph end
 
-abstract type GraphReceipt end
-struct GraphReady <: GraphReceipt
+abstract type AbstractGraphReceipt end
+struct GraphReady <: AbstractGraphReceipt
     sender::PW.CommandSender{StopGraph}
     control_thread::Int
 end
-struct GraphCompleted{E} <: GraphReceipt
+struct GraphCompleted{E} <: AbstractGraphReceipt
     error::E
     control_thread::Int
     released::Bool
@@ -40,7 +40,7 @@ command and two lifecycle receipts bound each worker's traffic.
 """
 mutable struct CalibrationGraphWorker
     const task::Task
-    const receipts::Channel{GraphReceipt}
+    const receipts::Channel{AbstractGraphReceipt}
     const preparation_commands::Channel{StopGraph}
     const controller_thread::Int
     sender::Union{Nothing,PW.CommandSender{StopGraph}}
@@ -56,7 +56,7 @@ end
 @hsmdef mutable struct Lifecycle{N,O,F}
     const node::N
     const outputs::O
-    const receipts::Channel{GraphReceipt}
+    const receipts::Channel{AbstractGraphReceipt}
     const preparation_commands::Channel{StopGraph}
     const notify::F
     const owner_thread::Int
@@ -221,7 +221,7 @@ end
 function start_calibration_graph(descriptor, remote, name, rate;
         notify, reference_clock=PW.METADATA_CLOCK_REALTIME)
     commands = Channel{StopGraph}(1)
-    receipts = Channel{GraphReceipt}(2)
+    receipts = Channel{AbstractGraphReceipt}(2)
     task = Threads.@spawn run_graph(descriptor, remote, name, rate, reference_clock,
         commands, receipts, notify)
     @async begin

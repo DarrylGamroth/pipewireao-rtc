@@ -9,7 +9,7 @@ include("helpers/correction_recovery_readbacks.jl")
 # The shared scripted single-loop transport supplies reply fencing and global
 # recovery phases. This second branch has independent adoption and first-close
 # evidence; it never uses a maximum generation as a group acknowledgement.
-mutable struct CoupledTransport <: CR.RecoveryTransport
+mutable struct CoupledTransport <: CR.AbstractRecoveryTransport
     base::ScriptedTransport
     requested::Int64
     active::Int64
@@ -113,7 +113,7 @@ function respond!(t::CoupledTransport, command::Runner.RunnerCommand{:properties
 end
 
 # Version2 explicitly declares a coupled scope even when it has one controller.
-struct OneControllerTransport <: CR.RecoveryTransport
+struct OneControllerTransport <: CR.AbstractRecoveryTransport
     base::ScriptedTransport
 end
 CR.transport_instance(t::OneControllerTransport) = CR.transport_instance(t.base)

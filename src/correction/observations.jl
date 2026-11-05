@@ -22,11 +22,11 @@ abstract type AbstractLoopObservation <: AbstractObservation end
 Owner/token identity and the ordered controller names are bound separately by
 the coordinator and native adapter. Coupled comparisons preserve that order.
 """
-abstract type ControllerScope end
+abstract type AbstractControllerScope end
 "One correction controller with a scalar generation and Boolean closure."
-struct SingleController <: ControllerScope end
+struct SingleController <: AbstractControllerScope end
 "An ordered scope of N independent correction controllers."
-struct CoupledControllers{N} <: ControllerScope end
+struct CoupledControllers{N} <: AbstractControllerScope end
 
 """Exact atomic Boolean/generation readback, with an owner-produced serial.
 
@@ -122,10 +122,10 @@ _closure_scope(_) = nothing
 
 "Return whether evidence has the same scalar/coupled representation and controller count."
 same_scope(a, b) = same_scope(controller_scope(a), controller_scope(b))
-same_scope(::ControllerScope, ::ControllerScope) = false
-same_scope(::S, ::S) where {S<:ControllerScope} = true
-same_scope(::Nothing, ::Union{Nothing,ControllerScope}) = false
-same_scope(::ControllerScope, ::Nothing) = false
+same_scope(::AbstractControllerScope, ::AbstractControllerScope) = false
+same_scope(::S, ::S) where {S<:AbstractControllerScope} = true
+same_scope(::Nothing, ::Union{Nothing,AbstractControllerScope}) = false
+same_scope(::AbstractControllerScope, ::Nothing) = false
 
 "Return whether every controller is open; a mixed coupled selection is false."
 all_open(observation::Union{AbstractLoopObservation,ReleaseObservation}) =

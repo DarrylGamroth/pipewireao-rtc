@@ -9,7 +9,7 @@ include("helpers/correction_recovery_transport.jl")
 
 # Add owner-produced supervision Props to the existing recovery model. The
 # underlying transport exclusively implements recovery, closure and token flow.
-mutable struct SupervisionTransport <: CR.RecoveryTransport
+mutable struct SupervisionTransport <: CR.AbstractRecoveryTransport
     recovery::ScriptedTransport
     properties::Dict{String,Runner.RunnerScalar}
     property_reads::Int

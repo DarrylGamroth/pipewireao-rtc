@@ -27,7 +27,7 @@ export Profile, PROFILE, Lifecycle, Preparing, Prepared, Connected, Fault, Stopp
     Command, Completion, Rejection, run_owner, read_declarations, main
 
 """Native `pipewireao.rtc.parameter-source/1` control profile."""
-struct Profile <: Client.Profile end
+struct Profile <: Client.AbstractProfile end
 """Shared stateless parameter-source control profile instance."""
 const PROFILE = Profile()
 """Parameter-source bootstrap states, encoded as native UInt32 identifiers."""

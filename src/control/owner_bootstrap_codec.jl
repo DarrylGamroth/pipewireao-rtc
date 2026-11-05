@@ -8,7 +8,7 @@ const Client = ControlClient
 const SPA = PipeWireAO.SPA
 export Profile, PROFILE, Lifecycle, Preparing, Prepared, Connected, Fault, Stopped,
     Command, Completion, Rejection
-struct Profile <: Client.Profile end
+struct Profile <: Client.AbstractProfile end
 const PROFILE = Profile()
 Client.profile_name(::Profile) = "pipewireao.rtc.owner-bootstrap/1"
 Client.capability_names(::Profile) = Tuple("pipewireao.rtc.owner-bootstrap." * suffix for suffix in

@@ -519,7 +519,7 @@ function Calibration.calibrate_optical(surface, observe, command_projection::Abs
         provenance::AbstractDict=Dict{String,Any}(), held_out_coefficients=nothing,
         signed_measurements::Tuple{Vararg{Symbol}}=(), centroid_measurements::Tuple{Vararg{Symbol}}=(),
         measurement_nulling::Tuple{Vararg{Symbol}}=(), normalization_probe::Real=poke_m,
-        command_coordinates::OpticalCommandCoordinates=PhysicalCommandCoordinates())
+        command_coordinates::AbstractOpticalCommandCoordinates=PhysicalCommandCoordinates())
     Base.require_one_based_indexing(command_projection,pupil_support)
     !isempty(command_projection) && all(isfinite,command_projection) && any(pupil_support) ||
         throw(ArgumentError("optical command projection and pupil support must be finite and nonempty"))
@@ -704,7 +704,7 @@ end
 function Calibration.calibrate_optical(surface, observe;
         actuator_coordinates::AbstractMatrix, controlled_actuators::AbstractVector{Bool},
         spatial_frequencies::AbstractMatrix, provenance::AbstractDict=Dict{String,Any}(),
-        tip_tilt::Bool=false, command_coordinates::OpticalCommandCoordinates=PhysicalCommandCoordinates(), kwargs...)
+        tip_tilt::Bool=false, command_coordinates::AbstractOpticalCommandCoordinates=PhysicalCommandCoordinates(), kwargs...)
     size(actuator_coordinates,1) == length(controlled_actuators) && size(actuator_coordinates,2) == 2 ||
         throw(DimensionMismatch("actuator coordinates require physical-command rows and x,y columns"))
     any(controlled_actuators) || throw(ArgumentError("optical calibration requires controlled physical actuators"))

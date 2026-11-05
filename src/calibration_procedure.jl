@@ -269,7 +269,7 @@ function Procedure(input::Plan; clock=Common.MONOTONIC_CLOCK, consume=(_...)->no
 end
 
 # Handler helpers construct commands and update facts, never dispatch/transition.
-function _issue!(p::Procedure, action::Codec.Action)
+function _issue!(p::Procedure, action::Codec.AbstractAction)
     deadline = Float64(Common.monotonic_seconds(p.clock)) + _timeout(action, p.plan.timeouts) / 1e9
     isfinite(deadline) || throw(ArgumentError("calibration deadline is not finite"))
     p.serial = Base.Checked.checked_add(p.serial, UInt64(1))
@@ -384,7 +384,7 @@ Deliver one correlated terminal action result and return the next command, or
 Malformed scientific evidence with a known terminal action requests recovery.
 The transport adapter remains responsible for owner/controller correlation.
 """
-function complete!(p::Procedure, run::UInt64, serial::UInt64, result::Codec.Result;
+function complete!(p::Procedure, run::UInt64, serial::UInt64, result::Codec.AbstractResult;
         at::Float64=Float64(Common.monotonic_seconds(p.clock)))
     return _dispatch_completion!(p, (; run, serial, result, at))
 end

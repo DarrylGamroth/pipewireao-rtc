@@ -1,6 +1,6 @@
 # Exact property reply inputs for native normalization tests. Existing selectors
 # provide CR/Runner/Envelope and the scripted source of ordinary owner properties.
-mutable struct ReadbackTransport <: CR.RecoveryTransport
+mutable struct ReadbackTransport <: CR.AbstractRecoveryTransport
     properties::Dict{String,Runner.RunnerScalar}
     token::Int64
 end

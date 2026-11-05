@@ -12,7 +12,7 @@ const CAP_NAMES = (
     "pipewireao.rtc.session.last-token", "pipewireao.rtc.session.controllers",
 )
 
-struct Profile <: ControlClient.Profile end
+struct Profile <: ControlClient.AbstractProfile end
 ControlClient.profile_name(::Profile) = Codec.PROFILE
 ControlClient.capability_names(::Profile) = CAP_NAMES
 ControlClient.lifecycle_type(::Profile) = Codec.Lifecycle

@@ -10,7 +10,7 @@ const SPA = PipeWireAO.SPA
 const PROTOCOL = "pipewireao.rtc-control/1"
 const CONTROLLER_PROFILE = "pipewireao.rtc.controller/1"
 "Owner-specific native control profile; traits preserve exact wire contracts."
-abstract type Profile end
+abstract type AbstractProfile end
 function profile_name end
 function capability_names end
 function lifecycle_type end
@@ -24,12 +24,12 @@ function decode_request end
 function encode_completion end
 function encode_rejection end
 function encode_failure end
-encode_failure(profile::Profile, header, lifecycle, command) =
+encode_failure(profile::AbstractProfile, header, lifecycle, command) =
     encode_failure(profile, header, lifecycle)
-reply_endpoint(::Profile) = :lifecycle
-reply_bound(profile::Profile) = Envelope._limit(Val(:reply), reply_endpoint(profile))
-maximum_budget(::Profile) = 30.0
-function budget_ns(profile::Profile, remaining::Float64)
+reply_endpoint(::AbstractProfile) = :lifecycle
+reply_bound(profile::AbstractProfile) = Envelope._limit(Val(:reply), reply_endpoint(profile))
+maximum_budget(::AbstractProfile) = 30.0
+function budget_ns(profile::AbstractProfile, remaining::Float64)
     isfinite(remaining) && remaining > 0 || throw(ArgumentError("invalid native request budget"))
     nanoseconds = min(remaining, maximum_budget(profile)) * 1.0e9
     # Float64(typemax(Int64)) rounds upward to 2^63. Saturate before integer
@@ -38,7 +38,7 @@ function budget_ns(profile::Profile, remaining::Float64)
         max(Int64(1), floor(Int64, nanoseconds))
 end
 "Profile-specific immutable bound NodeInfo identity; common profiles have none."
-node_identity(::Profile, properties, previous) = nothing
+node_identity(::AbstractProfile, properties, previous) = nothing
 
 const INSTANCE_LOCK = ReentrantLock()
 const NEXT_INSTANCE = Ref(Int64(0))
@@ -58,7 +58,7 @@ function next_instance()
     end
 end
 
-export Profile, Client, connect, request!, UnknownOutcome
+export AbstractProfile, Client, connect, request!, UnknownOutcome
 
 struct UnknownOutcome <: Exception
     message::String
@@ -78,7 +78,7 @@ struct ObservedReply{T}
 end
 
 "Bounded copied callback observations, read and written under the ThreadLoop lock."
-mutable struct Observation{P<:Profile,L,C,R}
+mutable struct Observation{P<:AbstractProfile,L,C,R}
     profile::P
     instance::Int64
     owner_pid::UInt32
@@ -98,7 +98,7 @@ mutable struct Observation{P<:Profile,L,C,R}
     matched_rejection::Union{Nothing,ObservedReply{R}}
 end
 
-function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:Profile}
+function Observation(profile::P, instance::Int64, pid::UInt32) where {P<:AbstractProfile}
     return Observation{P,lifecycle_type(profile),completion_type(profile),rejection_type(profile)}(
         profile, instance, pid, nothing, nothing, nothing, nothing, nothing, false, false, 0,
         nothing, Inf, nothing, nothing, nothing, nothing)
@@ -442,7 +442,7 @@ is verified and appears in the bounded retained capability. No operation is sent
 All discovery/subscription/admission steps share one absolute monotonic deadline.
 """
 
-function connect(profile::Profile, remote::AbstractString, node_name::AbstractString,
+function connect(profile::AbstractProfile, remote::AbstractString, node_name::AbstractString,
         expected_pid::Integer, expected_instance::Integer;
         deadline::Float64, check=NO_CHECK, controller_instance::Union{Nothing,Integer}=nothing)
     0 < expected_pid <= typemax(UInt32) || throw(ArgumentError("expected owner PID must fit positive Id"))

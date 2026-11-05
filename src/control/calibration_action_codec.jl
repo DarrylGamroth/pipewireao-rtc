@@ -13,13 +13,13 @@ const Pod = PipeWireAO.Pod
 const ColdLifecycle = Lifecycle.ColdLifecycle
 const AcquisitionCursor = Lifecycle.AcquisitionCursor
 
-export PROFILE, CalibrationActionProfile, Command, Hold, Adopt, Settle, Collect,
+export PROFILE, CalibrationActionProfile, Command, AbstractRule, AbstractAction, AbstractResult, Hold, Adopt, Settle, Collect,
     Capture, Restore, Release, Immediate, DiscardExposures, ModelTime,
     Held, Adopted, Settled, Responses, Captured, Restored, Released, Failed,
     FailureReason, Cancelled, Endpoint, InvalidEvidence, ProbeClipped,
     Exposure, Completion, Rejection, collect_reply_size, preflight_collect_reply
 
-struct CalibrationActionProfile <: Client.Profile end
+struct CalibrationActionProfile <: Client.AbstractProfile end
 const PROFILE = CalibrationActionProfile()
 Client.profile_name(::CalibrationActionProfile) = "pipewireao.rtc.calibration-actions/1"
 Client.maximum_budget(::CalibrationActionProfile) = Float64(typemax(Int64)) / 1e9
@@ -29,42 +29,42 @@ Client.capability_names(::CalibrationActionProfile) = Tuple(
     ("version", "instance", "owner-pid", "lifecycle", "last-token", "controllers"))
 Client.lifecycle_type(::CalibrationActionProfile) = ColdLifecycle
 
-abstract type Rule end
-struct Immediate <: Rule end
-struct DiscardExposures <: Rule
+abstract type AbstractRule end
+struct Immediate <: AbstractRule end
+struct DiscardExposures <: AbstractRule
     frames::UInt32
 end
-struct ModelTime <: Rule
+struct ModelTime <: AbstractRule
     duration_ns::UInt64
 end
-abstract type Action end
-struct Hold <: Action end
-struct Adopt{V<:AbstractVector{Float32}} <: Action
+abstract type AbstractAction end
+struct Hold <: AbstractAction end
+struct Adopt{V<:AbstractVector{Float32}} <: AbstractAction
     probe::UInt32
     figure::V
 end
-struct Settle{R<:Rule} <: Action
+struct Settle{R<:AbstractRule} <: AbstractAction
     probe::UInt32
     after::AcquisitionCursor
     rule::R
 end
-struct Collect <: Action
+struct Collect <: AbstractAction
     probe::UInt32
     after::AcquisitionCursor
     measurements::UInt32
     frames::UInt32
 end
-struct Capture <: Action
+struct Capture <: AbstractAction
     probe::UInt32
     after::AcquisitionCursor
     frames::UInt32
 end
-struct Restore{V<:AbstractVector{Float32},R<:Rule} <: Action
+struct Restore{V<:AbstractVector{Float32},R<:AbstractRule} <: AbstractAction
     figure::V
     rule::R
 end
-struct Release <: Action end
-struct Command{A<:Action}
+struct Release <: AbstractAction end
+struct Command{A<:AbstractAction}
     run::UInt64
     serial::UInt64
     action::A
@@ -78,16 +78,16 @@ _operation(::Restore) = UInt32(6)
 _operation(::Release) = UInt32(7)
 Client.operation_id(::CalibrationActionProfile, command::Command) = _operation(command.action)
 
-abstract type Result end
-struct Held <: Result
+abstract type AbstractResult end
+struct Held <: AbstractResult
     cursor::AcquisitionCursor
 end
-struct Adopted{V<:AbstractVector{Float32}} <: Result
+struct Adopted{V<:AbstractVector{Float32}} <: AbstractResult
     cursor::AcquisitionCursor
     figure::V
     clipped::Bool
 end
-struct Settled <: Result
+struct Settled <: AbstractResult
     cursor::AcquisitionCursor
 end
 struct Exposure
@@ -97,12 +97,12 @@ struct Exposure
     start_model_ns::UInt64
     duration_ns::UInt64
 end
-struct Responses{V<:AbstractVector{Float32},E<:AbstractVector{Exposure}} <: Result
+struct Responses{V<:AbstractVector{Float32},E<:AbstractVector{Exposure}} <: AbstractResult
     values::V
     exposures::E
     valid::Bool
 end
-struct Captured <: Result
+struct Captured <: AbstractResult
     cursor::AcquisitionCursor
     manifest::String
     sha256::String
@@ -110,13 +110,13 @@ struct Captured <: Result
     bytes::UInt64
     metadata_bytes::UInt64
 end
-struct Restored{V<:AbstractVector{Float32}} <: Result
+struct Restored{V<:AbstractVector{Float32}} <: AbstractResult
     figure::V
     clipped::Bool
 end
-struct Released <: Result end
+struct Released <: AbstractResult end
 @enum FailureReason::UInt32 Cancelled=1 Endpoint=2 InvalidEvidence=3 ProbeClipped=4
-struct Failed <: Result
+struct Failed <: AbstractResult
     reason::FailureReason
 end
 _tag(::Held) = UInt32(1)
@@ -132,7 +132,7 @@ struct Completion
     lifecycle::ColdLifecycle
     run::UInt64
     serial::UInt64
-    result::Union{Nothing,Result}
+    result::Union{Nothing,AbstractResult}
     message::String
 end
 struct Rejection
@@ -367,7 +367,7 @@ function _completion(header, run, serial, result)
         _check(_tag(result) == 8 || _tag(result) == header.operation, "operation/result mismatch")
 end
 function Client.encode_completion(::CalibrationActionProfile, header::Envelope.ReplyHeader,
-        lifecycle::ColdLifecycle, run::UInt64, serial::UInt64, result::Union{Nothing,Result}, message::AbstractString)
+        lifecycle::ColdLifecycle, run::UInt64, serial::UInt64, result::Union{Nothing,AbstractResult}, message::AbstractString)
     _check(1 <= UInt32(lifecycle) <= 5, "unknown cold lifecycle")
     _completion(header, run, serial, result)
     text = Lifecycle._checked_string(message; empty=true, limit=8192)

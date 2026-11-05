@@ -129,7 +129,7 @@ function action(value::AbstractDict)
     end
     throw(ArgumentError("unknown calibration action"))
 end
-action(value::Codec.Action) = value
+action(value::Codec.AbstractAction) = value
 _cursor_document(c) = Dict("domain"=>c.domain,"generation"=>c.generation,"sequence"=>c.sequence,"model_ns"=>c.model_ns)
 _kind(::Codec.Held) = "held"
 _kind(::Codec.Adopted) = "adopted"
@@ -149,7 +149,7 @@ document(r::Codec.Restored) = Dict("kind"=>"restored","figure"=>r.figure,"clippe
 document(::Codec.Released) = Dict("kind"=>"released")
 _reason(reason::Codec.FailureReason) = ("cancelled","endpoint","invalid_evidence","probe_clipped")[Int(reason)]
 document(r::Codec.Failed) = Dict("kind"=>"failed","reason"=>_reason(r.reason))
-_validate_figure(::Codec.Result, count) = nothing
+_validate_figure(::Codec.AbstractResult, count) = nothing
 _validate_figure(r::Union{Codec.Adopted,Codec.Restored}, count) =
     length(r.figure) == count || throw(Client.UnknownOutcome("calibration command contract changed"))
 
@@ -187,8 +187,8 @@ function _complete!(connection::Connection, value;
     connection.can_restore = _restore_allowed(result)
     return result
 end
-_valid_result(a::Codec.Action, r::Codec.Result) = Codec._operation(a) == Codec._tag(r)
-_valid_result(::Codec.Action, ::Codec.Failed) = true
+_valid_result(a::Codec.AbstractAction, r::Codec.AbstractResult) = Codec._operation(a) == Codec._tag(r)
+_valid_result(::Codec.AbstractAction, ::Codec.Failed) = true
 function _record!(connection, value, command_action, reply)
     result = reply.result
     result_document = document(result)
@@ -200,7 +200,7 @@ function _record!(connection, value, command_action, reply)
         "run"=>reply.run,"serial"=>reply.serial,"result"=>result_document))))
     return nothing
 end
-_restore_allowed(::Codec.Result) = true
+_restore_allowed(::Codec.AbstractResult) = true
 _restore_allowed(r::Codec.Restored) = !r.clipped
 _restore_allowed(r::Codec.Failed) = r.reason === Codec.InvalidEvidence
 # Typed callers retain ordinary structured evidence without serializing it live.
@@ -223,7 +223,7 @@ function complete!(connection::Connection, value; kwargs...)
         rethrow()
     end
 end
-_successful(result::Codec.Result) = result
+_successful(result::Codec.AbstractResult) = result
 _successful(result::Codec.Failed) = throw(ArgumentError("calibration action failed: $(document(result))"))
 function request!(connection::Connection, value, expected::AbstractString; kwargs...)
     result = _successful(complete!(connection, value; kwargs...))

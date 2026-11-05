@@ -1,11 +1,11 @@
 # Prepared optical measurement semantics; image arrays retain their existing
 # representation and row-major selected-pixel order.
 "Measurement semantics selected during optical preparation, independent of diagnostic fields."
-abstract type OpticalMeasurementKind end
+abstract type AbstractOpticalMeasurementKind end
 "Row-major selected image pixels; signed residual admission remains explicit."
-struct SelectedPixels <: OpticalMeasurementKind end
+struct SelectedPixels <: AbstractOpticalMeasurementKind end
 "The calibrated X=column, Y=row center-of-gravity measurement."
-struct CenterOfGravity <: OpticalMeasurementKind end
+struct CenterOfGravity <: AbstractOpticalMeasurementKind end
 
 optical_identity_fields(::SelectedPixels) = ("reconstructor","reference","mask")
 optical_identity_fields(::CenterOfGravity) = ("reconstructor","reference","mask","coordinates")

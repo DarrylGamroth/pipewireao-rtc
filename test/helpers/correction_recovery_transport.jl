@@ -1,6 +1,6 @@
 # Shared scripted native transport. Including test modules supply CR, Runner,
 # Envelope and Test; this helper owns no production implementation.
-mutable struct ScriptedTransport <: CR.RecoveryTransport
+mutable struct ScriptedTransport <: CR.AbstractRecoveryTransport
     token::Int64
     now_ns::UInt64
     instance::Int64

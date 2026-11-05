@@ -112,7 +112,7 @@ function admit!(sm::Protocol, command::Actions.Command)
     sm.command = command
     return Hsm.EventHandled
 end
-function record_result!(sm::Protocol, result::Actions.Result)
+function record_result!(sm::Protocol, result::Actions.AbstractResult)
     command = something(sm.command)
     command.run == sm.run && command.serial == sm.serial ||
         error("calibration action has not been accepted")
@@ -241,8 +241,8 @@ function await(predicate, condition::Base.AsyncCondition, guard::ReentrantLock, 
     end
 end
 
-matches(::Actions.Action, ::Actions.Result) = false
-matches(::Actions.Action, ::Actions.Failed) = true
+matches(::Actions.AbstractAction, ::Actions.AbstractResult) = false
+matches(::Actions.AbstractAction, ::Actions.Failed) = true
 matches(::Actions.Hold, ::Actions.Held) = true
 matches(::Actions.Adopt, ::Actions.Adopted) = true
 matches(::Actions.Settle, ::Actions.Settled) = true
@@ -260,9 +260,9 @@ function check_current!(endpoint::Endpoint)
     return nothing
 end
 
-_terminal_result(::Actions.Result) = false
+_terminal_result(::Actions.AbstractResult) = false
 _terminal_result(::Actions.Released) = true
-_await_release(endpoint, ticket, ::Actions.Result, deadline) = false
+_await_release(endpoint, ticket, ::Actions.AbstractResult, deadline) = false
 function _await_release(endpoint, ticket, ::Actions.Released, deadline)
     release = await(endpoint.wakeup, endpoint.wakeup_lock, min(Float64(deadline), ticket.deadline)) do
         status = Ingress.terminal_release(endpoint.ingress, ticket)

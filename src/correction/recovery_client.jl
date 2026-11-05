@@ -11,18 +11,18 @@ const RECOVERY_PREFIX = "pipewireao-recovery:"
 const RECOVERY_NODE = "pipewireao-recovery"
 
 """Transport dispatch seam for bounded, correlated native-control exchanges."""
-abstract type RecoveryTransport end
-struct SessionTransport{C<:SessionClient.Connection} <: RecoveryTransport
+abstract type AbstractRecoveryTransport end
+struct SessionTransport{C<:SessionClient.Connection} <: AbstractRecoveryTransport
     connection::C
 end
 transport_instance(transport::SessionTransport) = transport.connection.selected.status.incarnation
 transport_initial_token(transport::SessionTransport) = transport.connection.selected.status.query_token
-transport_clock_ns(::RecoveryTransport) = time_ns()
-transport_pause!(::RecoveryTransport, seconds::Float64) = sleep(seconds)
+transport_clock_ns(::AbstractRecoveryTransport) = time_ns()
+transport_pause!(::AbstractRecoveryTransport, seconds::Float64) = sleep(seconds)
 request_native!(transport::SessionTransport, command; deadline::Float64, check) =
     SessionClient.request!(transport.connection, command; deadline, check)
 
-mutable struct RecoveryChannel{T<:RecoveryTransport}
+mutable struct RecoveryChannel{T<:AbstractRecoveryTransport}
     const transport::T
     const instance::Int64
     reply_token::Int64
@@ -96,7 +96,7 @@ function validate_readbacks(::CoupledControllers{N},
     allunique(names) || throw(ArgumentError("duplicate recovery controllers"))
     return nothing
 end
-validate_readbacks(::ControllerScope, _) =
+validate_readbacks(::AbstractControllerScope, _) =
     throw(ArgumentError("controller readbacks do not match their declared scope"))
 
 """One native owner readback, retaining its exact reply serial and request token.
@@ -107,7 +107,7 @@ native recovery-transaction meanings; accessors select the controller readbacks.
 Version 1 has one scalar readback; version 2 has an ordered coupled tuple, even
 when its declared count is one. These are facts, not another recovery authority.
 """
-struct RecoverySnapshot{S<:ControllerScope,R} <: AbstractLoopObservation
+struct RecoverySnapshot{S<:AbstractControllerScope,R} <: AbstractLoopObservation
     serial::UInt64
     owner_instance::Int64
     readbacks::R
@@ -126,7 +126,7 @@ struct RecoverySnapshot{S<:ControllerScope,R} <: AbstractLoopObservation
             request_token::Int64, release_token::UInt64, requested::UInt64,
             active::UInt64, recovery_generation::UInt64, recovery_state::Symbol,
             inhibited::Bool, reference_reached::Bool, source_sequence::UInt64,
-            source_ns::UInt64, reference_timeout_ns::UInt64) where {S<:ControllerScope,R}
+            source_ns::UInt64, reference_timeout_ns::UInt64) where {S<:AbstractControllerScope,R}
         validate_readbacks(scope, readbacks)
         return new{S,R}(serial, owner, readbacks, request_token, release_token,
             requested, active, recovery_generation, recovery_state, inhibited,
@@ -378,7 +378,7 @@ and coherence are established by the scientific owner; physical settling is not.
 """
 protective_open!(connection::SessionClient.Connection, graph::AbstractString; kwargs...) =
     protective_open!(SessionTransport(connection), graph; kwargs...)
-function protective_open!(transport::RecoveryTransport, graph::AbstractString;
+function protective_open!(transport::AbstractRecoveryTransport, graph::AbstractString;
         deadline::Float64, timeout_ms::Union{Nothing,Integer}=nothing,
         reason::Symbol=:operator, check=ControlClient.NO_CHECK,
         expected_owner::Union{Nothing,Int64}=nothing,

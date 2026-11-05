@@ -56,7 +56,7 @@ function identity_integer(runtime,handle,key)
 end
 
 # HEART stays an external owner. This profile only decodes its public v1 wire records.
-struct HeartProfile <: ControlClient.Profile end
+struct HeartProfile <: ControlClient.AbstractProfile end
 @enum HeartLifecycle::UInt32 HeartPreparing=1 HeartReady=2 HeartFault=3 HeartStopped=4
 struct HeartCommand{O} end
 struct HeartSnapshot
@@ -117,7 +117,7 @@ function ControlClient.decode_rejection(::HeartProfile,input)
 end
 
 abstract type AbstractOwner end
-mutable struct Owner{P<:ControlClient.Profile,O<:ControlClient.Observation} <: AbstractOwner
+mutable struct Owner{P<:ControlClient.AbstractProfile,O<:ControlClient.Observation} <: AbstractOwner
     profile::P
     observation::O
     handle::UInt64
@@ -135,7 +135,7 @@ function check_owner!(runtime,owner::Owner)
         throw(ArgumentError("owner control identity changed"))
     return nothing
 end
-function capture_owner(runtime,handle::UInt64,profile::ControlClient.Profile,instance::Integer,pid::Integer)
+function capture_owner(runtime,handle::UInt64,profile::ControlClient.AbstractProfile,instance::Integer,pid::Integer)
     0 < instance <= typemax(Int64) && 0 < pid < typemax(UInt32) || throw(ArgumentError("invalid owner incarnation"))
     capture!(runtime,handle)
     owner = Owner(profile,ControlClient.Observation(profile,Int64(instance),UInt32(pid)),handle,UInt32(pid),Int64(instance),false)

@@ -173,8 +173,8 @@ function Base.close(runtime::Transport)
 end
 
 
-abstract type ConnectionHooks end
-struct Hooks{R,Q} <: ConnectionHooks
+abstract type AbstractConnectionHooks end
+struct Hooks{R,Q} <: AbstractConnectionHooks
     ready::R
     quit::Q
 end
@@ -200,56 +200,56 @@ struct OwnerReply
     ticket::Union{Nothing,Endpoint.Ticket}
     error::Union{Nothing,Exception}
 end
-abstract type OwnerMessage end
-struct OwnerPrepared <: OwnerMessage
+abstract type AbstractOwnerMessage end
+struct OwnerPrepared <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
 end
-struct ConnectTaken <: OwnerMessage
-    reply::Channel{OwnerReply}
-    ticket::Endpoint.Ticket
-end
-struct ConnectChecked <: OwnerMessage
+struct ConnectTaken <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
     ticket::Endpoint.Ticket
 end
-struct ConnectAwaited <: OwnerMessage
+struct ConnectChecked <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
     ticket::Endpoint.Ticket
 end
-struct ConnectionRegistered <: OwnerMessage
-    reply::Channel{OwnerReply}
-    ticket::Endpoint.Ticket
-    hooks::ConnectionHooks
-end
-struct ConnectCompleted <: OwnerMessage
+struct ConnectAwaited <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
     ticket::Endpoint.Ticket
 end
-struct HooksExcluded <: OwnerMessage
+struct ConnectionRegistered <: AbstractOwnerMessage
+    reply::Channel{OwnerReply}
+    ticket::Endpoint.Ticket
+    hooks::AbstractConnectionHooks
+end
+struct ConnectCompleted <: AbstractOwnerMessage
+    reply::Channel{OwnerReply}
+    ticket::Endpoint.Ticket
+end
+struct HooksExcluded <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
 end
-struct OwnerFault <: OwnerMessage
+struct OwnerFault <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
     error::Exception
 end
-struct OwnerFinished <: OwnerMessage
+struct OwnerFinished <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
 end
-struct OwnerClosed <: OwnerMessage
+struct OwnerClosed <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
 end
-struct OwnerCancelled <: OwnerMessage
+struct OwnerCancelled <: AbstractOwnerMessage
     reply::Channel{OwnerReply}
 end
 
 const MAILBOX_CAPACITY = 4
 "Separate cleanup capacity keeps ordinary ingress from preventing hook exclusion."
 struct Mailbox
-    owner::Channel{OwnerMessage}
-    cleanup::Channel{OwnerMessage}
+    owner::Channel{AbstractOwnerMessage}
+    cleanup::Channel{AbstractOwnerMessage}
 end
-Mailbox() = Mailbox(Channel{OwnerMessage}(MAILBOX_CAPACITY),
-    Channel{OwnerMessage}(MAILBOX_CAPACITY))
+Mailbox() = Mailbox(Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY),
+    Channel{AbstractOwnerMessage}(MAILBOX_CAPACITY))
 
 """Owner proxy; science stays on thread 1 and mutable handshakes on monitor 2.
 
@@ -326,7 +326,7 @@ function _owner_thread()
         throw(ArgumentError("bootstrap owner messages require constructing thread 1"))
     return nothing
 end
-function _enqueue!(mailbox::Mailbox, message::OwnerMessage; cleanup::Bool=false)
+function _enqueue!(mailbox::Mailbox, message::AbstractOwnerMessage; cleanup::Bool=false)
     channel = cleanup ? mailbox.cleanup : mailbox.owner
     lock(channel) do
         isopen(channel) || throw(InvalidStateException("bootstrap mailbox closed", :closed))
@@ -341,7 +341,7 @@ end
 _mailbox_full(error) = false
 _mailbox_full(error::InvalidStateException) = error.state === :full
 
-function _request!(runtime::Runtime, message::OwnerMessage; cleanup::Bool=false)
+function _request!(runtime::Runtime, message::AbstractOwnerMessage; cleanup::Bool=false)
     _owner_thread()
     _status(runtime).done && throw(InvalidStateException("bootstrap monitor closed", :closed))
     while true
@@ -440,7 +440,7 @@ function await_connected!(runtime::Runtime, ticket::Endpoint.Ticket)
         sleep(POLL_SECONDS)
     end
 end
-function _cleanup_request!(runtime::Runtime, message::OwnerMessage)
+function _cleanup_request!(runtime::Runtime, message::AbstractOwnerMessage)
     _owner_thread()
     _status(runtime).done && return nothing
     try
@@ -527,7 +527,7 @@ _fault_reply!(runtime, ticket, command::Union{Codec.Command{:connect},Codec.Comm
     connect_ticket::Union{Nothing,Endpoint.Ticket}
     connect_taken::Bool
     connect_done::Bool
-    hooks::Union{Nothing,ConnectionHooks}
+    hooks::Union{Nothing,AbstractConnectionHooks}
     finishing::Bool
     main_finished::Bool
     main_error::Union{Nothing,Exception}
@@ -823,7 +823,7 @@ function _connection_health(sm::Monitor, ticket)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
     return nothing
 end
-function _reply!(sm::Monitor, message::OwnerMessage; ticket=nothing, error=nothing)
+function _reply!(sm::Monitor, message::AbstractOwnerMessage; ticket=nothing, error=nothing)
     _observe!(sm)
     put!(message.reply, OwnerReply(ticket, error))
     return nothing

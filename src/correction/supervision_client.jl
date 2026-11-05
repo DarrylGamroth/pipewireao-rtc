@@ -30,7 +30,7 @@ end
 
 Client(connection::SessionClient.Connection, graph::AbstractString, outputs::Tuple) =
     Client(Recovery.SessionTransport(connection), graph, outputs)
-function Client(transport::Recovery.RecoveryTransport, graph::AbstractString, outputs::NTuple{N,Symbol}) where {N}
+function Client(transport::Recovery.AbstractRecoveryTransport, graph::AbstractString, outputs::NTuple{N,Symbol}) where {N}
     1 <= N <= 8 && allunique(outputs) || throw(ArgumentError("protection requires 1 to 8 unique feedback outputs"))
     isempty(graph) && throw(ArgumentError("protection graph is absent"))
     channel = Recovery.RecoveryChannel(transport, Recovery.transport_instance(transport),
