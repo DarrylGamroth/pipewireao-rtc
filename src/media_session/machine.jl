@@ -11,6 +11,7 @@ struct Identity
     pid::UInt32
 end
 
+"Lifecycle evidence retained when an operation temporarily leaves its admitted state."
 abstract type AbstractOrigin end
 struct OfflineOrigin <: AbstractOrigin end
 struct ConfiguringOrigin <: AbstractOrigin end
@@ -18,129 +19,123 @@ struct ReadyOrigin <: AbstractOrigin end
 struct RunningOrigin <: AbstractOrigin end
 struct FaultOrigin <: AbstractOrigin end
 
+"Closed session operation interface: `operation(command)` is its codec-defined wire ID."
 abstract type AbstractCommand end
-struct Quit <: AbstractCommand
-end
+struct Quit <: AbstractCommand end
 
 const QUIT_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:quit))
 operation(::Quit) = QUIT_OPERATION
 
 _command(::Val{QUIT_OPERATION}) = Quit()
 
-struct Groups <: AbstractCommand
-end
+struct Groups <: AbstractCommand end
 
 const GROUPS_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:groups))
 operation(::Groups) = GROUPS_OPERATION
 
 _command(::Val{GROUPS_OPERATION}) = Groups()
 
-struct Status <: AbstractCommand
-end
+struct Status <: AbstractCommand end
 
 const STATUS_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:status))
 operation(::Status) = STATUS_OPERATION
 
 _command(::Val{STATUS_OPERATION}) = Status()
 
-struct Properties <: AbstractCommand
-end
+struct Properties <: AbstractCommand end
 
-const PROPERTIES_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties))
+const PROPERTIES_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties))
 operation(::Properties) = PROPERTIES_OPERATION
 
 _command(::Val{PROPERTIES_OPERATION}) = Properties()
 
-struct PropertyGeneration <: AbstractCommand
-end
+struct PropertyGeneration <: AbstractCommand end
 
-const PROPERTY_GENERATION_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:property_generation))
+const PROPERTY_GENERATION_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:property_generation))
 operation(::PropertyGeneration) = PROPERTY_GENERATION_OPERATION
 
 _command(::Val{PROPERTY_GENERATION_OPERATION}) = PropertyGeneration()
 
-struct ParameterGeneration <: AbstractCommand
-end
+struct ParameterGeneration <: AbstractCommand end
 
-const PARAMETER_GENERATION_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter_generation))
+const PARAMETER_GENERATION_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter_generation))
 operation(::ParameterGeneration) = PARAMETER_GENERATION_OPERATION
 
 _command(::Val{PARAMETER_GENERATION_OPERATION}) = ParameterGeneration()
 
-struct StopGroup <: AbstractCommand
-end
+struct StopGroup <: AbstractCommand end
 
-const STOP_GROUP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:stop_group))
+const STOP_GROUP_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:stop_group))
 operation(::StopGroup) = STOP_GROUP_OPERATION
 
 _command(::Val{STOP_GROUP_OPERATION}) = StopGroup()
 
-struct StartGroup <: AbstractCommand
-end
+struct StartGroup <: AbstractCommand end
 
-const START_GROUP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:start_group))
+const START_GROUP_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:start_group))
 operation(::StartGroup) = START_GROUP_OPERATION
 
 _command(::Val{START_GROUP_OPERATION}) = StartGroup()
 
-struct Stop <: AbstractCommand
-end
+struct Stop <: AbstractCommand end
 
-const SESSION_STOP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_stop))
+const SESSION_STOP_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_stop))
 operation(::Stop) = SESSION_STOP_OPERATION
 
 _command(::Val{SESSION_STOP_OPERATION}) = Stop()
 
-struct Start <: AbstractCommand
-end
+struct Start <: AbstractCommand end
 
-const SESSION_START_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_start))
+const SESSION_START_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_start))
 operation(::Start) = SESSION_START_OPERATION
 
 _command(::Val{SESSION_START_OPERATION}) = Start()
 
-struct SourceEnded <: AbstractCommand
-end
+struct SourceEnded <: AbstractCommand end
 
-const SOURCE_ENDED_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:source_ended))
+const SOURCE_ENDED_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:source_ended))
 operation(::SourceEnded) = SOURCE_ENDED_OPERATION
 
 _command(::Val{SOURCE_ENDED_OPERATION}) = SourceEnded()
 
-struct Reset <: AbstractCommand
-end
+struct Reset <: AbstractCommand end
 
 const RESET_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:reset))
 operation(::Reset) = RESET_OPERATION
 
 _command(::Val{RESET_OPERATION}) = Reset()
 
-struct SetProperties <: AbstractCommand
-end
+struct SetProperties <: AbstractCommand end
 
-const PROPERTIES_SET_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties_set))
+const PROPERTIES_SET_OPERATION =
+    RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties_set))
 operation(::SetProperties) = PROPERTIES_SET_OPERATION
 
 _command(::Val{PROPERTIES_SET_OPERATION}) = SetProperties()
 
-struct SetParameter <: AbstractCommand
-end
+struct SetParameter <: AbstractCommand end
 
 const PARAMETER_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter))
 operation(::SetParameter) = PARAMETER_OPERATION
 
 _command(::Val{PARAMETER_OPERATION}) = SetParameter()
 
-struct InspectWarmup <: AbstractCommand
-end
+struct InspectWarmup <: AbstractCommand end
 
 const WARMUP_OPERATION = SessionCodec.operation_id(SessionCodec.WarmupCommand())
 operation(::InspectWarmup) = WARMUP_OPERATION
 
 _command(::Val{WARMUP_OPERATION}) = InspectWarmup()
 
-struct Admit <: AbstractCommand
-end
+struct Admit <: AbstractCommand end
 
 const ADMIT_OPERATION = SessionCodec.operation_id(SessionCodec.AdmitCommand())
 operation(::Admit) = ADMIT_OPERATION
@@ -162,87 +157,78 @@ struct Request{C<:AbstractCommand,P}
     payload::P
     controller::Union{Nothing,Identity}
 end
-function Request(command::AbstractCommand; token::Integer=0, deadline::Int64=typemax(Int64),
-        payload=nothing, controller::Union{Nothing,Identity}=nothing)
+function Request(
+    command::AbstractCommand;
+    token::Integer = 0,
+    deadline::Int64 = typemax(Int64),
+    payload = nothing,
+    controller::Union{Nothing,Identity} = nothing,
+)
     token >= 0 || throw(ArgumentError("negative request token"))
-    return Request(command,UInt64(token),deadline,payload,controller)
+    return Request(command, UInt64(token), deadline, payload, controller)
 end
-function Request(id::Integer;kwargs...)
+function Request(id::Integer; kwargs...)
     0 <= id <= typemax(UInt32) || throw(ArgumentError("invalid session operation"))
-    return Request(_command(Val(UInt32(id)));kwargs...)
+    return Request(_command(Val(UInt32(id))); kwargs...)
 end
 _command(::Val) = throw(ArgumentError("unsupported session operation"))
 operation(r::Request) = operation(r.command)
 
+"""Work requested by a handler and executed once by the session task.
+
+The backend implements `perform!(session, job, effect)` for each concrete effect
+and returns its documented evidence. Only correlated completion/failure events
+advance the machine. The independent `budgeted` trait controls deadline checks;
+it does not select an Hsm phase or grant retry permission.
+"""
 abstract type AbstractEffect end
-struct CaptureOwners <: AbstractEffect
-end
+struct CaptureOwners <: AbstractEffect end
 
-struct ConnectOwners <: AbstractEffect
-end
+struct ConnectOwners <: AbstractEffect end
 
-struct CaptureParameters <: AbstractEffect
-end
+struct CaptureParameters <: AbstractEffect end
 
-struct CaptureSources <: AbstractEffect
-end
+struct CaptureSources <: AbstractEffect end
 
-struct PrepareSources <: AbstractEffect
-end
+struct PrepareSources <: AbstractEffect end
 
-struct DiscoverGraphs <: AbstractEffect
-end
+struct DiscoverGraphs <: AbstractEffect end
 
-struct HoldSources <: AbstractEffect
-end
+struct HoldSources <: AbstractEffect end
 
-struct ConnectLinks <: AbstractEffect
-end
+struct ConnectLinks <: AbstractEffect end
 
-struct HoldGraphs <: AbstractEffect
-end
+struct HoldGraphs <: AbstractEffect end
 
-struct RunSources <: AbstractEffect
-end
+struct RunSources <: AbstractEffect end
 
-struct QuerySourceEnd <: AbstractEffect
-end
+struct QuerySourceEnd <: AbstractEffect end
 
-struct ResetSources <: AbstractEffect
-end
+struct ResetSources <: AbstractEffect end
 
-struct ResetGraphs <: AbstractEffect
-end
+struct ResetGraphs <: AbstractEffect end
 
-struct WithdrawLinks <: AbstractEffect
-end
+struct WithdrawLinks <: AbstractEffect end
 
-struct ShutdownSources <: AbstractEffect
-end
+struct ShutdownSources <: AbstractEffect end
 
-struct ShutdownOwners <: AbstractEffect
-end
+struct ShutdownOwners <: AbstractEffect end
 
-struct RemoveControls <: AbstractEffect
-end
+struct RemoveControls <: AbstractEffect end
 
-struct PublishQuit <: AbstractEffect
-end
+struct PublishQuit <: AbstractEffect end
 
-struct Disconnect <: AbstractEffect
-end
+struct Disconnect <: AbstractEffect end
 
-struct QueryGroups <: AbstractEffect
-end
+struct QueryGroups <: AbstractEffect end
 
-struct QueryStatus <: AbstractEffect
-end
+struct QueryStatus <: AbstractEffect end
 
 struct RunGraphs{G} <: AbstractEffect
     group::G
     running::Bool
 end
-RunGraphs(group=nothing) = RunGraphs(group,true)
+RunGraphs(group = nothing) = RunGraphs(group, true)
 
 """Whether the backend must enforce a scientific operation budget.
 
@@ -250,6 +236,10 @@ Disconnect is an emergency transport teardown, with an explicit receipt. It
 must execute even after the source-Hold deadline; no scientific mutation is
 authorized by this exception. The backend dispatches Disconnect directly and
 must not route it through a deadline-admission check for ordinary effects.
+
+The default is `true`. Emergency `Disconnect` returns `false` so an expired
+scientific request cannot revoke transport teardown. The machine assigns the
+ticket deadline and the transport checks the trait before submission.
 """
 budgeted(::AbstractEffect) = true
 budgeted(::Disconnect) = false
@@ -290,6 +280,31 @@ struct EffectTicket{E<:AbstractEffect,O<:AbstractOrigin}
     deadline::Int64
     effect::E
     target::Union{Nothing,Identity}
+end
+
+"""A correlated completion shared by the effect task and Hsm dispatcher.
+
+The result remains parametric. The ticket is retained through its common
+interface so each effect kind does not create another Hsm payload specialization.
+This cold-control boundary preserves exact ticket correlation while avoiding
+repeated compilation of the entire hierarchy during a cleanup deadline.
+"""
+struct EffectCompleted{R} <: AbstractEvent
+    ticket::EffectTicket
+    result::R
+    at::Int64
+end
+
+"A failed effect; `submitted` records possible mutation in addition to prior receipts."
+struct EffectFailed <: AbstractEvent
+    ticket::EffectTicket
+    reason::String
+    submitted::Bool
+end
+
+"Submission intent, published to the Hsm immediately before a scientific write."
+struct EffectSubmitted <: AbstractEvent
+    ticket::EffectTicket
 end
 
 struct Reply{D}
@@ -429,30 +444,53 @@ end
 @statedef Machine :HeldFault :Fault
 @statedef Machine :EmergencyDisconnect :Fault
 
-@on_initial function(m::Machine, ::Root)
-    return Hsm.transition!(m,:Offline)
+@on_initial function (m::Machine, ::Root)
+    return Hsm.transition!(m, :Offline)
 end
 
 _now(m::Machine)::Int64 = Clocks.time_nanos(m.clock)
-_deadline(m::Machine,duration_ns::Int64) = Base.Checked.checked_add(_now(m),duration_ns)
-function _issue!(m::Machine,effect::AbstractEffect;target=nothing)
+_deadline(m::Machine, duration_ns::Int64) = Base.Checked.checked_add(_now(m), duration_ns)
+function _issue!(m::Machine, effect::AbstractEffect; target = nothing)
     m.effect === nothing || error("session effect already pending")
-    m.serial = Base.Checked.checked_add(m.serial,UInt64(1))
-    m.effect = EffectTicket(m.session,m.epoch,m.serial,
-        m.request === nothing ? UInt32(0) : operation(m.request),m.origin,
-        budgeted(effect) ? m.deadline : typemax(Int64),effect,target)
+    m.serial = Base.Checked.checked_add(m.serial, UInt64(1))
+    m.effect = EffectTicket(
+        m.session,
+        m.epoch,
+        m.serial,
+        m.request === nothing ? UInt32(0) : operation(m.request),
+        m.origin,
+        budgeted(effect) ? m.deadline : typemax(Int64),
+        effect,
+        target,
+    )
     return nothing
 end
-function _reply!(m::Machine,r::Request,outcome::Symbol,details=nothing;
-        error=nothing,unknown=false)
+function _reply!(
+    m::Machine,
+    r::Request,
+    outcome::Symbol,
+    details = nothing;
+    error = nothing,
+    unknown = false,
+)
     length(m.replies) < 2 || throw(ArgumentError("session reply outbox is full"))
-    push!(m.replies,Reply(r.token,operation(r),m.lifecycle,outcome,details,
-        error === nothing ? nothing : String(error),unknown))
+    push!(
+        m.replies,
+        Reply(
+            r.token,
+            operation(r),
+            m.lifecycle,
+            outcome,
+            details,
+            error === nothing ? nothing : String(error),
+            unknown,
+        ),
+    )
     return nothing
 end
 function _retire!(m::Machine)
     # Fence before exposing cancellation, which may synchronously deliver I/O.
-    m.epoch = Base.Checked.checked_add(m.epoch,UInt64(1))
+    m.epoch = Base.Checked.checked_add(m.epoch, UInt64(1))
     if m.effect !== nothing
         m.cancelled === nothing || error("session cancellation outbox is full")
         m.cancelled = m.effect
@@ -460,18 +498,18 @@ function _retire!(m::Machine)
     end
     return nothing
 end
-function _begin!(m::Machine,r::Request,origin::AbstractOrigin)
+function _begin!(m::Machine, r::Request, origin::AbstractOrigin)
     m.effect === nothing || error("session effect already pending")
-    deadline = min(r.deadline,_deadline(m,SESSION_EFFECT_TIMEOUT_NS))
-    m.epoch = Base.Checked.checked_add(m.epoch,UInt64(1))
-    m.origin,m.request,m.mutated = origin,r,false
+    deadline = min(r.deadline, _deadline(m, SESSION_EFFECT_TIMEOUT_NS))
+    m.epoch = Base.Checked.checked_add(m.epoch, UInt64(1))
+    m.origin, m.request, m.mutated = origin, r, false
     m.deadline = deadline
     return nothing
 end
-function _finish!(m::Machine,outcome::Symbol,details=nothing)
+function _finish!(m::Machine, outcome::Symbol, details = nothing)
     r = m.request
     m.request = nothing
-    r === nothing || _reply!(m,r,outcome,details)
+    r === nothing || _reply!(m, r, outcome, details)
     return nothing
 end
 _ready(::ReadyOrigin) = true
@@ -481,101 +519,107 @@ _wire_id(::ConfiguringOrigin) = RunnerCodec.Configuring
 _wire_id(::ReadyOrigin) = RunnerCodec.Ready
 _wire_id(::RunningOrigin) = RunnerCodec.Running
 _wire_id(::FaultOrigin) = RunnerCodec.Fault
-function _lifecycle!(m::Machine,origin::AbstractOrigin)
-    m.lifecycle_origin,m.lifecycle = origin,_wire_id(origin)
+function _lifecycle!(m::Machine, origin::AbstractOrigin)
+    m.lifecycle_origin, m.lifecycle = origin, _wire_id(origin)
     return nothing
 end
 
-function _matches(m::Machine,t::EffectTicket)
+function _matches(m::Machine, t::EffectTicket)
     current = m.effect
-    return current !== nothing && t.session == m.session && t.epoch == m.epoch &&
-        t.serial == current.serial && t.operation == current.operation &&
-        t.target == current.target && t.effect === current.effect && t.origin === current.origin
+    return current !== nothing &&
+           t.session == m.session &&
+           t.epoch == m.epoch &&
+           t.serial == current.serial &&
+           t.operation == current.operation &&
+           t.target == current.target &&
+           t.effect === current.effect &&
+           t.origin === current.origin
 end
-_expired(m,event) = event.at >= m.deadline || _now(m) >= m.deadline
-function _accept!(m,event)
-    _matches(m,event.ticket) && !_expired(m,event) || return false
+_expired(m, event) = event.at >= m.deadline || _now(m) >= m.deadline
+function _accept!(m, event)
+    _matches(m, event.ticket) && !_expired(m, event) || return false
     m.effect = nothing
     return true
 end
-function _receive_failure!(m,event)
-    _matches(m,event.ticket) || return false
+function _receive_failure!(m, event)
+    _matches(m, event.ticket) || return false
     m.mutated = m.mutated || event.submitted
     m.effect = nothing
     return true
 end
-function _enter_fault!(m::Machine,reason)
-    deadline = _deadline(m,SESSION_EFFECT_TIMEOUT_NS)
+function _enter_fault!(m::Machine, reason)
+    deadline = _deadline(m, SESSION_EFFECT_TIMEOUT_NS)
     _retire!(m)
     m.failure === nothing && (m.failure = String(reason))
-    m.fault_request,m.request = m.request,nothing
+    m.fault_request, m.request = m.request, nothing
     m.fault_unknown = m.mutated
-    _lifecycle!(m,FaultOrigin())
+    _lifecycle!(m, FaultOrigin())
     m.origin = FaultOrigin()
     m.deadline = deadline
-    _issue!(m,HoldSources())
+    _issue!(m, HoldSources())
     return nothing
 end
 function _fault_reply!(m::Machine)
     r = m.fault_request
     m.fault_request = nothing
-    r === nothing || _reply!(m,r,:Failed;error=m.failure,unknown=m.fault_unknown)
+    r === nothing || _reply!(m, r, :Failed; error = m.failure, unknown = m.fault_unknown)
     return nothing
 end
-function _refuse_operation!(m::Machine,reason)
+function _refuse_operation!(m::Machine, reason)
     _retire!(m)
-    r,m.request = m.request,nothing
-    _reply!(m,something(r),:Failed;error=reason)
+    r, m.request = m.request, nothing
+    _reply!(m, something(r), :Failed; error = reason)
     return nothing
 end
-function _begin_quit!(m::Machine,r::Request)
-    deadline = min(r.deadline,_deadline(m,SESSION_EFFECT_TIMEOUT_NS))
+function _begin_quit!(m::Machine, r::Request)
+    deadline = min(r.deadline, _deadline(m, SESSION_EFFECT_TIMEOUT_NS))
     _retire!(m)
-    old,m.request = m.request,nothing
-    old === nothing || _reply!(m,old,:Failed;error="Cancelled by shutdown",unknown=m.mutated)
+    old, m.request = m.request, nothing
+    old === nothing ||
+        _reply!(m, old, :Failed; error = "Cancelled by shutdown", unknown = m.mutated)
     _fault_reply!(m)
-    m.request,m.origin = r,m.lifecycle_origin
+    m.request, m.origin = r, m.lifecycle_origin
     m.deadline = deadline
     m.mutated = false
-    _issue!(m,HoldSources())
+    _issue!(m, HoldSources())
     return nothing
 end
-function _cleanup_failed!(m::Machine,reason)
+function _cleanup_failed!(m::Machine, reason)
     m.cleanup_failure = String(reason)
     _retire!(m)
     return nothing
 end
 
-@on_event function(m::Machine,::Offline,::Boot,_)
-    _lifecycle!(m,ConfiguringOrigin())
+@on_event function (m::Machine, ::Offline, ::Boot, _)
+    _lifecycle!(m, ConfiguringOrigin())
     m.origin = ConfiguringOrigin()
-    m.epoch = Base.Checked.checked_add(m.epoch,UInt64(1))
-    m.deadline = _deadline(m,m.startup_timeout_ns)
-    _issue!(m,CaptureOwners())
-    return Hsm.transition!(m,:CapturingOwners)
+    m.epoch = Base.Checked.checked_add(m.epoch, UInt64(1))
+    m.deadline = _deadline(m, m.startup_timeout_ns)
+    _issue!(m, CaptureOwners())
+    return Hsm.transition!(m, :CapturingOwners)
 end
-@on_event function(m::Machine,::Root,::TakeCancellation,_)
-    m.cancellation_delivery,m.cancelled = m.cancelled,nothing
+@on_event function (m::Machine, ::Root, ::TakeCancellation, _)
+    m.cancellation_delivery, m.cancelled = m.cancelled, nothing
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Root,::TakeReplies,_)
+@on_event function (m::Machine, ::Root, ::TakeReplies, _)
     m.reply_delivery = copy(m.replies)
     empty!(m.replies)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Root,::Submitted,ticket)
-    _matches(m,ticket) && (m.mutated = true)
+@on_event function (m::Machine, ::Root, ::Submitted, event)
+    _matches(m, event.ticket) && (m.mutated = true)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Root,::Observed,observation)
+@on_event function (m::Machine, ::Root, ::Observed, observation)
     m.observation = observation
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Managed,::RequiredLost,reason)
-    _enter_fault!(m,reason)
-    return Hsm.transition!(m,:HoldingFaultSources)
+@on_event function (m::Machine, ::Managed, ::RequiredLost, reason)
+    _enter_fault!(m, reason)
+    return Hsm.transition!(m, :HoldingFaultSources)
 end
-@on_event function(m::Machine,::Fault,::RequiredLost,_)
+@on_event function (m::Machine, ::Fault, ::RequiredLost, _)
     return Hsm.EventHandled
 end
 
@@ -691,43 +735,43 @@ end
     return Hsm.transition!(m, :RemovingControls)
 end
 
-@on_event function(m::Machine,::HoldingInitialGraphs,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
+@on_event function (m::Machine, ::HoldingInitialGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
     m.warmed = true
-    return Hsm.transition!(m,:AwaitingAdmission)
+    return Hsm.transition!(m, :AwaitingAdmission)
 end
-@on_event function(m::Machine,::StartingSources,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
-    _lifecycle!(m,RunningOrigin())
-    _finish!(m,:Lifecycle)
-    return Hsm.transition!(m,:Running)
+@on_event function (m::Machine, ::StartingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _lifecycle!(m, RunningOrigin())
+    _finish!(m, :Lifecycle)
+    return Hsm.transition!(m, :Running)
 end
 _source_ended(result::SourceEnd) = result.completed && !result.running
 _source_ended(result) = false
-@on_event function(m::Machine,::CheckingSourceEnd,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
+@on_event function (m::Machine, ::CheckingSourceEnd, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
     if !_source_ended(event.result)
-        _enter_fault!(m,"Source end is not confirmed")
-        return Hsm.transition!(m,:HoldingFaultSources)
+        _enter_fault!(m, "Source end is not confirmed")
+        return Hsm.transition!(m, :HoldingFaultSources)
     end
-    _issue!(m,HoldSources())
-    return Hsm.transition!(m,:StoppingSources)
+    _issue!(m, HoldSources())
+    return Hsm.transition!(m, :StoppingSources)
 end
-@on_event function(m::Machine,::StoppingGraphs,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
-    _lifecycle!(m,ReadyOrigin())
-    _finish!(m,:Lifecycle)
-    return Hsm.transition!(m,:Ready)
+@on_event function (m::Machine, ::StoppingGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _lifecycle!(m, ReadyOrigin())
+    _finish!(m, :Lifecycle)
+    return Hsm.transition!(m, :Ready)
 end
-@on_event function(m::Machine,::ResettingGraphs,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
-    _finish!(m,:Lifecycle)
-    return Hsm.transition!(m,:Ready)
+@on_event function (m::Machine, ::ResettingGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _finish!(m, :Lifecycle)
+    return Hsm.transition!(m, :Ready)
 end
-@on_event function(m::Machine,::ControllingGroup,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
-    _finish!(m,:Group,event.result)
-    return Hsm.transition!(m,:Running)
+@on_event function (m::Machine, ::ControllingGroup, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _finish!(m, :Group, event.result)
+    return Hsm.transition!(m, :Running)
 end
 @on_event function (m::Machine, ::Querying, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
@@ -747,124 +791,124 @@ end
     return Hsm.transition!(m, :Running)
 end
 
-@on_event function(m::Machine,::PublishingQuit,::Completion,event)
-    _matches(m,event.ticket) || return Hsm.EventHandled
-    _expired(m,event) && (m.cleanup_failure = "Quit completion publication fence expired")
-    m.effect,m.request = nothing,nothing
-    return Hsm.transition!(m,:Offline)
+@on_event function (m::Machine, ::PublishingQuit, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _expired(m, event) && (m.cleanup_failure = "Quit completion publication fence expired")
+    m.effect, m.request = nothing, nothing
+    return Hsm.transition!(m, :Offline)
 end
-@on_event function(m::Machine,::RemovingControls,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
+@on_event function (m::Machine, ::RemovingControls, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
     # Cleanup is established here. The successful completion must be published
     # before the backend can fence that publication and disconnect transport.
-    _lifecycle!(m,OfflineOrigin())
-    _reply!(m,something(m.request),:Quit,true)
-    _issue!(m,PublishQuit())
-    return Hsm.transition!(m,:PublishingQuit)
+    _lifecycle!(m, OfflineOrigin())
+    _reply!(m, something(m.request), :Quit, true)
+    _issue!(m, PublishQuit())
+    return Hsm.transition!(m, :PublishingQuit)
 end
-@on_event function(m::Machine,::PublishingQuit,::Failure,event)
-    _receive_failure!(m,event) || return Hsm.EventHandled
+@on_event function (m::Machine, ::PublishingQuit, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventHandled
     m.cleanup_failure = String(event.reason)
     m.request = nothing
-    return Hsm.transition!(m,:Offline)
+    return Hsm.transition!(m, :Offline)
 end
-@on_event function(m::Machine,::PublishingQuit,::Tick,_)
+@on_event function (m::Machine, ::PublishingQuit, ::Tick, _)
     m.effect === nothing && return Hsm.EventHandled
     _now(m) < m.deadline && return Hsm.EventHandled
     m.cleanup_failure = "Quit completion publication fence expired"
     _retire!(m)
     m.request = nothing
-    return Hsm.transition!(m,:Offline)
+    return Hsm.transition!(m, :Offline)
 end
-@on_event function(m::Machine,::PublishingQuit,::RequiredLost,_)
+@on_event function (m::Machine, ::PublishingQuit, ::RequiredLost, _)
     # Owner disappearance is expected after acknowledged cleanup. The final
     # publication fence can fail, but cannot undo the successful shutdown.
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::WithdrawingFaultLinks,::Completion,event)
-    _accept!(m,event) || return Hsm.EventNotHandled
+@on_event function (m::Machine, ::WithdrawingFaultLinks, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
     _fault_reply!(m)
-    return Hsm.transition!(m,:HeldFault)
+    return Hsm.transition!(m, :HeldFault)
 end
-@on_event function(m::Machine,::EmergencyDisconnect,::Completion,event)
-    _matches(m,event.ticket) || return Hsm.EventHandled
+@on_event function (m::Machine, ::EmergencyDisconnect, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
     m.effect = nothing
     _fault_reply!(m)
-    return Hsm.transition!(m,:HeldFault)
+    return Hsm.transition!(m, :HeldFault)
 end
-@on_event function(m::Machine,::EmergencyDisconnect,::Failure,event)
-    _receive_failure!(m,event) || return Hsm.EventHandled
+@on_event function (m::Machine, ::EmergencyDisconnect, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventHandled
     m.cleanup_failure = String(event.reason)
     _fault_reply!(m)
-    return Hsm.transition!(m,:HeldFault)
+    return Hsm.transition!(m, :HeldFault)
 end
-@on_event function(m::Machine,::EmergencyDisconnect,::Tick,_)
+@on_event function (m::Machine, ::EmergencyDisconnect, ::Tick, _)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::EmergencyDisconnect,::RequiredLost,_)
+@on_event function (m::Machine, ::EmergencyDisconnect, ::RequiredLost, _)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Managed,::Completion,event)
-    _matches(m,event.ticket) || return Hsm.EventHandled
-    _enter_fault!(m,"Session effect expired; outcome unknown")
-    return Hsm.transition!(m,:HoldingFaultSources)
+@on_event function (m::Machine, ::Managed, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _enter_fault!(m, "Session effect expired; outcome unknown")
+    return Hsm.transition!(m, :HoldingFaultSources)
 end
-@on_event function(m::Machine,::Executing,::Completion,event)
-    _matches(m,event.ticket) || return Hsm.EventHandled
+@on_event function (m::Machine, ::Executing, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
     if m.mutated
-        _enter_fault!(m,"Session effect expired; outcome unknown")
-        return Hsm.transition!(m,:HoldingFaultSources)
+        _enter_fault!(m, "Session effect expired; outcome unknown")
+        return Hsm.transition!(m, :HoldingFaultSources)
     end
-    _refuse_operation!(m,"Session query expired")
+    _refuse_operation!(m, "Session query expired")
     if _ready(m.origin)
-        return Hsm.transition!(m,:Ready)
+        return Hsm.transition!(m, :Ready)
     end
-    return Hsm.transition!(m,:Running)
+    return Hsm.transition!(m, :Running)
 end
-@on_event function(m::Machine,::Root,::Completion,_)
+@on_event function (m::Machine, ::Root, ::Completion, _)
     return Hsm.EventHandled
 end
 
-@on_event function(m::Machine,::Managed,::Failure,event)
-    _receive_failure!(m,event) || return Hsm.EventHandled
-    _enter_fault!(m,event.reason)
-    return Hsm.transition!(m,:HoldingFaultSources)
+@on_event function (m::Machine, ::Managed, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventHandled
+    _enter_fault!(m, event.reason)
+    return Hsm.transition!(m, :HoldingFaultSources)
 end
-@on_event function(m::Machine,::Executing,::Failure,event)
-    _receive_failure!(m,event) || return Hsm.EventHandled
+@on_event function (m::Machine, ::Executing, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventHandled
     if m.mutated
-        _enter_fault!(m,event.reason)
-        return Hsm.transition!(m,:HoldingFaultSources)
+        _enter_fault!(m, event.reason)
+        return Hsm.transition!(m, :HoldingFaultSources)
     end
-    _refuse_operation!(m,event.reason)
+    _refuse_operation!(m, event.reason)
     if _ready(m.origin)
-        return Hsm.transition!(m,:Ready)
+        return Hsm.transition!(m, :Ready)
     end
-    return Hsm.transition!(m,:Running)
+    return Hsm.transition!(m, :Running)
 end
-@on_event function(m::Machine,::Root,::Failure,_)
+@on_event function (m::Machine, ::Root, ::Failure, _)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Managed,::Tick,_)
+@on_event function (m::Machine, ::Managed, ::Tick, _)
     m.effect === nothing && return Hsm.EventHandled
     _now(m) < m.deadline && return Hsm.EventHandled
-    _enter_fault!(m,"Session effect expired; outcome unknown")
-    return Hsm.transition!(m,:HoldingFaultSources)
+    _enter_fault!(m, "Session effect expired; outcome unknown")
+    return Hsm.transition!(m, :HoldingFaultSources)
 end
-@on_event function(m::Machine,::Executing,::Tick,_)
+@on_event function (m::Machine, ::Executing, ::Tick, _)
     m.effect === nothing && return Hsm.EventHandled
     _now(m) < m.deadline && return Hsm.EventHandled
     if m.mutated
-        _enter_fault!(m,"Session effect expired; outcome unknown")
-        return Hsm.transition!(m,:HoldingFaultSources)
+        _enter_fault!(m, "Session effect expired; outcome unknown")
+        return Hsm.transition!(m, :HoldingFaultSources)
     end
-    _refuse_operation!(m,"Session query expired")
+    _refuse_operation!(m, "Session query expired")
     if _ready(m.origin)
-        return Hsm.transition!(m,:Ready)
+        return Hsm.transition!(m, :Ready)
     end
-    return Hsm.transition!(m,:Running)
+    return Hsm.transition!(m, :Running)
 end
-@on_event function(m::Machine,::Root,::Tick,_)
+@on_event function (m::Machine, ::Root, ::Tick, _)
     return Hsm.EventHandled
 end
 
@@ -912,64 +956,69 @@ end
     return Hsm.transition!(m, :HeldFault)
 end
 
-@on_event function(m::Machine,::Fault,::Completion,event)
-    _matches(m,event.ticket) || return Hsm.EventHandled
-    _cleanup_failed!(m,"Fault cleanup expired; outcome unknown")
+@on_event function (m::Machine, ::Fault, ::Completion, event)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
     _fault_reply!(m)
-    return Hsm.transition!(m,:HeldFault)
+    return Hsm.transition!(m, :HeldFault)
 end
 # Completion handlers above must handle success before Fault's expiry fallback.
-@on_event function(m::Machine,::HoldingFaultSources,::Completion,event)
-    if _accept!(m,event)
-        _issue!(m,HoldGraphs())
-        return Hsm.transition!(m,:HoldingFaultGraphs)
+@on_event function (m::Machine, ::HoldingFaultSources, ::Completion, event)
+    if _accept!(m, event)
+        _issue!(m, HoldGraphs())
+        return Hsm.transition!(m, :HoldingFaultGraphs)
     end
-    _matches(m,event.ticket) || return Hsm.EventHandled
-    _cleanup_failed!(m,"Fault source Hold expired; outcome unknown")
-    _issue!(m,Disconnect())
-    return Hsm.transition!(m,:EmergencyDisconnect)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _cleanup_failed!(m, "Fault source Hold expired; outcome unknown")
+    _issue!(m, Disconnect())
+    return Hsm.transition!(m, :EmergencyDisconnect)
 end
-@on_event function(m::Machine,::HoldingFaultGraphs,::Completion,event)
-    if _accept!(m,event)
-        _issue!(m,WithdrawLinks())
-        return Hsm.transition!(m,:WithdrawingFaultLinks)
+@on_event function (m::Machine, ::HoldingFaultGraphs, ::Completion, event)
+    if _accept!(m, event)
+        _issue!(m, WithdrawLinks())
+        return Hsm.transition!(m, :WithdrawingFaultLinks)
     end
-    _matches(m,event.ticket) || return Hsm.EventHandled
-    _cleanup_failed!(m,"Fault graph Hold expired; outcome unknown")
-    _issue!(m,WithdrawLinks())
-    return Hsm.transition!(m,:WithdrawingFaultLinks)
+    _matches(m, event.ticket) || return Hsm.EventHandled
+    _cleanup_failed!(m, "Fault graph Hold expired; outcome unknown")
+    _issue!(m, WithdrawLinks())
+    return Hsm.transition!(m, :WithdrawingFaultLinks)
 end
 
-@on_event function(m::Machine,::Managed,::QuitRequested,r)
-    _begin_quit!(m,r)
-    return Hsm.transition!(m,:HoldingQuitSources)
+@on_event function (m::Machine, ::Managed, ::QuitRequested, r)
+    _begin_quit!(m, r)
+    return Hsm.transition!(m, :HoldingQuitSources)
 end
-@on_event function(m::Machine,::ShuttingDown,::QuitRequested,r)
-    _reply!(m,r,:Failed;error="Session shutdown already pending")
+@on_event function (m::Machine, ::ShuttingDown, ::QuitRequested, r)
+    _reply!(m, r, :Failed; error = "Session shutdown already pending")
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Root,::QuitRequested,r)
-    _reply!(m,r,:Failed;error="Session is offline")
+@on_event function (m::Machine, ::Root, ::QuitRequested, r)
+    _reply!(m, r, :Failed; error = "Session is offline")
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Configuring,::WarmupRequested,r)
-    if r.controller === nothing || (m.admission_controller !== nothing &&
-            r.controller != m.admission_controller)
-        _reply!(m,r,:Failed;error="Resource admission launcher incarnation changed")
+@on_event function (m::Machine, ::Configuring, ::WarmupRequested, r)
+    if r.controller === nothing ||
+       (m.admission_controller !== nothing && r.controller != m.admission_controller)
+        _reply!(m, r, :Failed; error = "Resource admission launcher incarnation changed")
     else
         m.admission_controller = r.controller
-        _reply!(m,r,:Warmup,m.warmed)
+        _reply!(m, r, :Warmup, m.warmed)
     end
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::AwaitingAdmission,::AdmissionRequested,r)
+@on_event function (m::Machine, ::AwaitingAdmission, ::AdmissionRequested, r)
     if m.admission_controller === nothing || r.controller != m.admission_controller
-        _reply!(m,r,:Failed;error="Resource admission requires prior launcher inspection")
+        _reply!(
+            m,
+            r,
+            :Failed;
+            error = "Resource admission requires prior launcher inspection",
+        )
         return Hsm.EventHandled
     end
-    _lifecycle!(m,ReadyOrigin())
-    _reply!(m,r,:Warmup,true)
-    return Hsm.transition!(m,:Ready)
+    _lifecycle!(m, ReadyOrigin())
+    _reply!(m, r, :Warmup, true)
+    return Hsm.transition!(m, :Ready)
 end
 @on_event function (m::Machine, ::Root, ::WarmupRequested, r)
     _reply!(m, r, :Failed; error = "Resource admission is not available in this state")
@@ -1065,23 +1114,23 @@ _event(::SetParameter) = :SetParameterRequested
     return Hsm.EventHandled
 end
 
-@on_event function(m::Machine,::Root,::GroupsRequested,r)
-    _reply!(m,r,:Observed,m.observation.groups)
+@on_event function (m::Machine, ::Root, ::GroupsRequested, r)
+    _reply!(m, r, :Observed, m.observation.groups)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Root,::StatusRequested,r)
-    _reply!(m,r,:Observed,m.observation.status)
+@on_event function (m::Machine, ::Root, ::StatusRequested, r)
+    _reply!(m, r, :Observed, m.observation.status)
     return Hsm.EventHandled
 end
-@on_event function(m::Machine,::Ready,::StartRequested,r)
-    _begin!(m,r,ReadyOrigin())
-    _issue!(m,RunGraphs())
-    return Hsm.transition!(m,:StartingGraphs)
+@on_event function (m::Machine, ::Ready, ::StartRequested, r)
+    _begin!(m, r, ReadyOrigin())
+    _issue!(m, RunGraphs())
+    return Hsm.transition!(m, :StartingGraphs)
 end
-@on_event function(m::Machine,::Ready,::ResetRequested,r)
-    _begin!(m,r,ReadyOrigin())
-    _issue!(m,HoldSources())
-    return Hsm.transition!(m,:ResettingSourcesHold)
+@on_event function (m::Machine, ::Ready, ::ResetRequested, r)
+    _begin!(m, r, ReadyOrigin())
+    _issue!(m, HoldSources())
+    return Hsm.transition!(m, :ResettingSourcesHold)
 end
 @on_event function (m::Machine, ::Admitted, ::StopRequested, r)
     _begin!(m, r, m.lifecycle_origin)
@@ -1149,27 +1198,56 @@ end
     return Hsm.transition!(m, :ControllingGroup)
 end
 
-function Machine(session::Integer;clock::Clocks.AbstractNanoClock=Clocks.SystemNanoClock(),
-        startup_timeout_ns::Int64=DEFAULT_STARTUP_TIMEOUT_NS,
-        admission_controller::Union{Nothing,Identity}=nothing)
+function Machine(
+    session::Integer;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    startup_timeout_ns::Int64 = DEFAULT_STARTUP_TIMEOUT_NS,
+    admission_controller::Union{Nothing,Identity} = nothing,
+)
     0 < session <= typemax(Int64) || throw(ArgumentError("invalid session incarnation"))
     MIN_STARTUP_TIMEOUT_NS <= startup_timeout_ns <= MAX_STARTUP_TIMEOUT_NS ||
         throw(ArgumentError("invalid startup timeout"))
-    m = Machine(UInt64(session),clock,startup_timeout_ns,admission_controller,
-        RunnerCodec.Offline,OfflineOrigin(),false,UInt64(0),UInt64(0),ConfiguringOrigin(),nothing,nothing,nothing,
-        nothing,nothing,Reply[],Reply[],typemax(Int64),false,nothing,nothing,false,Observation(nothing,nothing))
-    Hsm.dispatch!(m,:Boot)
+    m = Machine(
+        UInt64(session),
+        clock,
+        startup_timeout_ns,
+        admission_controller,
+        RunnerCodec.Offline,
+        OfflineOrigin(),
+        false,
+        UInt64(0),
+        UInt64(0),
+        ConfiguringOrigin(),
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        nothing,
+        Reply[],
+        Reply[],
+        typemax(Int64),
+        false,
+        nothing,
+        nothing,
+        false,
+        Observation(nothing, nothing),
+    )
+    Hsm.dispatch!(m, :Boot)
     return m
 end
-submit!(m::Machine,r::Request) = (Hsm.dispatch!(m,_event(r.command),r); nothing)
-submitted!(m::Machine,t::EffectTicket) = (Hsm.dispatch!(m,:Submitted,t); nothing)
-complete!(m::Machine,t::EffectTicket,result=nothing;at::Int64=_now(m)) =
-    (Hsm.dispatch!(m,:Completion,(;ticket=t,result,at)); nothing)
-fail!(m::Machine,t::EffectTicket,reason::AbstractString;submitted::Bool=true) =
-    (Hsm.dispatch!(m,:Failure,(;ticket=t,reason=String(reason),submitted)); nothing)
-tick!(m::Machine) = (Hsm.dispatch!(m,:Tick); nothing)
-required_lost!(m::Machine,reason::AbstractString) =
-    (Hsm.dispatch!(m,:RequiredLost,String(reason)); nothing)
-take_cancelled!(m::Machine) = (Hsm.dispatch!(m,:TakeCancellation); m.cancellation_delivery)
-take_replies!(m::Machine) = (Hsm.dispatch!(m,:TakeReplies); m.reply_delivery)
-observe!(m::Machine,o::Observation) = (Hsm.dispatch!(m,:Observed,o); nothing)
+submit!(m::Machine, r::Request) = (Hsm.dispatch!(m, _event(r.command), r); nothing)
+submitted!(m::Machine, t::EffectTicket) =
+    (Hsm.dispatch!(m, :Submitted, EffectSubmitted(t)); nothing)
+complete!(m::Machine, t::EffectTicket, result = nothing; at::Int64 = _now(m)) =
+    complete!(m, EffectCompleted(t,result,at))
+complete!(m::Machine, event::EffectCompleted) =
+    (Hsm.dispatch!(m, :Completion, event); nothing)
+fail!(m::Machine, t::EffectTicket, reason::AbstractString; submitted::Bool = true) =
+    fail!(m, EffectFailed(t,String(reason),submitted))
+fail!(m::Machine, event::EffectFailed) = (Hsm.dispatch!(m,:Failure,event); nothing)
+tick!(m::Machine) = (Hsm.dispatch!(m, :Tick); nothing)
+required_lost!(m::Machine, reason::AbstractString) =
+    (Hsm.dispatch!(m, :RequiredLost, String(reason)); nothing)
+take_cancelled!(m::Machine) = (Hsm.dispatch!(m, :TakeCancellation); m.cancellation_delivery)
+take_replies!(m::Machine) = (Hsm.dispatch!(m, :TakeReplies); m.reply_delivery)
+observe!(m::Machine, o::Observation) = (Hsm.dispatch!(m, :Observed, o); nothing)
