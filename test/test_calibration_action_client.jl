@@ -1,5 +1,6 @@
 module CalibrationActionClientTests
 using Test, PipeWireAORTC
+import Clocks
 const CalibrationActionClient = PipeWireAORTC.CalibrationActionClient
 const Generic = PipeWireAORTC.ControlClient
 const Codec = PipeWireAORTC.CalibrationActionCodec
@@ -10,6 +11,7 @@ mutable struct FakeConnection
     failure::Any
     commands::Vector{Any}
     closed::Bool
+    clock::Clocks.CachedNanoClock
 end
 function Generic.request!(fake::FakeConnection, command; deadline, check)
     check()
@@ -35,7 +37,7 @@ function connection(
     reply = Codec.Completion(
         header(op, transport), Lifecycle.Connected, run, serial, result, ""
     )
-    fake = FakeConnection(reply, nothing, Any[], false)
+    fake = FakeConnection(reply, nothing, Any[], false, Clocks.CachedNanoClock(-10))
     return CalibrationActionClient.Connection(
         fake,
         binding,
@@ -47,6 +49,11 @@ function connection(
         false,
     )
 end
+function change_request!(supplied::AbstractDict)
+    supplied["figure"][1] = 99
+    supplied["kind"] = "changed"
+end
+change_request!(supplied::Codec.Adopt) = (supplied.figure[1] = 99)
 @testset "native calibration action client preserves correlation and known outcomes" begin
     cursor = Codec.AcquisitionCursor(typemax(UInt64), UInt64(1) << 63, UInt64(0), UInt64(0))
     client = connection(Codec.Held(cursor))
@@ -80,12 +87,7 @@ end
     )
         client = connection(Codec.Adopted(cursor, Float32[1, 2], false); op = 2)
         result = CalibrationActionClient.complete!(client, supplied)
-        if supplied isa AbstractDict
-            supplied["figure"][1] = 99
-            supplied["kind"] = "changed"
-        else
-            supplied.figure[1] = 99
-        end
+        change_request!(supplied)
         result.figure[2] = 99
         evidence = only(client.records)
         @test evidence["request"]["action"]["kind"] == "adopt"

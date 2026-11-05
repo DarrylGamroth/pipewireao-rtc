@@ -332,3 +332,16 @@ Local logs: `/tmp/rtc-clk07-core-final.log`,
 `/tmp/rtc-clk07-pupil-cpu-complete.log`,
 `/tmp/rtc-clk07-regression-before.log`, and
 `/tmp/rtc-clk07-worker-relative-before.log`.
+
+## Core integration
+
+The official core selector, with the explicit PipeWireAO artifact prefix, reached
+`test_calibration_action_client.jl` and exposed a test double lacking the client's
+new bound clock. Its helper now owns a CachedNanoClock with a negative origin;
+the selector passes all 64 existing assertions. Its request-mutation test also
+uses method dispatch rather than a type branch. No production fallback was added.
+The failed selector and the remaining original selectors are being rerun in an
+isolated continuation. The successful unchanged prefix is retained rather than
+duplicated. Local logs: `/tmp/rtc-clock-core-suite-20261105.log`,
+`/tmp/rtc-clock-action-fake-final-20261105.log`, and
+`/tmp/rtc-clock-core-remainder-20261105.log`.
