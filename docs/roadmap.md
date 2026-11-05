@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-04. This section is the current delivery summary. Later sections
+Updated 2026-11-05. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -22,6 +22,21 @@ PipeWireAO.jl directly, following media-session terminology with Julia naming.
 The separate scientific graph processes and native control contracts remain.
 The replacement is not yet qualified or deployed; verified slices are committed
 as they complete.
+
+The [source and verification record](reviews/20261104-media-session/REVIEW.md)
+now covers typed effects, direct object/Link ownership, bounded native ingress,
+the journal worker, the generated Julia launcher and exact process binding.
+The old RTC Lua/WirePlumber host and plugin sources are retired; the independent
+management companion uses json-c. Native private-core checks cover real initial
+acquisition cleanup and active/pending Link release; the generated launcher also
+passes a separate-process public startup-Quit check. Full graph lifecycle/fault
+qualification and a released upstream client/SDK cohort remain open.
+
+The [Julia design conventions](architecture.md#julia-design-conventions) and
+[interface/trait inventory](SESSION_POLICY_MIGRATION.md#interface-and-trait-decisions--2026-11-05)
+record the shared contracts and explicit clock migration exceptions. Concrete
+protocol types and independent capability traits are reused; phase behavior
+stays with Hsm handlers and captured effect origins.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

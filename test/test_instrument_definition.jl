@@ -679,7 +679,6 @@ end
             "RUNTIME" => "/tmp/instrument-test",
             "REMOTE" => "instrument-test",
             "SESSION_UUID" => "00000000-0000-0000-0000-000000000001",
-            "SESSION_SCRIPT" => "/sealed/rtc/scripts/ao/session.lua",
             "SESSION_CONTROL_INSTANCE" => "21",
             "SESSION_CONTROLLER_INSTANCE" => "22",
             "ADMISSION_CONTROLLER_INSTANCE" => "23",
@@ -703,18 +702,21 @@ end
             node_owners = Dict("simulator-wfs" => "simulator", "core-sink" => "core"),
             configuration_store_root = nothing,
         )
-        components = configuration["wireplumber.components"]
-        endpoint = only(filter(c -> c["provides"] == "ao.session-control", components))
-        @test endpoint["arguments"]["profile"] == "pipewireao.rtc.session/1"
-        @test endpoint["arguments"]["node.name"] == "pipewireao.rtc.session.instrument-test"
-        @test endpoint["arguments"]["properties"] == Dict(
+        policy = configuration["pipewireao.session"]
+        @test Set(keys(configuration)) ==
+              Set(("context.properties", "context.modules", "pipewireao.session"))
+        @test policy["node.name"] == "pipewireao.rtc.session.instrument-test"
+        @test policy["properties"] == Dict(
             "pipewireao.rtc.session.session-uuid" => bindings["SESSION_UUID"],
             Instrument.PROPERTY => json,
             Instrument.HASH_PROPERTY => Instrument.digest(json),
         )
-        for component in components
-            component === endpoint && continue
-            properties = get(get(component, "arguments", Dict()), "properties", Dict())
+        other_nodes = Iterators.flatten((
+            configuration["context.modules"],
+            (policy["session"][role] for role in ("sources", "graphs", "sinks"))...,
+        ),)
+        for node in other_nodes
+            properties = get(node, "properties", Dict())
             @test !haskey(properties, Instrument.PROPERTY)
             @test !haskey(properties, Instrument.HASH_PROPERTY)
         end

@@ -3,7 +3,7 @@
 The installed RTC unit calls `prepare!` from ExecStartPre. Its direct
 ExecStart runs RTC after this function returns. This module creates
 processes and configuration; it never admits a session or issues source/link
-operations. The Lua session profile owns those actions.
+operations. The MediaSession module owns those actions.
 
 Owner names are exclusive per systemd invocation. A query followed by a stop
 cannot be atomic; manual replacement of the same name is outside this workflow.
@@ -37,13 +37,25 @@ struct Request
     unit::String
     launcher::String
     runtime_root::String
-    function Request(package::AbstractString, prefix::AbstractString, unit::AbstractString,
-                     launcher::AbstractString, runtime_root::AbstractString)
+    function Request(
+        package::AbstractString,
+        prefix::AbstractString,
+        unit::AbstractString,
+        launcher::AbstractString,
+        runtime_root::AbstractString,
+    )
         paths = (package, prefix, launcher, runtime_root)
-        all(isabspath, paths) || fail("package, prefix, launcher and runtime root must be absolute")
+        all(isabspath, paths) ||
+            fail("package, prefix, launcher and runtime root must be absolute")
         all(value -> !occursin(r"[\n\r\0;]", value), paths) || fail("invalid launch path")
         occursin(r"^[A-Za-z0-9_.@-]+\.service$", unit) || fail("invalid RTC unit name")
-        new(String(package), String(prefix), String(unit), String(launcher), String(runtime_root))
+        new(
+            String(package),
+            String(prefix),
+            String(unit),
+            String(launcher),
+            String(runtime_root),
+        )
     end
 end
 
@@ -55,26 +67,53 @@ struct Prepared
     owners::Dict{String,Any}
 end
 
-function cleanup_hook_valid(value::AbstractString, request::Request, source_role::AbstractString)
-    prefix = "{ path=" * request.launcher * " ; argv[]=" * request.launcher *
-        " cleanup --invocation \${INVOCATION_ID} --runtime-root " * request.runtime_root *
-        " --source-role " * source_role * " ; ignore_errors=no ; "
-    startswith(value, prefix) || return false
-    suffix = chopprefix(value, prefix)
-    occursin(r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$", suffix)
-end
-
-function stop_hook_valid(value::AbstractString, request::Request)
-    prefix = "{ path=" * request.launcher * " ; argv[]=" * request.launcher *
-        " stop --unit " * request.unit * " --runtime-root " * request.runtime_root *
+function cleanup_hook_valid(
+    value::AbstractString,
+    request::Request,
+    source_role::AbstractString,
+)
+    prefix =
+        "{ path=" *
+        request.launcher *
+        " ; argv[]=" *
+        request.launcher *
+        " cleanup --invocation \${INVOCATION_ID} --runtime-root " *
+        request.runtime_root *
+        " --source-role " *
+        source_role *
         " ; ignore_errors=no ; "
     startswith(value, prefix) || return false
     suffix = chopprefix(value, prefix)
-    occursin(r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$", suffix)
+    occursin(
+        r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$",
+        suffix,
+    )
+end
+
+function stop_hook_valid(value::AbstractString, request::Request)
+    prefix =
+        "{ path=" *
+        request.launcher *
+        " ; argv[]=" *
+        request.launcher *
+        " stop --unit " *
+        request.unit *
+        " --runtime-root " *
+        request.runtime_root *
+        " ; ignore_errors=no ; "
+    startswith(value, prefix) || return false
+    suffix = chopprefix(value, prefix)
+    occursin(
+        r"^start_time=[^;{}]* ; stop_time=[^;{}]* ; pid=[0-9]+ ; code=[^;{}]* ; status=[^;{}]* \}$",
+        suffix,
+    )
 end
 
 function preparation_identity(request::Request, source_role::AbstractString)
-    values = S.properties(request.unit; extra="ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
+    values = S.properties(
+        request.unit;
+        extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type",
+    )
     values["LoadState"] == "loaded" && values["ActiveState"] == "activating" ||
         fail("RTC unit is not in start preparation")
     tryparse(Int, values["ControlPID"]) == getpid() ||
@@ -84,11 +123,13 @@ function preparation_identity(request::Request, source_role::AbstractString)
         fail("launcher invocation environment differs from systemd")
     group = values["ControlGroup"]
     observed = S.proc_cgroup(getpid())
-    startswith(group, "/") && group != "/" &&
-        (observed == group || startswith(observed, group * "/")) ||
+    startswith(group, "/") &&
+    group != "/" &&
+    (observed == group || startswith(observed, group * "/")) ||
         fail("launcher is outside the RTC unit cgroup")
-    values["Restart"] == "no" && values["KillMode"] == "control-group" &&
-        values["Type"] == "exec" || fail("RTC unit has unexpected lifetime policy")
+    values["Restart"] == "no" &&
+    values["KillMode"] == "control-group" &&
+    values["Type"] == "exec" || fail("RTC unit has unexpected lifetime policy")
     cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         fail("RTC unit lacks its exact emergency cleanup hook")
     stop_hook_valid(values["ExecStop"], request) ||
@@ -97,14 +138,16 @@ function preparation_identity(request::Request, source_role::AbstractString)
 end
 
 function launch_record!(runtime, record)
-    C.write_json(joinpath(runtime, "launch.json"), record; atomic=true)
+    C.write_json(joinpath(runtime, "launch.json"), record; atomic = true)
 end
 
 function private_remote_environment(env, runtime, bindings)
-    for (key, value) in ("PIPEWIREAO_RUNTIME_DIR" => runtime,
-                         "PIPEWIRE_RUNTIME_DIR" => runtime,
-                         "PIPEWIREAO_REMOTE" => bindings["REMOTE"],
-                         "PIPEWIRE_REMOTE" => bindings["REMOTE"])
+    for (key, value) in (
+        "PIPEWIREAO_RUNTIME_DIR" => runtime,
+        "PIPEWIRE_RUNTIME_DIR" => runtime,
+        "PIPEWIREAO_REMOTE" => bindings["REMOTE"],
+        "PIPEWIRE_REMOTE" => bindings["REMOTE"],
+    )
         get(env, key, nothing) == value ||
             fail("owner environment overrides private remote binding $key")
     end
@@ -116,22 +159,30 @@ function owner_environment(paths, spec, bindings, runtime, role)
     for key in ("NOTIFY_SOCKET", "INVOCATION_ID", "JOURNAL_STREAM", "SYSTEMD_EXEC_PID")
         delete!(env, key)
     end
-    merge!(env, Dict("LD_LIBRARY_PATH" => paths["library"],
-        "PIPEWIREAO_RUNTIME_DIR" => runtime,
-        "PIPEWIRE_RUNTIME_DIR" => runtime,
-        "PIPEWIREAO_CONFIG_DIR" => joinpath(runtime, role),
-        "PIPEWIREAO_MODULE_DIR" => paths["modules"],
-        "PIPEWIREAO_SPA_PLUGIN_DIR" => paths["spa"],
-        "PIPEWIREAO_FITS_PLUGIN" => joinpath(paths["spa"], "fits/libspa-fits.so"),
-        "PIPEWIREAO_DISCARD_PLUGIN" => joinpath(paths["spa"], "discard/libspa-pipewireao-discard.so"),
-        "PIPEWIREAO_REMOTE" => bindings["REMOTE"],
-        "PIPEWIRE_REMOTE" => bindings["REMOTE"]))
+    merge!(
+        env,
+        Dict(
+            "LD_LIBRARY_PATH" => paths["library"],
+            "PIPEWIREAO_RUNTIME_DIR" => runtime,
+            "PIPEWIRE_RUNTIME_DIR" => runtime,
+            "PIPEWIREAO_CONFIG_DIR" => joinpath(runtime, role),
+            "PIPEWIREAO_MODULE_DIR" => paths["modules"],
+            "PIPEWIREAO_SPA_PLUGIN_DIR" => paths["spa"],
+            "PIPEWIREAO_FITS_PLUGIN" => joinpath(paths["spa"], "fits/libspa-fits.so"),
+            "PIPEWIREAO_DISCARD_PLUGIN" =>
+                joinpath(paths["spa"], "discard/libspa-pipewireao-discard.so"),
+            "PIPEWIREAO_REMOTE" => bindings["REMOTE"],
+            "PIPEWIRE_REMOTE" => bindings["REMOTE"],
+        ),
+    )
     for (key, value) in spec["environment"]
         env[key] = D.substitute(value, bindings)
     end
     private_remote_environment(env, runtime, bindings)
     if !isempty(spec["owners"])
-        env["JULIA_DEPOT_PATH"] = joinpath(runtime, "julia-depot") * ":" *
+        env["JULIA_DEPOT_PATH"] =
+            joinpath(runtime, "julia-depot") *
+            ":" *
             get(ENV, "JULIA_DEPOT_PATH", joinpath(homedir(), ".julia") * ":")
     end
     return env
@@ -141,13 +192,18 @@ function render_inputs!(request, spec, bindings, runtime)
     roles = collect(keys(spec["placement"]))
     for role in roles
         directory = joinpath(runtime, role)
-        mkdir(directory; mode=0o700)
-        for (key, output) in (("client", "client.conf"), ("core", "daemon.conf"),
-                              ("session", "session.conf"))
+        mkdir(directory; mode = 0o700)
+        for (key, output) in (
+            ("client", "client.conf"),
+            ("core", "daemon.conf"),
+            ("session", "session.conf"),
+        )
             relative = key == "client" ? spec["client"][role] : spec[key]
             source = D.relative_asset(request.package, relative)
-            write(joinpath(directory, output),
-                D.substitute(read(source, String), bindings; quoted=true))
+            write(
+                joinpath(directory, output),
+                D.substitute(read(source, String), bindings; quoted = true),
+            )
         end
     end
     graphs = joinpath(request.package, "graphs")
@@ -155,8 +211,10 @@ function render_inputs!(request, spec, bindings, runtime)
         for name in readdir(graphs)
             endswith(name, ".conf.in") || continue
             source = D.relative_asset(request.package, joinpath("graphs", name))
-            write(joinpath(runtime, name[1:end-3]),
-                D.substitute(read(source, String), bindings; quoted=true))
+            write(
+                joinpath(runtime, name[1:(end-3)]),
+                D.substitute(read(source, String), bindings; quoted = true),
+            )
         end
     end
     return D.decode(joinpath(runtime, "core", "session.conf"), request.prefix)
@@ -165,7 +223,7 @@ end
 function prepare_julia_overlay!(request, paths, spec, runtime)
     isempty(spec["owners"]) && return nothing
     overlay = joinpath(runtime, "native-prefix")
-    mkdir(overlay; mode=0o700)
+    mkdir(overlay; mode = 0o700)
     symlink(paths["library"], joinpath(overlay, "lib"))
     for name in ("bin", "share", "etc", "include")
         path = joinpath(request.prefix, name)
@@ -173,52 +231,69 @@ function prepare_julia_overlay!(request, paths, spec, runtime)
     end
     artifacts = joinpath(runtime, "julia-depot", "artifacts")
     mkpath(artifacts)
-    write(joinpath(artifacts, "Overrides.toml"),
+    write(
+        joinpath(artifacts, "Overrides.toml"),
         "[cde84cf6-9a21-5ce0-b5e3-1526e778c30b]\nPipeWireAO = " *
-        String(C.JSON.json(overlay)) * "\n")
+        String(C.JSON.json(overlay)) *
+        "\n",
+    )
     return nothing
 end
 
 function parameter_owner!(request, spec, session, bindings, runtime)
-    sources = filter(source -> get(source, "factory", nothing) ==
-        "pipewireao.runtime-parameter", session["sources"])
+    sources = filter(
+        source -> get(source, "factory", nothing) == "pipewireao.runtime-parameter",
+        session["sources"],
+    )
     isempty(sources) && return nothing
     any(owner -> owner["role"] == "parameters", spec["owners"]) &&
         fail("parameter transport role conflicts with a declared owner")
     directory = joinpath(runtime, "parameters")
-    mkdir(directory; mode=0o700)
+    mkdir(directory; mode = 0o700)
     client = D.relative_asset(request.package, spec["client"]["rtc"])
-    write(joinpath(directory, "client.conf"), D.substitute(read(client, String), bindings; quoted=true))
+    write(
+        joinpath(directory, "client.conf"),
+        D.substitute(read(client, String), bindings; quoted = true),
+    )
     declarations = Any[]
     for source in sources
         ports = source["ports"]
         length(ports) == 1 || fail("parameter source must have exactly one declared output")
         port = only(ports)
-        get(port, "parameter", false) === true && port["direction"] == "output" &&
-            port["name"] == "output_1" && port["element-type"] == "F32_LE" ||
-            fail("unsupported parameter source contract")
+        get(port, "parameter", false) === true &&
+        port["direction"] == "output" &&
+        port["name"] == "output_1" &&
+        port["element-type"] == "F32_LE" || fail("unsupported parameter source contract")
         address = source["node.name"] * ":" * port["name"]
         links = filter(link -> link["output"] == address, session["links"])
         length(links) == 1 || fail("parameter source needs one exact declared destination")
         target = only(links)["input"]
-        names = split(target, ':'; limit=2)
+        names = split(target, ':'; limit = 2)
         length(names) == 2 || fail("invalid parameter destination")
         graphs = filter(graph -> graph["node.name"] == names[1], session["graphs"])
         length(graphs) == 1 || fail("parameter destination graph is undeclared")
-        inputs = filter(input -> input["name"] == names[2] && input["direction"] == "input",
-            only(graphs)["ports"])
+        inputs = filter(
+            input -> input["name"] == names[2] && input["direction"] == "input",
+            only(graphs)["ports"],
+        )
         length(inputs) == 1 || fail("parameter destination port is undeclared")
         input = only(inputs)
-        get(input, "parameter", false) === true && all(key ->
-            get(input, key, nothing) == get(port, key, nothing),
-            ("element-type", "shape", "schema")) || fail("parameter contracts differ")
+        get(input, "parameter", false) === true && all(
+            key -> get(input, key, nothing) == get(port, key, nothing),
+            ("element-type", "shape", "schema"),
+        ) || fail("parameter contracts differ")
         layout = get(port, "layout", "ROW_MAJOR")
         layout in ("ROW_MAJOR", "COLUMN_MAJOR") && get(input, "layout", layout) == layout ||
             fail("parameter layouts differ")
-        row = Dict{String,Any}("node_name" => source["node.name"], "graph" => String(names[1]),
-            "inlet" => String(names[2]), "shape" => port["shape"], "element_type" => "F32_LE",
+        row = Dict{String,Any}(
+            "node_name" => source["node.name"],
+            "graph" => String(names[1]),
+            "inlet" => String(names[2]),
+            "shape" => port["shape"],
+            "element_type" => "F32_LE",
             "schema" => get(port, "schema", ""),
-            "layout" => layout == "ROW_MAJOR" ? "row-major" : "column-major")
+            "layout" => layout == "ROW_MAJOR" ? "row-major" : "column-major",
+        )
         initial = get(get(session, "parameters", Dict()), target, nothing)
         if initial !== nothing
             _initial_parameter_binding(initial)
@@ -236,48 +311,83 @@ function parameter_owner!(request, spec, session, bindings, runtime)
         fail("Current Julia runtime is unavailable for parameter transport")
     entry = if D.registered_application(spec)
         environment = D.application_environment(spec, request.package)
-        ["--project=" * environment, "-e",
-            "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)", "--"]
+        [
+            "--project=" * environment,
+            "-e",
+            "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)",
+            "--",
+        ]
     else
-        script = D.relative_asset(request.package, "julia/assets/deployment/hil/parameter_source.jl")
+        script = D.relative_asset(
+            request.package,
+            "julia/assets/deployment/hil/parameter_source.jl",
+        )
         ["--project=" * joinpath(request.package, "julia"), script]
     end
     bootstrap = "pipewireao.rtc.bootstrap.parameters"
     control = "pipewireao.rtc.parameters." * spec["name"]
     bindings["BOOTSTRAP_INSTANCE_PARAMETERS"] = string(N.next_instance())
     bindings["PARAMETER_OWNER_INSTANCE"] = string(N.next_instance())
-    return Dict{String,Any}("role" => "parameters", "bootstrap-node" => bootstrap,
+    return Dict{String,Any}(
+        "role" => "parameters",
+        "bootstrap-node" => bootstrap,
         "bootstrap-protocol" => "pipewireao.rtc.owner-bootstrap/1",
-        "control-node" => control, "control-protocol" => "pipewireao.rtc.parameter-source/1",
+        "control-node" => control,
+        "control-protocol" => "pipewireao.rtc.parameter-source/1",
         "control-instance" => bindings["PARAMETER_OWNER_INSTANCE"],
         "environment" => Dict("OPENBLAS_NUM_THREADS" => "1"),
-        "argv" => [executable, "--startup-file=no", "--threads=2,0",
+        "argv" => [
+            executable,
+            "--startup-file=no",
+            "--threads=2,0",
             entry...,
-            "--config", config, "--remote", joinpath(runtime, bindings["REMOTE"]),
-            "--bootstrap-node", bootstrap, "--bootstrap-instance", bindings["BOOTSTRAP_INSTANCE_PARAMETERS"],
-            "--control-node", control, "--control-instance", bindings["PARAMETER_OWNER_INSTANCE"]])
+            "--config",
+            config,
+            "--remote",
+            joinpath(runtime, bindings["REMOTE"]),
+            "--bootstrap-node",
+            bootstrap,
+            "--bootstrap-instance",
+            bindings["BOOTSTRAP_INSTANCE_PARAMETERS"],
+            "--control-node",
+            control,
+            "--control-instance",
+            bindings["PARAMETER_OWNER_INSTANCE"],
+        ],
+    )
 end
 
-_initial_parameter_binding(initial) = fail("initial parameter must name a declared artifact binding")
-_initial_parameter_binding(initial::String) = startswith(initial,"PIPEWIREAO_RTC_PARAMETER_") || fail("initial parameter must name a declared artifact binding")
+_initial_parameter_binding(initial) =
+    fail("initial parameter must name a declared artifact binding")
+_initial_parameter_binding(initial::String) =
+    startswith(initial, "PIPEWIREAO_RTC_PARAMETER_") ||
+    fail("initial parameter must name a declared artifact binding")
 _initial_parameter_value(value) = fail("initial parameter artifact binding is absent")
 _initial_parameter_value(::String) = nothing
 _core_socket_failure(error) = throw(error)
 _core_socket_failure(::Union{Base.IOError,Base.SystemError}) = nothing
 _fgn_graphs(graphs) = fail("session graphs must be a list")
-_fgn_graphs(graphs::AbstractVector) = filter(graph -> get(graph,"factory",nothing)=="pipewireao.fgn-native",graphs)
+_fgn_graphs(graphs::AbstractVector) =
+    filter(graph -> get(graph, "factory", nothing)=="pipewireao.fgn-native", graphs)
 _fgn_configuration_token(token) = fail("FGN graph has no configuration path")
 _fgn_configuration_token(::String) = nothing
 _fgn_node_name(name) = fail("FGN graph node differs from its rendered host module")
 _fgn_node_name(::String) = nothing
-_held_source_owner(role,spec) = fail("RTC session requires a declared held source owner")
-_held_source_owner(role::String,spec) = any(owner -> owner["role"]==role,spec["owners"]) || fail("RTC session requires a declared held source owner")
-_rendered_session_configuration(config,runtime) = fail("session generator did not return a private invocation configuration")
-_rendered_session_configuration(config::AbstractString,runtime) = isabspath(config) && isfile(config) &&
-    startswith(realpath(config),realpath(runtime)*"/") || fail("session generator did not return a private invocation configuration")
-_unretained_launch_outcome(item,unit,deadline) = nothing
-function _unretained_launch_outcome(item::AbstractDict,unit,deadline)
-    if get(item,"state","") in ("launching","uncertain") && S.properties(unit;deadline)["LoadState"]=="not-found"
+_held_source_owner(role, spec) = fail("RTC session requires a declared held source owner")
+_held_source_owner(role::String, spec) =
+    any(owner -> owner["role"]==role, spec["owners"]) ||
+    fail("RTC session requires a declared held source owner")
+_rendered_session_configuration(config, runtime) =
+    fail("session generator did not return a private invocation configuration")
+_rendered_session_configuration(config::AbstractString, runtime) =
+    isabspath(config) &&
+    isfile(config) &&
+    startswith(realpath(config), realpath(runtime)*"/") ||
+    fail("session generator did not return a private invocation configuration")
+_unretained_launch_outcome(item, unit, deadline) = nothing
+function _unretained_launch_outcome(item::AbstractDict, unit, deadline)
+    if get(item, "state", "") in ("launching", "uncertain") &&
+       S.properties(unit; deadline)["LoadState"]=="not-found"
         fail("owner launch outcome remains uncertain for $unit")
     end
     return nothing
@@ -288,12 +398,14 @@ _session_renderer(::Function) = nothing
 function reserve_owner!(coordinator, role, placement, record)
     service = S.Service(coordinator, role)
     haskey(record["owners"], role) && fail("duplicate owner role $role")
-    record["owners"][role] = merge(S.record(service), Dict{String,Any}(
-        "role" => role, "placement" => deepcopy(placement)))
+    record["owners"][role] = merge(
+        S.record(service),
+        Dict{String,Any}("role" => role, "placement" => deepcopy(placement)),
+    )
     return service
 end
 
-function wait_core!(service, socket; seconds=15)
+function wait_core!(service, socket; seconds = 15)
     deadline = monotonic() + seconds
     while monotonic() < deadline
         S.alive(service) || fail("private core exited before its socket was available")
@@ -321,14 +433,15 @@ function graph_arguments(graph, env, runtime, prefix)
     token = get(graph, "config.path", nothing)
     _fgn_configuration_token(token)
     match_result = match(r"^\$\{([A-Z][A-Z0-9_]*)\}$", token)
-    match_result === nothing && fail("FGN graph configuration must use a declared environment binding")
+    match_result === nothing &&
+        fail("FGN graph configuration must use a declared environment binding")
     path = get(env, match_result.captures[1], "")
     isfile(path) && startswith(realpath(path), realpath(runtime) * "/") ||
         fail("FGN graph configuration is not a rendered invocation asset")
     args = D.decode(path, prefix)
-    get(args,"node.name",nothing) == get(graph,"node.name",nothing) ||
+    get(args, "node.name", nothing) == get(graph, "node.name", nothing) ||
         fail("FGN graph node differs from its rendered host module")
-    _fgn_node_name(get(graph,"node.name",nothing))
+    _fgn_node_name(get(graph, "node.name", nothing))
     return args
 end
 
@@ -336,14 +449,19 @@ function render_fgn_host!(request, spec, session, env, runtime)
     graphs = fgn_graphs(session)
     isempty(graphs) && return String[]
     host = joinpath(runtime, "fgn")
-    mkdir(host; mode=0o700)
+    mkdir(host; mode = 0o700)
     template = D.relative_asset(request.package, spec["client"]["rtc"])
     config = D.decode(template, request.prefix)
     context = config["context.properties"]
     context["core.daemon"] = false
     for graph in graphs
-        push!(config["context.modules"], Dict("name" => graph["module"],
-            "args" => graph_arguments(graph, env, runtime, request.prefix)))
+        push!(
+            config["context.modules"],
+            Dict(
+                "name" => graph["module"],
+                "args" => graph_arguments(graph, env, runtime, request.prefix),
+            ),
+        )
     end
     E.write_spa_config(joinpath(host, "client-host.conf"), config)
     names = String[graph["node.name"] for graph in graphs]
@@ -352,7 +470,7 @@ function render_fgn_host!(request, spec, session, env, runtime)
 end
 
 function atomic_environment(path, values)
-    temporary, io = mktemp(dirname(path); cleanup=false)
+    temporary, io = mktemp(dirname(path); cleanup = false)
     try
         chmod(temporary, 0o600)
         for key in sort!(collect(keys(values)))
@@ -364,7 +482,7 @@ function atomic_environment(path, values)
             write(io, key, "=\"", escaped, "\"\n")
         end
         close(io)
-        mv(temporary, path; force=true)
+        mv(temporary, path; force = true)
     finally
         isopen(io) && close(io)
         ispath(temporary) && rm(temporary)
@@ -382,10 +500,11 @@ function prepare!(request::Request; render!::Function)
     package = realpath(request.package)
     prefix = realpath(request.prefix)
     spec = D.profile(joinpath(package, "deployment.conf"), prefix)
-    spec["cpu-latency-us"] === nothing ||
-        fail("RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null")
+    spec["cpu-latency-us"] === nothing || fail(
+        "RTC session does not yet retain a CPU DMA latency lease; cpu-latency-us must be null",
+    )
     source_role = get(spec, "source-owner", nothing)
-    _held_source_owner(source_role,spec)
+    _held_source_owner(source_role, spec)
     coordinator = preparation_identity(request, source_role)
     invocation = coordinator.invocation
     root = request.runtime_root
@@ -395,21 +514,24 @@ function prepare!(request::Request; render!::Function)
     locator = joinpath(root, "current.env")
     ispath(locator) && rm(locator) # A stale ExecStart environment cannot be reused.
     runtime = joinpath(root, invocation)
-    mkdir(runtime; mode=0o700) # Never reuse a previous invocation directory.
+    mkdir(runtime; mode = 0o700) # Never reuse a previous invocation directory.
     chmod(runtime, 0o700)
     remote_name = "rtc-" * invocation[1:12]
     remote = joinpath(runtime, remote_name)
-    ncodeunits(remote) <= 100 || fail("private core socket path exceeds the Unix socket bound")
+    ncodeunits(remote) <= 100 ||
+        fail("private core socket path exceeds the Unix socket bound")
     session_uuid = string(uuid4())
-    bindings = Dict{String,String}("PACKAGE" => package, "PREFIX" => prefix,
-        "RUNTIME" => runtime, "REMOTE" => remote_name, "INSTANCE" => invocation,
+    bindings = Dict{String,String}(
+        "PACKAGE" => package,
+        "PREFIX" => prefix,
+        "RUNTIME" => runtime,
+        "REMOTE" => remote_name,
+        "INSTANCE" => invocation,
         "SESSION_UUID" => session_uuid,
-        "SESSION_SCRIPT" => D.registered_application(spec) ?
-            joinpath(prefix, "share/pipewireao-rtc/scripts/ao/session.lua") :
-            joinpath(package, "rtc/scripts/ao/session.lua"),
         "ADMISSION_CONTROLLER_INSTANCE" => string(N.next_instance()),
         "SESSION_CONTROL_INSTANCE" => string(N.next_instance()),
-        "SESSION_CONTROLLER_INSTANCE" => string(N.next_instance()))
+        "SESSION_CONTROLLER_INSTANCE" => string(N.next_instance()),
+    )
     for owner in spec["owners"]
         D.uses_bootstrap_protocol(owner) || continue
         bindings[D.bootstrap_instance_key(owner["role"])] = string(N.next_instance())
@@ -429,20 +551,41 @@ function prepare!(request::Request; render!::Function)
         push!(spec["owners"], parameters)
         spec["placement"]["parameters"] = deepcopy(spec["placement"]["session"])
         contract = spec["placement"]["parameters"]
-        push!(contract["threads"], Dict("cpus" => [contract["leader-cpu"]],
-            "policy" => "other", "priority" => 0, "name" => "rtc-bootstrap", "count" => 1))
+        push!(
+            contract["threads"],
+            Dict(
+                "cpus" => [contract["leader-cpu"]],
+                "policy" => "other",
+                "priority" => 0,
+                "name" => "rtc-bootstrap",
+                "count" => 1,
+            ),
+        )
     end
-    !isempty(fgn_graphs(session)) && any(owner -> owner["role"] == "fgn", spec["owners"]) &&
+    !isempty(fgn_graphs(session)) &&
+        any(owner -> owner["role"] == "fgn", spec["owners"]) &&
         fail("FGN host role conflicts with a declared external owner")
     prepare_julia_overlay!(request, paths, spec, runtime)
-    record = Dict{String,Any}("version" => 1, "phase" => "preparing", "name" => spec["name"],
-        "unit" => request.unit, "invocation" => invocation, "session_uuid" => session_uuid,
-        "session_control_instance" => parse(Int64, bindings["SESSION_CONTROL_INSTANCE"]),
-        "session_controller_instance" => parse(Int64, bindings["SESSION_CONTROLLER_INSTANCE"]),
-        "admission_controller_instance" => parse(Int64, bindings["ADMISSION_CONTROLLER_INSTANCE"]),
-        "source_role" => source_role, "runtime" => runtime, "remote" => remote,
+    record = Dict{String,Any}(
+        "version" => 1,
+        "phase" => "preparing",
+        "name" => spec["name"],
+        "unit" => request.unit,
+        "invocation" => invocation,
+        "session_uuid" => session_uuid,
+        "session_control_instance" =>
+            parse(Int64, bindings["SESSION_CONTROL_INSTANCE"]),
+        "session_controller_instance" =>
+            parse(Int64, bindings["SESSION_CONTROLLER_INSTANCE"]),
+        "admission_controller_instance" =>
+            parse(Int64, bindings["ADMISSION_CONTROLLER_INSTANCE"]),
+        "source_role" => source_role,
+        "runtime" => runtime,
+        "remote" => remote,
         "session_executable" => D.session_executable(spec, package, prefix),
-        "owners" => Dict{String,Any}(), "error" => nothing)
+        "owners" => Dict{String,Any}(),
+        "error" => nothing,
+    )
     launch_record!(runtime, record)
     try
         contracts = collect(values(spec["placement"]))
@@ -451,25 +594,34 @@ function prepare!(request::Request; render!::Function)
         record["credentials"] = P.credentials(priority, locked, spec["cpu-latency-us"])
         launch_record!(runtime, record)
         services = Dict{String,S.Service}()
-        services["core"] = reserve_owner!(coordinator, "core", spec["placement"]["core"], record)
+        services["core"] =
+            reserve_owner!(coordinator, "core", spec["placement"]["core"], record)
         owner_records = record["owners"]
         for owner in spec["owners"]
             role = owner["role"]
-            services[role] = reserve_owner!(coordinator, role, spec["placement"][role], record)
-            control_instance = D.uses_heart_protocol(owner) ? bindings["HEART_OWNER_INSTANCE"] :
+            services[role] =
+                reserve_owner!(coordinator, role, spec["placement"][role], record)
+            control_instance =
+                D.uses_heart_protocol(owner) ? bindings["HEART_OWNER_INSTANCE"] :
                 D.uses_acquisition_protocol(owner) ? bindings["SOURCE_OWNER_INSTANCE"] :
                 get(owner, "control-instance", nothing)
-            merge!(owner_records[role], Dict{String,Any}(
-                "bootstrap-node" => get(owner, "bootstrap-node", nothing),
-                "bootstrap-instance" => get(bindings, D.bootstrap_instance_key(role), nothing),
-                "control-node" => get(owner, "control-node", nothing),
-                "control-protocol" => get(owner, "control-protocol", nothing),
-                "control-instance" => control_instance))
+            merge!(
+                owner_records[role],
+                Dict{String,Any}(
+                    "bootstrap-node" => get(owner, "bootstrap-node", nothing),
+                    "bootstrap-instance" =>
+                        get(bindings, D.bootstrap_instance_key(role), nothing),
+                    "control-node" => get(owner, "control-node", nothing),
+                    "control-protocol" => get(owner, "control-protocol", nothing),
+                    "control-instance" => control_instance,
+                ),
+            )
         end
         host_env = owner_environment(paths, spec, bindings, runtime, "fgn")
         fgn_nodes = render_fgn_host!(request, spec, session, host_env, runtime)
         if !isempty(fgn_nodes)
-            services["fgn"] = reserve_owner!(coordinator, "fgn", spec["placement"]["rtc"], record)
+            services["fgn"] =
+                reserve_owner!(coordinator, "fgn", spec["placement"]["rtc"], record)
             owner_records["fgn"]["graph-nodes"] = fgn_nodes
         end
         record["cohort_unit"] = S.cohort_name(invocation)
@@ -477,8 +629,18 @@ function prepare!(request::Request; render!::Function)
         launch_record!(runtime, record) # Complete role/name intent before any process starts.
         core_env = owner_environment(paths, spec, bindings, runtime, "core")
         core = services["core"]
-        S.install_fragment!(core.unit, S.service_unit(core, [paths["daemon"], "-c", "daemon.conf"],
-            core_env, joinpath(runtime, "core"), spec["placement"]["core"]), runtime, record)
+        S.install_fragment!(
+            core.unit,
+            S.service_unit(
+                core,
+                [paths["daemon"], "-c", "daemon.conf"],
+                core_env,
+                joinpath(runtime, "core"),
+                spec["placement"]["core"],
+            ),
+            runtime,
+            record,
+        )
         S.reload_fragments!(record)
         S.start_services!([core], core.unit, runtime, record)
         wait_core!(core, remote)
@@ -491,8 +653,19 @@ function prepare!(request::Request; render!::Function)
             end
             private_remote_environment(env, runtime, bindings)
             argv = [D.substitute(arg, bindings) for arg in owner["argv"]]
-            S.install_fragment!(services[role].unit, S.service_unit(services[role], argv, env,
-                joinpath(runtime, role), spec["placement"][role]; after=[core.unit]), runtime, record)
+            S.install_fragment!(
+                services[role].unit,
+                S.service_unit(
+                    services[role],
+                    argv,
+                    env,
+                    joinpath(runtime, role),
+                    spec["placement"][role];
+                    after = [core.unit],
+                ),
+                runtime,
+                record,
+            )
         end
         # HEART's source command needs the real controller PID. Keep this
         # necessary stage; ordinary FGN/JFG owners start together below.
@@ -510,26 +683,47 @@ function prepare!(request::Request; render!::Function)
         end
         if !isempty(fgn_nodes)
             host = services["fgn"]
-            S.install_fragment!(host.unit, S.service_unit(host, [paths["daemon"], "-c", "client-host.conf"],
-                host_env, joinpath(runtime, "fgn"), spec["placement"]["rtc"]; after=[core.unit]), runtime, record)
+            S.install_fragment!(
+                host.unit,
+                S.service_unit(
+                    host,
+                    [paths["daemon"], "-c", "client-host.conf"],
+                    host_env,
+                    joinpath(runtime, "fgn"),
+                    spec["placement"]["rtc"];
+                    after = [core.unit],
+                ),
+                runtime,
+                record,
+            )
         end
-        cohort = [services[role] for role in sort!(collect(keys(services))) if !(role in staged_roles)]
-        S.install_fragment!(record["cohort_unit"], S.cohort_unit(invocation, [service.unit for service in cohort]),
-            runtime, record)
+        cohort = [
+            services[role] for
+            role in sort!(collect(keys(services))) if !(role in staged_roles)
+        ]
+        S.install_fragment!(
+            record["cohort_unit"],
+            S.cohort_unit(invocation, [service.unit for service in cohort]),
+            runtime,
+            record,
+        )
         S.reload_fragments!(record)
         S.verify!(core)
         S.start_services!(cohort, record["cohort_unit"], runtime, record)
         config = render!(spec, session, bindings, deepcopy(owner_records), runtime)
-        _rendered_session_configuration(config,runtime)
+        _rendered_session_configuration(config, runtime)
         generated = D.decode(String(config), prefix)
-        all(haskey(generated, key) for key in
-            ("context.properties", "wireplumber.profiles", "wireplumber.components")) ||
-            fail("session generator did not emit a standard RTC SPA-JSON configuration")
+        all(
+            haskey(generated, key) for
+            key in ("context.properties", "context.modules", "pipewireao.session")
+        ) || fail("session generator did not emit a standard RTC SPA-JSON configuration")
+        any(startswith(key, "wireplumber.") for key in keys(generated)) &&
+            fail("session generator emitted retired WirePlumber configuration")
         get(generated["context.properties"], "remote.name", nothing) == remote ||
             fail("RTC configuration targets a different private core")
         final_coordinator = preparation_identity(request, source_role)
         final_coordinator.invocation == invocation &&
-            final_coordinator.cgroup == coordinator.cgroup ||
+        final_coordinator.cgroup == coordinator.cgroup ||
             fail("RTC unit incarnation changed during preparation")
         for (role, item) in owner_records
             service = S.Service(coordinator, role)
@@ -543,33 +737,41 @@ function prepare!(request::Request; render!::Function)
         record["phase"] = "prepared"
         record["config"] = String(config)
         launch_record!(runtime, record)
+        julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
+        project =
+            D.registered_application(spec) ? D.application_environment(spec, package) :
+            realpath(joinpath(package, "julia"))
+        isfile(julia) && Sys.isexecutable(julia) ||
+            fail("selected Julia runtime is unavailable")
+        isdir(project) || fail("selected Julia project environment is unavailable")
         session_env = Dict{String,String}(
-            "WIREPLUMBER_CONFIG_DIR" => dirname(String(config)),
             "RTC_CONFIG" => String(config),
             "PIPEWIRE_RUNTIME_DIR" => runtime,
             "PIPEWIRE_REMOTE" => remote,
             "PIPEWIREAO_REMOTE" => remote,
-            "LD_LIBRARY_PATH" => joinpath(package, "wireplumber/lib/wp") * ":" * paths["library"],
-            "PIPEWIREAO_MODULE_DIR" => paths["modules"],
-            "PIPEWIREAO_SPA_PLUGIN_DIR" => paths["spa"])
+            "PIPEWIREAORTC_JULIA" => julia,
+            "PIPEWIREAORTC_PROJECT" => project,
+        )
+        process_binding = D.session_process_binding(spec, package, String(config))
+        process_binding["julia"] == julia && process_binding["project"] == project ||
+            fail("selected Julia process binding changed during session preparation")
+        record["session_process"] = process_binding
+        launch_record!(runtime, record)
         for (key, value) in spec["session-runtime"]["environment"]
-            key in D.SESSION_PRIVATE_ENVIRONMENT && fail("session runtime environment cannot override private binding $key")
+            (
+                key in D.SESSION_PRIVATE_ENVIRONMENT ||
+                key in ("PIPEWIREAORTC_JULIA", "PIPEWIREAORTC_PROJECT")
+            ) && fail("session runtime environment cannot override private binding $key")
             session_env[key] = D.substitute(value, bindings)
         end
-        if D.registered_application(spec)
-            session_env["WIREPLUMBER_MODULE_DIR"] = joinpath(prefix, "lib/pipewireao-rtc/modules") *
-                ":" * joinpath(paths["library"], "wireplumber-0.5")
-            session_env["WIREPLUMBER_DATA_DIR"] = joinpath(prefix, "share/pipewireao-rtc") *
-                ":" * joinpath(prefix, "share/wireplumber")
-            session_env["LD_LIBRARY_PATH"] = paths["library"]
-        else
-            session_env["WIREPLUMBER_MODULE_DIR"] = joinpath(package, "rtc/modules") *
-                ":" * joinpath(package, "wireplumber/modules")
-            session_env["WIREPLUMBER_DATA_DIR"] = joinpath(package, "rtc") *
-                ":" * joinpath(package, "wireplumber")
-        end
         atomic_environment(locator, session_env)
-        return Prepared(invocation, runtime, remote, String(config), deepcopy(owner_records))
+        return Prepared(
+            invocation,
+            runtime,
+            remote,
+            String(config),
+            deepcopy(owner_records),
+        )
     catch error
         record["phase"] = "failed"
         record["error"] = sprint(showerror, error)
@@ -583,7 +785,7 @@ end
 function load_record(runtime, invocation, source_role)
     path = joinpath(runtime, "launch.json")
     isfile(path) || fail("invocation launch ledger is unavailable")
-    record = C.read_json(path; maximum=1024 * 1024)
+    record = C.read_json(path; maximum = 1024 * 1024)
     record["invocation"] == invocation && record["source_role"] == source_role ||
         fail("invocation launch ledger identity differs from cleanup request")
     return record
@@ -591,13 +793,14 @@ end
 
 function retained_service(record, role)
     item = get(record["owners"], role, nothing)
-    return _retained_service(record,role,item)
+    return _retained_service(record, role, item)
 end
-_retained_service(record,role,item) = nothing
-function _retained_service(record,role,item::AbstractDict)
+_retained_service(record, role, item) = nothing
+function _retained_service(record, role, item::AbstractDict)
     get(item, "state", "") in ("running", "uncertain") || return nothing
-    get(item, "pid", 0) > 0 && !isempty(get(item, "invocation", "")) &&
-        !isempty(get(item, "cgroup", "")) || return nothing
+    get(item, "pid", 0) > 0 &&
+    !isempty(get(item, "invocation", "")) &&
+    !isempty(get(item, "cgroup", "")) || return nothing
     owner = S.Coordinator(String(record["unit"]), String(record["invocation"]), "", "")
     service = S.Service(owner, role)
     service.main_pid = Int(item["pid"])
@@ -617,7 +820,7 @@ function cleanup_role!(record, role, deadline)
     retained = retained_service(record, role)
     if retained === nothing
         item = get(record["owners"], role, nothing)
-        _unretained_launch_outcome(item,unit,deadline)
+        _unretained_launch_outcome(item, unit, deadline)
         S.cleanup_unit(unit; deadline)
     else
         # A retained PID/start time and cgroup fence a replaced unit. This
@@ -631,8 +834,11 @@ end
 consumer; each stop must confirm its cgroup is empty. A failed core/source
 stop fences later cleanup and leaves diagnostics for operator recovery.
 """
-function cleanup_invocation!(runtime_root::AbstractString, id::AbstractString;
-                             source_role::AbstractString)
+function cleanup_invocation!(
+    runtime_root::AbstractString,
+    id::AbstractString;
+    source_role::AbstractString,
+)
     invocation = S.valid_invocation(id)
     S.valid_invocation(get(ENV, "INVOCATION_ID", "")) == invocation ||
         fail("cleanup invocation differs from the RTC service environment")
@@ -652,7 +858,10 @@ function cleanup_invocation!(runtime_root::AbstractString, id::AbstractString;
             end
             S.cleanup_unit(unit; deadline)
         end
-        fail("owner ledger unavailable after core/source revocation: " * sprint(showerror, error))
+        fail(
+            "owner ledger unavailable after core/source revocation: " *
+            sprint(showerror, error),
+        )
     end
     try
         cleanup_record!(runtime, record, invocation, source_role)
@@ -676,7 +885,7 @@ function cleanup_record!(runtime, record, invocation, source_role)
     prefix = S.PREFIX * invocation * "-"
     for unit in names
         startswith(unit, prefix) && endswith(unit, ".service") || continue
-        role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+        role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
         occursin(S.ROLE, role) && push!(roles, role)
     end
     union!(roles, String.(keys(record["owners"])))
@@ -684,7 +893,7 @@ function cleanup_record!(runtime, record, invocation, source_role)
         role in roles || continue
         cleanup_role!(record, role, deadline)
     end
-    optional(role) = startswith(role,"analysis-") && !haskey(record["owners"],role)
+    optional(role) = startswith(role, "analysis-") && !haskey(record["owners"], role)
     for role in sort!(collect(setdiff(roles, Set(["core", String(source_role)]))))
         optional(role) && continue
         cleanup_role!(record, role, deadline)
@@ -694,13 +903,13 @@ function cleanup_record!(runtime, record, invocation, source_role)
     quiet = 0
     while monotonic() < deadline
         units = filter(S.listed_units(invocation; deadline)) do unit
-            role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+            role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             !optional(role)
         end
         jobs = filter(S.listed_jobs(invocation; deadline)) do job
             unit = job.second
-            endswith(unit,".service") || return true
-            role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+            endswith(unit, ".service") || return true
+            role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             !optional(role)
         end
         if isempty(jobs) && all(unit -> S.quiescent_unit(unit; deadline), units)
@@ -716,7 +925,7 @@ function cleanup_record!(runtime, record, invocation, source_role)
         end
         for unit in units
             startswith(unit, prefix) && endswith(unit, ".service") || continue
-            role = unit[ncodeunits(prefix)+1:end-ncodeunits(".service")]
+            role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             role in ("core", source_role) && continue
             occursin(S.ROLE, role) && cleanup_role!(record, role, deadline)
         end
@@ -725,10 +934,12 @@ function cleanup_record!(runtime, record, invocation, source_role)
     # The target has no stop propagation. Stop it only after core/source and
     # every consumer are proven empty, then remove owned runtime definitions.
     if haskey(record, "cohort_unit")
-        record["cohort_unit"] == S.cohort_name(invocation) || fail("cleanup cohort identity differs")
+        record["cohort_unit"] == S.cohort_name(invocation) ||
+            fail("cleanup cohort identity differs")
         S.cleanup_unit(record["cohort_unit"]; deadline)
     end
-    get(record, "unit_files_removed", false) || S.remove_fragments!(runtime, record, deadline)
+    get(record, "unit_files_removed", false) ||
+        S.remove_fragments!(runtime, record, deadline)
     PipeWireAORTC.Analysis.cleanup!(runtime, record, deadline)
     result = get(ENV, "SERVICE_RESULT", "")
     record["service_result"] = result
@@ -737,9 +948,10 @@ function cleanup_record!(runtime, record, invocation, source_role)
         record["phase"] = "stopped"
     else
         record["phase"] = "failed"
-        record["error"] === nothing &&
-            (record["error"] = "RTC service exited with result " *
-                (isempty(result) ? "unknown" : result))
+        record["error"] === nothing && (
+            record["error"] =
+                "RTC service exited with result " * (isempty(result) ? "unknown" : result)
+        )
     end
     launch_record!(runtime, record)
     return nothing
@@ -748,18 +960,28 @@ end
 """Thin CLI adapter for an installed launcher entrypoint. The entrypoint
 provides the session renderer; this module supplies no fallback policy.
 """
-function main(argv=ARGS; render! = nothing)
+function main(argv = ARGS; render! = nothing)
     isempty(argv) && fail("expected prepare or cleanup")
     command = first(argv)
     if command == "prepare"
         _session_renderer(render!)
-        args = C.cli_arguments(argv[2:end];
-            required=["package", "prefix", "unit", "launcher", "runtime-root"])
-        request = Request(args.package, args.prefix, args.unit, args.launcher, args.runtime_root)
+        args = C.cli_arguments(
+            argv[2:end];
+            required = ["package", "prefix", "unit", "launcher", "runtime-root"],
+        )
+        request =
+            Request(args.package, args.prefix, args.unit, args.launcher, args.runtime_root)
         prepare!(request; render! = render!)
     elseif command == "cleanup"
-        args = C.cli_arguments(argv[2:end]; required=["invocation", "runtime-root", "source-role"])
-        cleanup_invocation!(args.runtime_root, args.invocation; source_role=args.source_role)
+        args = C.cli_arguments(
+            argv[2:end];
+            required = ["invocation", "runtime-root", "source-role"],
+        )
+        cleanup_invocation!(
+            args.runtime_root,
+            args.invocation;
+            source_role = args.source_role,
+        )
     else
         fail("unknown RTC launch command")
     end

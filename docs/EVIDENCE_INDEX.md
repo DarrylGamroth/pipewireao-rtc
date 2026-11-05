@@ -3,8 +3,11 @@
 ## Direct MediaSession replacement — 2026-11-04
 
 The [migration record](reviews/20261104-media-session/REVIEW.md) separates the
-verified pure Hsm/control slice and native loop API support from the pending
-direct-PipeWire runtime integration and qualification gate.
+verified Hsm/control, direct transport/object/Link, journal and management slices
+from qualification that remains open. It includes private-core resource lifetime,
+initial acquisition cleanup and generated-launcher public process checks, with
+failed cold-compilation probes and their scoped remediations. Full sealed-graph
+lifecycle/fault and release qualification remain separate pending gates.
 
 ## Naming and Julia type dispatch — 2026-11-04
 

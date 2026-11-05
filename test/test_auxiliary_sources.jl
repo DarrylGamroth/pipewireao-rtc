@@ -113,7 +113,6 @@ end
         "RUNTIME"=>"/tmp/coupled-session",
         "REMOTE"=>"rtc-coupled-session",
         "SESSION_UUID"=>"00000000-0000-0000-0000-000000000001",
-        "SESSION_SCRIPT"=>"/sealed/rtc/scripts/ao/session.lua",
         "SESSION_CONTROL_INSTANCE"=>"21",
         "SESSION_CONTROLLER_INSTANCE"=>"22",
         "ADMISSION_CONTROLLER_INSTANCE"=>"23",
@@ -139,9 +138,7 @@ end
         node_owners = mapping,
         configuration_store_root = nothing,
     )
-    arguments=only(
-        filter(c->c["type"]=="script/lua", configuration["wireplumber.components"]),
-    )["arguments"]
+    arguments=configuration["pipewireao.session"]
     @test arguments["source"]["role"]=="primary"
     auxiliary=only(arguments["auxiliary-sources"])
     @test auxiliary["role"]=="optical" && auxiliary["pid"]==43

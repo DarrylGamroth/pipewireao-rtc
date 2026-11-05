@@ -6,11 +6,8 @@ const C = PipeWireAORTC.Common
 const E = PipeWireAORTC.ScienceExport
 
 function main(args)
-    length(args) == 7 || error(
-        "usage: PACKAGE PREFIX WP_SOURCE WP_BUILD RTC_NATIVE_SOURCE RTC_NATIVE_BUILD FRESH_OUTPUT",
-    )
-    package, prefix, wp_source, wp_build, native_source, native_build, output =
-        abspath.(args)
+    length(args) == 3 || error("usage: PACKAGE PREFIX FRESH_OUTPUT")
+    package, prefix, output = abspath.(args)
     spec = D.profile(joinpath(package, "deployment.conf"), prefix)
     D.registered_application(spec) &&
         error("refresh a sealed runtime package, not a registered application")
@@ -18,8 +15,7 @@ function main(args)
     original = copy(spec["artifacts"])
     cp(package, output; follow_symlinks = true)
     E.copy_deployment_runtime(output)
-    E.stage_wireplumber!(output; source = wp_source, build = wp_build)
-    E.stage_rtc!(output; native_source, native_build)
+    E.stage_rtc!(output)
     spec["session-runtime"] = Dict(
         "argv" => ["@PACKAGE@/rtc/bin/pipewireao-rtc", "-c", "@RUNTIME@/rtc/rtc.conf"],
         "environment" => Dict{String,String}(),
@@ -30,7 +26,6 @@ function main(args)
         "source_descriptor_sha256" =>
             C.sha256_file(joinpath(package, "deployment.conf")),
         "rtc_revision" => E.revision(PipeWireAORTC.package_root()),
-        "wireplumber_revision" => E.revision(wp_source),
     )
     C.write_json(joinpath(output, "provenance.json"), provenance)
     artifacts = Dict(

@@ -5,6 +5,15 @@ Base.include(
     Module(:MediaSessionControlTests),
     joinpath(@__DIR__, "media_session_controls.jl"),
 )
+for selector in ("ingress", "transport", "effects", "objects")
+    Base.include(Module(gensym(:MediaSessionTests)),
+        joinpath(@__DIR__, "media_session_" * selector * ".jl"))
+end
+@testset "Journal owns its SQLite worker" begin
+    project = dirname(Base.active_project())
+    selector = joinpath(@__DIR__, "media_session_journal.jl")
+    @test success(`$(Base.julia_cmd()) --startup-file=no --threads=2,1 --project=$project $selector`)
+end
 
 Base.include(
     Module(:ControlTypeDispatchTests),
@@ -117,7 +126,7 @@ for name in (
     "calibration_action_codec",
     "calibration_action_client",
     "runner_commands",
-    "installed_wireplumber",
+    "installed_session_runtime",
     "package",
 )
     suite = Module(Symbol("Suite_", name))

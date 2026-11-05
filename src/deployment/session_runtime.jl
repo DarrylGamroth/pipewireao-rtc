@@ -23,8 +23,19 @@ const Acquisition = AcquisitionLifecycleClient
 const AcquisitionCodec = AcquisitionLifecycleCodec
 const UNIT = r"^pipewireao-session@([a-z0-9][a-z0-9-]{0,39})\.service$"
 
-export Handle, start!, attach, ready, running!, control!, source_status, stop!,
-    shutdown!, reconcile_shutdown!, reconcile_cleanup!, reconcile_stop!, final_record
+export Handle,
+    start!,
+    attach,
+    ready,
+    running!,
+    control!,
+    source_status,
+    stop!,
+    shutdown!,
+    reconcile_shutdown!,
+    reconcile_cleanup!,
+    reconcile_stop!,
+    final_record
 
 """
     Handle(unit, runtime_root, invocation, main_pid, start_ticks, cgroup,
@@ -54,15 +65,22 @@ end
 monotonic() = Common.monotonic_seconds()
 remaining(deadline::Real, limit::Real) = begin
     seconds = min(Float64(deadline) - monotonic(), Float64(limit))
-    isfinite(seconds) && seconds > 0 || throw(ArgumentError("session operation deadline expired"))
+    isfinite(seconds) && seconds > 0 ||
+        throw(ArgumentError("session operation deadline expired"))
     seconds
 end
 
-function checked(argv, deadline; limit=20)
-    result = Common.run_checked(argv; timeout=remaining(deadline, limit),
-        maximum_output_bytes=64 * 1024)
-    result.returncode == 0 ||
-        throw(ArgumentError("systemd session operation failed ($(result.returncode)): $(strip(result.stderr))"))
+function checked(argv, deadline; limit = 20)
+    result = Common.run_checked(
+        argv;
+        timeout = remaining(deadline, limit),
+        maximum_output_bytes = 64 * 1024,
+    )
+    result.returncode == 0 || throw(
+        ArgumentError(
+            "systemd session operation failed ($(result.returncode)): $(strip(result.stderr))",
+        ),
+    )
     return result
 end
 
@@ -87,24 +105,37 @@ function _unlink_owned_link!(unit, unit_file, deadline)
 end
 
 function _unit_has_jobs(unit, deadline)
-    result = checked(["systemctl", "--user", "list-jobs", "--all", "--plain",
-        "--no-legend", "--no-pager"], deadline)
-    any(split(result.stdout, '\n'; keepempty=false)) do line
+    result = checked(
+        [
+            "systemctl",
+            "--user",
+            "list-jobs",
+            "--all",
+            "--plain",
+            "--no-legend",
+            "--no-pager",
+        ],
+        deadline,
+    )
+    any(split(result.stdout, '\n'; keepempty = false)) do line
         fields = split(strip(line))
         length(fields) >= 3 && fields[2] == unit
     end
 end
 
 function _unrun_fields(values, root)
-    values["ActiveState"] == "inactive" && values["MainPID"] == "0" &&
-        isempty(values["InvocationID"]) && isempty(values["ControlGroup"]) &&
-        !(ispath(root) || islink(root)) || return false
+    values["ActiveState"] == "inactive" &&
+    values["MainPID"] == "0" &&
+    isempty(values["InvocationID"]) &&
+    isempty(values["ControlGroup"]) &&
+    !(ispath(root) || islink(root)) || return false
     if values["LoadState"] == "not-found"
         return isempty(values["FragmentPath"])
     end
     fragment = values["FragmentPath"]
     return values["LoadState"] == "loaded" &&
-        basename(fragment) == "pipewireao-session@.service" && isfile(fragment)
+           basename(fragment) == "pipewireao-session@.service" &&
+           isfile(fragment)
 end
 
 _unrun_instance(values, unit, root, deadline) =
@@ -115,7 +146,7 @@ _exact_fragment(fragment, unit_file) =
 
 function _no_exact_unit_file!(unit, deadline)
     result = checked(["systemd-analyze", "--user", "unit-paths"], deadline)
-    paths = split(strip(result.stdout), '\n'; keepempty=false)
+    paths = split(strip(result.stdout), '\n'; keepempty = false)
     isempty(paths) && throw(ArgumentError("user systemd unit search paths are unavailable"))
     for directory in paths
         isabspath(directory) && !occursin('\0', directory) ||
@@ -128,7 +159,7 @@ function _no_exact_unit_file!(unit, deadline)
 end
 
 function _assert_fresh_instance!(unit, root, deadline)
-    values = S.properties(unit; extra="FragmentPath", deadline)
+    values = S.properties(unit; extra = "FragmentPath", deadline)
     _unrun_instance(values, unit, root, deadline) ||
         throw(ArgumentError("fresh session unit has an existing instance or execution"))
     _no_exact_unit_file!(unit, deadline)
@@ -138,13 +169,18 @@ end
 function _assert_installed_instance!(unit, root, unit_file, deadline)
     _owned_link(unit, unit_file) ||
         throw(ArgumentError("fresh session exact instance link is unavailable"))
-    values = S.properties(unit; extra="FragmentPath", deadline)
+    values = S.properties(unit; extra = "FragmentPath", deadline)
     fragment = values["FragmentPath"]
-    values["LoadState"] == "loaded" && values["ActiveState"] == "inactive" &&
-        values["MainPID"] == "0" && isempty(values["InvocationID"]) &&
-        isempty(values["ControlGroup"]) && !(ispath(root) || islink(root)) &&
-        !_unit_has_jobs(unit, deadline) && _exact_fragment(fragment, unit_file) ||
-        throw(ArgumentError("fresh session manager did not load the exact installed instance"))
+    values["LoadState"] == "loaded" &&
+    values["ActiveState"] == "inactive" &&
+    values["MainPID"] == "0" &&
+    isempty(values["InvocationID"]) &&
+    isempty(values["ControlGroup"]) &&
+    !(ispath(root) || islink(root)) &&
+    !_unit_has_jobs(unit, deadline) &&
+    _exact_fragment(fragment, unit_file) || throw(
+        ArgumentError("fresh session manager did not load the exact installed instance"),
+    )
     return nothing
 end
 
@@ -157,68 +193,98 @@ function runtime_directory(unit::AbstractString)
     return joinpath(user_runtime, "pipewireao-session-" * matched.captures[1])
 end
 
-function _identity(unit, runtime_root; deadline=monotonic()+8)
-    values = S.properties(unit; extra="Type,Restart,KillMode", deadline)
-    values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
-        values["Type"] == "exec" && values["Restart"] == "no" &&
-        values["KillMode"] == "control-group" ||
+function _identity(unit, runtime_root; deadline = monotonic()+8)
+    values = S.properties(unit; extra = "Type,Restart,KillMode", deadline)
+    values["LoadState"] == "loaded" &&
+    values["ActiveState"] == "active" &&
+    values["Type"] == "exec" &&
+    values["Restart"] == "no" &&
+    values["KillMode"] == "control-group" ||
         throw(ArgumentError("RTC session unit is not active with the installed policy"))
     invocation = S.valid_invocation(values["InvocationID"])
     pid = tryparse(Int, values["MainPID"])
     pid !== nothing && 0 < pid <= typemax(UInt32) ||
         throw(ArgumentError("RTC MainPID is unavailable"))
     cgroup = values["ControlGroup"]
-    startswith(cgroup, "/") && cgroup != "/" &&
-        (S.proc_cgroup(pid) == cgroup || startswith(S.proc_cgroup(pid), cgroup * "/")) ||
+    startswith(cgroup, "/") &&
+    cgroup != "/" &&
+    (S.proc_cgroup(pid) == cgroup || startswith(S.proc_cgroup(pid), cgroup * "/")) ||
         throw(ArgumentError("RTC MainPID left its unit cgroup"))
     runtime_root == runtime_directory(unit) ||
         throw(ArgumentError("session runtime root differs from the unit instance"))
-    return Handle(String(unit), String(runtime_root), invocation, pid,
-        S.start_ticks(pid), cgroup, false, false, false, nothing)
+    return Handle(
+        String(unit),
+        String(runtime_root),
+        invocation,
+        pid,
+        S.start_ticks(pid),
+        cgroup,
+        false,
+        false,
+        false,
+        nothing,
+    )
 end
 
 function _retained_ledger(handle::Handle)
     path = joinpath(handle.runtime_root, handle.invocation, "launch.json")
-    record = Common.read_json(path; maximum=1024 * 1024)
-    record["unit"] == handle.unit && record["invocation"] == handle.invocation &&
-        record["runtime"] == dirname(path) &&
-        record["wireplumber_pid"] == handle.main_pid &&
-        UInt64(record["wireplumber_start_ticks"]) == handle.start_ticks ||
+    record = Common.read_json(path; maximum = 1024 * 1024)
+    record["unit"] == handle.unit &&
+    record["invocation"] == handle.invocation &&
+    record["runtime"] == dirname(path) &&
+    record["wireplumber_pid"] == handle.main_pid &&
+    UInt64(record["wireplumber_start_ticks"]) == handle.start_ticks ||
         throw(ArgumentError("retained launch ledger differs from the live RTC unit"))
     return record
 end
 
 function _ledger(handle::Handle)
     record = _retained_ledger(handle)
-    DeploymentConfiguration.verify_session_process(handle.main_pid, record["session_executable"], record["config"])
+    record["session_process"]["config"] == record["config"] ||
+        throw(ArgumentError("prepared process binding differs from session configuration"))
+    DeploymentConfiguration.verify_session_process(
+        handle.main_pid,
+        record["session_process"],
+    )
     return record
 end
 
 function _receipt(base, handle::Handle)
-    Common.write_json(joinpath(base, "session.json"), Dict(
-        "unit" => handle.unit, "runtime_root" => handle.runtime_root,
-        "invocation" => handle.invocation, "main_pid" => handle.main_pid,
-        "start_ticks" => handle.start_ticks, "cgroup" => handle.cgroup);
-        atomic=true)
+    Common.write_json(
+        joinpath(base, "session.json"),
+        Dict(
+            "unit" => handle.unit,
+            "runtime_root" => handle.runtime_root,
+            "invocation" => handle.invocation,
+            "main_pid" => handle.main_pid,
+            "start_ticks" => handle.start_ticks,
+            "cgroup" => handle.cgroup,
+        );
+        atomic = true,
+    )
     return nothing
 end
 
 function _failed_start_record(root, unit, invocation)
     isdir(root) || return nothing
     ids = filter(name -> occursin(r"^[0-9a-f]{32}$", name), readdir(root))
-    length(ids) <= 1 || throw(ArgumentError("failed session start left multiple invocation ledgers"))
+    length(ids) <= 1 ||
+        throw(ArgumentError("failed session start left multiple invocation ledgers"))
     isempty(ids) && return nothing
     id = only(ids)
     directory = joinpath(root, id)
-    isdir(directory) && !islink(directory) &&
-        isfile(joinpath(directory, "launch.json")) &&
-        !islink(joinpath(directory, "launch.json")) ||
+    isdir(directory) &&
+    !islink(directory) &&
+    isfile(joinpath(directory, "launch.json")) &&
+    !islink(joinpath(directory, "launch.json")) ||
         throw(ArgumentError("failed session invocation ledger is unavailable"))
-    invocation === nothing || id == invocation ||
+    invocation === nothing ||
+        id == invocation ||
         throw(ArgumentError("failed session ledger has a different invocation"))
-    record = Common.read_json(joinpath(directory, "launch.json"); maximum=1024 * 1024)
-    record["unit"] == unit && record["invocation"] == id &&
-        record["runtime"] == joinpath(root, id) ||
+    record = Common.read_json(joinpath(directory, "launch.json"); maximum = 1024 * 1024)
+    record["unit"] == unit &&
+    record["invocation"] == id &&
+    record["runtime"] == joinpath(root, id) ||
         throw(ArgumentError("failed session ledger has a different unit or runtime"))
     return record
 end
@@ -226,15 +292,21 @@ end
 function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted, primary)
     deadline = monotonic() + 320
     _owned_link(unit, unit_file) # Reject a same-name replacement before stopping.
-    before = S.properties(unit; extra="FragmentPath", deadline)
+    before = S.properties(unit; extra = "FragmentPath", deadline)
     if !start_attempted && _unrun_instance(before, unit, root, deadline)
         # Link/daemon-reload failed before Start. The manager still exposes
         # only an unrun inherited template (or no unit), so no stop is owed.
         _unlink_owned_link!(unit, unit_file, deadline)
-        Common.write_json(joinpath(target, "start-failure.json"), Dict(
-            "unit" => unit, "invocation" => nothing,
-            "cleanup_confirmed" => true,
-            "failure" => sprint(showerror, primary)); atomic=true)
+        Common.write_json(
+            joinpath(target, "start-failure.json"),
+            Dict(
+                "unit" => unit,
+                "invocation" => nothing,
+                "cleanup_confirmed" => true,
+                "failure" => sprint(showerror, primary),
+            );
+            atomic = true,
+        )
         return nothing
     end
     if before["LoadState"] != "not-found"
@@ -242,15 +314,18 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
         _exact_fragment(fragment, unit_file) ||
             throw(ArgumentError("failed session unit uses a different installed file"))
     end
-    invocation = isempty(before["InvocationID"]) ? nothing :
+    invocation =
+        isempty(before["InvocationID"]) ? nothing :
         S.valid_invocation(before["InvocationID"])
     pid = something(tryparse(Int, before["MainPID"]), 0)
     ticks = pid > 0 ? S.maybe_start_ticks(pid) : nothing
     group = before["ControlGroup"]
     stop_error = nothing
-    if before["LoadState"] != "not-found" || start_attempted || _unit_has_jobs(unit, deadline)
+    if before["LoadState"] != "not-found" ||
+       start_attempted ||
+       _unit_has_jobs(unit, deadline)
         stop_error = try
-            checked(["systemctl", "--user", "stop", unit], deadline; limit=300)
+            checked(["systemctl", "--user", "stop", unit], deadline; limit = 300)
             nothing
         catch error
             error # A timeout may have completed the stop; observe before deciding.
@@ -259,7 +334,7 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
     quiet_rounds = 0
     while true
         remaining(deadline, 5)
-        values = S.properties(unit; extra="FragmentPath", deadline)
+        values = S.properties(unit; extra = "FragmentPath", deadline)
         if values["LoadState"] != "not-found"
             fragment = values["FragmentPath"]
             _exact_fragment(fragment, unit_file) ||
@@ -277,11 +352,16 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
         end
         observed_group = values["ControlGroup"]
         isempty(group) && !isempty(observed_group) && (group = observed_group)
-        isempty(observed_group) || observed_group == group ||
+        isempty(observed_group) ||
+            observed_group == group ||
             throw(ArgumentError("failed session cgroup changed during cleanup"))
-        quiet = values["MainPID"] == "0" &&
-            (values["LoadState"] == "not-found" || values["ActiveState"] in ("inactive", "failed"))
-        quiet &= !_unit_has_jobs(unit, deadline) &&
+        quiet =
+            values["MainPID"] == "0" && (
+                values["LoadState"] == "not-found" ||
+                values["ActiveState"] in ("inactive", "failed")
+            )
+        quiet &=
+            !_unit_has_jobs(unit, deadline) &&
             (ticks === nothing || !S.old_process_exists(pid, ticks)) &&
             (isempty(group) || S.cgroup_empty(group))
         quiet_rounds = quiet ? quiet_rounds + 1 : 0
@@ -305,37 +385,51 @@ function _reconcile_failed_start!(target, unit, root, unit_file, start_attempted
             throw(ArgumentError("failed session start retained owner cleanup errors"))
         id = record["invocation"]
         isempty(S.listed_jobs(id; deadline)) &&
-            all(name -> S.quiescent_unit(name; deadline), S.listed_units(id; deadline)) ||
+        all(name -> S.quiescent_unit(name; deadline), S.listed_units(id; deadline)) ||
             throw(ArgumentError("failed session retained a live owner or start job"))
         for item in Base.values(record["owners"])
-            get(item, "pid", 0) > 0 && haskey(item, "start-ticks") &&
+            get(item, "pid", 0) > 0 &&
+                haskey(item, "start-ticks") &&
                 S.old_process_exists(Int(item["pid"]), UInt64(item["start-ticks"])) &&
                 throw(ArgumentError("failed session retained an owner process"))
             group = get(item, "cgroup", "")
-            isempty(group) || S.cgroup_empty(group) ||
+            isempty(group) ||
+                S.cgroup_empty(group) ||
                 throw(ArgumentError("failed session retained a populated owner cgroup"))
         end
         haskey(record, "wireplumber_pid") &&
-            S.old_process_exists(Int(record["wireplumber_pid"]),
-                UInt64(record["wireplumber_start_ticks"])) &&
+            S.old_process_exists(
+                Int(record["wireplumber_pid"]),
+                UInt64(record["wireplumber_start_ticks"]),
+            ) &&
             throw(ArgumentError("failed session retained the RTC process"))
-        Common.write_json(joinpath(target, "final-launch.json"), record; atomic=true)
+        Common.write_json(joinpath(target, "final-launch.json"), record; atomic = true)
     end
     _unlink_owned_link!(unit, unit_file, deadline)
-    Common.write_json(joinpath(target, "start-failure.json"), Dict(
-        "unit" => unit, "invocation" => invocation,
-        "cleanup_confirmed" => true,
-        "failure" => sprint(showerror, primary),
-        "stop_command_error" => stop_error === nothing ? nothing : sprint(showerror, stop_error));
-        atomic=true)
+    Common.write_json(
+        joinpath(target, "start-failure.json"),
+        Dict(
+            "unit" => unit,
+            "invocation" => invocation,
+            "cleanup_confirmed" => true,
+            "failure" => sprint(showerror, primary),
+            "stop_command_error" =>
+                stop_error === nothing ? nothing : sprint(showerror, stop_error),
+        );
+        atomic = true,
+    )
     return nothing
 end
 
 """Install a fresh sealed package and start one unique instance. Never retry a
 start whose outcome is uncertain; stop that exact reserved name on failure.
 """
-function start!(package::AbstractString, base::AbstractString;
-                prefix::AbstractString="/opt/pipewireao", deadline=monotonic()+430)
+function start!(
+    package::AbstractString,
+    base::AbstractString;
+    prefix::AbstractString = "/opt/pipewireao",
+    deadline = monotonic()+430,
+)
     source = realpath(package)
     spec = DeploymentConfiguration.profile(joinpath(source, "deployment.conf"), prefix)
     haskey(spec, "session-runtime") && haskey(spec, "node-owners") ||
@@ -344,54 +438,103 @@ function start!(package::AbstractString, base::AbstractString;
     !ispath(target) && !islink(target) ||
         throw(ArgumentError("session stage runtime must be fresh"))
     mkpath(dirname(target))
-    mkdir(target; mode=0o700)
+    mkdir(target; mode = 0o700)
     installed = joinpath(target, "installed")
     julia = Base.julia_cmd().exec[1]
     installer = if DeploymentConfiguration.registered_application(spec)
-        ["--project=" * DeploymentConfiguration.application_environment(spec, source),
-            "-e", "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))", "--"]
+        [
+            "--project=" * DeploymentConfiguration.application_environment(spec, source),
+            "-e",
+            "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))",
+            "--",
+        ]
     else
         launcher = joinpath(source, "julia", "session_cli.jl")
-        isfile(launcher) || throw(ArgumentError("sealed session installer is unavailable"))
+        isfile(launcher) ||
+            throw(ArgumentError("sealed session installer is unavailable"))
         ["--project=" * joinpath(source, "julia"), launcher]
     end
-    checked([julia, "--startup-file=no", installer...,
-        "install", "--package", source, "--destination", installed,
-        "--pipewire-prefix", String(prefix)], deadline; limit=120)
+    checked(
+        [
+            julia,
+            "--startup-file=no",
+            installer...,
+            "install",
+            "--package",
+            source,
+            "--destination",
+            installed,
+            "--pipewire-prefix",
+            String(prefix),
+        ],
+        deadline;
+        limit = 120,
+    )
     suffix = first(replace(string(uuid4()), "-" => ""), 12)
     unit = "pipewireao-session@" * suffix * ".service"
     root = runtime_directory(unit)
     _assert_fresh_instance!(unit, root, deadline)
     unit_file = joinpath(installed, "systemd", unit)
-    write(unit_file, read(joinpath(installed, "systemd", "pipewireao-session@.service"), String))
-    Common.write_json(joinpath(target, "pending-session.json"), Dict(
-        "unit" => unit, "runtime_root" => root, "installed" => installed);
-        atomic=true)
+    write(
+        unit_file,
+        read(joinpath(installed, "systemd", "pipewireao-session@.service"), String),
+    )
+    Common.write_json(
+        joinpath(target, "pending-session.json"),
+        Dict("unit" => unit, "runtime_root" => root, "installed" => installed);
+        atomic = true,
+    )
     start_attempted = false
     try
         checked(["systemctl", "--user", "link", "--runtime", unit_file], deadline)
         checked(["systemctl", "--user", "daemon-reload"], deadline)
         _assert_installed_instance!(unit, root, unit_file, deadline)
         start_attempted = true
-        checked(["systemctl", "--user", "start", unit], deadline;
-            limit=DeploymentConfiguration.startup_timeout_ms(spec) / 1000)
+        checked(
+            ["systemctl", "--user", "start", unit],
+            deadline;
+            limit = DeploymentConfiguration.startup_timeout_ms(spec) / 1000,
+        )
         handle = _identity(unit, root; deadline)
         launch_record = _ledger(handle)
         launch_record["phase"] == "prepared" ||
             throw(ArgumentError("RTC session did not retain prepared launch evidence"))
         handle.stage_root = target
         _receipt(target, handle)
-        Analysis.start!(installed, launch_record, unit; prefix, deadline=min(deadline, monotonic()+20),
-            ready=()->_analysis_ready(handle, launch_record, min(deadline, monotonic()+10)))
+        Analysis.start!(
+            installed,
+            launch_record,
+            unit;
+            prefix,
+            deadline = min(deadline, monotonic()+20),
+            ready = ()->_analysis_ready(
+                handle,
+                launch_record,
+                min(deadline, monotonic()+10),
+            ),
+        )
         return handle
     catch primary
         try
-            _reconcile_failed_start!(target, unit, root, unit_file, start_attempted, primary)
+            _reconcile_failed_start!(
+                target,
+                unit,
+                root,
+                unit_file,
+                start_attempted,
+                primary,
+            )
         catch cleanup
-            Common.write_json(joinpath(target, "start-failure.json"), Dict(
-                "unit" => unit, "cleanup_confirmed" => false,
-                "failure" => sprint(showerror, primary),
-                "cleanup_error" => sprint(showerror, cleanup)); atomic=true)
+            Common.write_json(
+                joinpath(target, "start-failure.json"),
+                Dict(
+                    "unit" => unit,
+                    "cleanup_confirmed" => false,
+                    "failure" => sprint(showerror, primary),
+                    "cleanup_error" => sprint(showerror, cleanup),
+                );
+                atomic = true,
+            )
             throw(CompositeException([primary, cleanup]))
         end
         rethrow()
@@ -399,21 +542,24 @@ function start!(package::AbstractString, base::AbstractString;
 end
 
 "Attach to an exact installed session unit or a stage receipt."
-function attach(path::AbstractString; deadline=monotonic()+8)
+function attach(path::AbstractString; deadline = monotonic()+8)
     root = abspath(path)
     receipt = joinpath(root, "session.json")
     if isfile(receipt)
-        saved = Common.read_json(receipt; maximum=4096)
+        saved = Common.read_json(receipt; maximum = 4096)
         handle = _identity(saved["unit"], saved["runtime_root"]; deadline)
-        (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ==
-            (saved["invocation"], saved["main_pid"], UInt64(saved["start_ticks"]), saved["cgroup"]) ||
-            throw(ArgumentError("session unit incarnation differs from its stage receipt"))
+        (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) == (
+            saved["invocation"],
+            saved["main_pid"],
+            UInt64(saved["start_ticks"]),
+            saved["cgroup"],
+        ) || throw(ArgumentError("session unit incarnation differs from its stage receipt"))
         handle.stage_root = root
         attempt = joinpath(root, "shutdown-attempt.json")
         if isfile(attempt)
-            saved_attempt = Common.read_json(attempt; maximum=4096)
+            saved_attempt = Common.read_json(attempt; maximum = 4096)
             saved_attempt["unit"] == handle.unit &&
-                saved_attempt["invocation"] == handle.invocation ||
+            saved_attempt["invocation"] == handle.invocation ||
                 throw(ArgumentError("native Quit attempt belongs to another session"))
             handle.shutdown_attempted = true
             handle.shutdown_accepted = get(saved_attempt, "accepted", false) === true
@@ -421,17 +567,23 @@ function attach(path::AbstractString; deadline=monotonic()+8)
         return handle
     end
     matched = match(r"^pipewireao-session-([a-z0-9][a-z0-9-]{0,39})$", basename(root))
-    matched === nothing && throw(ArgumentError("runtime is not a session stage or systemd runtime root"))
+    matched === nothing &&
+        throw(ArgumentError("runtime is not a session stage or systemd runtime root"))
     unit = "pipewireao-session@" * matched.captures[1] * ".service"
     return _identity(unit, root; deadline)
 end
 
-_direct_connection(connection) = throw(ArgumentError("direct session verification failed: $(connection.detail)"))
+_direct_connection(connection) =
+    throw(ArgumentError("direct session verification failed: $(connection.detail)"))
 _direct_connection(::Session.Connection) = nothing
-_source_control_node(node) = throw(ArgumentError("source requires a bounded exact control node"))
-_source_control_node(node::String) = occursin(r"^[a-zA-Z0-9_.-]{1,128}$",node) || throw(ArgumentError("source requires a bounded exact control node"))
-_stopped_identity(unit,invocation) = throw(ArgumentError("stopped systemd runtime needs its captured unit and invocation"))
-_stopped_identity(::AbstractString,::AbstractString) = nothing
+_source_control_node(node) =
+    throw(ArgumentError("source requires a bounded exact control node"))
+_source_control_node(node::String) =
+    occursin(r"^[a-zA-Z0-9_.-]{1,128}$", node) ||
+    throw(ArgumentError("source requires a bounded exact control node"))
+_stopped_identity(unit, invocation) =
+    throw(ArgumentError("stopped systemd runtime needs its captured unit and invocation"))
+_stopped_identity(::AbstractString, ::AbstractString) = nothing
 
 function _selected(record, deadline)
     directory = Discovery.existing_registry_directory()
@@ -439,8 +591,9 @@ function _selected(record, deadline)
     entries = filter(Discovery.list_sessions(directory)) do entry
         entry.record !== nothing && entry.record.session_id == record["session_uuid"]
     end
-    length(entries) == 1 || throw(ArgumentError("published session UUID is absent or ambiguous"))
-    connection = Session.select_direct_session(only(entries); deadline=Float64(deadline))
+    length(entries) == 1 ||
+        throw(ArgumentError("published session UUID is absent or ambiguous"))
+    connection = Session.select_direct_session(only(entries); deadline = Float64(deadline))
     _direct_connection(connection)
     return connection
 end
@@ -454,8 +607,10 @@ function _analysis_ready(handle, record, deadline)
         try
             connection = _selected(record, deadline)
             status = connection.selected.status
-            status.lifecycle in (:ready, :running) && status.owner_pid == UInt32(handle.main_pid) &&
-                status.incarnation == record["session_control_instance"] && status.remote == record["remote"] ||
+            status.lifecycle in (:ready, :running) &&
+            status.owner_pid == UInt32(handle.main_pid) &&
+            status.incarnation == record["session_control_instance"] &&
+            status.remote == record["remote"] ||
                 throw(ArgumentError("optional analysis requires an admitted RTC status"))
             return nothing
         catch error
@@ -465,7 +620,11 @@ function _analysis_ready(handle, record, deadline)
         end
         sleep(min(0.05, max(0, deadline-monotonic())))
     end
-    throw(ArgumentError("RTC was not ready for optional analysis: " * sprint(showerror,last_error)))
+    throw(
+        ArgumentError(
+            "RTC was not ready for optional analysis: " * sprint(showerror, last_error),
+        ),
+    )
 end
 
 function _verify_owners(handle::Handle, record, deadline)
@@ -482,9 +641,11 @@ function _verify_owners(handle::Handle, record, deadline)
         service.cgroup = String(item["cgroup"])
         S.running!(service)
         values = S.properties(service.unit; deadline)
-        values["LoadState"] == "loaded" && values["ActiveState"] == "active" &&
-            S.same_incarnation(service, values) &&
-            tryparse(Int, values["MainPID"]) == service.main_pid && S.alive(service) ||
+        values["LoadState"] == "loaded" &&
+        values["ActiveState"] == "active" &&
+        S.same_incarnation(service, values) &&
+        tryparse(Int, values["MainPID"]) == service.main_pid &&
+        S.alive(service) ||
             throw(ArgumentError("owner $role changed during session selection"))
     end
     return nothing
@@ -492,7 +653,8 @@ end
 
 function _source_endpoint(source)
     source_control = DeploymentConfiguration.uses_source_control_protocol(source)
-    source_control || DeploymentConfiguration.uses_acquisition_protocol(source) ||
+    source_control ||
+        DeploymentConfiguration.uses_acquisition_protocol(source) ||
         throw(ArgumentError("readiness requires a native source control profile"))
     node = get(source, "control-node", nothing)
     _source_control_node(node)
@@ -500,30 +662,33 @@ function _source_endpoint(source)
     instance = tryparse(Int64, string(retained))
     # Native source mailboxes publish their own incarnation; acquisition
     # endpoints instead use the positive instance reserved by SessionLaunch.
-    (source_control && retained === nothing) || (instance !== nothing && instance > 0) ||
+    (source_control && retained === nothing) ||
+        (instance !== nothing && instance > 0) ||
         throw(ArgumentError("source requires a valid retained control incarnation"))
-    return Dict("node" => node, "instance" => instance,
-        "profile" => source["control-protocol"])
+    return Dict(
+        "node" => node,
+        "instance" => instance,
+        "profile" => source["control-protocol"],
+    )
 end
 
 "Return a compatibility view built from a live direct Status and exact launch ledger."
-function ready(handle::Handle; deadline=monotonic()+30)
+function ready(handle::Handle; deadline = monotonic()+30)
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
-        (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
+    (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC session unit incarnation changed"))
     record = _ledger(handle)
-    record["phase"] == "prepared" ||
-        throw(ArgumentError("RTC launch is not prepared"))
+    record["phase"] == "prepared" || throw(ArgumentError("RTC launch is not prepared"))
     _verify_owners(handle, record, deadline)
     connection = _selected(record, deadline)
     lifecycle = nothing
     try
         status = connection.selected.status
         status.lifecycle in (:ready, :running) &&
-            status.owner_pid == UInt32(handle.main_pid) &&
-            status.incarnation == record["session_control_instance"] &&
-            status.remote == record["remote"] ||
+        status.owner_pid == UInt32(handle.main_pid) &&
+        status.incarnation == record["session_control_instance"] &&
+        status.remote == record["remote"] ||
             throw(ArgumentError("direct session Status did not verify admitted RTC"))
         lifecycle = status.lifecycle
     finally
@@ -533,27 +698,37 @@ function ready(handle::Handle; deadline=monotonic()+30)
     source_role = String(record["source_role"])
     source = record["owners"][source_role]
     endpoint = _source_endpoint(source)
-    processes = Dict{String,Any}(role => Dict("pid" => item["pid"],
-        "invocation" => item["invocation"], "start-ticks" => item["start-ticks"],
-        "cgroup" => item["cgroup"]) for (role, item) in record["owners"])
+    processes = Dict{String,Any}(
+        role => Dict(
+            "pid" => item["pid"],
+            "invocation" => item["invocation"],
+            "start-ticks" => item["start-ticks"],
+            "cgroup" => item["cgroup"],
+        ) for (role, item) in record["owners"]
+    )
     return Dict{String,Any}(
-        "unit" => handle.unit, "pid" => handle.main_pid,
+        "unit" => handle.unit,
+        "pid" => handle.main_pid,
         "wireplumber_start_ticks" => handle.start_ticks,
-        "instance" => handle.invocation, "private_runtime" => record["runtime"],
-        "observation_remote" => record["remote"], "source-owner" => source_role,
+        "instance" => handle.invocation,
+        "private_runtime" => record["runtime"],
+        "observation_remote" => record["remote"],
+        "source-owner" => source_role,
         "source_endpoint" => endpoint,
-        "processes" => processes, "ready" => Dict("session_id" => record["session_uuid"]),
-        "phase" => String(lifecycle), "admitted" => true)
+        "processes" => processes,
+        "ready" => Dict("session_id" => record["session_uuid"]),
+        "phase" => String(lifecycle),
+        "admitted" => true,
+    )
 end
-ready(path::AbstractString; deadline=monotonic()+30) =
+ready(path::AbstractString; deadline = monotonic()+30) =
     ready(attach(path; deadline); deadline)
 
 "Start a held Ready session once, then require a fresh native Running Status."
-function running!(handle::Handle; deadline=monotonic()+30)
+function running!(handle::Handle; deadline = monotonic()+30)
     observed = ready(handle; deadline)
     if observed["phase"] == "ready"
-        completion = control!(handle, SessionCodec.RunnerCommand(:session_start);
-            deadline)
+        completion = control!(handle, SessionCodec.RunnerCommand(:session_start); deadline)
         completion["ok"] === true && completion["state"] == "Running" ||
             throw(ArgumentError("RTC session Start did not complete Running"))
         observed = ready(handle; deadline)
@@ -564,22 +739,26 @@ function running!(handle::Handle; deadline=monotonic()+30)
 end
 
 "Send one typed native session command on the verified direct connection."
-function control!(handle::Handle, command; deadline=monotonic()+8,
-                  before_request=()->nothing)
+function control!(
+    handle::Handle,
+    command;
+    deadline = monotonic()+8,
+    before_request = ()->nothing,
+)
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
-        (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
+    (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC unit incarnation changed before control"))
     record = _ledger(handle)
     connection = _selected(record, deadline)
     try
         status = connection.selected.status
         status.owner_pid == UInt32(handle.main_pid) &&
-            status.incarnation == record["session_control_instance"] &&
-            status.remote == record["remote"] ||
+        status.incarnation == record["session_control_instance"] &&
+        status.remote == record["remote"] ||
             throw(ArgumentError("direct control selected a different RTC session"))
         before_request()
-        reply = Session.request!(connection, command; deadline=Float64(deadline))
+        reply = Session.request!(connection, command; deadline = Float64(deadline))
         return Session.render_direct(connection, reply)
     finally
         close(connection)
@@ -587,32 +766,45 @@ function control!(handle::Handle, command; deadline=monotonic()+8,
 end
 
 "Query the acquisition owner directly after public Release."
-function source_status(ready_record, instrument::AbstractString; deadline=monotonic()+8)
-    kind = instrument == "classic" ? AcquisitionCodec.Classic :
+function source_status(ready_record, instrument::AbstractString; deadline = monotonic()+8)
+    kind =
+        instrument == "classic" ? AcquisitionCodec.Classic :
         instrument == "copper" ? AcquisitionCodec.Copper :
         throw(ArgumentError("unsupported calibration instrument"))
     source = ready_record["source_endpoint"]
     get(source, "profile", nothing) == "pipewireao.rtc.calibration-lifecycle/1" ||
         throw(ArgumentError("source Status requires a calibration lifecycle endpoint"))
     role = ready_record["source-owner"]
-    connection = Acquisition.connect(AcquisitionCodec.CALIBRATION_PROFILE,
-        ready_record["observation_remote"], source["node"],
-        ready_record["processes"][role]["pid"], source["instance"], kind;
-        deadline=Float64(deadline))
+    connection = Acquisition.connect(
+        AcquisitionCodec.CALIBRATION_PROFILE,
+        ready_record["observation_remote"],
+        source["node"],
+        ready_record["processes"][role]["pid"],
+        source["instance"],
+        kind;
+        deadline = Float64(deadline),
+    )
     try
-        reply = Acquisition.status(connection; deadline=Float64(deadline))
+        reply = Acquisition.status(connection; deadline = Float64(deadline))
         snapshot = reply.snapshot
         snapshot === nothing && throw(ArgumentError("source Status has no live snapshot"))
-        return Dict{String,Any}("ok" => true, "operation" => "status",
-            "id" => reply.header.token, "native_token" => reply.header.token,
+        return Dict{String,Any}(
+            "ok" => true,
+            "operation" => "status",
+            "id" => reply.header.token,
+            "native_token" => reply.header.token,
             "endpoint_instance" => reply.header.endpoint_instance,
             "lifecycle" => string(reply.lifecycle),
             "state" => snapshot.running ? "running" : "paused",
-            "cursor" => snapshot.cursor, "report_cursor" => snapshot.report_cursor,
+            "cursor" => snapshot.cursor,
+            "report_cursor" => snapshot.report_cursor,
             "sequence" => snapshot.cursor === nothing ? nothing : snapshot.cursor.sequence,
-            "completed" => snapshot.completed, "phase" => snapshot.phase,
-            "held" => snapshot.held, "restored" => snapshot.restored,
-            "window" => snapshot.window)
+            "completed" => snapshot.completed,
+            "phase" => snapshot.phase,
+            "held" => snapshot.held,
+            "restored" => snapshot.restored,
+            "window" => snapshot.window,
+        )
     finally
         close(connection)
     end
@@ -624,16 +816,22 @@ function _stopped_record(handle::Handle, deadline)
         remaining(deadline, 5)
         values = S.properties(handle.unit; deadline)
         invocation = values["InvocationID"]
-        isempty(invocation) || S.valid_invocation(invocation) == handle.invocation ||
+        isempty(invocation) ||
+            S.valid_invocation(invocation) == handle.invocation ||
             throw(ArgumentError("RTC unit incarnation changed after stop"))
         group = values["ControlGroup"]
-        isempty(group) || group == handle.cgroup ||
+        isempty(group) ||
+            group == handle.cgroup ||
             throw(ArgumentError("RTC unit cgroup changed after stop"))
-        quiet = values["MainPID"] == "0" &&
-            (values["LoadState"] == "not-found" || values["ActiveState"] in ("inactive", "failed"))
-        if quiet && !_unit_has_jobs(handle.unit, deadline) &&
-                !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
-                S.cgroup_empty(handle.cgroup)
+        quiet =
+            values["MainPID"] == "0" && (
+                values["LoadState"] == "not-found" ||
+                values["ActiveState"] in ("inactive", "failed")
+            )
+        if quiet &&
+           !_unit_has_jobs(handle.unit, deadline) &&
+           !S.old_process_exists(handle.main_pid, handle.start_ticks) &&
+           S.cgroup_empty(handle.cgroup)
             # The exact old process is already gone. Validate its retained
             # identity without requiring /proc/<old-pid>/exe to still exist.
             record = _retained_ledger(handle)
@@ -650,23 +848,30 @@ end
 function _retain_stopped!(handle::Handle, deadline)
     record = _stopped_record(handle, deadline)
     handle.stage_root === nothing || Common.write_json(
-        joinpath(handle.stage_root, "final-launch.json"), record; atomic=true)
+        joinpath(handle.stage_root, "final-launch.json"),
+        record;
+        atomic = true,
+    )
     record["phase"] == "stopped" && get(record, "error", nothing) === nothing ||
         throw(ArgumentError("RTC stopped with a retained service failure"))
-    handle.stage_root === nothing || _unlink_owned_link!(handle.unit,
-        joinpath(handle.stage_root, "installed", "systemd", handle.unit), deadline)
+    handle.stage_root === nothing || _unlink_owned_link!(
+        handle.unit,
+        joinpath(handle.stage_root, "installed", "systemd", handle.unit),
+        deadline,
+    )
     return record
 end
 
 "Read-only cleanup after an attempted native Quit, including an unknown reply."
-function reconcile_cleanup!(handle::Handle; deadline=monotonic()+320)
-    handle.shutdown_attempted || handle.stop_attempted ||
+function reconcile_cleanup!(handle::Handle; deadline = monotonic()+320)
+    handle.shutdown_attempted ||
+        handle.stop_attempted ||
         throw(ArgumentError("session cleanup has not been attempted"))
     return _retain_stopped!(handle, deadline)
 end
 
 "Confirm cleanup only after a successful native Quit completion proved Offline."
-function reconcile_shutdown!(handle::Handle; deadline=monotonic()+320)
+function reconcile_shutdown!(handle::Handle; deadline = monotonic()+320)
     handle.shutdown_accepted ||
         throw(ArgumentError("native Quit has no accepted Offline completion"))
     return _retain_stopped!(handle, deadline)
@@ -681,21 +886,28 @@ function _native_quit!(send, handle::Handle)
     mark_attempt!() = begin
         handle.stage_root === nothing || Common.write_json(
             joinpath(handle.stage_root, "shutdown-attempt.json"),
-            Dict("unit" => handle.unit, "invocation" => handle.invocation,
-                "accepted" => false); atomic=true)
+            Dict(
+                "unit" => handle.unit,
+                "invocation" => handle.invocation,
+                "accepted" => false,
+            );
+            atomic = true,
+        )
         handle.shutdown_attempted = true
     end
     completion = send(mark_attempt!)
     handle.shutdown_attempted ||
         throw(ArgumentError("native Quit sender omitted its attempt fence"))
-    completion["ok"] === true && completion["state"] == "Offline" &&
-        get(completion["result"], "shutdown", false) === true ||
+    completion["ok"] === true &&
+    completion["state"] == "Offline" &&
+    get(completion["result"], "shutdown", false) === true ||
         throw(ArgumentError("native Quit did not complete Offline"))
     handle.shutdown_accepted = true
     handle.stage_root === nothing || Common.write_json(
         joinpath(handle.stage_root, "shutdown-attempt.json"),
-        Dict("unit" => handle.unit, "invocation" => handle.invocation,
-            "accepted" => true); atomic=true)
+        Dict("unit" => handle.unit, "invocation" => handle.invocation, "accepted" => true);
+        atomic = true,
+    )
     return completion
 end
 
@@ -709,35 +921,43 @@ If the request outcome is uncertain or cleanup is incomplete, this throws and
 the handle records the attempt; do not call `shutdown!` again. Use
 [`reconcile_cleanup!`](@ref) to inspect cleanup without replaying Quit.
 """
-function shutdown!(handle::Handle; deadline=monotonic()+320)
+function shutdown!(handle::Handle; deadline = monotonic()+320)
     _native_quit!(handle) do mark_attempt!
-        control!(handle, SessionCodec.RunnerCommand(:quit);
-            deadline=min(deadline, monotonic()+8), before_request=mark_attempt!)
+        control!(
+            handle,
+            SessionCodec.RunnerCommand(:quit);
+            deadline = min(deadline, monotonic()+8),
+            before_request = mark_attempt!,
+        )
     end
     return reconcile_shutdown!(handle; deadline)
 end
 
 "Reconcile a submitted stop without repeating its effect."
-function reconcile_stop!(handle::Handle; deadline=monotonic()+320)
-    handle.stop_attempted ||
-        throw(ArgumentError("session stop has not been submitted"))
+function reconcile_stop!(handle::Handle; deadline = monotonic()+320)
+    handle.stop_attempted || throw(ArgumentError("session stop has not been submitted"))
     return _retain_stopped!(handle, deadline)
 end
 
 "Stop only the retained unit incarnation; verify ExecStopPost's cleanup receipt."
-function stop!(handle::Handle; deadline=monotonic()+320)
+function stop!(handle::Handle; deadline = monotonic()+320)
     handle.stop_attempted && throw(ArgumentError("session stop was already attempted"))
     live = _identity(handle.unit, handle.runtime_root; deadline)
     (live.invocation, live.main_pid, live.start_ticks, live.cgroup) ==
-        (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
+    (handle.invocation, handle.main_pid, handle.start_ticks, handle.cgroup) ||
         throw(ArgumentError("RTC unit incarnation changed before stop"))
     timeout = remaining(deadline, 320)
     handle.stop_attempted = true # This command may have an unknown effect.
     command_error = try
-        result = Common.run_checked(["systemctl", "--user", "stop", handle.unit];
-            timeout, maximum_output_bytes=64 * 1024)
+        result = Common.run_checked(
+            ["systemctl", "--user", "stop", handle.unit];
+            timeout,
+            maximum_output_bytes = 64 * 1024,
+        )
         result.returncode == 0 ? nothing :
-            ArgumentError("systemd session stop failed ($(result.returncode)): $(strip(result.stderr))")
+        ArgumentError(
+            "systemd session stop failed ($(result.returncode)): $(strip(result.stderr))",
+        )
     catch error
         error
     end
@@ -750,11 +970,11 @@ function stop!(handle::Handle; deadline=monotonic()+320)
 end
 
 "Read the retained stopped ledger, including its invocation identity."
-function final_record(path::AbstractString; invocation=nothing, unit=nothing)
+function final_record(path::AbstractString; invocation = nothing, unit = nothing)
     base = abspath(path)
     receipt_path = joinpath(base, "session.json")
     if isfile(receipt_path)
-        receipt = Common.read_json(receipt_path; maximum=4096)
+        receipt = Common.read_json(receipt_path; maximum = 4096)
         unit = String(receipt["unit"])
         invocation = receipt["invocation"]
         matched = match(UNIT, unit)
@@ -763,14 +983,15 @@ function final_record(path::AbstractString; invocation=nothing, unit=nothing)
         isabspath(root) && basename(root) == "pipewireao-session-" * matched.captures[1] ||
             throw(ArgumentError("session receipt runtime root changed"))
     else
-        _stopped_identity(unit,invocation)
+        _stopped_identity(unit, invocation)
         root = runtime_directory(unit)
-        base == root || throw(ArgumentError("stopped runtime differs from the captured unit"))
+        base == root ||
+            throw(ArgumentError("stopped runtime differs from the captured unit"))
     end
     id = S.valid_invocation(invocation)
     retained = joinpath(base, "final-launch.json")
     source = isfile(retained) ? retained : joinpath(root, id, "launch.json")
-    record = Common.read_json(source; maximum=1024 * 1024)
+    record = Common.read_json(source; maximum = 1024 * 1024)
     record["unit"] == unit && record["invocation"] == id ||
         throw(ArgumentError("stopped session ledger differs from the stage receipt"))
     return record

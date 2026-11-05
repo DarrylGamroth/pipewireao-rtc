@@ -108,6 +108,8 @@ not establish a hardware or timing qualification result.
 | MSR-004 — Created Link admission omits LinkInfo ID correlation | P2, confirmed validation gap. Otherwise-valid LinkInfo ID 32 was admitted for bound ID 31. A sparse merge could also conceal a later raw event's changed ID by retaining the previous ID. A real native corruption trigger was not established. | Fixed: raw LinkUpdated events are checked before merging, LinkBound is checked against any earlier info, and validation compares the known bound ID. Tests cover both callback orders, changes after a valid observation, valid same-ID events and first-failure retention. |
 | MSR-005 — Link withdrawal suppresses unrelated required losses | P1, confirmed by the same controlled observations before/after. `runtime.withdrawing` suppressed every required-loss report and skipped captured identity checks. Graph removal, graph errors, identity changes and a foreign Link's removal were hidden. | Fixed: loss events always reach the machine; only destruction/error observations of an exact retiring session-created Link `(ID, serial)` are expected. Captured identity validation remains active. A copied path does not confer retirement. Required owner/graph evidence is retained until its separate receipt-proven handoff. |
 | MSR-006 — Property adapters discard the Hsm's admission origin | P2, confirmed interface mismatch. The machine records Ready/Running origin in the effect ticket, but adapters reread mutable lifecycle to decide correction admission and active adoption. Opposite-origin controlled cases reproduced four failures. | Fixed: `perform!` passes the ticket origin; property baseline/completion and correction/recovery guards dispatch on `ReadyOrigin` / `RunningOrigin`. Native owner, group, value and generation proofs remain required. No new phase trait or second state machine was introduced. |
+| MSR-007 — Final/emergency close retains created Link handles | P1, confirmed on a private core. Registry bindings closed, but distinct session-created Link proxies remained; Core close refused those live handles. | Fixed: shared best-effort transport cleanup closes created listeners/proxies before bound objects/endpoints/Core, preserves failed resources and aggregates failures. Disconnect completes only after actual Core closure; final close owns Context/MainLoop. Separate-peer resources survive with their exact identities. |
+| MSR-008 — Terminal ingress publishes through a disconnected endpoint | P2, independently confirmed. A real mapped native request reached emergency Disconnect, then `drain!` attempted `update_params!` on the closed Filter. The same test failed twice, including receipt-driven journal publication. No durable-data loss was established. | Fixed: only `PublishRecords` skips an actually closed endpoint. Reply correlation and journal actions still drain; open-endpoint publication errors remain visible. No wire delivery is claimed after transport retirement. |
 
 Observed verification: the object selector passes **103 assertions**, including
 16 against an isolated private core and 11 Link-ID regression assertions. The
@@ -215,10 +217,74 @@ package scripts and runtime sources contain no `isa` or `@eval` selectors after
 this cleanup. Frozen evidence, protocol data and independent historical probes
 retain their original content.
 
+## Direct owner, launcher and native lifetime integration — 2026-11-05
+
+The host now supplies the Agent duty cycle, bounded callback observations,
+correlated effect result slot, controller admission, journal actions and public
+native endpoint. All Hsm dispatch and PipeWire resource mutation stay on the
+session's opening OS thread. A separate journal worker owns SQLite. The cache is
+sampled once per duty cycle; transport submission still checks the fresh source
+clock. No graph scheduling, data-thread priority or installed service changed.
+
+The generator emits only the direct PipeWire context and `pipewireao.session`
+policy. Its packaged shell launcher executes the selected Julia binary/project
+with shared canonical arguments. Saved process bindings are checked after JSON
+round-trip against `/proc` executable/arguments. Removed native build-selector
+keywords and WirePlumber staging APIs have no compatibility aliases.
+
+Observed checks on Julia 1.13.3:
+
+| Selector | Observed result and boundary |
+| --- | --- |
+| Configuration / installed launcher / stop / auxiliary-source cohort | 75 + 26 + 12 + 30 assertions pass. No installation, service or device is started. |
+| `media_session_process.jl` | Eight assertions pass with the actual generated shell launcher, separate Julia process and test-owned private core: saved binding, tampered binding rejection, Configuring Warmup/Status/Groups, accepted Offline Quit and exit zero. This cancels incomplete startup; it is not full Ready/Run science admission. |
+| `media_session_private_core.jl` | 42 assertions pass: native discovery/coalesced controller publication, startup cancellation, active and not-yet-pumped created Link release, exact separate-peer resource preservation, actual Core closure before emergency completion, and best-effort continuation after a bound-object close failure. |
+| `media_session_acquisition_private_core.jl` | 35 assertions pass using real AcquisitionLifecycleRuntime/native envelopes with controlled Status/Shutdown handlers: first Preparing, repeated Preparing and Prepared cleanup; no fabricated cursor, Pause or Connect; one acknowledged Shutdown. Production scientific preparation is outside this selector. |
+| `media_session_host.jl` | 53 assertions pass after independent host review: real native request/controller ingress, emergency closure with mapped replies, durable requested/unknown rows with exact terminal POD bytes, and accepted Quit publication failure/expiry plus late callbacks. Scientific failures are injected; this is not an actual graph fault run. The unchanged test previously passed 51 and failed two on closed-Filter publication. |
+
+The owner tests require the local PipeWireAO 0.9.1 command-endpoint source cohort
+with public `iterate!`/enumeration sequence APIs, matching native4 SDK
+`/tmp/pipewire-command-endpoint-native4-sdk-20261104`, and
+`/tmp/pipewireao-rtc-optical-types-env`. The registered 0.9.0 client lacks the
+owner-thread pump; there is no private-layout fallback. The optional selectors
+run with `--threads=2,1` and an explicit matching `PIPEWIREAO_PREFIX`.
+
+The lifetime test failed before the fix: created Link proxies remained open,
+and Core close refused them. The shared transport cleanup now detaches listeners,
+closes every created handle and bound object, then closes endpoints/registry/Core;
+failed resources remain available for final cleanup. Context/MainLoop lifetime
+remains with final `close`. `main` preserves a primary `serve!` exception before
+any cleanup exception. Logs are
+`/tmp/rtc-session-resource-close-before-validated-20261105.log`,
+`/tmp/rtc-session-resource-close-formatted-20261105.log`,
+`/tmp/rtc-acquisition-after-transport-close-20261105.log` and
+`/tmp/rtc-media-session-generated-process-20261105.log`.
+
+Cold compilation initially crossed the unchanged five-second cleanup bound.
+Separately, unchanged controller facts caused a publication feedback loop:
+8,926 publications in a nine-second probe became four after exact fact
+coalescing. That fix alone did not resolve the cold deadline. Compiler timing
+showed first-use dispatch dominated the long spans. Shared typed effect receipts
+removed ticket-parameter specialization from result delivery; bounded offline
+dispatch preparation before public endpoint connection compiles cleanup without
+executing native or scientific effects. The strict first cold acquisition Quit
+then completed in 2.108 seconds, with repeated Preparing/Prepared cases in
+0.063/0.070 seconds. The formal 35-assertion selector also passes in a fresh
+process. These finite observations do not establish worst-case or tail latency.
+The proposed missing-MainLoop-entry cause was independently probed and not
+confirmed; no loop-entry workaround was added. Timing logs retain the failed
+attempts under `/tmp/rtc-cold-acquisition-*20261105*`.
+
+The independent host review found no additional terminal-hook defect after
+MSR-007/008. Matching PublishQuit completion, failure or expiry ends the process
+after the already accepted Offline outcome. A retired Disconnect does not end
+it: a new Quit may preempt emergency cleanup and owns the replacement effect.
+Terminal host logs are `/tmp/rtc-media-session-host-before.log` and
+`/tmp/rtc-media-session-host-after.log`.
+
 ## Remaining integration gate
 
-The direct owner loop, bounded ingress, journal persistence, exact discovery and
-Link lifetime, launcher/process binding and native lifecycle selectors remain
-in progress. Existing sealed/installed applications, services, devices and graph
-threads are unchanged. No hardware, strict deadline, tail-latency, GPU or
-sustained-cadence claim follows from these software slices.
+Full graph Ready/Run/Stop/Reset and fault qualification on newly built sealed
+applications remains open. Existing sealed/installed applications, services,
+devices and graph threads are unchanged. No hardware, strict deadline,
+tail-latency, GPU or sustained-cadence claim follows from these software slices.

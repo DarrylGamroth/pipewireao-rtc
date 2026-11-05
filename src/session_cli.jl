@@ -30,7 +30,8 @@ node_owner_mapping(mapping) =
 
 function prepared_identity(name::String, source_role, record)
     occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", name) &&
-        name == record["name"] && source_role == record["source_role"] ||
+    name == record["name"] &&
+    source_role == record["source_role"] ||
         throw(ArgumentError("deployment identity differs from prepared invocation"))
     return nothing
 end
@@ -38,8 +39,10 @@ prepared_identity(name, source_role, record) =
     throw(ArgumentError("deployment identity differs from prepared invocation"))
 
 function warmup_complete(reply::Session.AdministrativeCompletion)
-    reply.header.operation == UInt32(15) && reply.header.result == 0 &&
-        reply.error === nothing && reply.lifecycle == Session.Runner.Configuring ||
+    reply.header.operation == UInt32(15) &&
+    reply.header.result == 0 &&
+    reply.error === nothing &&
+    reply.lifecycle == Session.Runner.Configuring ||
         throw(ArgumentError("direct session warmup query did not retain Configuring"))
     return reply.warmed === true
 end
@@ -47,70 +50,95 @@ warmup_complete(reply) =
     throw(ArgumentError("direct session warmup query did not retain Configuring"))
 
 function confirm_admission(reply::Session.AdministrativeCompletion)
-    reply.header.operation == UInt32(16) && reply.header.result == 0 &&
-        reply.error === nothing && reply.warmed === true &&
-        reply.lifecycle == Session.Runner.Ready ||
+    reply.header.operation == UInt32(16) &&
+    reply.header.result == 0 &&
+    reply.error === nothing &&
+    reply.warmed === true &&
+    reply.lifecycle == Session.Runner.Ready ||
         throw(ArgumentError("direct session admission did not reach Ready"))
     return nothing
 end
-confirm_admission(reply) = throw(ArgumentError("direct session admission did not reach Ready"))
+confirm_admission(reply) =
+    throw(ArgumentError("direct session admission did not reach Ready"))
 
 function confirm_ready(reply::Session.Completion)
-    reply.header.operation == UInt32(3) && reply.header.result == 0 &&
-        reply.result !== nothing && reply.error === nothing &&
-        reply.lifecycle == Session.Runner.Ready ||
+    reply.header.operation == UInt32(3) &&
+    reply.header.result == 0 &&
+    reply.result !== nothing &&
+    reply.error === nothing &&
+    reply.lifecycle == Session.Runner.Ready ||
         throw(ArgumentError("fresh direct Status did not confirm Ready"))
     return nothing
 end
 confirm_ready(reply) = throw(ArgumentError("fresh direct Status did not confirm Ready"))
 
 function confirm_stoppable(reply::Session.Completion)
-    reply.header.result == 0 && reply.error === nothing &&
-        reply.lifecycle in (Session.Runner.Ready, Session.Runner.Running) ||
+    reply.header.result == 0 &&
+    reply.error === nothing &&
+    reply.lifecycle in (Session.Runner.Ready, Session.Runner.Running) ||
         throw(ArgumentError("native stop requires an admitted healthy session"))
     return nothing
 end
-confirm_stoppable(reply) = throw(ArgumentError("native stop requires an admitted healthy session"))
+confirm_stoppable(reply) =
+    throw(ArgumentError("native stop requires an admitted healthy session"))
 
 function confirm_shutdown(reply::Session.Completion)
-    reply.header.result == 0 && reply.error === nothing &&
-        reply.lifecycle == Session.Runner.Offline && reply.result !== nothing &&
-        reply.result.details.shutdown === true ||
+    reply.header.result == 0 &&
+    reply.error === nothing &&
+    reply.lifecycle == Session.Runner.Offline &&
+    reply.result !== nothing &&
+    reply.result.details.shutdown === true ||
         throw(ArgumentError("native systemd Quit did not complete Offline"))
     return nothing
 end
-confirm_shutdown(reply) = throw(ArgumentError("native systemd Quit did not complete Offline"))
+confirm_shutdown(reply) =
+    throw(ArgumentError("native systemd Quit did not complete Offline"))
 
 function render!(spec, session, bindings, records, runtime)
     return SessionConfiguration.write_session_config(
-        spec, session, bindings, records, runtime; node_owners=node_owners(spec))
+        spec,
+        session,
+        bindings,
+        records,
+        runtime;
+        node_owners = node_owners(spec),
+    )
 end
 
 function _preflight(argv)
-    args = C.cli_arguments(argv;
-        required=["package", "prefix", "unit", "launcher", "runtime-root"])
+    args = C.cli_arguments(
+        argv;
+        required = ["package", "prefix", "unit", "launcher", "runtime-root"],
+    )
     spec = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
     node_owners(spec)
     return nothing
 end
 
 function _unit_identity(unit, invocation, runtime_root, launcher, source_role)
-    values = S.properties(unit; extra="ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
+    values =
+        S.properties(unit; extra = "ControlPID,ExecStop,ExecStopPost,Restart,KillMode,Type")
     values["LoadState"] == "loaded" &&
-        values["ActiveState"] in ("activating", "active") &&
-        values["Type"] == "exec" && values["Restart"] == "no" &&
-        values["KillMode"] == "control-group" ||
+    values["ActiveState"] in ("activating", "active") &&
+    values["Type"] == "exec" &&
+    values["Restart"] == "no" &&
+    values["KillMode"] == "control-group" ||
         throw(ArgumentError("RTC unit has unexpected post-start policy"))
     S.valid_invocation(values["InvocationID"]) == invocation &&
-        tryparse(Int, values["ControlPID"]) == getpid() ||
+    tryparse(Int, values["ControlPID"]) == getpid() ||
         throw(ArgumentError("publisher is not this unit's ExecStartPost process"))
     group = values["ControlGroup"]
-    startswith(group, "/") && group != "/" &&
-        (S.proc_cgroup(getpid()) == group ||
-         startswith(S.proc_cgroup(getpid()), group * "/")) ||
+    startswith(group, "/") &&
+    group != "/" &&
+    (S.proc_cgroup(getpid()) == group || startswith(S.proc_cgroup(getpid()), group * "/")) ||
         throw(ArgumentError("publisher is outside the RTC unit cgroup"))
-    request = SessionLaunch.Request(dirname(launcher), dirname(launcher),
-        unit, launcher, runtime_root)
+    request = SessionLaunch.Request(
+        dirname(launcher),
+        dirname(launcher),
+        unit,
+        launcher,
+        runtime_root,
+    )
     SessionLaunch.cleanup_hook_valid(values["ExecStopPost"], request, source_role) ||
         throw(ArgumentError("RTC emergency cleanup hook changed"))
     SessionLaunch.stop_hook_valid(values["ExecStop"], request) ||
@@ -133,12 +161,21 @@ function _verified_discovery!(record, session_record)
     pod = Discovery.encode_record(session_record)
     path = joinpath(directory, "session-" * session_record.session_id * ".pod")
     Discovery._with_registry_lock(directory) do
-        if Discovery._check_file(path; absent_ok=true) !== nothing
+        if Discovery._check_file(path; absent_ok = true) !== nothing
             prior = Discovery._read_record(path)
-            (prior.session_id, prior.owner_pid, prior.incarnation, prior.remote, prior.node_name) ==
-                (session_record.session_id, session_record.owner_pid,
-                 session_record.incarnation, session_record.remote, session_record.node_name) ||
-                throw(ArgumentError("different session already owns discovery UUID"))
+            (
+                prior.session_id,
+                prior.owner_pid,
+                prior.incarnation,
+                prior.remote,
+                prior.node_name,
+            ) == (
+                session_record.session_id,
+                session_record.owner_pid,
+                session_record.incarnation,
+                session_record.remote,
+                session_record.node_name,
+            ) || throw(ArgumentError("different session already owns discovery UUID"))
         end
         Discovery._atomic_replace(directory, path, pod)
     end
@@ -153,8 +190,9 @@ function _placement_snapshot(record, unit, invocation, launcher, group, wp_pid, 
         item["role"] == role && item["state"] == "running" ||
             throw(ArgumentError("recorded owner is not running at session publication"))
         service = S.Service(owner, role)
-        item["unit"] == service.unit ||
-            throw(ArgumentError("recorded owner unit differs from exclusive invocation name"))
+        item["unit"] == service.unit || throw(
+            ArgumentError("recorded owner unit differs from exclusive invocation name"),
+        )
         service.main_pid = Int(item["pid"])
         service.invocation = String(item["invocation"])
         service.start_ticks = UInt64(item["start-ticks"])
@@ -172,78 +210,110 @@ function publish!(args)
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
-    record = C.read_json(ledger; maximum=1024 * 1024)
-    record["unit"] == args.unit && record["invocation"] == invocation &&
-        record["phase"] == "prepared" ||
+    record = C.read_json(ledger; maximum = 1024 * 1024)
+    record["unit"] == args.unit &&
+    record["invocation"] == invocation &&
+    record["phase"] == "prepared" ||
         throw(ArgumentError("launch ledger does not identify prepared RTC unit"))
     package = D.profile(joinpath(args.package, "deployment.conf"), args.prefix)
     name = package["name"]
     source_role = package["source-owner"]
     prepared_identity(name, source_role, record)
     launcher = joinpath(args.package, "bin", "pipewireao-rtc-session")
-    pid, ticks, group = _unit_identity(args.unit, invocation, args.runtime_root,
-        launcher, source_role)
-    D.verify_session_process(pid, D.session_executable(package, args.package, args.prefix), record["config"])
+    pid, ticks, group =
+        _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
+    record["session_process"]["config"] == record["config"] ||
+        throw(ArgumentError("prepared process binding differs from session configuration"))
+    D.verify_session_process(pid, record["session_process"])
     expected = Int64(record["session_control_instance"])
     uuid = String(record["session_uuid"])
     remote = String(record["remote"])
     node = "pipewireao.rtc.session." * name
-    deadline = Client.monotonic() + (haskey(package, "startup-timeout-ms") ?
-        D.startup_timeout_ms(package) / 1000 : 240)
-    client = Client.connect(Profile.Profile(), remote, node, UInt32(pid), expected;
-        deadline=min(deadline, Client.monotonic() + 30),
-        controller_instance=Int64(record["admission_controller_instance"]))
+    deadline =
+        Client.monotonic() +
+        (haskey(package, "startup-timeout-ms") ? D.startup_timeout_ms(package) / 1000 : 240)
+    client = Client.connect(
+        Profile.Profile(),
+        remote,
+        node,
+        UInt32(pid),
+        expected;
+        deadline = min(deadline, Client.monotonic() + 30),
+        controller_instance = Int64(record["admission_controller_instance"]),
+    )
     snapshots = nothing
     try
         while true
-            Client.monotonic() < deadline ||
-                throw(ArgumentError("direct session did not warm before publication deadline"))
-            warm = Client.request!(client, Session.WarmupCommand();
-                deadline=min(deadline, Client.monotonic() + 10))
+            Client.monotonic() < deadline || throw(
+                ArgumentError("direct session did not warm before publication deadline"),
+            )
+            warm = Client.request!(
+                client,
+                Session.WarmupCommand();
+                deadline = min(deadline, Client.monotonic() + 10),
+            )
             warmup_complete(warm) && break
             sleep(min(0.1, max(0.0, deadline - Client.monotonic())))
         end
-        latest_pid, latest_ticks, latest_group = _unit_identity(args.unit, invocation,
-            args.runtime_root, launcher, source_role)
+        latest_pid, latest_ticks, latest_group =
+            _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
         (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
             throw(ArgumentError("RTC process changed during warmup"))
-        snapshots = _placement_snapshot(record, args.unit, invocation, launcher, group,
-            pid, package["placement"]["session"])
-        latest_pid, latest_ticks, latest_group = _unit_identity(args.unit, invocation,
-            args.runtime_root, launcher, source_role)
+        snapshots = _placement_snapshot(
+            record,
+            args.unit,
+            invocation,
+            launcher,
+            group,
+            pid,
+            package["placement"]["session"],
+        )
+        latest_pid, latest_ticks, latest_group =
+            _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
         (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
             throw(ArgumentError("RTC process changed during placement inspection"))
         record["placement_snapshot"] = snapshots
-        C.write_json(ledger, record; atomic=true)
-        admit = Client.request!(client, Session.AdmitCommand();
-            deadline=min(deadline, Client.monotonic() + 10))
+        C.write_json(ledger, record; atomic = true)
+        admit = Client.request!(
+            client,
+            Session.AdmitCommand();
+            deadline = min(deadline, Client.monotonic() + 10),
+        )
         confirm_admission(admit)
-        completion = Client.request!(client, Session.RunnerCommand(:status);
-            deadline=min(deadline, Client.monotonic() + 10))
+        completion = Client.request!(
+            client,
+            Session.RunnerCommand(:status);
+            deadline = min(deadline, Client.monotonic() + 10),
+        )
         confirm_ready(completion)
         with_thread_loop_lock(client.loop) do _
             Client.healthy(client)
             client.observation.node_identity == uuid &&
-                client.observation.owner_pid == UInt32(pid) &&
-                client.observation.instance == expected &&
-                client.global_id > 0 && client.global_id < typemax(UInt32) &&
-                client.serial > 0 ||
-                throw(ArgumentError("direct native Status identity differs from prepared session"))
+            client.observation.owner_pid == UInt32(pid) &&
+            client.observation.instance == expected &&
+            client.global_id > 0 &&
+            client.global_id < typemax(UInt32) &&
+            client.serial > 0 || throw(
+                ArgumentError(
+                    "direct native Status identity differs from prepared session",
+                ),
+            )
         end
     finally
         close(client)
     end
-    latest_pid, latest_ticks, latest_group = _unit_identity(args.unit, invocation,
-        args.runtime_root, launcher, source_role)
+    latest_pid, latest_ticks, latest_group =
+        _unit_identity(args.unit, invocation, args.runtime_root, launcher, source_role)
     (pid, ticks, group) == (latest_pid, latest_ticks, latest_group) ||
         throw(ArgumentError("RTC process changed during direct Status proof"))
-    session_record = Discovery.SessionRecord(name, uuid, UInt32(pid), expected, remote, node)
+    session_record =
+        Discovery.SessionRecord(name, uuid, UInt32(pid), expected, remote, node)
     directory = Discovery.registry_directory()
     record["wireplumber_pid"] = pid
     record["wireplumber_start_ticks"] = ticks
     record["placement_snapshot"] = snapshots
     record["discovery_locator"] = joinpath(directory, "session-" * uuid * ".pod")
-    C.write_json(ledger, record; atomic=true)
+    C.write_json(ledger, record; atomic = true)
     _verified_discovery!(record, session_record)
     return nothing
 end
@@ -252,7 +322,7 @@ function retire!(runtime_root)
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
     ledger = joinpath(runtime_root, invocation, "launch.json")
     isfile(ledger) || return nothing
-    record = C.read_json(ledger; maximum=1024 * 1024)
+    record = C.read_json(ledger; maximum = 1024 * 1024)
     record["invocation"] == invocation ||
         throw(ArgumentError("retirement ledger has a different invocation"))
     return retire_record!(record, get(record, "discovery_locator", nothing))
@@ -265,11 +335,13 @@ function retire_record!(record, path::String)
     path == joinpath(directory, "session-" * record["session_uuid"] * ".pod") ||
         throw(ArgumentError("discovery locator escaped this session UUID"))
     Discovery._with_registry_lock(directory) do
-        Discovery._check_file(path; absent_ok=true) === nothing && return nothing
+        Discovery._check_file(path; absent_ok = true) === nothing && return nothing
         current = Discovery._read_record(path)
-        (current.session_id, current.owner_pid, current.incarnation) ==
-            (record["session_uuid"], UInt32(record["wireplumber_pid"]),
-             Int64(record["session_control_instance"])) || return nothing
+        (current.session_id, current.owner_pid, current.incarnation) == (
+            record["session_uuid"],
+            UInt32(record["wireplumber_pid"]),
+            Int64(record["session_control_instance"]),
+        ) || return nothing
         rm(path)
     end
     return nothing
@@ -279,38 +351,47 @@ end
 function stop!(args)
     invocation = S.valid_invocation(get(ENV, "INVOCATION_ID", ""))
     deadline = Client.monotonic() + 30
-    values = S.properties(args.unit;
-        extra="ControlPID,Type,Restart,KillMode", deadline)
-    values["LoadState"] == "loaded" && values["ActiveState"] == "deactivating" &&
-        values["Type"] == "exec" && values["Restart"] == "no" &&
-        values["KillMode"] == "control-group" &&
-        S.valid_invocation(values["InvocationID"]) == invocation &&
-        tryparse(Int, values["ControlPID"]) == getpid() ||
+    values = S.properties(args.unit; extra = "ControlPID,Type,Restart,KillMode", deadline)
+    values["LoadState"] == "loaded" &&
+    values["ActiveState"] == "deactivating" &&
+    values["Type"] == "exec" &&
+    values["Restart"] == "no" &&
+    values["KillMode"] == "control-group" &&
+    S.valid_invocation(values["InvocationID"]) == invocation &&
+    tryparse(Int, values["ControlPID"]) == getpid() ||
         throw(ArgumentError("native stop is not this session's ExecStop"))
     group = values["ControlGroup"]
     observed = S.proc_cgroup(getpid())
-    startswith(group, "/") && group != "/" &&
-        (observed == group || startswith(observed, group * "/")) ||
+    startswith(group, "/") &&
+    group != "/" &&
+    (observed == group || startswith(observed, group * "/")) ||
         throw(ArgumentError("native stop is outside this session's cgroup"))
     # A successful public Quit or unexpected process exit can invoke ExecStop
     # after MainPID has already disappeared. Cleanup remains ExecStopPost's job.
     values["MainPID"] == "0" && return nothing
     runtime = joinpath(args.runtime_root, invocation)
     ledger = joinpath(runtime, "launch.json")
-    record = C.read_json(ledger; maximum=1024 * 1024)
+    record = C.read_json(ledger; maximum = 1024 * 1024)
     pid = tryparse(Int, values["MainPID"])
-    record["unit"] == args.unit && record["invocation"] == invocation &&
-        record["runtime"] == runtime && pid == record["wireplumber_pid"] &&
-        S.start_ticks(pid) == UInt64(record["wireplumber_start_ticks"]) ||
+    record["unit"] == args.unit &&
+    record["invocation"] == invocation &&
+    record["runtime"] == runtime &&
+    pid == record["wireplumber_pid"] &&
+    S.start_ticks(pid) == UInt64(record["wireplumber_start_ticks"]) ||
         throw(ArgumentError("native stop ledger differs from the live session"))
     main_group = S.proc_cgroup(pid)
     (main_group == group || startswith(main_group, group * "/")) ||
         throw(ArgumentError("RTC MainPID left its session cgroup before stop"))
     haskey(record, "systemd_quit") &&
         throw(ArgumentError("native systemd Quit was already attempted; refusing to retry"))
-    client = Client.connect(Profile.Profile(), record["remote"],
-        "pipewireao.rtc.session." * record["name"], UInt32(pid),
-        Int64(record["session_control_instance"]); deadline)
+    client = Client.connect(
+        Profile.Profile(),
+        record["remote"],
+        "pipewireao.rtc.session." * record["name"],
+        UInt32(pid),
+        Int64(record["session_control_instance"]);
+        deadline,
+    )
     try
         status = Client.request!(client, Session.RunnerCommand(:status); deadline)
         confirm_stoppable(status)
@@ -322,12 +403,15 @@ function stop!(args)
         # Fence submission durably. Unknown outcomes proceed only to emergency
         # process cleanup, never to another native mutation.
         record["systemd_quit"] = Dict("attempted" => true, "accepted" => false)
-        C.write_json(ledger, record; atomic=true)
-        completion = Client.request!(client, Session.RunnerCommand(:quit);
-            deadline=min(deadline, Client.monotonic() + 8))
+        C.write_json(ledger, record; atomic = true)
+        completion = Client.request!(
+            client,
+            Session.RunnerCommand(:quit);
+            deadline = min(deadline, Client.monotonic() + 8),
+        )
         confirm_shutdown(completion)
         record["systemd_quit"]["accepted"] = true
-        C.write_json(ledger, record; atomic=true)
+        C.write_json(ledger, record; atomic = true)
     finally
         close(client)
     end
@@ -344,7 +428,8 @@ function stop!(args)
         # /proc may disappear after systemd's query and before this read.
         # Require a fresh MainPID=0 proof on the next pass; PID reuse still faults.
         current_ticks = S.maybe_start_ticks(pid)
-        current_ticks === nothing || current_ticks == UInt64(record["wireplumber_start_ticks"]) ||
+        current_ticks === nothing ||
+            current_ticks == UInt64(record["wireplumber_start_ticks"]) ||
             throw(ArgumentError("RTC PID was reused after native Quit"))
         sleep(min(0.005, max(0.0, deadline - Client.monotonic())))
     end
@@ -354,10 +439,16 @@ end
 "List local POD hints without treating their presence as live-session proof."
 function sessions()
     directory = Discovery.existing_registry_directory()
-    entries = directory === nothing ? Discovery.DiscoveryEntry[] :
+    entries =
+        directory === nothing ? Discovery.DiscoveryEntry[] :
         Discovery.list_sessions(directory)
-    return [Dict("verification"=>string(entry.verification),
-        "detail"=>entry.detail, "record"=>entry.record) for entry in entries]
+    return [
+        Dict(
+            "verification"=>string(entry.verification),
+            "detail"=>entry.detail,
+            "record"=>entry.record,
+        ) for entry in entries
+    ]
 end
 
 function _session_entry(session_id::AbstractString)
@@ -373,9 +464,11 @@ function _session_entry(session_id::AbstractString)
 end
 
 "Retain the exact direct connection used to prove the selected session's Status."
-function select_direct_session(session_id::AbstractString; deadline=Client.monotonic()+30)
-    result = SessionClient.select_direct_session(_session_entry(session_id);
-        deadline=Float64(deadline))
+function select_direct_session(session_id::AbstractString; deadline = Client.monotonic()+30)
+    result = SessionClient.select_direct_session(
+        _session_entry(session_id);
+        deadline = Float64(deadline),
+    )
     return selected_connection(result)
 end
 
@@ -388,15 +481,22 @@ function session_status(connection::SessionClient.Connection)
     status = selected.status
     status.authority === :rtc_session ||
         throw(ArgumentError("selected endpoint is not a direct RTC session"))
-    return Dict("label"=>selected.record.label, "session_id"=>status.session_id,
-        "owner_pid"=>status.owner_pid, "instance"=>status.incarnation,
-        "remote"=>status.remote, "node"=>status.node_name,
-        "global_id"=>status.global_id, "serial"=>status.object_serial,
-        "native_token"=>status.query_token, "lifecycle"=>String(status.lifecycle),
-        "authority"=>"rtc_session")
+    return Dict(
+        "label"=>selected.record.label,
+        "session_id"=>status.session_id,
+        "owner_pid"=>status.owner_pid,
+        "instance"=>status.incarnation,
+        "remote"=>status.remote,
+        "node"=>status.node_name,
+        "global_id"=>status.global_id,
+        "serial"=>status.object_serial,
+        "native_token"=>status.query_token,
+        "lifecycle"=>String(status.lifecycle),
+        "authority"=>"rtc_session",
+    )
 end
 
-function control_session(session_id::AbstractString, argv; timeout=30)
+function control_session(session_id::AbstractString, argv; timeout = 30)
     isfinite(timeout) && timeout > 0 ||
         throw(ArgumentError("control timeout must be finite and positive"))
     command = Commands.parse(argv)
@@ -414,8 +514,8 @@ function _control_arguments(argv)
     separator = findfirst(==("--"), argv)
     separator === nothing &&
         throw(ArgumentError("control requires -- between --session and the native command"))
-    args = C.cli_arguments(argv[1:separator-1]; required=["session"])
-    command = argv[separator+1:end]
+    args = C.cli_arguments(argv[1:(separator-1)]; required = ["session"])
+    command = argv[(separator+1):end]
     isempty(command) && throw(ArgumentError("control requires a native command"))
     return args.session, command
 end
@@ -427,9 +527,12 @@ Run one session command, write its report to standard output, and return the
 process exit code `0` on success. Invalid arguments and operation failures
 throw; the executable wrapper preserves Julia's error reporting and exit status.
 """
-function main(argv=ARGS)
-    isempty(argv) && throw(ArgumentError(
-        "expected install, prepare, publish, stop, cleanup, sessions, select-session or control"))
+function main(argv = ARGS)
+    isempty(argv) && throw(
+        ArgumentError(
+            "expected install, prepare, publish, stop, cleanup, sessions, select-session or control",
+        ),
+    )
     command = first(argv)
     rest = argv[2:end]
     if command == "install"
@@ -438,14 +541,15 @@ function main(argv=ARGS)
         _preflight(rest)
         SessionLaunch.main(argv; render!)
     elseif command == "publish"
-        args = C.cli_arguments(rest; required=["package", "prefix", "unit", "runtime-root"])
+        args =
+            C.cli_arguments(rest; required = ["package", "prefix", "unit", "runtime-root"])
         publish!(args)
     elseif command == "stop"
-        args = C.cli_arguments(rest; required=["unit", "runtime-root"])
+        args = C.cli_arguments(rest; required = ["unit", "runtime-root"])
         stop!(args)
     elseif command == "cleanup"
-        runtime_root = C.cli_arguments(rest;
-            required=["invocation", "runtime-root", "source-role"]).runtime_root
+        runtime_root =
+            C.cli_arguments(rest; required = ["invocation", "runtime-root", "source-role"]).runtime_root
         cleanup_error = nothing
         try
             SessionLaunch.main(argv)
@@ -462,7 +566,7 @@ function main(argv=ARGS)
         isempty(rest) || throw(ArgumentError("sessions takes no arguments"))
         println(JSON.json(sessions()))
     elseif command == "select-session"
-        args = C.cli_arguments(rest; required=["session"])
+        args = C.cli_arguments(rest; required = ["session"])
         connection = select_direct_session(args.session)
         try
             println(JSON.json(session_status(connection)))

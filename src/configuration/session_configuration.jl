@@ -2,7 +2,7 @@
 
 The caller supplies exact node-to-owner roles from the sealed export. This
 module validates those roles against retained systemd owner records and writes
-configuration only; session admission and lifecycle remain in Lua.
+configuration only; the Julia session policy owns admission and lifecycle.
 """
 module SessionConfiguration
 
@@ -55,23 +55,26 @@ function verified_pid(records, role)
 end
 verified_pid_record(item, role) = fail("node owner $role has no retained running record")
 function verified_pid_record(item::AbstractDict, role)
-    get(item, "role", nothing) == role &&
-        get(item, "state", nothing) == "running" ||
+    get(item, "role", nothing) == role && get(item, "state", nothing) == "running" ||
         fail("node owner $role has no retained running record")
     pid = get(item, "pid", nothing)
     return process_record_pid(pid, item, role)
 end
-process_record_pid(pid, item, role) = fail("node owner $role lacks verified PID and process identity")
-process_record_pid(pid::Bool, item, role) = fail("node owner $role lacks verified PID and process identity")
+process_record_pid(pid, item, role) =
+    fail("node owner $role lacks verified PID and process identity")
+process_record_pid(pid::Bool, item, role) =
+    fail("node owner $role lacks verified PID and process identity")
 function process_record_pid(pid::Integer, item, role)
-    pid > 0 && pid <= typemax(UInt32) || fail("node owner $role lacks verified PID and process identity")
+    pid > 0 && pid <= typemax(UInt32) ||
+        fail("node owner $role lacks verified PID and process identity")
     return process_record_ticks(get(item, "start-ticks", 0), pid, item, role)
 end
-process_record_ticks(ticks, pid, item, role) = fail("node owner $role lacks verified PID and process identity")
+process_record_ticks(ticks, pid, item, role) =
+    fail("node owner $role lacks verified PID and process identity")
 function process_record_ticks(ticks::Integer, pid, item, role)
     ticks > 0 &&
-        !isempty(get(item, "invocation", "")) &&
-        startswith(get(item, "cgroup", ""), "/") ||
+    !isempty(get(item, "invocation", "")) &&
+    startswith(get(item, "cgroup", ""), "/") ||
         fail("node owner $role lacks verified PID and process identity")
     return Int(pid)
 end
@@ -102,8 +105,9 @@ function node_pids(session, records, node_owners)
     end
     for (name, factory) in factories
         factory == "pipewireao.fgn-native" || continue
-        get(mapping, name, nothing) == "fgn" && fgn !== nothing &&
-            name in fgn["graph-nodes"] || fail("FGN graph is not hosted by the FGN owner")
+        get(mapping, name, nothing) == "fgn" &&
+        fgn !== nothing &&
+        name in fgn["graph-nodes"] || fail("FGN graph is not hosted by the FGN owner")
     end
     Set(keys(mapping)) == Set(names) ||
         fail("every declared source, graph and sink needs one exact owner mapping")
@@ -123,9 +127,11 @@ end
 function owner_specs(spec)
     return owner_declarations(get(spec, "owners", Any[]))
 end
-owner_declarations(entries) = fail("deployment owners must be a list of at most eight external owners")
+owner_declarations(entries) =
+    fail("deployment owners must be a list of at most eight external owners")
 function owner_declarations(entries::AbstractVector)
-    length(entries) <= D.MAX_EXTERNAL_OWNERS || fail("deployment owners must be a list of at most eight external owners")
+    length(entries) <= D.MAX_EXTERNAL_OWNERS ||
+        fail("deployment owners must be a list of at most eight external owners")
     by_role = Dict{String,Any}()
     for entry in entries
         register_owner!(by_role, entry)
@@ -144,7 +150,8 @@ end
 
 session_name(value) = fail("deployment has no validated name")
 function session_name(value::String)
-    occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value) || fail("deployment has no validated name")
+    occursin(r"^[a-z0-9][a-z0-9-]{0,39}$", value) ||
+        fail("deployment has no validated name")
     return value
 end
 declared_source_role(value) = fail("session has no declared source owner")
@@ -157,7 +164,8 @@ function private_remote_bindings(runtime::String, remote::String)
 end
 session_uuid(value) = fail("invalid session UUID binding")
 function session_uuid(value::String)
-    occursin(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", value) || fail("invalid session UUID binding")
+    occursin(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", value) ||
+        fail("invalid session UUID binding")
     return value
 end
 const AUXILIARY_ROLES_ERROR = "auxiliary source roles must uniquely name declared external owners distinct from the primary"
@@ -173,16 +181,10 @@ function auxiliary_source_roles(roles::AbstractVector, declarations, source)
     length(unique(roles)) == length(roles) || fail(AUXILIARY_ROLES_ERROR)
     return roles
 end
-bound_session_script(value) = fail("session script must be bound to its absolute trusted RTC asset")
-function bound_session_script(value::String)
-    isabspath(value) && !occursin('\0', value) ||
-        fail("session script must be bound to its absolute trusted RTC asset")
-    return value
-end
-
-function lua_owner_record(role, declaration, records, bindings)
+function owner_record(role, declaration, records, bindings)
     record = Dict{String,Any}("role" => role, "pid" => verified_pid(records, role))
-    for field in ("control-protocol", "control-node", "bootstrap-protocol", "bootstrap-node")
+    for field in
+        ("control-protocol", "control-node", "bootstrap-protocol", "bootstrap-node")
         haskey(declaration, field) && (record[field] = declaration[field])
     end
     if haskey(declaration, "bootstrap-node")
@@ -204,15 +206,24 @@ end
 Validate exact node owners and retained process identities, then return the
 RTC configuration for this invocation. This does not start a session.
 """
-function session_configuration(spec, session, bindings, records;
-                               node_owners::Dict{String,String},
-                               configuration_store_root::Union{Nothing,AbstractString}=PipeWireAORTC.ConfigurationStore.default_root())
-    isempty(D.validate_session_links(session)) && fail("native session requires at least one declared connection")
+function session_configuration(
+    spec,
+    session,
+    bindings,
+    records;
+    node_owners::Dict{String,String},
+    configuration_store_root::Union{Nothing,AbstractString} = PipeWireAORTC.ConfigurationStore.default_root(),
+)
+    isempty(D.validate_session_links(session)) &&
+        fail("native session requires at least one declared connection")
     D.validate_execution_groups(session)
     name = session_name(get(spec, "name", nothing))
     source_role = declared_source_role(get(spec, "source-owner", nothing))
     verified_pid(records, source_role)
-    runtime, remote_name = private_remote_bindings(get(bindings, "RUNTIME", nothing), get(bindings, "REMOTE", nothing))
+    runtime, remote_name = private_remote_bindings(
+        get(bindings, "RUNTIME", nothing),
+        get(bindings, "REMOTE", nothing),
+    )
     uuid = session_uuid(get(bindings, "SESSION_UUID", nothing))
     public_instance = positive_instance(bindings, "SESSION_CONTROL_INSTANCE")
     controller_instance = positive_instance(bindings, "SESSION_CONTROLLER_INSTANCE")
@@ -226,88 +237,70 @@ function session_configuration(spec, session, bindings, records;
     declarations = owner_specs(spec)
     all(role -> haskey(declarations, role) || role in ("core", "fgn"), keys(records)) ||
         fail("an owner process record has no matching owner declaration")
-    owners = Any[lua_owner_record(role, declarations[role], records, bindings)
-        for role in sort!(collect(keys(records))) if haskey(declarations, role)]
+    owners = Any[
+        owner_record(role, declarations[role], records, bindings) for
+        role in sort!(collect(keys(records))) if haskey(declarations, role)
+    ]
     haskey(declarations, source_role) || fail("source owner has no declaration")
     source_declaration = declarations[source_role]
-    source = lua_owner_record(source_role, source_declaration, records, bindings)
+    source = owner_record(source_role, source_declaration, records, bindings)
     for field in ("control-protocol", "control-node")
         haskey(source, field) || fail("source owner is missing $field")
     end
-    auxiliary_roles = auxiliary_source_roles(get(spec, "auxiliary-source-owners", String[]), declarations, source_role)
+    auxiliary_roles = auxiliary_source_roles(
+        get(spec, "auxiliary-source-owners", String[]),
+        declarations,
+        source_role,
+    )
     auxiliary = map(auxiliary_roles) do role
         declaration = declarations[role]
-        D.uses_source_control_protocol(declaration) && D.uses_bootstrap_protocol(declaration) ||
+        D.uses_source_control_protocol(declaration) &&
+        D.uses_bootstrap_protocol(declaration) ||
             fail("auxiliary source requires native SourceControl and owner bootstrap")
-        lua_owner_record(role, declaration, records, bindings)
+        owner_record(role, declaration, records, bindings)
     end
-    source_nodes = [source["control-node"], [entry["control-node"] for entry in auxiliary]...]
+    source_nodes =
+        [source["control-node"], [entry["control-node"] for entry in auxiliary]...]
     length(unique(source_nodes)) == length(source_nodes) ||
         fail("primary and auxiliary sources require distinct control node names")
-    script_path = bound_session_script(get(bindings, "SESSION_SCRIPT", nothing))
-    public_node = "pipewireao.rtc.session." * name
-    controller_node = "pipewireao.rtc.controller." * name
-    public_endpoint = Dict{String,Any}(
-        "name" => "libwireplumber-module-ao-control-endpoint", "type" => "module",
-        "provides" => "ao.session-control",
-        "arguments" => Dict{String,Any}(
-            "plugin.name" => "ao-session-control",
-            "node.name" => public_node, "profile" => "pipewireao.rtc.session/1",
-            "instance" => public_instance,
-            "properties" => Dict("pipewireao.rtc.session.session-uuid" => uuid)))
-    merge!(public_endpoint["arguments"]["properties"],
-        PipeWireAORTC.InstrumentDefinition.publication(spec,bindings))
-    controller_endpoint = Dict{String,Any}(
-        "name" => "libwireplumber-module-ao-control-endpoint", "type" => "module",
-        "provides" => "ao.session-controller",
-        "arguments" => Dict{String,Any}(
-            "plugin.name" => "ao-session-controller",
-            "node.name" => controller_node, "profile" => "pipewireao.rtc.controller/1",
-            "instance" => controller_instance))
-    script = Dict{String,Any}(
-        "name" => script_path, "type" => "script/lua",
-        "provides" => "ao.rtc-session",
-        "requires" => ["support.lua-scripting", "ao.lua", "ao.session-control", "ao.session-controller"],
-            "arguments" => Dict{String,Any}(
-            "session" => deepcopy(session), "owners" => owners, "source" => source,
-            "auxiliary-sources" => auxiliary,
-            "node.pids" => pids, "core.owner" => core_owner,
-            "instance" => string(public_instance),
-            "controller.instance" => string(controller_instance), "session.uuid" => uuid,
-            "admission.controller-instance" => string(admission_instance),
-            "startup.timeout-ms" => D.startup_timeout_ms(spec)))
-    components = Any[Dict("name" => "libwireplumber-module-lua-scripting",
-        "type" => "module", "provides" => "support.lua-scripting"),
-        Dict("name" => "libwireplumber-module-ao-lua", "type" => "module",
-            "provides" => "ao.lua"),
-        public_endpoint, controller_endpoint]
-    features = Dict("support.lua-scripting" => "required",
-        "ao.lua" => "required",
-        "ao.session-control" => "required", "ao.session-controller" => "required",
-        "ao.rtc-session" => "required")
+    policy = Dict{String,Any}(
+        "session" => deepcopy(session),
+        "owners" => owners,
+        "source" => source,
+        "auxiliary-sources" => auxiliary,
+        "node.pids" => pids,
+        "core.owner" => core_owner,
+        "instance" => string(public_instance),
+        "controller.instance" => string(controller_instance),
+        "session.uuid" => uuid,
+        "node.name" => "pipewireao.rtc.session." * name,
+        "controller.node.name" => "pipewireao.rtc.controller." * name,
+        "admission.controller-instance" => string(admission_instance),
+        "startup.timeout-ms" => D.startup_timeout_ms(spec),
+        "properties" => merge(
+            Dict("pipewireao.rtc.session.session-uuid" => uuid),
+            PipeWireAORTC.InstrumentDefinition.publication(spec, bindings),
+        ),
+    )
     if configuration_store_root !== nothing
         root = String(configuration_store_root)
         isabspath(root) && !occursin('\0', root) ||
             fail("configuration store root must be an absolute path without NUL")
-        push!(components, Dict("name" => "libwireplumber-module-ao-journal",
-            "type" => "module", "provides" => "ao.journal",
-            "arguments" => Dict("plugin.name" => "ao-journal",
-                "path" => joinpath(root, "history.sqlite3"))))
-        features["ao.journal"] = "required"
-        push!(script["requires"], "ao.journal")
-        script["arguments"]["journal.plugin"] = "ao-journal"
-        public_endpoint["arguments"]["properties"]["pipewireao.rtc.session.journal"] =
-            "pipewireao.configuration/1"
+        policy["journal.path"] = joinpath(root, "history.sqlite3")
+        policy["properties"]["pipewireao.rtc.session.journal"] = "pipewireao.configuration/1"
     end
-    push!(components, script)
     return Dict{String,Any}(
         "context.properties" => Dict{String,Any}(
-            "library.use-fallback" => false, "support.dbus" => false,
-            "remote.name" => joinpath(runtime, remote_name)),
-        "context.modules" => Any[Dict("name" => "libpipewire-module-protocol-native"),
-            Dict("name" => "libpipewire-module-client-node")],
-        "wireplumber.profiles" => Dict("ao-rtc" => features),
-        "wireplumber.components" => components)
+            "library.use-fallback" => false,
+            "support.dbus" => false,
+            "remote.name" => joinpath(runtime, remote_name),
+        ),
+        "context.modules" => Any[
+            Dict("name" => "libpipewire-module-protocol-native"),
+            Dict("name" => "libpipewire-module-client-node"),
+        ],
+        "pipewireao.session" => policy,
+    )
 end
 
 """
@@ -316,12 +309,25 @@ end
 Write validated native configuration below `runtime` and return its path.
 The runtime must match the invocation's `RUNTIME` binding.
 """
-function write_session_config(spec, session, bindings, records, runtime;
-                              node_owners::Dict{String,String},
-                              configuration_store_root::Union{Nothing,AbstractString}=PipeWireAORTC.ConfigurationStore.default_root())
+function write_session_config(
+    spec,
+    session,
+    bindings,
+    records,
+    runtime;
+    node_owners::Dict{String,String},
+    configuration_store_root::Union{Nothing,AbstractString} = PipeWireAORTC.ConfigurationStore.default_root(),
+)
     get(bindings, "RUNTIME", nothing) == runtime ||
         fail("configuration runtime differs from launch binding")
-    config = session_configuration(spec, session, bindings, records; node_owners, configuration_store_root)
+    config = session_configuration(
+        spec,
+        session,
+        bindings,
+        records;
+        node_owners,
+        configuration_store_root,
+    )
     directory = joinpath(runtime, "rtc")
     mkpath(directory)
     path = joinpath(directory, "rtc.conf")
