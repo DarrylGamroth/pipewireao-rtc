@@ -106,8 +106,9 @@ not establish a hardware or timing qualification result.
 | MSR-002 — Acknowledged owner retirement is treated as unexpected loss | P1, confirmed. Removing a captured owner always emitted RequiredLost; during ordered shutdown that event enters Fault. The adapter had no receipt-proven retirement handoff. | Fixed with `retire_owner!`: a validated bootstrap Quit receipt, matching declaration and native ClientInfo provenance authorize exact cohort retirement. Exact global-ID/serial targets remain for absence checks. Unacknowledged, foreign and shared-client captures retain loss detection. An acquisition Shutdown receipt cannot retire an entire process. Root effect integration must call this handoff and enforce the final absence fence. |
 | MSR-003 — Preparation can consume the fresh transport deadline check | P1, confirmed. An injected clock advanced to the effect deadline during identity validation; `setparam!` still invoked the native send after its earlier fresh-time check. | Fixed in transport: a final `check_job` runs immediately before enumeration or parameter submission, after identity, object and parameter preparation. The same injected-delay reproduction now refuses the send. An already-set submission marker remains conservative; the fix does not erase earlier cohort mutations. |
 | MSR-004 — Created Link admission omits LinkInfo ID correlation | P2, confirmed validation gap. Otherwise-valid LinkInfo ID 32 was admitted for bound ID 31. A sparse merge could also conceal a later raw event's changed ID by retaining the previous ID. A real native corruption trigger was not established. | Fixed: raw LinkUpdated events are checked before merging, LinkBound is checked against any earlier info, and validation compares the known bound ID. Tests cover both callback orders, changes after a valid observation, valid same-ID events and first-failure retention. |
+| MSR-005 — Link withdrawal suppresses unrelated required losses | P1, confirmed by the same controlled observations before/after. `runtime.withdrawing` suppressed every required-loss report and skipped captured identity checks. Graph removal, graph errors, identity changes and a foreign Link's removal were hidden. | Fixed: loss events always reach the machine; only destruction/error observations of an exact retiring session-created Link `(ID, serial)` are expected. Captured identity validation remains active. A copied path does not confer retirement. Required owner/graph evidence is retained until its separate receipt-proven handoff. |
 
-Observed verification: the object selector passes **94 assertions**, including
+Observed verification: the object selector passes **103 assertions**, including
 16 against an isolated private core and 11 Link-ID regression assertions. The
 same 11 assertions against the saved pre-MSR-004 source produced seven failures;
 they all pass after the fix. Existing pending-creation withdrawal, native sync
@@ -127,6 +128,15 @@ is `/tmp/rtc-msr003-deadline.jl`; before the fix it reported
 `send_at_expired_deadline=true`, and after the fix it reports `false` with an
 expiry refusal. The persistent object regressions retain the MSR-001/002/004
 invariants independently of these temporary artifacts.
+
+MSR-005 adds nine contract assertions: four failed and three dependent assertions
+errored on empty loss collections before the fix; all nine pass afterwards.
+The whole selector passes, including the existing 16 private-core checks and
+pending-creation, native sync and exact absence fences. Logs are
+`/tmp/media-session-withdrawal-before-20261105.log` and
+`/tmp/media-session-withdrawal-after-20261105.log`. The implementation uses
+concrete `Object{P,LinkInfo}` dispatch to identify Link evidence; it adds no
+phase-dependent logic to the event loop.
 
 No additional journal defect was confirmed in this review. PipeWireAO publicly
 provides `InfoTracker`, `track_info!`, `has_current_info` and `current_info` for

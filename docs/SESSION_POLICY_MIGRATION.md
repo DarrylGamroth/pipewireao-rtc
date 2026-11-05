@@ -78,6 +78,37 @@ components and Lua plugins are removed. Export stages the generated Julia
 launcher and package; installed launchers select their pinned Julia/project paths.
 Existing sealed applications are not rewritten.
 
+### Interface and trait decisions — 2026-11-05
+
+Interfaces describe operations and evidence, not a required field layout. Concrete
+types distinguish protocol and scientific kinds; traits describe independent
+properties. Reuse these existing contracts when changing their consumers:
+
+| Owning interface | Required operations and independent traits | Contract coverage |
+| --- | --- | --- |
+| `ControlClient.AbstractProfile` | The abstract type documents client/server codec methods and correlation. `reply_endpoint`, `maximum_budget` and `node_identity` describe independent wire limits and identity requirements. Clients and endpoints consume those traits without selecting concrete profiles. | `test_control_client.jl`, `control_type_dispatch.jl` and profile/endpoint selectors |
+| `CorrectionRecovery.AbstractObservation` / `AbstractLoopObservation` | Identity, token, serial, requested/applied generation and closure accessors accept alternative layouts. `controller_scope` returns `SingleController`, `CoupledControllers{N}` or `nothing` for malformed evidence. Scope is independent of observation inheritance; comparisons preserve ordered, componentwise partial ordering. | `test_recovery_observations.jl`, `test_correction_recovery.jl`, coupled-controller and native-client selectors; [interface guide](RECOVERY_OBSERVATIONS.md) |
+| `MediaSession.AbstractEvent` | Owned records implement `update!(session, event)` after native pumping; shared submission/completion records dispatch directly. No borrowed native pointers cross this boundary. | `media_session_objects.jl`, `media_session_transport.jl`, private-core selectors |
+| `MediaSession.AbstractOwner` / `AbstractSource` | `check_owner!` and `request_owner!` retain exact incarnation and reply correlation. Source methods prepare, connect, operate and shut down through concrete protocol bindings. Initial unconnected Hold retains actual Status evidence rather than inventing a connected cursor or Pause receipt. | `media_session_controls.jl`, `media_session_effects.jl`, `media_session_acquisition_private_core.jl` |
+| `MediaSession.AbstractEffect` | Hsm handlers emit typed effects; `perform!` executes once outside dispatch. `budgeted` returns a Boolean independent of phase; only emergency `Disconnect` bypasses the scientific-operation deadline. Correlated origin belongs to the effect ticket and must not be reconstructed from mutable lifecycle state. | `test_media_session.jl`, `media_session_effects.jl`, transport and private-core selectors |
+| `MediaSession.Ingress.AbstractTicket` / `AbstractAction` | Copied request tickets produce bounded dispatch, publication, journal and authority-failure actions for the session task. Journal acknowledgement precedes dispatch/publication where required. | `media_session_ingress.jl`, `media_session_journal.jl` |
+| Calibration preparation/acquisition and correction loops | These are concrete Hsm machines, not missing abstract interfaces. Their event and effect contracts retain run/serial/deadline and restoration/release invariants. Acquisition's parametric `Plan` reuses the codec-owned `AbstractRule` rather than creating another rule hierarchy. | `test_calibration_preparation.jl`, `test_calibration_acquisition.jl`, `test_calibration_procedure.jl`, `test_correction_loops.jl`, `hsm_allocations.jl` |
+
+An internal adapter interface does not by itself promise a public plugin API.
+Required method docstrings live beside their owning abstract type; this table
+connects those contracts to the migration and existing tests. Do not add an
+abstract type or trait solely to make every module look alike. In particular,
+Hsm state hierarchy decides phase behavior, protocol dispatch validates external
+evidence, and capability traits do not replace either responsibility.
+
+Review found two concrete integration seams: property effects discarded their
+captured origin and reread mutable lifecycle state; link withdrawal globally
+suppressed required-loss observations. Their remediations and discriminating
+tests belong in the [migration evidence](reviews/20261104-media-session/REVIEW.md).
+The clock exceptions below remain explicit migration work, not a second clock
+convention. This inventory establishes source contracts, not completion of every
+optional integration or hardware gate.
+
 ### Clock consistency audit — 2026-11-05
 
 This is a source inventory and migration order, not implementation completion.

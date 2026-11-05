@@ -650,6 +650,72 @@ function shutdown_cohort(; shared_client = false, graph_client = UInt32(10))
     return runtime, owner
 end
 
+@testset "Link withdrawal preserves unrelated required-loss observations" begin
+    runtime, _ = shutdown_cohort()
+    runtime.withdrawing = true
+    remove_object!(runtime, UInt32(12))
+    @test length(runtime.machine.losses) == 1
+    @test occursin("id=12", only(runtime.machine.losses))
+
+    runtime, _ = shutdown_cohort()
+    runtime.withdrawing = true
+    object = runtime.objects[UInt32(12)]
+    update!(runtime, ObjectError(object.id, object.serial, "required graph failed"))
+    @test runtime.machine.losses == ["required graph failed"]
+
+    runtime, _ = shutdown_cohort()
+    runtime.withdrawing = true
+    object = runtime.objects[UInt32(12)]
+    info = object.info
+    properties = copy(info.properties)
+    properties["client.id"] = "20"
+    changed = NodeInfo(
+        info.id,
+        info.max_input_ports,
+        info.max_output_ports,
+        PipeWireAO.NODE_CHANGE_PROPERTIES,
+        info.n_input_ports,
+        info.n_output_ports,
+        info.state,
+        info.error,
+        properties,
+        info.params,
+    )
+    update!(runtime, ObjectUpdated(object.id, object.serial, changed))
+    @test length(runtime.machine.losses) == 1
+    @test occursin("Required object changed", only(runtime.machine.losses))
+
+    runtime = TestRuntime()
+    runtime.client_id = UInt32(7)
+    runtime.withdrawing = true
+    record = link_record()
+    record.id, record.serial = UInt32(31), UInt64(310)
+    record.retiring = true
+    push!(runtime.links, record)
+    for (id, serial) in ((UInt32(31), UInt64(310)), (UInt32(32), UInt64(320)))
+        info = link_info(record; id)
+        properties = merge(copy(info.properties), Dict("object.serial"=>string(serial)))
+        object = Object{TestProxy,LinkInfo}(
+            id,
+            serial,
+            properties,
+            TestProxy(false),
+            info,
+            false,
+        )
+        runtime.objects[id] = object
+        capture!(runtime, UInt64(id))
+    end
+    # Only the exact retiring incarnation may disappear, even if another Link
+    # copies its path. Native proxy destruction and absence fences still apply.
+    remove_object!(runtime, UInt32(31))
+    @test isempty(runtime.machine.losses)
+    @test record.retiring && !record.destroyed
+    remove_object!(runtime, UInt32(32))
+    @test length(runtime.machine.losses) == 1
+    @test occursin("id=32", only(runtime.machine.losses))
+end
+
 @testset "Withdrawal retains captured controls through terminal owner receipts" begin
     runtime, owner = shutdown_cohort()
     before = copy(runtime.captured)

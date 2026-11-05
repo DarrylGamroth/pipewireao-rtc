@@ -145,9 +145,17 @@ function _serial(properties)
     return value
 end
 function _object_error!(runtime, message)
-    runtime.withdrawing || required_lost!(runtime.machine, message)
+    required_lost!(runtime.machine, message)
     return nothing
 end
+
+# Withdrawal permits destruction of these exact session-created incarnations.
+# It does not waive captured owner, graph or foreign-Link identity requirements.
+_retiring_link(::Object, records) = false
+_retiring_link(object::Object{P,LinkInfo}, records) where {P} = any(
+    record->record.retiring && record.id == object.id && record.serial == object.serial,
+    records,
+)
 
 # Wire tags are normalized only at registry admission. Runtime behavior uses
 # concrete proxy/info types, including sparse-info merge and state validation.
@@ -344,7 +352,7 @@ function _update_info!(runtime, object::Object{P,I}, info::I) where {P,I}
     info.id == object.id ||
         return _object_error!(runtime, "Object info ID differs from registry identity")
     object.info = _merge_info(object.info, info)
-    if haskey(runtime.captured, object.id) && !runtime.withdrawing
+    if haskey(runtime.captured, object.id)
         try
             assert_identity!(runtime, UInt64(object.id))
         catch error
@@ -366,7 +374,9 @@ function update!(runtime, event::ObjectError)
         !parameter_error!(runtime, event.id, event.sequence, event.message) ||
         return nothing
     object.removed = true
-    haskey(runtime.captured, event.id) && _object_error!(runtime, event.message)
+    haskey(runtime.captured, event.id) &&
+        !_retiring_link(object, runtime.links) &&
+        _object_error!(runtime, event.message)
     return nothing
 end
 function remove_object!(runtime, id::UInt32)
@@ -375,7 +385,7 @@ function remove_object!(runtime, id::UInt32)
     object.removed = true
     if haskey(runtime.captured, id)
         delete!(runtime.captured, id)
-        _object_error!(
+        _retiring_link(object, runtime.links) || _object_error!(
             runtime,
             "Required registry incarnation removed: id=$id serial=$(object.serial)",
         )
