@@ -9,7 +9,25 @@ const Envelope = ControlCodec
 const SPA = PipeWireAO.SPA
 const PROTOCOL = "pipewireao.rtc-control/1"
 const CONTROLLER_PROFILE = "pipewireao.rtc.controller/1"
-"Owner-specific native control profile; traits preserve exact wire contracts."
+"""Interface for one versioned owner-control protocol.
+
+A client profile implements `profile_name`, `capability_names`, `lifecycle_type`,
+`completion_type`, `rejection_type`, `operation_id`, `encode_request`,
+`decode_completion` and `decode_rejection`. Capability names are the ordered
+version, instance, owner PID, lifecycle, last token and controller-list fields.
+Lifecycle is an enum type. Decoded replies retain the common `ControlCodec`
+header and the profile's lifecycle; codecs reject invalid widths, tags and shapes.
+
+Server profiles additionally implement `decode_request`, `encode_completion`,
+`encode_rejection` and `encode_failure`. The common endpoint owns envelope
+admission and correlation; a profile must not create another request authority.
+
+Independent protocol properties use the traits `reply_endpoint` (`:lifecycle`
+or `:calibration`), `maximum_budget` (seconds), and `node_identity` (an optional
+immutable String pinned to a bound NodeInfo incarnation). Their defaults suit
+ordinary lifecycle profiles. Extend these traits when the wire contract differs,
+rather than selecting concrete profile types in the shared client or endpoint.
+"""
 abstract type AbstractProfile end
 function profile_name end
 function capability_names end

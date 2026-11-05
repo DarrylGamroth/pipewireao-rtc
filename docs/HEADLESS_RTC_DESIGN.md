@@ -10,6 +10,19 @@ identity checks, source hold/release, bounded waits and cleanup requirements in
 RTC-DEV-002/003/004/009/012/013/021/022/030/031. Historical results retain their
 original providers and qualification scope.
 
+### Current implementation selection — 2026-11-04
+
+The user selected Julia `MediaSession` using PipeWireAO.jl directly, removing
+both the Lua policy and libwireplumber dependency. RTC-ARCH-026 remains the
+single application authority. A separately configured WirePlumber process may
+provide site/device policy when a profile declares it; it does not own RTC
+admission, lifecycle or declared application Links. This replacement is under
+implementation and is not ready or qualified. See the
+[migration record](SESSION_POLICY_MIGRATION.md) and
+[current roadmap](roadmap.md#current-work). All dated libwireplumber design,
+implementation and verification details below retain their original selection
+and evidence scope; they do not qualify the Julia implementation.
+
 Upstream WirePlumber may manage separately configured site/device policy. No
 AO-specific device policy is currently defined or qualified. The ordinary Git
 fork is a contribution vehicle for upstream patches. Device policy does not
@@ -43,16 +56,18 @@ flowchart LR
     Systemd -->|process lifetime| Science
 ```
 
-The headless application uses public libwireplumber APIs: `WpCore`, `WpConf`,
-`ObjectManager`, asynchronous hooks/transitions and the public `WpLink` API. Reusing that library does not run the WirePlumber
-daemon. The application must not advertise `wireplumber.daemon=true`, select a
-privileged manager socket, or load desktop auto-connect/device policy.
+The selected Julia application uses PipeWireAO.jl's public discovery, proxy,
+Link and main-loop interfaces. It does not load libwireplumber, Lua policy or
+desktop/device-policy configuration. The older libwireplumber API selection
+and its identity/configuration constraints are retained in the dated historical
+sections below.
 
-The existing AO Lua policy, native control shim and asynchronous SQLite journal
-move to this repository's `runtime/` tree. They retain one serialized session
-authority and one native public endpoint. Link/SI interfaces follow upstream WirePlumber; RTC does not add methods to
-those library classes. Application modules, scripts and their tests
-are removed from the WirePlumber daemon build/install surface.
+The former Lua-policy migration plan retained one serialized session authority
+and one native public endpoint while moving its code under `runtime/`. That
+provider selection is superseded: the Julia `MediaSession` module now owns the
+serialized policy in the RTC process, and production export does not stage Lua
+or libwireplumber assets. Historical Link/SI API details below describe the
+former implementation only.
 
 Scientific owners still apply values and report adoption. The RTC coordinates
 operations and journals requests/completions; it does not decode FITS or perform
@@ -458,25 +473,33 @@ Implementation order and acceptance evidence:
    checks. Generation equality proves plan adoption, not a physical response or
    a transition frame; this increment makes neither claim.
 
-## Naming and deployment
+## Current naming and deployment
 
 | Surface | Meaning and authority |
 | --- | --- |
 | `pipewireao-rtc` | Headless application executable; existing product name |
+| `MediaSession` | Julia owner for discovery, application Links, readiness and lifecycle policy, using PipeWireAO.jl public APIs |
 | `SessionConfiguration`, `SessionLaunch`, `SessionInstall`, `SessionRuntime`, `SessionCLI` | Application configuration and existing one-shot tooling, moved from their former `WirePlumber*` names |
 | `session-runtime`, placement `session` | Deployment declaration and CPU placement for the headless application |
 | `rtc/rtc.conf`, `RTC_CONFIG` | Invocation-local application configuration |
-| `wireplumber.profiles`, `wireplumber.components`, `WIREPLUMBER_*` library search paths | Adopted libwireplumber configuration/API names; these do not grant daemon authority |
-| `libwireplumber-module-ao-*`, `ao/session.lua`, native protocol names | Existing plugin/script/wire boundaries retained during relocation |
+| `pipewireao.session` | Native relaxed SPA-JSON key for generated MediaSession policy |
+| `PIPEWIREAORTC_JULIA`, `PIPEWIREAORTC_PROJECT` | Pinned Julia executable and project selected for the session process |
 
-Each systemd invocation starts the real headless executable, with a sealed
-minimal configuration. There is no fallback to the WirePlumber daemon or
-retired runtime coordinators. The process still binds owners by PID/start time,
-publishes the same native session endpoint, and uses the existing core/source
-first emergency cleanup. Optional device policy must not independently link or
-auto-reconnect the RTC's declared application ports.
+Each systemd invocation starts the generated Julia launcher with a sealed
+configuration. The launcher execs the selected Julia runtime, preserving its PID
+and systemd lifetime. The launch record pins the Julia executable, project and
+exact arguments for process verification. Owner PID/start-time fences,
+the native session endpoint and core/source-first cleanup remain in force. An
+independent device-policy process must not own or reconnect the RTC's declared
+application Links.
 
-## Implementation and acceptance
+## Superseded 2026-10-21 implementation and acceptance plan
+
+The following implementation plan selected libwireplumber and Lua. It is kept
+as historical rationale and is superseded by the Julia/PipeWireAO migration
+above. Current implementation and acceptance gates are in the
+[migration record](SESSION_POLICY_MIGRATION.md) and
+[roadmap current work](roadmap.md#current-work).
 
 1. Move the application modules, Lua policy and tests without rewriting their
    scientific or lifecycle semantics. Add a small library-based native host;

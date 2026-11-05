@@ -120,10 +120,21 @@ This supersedes RTC-ARCH-025's assignment to the WirePlumber daemon, without
 restoring the retired Rust Statig or Julia DeploymentRunner coordinators.
 The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gates.
 
+On 2026-11-04 the user selected a further implementation change: replace both
+the Lua session policy and libwireplumber dependency with the Julia
+`MediaSession` module using PipeWireAO.jl's public APIs directly. RTC-ARCH-026's
+single application authority remains unchanged. An independently configured
+WirePlumber process may provide declared site/device policy, but is not an RTC
+dependency and must not own RTC admission, lifecycle or declared application
+links. This migration is underway and is not yet ready or qualified; see the
+[current roadmap](roadmap.md#current-work) and
+[migration record](SESSION_POLICY_MIGRATION.md). Previous WirePlumber results
+remain evidence for their original provider and scope.
+
 | Component | Selected responsibility |
 | --- | --- |
-| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. Reuse libwireplumber hooks, discovery and public WpLink APIs. |
-| Upstream WirePlumber, with separately configured site/device policy where needed | Manage configured devices, access and shared routing; do not coordinate RTC application lifecycle or create its declared application links. |
+| Headless RTC application | Own lifecycle, exact admission, explicit application links, source-first stop, reset/update sequencing, deadlines, required-loss handling, cleanup and fresh readmission. The Julia `MediaSession` owner uses PipeWireAO.jl's public interfaces. |
+| Independent WirePlumber, when declared | Provide separately configured site/device policy; do not own RTC application lifecycle, admission or declared application links. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
 | FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
@@ -131,14 +142,12 @@ The [headless design](HEADLESS_RTC_DESIGN.md) defines the implementation and gat
 | AOC and Julia calibration clients | Own calibration algorithms/estimates and coordinate acquisition through deployed endpoints. |
 | Julia deployment tools and GUI/CLI | Export/install/preflight or request and observe bounded native operations as clients; do not duplicate live lifecycle ownership. |
 
-The headless executable uses public libwireplumber APIs as an ordinary
-application. Its minimal configuration excludes desktop auto-connect policy,
-manager-socket preference and the WirePlumber daemon identity. Selective
-`ObjectManager` features observe declared identities and Links without
-subscribing to unrelated scientific Node Props. Scientific owners retain
-internal graphs and workers. Startup alone does not authorize source release.
+The headless executable uses PipeWireAO.jl's public discovery, proxy, Link and
+main-loop interfaces from its Julia `MediaSession` owner. The RTC does not load
+Lua policy or libwireplumber. Scientific owners retain internal graphs and
+workers. Startup alone does not authorize source release.
 
-## Active scope
+## Earlier active scope (superseded)
 
 The former implementation began with the Rust Statig runner described below.
 The paragraphs and milestones through this historical scope record the
@@ -244,21 +253,18 @@ The GUI reuses the existing catalog and parameter transaction interface.
 
 ## System boundary
 
-### WirePlumber and application tooling
+### Session policy and independent device policy
 
-Current runtime integration uses upstream WirePlumber; the ordinary Git fork
-is a contribution vehicle for upstream patches. Build and package integration lives in the sibling
-[PipeWireAO package guide](../../wireplumber/packaging/pipewireao/README.md).
-Site/device policy is configured separately through stock WirePlumber
-configuration. No AO-specific device policy is currently defined or qualified.
-
-The headless RTC is the application lifecycle owner: it admits declared
-endpoints, owns application Links, serializes transitions and detects cohort
-failure. It uses libwireplumber's public discovery, hooks and WpLink APIs.
-Upstream WirePlumber may manage separately configured site/device policy. Julia
-tools define application configuration, calibration bindings and one-shot deployment/control
-commands. systemd owns process lifetime; AOS/JFG/FGN execute scientific work.
-The GUI observes these owners and submits operator requests.
+The headless RTC's Julia `MediaSession` module is the sole application lifecycle
+owner. It uses PipeWireAO.jl's public APIs to discover declared endpoints, own
+application Links, serialize transitions and detect cohort failure. Production
+configuration, export and installation do not stage Lua or libwireplumber
+assets. A separate WirePlumber process may provide site/device policy when a
+profile declares it; it must not become a second RTC session authority.
+systemd owns process lifetime; AOS/JFG/FGN execute scientific work. Julia tools
+define application configuration, calibration bindings and one-shot deployment
+and control commands. The GUI observes these owners and submits operator
+requests.
 
 Selected on 2026-10-21, cold simulator settings management is a narrow
 application-replacement operation. Plants declare immutable defaults and JSON
@@ -446,9 +452,10 @@ recovery behavior. RTC-ARCH-025 supersedes this implementation allocation;
 the identifier and original rationale remain reserved.
 
 The selected deployment uses separate PipeWire, headless RTC and scientific
-owner processes. Device profiles may additionally use upstream WirePlumber with
-separately configured site/device policy. It does not require one process per
-graph operation.
+owner processes. A declared device profile may use upstream WirePlumber as an
+independent process for separately configured site/device policy; it is not an
+RTC library dependency or application-session authority. The deployment does
+not require one process per graph operation.
 
 ### Julia design conventions
 
@@ -586,7 +593,7 @@ is selected independently of the RTC graph owner.
 CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
 selected device fails preparation rather than falling back to CPU.
 
-In the selected workstation/WirePlumber integration, AOS HIL is an optional
+In the selected workstation session integration, AOS HIL is an optional
 instrument provider that becomes a required session participant when selected.
 An instance may provide multiple sensor/diagnostic sources and command sinks on
 the selected PipeWireAO core. The session declares endpoint roles, exact owner

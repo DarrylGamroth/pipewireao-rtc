@@ -16,12 +16,22 @@ pilots below retain their original scope; they do not define current ownership.
 The [architecture](architecture.md), [operating contract](operations.md) and
 [current roadmap](roadmap.md#current-work) remain authoritative.
 
+On 2026-11-04 the user selected the Julia `MediaSession` owner using
+PipeWireAO.jl directly, removing Lua policy and libwireplumber from the RTC
+dependency and export path. This work is under implementation and is not ready
+or qualified. A separately configured WirePlumber process may provide declared
+site/device policy, but it must not become a second RTC authority. Earlier
+WirePlumber integration results below remain scoped to their recorded providers
+and configurations; they do not qualify the selected replacement.
+
 ## Component responsibilities
 
-The workstation should assemble existing components around an ordinary PipeWire
+The workstation assembles existing components around an ordinary PipeWire
 session. Our extensions are NDArray transport and scientific graph execution.
-Process supervision, object discovery and general session policy can use systemd
-and WirePlumber. Algorithms remain in their scientific packages.
+systemd owns process supervision; the RTC's Julia `MediaSession` owner uses
+PipeWireAO.jl for RTC discovery and declared links. A separately configured
+WirePlumber process may provide site/device policy without owning the RTC
+session. Algorithms remain in their scientific packages.
 
 Graph authoring remains in existing PipeWireAO `filter.graph` configurations,
 using standard PipeWire relaxed SPA-JSON. AOS model configuration and AOC method
@@ -37,7 +47,7 @@ format.
 | **AOS** | Simulate the instrument: atmosphere, optics, mirrors, wavefront sensors and detectors | An owner may publish multiple sources and sinks; the current HIL adapter exposes one WFS/command exchange |
 | **AOC** | Prepare probes, estimate interaction matrices, construct reconstructors and calculate calibration diagnostics | Numerical plans, workspaces and results; acquisition uses the deployed instrument endpoints |
 | **Upstream WirePlumber** | Optionally apply separately configured site/device policy | Stock WirePlumber configuration and interfaces; no AO-specific device policy is currently defined or qualified |
-| **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy using libwireplumber | Existing native session/owner contracts and public WpLink APIs |
+| **Headless RTC** | Own exact discovery, application links, readiness and coordinated start/stop/reset/failure policy in Julia `MediaSession` | Existing native session/owner contracts through PipeWireAO.jl public APIs |
 | **systemd** | Start, stop and supervise processes; apply resource and scheduling limits | User services and, where configured, administrator-provisioned resources |
 | **PipeWireAORTC application/deployment tools** | Export, install and preflight applications; verify processes and request operations as clients | Standard configuration, systemd services and native session controls |
 | **Workstation GUI and CLI tools** | Edit/select configurations, request lifecycle and property/parameter changes, and observe status | Clients of the headless RTC and scientific owners |
@@ -281,7 +291,11 @@ Focal-plane sharpening primitives are available, but they do not by themselves
 constitute a deployed closed-loop sharpening workflow. Saved configurations and
 reports may use JSON; live controls retain native PipeWire serialization.
 
-## What to reuse from WirePlumber
+## Historical WirePlumber reuse analysis — 2026-10-21
+
+This section records the earlier libwireplumber integration selection. Its API
+recommendations and runtime claims are superseded by the current owner selection
+above; retain the cited reviews and receipts only for their original scope.
 
 The cloned WirePlumber 0.5.18 source already contains:
 
@@ -409,17 +423,17 @@ the RTC permanently.
 | --- | --- |
 | Process startup, termination and reaping | systemd; one-shot Julia deployment tools verify exact incarnations |
 | Optional site/device configuration, access and shared routing | Upstream WirePlumber using separately maintained stock configuration; no AO-specific policy is currently defined or qualified |
-| RTC application links, scientific readiness and lifecycle coordination | Headless RTC application using libwireplumber hooks and public WpLink APIs |
+| RTC application links, scientific readiness and lifecycle coordination | Headless RTC Julia `MediaSession` using PipeWireAO.jl public APIs |
 | NDArray buffers, scheduling and internal graph execution | PipeWireAO, FGN and JFG |
 | Instrument physics and calibration algorithms | AOS/adapter and AOC/Julia scientific owners |
 | Operator interface | Optional GUI/CLI/Julia clients of the same native headless endpoint |
 
 The RTC is the only application lifecycle and link owner. Required-owner loss
-revokes admission; fresh incarnations remain held until readmission. No
-WirePlumber daemon policy independently creates those links. Device-policy
-requirements remain profile-specific. See the [implementation and acceptance
-plan](HEADLESS_RTC_DESIGN.md); historical provider evidence below is not a
-qualification claim for the new host.
+revokes admission; fresh incarnations remain held until readmission. A separate
+device-policy process must not create or reconnect the declared RTC application
+links. Device-policy requirements remain profile-specific. See the
+[implementation and acceptance plan](HEADLESS_RTC_DESIGN.md); historical
+provider evidence below is not a qualification claim for the Julia replacement.
 
 ## Historical migration sequence — 2026-10-07
 

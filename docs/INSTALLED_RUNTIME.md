@@ -1,12 +1,23 @@
 # Installed AO runtime
 
-Scope: install PipeWireAO and upstream libwireplumber under `/opt/pipewireao`
-and export sealed session packages from installed assets. An optional upstream
-WirePlumber daemon uses separately configured site/device policy. RTC-ARCH-026 selects
-the headless RTC as application authority and systemd as process owner. Scientific
-algorithms, graph configurations, native controls and placement are unchanged.
+## Current selection — 2026-11-04
 
-## Delivery sequence
+The user selected replacing both Lua and libwireplumber with the Julia
+`MediaSession` owner using PipeWireAO.jl's public APIs. Production packages stage
+a generated Julia launcher and the selected Julia project; they do not stage
+Lua or libwireplumber assets. An independent WirePlumber process may provide
+separately declared site/device policy, but is not an RTC dependency or a second
+session authority. RTC-ARCH-026's allocation of lifecycle ownership to the
+headless RTC and process ownership to systemd remains in force. This migration
+is underway and is not ready or qualified;
+follow the [current roadmap](roadmap.md#current-work) and
+[migration record](SESSION_POLICY_MIGRATION.md).
+
+The installation steps and receipt below describe the earlier libwireplumber
+selection. They remain historical evidence only and are not current deployment
+instructions.
+
+## Historical delivery sequence — 2026-10-08
 
 1. Build PipeWireAO with the existing multiarch library directory and AO-only
    runtime options. Stage the install. Preserve external SPA plugins and the
@@ -37,7 +48,7 @@ policy changes are needed. Tests and builds live in temporary directories. No
 running service is restarted. Timing, other profiles and physical devices retain
 their existing qualification limits.
 
-Build commands and observed installation checks are recorded in the
-[dated validation receipt](validation/installed-runtime-20261008/README.md).
-Installed runtime assets are the default export prerequisites. Explicit
-development build/source selection remains available.
+The former selection's build commands and installation checks are recorded in
+the [dated validation receipt](validation/installed-runtime-20261008/README.md).
+They do not qualify the selected Julia runtime or establish current export
+prerequisites.
