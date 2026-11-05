@@ -10,6 +10,7 @@ import Hsm
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import ..Common
 import ..RunnerCodec
+import ..SessionCodec
 import ..ControlCodec
 import ..ControlClient
 import ..OwnerBootstrapCodec

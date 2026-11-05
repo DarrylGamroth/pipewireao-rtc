@@ -1,3 +1,8 @@
+const SESSION_EFFECT_TIMEOUT_NS = Int64(5_000_000_000)
+const DEFAULT_STARTUP_TIMEOUT_NS = Int64(300_000_000_000)
+const MIN_STARTUP_TIMEOUT_NS = Int64(1_000_000_000)
+const MAX_STARTUP_TIMEOUT_NS = Int64(3_600_000_000_000)
+
 """Exact native endpoint/controller incarnation, including its owning process."""
 struct Identity
     global_id::UInt32
@@ -6,55 +11,234 @@ struct Identity
     pid::UInt32
 end
 
-abstract type Origin end
-struct OfflineOrigin <: Origin end
-struct ConfiguringOrigin <: Origin end
-struct ReadyOrigin <: Origin end
-struct RunningOrigin <: Origin end
-struct FaultOrigin <: Origin end
+abstract type AbstractOrigin end
+struct OfflineOrigin <: AbstractOrigin end
+struct ConfiguringOrigin <: AbstractOrigin end
+struct ReadyOrigin <: AbstractOrigin end
+struct RunningOrigin <: AbstractOrigin end
+struct FaultOrigin <: AbstractOrigin end
 
-abstract type Command end
-for (name, id) in ((:Quit,1),(:Groups,2),(:Status,3),(:Properties,4),
-        (:PropertyGeneration,5),(:ParameterGeneration,6),(:StopGroup,7),
-        (:StartGroup,8),(:Stop,9),(:Start,10),(:SourceEnded,11),(:Reset,12),
-        (:SetProperties,13),(:SetParameter,14),(:InspectWarmup,15),(:Admit,16))
-    @eval begin
-        struct $name <: Command end
-        operation(::$name) = UInt32($id)
-        _command(::Val{$id}) = $name()
-    end
+abstract type AbstractCommand end
+struct Quit <: AbstractCommand
 end
 
-"""Owned, normalized public request. Deadlines are absolute monotonic seconds.
+const QUIT_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:quit))
+operation(::Quit) = QUIT_OPERATION
+
+_command(::Val{QUIT_OPERATION}) = Quit()
+
+struct Groups <: AbstractCommand
+end
+
+const GROUPS_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:groups))
+operation(::Groups) = GROUPS_OPERATION
+
+_command(::Val{GROUPS_OPERATION}) = Groups()
+
+struct Status <: AbstractCommand
+end
+
+const STATUS_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:status))
+operation(::Status) = STATUS_OPERATION
+
+_command(::Val{STATUS_OPERATION}) = Status()
+
+struct Properties <: AbstractCommand
+end
+
+const PROPERTIES_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties))
+operation(::Properties) = PROPERTIES_OPERATION
+
+_command(::Val{PROPERTIES_OPERATION}) = Properties()
+
+struct PropertyGeneration <: AbstractCommand
+end
+
+const PROPERTY_GENERATION_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:property_generation))
+operation(::PropertyGeneration) = PROPERTY_GENERATION_OPERATION
+
+_command(::Val{PROPERTY_GENERATION_OPERATION}) = PropertyGeneration()
+
+struct ParameterGeneration <: AbstractCommand
+end
+
+const PARAMETER_GENERATION_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter_generation))
+operation(::ParameterGeneration) = PARAMETER_GENERATION_OPERATION
+
+_command(::Val{PARAMETER_GENERATION_OPERATION}) = ParameterGeneration()
+
+struct StopGroup <: AbstractCommand
+end
+
+const STOP_GROUP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:stop_group))
+operation(::StopGroup) = STOP_GROUP_OPERATION
+
+_command(::Val{STOP_GROUP_OPERATION}) = StopGroup()
+
+struct StartGroup <: AbstractCommand
+end
+
+const START_GROUP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:start_group))
+operation(::StartGroup) = START_GROUP_OPERATION
+
+_command(::Val{START_GROUP_OPERATION}) = StartGroup()
+
+struct Stop <: AbstractCommand
+end
+
+const SESSION_STOP_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_stop))
+operation(::Stop) = SESSION_STOP_OPERATION
+
+_command(::Val{SESSION_STOP_OPERATION}) = Stop()
+
+struct Start <: AbstractCommand
+end
+
+const SESSION_START_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:session_start))
+operation(::Start) = SESSION_START_OPERATION
+
+_command(::Val{SESSION_START_OPERATION}) = Start()
+
+struct SourceEnded <: AbstractCommand
+end
+
+const SOURCE_ENDED_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:source_ended))
+operation(::SourceEnded) = SOURCE_ENDED_OPERATION
+
+_command(::Val{SOURCE_ENDED_OPERATION}) = SourceEnded()
+
+struct Reset <: AbstractCommand
+end
+
+const RESET_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:reset))
+operation(::Reset) = RESET_OPERATION
+
+_command(::Val{RESET_OPERATION}) = Reset()
+
+struct SetProperties <: AbstractCommand
+end
+
+const PROPERTIES_SET_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:properties_set))
+operation(::SetProperties) = PROPERTIES_SET_OPERATION
+
+_command(::Val{PROPERTIES_SET_OPERATION}) = SetProperties()
+
+struct SetParameter <: AbstractCommand
+end
+
+const PARAMETER_OPERATION = RunnerCodec.operation_id(RunnerCodec.RunnerCommand(:parameter))
+operation(::SetParameter) = PARAMETER_OPERATION
+
+_command(::Val{PARAMETER_OPERATION}) = SetParameter()
+
+struct InspectWarmup <: AbstractCommand
+end
+
+const WARMUP_OPERATION = SessionCodec.operation_id(SessionCodec.WarmupCommand())
+operation(::InspectWarmup) = WARMUP_OPERATION
+
+_command(::Val{WARMUP_OPERATION}) = InspectWarmup()
+
+struct Admit <: AbstractCommand
+end
+
+const ADMIT_OPERATION = SessionCodec.operation_id(SessionCodec.AdmitCommand())
+operation(::Admit) = ADMIT_OPERATION
+
+_command(::Val{ADMIT_OPERATION}) = Admit()
+
+"""Owned, normalized public request. Deadlines are absolute signed monotonic nanoseconds.
 
 The ingress proves the native controller record and copies the payload before
 constructing this value. Admission additionally pins the launcher's identity.
+`deadline` must be an `Int64` in the clock's nanosecond domain; seconds and
+unsigned ticks are rejected. Negative clock origins are valid. The default
+`typemax(Int64)` leaves the machine's five-second effect budget in force.
 """
-struct Request{C<:Command,P}
+struct Request{C<:AbstractCommand,P}
     command::C
     token::UInt64
-    deadline::Float64
+    deadline::Int64
     payload::P
     controller::Union{Nothing,Identity}
 end
-function Request(id::Integer; token::Integer=0, deadline::Real=Inf,
+function Request(command::AbstractCommand; token::Integer=0, deadline::Int64=typemax(Int64),
         payload=nothing, controller::Union{Nothing,Identity}=nothing)
-    1 <= id <= 16 || throw(ArgumentError("unsupported session operation"))
     token >= 0 || throw(ArgumentError("negative request token"))
-    isnan(deadline) && throw(ArgumentError("invalid request deadline"))
-    return Request(_command(Val(Int(id))),UInt64(token),Float64(deadline),payload,controller)
+    return Request(command,UInt64(token),deadline,payload,controller)
 end
+function Request(id::Integer;kwargs...)
+    0 <= id <= typemax(UInt32) || throw(ArgumentError("invalid session operation"))
+    return Request(_command(Val(UInt32(id)));kwargs...)
+end
+_command(::Val) = throw(ArgumentError("unsupported session operation"))
 operation(r::Request) = operation(r.command)
 
-abstract type Effect end
-for name in (:CaptureOwners,:ConnectOwners,:CaptureParameters,:CaptureSources,
-        :PrepareSources,:DiscoverGraphs,:HoldSources,:ConnectLinks,:HoldGraphs,
-        :RunSources,:QuerySourceEnd,:ResetSources,:ResetGraphs,:WithdrawLinks,
-        :ShutdownSources,:ShutdownOwners,:RemoveControls,:PublishQuit,:Disconnect,
-        :QueryGroups,:QueryStatus)
-    @eval struct $name <: Effect end
+abstract type AbstractEffect end
+struct CaptureOwners <: AbstractEffect
 end
-struct RunGraphs{G} <: Effect
+
+struct ConnectOwners <: AbstractEffect
+end
+
+struct CaptureParameters <: AbstractEffect
+end
+
+struct CaptureSources <: AbstractEffect
+end
+
+struct PrepareSources <: AbstractEffect
+end
+
+struct DiscoverGraphs <: AbstractEffect
+end
+
+struct HoldSources <: AbstractEffect
+end
+
+struct ConnectLinks <: AbstractEffect
+end
+
+struct HoldGraphs <: AbstractEffect
+end
+
+struct RunSources <: AbstractEffect
+end
+
+struct QuerySourceEnd <: AbstractEffect
+end
+
+struct ResetSources <: AbstractEffect
+end
+
+struct ResetGraphs <: AbstractEffect
+end
+
+struct WithdrawLinks <: AbstractEffect
+end
+
+struct ShutdownSources <: AbstractEffect
+end
+
+struct ShutdownOwners <: AbstractEffect
+end
+
+struct RemoveControls <: AbstractEffect
+end
+
+struct PublishQuit <: AbstractEffect
+end
+
+struct Disconnect <: AbstractEffect
+end
+
+struct QueryGroups <: AbstractEffect
+end
+
+struct QueryStatus <: AbstractEffect
+end
+
+struct RunGraphs{G} <: AbstractEffect
     group::G
     running::Bool
 end
@@ -67,13 +251,26 @@ must execute even after the source-Hold deadline; no scientific mutation is
 authorized by this exception. The backend dispatches Disconnect directly and
 must not route it through a deadline-admission check for ordinary effects.
 """
-budgeted(::Effect) = true
+budgeted(::AbstractEffect) = true
 budgeted(::Disconnect) = false
-for name in (:QueryProperties,:QueryPropertyGeneration,:QueryParameterGeneration,
-        :UpdateProperties,:SubmitParameter)
-    @eval struct $name{P} <: Effect
-        payload::P
-    end
+struct QueryProperties{P} <: AbstractEffect
+    payload::P
+end
+
+struct QueryPropertyGeneration{P} <: AbstractEffect
+    payload::P
+end
+
+struct QueryParameterGeneration{P} <: AbstractEffect
+    payload::P
+end
+
+struct UpdateProperties{P} <: AbstractEffect
+    payload::P
+end
+
+struct SubmitParameter{P} <: AbstractEffect
+    payload::P
 end
 
 """One effect, issued once by the owner outside Hsm dispatch.
@@ -84,13 +281,13 @@ send that can fail. Cancellation fences delivery; it does not imply rollback.
 The target may be absent for a bounded cohort effect, whose adapter retains the
 exact identities of all its component transactions.
 """
-struct EffectTicket{E<:Effect,O<:Origin}
+struct EffectTicket{E<:AbstractEffect,O<:AbstractOrigin}
     session::UInt64
     epoch::UInt64
     serial::UInt64
     operation::UInt32
     origin::O
-    deadline::Float64
+    deadline::Int64
     effect::E
     target::Union{Nothing,Identity}
 end
@@ -98,7 +295,7 @@ end
 struct Reply{D}
     token::UInt64
     operation::UInt32
-    lifecycle::UInt32
+    lifecycle::RunnerCodec.Lifecycle
     outcome::Symbol
     details::D
     error::Union{Nothing,String}
@@ -128,19 +325,22 @@ end
 correlated terminal event. The owner drains cancellation before starting the
 replacement effect. Replies have capacity two: a cancelled request and Quit.
 No method in this machine performs native I/O, polls an owner or runs science.
-Wire lifecycle IDs remain 1–5; transient Hsm states are private.
+Wire lifecycle uses RunnerCodec.Lifecycle; transient Hsm states are private.
+The clock must implement `Clocks.AbstractNanoClock`. Its signed nanosecond
+values are used directly, including negative injected clock origins. Deadline
+addition is checked; an unrepresentable deadline raises `OverflowError`.
 """
-@hsmdef mutable struct Machine{C}
+@hsmdef mutable struct Machine{C<:Clocks.AbstractNanoClock}
     session::UInt64
     clock::C
-    startup_timeout::Float64
+    startup_timeout_ns::Int64
     admission_controller::Union{Nothing,Identity}
-    lifecycle::UInt32
-    lifecycle_origin::Origin
+    lifecycle::RunnerCodec.Lifecycle
+    lifecycle_origin::AbstractOrigin
     warmed::Bool
     epoch::UInt64
     serial::UInt64
-    origin::Origin
+    origin::AbstractOrigin
     request::Union{Nothing,Request}
     fault_request::Union{Nothing,Request}
     effect::Union{Nothing,EffectTicket}
@@ -148,7 +348,7 @@ Wire lifecycle IDs remain 1–5; transient Hsm states are private.
     cancellation_delivery::Union{Nothing,EffectTicket}
     replies::Vector{Reply}
     reply_delivery::Vector{Reply}
-    deadline::Float64
+    deadline::Int64
     mutated::Bool
     failure::Union{Nothing,String}
     cleanup_failure::Union{Nothing,String}
@@ -160,26 +360,68 @@ end
 @statedef Machine :Managed
 @statedef Machine :Configuring :Managed
 @statedef Machine :Preparing :Configuring
-for name in (:CapturingOwners,:ConnectingOwners,:CapturingParameters,
-        :CapturingSources,:PreparingSources,:DiscoveringGraphs,
-        :HoldingInitialSources,:ConnectingLinks,:HoldingInitialGraphs)
-    @eval @statedef Machine $(QuoteNode(name)) :Preparing
-end
+@statedef Machine :CapturingOwners :Preparing
+
+@statedef Machine :ConnectingOwners :Preparing
+
+@statedef Machine :CapturingParameters :Preparing
+
+@statedef Machine :CapturingSources :Preparing
+
+@statedef Machine :PreparingSources :Preparing
+
+@statedef Machine :DiscoveringGraphs :Preparing
+
+@statedef Machine :HoldingInitialSources :Preparing
+
+@statedef Machine :ConnectingLinks :Preparing
+
+@statedef Machine :HoldingInitialGraphs :Preparing
+
 @statedef Machine :AwaitingAdmission :Configuring
 @statedef Machine :Admitted :Managed
 @statedef Machine :Ready :Admitted
 @statedef Machine :Running :Admitted
 @statedef Machine :Executing :Managed
-for name in (:StartingGraphs,:StartingSources,:CheckingSourceEnd,:StoppingSources,
-        :StoppingGraphs,:ResettingSourcesHold,:ResettingGraphsHold,:ResettingSources,
-        :ResettingGraphs,:ControllingGroup,:Querying,:Updating)
-    @eval @statedef Machine $(QuoteNode(name)) :Executing
-end
+@statedef Machine :StartingGraphs :Executing
+
+@statedef Machine :StartingSources :Executing
+
+@statedef Machine :CheckingSourceEnd :Executing
+
+@statedef Machine :StoppingSources :Executing
+
+@statedef Machine :StoppingGraphs :Executing
+
+@statedef Machine :ResettingSourcesHold :Executing
+
+@statedef Machine :ResettingGraphsHold :Executing
+
+@statedef Machine :ResettingSources :Executing
+
+@statedef Machine :ResettingGraphs :Executing
+
+@statedef Machine :ControllingGroup :Executing
+
+@statedef Machine :Querying :Executing
+
+@statedef Machine :Updating :Executing
+
 @statedef Machine :ShuttingDown :Managed
-for name in (:HoldingQuitSources,:HoldingQuitGraphs,:WithdrawingQuitLinks,
-        :ShuttingSources,:ShuttingOwners,:RemovingControls,:PublishingQuit)
-    @eval @statedef Machine $(QuoteNode(name)) :ShuttingDown
-end
+@statedef Machine :HoldingQuitSources :ShuttingDown
+
+@statedef Machine :HoldingQuitGraphs :ShuttingDown
+
+@statedef Machine :WithdrawingQuitLinks :ShuttingDown
+
+@statedef Machine :ShuttingSources :ShuttingDown
+
+@statedef Machine :ShuttingOwners :ShuttingDown
+
+@statedef Machine :RemovingControls :ShuttingDown
+
+@statedef Machine :PublishingQuit :ShuttingDown
+
 @statedef Machine :Fault :Managed
 @statedef Machine :HoldingFaultSources :Fault
 @statedef Machine :HoldingFaultGraphs :Fault
@@ -191,13 +433,14 @@ end
     return Hsm.transition!(m,:Offline)
 end
 
-_now(m::Machine) = Float64(Common.monotonic_seconds(m.clock))
-function _issue!(m::Machine,effect::Effect;target=nothing)
+_now(m::Machine)::Int64 = Clocks.time_nanos(m.clock)
+_deadline(m::Machine,duration_ns::Int64) = Base.Checked.checked_add(_now(m),duration_ns)
+function _issue!(m::Machine,effect::AbstractEffect;target=nothing)
     m.effect === nothing || error("session effect already pending")
     m.serial = Base.Checked.checked_add(m.serial,UInt64(1))
     m.effect = EffectTicket(m.session,m.epoch,m.serial,
         m.request === nothing ? UInt32(0) : operation(m.request),m.origin,
-        budgeted(effect) ? m.deadline : Inf,effect,target)
+        budgeted(effect) ? m.deadline : typemax(Int64),effect,target)
     return nothing
 end
 function _reply!(m::Machine,r::Request,outcome::Symbol,details=nothing;
@@ -217,11 +460,12 @@ function _retire!(m::Machine)
     end
     return nothing
 end
-function _begin!(m::Machine,r::Request,origin::Origin)
+function _begin!(m::Machine,r::Request,origin::AbstractOrigin)
     m.effect === nothing || error("session effect already pending")
+    deadline = min(r.deadline,_deadline(m,SESSION_EFFECT_TIMEOUT_NS))
     m.epoch = Base.Checked.checked_add(m.epoch,UInt64(1))
     m.origin,m.request,m.mutated = origin,r,false
-    m.deadline = min(r.deadline,_now(m)+5.0)
+    m.deadline = deadline
     return nothing
 end
 function _finish!(m::Machine,outcome::Symbol,details=nothing)
@@ -232,12 +476,12 @@ function _finish!(m::Machine,outcome::Symbol,details=nothing)
 end
 _ready(::ReadyOrigin) = true
 _ready(::RunningOrigin) = false
-_wire_id(::OfflineOrigin) = UInt32(1)
-_wire_id(::ConfiguringOrigin) = UInt32(2)
-_wire_id(::ReadyOrigin) = UInt32(3)
-_wire_id(::RunningOrigin) = UInt32(4)
-_wire_id(::FaultOrigin) = UInt32(5)
-function _lifecycle!(m::Machine,origin::Origin)
+_wire_id(::OfflineOrigin) = RunnerCodec.Offline
+_wire_id(::ConfiguringOrigin) = RunnerCodec.Configuring
+_wire_id(::ReadyOrigin) = RunnerCodec.Ready
+_wire_id(::RunningOrigin) = RunnerCodec.Running
+_wire_id(::FaultOrigin) = RunnerCodec.Fault
+function _lifecycle!(m::Machine,origin::AbstractOrigin)
     m.lifecycle_origin,m.lifecycle = origin,_wire_id(origin)
     return nothing
 end
@@ -248,7 +492,7 @@ function _matches(m::Machine,t::EffectTicket)
         t.serial == current.serial && t.operation == current.operation &&
         t.target == current.target && t.effect === current.effect && t.origin === current.origin
 end
-_expired(m,event) = !isfinite(event.at) || event.at >= m.deadline || _now(m) >= m.deadline
+_expired(m,event) = event.at >= m.deadline || _now(m) >= m.deadline
 function _accept!(m,event)
     _matches(m,event.ticket) && !_expired(m,event) || return false
     m.effect = nothing
@@ -261,13 +505,14 @@ function _receive_failure!(m,event)
     return true
 end
 function _enter_fault!(m::Machine,reason)
+    deadline = _deadline(m,SESSION_EFFECT_TIMEOUT_NS)
     _retire!(m)
     m.failure === nothing && (m.failure = String(reason))
     m.fault_request,m.request = m.request,nothing
     m.fault_unknown = m.mutated
     _lifecycle!(m,FaultOrigin())
     m.origin = FaultOrigin()
-    m.deadline = _now(m)+5.0
+    m.deadline = deadline
     _issue!(m,HoldSources())
     return nothing
 end
@@ -284,12 +529,13 @@ function _refuse_operation!(m::Machine,reason)
     return nothing
 end
 function _begin_quit!(m::Machine,r::Request)
+    deadline = min(r.deadline,_deadline(m,SESSION_EFFECT_TIMEOUT_NS))
     _retire!(m)
     old,m.request = m.request,nothing
     old === nothing || _reply!(m,old,:Failed;error="Cancelled by shutdown",unknown=m.mutated)
     _fault_reply!(m)
     m.request,m.origin = r,m.lifecycle_origin
-    m.deadline = min(r.deadline,_now(m)+5.0)
+    m.deadline = deadline
     m.mutated = false
     _issue!(m,HoldSources())
     return nothing
@@ -304,7 +550,7 @@ end
     _lifecycle!(m,ConfiguringOrigin())
     m.origin = ConfiguringOrigin()
     m.epoch = Base.Checked.checked_add(m.epoch,UInt64(1))
-    m.deadline = _now(m)+m.startup_timeout
+    m.deadline = _deadline(m,m.startup_timeout_ns)
     _issue!(m,CaptureOwners())
     return Hsm.transition!(m,:CapturingOwners)
 end
@@ -335,33 +581,116 @@ end
 
 # Each phase retains the operation's absolute deadline. Static transitions must
 # remain in Hsm handler bodies; helpers validate records or update facts only.
-for (state,nextstate,nexteffect) in (
-        (:CapturingOwners,:ConnectingOwners,:ConnectOwners),
-        (:ConnectingOwners,:CapturingParameters,:CaptureParameters),
-        (:CapturingParameters,:CapturingSources,:CaptureSources),
-        (:CapturingSources,:PreparingSources,:PrepareSources),
-        (:PreparingSources,:DiscoveringGraphs,:DiscoverGraphs),
-        (:DiscoveringGraphs,:HoldingInitialSources,:HoldSources),
-        (:HoldingInitialSources,:ConnectingLinks,:ConnectLinks),
-        (:ConnectingLinks,:HoldingInitialGraphs,:HoldGraphs),
-        (:StartingGraphs,:StartingSources,:RunSources),
-        (:StoppingSources,:StoppingGraphs,:HoldGraphs),
-        (:ResettingSourcesHold,:ResettingGraphsHold,:HoldGraphs),
-        (:ResettingGraphsHold,:ResettingSources,:ResetSources),
-        (:ResettingSources,:ResettingGraphs,:ResetGraphs),
-        (:HoldingQuitSources,:HoldingQuitGraphs,:HoldGraphs),
-        (:HoldingQuitGraphs,:WithdrawingQuitLinks,:WithdrawLinks),
-        (:WithdrawingQuitLinks,:ShuttingSources,:ShutdownSources),
-        (:ShuttingSources,:ShuttingOwners,:ShutdownOwners),
-        (:ShuttingOwners,:RemovingControls,:RemoveControls))
-    after = state in (:StoppingSources,:ResettingSourcesHold) ? :(_lifecycle!(m,ReadyOrigin())) : nothing
-    @eval @on_event function(m::Machine,::$state,::Completion,event)
-        _accept!(m,event) || return Hsm.EventNotHandled
-        $after
-        _issue!(m,$nexteffect())
-        return Hsm.transition!(m,$(QuoteNode(nextstate)))
-    end
+@on_event function (m::Machine, ::CapturingOwners, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ConnectOwners())
+    return Hsm.transition!(m, :ConnectingOwners)
 end
+
+@on_event function (m::Machine, ::ConnectingOwners, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, CaptureParameters())
+    return Hsm.transition!(m, :CapturingParameters)
+end
+
+@on_event function (m::Machine, ::CapturingParameters, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, CaptureSources())
+    return Hsm.transition!(m, :CapturingSources)
+end
+
+@on_event function (m::Machine, ::CapturingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, PrepareSources())
+    return Hsm.transition!(m, :PreparingSources)
+end
+
+@on_event function (m::Machine, ::PreparingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, DiscoverGraphs())
+    return Hsm.transition!(m, :DiscoveringGraphs)
+end
+
+@on_event function (m::Machine, ::DiscoveringGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, HoldSources())
+    return Hsm.transition!(m, :HoldingInitialSources)
+end
+
+@on_event function (m::Machine, ::HoldingInitialSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ConnectLinks())
+    return Hsm.transition!(m, :ConnectingLinks)
+end
+
+@on_event function (m::Machine, ::ConnectingLinks, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, HoldGraphs())
+    return Hsm.transition!(m, :HoldingInitialGraphs)
+end
+
+@on_event function (m::Machine, ::StartingGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, RunSources())
+    return Hsm.transition!(m, :StartingSources)
+end
+
+@on_event function (m::Machine, ::StoppingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _lifecycle!(m, ReadyOrigin())
+    _issue!(m, HoldGraphs())
+    return Hsm.transition!(m, :StoppingGraphs)
+end
+
+@on_event function (m::Machine, ::ResettingSourcesHold, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _lifecycle!(m, ReadyOrigin())
+    _issue!(m, HoldGraphs())
+    return Hsm.transition!(m, :ResettingGraphsHold)
+end
+
+@on_event function (m::Machine, ::ResettingGraphsHold, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ResetSources())
+    return Hsm.transition!(m, :ResettingSources)
+end
+
+@on_event function (m::Machine, ::ResettingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ResetGraphs())
+    return Hsm.transition!(m, :ResettingGraphs)
+end
+
+@on_event function (m::Machine, ::HoldingQuitSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, HoldGraphs())
+    return Hsm.transition!(m, :HoldingQuitGraphs)
+end
+
+@on_event function (m::Machine, ::HoldingQuitGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, WithdrawLinks())
+    return Hsm.transition!(m, :WithdrawingQuitLinks)
+end
+
+@on_event function (m::Machine, ::WithdrawingQuitLinks, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ShutdownSources())
+    return Hsm.transition!(m, :ShuttingSources)
+end
+
+@on_event function (m::Machine, ::ShuttingSources, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ShutdownOwners())
+    return Hsm.transition!(m, :ShuttingOwners)
+end
+
+@on_event function (m::Machine, ::ShuttingOwners, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, RemoveControls())
+    return Hsm.transition!(m, :RemovingControls)
+end
+
 @on_event function(m::Machine,::HoldingInitialGraphs,::Completion,event)
     _accept!(m,event) || return Hsm.EventNotHandled
     m.warmed = true
@@ -400,16 +729,24 @@ end
     _finish!(m,:Group,event.result)
     return Hsm.transition!(m,:Running)
 end
-for (state,outcome) in ((:Querying,:Observed),(:Updating,:Updated))
-    @eval @on_event function(m::Machine,::$state,::Completion,event)
-        _accept!(m,event) || return Hsm.EventNotHandled
-        _finish!(m,$(QuoteNode(outcome)),event.result)
-        if _ready(m.origin)
-            return Hsm.transition!(m,:Ready)
-        end
-        return Hsm.transition!(m,:Running)
+@on_event function (m::Machine, ::Querying, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _finish!(m, :Observed, event.result)
+    if _ready(m.origin)
+        return Hsm.transition!(m, :Ready)
     end
+    return Hsm.transition!(m, :Running)
 end
+
+@on_event function (m::Machine, ::Updating, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _finish!(m, :Updated, event.result)
+    if _ready(m.origin)
+        return Hsm.transition!(m, :Ready)
+    end
+    return Hsm.transition!(m, :Running)
+end
+
 @on_event function(m::Machine,::PublishingQuit,::Completion,event)
     _matches(m,event.ticket) || return Hsm.EventHandled
     _expired(m,event) && (m.cleanup_failure = "Quit completion publication fence expired")
@@ -533,30 +870,48 @@ end
 
 # Fault compensation has its own absolute budget. A failed source Hold cannot
 # establish safe graph teardown: disconnect invokes systemd's emergency path.
-for event in (:Failure,:Tick)
-    validity = event === :Failure ? :(_receive_failure!(m,event)) :
-        event === :Completion ? :(_matches(m,event.ticket) && _expired(m,event)) :
-        :(m.effect !== nothing && _now(m) >= m.deadline)
-    reason = event === :Failure ? :(event.reason) : :("Fault cleanup expired; outcome unknown")
-    @eval @on_event function(m::Machine,::HoldingFaultSources,::$event,event)
-        $validity || return Hsm.EventNotHandled
-        _cleanup_failed!(m,$reason)
-        _issue!(m,Disconnect())
-        return Hsm.transition!(m,:EmergencyDisconnect)
-    end
-    @eval @on_event function(m::Machine,::HoldingFaultGraphs,::$event,event)
-        $validity || return Hsm.EventNotHandled
-        _cleanup_failed!(m,$reason)
-        _issue!(m,WithdrawLinks())
-        return Hsm.transition!(m,:WithdrawingFaultLinks)
-    end
-    @eval @on_event function(m::Machine,::Fault,::$event,event)
-        $validity || return Hsm.EventHandled
-        _cleanup_failed!(m,$reason)
-        _fault_reply!(m)
-        return Hsm.transition!(m,:HeldFault)
-    end
+@on_event function (m::Machine, ::HoldingFaultSources, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventNotHandled
+    _cleanup_failed!(m, event.reason)
+    _issue!(m, Disconnect())
+    return Hsm.transition!(m, :EmergencyDisconnect)
 end
+
+@on_event function (m::Machine, ::HoldingFaultGraphs, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventNotHandled
+    _cleanup_failed!(m, event.reason)
+    _issue!(m, WithdrawLinks())
+    return Hsm.transition!(m, :WithdrawingFaultLinks)
+end
+
+@on_event function (m::Machine, ::Fault, ::Failure, event)
+    _receive_failure!(m, event) || return Hsm.EventHandled
+    _cleanup_failed!(m, event.reason)
+    _fault_reply!(m)
+    return Hsm.transition!(m, :HeldFault)
+end
+
+@on_event function (m::Machine, ::HoldingFaultSources, ::Tick, event)
+    m.effect !== nothing && _now(m) >= m.deadline || return Hsm.EventNotHandled
+    _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
+    _issue!(m, Disconnect())
+    return Hsm.transition!(m, :EmergencyDisconnect)
+end
+
+@on_event function (m::Machine, ::HoldingFaultGraphs, ::Tick, event)
+    m.effect !== nothing && _now(m) >= m.deadline || return Hsm.EventNotHandled
+    _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
+    _issue!(m, WithdrawLinks())
+    return Hsm.transition!(m, :WithdrawingFaultLinks)
+end
+
+@on_event function (m::Machine, ::Fault, ::Tick, event)
+    m.effect !== nothing && _now(m) >= m.deadline || return Hsm.EventHandled
+    _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
+    _fault_reply!(m)
+    return Hsm.transition!(m, :HeldFault)
+end
+
 @on_event function(m::Machine,::Fault,::Completion,event)
     _matches(m,event.ticket) || return Hsm.EventHandled
     _cleanup_failed!(m,"Fault cleanup expired; outcome unknown")
@@ -616,29 +971,100 @@ end
     _reply!(m,r,:Warmup,true)
     return Hsm.transition!(m,:Ready)
 end
-for event in (:WarmupRequested,:AdmissionRequested)
-    @eval @on_event function(m::Machine,::Root,::$event,r)
-        _reply!(m,r,:Failed;error="Resource admission is not available in this state")
-        return Hsm.EventHandled
-    end
+@on_event function (m::Machine, ::Root, ::WarmupRequested, r)
+    _reply!(m, r, :Failed; error = "Resource admission is not available in this state")
+    return Hsm.EventHandled
 end
+
+@on_event function (m::Machine, ::Root, ::AdmissionRequested, r)
+    _reply!(m, r, :Failed; error = "Resource admission is not available in this state")
+    return Hsm.EventHandled
+end
+
 _event(::Quit) = :QuitRequested
 _event(::InspectWarmup) = :WarmupRequested
 _event(::Admit) = :AdmissionRequested
-for (command,event) in ((:Groups,:GroupsRequested),(:Status,:StatusRequested),
-        (:Properties,:PropertiesRequested),(:PropertyGeneration,:PropertyGenerationRequested),
-        (:ParameterGeneration,:ParameterGenerationRequested),(:StopGroup,:StopGroupRequested),
-        (:StartGroup,:StartGroupRequested),(:Stop,:StopRequested),(:Start,:StartRequested),
-        (:SourceEnded,:SourceEndedRequested),(:Reset,:ResetRequested),
-        (:SetProperties,:SetPropertiesRequested),(:SetParameter,:SetParameterRequested))
-    @eval _event(::$command) = $(QuoteNode(event))
-    if command !== :Groups && command !== :Status
-        @eval @on_event function(m::Machine,::Root,::$event,r)
-            _reply!(m,r,:Failed;error="Operation is not admitted in this state")
-            return Hsm.EventHandled
-        end
-    end
+_event(::Groups) = :GroupsRequested
+
+_event(::Status) = :StatusRequested
+
+_event(::Properties) = :PropertiesRequested
+
+@on_event function (m::Machine, ::Root, ::PropertiesRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
 end
+
+_event(::PropertyGeneration) = :PropertyGenerationRequested
+
+@on_event function (m::Machine, ::Root, ::PropertyGenerationRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::ParameterGeneration) = :ParameterGenerationRequested
+
+@on_event function (m::Machine, ::Root, ::ParameterGenerationRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::StopGroup) = :StopGroupRequested
+
+@on_event function (m::Machine, ::Root, ::StopGroupRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::StartGroup) = :StartGroupRequested
+
+@on_event function (m::Machine, ::Root, ::StartGroupRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::Stop) = :StopRequested
+
+@on_event function (m::Machine, ::Root, ::StopRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::Start) = :StartRequested
+
+@on_event function (m::Machine, ::Root, ::StartRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::SourceEnded) = :SourceEndedRequested
+
+@on_event function (m::Machine, ::Root, ::SourceEndedRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::Reset) = :ResetRequested
+
+@on_event function (m::Machine, ::Root, ::ResetRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::SetProperties) = :SetPropertiesRequested
+
+@on_event function (m::Machine, ::Root, ::SetPropertiesRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
+_event(::SetParameter) = :SetParameterRequested
+
+@on_event function (m::Machine, ::Root, ::SetParameterRequested, r)
+    _reply!(m, r, :Failed; error = "Operation is not admitted in this state")
+    return Hsm.EventHandled
+end
+
 @on_event function(m::Machine,::Root,::GroupsRequested,r)
     _reply!(m,r,:Observed,m.observation.groups)
     return Hsm.EventHandled
@@ -657,59 +1083,88 @@ end
     _issue!(m,HoldSources())
     return Hsm.transition!(m,:ResettingSourcesHold)
 end
-for (state,origin) in ((:Ready,:ReadyOrigin),(:Running,:RunningOrigin))
-    @eval @on_event function(m::Machine,::$state,::StopRequested,r)
-        _begin!(m,r,$origin())
-        _issue!(m,HoldSources())
-        return Hsm.transition!(m,:StoppingSources)
-    end
-    @eval @on_event function(m::Machine,::$state,::SourceEndedRequested,r)
-        _begin!(m,r,$origin())
-        _issue!(m,QuerySourceEnd())
-        return Hsm.transition!(m,:CheckingSourceEnd)
-    end
-    for (event,effect) in ((:GroupsRequested,:QueryGroups),(:StatusRequested,:QueryStatus))
-        @eval @on_event function(m::Machine,::$state,::$event,r)
-            _begin!(m,r,$origin())
-            _issue!(m,$effect())
-            return Hsm.transition!(m,:Querying)
-        end
-    end
-    for (event,effect,nextstate) in ((:PropertiesRequested,:QueryProperties,:Querying),
-            (:PropertyGenerationRequested,:QueryPropertyGeneration,:Querying),
-            (:ParameterGenerationRequested,:QueryParameterGeneration,:Querying),
-            (:SetPropertiesRequested,:UpdateProperties,:Updating),
-            (:SetParameterRequested,:SubmitParameter,:Updating))
-        @eval @on_event function(m::Machine,::$state,::$event,r)
-            _begin!(m,r,$origin())
-            _issue!(m,$effect(r.payload))
-            return Hsm.transition!(m,$(QuoteNode(nextstate)))
-        end
-    end
-end
-for (event,running) in ((:StopGroupRequested,false),(:StartGroupRequested,true))
-    @eval @on_event function(m::Machine,::Running,::$event,r)
-        _begin!(m,r,RunningOrigin())
-        _issue!(m,RunGraphs(r.payload,$running))
-        return Hsm.transition!(m,:ControllingGroup)
-    end
+@on_event function (m::Machine, ::Admitted, ::StopRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, HoldSources())
+    return Hsm.transition!(m, :StoppingSources)
 end
 
-function Machine(session::Integer;clock=Common.MONOTONIC_CLOCK,startup_timeout::Real=300.0,
+@on_event function (m::Machine, ::Admitted, ::SourceEndedRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QuerySourceEnd())
+    return Hsm.transition!(m, :CheckingSourceEnd)
+end
+
+@on_event function (m::Machine, ::Admitted, ::GroupsRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QueryGroups())
+    return Hsm.transition!(m, :Querying)
+end
+
+@on_event function (m::Machine, ::Admitted, ::StatusRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QueryStatus())
+    return Hsm.transition!(m, :Querying)
+end
+
+@on_event function (m::Machine, ::Admitted, ::PropertiesRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QueryProperties(r.payload))
+    return Hsm.transition!(m, :Querying)
+end
+
+@on_event function (m::Machine, ::Admitted, ::PropertyGenerationRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QueryPropertyGeneration(r.payload))
+    return Hsm.transition!(m, :Querying)
+end
+
+@on_event function (m::Machine, ::Admitted, ::ParameterGenerationRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, QueryParameterGeneration(r.payload))
+    return Hsm.transition!(m, :Querying)
+end
+
+@on_event function (m::Machine, ::Admitted, ::SetPropertiesRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, UpdateProperties(r.payload))
+    return Hsm.transition!(m, :Updating)
+end
+
+@on_event function (m::Machine, ::Admitted, ::SetParameterRequested, r)
+    _begin!(m, r, m.lifecycle_origin)
+    _issue!(m, SubmitParameter(r.payload))
+    return Hsm.transition!(m, :Updating)
+end
+
+@on_event function (m::Machine, ::Running, ::StopGroupRequested, r)
+    _begin!(m, r, RunningOrigin())
+    _issue!(m, RunGraphs(r.payload, false))
+    return Hsm.transition!(m, :ControllingGroup)
+end
+
+@on_event function (m::Machine, ::Running, ::StartGroupRequested, r)
+    _begin!(m, r, RunningOrigin())
+    _issue!(m, RunGraphs(r.payload, true))
+    return Hsm.transition!(m, :ControllingGroup)
+end
+
+function Machine(session::Integer;clock::Clocks.AbstractNanoClock=Clocks.SystemNanoClock(),
+        startup_timeout_ns::Int64=DEFAULT_STARTUP_TIMEOUT_NS,
         admission_controller::Union{Nothing,Identity}=nothing)
     0 < session <= typemax(Int64) || throw(ArgumentError("invalid session incarnation"))
-    isfinite(startup_timeout) && 1 <= startup_timeout <= 3600 ||
+    MIN_STARTUP_TIMEOUT_NS <= startup_timeout_ns <= MAX_STARTUP_TIMEOUT_NS ||
         throw(ArgumentError("invalid startup timeout"))
-    m = Machine(UInt64(session),clock,Float64(startup_timeout),admission_controller,
-        UInt32(1),OfflineOrigin(),false,UInt64(0),UInt64(0),ConfiguringOrigin(),nothing,nothing,nothing,
-        nothing,nothing,Reply[],Reply[],Inf,false,nothing,nothing,false,Observation(nothing,nothing))
+    m = Machine(UInt64(session),clock,startup_timeout_ns,admission_controller,
+        RunnerCodec.Offline,OfflineOrigin(),false,UInt64(0),UInt64(0),ConfiguringOrigin(),nothing,nothing,nothing,
+        nothing,nothing,Reply[],Reply[],typemax(Int64),false,nothing,nothing,false,Observation(nothing,nothing))
     Hsm.dispatch!(m,:Boot)
     return m
 end
 submit!(m::Machine,r::Request) = (Hsm.dispatch!(m,_event(r.command),r); nothing)
 submitted!(m::Machine,t::EffectTicket) = (Hsm.dispatch!(m,:Submitted,t); nothing)
-complete!(m::Machine,t::EffectTicket,result=nothing;at::Real=_now(m)) =
-    (Hsm.dispatch!(m,:Completion,(;ticket=t,result,at=Float64(at))); nothing)
+complete!(m::Machine,t::EffectTicket,result=nothing;at::Int64=_now(m)) =
+    (Hsm.dispatch!(m,:Completion,(;ticket=t,result,at)); nothing)
 fail!(m::Machine,t::EffectTicket,reason::AbstractString;submitted::Bool=true) =
     (Hsm.dispatch!(m,:Failure,(;ticket=t,reason=String(reason),submitted)); nothing)
 tick!(m::Machine) = (Hsm.dispatch!(m,:Tick); nothing)
