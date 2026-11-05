@@ -1,5 +1,8 @@
 using Test, PipeWireAORTC
 
+Base.include(Module(:MediaSessionMachineTests), joinpath(@__DIR__, "test_media_session.jl"))
+Base.include(Module(:MediaSessionControlTests), joinpath(@__DIR__, "media_session_controls.jl"))
+
 Base.include(Module(:ControlTypeDispatchTests), joinpath(@__DIR__, "control_type_dispatch.jl"))
 
 include("test_recovery_observations.jl")

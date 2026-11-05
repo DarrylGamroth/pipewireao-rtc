@@ -38,14 +38,16 @@
 
 - RTC-ARCH-026 supersedes RTC-ARCH-025's ownership allocation. The headless RTC
   application owns session lifecycle, admission and declared application links.
-  It reuses libwireplumber hooks, discovery and public WpLink APIs as a library;
-  upstream WirePlumber remains the runtime, while site/device policy is
-  configured separately. The WirePlumber fork carries build integration and
-  independent upstream fixes, not another runtime API. systemd owns process
+  The user selected removal of Lua and libwireplumber on 2026-11-04. The
+  `MediaSession` module in `src/media_session/` uses public PipeWireAO.jl APIs
+  and Hsm.jl; systemd owns process
   lifetime; Julia tools export, install, inspect and send native controls as
   one-shot clients. Rust Statig and Julia DeploymentRunner coordinators remain
   retired. Do not introduce a second session authority or supervisor fallback.
   One-shot clients and scientific owners remain; qualify each profile separately.
+  Independent WirePlumber may supply site/device policy. Follow upstream
+  media-session terminology with idiomatic Julia names; do not copy C prefixes
+  or introduce parallel names for PipeWire objects and operations.
 - Production calibration orchestration uses Julia and the existing acquisition,
   protocol, analysis and AdaptiveOpticsCalibration APIs. Maintained repository
   scripts and scripting tests use Julia; do not add Python implementations.

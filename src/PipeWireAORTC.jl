@@ -88,6 +88,8 @@ include("management_cli.jl")
 public Analysis, InstrumentExport, InstrumentCalibration, InstrumentConfiguration, InstrumentDefinition, ConfigurationStore, ConfigurationStoreCLI, SimulatorConfiguration, ManagementCLI, AOSOwner, Artifacts, SessionConfiguration, SessionInstall, SessionRuntime,
     SessionClient, CalibrationEndpoint, CalibrationAcquisition, CalibrationPreparation, CalibrationCLI, SessionCLI,
     OwnerBootstrapRuntime, ParameterSource, SourceControl, GraphOwner,
-    CorrectionRecovery, CorrectionSupervision
+    CorrectionRecovery, CorrectionSupervision, MediaSession
+
+include("media_session/MediaSession.jl")
 
 end

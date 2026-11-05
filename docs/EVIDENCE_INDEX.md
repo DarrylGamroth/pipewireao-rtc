@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Direct MediaSession replacement — 2026-11-04
+
+The [migration record](reviews/20261104-media-session/REVIEW.md) separates the
+verified pure Hsm/control slice and native loop API support from the pending
+direct-PipeWire runtime integration and qualification gate.
+
 ## Naming and Julia type dispatch — 2026-11-04
 
 The [completion record](reviews/20261104-naming-cleanup/REVIEW.md) records test and

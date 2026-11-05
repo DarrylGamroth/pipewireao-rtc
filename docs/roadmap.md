@@ -16,7 +16,9 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 Implementation is underway on `codex/julia-session-policy-20261104`. The
 [migration plan and requirement closure](SESSION_POLICY_MIGRATION.md) retain
-one RTC session authority with a Julia/Hsm owner and C libwireplumber boundary.
+one RTC session authority in a dedicated `MediaSession` Julia/Hsm module.
+The user expanded the migration to remove libwireplumber as well and use
+PipeWireAO.jl directly, following media-session terminology with Julia naming.
 The separate scientific graph processes and native control contracts remain.
 The replacement is not yet qualified or deployed; verified slices are committed
 as they complete.

@@ -425,9 +425,11 @@ executor such as AdaptiveOpticsSim.
 ## Implementation language and placement
 
 Under RTC-ARCH-026, the headless RTC owns session policy through libwireplumber.
-The user selected replacement of its Lua policy on 2026-11-04: Julia/Hsm owns
-the serialized policy in the same RTC process, with C providing the native
-libwireplumber/PipeWire boundary. Julia also supplies deployment tools and
+The user selected replacement of both Lua and libwireplumber on 2026-11-04:
+the `MediaSession` Julia module owns the serialized policy in the same RTC
+process, using public PipeWireAO.jl APIs. This updates the library selection
+under RTC-ARCH-026 without changing its single-authority allocation.
+Julia also supplies deployment tools and
 scientific owners. systemd supervises the processes. These implementation
 languages are not part of the scientist-facing ABI; scientific Algorithms
 remain in their owning implementation language.
