@@ -1,6 +1,13 @@
 # Cold policy adapters. These methods run only on the serialized Julia owner task.
 const PolicySPA = PipeWireAO.SPA
 const PolicyPod = PipeWireAO.Pod
+# The public owner protocol bounds one cold request to sixty seconds.
+const CONTROL_REQUEST_TIMEOUT_NS = Int64(60_000_000_000)
+function control_deadline(runtime,job)
+    current = now(runtime)::Int64
+    deadline = job.ticket.deadline::Int64
+    return min(deadline,Base.Checked.checked_add(current,CONTROL_REQUEST_TIMEOUT_NS))
+end
 policy_struct(values::PolicyPod...) = PolicySPA.Struct(PolicyPod[values...])
 policy_scalar(pod, tag, ::Type{T}) where T = begin
     PipeWireAO.pod_type(pod) == tag && sizeof(pod) == 8 + (T === Bool ? 4 : sizeof(T)) ||
@@ -55,67 +62,12 @@ function identity_integer(runtime,handle,key)
     return parsed
 end
 
-# HEART stays an external owner. This profile only decodes its public v1 wire records.
-struct HeartProfile <: ControlClient.AbstractProfile end
-@enum HeartLifecycle::UInt32 HeartPreparing=1 HeartReady=2 HeartFault=3 HeartStopped=4
-struct HeartCommand{O} end
-struct HeartSnapshot
-    generation::Int64
-    pid::Union{Nothing,UInt32}
-    returncode::Union{Nothing,Int32}
-    alive::Bool
-    ingress::UInt32
-    placement_applied::Bool
-    placement_verified::Bool
-    report_path::String
-    report_digest::String
-end
-struct HeartCompletion
-    header::ControlCodec.ReplyHeader
-    lifecycle::HeartLifecycle
-    snapshot::HeartSnapshot
-    message::String
-end
-struct HeartRejection
-    header::ControlCodec.ReplyHeader
-    lifecycle::HeartLifecycle
-    message::String
-end
-ControlClient.profile_name(::HeartProfile) = "pipewireao.rtc.heart/1"
-ControlClient.capability_names(::HeartProfile) = Tuple("pipewireao.rtc.heart."*name for name in
-    ("version","instance","owner-pid","lifecycle","last-token","controllers"))
-ControlClient.lifecycle_type(::HeartProfile) = HeartLifecycle
-ControlClient.completion_type(::HeartProfile) = HeartCompletion
-ControlClient.rejection_type(::HeartProfile) = HeartRejection
-ControlClient.operation_id(::HeartProfile,::HeartCommand{:status}) = UInt32(1)
-ControlClient.operation_id(::HeartProfile,::HeartCommand{:connect}) = UInt32(3)
-ControlClient.operation_id(::HeartProfile,::HeartCommand{:quit}) = UInt32(4)
-ControlClient.encode_request(profile::HeartProfile,header,command::HeartCommand) =
-    (header.operation == ControlClient.operation_id(profile,command) || throw(ArgumentError("HEART operation mismatch"));
-     ControlCodec.encode_request(header,policy_struct()))
-function ControlClient.decode_completion(::HeartProfile,input)
-    header,payload = ControlCodec.decode_completion(input;endpoint=:lifecycle)
-    f = payload.values
-    length(f) == 3 || throw(ArgumentError("wrong HEART completion arity"))
-    state = HeartLifecycle(policy_id(f[1]))
-    s = policy_fields(f[2],9)
-    generation = policy_long(s[1]); generation >= 0 || throw(ArgumentError("invalid HEART generation"))
-    pid = PipeWireAO.pod_type(s[2]) == PolicySPA.POD_NONE ? nothing : policy_id(s[2])
-    pid === nothing || pid > 0 || throw(ArgumentError("invalid HEART child PID"))
-    returncode = PipeWireAO.pod_type(s[3]) == PolicySPA.POD_NONE ? nothing : policy_int(s[3])
-    alive = policy_bool(s[4]); ingress = policy_id(s[5])
-    ingress in (1,2) || throw(ArgumentError("unknown HEART ingress mode"))
-    path = policy_text(s[8];limit=4096); digest = policy_text(s[9];limit=64)
-    isempty(digest) || occursin(r"^[0-9a-f]{64}$",digest) || throw(ArgumentError("invalid HEART report SHA-256"))
-    snapshot = HeartSnapshot(generation,pid,returncode,alive,ingress,policy_bool(s[6]),policy_bool(s[7]),path,digest)
-    return HeartCompletion(header,state,snapshot,policy_text(f[3]))
-end
-function ControlClient.decode_rejection(::HeartProfile,input)
-    header,payload = ControlCodec.decode_rejection(input;endpoint=:lifecycle)
-    length(payload.values) == 2 || throw(ArgumentError("wrong HEART rejection arity"))
-    return HeartRejection(header,HeartLifecycle(policy_id(payload.values[1])),policy_text(payload.values[2]))
-end
+"""One captured native owner, controlled by the serialized session task.
 
+`check_owner!` validates the retained incarnation. `request_owner!` submits one
+typed profile command and returns its matching reply. Connection and shutdown
+methods exist only where the owner's public protocol defines those operations.
+"""
 abstract type AbstractOwner end
 mutable struct Owner{P<:ControlClient.AbstractProfile,O<:ControlClient.Observation} <: AbstractOwner
     profile::P
@@ -143,11 +95,10 @@ function capture_owner(runtime,handle::UInt64,profile::ControlClient.AbstractPro
     return owner
 end
 owner_profile(::Val{Symbol("pipewireao.rtc.owner-bootstrap")}) = OwnerBootstrapCodec.PROFILE
-owner_profile(::Val{Symbol("pipewireao.rtc.heart")}) = HeartProfile()
 owner_profile(::Val{Symbol("pipewireao.rtc.calibration-lifecycle")}) = AcquisitionLifecycleCodec.CALIBRATION_PROFILE
 owner_profile(::Val{Symbol("pipewireao.rtc.correction-lifecycle")}) = AcquisitionLifecycleCodec.CORRECTION_PROFILE
 owner_profile(::Val{Symbol("pipewireao.rtc.parameter-source")}) = ParameterSource.PROFILE
-owner_profile(::Val) = throw(ArgumentError("unsupported owner profile"))
+owner_profile(::Val{N}) where N = throw(ArgumentError("unsupported owner control profile: $N"))
 capture_owner(runtime,handle::UInt64,namespace::AbstractString,instance::Integer,pid::Integer) =
     capture_owner(runtime,handle,owner_profile(Val(Symbol(namespace))),instance,pid)
 function observe_owner!(runtime,job,owner::Owner)
@@ -162,47 +113,65 @@ function observe_owner!(runtime,job,owner::Owner)
             haskey(values,"pipewireao.rtc.control.rejection.header") ? "rejection" : throw(ArgumentError("unrecognized owner Props record"))
         kind in kinds && throw(ArgumentError("duplicate owner Props record"))
         push!(kinds,kind)
-        ControlClient.observe!(owner.observation,pod;at=now(runtime))
+        # ControlClient's existing observation API declares seconds.
+        ControlClient.observe!(owner.observation,pod;at=now(runtime)/1.0e9)
     end
     "capability" in kinds || throw(ArgumentError("owner capability is unavailable"))
     check_owner!(runtime,owner)
     owner.observation.fatal_failure === nothing || throw(ArgumentError(owner.observation.fatal_failure))
     return owner.observation.capability
 end
+preparation_states(::OwnerBootstrapCodec.Profile) = (OwnerBootstrapCodec.Preparing,OwnerBootstrapCodec.Prepared)
+preparation_states(::AcquisitionLifecycleCodec.CalibrationLifecycleProfile) =
+    (AcquisitionLifecycleCodec.Preparing,AcquisitionLifecycleCodec.Prepared)
+preparation_states(::AcquisitionLifecycleCodec.CorrectionLifecycleProfile) =
+    (AcquisitionLifecycleCodec.Preparing,AcquisitionLifecycleCodec.Prepared)
+preparation_states(::ParameterSource.Profile) = (ParameterSource.Preparing,ParameterSource.Prepared)
 function wait_prepared!(runtime,job,owner::Owner)
     owner.observation.pending === nothing || throw(ArgumentError("owner operation already pending"))
     return await_condition!(runtime,job) do
         capability = observe_owner!(runtime,job,owner)
-        state = UInt32(capability.lifecycle)
-        state in (1,2) || throw(ArgumentError("owner preparation reached unexpected lifecycle"))
-        state == 2 && runtime.controller in capability.controllers ? capability.lifecycle : nothing
+        preparing,prepared = preparation_states(owner.profile)
+        state = capability.lifecycle
+        state in (preparing,prepared) || throw(ArgumentError("owner preparation reached unexpected lifecycle"))
+        state == prepared && runtime.controller in capability.controllers ? capability.lifecycle : nothing
     end
+end
+send_owner_request!(runtime,job,owner,command,pod::PolicyPod) =
+    setparam!(runtime,job,owner.handle,"Props",pod)
+function send_owner_request!(runtime,job,owner,command::Union{
+        OwnerBootstrapCodec.Command{:status},AcquisitionLifecycleCodec.LifecycleCommand{:status},
+        RunnerCodec.RunnerCommand{:status}},pod::PolicyPod)
+    return queryparam!(runtime,job,owner.handle,"Props",pod)
 end
 function request_owner!(runtime,job,owner::Owner,command)
     observation = owner.observation
     observation.pending === nothing || throw(ArgumentError("owner operation already pending"))
-    deadline = min(job.ticket.deadline,now(runtime)+60.0)
+    deadline = control_deadline(runtime,job)
     submitted = false
     try
         return await_condition!(runtime,job) do
             now(runtime) < deadline || throw(ControlClient.UnknownOutcome(submitted ? "owner completion timed out" : "owner registration timed out"))
             capability = observe_owner!(runtime,job,owner)
+            now(runtime) < deadline || throw(ControlClient.UnknownOutcome("owner control deadline expired"))
             if submitted
-                reply = ControlClient.matching_reply(observation,deadline)
+                # Keep nanoseconds in policy; convert at the seconds-based client API.
+                reply = ControlClient.matching_reply(observation,deadline/1.0e9)
                 reply === nothing && return nothing
                 reply.header.result == 0 || throw(ArgumentError("owner rejected operation ($(reply.header.result))"))
                 return reply
             end
             runtime.controller in capability.controllers || return nothing
             token = next_control_token!(runtime,observation.max_accepted)
-            budget = max(Int64(1),floor(Int64,(deadline-now(runtime))*1e9))
+            budget = Base.Checked.checked_sub(deadline,now(runtime))
+            budget > 0 || throw(ControlClient.UnknownOutcome("owner request expired before submission"))
             header = ControlCodec.RequestHeader(runtime.controller,owner.instance,token,
                 ControlClient.operation_id(owner.profile,command),budget)
             request = ControlClient.encode_request(owner.profile,header,command)
             observation.pending = header
             observation.matched_completion = nothing; observation.matched_rejection = nothing
             submitted = true
-            setparam!(runtime,job,owner.handle,"Props",request)
+            send_owner_request!(runtime,job,owner,command,request)
             return nothing
         end
     finally
@@ -211,9 +180,7 @@ function request_owner!(runtime,job,owner::Owner,command)
     end
 end
 connect_command(::OwnerBootstrapCodec.Profile) = OwnerBootstrapCodec.Command(:connect)
-connect_command(::HeartProfile) = HeartCommand{:connect}()
 shutdown_command(::OwnerBootstrapCodec.Profile) = OwnerBootstrapCodec.Command(:quit)
-shutdown_command(::HeartProfile) = HeartCommand{:quit}()
 function connect_owner!(runtime,job,owner::Owner)
     wait_prepared!(runtime,job,owner)
     reply = request_owner!(runtime,job,owner,connect_command(owner.profile))
@@ -222,13 +189,6 @@ function connect_owner!(runtime,job,owner::Owner)
 end
 validate_connected(reply::OwnerBootstrapCodec.Completion) =
     (reply.lifecycle == OwnerBootstrapCodec.Connected || throw(ArgumentError("bootstrap owner did not connect")); nothing)
-function validate_connected(reply::HeartCompletion)
-    s = reply.snapshot
-    reply.lifecycle == HeartReady && s.generation >= 1 && s.pid !== nothing && s.returncode === nothing &&
-        s.alive && !isempty(s.report_path) && occursin(r"^[0-9a-f]{64}$",s.report_digest) ||
-        throw(ArgumentError("HEART wrapper did not complete Ready with a live child report"))
-    return nothing
-end
 function shutdown_owner!(runtime,job,owner::Owner)
     reply = request_owner!(runtime,job,owner,shutdown_command(owner.profile))
     validate_stopped(reply)
@@ -237,10 +197,7 @@ function shutdown_owner!(runtime,job,owner::Owner)
 end
 validate_stopped(reply::OwnerBootstrapCodec.Completion) =
     (reply.lifecycle == OwnerBootstrapCodec.Stopped || throw(ArgumentError("bootstrap owner did not stop")); nothing)
-validate_stopped(reply::HeartCompletion) =
-    (reply.lifecycle == HeartStopped && !reply.snapshot.alive || throw(ArgumentError("HEART child remained alive after shutdown")); nothing)
-
-"A normalized finite-source cursor; cold profile details retain their declared type."
+"A normalized finite-source cursor; owner protocol details retain their declared type."
 struct SourceSnapshot{D}
     running::Bool
     completed::Bool
@@ -250,23 +207,29 @@ struct SourceSnapshot{D}
     report_sequence::UInt64
     details::D
 end
-abstract type AbstractAcquisitionSource end
-const AcquisitionSource = AbstractAcquisitionSource
-mutable struct ColdSource{O<:Owner} <: AbstractAcquisitionSource
+"""A captured source whose protocol owns its acquisition cursor.
+
+Implement `prepare_source!`, `connect_source!`, `source_operation!` and
+`shutdown_source!` on the serialized session task. Operations return a
+`SourceSnapshot` after their protocol's fresh acknowledgement and cursor proof;
+shutdown may return `nothing` when another declared owner owns that resource.
+"""
+abstract type AbstractSource end
+mutable struct AcquisitionBinding{O<:Owner} <: AbstractSource
     owner::O
     instrument::Union{Nothing,AcquisitionLifecycleCodec.Instrument}
     previous::Union{Nothing,AcquisitionLifecycleCodec.AcquisitionCursor}
 end
-struct LegacyDetails
+struct SourceControlDetails
     kind::Int32
     token::Int64
     result::Int32
 end
-mutable struct LegacySource <: AbstractAcquisitionSource
+mutable struct SourceControlBinding <: AbstractSource
     handle::UInt64
     pid::UInt32
     instance::Int64
-    previous::Union{Nothing,SourceSnapshot{LegacyDetails}}
+    previous::Union{Nothing,SourceSnapshot{SourceControlDetails}}
 end
 function source(runtime,handle::UInt64,declaration)
     pid = Int64(declaration["pid"])
@@ -278,7 +241,7 @@ function source(runtime,handle::UInt64,declaration)
         capture!(runtime,handle)
         instance = identity_integer(runtime,handle,"pipewireao.source-control.instance")
         identity_integer(runtime,handle,"pipewireao.source-control.owner-pid") == pid || throw(ArgumentError("source PID mismatch"))
-        return LegacySource(handle,UInt32(pid),instance,nothing)
+        return SourceControlBinding(handle,UInt32(pid),instance,nothing)
     end
     profile in ("pipewireao.rtc.calibration-lifecycle/1","pipewireao.rtc.correction-lifecycle/1") ||
         throw(ArgumentError("unsupported acquisition profile"))
@@ -286,9 +249,9 @@ function source(runtime,handle::UInt64,declaration)
     instrument = get(declaration,"instrument",nothing)
     normalized = instrument === nothing ? nothing : instrument in ("classic","Classic",1) ? AcquisitionLifecycleCodec.Classic :
         instrument in ("copper","Copper",2) ? AcquisitionLifecycleCodec.Copper : throw(ArgumentError("invalid acquisition instrument"))
-    return ColdSource(owner,normalized,nothing)
+    return AcquisitionBinding(owner,normalized,nothing)
 end
-function source_snapshot!(source::ColdSource,reply::AcquisitionLifecycleCodec.Completion)
+function source_snapshot!(source::AcquisitionBinding,reply::AcquisitionLifecycleCodec.Completion)
     snapshot = reply.snapshot
     snapshot === nothing && throw(ArgumentError("acquisition snapshot unavailable"))
     source.instrument === nothing || source.instrument == snapshot.instrument || throw(ArgumentError("acquisition instrument changed"))
@@ -299,19 +262,19 @@ function source_snapshot!(source::ColdSource,reply::AcquisitionLifecycleCodec.Co
         cursor === nothing ? UInt64(0) : cursor.sequence,report === nothing ? UInt64(0) : report.generation,
         report === nothing ? UInt64(0) : report.sequence,reply)
 end
-function prepare_source!(runtime,job,source::ColdSource)
+function prepare_source!(runtime,job,source::AcquisitionBinding)
     wait_prepared!(runtime,job,source.owner)
     reply = request_owner!(runtime,job,source.owner,AcquisitionLifecycleCodec.LifecycleCommand(:status))
     reply.lifecycle == AcquisitionLifecycleCodec.Prepared || throw(ArgumentError("acquisition owner changed Prepared readiness"))
     source_snapshot!(source,reply)
     return connect_source!(runtime,job,source)
 end
-function connect_source!(runtime,job,source::ColdSource)
+function connect_source!(runtime,job,source::AcquisitionBinding)
     reply = request_owner!(runtime,job,source.owner,AcquisitionLifecycleCodec.LifecycleCommand(:connect))
     reply.lifecycle == AcquisitionLifecycleCodec.Connected || throw(ArgumentError("acquisition Connect did not complete Connected"))
     return source_snapshot!(source,reply)
 end
-function source_operation!(runtime,job,source::ColdSource,kind::Symbol;running=false)
+function source_operation!(runtime,job,source::AcquisitionBinding,kind::Symbol;running=false)
     kind in (:run,:query,:reset) || throw(ArgumentError("invalid acquisition operation"))
     operation = kind === :query ? :status : kind === :reset ? :reset : running ? :resume : :pause
     reply = request_owner!(runtime,job,source.owner,AcquisitionLifecycleCodec.LifecycleCommand(operation))
@@ -325,7 +288,7 @@ function validate_source_operation(snapshot::SourceSnapshot,kind,running)
     kind === :reset && (snapshot.running || snapshot.completed || snapshot.sequence != 0) && throw(ArgumentError("acquisition reset cursor was not acknowledged"))
     return nothing
 end
-function shutdown_source!(runtime,job,source::ColdSource)
+function shutdown_source!(runtime,job,source::AcquisitionBinding)
     reply = request_owner!(runtime,job,source.owner,AcquisitionLifecycleCodec.LifecycleCommand(:shutdown))
     snapshot = source_snapshot!(source,reply); details = reply.snapshot
     reply.lifecycle == AcquisitionLifecycleCodec.Stopped && isempty(reply.message) && !snapshot.running && !details.held &&
@@ -333,18 +296,18 @@ function shutdown_source!(runtime,job,source::ColdSource)
     source.owner.retired = true
     return snapshot
 end
-shutdown_source!(runtime,job,source::LegacySource) = nothing
+shutdown_source!(runtime,job,source::SourceControlBinding) = nothing
 
-struct NativeStatus
+struct ControlStatus
     token::Int64
     result::Int32
     state::String
 end
-struct NodeRecords
-    run::Union{Nothing,NativeStatus}
-    reset::Union{Nothing,NativeStatus}
-    snapshot::Union{Nothing,SourceSnapshot{LegacyDetails}}
-    rejection::Union{Nothing,SourceSnapshot{LegacyDetails}}
+struct ControlRecords
+    run::Union{Nothing,ControlStatus}
+    reset::Union{Nothing,ControlStatus}
+    snapshot::Union{Nothing,SourceSnapshot{SourceControlDetails}}
+    rejection::Union{Nothing,SourceSnapshot{SourceControlDetails}}
     maximum::Int64
 end
 function exact_named(values,names)
@@ -352,21 +315,26 @@ function exact_named(values,names)
         throw(ArgumentError("incorrect native control fields"))
     return nothing
 end
-function native_status(values,namespace,run::Bool)
-    names = [namespace*"."*field for field in (run ? ("version","completed-token","result","actual-state") : ("version","completed-token","result"))]
-    exact_named(values,names)
-    token = policy_long(values[namespace*".completed-token"])
-    result = policy_int(values[namespace*".result"])
-    policy_int(values[namespace*".version"]) == 1 && token >= 0 && result <= 0 || throw(ArgumentError("invalid native control status"))
-    state = run ? policy_text(values[namespace*".actual-state"]) : ""
-    !run || state in ("running","stopped","unknown") || throw(ArgumentError("invalid native running state"))
-    return NativeStatus(token,result,state)
+function control_status(pod::PolicyPod,::Val{:run})
+    destination = Ref{PipeWireAO.RunControlStatus}()
+    PipeWireAO.parse_run_control_status!(destination,pod) == 0 || throw(ArgumentError("invalid run-control status"))
+    status = destination[]
+    status.result <= 0 || throw(ArgumentError("invalid run-control result"))
+    state = status.actual_state == PipeWireAO.LibPipeWire.PW_AO_RUN_CONTROL_STATE_UNKNOWN ? "unknown" : control_state(status.actual_state)
+    return ControlStatus(status.completed_token,status.result,state)
 end
-function legacy_snapshot(values,instance::Int64;rejection=false)
+function control_status(pod::PolicyPod,::Val{:reset})
+    destination = Ref{PipeWireAO.ResetControlStatus}()
+    PipeWireAO.parse_reset_control_status!(destination,pod) == 0 || throw(ArgumentError("invalid reset-control status"))
+    status = destination[]
+    status.result <= 0 || throw(ArgumentError("invalid reset-control result"))
+    return ControlStatus(status.completed_token,status.result,"")
+end
+function source_control_snapshot(values,instance::Int64;rejection=false)
     names = rejection ? SourceControl.REJECTION_NAMES : SourceControl.SNAPSHOT_NAMES
     exact_named(values,names)
     f = [values[name] for name in names]
-    policy_int(f[1]) == 1 && policy_long(f[2]) == instance && instance > 0 || throw(ArgumentError("source snapshot identity mismatch"))
+    policy_int(f[1]) == SourceControl.VERSION && policy_long(f[2]) == instance && instance > 0 || throw(ArgumentError("source snapshot identity mismatch"))
     kind = policy_int(f[3]); token = policy_long(f[4]); result = policy_int(f[5])
     generation = policy_long(f[6]); sequence = policy_long(f[7])
     running = policy_bool(f[8]); completed = policy_bool(f[9])
@@ -374,32 +342,32 @@ function legacy_snapshot(values,instance::Int64;rejection=false)
     generation >= 1 && sequence >= 0 && report_generation >= 1 && report_sequence >= 0 &&
         (report_generation < generation || (report_generation == generation && report_sequence <= sequence)) &&
         !(running && completed) || throw(ArgumentError("invalid source snapshot cursor"))
-    valid = kind == 0 ? token == 0 && result == 0 : rejection && kind == 4 ? token == 0 && result < 0 :
-        kind in 1:3 && token > 0 && (rejection ? result < 0 : result <= 0)
+    valid = kind == SourceControl.INITIAL ? token == 0 && result == 0 : rejection && kind == SourceControl.INVALID ? token == 0 && result < 0 :
+        kind in (SourceControl.RUN,SourceControl.RESET,SourceControl.QUERY) && token > 0 && (rejection ? result < 0 : result <= 0)
     valid || throw(ArgumentError("invalid source snapshot result"))
-    return SourceSnapshot(running,completed,UInt64(generation),UInt64(sequence),UInt64(report_generation),UInt64(report_sequence),LegacyDetails(kind,token,result))
+    return SourceSnapshot(running,completed,UInt64(generation),UInt64(sequence),UInt64(report_generation),UInt64(report_sequence),SourceControlDetails(kind,token,result))
 end
-function node_records(records,instance::Union{Nothing,Int64}=nothing)
+function control_records(records,instance::Union{Nothing,Int64}=nothing)
     length(records) <= (instance === nothing ? 3 : 4) || throw(ArgumentError("node published too many Props records"))
     run = nothing; reset = nothing; snapshot = nothing; rejection = nothing; maximum = Int64(0)
     for pod in records
         values = named_values(pod)
         if haskey(values,"pipewireao.run-control.version")
             run === nothing || throw(ArgumentError("duplicate run-control record"))
-            run = native_status(values,"pipewireao.run-control",true)
+            run = control_status(pod,Val(:run))
             instance === nothing || run.state != "unknown" || throw(ArgumentError("invalid source running state"))
             maximum = max(maximum,run.token)
         elseif haskey(values,"pipewireao.reset-control.version")
             reset === nothing || throw(ArgumentError("duplicate reset-control record"))
-            reset = native_status(values,"pipewireao.reset-control",false)
+            reset = control_status(pod,Val(:reset))
             maximum = max(maximum,reset.token)
         elseif instance !== nothing && haskey(values,"pipewireao.source-snapshot.version")
             snapshot === nothing || throw(ArgumentError("duplicate source snapshot"))
-            snapshot = legacy_snapshot(values,instance)
+            snapshot = source_control_snapshot(values,instance)
             maximum = max(maximum,snapshot.details.token)
         elseif instance !== nothing && haskey(values,"pipewireao.source-rejection.version")
             rejection === nothing || throw(ArgumentError("duplicate source rejection"))
-            rejection = legacy_snapshot(values,instance;rejection=true)
+            rejection = source_control_snapshot(values,instance;rejection=true)
             maximum = max(maximum,rejection.details.token)
         else
             instance === nothing || throw(ArgumentError("unrecognized source control Props"))
@@ -410,29 +378,32 @@ function node_records(records,instance::Union{Nothing,Int64}=nothing)
         end
     end
     instance === nothing || snapshot !== nothing || throw(ArgumentError("source snapshot unavailable"))
-    return NodeRecords(run,reset,snapshot,rejection,maximum)
+    return ControlRecords(run,reset,snapshot,rejection,maximum)
 end
-function check_legacy!(runtime,source::LegacySource)
+control_records!(runtime,job,handle,instance::Union{Nothing,Int64}=nothing) =
+    control_records(enumerate!(runtime,job,handle,"Props"),instance)
+function check_source_control!(runtime,source::SourceControlBinding)
     assert_identity!(runtime,source.handle)
     identity_integer(runtime,source.handle,"pipewireao.source-control.instance") == source.instance &&
         identity_integer(runtime,source.handle,"pipewireao.source-control.owner-pid") == source.pid ||
         throw(ArgumentError("source owner identity changed"))
     return nothing
 end
-function native_request(kind::Symbol,token::Int64,argument,instance)
-    namespace = kind === :query ? "pipewireao.source-query" : "pipewireao.$kind-control"
-    pairs = Pair{String,PolicyPod}[namespace*".version"=>PolicyPod(Int32(1)),namespace*".request-token"=>PolicyPod(token)]
-    kind === :run && push!(pairs,namespace*".requested-state"=>PolicyPod(argument))
-    kind === :query && push!(pairs,namespace*".instance"=>PolicyPod(instance))
-    return PolicyPod(PipeWireAO.props_param(PolicySPA.Props(pairs)))
+control_request(kind::Symbol,token::Int64,argument,instance) = control_request(Val(kind),token,argument,instance)
+control_request(::Val{:run},token::Int64,argument,instance) = PipeWireAO.run_control_request(token,Symbol(argument))
+control_request(::Val{:reset},token::Int64,argument,instance) = PipeWireAO.reset_control_request(token)
+function control_request(::Val{:query},token::Int64,argument,instance::Int64)
+    values = SourceControl.query_values(token,instance)
+    return PolicyPod(PipeWireAO.props_param(PolicySPA.Props([
+        SourceControl.QUERY_NAMES[i]=>PolicyPod(values[i]) for i in eachindex(values)])))
 end
-native_state(argument::Bool) = argument ? "running" : "stopped"
-function native_state(argument)
-    argument in (1,"stopped",:stopped) && return "stopped"
-    argument in (2,"running",:running) && return "running"
+control_state(argument::Bool) = argument ? "running" : "stopped"
+function control_state(argument)
+    argument in (PipeWireAO.LibPipeWire.PW_AO_RUN_CONTROL_STATE_STOPPED,"stopped",:stopped) && return "stopped"
+    argument in (PipeWireAO.LibPipeWire.PW_AO_RUN_CONTROL_STATE_RUNNING,"running",:running) && return "running"
     throw(ArgumentError("invalid requested running state"))
 end
-function matching_node_record(records::NodeRecords,kind::Symbol,token::Int64,state)
+function matching_control_record(records::ControlRecords,kind::Symbol,token::Int64,state)
     record = kind === :run ? records.run : records.reset
     record === nothing && return nothing
     record.token > token && throw(ArgumentError("node advanced past requested completion"))
@@ -441,7 +412,7 @@ function matching_node_record(records::NodeRecords,kind::Symbol,token::Int64,sta
     kind === :run && record.state != state && throw(ArgumentError("node reported unexpected running state"))
     return record
 end
-function matching_source_record(records::NodeRecords,kind::Symbol,token::Int64,state,previous::SourceSnapshot)
+function matching_source_control_record(records::ControlRecords,kind::Symbol,token::Int64,state,previous::SourceSnapshot)
     snapshot = records.snapshot
     expected = kind === :run ? SourceControl.RUN : kind === :reset ? SourceControl.RESET : SourceControl.QUERY
     snapshot.details.token > token && throw(ArgumentError("source advanced past requested completion"))
@@ -475,49 +446,57 @@ end
 function node_operation!(runtime,job,handle::UInt64,kind::Symbol,argument=nothing)
     kind in (:run,:reset) || throw(ArgumentError("unknown node control"))
     capture!(runtime,handle)
-    state = kind === :run ? native_state(argument) : ""
+    state = kind === :run ? control_state(argument) : ""
     raw_instance = property(runtime,handle,"pipewireao.source-control.instance")
     instance = raw_instance === nothing ? nothing : identity_integer(runtime,handle,"pipewireao.source-control.instance")
-    # Legacy source operations additionally require the snapshot/native ACK join.
+    # Source-control operations additionally require the snapshot/native ACK join.
     if instance !== nothing
         pid = identity_integer(runtime,handle,"pipewireao.source-control.owner-pid")
         0 < pid < typemax(UInt32) || throw(ArgumentError("invalid source owner PID"))
-        return legacy_operation!(runtime,job,LegacySource(handle,UInt32(pid),instance,nothing),kind,state)
+        return source_control_operation!(runtime,job,SourceControlBinding(handle,UInt32(pid),instance,nothing),kind,state)
     end
-    records = node_records(enumerate!(runtime,job,handle,"Props"))
+    records = control_records!(runtime,job,handle)
     token = next_control_token!(runtime,records.maximum)
-    deadline = min(job.ticket.deadline,now(runtime)+60.0)
-    setparam!(runtime,job,handle,"Props",native_request(kind,token,state,nothing))
+    deadline = control_deadline(runtime,job)
+    setparam!(runtime,job,handle,"Props",control_request(kind,token,state,nothing))
     return await_condition!(runtime,job) do
         now(runtime) < deadline || throw(ControlClient.UnknownOutcome("node operation expired"))
         assert_identity!(runtime,handle)
-        matching_node_record(node_records(enumerate!(runtime,job,handle,"Props")),kind,token,state)
+        records = control_records!(runtime,job,handle)
+        now(runtime) < deadline || throw(ControlClient.UnknownOutcome("node operation expired"))
+        matching_control_record(records,kind,token,state)
     end
 end
-function legacy_operation!(runtime,job,source::LegacySource,kind::Symbol,state="")
-    check_legacy!(runtime,source)
-    records = node_records(enumerate!(runtime,job,source.handle,"Props"),source.instance)
+function source_control_operation!(runtime,job,source::SourceControlBinding,kind::Symbol,state="")
+    check_source_control!(runtime,source)
+    records = control_records!(runtime,job,source.handle,source.instance)
     previous = records.snapshot
     token = next_control_token!(runtime,records.maximum)
-    deadline = min(job.ticket.deadline,now(runtime)+60.0)
-    check_legacy!(runtime,source)
-    setparam!(runtime,job,source.handle,"Props",native_request(kind,token,state,source.instance))
+    deadline = control_deadline(runtime,job)
+    check_source_control!(runtime,source)
+    send_source_control_request!(runtime,job,source,Val(kind),control_request(kind,token,state,source.instance))
     snapshot = await_condition!(runtime,job) do
         now(runtime) < deadline || throw(ControlClient.UnknownOutcome("source operation expired"))
-        check_legacy!(runtime,source)
-        matching_source_record(node_records(enumerate!(runtime,job,source.handle,"Props"),source.instance),kind,token,state,previous)
+        check_source_control!(runtime,source)
+        records = control_records!(runtime,job,source.handle,source.instance)
+        now(runtime) < deadline || throw(ControlClient.UnknownOutcome("source operation expired"))
+        matching_source_control_record(records,kind,token,state,previous)
     end
     source.previous = snapshot
     return snapshot
 end
-function source_operation!(runtime,job,source::LegacySource,kind::Symbol;running=false)
+send_source_control_request!(runtime,job,source::SourceControlBinding,::Val,pod::PolicyPod) =
+    setparam!(runtime,job,source.handle,"Props",pod)
+send_source_control_request!(runtime,job,source::SourceControlBinding,::Val{:query},pod::PolicyPod) =
+    queryparam!(runtime,job,source.handle,"Props",pod)
+function source_operation!(runtime,job,source::SourceControlBinding,kind::Symbol;running=false)
     kind in (:run,:query,:reset) || throw(ArgumentError("invalid acquisition operation"))
     if kind !== :query
-        legacy_operation!(runtime,job,source,kind,running ? "running" : "stopped")
+        source_control_operation!(runtime,job,source,kind,running ? "running" : "stopped")
     end
-    snapshot = legacy_operation!(runtime,job,source,:query)
+    snapshot = source_control_operation!(runtime,job,source,:query)
     validate_source_operation(snapshot,kind,running)
     return snapshot
 end
-prepare_source!(runtime,job,source::LegacySource) = source_operation!(runtime,job,source,:query)
-connect_source!(runtime,job,source::LegacySource) = source_operation!(runtime,job,source,:query)
+prepare_source!(runtime,job,source::SourceControlBinding) = source_operation!(runtime,job,source,:query)
+connect_source!(runtime,job,source::SourceControlBinding) = source_operation!(runtime,job,source,:query)

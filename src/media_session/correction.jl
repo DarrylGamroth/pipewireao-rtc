@@ -30,7 +30,7 @@ end
 function correction_running!(runtime,name,values)
     correction_long(values,CORRECTION_PREFIX*"owner-instance") == correction_owner_instance(runtime.configuration,name) ||
         throw(ArgumentError("correction graph owner incarnation changed"))
-    runtime.machine.lifecycle == 4 || throw(ArgumentError("correction control requires a running session"))
+    runtime.machine.lifecycle == RunnerCodec.Running || throw(ArgumentError("correction control requires a running session"))
     admitted = false
     for group in Base.values(runtime.groups)
         if name in group.nodes
@@ -42,16 +42,15 @@ function correction_running!(runtime,name,values)
     correction_text(values,"pipewireao.run-control.actual-state") == "running" || throw(ArgumentError("correction graph owner is stopped"))
     return nothing
 end
-function recovery_reference_fresh(values,monotonic_seconds::Float64)
+function recovery_reference_fresh(values,current_ns::Int64)
     timestamp = correction_long(values,RECOVERY_PREFIX*"observation-monotonic-nanoseconds")
     timeout_ms = correction_int(values,RECOVERY_PREFIX*"reference-timeout-ms")
-    observed_us = fld(timestamp,1000)
-    current_us = floor(Int64,monotonic_seconds*1e6)
-    return 1 <= timeout_ms <= 60000 && timestamp > 0 && observed_us <= current_us && current_us-observed_us < Int64(timeout_ms)*1000
+    return 1 <= timeout_ms <= 60000 && timestamp > 0 && timestamp <= current_ns &&
+        current_ns-timestamp < Int64(timeout_ms)*1_000_000
 end
-function recovery_reference_confirmed(values,monotonic_seconds)
+function recovery_reference_confirmed(values,current_ns::Int64)
     correction_bool(values,RECOVERY_PREFIX*"reference-reached") &&
-        correction_long(values,RECOVERY_PREFIX*"observation-sequence") > 0 && recovery_reference_fresh(values,monotonic_seconds)
+        correction_long(values,RECOVERY_PREFIX*"observation-sequence") > 0 && recovery_reference_fresh(values,current_ns)
 end
 function check_recovery!(runtime,name,values,updates,declarations)
     request = get(updates,RECOVERY_PREFIX*"request-token",nothing)
@@ -194,7 +193,7 @@ function update_properties!(runtime,job,payload::Tuple)
     end
     before = named_properties!(runtime,job,handle)
     check_correction!(runtime,name,before,updates,declarations)
-    running = runtime.machine.lifecycle == 4
+    running = runtime.machine.lifecycle == RunnerCodec.Running
     baseline = Dict{String,Int64}()
     if running
         for algorithm in names

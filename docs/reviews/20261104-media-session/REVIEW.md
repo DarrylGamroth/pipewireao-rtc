@@ -22,8 +22,8 @@ and bounded reply/cancellation slots. Opaque effect completion means the backend
 has already validated native evidence; the machine does not fabricate successful
 native effects. Source completion uses a typed `SourceEnd` observation.
 
-Observed: `test/media_session_controls.jl` passes 67 assertions for cold owner,
-HEART, acquisition and legacy source semantics, correction/recovery admission,
+Observed at the initial slice: `test/media_session_controls.jl` passed 67
+assertions for owner and source semantics, correction/recovery admission,
 scalar property transactions and sparse parameter submission. The adapters use
 existing native codecs and preserve request/receipt correlation. These tests
 use controlled I/O boundaries; they do not qualify live transport.
@@ -31,6 +31,35 @@ use controlled I/O boundaries; they do not qualify live transport.
 The renamed module and both selectors were loaded together in a fresh Julia
 1.13.3 process; all 574 assertions passed with exit status zero. No `Any` fields,
 `isa` branches or field-presence type selectors were added to these sources.
+
+## Consistent interfaces and clocks
+
+User decisions are recorded in the package-wide
+[Julia design conventions](../../architecture.md#julia-design-conventions).
+Commit `5f7ac7b` records interfaces, traits, hierarchy, ownership, clock units,
+terminology and formatting rules. Commit `c8c8b16` applies `Abstract` prefixes to
+local abstract types and updates callers without compatibility aliases. Focused
+control, bootstrap, acquisition, calibration, recovery and optical selectors
+passed; the root reran the 23-assertion control client selector. This does not
+qualify the optional graph worker against a live core.
+
+Commit `aaaa690` replaces generated Hsm declarations with explicit types and
+hierarchical handlers, derives operations from codecs, uses
+`RunnerCodec.Lifecycle`, and uses direct signed Clocks nanoseconds. The same
+machine selector passes 553 assertions: the prior 507 and 46 clock/interface
+checks. Negative clock origins, checked deadline overflow and one-nanosecond
+boundaries are covered. `budgeted(::AbstractEffect)` expresses the independent
+deadline property; emergency disconnection has no scientific-operation budget.
+
+The control adapter selector now passes 95 assertions. Source bindings are
+`AcquisitionBinding` and `SourceControlBinding` behind `AbstractSource`; names
+describe their public protocols. Instrument-specific profile code was removed.
+Run/reset builders and parsers reuse PipeWireAO's public interface. All internal
+deadlines and freshness comparisons use signed nanoseconds; conversion to
+seconds occurs only at the existing ControlClient observation/reply interface.
+Read-only status requests do not mark the scientific effect as submitted.
+The three read-only regression failures were reproduced against the initial
+slice before the fix. These remain controlled-I/O software checks.
 
 | Finding | Classification | Disposition |
 | --- | --- | --- |
