@@ -18,7 +18,11 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <wp/wp.h>
+#include <json-c/json.h>
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (json_object, json_object_put)
+
+#define JSON_FORMAT (JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE)
 
 #define PROTOCOL "pipewireao.management/1"
 #define CONFIGURATION "pipewireao.configuration/1"
@@ -47,8 +51,9 @@ typedef struct
   gboolean owns_socket;
 } Management;
 
-/* WpSpaJson intentionally accepts relaxed SPA JSON. Require strict JSON on this
- * public wire boundary before using its object API. Bound recursion as well as bytes. */
+/* Keep the public JSON boundary strict, bounded to 64 levels, NUL-free and
+ * unambiguous. json-c owns parsing and values; this lexical check also rejects
+ * duplicate decoded keys before json-c could replace an earlier member. */
 typedef struct
 {
   const char *p, *end;
@@ -107,6 +112,8 @@ json_value (JsonInput *s)
   else if (c == '{' || c == '[')
     {
       char end = c == '{' ? '}' : ']';
+      g_autoptr (GHashTable) seen = c == '{'
+          ? g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL) : NULL;
       s->p++;
       whitespace (s);
       if (s->p < s->end && *s->p == end)
@@ -116,8 +123,15 @@ json_value (JsonInput *s)
           {
             if (c == '{')
               {
+                const char *start = s->p;
                 if (!json_string (s))
                   return FALSE;
+                g_autofree char *text = g_strndup (start, s->p - start);
+                g_autoptr (json_object) key = json_tokener_parse (text);
+                if (!key || !json_object_is_type (key, json_type_string)
+                    || g_hash_table_contains (seen, json_object_get_string (key)))
+                  return FALSE;
+                g_hash_table_add (seen, g_strdup (json_object_get_string (key)));
                 whitespace (s);
                 if (s->p == s->end || *s->p++ != ':')
                   return FALSE;
@@ -139,6 +153,8 @@ json_value (JsonInput *s)
     }
   else if (c == '-' || g_ascii_isdigit (c))
     {
+      const char *start = s->p;
+      gboolean integer = TRUE;
       if (*s->p == '-')
         s->p++;
       if (s->p == s->end)
@@ -154,6 +170,7 @@ json_value (JsonInput *s)
         }
       if (s->p < s->end && *s->p == '.')
         {
+          integer = FALSE;
           s->p++;
           if (s->p == s->end || !g_ascii_isdigit (*s->p))
             return FALSE;
@@ -162,6 +179,7 @@ json_value (JsonInput *s)
         }
       if (s->p < s->end && (*s->p == 'e' || *s->p == 'E'))
         {
+          integer = FALSE;
           s->p++;
           if (s->p < s->end && (*s->p == '+' || *s->p == '-'))
             s->p++;
@@ -169,6 +187,16 @@ json_value (JsonInput *s)
             return FALSE;
           while (s->p < s->end && g_ascii_isdigit (*s->p))
             s->p++;
+        }
+      if (integer)
+        {
+          errno = 0;
+          if (*start == '-')
+            g_ascii_strtoll (start, NULL, 10);
+          else
+            g_ascii_strtoull (start, NULL, 10);
+          if (errno == ERANGE)
+            return FALSE;
         }
     }
   else
@@ -182,14 +210,49 @@ json_value (JsonInput *s)
   s->depth--;
   return TRUE;
 }
-static WpSpaJson *
+static json_object *
 parse_json (const char *text)
 {
   JsonInput s = { text, text + strlen (text), 0 };
   if (!g_utf8_validate (text, -1, NULL) || !json_value (&s))
     return NULL;
   whitespace (&s);
-  return s.p == s.end ? wp_spa_json_new_from_string (text) : NULL;
+  if (s.p != s.end)
+    return NULL;
+  struct json_tokener *parser = json_tokener_new_ex (65);
+  /* json-c 0.18 strict mode rejects UTF-8 bytes as signed control chars.
+   * The lexical pass above enforces strict syntax and integer bounds, while
+   * GLib validates UTF-8 without excluding non-ASCII strings. */
+  json_object *value = json_tokener_parse_ex (parser, text, strlen (text) + 1);
+  if (json_tokener_get_error (parser) != json_tokener_success)
+    g_clear_pointer (&value, json_object_put);
+  json_tokener_free (parser);
+  return value;
+}
+/* Borrowed members retain their enclosing object's lifetime. Check the JSON
+ * type explicitly: json-c's convenience getters otherwise coerce values. */
+static json_object *
+member (json_object *object, const char *key)
+{
+  json_object *value = NULL;
+  if (json_object_is_type (object, json_type_object))
+    json_object_object_get_ex (object, key, &value);
+  return value;
+}
+static const char *
+string_member (json_object *object, const char *key)
+{
+  json_object *value = member (object, key);
+  return json_object_is_type (value, json_type_string) ? json_object_get_string (value) : NULL;
+}
+static gboolean
+boolean_member (json_object *object, const char *key, gboolean *result)
+{
+  json_object *value = member (object, key);
+  if (!json_object_is_type (value, json_type_boolean))
+    return FALSE;
+  *result = json_object_get_boolean (value);
+  return TRUE;
 }
 static gboolean
 valid_id (const char *id)
@@ -201,47 +264,52 @@ valid_id (const char *id)
       return FALSE;
   return TRUE;
 }
-/* Enforce known keys, including uniqueness (SPA getters otherwise take one). */
+/* Duplicate decoded keys were rejected before construction of the object. */
 static gboolean
-keys (WpSpaJson *json, const char *allowed)
+keys (json_object *json, const char *allowed)
 {
-  if (!json || !wp_spa_json_is_object (json))
+  if (!json_object_is_type (json, json_type_object))
     return FALSE;
-  g_autoptr (WpSpaJsonParser) p = wp_spa_json_parser_new_object (json);
-  g_autoptr (GHashTable) seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-  char *key;
-  while ((key = wp_spa_json_parser_get_string (p)))
+  json_object_object_foreach (json, key, value)
     {
       g_autofree char *token = g_strdup_printf ("|%s|", key);
-      if (strchr (key, '|') || !strstr (allowed, token) || g_hash_table_contains (seen, key))
-        {
-          g_free (key);
-          return FALSE;
-        }
-      g_hash_table_add (seen, key);
-      g_autoptr (WpSpaJson) value = wp_spa_json_parser_get_json (p);
-      if (!value)
+      if (strchr (key, '|') || !strstr (allowed, token))
         return FALSE;
+      (void)value;
     }
   return TRUE;
 }
-static WpSpaJson *
+static json_object *
 error_response (const char *id, const char *error, gboolean unavailable)
 {
-  return wp_spa_json_new_object ("protocol", "s", PROTOCOL, "id", "s", id ? id : "", "ok", "b",
-                                 FALSE, "error", "s", error, "unavailable", "b", unavailable, NULL);
+  json_object *response = json_object_new_object ();
+  json_object_object_add (response, "protocol", json_object_new_string (PROTOCOL));
+  json_object_object_add (response, "id", json_object_new_string (id ? id : ""));
+  json_object_object_add (response, "ok", json_object_new_boolean (FALSE));
+  json_object_object_add (response, "error", json_object_new_string (error));
+  json_object_object_add (response, "unavailable", json_object_new_boolean (unavailable));
+  return response;
 }
-static WpSpaJson *
+static json_object *
 preadmission_error (const char *error)
 {
-  return wp_spa_json_new_object ("protocol", "s", PROTOCOL, "id", "s", "", "ok", "b", FALSE,
-                                 "admitted", "b", FALSE, "error", "s", error, NULL);
+  json_object *response = json_object_new_object ();
+  json_object_object_add (response, "protocol", json_object_new_string (PROTOCOL));
+  json_object_object_add (response, "id", json_object_new_string (""));
+  json_object_object_add (response, "ok", json_object_new_boolean (FALSE));
+  json_object_object_add (response, "admitted", json_object_new_boolean (FALSE));
+  json_object_object_add (response, "error", json_object_new_string (error));
+  return response;
 }
-static WpSpaJson *
-result_response (const char *id, WpSpaJson *result)
+static json_object *
+result_response (const char *id, json_object *result)
 {
-  return wp_spa_json_new_object ("protocol", "s", PROTOCOL, "id", "s", id, "ok", "b", TRUE,
-                                 "result", "J", result, NULL);
+  json_object *response = json_object_new_object ();
+  json_object_object_add (response, "protocol", json_object_new_string (PROTOCOL));
+  json_object_object_add (response, "id", json_object_new_string (id));
+  json_object_object_add (response, "ok", json_object_new_boolean (TRUE));
+  json_object_object_add (response, "result", json_object_get (result));
+  return response;
 }
 static gint64
 deadline_seconds (int seconds)
@@ -354,20 +422,20 @@ read_line (Management *m, int fd, size_t limit, gint64 deadline, gboolean socket
   return NULL;
 }
 static gboolean
-send_response (Management *m, int fd, WpSpaJson *response)
+send_response (Management *m, int fd, json_object *response)
 {
-  g_autofree char *text = wp_spa_json_to_string (response);
+  const char *text = json_object_to_json_string_ext (response, JSON_FORMAT);
   gint64 deadline = deadline_seconds (10);
   return write_bytes (m, fd, text, strlen (text), deadline)
          && write_bytes (m, fd, "\n", 1, deadline);
 }
 
 static gboolean
-durable_receipt (Management *m, const char *id, WpSpaJson *record)
+durable_receipt (Management *m, const char *id, json_object *record)
 {
   g_autofree char *name = g_strdup_printf ("%s.json", id);
   g_autofree char *temp = g_strdup_printf (".%s.tmp", id);
-  g_autofree char *text = wp_spa_json_to_string (record);
+  const char *text = json_object_to_json_string_ext (record, JSON_FORMAT);
   int fd = openat (m->root_fd, temp, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600);
   if (fd < 0)
     return FALSE;
@@ -398,7 +466,7 @@ durable_receipt (Management *m, const char *id, WpSpaJson *record)
     unlinkat (m->root_fd, temp, 0);
   return ok;
 }
-static WpSpaJson *
+static json_object *
 read_receipt (Management *m, const char *id)
 {
   g_autofree char *name = g_strdup_printf ("%s.json", id);
@@ -429,13 +497,16 @@ read_receipt (Management *m, const char *id)
   g_autofree char *owned = data;
   return owned ? parse_json (owned) : NULL;
 }
-static WpSpaJson *
-receipt_record (const char *id, const char *domain, const char *state, WpSpaJson *response)
+static json_object *
+receipt_record (const char *id, const char *domain, const char *state, json_object *response)
 {
+  json_object *record = json_object_new_object ();
+  json_object_object_add (record, "id", json_object_new_string (id));
+  json_object_object_add (record, "domain", json_object_new_string (domain));
+  json_object_object_add (record, "state", json_object_new_string (state));
   if (response)
-    return wp_spa_json_new_object ("id", "s", id, "domain", "s", domain, "state", "s", state,
-                                   "response", "J", response, NULL);
-  return wp_spa_json_new_object ("id", "s", id, "domain", "s", domain, "state", "s", state, NULL);
+    json_object_object_add (record, "response", json_object_get (response));
+  return record;
 }
 static int
 recover_receipts (Management *m)
@@ -464,18 +535,18 @@ recover_receipts (Management *m)
       g_autofree char *id = g_strndup (name, strlen (name) - 5);
       if (!valid_id (id))
         return -1;
-      g_autoptr (WpSpaJson) record = read_receipt (m, id);
-      g_autofree char *domain = NULL, *state = NULL, *stored_id = NULL;
-      if (!record
-          || !wp_spa_json_object_get (record, "id", "s", &stored_id, "domain", "s", &domain,
-                                      "state", "s", &state, NULL)
+      g_autoptr (json_object) record = read_receipt (m, id);
+      const char *domain = string_member (record, "domain"),
+                 *state = string_member (record, "state"),
+                 *stored_id = string_member (record, "id");
+      if (!record || !stored_id || !domain || !state
           || strcmp (stored_id, id)
           || (strcmp (state, "accepted") && strcmp (state, "complete")
               && strcmp (state, "unknown")))
         return -1;
       if (!strcmp (state, "accepted"))
         {
-          g_autoptr (WpSpaJson) unknown = receipt_record (id, domain, "unknown", NULL);
+          g_autoptr (json_object) unknown = receipt_record (id, domain, "unknown", NULL);
           if (!durable_receipt (m, id, unknown))
             return -1;
         }
@@ -587,13 +658,13 @@ start_worker (Management *m)
   return request.success;
 }
 
-static WpSpaJson *
-execute (Management *m, const char *id, const char *domain, const char *op, WpSpaJson *request,
+static json_object *
+execute (Management *m, const char *id, const char *domain, const char *op, json_object *request,
          size_t limit)
 {
   if (!start_worker (m))
     return error_response (id, "management worker unavailable", TRUE);
-  g_autofree char *text = wp_spa_json_to_string (request);
+  const char *text = json_object_to_json_string_ext (request, JSON_FORMAT);
   gint64 deadline = deadline_seconds (!strcmp (domain, SIMULATOR) && !strcmp (op, "describe")
                                           ? m->describe_timeout
                                           : m->operation_timeout);
@@ -601,54 +672,51 @@ execute (Management *m, const char *id, const char *domain, const char *op, WpSp
   if (write_bytes (m, m->worker_in, text, strlen (text), deadline)
       && write_bytes (m, m->worker_in, "\n", 1, deadline))
     line = read_line (m, m->worker_out, limit - 128, deadline, FALSE, NULL);
-  g_autoptr (WpSpaJson) response = line ? parse_json (line) : NULL;
+  g_autoptr (json_object) response = line ? parse_json (line) : NULL;
   gboolean ok = FALSE;
-  g_autoptr (WpSpaJson) result = NULL;
-  g_autofree char *error = NULL;
+  json_object *result = NULL;
+  const char *error = string_member (response, "error");
   if (response && keys (response, "|ok||result||error||unavailable|")
-      && wp_spa_json_object_get (response, "ok", "b", &ok, NULL))
+      && boolean_member (response, "ok", &ok))
     {
-      if (ok && wp_spa_json_object_get (response, "result", "J", &result, NULL))
+      if (ok && json_object_object_get_ex (response, "result", &result))
         {
-          WpSpaJson *reply = result_response (id, result);
-          if (wp_spa_json_get_size (reply) + 1 <= limit)
+          json_object *reply = result_response (id, result);
+          if (strlen (json_object_to_json_string_ext (reply, JSON_FORMAT)) + 1 <= limit)
             {
               m->worker_idle = g_get_monotonic_time ();
               return reply;
             }
-          wp_spa_json_unref (reply);
+          json_object_put (reply);
         }
-      if (!ok && wp_spa_json_object_get (response, "error", "s", &error, NULL))
+      if (!ok && error)
         {
           gboolean unavailable = FALSE;
-          wp_spa_json_object_get (response, "unavailable", "b", &unavailable, NULL);
-          WpSpaJson *reply = error_response (id, error, unavailable);
-          if (wp_spa_json_get_size (reply) + 1 <= limit)
+          boolean_member (response, "unavailable", &unavailable);
+          json_object *reply = error_response (id, error, unavailable);
+          if (strlen (json_object_to_json_string_ext (reply, JSON_FORMAT)) + 1 <= limit)
             {
               m->worker_idle = g_get_monotonic_time ();
               return reply;
             }
-          wp_spa_json_unref (reply);
+          json_object_put (reply);
         }
     }
   retire_worker (m);
   return error_response (id, "management worker lost, timed out or returned an invalid reply",
                          TRUE);
 }
-static WpSpaJson *
+static json_object *
 dispatch (Management *m, const char *line, int fd, gboolean *admitted)
 {
-  g_autoptr (WpSpaJson) envelope = parse_json (line), request = NULL, args = NULL;
-  g_autofree char *id = NULL, *protocol = NULL, *domain = NULL, *op = NULL;
-  if (envelope)
-    wp_spa_json_object_get (envelope, "id", "s", &id, NULL);
-  if (!valid_id (id) || !keys (envelope, "|protocol||id||request|")
-      || !wp_spa_json_object_get (envelope, "protocol", "s", &protocol, "request", "J", &request,
-                                  NULL)
+  g_autoptr (json_object) envelope = parse_json (line);
+  json_object *request = member (envelope, "request"), *args = member (request, "arguments");
+  const char *id = string_member (envelope, "id"),
+             *protocol = string_member (envelope, "protocol"),
+             *domain = string_member (request, "protocol"), *op = string_member (request, "op");
+  if (!valid_id (id) || !keys (envelope, "|protocol||id||request|") || !protocol
       || strcmp (protocol, PROTOCOL) || !keys (request, "|protocol||op||arguments|")
-      || !wp_spa_json_object_get (request, "protocol", "s", &domain, "op", "s", &op, "arguments",
-                                  "J", &args, NULL)
-      || !wp_spa_json_is_object (args))
+      || !domain || !op || !json_object_is_type (args, json_type_object))
     return error_response (id, "invalid management envelope", FALSE);
   gboolean configuration = !strcmp (domain, CONFIGURATION), simulator = !strcmp (domain, SIMULATOR),
            receipt = !strcmp (domain, PROTOCOL) && !strcmp (op, "receipt");
@@ -668,46 +736,37 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
   if (!g_mutex_trylock (&m->operation))
     return error_response (id, "Busy", FALSE);
   *admitted = TRUE;
-  WpSpaJson *response = NULL;
+  json_object *response = NULL;
   if (receipt)
     {
-      g_autofree char *original = NULL;
-      if (!keys (args, "|id|") || !wp_spa_json_object_get (args, "id", "s", &original, NULL)
-          || !valid_id (original))
+      const char *original = string_member (args, "id");
+      if (!keys (args, "|id|") || !valid_id (original))
         response = error_response (id, "invalid receipt identity", FALSE);
       else
         {
-          g_autoptr (WpSpaJson) record = read_receipt (m, original);
+          g_autoptr (json_object) record = read_receipt (m, original);
           response = record ? result_response (id, record)
                             : error_response (id, "receipt not found", FALSE);
-          if (wp_spa_json_get_size (response) + 1 > RECEIPT_LIMIT)
+          if (strlen (json_object_to_json_string_ext (response, JSON_FORMAT)) + 1 > RECEIPT_LIMIT)
             {
-              wp_spa_json_unref (response);
+              json_object_put (response);
               response = error_response (id, "receipt response exceeds byte limit", FALSE);
             }
         }
       goto out;
     }
   {
-    g_autoptr (WpSpaJsonBuilder) builder = wp_spa_json_builder_new_object ();
-    g_autoptr (WpSpaJsonParser) parser = wp_spa_json_parser_new_object (args);
-    g_autoptr (GHashTable) seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    char *key;
-    while ((key = wp_spa_json_parser_get_string (parser)))
+    g_autoptr (json_object) worker_args = json_object_new_object ();
+    json_object_object_foreach (args, key, value)
       {
-        g_autofree char *owned = key;
-        g_autoptr (WpSpaJson) value = wp_spa_json_parser_get_json (parser);
-        if (!value || !strcmp (key, "root") || !strcmp (key, "state_root")
-            || !strcmp (key, "configuration_root") || (registration && !strcmp (key, "path"))
-            || g_hash_table_contains (seen, key))
+        if (!strcmp (key, "root") || !strcmp (key, "state_root")
+            || !strcmp (key, "configuration_root") || (registration && !strcmp (key, "path")))
           {
             response = error_response (
                 id, "client paths, roots or duplicate arguments are forbidden", FALSE);
             goto out;
           }
-        g_hash_table_add (seen, g_strdup (key));
-        wp_spa_json_builder_add_property (builder, key);
-        wp_spa_json_builder_add_json (builder, value);
+        json_object_object_add (worker_args, key, json_object_get (value));
       }
     if (registration)
       {
@@ -721,19 +780,16 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
             goto out;
           }
         g_autofree char *path = g_strdup_printf ("/proc/%ld/fd/%d", (long)getpid (), fd);
-        wp_spa_json_builder_add_property (builder, "path");
-        wp_spa_json_builder_add_string (builder, path);
+        json_object_object_add (worker_args, "path", json_object_new_string (path));
       }
-    g_autoptr (WpSpaJson) worker_args = wp_spa_json_builder_end (builder);
-    g_autoptr (WpSpaJson) worker_request
-        = configuration
-              ? wp_spa_json_new_object ("protocol", "s", domain, "op", "s", op, "arguments", "J",
-                                        worker_args, "root", "s", m->configuration_root, NULL)
-          : simulator && !strcmp (op, "start_rebuild")
-              ? wp_spa_json_new_object ("protocol", "s", domain, "op", "s", op, "arguments", "J",
-                                        worker_args, "id", "s", id, NULL)
-              : wp_spa_json_new_object ("protocol", "s", domain, "op", "s", op, "arguments", "J",
-                                        worker_args, NULL);
+    g_autoptr (json_object) worker_request = json_object_new_object ();
+    json_object_object_add (worker_request, "protocol", json_object_new_string (domain));
+    json_object_object_add (worker_request, "op", json_object_new_string (op));
+    json_object_object_add (worker_request, "arguments", json_object_get (worker_args));
+    if (configuration)
+      json_object_object_add (worker_request, "root", json_object_new_string (m->configuration_root));
+    else if (simulator && !strcmp (op, "start_rebuild"))
+      json_object_object_add (worker_request, "id", json_object_new_string (id));
     if (mutation)
       {
         g_autofree char *name = g_strdup_printf ("%s.json", id);
@@ -748,7 +804,7 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
             response = error_response (id, "receipt store unavailable or full", FALSE);
             goto out;
           }
-        g_autoptr (WpSpaJson) accepted = receipt_record (id, domain, "accepted", NULL);
+        g_autoptr (json_object) accepted = receipt_record (id, domain, "accepted", NULL);
         gboolean persisted = durable_receipt (m, id, accepted);
         /* A rename can succeed even if the following directory fsync fails.
          * It still consumes capacity and must never be silently overwritten. */
@@ -765,12 +821,12 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
     if (mutation)
       {
         gboolean unavailable = FALSE;
-        wp_spa_json_object_get (response, "unavailable", "b", &unavailable, NULL);
-        g_autoptr (WpSpaJson) record = receipt_record (
+        boolean_member (response, "unavailable", &unavailable);
+        g_autoptr (json_object) record = receipt_record (
             id, domain, unavailable ? "unknown" : "complete", unavailable ? NULL : response);
         if (!durable_receipt (m, id, record))
           {
-            wp_spa_json_unref (response);
+            json_object_put (response);
             response = error_response (id, "cannot persist completion; outcome unknown", TRUE);
           }
       }
@@ -798,7 +854,7 @@ handle_connection (gpointer data)
       g_autofree char *line
           = read_line (m, socket_fd, REQUEST_LIMIT, deadline_seconds (10), TRUE, &input_fd);
       gboolean admitted = FALSE;
-      g_autoptr (WpSpaJson) response
+      g_autoptr (json_object) response
           = line ? dispatch (m, line, input_fd, &admitted)
                  : preadmission_error ("invalid, oversized or timed out request");
       send_response (m, socket_fd, response);
@@ -998,18 +1054,16 @@ main (int argc, char **argv)
                   "required\n");
       return 2;
     }
-  g_autoptr (WpSpaJson) argv_json = parse_json (m.worker_json);
-  if (!argv_json || !wp_spa_json_is_array (argv_json))
+  g_autoptr (json_object) argv_json = parse_json (m.worker_json);
+  if (!json_object_is_type (argv_json, json_type_array))
     return 2;
-  g_autoptr (WpSpaJsonParser) parser = wp_spa_json_parser_new_array (argv_json);
   g_autoptr (GPtrArray) arguments = g_ptr_array_new_with_free_func (g_free);
-  g_autoptr (WpSpaJson) arg = NULL;
-  while ((arg = wp_spa_json_parser_get_json (parser)))
+  for (size_t i = 0; i < json_object_array_length (argv_json); i++)
     {
-      if (!wp_spa_json_is_string (arg))
+      json_object *arg = json_object_array_get_idx (argv_json, i);
+      if (!json_object_is_type (arg, json_type_string))
         return 2;
-      g_ptr_array_add (arguments, wp_spa_json_parse_string (arg));
-      g_clear_pointer (&arg, wp_spa_json_unref);
+      g_ptr_array_add (arguments, g_strdup (json_object_get_string (arg)));
     }
   if (!arguments->len)
     return 2;

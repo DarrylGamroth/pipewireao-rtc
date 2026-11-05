@@ -91,6 +91,83 @@ The discarded libwireplumber bridge experiment is preserved at `24ad2e9` on
 `codex/libwireplumber-bridge-evaluation-20261104`. Its six native/sanitizer cases
 do not qualify the selected direct-PipeWire implementation.
 
+## Independent backend review
+
+The independent review began at `aaaa690` plus the uncommitted direct object,
+transport and journal adapters, in the dedicated migration worktree. It checked
+the RTC-DEV-003/004/021/025/022 closure obligations in the migration plan. The
+following findings were independently reproduced and adjudicated before fixes.
+Confidence is high for the demonstrated software behavior; these findings do
+not establish a hardware or timing qualification result.
+
+| Finding | Severity and evidence | Disposition |
+| --- | --- | --- |
+| MSR-001 — Link withdrawal discards owner identity captures | P1, confirmed. A captured control node passed identity validation before `remove_links!`; successful withdrawal emptied all captures, and the following owner check failed with `object is not captured`. The machine next issues source and owner Shutdown effects. | Fixed: withdrawal retains the remaining captures after the native Link absence fence. A regression checks that the same captured control endpoint remains valid through withdrawal. No fresh recapture substitutes for the original identity. |
+| MSR-002 — Acknowledged owner retirement is treated as unexpected loss | P1, confirmed. Removing a captured owner always emitted RequiredLost; during ordered shutdown that event enters Fault. The adapter had no receipt-proven retirement handoff. | Fixed with `retire_owner!`: a validated bootstrap Quit receipt, matching declaration and native ClientInfo provenance authorize exact cohort retirement. Exact global-ID/serial targets remain for absence checks. Unacknowledged, foreign and shared-client captures retain loss detection. An acquisition Shutdown receipt cannot retire an entire process. Root effect integration must call this handoff and enforce the final absence fence. |
+| MSR-003 — Preparation can consume the fresh transport deadline check | P1, confirmed. An injected clock advanced to the effect deadline during identity validation; `setparam!` still invoked the native send after its earlier fresh-time check. | Fixed in transport: a final `check_job` runs immediately before enumeration or parameter submission, after identity, object and parameter preparation. The same injected-delay reproduction now refuses the send. An already-set submission marker remains conservative; the fix does not erase earlier cohort mutations. |
+| MSR-004 — Created Link admission omits LinkInfo ID correlation | P2, confirmed validation gap. Otherwise-valid LinkInfo ID 32 was admitted for bound ID 31. A sparse merge could also conceal a later raw event's changed ID by retaining the previous ID. A real native corruption trigger was not established. | Fixed: raw LinkUpdated events are checked before merging, LinkBound is checked against any earlier info, and validation compares the known bound ID. Tests cover both callback orders, changes after a valid observation, valid same-ID events and first-failure retention. |
+
+Observed verification: the object selector passes **94 assertions**, including
+16 against an isolated private core and 11 Link-ID regression assertions. The
+same 11 assertions against the saved pre-MSR-004 source produced seven failures;
+they all pass after the fix. Existing pending-creation withdrawal, native sync
+and absence checks still pass. Object-selector host deadlines now use direct
+Clocks signed `Int64` nanoseconds, including the private-core polling loop.
+
+```sh
+julia --project=. -e 'using PipeWireAO;
+ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir);
+include("test/media_session_objects.jl")'
+```
+
+The MSR-004 logs are `/tmp/media-session-msr004-before.log` and
+`/tmp/media-session-msr004-after.log`; the saved pre-fix source is
+`/tmp/media-session-objects-before-msr004.jl`. The MSR-003 discriminating script
+is `/tmp/rtc-msr003-deadline.jl`; before the fix it reported
+`send_at_expired_deadline=true`, and after the fix it reports `false` with an
+expiry refusal. The persistent object regressions retain the MSR-001/002/004
+invariants independently of these temporary artifacts.
+
+No additional journal defect was confirmed in this review. PipeWireAO publicly
+provides `InfoTracker`, `track_info!`, `has_current_info` and `current_info` for
+Node/Port/Device/Link snapshots, but no public callback-free merge operation or
+Client/Factory tracker. Reuse must preserve every Link observation: reading only
+the latest snapshot after a pump could hide a bad event followed by a good one.
+Sparse-merge duplication is an interface ownership concern, not an additional
+established failure of the currently consumed RTC fields.
+
+## Management companion dependency removal
+
+Observed: the independent C management helper used libwireplumber only for its
+JSON utility. It now uses json-c 0.18 or newer and the existing GLib/GIO Unix
+interfaces. The selected Meson build creates only the management companion and
+its test helpers; it does not build or install the retired session executable,
+plugins or scripts. The Julia launcher is generated separately. This does not
+add another session authority.
+
+Observed software verification: the unchanged management IPC selector passes
+150 assertions covering peer credentials, descriptor transfer, worker lifetime,
+durable acceptance, bounded capacity, no replay and crash-to-unknown behavior.
+Five native JSON test groups pass with warnings treated as errors, and under
+ASan/UBSan with leak detection. An old-helper/new-helper comparison passes 21
+checks for numeric, Unicode and receipt compatibility. The root independently
+reviewed ownership/type checks and reran configuration, compilation and the
+native tests after removing the unused build option.
+
+UInt64 identities and floating-point token spellings are preserved. Duplicate
+decoded keys now reject at every object depth; integers outside −2⁶³ through
+2⁶⁴−1 reject. JSON whitespace, Unicode escapes and integer `-0` may normalize.
+Receipt identity, rather than a digest of request serialization, prevents replay.
+The existing lexical validator remains necessary: an isolated json-c 0.18 probe
+rejects valid non-ASCII input with its strict flag, whereas ordinary parsing
+accepts it. The production path validates strict syntax, depth, NUL exclusion,
+UTF-8 and decoded-key uniqueness before invoking the library parser.
+
+Logs: `/tmp/rtc-management-json-endpoint-20261105.log`,
+`/tmp/rtc-management-json-golden-20261105.log`, and the `meson-logs/testlog.txt`
+files under `/tmp/rtc-management-json-build-20261105` and
+`/tmp/rtc-management-json-asan-20261105`. No service or installation changed.
+
 ## Remaining integration gate
 
 The direct owner loop, bounded ingress, journal persistence, exact discovery and

@@ -1,87 +1,59 @@
-# Headless RTC runtime
+# RTC session and management runtimes
 
-`pipewireao-rtc -c /absolute/path/to/rtc.conf` runs the RTC application using
-public libwireplumber `WpConf`, `WpCore`, component activation and a GLib main
-loop. The executable always selects the `ao-rtc` profile. Its configuration uses
-the library's `wireplumber.profiles` and `wireplumber.components` sections;
-those names identify the library format, not a daemon-owned application.
-Configuration fragments are disabled. Application identity, profile and
-ordinary-client mode are imposed after configuration properties are merged.
-The host does not select the manager socket.
+The selected session owner is the Julia `MediaSession` module in
+`src/media_session/`. Its generated `rtc/bin/pipewireao-rtc` launcher executes
+`PipeWireAORTC.MediaSession.main(ARGS)` with the pinned Julia executable and
+project. One session task owns its Hsm, PipeWire objects and application Links;
+Agent.jl supplies its duty cycle and Clocks.jl supplies signed control time.
+Scientific graphs stay in their separate processes and PipeWire data threads.
 
-The RTC owns `scripts/ao/session.lua`, `scripts/lib/ao-*.lua`, its control
-endpoint and journal plugins. Upstream Link objects, factories and event hooks remain in libwireplumber.
-RTC uses ordinary Link creation/activation plus its own narrow Lua-to-C
-retirement and negotiated-Format bindings. The application modules keep
-`libwireplumber-module-*.so` filenames because that is the library's plugin
-loading boundary. The control endpoint hosts no frame-processing callback.
+The authoritative generator writes standard relaxed SPA-JSON with
+`context.properties`, `context.modules` and `pipewireao.session`. It verifies
+serialization through PipeWireAO’s `pwao-spa-json-dump` parser. Configuration
+and startup alone do not establish readiness: preparation, exact ownership,
+resource admission and the public protocol still apply.
 
-A successful, fenced Quit marks a private core property before disconnecting.
-An unexpected disconnection or an unfenced/failing Quit exits with status 69;
-SIGINT and SIGTERM exit with status 0. Configuration errors return 78, usage
-errors 64, and other initialization errors return nonzero. systemd remains the
-process-lifetime owner. Signal and activation callbacks retain or remove their
-owners during shutdown; queued completions receive a bounded drain.
+The migration is under integration, not release or real-time qualification.
+See the [migration contract and gates](../docs/SESSION_POLICY_MIGRATION.md) and
+[current roadmap](../docs/roadmap.md#current-work). Earlier policy sources and
+receipts retain their historical scope; Meson no longer builds or installs the
+retired session executable, plugins or scripts.
 
-Retained Lua proxies do not retain a removed PipeWire incarnation. Native
-identity checks reject unbound proxies before reading their live metadata;
-owner disappearance remains a failed operation, never a successful Quit.
-This guard prevents invalid metadata reads during cleanup. It does not explain
-or repair premature owner disappearance or establish the cause of GUI
-Stop/Refresh failures.
+## Compiled management companion
 
-## Build and install
+`pipewireao-management` supplies the existing local management socket, peer
+credentials, descriptor transfer, durable receipts and private worker lifetime.
+It is a cold control process and does not run scientific frame callbacks or
+coordinate the session lifecycle. Its JSON utility dependency is json-c;
+no session-manager library is needed.
 
-Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO (including Unix
-support), upstream libwireplumber 0.5.18, PipeWireAO development libraries and
-SQLite 3.24 or newer. Both libwireplumber and this application must select
-`libpipewire-ao-0.3` and `libspa-ao-0.2`. Set `PKG_CONFIG_PATH` explicitly for
-the selected prefix; ordinary PipeWire does not supply the AO ABI/NDArray formats.
-No custom Link, SessionItem, Lua or POD API is required. The RTC owns `ao-lua`,
-a small public-C-API binding used by its Lua modules; the clock uses upstream
-`GLib.get_monotonic_time` directly.
-
-The production generator writes standard relaxed SPA-JSON: simple strings such
-as component feature names are bare, while values needing quotes use JSON string
-escaping. Every document is normalized through the PipeWireAO dependency's
-`pwao-spa-json-dump` parser and compared before replacing its destination.
-Generated startup now works with unmodified upstream libwireplumber built
-against PipeWireAO; no component-loader patch is required. The separate large
-POD-filter and Lua event-property fixes remain independently reviewable rather
-than RTC dependency requirements. The RTC uses native event construction.
-See [SPA-JSON validation](../docs/validation/spa-json-20261021/README.md) and
-[upstream binding validation](../docs/validation/upstream-bindings-20261021/README.md)
-for exact cohorts and limits.
+Requirements: C compiler, Meson, Ninja, pkg-config, GLib/GIO development files
+with Unix support, and json-c 0.18 or newer development files. Build and test
+in a separate directory:
 
 ```sh
-meson setup runtime/build runtime --prefix=/absolute/isolated/prefix --libdir=lib \
-  -Dwp_source_dir=/absolute/path/to/wireplumber
-meson compile -C runtime/build
-meson test -C runtime/build --print-errorlogs
-meson install -C runtime/build
+meson setup /tmp/rtc-management-build runtime --prefix=/absolute/isolated/prefix
+meson compile -C /tmp/rtc-management-build
+meson test -C /tmp/rtc-management-build --print-errorlogs
 ```
 
-For a build without tests, use `-Dtests=false`; the upstream source checkout is
-then unnecessary. Tests include the upstream Lua runner in place, load RTC's binding module before
-each script and include
-its private test-server headers through the explicit `wp_source_dir` option.
-No upstream test tree is copied. Test servers are isolated from the user's
-running PipeWire service. Runtime library discovery must include the selected
-cohort's library directory (the deployment launcher sets `LD_LIBRARY_PATH`).
+`-Dtests=false` omits the focused management tests and socket-activation test
+helper. Installing this build provides only `bin/pipewireao-management` and its
+license. Session launchers are generated by `ScienceExport.stage_rtc!`.
 
-| Owner | Build/source path | Installed path below prefix |
-| --- | --- | --- |
-| Native application | `runtime/build/pipewireao-rtc` | `bin/pipewireao-rtc` |
-| RTC plugins | `runtime/build/modules/*.so` | `lib/pipewireao-rtc/modules/*.so` |
-| RTC Lua policy | `runtime/scripts/` | `share/pipewireao-rtc/scripts/` |
+The management protocol keeps its existing schemas and receipt identities.
+Its strict JSON boundary rejects duplicate decoded keys at every depth and
+integers outside −2⁶³ through 2⁶⁴−1. UInt64 identities and floating-point token
+spellings survive forwarding. Whitespace, escaped Unicode and integer `-0`
+can be normalized; replay protection uses durable operation identity, not a
+hash of serialized request bytes.
 
-Deployment seals those assets under package `rtc/bin`, `rtc/modules` and
-`rtc/scripts`. `WIREPLUMBER_MODULE_DIR` lists the RTC modules followed by generic
-library modules. `WIREPLUMBER_DATA_DIR` lists the RTC data root followed by
-generic library data. Both variables use colon-separated directories. If unset,
-the host supplies the corresponding build-selected installed directories.
-The generated policy component uses an absolute installed script path to avoid
-the Lua loader's ordinary-client working-directory lookup.
+The standalone IPC selector uses a test-owned process and private socket:
+
+```sh
+PIPEWIREAO_MANAGEMENT_BINARY=/tmp/rtc-management-build/pipewireao-management \
+  julia --project=. test/management_endpoint.jl
+```
 
 ## Coupled source lifecycle
 
