@@ -39,33 +39,30 @@ protocol types and independent capability traits are reused; phase behavior
 stays with Hsm handlers and captured effect origins.
 New private launch ledgers use version 2 and `session_pid` /
 `session_start_ticks`; older installed sessions keep their pinned tools and
-historical reports are unchanged. The shared formatting profile now covers the
-selected 414 authored Julia files; clock migration exceptions remain explicit
-work in the inventory, rather than a completed package-wide clock claim.
+historical reports are unchanged. The shared formatting profile covers the
+selected 414 authored Julia files.
 
-The [signed-clock evidence](reviews/20261105-clocks/REVIEW.md) records subsequent
-verified migrations. Physical-offset host receipt/silence timing now uses signed
-Clocks ticks and one sample per receiver cycle; model chronology remains separate.
-Core, CPU input and native receiver checks pass. Its graph private-core gate
-remains unqualified: the baseline reproduces the same pre-frame buffer failure.
-Native clients, MediaSession controls and owner endpoints retain signed
-receipt/deadline ticks through calibration and capture. Deterministic and
-private-core admission, effect, fault and terminal-release checks pass. Actual
-parameter-owner execution and scientific initial calibration remain unverified.
-Remaining deployment/optical caller chains continue as separate slices.
-Calibration preparation/acquisition Hsms also retain signed deadlines and event
-times, with known/unknown recovery and saved-report seconds preserved; 726 pure
-checks, optional reference checks and the existing warmed allocation gates pass.
-Correction/recovery/supervision host times now use the same signed clock contract,
-with once-per-cycle sampling and fail-closed regression/overflow behavior; pure
-and private-core timer checks pass.
-Deployment/systemd waits, session CLI, optional Analysis lifecycle and simulator
-replacement now forward signed deadlines and the same injected clock; 597
-combined software assertions pass without modifying services or placement.
-Optical host pacing and diagnostic/publisher throttles now use signed Clocks
-ticks while preserving completion-based pacing and scientific chronology; 495
-checks pass, including native Pause/Run continuity and allocation gates. Three
-cold preparation/worker waits remain, with full core integration running.
+The [signed-clock migration](reviews/20261105-clocks/REVIEW.md) now covers session
+controls, native clients/endpoints, calibration Hsms/capture, correction/recovery,
+physical-offset freshness, deployment/analysis waits, optical pacing and cold
+preparation. Owners use signed Clocks values directly and sample once per decision
+cycle. Producer receipts, fresh native/I/O guards and completion measurements
+retain their distinct purposes. Common clock adapters are retired; explicit
+compatibility/report units, model chronology and saved/native ABI widths remain.
+
+All core selectors pass after a missing clock was added to a calibration test
+double. The unchanged successful prefix and the repaired selector/remainder were
+verified in two segments, reporting 11,331 assertions across 515 passing summaries
+(including subprocess checks). Focused CPU/native/allocation checks also pass;
+the last cold-wait slice passes 153 assertions, including real CPU preparation
+with a negative CachedNanoClock. Evidence records intermediate failures and fixes.
+
+The physical-offset graph gate remains unqualified: the unchanged baseline
+reproduces its pre-frame buffer-allocation failure. Actual parameter-owner and
+scientific initial-calibration execution, full modal validation, release-cohort,
+sustained cadence, hardware and strict deadline qualification remain separate.
+The session replacement is not promoted as deployed or fully qualified by the
+clock migration.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

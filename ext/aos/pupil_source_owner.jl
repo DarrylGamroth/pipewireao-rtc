@@ -22,8 +22,13 @@ import Clocks
 const IC = PipeWireAORTC.InstrumentConfiguration
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Extension = parentmodule(@__MODULE__)
+const WARMUP_TIMEOUT_NS = Int64(30_000_000_000)
 
-function Owner.prepare_pupil_source_science(options; check = () -> nothing)
+function Owner.prepare_pupil_source_science(
+    options;
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     check()
     device = target(options)
     execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
@@ -46,7 +51,7 @@ function Owner.prepare_pupil_source_science(options; check = () -> nothing)
     science = merge(system, (; driver, command))
     publisher = PupilOutput.prepare(options, science)
     try
-        warmup!(science, publisher; check)
+        warmup!(science, publisher; check, clock)
     catch
         PupilOutput.close!(publisher)
         rethrow()
@@ -55,17 +60,28 @@ function Owner.prepare_pupil_source_science(options; check = () -> nothing)
 end
 
 "Warm the actual graph and packet packing, then restore the first model phase."
-function warmup!(science, publisher; check = () -> nothing)
+function warmup!(
+    science,
+    publisher;
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     try
         check()
         step_graph_at!(science.graph, science.driver)
         check()
         PupilOutput.sample!(publisher; generation = UInt64(1), model_ns = Int64(0)) ||
             error("pupil source warmup snapshot unavailable")
-        deadline = time_ns() + UInt64(30_000_000_000)
-        while !poll_graph_output_snapshot!(publisher.snapshot)
+        previous = Clocks.time_nanos(clock)::Int64
+        deadline = Base.checked_add(previous, WARMUP_TIMEOUT_NS)
+        while true
+            now_ns = Clocks.time_nanos(clock)::Int64
+            # Readiness is an owned snapshot proof and precedes temporal refusal.
+            poll_graph_output_snapshot!(publisher.snapshot) && break
             check()
-            time_ns() < deadline || error("pupil source warmup snapshot timed out")
+            now_ns >= previous || error("pupil source warmup monotonic clock regressed")
+            previous = now_ns
+            now_ns < deadline || error("pupil source warmup snapshot timed out")
             yield()
         end
         try
@@ -288,7 +304,7 @@ function run!(
             Bootstrap.await_connected!(runtime, ticket)
             reset_owner! =
                 () -> begin
-                    PupilOutput.drain!(publisher; check = options.owner_check)
+                    PupilOutput.drain!(publisher; check = options.owner_check, clock)
                     Offsets.reset_inputs!(inputs)
                     reset_science!(science)
                     state.generation = Base.checked_add(state.generation, Int64(1))
@@ -304,7 +320,10 @@ function run!(
                     state.completed = false
                     state.deadline_ns = 0
                     PupilOutput.reset!(
-                        publisher, UInt64(state.generation); check = options.owner_check
+                        publisher,
+                        UInt64(state.generation);
+                        check = options.owner_check,
+                        clock,
                     )
                 end
             while !Bootstrap.cancelled(runtime)
@@ -336,7 +355,7 @@ function run!(
             end
         finally
             Bootstrap.finishing!(runtime)
-            PupilOutput.drain!(publisher; check = () -> nothing)
+            PupilOutput.drain!(publisher; check = () -> nothing, clock)
             with_thread_loop_lock(transport.loop) do _
                 filter === nothing || close(filter)
             end
@@ -345,7 +364,9 @@ function run!(
     return nothing
 end
 
-function Owner.run_pupil_source_owner(options)
+function Owner.run_pupil_source_owner(
+    options; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     options = merge(
         options,
         (; configuration_sha256 = PipeWireAORTC.Common.sha256_file(options.config_path)),
@@ -375,12 +396,14 @@ function Owner.run_pupil_source_owner(options)
         )
         all(name -> name ∉ reserved, names) ||
             throw(ArgumentError("pupil source native node names collide"))
-        science = Owner.prepare_pupil_source_science(options; check = options.owner_check)
+        science = Owner.prepare_pupil_source_science(
+            options; check = options.owner_check, clock
+        )
         options = merge(
             options, (; pupil_output_status = () -> PupilOutput.status(science.publisher))
         )
         report!(options, mailbox, state)
-        run!(options, science, prepared, mailbox, state)
+        run!(options, science, prepared, mailbox, state; clock)
     catch error
         if !(owner_cancelled(error, options.bootstrap_runtime))
             push!(failures, error)

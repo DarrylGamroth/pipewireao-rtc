@@ -5,7 +5,9 @@
 The [migration evidence](reviews/20261105-clocks/REVIEW.md) records each verified
 signed-nanosecond slice, deterministic boundary checks, review and remaining
 qualification limits. The physical-offset graph's pre-frame buffer-allocation
-failure is preserved with its unchanged-baseline reproduction.
+failure is preserved with its unchanged-baseline reproduction. Core selectors
+complete in two segments after a test-double repair; cold optical wait, CPU
+preparation and extension-loading checks pass without hardware qualification.
 
 ## Direct MediaSession replacement — 2026-11-04
 

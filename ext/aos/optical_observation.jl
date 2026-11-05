@@ -1,6 +1,7 @@
 module OpticalObservation
 
 import PipeWireAORTC
+import Clocks
 
 using AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
@@ -40,6 +41,7 @@ const RMS_CHANNELS = (
     ),
 )
 const PERIOD_NS = Int64(50_000_000)
+const PREPARATION_TIMEOUT_NS = Int64(30_000_000_000)
 const ZERO_PADDING = 2
 const RMS_SHAPE = (1, 2)
 
@@ -486,7 +488,13 @@ function start!(observation::Observation, pipewire, cpu)
     return nothing
 end
 
-warm!(::Nothing, pipewire; check = () -> nothing, cpu = nothing) = nothing
+warm!(
+    ::Nothing,
+    pipewire;
+    check = () -> nothing,
+    cpu = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+) = nothing
 function pin_image_thread!(cpu::Integer)
     cpu > 1 || throw(ArgumentError("image thread CPU must exclude CPU0/1"))
     # pw_thread_loop_start passes only its name to the native thread creator.
@@ -504,7 +512,13 @@ function pin_image_thread!(cpu::Integer)
         throw(ArgumentError("native image thread CPU placement was not applied"))
     return nothing
 end
-function warm!(observation::Observation, pipewire; check = () -> nothing, cpu = nothing)
+function warm!(
+    observation::Observation,
+    pipewire;
+    check = () -> nothing,
+    cpu = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     check()
     observation.generation = UInt64(frame_acquisition_generation(pipewire))
     cpu !== nothing && cpu > 1 ||
@@ -514,12 +528,19 @@ function warm!(observation::Observation, pipewire; check = () -> nothing, cpu = 
     target = observation.completed[] + UInt64(1)
     submit!(observation; generation = observation.generation) ||
         throw(ArgumentError("cannot warm the optical snapshot"))
-    deadline = time_ns() + UInt64(30_000_000_000)
-    while observation.completed[] < target
+    previous = Clocks.time_nanos(clock)::Int64
+    deadline = Base.checked_add(previous, PREPARATION_TIMEOUT_NS)
+    while true
+        now_ns = Clocks.time_nanos(clock)::Int64
+        # Completed slot release is known even at expiry or a regressed clock.
+        observation.completed[] >= target && break
         check()
         observation.failed[] &&
             throw(ArgumentError("optical worker failed during preparation"))
-        time_ns() < deadline || throw(ArgumentError("optical worker preparation timed out"))
+        now_ns >= previous ||
+            throw(ArgumentError("optical worker monotonic clock regressed"))
+        previous = now_ns
+        now_ns < deadline || throw(ArgumentError("optical worker preparation timed out"))
         GC.safepoint()
         yield()
     end
@@ -571,11 +592,23 @@ function stop_worker!(observation::Observation)
     return nothing
 end
 
-reset!(::Nothing, pipewire; check = () -> nothing, cpu = nothing) = nothing
-function reset!(observation::Observation, pipewire; check = () -> nothing, cpu = nothing)
+reset!(
+    ::Nothing,
+    pipewire;
+    check = () -> nothing,
+    cpu = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+) = nothing
+function reset!(
+    observation::Observation,
+    pipewire;
+    check = () -> nothing,
+    cpu = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     observation.next_sample_ns = nothing
     observation.failed[] = false
-    warm!(observation, pipewire; check, cpu)
+    warm!(observation, pipewire; check, cpu, clock)
     return nothing
 end
 

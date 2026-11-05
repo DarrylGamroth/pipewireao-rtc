@@ -598,7 +598,7 @@ Base.@nospecializeinfer function run_streams!(
     @nospecialize(ticket);
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
-    @info "Optical owner startup" phase = :streams_entry at_ns = time_ns()
+    @info "Optical owner startup" phase = :streams_entry at_ns = Clocks.time_nanos(clock)
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     clocked = options.version == 6
@@ -658,11 +658,17 @@ Base.@nospecializeinfer function run_streams!(
             ready && break
             sleep(0.001)
         end
-        @info "Optical owner startup" phase = :streams_ready at_ns = time_ns()
-        @info "Optical owner startup" phase = :transport_warmup_begin at_ns = time_ns()
+        @info "Optical owner startup" phase = :streams_ready at_ns = Clocks.time_nanos(
+            clock
+        )
+        @info "Optical owner startup" phase = :transport_warmup_begin at_ns = Clocks.time_nanos(
+            clock
+        )
         warmup_stream_transport!(owner, execution, clocked)
         Bootstrap.check_connect!(runtime, ticket)
-        @info "Optical owner startup" phase = :transport_warmup_end at_ns = time_ns()
+        @info "Optical owner startup" phase = :transport_warmup_end at_ns = Clocks.time_nanos(
+            clock
+        )
         publication_enabled[] = true
         Bootstrap.connected!(runtime, ticket)
         Bootstrap.await_connected!(runtime, ticket)
@@ -745,10 +751,16 @@ end
 # Model warming belongs to Preparing. The same quiet emitter checks conversion,
 # sequence and chopping contracts here and later publishes real camera frames.
 # Its transport reference remains empty until Connect; no warmup frame escapes.
-function prepare_stream_execution!(options, science, mailbox, state)
+function prepare_stream_execution!(
+    options,
+    science,
+    mailbox,
+    state;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     options.owner_check()
     execution = stream_execution(options, science, state)
-    @info "Optical owner startup" phase = :warmup_begin at_ns = time_ns()
+    @info "Optical owner startup" phase = :warmup_begin at_ns = Clocks.time_nanos(clock)
     try
         if options.version == 6
             warmup_clocked_source!(
@@ -771,20 +783,22 @@ function prepare_stream_execution!(options, science, mailbox, state)
         foreach(frame -> fill!(frame, 0), execution.frames)
         foreach(buffer -> fill!(buffer, 0), execution.buffers)
     end
-    @info "Optical owner startup" phase = :warmup_end at_ns = time_ns()
+    @info "Optical owner startup" phase = :warmup_end at_ns = Clocks.time_nanos(clock)
     options.owner_check()
-    @info "Optical owner startup" phase = :precompile_begin at_ns = time_ns()
+    @info "Optical owner startup" phase = :precompile_begin at_ns = Clocks.time_nanos(clock)
     ready = precompile(
         run_streams!,
         (Any, typeof(science), typeof(mailbox), typeof(state), typeof(execution), Any, Any),
     )
-    @info "Optical owner startup" phase = :precompile_end at_ns = time_ns()
+    @info "Optical owner startup" phase = :precompile_end at_ns = Clocks.time_nanos(clock)
     options.owner_check()
     ready || error("external-pupil control-loop preparation failed")
     return execution
 end
 
-function Owner.run_external_pupil_owner(options)
+function Owner.run_external_pupil_owner(
+    options; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     runtime = options.bootstrap_runtime
     options = merge(
         options,
@@ -804,23 +818,27 @@ function Owner.run_external_pupil_owner(options)
             input_option = options.version == 6 ? clocked_command_option(options) : nothing,
             reference_clock = prepare_reference_clock(options),
         )
-        execution = prepare_stream_execution!(options, science, mailbox, state)
-        @info "Optical owner startup" phase = :prepared at_ns = time_ns()
+        execution = prepare_stream_execution!(options, science, mailbox, state; clock)
+        @info "Optical owner startup" phase = :prepared at_ns = Clocks.time_nanos(clock)
         Bootstrap.prepared!(runtime)
         ticket = Bootstrap.take_connect!(runtime)
-        @info "Optical owner startup" phase = :connect_received at_ns = time_ns()
+        @info "Optical owner startup" phase = :connect_received at_ns = Clocks.time_nanos(
+            clock
+        )
         Bootstrap.check_connect!(runtime, ticket)
         with_array_streams(
             streams;
             remote = options.remote,
             input = (true, map(_ -> false, keys(science.sensors))...),
         ) do owner
-            @info "Optical owner startup" phase = :streams_constructed at_ns = time_ns()
+            @info "Optical owner startup" phase = :streams_constructed at_ns = Clocks.time_nanos(
+                clock
+            )
             cpu = get(options, :pipewire_cpu, nothing)
             cpu === nothing || PipeWireAORTC.Placement.pin_loop!(
                 owner.loop, cpu; check = options.owner_check
             )
-            run_streams!(options, science, mailbox, state, execution, owner, ticket)
+            run_streams!(options, science, mailbox, state, execution, owner, ticket; clock)
         end
     catch error
         if !(owner_cancelled(error, runtime))

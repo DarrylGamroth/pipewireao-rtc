@@ -120,7 +120,7 @@ optional integration or hardware gate.
 
 ### Clock consistency audit — 2026-11-05
 
-This is a source inventory and migration order, not implementation completion.
+This records the initial source inventory and the subsequently verified migrations.
 The inspected baseline is `0fb7403f8570ef3a908f0240784f8eeeb6e14534` plus the
 current formatting/integration worktree. The initial audit read runtime files
 only; subsequently verified implementation slices are identified in the table. The
@@ -138,8 +138,8 @@ measurement counters.
 | CLK-04 — calibration Hsms | **Verified 2026-11-05:** Preparation request/confirmation times and acquisition procedure deadlines/completions use signed Int64 ns with AbstractNanoClock. The driver owns a cache and passes signed deadlines to the action client. Reference report fields retain seconds at serialization; legacy server entries have explicit temporary seconds conversions. | Preparation 239, procedure 219, driver 268, optional CPU reference/pyramid 107 and cleanup 13 checks pass. Four 1,000-cycle warmed Hsm paths remain zero-byte (17 assertions). Negative origins, exact boundaries, regression/overflow, queued receipts and known/unknown restoration/release behavior are checked; independent review found no material issue. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-04-calibration-preparation-and-acquisition). |
 | CLK-05 — correction control and freshness | **Verified 2026-11-05:** Correction loops, recovery/supervision, observers and clients retain signed host ticks/durations directly. Observers/drivers sample once per cycle into an owned cache; query results stage for the next cycle. Native transports use their bound client clock. Presence is explicit; regression and overflow fail closed. Wire identities, generations, sequences and public timeout_ms units are preserved. | Primary aggregate 1,750 assertions/99 testsets passes, with two additional bound-clock assertions; optional graph observer 46 and private-core timer 56 pass. Signed origins, precision, exact freshness, future samples, regression and standalone overflow latching are covered. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-05-correction-recovery-and-supervision). |
 | CLK-06 — physical-offset receiver | **Host slice verified 2026-11-05:** [PhysicalOffsets](../src/correction/physical_offsets.jl) stores signed host arrival/silence ticks and retains a regression watermark across model resets. Receivers accept AbstractNanoClock and sample once per loop/poll. Model PTS, exposure duration and acquisition identities keep their existing contracts. | Core 127, CPU input 30 and native HIL receiver 32 checks pass, including one source read for two receipts, exact silence, signed origins and reset chronology. The graph private-core gate fails before its first frame with buffer allocation -95, reproduced on the unchanged baseline; it remains unqualified. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-06-physical-offset-host-chronology). |
-| CLK-07 — optical pacing and native timing | **Pacing slice verified 2026-11-05:** shared OwnerState/SourceControl, AOS/pupil/external owners, observation throttle and publisher host timers use signed ticks. One cycle decision sample is separate from completion measurements preserving existing overrun/relative-wait policies. Host pacing durations fit Int64; model/exposure fields, public HIL timing and saved PhaseTiming UInt64 ABI retain explicit boundaries. Three cold 30-second waits and startup diagnostic reads remain follow-up. | 495 assertions pass across core 263, external configuration 43, preparation 42, timing/throttle 72, idle allocation 8, native Pause/Run 11 and CPU chronology/export 56. Independent review resolved post-I/O throttle regressions with same-test fail-before/pass-after. Negative saved timing rejects explicitly; ordinary negative pacing remains supported without capture. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-07-optical-pacing-and-diagnostic-throttle). No cadence, GPU, hardware or deadline qualification. |
-| CLK-08 — cold tools and setup waits | **Verified setup and deployment slices 2026-11-05:** Placement/analysis setup and SystemdOwners, session runtime/launch, CLI, Analysis lifecycle and simulator replacement use direct signed Clocks values with checked arithmetic and clock propagation. Owned polling loops sample once at their beginning; native/process submissions retain fresh guards. Public timeout/grace/seconds compatibility inputs, subprocess/sleep and report units remain explicit boundaries. Optical warmup/worker cold waits remain a separate CLK-07 follow-up. | Earlier placement 21/analysis setup 18 and fake/proc 116 checks pass; optional analysis CPU selector passes 54 plus synchronized-input 3. Deployment primary aggregate passes 597 assertions/39 sets, covering systemd/runtime/configuration/stop/Analysis/simulator. New worker clock coverage 82 plus Analysis lock 13 checks negative/precise origins, exact expiry, regression, overflow, process refusal, cleanup and lock release. Source review closed removed Runtime-helper callers. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-08-deployment-waits-and-optional-analysis-lifecycle). No live manager, priority, hardware or deadline qualification. |
+| CLK-07 — optical pacing and native timing | **Pacing slice verified 2026-11-05:** shared OwnerState/SourceControl, AOS/pupil/external owners, observation throttle and publisher host timers use signed ticks. One cycle decision sample is separate from completion measurements preserving existing overrun/relative-wait policies. Host pacing durations fit Int64; model/exposure fields, public HIL timing and saved PhaseTiming UInt64 ABI retain explicit boundaries. The three cold 30-second waits and startup diagnostic reads are also migrated, with existing readiness-first behavior and setup-relative budget starts preserved. | 495 assertions pass across core 263, external configuration 43, preparation 42, timing/throttle 72, idle allocation 8, native Pause/Run 11 and CPU chronology/export 56. Independent review resolved post-I/O throttle regressions with same-test fail-before/pass-after. Negative saved timing rejects explicitly; ordinary negative pacing remains supported without capture. Cold follow-up passes 153 checks (94 deterministic waits, 56 CPU preparation/export and 3 extension load). See [pacing evidence](reviews/20261105-clocks/REVIEW.md#clk-07-optical-pacing-and-diagnostic-throttle) and [cold waits](reviews/20261105-clocks/REVIEW.md#clk-0708-cold-optical-preparation-waits). No cadence, GPU, hardware or deadline qualification. |
+| CLK-08 — cold tools and setup waits | **Verified setup and deployment slices 2026-11-05:** Placement/analysis setup and SystemdOwners, session runtime/launch, CLI, Analysis lifecycle and simulator replacement use direct signed Clocks values with checked arithmetic and clock propagation. Owned polling loops sample once at their beginning; native/process submissions retain fresh guards. Public timeout/grace/seconds compatibility inputs, subprocess/sleep and report units remain explicit boundaries. Optical warmup/worker cold waits are verified in the CLK-07 follow-up. | Earlier placement 21/analysis setup 18 and fake/proc 116 checks pass; optional analysis CPU selector passes 54 plus synchronized-input 3. Deployment primary aggregate passes 597 assertions/39 sets, covering systemd/runtime/configuration/stop/Analysis/simulator. New worker clock coverage 82 plus Analysis lock 13 checks negative/precise origins, exact expiry, regression, overflow, process refusal, cleanup and lock release. Source review closed removed Runtime-helper callers. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-08-deployment-waits-and-optional-analysis-lifecycle). No live manager, priority, hardware or deadline qualification. |
 | CLK-09 — identities and measurements | **Source migration verified 2026-11-05:** controller identity seeding reads Clocks then explicitly preserves its unsigned protocol seed-bit range and locked positive/nonreuse sequence. Modal validation uses an injectable AbstractNanoClock, signed start/completion readings and widened nonnegative elapsed duration; saved step_ms stays milliseconds. Base.gc_time_ns remains a cumulative counter. | Client 62 checks include two identity assertions. Fresh Calibration extension loading passes 3 checks; the full scientific modal-validation run was not repeated. No model time, epoch/reference records, wire identities or cumulative measurements were retyped as deadlines. See [evidence](reviews/20261105-clocks/REVIEW.md#clk-09-identity-seeds-and-elapsed-report-measurements). |
 
 Epoch/reference recording is a separate boundary: `Common.prepare_reference_clock`
@@ -149,22 +149,22 @@ calendar history. Acquisition domains, run/serial/generation/sequence counters,
 PTS/model chronology and exposure durations retain their declared native/science
 representations. They must not be renamed or retyped by a host-clock search.
 
-Confirmed consistency gaps are the Common representation split, remaining
-seconds-based internal control/procedure state and unsigned host-time observers.
-There is no demonstrated deadline or scientific failure from this audit.
-Derived risks are Float64 losing individual-nanosecond distinctions, signed
-addition/subtraction overflow, altered zero sentinels and accidentally comparing
-different clock domains. Each migration needs checked arithmetic and deterministic
-CachedNanoClock tests before its old callable/unsigned contract is removed.
+The initial audit identified mixed representations, seconds-based internal state
+and unsigned host observations. The verified slices above close those source
+migration gaps with direct signed Clocks values and tests at their actual owners.
+Cached decision samples, producer receipts and fresh native/I/O submission checks
+remain distinct. Completion measurements preserve existing pacing/diagnostic
+boundaries; public compatibility/report/Timer/sleep units convert explicitly.
 
-Start with isolated cold setup loops and the already typed session checks, then
-CLK-03/04 and CLK-05/06 with their dependency chains. Treat optical pacing as a
-separate measured change. Retire Common's adapters last. Reuse the existing
-common, calibration, correction, physical-offset, bootstrap and MediaSession
-selectors; extend their assertions rather than treating an existing green count
-as signed-clock coverage. The initial source audit ran no runtime or hardware
-gates. The software checks recorded in the table do not establish package-wide
-clock migration, allocation bounds or RT qualification.
+The official core selection completes successfully in two segments after fixing
+one test double's missing bound clock. Combined logs report 11,331 passing
+assertions in 515 passing summaries, including subprocess checks. Deterministic,
+optional CPU, native and allocation results are scoped in the
+[clock evidence](reviews/20261105-clocks/REVIEW.md); counts are not additive across
+selectors. The physical-offset graph's baseline-reproduced buffer failure, actual
+parameter-owner/scientific initial-calibration execution, full modal validation
+and hardware/cadence/deadline qualification remain separate. A completed clock
+source migration does not establish those claims.
 
 ## Requirement closure and delivery gates
 

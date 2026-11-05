@@ -390,14 +390,16 @@ function run_prepared!(
             # Drain optional asynchronous snapshots before graph reset. Native
             # source controls are applied only here, after the preceding exchange.
             OpticalObservation.drain!(observation)
-            PupilOutput.drain!(pupil; check = options.owner_check)
+            PupilOutput.drain!(pupil; check = options.owner_check, clock)
             save_phase_timing!(phase)
             reset_pipewire_hil!(pipewire, science.driver)
             # The plant reset has committed this empty cursor even if optional
             # observation rewarming subsequently fails before the control ACK.
             state.generation = Int64(frame_acquisition_generation(pipewire))
             state.sequence = 0
-            PupilOutput.reset!(pupil, UInt64(state.generation); check = options.owner_check)
+            PupilOutput.reset!(
+                pupil, UInt64(state.generation); check = options.owner_check, clock
+            )
             state.completed = false
             state.deadline_ns = 0
             reset_phase_timing!(phase, state.generation)
@@ -406,6 +408,7 @@ function run_prepared!(
                 pipewire;
                 check = options.owner_check,
                 cpu = get(options, :optical_diagnostics_cpu, nothing),
+                clock,
             )
         end
     ticket = Bootstrap.take_connect!(runtime)
@@ -497,7 +500,9 @@ applied_command_names(name::AbstractString, enabled) =
 applied_command_names(names::NamedTuple, enabled) =
     enabled ? map(name -> name * "-applied", names) : nothing
 
-function Owner.run_owner(options)
+function Owner.run_owner(
+    options; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
     runtime = options.bootstrap_runtime
     options.owner_check()
     println("SIMULATOR_PREPARING backend=$(options.backend) graph=$(options.graph)")
@@ -586,12 +591,14 @@ function Owner.run_owner(options)
             pipewire;
             check = options.owner_check,
             cpu = get(options, :optical_diagnostics_cpu, nothing),
+            clock,
         )
         PupilOutput.start!(
             pupil;
             remote = options.remote,
             cpu = get(options, :pupil_output_cpu, nothing),
             check = options.owner_check,
+            clock,
         )
         precompile(OpticalObservation.close!, (typeof(observation), typeof(pipewire))) ||
             error("cannot compile prepared optical cleanup before admission")
@@ -614,7 +621,9 @@ function Owner.run_owner(options)
             "SIMULATOR_PREPARED command_count=$(options.command_count) frame_shape=$(options.frame_shape)",
         )
         flush(stdout)
-        run_prepared!(options, science, pipewire, observation, mailbox, state, phase, pupil)
+        run_prepared!(
+            options, science, pipewire, observation, mailbox, state, phase, pupil; clock
+        )
     catch error
         if !(owner_cancelled(error, runtime))
             push!(failures, error)

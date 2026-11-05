@@ -355,6 +355,38 @@ and preserves parsed syntax/literals. Logs:
 epoch/reference clocks, wire identities and model/exposure chronology keep their
 own contracts; a host-clock source scan does not justify retyping them.
 
+## CLK-07/08: cold optical preparation waits
+
+The remaining three 30-second waits now use injected AbstractNanoClock values,
+checked signed deadlines and one source sample at the beginning of each iteration.
+Clock propagation reaches optical owner preparation/run, observation warm/reset,
+and publisher start/drain/reset. Startup diagnostic `at_ns` fields use direct
+signed Clocks readings while retaining their names and nanosecond units.
+
+These cold waits preserve the existing readiness-first contract: an available
+owned acknowledgement/snapshot succeeds before temporal refusal, including at
+expiry or a regressed clock. Pending waits reject regression/exact expiry.
+Overflow refuses the wait; each budget still begins after the same existing
+setup effects. Pupil warmup always restores its first model phase in `finally`.
+Native effect admission remains a separate fresh-clock boundary. No replacement
+clock wrapper, scientific time change or frame scheduler was introduced.
+
+Final checks pass 153 assertions: 94 deterministic cold waits, 56 real CPU
+preparation/chronology/export checks (including a negative CachedNanoClock on
+real preparation), and three fresh Calibration extension-load checks. Formatting
+uses JuliaFormatter 2.14.8, preserves syntax/literals and is idempotent. Primary
+review inspected all seven changed files and their caller chains.
+
+Initial test attempts reused a busy test snapshot and called a function through
+the wrong test namespace; fresh owned records and the correct public binding
+resolved these harness errors. No production timing failure was inferred from
+them. This slice performs no live core/affinity/device/GUI/GPU actions; native
+cold-owner runtime, scientific modal validation and real-time deadlines remain
+unqualified. Logs: `/tmp/rtc-cold-optical-waits-final.log`,
+`/tmp/rtc-cold-optical-pupil-cpu.log`,
+`/tmp/rtc-cold-calibration-extension-load.log`, and
+`/tmp/rtc-cold-optical-format.log`.
+
 ## Core integration
 
 The official core selector, with the explicit PipeWireAO artifact prefix, reached
@@ -362,8 +394,22 @@ The official core selector, with the explicit PipeWireAO artifact prefix, reache
 new bound clock. Its helper now owns a CachedNanoClock with a negative origin;
 the selector passes all 64 existing assertions. Its request-mutation test also
 uses method dispatch rather than a type branch. No production fallback was added.
-The failed selector and the remaining original selectors are being rerun in an
-isolated continuation. The successful unchanged prefix is retained rather than
-duplicated. Local logs: `/tmp/rtc-clock-core-suite-20261105.log`,
+The failed selector and all remaining original selectors pass in an isolated
+continuation of the original test list. The successful unchanged prefix is
+retained rather than duplicated. Together the logs report 11,331 passing
+assertions in 515 passing summaries, including subprocess selectors; this is
+completion in two segments, not an uninterrupted green full-suite invocation.
+The initial missing-clock error remains recorded. The later client clock-source
+change also has its separate 62-check fresh-process gate.
+
+Local logs: `/tmp/rtc-clock-core-suite-20261105.log`,
 `/tmp/rtc-clock-action-fake-final-20261105.log`, and
 `/tmp/rtc-clock-core-remainder-20261105.log`.
+
+Final source search finds no direct `time_ns()` reads, Common clock adapters or
+`isa` branches in maintained `src/` and `ext/`. The remaining
+`Base.gc_time_ns()` is a cumulative measurement counter. Changed local Markdown
+targets and final newlines pass; the roadmap retains its pre-existing historical
+link to the retired `tests/calibration.rs`, also present at the baseline. No
+generated files or historical evidence were rewritten. Qualification limits
+under the individual slices still apply.

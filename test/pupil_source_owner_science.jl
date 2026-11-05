@@ -30,7 +30,9 @@ end
 @testset "shared command storage cannot masquerade as independent facility residual" begin
     mktempdir() do directory
         (; config, path, simulation) = pupil_source_documents(directory)
-        science = Owner.prepare_pupil_source_science(Owner.configuration(config))
+        science = Owner.prepare_pupil_source_science(
+            Owner.configuration(config); clock = Ext.Clocks.CachedNanoClock(-Int64(2)^60)
+        )
         try
             command = Float32[1e-9, -2e-9]
             copyto!(science.command, command)

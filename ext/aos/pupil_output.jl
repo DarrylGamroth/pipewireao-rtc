@@ -23,6 +23,7 @@ using Base.Threads: Atomic, atomic_add!
 const Extension = parentmodule(@__MODULE__)
 const IC = PipeWireAORTC.InstrumentConfiguration
 const NODE_NAME = "simulator-pupil-output"
+const OPERATION_TIMEOUT_NS = Int64(30_000_000_000)
 
 # Names and units follow AOS external_pupil_contract; the Stream exposes output_1.
 # This is cold Node information, not part of the scientific packet or its hash.
@@ -400,19 +401,33 @@ function worker!(p, remote, cpu; clock::Clocks.AbstractNanoClock = Clocks.System
     return nothing
 end
 
-function await!(predicate, p; check = () -> nothing)
-    deadline = time_ns() + UInt64(30_000_000_000)
-    while !predicate()
+"""Wait for a cold acknowledgement using signed host nanoseconds.
+
+Each pending iteration uses one source sample. A ready acknowledgement wins
+before expiry/regression checks, preserving the existing readiness-first rule.
+"""
+function await!(
+    predicate,
+    p;
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
+    previous = Clocks.time_nanos(clock)::Int64
+    deadline = Base.checked_add(previous, OPERATION_TIMEOUT_NS)
+    while true
+        now_ns = Clocks.time_nanos(clock)::Int64
+        predicate() && return nothing
         check()
         if p.task !== nothing && istaskdone(p.task)
             fetch(p.task)
             error("scientific pupil worker stopped before acknowledging cold operation")
         end
-        time_ns() < deadline ||
+        now_ns >= previous || error("scientific pupil worker monotonic clock regressed")
+        previous = now_ns
+        now_ns < deadline ||
             error("scientific pupil worker did not acknowledge cold operation")
         sleep(0.001)
     end
-    return nothing
 end
 
 start!(::Nothing; kwargs...) = nothing
@@ -432,27 +447,36 @@ function start!(
     # Compile the actual snapshot/packing path without emitting sequence zero.
     sample!(p; generation = p.generation[], model_ns = Int64(0)) ||
         error("pupil warmup snapshot was not free")
-    await!(() -> p.failed[] || (p.registered[] && p.completed[] > 0), p; check)
+    await!(() -> p.failed[] || (p.registered[] && p.completed[] > 0), p; check, clock)
     p.failed[] && error("scientific pupil worker failed during preparation")
     p.completed[] = 0
     return nothing
 end
 
 drain!(::Nothing; kwargs...) = nothing
-function drain!(p::Publisher; check = () -> nothing)
+function drain!(
+    p::Publisher;
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     p.paused[] = true
     request = atomic_add!(p.drain_request, UInt64(1)) + UInt64(1)
-    await!(() -> p.drained[] == request, p; check)
+    await!(() -> p.drained[] == request, p; check, clock)
     return nothing
 end
 
 reset!(::Nothing, generation; kwargs...) = nothing
-function reset!(p::Publisher, generation::UInt64; check = () -> nothing)
+function reset!(
+    p::Publisher,
+    generation::UInt64;
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     p.paused[] && p.drained[] == p.drain_request[] ||
         error("pupil output must be drained before reset")
     generation > p.generation[] || error("pupil output generation must increase")
     p.generation[] = generation
-    await!(() -> p.flushed[] == generation, p; check)
+    await!(() -> p.flushed[] == generation, p; check, clock)
     p.paused[] = false
     return nothing
 end
