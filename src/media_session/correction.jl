@@ -258,7 +258,7 @@ update_properties!(runtime, job, payload::Tuple) =
     update_properties!(runtime, job, job.ticket.origin, payload)
 function update_properties!(runtime, job, origin::AbstractOrigin, payload::Tuple)
     name, properties = payload
-    1 <= length(properties) <= 42 ||
+    1 <= length(properties) <= RunnerCodec.MAX_PROPERTIES ||
         throw(ArgumentError("invalid property transaction size"))
     updates = Dict{String,PolicyPod}()
     algorithms = Set{String}()
