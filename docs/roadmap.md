@@ -54,6 +54,9 @@ remaining deployment/optical caller chains continue as separate slices.
 Calibration preparation/acquisition Hsms also retain signed deadlines and event
 times, with known/unknown recovery and saved-report seconds preserved; 726 pure
 checks, optional reference checks and the existing warmed allocation gates pass.
+Correction/recovery/supervision host times now use the same signed clock contract,
+with once-per-cycle sampling and fail-closed regression/overflow behavior; pure
+and private-core timer checks pass.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

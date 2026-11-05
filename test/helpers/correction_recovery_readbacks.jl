@@ -1,16 +1,18 @@
+import Clocks
 # Exact property reply inputs for native normalization tests. Existing selectors
 # provide CR/Runner/Envelope and the scripted source of ordinary owner properties.
 mutable struct ReadbackTransport <: CR.AbstractRecoveryTransport
     properties::Dict{String,Runner.RunnerScalar}
     token::Int64
+    clock::Clocks.CachedNanoClock
 end
 CR.transport_instance(::ReadbackTransport) = Int64(912)
 CR.transport_initial_token(::ReadbackTransport) = Int64(0)
-CR.transport_clock_ns(::ReadbackTransport) = UInt64(1_000_000_000)
+CR.transport_clock(transport::ReadbackTransport) = transport.clock
 function CR.request_native!(
     transport::ReadbackTransport,
     command::Runner.RunnerCommand{:properties};
-    deadline::Float64,
+    deadline::Int64,
     check,
 )
     check()
@@ -31,14 +33,18 @@ function CR.request_native!(
     )
 end
 function native_readback(properties)
-    transport = ReadbackTransport(properties, Int64(0))
+    transport = ReadbackTransport(
+        properties, Int64(0), Clocks.CachedNanoClock(1_000_000_000)
+    )
     channel = CR.RecoveryChannel(transport, Int64(912), Int64(0))
-    return CR.native_snapshot!(channel, "science"; deadline = 2.0, check = () -> nothing)
+    return CR.native_snapshot!(
+        channel, "science"; deadline = Int64(2_000_000_000), check = () -> nothing
+    )
 end
 owner_properties(transport) = CR.request_native!(
     transport,
     Runner.RunnerCommand(:properties, "science");
-    deadline = 2.0,
+    deadline = Int64(2_000_000_000),
     check = () -> nothing,
 ).result.details.properties
 function replace_readbacks(snapshot, scope, readbacks)

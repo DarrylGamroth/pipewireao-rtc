@@ -9,7 +9,7 @@ module CorrectionRecovery
 
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event, @on_entry, @on_exit
 import Hsm
-import ..Common
+import Clocks
 
 public Coordinator,
     StageRecovery,
@@ -91,13 +91,13 @@ Unverified/Fault outcomes latch and require external reconciliation and a newly
 qualified coordinator. History never restores commands or numerical state.
 Timeouts are checked by the serialized owner, including before every observation
 and operation; no background writer or timer task is created.
-`clock` accepts a Clocks nanosecond clock or an existing nanosecond callable;
-its readings must remain representable by UInt64.
+`clock` implements `Clocks.AbstractNanoClock` and returns signed Int64 ticks.
+Clock regression or unrepresentable elapsed/deadline arithmetic fails closed.
 """
 @hsmdef mutable struct Coordinator{C,G,V}
     const owner_instance::Int64
     const clock::C
-    const timeout_ns::UInt64
+    const timeout_ns::Int64
     token::UInt64
     serial::UInt64
     loop_generation::G
@@ -105,8 +105,9 @@ its readings must remain representable by UInt64.
     target_closed::V
     recovery_generation::UInt64
     reference_serial::UInt64
-    reference_since_ns::UInt64
-    pending_since_ns::UInt64
+    reference_since_ns::Int64
+    pending_since_ns::Int64
+    last_at_ns::Int64
     reason::Symbol
     failure::Union{Nothing,Symbol}
 end
@@ -130,12 +131,13 @@ end
 end
 @on_event function (sm::Coordinator{C}, ::Unverified, ::Qualified, observation) where {C}
     sm.failure === nothing || return Hsm.EventNotHandled
-    try
-        clock_ns(sm.clock)
+    now = try
+        Clocks.time_nanos(sm.clock)
     catch
         latch_failure!(sm, :clock_error)
         return Hsm.transition!(sm, :Unverified)
     end
+    record_clock!(sm, now) || return Hsm.transition!(sm, :Unverified)
     matching_observation(sm, observation) || return Hsm.EventNotHandled
     reason = if !same_scope(sm, observation)
         :loop_scope_mismatch
@@ -160,15 +162,24 @@ end
     end
 end
 @on_event function (sm::Coordinator{C}, ::Open, ::Protect, request) where {C}
-    accept_protection!(sm, request) || return Hsm.EventNotHandled
+    if !accept_protection!(sm, request)
+        sm.failure === nothing && return Hsm.EventNotHandled
+        return Hsm.transition!(sm, :Unverified)
+    end
     return Hsm.transition!(sm, :Opening)
 end
 @on_event function (sm::Coordinator{C}, ::Closed, ::Protect, request) where {C}
-    accept_protection!(sm, request) || return Hsm.EventNotHandled
+    if !accept_protection!(sm, request)
+        sm.failure === nothing && return Hsm.EventNotHandled
+        return Hsm.transition!(sm, :Unverified)
+    end
     return Hsm.transition!(sm, :Opening)
 end
 @on_event function (sm::Coordinator{C}, ::PartiallyClosed, ::Protect, request) where {C}
-    accept_protection!(sm, request) || return Hsm.EventNotHandled
+    if !accept_protection!(sm, request)
+        sm.failure === nothing && return Hsm.EventNotHandled
+        return Hsm.transition!(sm, :Unverified)
+    end
     return Hsm.transition!(sm, :Opening)
 end
 @on_event function (sm::Coordinator{C}, ::Opening, ::LoopObserved, observation) where {C}
@@ -330,55 +341,44 @@ end
 
 # Entry/exit behaviors own deadlines only. Commands stay in admitted operations.
 @on_entry function (sm::Coordinator{C}, ::Opening) where {C}
-    sm.pending_since_ns = clock_ns(sm.clock)
+    sm.pending_since_ns = Clocks.time_nanos(sm.clock)
     return nothing
 end
 @on_entry function (sm::Coordinator{C}, ::RestoringReference) where {C}
-    sm.pending_since_ns = clock_ns(sm.clock)
+    sm.pending_since_ns = Clocks.time_nanos(sm.clock)
     return nothing
 end
 @on_entry function (sm::Coordinator{C}, ::Verifying) where {C}
-    sm.pending_since_ns = clock_ns(sm.clock)
+    sm.pending_since_ns = Clocks.time_nanos(sm.clock)
     return nothing
 end
 @on_entry function (sm::Coordinator{C}, ::Releasing) where {C}
-    sm.pending_since_ns = clock_ns(sm.clock)
+    sm.pending_since_ns = Clocks.time_nanos(sm.clock)
     return nothing
 end
 @on_entry function (sm::Coordinator{C}, ::Closing) where {C}
-    sm.pending_since_ns = clock_ns(sm.clock)
+    sm.pending_since_ns = Clocks.time_nanos(sm.clock)
     return nothing
 end
 @on_exit function (sm::Coordinator{C}, ::Opening) where {C}
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
 end
 @on_exit function (sm::Coordinator{C}, ::RestoringReference) where {C}
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
 end
 @on_exit function (sm::Coordinator{C}, ::Verifying) where {C}
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
 end
 @on_exit function (sm::Coordinator{C}, ::Releasing) where {C}
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
 end
 @on_exit function (sm::Coordinator{C}, ::Closing) where {C}
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
-end
-
-clock_ns(clock) = clock_value(Common.monotonic_ns(clock))
-clock_value(_) =
-    throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
-clock_value(::Bool) =
-    throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
-function clock_value(now::Integer)
-    0 <= now <= typemax(UInt64) ||
-        throw(ArgumentError("clock must return nanoseconds representable by UInt64"))
-    return UInt64(now)
 end
 
 controller_scope(sm::Coordinator) =
@@ -436,20 +436,20 @@ _check_controller_count(controllers::Integer) =
 
 function Coordinator(
     owner_instance::Int64;
-    clock = Common.MONOTONIC_CLOCK,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     timeout_ms::Integer = 5000,
     controllers::Union{Nothing,Integer} = nothing,
 )
     owner_instance > 0 || throw(ArgumentError("owner incarnation must be positive"))
     _check_timeout(timeout_ms)
-    clock_ns(clock)
+    now = Clocks.time_nanos(clock)
     _check_controller_count(controllers)
     generation = controllers === nothing ? UInt64(0) : ntuple(_ -> UInt64(0), controllers)
     target = controllers === nothing ? true : ntuple(_ -> true, controllers)
     return Coordinator(
         owner_instance,
         clock,
-        UInt64(timeout_ms) * UInt64(1_000_000),
+        Int64(timeout_ms) * Int64(1_000_000),
         UInt64(0),
         UInt64(0),
         generation,
@@ -457,8 +457,9 @@ function Coordinator(
         target,
         UInt64(0),
         UInt64(0),
-        UInt64(0),
-        UInt64(0),
+        Int64(0),
+        Int64(0),
+        now,
         :none,
         nothing,
     )
@@ -490,7 +491,7 @@ their serialized control thread before processing observations and requests.
 function check_timeout!(sm::Coordinator)
     sm.failure === nothing || return nothing
     now = try
-        clock_ns(sm.clock)
+        Clocks.time_nanos(sm.clock)
     catch
         return failed!(sm, :clock_error)
     end
@@ -523,14 +524,45 @@ function latch_failure!(sm, reason)
     sm.reference_serial = 0
     return true
 end
-deadline_expired!(sm, now) =
-    sm.failure === nothing &&
-    now - sm.pending_since_ns >= sm.timeout_ns &&
-    latch_failure!(sm, :operation_timeout)
+# Strict expiry for reference/adoption budgets; signed zero is a valid origin.
+function fresh_within(now::Int64, then::Int64, timeout::Int64)
+    now >= then || return false
+    elapsed, overflow = Base.sub_with_overflow(now, then)
+    return !overflow && elapsed < timeout
+end
+function record_clock!(sm, now::Int64)
+    sm.failure === nothing || return false
+    if now < sm.last_at_ns || last(Base.add_with_overflow(now, sm.timeout_ns))
+        latch_failure!(sm, :clock_error)
+        return false
+    end
+    sm.last_at_ns = now
+    return true
+end
+@on_event function (sm::Coordinator{C}, ::Root, ::DeadlineChecked, now::Int64) where {C}
+    record_clock!(sm, now) && return Hsm.EventHandled
+    return Hsm.transition!(sm, :Unverified)
+end
+function deadline_expired!(sm, now::Int64)
+    record_clock!(sm, now) || return true
+    elapsed = try
+        Base.checked_sub(now, sm.pending_since_ns)
+    catch
+        latch_failure!(sm, :clock_error)
+        return true
+    end
+    return elapsed >= sm.timeout_ns && latch_failure!(sm, :operation_timeout)
+end
 function accept_protection!(sm, request)
     sm.failure === nothing &&
     request.owner_instance == sm.owner_instance &&
     request.token > sm.token || return false
+    try
+        Base.checked_add(sm.last_at_ns, sm.timeout_ns)
+    catch
+        latch_failure!(sm, :clock_error)
+        return false
+    end
     sm.token = request.token
     sm.reason = request.reason
     sm.expected_loop_generation = unstaged_generation(sm)
@@ -543,7 +575,7 @@ function record_reference!(sm, observation)
     sm.serial = observation_serial(observation)
     if observation.reference_reached && observation.coherent && observation.ready
         sm.reference_serial = observation_serial(observation)
-        sm.reference_since_ns = clock_ns(sm.clock)
+        sm.reference_since_ns = Clocks.time_nanos(sm.clock)
         return true
     end
     sm.reference_serial = 0
@@ -553,7 +585,8 @@ function accept_close!(sm, request)
     matching_effect(sm, request) &&
     sm.recovery_generation > 0 &&
     sm.reference_serial > 0 &&
-    clock_ns(sm.clock) - sm.reference_since_ns < sm.timeout_ns || return false
+    fresh_within(Clocks.time_nanos(sm.clock), sm.reference_since_ns, sm.timeout_ns) ||
+        return false
     adds_closure(sm, request.closed) || throw(
         ArgumentError("close requires a nonempty scope-compatible controller selection")
     )
@@ -568,7 +601,7 @@ function accept_release!(sm, observation)
     observation.coherent &&
     observation.ready || return :release_prerequisites_changed
     sm.reference_serial = observation_serial(observation)
-    sm.reference_since_ns = clock_ns(sm.clock)
+    sm.reference_since_ns = Clocks.time_nanos(sm.clock)
     sm.expected_loop_generation = unstaged_generation(sm)
     return nothing
 end

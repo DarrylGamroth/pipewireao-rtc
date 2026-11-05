@@ -1,14 +1,15 @@
+import Clocks
 # Optional CPU integration: no desktop core, instrument session or GPU is used.
 include("test_correction_observer.jl")
 include("control_private_core.jl")
 
 @testset "Idle correction deadline publishes from a native timer" begin
     with_control_private_core() do remote, _, _
-        now = Threads.Atomic{UInt64}(0)
+        now = Clocks.CachedNanoClock(0)
         timed_out = Threads.Atomic{Bool}(false)
         wakes = Threads.Atomic{Int}(0)
         observer = Loops.Observer(
-            ["correction:closed"], Int64(24); timeout_ms = 10, clock = () -> now[]
+            ["correction:closed"], Int64(24); timeout_ms = 10, clock = now
         )
         getter =
             (props, available) -> begin
@@ -35,7 +36,7 @@ include("control_private_core.jl")
                     Threads.atomic_add!(wakes, 1)
                     # Logical time advances only when the real native timer fires.
                     # This distinguishes the wake from incidental startup readback.
-                    now[] = UInt64(10_000_000)
+                    Clocks.update!(now, Int64(10_000_000))
                     PipeWireAO.notify_properties!(node.filter)
                     nothing
                 end

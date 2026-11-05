@@ -20,7 +20,7 @@ end
 function fresh_controllers(
     operation::Operation, snapshot::RecoverySnapshot, selected, after_sequence
 )
-    now = transport_clock_ns(operation.channel.transport)
+    now = Clocks.time_nanos(operation.coordinator.clock)
     timeout = min(operation.reference_timeout_ns, snapshot.reference_timeout_ns)
     return all(eachindex(selected)) do index
         selected[index] || return true
@@ -28,9 +28,7 @@ function fresh_controllers(
         proof.guarded &&
             proof.ready &&
             proof.sequence > after_sequence &&
-            proof.timestamp_ns > 0 &&
-            now >= proof.timestamp_ns &&
-            now - proof.timestamp_ns < timeout
+            fresh_within(now, proof.timestamp_ns, timeout)
     end
 end
 
@@ -60,7 +58,7 @@ release_for_close!(
     close::CloseLoop,
     before::RecoverySnapshot,
     pending;
-    deadline::Float64,
+    deadline::Int64,
     check,
 ) = (close, before.requested_generation)
 
@@ -69,7 +67,7 @@ function release_for_close!(
     release::ReleaseRecovery,
     before::RecoverySnapshot,
     pending;
-    deadline::Float64,
+    deadline::Int64,
     check,
 )
     coordinator = operation.coordinator
@@ -83,8 +81,9 @@ function release_for_close!(
     virtual_generation = generation_for(reply, RECOVERY_NODE)
     virtual_generation > before.requested_generation ||
         throw(ArgumentError("release transaction did not advance"))
+    snapshot = snapshot!(operation; deadline, check)
     while state(coordinator) === :Releasing
-        snapshot = snapshot!(operation; deadline, check)
+        sample_cycle!(operation)
         require_controller_values(
             operation, snapshot, open_target(controller_scope(coordinator))
         )
@@ -117,11 +116,12 @@ function release_for_close!(
             end
         end
         pause_control!(operation; deadline, check)
+        snapshot = snapshot!(operation; deadline, check)
     end
     throw(ControlClient.UnknownOutcome("close is not authorized"))
 end
 
-function resume_controllers!(operation::Operation; deadline::Float64, check, controllers)
+function resume_controllers!(operation::Operation; deadline::Int64, check, controllers)
     coordinator = operation.coordinator
     coordinator.failure === nothing && state(coordinator) in (:Holding, :PartiallyClosed) ||
         throw(
@@ -137,9 +137,10 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
     first_close = state(coordinator) === :Holding
     try
         running!(operation.channel; deadline, check)
-        started = transport_clock_ns(operation.channel.transport)
         before = snapshot!(operation; deadline, check)
+        started = operation.channel.last_at_ns::Int64
         while true
+            sample_cycle!(operation)
             require_scope(operation, before)
             require_controller_values(operation, before, coordinator.target_closed)
             if first_close
@@ -156,8 +157,9 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
                     operation, before, pending, operation.reference_sequence
                 ) &&
                 break
-            transport_clock_ns(operation.channel.transport) - started <
-            coordinator.timeout_ns || throw(
+            fresh_within(
+                Clocks.time_nanos(coordinator.clock), started, coordinator.timeout_ns
+            ) || throw(
                 ControlClient.UnknownOutcome(
                     "fresh selected-controller proof did not arrive"
                 ),
@@ -199,8 +201,9 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
             pending ? generation_for(reply, name) : active
         end
         staged!(coordinator, effect, generations)
+        snapshot = snapshot!(operation; deadline, check)
         while state(coordinator) === :Closing
-            snapshot = snapshot!(operation; deadline, check)
+            sample_cycle!(operation)
             require_released(operation, snapshot, virtual_generation)
             observe_loop!(coordinator, snapshot)
             if state(coordinator) in (:Closed, :PartiallyClosed)
@@ -208,6 +211,7 @@ function resume_controllers!(operation::Operation; deadline::Float64, check, con
                 return operation
             end
             pause_control!(operation; deadline, check)
+            snapshot = snapshot!(operation; deadline, check)
         end
         throw(ControlClient.UnknownOutcome("selected close adoption is unverified"))
     catch error

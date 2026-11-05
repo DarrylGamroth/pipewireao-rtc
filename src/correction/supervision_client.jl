@@ -48,12 +48,12 @@ end
 
 """Read one correlated native snapshot and consume at most one protective trip.
 
-Use an absolute finite deadline. A replacement owner, unavailable observation,
+Use an absolute signed Int64 nanosecond deadline. A replacement owner, unavailable observation,
 malformed publication or uncertain native request cannot authorize an effect.
 Unknown outcomes are not retried. The returned recovery Operation belongs to the
 caller and must be retained even if later operator-directed closure fails.
 """
-function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK)
+function poll!(client::Client; deadline::Int64, check = ControlClient.NO_CHECK)
     client.state === :Unverified &&
         throw(ControlClient.UnknownOutcome("supervision client is unverified"))
     try
@@ -77,7 +77,7 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
         client.owner_instance == 0 && (client.owner_instance = instance)
         client.owner_instance == instance ||
             throw(ControlClient.UnknownOutcome("supervision owner replaced"))
-        now = Recovery.transport_clock_ns(client.channel.transport)
+        now = Clocks.time_nanos(Recovery.transport_clock(client.channel.transport))
         observed = map(client.outputs) do output
             prefix = OBSERVATION_PREFIX * string(output) * "."
             state = value(prefix * "state", :string, String)
@@ -86,21 +86,22 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
                 throw(ArgumentError("invalid supervision state"))
             action in ("none", "monitor_only", "restore_reference") ||
                 throw(ArgumentError("unsupported protective action"))
-            sequence, observed_ns, trip_sequence, trip_ns, max_gap_ns = map((
-                "sequence", "observed-ns", "trip-sequence", "trip-ns", "max-gap-ns"
-            )) do field
-                parsed = tryparse(UInt64, value(prefix * field, :string, String))
-                parsed === nothing && throw(ArgumentError("invalid supervision counter"))
-                return parsed
-            end
+            counter(field, T) =
+                something(tryparse(T, value(prefix * field, :string, String)))
+            sequence, trip_sequence = map(
+                field -> counter(field, UInt64), ("sequence", "trip-sequence")
+            )
+            observed_ns, trip_ns, max_gap_ns = map(
+                field -> counter(field, Int64), ("observed-ns", "trip-ns", "max-gap-ns")
+            )
             max_gap_ns > 0 &&
             observed_ns <= now &&
             trip_sequence <= sequence &&
-            trip_ns <= observed_ns ||
+            (state != "Tripped" || trip_ns <= observed_ns) ||
                 throw(ArgumentError("contradictory supervision evidence"))
             state == "Tripped" ?
             (
-                trip_ns > 0 && action != "none" ||
+                action != "none" ||
                 throw(ArgumentError("missing supervision trip identity"))
             ) :
             (action == "none" || throw(ArgumentError("action without a supervision trip")))
@@ -110,7 +111,7 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
             fresh =
                 state in ("Clear", "Pending", "Tripped") &&
                 published_fresh &&
-                now - observed_ns <= max_gap_ns
+                within(now, observed_ns, max_gap_ns)
             return (;
                 output,
                 state,
@@ -137,8 +138,7 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
         )
         restore || return (; state = :Monitoring, observed, operation = nothing)
         expiry = minimum(
-            item ->
-                item.observed_ns + min(item.max_gap_ns, typemax(UInt64) - item.observed_ns),
+            item -> Base.checked_add(item.observed_ns, item.max_gap_ns),
             filter(
                 item -> item.state == "Tripped" && item.action == "restore_reference",
                 observed,
@@ -153,7 +153,7 @@ function poll!(client::Client; deadline::Float64, check = ControlClient.NO_CHECK
             check,
             reason = :saturation,
             expected_owner = client.owner_instance,
-            admission_deadline = min(deadline, Float64(expiry) / 1e9),
+            admission_deadline = min(deadline, expiry),
         )
         client.state = :Holding
         return (; state = :Holding, observed, operation)

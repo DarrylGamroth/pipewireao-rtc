@@ -8,7 +8,7 @@ module CorrectionLoops
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event, @on_entry, @on_exit
 import Hsm
 import PipeWireAO
-import ..Common
+import Clocks
 
 public Loop,
     Observer,
@@ -35,9 +35,9 @@ replacement owners require new machines.
     active_generation::Int64
     requested_closed::Bool
     applied_closed::Bool
-    pending_since_ns::UInt64
+    pending_since_ns::Int64
     const clock::C
-    const timeout_ns::UInt64
+    const timeout_ns::Int64
     # Cold loop sources are attached after the graph's native filter exists.
     # No timer or Hsm operation runs on the scientific processing path.
     timer::Union{Nothing,PipeWireAO.TimerSource}
@@ -105,6 +105,15 @@ end
     sm.requested_generation = request.requested_generation
     sm.requested_closed = request.closed
     request.closed == sm.applied_closed && return Hsm.EventHandled
+    pending_since_ns = try
+        now = Clocks.time_nanos(sm.clock)
+        Base.checked_add(now, sm.timeout_ns)
+        now
+    catch
+        latch_unknown!(sm, :clock_error)
+        return Hsm.transition!(sm, :Unknown)
+    end
+    sm.pending_since_ns = pending_since_ns
     if request.closed
         return Hsm.transition!(sm, :Closing)
     else
@@ -133,7 +142,14 @@ end
 
 @on_event function (sm::Loop{C}, ::Pending, ::DeadlineChecked, timing) where {C}
     sm.failure === nothing || return Hsm.EventHandled
-    elapsed = timing.now - sm.pending_since_ns
+    elapsed = try
+        timing.now >= sm.pending_since_ns ||
+            throw(ArgumentError("correction clock regressed"))
+        Base.checked_sub(timing.now, sm.pending_since_ns)
+    catch
+        latch_unknown!(sm, :clock_error)
+        return Hsm.transition!(sm, :Unknown)
+    end
     if elapsed >= timing.timeout_ns
         latch_unknown!(sm, :adoption_timeout)
         return Hsm.transition!(sm, :Unknown)
@@ -177,27 +193,22 @@ function record_applied!(sm::Loop, observation)
     return nothing
 end
 
-function start_timer!(sm::Loop)
-    sm.pending_since_ns = clock_ns(sm.clock)
-    arm_timer!(sm.timer, sm.timeout_ns)
-    return nothing
-end
-
 function stop_timer!(sm::Loop)
     disarm_timer!(sm.timer)
-    sm.pending_since_ns = UInt64(0)
+    sm.pending_since_ns = Int64(0)
     return nothing
 end
 
-arm_timer!(::Nothing, ::UInt64) = nothing
-arm_timer!(timer::PipeWireAO.TimerSource, remaining_ns::UInt64) =
+arm_timer!(::Nothing, ::Int64) = nothing
+arm_timer!(timer::PipeWireAO.TimerSource, remaining_ns::Int64) =
     PipeWireAO.update_timer!(timer; delay = max(1, remaining_ns) / 1e9)
 disarm_timer!(::Nothing) = nothing
 disarm_timer!(timer::PipeWireAO.TimerSource) =
     PipeWireAO.update_timer!(timer; delay = nothing)
 
 @on_entry function (sm::Loop{C}, ::Pending) where {C}
-    start_timer!(sm)
+    # Requested retained a valid signed sample before selecting this transition.
+    arm_timer!(sm.timer, sm.timeout_ns)
     return nothing
 end
 
@@ -209,14 +220,14 @@ end
 function Loop(
     property::String,
     instance::Int64;
-    clock = Common.MONOTONIC_CLOCK,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     timeout_ms::Integer = 5000,
 )
     names = split(property, ':')
     length(names) == 2 && all(!isempty, names) ||
         throw(ArgumentError("correction-loop property must be qualified as node:property"))
     instance > 0 || throw(ArgumentError("owner instance must be positive"))
-    clock_ns(clock)
+    Clocks.time_nanos(clock)
     return Loop(
         property,
         instance,
@@ -224,7 +235,7 @@ function Loop(
         0,
         false,
         false,
-        UInt64(0),
+        Int64(0),
         clock,
         timeout_ns(timeout_ms),
         nothing,
@@ -297,41 +308,24 @@ The owner invokes `observer(Val(:observed), props)` for applied readback and
 `observer(Val(:requested), props)` after successful staging. Every callback is
 serialized by that owner; this observer is never shared across incarnations.
 `timeout_ms` is 1 to 60000 (default 5000). `clock` accepts a Clocks nanosecond
-clock or a callable returning integer nanoseconds representable by UInt64.
+clock implementing `Clocks.AbstractNanoClock`, with signed Int64 ticks.
 Adoption deadlines are checked before
 every callback or available status readback. Attached native timers request
 owner-thread publication at the deadline; no background Hsm writer is created.
 """
-struct Observer{C}
-    loops::Vector{Loop{C}}
+struct Observer{C<:Clocks.AbstractNanoClock}
+    loops::Vector{Loop{Clocks.CachedNanoClock}}
     instance::Int64
-    timeout_ns::UInt64
+    timeout_ns::Int64
     clock::C
+    sampled_clock::Clocks.CachedNanoClock
 end
-
-clock_ns(clock) = clock_value(Common.monotonic_ns(clock))
-
-function clock_value(now::Integer)
-    0 <= now <= typemax(UInt64) || throw(
-        ArgumentError(
-            "correction-loop clock must return an integer UInt64 nanosecond count"
-        ),
-    )
-    return UInt64(now)
-end
-
-clock_value(::Bool) = throw(
-    ArgumentError("correction-loop clock must return an integer UInt64 nanosecond count"),
-)
-clock_value(_) = throw(
-    ArgumentError("correction-loop clock must return an integer UInt64 nanosecond count"),
-)
 
 function timeout_ns(timeout_ms::Integer)
     1 <= timeout_ms <= 60_000 || throw(
         ArgumentError("correction-loop adoption timeout must be 1 to 60000 milliseconds"),
     )
-    return UInt64(timeout_ms) * UInt64(1_000_000)
+    return Int64(timeout_ms) * Int64(1_000_000)
 end
 
 timeout_ns(::Bool) =
@@ -341,17 +335,21 @@ function Observer(
     properties::Vector{String},
     instance::Int64;
     timeout_ms::Integer = 5000,
-    clock = Common.MONOTONIC_CLOCK,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     allunique(properties) || throw(ArgumentError("duplicate correction-loop property"))
     instance > 0 || throw(ArgumentError("owner instance must be positive"))
     timeout = timeout_ns(timeout_ms)
-    clock_ns(clock)
+    sampled_clock = Clocks.CachedNanoClock(Clocks.time_nanos(clock))
     return Observer(
-        [Loop(property, instance; clock, timeout_ms) for property in properties],
+        [
+            Loop(property, instance; clock = sampled_clock, timeout_ms) for
+            property in properties
+        ],
         instance,
         timeout,
         clock,
+        sampled_clock,
     )
 end
 
@@ -438,7 +436,7 @@ end
 observe!(::Val{:observed}, sm::Loop, requested::Int64, active::Int64, closed::Bool) =
     observed!(sm, sm.instance, requested, active, closed)
 
-function expire!(sm::Loop, now::UInt64, timeout_ns::UInt64)
+function expire!(sm::Loop, now::Int64, timeout_ns::Int64)
     Hsm.dispatch!(sm, :DeadlineChecked, (; now, timeout_ns))
     return nothing
 end
@@ -447,7 +445,11 @@ function (observer::Observer)(
     phase::Union{Val{:requested},Val{:observed}}, props::PipeWireAO.SPA.Props
 )
     now = try
-        clock_ns(observer.clock)
+        sampled = Clocks.time_nanos(observer.clock)
+        sampled >= Clocks.time_nanos(observer.sampled_clock) ||
+            throw(ArgumentError("correction clock regressed"))
+        Clocks.update!(observer.sampled_clock, sampled)
+        sampled
     catch
         foreach(sm -> unknown!(sm, :observer_error), observer.loops)
         return nothing
@@ -559,7 +561,7 @@ end
 
 """Return status extras reconciled against exactly `graphprops`.
 
-The clock returns unsigned nanoseconds, with wrap-safe elapsed arithmetic.
+The clock returns signed nanoseconds; regression and arithmetic overflow fail closed.
 Only `Opening`/`Closing` adoption expires after `timeout_ms` (default 5000).
 Unavailable observation and expired adoption latch `Unknown`; this getter never
 writes scientific properties or retries and never returns cached known state

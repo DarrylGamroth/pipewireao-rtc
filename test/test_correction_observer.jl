@@ -1,3 +1,4 @@
+import Clocks
 # Optional CPU selector: requires the scientific packages and the native SDK.
 using Test,
     PipeWireAORTC, PipeWireAO, FilterGraphAlgorithms, FilterGraphPipeWire, JuliaFilterGraph
@@ -127,20 +128,18 @@ end
 end
 
 @testset "RTC correction status expires before late adoption" begin
-    now = Ref(UInt64(0))
-    observer = Loops.Observer(
-        ["correction:closed"], Int64(19); timeout_ms = 1, clock = () -> now[]
-    )
+    now = Clocks.CachedNanoClock(0)
+    observer = Loops.Observer(["correction:closed"], Int64(19); timeout_ms = 1, clock = now)
     node = observed_node(observer)
     callbacks = node.filter.callbacks
     try
         callbacks.on_properties(
             node.filter, PipeWireAO.SPA.Props("correction:closed" => false)
         )
-        now[] = UInt64(999_999)
+        Clocks.update!(now, Int64(999_999))
         pending = callbacks.on_get_properties(node.filter)
         @test status_value(pending, "correction:closed.state") == "Opening"
-        now[] += UInt64(1)
+        Clocks.advance!(now, Int64(1))
         expired = callbacks.on_get_properties(node.filter)
         @test status_value(expired, "correction:closed.state") == "Unknown"
         @test occursin("timeout", status_value(expired, "correction:closed.fault"))

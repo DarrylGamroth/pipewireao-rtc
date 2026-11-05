@@ -1,4 +1,5 @@
 module CorrectionRecoveryClientTests
+import Clocks
 using Test, PipeWireAORTC
 const CR = PipeWireAORTC.CorrectionRecovery
 const Runner = PipeWireAORTC.RunnerCodec
@@ -7,9 +8,38 @@ const Envelope = PipeWireAORTC.ControlCodec
 include("helpers/correction_recovery_transport.jl")
 include("helpers/correction_recovery_readbacks.jl")
 
+@testset "session recovery uses the bound client clock" begin
+    discovery = PipeWireAORTC.SessionDiscovery
+    session_id = "01234567-89ab-cdef-0123-456789abcdef"
+    record = discovery.SessionRecord(
+        "clock-test", session_id, UInt32(getpid()), Int64(1), "/unused", "session"
+    )
+    status = discovery.FreshSessionStatus(
+        session_id,
+        UInt32(getpid()),
+        Int64(1),
+        "/unused",
+        "session",
+        UInt32(2),
+        UInt64(3),
+        Int64(4),
+        :ready,
+        :rtc_session,
+    )
+    clock = Clocks.CachedNanoClock(-10)
+    connection = PipeWireAORTC.SessionClient.Connection(
+        discovery.SelectedSession(record, status), (; clock)
+    )
+    transport = CR.SessionTransport(connection)
+    @test CR.transport_clock(transport) === clock
+    @test Clocks.time_nanos(CR.transport_clock(transport)) === Int64(-10)
+end
+
 @testset "Native recovery driver keeps recovery and resume explicit" begin
     t = ScriptedTransport()
-    operation = CR.protective_open!(t, "science"; deadline = 2.0, reason = :saturation)
+    operation = CR.protective_open!(
+        t, "science"; deadline = Int64(2_000_000_000), reason = :saturation
+    )
     @test CR.state(operation.coordinator) === :Holding
     @test operation.coordinator.reason === :saturation
     @test operation.coordinator.recovery_generation == 3
@@ -18,26 +48,30 @@ include("helpers/correction_recovery_readbacks.jl")
     @test isempty(writes(t, "correction:closed"))
     @test length(writes(t, "pipewireao-recovery:request-token")) == 1
     @test isempty(writes(t, "pipewireao-recovery:release-token"))
-    @test CR.resume!(operation; deadline = 2.0) === operation
+    @test CR.resume!(operation; deadline = Int64(2_000_000_000)) === operation
     @test CR.state(operation.coordinator) === :Closed
     @test length(writes(t, "pipewireao-recovery:release-token")) == 1
     @test only(writes(t, "pipewireao-recovery:release-token")).second.value == 3
     @test length(writes(t, "correction:closed")) == 1
     @test last(writes(t, "correction:closed")).second.value === true
-    @test_throws ArgumentError CR.resume!(operation; deadline = 2.0)
+    @test_throws ArgumentError CR.resume!(operation; deadline = Int64(2_000_000_000))
     @test length(writes(t, "correction:closed")) == 1
 end
 
 @testset "Missing or expired source evidence never closes or retries" begin
     for mode in (:stall, :expired_reference)
         t = ScriptedTransport(; mode)
-        failure = failure_of(() -> CR.protective_open!(t, "science"; deadline = 2.0))
+        failure = failure_of(
+            () -> CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+        )
         @test CR.state(failure.operation.coordinator) === :Unverified
         @test failure.operation.coordinator.failure === :operation_timeout
         @test length(writes(t, "pipewireao-recovery:request-token")) == 1
         @test isempty(writes(t, "pipewireao-recovery:release-token"))
         @test isempty(writes(t, "correction:closed"))
-        @test_throws ArgumentError CR.resume!(failure.operation; deadline = 2.0)
+        @test_throws ArgumentError CR.resume!(
+            failure.operation; deadline = Int64(2_000_000_000)
+        )
         @test isempty(writes(t, "correction:closed"))
     end
 end
@@ -45,7 +79,9 @@ end
 @testset "Native owner and outcome failures latch without replay" begin
     for mode in (:wrong_owner, :wrong_session, :unknown, :cached_reply)
         t = ScriptedTransport(; mode)
-        failure = failure_of(() -> CR.protective_open!(t, "science"; deadline = 2.0))
+        failure = failure_of(
+            () -> CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+        )
         @test CR.state(failure.operation.coordinator) === :Unverified
         @test length(writes(t, "pipewireao-recovery:request-token")) == 1
         @test isempty(writes(t, "correction:closed"))
@@ -62,14 +98,14 @@ end
         :wrong_release_token,
     )
         t = ScriptedTransport()
-        operation = CR.protective_open!(t, "science"; deadline = 2.0)
+        operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
         t.mode = mode
-        failure = failure_of(() -> CR.resume!(operation; deadline = 2.0))
+        failure = failure_of(() -> CR.resume!(operation; deadline = Int64(2_000_000_000)))
         @test failure.operation === operation
         @test CR.state(operation.coordinator) === :Unverified
         @test isempty(writes(t, "correction:closed"))
         @test length(writes(t, "pipewireao-recovery:release-token")) <= 1
-        @test_throws ArgumentError CR.resume!(operation; deadline = 2.0)
+        @test_throws ArgumentError CR.resume!(operation; deadline = Int64(2_000_000_000))
         @test isempty(writes(t, "correction:closed"))
     end
 end
@@ -78,7 +114,9 @@ end
     t = ScriptedTransport()
     t.recovery_state = :pending
     t.virtual_requested += 1
-    @test_throws ArgumentError CR.protective_open!(t, "science"; deadline = 2.0)
+    @test_throws ArgumentError CR.protective_open!(
+        t, "science"; deadline = Int64(2_000_000_000)
+    )
     @test isempty(t.writes)
 end
 
@@ -88,7 +126,9 @@ end
         () ->
             isempty(writes(t, "pipewireao-recovery:request-token")) ? nothing :
             throw(InterruptException())
-    failure = failure_of(() -> CR.protective_open!(t, "science"; deadline = 2.0, check))
+    failure = failure_of(
+        () -> CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000), check)
+    )
     @test failure.operation.coordinator.failure === :operation_cancelled
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test length(writes(t, "pipewireao-recovery:request-token")) == 1
@@ -97,24 +137,28 @@ end
 
 @testset "Slow successful readiness cannot issue an expired phase effect" begin
     opening = ScriptedTransport(; mode = :slow_open_status)
-    failure = failure_of(() -> CR.protective_open!(opening, "science"; deadline = 2.0))
+    failure = failure_of(
+        () -> CR.protective_open!(opening, "science"; deadline = Int64(2_000_000_000))
+    )
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test isempty(opening.writes)
-    @test opening.now_ns < 2_000_000_000
+    @test Clocks.time_nanos(opening.clock) < 2_000_000_000
 
     closing = ScriptedTransport()
-    operation = CR.protective_open!(closing, "science"; deadline = 2.0)
+    operation = CR.protective_open!(closing, "science"; deadline = Int64(2_000_000_000))
     closing.mode = :slow_close_status
-    failure = failure_of(() -> CR.resume!(operation; deadline = 2.0))
+    failure = failure_of(() -> CR.resume!(operation; deadline = Int64(2_000_000_000)))
     @test failure.operation === operation
     @test CR.state(operation.coordinator) === :Unverified
     @test length(writes(closing, "pipewireao-recovery:release-token")) == 1
     @test isempty(writes(closing, "correction:closed"))
-    @test closing.now_ns < 2_000_000_000
+    @test Clocks.time_nanos(closing.clock) < 2_000_000_000
 end
 @testset "Native terminal failures retain their reported field and cause" begin
     transport = ScriptedTransport(; mode = :native_error)
-    failure = failure_of(() -> CR.protective_open!(transport, "science"; deadline = 2.0))
+    failure = failure_of(
+        () -> CR.protective_open!(transport, "science"; deadline = Int64(2_000_000_000))
+    )
     @test occursin("properties: owner rejected update", sprint(showerror, failure))
     @test CR.state(failure.operation.coordinator) === :Unverified
     @test length(transport.writes) == 1
@@ -124,7 +168,7 @@ end
 @testset "First protective mutation inhibits a competing close before adoption" begin
     t = ScriptedTransport(; mode = :competing_close)
     operation = try
-        CR.protective_open!(t, "science"; deadline = 2.0)
+        CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
     catch error
         error
     end
@@ -141,7 +185,7 @@ end
 
 @testset "First recovery readback may already show atomic application" begin
     t = ScriptedTransport(; mode = :immediate_application)
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
     @test CR.state(operation.coordinator) === :Holding
     @test operation.coordinator.loop_generation == 4
     @test operation.coordinator.recovery_generation == 3
@@ -238,5 +282,25 @@ end
     properties[p*"version"] = scalar(Int64(1))
     @test_throws ArgumentError native_readback(properties)
 end
+
+@testset "Native recovery accepts signed source times and exact integer deadlines" begin
+    for origin in (Int64(-1_000_000_000), Int64(0), Int64(2)^53 + 1)
+        transport = ScriptedTransport()
+        Clocks.update!(transport.clock, origin)
+        transport.source_ns = origin
+        deadline = Base.checked_add(origin, Int64(1_000_000_000))
+        operation = CR.protective_open!(transport, "science"; deadline)
+        @test CR.state(operation.coordinator) === :Holding
+        @test CR.resume!(operation; deadline) === operation
+        @test CR.state(operation.coordinator) === :Closed
+    end
+    transport = ScriptedTransport()
+    deadline = Clocks.time_nanos(transport.clock)
+    @test_throws PipeWireAORTC.ControlClient.UnknownOutcome CR.protective_open!(
+        transport, "science"; deadline
+    )
+    @test isempty(transport.writes)
+end
+
 
 end

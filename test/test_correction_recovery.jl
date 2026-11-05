@@ -55,8 +55,10 @@ release_observation(
     ready,
 )
 
-function qualified_recovery(; now = Ref(UInt64(100)), closed = true, timeout_ms = 5)
-    sm = CR.Coordinator(RECOVERY_OWNER; clock = () -> now[], timeout_ms)
+function qualified_recovery(;
+    now = Clocks.CachedNanoClock(100), closed = true, timeout_ms = 5
+)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock = now, timeout_ms)
     CR.qualify!(sm, loop_observation(1, 3, 3, closed; token = UInt64(0)))
     return sm, now
 end
@@ -95,12 +97,12 @@ end
     Clocks.update!(clock, -1)
     CR.check_timeout!(sm)
     @test CR.state(sm) === :Unverified && sm.failure === :clock_error
-    @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; clock)
+    @test CR.Coordinator(RECOVERY_OWNER; clock).clock === clock
 end
 
 @testset "Recovery events own admission facts and latch the first failure" begin
-    now = Ref(UInt64(100))
-    sm = CR.Coordinator(RECOVERY_OWNER; clock = () -> now[], timeout_ms = 5)
+    now = Clocks.CachedNanoClock(100)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock = now, timeout_ms = 5)
     initial = loop_observation(1, 3, 3, true; token = UInt64(0))
     Hsm.dispatch!(sm, :Qualified, initial)
     @test CR.state(sm) === :Closed
@@ -112,7 +114,7 @@ end
     @test CR.state(sm) === :Opening
     @test (sm.token, sm.reason, sm.target_closed) == (RECOVERY_TOKEN, :saturation, false)
     deadline = sm.pending_since_ns
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :Protect, merge(request, (; token = RECOVERY_TOKEN + UInt64(1))))
     @test sm.token == RECOVERY_TOKEN && sm.pending_since_ns == deadline
     Hsm.dispatch!(sm, :Failed, (; reason = :endpoint_lost, uncertain = false))
@@ -140,19 +142,19 @@ end
     CR.observe_recovery!(sm, recovery_observation(3))
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(4))
     @test CR.state(sm) === :Holding && sm.reference_serial == 4
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(5))
-    @test sm.reference_serial == 5 && sm.reference_since_ns == now[]
+    @test sm.reference_serial == 5 && sm.reference_since_ns == Clocks.time_nanos(now)
     @test sm.pending_since_ns == 0
     request = (; owner_instance = RECOVERY_OWNER, token = RECOVERY_TOKEN, closed = true)
     Hsm.dispatch!(sm, :Release, request)
     @test CR.state(sm) === :Releasing && sm.target_closed
     deadline = sm.pending_since_ns
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(6))
     refreshed = sm.reference_since_ns
-    @test sm.reference_serial == 6 && refreshed == now[]
-    now[] += 1
+    @test sm.reference_serial == 6 && refreshed == Clocks.time_nanos(now)
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :Release, request)
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(6))
     Hsm.dispatch!(
@@ -161,7 +163,7 @@ end
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(7; generation = 10))
     @test sm.serial == 6 && sm.reference_serial == 6 && sm.reference_since_ns == refreshed
     @test sm.pending_since_ns == deadline && CR.state(sm) === :Releasing
-    now[] = deadline + sm.timeout_ns
+    Clocks.update!(now, deadline + sm.timeout_ns)
     CR.check_timeout!(sm)
     @test CR.state(sm) === :Unverified && sm.failure === :operation_timeout
     @test sm.pending_since_ns == 0 && sm.reference_serial == 0
@@ -171,7 +173,7 @@ end
     sm, now = holding_recovery()
     CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     freshness = sm.reference_since_ns
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :ReferenceObserved, reference_observation(5; ready = false))
     @test CR.state(sm) === :Unverified && sm.failure === :release_prerequisites_changed
     @test sm.serial == 5 && sm.reference_serial == 0
@@ -203,14 +205,14 @@ end
     @test CR.state(sm) === :Opening
     @test Hsm.ancestor(sm, CR.state(sm)) === :ProtectiveOpen
     @test sm.reason === :saturation
-    @test sm.pending_since_ns == now[]
+    @test sm.pending_since_ns == Clocks.time_nanos(now)
     CR.recovery_staged!(sm, effect, UInt64(11); loop_generation = UInt64(4))
-    now[] += 1
+    Clocks.advance!(now, 1)
     CR.recovery_staged!(sm, effect, UInt64(11); loop_generation = UInt64(4)) # no new effect
-    @test sm.pending_since_ns == now[] - 1
+    @test sm.pending_since_ns == Clocks.time_nanos(now) - 1
     @test CR.observe_loop!(sm, loop_observation(2, 4, 4, false)) === nothing
     @test CR.state(sm) === :RestoringReference
-    @test sm.pending_since_ns == now[]
+    @test sm.pending_since_ns == Clocks.time_nanos(now)
     @test CR.observe_recovery!(sm, recovery_observation(3)) === nothing
     @test CR.state(sm) === :Verifying
     @test CR.observe_reference!(sm, reference_observation(4)) === nothing
@@ -261,7 +263,7 @@ end
     @test_throws ArgumentError CR.request_close!(
         sm, RECOVERY_OWNER, RECOVERY_TOKEN - UInt64(1)
     )
-    now[] += UInt64(5_000_000)
+    Clocks.advance!(now, Int64(5_000_000))
     @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     @test CR.state(sm) === :Holding
     CR.observe_reference!(sm, reference_observation(6))
@@ -310,7 +312,7 @@ end
             CR.staged!(sm, close, UInt64(5))
         end
         @test CR.state(sm) === phase
-        now[] += UInt64(5_000_000)
+        Clocks.advance!(now, Int64(5_000_000))
         # Late valid adoption is checked for timeout before accepting facts.
         @test CR.observe_loop!(sm, loop_observation(50, 5, 5, true)) === nothing
         @test CR.state(sm) === :Unverified
@@ -362,7 +364,7 @@ end
         @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; timeout_ms)
     end
     for clock in (() -> -1, () -> true, () -> 1.5, () -> typemax(UInt128))
-        @test_throws ArgumentError CR.Coordinator(RECOVERY_OWNER; clock)
+        @test_throws TypeError CR.Coordinator(RECOVERY_OWNER; clock)
     end
     sm = CR.Coordinator(RECOVERY_OWNER)
     CR.qualify!(sm, loop_observation(1, 4, 3, true; token = UInt64(0)))
@@ -380,11 +382,11 @@ end
     @test sm.failure === :operation_cancelled
     @test CR.observe_reference!(sm, reference_observation(5)) === nothing
     @test_throws ArgumentError CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
-    now = Ref(Int64(1))
-    sm = CR.Coordinator(RECOVERY_OWNER; clock = () -> now[])
+    now = Clocks.CachedNanoClock(1)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock = now)
     CR.qualify!(sm, loop_observation(1, 3, 3, true; token = UInt64(0)))
     CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
-    now[] = -1
+    Clocks.update!(now, -1)
     @test CR.check_timeout!(sm) === nothing
     @test sm.failure === :clock_error
     @test CR.state(sm) === :Unverified
@@ -420,10 +422,8 @@ end
 end
 
 function coupled_recovery()
-    now = Ref(UInt64(100))
-    sm = CR.Coordinator(
-        RECOVERY_OWNER; clock = () -> now[], timeout_ms = 5, controllers = 2
-    )
+    now = Clocks.CachedNanoClock(100)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock = now, timeout_ms = 5, controllers = 2)
     observation(serial, requested, active, closed; token = RECOVERY_TOKEN) =
         CR.LoopObservation(
             RECOVERY_OWNER,
@@ -518,7 +518,7 @@ end
     stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     CR.recovery_staged!(sm, stage, UInt64(11); loop_generation = UInt64(4))
     deadline = sm.pending_since_ns
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :LoopObserved, loop_observation(2, 4, 3, true))
     Hsm.dispatch!(sm, :LoopObserved, loop_observation(3, 3, 3, true))
     Hsm.dispatch!(sm, :RecoveryObserved, recovery_observation(4))
@@ -528,7 +528,7 @@ end
     @test CR.state(sm) === :RestoringReference && sm.serial == 5
     @test sm.loop_generation == 4 && sm.expected_loop_generation == 0
     deadline = sm.pending_since_ns
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :LoopObserved, loop_observation(6, 4, 3, true))
     Hsm.dispatch!(sm, :LoopObserved, loop_observation(5, 4, 4, false))
     @test sm.serial == 5 && sm.pending_since_ns == deadline
@@ -582,14 +582,14 @@ end
 
 @testset "Staging, cancellation and deadline events follow the active phase" begin
     sm, now = qualified_recovery()
-    Hsm.dispatch!(sm, :DeadlineChecked, typemax(UInt64))
+    Hsm.dispatch!(sm, :DeadlineChecked, Clocks.time_nanos(now))
     Hsm.dispatch!(sm, :Cancelled, (; owner_instance = RECOVERY_OWNER, token = UInt64(0)))
     @test CR.state(sm) === :Closed && sm.failure === nothing
     stage = CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
     deadline = sm.pending_since_ns
     staged = (; effect = stage, generation = UInt64(11), loop_generation = UInt64(4))
     Hsm.dispatch!(sm, :RecoveryStaged, staged)
-    now[] += 1
+    Clocks.advance!(now, 1)
     Hsm.dispatch!(sm, :RecoveryStaged, staged)
     @test sm.recovery_generation == 11 && sm.expected_loop_generation == 4
     @test sm.pending_since_ns == deadline
@@ -599,7 +599,7 @@ end
         (; effect = CR.CloseLoop(RECOVERY_OWNER, RECOVERY_TOKEN), generation = UInt64(5)),
     )
     @test sm.expected_loop_generation == 4 && sm.failure === nothing
-    Hsm.dispatch!(sm, :DeadlineChecked, deadline + sm.timeout_ns - UInt64(1))
+    Hsm.dispatch!(sm, :DeadlineChecked, deadline + sm.timeout_ns - Int64(1))
     @test CR.state(sm) === :Opening && sm.pending_since_ns == deadline
     Hsm.dispatch!(sm, :DeadlineChecked, deadline + sm.timeout_ns)
     @test CR.state(sm) === :Unverified && sm.failure === :operation_timeout
@@ -622,15 +622,13 @@ end
 end
 
 @testset "Qualification and release dispatch preserve refusal and clock semantics" begin
-    now = Ref(Int64(100))
-    reads = Ref(0)
-    sm = CR.Coordinator(RECOVERY_OWNER; clock = () -> (reads[] += 1; now[]))
+    now = Clocks.CachedNanoClock(100)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock = now)
     CR.qualify!(sm, loop_observation(1, 3, 3, true; token = UInt64(0)))
-    qualified_reads = reads[]
-    now[] = -1
+    Clocks.update!(now, -1)
     CR.qualify!(sm, loop_observation(2, 4, 4, false; token = UInt64(0)))
     @test CR.state(sm) === :Closed && sm.failure === nothing
-    @test reads[] == qualified_reads && sm.serial == 1
+    @test sm.serial == 1
 
     sm, _ = holding_recovery()
     release = CR.request_close!(sm, RECOVERY_OWNER, RECOVERY_TOKEN; released = true)
@@ -641,4 +639,39 @@ end
     @test sm.serial == 5 && sm.failure === :release_prerequisites_changed
     @test CR.state(sm) === :Unverified && sm.pending_since_ns == 0
     @test CR.observe_release!(sm, release_observation(6)) === nothing
+end
+
+@testset "Signed recovery origins and checked clock spans" begin
+    for origin in (Int64(-10_000_000), Int64(0), Int64(2)^53 + 1)
+        clock = Clocks.CachedNanoClock(origin)
+        sm, _ = qualified_recovery(; now = clock, timeout_ms = 1)
+        CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+        @test sm.pending_since_ns === origin
+        Clocks.advance!(clock, 999_999)
+        CR.check_timeout!(sm)
+        @test CR.state(sm) === :Opening
+        Clocks.advance!(clock, 1)
+        CR.check_timeout!(sm)
+        @test sm.failure === :operation_timeout
+    end
+    sm, clock = qualified_recovery(; now = Clocks.CachedNanoClock(-10))
+    Clocks.update!(clock, -11)
+    CR.check_timeout!(sm)
+    @test sm.failure === :clock_error && CR.state(sm) === :Unverified
+    sm, _ = qualified_recovery(; now = Clocks.CachedNanoClock(typemax(Int64) - 1))
+    @test_throws ArgumentError CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    @test sm.failure === :clock_error && CR.state(sm) === :Unverified
+    sm, clock = qualified_recovery(; now = Clocks.CachedNanoClock(typemin(Int64)))
+    CR.request_protection!(sm, RECOVERY_OWNER, RECOVERY_TOKEN)
+    Clocks.update!(clock, 0)
+    CR.check_timeout!(sm)
+    @test sm.failure === :clock_error
+end
+
+@testset "Qualification rejects a regressing signed clock" begin
+    clock = Clocks.CachedNanoClock(-10)
+    sm = CR.Coordinator(RECOVERY_OWNER; clock)
+    Clocks.update!(clock, -11)
+    CR.qualify!(sm, loop_observation(1, 3, 3, true; token = UInt64(0)))
+    @test sm.failure === :clock_error && CR.state(sm) === :Unverified
 end

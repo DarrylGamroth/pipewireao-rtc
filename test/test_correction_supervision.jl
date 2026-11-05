@@ -212,3 +212,32 @@ end
     @test sample!(replacement, 1, 0, 1.0).reason === :wrong_owner
     @test sample!(replacement, 1, 0, 1.0; instance = INSTANCE + 1).action === :none
 end
+
+@testset "Signed supervision timestamps preserve exact freshness and persistence" begin
+    configuration = CS.Configuration(;
+        trip_fraction = 0.5,
+        clear_fraction = 0.1,
+        persistence_ns = 2,
+        max_gap_ns = 3,
+        action = :restore_reference,
+    )
+    for origin in (Int64(-10), Int64(0), Int64(2)^53 + 1)
+        sm = CS.Supervisor(configuration, INSTANCE)
+        @test CS.observe!(sm, INSTANCE, 1, origin, 1.0; now_ns = origin).reason === :pending
+        @test CS.observe!(sm, INSTANCE, 2, origin + 1, 1.0; now_ns = origin + 1).reason ===
+            :pending
+        @test CS.observe!(sm, INSTANCE, 3, origin + 2, 1.0; now_ns = origin + 2).tripped
+        @test CS.observe!(sm, INSTANCE, 4, origin + 3, 0.0; now_ns = origin + 3).tripped
+        @test CS.rearm!(sm, INSTANCE, 4; now_ns = origin + 6)
+        @test !CS.observe!(sm, INSTANCE, 5, origin + 4, 1.0; now_ns = origin + 4).tripped
+        @test CS.observe!(sm, INSTANCE, 6, origin + 5, 1.0; now_ns = origin + 9).reason ===
+            :stale_sample
+        @test CS.observe!(sm, INSTANCE, 6, origin + 5, 1.0; now_ns = origin + 4).reason ===
+            :future_sample
+    end
+    sm = CS.Supervisor(configuration, INSTANCE)
+    CS.observe!(sm, INSTANCE, 1, typemin(Int64), 1.0; now_ns = typemin(Int64))
+    @test CS.observe!(sm, INSTANCE, 2, typemin(Int64) + 1, 1.0; now_ns = 0).reason ===
+        :stale_sample
+    @test !sm.tripped
+end

@@ -1,4 +1,5 @@
 module CoupledRecoveryClientTests
+import Clocks
 using Test, PipeWireAORTC
 const CR = PipeWireAORTC.CorrectionRecovery
 const Runner = PipeWireAORTC.RunnerCodec
@@ -24,12 +25,12 @@ CoupledTransport(; mode = :normal) = CoupledTransport(
 )
 CR.transport_instance(t::CoupledTransport) = CR.transport_instance(t.base)
 CR.transport_initial_token(t::CoupledTransport) = CR.transport_initial_token(t.base)
-CR.transport_clock_ns(t::CoupledTransport) = CR.transport_clock_ns(t.base)
+CR.transport_clock(t::CoupledTransport) = CR.transport_clock(t.base)
 CR.transport_pause!(t::CoupledTransport, seconds::Float64) =
     CR.transport_pause!(t.base, seconds)
-function CR.request_native!(t::CoupledTransport, command; deadline::Float64, check)
+function CR.request_native!(t::CoupledTransport, command; deadline::Int64, check)
     check()
-    t.base.now_ns += UInt64(100_000)
+    Clocks.advance!(t.base.clock, Int64(100_000))
     t.base.token += 1
     return respond!(t, command)
 end
@@ -144,11 +145,11 @@ struct OneControllerTransport <: CR.AbstractRecoveryTransport
 end
 CR.transport_instance(t::OneControllerTransport) = CR.transport_instance(t.base)
 CR.transport_initial_token(t::OneControllerTransport) = CR.transport_initial_token(t.base)
-CR.transport_clock_ns(t::OneControllerTransport) = CR.transport_clock_ns(t.base)
+CR.transport_clock(t::OneControllerTransport) = CR.transport_clock(t.base)
 CR.transport_pause!(t::OneControllerTransport, seconds::Float64) =
     CR.transport_pause!(t.base, seconds)
 function CR.request_native!(
-    t::OneControllerTransport, command::Runner.RunnerCommand; deadline::Float64, check
+    t::OneControllerTransport, command::Runner.RunnerCommand; deadline::Int64, check
 )
     reply = CR.request_native!(t.base, command; deadline, check)
     return one_controller_reply(t, command, reply)
@@ -175,18 +176,20 @@ end
 
 @testset "Coupled native recovery releases once and recloses branches independently" begin
     t = CoupledTransport()
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
     @test CR.state(operation.coordinator) === :Holding
     @test operation.coordinator.loop_generation == (4, 10)
     @test operation.controller == ("correction", "llowfs-correction")
     @test !t.base.closed && !t.closed && t.base.inhibited
     for selection in (("foreign",), (), ("correction", "correction"), "correction", (1,))
         @test_throws ArgumentError CR.resume!(
-            operation; controllers = selection, deadline = 2.0
+            operation; controllers = selection, deadline = Int64(2_000_000_000)
         )
     end
     @test length(t.transactions) == 1
-    CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+    CR.resume!(
+        operation; controllers = ("llowfs-correction",), deadline = Int64(2_000_000_000)
+    )
     @test CR.state(operation.coordinator) === :PartiallyClosed
     @test !t.base.closed && t.closed && !t.base.inhibited
     @test t.guarded == (true, false)
@@ -196,7 +199,7 @@ end
         ["pipewireao-recovery:release-token"],
         ["llowfs-correction:closed"],
     ]
-    CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
+    CR.resume!(operation; controllers = ("correction",), deadline = Int64(2_000_000_000))
     @test CR.state(operation.coordinator) === :Closed
     @test t.base.closed && t.closed && !t.base.inhibited
     @test t.guarded == (false, false)
@@ -207,23 +210,31 @@ end
 
 @testset "Partial close adoption and replaced owners cannot complete or retry" begin
     t = CoupledTransport(; mode = :stalled_llowfs)
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
     failure = failure_of(
-        () -> CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+        () -> CR.resume!(
+            operation;
+            controllers = ("llowfs-correction",),
+            deadline = Int64(2_000_000_000),
+        ),
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test t.requested == 11 && t.active == 10
     @test !t.closed && !t.base.closed
     @test length(writes(t.base, "llowfs-correction:closed")) == 1
     @test_throws ArgumentError CR.resume!(
-        operation; controllers = ("llowfs-correction",), deadline = 2.0
+        operation; controllers = ("llowfs-correction",), deadline = Int64(2_000_000_000)
     )
     t = CoupledTransport()
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
-    CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+    CR.resume!(
+        operation; controllers = ("llowfs-correction",), deadline = Int64(2_000_000_000)
+    )
     t.base.owner += 1
     failure = failure_of(
-        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
+        () -> CR.resume!(
+            operation; controllers = ("correction",), deadline = Int64(2_000_000_000)
+        ),
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test isempty(writes(t.base, "correction:closed"))
@@ -232,8 +243,8 @@ end
 
 @testset "Coupled native recovery closes a selected group atomically" begin
     t = CoupledTransport()
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
-    CR.resume!(operation; deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+    CR.resume!(operation; deadline = Int64(2_000_000_000))
     @test CR.state(operation.coordinator) === :Closed
     @test last(t.transactions) == ["correction:closed", "llowfs-correction:closed"]
     @test operation.coordinator.loop_generation == (5, 11)
@@ -241,32 +252,40 @@ end
 
 @testset "Missing branch readiness never borrows the other branch's proof" begin
     t = CoupledTransport(; mode = :scc_unready)
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
-    CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+    CR.resume!(
+        operation; controllers = ("llowfs-correction",), deadline = Int64(2_000_000_000)
+    )
     failure = failure_of(
-        () -> CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
+        () -> CR.resume!(
+            operation; controllers = ("correction",), deadline = Int64(2_000_000_000)
+        ),
     )
     @test CR.state(operation.coordinator) === :Unverified
     @test !t.base.closed && t.closed
     @test isempty(writes(t.base, "correction:closed"))
     @test t.guarded == (true, false)
     @test_throws ArgumentError CR.resume!(
-        operation; controllers = ("correction",), deadline = 2.0
+        operation; controllers = ("correction",), deadline = Int64(2_000_000_000)
     )
 end
 
 @testset "Malformed plural descriptors are refused before any mutation" begin
     for mode in (:bad_count, :duplicate)
         t = CoupledTransport(; mode)
-        @test_throws ArgumentError CR.protective_open!(t, "science"; deadline = 2.0)
+        @test_throws ArgumentError CR.protective_open!(
+            t, "science"; deadline = Int64(2_000_000_000)
+        )
         @test isempty(t.transactions)
     end
 end
 
 @testset "Cancelling after the first subset close inhibits every remaining effect" begin
     t = CoupledTransport()
-    operation = CR.protective_open!(t, "science"; deadline = 2.0)
-    CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+    operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
+    CR.resume!(
+        operation; controllers = ("llowfs-correction",), deadline = Int64(2_000_000_000)
+    )
     transactions = length(t.transactions)
     CR.cancel!(
         operation.coordinator,
@@ -276,7 +295,7 @@ end
     @test CR.state(operation.coordinator) === :Unverified
     @test operation.coordinator.failure === :operation_cancelled
     @test_throws ArgumentError CR.resume!(
-        operation; controllers = ("correction",), deadline = 2.0
+        operation; controllers = ("correction",), deadline = Int64(2_000_000_000)
     )
     @test length(t.transactions) == transactions
     @test !t.base.closed && t.closed
@@ -285,9 +304,13 @@ end
 @testset "Release rejects changed selected and unselected controller generations" begin
     for mode in (:foreign_scc_open, :foreign_llowfs_open)
         t = CoupledTransport(; mode)
-        operation = CR.protective_open!(t, "science"; deadline = 2.0)
+        operation = CR.protective_open!(t, "science"; deadline = Int64(2_000_000_000))
         failed = try
-            CR.resume!(operation; controllers = ("llowfs-correction",), deadline = 2.0)
+            CR.resume!(
+                operation;
+                controllers = ("llowfs-correction",),
+                deadline = Int64(2_000_000_000),
+            )
             nothing
         catch error
             error
@@ -383,7 +406,7 @@ end
     transport = OneControllerTransport(ScriptedTransport())
     channel = CR.RecoveryChannel(transport, CR.transport_instance(transport), Int64(0))
     snapshot = CR.native_snapshot!(
-        channel, "science"; deadline = 2.0, check = () -> nothing
+        channel, "science"; deadline = Int64(2_000_000_000), check = () -> nothing
     )
     singular = native_readback(owner_properties(ScriptedTransport()))
     @test CR.controller_scope(snapshot) isa CR.CoupledControllers{1}
@@ -394,12 +417,12 @@ end
         (UInt64(3),)
     @test CR.closed(snapshot) == (true,)
     @test snapshot.controller_readiness isa Tuple{CR.ControllerReadiness}
-    operation = CR.protective_open!(transport, "science"; deadline = 2.0)
+    operation = CR.protective_open!(transport, "science"; deadline = Int64(2_000_000_000))
     @test CR.controller_scope(operation) isa CR.CoupledControllers{1}
     @test operation.controller == ("correction",)
     @test operation.coordinator.loop_generation == (UInt64(4),)
     @test CR.state(operation.coordinator) === :Holding
-    CR.resume!(operation; controllers = ("correction",), deadline = 2.0)
+    CR.resume!(operation; controllers = ("correction",), deadline = Int64(2_000_000_000))
     @test CR.state(operation.coordinator) === :Closed
     @test operation.coordinator.loop_generation == (UInt64(5),)
     @test length(writes(transport.base, "pipewireao-recovery:release-token")) == 1

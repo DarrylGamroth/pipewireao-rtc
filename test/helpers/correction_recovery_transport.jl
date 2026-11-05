@@ -1,8 +1,9 @@
+import Clocks
 # Shared scripted native transport. Including test modules supply CR, Runner,
 # Envelope and Test; this helper owns no production implementation.
 mutable struct ScriptedTransport <: CR.AbstractRecoveryTransport
     token::Int64
-    now_ns::UInt64
+    clock::Clocks.CachedNanoClock
     instance::Int64
     owner::Int64
     mode::Symbol
@@ -28,7 +29,7 @@ mutable struct ScriptedTransport <: CR.AbstractRecoveryTransport
 end
 ScriptedTransport(; mode = :normal) = ScriptedTransport(
     0,
-    UInt64(1_000_000_000),
+    Clocks.CachedNanoClock(1_000_000_000),
     912,
     501,
     mode,
@@ -54,9 +55,9 @@ ScriptedTransport(; mode = :normal) = ScriptedTransport(
 )
 CR.transport_instance(t::ScriptedTransport) = t.instance
 CR.transport_initial_token(::ScriptedTransport) = Int64(0)
-CR.transport_clock_ns(t::ScriptedTransport) = t.now_ns
+CR.transport_clock(t::ScriptedTransport) = t.clock
 function CR.transport_pause!(t::ScriptedTransport, seconds::Float64)
-    t.now_ns += round(UInt64, seconds * 1e9)
+    Clocks.advance!(t.clock, round(Int64, seconds * 1e9))
     return nothing
 end
 function result(t, ::Runner.RunnerCommand{O}, details; outcome = Runner.Observed) where {O}
@@ -80,10 +81,10 @@ function result(t, ::Runner.RunnerCommand{O}, details; outcome = Runner.Observed
     )
 end
 function CR.request_native!(
-    t::ScriptedTransport, command::Runner.RunnerCommand; deadline::Float64, check
+    t::ScriptedTransport, command::Runner.RunnerCommand; deadline::Int64, check
 )
     check()
-    t.now_ns += UInt64(100_000)
+    Clocks.advance!(t.clock, Int64(100_000))
     t.token += 1
     return respond!(t, command)
 end
@@ -94,7 +95,7 @@ function respond!(t, command::Runner.RunnerCommand{:status})
     if slow_open || slow_close
         # Readiness succeeds after the phase's 100 ms budget, while the caller's
         # absolute deadline still has time. This must not authorize a late write.
-        t.now_ns += UInt64(200_000_000)
+        Clocks.advance!(t.clock, Int64(200_000_000))
     end
     return result(t, command, (; running = true))
 end
@@ -200,9 +201,10 @@ function respond!(t, command::Runner.RunnerCommand{:properties})
         (t.mode === :frozen_after_release && t.recovery_state === :released)
     if reference && !frozen
         t.source_sequence += 1
-        t.source_ns = Int64(t.now_ns)
+        t.source_ns = Int64(Clocks.time_nanos(t.clock))
     end
-    t.mode === :expired_reference && (t.source_ns = Int64(t.now_ns) - 100_000_000)
+    t.mode === :expired_reference &&
+        (t.source_ns = Int64(Clocks.time_nanos(t.clock)) - 100_000_000)
     owner = t.mode === :wrong_owner && t.recovery_state !== :idle ? t.owner + 1 : t.owner
     loop_state =
         t.requested == t.active ? (t.closed ? "Closed" : "Open") :

@@ -36,12 +36,12 @@ mutable struct PublishedObservation
     @atomic reason::UInt8
     @atomic fraction::Float64
     @atomic sequence::UInt64
-    @atomic observed_ns::UInt64
+    @atomic observed_ns::Int64
     @atomic trip_sequence::UInt64
-    @atomic trip_ns::UInt64
+    @atomic trip_ns::Int64
     @atomic action::UInt8
     @atomic rearm_sequence::UInt64
-    @atomic rearm_ns::UInt64
+    @atomic rearm_ns::Int64
     PublishedObservation() = new(0, 2, 1, NaN, 0, 0, 0, 0, 1, 0, 0)
 end
 
@@ -87,19 +87,12 @@ successful frame, the frame writer accepts it only against new, fresh clear
 feedback for every latched output, or publishes a one-shot refusal. No closure,
 reference restoration or native effect follows from supervision rearm.
 """
-struct Observer{B,C}
+struct Observer{B,C<:Clocks.AbstractNanoClock}
     bindings::B
     owner_instance::Int64
     clock::C
     rearm::RearmMailbox
     reset_unverified::Threads.Atomic{Bool}
-end
-
-function observation_clock(clock)
-    now = clock()
-    unsigned(now) ||
-        throw(ArgumentError("supervision clock must return nonnegative UInt64 nanoseconds"))
-    return UInt64(now)
 end
 
 validated_configuration(configuration::Configuration) = configuration
@@ -118,13 +111,16 @@ end
 feedback_count(::FeedbackObservation{Name,Shape}) where {Name,Shape} = only(Shape)
 
 function Observer(
-    formats::NamedTuple, policies::NamedTuple; owner_instance, clock = time_ns
+    formats::NamedTuple,
+    policies::NamedTuple;
+    owner_instance,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     owner(owner_instance) ||
         throw(ArgumentError("owner incarnation must be positive and fit Int64"))
     1 <= length(policies) <= 64 ||
         throw(ArgumentError("supervision requires 1:64 feedback outputs"))
-    observation_clock(clock)
+    Clocks.time_nanos(clock)
     bindings = map(keys(policies)) do name
         hasproperty(formats, name) ||
             throw(ArgumentError("unknown supervision feedback output $name"))
@@ -260,7 +256,7 @@ end
     observer::Observer,
     outputs::NamedTuple,
     header,
-    now::UInt64,
+    now::Int64,
 ) where {Name,Shape}
     cause = metadata_reason(header)
     if cause !== :none
@@ -285,7 +281,7 @@ function observe_frame!(
     observer::Observer,
     outputs::NamedTuple,
     metadata::NamedTuple,
-    now::UInt64,
+    now::Int64,
 ) where {Name}
     if !hasproperty(outputs, Name) || !hasproperty(metadata, Name)
         publish!(binding, reject!(binding.supervisor, :missing_feedback))
@@ -307,9 +303,9 @@ function observe_frame!(
 end
 
 function (observer::Observer)(::Val{:frame}, outputs::NamedTuple, metadata::NamedTuple)
+    now = Clocks.time_nanos(observer.clock)
     request = @atomic observer.rearm.request_token
-    now = observer.clock()
-    if !unsigned(now)
+    if !ticks(now)
         foreach(
             binding -> publish!(binding, reject!(binding.supervisor, :malformed_sample)),
             observer.bindings,
@@ -320,11 +316,11 @@ function (observer::Observer)(::Val{:frame}, outputs::NamedTuple, metadata::Name
         invalidate_observations!(observer, :reset)
     else
         foreach(
-            binding -> observe_frame!(binding, observer, outputs, metadata, UInt64(now)),
+            binding -> observe_frame!(binding, observer, outputs, metadata, now),
             observer.bindings,
         )
     end
-    adopt_rearm!(observer, request, UInt64(now))
+    adopt_rearm!(observer, request, now)
     return nothing
 end
 
@@ -371,7 +367,7 @@ function request_rearm!(observer::Observer, owner_instance)
     return token
 end
 
-function can_rearm(binding::FeedbackObservation, now::UInt64)
+function can_rearm(binding::FeedbackObservation, now::Int64)
     sm = binding.supervisor
     return !sm.tripped || (
         sm.has_sample &&
@@ -379,11 +375,11 @@ function can_rearm(binding::FeedbackObservation, now::UInt64)
         sm.last_fraction !== nothing &&
         sm.last_fraction <= sm.configuration.clear_fraction &&
         now >= sm.last_sample_ns &&
-        now - sm.last_sample_ns <= sm.configuration.max_gap_ns
+        within(now, sm.last_sample_ns, sm.configuration.max_gap_ns)
     )
 end
 
-function adopt_rearm!(observer::Observer, token::UInt64, now::UInt64)
+function adopt_rearm!(observer::Observer, token::UInt64, now::Int64)
     token == 0 ||
         token == typemax(UInt64) ||
         begin
@@ -404,7 +400,7 @@ function adopt_rearm!(observer::Observer, token::UInt64, now::UInt64)
                         @atomic published.version = publication_version + UInt64(1)
                         @atomic published.action = UInt8(1)
                         @atomic published.trip_sequence = UInt64(0)
-                        @atomic published.trip_ns = UInt64(0)
+                        @atomic published.trip_ns = Int64(0)
                         @atomic published.rearm_sequence = sm.last_sequence
                         @atomic published.rearm_ns = now
                         @atomic published.state = code(OBSERVATION_STATES, state(sm))
@@ -518,7 +514,7 @@ output_name(::FeedbackObservation{Name}) where {Name} = Name
 output_names(observer::Observer) = map(output_name, observer.bindings)
 
 function (observer::Observer)(graphprops::PipeWireAO.SPA.Props, available::Bool)
-    now = observer.clock()
+    now = Clocks.time_nanos(observer.clock)
     extras = Pair{String,PipeWireAO.Pod}[
         OBSERVATION_PREFIX*"version"=>PipeWireAO.Pod(Int32(1)),
         OBSERVATION_PREFIX*"owner-instance"=>PipeWireAO.Pod(observer.owner_instance),
@@ -539,11 +535,11 @@ function (observer::Observer)(graphprops::PipeWireAO.SPA.Props, available::Bool)
         fresh =
             value !== nothing &&
             available &&
-            unsigned(now) &&
+            ticks(now) &&
             value.state in (:Clear, :Pending, :Tripped) &&
             isfinite(value.fraction) &&
             now >= value.observed_ns &&
-            now - value.observed_ns <= binding.supervisor.configuration.max_gap_ns
+            within(now, value.observed_ns, binding.supervisor.configuration.max_gap_ns)
         current = if value === nothing
             :Unknown
         elseif value.state in (:Disabled, :Tripped) || fresh

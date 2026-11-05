@@ -69,8 +69,8 @@ end
 
 @testset "Accepted events preserve same-value states and duplicate deadlines" begin
     for closed in (false, true)
-        now = Ref(UInt64(70))
-        sm = CL.Loop("correction:closed", OWNER; clock = () -> now[])
+        now = Clocks.CachedNanoClock(70)
+        sm = CL.Loop("correction:closed", OWNER; clock = now)
         Hsm.dispatch!(
             sm,
             :Observed,
@@ -117,7 +117,7 @@ end
         @test Hsm.ancestor(sm, CL.state(sm)) === :Pending
         @test Hsm.ancestor(sm, :Pending) === :Operational
         @test sm.pending_since_ns == 70
-        now[] += 1
+        Clocks.advance!(now, 1)
         Hsm.dispatch!(sm, :Requested, request)
         @test sm.pending_since_ns == 70
         Hsm.dispatch!(
@@ -135,8 +135,8 @@ end
     end
 end
 
-struct BrokenTraceClock end
-(::BrokenTraceClock)() = UInt64(70)
+struct BrokenTraceClock <: Clocks.AbstractNanoClock end
+Clocks.time_nanos(::BrokenTraceClock) = Int64(70)
 function Hsm.trace_dispatch_start(::CL.Loop{BrokenTraceClock}, event::Symbol, arg)
     event === :Unknown && error("Hsm dispatch instrumentation failed")
     return nothing
@@ -184,7 +184,7 @@ end
     observer(Val(:observed), loop_props(false))
     observer(Val(:requested), loop_props(true; requested = 1, active = 0))
     sm = only(observer.loops)
-    @test sm.clock === clock && sm.pending_since_ns == 70
+    @test sm.clock === observer.sampled_clock && sm.pending_since_ns == 70
     Clocks.advance!(clock, 4_999_999)
     observer(Val(:observed), loop_props(false; requested = 1, active = 0))
     @test CL.state(sm) === :Closing && sm.pending_since_ns == 70
@@ -197,12 +197,12 @@ end
     Clocks.update!(clock, -1)
     observer(Val(:observed), loop_props(false))
     @test only(observer.loops).failure === :observer_error
-    @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; clock)
+    @test CL.Observer(["correction:closed"], OWNER; clock).clock === clock
 end
 
 @testset "Correction-control publication reuses exact graph properties" begin
-    now = Ref(UInt64(100))
-    observer = CL.Observer(["correction:closed"], OWNER; clock = () -> now[])
+    now = Clocks.CachedNanoClock(100)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     infos = CL.property_info(observer)
     names = [info.name for info in infos]
     @test names == [
@@ -252,21 +252,19 @@ end
 
 @testset "Closure adoption expires before late confirmation" begin
     for (initial, desired, pending) in ((false, true, :Closing), (true, false, :Opening))
-        now = Ref(UInt64(70))
-        observer = CL.Observer(
-            ["correction:closed"], OWNER; timeout_ms = 5, clock = () -> now[]
-        )
+        now = Clocks.CachedNanoClock(70)
+        observer = CL.Observer(["correction:closed"], OWNER; timeout_ms = 5, clock = now)
         observer(Val(:observed), loop_props(initial))
         observer(Val(:requested), loop_props(desired; requested = 1, active = 0))
         sm = only(observer.loops)
         @test CL.state(sm) === pending
         @test sm.pending_since_ns == 70
-        now[] += UInt64(4_000_000)
+        Clocks.advance!(now, Int64(4_000_000))
         observer(Val(:requested), loop_props(desired; requested = 1, active = 0))
         @test sm.pending_since_ns == 70
         observer(Val(:observed), loop_props(initial; requested = 1, active = 0))
         @test CL.state(sm) === pending
-        now[] += UInt64(1_000_000)
+        Clocks.advance!(now, Int64(1_000_000))
         late = observer(loop_props(desired; requested = 1), true)
         @test sm.failure === :adoption_timeout
         @test CL.state(sm) === :Unknown
@@ -276,7 +274,7 @@ end
         @test correction_status(late, "correction:closed.fault", String) ==
             "Applied correction did not confirm before the adoption timeout"
         @test correction_status(late, "correction:closed.requested", Bool) === desired
-        now[] += UInt64(1)
+        Clocks.advance!(now, Int64(1))
         observer(Val(:observed), loop_props(desired; requested = 1))
         observer(Val(:requested), loop_props(initial; requested = 2, active = 1))
         @test CL.state(sm) === :Unknown
@@ -285,62 +283,60 @@ end
     end
 end
 
-@testset "Pending-state entry and exit own the adoption deadline" begin
-    now = Ref(UInt64(70))
+@testset "Pending transitions retain adoption time and own the timer lifetime" begin
+    now = Clocks.CachedNanoClock(70)
     for (initial, desired) in ((false, true), (true, false))
-        sm = CL.Loop("correction:closed", OWNER; clock = () -> now[], timeout_ms = 5)
+        sm = CL.Loop("correction:closed", OWNER; clock = now, timeout_ms = 5)
         CL.observed!(sm, OWNER, 0, 0, initial)
         @test sm.pending_since_ns == 0
         # Direct machine events, without the Observer callback, must run the
         # same entry/exit behaviors as RTC property observation.
         CL.requested!(sm, OWNER, 1, 0, desired)
-        @test sm.pending_since_ns == now[]
-        now[] += UInt64(1)
+        @test sm.pending_since_ns == Clocks.time_nanos(now)
+        Clocks.advance!(now, Int64(1))
         CL.requested!(sm, OWNER, 1, 0, desired)
-        @test sm.pending_since_ns == now[] - 1
+        @test sm.pending_since_ns == Clocks.time_nanos(now) - 1
         CL.observed!(sm, OWNER, 1, 1, desired)
         @test sm.pending_since_ns == 0
         CL.requested!(sm, OWNER, 2, 1, desired)
         @test sm.pending_since_ns == 0
         CL.observed!(sm, OWNER, 2, 2, desired)
         CL.requested!(sm, OWNER, 3, 2, initial)
-        @test sm.pending_since_ns == now[]
+        @test sm.pending_since_ns == Clocks.time_nanos(now)
         CL.unknown!(sm, :observer_error)
         @test sm.pending_since_ns == 0
     end
 end
 
 @testset "Timely adoption and same-Boolean updates do not expire" begin
-    now = Ref(UInt64(0))
-    observer = CL.Observer(
-        ["correction:closed"], OWNER; timeout_ms = 1, clock = () -> now[]
-    )
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; timeout_ms = 1, clock = now)
     observer(Val(:observed), loop_props(false))
     observer(Val(:requested), loop_props(true; requested = 1, active = 0))
-    now[] = UInt64(999_999)
+    Clocks.update!(now, Int64(999_999))
     timely = observer(loop_props(true; requested = 1), true)
     @test correction_status(timely, "correction:closed.state", String) == "Closed"
-    now[] = UInt64(10_000_000)
+    Clocks.update!(now, Int64(10_000_000))
     @test correction_status(
         observer(loop_props(true; requested = 1), true), "correction:closed.state", String
     ) == "Closed"
     observer(Val(:requested), loop_props(true; requested = 2, active = 1))
-    now[] = UInt64(100_000_000)
+    Clocks.update!(now, Int64(100_000_000))
     gain_pending = observer(loop_props(true; requested = 2, active = 1), true)
     @test correction_status(gain_pending, "correction:closed.state", String) == "Closed"
     @test only(observer.loops).failure === nothing
     observer(Val(:observed), loop_props(true; requested = 2))
     @test CL.check_ready(observer) === nothing
-    # UInt64 elapsed subtraction also covers the monotonic clock wrapping.
-    now[] = typemax(UInt64) - UInt64(50)
+    # Adjacent signed ticks remain exact above the Float64 integer range.
+    Clocks.update!(now, Int64(2)^53 + 1)
     observer(Val(:requested), loop_props(false; requested = 3, active = 2))
-    now[] += UInt64(999_999)
+    Clocks.advance!(now, Int64(999_999))
     @test correction_status(
         observer(loop_props(true; requested = 3, active = 2), true),
         "correction:closed.state",
         String,
     ) == "Opening"
-    now[] += UInt64(1)
+    Clocks.advance!(now, Int64(1))
     @test correction_status(
         observer(loop_props(false; requested = 3), true), "correction:closed.state", String
     ) == "Unknown"
@@ -348,8 +344,8 @@ end
 end
 
 @testset "Unavailable or malformed observation publishes a latched fault" begin
-    now = Ref(UInt64(0))
-    observer = CL.Observer(["correction:closed"], OWNER; clock = () -> now[])
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     observer(Val(:observed), loop_props(true))
     unavailable = observer(loop_props(true), false)
     @test correction_status(unavailable, "correction:closed.state", String) == "Unknown"
@@ -365,7 +361,7 @@ end
         loop_props(true; active = Int32(0)),
         PipeWireAO.SPA.Props("correction:closed" => true),
     )
-        malformed = CL.Observer(["correction:closed"], OWNER; clock = () -> now[])
+        malformed = CL.Observer(["correction:closed"], OWNER; clock = now)
         malformed(Val(:observed), loop_props(false))
         status = malformed(props, true)
         @test correction_status(status, "correction:closed.state", String) == "Unknown"
@@ -384,12 +380,12 @@ end
     @test CL.Observer(["correction:closed"], OWNER; timeout_ms = 60_000).timeout_ns ==
         UInt64(60_000_000_000)
     for clock in (() -> -1, () -> true, () -> 1.5, () -> typemax(UInt128))
-        @test_throws ArgumentError CL.Observer(["correction:closed"], OWNER; clock)
+        @test_throws TypeError CL.Observer(["correction:closed"], OWNER; clock)
     end
-    now = Ref(Int64(0))
-    observer = CL.Observer(["correction:closed"], OWNER; clock = () -> now[])
+    now = Clocks.CachedNanoClock(0)
+    observer = CL.Observer(["correction:closed"], OWNER; clock = now)
     observer(Val(:observed), loop_props(true))
-    now[] = -1
+    Clocks.update!(now, -1)
     @test observer(Val(:requested), loop_props(false; requested = 1, active = 0)) ===
         nothing
     @test only(observer.loops).failure === :observer_error
@@ -587,5 +583,61 @@ end
         @test_throws ArgumentError CL.check_ready(malformed)
         @test malformed(Val(:observed), loop_props(true)) === nothing
         @test CL.state(only(malformed.loops)) === :Unknown
+    end
+end
+
+mutable struct CountingCorrectionClock <: Clocks.AbstractNanoClock
+    now::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::CountingCorrectionClock)
+    clock.reads += 1
+    return clock.now
+end
+
+@testset "Signed adoption clocks preserve origins, precision and one source sample" begin
+    for origin in (Int64(-10_000_000), Int64(0), Int64(2)^53 + 1)
+        clock = CountingCorrectionClock(origin, 0)
+        observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+        before = clock.reads
+        observer(Val(:observed), loop_props(false))
+        @test clock.reads == before + 1
+        before = clock.reads
+        observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+        sm = only(observer.loops)
+        @test clock.reads == before + 1 && sm.pending_since_ns === origin
+        clock.now = origin + 999_999
+        observer(Val(:observed), loop_props(false; requested = 1, active = 0))
+        @test CL.state(sm) === :Closing
+        clock.now += 1
+        observer(Val(:observed), loop_props(true; requested = 1))
+        @test sm.failure === :adoption_timeout
+    end
+    clock = Clocks.CachedNanoClock(typemax(Int64) - 1)
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    @test CL.state(only(observer.loops)) === :Unknown
+    @test only(observer.loops).failure === :clock_error
+    clock = Clocks.CachedNanoClock(typemin(Int64))
+    observer = CL.Observer(["correction:closed"], OWNER; clock, timeout_ms = 1)
+    observer(Val(:observed), loop_props(false))
+    observer(Val(:requested), loop_props(true; requested = 1, active = 0))
+    Clocks.update!(clock, typemax(Int64))
+    observer(Val(:observed), loop_props(true; requested = 1))
+    @test only(observer.loops).failure === :clock_error
+end
+
+@testset "Standalone correction requests fail closed on deadline overflow" begin
+    for initial in (false, true)
+        clock = Clocks.CachedNanoClock(typemax(Int64) - 1)
+        sm = CL.Loop("correction:closed", OWNER; clock, timeout_ms = 1)
+        CL.observed!(sm, OWNER, 0, 0, initial)
+        @test CL.requested!(sm, OWNER, 1, 0, !initial) === nothing
+        @test CL.state(sm) === :Unknown && Hsm.current(sm) === :Unknown
+        @test sm.failure === :clock_error
+        @test sm.pending_since_ns === Int64(0) && sm.timer === nothing
+        CL.observed!(sm, OWNER, 1, 1, !initial)
+        @test CL.state(sm) === :Unknown && sm.failure === :clock_error
     end
 end

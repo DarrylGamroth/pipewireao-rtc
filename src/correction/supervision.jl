@@ -6,6 +6,8 @@ the existing RTC coordinator. Recommendations never request automatic closure.
 """
 module CorrectionSupervision
 
+import Clocks
+
 public Configuration, Supervisor, Recommendation, observe!, rearm!, state, reason
 
 fraction(_) = nothing
@@ -14,13 +16,24 @@ fraction(value::Real) = isfinite(value) && 0 <= value <= 1 ? Float64(value) : no
 unsigned(_) = false
 unsigned(::Bool) = false
 unsigned(value::Integer) = 0 <= value <= typemax(UInt64)
+ticks(_) = false
+ticks(::Bool) = false
+ticks(value::Integer) = typemin(Int64) <= value <= typemax(Int64)
+
+# Checked elapsed arithmetic: invalid ordering or a span outside Int64 is stale.
+function within(now::Int64, then::Int64, limit::Int64)
+    now >= then || return false
+    elapsed, overflow = Base.sub_with_overflow(now, then)
+    return !overflow && elapsed <= limit
+end
+
 owner(_) = false
 owner(::Bool) = false
 owner(value::Integer) = 0 < value <= typemax(Int64)
 function duration(value::Integer, name)
     0 < value <= typemax(Int64) ||
         throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
-    return UInt64(value)
+    return Int64(value)
 end
 duration(value, name) =
     throw(ArgumentError("$name must be positive nanoseconds fitting Int64"))
@@ -43,8 +56,8 @@ policy returns only `:monitor_only`; explicitly configured `:hold` or
 struct Configuration
     trip_fraction::Float64
     clear_fraction::Float64
-    persistence_ns::UInt64
-    max_gap_ns::UInt64
+    persistence_ns::Int64
+    max_gap_ns::Int64
     enabled::Bool
     action::Symbol
 
@@ -97,11 +110,11 @@ mutable struct Supervisor
     const owner_instance::Int64
     has_sample::Bool
     last_sequence::UInt64
-    last_sample_ns::UInt64
-    last_observed_ns::UInt64
+    last_sample_ns::Int64
+    last_observed_ns::Int64
     last_fraction::Union{Nothing,Float64}
     pending::Bool
-    pending_since_ns::UInt64
+    pending_since_ns::Int64
     tripped::Bool
     trip_reason::Union{Nothing,Symbol}
 
@@ -169,9 +182,9 @@ function observe!(
     configuration.enabled || return Recommendation(:none, :disabled, false)
     owner(owner_instance) && owner_instance == supervisor.owner_instance ||
         return reject!(supervisor, :wrong_owner)
-    unsigned(sequence) && unsigned(sample_ns) && unsigned(now_ns) ||
+    unsigned(sequence) && ticks(sample_ns) && ticks(now_ns) ||
         return reject!(supervisor, :malformed_sample)
-    sequence, sample_ns, now_ns = UInt64(sequence), UInt64(sample_ns), UInt64(now_ns)
+    sequence, sample_ns, now_ns = UInt64(sequence), Int64(sample_ns), Int64(now_ns)
     sample_ns <= now_ns || return reject!(supervisor, :future_sample)
     if supervisor.has_sample && (
         sequence <= supervisor.last_sequence ||
@@ -180,13 +193,13 @@ function observe!(
     )
         return reject!(supervisor, :stale_sample)
     end
-    now_ns - sample_ns <= configuration.max_gap_ns ||
+    within(now_ns, sample_ns, configuration.max_gap_ns) ||
         return reject!(supervisor, :stale_sample)
     contiguous =
         !supervisor.has_sample || (
             sequence - supervisor.last_sequence == 1 &&
-            sample_ns - supervisor.last_sample_ns <= configuration.max_gap_ns &&
-            now_ns - supervisor.last_observed_ns <= configuration.max_gap_ns
+            within(sample_ns, supervisor.last_sample_ns, configuration.max_gap_ns) &&
+            within(now_ns, supervisor.last_observed_ns, configuration.max_gap_ns)
         )
     supervisor.has_sample = true
     supervisor.last_sequence = sequence
@@ -210,7 +223,7 @@ function observe!(
         supervisor.pending_since_ns = sample_ns
     end
     if supervisor.pending &&
-        sample_ns - supervisor.pending_since_ns >= configuration.persistence_ns
+        !within(sample_ns, supervisor.pending_since_ns, configuration.persistence_ns - 1)
         supervisor.tripped = true
         supervisor.trip_reason = :persistent_clipping
         return Recommendation(configuration.action, supervisor.trip_reason, true)
@@ -232,10 +245,10 @@ function rearm!(supervisor::Supervisor, owner_instance, sequence; now_ns)
     owner_instance == supervisor.owner_instance &&
     unsigned(sequence) &&
     sequence == supervisor.last_sequence &&
-    unsigned(now_ns) || return false
-    now_ns = UInt64(now_ns)
+    ticks(now_ns) || return false
+    now_ns = Int64(now_ns)
     now_ns >= supervisor.last_observed_ns &&
-    now_ns - supervisor.last_sample_ns <= supervisor.configuration.max_gap_ns &&
+    within(now_ns, supervisor.last_sample_ns, supervisor.configuration.max_gap_ns) &&
     supervisor.last_fraction !== nothing &&
     supervisor.last_fraction <= supervisor.configuration.clear_fraction || return false
     supervisor.tripped = false

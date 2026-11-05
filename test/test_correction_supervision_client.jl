@@ -1,4 +1,5 @@
 module CorrectionSupervisionClientTests
+import Clocks
 using Test, PipeWireAORTC
 const CS = PipeWireAORTC.CorrectionSupervision
 const CR = PipeWireAORTC.CorrectionRecovery
@@ -28,7 +29,7 @@ function SupervisionTransport(outputs = (:left,); action = "monitor_only", mode 
             ("state", "Tripped"),
             ("action", action),
             ("sequence", "100"),
-            ("observed-ns", string(recovery.now_ns)),
+            ("observed-ns", string(Clocks.time_nanos(recovery.clock))),
             ("trip-sequence", "90"),
             ("trip-ns", "900000000"),
             ("max-gap-ns", "1000000000"),
@@ -41,23 +42,23 @@ function SupervisionTransport(outputs = (:left,); action = "monitor_only", mode 
 end
 CR.transport_instance(t::SupervisionTransport) = CR.transport_instance(t.recovery)
 CR.transport_initial_token(t::SupervisionTransport) = CR.transport_initial_token(t.recovery)
-CR.transport_clock_ns(t::SupervisionTransport) = CR.transport_clock_ns(t.recovery)
+CR.transport_clock(t::SupervisionTransport) = CR.transport_clock(t.recovery)
 CR.transport_pause!(t::SupervisionTransport, seconds::Float64) =
     CR.transport_pause!(t.recovery, seconds)
 function CR.request_native!(
-    t::SupervisionTransport, command::Runner.RunnerCommand; deadline::Float64, check
+    t::SupervisionTransport, command::Runner.RunnerCommand; deadline::Int64, check
 )
     if t.recovery.mode === :expired_trigger && t.property_reads == 1
         # Supervision was fresh when queried, but admission's readiness read
         # completes after its evidence expiry and before the caller deadline.
-        t.recovery.now_ns += UInt64(2_000_000)
+        Clocks.advance!(t.recovery.clock, Int64(2_000_000))
     end
     return CR.request_native!(t.recovery, command; deadline, check)
 end
 function CR.request_native!(
     t::SupervisionTransport,
     command::Runner.RunnerCommand{:properties};
-    deadline::Float64,
+    deadline::Int64,
     check,
 )
     t.property_reads += 1
@@ -79,7 +80,7 @@ end
 set_status!(t, output, field, value) =
     (t.properties[CS.OBSERVATION_PREFIX*string(output)*"."*field] = scalar(value); t)
 client(t, outputs = (:left,)) = CS.Client(t, "science", outputs)
-poll!(c) = CS.poll!(c; deadline = 2.0)
+poll!(c) = CS.poll!(c; deadline = Int64(2_000_000_000))
 
 @testset "Monitor-only supervision never changes correction" begin
     t = SupervisionTransport()
@@ -147,7 +148,7 @@ end
         ("observed-ns", "18446744073709551615"),
         ("trip-sequence", "101"),
         ("trip-ns", "1000000001"),
-        ("trip-ns", "0"),
+        ("trip-ns", "-9223372036854775809"),
         ("max-gap-ns", "0"),
         ("max-gap-ns", "nan"),
         ("sequence", Int64(100)),
@@ -187,19 +188,17 @@ end
     maximum = string(typemax(UInt64))
     set_status!(t, :left, "sequence", maximum)
     set_status!(t, :left, "trip-sequence", maximum)
-    set_status!(t, :left, "max-gap-ns", maximum)
+    set_status!(t, :left, "max-gap-ns", string(typemax(Int64)))
     result = poll!(client(t))
     @test only(result.observed).sequence === typemax(UInt64)
     @test only(result.observed).trip_sequence === typemax(UInt64)
     @test result.state === :Monitoring && isempty(t.recovery.writes)
-    # A full-domain unsigned duration saturates expiry rather than wrapping
-    # into the past when added to a nonzero observation clock.
+    # A signed duration whose absolute expiry cannot fit fails before effects.
     t = SupervisionTransport(; action = "restore_reference")
-    set_status!(t, :left, "max-gap-ns", maximum)
-    result = poll!(client(t))
-    @test result.state === :Holding
-    @test only(t.recovery.writes).first == "pipewireao-recovery:request-token"
-    @test isempty(writes(t.recovery, "correction:closed"))
+    set_status!(t, :left, "max-gap-ns", string(typemax(Int64)))
+    c = client(t)
+    @test_throws OverflowError poll!(c)
+    @test c.state === :Unverified && isempty(t.recovery.writes)
     for field in ("observed-ns", "trip-ns")
         t = SupervisionTransport(; action = "restore_reference")
         set_status!(t, :left, field, maximum)
@@ -240,7 +239,7 @@ end
     c = client(t)
     @test_throws ControlClient.UnknownOutcome poll!(c)
     @test c.state === :Unverified
-    @test t.recovery.now_ns < 2_000_000_000
+    @test Clocks.time_nanos(t.recovery.clock) < 2_000_000_000
     @test isempty(t.recovery.writes)
     reads = (t.property_reads, t.recovery.token)
     @test_throws ControlClient.UnknownOutcome poll!(c)
@@ -252,7 +251,7 @@ end
     set_status!(t, :left, "max-gap-ns", "1000000")
     result = poll!(client(t))
     @test result.state === :Holding
-    @test t.recovery.now_ns > 1_001_000_000
+    @test Clocks.time_nanos(t.recovery.clock) > 1_001_000_000
     @test only(t.recovery.writes).first == "pipewireao-recovery:request-token"
 end
 
@@ -266,7 +265,7 @@ end
     # Test the recovery admission fence independently of supervision parsing.
     base = ScriptedTransport()
     @test_throws ControlClient.UnknownOutcome CR.protective_open!(
-        base, "science"; deadline = 2.0, expected_owner = base.owner + 1
+        base, "science"; deadline = Int64(2_000_000_000), expected_owner = base.owner + 1
     )
     @test isempty(base.writes)
 
@@ -293,4 +292,32 @@ end
         @test before == (t.property_reads, length(t.recovery.writes), t.recovery.token)
     end
 end
+@testset "Signed supervision publication has exact freshness and no zero sentinel" begin
+    for origin in (Int64(-1_000_000_000), Int64(0), Int64(2)^53 + 1)
+        for (gap, expected) in ((200_000, :Monitoring), (199_999, :Unknown))
+            transport = SupervisionTransport()
+            Clocks.update!(transport.recovery.clock, origin)
+            set_status!(transport, :left, "observed-ns", string(origin))
+            set_status!(transport, :left, "trip-ns", string(origin))
+            set_status!(transport, :left, "max-gap-ns", string(gap))
+            result = CS.poll!(client(transport); deadline = origin + 1_000_000_000)
+            @test result.state === expected
+            @test only(result.observed).observed_ns === origin
+            @test isempty(transport.recovery.writes)
+        end
+    end
+    transport = SupervisionTransport()
+    set_status!(transport, :left, "trip-ns", "0")
+    @test poll!(client(transport)).state === :Monitoring
+    transport = SupervisionTransport(; action = "restore_reference")
+    Clocks.update!(transport.recovery.clock, -1_000_000_000)
+    transport.recovery.source_ns = -1_000_000_000
+    set_status!(transport, :left, "observed-ns", "-1000000000")
+    set_status!(transport, :left, "trip-ns", "-1000000000")
+    result = CS.poll!(client(transport); deadline = Int64(0))
+    @test result.state === :Holding
+    @test CR.state(result.operation.coordinator) === :Holding
+end
+
+
 end

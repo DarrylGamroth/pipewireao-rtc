@@ -1,3 +1,4 @@
+import Clocks
 using Test, PipeWireAORTC, PipeWireAO
 
 const CL = PipeWireAORTC.CorrectionLoops
@@ -25,7 +26,7 @@ const CL = PipeWireAORTC.CorrectionLoops
         @test CL.state(sm) === :Closing
         @test sm.failure === nothing
         # Only the serialized control observation can dispatch the fault.
-        CL.expire!(sm, time_ns(), observer.timeout_ns)
+        CL.expire!(sm, Clocks.time_nanos(observer.clock), observer.timeout_ns)
         @test CL.state(sm) === :Unknown
         @test sm.failure === :adoption_timeout
         @test sm.pending_since_ns == 0
@@ -73,12 +74,10 @@ end
 end
 
 @testset "Early native wakes preserve the original adoption deadline" begin
-    now = Ref(UInt64(0))
+    now = Clocks.CachedNanoClock(0)
     loop = ThreadLoop("correction-control-rearm")
     wakes = Threads.Atomic{Int}(0)
-    observer = CL.Observer(
-        ["correction:closed"], Int64(25); timeout_ms = 50, clock = () -> now[]
-    )
+    observer = CL.Observer(["correction:closed"], Int64(25); timeout_ms = 50, clock = now)
     sm = only(observer.loops)
     CL.observed!(sm, sm.instance, 0, 0, false)
     CL.attach_timers!(observer, loop, () -> Threads.atomic_add!(wakes, 1))
@@ -87,14 +86,14 @@ end
         CL.requested!(sm, sm.instance, 1, 0, true)
         update_timer!(sm.timer; delay = 0.001)
         @test timedwait(() -> wakes[] > 0, 5; pollint = 0.005) === :ok
-        now[] = UInt64(10_000_000)
-        CL.expire!(sm, now[], observer.timeout_ns)
+        Clocks.update!(now, Int64(10_000_000))
+        CL.expire!(sm, Clocks.time_nanos(now), observer.timeout_ns)
         @test CL.state(sm) === :Closing
         @test sm.pending_since_ns == 0
         count = wakes[]
         @test timedwait(() -> wakes[] > count, 5; pollint = 0.005) === :ok
-        now[] = UInt64(50_000_000)
-        CL.expire!(sm, now[], observer.timeout_ns)
+        Clocks.update!(now, Int64(50_000_000))
+        CL.expire!(sm, Clocks.time_nanos(now), observer.timeout_ns)
         @test sm.failure === :adoption_timeout
         @test CL.state(sm) === :Unknown
     finally

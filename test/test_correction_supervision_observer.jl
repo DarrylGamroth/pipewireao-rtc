@@ -1,20 +1,17 @@
+import Clocks
 using Test, PipeWireAORTC, PipeWireAO
 const CSO = PipeWireAORTC.CorrectionSupervision
 const OBS_SCHEMA = "pipewireao/pdm-constraint-feedback-f32/1"
 
 # Public format/metadata shape without loading optional scientific packages.
 # The extension integration selector separately exercises actual public types.
-mutable struct ObserverClock
-    now::UInt64
-end
-(clock::ObserverClock)() = clock.now
 const OBS_FORMATS = (
     feedback = (
         element_type = Float32, shape = (4,), layout = :row_major, schema = OBS_SCHEMA
     ),
 )
 function observer_inputs(; tolerance = 0.1, action = :monitor_only)
-    clock = ObserverClock(1000)
+    clock = Clocks.CachedNanoClock(1000)
     configuration = CSO.Configuration(;
         trip_fraction = 0.5,
         clear_fraction = 0.0,
@@ -36,7 +33,7 @@ header(sequence; offset = 0, corrupted = false, discontinuity = false) = (;
     timestamp_nanoseconds = Int64(-10),
 ) # Model PTS is deliberately unusable.
 function frame!(observer, clock, sequence, now, feedback; metadata = header(sequence))
-    clock.now = now
+    Clocks.update!(clock, now)
     observer(Val(:frame), (; feedback), (; feedback = metadata))
     return only(CSO.snapshot(observer))
 end
@@ -153,13 +150,13 @@ end
         PipeWireAO.SPA.Props
     frame!(observer, clock, 1, 1000, zeros(Float32, 4))
     # The control getter must never mutate the single-writer Supervisor.
-    clock.now = 1061
+    Clocks.update!(clock, 1061)
     observer(PipeWireAO.SPA.Props(Pair{String,PipeWireAO.Pod}[]), true)
     @test CSO.state(binding.supervisor) === :Clear
 end
 
 function observer_allocation(observer, clock, outputs, metadata)
-    clock.now += 1
+    Clocks.advance!(clock, 1)
     return @allocated observer(Val(:frame), outputs, metadata)
 end
 @testset "Warm callback allocation budget" begin
@@ -241,7 +238,7 @@ end
     captured = @atomic observer.rearm.request_token
     frame!(observer, clock, 4, 1150, zeros(Float32, 4))
     token = CSO.request_rearm!(observer, 701)
-    CSO.adopt_rearm!(observer, captured, UInt64(1150))
+    CSO.adopt_rearm!(observer, captured, Int64(1150))
     @test CSO.rearm_status(observer).requested_token == token
     @test only(CSO.snapshot(observer)).state === :Tripped
     frame!(observer, clock, 5, 1200, zeros(Float32, 4))
@@ -257,7 +254,7 @@ end
     high = fill(0.2f0, 4)
     clear = zeros(Float32, 4)
     for (sequence, now) in ((1, 1000), (2, 1050), (3, 1100))
-        clock.now = now
+        Clocks.update!(clock, now)
         observer(
             Val(:frame),
             (; left = high, right = high),
@@ -266,14 +263,14 @@ end
     end
     @test all(s -> s.state === :Tripped, CSO.snapshot(observer))
     token = CSO.request_rearm!(observer, 701)
-    clock.now = 1150
+    Clocks.update!(clock, 1150)
     observer(
         Val(:frame), (; left = clear, right = high), (; left = header(4), right = header(4))
     )
     @test CSO.rearm_status(observer).result === :refused
     @test all(s -> s.state === :Tripped, CSO.snapshot(observer))
     @test CSO.request_rearm!(observer, 701) > token
-    clock.now = 1200
+    Clocks.update!(clock, 1200)
     observer(
         Val(:frame),
         (; left = clear, right = clear),
@@ -284,8 +281,8 @@ end
 end
 
 function successful_frame_allocation(observer, clock, outputs)
-    clock.now += 1
-    metadata = (feedback = header(clock.now),)
+    Clocks.advance!(clock, 1)
+    metadata = (feedback = header(Clocks.time_nanos(clock)),)
     return @allocated observer(Val(:frame), outputs, metadata)
 end
 @testset "Successful and rearm callback allocation budgets" begin
@@ -307,7 +304,7 @@ end
     seen_first = Threads.Atomic{Bool}(false)
     writer = Threads.@spawn begin
         for sequence in UInt64(1):UInt64(20000)
-            clock.now = sequence + 1000
+            Clocks.update!(clock, sequence + 1000)
             observer(Val(:frame), (feedback = values,), (feedback = header(sequence),))
             if sequence == 1
                 while !seen_first[]
@@ -378,7 +375,7 @@ end
     observer, clock, _ = observer_inputs()
     outputs = (feedback = fill(0.2f0, 4), unrelated = zeros(Float32, 1))
     for (sequence, now, present) in ((1, 1000, true), (2, 1050, false), (3, 1100, true))
-        clock.now = now
+        Clocks.update!(clock, now)
         # The absent value is deliberately a valid stale header: it must never
         # count as an observation or accidentally repair continuity.
         metadata = (
@@ -408,4 +405,39 @@ end
     @test PipeWireAO.pod_value(String, pod) == "60"
     info = only(info for info in CSO.property_info(observer) if info.name == name)
     @test !iszero(info.flags & PipeWireAO.SPA.PROPERTY_READONLY)
+end
+
+mutable struct CountingSupervisionClock <: Clocks.AbstractNanoClock
+    now::Int64
+    reads::Int
+end
+function Clocks.time_nanos(clock::CountingSupervisionClock)
+    clock.reads += 1
+    return clock.now
+end
+@testset "Signed frame time is sampled once and published without zero sentinels" begin
+    _, _, policy = observer_inputs()
+    for origin in (Int64(-100), Int64(0), Int64(2)^53 + 1)
+        clock = CountingSupervisionClock(origin, 0)
+        observer = CSO.Observer(
+            OBS_FORMATS, (; feedback = policy); owner_instance = 701, clock
+        )
+        for (sequence, offset) in ((1, 0), (2, 50), (3, 100))
+            clock.now = origin + offset
+            before = clock.reads
+            observer(
+                Val(:frame), (; feedback = fill(0.2f0, 4)), (; feedback = header(sequence))
+            )
+            @test clock.reads == before + 1
+        end
+        value = only(CSO.snapshot(observer))
+        @test value.state === :Tripped && value.trip_ns === origin + 100
+        before = clock.reads
+        extras = observer(PipeWireAO.SPA.Props(), true)
+        @test clock.reads == before + 1
+        published = Dict(extras.values)
+        @test PipeWireAO.pod_value(
+            String, published[CSO.OBSERVATION_PREFIX*"feedback.trip-ns"]
+        ) == string(origin + 100)
+    end
 end

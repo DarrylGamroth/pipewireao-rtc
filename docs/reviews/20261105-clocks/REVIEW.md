@@ -128,3 +128,40 @@ executed in that attempt. After the edit was finished, the primary's aggregate
 rerun passed all 726 calibration assertions
 (`/tmp/rtc-clk04-root-final-20261105.log`). Formatting is idempotent with parsed
 syntax/literal equality, and whitespace checks pass.
+
+## CLK-05: correction, recovery and supervision
+
+Correction loops, recovery and supervision retain signed host timestamps and
+durations directly, without Common/callable adapters. Each observer/driver cycle
+samples its source first and updates its owned CachedNanoClock. Snapshot queries
+are staged for the next decision cycle so receipts produced during a query are
+compared with that cycle's later sample. Producer timestamps, tokens, generations
+and sequence widths remain separate. Native session transports use the bound
+client's clock rather than assuming the system clock domain.
+
+Elapsed/freshness comparisons widen arithmetic. Regression and deadline overflow
+fail closed without retry. An overflowing standalone correction request latches
+Unknown before transition/timer setup; a late readback cannot revive it. Signed
+zero/negative samples use explicit presence rather than positive-time sentinels.
+The existing expiry-before-adoption rule and published field names are preserved;
+decimal host-time readers now accept signed values.
+
+The primary aggregate passes 1,750 assertions across 99 testsets; an additional
+two assertions verify native transport clock-domain propagation. The final bound
+client selector passes after that addition. Optional graph observer checks pass
+46 and private-core timers 56. Source review caught and resolved the standalone
+overflow transition and native transport clock-domain seams. Formatting preserves
+parsed syntax/literals and is idempotent; whitespace checks pass.
+
+The first primary aggregate selected an optional graph observer without its
+science environment and stopped at a missing FilterGraphAlgorithms import. It
+was rerun with only core selectors; the separate optional selector uses the
+science environment. This was a harness/environment error, not a package failure.
+
+Local logs: `/tmp/rtc-clk05-root-final-20261105.log`,
+`/tmp/rtc-clk05-bound-client-final-20261105.log`,
+`/tmp/rtc-clk05-recovery-final-20261105.log`,
+`/tmp/rtc-clk05-native-final-20261105.log`, and
+`/tmp/rtc-clk05-standalone-overflow-20261105.log`. These checks do not qualify
+physical recovery, deadlines or hardware. Existing warmed Hsm allocation checks
+are recorded under CLK-04.
