@@ -222,7 +222,7 @@ end
             write(path, JSON.json(paced))
             parsed = Owner.configuration(path)
             @test parsed.pacing_rate_hz == pacing
-            @test parsed.pacing_period_ns == UInt64(period)
+            @test parsed.pacing_period_ns === Int64(period)
             @test parsed.period_ns == options.period_ns
             @test parsed.exposure_ns == options.exposure_ns
         end
@@ -565,3 +565,66 @@ end
 end
 
 Base.include(@__MODULE__, joinpath(@__DIR__, "test_aos_plant_loading.jl"))
+
+# SourceControl is transport-neutral at its owner commit boundary. The concrete
+# optical OwnerState lives in the optional AOS extension; this state exercises
+# the same public fields without loading science packages or native resources.
+mutable struct SourcePacingState
+    running::Bool
+    completed::Bool
+    sequence::UInt64
+    last_request_id::Int64
+    deadline_ns::Int64
+    host_ns::Union{Nothing,Int64}
+end
+SourcePacingState() = SourcePacingState(false, false, 0, 0, 0, nothing)
+
+@testset "signed source pacing preserves Pause Run Reset and fences invalid clocks" begin
+    control = PipeWireAORTC.SourceControl
+    for origin in (typemin(Int64), -Int64(2)^60, Int64(2)^53 + 1)
+        state = SourcePacingState()
+        resets = Ref(0)
+        reset = () -> (resets[] += 1)
+        @test control.apply!(state, control.RUN, Int64(1), true, origin, Int64(1), reset) ==
+            0
+        @test state.running && state.deadline_ns === origin + 1
+        state.sequence = 17
+        @test control.apply!(
+            state, control.RUN, Int64(2), false, origin + 1, Int64(1), reset
+        ) == 0
+        @test !state.running && state.sequence === UInt64(17)
+        @test control.apply!(
+            state, control.RUN, Int64(3), true, origin + 2, Int64(1), reset
+        ) == 0
+        @test state.running &&
+            state.sequence === UInt64(17) &&
+            state.deadline_ns === origin + 3
+        @test control.apply!(
+            state, control.RESET, Int64(4), false, origin + 3, Int64(1), reset
+        ) == -Base.Libc.EBUSY
+        @test resets[] == 0 && state.sequence == 17
+        @test control.apply!(
+            state, control.RUN, Int64(5), false, origin + 4, Int64(1), reset
+        ) == 0
+        @test control.apply!(
+            state, control.RESET, Int64(6), false, origin + 5, Int64(1), reset
+        ) == 0
+        @test resets[] == 1 && state.sequence === UInt64(0) && state.host_ns === origin + 5
+        @test_throws ArgumentError control.apply!(
+            state, control.RUN, Int64(7), true, origin + 4, Int64(1), reset
+        )
+        @test !state.running && state.last_request_id == 6 && state.host_ns === origin + 5
+    end
+    state = SourcePacingState()
+    @test_throws OverflowError control.apply!(
+        state, control.RUN, Int64(1), true, typemax(Int64), Int64(1), () -> nothing
+    )
+    @test !state.running && state.deadline_ns === Int64(0)
+    state = SourcePacingState()
+    @test_throws ArgumentError control.apply!(
+        state, control.RUN, Int64(1), true, Int64(0), Int64(-1), () -> nothing
+    )
+    @test state.last_request_id == 0 && state.host_ns === nothing
+    @test Owner.pacing_period(0, 500) === Int64(0)
+    @test_throws ArgumentError Owner.pacing_period(1e-10, 500)
+end

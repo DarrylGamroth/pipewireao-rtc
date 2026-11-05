@@ -15,6 +15,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
 using UUIDs, SHA
 import PipeWireAORTC
+import Clocks
 import PipeWireAORTC.Common: prepare_reference_clock
 const IC = PipeWireAORTC.InstrumentConfiguration
 
@@ -359,7 +360,14 @@ function report!(options, mailbox, state)
     return nothing
 end
 
-function consume_control!(options, mailbox, filter, state, reset_owner!)
+function consume_control!(
+    options,
+    mailbox,
+    filter,
+    state,
+    reset_owner!;
+    now_ns::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
+)
     mailbox.ready[] || return nothing
     loop = options.bootstrap_runtime.transport.loop
     kind, token, running = with_thread_loop_lock(loop) do _
@@ -367,7 +375,7 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
     end
     if kind != SourceControl.INITIAL
         result = SourceControl.apply!(
-            state, kind, token, running, time_ns(), UInt64(1), reset_owner!
+            state, kind, token, running, now_ns, Int64(1), reset_owner!
         )
         kind == SourceControl.RESET && result == 0 && report!(options, mailbox, state)
         with_thread_loop_lock(loop) do _
@@ -587,7 +595,8 @@ Base.@nospecializeinfer function run_streams!(
     state,
     execution,
     @nospecialize(owner),
-    @nospecialize(ticket)
+    @nospecialize(ticket);
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     @info "Optical owner startup" phase = :streams_entry at_ns = time_ns()
     runtime = options.bootstrap_runtime
@@ -675,7 +684,8 @@ Base.@nospecializeinfer function run_streams!(
                 upstream_generation = UInt64(0)
             end
         while !Bootstrap.cancelled(runtime)
-            consume_control!(options, mailbox, filter, state, reset_owner!)
+            now_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
+            consume_control!(options, mailbox, filter, state, reset_owner!; now_ns)
             Bootstrap.cancelled(runtime) && break
             all(
                 index -> !array_stream_status(owner, index).failed, eachindex(owner.streams)
@@ -691,7 +701,8 @@ Base.@nospecializeinfer function run_streams!(
                     )
                     copyto!(command, incoming_command)
                 end
-                if !state.running || time_ns() < state.deadline_ns
+                if !state.running ||
+                    (options.pacing_period_ns != 0 && now_ns < state.deadline_ns)
                     sleep(0.001)
                     continue
                 end
@@ -700,9 +711,11 @@ Base.@nospecializeinfer function run_streams!(
                         emit, science, command; generation = UInt64(state.generation)
                     )
                 end
+                # This owner intentionally waits one period after actual step completion.
+                finished_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
                 state.deadline_ns =
-                    options.pacing_period_ns == 0 ? UInt64(0) :
-                    time_ns() + options.pacing_period_ns
+                    options.pacing_period_ns == 0 ? Int64(0) :
+                    Base.checked_add(finished_ns, options.pacing_period_ns)
                 continue
             end
             receipt = drain_pipewire_array!(packet, owner, 1)

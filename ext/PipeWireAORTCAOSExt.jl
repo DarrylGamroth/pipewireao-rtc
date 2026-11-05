@@ -6,6 +6,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL
 using PipeWireAO
 using YAML
+import Clocks
 
 const Owner = PipeWireAORTC.AOSOwner
 const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
@@ -27,10 +28,11 @@ mutable struct OwnerState
     completed::Bool
     sequence::UInt64
     last_request_id::Int64
-    deadline_ns::UInt64
+    deadline_ns::Int64
     generation::Int64
+    host_ns::Union{Nothing,Int64}
 end
-OwnerState() = OwnerState(false, false, 0, 0, 0, 1)
+OwnerState() = OwnerState(false, false, 0, 0, 0, 1, nothing)
 
 target_device(::Val{:cpu}, device) = Backends.HostComputeDevice()
 target_device(::Val{:cuda}, device) =
@@ -285,7 +287,14 @@ end
 # The idle poll forwards this callable; explicit specialization keeps its
 # prepared science captures from being boxed again on every poll.
 function consume_control!(
-    options, mailbox, pipewire, state, pacing_period, reset_owner!::F, phase = nothing
+    options,
+    mailbox,
+    pipewire,
+    state,
+    pacing_period::Int64,
+    reset_owner!::F,
+    phase = nothing;
+    now_ns::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
 ) where {F}
     mailbox.ready[] || return nothing
     kind, token, requested_running = with_frame_stream(pipewire) do _
@@ -297,8 +306,8 @@ function consume_control!(
             kind,
             token,
             requested_running,
-            time_ns(),
-            max(pacing_period, UInt64(1)),
+            now_ns,
+            max(pacing_period, Int64(1)),
             reset_owner!,
         )
         request_generation = Int64(frame_acquisition_generation(pipewire))
@@ -321,8 +330,20 @@ function consume_control!(
     return nothing
 end
 
-function wait_registered!(pipewire, runtime, ticket, pupil = nothing)
+function wait_registered!(
+    pipewire,
+    runtime,
+    ticket,
+    pupil = nothing;
+    clock::Clocks.AbstractNanoClock = runtime.transport.endpoint.clock,
+)
+    previous = nothing
     while true
+        now_ns = Clocks.time_nanos(clock)::Int64
+        previous === nothing ||
+            now_ns >= previous ||
+            throw(Bootstrap.Client.UnknownOutcome("source registration clock regressed"))
+        previous = now_ns
         Bootstrap.check_connect!(runtime, ticket)
         registered = with_frame_stream(pipewire) do frame
             streams = (frame, command_streams(pipewire.command_stream)...)
@@ -337,14 +358,19 @@ function wait_registered!(pipewire, runtime, ticket, pupil = nothing)
         end
         Bootstrap.check_connect!(runtime, ticket)
         registered && PupilOutput.registered(pupil) && return nothing
-        sleep(min(0.005, max(0.0, ticket.deadline - Bootstrap.Client.monotonic())))
+        sleep(Float64(clamp(widen(ticket.deadline) - now_ns, 0, 5_000_000)) / 1e9)
     end
 end
 
-function next_deadline(deadline::UInt64, period::UInt64, now::UInt64)
-    candidate = Base.checked_add(deadline, period)
-    missed = now >= candidate ? div(now - candidate, period) + UInt64(1) : UInt64(0)
-    return Base.checked_add(candidate, Base.checked_mul(missed, period))
+# Pacing skips elapsed wall periods without skipping scientific model steps.
+function next_deadline(deadline::Int64, period::Int64, now::Int64)
+    period > 0 || throw(ArgumentError("pacing period must be positive"))
+    candidate = widen(deadline) + period
+    missed = now >= candidate ? div(widen(now) - candidate, period) + 1 : Int128(0)
+    result = candidate + missed * period
+    typemin(Int64) <= result <= typemax(Int64) ||
+        throw(OverflowError("source pacing deadline exceeds signed nanoseconds"))
+    return Int64(result)
 end
 
 function run_prepared!(
@@ -355,7 +381,8 @@ function run_prepared!(
     mailbox,
     state,
     phase = nothing,
-    pupil = nothing,
+    pupil = nothing;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     runtime = options.bootstrap_runtime
     reset_owner! =
@@ -384,17 +411,25 @@ function run_prepared!(
     ticket = Bootstrap.take_connect!(runtime)
     Bootstrap.check_connect!(runtime, ticket)
     start!(pipewire)
-    wait_registered!(pipewire, runtime, ticket, pupil)
+    wait_registered!(pipewire, runtime, ticket, pupil; clock)
     Bootstrap.connected!(runtime, ticket)
     Bootstrap.await_connected!(runtime, ticket)
     println("SIMULATOR_CONNECTED sequence=0 held=true")
     flush(stdout)
     while !Bootstrap.cancelled(runtime)
+        now_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
         consume_control!(
-            options, mailbox, pipewire, state, options.pacing_period_ns, reset_owner!, phase
+            options,
+            mailbox,
+            pipewire,
+            state,
+            options.pacing_period_ns,
+            reset_owner!,
+            phase;
+            now_ns,
         )
         Bootstrap.cancelled(runtime) && break
-        if !state.running || time_ns() < state.deadline_ns
+        if !state.running || (options.pacing_period_ns != 0 && now_ns < state.deadline_ns)
             yield()
             GC.safepoint()
             continue
@@ -411,11 +446,16 @@ function run_prepared!(
             error("model-time sequence differs from source")
         frame_timing = completed_frame_timing(frame_command_timing(pipewire))
         PupilOutput.sample!(pupil; generation = UInt64(state.generation), model_ns)
-        OpticalObservation.sample!(observation, frame_timing, model_ns, time_ns())
-        optical_finished = timing === nothing ? UInt64(0) : time_ns()
+        # Throttle admission retains the completed-exchange host measurement.
+        completed_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
+        OpticalObservation.sample!(observation, frame_timing, model_ns, completed_ns)
+        # Observation enqueue/copy work finishes after its throttle decision.
+        # This distinct measurement preserves saved optical-finish timing and
+        # skip-to-next-phase pacing after all exchange/observation work.
+        optical_finished = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
         state.deadline_ns =
-            options.pacing_period_ns == 0 ? UInt64(0) :
-            next_deadline(state.deadline_ns, options.pacing_period_ns, time_ns())
+            options.pacing_period_ns == 0 ? Int64(0) :
+            next_deadline(state.deadline_ns, options.pacing_period_ns, optical_finished)
         timing === nothing || record_phase_timing!(
             phase, timing, frame_timing, deadline, optical_finished, state.deadline_ns
         )

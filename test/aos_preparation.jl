@@ -69,7 +69,7 @@ AdaptiveOpticsSimPipeWireHIL.frame_acquisition_generation(
         AOSReportControl.stage!(mailbox, AOSReportControl.RESET, Int64(1))
         transport = ReportControlTransport(1)
         @test_throws Base.IOError AOSReportExtension.consume_control!(
-            blocked, mailbox, transport, state, UInt64(0), () -> (transport.generation = 2)
+            blocked, mailbox, transport, state, Int64(0), () -> (transport.generation = 2)
         )
         @test state.sequence == 0
         @test mailbox.kind == AOSReportControl.RESET && mailbox.token == 1

@@ -2,6 +2,7 @@
 module PupilOutput
 
 import PipeWireAORTC
+import Clocks
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs:
     prepare_graph_output_snapshot,
@@ -146,7 +147,7 @@ function prepare(
             schema = boundary.schema,
             format = format,
             properties = extra,
-            reference_clock,
+            reference_clock = reference_clock,
             metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
         )
         bits = uuid4().value
@@ -303,14 +304,22 @@ function process_sample!(p, owner)
     return true
 end
 
-function worker!(p, remote, cpu)
+function worker!(p, remote, cpu; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
     cpu === nothing || ThreadPinning.pinthread(cpu)
+    # period_ns remains the UInt64 scientific exposure duration in published packets.
+    trigger_period = max(Int64(p.period_ns), Int64(100_000))
     with_array_streams((p.options,); remote, input = (false,)) do owner
         cpu === nothing || PipeWireAORTC.Placement.pin_loop!(owner.loop, cpu)
-        next_status = next_trigger = UInt64(0)
-        trigger_period = max(p.period_ns, UInt64(100_000))
+        next_status = next_trigger = previous = nothing
+        clock_failed = false
         while !p.stop[]
             try
+                now_ns = Clocks.time_nanos(clock)::Int64
+                if !clock_failed && previous !== nothing && now_ns < previous
+                    clock_failed = true
+                    error("pupil output monotonic clock regressed")
+                end
+                previous = now_ns
                 request = p.drain_request[]
                 if p.drained[] != request
                     reset_graph_output_snapshot!(p.snapshot)
@@ -325,11 +334,11 @@ function worker!(p, remote, cpu)
                     p.gaps[] = 0
                     p.flushed[] = p.generation[]
                 end
-                if !p.paused[] && !p.failed[]
+                if !clock_failed && !p.paused[] && !p.failed[]
                     process_sample!(p, owner)
                     # An unlinked source holds the latest packet. Never drive a
                     # native graph until it has a streaming consumer.
-                    if time_ns() >= next_trigger
+                    if next_trigger === nothing || now_ns >= next_trigger
                         pending = array_stream_status(owner, 1).pending
                         with_array_stream(owner, 1) do stream
                             p.registered[] =
@@ -344,12 +353,36 @@ function worker!(p, remote, cpu)
                                 is_driving(stream) &&
                                 trigger_process!(stream)
                         end
-                        next_trigger = time_ns() + trigger_period
+                        # Completion measurements preserve a full relative wait
+                        # after native work, separately from this cycle's decision.
+                        finished_ns = Clocks.time_nanos(clock)::Int64
+                        if finished_ns < previous
+                            clock_failed = true
+                            error("pupil output monotonic clock regressed")
+                        end
+                        previous = finished_ns
+                        next_trigger = try
+                            Base.checked_add(finished_ns, trigger_period)
+                        catch
+                            clock_failed = true
+                            rethrow()
+                        end
                     end
                 end
-                if time_ns() >= next_status
+                if !clock_failed && (next_status === nothing || now_ns >= next_status)
                     publish_status!(p, owner)
-                    next_status = time_ns() + UInt64(100_000_000)
+                    finished_ns = Clocks.time_nanos(clock)::Int64
+                    if finished_ns < previous
+                        clock_failed = true
+                        error("pupil output monotonic clock regressed")
+                    end
+                    previous = finished_ns
+                    next_status = try
+                        Base.checked_add(finished_ns, Int64(100_000_000))
+                    catch
+                        clock_failed = true
+                        rethrow()
+                    end
                 end
             catch failure
                 p.failed[] = true
@@ -383,12 +416,18 @@ function await!(predicate, p; check = () -> nothing)
 end
 
 start!(::Nothing; kwargs...) = nothing
-function start!(p::Publisher; remote, cpu = nothing, check = () -> nothing)
+function start!(
+    p::Publisher;
+    remote,
+    cpu = nothing,
+    check = () -> nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     Threads.nthreads(:default) >= 3 ||
         throw(ArgumentError("pupil output requires three Julia threads"))
     p.task = ThreadPinning.@spawnat 3 begin
         current_task().sticky = true
-        worker!(p, remote, cpu)
+        worker!(p, remote, cpu; clock)
     end
     # Compile the actual snapshot/packing path without emitting sequence zero.
     sample!(p; generation = p.generation[], model_ns = Int64(0)) ||

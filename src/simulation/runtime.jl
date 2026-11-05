@@ -54,15 +54,15 @@ function pacing_period(value::Real, rate)
     isfinite(value) && 0 <= value <= rate || throw(
         ArgumentError("pacing_rate_hz must be finite between zero and the model rate")
     )
-    value == 0 && return UInt64(0)
+    value == 0 && return Int64(0)
     return pacing_period_value(value)
 end
-pacing_period_value(value::Int) = UInt64(div(1_000_000_000 + div(value, 2), value))
+pacing_period_value(value::Int) = Int64(div(1_000_000_000 + div(value, 2), value))
 function pacing_period_value(value::Real)
     period = 1e9 / Float64(value)
-    isfinite(period) && 1 <= period < Float64(typemax(UInt64)) ||
-        throw(ArgumentError("pacing period must fit UInt64 nanoseconds"))
-    return round(UInt64, period)
+    isfinite(period) && 1 <= period < Float64(typemax(Int64)) ||
+        throw(ArgumentError("pacing period must fit signed Int64 nanoseconds"))
+    return round(Int64, period)
 end
 function identifier(value, label)
     name = text(value, label)

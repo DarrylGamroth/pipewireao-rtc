@@ -355,16 +355,32 @@ function report_ready!(mailbox::Mailbox, generation::Int64, sequence::UInt64)
     return nothing
 end
 
-"""Apply one validated request outside the PipeWire lock, between exchanges."""
+"""Retain a signed owner decision/completion sample; a regression fences the owner."""
+function observe_clock!(state, now::Int64)
+    previous = state.host_ns
+    previous === nothing ||
+        now >= previous ||
+        throw(ArgumentError("source monotonic clock regressed"))
+    state.host_ns = now
+    return now
+end
+
+"""Apply one validated request outside the PipeWire lock, between exchanges.
+
+The owner passes its one signed nanosecond decision sample for the current loop.
+The host pacing period is independent of scientific model/exposure durations.
+"""
 function apply!(
     state,
     kind::Int32,
     token::Int64,
     requested_running::Bool,
-    now::UInt64,
-    period::UInt64,
+    now::Int64,
+    period::Int64,
     reset_owner!::F,
 ) where {F}
+    period >= 0 || throw(ArgumentError("source pacing period must be nonnegative"))
+    observe_clock!(state, now)
     kind in (RUN, RESET, QUERY) || return Int32(-Base.Libc.EINVAL)
     token > state.last_request_id || return Int32(-Base.Libc.ESTALE)
     state.last_request_id = token

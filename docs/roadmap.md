@@ -62,6 +62,10 @@ and private-core timer checks pass.
 Deployment/systemd waits, session CLI, optional Analysis lifecycle and simulator
 replacement now forward signed deadlines and the same injected clock; 597
 combined software assertions pass without modifying services or placement.
+Optical host pacing and diagnostic/publisher throttles now use signed Clocks
+ticks while preserving completion-based pacing and scientific chronology; 495
+checks pass, including native Pause/Run continuity and allocation gates. Three
+cold preparation/worker waits remain, with full core integration running.
 
 ### Naming and Julia type dispatch — 2026-11-04
 

@@ -41,21 +41,27 @@ function record_phase_timing!(
     owner::OwnerPhaseTiming,
     timing::PipeWireExchangeTiming,
     frame::PipeWireFrameCommandTiming,
-    deadline::UInt64,
-    optical_finished::UInt64,
-    next_deadline::UInt64,
+    deadline::Int64,
+    optical_finished::Int64,
+    next_deadline::Int64,
 )
     timing.sequence == frame.sequence ||
         error("phase timing sequence differs from completed exchange")
+    # Saved rows and public HIL measurements retain their existing UInt64 ABI.
+    # Negative injected pacing origins are supported without this optional capture;
+    # a saved timing row cannot represent them and rejects before recording.
+    saved_deadline = UInt64(deadline)
+    saved_finished = UInt64(optical_finished)
+    saved_next = UInt64(next_deadline)
     period = owner.capture.period_ns
     missed =
         period == 0 ? UInt64(0) :
-        (next_deadline - Base.checked_add(deadline, period)) ÷ period
+        UInt64(div(widen(next_deadline) - (widen(deadline) + period), period))
     Base.gc_bytes(owner.allocated_bytes)
     row = (
         timing.generation,
         timing.sequence,
-        deadline,
+        saved_deadline,
         timing.started_ns,
         timing.ready_ns,
         timing.step_started_ns,
@@ -65,8 +71,8 @@ function record_phase_timing!(
         UInt64(frame.command_received_nanoseconds),
         timing.adoption_started_ns,
         timing.finished_ns,
-        optical_finished,
-        next_deadline,
+        saved_finished,
+        saved_next,
         missed,
         Base.gc_time_ns(),
         UInt64(owner.allocated_bytes[]),

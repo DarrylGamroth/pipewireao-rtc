@@ -39,7 +39,7 @@ const RMS_CHANNELS = (
         units = "nm OPD",
     ),
 )
-const PERIOD_NS = UInt64(50_000_000)
+const PERIOD_NS = Int64(50_000_000)
 const ZERO_PADDING = 2
 const RMS_SHAPE = (1, 2)
 
@@ -57,7 +57,8 @@ mutable struct Observation{S,U,I,V,M}
     completed::Atomic{UInt64}
     dropped::Atomic{UInt64}
     generation::UInt64
-    next_sample_ns::UInt64
+    next_sample_ns::Union{Nothing,Int64}
+    host_ns::Union{Nothing,Int64}
     task::Any
 end
 
@@ -199,7 +200,8 @@ function prepare(definition::AlgorithmGraphDefinition, graph; imaging = default_
             Atomic{UInt64}(0),
             Atomic{UInt64}(0),
             UInt64(0),
-            UInt64(0),
+            nothing,
+            nothing,
             nothing,
         )
     catch error
@@ -532,11 +534,23 @@ function sample!(
     observation::Observation,
     timing::PipeWireFrameCommandTiming,
     model_ns::Int64,
-    now::UInt64,
+    now::Int64,
 )
     observation.failed[] && return false
-    now < observation.next_sample_ns && return false
-    observation.next_sample_ns = now + PERIOD_NS
+    previous = observation.host_ns
+    if previous !== nothing && now < previous
+        observation.failed[] = true
+        return false
+    end
+    observation.host_ns = now
+    next = observation.next_sample_ns
+    next !== nothing && now < next && return false
+    observation.next_sample_ns = try
+        Base.checked_add(now, PERIOD_NS)
+    catch
+        observation.failed[] = true
+        return false
+    end
     pts = timing.source_published_nanoseconds
     admitted = try
         submit!(observation; generation = observation.generation, pts, model_time_ns = model_ns)
@@ -559,7 +573,7 @@ end
 
 reset!(::Nothing, pipewire; check = () -> nothing, cpu = nothing) = nothing
 function reset!(observation::Observation, pipewire; check = () -> nothing, cpu = nothing)
-    observation.next_sample_ns = 0
+    observation.next_sample_ns = nothing
     observation.failed[] = false
     warm!(observation, pipewire; check, cpu)
     return nothing

@@ -274,3 +274,61 @@ ControlClient/SystemdOwners retain their existing public seconds compatibility
 helpers, implemented directly with Clocks; maintained runtime callers use signed
 deadlines. Epoch/reference timestamps and scientific/model chronology remain
 outside this removal.
+
+## CLK-07: optical pacing and diagnostic throttle
+
+OwnerState, SourceControl and AOS/pupil/external-pupil callers use signed host
+ticks and bounded signed pacing periods. Each owner loop samples once for its
+cycle decisions; separate completion measurements preserve the existing overrun
+policy. AOS/pupil owners skip elapsed host periods without skipping scientific
+steps; clocked external-pupil processing waits one period after step completion.
+Zero pacing stays immediate. Host regression and checked deadline overflow refuse
+further timed work. The host watermark survives model reset. Offset observations
+share the owner cycle's sample, and publisher workers receive the injected clock.
+
+Optical diagnostic throttling retains post-exchange time. Publisher trigger/status
+throttles retain their relative wait after actual I/O completion. Independent
+review caught and resolved an intermediate migration that anchored these waits to
+cycle start: with 3 ms trigger work and a 2 ms period, or 150 ms status work and a
+100 ms period, the same test produced four/three effects instead of one before
+the fix. Separate checked completion measurements restore the full relative wait.
+
+Model/exposure durations, fixed scientific steps, generations/sequences and public
+HIL timing fields retain their representations. Saved PhaseTiming rows remain the
+existing UInt64 tuple ABI; signed owner values convert explicitly and reject
+negative values when optional timing capture is enabled. Ordinary negative-origin
+pacing works with that capture disabled. No timestamp reinterpretation/clamping
+was added at that saved-data boundary.
+
+Observed gates total 495 assertions: core source-control/declaration 263, external
+cold configuration 43, native-free preparation 42, timing/throttle/worker 72,
+idle allocation 8, native Pause/Run continuity 11 and CPU chronology/export 56.
+Idle checks retain zero bytes over 1/100/1,000 polls; timing checks include a
+zero-byte 1,000-cycle path. Primary and independent source reviews found no
+remaining material issue after the pacing fixes. Final repository formatting uses
+JuliaFormatter 2.14.8, preserves parsed syntax/literals and is idempotent.
+
+Two pre-existing integration defects were confirmed and narrowly corrected:
+PupilOutput passed `reference_clock` positionally to an all-keyword upstream
+constructor; its explicit keyword now permits real CPU preparation. A final
+constructor-only test input lacked the declared exposure records and represented
+ordinary sensors as chopped; it now declares 2 ms exposures and empty chopping,
+retaining its existing schema/storage/metadata assertions. Scientific production
+configuration and algorithms were not changed by that test correction.
+
+Interrupted concurrent extension compilation exposed cache-lock waits and missing
+build-ID warnings. Final selectors ran sequentially. A compile-min allocation
+probe, missing prefix/FITSIO setup attempts and the original failures remain in
+local logs; they are not promoted as runtime or allocation evidence. The native
+continuity run passed with precompile warnings; a clean released dependency
+cohort and graph cadence/GPU/hardware/deadline qualification remain separate.
+The three cold 30-second warmup/worker waits are the next slice.
+
+Local logs: `/tmp/rtc-clk07-core-final.log`,
+`/tmp/rtc-clk07-external-config.log`,
+`/tmp/rtc-clk07-preparation-stack.log`,
+`/tmp/rtc-clk07-timing-reviewed.log`, `/tmp/rtc-clk07-idle-final.log`,
+`/tmp/rtc-clk07-pupil-private-first.log`,
+`/tmp/rtc-clk07-pupil-cpu-complete.log`,
+`/tmp/rtc-clk07-regression-before.log`, and
+`/tmp/rtc-clk07-worker-relative-before.log`.

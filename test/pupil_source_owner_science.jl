@@ -117,7 +117,7 @@ end
                 AcquisitionIdentity(identity.domain, UInt64(1), UInt64(1)),
                 Int64(0),
                 UInt64(2_000_000);
-                now_ns = UInt64(1),
+                now_ns = Int64(1),
                 schema = c.schema,
                 calibration_identity = c.identity,
                 command_order = c.command_order,
@@ -243,7 +243,13 @@ end
             properties = Dict{String,String}(),
         ),
         sensors = (; llowfs = sensor, scc = sensor),
-        chopping = (; scc = nothing),
+        plant = (;
+            exposures = (;
+                llowfs = (; duration_ns = Int64(2_000_000)),
+                scc = (; duration_ns = Int64(2_000_000)),
+            ),
+        ),
+        chopping = (;),
     )
     names = (; llowfs = "llowfs", scc = "scc")
     for count in (2, 3, 64)

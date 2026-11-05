@@ -7,7 +7,7 @@ using AdaptiveOpticsSimPipeWireHIL
 
 const IdleOwnerExtension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 
-function idle_owner_polls!(options, mailbox, state, payload, count)
+function idle_owner_polls!(options, mailbox, state, payload, count, clock)
     reset_owner! = () -> begin
         options.owner_check()
         state.sequence = payload[1]
@@ -20,14 +20,21 @@ function idle_owner_polls!(options, mailbox, state, payload, count)
         # out of line. Enforce that boundary for the headless Nothing fixture;
         # otherwise inlining erases the unspecialized callback boxing defect.
         @noinline IdleOwnerExtension.consume_control!(
-            options, mailbox, nothing, state, period, reset_owner!, nothing
+            options,
+            mailbox,
+            nothing,
+            state,
+            period,
+            reset_owner!,
+            nothing;
+            now_ns = IdleOwnerExtension.Clocks.time_nanos(clock),
         )
     end
     return nothing
 end
 
-function idle_owner_bytes(options, mailbox, state, payload, count)
-    return @allocated idle_owner_polls!(options, mailbox, state, payload, count)
+function idle_owner_bytes(options, mailbox, state, payload, count, clock)
+    return @allocated idle_owner_polls!(options, mailbox, state, payload, count, clock)
 end
 
 println(
@@ -35,16 +42,17 @@ println(
 )
 
 @testset "idle AOS owner retains its locally captured reset callback" begin
-    options = (; pacing_period_ns = UInt64(2_000_000), owner_check = () -> nothing)
+    options = (; pacing_period_ns = Int64(2_000_000), owner_check = () -> nothing)
     mailbox = PipeWireAORTC.SourceControl.Mailbox(Int64(1))
     state = IdleOwnerExtension.OwnerState()
     payload = ntuple(index -> UInt64(index), 512)
+    clock = IdleOwnerExtension.Clocks.CachedNanoClock(Int64(0))
     @test !mailbox.ready[]
     @test sizeof(payload) == 4096
     for count in (1, 100, 1000)
-        idle_owner_polls!(options, mailbox, state, payload, count)
-        idle_owner_bytes(options, mailbox, state, payload, count)
-        bytes = idle_owner_bytes(options, mailbox, state, payload, count)
+        idle_owner_polls!(options, mailbox, state, payload, count, clock)
+        idle_owner_bytes(options, mailbox, state, payload, count, clock)
+        bytes = idle_owner_bytes(options, mailbox, state, payload, count, clock)
         println("AOS_IDLE_OWNER polls=$count bytes=$bytes")
         @test bytes == 0
     end

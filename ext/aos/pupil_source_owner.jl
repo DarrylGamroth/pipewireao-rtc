@@ -18,6 +18,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs:
     release_graph_output_snapshot!,
     reset_graph_output_snapshot!
 import PipeWireAORTC
+import Clocks
 const IC = PipeWireAORTC.InstrumentConfiguration
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Extension = parentmodule(@__MODULE__)
@@ -168,7 +169,14 @@ function report!(options, mailbox, state)
     return nothing
 end
 
-function consume_control!(options, mailbox, filter, state, reset_owner!)
+function consume_control!(
+    options,
+    mailbox,
+    filter,
+    state,
+    reset_owner!;
+    now_ns::Int64 = Clocks.time_nanos(Clocks.SystemNanoClock()),
+)
     mailbox.ready[] || return nothing
     loop = options.bootstrap_runtime.transport.loop
     kind, token, running = with_thread_loop_lock(loop) do _
@@ -180,8 +188,8 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
             kind,
             token,
             running,
-            time_ns(),
-            max(options.pacing_period_ns, UInt64(1)),
+            now_ns,
+            max(options.pacing_period_ns, Int64(1)),
             reset_owner!,
         )
         if result == 0
@@ -201,7 +209,14 @@ function consume_control!(options, mailbox, filter, state, reset_owner!)
     return nothing
 end
 
-function run!(options, science, prepared, mailbox, state)
+function run!(
+    options,
+    science,
+    prepared,
+    mailbox,
+    state;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+)
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     publisher = science.publisher
@@ -211,7 +226,9 @@ function run!(options, science, prepared, mailbox, state)
     applied_command = applied_command_option(options)
     applied_values =
         applied_command === nothing ? Float32[] : zeros(Float32, options.command_count)
-    Offsets.with_receiver(prepared; remote = options.remote, applied_command) do inputs
+    Offsets.with_receiver(
+        prepared; remote = options.remote, applied_command, clock
+    ) do inputs
         cpu = get(options, :pipewire_cpu, nothing)
         cpu === nothing || PipeWireAORTC.Placement.pin_loop!(
             inputs.transport.loop, cpu; check = options.owner_check
@@ -248,6 +265,7 @@ function run!(options, science, prepared, mailbox, state)
                 remote = options.remote,
                 cpu = get(options, :pupil_output_cpu, nothing),
                 check = () -> Bootstrap.check_connect!(runtime, ticket),
+                clock,
             )
             while true
                 Bootstrap.check_connect!(runtime, ticket)
@@ -290,14 +308,16 @@ function run!(options, science, prepared, mailbox, state)
                     )
                 end
             while !Bootstrap.cancelled(runtime)
-                consume_control!(options, mailbox, filter, state, reset_owner!)
+                now_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
+                consume_control!(options, mailbox, filter, state, reset_owner!; now_ns)
                 Bootstrap.cancelled(runtime) && break
-                if !state.running || time_ns() < state.deadline_ns
+                if !state.running ||
+                    (options.pacing_period_ns != 0 && now_ns < state.deadline_ns)
                     yield()
                     GC.safepoint()
                     continue
                 end
-                command = Offsets.poll!(inputs)
+                command = Offsets.poll!(inputs; now_ns)
                 state.sequence = step!(
                     science,
                     publisher,
@@ -306,10 +326,12 @@ function run!(options, science, prepared, mailbox, state)
                     generation = UInt64(state.generation),
                 )
                 observe_command!(inputs, applied_values, command, publisher, state)
+                # Separate exchange completion retains the existing missed-period policy.
+                finished_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
                 state.deadline_ns =
-                    options.pacing_period_ns == 0 ? UInt64(0) :
+                    options.pacing_period_ns == 0 ? Int64(0) :
                     Extension.next_deadline(
-                        state.deadline_ns, options.pacing_period_ns, time_ns()
+                        state.deadline_ns, options.pacing_period_ns, finished_ns
                     )
             end
         finally
