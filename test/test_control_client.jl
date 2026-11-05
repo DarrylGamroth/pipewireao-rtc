@@ -279,6 +279,13 @@ function Client.request!(probe::DeadlineProbe, command; deadline, check)
     throw(ProbeStopped())
 end
 
+@testset "controller instances retain positive nonreused identities" begin
+    first_instance = Client.next_instance()
+    next_instance = Client.next_instance()
+    @test 0 < first_instance < next_instance <= typemax(Int64)
+    @test next_instance == first_instance + 1
+end
+
 @testset "calibration default deadline uses its bound clock" begin
     actions = PipeWireAORTC.CalibrationActionClient
     codec = PipeWireAORTC.CalibrationActionCodec

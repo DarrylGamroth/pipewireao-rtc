@@ -86,7 +86,10 @@ function next_instance()
     return lock(INSTANCE_LOCK) do
         if NEXT_INSTANCE[] == 0
             # Seed on the first actual connection, never during precompilation.
-            NEXT_INSTANCE[] = Int64(time_ns() % UInt64(typemax(Int64) - 2)) + 1
+            # Identity seeds preserve the unsigned bit range of the clock tick;
+            # they are protocol identities, not monotonic deadlines.
+            seed = reinterpret(UInt64, Clocks.time_nanos(Clocks.SystemNanoClock()))
+            NEXT_INSTANCE[] = Int64(seed % UInt64(typemax(Int64) - 2)) + 1
         end
         instance = NEXT_INSTANCE[]
         instance < typemax(Int64) || throw(ArgumentError("controller instances exhausted"))

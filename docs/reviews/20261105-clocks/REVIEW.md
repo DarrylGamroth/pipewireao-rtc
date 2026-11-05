@@ -333,6 +333,28 @@ Local logs: `/tmp/rtc-clk07-core-final.log`,
 `/tmp/rtc-clk07-regression-before.log`, and
 `/tmp/rtc-clk07-worker-relative-before.log`.
 
+## CLK-09: identity seeds and elapsed report measurements
+
+The final non-deadline reads now use Clocks directly. Controller instance seeding
+explicitly converts the signed tick's bit pattern to the existing unsigned seed
+range before the original locked positive/nonreuse sequence. This is an identity
+boundary, not unsigned deadline arithmetic. Client checks pass 62, including the
+two identity range/nonreuse assertions.
+
+Pyramid modal validation accepts AbstractNanoClock for its host measurement.
+It samples at step start and separately at completion, widens elapsed subtraction,
+refuses regression and converts only the result to the existing `step_ms` report
+unit. Scientific model steps, outputs and report fields are unchanged. A fresh
+optional Calibration extension load passes three checks with this method present;
+a full scientific modal-validation run was not repeated. Formatting is idempotent
+and preserves parsed syntax/literals. Logs:
+`/tmp/rtc-clk09-client-final-20261105.log` and
+`/tmp/rtc-cold-calibration-extension-load.log`.
+
+`Base.gc_time_ns()` remains a cumulative diagnostic counter. Native recording
+epoch/reference clocks, wire identities and model/exposure chronology keep their
+own contracts; a host-clock source scan does not justify retyping them.
+
 ## Core integration
 
 The official core selector, with the explicit PipeWireAO artifact prefix, reached

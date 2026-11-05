@@ -1,4 +1,6 @@
 # Array validation of the same calibrated graph and complete named command set.
+import Clocks
+
 function Calibration._validate_system(
     ::Val{:pyramid},
     source,
@@ -9,6 +11,7 @@ function Calibration._validate_system(
     steps = 48,
     execution = nothing,
     pupil_field_output = nothing,
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     ispath(report_path) && throw(ArgumentError("validation output must be fresh"))
     steps >= 16 || throw(ArgumentError("validation needs at least 16 correction steps"))
@@ -108,7 +111,7 @@ function Calibration._validate_system(
             results[String(name)] = case
             isnothing(reference_field) || (case["pupil_field_overlap"] = overlap)
             for step in 1:steps
-                started = time_ns()
+                started = Clocks.time_nanos(clock)
                 frame = modal_frame!(system, commands)
                 residual = Float64(rms(HIL.graph_output(system.graph, :pupil_opd)))
                 isfinite(residual) ||
@@ -138,7 +141,9 @@ function Calibration._validate_system(
                     inputs.var"constraint-feedback",
                     outputs.var"controller-constraint-feedback",
                 )
-                push!(times, Float64(time_ns() - started) / 1e6)
+                elapsed = Int128(Clocks.time_nanos(clock)) - started
+                elapsed >= 0 || throw(ArgumentError("validation clock regressed"))
+                push!(times, Float64(elapsed) / 1e6)
             end
             before = rms(disturbance)
             after = sum(history[(end-7):end]) / 8
