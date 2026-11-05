@@ -102,7 +102,7 @@ this selection verifier contract; the verifier's one fresh status query is
 read-only. Later operator controls remain explicit opt-in requests through the
 verified supervisor.
 
-`NativeSessionClient.select_session` supplies the native verifier. It connects
+`SessionClient.select_session` supplies the native verifier. It connects
 once to the exact recorded endpoint, sends one read-only Status, checks the
 fresh UUID/PID/incarnation and native global/serial identity, and retains that
 same client after selection for later explicit controls. A different fresh UUID

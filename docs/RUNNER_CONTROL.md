@@ -1,7 +1,7 @@
-# Native runner control profile
+# runner control profile
 
 2026-10-05. Phase B of
-[the migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), under
+[the migration design](CONTROL_MIGRATION_DESIGN.md), under
 RTC-ARCH-024 / RTC-DEV-030. Worktree `pipewireao-rtc-native-controls`, branch
 `work/native-control-planes-20261005`, starting revision
 `e57b2e5403bd8b90b6a2ebbaa7fbefe6c4ccfada`; the starting tree was clean.
@@ -28,7 +28,7 @@ checks.
 ## Requests
 
 Advertisement profile: `pipewireao.rtc.runner/1`. Requests use the
-[common envelope](NATIVE_CONTROL_ENVELOPE.md), including its exact incarnation,
+[common envelope](CONTROL_ENVELOPE.md), including its exact incarnation,
 caller identity, positive token, relative remaining budget and 16 KiB bound.
 The operation Id selects one exact payload Struct; extra fields are invalid.
 

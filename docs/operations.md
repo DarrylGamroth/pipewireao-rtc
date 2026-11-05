@@ -1061,7 +1061,7 @@ HEART interfaces require observed support without source modifications.
 
 ### Calibration completion channel
 
-The selected `NativeCalibrationEndpoint` uses the exact private-core acquisition
+The selected `CalibrationEndpoint` uses the exact private-core acquisition
 owner with one bounded pending native request, outside processing callbacks.
 It does not establish command ownership itself. The endpoint server MUST serialize effects,
 fence prior work before restoration, and retain the hold or fault the deployment

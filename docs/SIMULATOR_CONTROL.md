@@ -1,4 +1,4 @@
-# Native simulator control contract
+# simulator control contract
 
 This is the selected complete-frame simulator control transport under
 [RTC-DEV-025/026](operations.md#rtc-dev-025--acknowledged-simulator-admission-and-controls).

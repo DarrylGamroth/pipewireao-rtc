@@ -1,5 +1,72 @@
 # Delivery evidence catalog
 
+## Naming and Julia type dispatch — 2026-11-04
+
+The [completion record](reviews/20261104-naming-cleanup/REVIEW.md) records test and
+guide moves, alias/classifier migration, typed representation operations,
+parametric storage, numerical/error equivalence and protected historical hashes.
+It preserves the initial integration failures and their passing reruns.
+
+## Calibration worker command ownership — 2026-11-04
+
+The [review record](reviews/20261104-calibration-worker/REVIEW.md) records the
+upstream public endpoint, bounded worker lifecycle messages, data-thread/control
+thread ownership, sparse-parameter exclusion and explicit reclamation receipt.
+It distinguishes the delivered source cohort from the registered artifact and
+preserves the rejected co-location experiment and other failed checks.
+
+## Optical measurement and projection types — 2026-11-04
+
+The [review record](reviews/20261104-optical-types/REVIEW.md) covers graph
+projection records, measurement and command-coordinate dispatch, exact numerical
+and artifact comparisons, optional CPU and private transport gates, and public
+API migration. It also identifies the missing upstream command endpoint needed
+to remove shared calibration worker state. That ownership migration is pending.
+
+## Recovery observation interfaces — 2026-11-04
+
+The [review record](reviews/20261104-observation-interfaces/REVIEW.md) covers
+abstract observation interfaces, scope traits, typed native controller records
+and preserved coupled partial ordering. It includes fail-before/pass-after
+evidence for malformed active generations and unsupported sensor recipes,
+independent source review and scoped scalar/coupled allocation checks.
+
+## Control HSMs and Active Objects — 2026-11-04
+
+The [integration record](reviews/20261104-control-hsm/REVIEW.md) covers the
+remaining cold Hsm migrations, native publication ordering and service identity
+checks, followed by bootstrap Active Object and clock integration. It records
+each validation cohort separately, including final bootstrap startup checks
+after the measured cold-compilation fix. Core and private-core verification
+remain distinct from scientific, hardware and RT qualification.
+
+## Calibration acquisition and preparation HSMs — 2026-11-04
+
+The [migration and verification record](reviews/20261104-calibration-hsm/REVIEW.md)
+records hierarchical event handling, preserved command and preparation contracts,
+consumer cancellation regression coverage and independent review. The warmed
+ready-preparation allocation check is separate from end-to-end acquisition,
+scientific, live-service and real-time qualification.
+
+## Correction HSM event handling — 2026-11-04
+
+The [state-machine review](reviews/20261104-correction-hsm/REVIEW.md) records
+event-owned phase behavior, shared hierarchy, preserved admission/serial/deadline
+semantics, and candidates for consistent Hsm.jl adoption elsewhere. Software
+verification and independent review do not establish hardware or RT/GC guarantees.
+
+## Julia package cleanup — 2026-11-04
+
+The [follow-up term audit](reviews/20261104-package-cleanup/REVIEW.md#pkg-05--follow-up-naming-audit-remains-incomplete)
+records remaining test/alias/classifier naming debt and protected uses of
+`native`. The source directory and public module migrations are complete; the
+remaining naming surfaces are not.
+
+The [review and verification record](reviews/20261104-package-cleanup/REVIEW.md)
+records the calibration-evidence ownership defect, public help documentation,
+protocol filename cleanup, and adjudication of `Any` and `isa` usage. Package
+checks remain distinct from scientific, hardware and timing qualification.
+
 ## Startup-settings memory and cold token selection — 2026-11-04 UTC
 
 The [inspection record](validation/startup-settings-memory-20261104/README.md)
@@ -995,7 +1062,7 @@ cadence evidence from the earlier finite scientific checks. The
 [evidence ledger](SUSTAINED_HIL_EVIDENCE.json) seals completed campaign reports
 and records the remaining midrun-control and qualification limits.
 
-[Native simulator controls](LIVE_CONTROL_NATIVE.md), the
+[Native simulator controls](SIMULATOR_CONTROL.md), the
 [allocation plan](LIVE_CONTROL_ALLOCATION_PLAN.md) and
 [independent review](LIVE_CONTROL_REVIEW.md) and
 [validation](LIVE_CONTROL_VALIDATION.md) record the selected SPA parameter
@@ -1003,16 +1070,16 @@ transport and its separate installed midrun-control qualification. Saved JSON
 reports remain artifacts. Selected supervisor and calibration controls now use
 native transport; fresh integrated installed qualification remains separate.
 
-[Native control migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), its
+[Native control migration design](CONTROL_MIGRATION_DESIGN.md), its
 [inventory](LIVE_CONTROL_INVENTORY.md),
 [mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
 [independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) document the selected
 RTC-ARCH-024 / RTC-DEV-030 transport increment. The three active documents
-above remain the normative authority. The [fixed envelope](NATIVE_CONTROL_ENVELOPE.md),
+above remain the normative authority. The [fixed envelope](CONTROL_ENVELOPE.md),
 [codec review](NATIVE_CONTROL_CODEC_REVIEW.md) and
 [CPU validation](NATIVE_CONTROL_ENVELOPE_VALIDATION.md) record the common header
 and diagnostic interoperability separately from production owner migration.
-[Local RTC session discovery](NATIVE_SESSION_DISCOVERY.md) defines the bounded
+[Local RTC session discovery](SESSION_DISCOVERY.md) defines the bounded
 per-user native locator record and fresh-status selection boundary. The
 [publication and operator validation](NATIVE_SESSION_DEPLOYMENT_VALIDATION.md)
 records actual supervisor publication, independent duplicate-name sessions,
@@ -1031,7 +1098,7 @@ post-exit report verification with the captured launcher PID.
 The [synchronization prerequisite](NATIVE_CONTROL_SYNC_VALIDATION.md) and its
 [independent review](NATIVE_CONTROL_SYNC_REVIEW.md) record the corrected inner
 wait and stalled-core evidence, separately from native runner ingress.
-The [runner request profile](NATIVE_RUNNER_CONTROL.md), its
+The [runner request profile](RUNNER_CONTROL.md), its
 [independent review](NATIVE_RUNNER_CONTROL_REVIEW.md) and
 [validation](NATIVE_RUNNER_CONTROL_VALIDATION.md) record closed typed dispatcher
 results and exact native request encoding. The subsequent
@@ -1045,18 +1112,18 @@ supervisor-to-runner hop. HEART, calibration, public operator and remaining live
 readiness/status-file controls are still awaiting migration.
 The [sealed source/evidence identities](NATIVE_RUNNER_CONTROL_EVIDENCE.json)
 bind the passing runner/caller checks and preserve their remaining limits.
-The [HEART profile](NATIVE_HEART_CONTROL.md),
+The [HEART profile](HEART_WRAPPER_CONTROL.md),
 [connected client tests](NATIVE_HEART_CLIENT_VALIDATION.md),
 [unchanged vendor process checks](NATIVE_HEART_VENDOR_VALIDATION.md) and
 [independent review](NATIVE_HEART_REVIEW.md) record wrapper preparation,
 connection, reset, health and shutdown migration separately from pending
 installed HIL caller qualification.
-The [acquisition lifecycle codec contract](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md)
+The [acquisition lifecycle codec contract](ACQUISITION_LIFECYCLE_CONTROL.md)
 records the bounded calibration and correction phase D foundation; owner
 integration remains pending.
-The [cold lifecycle helper API](NATIVE_ACQUISITION_LIFECYCLE_HELPERS.md) records
+The [cold lifecycle helper API](ACQUISITION_LIFECYCLE_HELPERS.md) records
 the runtime/client transport boundary and private-core fixture evidence.
-The [public supervisor codec foundation](NATIVE_SUPERVISOR_CONTROL.md) records
+The [public supervisor codec foundation](SUPERVISOR_CONTROL.md) records
 the separate public profile, combined typed owner status, mutation reply capacity
 reservation and shared Julia/Rust fixtures. Public runtime ingress is implemented;
 its installed qualification is separate. The [current retirement inventory](LIVE_CONTROL_INVENTORY.md)

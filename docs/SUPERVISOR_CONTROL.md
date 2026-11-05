@@ -1,7 +1,7 @@
-# Native deployment supervisor control
+# Deployment supervisor control
 
 2026-10-06, issue #8, phase F of the
-[native control migration design](NATIVE_CONTROL_MIGRATION_DESIGN.md), under
+[native control migration design](CONTROL_MIGRATION_DESIGN.md), under
 RTC-ARCH-024 / RTC-DEV-030. Worktree `pipewireao-rtc-native-supervisor`, branch
 `rtc-native-supervisor`, starting revision
 `1eba8edc48cde64a72be532d03530156d583b3c9`; the starting tree was clean.
@@ -20,8 +20,8 @@ timing or hardware qualification claim.
 The public profile is `pipewireao.rtc.deployment-supervisor/1`, distinct from the
 internal `pipewireao.rtc.runner/1`. Generic NodeInfo protocol, PID, instance,
 registry global ID, object.serial, controller marker and exact-token admission
-retain the [common envelope](NATIVE_CONTROL_ENVELOPE.md) and existing
-`NativeControlClient` / `NativeControlEndpoint` rules. A supervisor client never
+retain the [common envelope](CONTROL_ENVELOPE.md) and existing
+`ControlClient` / `ControlEndpoint` rules. A supervisor client never
 selects an internal runner by profile.
 
 Capability names use the `pipewireao.rtc.deployment-supervisor` namespace with
@@ -30,7 +30,7 @@ The lifecycle field is supervisor phase: Preparing=1, Admitted=2, Failed=3,
 Stopping=4, Stopped=5. `admitted` is true exactly in phase Admitted. Running is
 an independently queried runner/scientific fact, never inferred from that phase.
 
-Requests reuse all fourteen exact [runner commands](NATIVE_RUNNER_CONTROL.md),
+Requests reuse all fourteen exact [runner commands](RUNNER_CONTROL.md),
 operation IDs and payloads, including the typed scalar property transaction and
 parameter artifact descriptor. No argv array, relaxed SPA-JSON command string,
 JSON byte buffer, arbitrary dictionary or new scientific scheduler is introduced.
@@ -122,11 +122,11 @@ profiles are `pipewireao.rtc.calibration-lifecycle/1` and
 `pipewireao.rtc.correction-lifecycle/1`. Their payload is
 `Struct(Id cold_lifecycle, Struct acquisition_snapshot)`, reusing all nine fields,
 closed phases/instruments, optional four-component acquisition/report cursors and
-window semantics from the [acquisition lifecycle codec](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md).
+window semantics from the [acquisition lifecycle codec](ACQUISITION_LIFECYCLE_CONTROL.md).
 Cursor components and window Longs preserve full UInt64 bits.
 
 The optional HEART observation reuses all nine fields and Ready health
-invariants from the [HEART codec](NATIVE_HEART_CONTROL.md), including the current
+invariants from the [HEART codec](HEART_WRAPPER_CONTROL.md), including the current
 child PID, child generation, placement/diagnostic facts and saved report locator
 and digest. A saved report path is an artifact locator, not a live health source.
 

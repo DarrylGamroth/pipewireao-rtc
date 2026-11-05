@@ -1,4 +1,4 @@
-# Native live-control migration design
+# live-control migration design
 
 2026-10-05. Proposed narrow implementation design from
 [live control inventory](LIVE_CONTROL_INVENTORY.md); the initial source inspection performed no workloads or tests. The design is
@@ -97,7 +97,7 @@ bound using safe owned data, rather than capturing thread-local Runner state.
 ## 2. Ownership and causal completion contract
 
 The following are required field semantics for new supervisor/runner/calibration/
-wrapper schemas. The [fixed header contract](NATIVE_CONTROL_ENVELOPE.md) defines the common
+wrapper schemas. The [fixed header contract](CONTROL_ENVELOPE.md) defines the common
 namespace, exact scalar types and unsigned bit-pattern representation.
 Owner-specific operation enums and payload schemas remain separate reviewed
 contracts; they are not inferred from diagnostic operation IDs.
@@ -303,7 +303,7 @@ affected paths are implemented.
   not establish registry-bound authority, two actual caller connections, busy/stale
   admission, calibration hold/disconnect/inactivity handling or production effects.
 - The fixed header and unsigned bit-pattern representation are specified in
-  [the common envelope](NATIVE_CONTROL_ENVELOPE.md) and exercised across Julia/Rust.
+  [the common envelope](CONTROL_ENVELOPE.md) and exercised across Julia/Rust.
   Production owner-specific enums, payload/catalog identity and registry-bound
   controller lifetime remain owner-specific implementation and integration gates.
 - Rust inner synchronization is now locally bounded with separate

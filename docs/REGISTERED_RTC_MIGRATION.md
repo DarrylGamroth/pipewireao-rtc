@@ -5,7 +5,7 @@ Approved direction: user instructions and the adjudicated [application review](P
 ## Source baseline and preserved state
 
 - Shared package: `8a175c2a3608f74e66571617906d0aa8f8e5f580`, implementation branch `codex/pipewireaortc-implementation-20261014`, separate worktree `PipeWireAORTC-implementation-20261014`.
-- The starting README/module changes and `NativeSourceControl` implementation were retained from the original working tree. No unrelated scientific changes are adopted by this migration.
+- The starting README/module changes and `SourceControl` implementation were retained from the original working tree. No unrelated scientific changes are adopted by this migration.
 - WirePlumber policy baseline: `d20cd2037fda7b5932b0feb58b0af5aef5226a48`; policy validation is a separate change.
 - RTC-ARCH-024/025 and RTC-DEV-030 remain authoritative for transport, session ownership and controls. Renaming does not revise these contracts.
 

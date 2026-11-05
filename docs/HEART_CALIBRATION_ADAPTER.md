@@ -227,7 +227,7 @@ The full saved generation report is verified using the path and SHA-256 from
 a fresh native completion. Later health checks use subscribed native state and
 child identity. A completion without a snapshot requires a fresh status before
 health-authorized work can continue. See [the native wrapper
-contract](NATIVE_HEART_CONTROL.md).
+contract](HEART_WRAPPER_CONTROL.md).
 
 For Classic, declare `--heart-classic-order <188-U32_LE-indices>` and
 `--heart-slope-scale-x <finite-nonzero-scale>` /

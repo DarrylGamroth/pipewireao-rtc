@@ -56,13 +56,13 @@ package pins.
 | `SessionConfiguration` | Generate and write native session configuration |
 | `SessionInstall` | Install a sealed session package |
 | `SessionRuntime` | Start, attach, inspect and stop an installed session |
-| `NativeSessionClient` | Send controls to a selected native session |
+| `SessionClient` | Send controls to a selected session |
 | `ConfigurationStore` | Register and retrieve Git artifacts; query the shared SQLite journal |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
 | `SimulatorConfiguration` | Describe declared simulator settings and submit/observe cold application replacement jobs |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
 | `CalibrationCLI`, `SessionCLI` | Translate command arguments and reports |
-| `NativeOwnerBootstrapRuntime`, `NativeParameterSource`, `NativeSourceControl` | Reusable cold owner entry points and native source controls |
+| `OwnerBootstrapRuntime`, `ParameterSource`, `SourceControl` | Cold admission, parameter publication and source controls |
 | `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
 | `GraphOwner`, `AOSOwner` | Package-owned optional scientific owners, configured with graphs and FITS bindings |
 
@@ -84,9 +84,25 @@ modules load no science during an ordinary operational client import. See the
 For example, `PipeWireAORTC.SessionCLI.main(["sessions"])` is the callable
 counterpart of the root `session_cli.jl` command. Root `session_*.jl`
 files are thin command entry points; their implementation loads with the package
-from `src/configuration/`, `src/deployment/` and `src/cli.jl`. Native protocols
-live under `src/native/`, and reusable owner runtimes live under `src/owners/`.
+from `src/configuration/`, `src/deployment/` and the `src/*_cli.jl` modules.
+Control protocol codecs, clients and endpoints live under `src/control/`.
+Correction sequencing lives under `src/correction/`; graph execution and
+simulation preparation live under `src/graphs/` and `src/simulation/`.
 The sealed SDK launch path remains available during application migration.
+
+The unreleased API cleanup removes the `Native` prefix from Julia control
+modules: for example, use `SessionClient`, `ControlClient` and `ParameterSource`
+in place of their former `Native*` names. See the
+[complete migration mapping](docs/reviews/20261104-package-cleanup/REVIEW.md#pkg-04--public-names-repeat-the-selected-transport).
+Update source callers and regenerate deployments with the matching package
+version; existing sealed applications retain their pinned APIs and files.
+
+Use Julia help for callable contracts, including optional science entry points
+before their extensions load. For example, enter
+`?PipeWireAORTC.CalibrationAcquisition.Plan` or
+`?PipeWireAORTC.InstrumentConfiguration.prepare_system` at the REPL. Docstrings
+describe ownership, units and lifecycle effects; the architecture and operating
+contract remain authoritative for system requirements.
 
 ### FITS calibration inputs
 
@@ -119,7 +135,7 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 
 A sealed package includes its scientific configurations, calibration artifacts,
 scientific owners, Julia SDK, native headless RTC and selected libwireplumber
-library/modules. Build the native host from [runtime/](runtime/README.md).
+library/modules. Build the application host from [runtime/](runtime/README.md).
 The start helper installs to a fresh stage, starts an exact systemd instance,
 and returns after held admission. The helper exits; the headless RTC remains
 the session authority.
@@ -189,8 +205,12 @@ See [headless artifact registration and shared update history](docs/JULIA_DEPLOY
 | Path | Responsibility |
 | --- | --- |
 | `Project.toml`, `Manifest.toml` | Julia package identity and pinned operational environment |
-| `src/` | Julia native clients, shared operational tools |
-| `runtime/` | Headless executable, application Lua policy, native control and journal modules |
+| `src/control/` | Control codecs, clients, endpoints and cold admission |
+| `src/correction/` | Correction-loop control, recovery, supervision and physical offsets |
+| `src/graphs/` | Scientific graph preparation and execution entry point |
+| `src/simulation/` | Simulation entry point and pupil-source configuration |
+| `src/diagnostics/` | Phase timing capture |
+| `runtime/` | C application host, Lua session policy, control and journal plugins |
 | `test/` | Package tests and native protocol records under `test/data/` |
 | `assets/deployment/` | Generic systemd, PipeWire and parameter-source resources |
 | `configs/` | Retained development graph/session configurations |
@@ -219,7 +239,7 @@ Historical runner reports retain their original revision and scope.
 
 ## Finite source control
 
-`NativeSourceControl` owns the existing native v1 source run/reset/query mailbox
+`SourceControl` owns the existing native v1 source run/reset/query mailbox
 and retained snapshots. The implementation was moved from the REVOLT HIL
 resources without changing wire keys, IDs or request/response semantics.
 Instrument owners apply accepted requests between completed exchanges and

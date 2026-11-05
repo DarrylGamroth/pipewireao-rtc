@@ -71,6 +71,43 @@
 - Keep the runner outside frame processing. Scientists declare typed Algorithms,
   ports, properties, parameters, shapes and schemas; they do not write SPA
   callbacks, pointer/errno handling, publication or worker machinery.
+- Prefer Hsm.jl for Julia-owned state machines. Public mutation/observation
+  functions dispatch domain events; state-specific and ancestor handlers own
+  phase-dependent admission, transitions and state updates. Use hierarchy for
+  shared behavior and return internal handling for updates that must not restart
+  entry deadlines. Read-only status queries may inspect the active state. Keep
+  scientific commands out of entry/exit behaviors and preserve one-shot effects.
+  Document execution-boundary exceptions: C/Rust RT code, callback paths requiring
+  bounded allocation/GC evidence, and durable receipts that are data rather than
+  a running machine. Consistency must not introduce another lifecycle authority.
+- Model domain evidence and operations with concrete types behind documented
+  abstract interfaces. Dispatch behavior and comparisons on those interfaces;
+  use traits for independent scope or capability distinctions. Normalize native
+  records at their boundary so correlated controller facts stay together.
+  Prefer typed methods and parametric structs over `isa` branches; do not hide
+  type branches behind `typeof`/subtype predicates or field-presence selectors.
+  Keep representation/tag checks at input validation boundaries, and keep
+  partial-order semantics explicit for coupled-controller generations.
+- Prefer Active Objects for long-lived cross-thread control: one Agent.jl duty
+  cycle owns its Hsm and mutable application state. Other contexts send bounded
+  typed messages and use replies or immutable published snapshots. Define queue
+  capacity, full/closed behavior and shutdown acknowledgements; do not block
+  native callbacks or wait for a reply while holding a native loop lock. Retain
+  required PipeWire locks for native transactions. For blocking graph workers,
+  use the public native command endpoint so their main loop receives commands
+  while `run!` blocks. Keep scientific execution on its PipeWire data thread and
+  lifecycle Hsms on their control thread. Cold-bound calibration nodes omit live
+  sparse Parameter Ports. Reclaim graph storage only after an explicit release
+  receipt and task completion. Other native owners retain their documented
+  thread-safe quit capability until migrated. Synchronous clients and Hsms already
+  owned by one task do not need an extra agent or queue solely for consistency.
+- Use Clocks.jl monotonic clocks for control elapsed time. Preserve each public
+  API's declared units and accept injected cached clocks for deterministic tests
+  where a clock seam exists. Cached clocks have one updating owner and require
+  explicit publication; native deadline validation must not silently use stale
+  duty-cycle time. Keep epoch/reference timestamps separate from elapsed clocks.
+  An agent samples its source once at the beginning of a duty cycle and uses
+  its owned cached clock throughout that cycle; retain producer receipt times.
 - Algorithms must remain array-testable and usable by other executors. Support
   declared full-frame/row-block owners without adding an RTC data scheduler.
 - Follow the relevant roadmap dependencies unless the user changes their order.
@@ -90,6 +127,8 @@
   include("test/runtests.jl")'`. The optional science environment alone does not
   expose all core-test dependencies. This selector does not qualify hardware.
 - Keep commits focused; never rewrite published history without authorization.
+- Commit each coherent, verified changeset as work completes. Do not accumulate
+  unrelated completed changes across tasks; preserve local dependency order.
 - Choose checks for the changed behavior. Rust code: formatting, focused tests,
   workspace tests and Clippy in proportion to the change. Live/hardware gates
   are opt-in; do not stop an existing daemon, instrument or experiment.
@@ -102,6 +141,12 @@
 - Keep observed, derived and unconfirmed conclusions distinct. A functional
   check/microbenchmark does not establish deadline, tail-latency, physical-loop,
   safety or real-time qualification. Preserve failed gates and their scope.
+- The calibration worker command selectors require the upstream accessor SDK,
+  PipeWireAO 0.9.1 and FilterGraphPipeWire 0.4.1. The registered native artifact
+  does not contain the accessor. Select the client library through JLL path
+  preferences in a validation environment declaring `PipeWireAO_jll` directly,
+  and select the same daemon SDK with `PIPEWIREAO_PREFIX`. See the
+  [source cohort and commands](docs/reviews/20261104-calibration-worker/REVIEW.md).
 - Maintain current work in the roadmap's **Current work** section. Keep dated
   integration/review/validation records as evidence, indexed in
   `docs/EVIDENCE_INDEX.md`; do not append another competing status narrative.

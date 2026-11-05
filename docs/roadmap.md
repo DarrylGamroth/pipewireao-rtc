@@ -6,11 +6,133 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-02. This section is the current delivery summary. Later sections
+Updated 2026-11-04. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Naming and Julia type dispatch — 2026-11-04
+
+The [completion record](reviews/20261104-naming-cleanup/REVIEW.md) covers the
+remaining test/guide filenames, component aliases, protocol classifiers and
+private names. Typed operations replace `isa` throughout maintained Julia source
+and extensions; scalar and FITS binding storage retain their type parameters.
+Protocol vocabulary, compiled-source keywords and historical evidence retain
+their meanings. The core suite passes 9,660 assertions across 429 testsets;
+focused equivalence checks, independent review and private-core worker/receiver
+checks pass. Lua replacement follows this completed cleanup.
+
+### Calibration worker commands — 2026-11-04
+
+The [implementation and verification](reviews/20261104-calibration-worker/REVIEW.md)
+adds the upstream native loop accessor, a bounded public PipeWireAO command
+endpoint and the FilterGraphPipeWire adapter. Calibration workers exchange stop,
+readiness and completion messages. Their Hsm and node lifecycle remain on the
+control thread; graph execution retains the PipeWire data thread, as selected by
+the user. Live sparse Parameter Ports are omitted after cold FITS binding.
+Scientific storage is reclaimed only after task completion and an explicit
+release receipt. The core suite passes all 426 testsets; worker, private transport
+and Classic CPU selectors pass, including 106 pilot assertions. Independent
+review and a reproduced/fixed status-contention race are recorded separately.
+The registered native artifact still needs a release containing
+the accessor; source validation uses the isolated rebuilt SDK.
+
+### Optical types and thread ownership — 2026-11-04
+
+The [review](reviews/20261104-optical-types/REVIEW.md) records typed calibration
+graph projections, explicit optical measurement and command-coordinate kinds,
+and dispatch for scalar/named graph operations and supported input forms.
+Existing values, identities and generated bundle byte hashes match all 378
+before/after oracle records. The core suite passes 9,525 assertions; optional CPU
+and private transport evidence is scoped separately in the review.
+
+Thread ownership follows the user's direction: private mutable state with
+bounded commands and owned receipts; completion acknowledges release before
+another owner closes or reuses scientific storage. The subsequently implemented
+worker command endpoint above resolves the shared node/flag boundary identified
+by this optical review. The separate-process production filter graph is retained.
+
+### Typed recovery observations — 2026-11-04
+
+The [interface](RECOVERY_OBSERVATIONS.md) and
+[verification record](reviews/20261104-observation-interfaces/REVIEW.md) replace
+primitive generation helpers with observation interfaces and controller-scope
+dispatch. Native snapshots retain correlated per-controller records; resume
+dispatches on scope and effect types. Coupled partial ordering, token provenance,
+one-shot effects and refusal precedence are preserved. Malformed active types
+now fail closed. Recipe validation uses the existing sensor trait and rejects
+unsupported SCC/LLOWFS procedures before optical loading. The core suite passes
+9,519 assertions; focused tests, ambiguity checks, independent review and warmed
+scalar/coupled allocation checks pass. The record identifies
+remaining optional optical representation improvements and their required gates.
+
+### Control HSMs, Active Objects and clocks — 2026-11-04
+
+The [integration record](reviews/20261104-control-hsm/REVIEW.md) follows the
+calibration acquisition/preparation migrations with calibration endpoint,
+shared ticket admission, bootstrap and service-client Hsms. The bootstrap
+Active Object uses an Agent.jl duty cycle with bounded typed messages for
+cross-thread handshakes. Clocks.jl supplies monotonic/cached clocks.
+One source sample at the beginning of each agent cycle
+feeds its owned cache. Native transaction locks, exact tickets, process identity
+and scientific-thread cancellation capability retain their existing boundaries.
+The core suite passes 9,317 assertions; final bootstrap private-core gates pass
+178. Allocation evidence remains scoped to the measured warmed paths and
+quiet/churn windows. All six identified cold migrations are delivered; callback
+and durable-receipt exceptions remain documented in the correction review.
+
+### Calibration acquisition and preparation HSMs — 2026-11-04
+
+The [migration record](reviews/20261104-calibration-hsm/REVIEW.md) covers the first
+two follow-on Hsm.jl migrations. Acquisition shares completion failure rules
+through Acquiring and Recovery parents; preparation shares cancellation,
+expiry and invalidation through Active and Terminal parents. Public mutation
+functions dispatch events. A bounded delivery slot runs the acquisition consumer
+between dispatch steps so it can request cancellation. Preparation retains its
+read-only `state` API as a projection of Hsm's state. Wire contracts, scientific
+validation, absolute deadlines and restoration/release rules are preserved.
+Focused tests and independent review cover these boundaries; allocation evidence
+is limited to warmed scalar paths. The follow-on cold candidates from the
+[correction review](reviews/20261104-correction-hsm/REVIEW.md#other-state-machine-candidates)
+are covered by the current control integration above.
+
+### Correction HSM event handling — 2026-11-04
+
+The [HSM review](reviews/20261104-correction-hsm/REVIEW.md) moves phase-dependent
+behavior into events and state/ancestor handlers across both existing machines.
+Loop control shares timer behavior through a Pending parent; recovery reuses
+ProtectiveOpen for monitoring and cancellation. Published leaf outcomes, admission
+rules, one-shot effects and timeout values are preserved. Repository guidance
+now prefers Hsm.jl for Julia-owned state machines. The review identifies six
+additional cold migrations and callback/durability constraints. Those cold
+migrations are now delivered in the records above. Validation is software-only.
+
+### Julia package cleanup — 2026-11-04
+
+The [package review](reviews/20261104-package-cleanup/REVIEW.md) records the
+calibration journal ownership fix, public Julia help documentation, source
+grouping and the approved breaking Julia module-name migration. Native wire
+contracts are preserved. The record distinguishes heterogeneous input/task
+storage from narrowed record containers, and leaves a repository-wide formatting
+change outside this increment. Verification does not qualify live applications,
+scientific performance or hardware.
+
+The [follow-up naming audit](reviews/20261104-package-cleanup/REVIEW.md#pkg-05--follow-up-naming-audit-remains-incomplete)
+found remaining test filenames, local module aliases and protocol-classifier
+names. The [completion increment](reviews/20261104-naming-cleanup/REVIEW.md)
+delivers that naming pass and the subsequent source-wide Julia type-dispatch
+request. Protocol identities, physical units and historical/generated evidence
+retain their meanings.
+
+Next replace Lua session policy while
+preserving RTC-ARCH-026's single session
+authority and the separate filter-graph process. Prefer Julia/Hsm.jl where the
+control execution boundary permits it; retain C/Rust for strict RT deadlines or
+work better served by compiled code. Verify allocation and GC behavior for Julia
+work participating in any deadline-sensitive path. The replacement requires
+policy-equivalence, lifecycle/fault/cleanup tests and separate timing/resource
+evidence. It is not part of the package cleanup.
 
 ### Startup-settings inspection memory — 2026-11-04 UTC
 
@@ -3926,7 +4048,7 @@ JFG and Copper release-installed reruns are not implied.
 ## Native live control integration — 2026-10-06
 
 RTC-ARCH-024 and RTC-DEV-030 select native serialization for live local
-controls, following the [reviewed design](NATIVE_CONTROL_MIGRATION_DESIGN.md).
+controls, following the [reviewed design](CONTROL_MIGRATION_DESIGN.md).
 The [current inventory](LIVE_CONTROL_INVENTORY.md) distinguishes selected
 production paths from retained fixture APIs and historical transports.
 

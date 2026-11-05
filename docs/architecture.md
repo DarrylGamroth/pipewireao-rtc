@@ -736,7 +736,7 @@ callback and publishes its typed completion afterward. Scientists continue to
 write ordinary transport-neutral algorithms and properties.
 
 The migration is dependency ordered under RTC-DEV-030. The
-[design](NATIVE_CONTROL_MIGRATION_DESIGN.md),
+[design](CONTROL_MIGRATION_DESIGN.md),
 [control inventory](LIVE_CONTROL_INVENTORY.md),
 [mechanism proof](NATIVE_CONTROL_FILTER_PROOF.md) and
 [independent review](NATIVE_CONTROL_MIGRATION_REVIEW.md) distinguish selected

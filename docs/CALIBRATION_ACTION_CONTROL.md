@@ -1,4 +1,7 @@
-# Native calibration action control
+# calibration action control
+
+Current selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md). Commands in dated evidence below retain their original paths.
+
 
 The phase E codec foundation implements the pure Julia and Rust profile
 `pipewireao.rtc.calibration-actions/1` under RTC-ARCH-024 / RTC-DEV-030. It does
@@ -10,8 +13,8 @@ issue #7 remains open. The existing effect implementation,
 restoration fencing and scientific acquisition behavior remain authoritative.
 
 The [action inventory](NATIVE_CALIBRATION_ACTION_WIRE_INVENTORY.md),
-[common envelope](NATIVE_CONTROL_ENVELOPE.md) and
-[acquisition lifecycle](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md) define the
+[common envelope](CONTROL_ENVELOPE.md) and
+[acquisition lifecycle](ACQUISITION_LIFECYCLE_CONTROL.md) define the
 prior boundaries. This document specifies only the selected action payload.
 The common envelope bounds the complete request to 16 KiB and the complete
 calibration completion or rejection to 128 KiB. Native integer widths, array
@@ -156,7 +159,7 @@ Encoders independently recheck the exact final extent before copying vectors.
 ## Validation scope
 
 The shared binary fixtures in
-[`tests/data/native-calibration-actions`](../tests/data/native-calibration-actions)
+[`test/data/native-calibration-actions`](../test/data/native-calibration-actions)
 were emitted by Julia. Both codecs compare re-encoded bytes against them.
 They cover every action, all settling rules, every result and failure reason,
 negative transport completion, rejection, full UInt64 identity boundaries,
@@ -215,7 +218,7 @@ reviewed codecs and phase D acquisition owners. Its selected source owners are
 | Sole owner Core and ThreadLoop | Action endpoint borrows the lifecycle Bridge core/loop; identity assertions and terminal cleanup tests | Implemented |
 | Lifecycle service during accepted effects | `safe=false` service checks defer Connect/Reset/Shutdown; safe owner boundary services them outside effects | Implemented; final independent review pending |
 | Finite disconnect/deadline failure and cleanup | Existing ticket deadlines and actual controller presence; action ingress closes before SCI cleanup; Release facts survive later transport abort | Implemented, expanded installed fault tests pending |
-| Selected Rust coordinator and CLI | `NativeCalibrationEndpoint` adapts the existing coordinator; `rtc-calibrate` requires explicit `--remote`, `--node`, `--owner-pid`, `--owner-instance`; actual Rust-to-Julia private-core cycle | Implemented, installed qualification pending |
+| Selected Rust coordinator and CLI | `CalibrationEndpoint` adapts the existing coordinator; `rtc-calibrate` requires explicit `--remote`, `--node`, `--owner-pid`, `--owner-instance`; actual Rust-to-Julia private-core cycle | Implemented, installed qualification pending |
 | Native supervisor identity handoff | Existing launcher readiness metadata supplies connection hints; fresh native proof remains mandatory | Partial, issue #8 owns replacement |
 | Installed exports and selected profiles | New source assets require parent integration and installed acceptance | Pending |
 
@@ -319,7 +322,7 @@ endpoint machinery or SCI numerical effects change in this remediation.
 
 ## Rust coordinator endpoint
 
-`NativeCalibrationEndpoint` implements the existing `CalibrationEndpoint`
+`CalibrationEndpoint` implements the existing `CalibrationEndpoint`
 trait. Its `submit` method validates the borrowed action, encodes a bounded
 request and queues `Node.set_param` without iterating or waiting. `receive`
 iterates the client's single PipeWire MainLoop with the coordinator's absolute

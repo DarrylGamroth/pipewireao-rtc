@@ -32,7 +32,7 @@ The reusable Julia API uses the same driver:
 ```julia
 using PipeWireAORTC
 const Acquisition = PipeWireAORTC.CalibrationAcquisition
-const Native = PipeWireAORTC.NativeCalibrationActionClient
+const Native = PipeWireAORTC.CalibrationActionClient
 
 plan = Acquisition.read_plan(plan_path)
 binding = Native.Binding(remote, action_node, owner_pid, owner_instance)
@@ -85,6 +85,14 @@ There is no transport, file I/O, sleep, polling loop or device callback inside
 the procedure. The existing `acquire`/`acquire!` functions drive the same state
 machine over the existing version-1 native action protocol.
 
+The procedure uses Hsm.jl. Public mutation functions dispatch events; leaf and
+ancestor handlers own phase-dependent behavior and command selection.
+`Acquiring` contains Holding, Adopting, Settling, Collecting and Processing;
+`Recovery` contains Restoring and Releasing. Both share the Active parent.
+The Terminal parent contains Complete, Aborted and Fault. Shared failure
+handlers distinguish a known completed action from an unknown in-flight outcome,
+and never start another restoration attempt while already recovering.
+
 This is the ownership and data flow for the first shared procedure:
 
 ```mermaid
@@ -136,6 +144,30 @@ with an explicitly bounded handoff. The procedure does not create an unbounded
 worker queue or asynchronous recorder. Its existing finite response-retention
 bound remains in force.
 
+One typed delivery slot holds the consumer snapshot. The consumer runs between
+Hsm dispatch steps, so it can call `cancel!` without recursive event dispatch.
+The Processing handler receives the consumption event, polls cancellation and
+selects the next command. Command submission and consumer work do not occur in
+state entry or exit behaviors.
+
+The `clock` keyword accepts Clocks.jl monotonic nanosecond clocks directly, as
+well as the existing callables that return seconds. Absolute `deadline` and
+completion `at` values remain seconds. A cached clock has one updating owner;
+tests can advance it explicitly without sleeping:
+
+```julia
+using Clocks
+clock = CachedNanoClock(0)
+procedure = Acquisition.Procedure(plan; clock)
+advance!(clock, 1_000_000_000) # nanoseconds; choose the plan's action timeout
+Acquisition.expire!(procedure)
+```
+
+Preparation accepts the same clock providers. A control agent samples its source
+once at the start of a duty cycle and updates its owned cache for that cycle's
+handlers. Producers retain their own event receipt timestamps. Advancing a test
+clock changes logical time; it does not run a timer or deliver a deadline event.
+
 For an external event loop, prepare `Procedure(plan; consume, clock)` and submit
 its `command`. After owner/controller validation, deliver
 `complete!(procedure, run, serial, result)`. The optional `at` keyword is the
@@ -153,11 +185,33 @@ not required to calculate a response during acquisition.
 cold projections from a built regular graph. For the Classic initial session,
 select raw `pixel-calibration:raw` to existing `slopes`, `flux`, `validity` outputs,
 and absolute `pdm-command:requested` to `demanded`, `constraint-feedback`.
+The result is a `GraphProjection` record. Its existing graph, configuration and
+provenance properties remain readable. Replace `merge(projection, overrides)`
+with `GraphProjection(projection; overrides...)`; obtain the constructor from
+`Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)`. Copy construction
+retains the same prepared graph and arrays. It does not transfer ownership or
+authorize either copy to close a graph still in use. Named command projections
+are a NamedTuple of these records; a command named `graph` has no special meaning.
+
 `prepare_initial_calibration(application, remote, frontend, command;
 reference, name, instance, deadline)` owns both prepared projections and returns
-`NativeCalibrationEndpoint.Endpoint`. Serve it with `serve!(endpoint; deadline)`
+`CalibrationEndpoint.Endpoint`. Serve it with `serve!(endpoint; deadline)`
 on a control task and close it after the native client disconnects. Use at least
 three Julia default threads; the private-core optical selector uses four.
+
+Each graph worker receives bounded stop commands and publishes readiness and
+completion receipts. Its node lifecycle and Hsm stay on a dedicated control
+thread; JuliaFilterGraph processing remains on the PipeWire data thread.
+The controller does not inspect the running graph. Parameter values are bound
+before lending the graph, and these calibration nodes expose no live sparse
+Parameter Ports. Completion must explicitly release storage and the worker task
+must finish before prepared graph storage can be closed or reused.
+
+This requires PipeWireAO 0.9.1, FilterGraphPipeWire 0.4.1 and a native SDK exporting
+`pw_ndarray_filter_get_loop`. The currently registered artifact lacks that
+accessor; use the [validated source cohort](reviews/20261104-calibration-worker/REVIEW.md)
+until its artifact release. Client-library selection and the test daemon prefix
+must identify the same SDK.
 
 This CPU simulation endpoint uses normal configured detector noise and ADC,
 actual transported command adoption and correlated raw/WFS streams. It rechecks
@@ -193,6 +247,13 @@ confirmation is operator attestation; a simulator/service adapter must verify
 its configured authority before emitting confirmation and invalidate the gate
 on observed condition/authority loss. No message format or device protocol is
 introduced by this Julia interface.
+
+Preparation also uses Hsm.jl. Pending and Ready share the Active parent, which
+handles cancellation, deadline events and invalidation. Cancelled, Expired and
+Invalidated share Terminal; a terminal gate cannot become ready again.
+`check_current!` dispatches a deadline event followed by an admission event.
+The existing lowercase `procedure.state` property is a read-only projection of
+the active Hsm state, rather than a second stored phase.
 
 The shared procedure describes the required optical condition, rather than a
 manufacturer's commands. A dark blocks light at the detector while retaining the

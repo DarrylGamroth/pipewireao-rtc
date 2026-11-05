@@ -1,4 +1,4 @@
-# Native HEART wrapper control
+# HEART wrapper control
 
 RTC-DEV-030, issue #5. This is the cold control profile of the existing
 supervised HEART wrapper, not a replacement for vendor HEART TCP commands,

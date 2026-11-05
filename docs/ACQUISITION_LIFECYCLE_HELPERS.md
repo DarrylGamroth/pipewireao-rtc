@@ -1,14 +1,17 @@
-# Native acquisition lifecycle helpers
+# acquisition lifecycle helpers
+
+Current selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md). Commands in dated evidence below retain their original paths.
+
 
 These Julia helpers implement the cold transport portion of RTC-DEV-030 phase D
-for the two [acquisition lifecycle profiles](NATIVE_ACQUISITION_LIFECYCLE_CONTROL.md).
+for the two [acquisition lifecycle profiles](ACQUISITION_LIFECYCLE_CONTROL.md).
 They do not apply acquisition effects. The scientific and HEART calibration
 owners and the HEART correction owner still need integration with their sole
 serialized dispatchers.
 
 ## Runtime API
 
-`PipeWireAODeployment.NativeAcquisitionLifecycleRuntime` provides:
+`PipeWireAORTC.AcquisitionLifecycleRuntime` provides:
 
 ```julia
 Runtime(profile, remote::AbstractString, node::AbstractString, instance::Int64)
@@ -63,7 +66,7 @@ to observe synchronization leaves the caller with an unknown outcome.
 
 ## Client API
 
-`PipeWireAODeployment.NativeAcquisitionLifecycleClient` provides:
+`PipeWireAORTC.AcquisitionLifecycleClient` provides:
 
 ```julia
 connect(profile, remote, node, pid, instance, instrument::Instrument;
@@ -101,7 +104,7 @@ synchronization and clean resource closure. A warmed idle `has_pending` and
 service fast path each measure zero Julia heap bytes. Run it with:
 
 ```sh
-taskset -c 15 julia --project=deployment/julia -e 'using PipeWireAODeployment; include("deployment/julia/test/native_acquisition_lifecycle_client.jl")'
+taskset -c 15 julia --project=. -e 'using PipeWireAORTC; include("test/native_acquisition_lifecycle_client.jl")'
 ```
 
 The fixture has no scientific acquisition, HEART process or installed

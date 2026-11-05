@@ -49,7 +49,7 @@ daemon. The application must not advertise `wireplumber.daemon=true`, select a
 privileged manager socket, or load desktop auto-connect/device policy.
 
 The existing AO Lua policy, native control shim and asynchronous SQLite journal
-move to this repository's `native/` tree. They retain one serialized session
+move to this repository's `runtime/` tree. They retain one serialized session
 authority and one native public endpoint. Link/SI interfaces follow upstream WirePlumber; RTC does not add methods to
 those library classes. Application modules, scripts and their tests
 are removed from the WirePlumber daemon build/install surface.

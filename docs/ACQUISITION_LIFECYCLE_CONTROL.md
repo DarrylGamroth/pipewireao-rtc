@@ -1,4 +1,4 @@
-# Native acquisition lifecycle codec foundation
+# acquisition lifecycle codec foundation
 
 Baseline: `60e28b8`, RTC-DEV-030 and phase D of the native control migration.
 This document fixes the Julia wire profile for calibration and finite HEART

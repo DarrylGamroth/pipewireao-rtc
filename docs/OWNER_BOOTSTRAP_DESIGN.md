@@ -1,8 +1,16 @@
-# Native ordinary-owner bootstrap
+# ordinary-owner bootstrap
+
+Current selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md). Commands in dated evidence below retain their original paths.
+
 
 ## Status and authority
 
 This design covers RTC migration issue #9 under [RTC-ARCH-024](architecture.md#native-live-control-transport) and [RTC-DEV-030](operations.md#rtc-dev-030--native-local-live-controls). It is a design, not implementation or qualification evidence.
+
+The subsequent [control HSM and Active Object integration](reviews/20261104-control-hsm/REVIEW.md)
+records event ownership, bounded handshakes and cached clocks for the current
+Julia bootstrap implementation. The original design and dated evidence below
+retain their recorded source and execution assumptions.
 
 Source baseline: `2fb82e9`, worktree `pipewireao-rtc-owner-bootstrap`, branch `work/native-owner-bootstrap-design-20261006`. The worktree started clean. External JFG source inspected at `f2f4cd4`; public PipeWireAO Julia source supplies the thread and callback contracts below. Existing unrelated root and JFG changes were preserved.
 
@@ -16,14 +24,14 @@ The primary agent approved the distinct `pipewireao.rtc.owner-bootstrap/1` profi
 | [owner_protocol.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/assets/deployment/hil/owner_protocol.jl), `parse_options` | Marker mode is the ordinary-source default. Native acquisition options overload `control-node`, which ordinary SourceControlV1 also uses for its science node. | Distinct bootstrap options; reject marker/file-control flags in the selected ordinary path. |
 | JFG `deployment/run_island.jl`, `run_service`/`run_connected_service` | Main constructs, prepares, connects and runs its node; prepared/connect/connected/quit markers drive startup and stop. | RTC SDK wrapper reuses the scientific preparation and run sequence with native handshakes. The existing script's guarded entry point permits inclusion without running its marker entry point. |
 | JFG `deployment/startup.jl`, `configure_threads`/`spawn_monitor` | Live owners already require at least two default Julia threads; monitor tasks use public `ThreadPinning.@spawnat` on thread 2. Row workers start at thread 3. | Reuse this reserved monitor role; preserve scientific placement and row-worker assignments. |
-| [deploy.jl](../deployment/julia/src/deploy.jl), owner validation/startup/`stop_owner!` | Owners outside the migrated HEART/acquisition cases still wait/touch marker paths. Generic source file-control configuration remains accepted. | Root-owned strict profile selection and native client startup/cleanup; reject unsupported legacy configurations before spawning. |
+| [deploy.jl at the recorded baseline](https://github.com/DarrylGamroth/pipewireao-rtc/blob/2fb82e9/deployment/julia/src/deploy.jl), owner validation/startup/`stop_owner!` | Owners outside the migrated HEART/acquisition cases still wait/touch marker paths. Generic source file-control configuration remains accepted. | Root-owned strict profile selection and native client startup/cleanup; reject unsupported legacy configurations before spawning. |
 | [hil_export.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/hil_export.jl), [calibration_export.jl](https://github.com/DarrylGamroth/pipewireao-rtc/blob/3101c5a/src/calibration_export.jl), JFG `deployment/export.py` | Ordinary simulator launches with `--threads=1,0`; generated external JFG launches with `--threads=2,0`; both carry marker descriptors/arguments. | Root-owned descriptors, sealed SDK assets/dependencies, thread flags and placement migrate together. |
 
 The [live-control inventory](LIVE_CONTROL_INVENTORY.md) identifies early preparation and failures before source-port publication as bootstrap debt. Saved output reports, immutable captures, configuration and provenance remain artifacts; their existence is never live readiness authority.
 
 ## Thread ownership
 
-Public PipeWireAO `ThreadLoop` runs on a native thread. Its Filter parameter callback stages a bounded owned request in [NativeControlEndpoint](../src/native_control_endpoint.jl); it does not execute owner effects. `take!`, `check_ticket` and `complete!` serialize endpoint state under the same ThreadLoop lock. The public SDK also exposes EventSource, TimerSource and LoopChannel callbacks, but using them to dispatch owner effects would introduce a new callback policy. This design uses the existing staging boundary.
+Public PipeWireAO `ThreadLoop` runs on a native thread. Its Filter parameter callback stages a bounded owned request in [ControlEndpoint](../src/control/control_endpoint.jl); it does not execute owner effects. `take!`, `check_ticket` and `complete!` serialize endpoint state under the same ThreadLoop lock. The public SDK also exposes EventSource, TimerSource and LoopChannel callbacks, but using them to dispatch owner effects would introduce a new callback policy. This design uses the existing staging boundary.
 
 Public `NdArrayFilter.connect!` and `run!` require the thread that constructed the filter. `quit!` is explicitly callable from any Julia thread. FilterGraphPipeWire forwards these public methods. Therefore preparation, construction, connect, run and close remain on default Julia thread 1. The cold monitor is a sticky task on default Julia thread 2 using public `ThreadPinning.@spawnat`; it never constructs, executes or closes scientific graphs.
 
@@ -53,7 +61,7 @@ Only the monitor publishes bootstrap lifecycle/completion state. Main sends boun
 
 ## Wire and lifecycle contract
 
-Reuse the common `NativeControlCodec` envelope, exact endpoint/controller identity, one pending request, one retained terminal completion, one independent rejection and existing finite admission budget. No new JSON-in-POD encoding is introduced. Requests are bounded to 16 KiB and replies to 64 KiB; strict envelope scalar widths, padding and arity remain authoritative.
+Reuse the common `ControlCodec` envelope, exact endpoint/controller identity, one pending request, one retained terminal completion, one independent rejection and existing finite admission budget. No new JSON-in-POD encoding is introduced. Requests are bounded to 16 KiB and replies to 64 KiB; strict envelope scalar widths, padding and arity remain authoritative.
 
 | Item | Proposed exact representation |
 | --- | --- |
@@ -89,7 +97,7 @@ Main exceptions send a bounded fault fact to the monitor. It publishes Fault whi
 
 | Increment | Owned changes | Evidence before integration |
 | --- | --- | --- |
-| BOOT-1 | Codec/client/runtime under `deployment/julia/src/native_owner_bootstrap_*.jl`; package includes and direct dependency; typed monitor/main handshake. | Pure strict wire/size/phase tests; actual private-core exact identity, fresh Preparing Status, collision/removal/expiry/cleanup tests. |
+| BOOT-1 | Codec/client/runtime under `src/control/owner_bootstrap_*.jl`; package includes and direct dependency; typed monitor/main handshake. | Pure strict wire/size/phase tests; actual private-core exact identity, fresh Preparing Status, collision/removal/expiry/cleanup tests. |
 | BOOT-2 | `deployment/hil/native_owner_bootstrap.jl`, lightweight ordinary simulator entry point/body hooks, distinct parser options, generated external JFG SDK wrapper. No JFG algorithm/vendor edits. | Original-thread instrumentation; blocked preparation with responsive Status; Connect actual registration; Quit main cleanup before completion; fail-fast one-thread launch. |
 | BOOT-3 — root | Strict deploy profile/configuration, owner clients, absolute remotes/incarnations, export descriptors/assets/direct dependencies, thread placement and launcher flags; reject all legacy operational marker/file-control configurations. | Fresh installed ordinary Classic/Copper native and external JFG profiles, early preparation failure, bounded terminal stop, no marker IPC. |
 | BOOT-4 — root | System scientific and allocation gates after selected installed bootstrap migration. | Existing frame/command/reference comparison and inclusive zero-allocation boundary; owner/core/process cleanup, monitored thread placement. |
