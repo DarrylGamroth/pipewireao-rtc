@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Package necessity and ownership — 2026-11-05
+
+The [bounded source review](reviews/20261105-package-scope/REVIEW.md) separates
+confirmed duplicated implementation and oversized runtime exports from scientific
+ownership transfers and optional product-scope choices. It records current callers,
+receiving-interface gaps and a removal order; it does not claim code was deleted
+or that moving packages alone reduces maintenance.
+
 ## Physical-offset graph buffer negotiation — 2026-11-05
 
 The [investigation and verification](reviews/20261105-graph-buffers/REVIEW.md)

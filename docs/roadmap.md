@@ -12,6 +12,18 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Package necessity before further cleanup — 2026-11-05
+
+The user prioritized questioning code ownership and necessity before repairing
+more of the existing implementation. The [scope review](reviews/20261105-package-scope/REVIEW.md)
+records scientific processing in RTC, a Classic-specific capture product,
+duplicated native endpoint resources/journal schema, and development tests in
+runtime exports. It distinguishes removals that preserve features from transfers
+and optional workstation feature decisions. No implementation was removed by the
+review; prior qualification work does not establish that every feature belongs in
+this package. The next cleanup should remove maintained decisions and duplicated
+implementation rather than add wrappers around the current surface.
+
 ### Lua session policy replacement — 2026-11-04
 
 Implementation is underway on `codex/julia-session-policy-20261104`. The
