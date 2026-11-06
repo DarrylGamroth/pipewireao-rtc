@@ -358,6 +358,12 @@ the development workspace includes them. A registered application resolves the
 package through its Project/Manifest; it does not copy `src/` or `test/` into
 the application payload, and the development test workspace is not an
 application dependency.
+
+Measured-influence preparation requires explicitly loading AdaptiveOpticsSim
+0.3.20 or newer. Its `Optics.resample_measured_influences` owns coordinate sampling
+and interpolation. RTC validates and decodes the sealed FITS input and retains
+its provenance. This preparation requires no HIL transport package.
+
 Run portable verification with:
 
 ```sh

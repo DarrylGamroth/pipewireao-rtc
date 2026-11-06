@@ -5,7 +5,7 @@ preparation runs here; numerical execution remains in the prepared AOS graph.
 """
 module InstrumentConfiguration
 
-import JSON, SHA, FITSIO, Interpolations
+import JSON, SHA, FITSIO
 import ..Schemas
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
 const D = DeploymentConfiguration

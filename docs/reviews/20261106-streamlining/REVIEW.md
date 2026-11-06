@@ -29,12 +29,50 @@ JuliaFormatter 2.14.8 preserves syntax/literals and is idempotent for all three
 changed Julia files (`/tmp/rtc-streamline-format-20261106.log`). No core, owner or
 service was launched. No deployment or instrument source was rewritten.
 
-## Scientific transfers in progress
+## Measured-influence scientific ownership
 
-Measured-influence resampling and detector layout are being transferred to AOS
-through its public scientific interfaces. RTC retains input admission and
-provenance. Measured influence preparation must explicitly select AOS rather than
-leave a numerical fallback in RTC; ordinary RTC loading remains independent of
-optional science packages. Receiving source, compatibility and numerical evidence
-will be recorded with each verified transfer. No receiving API or release is
-claimed complete by the initial retirement changeset.
+AOS commit `8f7f09bc`, dedicated branch `codex/rtc-scientific-ownership-20261106`
+in `AdaptiveOpticsSim-rtc-ownership`, adds the transport-neutral public
+`Optics.resample_measured_influences`. Its glossary and docstring define the
+source-grid coordinates, full-square bilinear sampling, physical-command columns,
+signed reference command, OPD scaling and Float32 output. The interpolation
+expression and evaluation order are preserved. AOS version 0.3.20 owns the new
+interface and Interpolations dependency; no registry or release was published.
+
+RTC removes coordinate construction and interpolation, and its AOS-only extension
+calls that interface after artifact admission. FITS path/hash/HDU/axes/type/shape
+checks, storage bounds, identity-registration admission and provenance remain in
+RTC. The cold extension call uses `invokelatest` because explicit optional science
+loading can occur within the same preparation call. Missing AOS fails clearly;
+there is no numerical fallback and HIL is not required. RTC weak compatibility
+now requires the receiving AOS 0.3.20 API. The package environment is regenerated
+with Pkg; removing Interpolations eliminates 14 entries from its current manifest
+closure. Application/instrument pins are not rewritten.
+
+Verified with Julia 1.13.3:
+
+| Gate | Passing assertions | Log under `/tmp/` |
+| --- | ---: | --- |
+| AOS core optics, including sampler | 1,352 | `aos-rtc-core-optics-tests.log` |
+| Standalone AOS sampler | 47 | `aos-rtc-measured-tests.log` |
+| Exact comparison against frozen RTC `463e39c` coordinate/interpolation code | 48 | `aos-rtc-sampler-equivalence.log` |
+| RTC artifact admission without AOS | 16 | `rtc-influence-admission-20261106.log` |
+| Original RTC FITS/provenance tests plus late AOS load and no-HIL checks | 43 | `rtc-influence-science-final-20261106.log` |
+
+The comparison covers Float32/Float64 cubes, square/rectangular source grids,
+resolutions 1/2/3/8, physical-command permutation and signed reference commands.
+All compared matrices are exactly equal. New scientific tests also cover views,
+source precision, boundary coverage and invalid/nonfinite inputs. Root source
+review checked coordinate signs, scaling, interpolation order and retained input
+admission. The first AOS core-optics attempt exposed the missing reviewed public
+API entry; it was declared consistently with the glossary before the passing run.
+
+RTC science checks use `/tmp/rtc-scientific-ownership-env-20261106`, derived from
+the existing optional environment in a new directory and resolved with the new
+AOS worktree. AOS checks use `/tmp/aos-rtc-ownership-env`. Existing environments
+were preserved. The positive FITS selector remains outside the core suite; the
+core retains artifact admission without importing optional scientific packages.
+These software checks do not qualify live lifecycle, GPU execution or deadlines.
+
+Detector layout transfer is the next slice. Classic capture ownership and optional
+workstation features retain the reviewed scope/prerequisites until implemented.

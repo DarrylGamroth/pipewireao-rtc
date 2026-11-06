@@ -37,8 +37,12 @@ and marker-validation branches are removed; new declarations require the native
 owner contracts. NEC-08's current runtime/version guidance now matches Julia
 MediaSession and Julia 1.13. Focused admission/export/package selectors pass 556
 assertions. [Implementation evidence](reviews/20261106-streamlining/REVIEW.md)
-records each verified slice. Scientific ownership transfers are next; optional
-workstation feature retirement is not implied.
+records each verified slice. Measured-influence sampling now belongs to AOS
+0.3.20; RTC retains artifact admission and provenance through an AOS-only
+extension. The core drops its Interpolations dependency; 48 frozen-baseline
+numerical comparisons are exactly equal, AOS core optics passes 1,352 assertions,
+and RTC science preparation passes 43. Detector layout is the next transfer;
+optional workstation feature retirement is not implied.
 
 ### Session operation journal removal — 2026-11-06
 

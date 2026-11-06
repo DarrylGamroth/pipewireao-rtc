@@ -133,36 +133,10 @@ function _influence_storage_size(shape, element_bytes, name)
     return bytes
 end
 
-function _influence_sample_coordinates(
-    metadata, spatial_shape, description, resolution, registration
+"The AOS-only extension owns measured-influence sampling of an admitted FITS cube."
+_influence_modes(samples, grid_shape, metadata, resolution, registration) = throw(
+    ArgumentError("measured-influence preparation requires loading AdaptiveOpticsSim")
 )
-    columns, rows = description.layout.grid_shape
-    half = resolution / 2
-    # AOS pupil arrays index increasing normalized x first, increasing y second.
-    # The mirror description indexes source columns rightward and rows downward.
-    coordinates = ntuple(2) do axis
-        centre = (axis == 1 ? columns : rows) / 2 + 0.5
-        direction = axis == 1 ? 1 : -1
-        values = [
-            (
-                (
-                    centre +
-                    direction * ((i - (resolution + 1) / 2) / half) /
-                    registration.actuator_pitch_pupil_radius - metadata.sample_origin[axis]
-                ) / metadata.sample_pitch[axis] + 1
-            ) for i in 1:resolution
-        ]
-        all(isfinite, values) &&
-        minimum(values) >= 1 &&
-        maximum(values) <= spatial_shape[axis] || throw(
-            ArgumentError(
-                "influence sampling domain does not cover the full target pupil square"
-            ),
-        )
-        values
-    end
-    return coordinates
-end
 
 """
     _load_influence_functions(spec, description, pupil_resolution, pupil_registration)
@@ -175,6 +149,8 @@ The required SHA-256 identifies the original snapshot; `type` selects Float32 or
 Float64 decoding before interpolation, and `shape` is in logical axis order.
 The separable source-grid interpolation supports identity pupil registration
 only; other registrations require a general two-dimensional resampler.
+Load AdaptiveOpticsSim to select its scientific sampler; no HIL dependency is
+needed for measured-influence preparation.
 """
 function _load_influence_functions(
     spec::NamedTuple, description, pupil_resolution, pupil_registration
@@ -199,24 +175,15 @@ function _load_influence_functions(
     T = metadata.type == "Float32" ? Float32 : Float64
     prepared = Artifacts.prepare_snapshot(source, T, metadata.shape, snapshot)
     spatial_shape = (metadata.shape[1], metadata.shape[2])
-    column_samples, row_samples = _influence_sample_coordinates(
-        metadata, spatial_shape, description, resolution, registration
+    # Preparation can follow explicit optional-package loading in the same call.
+    modes = Base.invokelatest(
+        _influence_modes,
+        prepared.data,
+        description.layout.grid_shape,
+        metadata,
+        resolution,
+        registration,
     )
-    logical = prepared.data
-    modes = Matrix{Float32}(undef, resolution * resolution, count)
-    scale = metadata.opd_scale_m / metadata.reference_command_m
-    for (plane, command) in pairs(metadata.command_indices)
-        interpolant = Interpolations.interpolate(
-            view(logical, :, :, plane), Interpolations.BSpline(Interpolations.Linear())
-        )
-        for j in 1:resolution, i in 1:resolution
-            value = Float32(interpolant(column_samples[i], row_samples[j]) * scale)
-            isfinite(value) || throw(
-                ArgumentError("resampled influence response must remain finite Float32")
-            )
-            modes[i+(j-1)*resolution, command] = value
-        end
-    end
     # Publication provenance must remain independent of a local build directory.
     artifact = filter(pair -> first(pair) != "source", prepared.provenance)
     provenance = (;

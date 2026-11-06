@@ -12,7 +12,6 @@ Clocks = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
 DBInterface = "a10d1c49-ce27-4219-8d33-6db1a4562965"
 FITSIO = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
 Hsm = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
-Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PipeWireAO = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
@@ -36,6 +35,7 @@ FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
 JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
 
 [extensions]
+PipeWireAORTCOpticsExt = "AdaptiveOpticsSim"
 PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
 PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
 PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
@@ -45,7 +45,7 @@ PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithm
 [compat]
 AMDGPU = "2.7"
 AdaptiveOpticsCalibration = "0.17.3"
-AdaptiveOpticsSim = "0.3.19"
+AdaptiveOpticsSim = "0.3.20"
 AdaptiveOpticsSimPipeWireHIL = "0.5.0"
 Agent = "0.4.1"
 CUDA = "6.4.2"
@@ -56,7 +56,6 @@ FilterGraphAlgorithms = "0.11.0"
 FilterGraphIsland = "0.4.0"
 FilterGraphPipeWire = "0.4.1"
 Hsm = "0.3.2"
-Interpolations = "0.16"
 JSON = "1.12"
 JuliaFilterGraph = "0.7.0"
 LinearAlgebra = "1"

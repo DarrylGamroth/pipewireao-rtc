@@ -169,6 +169,11 @@
 
 ## Instrument export checks
 
+- `test/test_instrument_influences.jl` checks measured-influence artifact admission
+  without science packages. `test/instrument_influences_science.jl` runs the
+  original FITS/resampling/provenance checks with AdaptiveOpticsSim 0.3.20 or newer
+  selected explicitly; it also checks late extension loading without HIL. Neither
+  selector opens a core. The scientific sampler belongs to AOS, not RTC.
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
 - `test/runtime_install.jl` checks actual instrument export, registered dependency
