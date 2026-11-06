@@ -207,12 +207,7 @@ Validate exact node owners and retained process identities, then return the
 RTC configuration for this invocation. This does not start a session.
 """
 function session_configuration(
-    spec,
-    session,
-    bindings,
-    records;
-    node_owners::Dict{String,String},
-    configuration_store_root::Union{Nothing,AbstractString} = PipeWireAORTC.ConfigurationStore.default_root(),
+    spec, session, bindings, records; node_owners::Dict{String,String}
 )
     isempty(D.validate_session_links(session)) &&
         fail("native session requires at least one declared connection")
@@ -280,13 +275,6 @@ function session_configuration(
             PipeWireAORTC.InstrumentDefinition.publication(spec, bindings),
         ),
     )
-    if configuration_store_root !== nothing
-        root = String(configuration_store_root)
-        isabspath(root) && !occursin('\0', root) ||
-            fail("configuration store root must be an absolute path without NUL")
-        policy["journal.path"] = joinpath(root, "history.sqlite3")
-        policy["properties"]["pipewireao.rtc.session.journal"] = "pipewireao.configuration/1"
-    end
     return Dict{String,Any}(
         "context.properties" => Dict{String,Any}(
             "library.use-fallback" => false,
@@ -308,19 +296,11 @@ Write validated native configuration below `runtime` and return its path.
 The runtime must match the invocation's `RUNTIME` binding.
 """
 function write_session_config(
-    spec,
-    session,
-    bindings,
-    records,
-    runtime;
-    node_owners::Dict{String,String},
-    configuration_store_root::Union{Nothing,AbstractString} = PipeWireAORTC.ConfigurationStore.default_root(),
+    spec, session, bindings, records, runtime; node_owners::Dict{String,String}
 )
     get(bindings, "RUNTIME", nothing) == runtime ||
         fail("configuration runtime differs from launch binding")
-    config = session_configuration(
-        spec, session, bindings, records; node_owners, configuration_store_root
-    )
+    config = session_configuration(spec, session, bindings, records; node_owners)
     directory = joinpath(runtime, "rtc")
     mkpath(directory)
     path = joinpath(directory, "rtc.conf")

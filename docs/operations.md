@@ -768,23 +768,19 @@ Verification intent: oversized input/file, dimension overflow, flood/slow
 client/disconnect, operator rejection, stopped submission, running adoption,
 unknown timeout outcome and required-object monitoring between commands.
 
-The selected headless configuration journal covers property-set and parameter
-requests admitted through the session endpoint. A journal-enabled session MUST
-persist the request before dispatching its scientific effect and persist the
-reported completion before publishing it. Journal I/O MUST run outside PipeWire
-callbacks and the session main context. The original finite request deadline
-includes journal work. A failure before dispatch MUST refuse the operation without
-faulting an otherwise healthy scientific session. An effect whose durable outcome
-cannot be established MUST remain unknown; history MUST NOT infer adoption,
-rollback or permission to retry. History queries MUST retain the original session,
-controller, endpoint and token identities across client exits.
+Native property and parameter requests MUST retain finite deadlines and
+correlation through submission and owner response. The response MUST distinguish
+submission from observed active adoption. If an effect's outcome cannot be
+established, it MUST remain unknown; clients MUST NOT infer adoption or rollback,
+or automatically retry it. The RTC does not require durable operation history or
+a durable write before dispatch. These controls do not provide complete scientific
+stream recording.
 
-Verification intent: two independent native clients contribute to one SQLite
-history; refused pre-effect writes produce no scientific effect; expiry or
-controller loss while waiting for persistence does not dispatch later; restart
-retains unresolved requests without replay. Artifact registration and history
-queries run headlessly with the GUI absent. This is configuration-operation
-history, not complete scientific stream recording.
+Verification intent: native clients preserve request identity and deadline
+semantics; expiry and controller loss do not produce a later implicit dispatch;
+unknown outcomes are not replayed or reported as rolled back. Artifact catalog
+registration and retrieval remain available independently of session operation
+history.
 
 ### RTC-DEV-023 — Deployment controls and documentation
 
@@ -1257,9 +1253,10 @@ CPU transport tests or host real-time qualification.
 The local [management endpoint](MANAGEMENT_ENDPOINT.md) is an RTC-owned client
 access boundary for the tooling below. It does not replace native live controls
 or add a session authority. Its companion, shared worker and durable receipt
-lifetime are independent of GUI connections. Per-user catalog/history remains
-usable without a running session; simulator effects retain the exact managed
-incarnation fences and scientific preparation requirements below.
+lifetime are independent of GUI connections. Per-user catalog queries and
+management receipt lookup remain usable without a running session; simulator
+effects retain the exact managed incarnation fences and scientific preparation
+requirements below.
 
 For a registered managed development application, the headless RTC tooling MUST
 describe startup settings using the selected plant package's declared defaults

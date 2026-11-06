@@ -62,35 +62,34 @@ using PipeWireAORTC: SessionConfiguration
         "controller.node.name",
         "admission.controller-instance",
         "startup.timeout-ms",
-        "journal.path",
         "properties",
     ))
-    @test policy["journal.path"] ==
-        joinpath(PipeWireAORTC.ConfigurationStore.default_root(), "history.sqlite3")
     @test policy["properties"]["pipewireao.rtc.session.session-uuid"] ==
         bindings["SESSION_UUID"]
-    @test policy["properties"]["pipewireao.rtc.session.journal"] ==
-        "pipewireao.configuration/1"
-    disabled = SessionConfiguration.session_configuration(
-        spec,
-        session,
-        bindings,
-        records;
-        node_owners = mapping,
-        configuration_store_root = nothing,
-    )
-    @test !haskey(disabled["pipewireao.session"], "journal.path")
-    @test !haskey(
-        disabled["pipewireao.session"]["properties"], "pipewireao.rtc.session.journal"
-    )
-    @test_throws SessionConfiguration.ConfigurationError SessionConfiguration.session_configuration(
-        spec,
-        session,
-        bindings,
-        records;
-        node_owners = mapping,
-        configuration_store_root = "relative",
-    )
+    @test !haskey(policy, "journal.path")
+    @test !haskey(policy["properties"], "pipewireao.rtc.session.journal")
+
+    mktempdir() do directory
+        for setting in (:path, :property)
+            stale = deepcopy(configuration)
+            old_policy = stale["pipewireao.session"]
+            if setting === :path
+                old_policy["journal.path"] = joinpath(
+                    directory, "missing", "history.sqlite3"
+                )
+            else
+                old_policy["properties"]["pipewireao.rtc.session.journal"] = "pipewireao.configuration/1"
+            end
+            path = joinpath(directory, "stale.conf")
+            PipeWireAORTC.ScienceExport.write_spa_config(path, stale)
+            withenv("PIPEWIREAO_CONFIG_NAME" => path) do
+                @test_throws r"session journaling is retired; regenerate" PipeWireAORTC.MediaSession.Session(
+                    path
+                )
+            end
+            @test !ispath(joinpath(directory, "missing"))
+        end
+    end
 
     spec["startup-timeout-ms"] = 900000
     budget_configuration = SessionConfiguration.session_configuration(
@@ -110,13 +109,7 @@ using PipeWireAORTC: SessionConfiguration
     mktempdir() do runtime
         private = merge(bindings, Dict("RUNTIME" => runtime))
         path = SessionConfiguration.write_session_config(
-            spec,
-            session,
-            private,
-            records,
-            runtime;
-            node_owners = mapping,
-            configuration_store_root = nothing,
+            spec, session, private, records, runtime; node_owners = mapping
         )
         @test path == joinpath(runtime, "rtc/rtc.conf")
         @test isfile(path)
@@ -215,7 +208,7 @@ end
         "argv" => [
             julia,
             "--startup-file=no",
-            "--threads=2,1",
+            "--threads=1,0",
             "--project=" * project,
             "-e",
             code,

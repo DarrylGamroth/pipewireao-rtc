@@ -5,7 +5,7 @@ const E = PipeWireAORTC.ScienceExport
 @testset "generated RTC launcher is the sole RTC runtime asset" begin
     @test occursin("# Generated", E.rtc_launcher())
     @test occursin("PipeWireAORTC.MediaSession.main(ARGS)", E.rtc_launcher())
-    @test occursin("--threads=2,1", E.rtc_launcher())
+    @test occursin("--threads=1,0", E.rtc_launcher())
     @test !occursin("wireplumber", lowercase(E.rtc_launcher()))
     @test !occursin("lua", lowercase(E.rtc_launcher()))
     @test occursin("--startup-file=no", E.rtc_launcher())

@@ -100,7 +100,7 @@ properties. Reuse these existing contracts when changing their consumers:
 | `MediaSession.AbstractEvent` | Owned records implement `update!(session, event)` after native pumping; shared submission/completion records dispatch directly. No borrowed native pointers cross this boundary. | `media_session_objects.jl`, `media_session_transport.jl`, private-core selectors |
 | `MediaSession.AbstractOwner` / `AbstractSource` | `check_owner!` and `request_owner!` retain exact incarnation and reply correlation. Source methods prepare, connect, operate and shut down through concrete protocol bindings. Initial unconnected Hold retains actual Status evidence rather than inventing a connected cursor or Pause receipt. | `media_session_controls.jl`, `media_session_effects.jl`, `media_session_acquisition_private_core.jl` |
 | `MediaSession.AbstractEffect` | Hsm handlers emit typed effects; `perform!` executes once outside dispatch. `budgeted` returns a Boolean independent of phase; only emergency `Disconnect` bypasses the scientific-operation deadline. Correlated origin belongs to the effect ticket and must not be reconstructed from mutable lifecycle state. | `test_media_session.jl`, `media_session_effects.jl`, transport and private-core selectors |
-| `MediaSession.Ingress.AbstractTicket` / `AbstractAction` | Copied request tickets produce bounded dispatch, publication, journal and authority-failure actions for the session task. Journal acknowledgement precedes dispatch/publication where required. | `media_session_ingress.jl`, `media_session_journal.jl` |
+| `MediaSession.Ingress.AbstractTicket` / `AbstractAction` | Copied request tickets produce bounded dispatch, publication and authority-failure actions for the session task. Dispatch preserves the request deadline and correlation; operation history is not persisted. | `media_session_ingress.jl` and session transport selectors |
 | Calibration preparation/acquisition and correction loops | These are concrete Hsm machines, not missing abstract interfaces. Their event and effect contracts retain run/serial/deadline and restoration/release invariants. Acquisition's parametric `Plan` reuses the codec-owned `AbstractRule` rather than creating another rule hierarchy. | `test_calibration_preparation.jl`, `test_calibration_acquisition.jl`, `test_calibration_procedure.jl`, `test_correction_loops.jl`, `hsm_allocations.jl` |
 
 An internal adapter interface does not by itself promise a public plugin API.
@@ -182,7 +182,7 @@ no existing hardware, GPU, sustained cadence or strict deadline claim transfers.
 | RTC-DEV-010/013 | Existing multi-graph/groups/passive boundaries, external ownership and exact full port schemas; no graph parser/scheduler or external node ownership added |
 | RTC-DEV-021/025 | Exact owner readiness and resource-admission controller; held startup, graph-before-source Run, source-before-graph Hold; cursor/reset proofs, ordered shutdown and emergency cleanup |
 | RTC-DEV-022/030 | Same native envelope and limits, receipt-based deadlines, competing/stale/busy/malformed callers, retained terminal/rejection; typed scalar/parameter queries/updates and correction guards |
-| RTC-DEV-022 journal | Requested durability before mutation, completed durability before publication; pre/post-dispatch failure and expiry/controller-loss races; no replay or inferred rollback |
+| RTC-DEV-022 outcome semantics | Finite deadline and correlation through dispatch/reply; submission is distinct from observed adoption; unknown outcomes are not replayed or treated as rollback. No durable operation-history gate applies. |
 
 Two observed Lua behaviors are implementation gaps, not compatibility promises:
 Quit currently rejects Configuring/Fault, and pending public work rejects Quit.
@@ -197,8 +197,8 @@ retention and unknown-outcome rules remain unchanged.
    preserving existing callers, and verify against an isolated native core.
 3. Add the pure Hsm session machine with gated effect tests for normal sequences,
    all-managed-state Quit, cancellation, stale replies, failure and expiry.
-4. Add the native effect/ingress adapter, source/correction/property semantics and
-   journal ordering. Connect the executable and authoritative generators together;
+4. Add the native effect/ingress adapter and source/correction/property semantics.
+   Connect the executable and authoritative generators together;
    remove production Lua loading and dependencies. Test fresh export/load and
    native control against a private core and external graph process.
 5. Obtain independent review, run relevant native/core/private integration gates,

@@ -697,7 +697,6 @@ end
             bindings,
             records;
             node_owners = Dict("simulator-wfs" => "simulator", "core-sink" => "core"),
-            configuration_store_root = nothing,
         )
         policy = configuration["pipewireao.session"]
         @test Set(keys(configuration)) ==

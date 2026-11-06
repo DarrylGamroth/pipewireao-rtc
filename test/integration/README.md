@@ -151,19 +151,19 @@ Optional `media_session_private_core.jl`,
 `media_session_process.jl`
 checks need the current source
 environment with the PipeWireAO public `iterate!` API and a matching native SDK
-prefix. They own only a private core and test processes. Select two default-pool
-threads plus one interactive thread and set `PIPEWIREAO_PREFIX` to the matching
-PipeWireAO SDK:
+prefix. They own only a private core and test processes. Session control needs
+one owning Julia thread and no journal worker pool. Use `--threads=1,0` and set
+`PIPEWIREAO_PREFIX` to the matching PipeWireAO SDK:
 
 ```sh
 PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
-  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_private_core.jl
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_private_core.jl
 PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
-  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_acquisition_private_core.jl
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_acquisition_private_core.jl
 PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
-  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_host.jl
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_host.jl
 PIPEWIREAO_PREFIX=/absolute/path/to/pipewireao-sdk \
-  julia --startup-file=no --threads=2,1 --project=/absolute/source-environment test/media_session_process.jl
+  julia --startup-file=no --threads=1,0 --project=/absolute/source-environment test/media_session_process.jl
 ```
 
 These are functional private-core checks; they do not qualify service

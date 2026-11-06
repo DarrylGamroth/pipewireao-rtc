@@ -1,4 +1,4 @@
-# Optional native host selector: use the source cohort and --threads=2,1.
+# Optional native host selector: use the source cohort and --threads=1,0.
 module MediaSessionHostTests
 using Test, PipeWireAORTC, PipeWireAO
 const S = PipeWireAORTC.MediaSession
@@ -8,7 +8,7 @@ const Clocks = S.Clocks
 const SECOND = Int64(1_000_000_000)
 include("control_private_core.jl")
 
-function host_session(socket, directory, daemon; journaled = false)
+function host_session(socket, directory, daemon)
     policy = Dict{String,Any}(
         "instance" => "101",
         "controller.instance" => "102",
@@ -35,7 +35,6 @@ function host_session(socket, directory, daemon; journaled = false)
             ],
         ),
     )
-    journaled && (policy["journal.path"] = joinpath(directory, "host.sqlite"))
     config = Dict(
         "context.properties" => Dict(
             "remote.name" => socket,
@@ -108,7 +107,6 @@ function send_pending!(session, command)
     set_param!(endpoint.proxy, PipeWireAO.SPA.PARAM_PROPS, request)
     wait_host(() -> length(session.requests) == 1, session)
     @test session.ingress.pending !== nothing
-    @test session.ingress.pending.dispatched
     return only(values(session.requests))
 end
 
@@ -147,14 +145,14 @@ function drain_failure(session)
 end
 
 @testset "Native host terminal paths" begin
-    for journaled in (false, true)
-        @testset "Disconnect with mapped ingress, journaled=$journaled" begin
+    for operation in (:quit, :properties_set)
+        @testset "Disconnect with mapped ingress, operation=$operation" begin
             with_control_private_core() do socket, directory, daemon
-                session = host_session(socket, directory, daemon; journaled)
+                session = host_session(socket, directory, daemon)
                 try
                     prepare_host!(session)
                     command =
-                        journaled ?
+                        operation === :properties_set ?
                         R.RunnerCommand(
                             :properties_set,
                             "graph",
@@ -164,36 +162,6 @@ end
                     disconnect_pending!(session)
                     @test drain_failure(session) === nothing
                     @test isempty(session.requests)
-                    if journaled
-                        writer = something(session.journal)
-                        close(writer) # Accepted terminal work must drain despite no wire.
-                        result = something(S.take_result!(writer))
-                        @test result.success
-                        S.Ingress.journal_receipt!(
-                            session.ingress, result.token, result.success, result.message
-                        )
-                        @test drain_failure(session) === nothing
-                        database = S.SQLite.DB(writer.path)
-                        try
-                            rows = S.DBInterface.execute(
-                                database,
-                                "SELECT event,record,operation_key FROM operation_events ORDER BY sequence",
-                            ) do records
-                                [
-                                    (
-                                        event = String(row.event),
-                                        record = Vector{UInt8}(row.record),
-                                        key = String(row.operation_key),
-                                    ) for row in records
-                                ]
-                            end
-                            @test [row.event for row in rows] == ["requested", "unknown"]
-                            @test rows[1].key == rows[2].key
-                            @test rows[2].record == session.ingress.completion.data
-                        finally
-                            close(database)
-                        end
-                    end
                     completion = R.decode_completion(session.ingress.completion)
                     @test completion.header.token == ticket.header.token
                     @test completion.header.result == -5

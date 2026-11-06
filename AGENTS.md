@@ -58,6 +58,10 @@
   Historical Python tools remain in Git history with their recorded evidence.
 - Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
   Saved reports/configuration may use JSON. Saved files never prove live readiness.
+- Session controls do not persist operation history or wait for durable writes.
+  Preserve finite deadlines, exact correlation and unknown-outcome handling.
+  Archiving is deferred to a separate service; do not add an RTC recording store.
+  Artifact provenance and management job receipts retain their separate contracts.
 - Native PipeWire configuration uses maintained standard relaxed SPA-JSON.
   Human-authored instrument, simulation, RTC, process/profile, calibration and
   GUI configuration uses bounded YAML and is compiled to existing native runtime

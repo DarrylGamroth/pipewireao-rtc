@@ -132,12 +132,7 @@ end
     )
     mapping = Dict("primary-source" => "primary", "optical-sensor" => "optical")
     configuration = S.session_configuration(
-        spec,
-        session,
-        bindings,
-        records;
-        node_owners = mapping,
-        configuration_store_root = nothing,
+        spec, session, bindings, records; node_owners = mapping
     )
     arguments = configuration["pipewireao.session"]
     @test arguments["source"]["role"] == "primary"
@@ -150,43 +145,23 @@ end
         invalid = deepcopy(spec)
         invalid["auxiliary-source-owners"] = roles
         @test_throws S.ConfigurationError S.session_configuration(
-            invalid,
-            session,
-            bindings,
-            records;
-            node_owners = mapping,
-            configuration_store_root = nothing,
+            invalid, session, bindings, records; node_owners = mapping
         )
     end
     invalid = deepcopy(spec)
     delete!(invalid["owners"][2], "control-protocol")
     @test_throws S.ConfigurationError S.session_configuration(
-        invalid,
-        session,
-        bindings,
-        records;
-        node_owners = mapping,
-        configuration_store_root = nothing,
+        invalid, session, bindings, records; node_owners = mapping
     )
     invalid = deepcopy(spec)
     invalid["owners"][2]["control-node"] = "primary-source"
     @test_throws S.ConfigurationError S.session_configuration(
-        invalid,
-        session,
-        bindings,
-        records;
-        node_owners = mapping,
-        configuration_store_root = nothing,
+        invalid, session, bindings, records; node_owners = mapping
     )
     invalid = deepcopy(records)
     invalid["optical"]["pid"] = 0
     @test_throws S.ConfigurationError S.session_configuration(
-        spec,
-        session,
-        bindings,
-        invalid;
-        node_owners = mapping,
-        configuration_store_root = nothing,
+        spec, session, bindings, invalid; node_owners = mapping
     )
 end
 

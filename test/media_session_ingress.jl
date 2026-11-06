@@ -23,9 +23,9 @@ function select_actions(::Type{T}, actions) where {T}
 end
 add_selected!(selected::Vector{T}, action::T) where {T} = (push!(selected, action); nothing)
 add_selected!(selected, action) = nothing
-function gate(; journaled = false)
+function gate()
     clock = Clocks.CachedNanoClock(Int64(10_000_000_000))
-    g = I.Gate(17; clock, journaled, owner_pid = 19)
+    g = I.Gate(17; clock, owner_pid = 19)
     @test length(I.take_actions!(g)) == 1
     I.controllers!(g, [FACTS])
     @test length(I.take_actions!(g)) == 1
@@ -72,6 +72,12 @@ function reply(ticket; failure = false, quit = false)
             Pod(SPA.Id(UInt32(6))),
             Pod(str(Pod("graph"), Pod(str()), Pod(false))),
         )
+    elseif ticket.header.operation == 14
+        str(
+            Pod(SPA.Id(UInt32(3))),
+            Pod(SPA.Id(UInt32(6))),
+            Pod(str(Pod("graph"), Pod("matrix"), Pod(nothing), Pod(false))),
+        )
     else
         str(Pod(SPA.Id(UInt32(3))), Pod(SPA.Id(UInt32(2))), Pod(str(Pod(str()))))
     end
@@ -98,14 +104,13 @@ completion(g) = first(C.decode_completion(g.completion; endpoint = :lifecycle))
     actions = admit!(g, request(1))
     ticket = only(select_actions(I.DispatchRequest, actions)).ticket
     @test ticket.controller == FACTS.identity
-    @test ticket.client_name == "client"
     @test ticket.deadline == Int64(15_000_000_000)
     @test g.last_token == 1
     @test isempty(select_actions(I.DispatchRequest, admit!(g, request(1))))
     @test length(select_actions(I.PublishRecords, admit!(g, request(1)))) == 1
     @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2))))
     @test rejection(g).result == -16
-    @test g.pending.ticket === ticket
+    @test g.pending === ticket
     I.complete!(g, ticket, reply(ticket))
     @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
     @test g.pending === nothing && completion(g).token == 1
@@ -190,109 +195,57 @@ end
     @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
     @test completion(g).result == -5
 end
-@testset "requested and terminal journal fences" begin
-    g, _ = gate(; journaled = true)
-    actions = admit!(g, write_request(1))
-    requested = only(select_actions(I.AppendJournal, actions))
-    @test requested.event == :requested
-    @test isempty(select_actions(I.DispatchRequest, actions))
-    ticket = requested.ticket
-    I.journal_receipt!(g, requested.id, true)
-    @test only(select_actions(I.DispatchRequest, I.take_actions!(g))).ticket === ticket
-    I.journal_receipt!(g, requested.id, true)
-    @test isempty(I.take_actions!(g))
-    initial = g.completion
-    I.complete!(g, ticket, reply(ticket))
-    actions = I.take_actions!(g)
-    completed = only(select_actions(I.AppendJournal, actions))
-    @test completed.event == :completed
-    @test isempty(select_actions(I.PublishRecords, actions))
-    @test g.completion == initial
-    I.journal_receipt!(g, completed.id, true)
-    @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
-    @test completion(g).result == 0
-    @test g.pending === nothing
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.journal_receipt!(g, requested.id, false, "storage unavailable")
-    actions = I.take_actions!(g)
-    @test isempty(select_actions(I.DispatchRequest, actions))
-    @test isempty(select_actions(I.AuthorityFailed, actions))
-    @test completion(g).result == -5
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.journal_receipt!(g, requested.id, true)
-    I.take_actions!(g)
-    I.complete!(g, requested.ticket, reply(requested.ticket))
-    completed = only(select_actions(I.AppendJournal, I.take_actions!(g)))
-    I.journal_receipt!(g, completed.id, false, "storage unavailable")
-    @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
-    @test completion(g).result == -5
+@testset "property and parameter changes proceed without persistence" begin
+    parameter = R.RunnerCommand(
+        :parameter, "graph", "matrix", "F32_LE", UInt32[2, 2], "schema", "/tmp/parameter"
+    )
+    header = C.RequestHeader(
+        CONTROLLER, Int64(17), Int64(1), R.operation_id(parameter), Int64(5_000_000_000)
+    )
+    for pod in (write_request(1), R.encode_request(header, parameter))
+        g, _ = gate()
+        initial = g.completion
+        actions = admit!(g, pod)
+        ticket = only(select_actions(I.DispatchRequest, actions)).ticket
+        @test g.pending === ticket
+        @test g.completion == initial
+        @test isempty(select_actions(I.PublishRecords, actions))
+        I.complete!(g, ticket, reply(ticket))
+        @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
+        @test completion(g).result == 0 && g.pending === nothing
+        result = R.decode_completion(g.completion).result
+        @test result.outcome == R.Submitted
+        @test !result.details.active_adoption_observed
+        terminal = g.completion
+        I.complete!(g, ticket, reply(ticket; failure = true))
+        @test isempty(I.take_actions!(g)) && g.completion == terminal
+    end
 end
-@testset "journal expiry before and after dispatch" begin
-    g, clock = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    Clocks.update!(clock, Int64(15_000_000_000))
-    I.tick!(g)
-    actions = I.take_actions!(g)
-    terminal = only(select_actions(I.AppendJournal, actions))
-    @test terminal.event == :completed
-    @test isempty(select_actions(I.AuthorityFailed, actions))
-    I.journal_receipt!(g, requested.id, true)
-    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
-    I.journal_receipt!(g, terminal.id, true)
-    I.take_actions!(g)
-    @test completion(g).result == -5
-    g, clock = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.journal_receipt!(g, requested.id, true)
-    I.take_actions!(g)
-    I.complete!(g, requested.ticket, reply(requested.ticket))
-    completed = only(select_actions(I.AppendJournal, I.take_actions!(g)))
-    Clocks.update!(clock, Int64(15_000_000_000))
-    I.journal_receipt!(g, completed.id, true)
-    actions = I.take_actions!(g)
-    unknown = only(select_actions(I.AppendJournal, actions))
-    @test unknown.event == :unknown
-    @test length(select_actions(I.AuthorityFailed, actions)) == 1
-    I.journal_receipt!(g, unknown.id, true)
-    I.take_actions!(g)
-    @test completion(g).result == -5
-end
-@testset "Quit supersedes pending work and retains old evidence" begin
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.journal_receipt!(g, requested.id, true)
-    I.take_actions!(g)
-    old = requested.ticket
-    actions = admit!(g, request(2, :quit))
-    quit = only(select_actions(I.DispatchRequest, actions)).ticket
-    @test g.pending.ticket === quit && g.retired.ticket === old
-    admit!(g, request(3))
-    @test rejection(g).result == -108
-    I.complete!(g, old, reply(old; failure = true); unknown = true)
-    terminal = only(select_actions(I.AppendJournal, I.take_actions!(g)))
-    @test terminal.event == :unknown
-    @test g.pending.ticket === quit
-    I.complete!(g, quit, reply(quit; quit = true); terminal = true)
-    I.take_actions!(g)
-    @test completion(g).token == 2
-    I.journal_receipt!(g, terminal.id, true)
-    I.take_actions!(g)
-    @test completion(g).token == 2
-    @test g.pending === nothing && g.retired === nothing
-    @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2, :quit))))
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    actions = admit!(g, request(2, :quit))
-    cancelled = only(select_actions(I.AppendJournal, actions))
-    @test cancelled.event == :completed
-    @test length(select_actions(I.DispatchRequest, actions)) == 1
-    I.journal_receipt!(g, requested.id, true)
-    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
-    I.journal_receipt!(g, cancelled.id, true)
-    I.take_actions!(g)
-    @test completion(g).token == 1
+@testset "Quit supersedes dispatched work without overwriting its reply" begin
+    for quit_first in (false, true)
+        g, _ = gate()
+        old = only(select_actions(I.DispatchRequest, admit!(g, write_request(1)))).ticket
+        actions = admit!(g, request(2, :quit))
+        quit = only(select_actions(I.DispatchRequest, actions)).ticket
+        @test g.pending === quit && g.retired === old
+        admit!(g, request(3))
+        @test rejection(g).result == -108
+        if quit_first
+            I.complete!(g, quit, reply(quit; quit = true); terminal = true)
+            I.take_actions!(g)
+            @test completion(g).token == 2 && g.retired === old
+            I.complete!(g, old, reply(old; failure = true); unknown = true)
+        else
+            I.complete!(g, old, reply(old; failure = true); unknown = true)
+            I.take_actions!(g)
+            @test g.pending === quit && g.retired === nothing
+            I.complete!(g, quit, reply(quit; quit = true); terminal = true)
+        end
+        I.take_actions!(g)
+        @test completion(g).token == 2
+        @test g.pending === nothing && g.retired === nothing
+        @test isempty(select_actions(I.DispatchRequest, admit!(g, request(2, :quit))))
+    end
 end
 @testset "administrative payloads retain exact public arity" begin
     g, _ = gate()
@@ -366,34 +319,35 @@ end
     end
 end
 @testset "unknown success cannot publish a successful scientific claim" begin
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.journal_receipt!(g, requested.id, true)
-    I.take_actions!(g)
-    I.complete!(g, requested.ticket, reply(requested.ticket); unknown = true)
-    terminal = only(select_actions(I.AppendJournal, I.take_actions!(g)))
-    @test terminal.event == :unknown
-    @test first(C.decode_completion(terminal.pod; endpoint = :lifecycle)).result == -5
-    I.journal_receipt!(g, terminal.id, true)
-    I.take_actions!(g)
+    g, _ = gate()
+    ticket = only(select_actions(I.DispatchRequest, admit!(g, write_request(1)))).ticket
+    I.complete!(g, ticket, reply(ticket); unknown = true)
+    @test length(select_actions(I.PublishRecords, I.take_actions!(g))) == 1
     @test completion(g).result == -5
+    @test occursin("outcome unknown", R.decode_completion(g.completion).error.message)
 end
-@testset "controller loss while requested persistence is pending" begin
-    g, _ = gate(; journaled = true)
-    requested = only(select_actions(I.AppendJournal, admit!(g, write_request(1))))
-    I.controllers!(g, I.Controller[])
-    actions = I.take_actions!(g)
-    terminal = only(select_actions(I.AppendJournal, actions))
-    @test terminal.event == :completed
-    @test isempty(select_actions(I.AuthorityFailed, actions))
+@testset "late or expired mutations cannot become successful" begin
+    for cause in (:expiry, :controller_loss)
+        g, clock = gate()
+        ticket = only(select_actions(I.DispatchRequest, admit!(g, write_request(1)))).ticket
+        if cause === :expiry
+            Clocks.update!(clock, ticket.deadline)
+            I.tick!(g)
+        else
+            I.controllers!(g, I.Controller[])
+        end
+        actions = I.take_actions!(g)
+        @test length(select_actions(I.AuthorityFailed, actions)) == 1
+        @test completion(g).result == -5 && g.pending === nothing
+        previous = g.completion
+        I.complete!(g, ticket, reply(ticket))
+        @test isempty(I.take_actions!(g)) && g.completion == previous
+    end
+    g, clock = gate()
+    Clocks.advance!(clock, Int64(5_000_000_000))
+    actions = admit!(g, write_request(1))
     @test isempty(select_actions(I.DispatchRequest, actions))
-    I.journal_receipt!(g, requested.id, true)
-    @test isempty(select_actions(I.DispatchRequest, I.take_actions!(g)))
-    I.journal_receipt!(g, terminal.id, false, "bad\0journal" * "x"^20000)
-    actions = I.take_actions!(g)
-    @test isempty(select_actions(I.AuthorityFailed, actions))
-    @test sizeof(g.completion) <= 64 * 1024
-    @test completion(g).result == -5
+    @test rejection(g).result == -110 && g.pending === nothing
 end
 
 @testset "signed nanosecond receipts retain exact boundaries" begin

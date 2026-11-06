@@ -41,10 +41,11 @@ Request envelope (at most 64 KiB including its newline):
 
 The owner rejects unknown domains/operations and client-supplied roots. Its
 installation selects the configuration-store root and durable management state.
-The default configuration root remains ConfigurationStore.default_root(); it
-must agree with native journal installation. Simulator jobs retain their existing
-configured owner root. Live RPC operations such as Start/Stop/Reset/Status are
-not admitted through management.
+The default configuration root remains ConfigurationStore.default_root(). It
+stores artifact catalog data; session-operation journaling is retired. Management
+receipts remain in the separate management state root. Simulator jobs retain
+their existing configured owner root. Live RPC operations such as
+Start/Stop/Reset/Status are not admitted through management.
 
 For `register`, client opens the bounded regular FITS input before submitting and
 attaches exactly one SCM_RIGHTS descriptor to the first request byte. The path is
@@ -116,7 +117,9 @@ records; capacity exhaustion rejects new mutations, never deletes recovery data.
 Write acceptance before dispatch; write the complete worker reply durably before
 publishing success. Receipt writes use atomic replacement with file and directory
 synchronization. Duplicate IDs reject without redispatch, even after restart.
-Read-only list/history/describe/job do not consume retained receipt capacity.
+Read-only list/describe/job and receipt lookup do not consume retained receipt
+capacity. These durable management receipts are separate from the retired RTC
+session-operation history.
 
 A service restart marks interrupted accepted records Unknown. Worker loss or
 possible effect followed by a lost reply remains Unknown; the service never
@@ -146,8 +149,9 @@ request ID for deliberate recovery through owner tooling.
 The RTC owner installs/activates units; GUI clients never run systemctl or a
 helper command.
 When upgrading an existing installation, select its existing configuration and
-simulator roots in `ManagementCLI.install` and keep the catalog root aligned
-with the native journal. Former GUI root overrides are not migrated or merged
+simulator roots in `ManagementCLI.install`; the configuration root selects the
+artifact catalog, while the management state root holds durable operation
+receipts. Former GUI root overrides are not migrated or merged
 automatically; root selection and any reconciliation are owner operations. The native companion accepts trusted owner options (`--socket`, `--state-root`,
 `--configuration-root`, `--worker-argv`, `--operation-timeout`,
 `--describe-timeout`, `--idle-timeout`) for socket,

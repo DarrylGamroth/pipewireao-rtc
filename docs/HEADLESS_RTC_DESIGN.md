@@ -70,9 +70,9 @@ or libwireplumber assets. Historical Link/SI API details below describe the
 former implementation only.
 
 Scientific owners still apply values and report adoption. The RTC coordinates
-operations and journals requests/completions; it does not decode FITS or perform
-database work in scientific callbacks. Artifact-management features remain
-paused. GUI/CLI/Julia retain the same wire protocol and shared history.
+operations while preserving request deadlines, correlation and unknown outcomes;
+it does not persist session operation history, decode FITS or perform database
+work in scientific callbacks. GUI/CLI/Julia retain the same live-control protocol.
 
 ## Correction-loop control — investigation, 2026-10-26
 

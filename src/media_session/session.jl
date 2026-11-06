@@ -8,8 +8,7 @@ struct ShutdownRequested <: AbstractEvent end
 
 The native callbacks stage copied `AbstractEvent`s. Only the owner's Agent duty
 cycle applies those observations, dispatches Hsm events and starts typed effects.
-Scientific graph state remains in its separate process and data thread. SQLite
-is private to `Journal`'s worker and communicates through bounded messages.
+Scientific graph state remains in its separate process and data thread.
 """
 mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     configuration::Dict{String,Any}
@@ -47,7 +46,6 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     active_job::Union{Nothing,Job}
     active_task::Union{Nothing,Task}
     effect_result::Union{Nothing,EffectCompleted,EffectFailed}
-    journal::Union{Nothing,Journal}
     withdrawing::Bool
     overflow_seen::Bool
     transport_error::Union{Nothing,String}
@@ -158,43 +156,12 @@ function apply!(session::Session, action::Ingress.DispatchRequest)
 end
 function apply!(session::Session, action::Ingress.PublishRecords)
     # Emergency Disconnect can retire transport before ingress retains its final
-    # reply. Gate records and journal actions still drain; a closed endpoint
+    # reply. Gate records still drain; a closed endpoint
     # cannot establish wire delivery.
     isopen(session.endpoint) || return nothing
     PipeWireAO.update_params!(
         session.endpoint, Pod[action.capability, action.completion, action.rejection]
     )
-    return nothing
-end
-function apply!(session::Session, action::Ingress.AppendJournal)
-    ticket = action.ticket
-    header = ticket.header
-    key = join(
-        (
-            header.endpoint_instance,
-            header.controller.global_id,
-            header.controller.serial,
-            header.controller.instance,
-            header.token,
-            header.operation,
-        ),
-        ':',
-    )
-    request = JournalRequest(
-        action.id,
-        session.configuration["session.uuid"],
-        action.event,
-        action.pod.data,
-        ticket.client_name,
-        ticket.controller.pid,
-        key,
-    )
-    writer = session.journal
-    if writer === nothing || !submit!(writer, request)
-        Ingress.journal_receipt!(
-            session.ingress, action.id, false, "journal command refused"
-        )
-    end
     return nothing
 end
 function apply!(session::Session, action::Ingress.AuthorityFailed)
@@ -266,7 +233,7 @@ function drain!(session::Session)
             terminal = reply.outcome === :Quit,
         )
     end
-    # Processing an action can dispatch an immediate reply or a journal refusal.
+    # Processing an action can dispatch an immediate reply.
     # Drain each bounded outbox before applying the next native observation.
     for _ in 1:Ingress.MAX_ACTIONS
         actions = Ingress.take_actions!(session.ingress)
@@ -284,8 +251,7 @@ function start_effect!(session::Session)
     session.active_job !== nothing &&
         session.active_job.ticket.serial == ticket.serial &&
         return nothing
-    # Terminal publication must have its journal receipt and leave ingress before
-    # the final native fence. Other effects are already gated by requested durability.
+    # Retained terminal replies must leave ingress before the final native fence.
     ready_for_effect(session, ticket.effect) || return nothing
     job = Job(ticket, false)
     session.active_job = job
@@ -329,18 +295,6 @@ function Agent.do_work(session::Session)
         update!(session, result)
         drain!(session)
         work += 1
-    end
-    writer = session.journal
-    if writer !== nothing
-        for _ in 1:writer.capacity
-            result = take_result!(writer)
-            result === nothing && break
-            Ingress.journal_receipt!(
-                session.ingress, result.token, result.success, result.message
-            )
-            drain!(session)
-            work += 1
-        end
     end
     tick!(session.machine)
     Ingress.tick!(session.ingress)
@@ -534,14 +488,11 @@ end
 """Open a session from its generated standard SPA-JSON configuration.
 
 No service, device or graph process is started here. The caller owns `close`.
-The creating task must stay on its creating OS thread. The optional journal
-requires an interactive policy thread and a separate default-pool worker.
+The creating task must stay on its creating OS thread.
 """
 function Session(
     path::AbstractString; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
-    isdefined(PipeWireAO, :iterate!) ||
-        throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
     file = realpath(path)
     override = get(ENV, "PIPEWIREAO_CONFIG_NAME", file)
     override == file || throw(
@@ -555,12 +506,22 @@ function Session(
     Set(("context.properties", "context.modules", "pipewireao.session")) ||
         throw(ArgumentError("session configuration has unsupported sections"))
     configuration = Dict{String,Any}(config["pipewireao.session"])
+    if haskey(configuration, "journal.path") ||
+        haskey(get(configuration, "properties", Dict()), "pipewireao.rtc.session.journal")
+        throw(
+            ArgumentError(
+                "session journaling is retired; regenerate the session configuration"
+            ),
+        )
+    end
     isempty(DeploymentConfiguration.validate_session_links(configuration["session"])) &&
         throw(ArgumentError("session requires a declared connection"))
     DeploymentConfiguration.validate_execution_groups(configuration["session"])
     modules = [entry["name"] for entry in config["context.modules"]]
     modules == ["libpipewire-module-protocol-native", "libpipewire-module-client-node"] ||
         throw(ArgumentError("session configuration has unsupported context modules"))
+    isdefined(PipeWireAO, :iterate!) ||
+        throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
     queue = EventQueue()
     loop = MainLoop()
     context = nothing
@@ -569,7 +530,6 @@ function Session(
     listener = nothing
     endpoint = nothing
     controller = nothing
-    journal = nothing
     try
         context = Context(loop; properties = Dict("config.name" => file))
         core = CoreConnection(
@@ -614,8 +574,6 @@ function Session(
                 id == SPA.PARAM_PROPS &&
                 stage!(queue, RequestReceived(nothing, Clocks.time_nanos(clock))),
         )
-        journal_path = get(configuration, "journal.path", nothing)
-        journal = journal_path === nothing ? nothing : Journal(journal_path)
         cached = Clocks.CachedNanoClock(Clocks.time_nanos(clock))
         machine = Machine(
             instance;
@@ -624,7 +582,7 @@ function Session(
                 Int64(configuration["startup.timeout-ms"]), Int64(1_000_000)
             ),
         )
-        ingress = Ingress.Gate(instance; clock = cached, journaled = journal !== nothing)
+        ingress = Ingress.Gate(instance; clock = cached)
         session = Session(
             configuration,
             loop,
@@ -661,7 +619,6 @@ function Session(
             nothing,
             nothing,
             nothing,
-            journal,
             false,
             false,
             nothing,
@@ -687,8 +644,7 @@ function Session(
         return session
     catch primary
         failures = Exception[primary]
-        for resource in
-            (journal, endpoint, controller, listener, registry, core, context, loop)
+        for resource in (endpoint, controller, listener, registry, core, context, loop)
             resource === nothing && continue
             try
                 close(resource)
@@ -754,7 +710,6 @@ function Base.close(session::Session)
             push!(failures, cleanup)
         end
     end
-    _close_resource!(failures, session.journal)
     _close_transport!(session, failures)
     for resource in (session.context, session.loop)
         _close_resource!(failures, resource)

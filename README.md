@@ -57,7 +57,7 @@ package pins.
 | `SessionInstall` | Install a sealed session package |
 | `SessionRuntime` | Start, attach, inspect and stop an installed session |
 | `SessionClient` | Send controls to a selected session |
-| `ConfigurationStore` | Register and retrieve Git artifacts; query the shared SQLite journal |
+| `ConfigurationStore` | Register and retrieve Git artifacts through a SQLite catalog |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
 | `SimulatorConfiguration` | Describe declared simulator settings and submit/observe cold application replacement jobs |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
@@ -198,7 +198,7 @@ headless RTC withdrawal; systemd cleanup reconciles the exact owned cohort.
 Emergency `systemctl --user stop UNIT` is process cleanup, not proof of a
 successful public shutdown.
 
-See [headless artifact registration and shared update history](docs/JULIA_DEPLOYMENT_USAGE.md#headless-artifact-registration-and-shared-update-history) for catalog, script and GUI usage.
+See [headless artifact registration](docs/JULIA_DEPLOYMENT_USAGE.md#headless-artifact-registration) for catalog and script usage.
 
 ## Source layout
 
@@ -210,7 +210,7 @@ See [headless artifact registration and shared update history](docs/JULIA_DEPLOY
 | `src/graphs/` | Scientific graph preparation and execution entry point |
 | `src/simulation/` | Simulation entry point and pupil-source configuration |
 | `src/diagnostics/` | Phase timing capture |
-| `runtime/` | C application host, Lua session policy, control and journal plugins |
+| `runtime/` | C native runtime and local management companion |
 | `test/` | Package tests and native protocol records under `test/data/` |
 | `assets/deployment/` | Generic systemd, PipeWire and parameter-source resources |
 | `configs/` | Retained development graph/session configurations |
@@ -248,7 +248,7 @@ with each instrument; callbacks stage only bounded scalar requests.
 
 ## Fault qualification tests
 
-[RTC fault tests](test/integration/README.md) cover the production Lua fault path
+[RTC fault tests](test/integration/README.md) cover session lifecycle fault paths
 and opt-in installed-session sink/link loss and graph-owner exit. They run in
 isolated sessions and preserve the headless RTC/systemd authority boundary.
 Physical-device safe-state and recovery qualification remain outside the current

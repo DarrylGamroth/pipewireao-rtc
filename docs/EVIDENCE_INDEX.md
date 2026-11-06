@@ -16,6 +16,14 @@ private-core test. Matching explicit profiles preserve all original assertions:
 147 pass with each selected daemon. Original failures and the independent SDK
 selector correction are recorded; hardware and RT qualification remain separate.
 
+## Session operation journal removal — 2026-11-06
+
+The [removal record](reviews/20261106-journal-removal/REVIEW.md) records retirement
+of session persistence gates, worker and operation-history interfaces, catalog
+data preservation, stale-configuration rejection and native control regressions.
+Separate archiving remains deferred; saved provenance and management job receipts
+retain their own scope. No live deployment or hardware qualification is implied.
+
 ## Signed control clocks — 2026-11-05
 
 The [migration evidence](reviews/20261105-clocks/REVIEW.md) records each verified

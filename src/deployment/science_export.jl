@@ -323,7 +323,7 @@ function port(
     return value
 end
 
-const RTC_JULIA_FLAGS = ("--startup-file=no", "--threads=2,1")
+const RTC_JULIA_FLAGS = ("--startup-file=no", "--threads=1,0")
 const RTC_ENTRYPOINT = "using PipeWireAORTC; exit(PipeWireAORTC.MediaSession.main(ARGS))"
 
 "Exact Julia arguments shared by launcher generation and process verification."

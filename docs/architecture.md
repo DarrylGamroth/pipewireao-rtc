@@ -212,31 +212,38 @@ These exclusions are deliberate. A later project may select one capability
 from the archive, revise it against current interfaces, and add it without
 changing scientist-authored algorithms.
 
-## Headless artifact catalog and configuration journal
+## Headless artifact catalog
 
 Selected by the user on 2026-10-20. Headless configuration tooling owns a
 Git repository of immutable artifact bytes and manifests, plus a local SQLite
-catalog and update journal. GUI, CLI and Julia calibration scripts are clients.
-Artifact registration does not apply a value or select a startup default.
-Scientific compatibility remains a declared owner contract.
+catalog. GUI, CLI and Julia calibration scripts are clients. Artifact
+registration does not apply a value or select a startup default. Scientific
+compatibility remains a declared owner contract.
+
+Durable streaming-message archiving is deferred to a separate standalone
+service. It is not part of the RTC session lifecycle, artifact catalog, or
+management API.
 
 Git blobs identify original FITS bytes and manifests; retained Git refs preserve
-registered commits and their objects. SQLite holds searchable metadata and
-correlated operation events. Git publication precedes SQLite references; the two
-stores are not one atomic transaction. Git maintenance, FITS decoding and database
-I/O remain outside scientific frame processing.
+registered commits and their objects. SQLite holds searchable catalog metadata.
+Git publication precedes SQLite references; the two stores are not one atomic
+transaction. Git maintenance, FITS decoding and database I/O remain outside
+scientific frame processing.
 
-The headless RTC remains the sole session admission/lifecycle authority. Its optional
-journal module asynchronously records native property/parameter requests before
-effects, then records the reported completion before publication. Newly generated
-sessions require the journal; existing sealed sessions retain their previous
-configuration and have no retroactive history. A failed pre-effect durable write
-refuses the request. An uncertain or interrupted effect remains unknown, without
-automatic retry or inferred rollback. Requested, submitted and active are distinct.
+On 2026-11-06, the user retired the RTC configuration-operation journal and its
+write-before-effect requirement. This retirement does not remove the separate
+management service's durable receipts for its own accepted operations.
 
-The headless management interface supports artifact registration, catalog reads,
-exact retrieval and paginated history. It does not introduce another live-control
-protocol, execute calibration acquisition or expose a browser gateway. The native
+The headless RTC remains the sole session admission/lifecycle authority. Native
+requests retain finite deadlines, correlation, and explicit unknown outcome
+semantics. The RTC does not persist a session operation history or require a
+durable write before an effect. An uncertain or interrupted effect is not
+automatically retried or treated as rolled back. Requested, submitted and active
+remain distinct.
+
+The headless management interface supports artifact registration, catalog reads
+and exact retrieval. It does not introduce another live-control protocol, execute
+calibration acquisition or expose a browser gateway. The native
 GUI connects to the [RTC-owned local endpoint](MANAGEMENT_ENDPOINT.md) off its UI
 thread. That per-user companion shares a bounded worker across clients and is
 installed/activated independently of GUI and live-session lifetimes. Legacy

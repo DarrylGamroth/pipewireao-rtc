@@ -1,4 +1,4 @@
-"""Pure native session admission and journal ordering, owned by the session task."""
+"""Pure native session admission and completion ordering, owned by the session task."""
 module Ingress
 using PipeWireAO
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
@@ -64,9 +64,9 @@ end
 """An owned, admitted native request retained until its terminal publication.
 
 Concrete tickets carry a validated envelope header, decoded command, copied
-payload, absolute nanosecond deadline and exact controller identity/name. Only
+payload, absolute nanosecond deadline and exact controller identity. Only
 the serialized session task consumes them; retaining a ticket does not authorize
-another dispatch or retry. The ingress gate owns its dispatch/journal ordering.
+another dispatch or retry. The ingress gate owns dispatch and completion ordering.
 """
 abstract type AbstractTicket end
 struct Ticket{C} <: AbstractTicket
@@ -75,22 +75,12 @@ struct Ticket{C} <: AbstractTicket
     payload::Vector{UInt8}
     deadline::Int64
     controller::Identity
-    client_name::String
 end
-mutable struct Attempt{T<:AbstractTicket}
-    ticket::T
-    dispatched::Bool
-    job::UInt64
-    record::Union{Nothing,Pod}
-    cancelled::Bool
-end
-Attempt(ticket::Ticket) = Attempt(ticket, false, UInt64(0), nothing, false)
 """One bounded instruction from ingress to its serialized session host.
 
-The host dispatches `DispatchRequest`, publishes `PublishRecords`, submits
-`AppendJournal` and reports `AuthorityFailed` through concrete action methods.
-Journal results return as correlated gate events; emitting an action itself
-does not establish successful I/O. No action directly mutates the session Hsm.
+The host dispatches `DispatchRequest`, publishes `PublishRecords` and reports
+`AuthorityFailed` through concrete action methods. Emitting a dispatch action
+does not establish a successful effect. No action directly mutates the session Hsm.
 """
 abstract type AbstractAction end
 struct DispatchRequest{T<:AbstractTicket} <: AbstractAction
@@ -101,12 +91,6 @@ struct PublishRecords <: AbstractAction
     completion::Pod
     rejection::Pod
 end
-struct AppendJournal{T<:AbstractTicket} <: AbstractAction
-    id::UInt64
-    ticket::T
-    event::Symbol
-    pod::Pod
-end
 struct AuthorityFailed <: AbstractAction
     message::String
 end
@@ -115,28 +99,22 @@ end
     instance::Int64
     owner_pid::UInt32
     clock::C
-    journaled::Bool
     lifecycle::RunnerCodec.Lifecycle
     last_token::Int64
     controllers::Vector{ControllerRecord}
-    pending::Union{Nothing,Attempt}
-    retired::Union{Nothing,Attempt}
+    pending::Union{Nothing,AbstractTicket}
+    retired::Union{Nothing,AbstractTicket}
     terminal_request::Union{Nothing,AbstractTicket}
     completion::Pod
     rejection::Pod
-    next_job::UInt64
     actions::Vector{AbstractAction}
     delivery::Vector{AbstractAction}
 end
 @statedef Gate :Open
 @statedef Gate :Idle :Open
-@statedef Gate :Pending :Open
-@statedef Gate :WaitingRequested :Pending
-@statedef Gate :Applying :Pending
-@statedef Gate :WaitingTerminal :Pending
+@statedef Gate :Applying :Open
 @statedef Gate :Closing
 @statedef Gate :QuitApplying :Closing
-@statedef Gate :QuitWaitingTerminal :Closing
 @statedef Gate :Closed :Closing
 @on_initial function (gate::Gate, ::Root)
     return Hsm.transition!(gate, :Idle)
@@ -246,9 +224,7 @@ function _same_request(ticket::AbstractTicket, header, payload)
 end
 function _duplicate(gate, header, payload)
     for attempt in (gate.pending, gate.retired)
-        attempt === nothing ||
-            !_same_request(attempt.ticket, header, payload) ||
-            return true
+        attempt === nothing || !_same_request(attempt, header, payload) || return true
     end
     return gate.terminal_request !== nothing &&
            _same_request(gate.terminal_request, header, payload)
@@ -284,33 +260,12 @@ function _candidate!(gate, pod, received::Int64)
         end
         header.budget_ns <= 60_000_000_000 || throw(ArgumentError("invalid request budget"))
         deadline = Base.Checked.checked_add(received, header.budget_ns)
-        return Ticket(
-            header,
-            command,
-            copy(canonical.data),
-            deadline,
-            controller.identity,
-            controller.name,
-        )
+        return Ticket(header, command, copy(canonical.data), deadline, controller.identity)
     catch
         # Malformed requests never acquire a trusted request identity.
         _reject!(gate, nothing, -22, "Malformed session request")
         return nothing
     end
-end
-_journaled(::RunnerCodec.RunnerCommand{:properties_set}) = true
-_journaled(::RunnerCodec.RunnerCommand{:parameter}) = true
-_journaled(command) = false
-function _append!(gate, attempt, event, pod)
-    gate.next_job < typemax(UInt64) ||
-        throw(ArgumentError("journal correlation space exhausted"))
-    gate.next_job += 1
-    attempt.job = gate.next_job
-    _emit!(gate, AppendJournal(attempt.job, attempt.ticket, event, pod))
-end
-function _dispatch!(gate, attempt)
-    attempt.dispatched = true
-    _emit!(gate, DispatchRequest(attempt.ticket))
 end
 function _accept!(gate, ticket)
     if ticket.header.token <= gate.last_token
@@ -322,85 +277,43 @@ function _accept!(gate, ticket)
         return false
     end
     gate.last_token = ticket.header.token
-    attempt = Attempt(ticket)
-    gate.pending = attempt
-    if gate.journaled && _journaled(ticket.command)
-        _append!(gate, attempt, :requested, Pod(ticket.payload))
-    else
-        _dispatch!(gate, attempt)
-    end
+    gate.pending = ticket
+    _emit!(gate, DispatchRequest(ticket))
     return true
 end
 function _locate(gate, ticket)
     for attempt in (gate.pending, gate.retired)
-        attempt === nothing || attempt.ticket !== ticket || return attempt
+        attempt === nothing || attempt !== ticket || return attempt
     end
     return nothing
 end
-function _publish_terminal!(gate, attempt, pod)
-    ticket = attempt.ticket
+function _finish!(gate, ticket, pod)
     if gate.terminal_request === nothing ||
         ticket.header.token > gate.terminal_request.header.token
         gate.terminal_request = ticket
         gate.completion = pod
     end
-    gate.pending === attempt && (gate.pending = nothing)
-    gate.retired === attempt && (gate.retired = nothing)
-    attempt.job = 0
+    gate.pending === ticket && (gate.pending = nothing)
+    gate.retired === ticket && (gate.retired = nothing)
     _publish!(gate)
 end
-function _finish!(gate, attempt, pod; unknown = false)
-    attempt.record === nothing || return nothing
-    attempt.record = pod
-    if gate.journaled && _journaled(attempt.ticket.command)
-        _append!(gate, attempt, unknown ? :unknown : :completed, pod)
-    else
-        _publish_terminal!(gate, attempt, pod)
-    end
-    return nothing
-end
-function _cancel!(gate, attempt, message; authority = true)
-    attempt.cancelled && return nothing
-    attempt.cancelled = true
-    unknown = attempt.dispatched
-    unknown &&
-        authority &&
-        _emit!(gate, AuthorityFailed(message * "; effect outcome unknown"))
-    # Fence any original append before staging the replacement terminal record.
-    attempt.job = 0
-    attempt.record = nothing
-    _finish!(
-        gate,
-        attempt,
-        _failure(
-            gate,
-            attempt.ticket,
-            message *
-            (unknown ? "; effect outcome unknown" : "; no scientific effect issued"),
-        );
-        unknown,
-    )
+function _cancel!(gate, ticket, message)
+    _emit!(gate, AuthorityFailed(message * "; effect outcome unknown"))
+    _finish!(gate, ticket, _failure(gate, ticket, message * "; effect outcome unknown"))
     return nothing
 end
 function _check!(gate)
     for attempt in (gate.pending, gate.retired)
         attempt === nothing && continue
-        attempt.cancelled && continue
-        _controller(gate, attempt.ticket.header) === nothing &&
+        _controller(gate, attempt.header) === nothing &&
             (_cancel!(gate, attempt, "Session controller disappeared or changed"); continue)
-        _now(gate) >= attempt.ticket.deadline &&
-            _cancel!(gate, attempt, "Session request expired")
+        _now(gate) >= attempt.deadline && _cancel!(gate, attempt, "Session request expired")
     end
 end
-_closing(gate) = Hsm.current(gate) in (:QuitApplying, :QuitWaitingTerminal, :Closed)
+_closing(gate) = Hsm.current(gate) in (:QuitApplying, :Closed)
 function _state_after(gate; closing = _closing(gate))
-    attempt = gate.pending
-    attempt === nothing && return closing ? :Closed : :Idle
-    if closing
-        return attempt.record === nothing ? :QuitApplying : :QuitWaitingTerminal
-    end
-    attempt.record !== nothing && return :WaitingTerminal
-    return attempt.dispatched ? :Applying : :WaitingRequested
+    gate.pending === nothing && return closing ? :Closed : :Idle
+    return closing ? :QuitApplying : :Applying
 end
 function _update_controllers!(gate, observed::Vector{Controller})
     length(observed) <= MAX_CONTROLLERS ||
@@ -444,21 +357,15 @@ end
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
 end
-@on_event function (gate::Gate, ::Pending, ::Received, event)
+@on_event function (gate::Gate, ::Applying, ::Received, event)
     ticket = _candidate!(gate, event.pod, event.received)
     ticket === nothing && return Hsm.EventHandled
     if ticket.header.operation != QUIT_OPERATION
@@ -476,26 +383,17 @@ end
     end
     gate.retired === nothing ||
         throw(ArgumentError("retired public request slot is occupied"))
-    old = gate.pending
-    gate.retired = old
+    gate.retired = gate.pending
     gate.pending = nothing
-    old.dispatched ||
-        _cancel!(gate, old, "Session request superseded by Quit"; authority = false)
     _accept!(gate, ticket)
     nextstate = _state_after(gate; closing = true)
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
@@ -512,16 +410,10 @@ end
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
@@ -540,16 +432,10 @@ end
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
@@ -565,16 +451,10 @@ end
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
@@ -582,12 +462,9 @@ end
 @on_event function (gate::Gate, ::Root, ::Completed, event)
     _check!(gate)
     attempt = _locate(gate, event.ticket)
-    if attempt !== nothing &&
-        attempt.dispatched &&
-        !attempt.cancelled &&
-        attempt.record === nothing
+    if attempt !== nothing
         header, _ = Envelope.decode_completion(event.pod; endpoint = :lifecycle)
-        request = attempt.ticket.header
+        request = attempt.header
         header.endpoint_instance == request.endpoint_instance &&
         header.controller == request.controller &&
         header.token == request.token &&
@@ -601,85 +478,19 @@ end
             event.unknown && header.result == 0 ?
             _failure(
                 gate,
-                attempt.ticket,
+                attempt,
                 "Scientific operation outcome unavailable; effect outcome unknown",
             ) : event.pod
-        _finish!(gate, attempt, record; unknown = event.unknown)
+        _finish!(gate, attempt, record)
     end
     nextstate = _state_after(gate)
     nextstate == Hsm.current(gate) && return Hsm.EventHandled
     if nextstate === :Idle
         return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
     elseif nextstate === :Applying
         return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
     elseif nextstate === :QuitApplying
         return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
-    else
-        return Hsm.transition!(gate, :Closed)
-    end
-end
-@on_event function (gate::Gate, ::Root, ::JournalReceipt, event)
-    _check!(gate)
-    for attempt in (gate.pending, gate.retired)
-        attempt === nothing && continue
-        attempt.job == event.id && event.id != 0 || continue
-        attempt.job = 0
-        if attempt.record === nothing
-            if event.success
-                _dispatch!(gate, attempt)
-            else
-                _publish_terminal!(
-                    gate,
-                    attempt,
-                    _failure(
-                        gate,
-                        attempt.ticket,
-                        "Journal failed before dispatch; no scientific effect issued: " *
-                        event.message,
-                    ),
-                )
-            end
-        elseif event.success
-            _publish_terminal!(gate, attempt, attempt.record)
-        else
-            if attempt.dispatched
-                _emit!(
-                    gate,
-                    AuthorityFailed(
-                        "Journal persistence failed after dispatch; effect outcome unknown"
-                    ),
-                )
-            end
-            message =
-                attempt.dispatched ?
-                "Journal persistence failed; effect outcome unknown: " :
-                "Journal persistence failed before dispatch: "
-            _publish_terminal!(
-                gate, attempt, _failure(gate, attempt.ticket, message * event.message)
-            )
-        end
-        break
-    end
-    nextstate = _state_after(gate)
-    nextstate == Hsm.current(gate) && return Hsm.EventHandled
-    if nextstate === :Idle
-        return Hsm.transition!(gate, :Idle)
-    elseif nextstate === :WaitingRequested
-        return Hsm.transition!(gate, :WaitingRequested)
-    elseif nextstate === :Applying
-        return Hsm.transition!(gate, :Applying)
-    elseif nextstate === :WaitingTerminal
-        return Hsm.transition!(gate, :WaitingTerminal)
-    elseif nextstate === :QuitApplying
-        return Hsm.transition!(gate, :QuitApplying)
-    elseif nextstate === :QuitWaitingTerminal
-        return Hsm.transition!(gate, :QuitWaitingTerminal)
     else
         return Hsm.transition!(gate, :Closed)
     end
@@ -692,7 +503,6 @@ end
 function Gate(
     instance::Integer;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-    journaled = false,
     owner_pid::Integer = getpid(),
 )
     0 < instance <= typemax(Int64) && 0 < owner_pid < typemax(UInt32) ||
@@ -712,7 +522,6 @@ function Gate(
         Int64(instance),
         UInt32(owner_pid),
         clock,
-        journaled,
         RunnerCodec.Offline,
         Int64(0),
         ControllerRecord[],
@@ -721,7 +530,6 @@ function Gate(
         nothing,
         completion,
         rejection,
-        UInt64(0),
         AbstractAction[],
         AbstractAction[],
     )
@@ -744,14 +552,6 @@ state!(gate::Gate, lifecycle::RunnerCodec.Lifecycle) =
 tick!(gate::Gate) = (Hsm.dispatch!(gate, :Tick); nothing)
 complete!(gate::Gate, ticket::AbstractTicket, pod::Pod; unknown = false, terminal = false) =
     (Hsm.dispatch!(gate, :Completed, (; ticket, pod, unknown, terminal)); nothing)
-journal_receipt!(gate::Gate, id::Integer, success::Bool, message::AbstractString = "") = (
-    Hsm.dispatch!(
-        gate,
-        :JournalReceipt,
-        (id = UInt64(id), success = success, message = _message(message)),
-    );
-    nothing
-)
 take_actions!(gate::Gate) = (Hsm.dispatch!(gate, :TakeActions); gate.delivery)
 
 export Gate,
@@ -760,7 +560,6 @@ export Gate,
     AbstractAction,
     DispatchRequest,
     PublishRecords,
-    AppendJournal,
     AuthorityFailed,
     receive!,
     controllers!,
@@ -768,6 +567,5 @@ export Gate,
     state!,
     tick!,
     complete!,
-    journal_receipt!,
     take_actions!
 end

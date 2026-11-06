@@ -614,7 +614,7 @@ protocol or GUI acquisition wizard. A configured capture writes
 `incomplete` or `registration_failed`, plus any retained artifact IDs. Existing
 analysis configurations without `capture` retain their behavior.
 
-## Headless artifact registration and shared update history
+## Headless artifact registration
 
 `PipeWireAORTC.ConfigurationStore` owns a local bare Git repository and SQLite
 catalog. GUI, CLI and Julia scripts use this implementation. The default root is
@@ -674,13 +674,12 @@ Send one JSON object per line:
 
 ```json
 {"protocol":"pipewireao.configuration/1","op":"list","arguments":{"limit":50}}
-{"protocol":"pipewireao.configuration/1","op":"history","arguments":{"limit":50}}
 ```
 
 `register` accepts the FITS path, type, shape, one-based HDU, axes, label, scope,
 schema and metadata. `get` accepts an artifact ID and optional `layout`.
 `root` optionally selects an explicit local store. This management interface
-performs catalog/import/history work only. It does not provide another live
+performs catalog/import/retrieval work only. It does not provide another live
 control protocol, calibration orchestrator or remote browser service.
 
 The native GUI's `PIPEWIREAO_CONFIGURATION_COMMAND` is a JSON array of executable
@@ -690,39 +689,36 @@ Without a helper the GUI reports the catalog unavailable while existing native
 controls remain usable. Browser/WASM presentation compilation does not establish
 a live browser management transport.
 
-New `SessionConfiguration` configurations include the RTC-owned asynchronous
-`ao-journal` module. The `configuration_store_root` keyword selects its store;
-`nothing` explicitly produces an unjournaled configuration for an older isolated
-runtime. The exporter and installer require the matching journal module. Existing
-sealed sessions are unchanged; no earlier history can be reconstructed.
-
-`ConfigurationStore.history(store; session_id=nothing, limit=50)` queries the
-shared journal. Its entries include the proven controller identity/name, native
-session and endpoint incarnation, token, requested property values or parameter
-binding, and correlated completion. All clients using the journal-enabled session
-endpoint contribute, even when the GUI is closed. Direct writes bypassing that
-endpoint are outside this history. Read-only queries are not update events.
+Current `SessionConfiguration` exports do not install an operation journal.
+The journal-only `configuration_store_root` keyword is removed. The
+`ConfigurationStore.history` API and configuration management `history`
+operation are also removed. GUI clients outside this repository that depended on
+those interfaces need to update their integration; this guide does not claim
+those clients have migrated. Regenerate configurations created by an older
+exporter: the current RTC rejects stale session configurations containing
+`journal.path` or `pipewireao.rtc.session.journal` before connecting. Existing
+installed applications remain pinned to their installed code and configuration.
 
 For a registered artifact, select its target and catalog entry in the GUI, load
 it to prepare a verified read-only transport payload, then explicitly apply it.
-The current native parameter request carries the prepared file path. The
-headless history query correlates that path with the retained catalog mapping
-and returns the exact Git manifest ID in `artifact_id`; the GUI displays it in
-the selected update. The native journal retains the original request and reply.
-An immediate Submitted result is preserved even when a later
-`parameter-generation` query confirms equal requested and active sequences.
+The catalog record supplies the exact Git manifest ID as `artifact_id`. The
+native parameter request carries its prepared file path, but no persistent
+session operation history correlates that request back to the catalog record.
+Native request correlation and owner generation queries provide live operation
+results. An immediate Submitted result remains distinct from later
+`parameter-generation` evidence of active adoption.
 
 Requested operations lacking terminal evidence remain unknown. A submitted
 parameter is not necessarily active; an SQLite transaction and a Git commit do
 not make several scientific changes atomic. Existing owner generation/status
-queries remain the source of current adoption evidence. Reopening the journal
-never retries an operation or restores an old value.
+queries remain the source of current adoption evidence. Clients must not retry an
+unknown operation automatically or infer rollback.
 
-Backups must preserve both a consistent SQLite snapshot and the Git repository,
-including all retained artifact refs. Git maintenance must preserve registered
-objects. Do not place the SQLite WAL database on a network filesystem or copy a
-live database file without its consistent snapshot. Backup/restore automation
-and scientific stream recording are separate work.
+Backups must preserve the artifact catalog's consistent SQLite snapshot and
+the Git repository, including all retained artifact refs. Git maintenance must
+preserve registered objects. Do not place the SQLite WAL database on a network
+filesystem or copy a live database file without its consistent snapshot.
+Backup/restore automation and scientific stream recording are separate work.
 
 ## Simulator startup settings and rebuild
 
@@ -783,7 +779,8 @@ identity, immutable request, candidate, preflight logs, shutdown/startup receipt
 and final result. A failed/unknown effect is never retried or rolled back
 automatically. Use the retained original application for explicit recovery.
 Archive completed records explicitly before reaching the 256-record limit.
-The saved Git artifact catalog and SQLite journal are not changed by this tool.
+The saved Git artifact catalog and SQLite catalog database are not changed by
+this tool.
 
 ## Managed external-pupil applications
 

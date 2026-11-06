@@ -8,6 +8,7 @@ module MediaSession
 
 import Hsm
 import Clocks
+import Agent
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import ..Common
 import ..RunnerCodec
@@ -36,7 +37,6 @@ include("controls.jl")
 include("correction.jl")
 include("transport.jl")
 include("objects.jl")
-include("journal.jl")
 include("ingress.jl")
 include("effects.jl")
 include("session.jl")

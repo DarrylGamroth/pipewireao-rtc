@@ -10,14 +10,6 @@ for selector in ("ingress", "transport", "effects", "objects")
         joinpath(@__DIR__, "media_session_" * selector * ".jl"),
     )
 end
-@testset "Journal owns its SQLite worker" begin
-    project = dirname(Base.active_project())
-    selector = joinpath(@__DIR__, "media_session_journal.jl")
-    @test success(
-        `$(Base.julia_cmd()) --startup-file=no --threads=2,1 --project=$project $selector`
-    )
-end
-
 Base.include(
     Module(:ControlTypeDispatchTests), joinpath(@__DIR__, "control_type_dispatch.jl")
 )

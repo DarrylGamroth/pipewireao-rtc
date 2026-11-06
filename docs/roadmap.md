@@ -24,15 +24,26 @@ review; prior qualification work does not establish that every feature belongs i
 this package. The next cleanup should remove maintained decisions and duplicated
 implementation rather than add wrappers around the current surface.
 
-The user identified a future standalone archiver modeled on SPIDERS
-`~/spiders-working/archiverservice` (2026-11-06). That service records subscribed
-messages verbatim in rolling files, with a SQLite index for queries and replay.
-Recording/storage belongs in that later service rather than another RTC-owned
-archive implementation. Its batched recording does not provide the existing
-journal's write-before-effect guarantee. Removing mandatory RTC journaling would
-therefore retire that guarantee; an asynchronous archiver is not a transparent
-replacement. No archiver implementation or journal removal is delivered here;
-the existing journal selection remains implemented pending its explicit revision.
+### Session operation journal removal — 2026-11-06
+
+The user retired the RTC session-operation journal and its write-before-effect
+requirement. Session controls retain deadlines, exact request correlation,
+duplicate suppression, terminal replies and unknown outcomes without a storage
+gate. The journal worker, queues, persistence states and operation-history API
+are removed. The artifact Git repository and SQLite catalog remain; opening an
+existing catalog does not delete or migrate its historical operation rows.
+New configurations omit journal settings; stale journal-enabled configurations
+require regeneration. Existing installed applications keep their pinned tools.
+The generated session launcher uses one Julia thread (`--threads=1,0`) without
+reserving pools for the retired writer.
+Management job receipts and optional saved calibration evidence remain separate.
+
+Archiving is deferred to a standalone service modeled on SPIDERS
+`~/spiders-working/archiverservice`: subscribed messages in rolling files with a
+query/replay index. No replacement archive or recording API is added to RTC.
+The [removal record](reviews/20261106-journal-removal/REVIEW.md) records the scope,
+public API migration and verification. This supersedes the session-journal
+selection and qualification work recorded in earlier dated increments.
 
 ### Lua session policy replacement — 2026-11-04
 
@@ -46,8 +57,8 @@ The replacement is not yet qualified or deployed; verified slices are committed
 as they complete.
 
 The [source and verification record](reviews/20261104-media-session/REVIEW.md)
-now covers typed effects, direct object/Link ownership, bounded native ingress,
-the journal worker, the generated Julia launcher and exact process binding.
+covers typed effects, direct object/Link ownership, bounded native ingress,
+the since-retired journal worker, the generated Julia launcher and exact process binding.
 The old RTC Lua/WirePlumber host and plugin sources are retired; the independent
 management companion uses json-c. Native private-core checks cover real initial
 acquisition cleanup and active/pending Link release; the generated launcher also
