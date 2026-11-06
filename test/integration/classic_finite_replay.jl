@@ -8,7 +8,7 @@ using Test, SHA
 using AdaptiveOpticsSim.AlgorithmGraphs, AdaptiveOpticsSim.Backends
 using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
 using PipeWireAO, PipeWireAO_jll, PipeWireAORTC
-using FilterGraphIsland, FilterGraphPipeWire, FilterGraphAlgorithms, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphAlgorithms, FilterGraphs
 
 # Reuse the shared software integration support, including its borrowed-buffer
 # copying and private-core configuration. It only defines helpers on inclusion.
@@ -311,7 +311,7 @@ function run_prefix(application, output, system, count;mode=:none)
                     rethrow()
                 finally
                     controller === nothing || close(controller)
-                    FilterGraphIsland.close_execution(graph)
+                    FilterGraphPipeWire.close_execution(graph)
                 end
             end
             timedwait(() -> isready(published) || istaskdone(owner_task),300;pollint=0.01)==:ok ||

@@ -116,7 +116,7 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
         frontend = Calibration.calibration_graph(application;
             inputs=(raw="pixel-calibration:raw",),outputs=frontend_outputs,parameter_sources=sources)
         measurement_count = measurements === nothing ? 0 : prod(getproperty(
-            JuliaFilterGraph.output_formats(frontend.graph),measurements).shape)
+            FilterGraphs.output_formats(frontend.graph),measurements).shape)
         Actions.preflight_collect_reply(measurement_count,counts.samples)
         command = if commands === nothing
             Calibration.calibration_graph(application;
@@ -136,7 +136,7 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
             catch primary
                 failures = Exception[primary]
                 for descriptor in reverse(built)
-                    try FilterGraphIsland.close_execution(descriptor.graph)
+                    try FilterGraphPipeWire.close_execution(descriptor.graph)
                     catch cleanup; push!(failures,cleanup) end
                 end
                 length(failures) == 1 && rethrow()
@@ -249,7 +249,7 @@ function reference_stage(application,remote,sources,reference,run,serial,stage,c
         end
         for descriptor in calibration_descriptors(frontend,command)
             descriptor === nothing && continue
-            try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors,error) end
+            try FilterGraphPipeWire.close_execution(descriptor.graph) catch error; push!(errors,error) end
         end
     end
     isempty(errors) || (length(errors) == 1 ? throw(only(errors)) : throw(CompositeException(errors)))

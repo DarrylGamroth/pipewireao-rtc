@@ -127,5 +127,5 @@ end
         @test all(!c.armed for c in values(prepared.inputs.receiver.branches))
         @test all(iszero,prepared.inputs.total)
     end
-    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","FilterGraphs","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end

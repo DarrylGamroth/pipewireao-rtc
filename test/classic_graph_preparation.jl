@@ -1,5 +1,5 @@
 # Optional application check, run in its resolved scientific environment.
-using Test, PipeWireAORTC, FilterGraphIsland, JSON
+using Test, PipeWireAORTC, FilterGraphPipeWire, JSON
 
 function check_application(application)
     R = PipeWireAORTC
@@ -11,9 +11,14 @@ function check_application(application)
         "REMOTE" => "not-connected", "BOOTSTRAP_INSTANCE_JULIA" => "1")
     arguments = [R.DeploymentConfiguration.substitute(argument, bindings) for argument in arguments]
     _, graph_arguments, fits_path = R.GraphOwner.arguments(arguments)
-    options = FilterGraphIsland.parse_arguments(graph_arguments)
+    options = FilterGraphPipeWire.parse_arguments(graph_arguments)
     entries = R.GraphOwner.bindings(fits_path)
-    graph = FilterGraphIsland.prepare_service_graph(options;
+    graph = FilterGraphPipeWire.prepare_service_graph(options.graph;
+        algorithms=FilterGraphPipeWire.algorithm_declarations(;
+            packages=options.packages, algorithms=options.algorithms, builtins=options.builtins),
+        execution=options.execution == "row-block" ? :row_block : :complete_frame,
+        workers=options.row_workers, matrix_layout=options.matrix_layout, parameters=options.parameters,
+        capture_backend=options.capture_backend === nothing ? nothing : Symbol(options.capture_backend),
         initial_parameters=formats -> R.GraphOwner.prepare_bindings(entries, formats))
     try
         @test length(entries) == 16
@@ -21,7 +26,7 @@ function check_application(application)
         @test options.session_run_control
         println("Classic graph prepared with ", length(entries), " FITS startup parameters")
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 

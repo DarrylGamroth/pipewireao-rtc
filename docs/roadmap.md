@@ -12,6 +12,27 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Three-package graph cohort — 2026-11-06
+
+RTC 0.6 adopts the approved optional graph stack: FilterGraphAlgorithms 0.12, FilterGraphs
+0.9 (new UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`) and FilterGraphPipeWire
+0.5, with PipeWireAO 0.9.1/native SDK 4.0.1. The core package identity replaces
+JuliaFilterGraph; the retained PipeWire package includes the former Island
+launcher and preparation lifecycle. The `filtergraph-island` command is unchanged.
+RTC extensions require the three current packages and use direct path-based
+preparation; CLI graph owners retain argument parsing and raw startup parameters.
+Scientific configurations, native controls and requirement identities retain
+their meanings. The existing custom registry supplies the installed cohort;
+local source selections are confined to isolated development validation.
+
+[Source migration validation](validation/graph-cohort-20261106/README.md) passes
+8,528 core assertions, 409 package/export assertions after the 0.6 version bump,
+28 owner checks, 187 analysis/correction assertions and 203 calibration/schema
+assertions with Julia 1.13.3 and registered scientific providers. Existing dated
+receipts retain their original dependency scope. No RTC service, native core,
+GPU owner or hardware experiment was started; registry publication and installed
+application qualification remain separate coordinated gates.
+
 ### Startup-settings inspection memory — 2026-11-04 UTC
 
 The [measured inspection update](validation/startup-settings-memory-20261104/README.md)

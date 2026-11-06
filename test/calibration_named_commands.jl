@@ -1,6 +1,6 @@
 # Cold CPU contracts and locked named-slot state; no daemon, devices or GPU.
 module CalibrationNamedCommandTests
-using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 
@@ -15,8 +15,7 @@ function prepare_command(count, schema)
     graph = mktempdir() do directory
         path=joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,declaration)
-        FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
-            "--graph",path,"--check","--execution","complete-frame"]))
+        FilterGraphPipeWire.prepare_service_graph(path)
     end
     return (;graph, source_graph_sha256="test")
 end
@@ -35,12 +34,11 @@ end
     graph=mktempdir() do directory
         path=joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,declaration)
-        FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
-            "--graph",path,"--check","--execution","complete-frame"]))
+        FilterGraphPipeWire.prepare_service_graph(path)
     end
     try
         frontend=(;graph,parameters=Dict{Symbol,Array}())
-        outputs=JuliaFilterGraph.output_formats(graph)
+        outputs=FilterGraphs.output_formats(graph)
         @test outputs[Symbol("reconstruction-pixels")].shape==(4,6)
         @test Ext.calibration_measurements(frontend,outputs,Symbol("reconstruction-pixels"),nothing)===nothing
         @test Ext.calibration_measurements(frontend,outputs,Symbol("mean-pupil-intensity"),nothing)===nothing
@@ -49,7 +47,7 @@ end
         @test_throws ArgumentError Ext.calibration_measurements(frontend,outputs,:slopes,nothing)
         @test_throws ArgumentError Ext.calibration_measurements(frontend,outputs,Symbol("reconstruction-pixels"),trues(6))
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
@@ -90,8 +88,8 @@ end
         @test_throws ErrorException Ext.calibration_feedback(figures,actual,(woofer=feedback.woofer,))
         @test Ext.calibration_feedback(Float32[2],Float32[1],Float32[1])
     finally
-        FilterGraphIsland.close_execution(woofer.graph)
-        FilterGraphIsland.close_execution(tiptilt.graph)
+        FilterGraphPipeWire.close_execution(woofer.graph)
+        FilterGraphPipeWire.close_execution(tiptilt.graph)
     end
 end
 

@@ -143,10 +143,10 @@ Ports and 64 channels per Port, with valid UTF-8, nonempty control-free text up 
 bytes. The complete published catalog must fit 16384 bytes. Changing these units
 requires a new source Node. Existing analysis configurations remain valid.
 
-Standalone FilterGraphIsland and RTC GraphOwner launches can use repeated
+Standalone FilterGraphPipeWire and RTC GraphOwner launches can use repeated
 `--channel-unit PORT CHANNEL UNITS` arguments for the same source annotation.
 The authoritative channel meanings and publication contract remain with
-JuliaFilterGraph's `schemas/catalog.toml` and `docs/source-channels.md`.
+The graph repository's `schemas/catalog.toml` and `docs/source-channels.md`.
 
 The current REVOLT Classic profile computes this packet in a separate optional
 JFG analysis process. The required WFS/controller graph remains unchanged. Its

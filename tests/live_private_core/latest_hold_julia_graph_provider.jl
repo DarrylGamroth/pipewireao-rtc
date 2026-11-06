@@ -1,6 +1,6 @@
 using FilterGraphAlgorithms
 using FilterGraphPipeWire
-using JuliaFilterGraph
+using FilterGraphs
 using PipeWireAO
 
 import FilterGraphAlgorithms: process!
@@ -51,7 +51,7 @@ core_name, graph_configuration, stop_file, rate_text = ARGS
 rate = parse(Int, rate_text)
 rate > 0 || error("RATE must be positive")
 
-graph = JuliaFilterGraph.prepare_graph(
+graph = FilterGraphs.prepare_graph(
     graph_configuration;
     algorithms=(LatestHoldPrimaryPassF32,),
 )

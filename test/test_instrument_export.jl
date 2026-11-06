@@ -247,7 +247,7 @@ end
         @test E.prepare_session_configuration!(directory, spec, [], "absent.json", prefix) === nothing
     end
     @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
-        "FilterGraphIsland", "JuliaFilterGraph", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+        "FilterGraphPipeWire", "FilterGraphs", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end
 
 @testset "session wire element types preserve Boolean and integer representations" begin

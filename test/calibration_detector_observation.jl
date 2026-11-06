@@ -1,6 +1,6 @@
 # Optional CPU selector: real exposure/detector/frontend graphs; no core or service.
 using Test, LinearAlgebra, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper
-using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs
 const IC = PipeWireAORTC.InstrumentConfiguration
 const Calibration = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)

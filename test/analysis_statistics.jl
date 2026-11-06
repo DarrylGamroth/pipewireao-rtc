@@ -1,6 +1,6 @@
 # Optional scientific selector: actual JFG statistics through the shared artifact interface.
-using Test, PipeWireAORTC, FilterGraphAlgorithms, JuliaFilterGraph, PipeWireAO
-using FilterGraphIsland, FilterGraphPipeWire
+using Test, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphs, PipeWireAO
+using FilterGraphPipeWire
 import FilterGraphAlgorithms: process!
 using PipeWireAORTC.Common: JSON
 using PipeWireAORTC.Artifacts: FITS
@@ -38,7 +38,7 @@ observer_bytes(capture, outputs, metadata) = @allocated capture(Val(:frame),outp
         config=A.configuration(config_path,prefix)
         @test config.capture.window_samples == 3
         graph=prepare_graph(graph_path;algorithms=algorithms())
-        capture=A.prepare_capture(config.capture,JuliaFilterGraph.output_formats(graph))
+        capture=A.prepare_capture(config.capture,FilterGraphs.output_formats(graph))
         extension=Base.get_extension(PipeWireAORTC,:PipeWireAORTCGraphExt)
         node=extension.prepare_analysis_node(config,joinpath(root,"absent.sock"),graph,nothing,capture)
         try
@@ -47,13 +47,13 @@ observer_bytes(capture, outputs, metadata) = @allocated capture(Val(:frame),outp
         finally
             close(node)
         end
-        output=map(format->zeros(format.element_type,format.shape),JuliaFilterGraph.output_formats(graph))
+        output=map(format->zeros(format.element_type,format.shape),FilterGraphs.output_formats(graph))
         input=(;sample=zeros(Float32,2,3))
         for (i,seq) in enumerate((8,10,14))
             input.sample .= i
             header=SampleMetadata(seq,0;terminal=true,timestamp_nanoseconds=seq*1_000_000)
             @test process!(output,graph,input,(;sample=header)) == map(_->true,output)
-            metadata=JuliaFilterGraph.output_metadata(graph)
+            metadata=FilterGraphs.output_metadata(graph)
             capture(Val(:frame),output,metadata)
         end
         @test capture.ready[] == 1
@@ -142,12 +142,12 @@ end
         config=A.configuration(config_path,String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir))
         prepared=A.prepare_graph(config,"/tmp/unused-private-socket")
         try
-            outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(prepared.graph))
-            @test JuliaFilterGraph.input_formats(prepared.graph).raw.element_type === UInt16
+            outputs=map(f->zeros(f.element_type,f.shape),FilterGraphs.output_formats(prepared.graph))
+            @test FilterGraphs.input_formats(prepared.graph).raw.element_type === UInt16
             @test all(values(process!(outputs,prepared.graph,(raw=fill(UInt16(10),2,2),))))
             @test outputs.mean == 2f0 .* (10f0 .- background)
         finally
-            FilterGraphIsland.close_execution(prepared.graph)
+            FilterGraphPipeWire.close_execution(prepared.graph)
         end
         records=Dict{String,Any}[]
         graph_hash=PipeWireAORTC.InstrumentCalibration.digest(graph_path)
@@ -167,12 +167,12 @@ end
             execution=A.prepare_graph(admitted,"/tmp/unused-private-socket")
             try
                 @test execution.graph_sha256==graph_hash
-                outputs=map(f->zeros(f.element_type,f.shape),JuliaFilterGraph.output_formats(execution.graph))
-                capture=A.prepare_capture(admitted.capture,JuliaFilterGraph.output_formats(execution.graph))
+                outputs=map(f->zeros(f.element_type,f.shape),FilterGraphs.output_formats(execution.graph))
+                capture=A.prepare_capture(admitted.capture,FilterGraphs.output_formats(execution.graph))
                 for n in 1:3
                     header=SampleMetadata(n,0;terminal=true)
                     @test all(values(process!(outputs,execution.graph,(raw=fill(UInt16(10),2,2),),(raw=header,))))
-                    capture(Val(:frame),outputs,JuliaFilterGraph.output_metadata(execution.graph))
+                    capture(Val(:frame),outputs,FilterGraphs.output_metadata(execution.graph))
                 end
                 result=A.register_capture!(CS.Store(joinpath(root,"catalog")),capture;
                     source="controller:raw",graph_sha256=execution.graph_sha256)
@@ -180,7 +180,7 @@ end
                 @test result["mean"]["manifest"]["metadata"]["acquisition_provenance"]["parameter_sha256"]==hashes
                 @test capture.buffers.mean==coefficient.*(10f0.-background)
             finally
-                FilterGraphIsland.close_execution(execution.graph)
+                FilterGraphPipeWire.close_execution(execution.graph)
             end
             # Square asymmetric data keeps its shape and original byte hash
             # when axes change; the binding identity must still reject it.

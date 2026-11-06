@@ -82,7 +82,7 @@ authority.
 This is decision **RTC-ARCH-016**: make the RTC processing-node implementation
 substitutable at the ordinary PipeWire boundary. A declared processing role MAY
 be realized by a runner-owned `fgn-native` filter graph or by an externally
-owned `JuliaFilterGraph.jl` graph published through `FilterGraphPipeWire`. The
+owned `FilterGraphs.jl` graph published through `FilterGraphPipeWire`. The
 session contract names identical scientific ports, shapes, schemas, properties,
 parameters, and links; it does not select behavior by implementation language
 or package identity.
@@ -108,7 +108,7 @@ through the same external HIL boundary. `REVOLTClassicSim.jl` remains
 transport-neutral. A separate `REVOLTClassicSimPipeWireHIL.jl` package maps
 its prepared 352-by-352 Shack–Hartmann frame and 277-element HSDM277 command
 boundary to ordinary PipeWire nodes. The RTC may place either the maintained
-`fgn-native` controller or an equivalent `JuliaFilterGraph.jl` processing node
+`fgn-native` controller or an equivalent `FilterGraphs.jl` processing node
 between those endpoints without knowing how the plant or controller is
 implemented.
 
@@ -174,7 +174,7 @@ The next reference-system increment adds one externally owned AdaptiveOpticsSim
 WFS source, one externally owned simulated command sink, and one or more
 processing graphs between them. The first fixture uses a runner-owned FGN
 graph; the following substitution fixture uses an externally owned
-`JuliaFilterGraph.jl` node with the same public contract. The integration
+`FilterGraphs.jl` node with the same public contract. The integration
 package, not AdaptiveOpticsSim, owns PipeWire stream and acquisition-metadata
 mapping.
 These minimal-fixture endpoint counts do not limit an AOS application's sources
@@ -318,7 +318,7 @@ flowchart LR
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
 | `AdaptiveOpticsSimPipeWireHIL.jl` | Map one prepared AdaptiveOpticsSim HIL boundary to an externally owned PipeWire source and non-actuating sink using public PipeWireAO interfaces. |
-| `JuliaFilterGraph.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
+| `FilterGraphs.jl` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
 | Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS YAML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
 
 The headless RTC is the live application control plane for this session. It does not process
@@ -380,7 +380,7 @@ When not granted, the external application retains run control and the node
 cannot belong to an RTC-controlled execution group. Ownership never transfers
 in either case.
 
-This same boundary applies when `JuliaFilterGraph.jl` and its
+This same boundary applies when `FilterGraphs.jl` and its
 `FilterGraphPipeWire` adapter publish a prepared Julia graph as one PipeWire
 node. The RTCW sees public ports, formats, schemas, and links—not Julia
 algorithms or the graph host. The owner-mediated public run-control contract
@@ -1044,7 +1044,7 @@ no unit conversion is selected, and no namespace/version parser interprets them.
 They are separate from authoring `schema_version` fields and the settings
 validation descriptions below.
 
-The shared `JuliaFilterGraph/schemas/catalog.toml` is the authoring authority for
+The shared graph repository's `schemas/catalog.toml` is the authoring authority for
 scientific payload contracts. Each entry declares a quantity name, Julia element
 type, version and scientific definition. The generator derives identifiers such
 as `pipewireao/dm-command-opd-um-f32/1`, SPA element types and consumer declarations

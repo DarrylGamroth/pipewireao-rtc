@@ -1,7 +1,7 @@
 # Optional native selector: two independent conditioner owners on one private
 # core. No optical model, deployed session, device or accelerator is used.
 module CalibrationNamedTransportTests
-using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("native_control_private_core.jl")
 include("calibration_named_commands.jl")
@@ -20,7 +20,7 @@ function named_transport(remote,directory,daemon)
     sinks=Stream[]
     commands=(woofer=CalibrationNamedCommandTests.prepare_command(2,"test.woofer/1"),
         tiptilt=CalibrationNamedCommandTests.prepare_command(3,"test.tiptilt/1"))
-    actual=map(descriptor->zeros(Float32,only(JuliaFilterGraph.input_formats(descriptor.graph).requested.shape)),commands)
+    actual=map(descriptor->zeros(Float32,only(FilterGraphs.input_formats(descriptor.graph).requested.shape)),commands)
     sequences=map(_->Ref(UInt64(0)),commands)
     buffers=map(_->StreamBuffer(),commands)
     try
@@ -57,7 +57,7 @@ function named_transport(remote,directory,daemon)
                         nothing
                     end)
                 push!(sinks,sink)
-                format=Ext.calibration_probe_format(JuliaFilterGraph.output_formats(descriptor.graph).demanded,500//1)
+                format=Ext.calibration_probe_format(FilterGraphs.output_formats(descriptor.graph).demanded,500//1)
                 connect!(sink,:input;flags=STREAM_MAP_BUFFERS|STREAM_INACTIVE|STREAM_DONT_RECONNECT|STREAM_NO_CONVERT,
                     params=Ext.calibration_probe_parameters(format,"test.$key/1"))
             end
@@ -157,7 +157,7 @@ function named_transport(remote,directory,daemon)
             end
         end
         close(loop)
-        foreach(descriptor->FilterGraphIsland.close_execution(descriptor.graph),values(commands))
+        foreach(descriptor->FilterGraphPipeWire.close_execution(descriptor.graph),values(commands))
         close(condition)
     end
 end

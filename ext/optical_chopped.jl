@@ -69,30 +69,29 @@ function prepare_optical_chopped_frontend(document, name, reference, duration, p
     graph = mktempdir() do directory
         path = joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,document)
-        options = FilterGraphIsland.parse_arguments(["--graph",path,"--check","--execution","complete-frame"])
-        FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats -> begin
+        FilterGraphPipeWire.prepare_service_graph(path; initial_parameters=formats -> begin
             keys(formats) == (parameter,) && getproperty(formats,parameter).shape == (length(reference_pixels),) ||
                 throw(ArgumentError("chopped frontend reference parameter differs from detector pixels"))
             [parameter=>reference_pixels]
         end)
     end
     try
-        formats = JuliaFilterGraph.input_formats(graph)
+        formats = FilterGraphs.input_formats(graph)
         keys(formats) == (:image,) && formats.image.element_type === Float32 && formats.image.shape == size(reference) ||
             throw(ArgumentError("chopped frontend must consume the actual Float32 detector image"))
-        output = JuliaFilterGraph.output_formats(graph).measurements
+        output = FilterGraphs.output_formats(graph).measurements
         output.shape == (count(mask),) && output.schema == FGA.SCC_SELECTED_PIXEL_RESIDUALS_V1 ||
             throw(ArgumentError("chopped measurement output differs from selected pixels"))
         return (; graph,document,duration,polarity,reference=copy(reference),mask=copy(mask),
             inputs=(image=zeros(Float32,size(reference)),),outputs=(measurements=zeros(Float32,count(mask)),))
     catch
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
         rethrow()
     end
 end
 
 function optical_chopped_measurement!(frontend, fringed, unfringed)
-    JuliaFilterGraph.reset!(frontend.graph)
+    FilterGraphs.reset!(frontend.graph)
     for (index,image) in enumerate((fringed,unfringed))
         size(image) == size(frontend.reference) || throw(DimensionMismatch("chopped calibration image shape changed"))
         copyto!(frontend.inputs.image,optical_image(image))
@@ -103,7 +102,7 @@ function optical_chopped_measurement!(frontend, fringed, unfringed)
             chopped_image_kind=index == 1 ? FGA.ChoppedImageFringed : FGA.ChoppedImageUnfringed,
             exposure_duration_nanoseconds=frontend.duration,
             acquisition_identity=FGA.SampleAcquisitionIdentity(ntuple(_->UInt8(0xc1),16),1,index))
-        result = JuliaFilterGraph.process!(frontend.outputs,frontend.graph,frontend.inputs,(image=metadata,))
+        result = FilterGraphs.process!(frontend.outputs,frontend.graph,frontend.inputs,(image=metadata,))
         if index == 1
             result === FGA.SccPixelResidualIncompletePair || throw(ArgumentError("chopped frontend did not prime on its first optical role"))
         else

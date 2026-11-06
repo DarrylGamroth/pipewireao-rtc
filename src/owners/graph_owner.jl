@@ -182,20 +182,20 @@ function run_owner end
 function read_bindings end
 
 function _main(args; with_owner=Bootstrap.with_owner,
-        load_science=() -> Base.require(Main, :FilterGraphIsland), run=run_owner)
+        load_science=() -> Base.require(Main, :FilterGraphPipeWire), run=run_owner)
     binding, graph_arguments, fits_path, correction_properties, correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path = arguments(args)
     with_owner(binding) do admitted
         admitted.owner_check()
-        island = load_science()
+        pipewire = load_science()
         offsets_path === nothing || Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
         admitted.owner_check()
-        options = merge(Base.invokelatest(island.parse_arguments, graph_arguments),
+        options = merge(Base.invokelatest(pipewire.parse_arguments, graph_arguments),
             (; correction_properties, correction_timeout_ms, recovery_nodes, physical_offsets=offsets_path,
                 supervision=supervision_path === nothing ? () : read_supervision(supervision_path),
                 chopped_warmup=warmup_path === nothing ? nothing : read_chopped_warmup(warmup_path)))
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
-        Base.invokelatest(run, island, options, admitted.bootstrap_runtime, entries)
+        Base.invokelatest(run, pipewire, options, admitted.bootstrap_runtime, entries)
     end
     return 0
 end
@@ -204,7 +204,7 @@ end
     main(args)
 
 Run a package-owned JFG scientific process. Publish bootstrap Preparing before
-loading FilterGraphIsland. Required bootstrap flags are `--bootstrap-node`,
+loading FilterGraphPipeWire. Required bootstrap flags are `--bootstrap-node`,
 `--bootstrap-instance`, and absolute `--remote`; other graph flags are forwarded.
 `--fits-bindings PATH` selects a native SPA-JSON document with `parameters` entries
 containing `port`, `path`, optional one-based `hdu` and FITS `axes`. The graph's

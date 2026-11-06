@@ -96,7 +96,7 @@ function Calibration._calibrate_system(::Val{:shack_hartmann}, source, specifica
         parameters[:active] = copy(getproperty(flat_output, Symbol(estimator["validity_output"])))
         flat_flux = copy(getproperty(flat_output, Symbol(estimator["flux_output"])))
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     K.replace_dimensions!(working, parameters, n; measurement_count, command_limits=limits, mirror=mirror_name)
     graph = K.controller_graph(working)
@@ -144,7 +144,7 @@ function Calibration._calibrate_system(::Val{:shack_hartmann}, source, specifica
         get!(parameters,Symbol("shape-offset"),zeros(Float32,physical_count))
         return K.write_bundle(output,report,rtc.calibration,concrete,parameters;diagnostics)
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     end
 end

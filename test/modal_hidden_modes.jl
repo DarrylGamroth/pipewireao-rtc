@@ -2,7 +2,7 @@ module ModalHiddenModesTests
 using Test, LinearAlgebra, PipeWireAORTC
 import AdaptiveOpticsCalibration
 for dependency in (:FilterGraphAlgorithms, :AdaptiveOpticsSim, :AdaptiveOpticsSimPipeWireHIL,
-        :FilterGraphIsland, :FilterGraphPipeWire, :JuliaFilterGraph)
+        :FilterGraphPipeWire, :FilterGraphs)
     Base.require(Main, dependency)
 end
 const C = PipeWireAORTC.InstrumentCalibration

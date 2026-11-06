@@ -1,9 +1,8 @@
 module PipeWireAORTCGraphExt
 
 import PipeWireAORTC
-import FilterGraphIsland
 import FilterGraphPipeWire
-import JuliaFilterGraph
+import FilterGraphs
 import PipeWireAO
 import FilterGraphAlgorithms
 
@@ -37,9 +36,8 @@ function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(declaration:
     return mktempdir() do directory
         path = joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,concrete)
-        options = FilterGraphIsland.parse_arguments(["--graph",path,"--check","--execution","complete-frame"])
         updates = Pair{Symbol,Array}[]
-        graph = FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats -> begin
+        graph = FilterGraphPipeWire.prepare_service_graph(path; initial_parameters=formats -> begin
             append!(updates,Owner.prepare_bindings(selected,formats))
             updates
         end)
@@ -52,44 +50,40 @@ function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(declaration:
             plan = FilterGraphAlgorithms.VdmShapeOffsetPlan(completion,inverse,zeros(Float32,count))
             return Tuple(plan.controlled_actuators)
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
     end
 end
 
 function PipeWireAORTC.InstrumentExport.graph_port_contracts(path::AbstractString;metadata::Bool=false)
-    options = FilterGraphIsland.parse_arguments([
-        "--graph", String(path), "--check", "--execution", "complete-frame"])
-    graph = FilterGraphIsland.prepare_service_graph(options)
+    graph = FilterGraphPipeWire.prepare_service_graph(String(path))
     try
         contracts=Dict(section => Dict(string(name) => PipeWireAORTC.InstrumentExport.port_contract(format)
             for (name, format) in pairs(formats(graph)))
-            for (section, formats) in (("inputs", JuliaFilterGraph.input_formats),
-                ("parameters", JuliaFilterGraph.parameter_formats),
-                ("outputs", JuliaFilterGraph.output_formats)))
+            for (section, formats) in (("inputs", FilterGraphs.input_formats),
+                ("parameters", FilterGraphs.parameter_formats),
+                ("outputs", FilterGraphs.output_formats)))
         if metadata
             required=FilterGraphPipeWire.required_input_metadata(graph)
-            inputs=keys(JuliaFilterGraph.input_formats(graph))
-            outputs=keys(JuliaFilterGraph.output_formats(graph))
+            inputs=keys(FilterGraphs.input_formats(graph))
+            outputs=keys(FilterGraphs.output_formats(graph))
             profiles=(inputs=PipeWireAORTC.Common.telemetry_metadata_ports(inputs;required),
                 outputs=PipeWireAORTC.Common.telemetry_metadata_ports(outputs,inputs,
-                    JuliaFilterGraph.output_metadata_source_inputs(graph);required))
+                    FilterGraphs.output_metadata_source_inputs(graph);required))
             for section in (:inputs,:outputs), (name,profile) in pairs(getproperty(profiles,section))
                 contracts[string(section)][string(name)]["metadata"]=[Dict("type"=>r.type,"size"=>r.size,"required"=>r.required) for r in profile.metadata]
             end
         end
         return contracts
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
 function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractString)
-    options = FilterGraphIsland.parse_arguments([
-        "--graph", String(graph_path), "--check", "--execution", "complete-frame"])
     entries = Owner.bindings(binding_path)
     updates = Pair{Symbol,Array}[]
-    graph = FilterGraphIsland.prepare_service_graph(options;
+    graph = FilterGraphPipeWire.prepare_service_graph(String(graph_path);
         initial_parameters=formats -> begin
             append!(updates, Owner.prepare_bindings(entries, formats))
             updates
@@ -97,45 +91,50 @@ function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractS
     try
         return Dict(updates)
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
 function PipeWireAORTC.InstrumentExport.validate_feedback(application, graph_path, binding_path, receiver_path)
     graphfile=joinpath(application,graph_path)
     entries=Owner.bindings(joinpath(application,binding_path))
-    options=FilterGraphIsland.parse_arguments(["--graph",graphfile,"--check","--execution","complete-frame"])
-    graph=FilterGraphIsland.prepare_service_graph(options;
+    graph=FilterGraphPipeWire.prepare_service_graph(graphfile;
         initial_parameters=formats->Owner.prepare_bindings(entries,formats))
     try
         path=joinpath(application,receiver_path)
         PipeWireAORTC.PhysicalOffsets.prepare(path,graph)
-        PipeWireAORTC.PhysicalOffsets.frame_observer(path,nothing,JuliaFilterGraph.output_formats(graph))
+        PipeWireAORTC.PhysicalOffsets.frame_observer(path,nothing,FilterGraphs.output_formats(graph))
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     return nothing
 end
 
-function Owner.run_owner(island::Module, options, runtime, entries)
+function Owner.run_owner(pipewire::Module, options, runtime, entries)
     Bootstrap.preparation_check!(runtime)
     options.check && throw(ArgumentError("native graph owner cannot run --check"))
     options.session_run_control || throw(ArgumentError("native graph owner requires --session-run-control"))
     raw_ports = Set(parameter.port for parameter in options.parameters)
     any(entry -> entry.port in raw_ports, entries) &&
         throw(ArgumentError("FITS parameter overlaps a legacy raw startup parameter"))
-    declarations = island.algorithm_declarations(options)
+    declarations = pipewire.algorithm_declarations(;
+        packages=options.packages, algorithms=options.algorithms, builtins=options.builtins)
     Bootstrap.preparation_check!(runtime)
-    workers = island.configure_threads(options)
+    workers = pipewire.configure_threads(options)
     initial_parameters = formats -> Owner.prepare_bindings(entries, formats;
         check=() -> Bootstrap.preparation_check!(runtime))
-    graph = island.prepare_service_graph(options; declarations,
-        worker_thread_ids=workers, initial_parameters)
+    graph = pipewire.prepare_service_graph(options.graph; algorithms=declarations,
+        execution=options.execution == "row-block" ? :row_block : :complete_frame,
+        workers=options.row_workers, matrix_layout=options.matrix_layout,
+        worker_thread_ids=workers, initial_parameters, parameters=options.parameters,
+        capture_backend=options.capture_backend === nothing ? nothing : Symbol(options.capture_backend))
     try
+        graph isa FilterGraphs.PreparedComposition && options.feedback !== nothing &&
+            throw(ArgumentError("composition owns its feedback"))
         # Optional provider methods loaded by declarations must be visible here.
         Base.invokelatest(run_prepared, options, runtime, graph)
     finally
-        island.close_execution(graph)
+        pipewire.close_execution(graph)
     end
     return nothing
 end
@@ -155,7 +154,7 @@ function run_prepared(options, runtime, graph)
         Threads.nthreads(:default)>=3) || throw(ArgumentError("physical offsets require complete-frame CPU execution and three default threads"))
     offset_receiver = offsets_path === nothing ? nothing : PipeWireAORTC.PhysicalOffsets.prepare(offsets_path,graph)
     offset_clock = offsets_path === nothing ? nothing : PipeWireAORTC.PhysicalOffsets.frame_observer(
-        offsets_path,get(observation,:frame_observer,nothing),JuliaFilterGraph.output_formats(graph))
+        offsets_path,get(observation,:frame_observer,nothing),FilterGraphs.output_formats(graph))
     offsets_path === nothing || (observation=merge(observation,(;frame_observer=offset_clock)))
     controllers = Tuple(Symbol(first(split(property, ':'))) for property in correction_properties)
     recovery = isempty(options.recovery_nodes) ? (;) :
@@ -163,18 +162,18 @@ function run_prepared(options, runtime, graph)
             participants=Tuple(Symbol.(options.recovery_nodes)),
             reference_timeout_ms=options.correction_timeout_ms))
     reference_clock=PipeWireAORTC.Common.prepare_reference_clock(options)
-    input_names=keys(JuliaFilterGraph.input_formats(graph))
-    output_names=keys(JuliaFilterGraph.output_formats(graph))
+    input_names=keys(FilterGraphs.input_formats(graph))
+    output_names=keys(FilterGraphs.output_formats(graph))
     if options.feedback !== nothing
         input_names=filter(!=(first(options.feedback)),input_names)
         output_names=filter(!=(last(options.feedback)),output_names)
     end
-    source_indices=NamedTuple{Tuple(keys(JuliaFilterGraph.output_formats(graph)))}(JuliaFilterGraph.output_metadata_source_inputs(graph))
+    source_indices=NamedTuple{Tuple(keys(FilterGraphs.output_formats(graph)))}(FilterGraphs.output_metadata_source_inputs(graph))
     common = (; reference_clock,recovery..., name=options.name, remote=options.remote, rate=options.rate,
         input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(input_names;
             required=FilterGraphPipeWire.required_input_metadata(graph)),
         output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(output_names,
-            keys(JuliaFilterGraph.input_formats(graph)),map(name -> getproperty(source_indices,name),output_names);
+            keys(FilterGraphs.input_formats(graph)),map(name -> getproperty(source_indices,name),output_names);
             required=FilterGraphPipeWire.required_input_metadata(graph)),
         connect=false, run_control=options.session_run_control,
         channel_units=options.channel_units)
@@ -233,8 +232,8 @@ function chopped_warmup_samples(graph, options, warmup)
     options.execution == "complete-frame" &&
         options.feedback === nothing && options.capture_backend === nothing ||
         throw(ArgumentError("chopped warmup requires ordinary complete-frame execution"))
-    formats = JuliaFilterGraph.input_formats(graph)
-    composition = graph isa JuliaFilterGraph.PreparedComposition
+    formats = FilterGraphs.input_formats(graph)
+    composition = graph isa FilterGraphs.PreparedComposition
     (composition ? warmup.input in keys(formats) : keys(formats) == (warmup.input,)) ||
         throw(ArgumentError("chopped warmup requires its declared image input"))
     format = getproperty(formats, warmup.input)

@@ -22,10 +22,10 @@ function start_calibration_graph(descriptor, remote, name, rate; notify,referenc
             stop_requested[] && return nothing
             owned = FilterGraphPipeWire.PipeWireNode(descriptor.graph;
                 remote, name, rate, connect=false,reference_clock,
-                input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.input_formats(descriptor.graph));
+                input_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(FilterGraphs.input_formats(descriptor.graph));
                     required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
-                output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(JuliaFilterGraph.output_formats(descriptor.graph)),
-                    keys(JuliaFilterGraph.input_formats(descriptor.graph)),JuliaFilterGraph.output_metadata_source_inputs(descriptor.graph);
+                output_metadata=PipeWireAORTC.Common.telemetry_metadata_ports(keys(FilterGraphs.output_formats(descriptor.graph)),
+                    keys(FilterGraphs.input_formats(descriptor.graph)),FilterGraphs.output_metadata_source_inputs(descriptor.graph);
                     required=FilterGraphPipeWire.required_input_metadata(descriptor.graph)),
                 # Every requested calibration sample must reach the graph.
                 # Latest-input admission can discard it under output starvation.
@@ -33,7 +33,7 @@ function start_calibration_graph(descriptor, remote, name, rate; notify,referenc
                 boundary_layout=FilterGraphAlgorithms.RowMajorLayout())
             stop_requested[] && return nothing
             FilterGraphPipeWire.prepare!(owned; execution=:complete_frame,
-                required_outputs=Tuple(keys(JuliaFilterGraph.output_formats(descriptor.graph))))
+                required_outputs=Tuple(keys(FilterGraphs.output_formats(descriptor.graph))))
             stop_requested[] && return nothing
             FilterGraphPipeWire.connect!(owned)
             stop_requested[] && return nothing
@@ -331,8 +331,8 @@ function prepare_calibration_probes(core, commands::NamedTuple, rate; notify, pr
     failure = Ref{Any}(nothing)
     try
         for (name, descriptor) in pairs(commands)
-            format = JuliaFilterGraph.input_formats(descriptor.graph).requested
-            feedback = JuliaFilterGraph.output_formats(descriptor.graph)[Symbol("constraint-feedback")]
+            format = FilterGraphs.input_formats(descriptor.graph).requested
+            feedback = FilterGraphs.output_formats(descriptor.graph)[Symbol("constraint-feedback")]
             push!(prepared, prepare_calibration_probe(core, format, format.schema, feedback,
                 feedback.schema, rate; notify, prefix=prefix*"."*String(name), failure,reference_clock))
         end

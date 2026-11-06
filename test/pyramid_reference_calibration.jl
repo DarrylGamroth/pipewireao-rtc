@@ -2,7 +2,7 @@
 # geometry/projection checks; private-core end-to-end acquisition is separate.
 module PyramidReferenceCalibrationTests
 using Test
-using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 const Ext = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
 const C = PipeWireAORTC.InstrumentCalibration
@@ -197,23 +197,23 @@ if application !== nothing
         dark = C.calibration_graph(application;inputs=(raw="pixel-calibration:raw",),
             outputs=(calibrated="pixel-calibration:calibrated",))
         try
-            @test JuliaFilterGraph.output_formats(dark.graph).calibrated.shape == options.frame_shape
+            @test FilterGraphs.output_formats(dark.graph).calibrated.shape == options.frame_shape
             @test all(node["label"] != "pyramid-pupil-image-f32" for node in dark.document["filter.graph"]["nodes"])
         finally
-            FilterGraphIsland.close_execution(dark.graph)
+            FilterGraphPipeWire.close_execution(dark.graph)
         end
         frontend = C.calibration_graph(application;inputs=(raw="pixel-calibration:raw",),
             outputs=(reconstruction_pixels=Symbol("reconstruction-pixels"),
                 mean_pupil_intensity=Symbol("mean-pupil-intensity")))
         try
-            formats = JuliaFilterGraph.output_formats(frontend.graph)
+            formats = FilterGraphs.output_formats(frontend.graph)
             @test formats.reconstruction_pixels.shape == (4,geometry.selected)
             @test formats.mean_pupil_intensity.shape == (1,)
             @test frontend.parameters[:flat] == parameters[:flat]
             @test frontend.parameters[Symbol("pupil-mask")] == parameters[Symbol("pupil-mask")]
             @test frontend.parameters[Symbol("pupil-origins")] == parameters[Symbol("pupil-origins")]
         finally
-            FilterGraphIsland.close_execution(frontend.graph)
+            FilterGraphPipeWire.close_execution(frontend.graph)
         end
         @test Ext.reference_application_hashes(application) == before
     end

@@ -174,5 +174,5 @@ end
             Ext.PupilOutput.close!(publisher)
         end
     end
-    @test !any(id->id.name in ("CUDA","AMDGPU","FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph"),keys(Base.loaded_modules))
+    @test !any(id->id.name in ("CUDA","AMDGPU","FilterGraphAlgorithms","FilterGraphPipeWire","FilterGraphs"),keys(Base.loaded_modules))
 end

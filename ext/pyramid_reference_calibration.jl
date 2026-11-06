@@ -141,8 +141,8 @@ function pyramid_reference_geometry(application,parameters,options,recipe,declar
     # Validate shapes against the actual prepared normal graph, not vector lengths.
     authority = Calibration.controller_graph(application)
     try
-        inputs = JuliaFilterGraph.input_formats(authority)
-        outputs = JuliaFilterGraph.output_formats(authority)
+        inputs = FilterGraphs.input_formats(authority)
+        outputs = FilterGraphs.output_formats(authority)
         inputs.raw.element_type === UInt16 && inputs.raw.shape == (rows,columns) &&
             outputs[Symbol("reconstruction-pixels")].element_type === Float32 &&
             outputs[Symbol("reconstruction-pixels")].shape == (4,selected) &&
@@ -150,7 +150,7 @@ function pyramid_reference_geometry(application,parameters,options,recipe,declar
             outputs[Symbol("mean-pupil-intensity")].shape == (1,) || throw(DimensionMismatch(
             "pyramid normal graph formats differ from the reference contract"))
     finally
-        FilterGraphIsland.close_execution(authority)
+        FilterGraphPipeWire.close_execution(authority)
     end
     normalization = get(calibration,"normalization",nothing)
     row_units = pyramid_reference_units(parameters,recipe,declaration.instrument.document,normalization)

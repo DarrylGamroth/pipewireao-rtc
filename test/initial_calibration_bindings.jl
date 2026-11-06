@@ -4,7 +4,7 @@
 module InitialCalibrationBindingsTests
 
 using Test, Sockets
-using PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
+using PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
@@ -36,7 +36,7 @@ const Native = PipeWireAORTC.NativeControlClient
             remote = joinpath(directory, "unused.sock")
             socket = listen(remote)
             try
-                count = only(JuliaFilterGraph.input_formats(command.graph).requested.shape)
+                count = only(FilterGraphs.input_formats(command.graph).requested.shape)
                 error = try
                     Calibration.prepare_initial_calibration(application, remote, stale, command;
                         reference=zeros(Float32, count), name="test.stale-calibration",
@@ -52,8 +52,8 @@ const Native = PipeWireAORTC.NativeControlClient
             end
         end
     finally
-        frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)
-        command === nothing || FilterGraphIsland.close_execution(command.graph)
+        frontend === nothing || FilterGraphPipeWire.close_execution(frontend.graph)
+        command === nothing || FilterGraphPipeWire.close_execution(command.graph)
     end
     @test !any(id.name in ("CUDA", "AMDGPU") for id in keys(Base.loaded_modules))
 end

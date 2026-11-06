@@ -1,9 +1,8 @@
 module PipeWireAORTCCalibrationExt
 
 import PipeWireAORTC
-import FilterGraphIsland
 import FilterGraphPipeWire
-import JuliaFilterGraph
+import FilterGraphs
 import AdaptiveOpticsSim
 import AdaptiveOpticsSimPipeWireHIL
 import AdaptiveOpticsCalibration
@@ -20,10 +19,8 @@ function Calibration.shack_hartmann_configuration(system)
 end
 
 function Calibration.controller_graph(application; overrides=Dict())
-    options = FilterGraphIsland.parse_arguments([
-        "--graph", joinpath(application, "rtc", "graph.conf"), "--check", "--execution", "complete-frame"])
     entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    return FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats ->
+    return FilterGraphPipeWire.prepare_service_graph(joinpath(application, "rtc", "graph.conf"); initial_parameters=formats ->
         [port => get(overrides, port, data) for (port, data) in
             GraphOwner.prepare_bindings(entries, formats)])
 end
@@ -41,9 +38,9 @@ end
 
 function Calibration.measure!(storage, graph, frame)
     storage.raw .= round.(eltype(storage.raw), frame)
-    JuliaFilterGraph.reset!(graph)
+    FilterGraphs.reset!(graph)
     fill!(storage.feedback, 0)
-    all(values(JuliaFilterGraph.process!(storage.outputs, graph, storage.inputs))) ||
+    all(values(FilterGraphs.process!(storage.outputs, graph, storage.inputs))) ||
         throw(ArgumentError("calibration estimator rejected a frame"))
     return storage.outputs
 end

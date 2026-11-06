@@ -1,6 +1,6 @@
 # Optional CPU selector: actual FGA/JFG frontend, no core, service or accelerator.
 using Test, PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
-using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 using LinearAlgebra
 const ChoppedCalibration = Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
 const ChoppedGraphOwner = Base.get_extension(PipeWireAORTC,:PipeWireAORTCGraphExt)
@@ -84,7 +84,7 @@ end
         @test ChoppedCalibration.optical_chopped_measurement!(frontend,fringed,unfringed) == expected
         @test length(frontend.outputs.measurements) == count(mask)
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 
@@ -123,20 +123,20 @@ end
             @test FilterGraphPipeWire.node_state(node)==PipeWireAO.NDARRAY_FILTER_STATE_UNCONNECTED
             # output_metadata explicitly retains the last product even when
             # unavailable. It is not publication evidence after preparation.
-            @test JuliaFilterGraph.output_metadata(frontend.graph).measurements.sequence==3
+            @test FilterGraphs.output_metadata(frontend.graph).measurements.sequence==3
             pair=only(filter(item->item.name===:pair,frontend.graph.nodes)).prepared.workspace
             @test !chopped_image_is_primed(pair)
             live=SampleMetadata(1;terminal=true,trigger_high=true,chopped_image_kind=ChoppedImageFringed,
                 exposure_duration_nanoseconds=10_000_000,
                 acquisition_identity=SampleAcquisitionIdentity(ntuple(_->UInt8(0xd2),16),1,1))
-            @test JuliaFilterGraph.process!(frontend.outputs,frontend.graph,(image=fringed,),(image=live,))===SccPixelResidualIncompletePair
+            @test FilterGraphs.process!(frontend.outputs,frontend.graph,(image=fringed,),(image=live,))===SccPixelResidualIncompletePair
             @test_throws ArgumentError ChoppedGraphOwner.chopped_warmup_samples(frontend.graph,
                 merge(options,(;execution="row-block")),warmup)
         finally
             close(node)
         end
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 
@@ -201,7 +201,7 @@ end
             @test !ispath(joinpath(directory,"changed"))
         end
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 

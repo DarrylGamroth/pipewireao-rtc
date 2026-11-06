@@ -94,7 +94,7 @@ end
 reference_roots!(roots, value) = roots
 
 function graph_contract_context(application, declarations, prefix)
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     result = Dict{String,Any}()
     for entry in declarations
         path = D.relative_asset(application, entry["path"])

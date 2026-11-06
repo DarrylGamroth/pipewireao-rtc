@@ -814,11 +814,11 @@ end
 function optical_reference_measurement!(outputs, frontend, inputs, frame)
     eltype(frame) === UInt16 || throw(ArgumentError("upstream optical reference must retain raw UInt16 ADC frames"))
     copyto!(inputs.raw,Array(frame))
-    JuliaFilterGraph.reset!(frontend.graph)
+    FilterGraphs.reset!(frontend.graph)
     # The deployed pyramid uses its previous successful frame's flux. Two
     # evaluations of the same held acquisition reach its declared held-flux state.
     for _ in 1:2
-        status = JuliaFilterGraph.process!(outputs,frontend.graph,inputs)
+        status = FilterGraphs.process!(outputs,frontend.graph,inputs)
         status isa NamedTuple && all(values(status)) ||
             throw(ArgumentError("deployed upstream reconstruction rejected a held UInt16 frame"))
     end
@@ -1074,7 +1074,7 @@ function Calibration.calibrate_optical_reference(upstream_application::AbstractS
         calibration.report["upstream_reference"] = provenance
         return merge(calibration,(;fast_reference=chosen))
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 

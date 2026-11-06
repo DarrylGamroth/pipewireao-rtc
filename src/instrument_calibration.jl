@@ -91,7 +91,7 @@ end
 
 function read_parameters(application)
     # This cold API loads the optional scientific owner; core startup stays independent.
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     return Base.invokelatest(GraphOwner.read_bindings,
         joinpath(application, "rtc", "graph.conf"),
         joinpath(application, "rtc", "parameters.conf"))
@@ -396,7 +396,7 @@ end
 
 "Read estimator dimensions from prepared ports and reject stale calibration declarations."
 function estimator_dimensions(application, estimator)
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     contracts = Base.invokelatest(InstrumentExport.graph_port_contracts,
         joinpath(application, "rtc", "graph.conf"))
     detector_shape = Tuple(contracts["inputs"][estimator["raw_input"]]["shape"])

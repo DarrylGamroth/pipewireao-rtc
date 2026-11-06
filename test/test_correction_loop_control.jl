@@ -1,7 +1,7 @@
 # Optional scientific integration selector. No native core or live session.
 using Test, PipeWireAORTC
 import FilterGraphAlgorithms as FGA
-import JuliaFilterGraph as JFG
+import FilterGraphs as JFG
 
 const Commands = PipeWireAORTC.RunnerCommands
 const Codec = PipeWireAORTC.NativeRunnerCodec

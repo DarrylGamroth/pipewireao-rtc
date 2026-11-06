@@ -266,7 +266,7 @@ function prepare_feedback(base::AbstractString,component::AbstractString,destina
             "rtc/feedback-profile.yaml"=>profilefile,receiver["simulation_configuration"]=>simulationfile)
         staged = compose(mainroot,componentroot,joinpath(temporary,"application");namespace,roles=document["roles"],links=document["links"],
             overrides,prefix,owner_arguments=Dict(role=>argv),sinks,node_owners=Dict(sink["node.name"]=>role for sink in sinks))
-        Base.require(Main,:FilterGraphIsland)
+        Base.require(Main,:FilterGraphPipeWire)
         Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
         Base.invokelatest(validate_feedback,staged,receiver["graph"],receiver["parameters"],receiver["configuration"])
         mv(staged,output)

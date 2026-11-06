@@ -5,7 +5,7 @@ function prepare_supervision(options, owner_instance, graph)
     isempty(conditions) && return nothing
     options.capture_backend === nothing && options.execution == "complete-frame" ||
         throw(ArgumentError("supervision supports complete-frame CPU controller owners only"))
-    formats = JuliaFilterGraph.output_formats(graph)
+    formats = FilterGraphs.output_formats(graph)
     names = map(condition -> condition.output, conditions)
     policies = NamedTuple{names}(map(conditions) do condition
         hasproperty(formats, condition.output) ||

@@ -131,7 +131,7 @@ end
             Pupil.close!(p)
         end
     end
-    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","FilterGraphs","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end
 
 @testset "native pupil and adopted command exports follow the selected physical source" begin
@@ -164,5 +164,5 @@ end
         @test streams[2].buffers==streams[3].buffers==count
         @test streams[2].metadata==streams[3].metadata && all(r->r.required,streams[2].metadata)
     end
-    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","FilterGraphs","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end

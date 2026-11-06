@@ -1,6 +1,6 @@
 # CPU-only numerical-extension test; no server or services needed.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
+using FilterGraphPipeWire, FilterGraphs, FilterGraphAlgorithms
 const E=Base.get_extension(PipeWireAORTC,:PipeWireAORTCGraphExt)
 
 function prepared_analysis_flux_graph()
@@ -18,9 +18,8 @@ function prepared_analysis_flux_graph()
                 outputs = [ "flux:pupil-flux" ]
             }
             """)
-        options = FilterGraphIsland.parse_arguments(["--graph", path, "--check"])
-        return FilterGraphIsland.prepare_service_graph(options;
-            declarations=(FilterGraphAlgorithms.PyramidPupilFluxU16F64,))
+        return FilterGraphPipeWire.prepare_service_graph(path;
+            algorithms=(FilterGraphAlgorithms.PyramidPupilFluxU16F64,))
     end
 end
 
@@ -36,25 +35,14 @@ end
 
 function analysis_native_buffer(data; header=nothing, output=false)
     native = PipeWireAO.LibPipeWire
-    storage = [native.pw_ndarray_filter_buffer(
-        ntuple(_ -> UInt8(0), sizeof(native.pw_ndarray_filter_buffer)),)]
-    header_metadata = native.PW_NDARRAY_FILTER_METADATA_HEADER
-    GC.@preserve storage data begin
-        buffer = pointer(storage)
-        unsafe_store!(buffer.struct_size, UInt32(sizeof(native.pw_ndarray_filter_buffer)))
-        unsafe_store!(buffer.flags, output ?
-            native.PW_NDARRAY_FILTER_BUFFER_FLAG_OUTPUT_UNAVAILABLE : UInt32(0))
-        unsafe_store!(buffer.data, Ptr{Cvoid}(pointer(data)))
-        unsafe_store!(buffer.size, UInt32(sizeof(eltype(data)) * length(data)))
-        unsafe_store!(buffer.capacity, UInt32(sizeof(eltype(data)) * length(data)))
-        unsafe_store!(buffer.metadata_available, header_metadata)
-        unsafe_store!(buffer.metadata_valid, isnothing(header) ? UInt32(0) : header_metadata)
-        if !isnothing(header)
-            unsafe_store!(buffer.header, native.spa_meta_header(
-                header.flags, header.offset, header.pts, header.dts_offset, header.sequence))
-        end
-    end
-    return storage
+    metadata = PipeWireAO.MetadataSnapshot((PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_HEADER),))
+    records = PipeWireAO.writable_metadata_records(metadata)
+    header === nothing || PipeWireAO.set_buffer_header!(records, header)
+    extent = UInt32(sizeof(data))
+    storage = [native.pw_ndarray_filter_buffer(UInt32(sizeof(native.pw_ndarray_filter_buffer)),
+        output ? native.PW_NDARRAY_FILTER_BUFFER_FLAG_OUTPUT_UNAVAILABLE : UInt32(0),
+        Ptr{Cvoid}(pointer(data)), extent, extent, metadata.count, 0, pointer(metadata.descriptors))]
+    return (; storage, metadata)
 end
 
 @testset "single-input analysis keeps the ordinary graph boundary and Header" begin
@@ -62,8 +50,8 @@ end
     try
         input_owner = E.analysis_input_owner(graph)
         @test input_owner === graph
-        @test JuliaFilterGraph.output_metadata_source_inputs(input_owner) == (1,)
-        @test !(input_owner isa JuliaFilterGraph.PreparedSynchronizedInputs)
+        @test FilterGraphs.output_metadata_source_inputs(input_owner) == (1,)
+        @test !(input_owner isa FilterGraphs.PreparedSynchronizedInputs)
 
         node = FilterGraphPipeWire.PipeWireNode(input_owner;
             name="analysis-single-input-test", rate=500//1, connect=false)
@@ -80,9 +68,9 @@ end
             output_storage = analysis_native_buffer(pupil_flux; output=true)
             GC.@preserve raw pupil_flux input_storage output_storage begin
                 inputs = PipeWireAO.NdArrayFilterBuffers{false}(
-                    Ptr{Cvoid}(pointer(input_storage)), UInt32(1))
+                    Ptr{Cvoid}(pointer(input_storage.storage)), UInt32(1))
                 outputs = PipeWireAO.NdArrayFilterBuffers{true}(
-                    Ptr{Cvoid}(pointer(output_storage)), UInt32(1))
+                    Ptr{Cvoid}(pointer(output_storage.storage)), UInt32(1))
                 FilterGraphPipeWire._process_graph_buffers!(node.owner, nothing, inputs, outputs)
                 @test pupil_flux == Float64[33, 105, 45, 117]
                 @test PipeWireAO.buffer_header(outputs[1]) == header
@@ -91,7 +79,7 @@ end
             close(node)
         end
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
@@ -125,7 +113,7 @@ end
         before_return=false
         try
             redirect_stdout(pipe) do
-                monitor=FilterGraphIsland.spawn_monitor() do
+                monitor=FilterGraphPipeWire.spawn_monitor() do
                     @ccall gc_safe=true usleep(100000::Cuint)::Cint
                     E.analysis_ready_notice(config,4)
                     completed[]=true

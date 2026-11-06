@@ -1,7 +1,7 @@
 # Optional CPU transfer/build selector; no native core or accelerator imports.
 using Test, LinearAlgebra, PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim,
     AdaptiveOpticsSimPipeWireHIL,AdaptiveOpticsCalibration,FilterGraphAlgorithms,
-    FilterGraphIsland,FilterGraphPipeWire,JuliaFilterGraph
+    FilterGraphPipeWire,FilterGraphs
 const E=PipeWireAORTC.InstrumentExport
 const C=PipeWireAORTC.Common
 const D=PipeWireAORTC.DeploymentConfiguration

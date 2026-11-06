@@ -1,5 +1,5 @@
 # Optional CPU/private-core transport selector; no instrument optics or devices.
-using Test, PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("native_control_private_core.jl")
 const Transport = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
@@ -50,8 +50,7 @@ function transport_test(socket, directory, daemon)
             outputs = ["pdm:demanded" "pdm:constraint-feedback"]
         } }
         """)
-        graph = FilterGraphIsland.prepare_service_graph(FilterGraphIsland.parse_arguments([
-            "--graph",path,"--check","--execution","complete-frame"]))
+        graph = FilterGraphPipeWire.prepare_service_graph(path)
         with_thread_loop_lock(loop) do _
             context = Context(loop)
             core = CoreConnection(context; properties=Dict("remote.name"=>socket))
@@ -87,8 +86,8 @@ function transport_test(socket, directory, daemon)
         @test !Transport.calibration_incarnation_present(registry,(;node=replaced,port=endpoint[].port))
         @test_throws ErrorException Transport.calibration_link(core,registry,
             (;node=replaced,port=endpoint[].port), endpoint[]; on_info=(_, _)->nothing)
-        formats = JuliaFilterGraph.output_formats(graph)
-        probe = Transport.prepare_calibration_probe(core,JuliaFilterGraph.input_formats(graph).requested,
+        formats = FilterGraphs.output_formats(graph)
+        probe = Transport.prepare_calibration_probe(core,FilterGraphs.input_formats(graph).requested,
             "pipewireao/requested-pdm-command-f32/1",formats[Symbol("constraint-feedback")],
             "pipewireao/pdm-constraint-feedback-f32/1",500//1;notify=notify_owner)
         with_thread_loop_lock(loop) do _
@@ -197,7 +196,7 @@ function transport_test(socket, directory, daemon)
             end
         end
         close(loop)
-        graph===nothing || FilterGraphIsland.close_execution(graph)
+        graph===nothing || FilterGraphPipeWire.close_execution(graph)
         close(wake)
     end
 end

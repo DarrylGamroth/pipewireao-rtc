@@ -2,7 +2,7 @@
 using Test, Libdl
 using PipeWireAORTC
 using PipeWireAO: METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 

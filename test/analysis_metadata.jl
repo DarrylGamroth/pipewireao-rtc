@@ -1,6 +1,6 @@
 # Actual native callback buffers and RTC Node policy; no server or service.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphIsland, FilterGraphPipeWire
+using FilterGraphAlgorithms, FilterGraphs, FilterGraphPipeWire
 const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 const C = PipeWireAORTC.Common
 
@@ -33,16 +33,14 @@ end
                 outputs = [ "wfs:summary" ]
             }
             """)
-        options = FilterGraphIsland.parse_arguments(["--graph", path, "--check",
-            "--boundary-layout", "row-major"])
-        graph = FilterGraphIsland.prepare_service_graph(options;
-            declarations=FilterGraphIsland.algorithm_declarations(options))
+        graph = FilterGraphPipeWire.prepare_service_graph(path;
+            algorithms=FilterGraphPipeWire.algorithm_declarations())
         config = (; name="analysis-metadata-test", rate=500//1, channel_units=NamedTuple())
         node = E.prepare_analysis_node(config, joinpath(directory, "absent.sock"),
-            graph, options.boundary_layout, nothing)
+            graph, FilterGraphAlgorithms.RowMajorLayout(), nothing)
         try
             FilterGraphPipeWire._prepare_owner(node.owner)
-            @test node.owner.join isa JuliaFilterGraph.PreparedSynchronizedInputs
+            @test node.owner.join isa FilterGraphs.PreparedSynchronizedInputs
             requirements = node.owner.output_records.summary.requirements
             @test Set(r.type for r in requirements) == Set(r.type for r in C.TELEMETRY_METADATA)
             identity = AcquisitionIdentity(AcquisitionDomain(ntuple(UInt8,16)), 7, 42)
@@ -74,7 +72,7 @@ end
             end
         finally
             close(node)
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
     end
 end

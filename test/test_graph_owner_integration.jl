@@ -2,11 +2,10 @@
 using Test
 using PipeWireAORTC
 
-@test !any(id -> id.name in ("FilterGraphIsland", "JuliaFilterGraph", "FilterGraphPipeWire", "CUDA"), keys(Base.loaded_modules))
+@test !any(id -> id.name in ("FilterGraphPipeWire", "FilterGraphs", "CUDA"), keys(Base.loaded_modules))
 
-using FilterGraphIsland
-using JuliaFilterGraph
 using FilterGraphPipeWire
+using FilterGraphs
 using FilterGraphAlgorithms
 
 @test Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt) !== nothing
@@ -39,42 +38,39 @@ using FilterGraphAlgorithms
                 outputs = [ "calibrate:calibrated" ]
             }
             """)
-        for execution in ("complete-frame", "row-block")
-            options = FilterGraphIsland.parse_arguments([
-                "--graph", graph_path, "--check", "--execution", execution])
+        for execution in (:complete_frame, :row_block)
             arrays = Ref{Any}(nothing)
-            graph = FilterGraphIsland.prepare_service_graph(options;
+            graph = FilterGraphPipeWire.prepare_service_graph(graph_path; execution,
                 initial_parameters=formats -> begin
                     arrays[] = PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats)
                     arrays[]
                 end)
             try
-                checked = execution == "row-block" ? graph.graph : graph
+                checked = execution === :row_block ? graph.graph : graph
                 @test checked.nodes[1].prepared.plan.background == background
                 last(only(arrays[]))[1] = -1
                 @test checked.nodes[1].prepared.plan.background[1] == 1
-                @test JuliaFilterGraph.parameter_formats(graph).background.shape == (8,6)
+                @test FilterGraphs.parameter_formats(graph).background.shape == (8,6)
                 outputs = (; calibrated=zeros(Float32, 2, 6))
                 inputs = (; raw=fill(UInt16(100), 2, 6))
                 for block in 0:3
                     metadata = (; raw=FilterGraphAlgorithms.SampleMetadata(0, 2block;
                         terminal=block == 3))
-                    JuliaFilterGraph.process!(outputs, graph, inputs, metadata)
+                    FilterGraphs.process!(outputs, graph, inputs, metadata)
                     @test outputs.calibrated == 100f0 .- background[(2block+1):(2block+2), :]
                 end
             finally
-                FilterGraphIsland.close_execution(graph)
+                FilterGraphPipeWire.close_execution(graph)
             end
         end
         @test PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:background] == background
-        options = FilterGraphIsland.parse_arguments(["--graph", graph_path, "--check"])
         for (array, axes) in ((zeros(Float32, 8, 5), (2,1)),
                 (background, (1,2)), (fill(Inf32, 8, 6), (2,1)))
             PipeWireAORTC.InstrumentCalibration.write_fits(path, array)
             source = PipeWireAORTC.Artifacts.FITSArtifact(path; axes)
             invalid = [PipeWireAORTC.GraphOwner.FITSBinding(:background, source)]
             expected = all(isfinite, array) ? DimensionMismatch : ArgumentError
-            @test_throws expected FilterGraphIsland.prepare_service_graph(options;
+            @test_throws expected FilterGraphPipeWire.prepare_service_graph(graph_path;
                 initial_parameters=formats -> PipeWireAORTC.GraphOwner.prepare_bindings(invalid, formats))
         end
         @test sort(readdir(directory)) == ["background.fits", "bindings.conf", "graph.conf"]
@@ -115,8 +111,7 @@ end
         write_fits = PipeWireAORTC.InstrumentCalibration.write_fits
         write_fits(mask_path, mask)
         write_fits(origins_path, UInt32[0 0])
-        options = FilterGraphIsland.parse_arguments(["--graph", graph_path, "--check"])
-        prepare() = FilterGraphIsland.prepare_service_graph(options;
+        prepare() = FilterGraphPipeWire.prepare_service_graph(graph_path;
             initial_parameters=formats -> PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats))
         graph = prepare()
         try
@@ -124,11 +119,11 @@ end
             selected = zeros(Float32, 3)
             regions = zeros(Float32, 1, 1, 1)
             outputs = NamedTuple{(Symbol("selected-pixels"), :regions)}((selected, regions))
-            @test all(values(JuliaFilterGraph.process!(outputs, graph, (; image, calibrated=image))))
+            @test all(values(FilterGraphs.process!(outputs, graph, (; image, calibrated=image))))
             @test selected == Float32[2, 4, 6]
             @test regions == ones(Float32, 1, 1, 1)
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
         @test eltype(PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:mask]) === Bool
         write_fits(mask_path, UInt8[0 2 0; 1 0 1])

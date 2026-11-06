@@ -3,7 +3,7 @@ module ClassicManagedReplay
 using Test, SHA, Libdl, LinearAlgebra, Statistics
 using PipeWireAO, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphs
 include("classic_observation.jl")
 include("classic_replay.jl")
 module FaultCleanup

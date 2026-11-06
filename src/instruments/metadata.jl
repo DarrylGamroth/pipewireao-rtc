@@ -250,7 +250,7 @@ function publication(path)
             bases = Tuple(resolve_basis(declaration,basis,description,source) for basis in control["shape_control"]["bases"])
             n = length(dm.layout.command_positions)
             controlled = if haskey(control["shape_control"],"controlled_actuators")
-                Base.require(Main,:FilterGraphIsland)
+                Base.require(Main,:FilterGraphPipeWire)
                 Base.invokelatest(controlled_actuators,declaration,control["shape_control"]["controlled_actuators"],n)
             else
                 ntuple(_ -> true,n)

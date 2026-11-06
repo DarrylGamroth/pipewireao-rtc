@@ -1,6 +1,6 @@
 using FilterGraphAlgorithms
 using FilterGraphPipeWire
-using JuliaFilterGraph
+using FilterGraphs
 using PipeWireAO
 
 length(ARGS) in (3, 4, 5) || error(
@@ -10,7 +10,7 @@ core_name, graph_configuration, stop_file = ARGS[1:3]
 node_name = length(ARGS) >= 4 ? ARGS[4] : "pipewireao-rtc-revolt-controller"
 expected_disconnect = length(ARGS) == 5 ? ARGS[5] : nothing
 
-graph = JuliaFilterGraph.prepare_graph(
+graph = FilterGraphs.prepare_graph(
     graph_configuration;
     algorithms=FilterGraphAlgorithms.algorithms(),
 )

@@ -140,7 +140,7 @@ end
 
 @testset "Completion cannot replace the coupled tip/tilt basis" begin
     for dependency in (:AdaptiveOpticsSim,:AdaptiveOpticsSimPipeWireHIL,:AdaptiveOpticsCalibration,
-            :FilterGraphIsland,:FilterGraphPipeWire,:JuliaFilterGraph)
+            :FilterGraphPipeWire,:FilterGraphs)
         Base.require(Main,dependency)
     end
     recipe = Dict("mirrors"=>[Dict("name"=>"woofer","completion"=>POLICY)],

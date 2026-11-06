@@ -1,10 +1,10 @@
 # Cold CPU selector; no native connection or accelerator imports.
 using Test, SHA, LinearAlgebra
-using PipeWireAORTC, AdaptiveOpticsSimPipeWireHIL, FilterGraphAlgorithms, FilterGraphPipeWire, JuliaFilterGraph
+using PipeWireAORTC, AdaptiveOpticsSimPipeWireHIL, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 const Offsets=PipeWireAORTC.PhysicalOffsets
 const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCOffsetsExt)
 const Calibration=PipeWireAORTC.InstrumentCalibration
-const JFG=JuliaFilterGraph
+const JFG=FilterGraphs
 const Cal=Calibration
 const Common=PipeWireAORTC.Common
 

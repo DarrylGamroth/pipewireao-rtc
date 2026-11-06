@@ -43,7 +43,7 @@ Arrays, unknown ports and overrides outside the projection are rejected.
 
 Returns `(graph, document, bindings, parameters, source_graph_sha256,
 parameter_sources, parameter_sha256)`. The caller
-owns the prepared graph and closes it with `FilterGraphIsland.close_execution`.
+owns the prepared graph and closes it with `FilterGraphPipeWire.close_execution`.
 `document` is generated configuration, `bindings` retains the resolved FITS
 sources, and `parameters` contains owned logical arrays keyed by external Port.
 `parameter_sources` is an owned override mapping; `parameter_sha256` records each
@@ -134,7 +134,7 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
     authority = Calibration.controller_graph(application)
     projected = nothing
     try
-        parameter_names = Set(keys(JuliaFilterGraph.parameter_formats(authority)))
+        parameter_names = Set(keys(FilterGraphs.parameter_formats(authority)))
         issubset(Set(keys(source_overrides)), parameter_names) ||
             throw(ArgumentError("override is not an external Parameter Port"))
         parameter_endpoints = Dict(endpoint => calibration_port(port).name
@@ -197,9 +197,7 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
         projected = mktempdir() do directory
             path = joinpath(directory, "graph.conf")
             PipeWireAORTC.ScienceExport.write_spa_config(path, projected_document)
-            options = FilterGraphIsland.parse_arguments([
-                "--graph", path, "--check", "--execution", "complete-frame"])
-            FilterGraphIsland.prepare_service_graph(options; initial_parameters=formats -> begin
+            FilterGraphPipeWire.prepare_service_graph(path; initial_parameters=formats -> begin
                 prepared = GraphOwner.prepare_artifacts(bindings, formats)
                 for (port, artifact) in prepared
                     parameters[port] = artifact.data
@@ -212,9 +210,9 @@ function Calibration.calibration_graph(application; inputs::NamedTuple, outputs:
         return (; graph=projected, document=projected_document, bindings, parameters,
             source_graph_sha256=source_hash, parameter_sources=source_overrides, parameter_sha256)
     catch
-        projected === nothing || FilterGraphIsland.close_execution(projected)
+        projected === nothing || FilterGraphPipeWire.close_execution(projected)
         rethrow()
     finally
-        FilterGraphIsland.close_execution(authority)
+        FilterGraphPipeWire.close_execution(authority)
     end
 end

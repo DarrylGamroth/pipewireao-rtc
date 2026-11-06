@@ -245,7 +245,7 @@ function prepare_graph end
 function main(args=ARGS)
     path, remote = arguments(args)
     config = configuration(path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
-    for name in (:FilterGraphIsland, :FilterGraphPipeWire, :JuliaFilterGraph)
+    for name in (:FilterGraphPipeWire, :FilterGraphs)
         Base.require(Main, name)
     end
     Base.invokelatest(run_graph, config, remote)

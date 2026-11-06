@@ -33,5 +33,5 @@ Base.include(@__MODULE__,joinpath(@__DIR__,"physical_offset_inputs_documents.jl"
         C.write_yaml(path,document)
         @test_throws DimensionMismatch O.prepare(path;command_count=5,command_order="actual-physical-order",calibration_identity="accepted-calibration")
     end
-    @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","FilterGraphAlgorithms","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    @test all(id->id.name ∉ ("AdaptiveOpticsSim","AdaptiveOpticsSimPipeWireHIL","FilterGraphAlgorithms","FilterGraphs","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end

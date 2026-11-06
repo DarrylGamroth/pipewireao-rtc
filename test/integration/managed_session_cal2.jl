@@ -164,7 +164,7 @@ function preflight(application, prefix; sample_count=40, timeout_seconds=nothing
     require(parse(Int,first(split(argument(receiving["argv"],"--threads"),',')))>=3,"receiver requires three default Julia threads")
     graph_path=asset(application,argument(receiving["argv"],"--graph"))
     binding_path=asset(application,argument(receiving["argv"],"--fits-bindings"))
-    Base.require(Main,:FilterGraphIsland)
+    Base.require(Main,:FilterGraphPipeWire)
     Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     Base.invokelatest(E.validate_feedback,application,relpath(graph_path,application),relpath(binding_path,application),relpath(receiver_path,application))
     contracts=Base.invokelatest(E.graph_port_contracts,graph_path)

@@ -78,5 +78,5 @@ Base.include(@__MODULE__,joinpath(pkgdir(HIL),"test/private_core_helpers.jl"))
             Ext.PupilOutput.close!(publisher)
         end
     end
-    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","JuliaFilterGraph","CUDA","AMDGPU"),keys(Base.loaded_modules))
+    @test !any(id->id.name in ("FilterGraphAlgorithms","FilterGraphPipeWire","FilterGraphs","CUDA","AMDGPU"),keys(Base.loaded_modules))
 end

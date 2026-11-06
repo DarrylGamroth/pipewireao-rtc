@@ -1,6 +1,6 @@
 using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
-using AdaptiveOpticsCalibration, FilterGraphAlgorithms, JuliaFilterGraph
-using FilterGraphIsland, FilterGraphPipeWire
+using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphs
+using FilterGraphPipeWire
 const FIELD_VALIDATION=Base.get_extension(PipeWireAORTC,:PipeWireAORTCCalibrationExt)
 @testset "Propagated pupil-field validation metric" begin
     field=ComplexF32[1 2im; 3+4im 0]

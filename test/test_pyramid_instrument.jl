@@ -106,5 +106,5 @@ end
         @test IC.artifact_paths(declaration, Dict("profile" => "test")) == Set(["origins.fits"])
     end
     @test !any(id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL",
-        "FilterGraphIsland", "JuliaFilterGraph", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
+        "FilterGraphPipeWire", "FilterGraphs", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
 end

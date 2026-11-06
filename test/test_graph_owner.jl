@@ -27,7 +27,7 @@ const GraphOwner = PipeWireAORTC.GraphOwner
     end
 end
 
-module GraphOwnerIsland
+module GraphOwnerPipeWire
 parse_arguments(args) = (; args)
 end
 
@@ -96,8 +96,8 @@ end
     end
     without_fits = argv[1:end-2]
     @test GraphOwner._main(without_fits; with_owner=fake_owner,
-        load_science=() -> (push!(events, :load_science); GraphOwnerIsland),
-        run=(island, options, runtime, entries) -> begin
+        load_science=() -> (push!(events, :load_science); GraphOwnerPipeWire),
+        run=(pipewire, options, runtime, entries) -> begin
             @test runtime === :runtime
             @test isempty(entries)
             @test isempty(options.correction_properties)
@@ -117,7 +117,7 @@ end
     @test_throws InterruptException GraphOwner._main(without_fits; with_owner=cancelled,
         load_science=() -> push!(events, :load_science))
     @test events == [:preparing, :cleanup]
-    @test !any(id -> id.name in ("FilterGraphIsland", "JuliaFilterGraph", "FilterGraphPipeWire", "CUDA"), keys(Base.loaded_modules))
+    @test !any(id -> id.name in ("FilterGraphPipeWire", "FilterGraphs", "CUDA"), keys(Base.loaded_modules))
 end
 
 @testset "FITS graph contracts, logical ordering and cancellation" begin

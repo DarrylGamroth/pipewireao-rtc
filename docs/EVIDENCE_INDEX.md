@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Three-package graph source cohort — 2026-11-06
+
+The [RTC migration record](validation/graph-cohort-20261106/README.md) records
+PipeWireAORTC 0.6's optional dependency identities, direct graph preparation,
+registered SDK/scientific providers and passing core, owner, analysis and
+calibration selectors. The dormant native-buffer test helper has same-test
+fail-before/pass-after evidence for SDK 4 descriptors. Registry publication,
+installed application, hardware and deadline qualification are separate gates.
+
 ## Startup-settings memory and cold token selection — 2026-11-04 UTC
 
 The [inspection record](validation/startup-settings-memory-20261104/README.md)

@@ -83,7 +83,7 @@ end
             "outputs"=>[Dict("name"=>"modal-residual","endpoint"=>"reference:output")]))
         path=joinpath(directory,"graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path,graph)
-        Base.require(Main,:FilterGraphIsland)
+        Base.require(Main,:FilterGraphPipeWire)
         contracts=Base.invokelatest(CAL2.E.graph_port_contracts,path)
         contract=contracts["outputs"]["modal-residual"]
         @test contract["schema"]==schema && contract["shape"]==[8]

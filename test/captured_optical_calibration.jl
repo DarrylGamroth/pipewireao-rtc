@@ -1,6 +1,6 @@
 # Optional native-free selector: PIPEWIREAORTC_TEST_BACKEND=cpu|cuda|amdgpu.
 using Test, LinearAlgebra, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper
-using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs
 import AdaptiveOpticsSim.Backends as B
 BLAS.set_num_threads(1)

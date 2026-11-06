@@ -43,6 +43,17 @@ The shared Julia package is `PipeWireAORTC` (UUID
 to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
 native protocol names and v1 records retain their identities.
 
+Version 0.6 changes the optional graph dependency identities. The graph cohort uses `FilterGraphAlgorithms` 0.12, `FilterGraphs` 0.9
+(UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`) and `FilterGraphPipeWire` 0.5.
+`FilterGraphs` replaces the former `JuliaFilterGraph` package identity;
+`FilterGraphPipeWire` now also owns the standalone launcher previously supplied
+by `FilterGraphIsland`. The `filtergraph-island` command keeps its name.
+Programmatic admission uses `FilterGraphPipeWire.prepare_service_graph(path;
+initial_parameters=...)`; command parsing belongs to launchers. This source
+cohort requires PipeWireAO 0.9.1 and native SDK 4.0.1. Development validation can
+select local package sources. Installed applications resolve the released cohort
+from the existing custom registry.
+
 The callable session modules use application names. Update former
 `WirePlumber*` module references to the following bindings when upgrading:
 

@@ -1,6 +1,6 @@
 # Optional cold owner-compiler and numerical check; no core, GPU or optical preparation.
 # julia --project=/path/to/science-environment test/calibrated_graph_exports.jl
-using Test, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
@@ -44,10 +44,10 @@ end
         @test contracts["constraint-feedback"]["schema"] == S["pdm_constraint_feedback"]["id"]
         baselinepath = joinpath(directory,"calibrated.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(baselinepath,frozen)
-        baseline = JuliaFilterGraph.prepare_graph(baselinepath;algorithms=FilterGraphAlgorithms.algorithms())
-        executed = JuliaFilterGraph.prepare_graph(path;algorithms=FilterGraphAlgorithms.algorithms())
+        baseline = FilterGraphs.prepare_graph(baselinepath;algorithms=FilterGraphAlgorithms.algorithms())
+        executed = FilterGraphs.prepare_graph(path;algorithms=FilterGraphAlgorithms.algorithms())
         for prepared in (baseline,executed)
-            JuliaFilterGraph.replace_parameters!(prepared,
+            FilterGraphs.replace_parameters!(prepared,
                 :completion=>Float32[1 0;0 1;0.5 -0.5],
                 :projection=>Float32[1 0 0;0 1 0;0 0 1;0 0 0])
         end
@@ -55,8 +55,8 @@ end
         output = NamedTuple{(:demanded,Symbol("correction-role"),Symbol("constraint-feedback"))}(
             (zeros(Float32,4),zeros(UInt8,4),zeros(Float32,4)))
         for input in (Float32[2,-1],Float32[-0.25,0.5],Float32[0,0])
-            @test JuliaFilterGraph.process!(old,baseline,(;input)) == (demanded=true,)
-            @test all(values(JuliaFilterGraph.process!(output,executed,(;input))))
+            @test FilterGraphs.process!(old,baseline,(;input)) == (demanded=true,)
+            @test all(values(FilterGraphs.process!(output,executed,(;input))))
             @test old.demanded == output.demanded
             @test getproperty(output,Symbol("correction-role")) == UInt8[1,1,2,0]
             requested = Float32[input[1],input[2],0.5f0*(input[1]-input[2]),0]
@@ -66,7 +66,7 @@ end
     for endpoint in ("missing:correction-role","completion:missing")
         changed = deepcopy(frozen)
         push!(changed["filter.graph"]["outputs"],Dict("name"=>"roles","endpoint"=>endpoint))
-        @test_throws JuliaFilterGraph.GraphConfigurationError E.calibrated_graph_exports(changed,frozen)
+        @test_throws FilterGraphs.GraphConfigurationError E.calibrated_graph_exports(changed,frozen)
     end
     @test !any(id -> id.name in ("AMDGPU","CUDA","Proper"),keys(Base.loaded_modules))
 end

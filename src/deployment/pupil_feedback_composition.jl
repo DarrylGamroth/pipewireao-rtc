@@ -91,7 +91,7 @@ function prepare_pupil_feedback(mainroot,main,componentroot,extra,output,recipe,
     Base.require(Main,:AdaptiveOpticsSim)
     Base.require(Main,:AdaptiveOpticsSimPipeWireHIL)
     Base.require(Main,:AdaptiveOpticsCalibration)
-    Base.require(Main,:FilterGraphIsland)
+    Base.require(Main,:FilterGraphPipeWire)
     equivalence=Base.invokelatest(validate_pupil_equivalence,mainroot,componentroot,simulation,reference,matrices["projection"];
         mirror=receiver["mirror"],prefix)
     count=length(mirror["layout"]["command_positions"])

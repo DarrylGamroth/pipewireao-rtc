@@ -148,7 +148,7 @@ function (owner::InitialCalibration)(action::Actions.Collect, deadline)
     action.probe == owner.probe && action.after == owner.cursor ||
         return Actions.Failed(Actions.InvalidEvidence)
     measurements = owner.measurements === nothing ? 0 :
-        prod(getproperty(JuliaFilterGraph.output_formats(owner.graphs.frontend.graph), owner.measurements).shape)
+        prod(getproperty(FilterGraphs.output_formats(owner.graphs.frontend.graph), owner.measurements).shape)
     action.measurements == measurements || return Actions.Failed(Actions.InvalidEvidence)
     try
         Actions.preflight_collect_reply(measurements, action.frames)
@@ -252,7 +252,7 @@ function Base.close(owner::InitialCalibration)
     # Prepared storage cannot be destroyed while a native graph owner still runs.
     if all(worker -> istaskdone(worker.task), values(owner.workers))
         for descriptor in calibration_descriptors(owner.graphs.frontend, owner.graphs.command)
-            try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors, error) end
+            try FilterGraphPipeWire.close_execution(descriptor.graph) catch error; push!(errors, error) end
         end
     end
     isempty(errors) || throw(CompositeException(errors))
@@ -317,8 +317,8 @@ calibration_descriptors(frontend, command) = calibration_named_commands(command)
     (frontend, values(command)...) : (frontend, command)
 
 function calibration_command(descriptor, reference, count, schema)
-    inputs = JuliaFilterGraph.input_formats(descriptor.graph)
-    outputs = JuliaFilterGraph.output_formats(descriptor.graph)
+    inputs = FilterGraphs.input_formats(descriptor.graph)
+    outputs = FilterGraphs.output_formats(descriptor.graph)
     keys(inputs) == (:requested,) && Set(keys(outputs)) == Set((:demanded, Symbol("constraint-feedback"))) ||
         throw(ArgumentError("command projection requires requested, demanded and constraint-feedback Ports"))
     format = inputs.requested
@@ -352,7 +352,7 @@ function calibration_commands(command, reference, probe_command, options)
 end
 
 function calibration_measurements(frontend, outputs, measurements, active; consume=nothing)
-    inputs = JuliaFilterGraph.input_formats(frontend.graph)
+    inputs = FilterGraphs.input_formats(frontend.graph)
     keys(inputs) == (:raw,) && inputs.raw.element_type === UInt16 && length(inputs.raw.shape) == 2 ||
         throw(ArgumentError("calibration frontend requires one UInt16 rank-two raw input"))
     if measurements === nothing
@@ -462,7 +462,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         throw(ArgumentError("calibration projections must share this application's regular graph"))
     selected = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
     prepared = map(descriptors, Tuple(eachindex(descriptors))) do descriptor,index
-        formats = JuliaFilterGraph.parameter_formats(descriptor.graph)
+        formats = FilterGraphs.parameter_formats(descriptor.graph)
         entries = filter(entry -> haskey(formats, entry.port), selected)
         Set(entry.port for entry in entries) == Set(keys(formats)) == Set(keys(descriptor.parameters)) ||
             throw(ArgumentError("calibration projection parameter ports differ from the selected bindings"))
@@ -483,7 +483,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         updates = [port => artifact.data for (port, artifact) in artifacts]
         all(pair -> isequal(last(pair), descriptor.parameters[first(pair)]), updates) ||
             throw(ArgumentError("calibration projection parameters differ from the selected FITS inputs"))
-        isempty(updates) || JuliaFilterGraph.replace_parameters!(descriptor.graph, updates...)
+        isempty(updates) || FilterGraphs.replace_parameters!(descriptor.graph, updates...)
         provenance = Dict(port => filter(pair -> first(pair) != "source", artifact.provenance)
             for (port, artifact) in artifacts)
         merge(descriptor, (; bindings=entries, parameters=Dict{Symbol,Array}(updates), provenance))
@@ -494,7 +494,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     reference_clock = PipeWireAORTC.Common.prepare_reference_clock(options)
     references = calibration_commands(command, reference, probe_command, options)
     reference = named ? copy(getproperty(references, probe_command)) : copy(reference)
-    outputs = JuliaFilterGraph.output_formats(frontend.graph)
+    outputs = FilterGraphs.output_formats(frontend.graph)
     calibration_measurements(frontend, outputs, measurements, active; consume)
     options.backend === :cpu || throw(ArgumentError("initial calibration requires a built CPU application"))
     simulation_graph in ("production","internal-source","dark") ||
@@ -513,7 +513,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
     else
         !named && declaration.document["id"] == "revolt-classic" ||
             throw(ArgumentError("capture storage requires the declared Classic profile"))
-        raw = JuliaFilterGraph.input_formats(frontend.graph).raw
+        raw = FilterGraphs.input_formats(frontend.graph).raw
         for (role,contract) in pairs(Calibration.CLASSIC_CAPTURE_CONTRACTS)
             payload_format = role === :raw ? raw : getproperty(outputs,role)
             payload_format.element_type === contract.type && Tuple(payload_format.shape) == contract.shape ||
@@ -557,7 +557,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             timeout_ns=UInt64(Control.budget_ns(Actions.PROFILE, Float64(deadline-Control.monotonic()))))
         hil = Wire.prepare_pipewire_calibration(boundary, configuration;reference_clock)
         rate = UInt32(options.rate)//UInt32(1)
-        frame_format = JuliaFilterGraph.input_formats(frontend.graph).raw
+        frame_format = FilterGraphs.input_formats(frontend.graph).raw
         declarations = (; raw=(name=name*".raw",format=capture_format(frame_format, configuration.rate),schema=frame_format.schema),
             (key => (name=name*"."*String(key), format=capture_format(getproperty(outputs,key),configuration.rate),
                 schema=getproperty(outputs,key).schema) for key in keys(outputs))...)
@@ -566,8 +566,8 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
         probe = if named
             prepare_calibration_probes(hil.core, command, configuration.rate; notify, prefix=name*".calibration",reference_clock)
         else
-            format = JuliaFilterGraph.input_formats(command.graph).requested
-            feedback = JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
+            format = FilterGraphs.input_formats(command.graph).requested
+            feedback = FilterGraphs.output_formats(command.graph)[Symbol("constraint-feedback")]
             prepare_calibration_probe(hil.core, format, format.schema, feedback, feedback.schema,
                 configuration.rate; notify,reference_clock)
         end
@@ -733,7 +733,7 @@ function Calibration.prepare_initial_calibration(application, remote, frontend, 
             hil === nothing || try close(hil) catch error; push!(errors,error) end
             if all(worker -> istaskdone(worker.task), workers)
                 for descriptor in calibration_descriptors(frontend,command)
-                    try FilterGraphIsland.close_execution(descriptor.graph) catch error; push!(errors,error) end
+                    try FilterGraphPipeWire.close_execution(descriptor.graph) catch error; push!(errors,error) end
                 end
             end
         end

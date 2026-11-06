@@ -60,11 +60,11 @@ function Calibration._validate_system(::Val{:shack_hartmann}, application, speci
             stamp.sequence == index || error("plant sequence mismatch")
             storage.raw .= round.(eltype(storage.raw), HIL.hil_frame_buffer(science.boundary))
             if index == 1
-                all(values(JuliaFilterGraph.process!(storage.outputs, graph, storage.inputs))) || error("warmup rejected")
-                JuliaFilterGraph.reset!(graph)
+                all(values(FilterGraphs.process!(storage.outputs, graph, storage.inputs))) || error("warmup rejected")
+                FilterGraphs.reset!(graph)
                 fill!(storage.feedback, 0)
             end
-            all(values(JuliaFilterGraph.process!(storage.outputs, graph, storage.inputs))) || error("controller rejected frame")
+            all(values(FilterGraphs.process!(storage.outputs, graph, storage.inputs))) || error("controller rejected frame")
             commanded = storage.outputs.demanded
             all(i -> isfinite(commanded[i]) && lower[i] <= commanded[i] <= upper[i], eachindex(commanded)) || error("invalid physical command")
             residual = getproperty(storage.outputs, Symbol("constraint-feedback"))
@@ -87,7 +87,7 @@ function Calibration._validate_system(::Val{:shack_hartmann}, application, speci
                 " clipped=", sum(clips[1:index])); flush(stdout))
         end
         finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     result = Dict("scope" => "Finite seeded simulation validation; no physical device qualification",
         "application" => abspath(application), "backend" => string(typeof(target)), "frames" => frames,

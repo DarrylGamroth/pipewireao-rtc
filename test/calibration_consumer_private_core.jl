@@ -4,7 +4,7 @@
 module CalibrationConsumerPrivateCoreTests
 
 using Test, SHA
-using PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("native_control_private_core.jl")
 
@@ -283,8 +283,8 @@ end
             finally
                 client === nothing || close(client)
                 server === nothing || close(server)
-                frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)
-                command === nothing || FilterGraphIsland.close_execution(command.graph)
+                frontend === nothing || FilterGraphPipeWire.close_execution(frontend.graph)
+                command === nothing || FilterGraphPipeWire.close_execution(command.graph)
             end
         end
     finally

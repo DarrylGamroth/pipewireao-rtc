@@ -173,8 +173,8 @@ function Calibration._calibrate_system(::Val{:pyramid}, source, recipe, output;
     return mktempdir() do temporary
     graphpath=joinpath(temporary,"graph.conf")
     PipeWireAORTC.ScienceExport.write_spa_config(graphpath,concrete;header="Generated simulation calibration graph; edit source and regenerate.")
-    graph=JuliaFilterGraph.prepare_graph(graphpath;algorithms=FGA.algorithms())
-    parameters=Dict(name=>zeros(format.element_type,format.shape) for(name,format) in pairs(JuliaFilterGraph.parameter_formats(graph)))
+    graph=FilterGraphs.prepare_graph(graphpath;algorithms=FGA.algorithms())
+    parameters=Dict(name=>zeros(format.element_type,format.shape) for(name,format) in pairs(FilterGraphs.parameter_formats(graph)))
     fill!(parameters[:flat],adc_scale);parameters[:background].=background
     parameters[Symbol("pupil-origins")] .= reduce(vcat,permutedims.(origins))
     parameters[Symbol("pupil-mask")] .= mask

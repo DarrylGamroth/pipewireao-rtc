@@ -5,7 +5,7 @@ import PipeWireAORTC
 import AdaptiveOpticsSimPipeWireHIL as HIL
 import FilterGraphAlgorithms as FGA
 import FilterGraphPipeWire as FGP
-import JuliaFilterGraph as JFG
+import FilterGraphs as JFG
 using SHA
 import ThreadPinning
 const Offsets = PipeWireAORTC.PhysicalOffsets

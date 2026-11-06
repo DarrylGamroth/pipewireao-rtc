@@ -3,7 +3,7 @@
 # for the actual caller-owned private-core campaign and cancellation checks.
 module ReferenceCalibrationTests
 using Test, SHA
-using PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const C = PipeWireAORTC.InstrumentCalibration

@@ -1,11 +1,11 @@
 # CPU native return-path selector: julia --threads=4,0 --project=<science-env> ...
 using Test, SHA, LinearAlgebra
-using PipeWireAO, PipeWireAORTC, AdaptiveOpticsSimPipeWireHIL, FilterGraphAlgorithms, FilterGraphPipeWire, JuliaFilterGraph
+using PipeWireAO, PipeWireAORTC, AdaptiveOpticsSimPipeWireHIL, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 import PipeWireAO_jll
 include(joinpath(pkgdir(AdaptiveOpticsSimPipeWireHIL),"test/private_core_helpers.jl"))
 const HIL=AdaptiveOpticsSimPipeWireHIL
 const FGP=FilterGraphPipeWire
-const JFG=JuliaFilterGraph
+const JFG=FilterGraphs
 const Offsets=PipeWireAORTC.PhysicalOffsets
 const Ext=Base.get_extension(PipeWireAORTC,:PipeWireAORTCOffsetsExt)
 const Cal=PipeWireAORTC.InstrumentCalibration
