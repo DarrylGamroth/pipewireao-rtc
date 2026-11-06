@@ -55,9 +55,8 @@ retired; acquisition test owners use the same resource type and existing profile
 codecs. The [resource consolidation record](reviews/20261106-endpoint-resources/REVIEW.md)
 records API migration, source review and focused/native/export evidence.
 
-The next bounded reduction is NEC-05: exclude development tests from deployed
-runtimes by changing the package/workspace closure, exporter and validator
-together. NEC-01 detector execution and influence interpolation require receiving
+NEC-05 is delivered by the dependency-only deployment change below. NEC-01
+detector execution and influence interpolation require receiving
 scientific APIs before deleting RTC copies; NEC-02's Classic capture format needs
 an instrument-owned writer/reader/schema interface first. These have active callers.
 The scope follow-up found no additional major implementation proven safely dead.
@@ -72,11 +71,11 @@ Project/Manifest and reject an application development workspace. The checkout's
 development workspace stays intact.
 
 Instrument export stages only the generated `rtc/bin` launcher and preserves
-authored RTC configuration. A tiny instrument's actual offline prepare passes;
-structural and broad package checks precede a cold exact-tree registry
-install/relocation gate. The integration record will distinguish this local
-validation from a released package cohort. Existing instrument pins, including
-Classic's RTC 0.4.4 selection, still require a coordinated release update.
+authored RTC configuration. The full core suite passes 10,859 assertions, and the
+[integration record](reviews/20261106-dependency-runtime/REVIEW.md) separates cold
+exact-tree registry validation from a released package cohort. Existing instrument
+pins, including Classic's RTC 0.4.4 selection and its launcher declaration, still
+require a coordinated release update.
 
 ### Lua session policy replacement — 2026-11-04
 

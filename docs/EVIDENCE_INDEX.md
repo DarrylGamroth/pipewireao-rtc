@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## RTC as an application dependency — 2026-11-06
+
+The [deployment record](reviews/20261106-dependency-runtime/REVIEW.md) records
+retirement of the copied SDK, preservation of the development workspace and
+instrument declarations, registered application validation, full core checks and
+the isolated registry export/install/relocation gate. Local exact-source evidence
+does not qualify a published instrument dependency cohort or hardware.
+
 ## Shared endpoint resources — 2026-11-06
 
 The [consolidation record](reviews/20261106-endpoint-resources/REVIEW.md) records the

@@ -171,6 +171,12 @@
 
 - `test/test_instrument_export.jl` is the focused cold export/profile/template
   selector; it runs without scientific optional packages or GPU access.
+- `test/runtime_install.jl` checks actual instrument export, registered dependency
+  resolution, installation and software-environment relocation in temporary
+  directories. It needs the selected RTC source version in a registry and an
+  explicit compatible `PIPEWIREAO_PREFIX`; `--prepare-only` runs the offline
+  export regression. It starts no core or service. Installed absolute service
+  paths require reinstallation after moving an application.
 - `test/session_graph_schema.jl` uses the optional JFG environment to check actual
   prepared port schemas against session declarations and native-command limiter
   equivalence. It opens no core, service or device.
