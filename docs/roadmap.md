@@ -30,6 +30,16 @@ and inconsistent current runtime/version guidance. These are reviewed candidates
 not implementation changes. Optional workstation features still require a scope
 decision; no additional large subsystem is proven safely dead.
 
+### RTC streamlining — 2026-11-06
+
+The user approved the reviewed cleanup. NEC-07's unused legacy export-input mode
+and marker-validation branches are removed; new declarations require the native
+owner contracts. NEC-08's current runtime/version guidance now matches Julia
+MediaSession and Julia 1.13. Focused admission/export/package selectors pass 556
+assertions. [Implementation evidence](reviews/20261106-streamlining/REVIEW.md)
+records each verified slice. Scientific ownership transfers are next; optional
+workstation feature retirement is not implied.
+
 ### Session operation journal removal — 2026-11-06
 
 The user retired the RTC session-operation journal and its write-before-effect

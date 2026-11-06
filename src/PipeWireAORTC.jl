@@ -4,12 +4,12 @@ Scientific algorithms and frame execution remain in their owning packages.
 """
 module PipeWireAORTC
 
-VERSION >= v"1.12" || error("PipeWireAORTC requires Julia 1.12 or newer; found $VERSION")
+VERSION >= v"1.13" || error("PipeWireAORTC requires Julia 1.13 or newer; found $VERSION")
 
 """Return this package's current location, including after precompiled relocation."""
 package_root() = pkgdir(@__MODULE__)
 
-"""Find required deployment resources in an installed SDK or source checkout."""
+"""Find required deployment resources relative to the installed package."""
 function resource_root()
     root = joinpath(package_root(), "assets", "deployment")
     all(isdir(joinpath(root, name)) for name in ("hil", "templates")) &&

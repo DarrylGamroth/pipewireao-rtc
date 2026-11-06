@@ -12,6 +12,11 @@ records event ownership, bounded handshakes and cached clocks for the current
 Julia bootstrap implementation. The original design and dated evidence below
 retain their recorded source and execution assumptions.
 
+New application exports and runtime validation accept only declared native owner
+protocols. The unused `legacy_export_input` mode and marker-input validation are
+retired as of 2026-11-06. Historical conversion evidence below retains its scope;
+old sealed applications use their matching original tools.
+
 Source baseline: `2fb82e9`, worktree `pipewireao-rtc-owner-bootstrap`, branch `work/native-owner-bootstrap-design-20261006`. The worktree started clean. External JFG source inspected at `f2f4cd4`; public PipeWireAO Julia source supplies the thread and callback contracts below. Existing unrelated root and JFG changes were preserved.
 
 The primary agent approved the distinct `pipewireao.rtc.owner-bootstrap/1` profile and a reserved second default Julia thread on 2026-10-06. The CPU scientific executor remains serial. The primary agent subsequently approved inactive HIL port preparation and exchange-method warming before Prepared. This profile supplies Status, Connect and Quit for ordinary simulator and external JFG owners. Calibration, correction and HEART retain their selected native profiles. Ordinary simulator pause/resume/reset/query retain the existing scientific `pipewireao.source-control/1` endpoint.

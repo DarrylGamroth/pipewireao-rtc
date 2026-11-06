@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## RTC streamlining — 2026-11-06
+
+The [implementation record](reviews/20261106-streamlining/REVIEW.md) records
+retirement of the unused legacy export-input mode, preserved native admission,
+corrected runtime/version guidance and the scientific ownership transfer gates.
+
 ## Remaining package cleanup — 2026-11-06
 
 The [scope follow-up](reviews/20261106-package-scope-followup/REVIEW.md) rechecks

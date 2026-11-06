@@ -551,22 +551,18 @@ function validate_placements(placements::AbstractDict, roles)
     return nothing
 end
 
-function profile(
-    path::AbstractString, prefix::AbstractString; legacy_export_input::Bool = false
-)
+function profile(path::AbstractString, prefix::AbstractString)
     value = decode(path, prefix)
-    result = validate_application(value, path, prefix; legacy_export_input)
+    result = validate_application(value, path, prefix)
     application_environment(value, dirname(path))
     return result
 end
 
 # Shared structural, asset and ownership checks. This does not qualify a
 # dependency environment; installation always goes through profile above.
-validate_application(value, path, prefix; legacy_export_input::Bool = false) =
+validate_application(value, path, prefix) =
     fail("expected version 1 deployment with the documented fields")
-function validate_application(
-    value::AbstractDict, path, prefix; legacy_export_input::Bool = false
-)
+function validate_application(value::AbstractDict, path, prefix)
     require(
         REQUIRED_KEYS ⊆
         Set(keys(value)) ⊆
@@ -607,11 +603,8 @@ function validate_application(
     )
     auxiliary = get(value, "auxiliary-source-owners", String[])
     validate_auxiliary_sources(auxiliary, source_role)
-    markers = Set{String}()
     for owner in owners
-        validate_external_owner!(
-            owner, source_role, auxiliary, roles, markers; legacy_export_input
-        )
+        validate_external_owner!(owner, source_role, auxiliary, roles)
     end
     require(
         source_role === nothing || source_role in (owner["role"] for owner in owners),
@@ -645,25 +638,6 @@ function validate_application(
             ),
         "detector observation requires an admitted native source owner",
     )
-    reserved = union(
-        roles, Set(["control.sock", "native-control.sock", "native-prefix", "julia-depot"])
-    )
-    require(
-        isempty(intersect(markers, reserved)),
-        "owner markers conflict with deployment runtime paths",
-    )
-    source =
-        source_role === nothing ? nothing :
-        only(filter(owner -> owner["role"] == source_role, owners))
-    if source !== nothing &&
-        !uses_source_control_protocol(source) &&
-        !uses_acquisition_protocol(source)
-        staging = splitext(source["control-request"])[1] * ".new"
-        require(
-            !(staging in markers || staging in reserved),
-            "source request staging path conflicts with runtime paths",
-        )
-    end
     validate_placements(value["placement"], roles)
     for owner in owners
         uses_bootstrap_protocol(owner) &&
@@ -1074,15 +1048,6 @@ function validate_owner_argv(argv::AbstractVector)
     return nothing
 end
 
-validate_owner_marker(marker, key) = fail("owner $key must be a marker basename")
-function validate_owner_marker(marker::String, key)
-    require(
-        !(marker in (".", "..")) && occursin(r"^[a-zA-Z0-9_.-]{1,64}$", marker),
-        "owner $key must be a marker basename",
-    )
-    return nothing
-end
-
 validate_detector_observation(value::Bool) = nothing
 validate_detector_observation(value) = fail("detector-observation must be a Boolean")
 
@@ -1143,23 +1108,18 @@ collect_core_queue_properties!(nodes, properties) = nothing
 collect_core_queue_properties!(nodes, properties::AbstractDict) =
     collect_core_node!(nodes, get(properties, "node.name", nothing))
 
-validate_external_owner!(
-    owner, source_role, auxiliary, roles, markers; legacy_export_input
-) = fail("external owner fields do not match the deployment contract")
-function validate_external_owner!(
-    owner::AbstractDict, source_role, auxiliary, roles, markers; legacy_export_input
-)
+validate_external_owner!(owner, source_role, auxiliary, roles) =
+    fail("external owner fields do not match the deployment contract")
+function validate_external_owner!(owner::AbstractDict, source_role, auxiliary, roles)
     ordinary = !uses_heart_protocol(owner) && !uses_acquisition_protocol(owner)
     require(
-        !ordinary || uses_bootstrap_protocol(owner) || legacy_export_input,
+        !ordinary || uses_bootstrap_protocol(owner),
         "ordinary owner requires native bootstrap; regenerate the deployment from its sealed artifacts",
     )
     fields = if !ordinary
         Set(["role", "argv", "environment", "control-protocol", "control-node"])
-    elseif uses_bootstrap_protocol(owner)
-        Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"])
     else
-        Set(["role", "argv", "environment", "prepared", "connect", "connected", "quit"])
+        Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"])
     end
     if uses_bootstrap_protocol(owner)
         node = get(owner, "bootstrap-node", nothing)
@@ -1205,16 +1165,11 @@ function validate_external_owner!(
             )
         end
         require(
-            uses_acquisition_protocol(owner) ||
-                uses_source_control_protocol(owner) ||
-                legacy_export_input,
+            uses_acquisition_protocol(owner) || uses_source_control_protocol(owner),
             "source owner requires a native source control profile",
         )
-        uses_acquisition_protocol(owner) || union!(
-            fields,
-            uses_source_control_protocol(owner) ? ["control-protocol", "control-node"] :
-            ["control-request", "control-reply"],
-        )
+        uses_acquisition_protocol(owner) ||
+            union!(fields, ["control-protocol", "control-node"])
         if uses_source_control_protocol(owner)
             node = get(owner, "control-node", nothing)
             require(
@@ -1229,7 +1184,7 @@ function validate_external_owner!(
     )
     role = owner["role"]
     require(
-        role != "heart" || uses_heart_protocol(owner) || legacy_export_input,
+        role != "heart" || uses_heart_protocol(owner),
         "HEART owner requires the native control profile",
     )
     validate_external_owner_role(role, roles)
@@ -1239,26 +1194,6 @@ function validate_external_owner!(
     uses_acquisition_protocol(owner) && validate_acquisition_arguments(owner)
     uses_bootstrap_protocol(owner) && validate_bootstrap_arguments(owner)
     validate_environment(owner["environment"], "owner $role")
-    names = Set{String}()
-    marker_keys =
-        uses_heart_protocol(owner) ||
-        uses_acquisition_protocol(owner) ||
-        uses_bootstrap_protocol(owner) ? String[] :
-        ["prepared", "connect", "connected", "quit"]
-    role == source_role &&
-        !uses_source_control_protocol(owner) &&
-        !uses_acquisition_protocol(owner) &&
-        append!(marker_keys, ["control-request", "control-reply"])
-    for key in marker_keys
-        marker = owner[key]
-        validate_owner_marker(marker, key)
-        push!(names, marker)
-    end
-    require(
-        length(names) == length(marker_keys) && isempty(intersect(names, markers)),
-        "owner markers must be distinct",
-    )
-    union!(markers, names)
     return nothing
 end
 

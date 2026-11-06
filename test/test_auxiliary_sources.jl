@@ -59,6 +59,31 @@ end
         path = joinpath(directory, "deployment.conf")
         @test length(D.validate_application(spec, path, "/unused")["owners"]) == 8
         @test length(S.owner_specs(spec)) == 8
+        for key in
+            ("prepared", "connect", "connected", "quit", "control-request", "control-reply")
+            invalid = deepcopy(spec)
+            invalid["owners"][1][key] = "source1." * key
+            @test_throws D.DeploymentError D.validate_application(invalid, path, "/unused")
+        end
+        invalid = deepcopy(spec)
+        for key in
+            ("bootstrap-protocol", "bootstrap-node", "control-protocol", "control-node")
+            delete!(invalid["owners"][1], key)
+        end
+        merge!(
+            invalid["owners"][1],
+            Dict(
+                key => "source1." * key for key in (
+                    "prepared",
+                    "connect",
+                    "connected",
+                    "quit",
+                    "control-request",
+                    "control-reply",
+                )
+            ),
+        )
+        @test_throws D.DeploymentError D.validate_application(invalid, path, "/unused")
         for auxiliary in (
             ["source1"],
             ["unknown"],

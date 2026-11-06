@@ -1,11 +1,10 @@
 # PipeWireAORTC
 
 `pipewireao-rtc` is the headless, non-actuating adaptive-optics application. It
-owns admission, lifecycle and declared application links, reusing public
-libwireplumber interfaces. Upstream WirePlumber may run with site-configured
-device policy, managed separately from this package. The ordinary Git fork is a
-contribution vehicle; the runtime remains upstream WirePlumber. The Julia
-package provides configuration, installation and native clients. systemd user
+owns admission, lifecycle and declared application links through its Julia
+`MediaSession` module and public PipeWireAO interfaces. Independent WirePlumber
+may provide site-configured device policy separately. The Julia package provides
+configuration, installation and native clients. systemd user
 services own process lifetime and resource policy. PipeWireAO schedules NDArray transport;
 FGN and JFG execute the scientific graphs. AOS/HIL supplies simulated instrument
 sources and sinks; AOC supplies calibration algorithms.
@@ -46,10 +45,10 @@ native protocol names and v1 records retain their identities.
 The callable session modules use application names. Update former
 `WirePlumber*` module references to the following bindings when upgrading:
 
-Version 0.2 packages the headless application and these renamed modules. Native
-RTC assets and upstream libwireplumber are installed separately from the Julia
-package. Classic records the selected native prefix and seals its registered
-package pins.
+New applications select the RTC package and its dependencies through their sealed
+Project/Manifest. PipeWireAO provides the selected native libraries and runtime
+assets. Classic records the selected native prefix and seals its registered
+package pins. Development and release tooling require Julia 1.13 or newer.
 
 | Module | Purpose |
 | --- | --- |
@@ -140,9 +139,10 @@ Instantiate the one-shot tooling environment:
 julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-A sealed package includes its scientific configurations, calibration artifacts,
-scientific owners, Julia SDK, native headless RTC and selected libwireplumber
-library/modules. Build the application host from [runtime/](runtime/README.md).
+A sealed application includes its scientific configurations, calibration artifacts,
+owner declarations, generated RTC launcher and registered Project/Manifest.
+Instantiate its selected dependencies before launch; RTC and scientific code load
+from those packages. The selected PipeWireAO prefix supplies the native runtime.
 The start helper installs to a fresh stage, starts an exact systemd instance,
 and returns after held admission. The helper exits; the headless RTC remains
 the session authority.

@@ -1,6 +1,6 @@
 # Julia deployment and calibration entrypoints
 
-Operational calibration preparation and acquisition clients use Julia ≥ 1.12.
+Operational calibration preparation and acquisition clients use Julia ≥ 1.13.
 The headless RTC owns application session policy; systemd owns process supervision. The numerical estimators and probe bases remain
 in AdaptiveOpticsCalibration. Detector acquisition and graph algorithms retain
 their existing owners. The migration does not change illumination, noise,
