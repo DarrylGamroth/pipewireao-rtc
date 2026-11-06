@@ -74,5 +74,69 @@ were preserved. The positive FITS selector remains outside the core suite; the
 core retains artifact admission without importing optional scientific packages.
 These software checks do not qualify live lifecycle, GPU execution or deadlines.
 
-Detector layout transfer is the next slice. Classic capture ownership and optional
-workstation features retain the reviewed scope/prerequisites until implemented.
+## Detector layout scientific ownership
+
+AOS commit `6a966ccd` moves detector layout to its built-in AlgorithmGraphs node
+registry. This reuses the existing graph node/factory interfaces without another
+detector owner wrapper, executor or public constructor. The node keeps selector
+`detector_frame_layout_f32`, config fields, ports, schema declarations,
+Float32/UInt16 output contracts, zero-based origin, padding, affine conversion,
+clipping, nearest-even rounding, reset and fixed-address capture capability.
+The graph parser reuses its existing named-field/string/tuple validation.
+
+RTC deletes its 305-line node implementation. Its factory composition retains
+only application-relative optical path handling around the AOS builtins. The
+scientific CPU/GPU tests move upstream; RTC retains a small public graph-load and
+execution integration check. AOS version 0.3.21 owns the node; RTC's weak compat
+requires that version. Pkg regenerates manifests; no source overrides are added
+to exported applications and no release or registry is published.
+
+| Gate | Passing assertions | Log under `/tmp/` |
+| --- | ---: | --- |
+| AOS detector layout CPU | 76 | `aos-rtc-detector-layout-tests.log` |
+| AOS algorithm graphs | 1,472 | `aos-rtc-algorithm-graphs-tests.log` |
+| CUDA stream and captured execution | 60 | `aos-rtc-detector-layout-cuda-tests.log` |
+| AMDGPU stream and captured execution | 60 | `aos-rtc-detector-layout-amdgpu-tests.log` |
+| Fresh stable YAML parse/load/prepare/step/reset | 2 | `aos-rtc-detector-stable-load.log` |
+| RTC factory composition and UInt16 processing | 5 | `rtc-detector-integration-20261106.log` |
+| Full RTC core suite after legacy/influence changes | 10,832 in 503 testsets | `rtc-streamline-core-20261106.log` |
+
+All processes exit 0. The core explicitly selects the PipeWireAO artifact prefix;
+optional graph checks open no core/service. The full core does not import optional
+science, so the separate factory integration and upstream graph/GPU checks cover
+the detector transfer. Root review checked the copied conversion order, buffer
+shape/device/alias checks, zero padding, retained ROI view and capture traits.
+
+The algorithm-graphs log retains a precompile warning about a missing AOS build ID
+in an AOSYAMLExt cache. CUDA environment setup overlapped that first test process;
+this was a validation setup error, not a confirmed cause of the cache warning.
+Fresh AOS/YAML loading and the stable YAML execution probe pass without warnings
+after setup ends (`aos-rtc-detector-cache-recheck.log`). AMDGPU uses its own
+`/tmp/aos-rtc-ownership-amdgpu-env`; no environment is mutated during final probes.
+GPU software execution is demonstrated; no hardware-control or deadline
+qualification follows.
+
+## Capture interface under discussion
+
+The user clarified that instrument repositories should remain declarative rather
+than acquire per-instrument Julia packages. A receiving-source inspection at
+instrument revision `7eed0543` confirms that guidance, and finds no instrument
+tool callers of the current Classic capture-file product. Its private-core RTC
+test remains an active caller. No existing receiving capture API was identified.
+The feature remains intact; it is not silently retired or moved into deployments.
+
+The missing boundary is a generic bounded capture contract: select channels as
+data and derive their admitted types, shapes, layout, rate, metadata and schemas
+from prepared ports. Reuse `NdArrayFormat`, `payload_size`, semantic metadata and
+the existing completed acquisition snapshots. The existing native Capture command
+already carries probe/cursor/frame count; its cold-bound owner contract can fix
+channel layout without dynamic per-request selection or a protocol replacement.
+
+Classic channel roles, dimensions and scientific quality diagnostics must stop
+being generic transport policy. Preserve their declared meanings and saved schema
+readability when designing the replacement. Generic file persistence has no
+drop-in interface in PipeWireAO today; placing it there is not an accepted scope
+decision. The inspected `DataRecorder.jl` is an AeronTensorPool recorder and is
+not an established replacement for metadata-preserving PipeWire calibration
+capture. Continuous archiving remains deferred to its separate service. No new
+capture framework or persistence dependency is introduced during this discussion.

@@ -18,8 +18,12 @@ import PipeWireAORTC.Common: prepare_reference_clock
 include("aos/optical_observation.jl")
 include("aos/phase_timing.jl")
 include("aos/metadata.jl")
-include("aos/graph_adapters.jl")
 include("aos/optical_model_paths.jl")
+
+"Compose AOS scientific factories with application-relative optical model paths."
+configured_graph_node_types(directory = nothing) =
+    instrument_optical_factories(builtin_graph_node_types(), directory)
+
 include("aos/instruments.jl")
 include("aos/pupil_output.jl")
 

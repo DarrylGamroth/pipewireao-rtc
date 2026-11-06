@@ -360,9 +360,14 @@ the application payload, and the development test workspace is not an
 application dependency.
 
 Measured-influence preparation requires explicitly loading AdaptiveOpticsSim
-0.3.20 or newer. Its `Optics.resample_measured_influences` owns coordinate sampling
+0.3.21 or newer. Its `Optics.resample_measured_influences` owns coordinate sampling
 and interpolation. RTC validates and decodes the sealed FITS input and retains
 its provenance. This preparation requires no HIL transport package.
+
+Configured detector layout uses AOS's built-in `detector_frame_layout_f32` node.
+RTC composes the scientific factories with application-relative optical paths;
+it implements no detector placement/conversion kernel. Existing graph declarations
+keep their selector, configuration, ports and schemas.
 
 Run portable verification with:
 

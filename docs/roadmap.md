@@ -41,8 +41,14 @@ records each verified slice. Measured-influence sampling now belongs to AOS
 0.3.20; RTC retains artifact admission and provenance through an AOS-only
 extension. The core drops its Interpolations dependency; 48 frozen-baseline
 numerical comparisons are exactly equal, AOS core optics passes 1,352 assertions,
-and RTC science preparation passes 43. Detector layout is the next transfer;
-optional workstation feature retirement is not implied.
+and RTC science preparation passes 43. Detector layout is also an AOS builtin;
+RTC removes its node implementation and retains only factory/path composition.
+The receiving AOS 0.3.21 graph suite passes 1,472 assertions, CPU layout passes 76,
+and CUDA/AMDGPU stream/capture each pass 60. RTC factory integration passes 5;
+the full core passes 10,832. These are source-cohort software checks, not a release
+or deadline qualification. Classic capture's generic data/port contract is under
+discussion; the instrument repository remains declarative. Optional workstation
+feature retirement is not implied.
 
 ### Session operation journal removal — 2026-11-06
 
