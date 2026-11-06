@@ -191,21 +191,25 @@ end
 
 # No native core or science: mailbox acceptance, reply/exclusion, immutable
 # observations, and the Agent duty clock are tested at the transport boundary.
-mutable struct MonitorTransport
+struct MonitorEndpoint
     publications::Vector{PipeWireAORTC.OwnerBootstrapCodec.Lifecycle}
+end
+mutable struct MonitorTransport
+    endpoint::MonitorEndpoint
     flushes::Vector{Int64}
     failure::Union{Nothing,Exception}
 end
-Bootstrap.lifecycle!(transport::MonitorTransport, lifecycle) =
-    (push!(transport.publications, lifecycle); nothing)
-Bootstrap.flush_terminal!(transport::MonitorTransport, deadline; check = () -> nothing) =
-    (push!(transport.flushes, deadline); nothing)
+PipeWireAORTC.ControlEndpoint.state!(endpoint::MonitorEndpoint, lifecycle) =
+    (push!(endpoint.publications, lifecycle); nothing)
+PipeWireAORTC.ControlEndpoint.flush_terminal!(
+    transport::MonitorTransport, deadline; check = () -> nothing
+) = (push!(transport.flushes, deadline); nothing)
 function Bootstrap._poll_ready!(transport::MonitorTransport)
     transport.failure === nothing || throw(transport.failure)
     return false
 end
-Bootstrap.poll!(::MonitorTransport) = nothing
-Bootstrap.take!(::MonitorTransport) = nothing
+PipeWireAORTC.ControlEndpoint.poll!(::MonitorEndpoint) = nothing
+PipeWireAORTC.ControlEndpoint.take!(::MonitorEndpoint) = nothing
 mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
     at::Int64
     reads::Int
@@ -213,7 +217,9 @@ end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
 function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
     runtime = Bootstrap.Runtime(
-        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Int64[], nothing)
+        MonitorTransport(
+            MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[]), Int64[], nothing
+        ),
     )
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
@@ -232,7 +238,9 @@ function bootstrap_ticket(operation)
         PipeWireAORTC.ControlClient.operation_id(codec.PROFILE, command),
         Int64(1_000_000_000),
     )
-    PipeWireAORTC.ControlEndpoint.Ticket{Bootstrap.Commands}(
+    PipeWireAORTC.ControlEndpoint.Ticket{
+        PipeWireAORTC.ControlClient.command_type(codec.PROFILE)
+    }(
         header, command, UInt8[], typemax(Int64)
     )
 end
@@ -257,12 +265,12 @@ status_read_allocations(runtime) = (
     yield()
     @test Hsm.current(monitor) === :Preparing
     @test !Bootstrap._status(runtime).prepared
-    @test isempty(runtime.transport.publications)
+    @test isempty(runtime.transport.endpoint.publications)
     @test Agent.invoke_unchecked(invoker) == 1
     @test fetch(task) === nothing
     @test Hsm.current(monitor) === :Prepared
     Agent.invoke_unchecked(invoker)
-    @test runtime.transport.publications == [codec.Prepared]
+    @test runtime.transport.endpoint.publications == [codec.Prepared]
     @test Bootstrap._status(runtime).prepared
     Bootstrap.preparation_check!(runtime)
     Bootstrap.cancelled(runtime)
@@ -281,7 +289,7 @@ status_read_allocations(runtime) = (
     @test Hsm.current(monitor) === :FaultConnectPending
     @test runtime.main_error === first
     @test monitor.active === ticket
-    @test runtime.transport.publications == [codec.Prepared, codec.Fault]
+    @test runtime.transport.endpoint.publications == [codec.Prepared, codec.Fault]
     close(invoker)
 
     runtime, monitor, invoker = monitor_runtime()
@@ -486,7 +494,9 @@ end
     @test monitor.source_clock !== monitor.clock
     close(invoker)
     runtime = Bootstrap.Runtime(
-        MonitorTransport(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], Int64[], nothing)
+        MonitorTransport(
+            MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[]), Int64[], nothing
+        ),
     )
     monitor = Bootstrap.Monitor(runtime)
     @test typeof(monitor.source_clock) === Clocks.SystemNanoClock
