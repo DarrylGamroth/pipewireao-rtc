@@ -9,8 +9,12 @@ matrices, gains or scientific acceptance.
 The Julia DeploymentRunner and supervisor launchers are retired. Use the
 one-shot RTC session tools described in the [repository quickstart](../README.md#launch-a-sealed-session-package).
 The native session client controls admission and graph operations; local owner
-interfaces retain calibration acquisition actions. The new SDK includes sealed
-headless RTC and libwireplumber assets and rejects a missing session runtime before installation.
+interfaces retain calibration acquisition actions. New applications declare
+PipeWireAORTC as a registered Julia dependency in their sealed Project/Manifest.
+The installation launcher uses that exact application environment; the
+application does not contain a copied RTC implementation or test workspace.
+Existing sealed SDK deployments retain their recorded runtime and must use
+matching older tools.
 Scientific campaign qualification under this replacement remains separate from
 the recorded Copper complete-frame lifecycle checks.
 
@@ -348,9 +352,12 @@ and product contracts. Output and runtime directories must be new.
 
 ## Package and resources
 
-The cold orchestration project is the named package `PipeWireAORTC`
-(v0.1.1, Julia ≥ 1.12), loaded with `using PipeWireAORTC`. Modules live in
-`src`; the test workspace lives in `test`.
+The cold orchestration project is the named package `PipeWireAORTC`, loaded with
+`using PipeWireAORTC`. Modules live in `src`; package tests live in `test` and
+the development workspace includes them. A registered application resolves the
+package through its Project/Manifest; it does not copy `src/` or `test/` into
+the application payload, and the development test workspace is not an
+application dependency.
 Run portable verification with:
 
 ```sh
@@ -358,22 +365,22 @@ julia --startup-file=no --project=. -e 'using Pkg; Pkg.precompile(); Pkg.test()'
 ```
 
 Reusable operational implementations live in package modules under `src`; root
-`session_*.jl` scripts are thin package entrypoints. REVOLT entrypoints
-are under `../REVOLTRTC.jl/bin` and use that app's project. The shared package
-source checkout uses `assets/deployment/hil`, `assets/deployment/templates` and
-the service template as resources.
-Every exported SDK embeds these resources under `julia/assets/deployment`, along
-with its package project, lock, source, CLI and test workspace closure. Resource
-paths are resolved from the loaded package at runtime, including after SDK
-relocation and precompilation. Operational provenance inventories exclude tests.
-The repository's maintained scripts use Julia.
+`session_*.jl` scripts are thin package entrypoints. Instrument build tools call
+the shared package selected by the registered application Project/Manifest.
+Instrument identity, simulation definitions, RTC configuration, graphs and
+profiles remain authored in the instrument repository; generated application
+data is prepared from those declarations. The shared package source checkout
+uses `assets/deployment/hil`, `assets/deployment/templates` and the service
+template as package resources. Resource lookup is relative to the installed
+registered package, not to a copied SDK directory. The repository's maintained
+scripts use Julia.
 
-Installation verifies the sealed incoming artifacts, package identity/version
-and resource completeness before copying an SDK. Generated service units use
-that SDK's embedded template. Installation writes the unit but does not enable
-or start it. Keep legacy include-loaded SDKs with their original launcher;
-export a new SDK to adopt this package format. The new installer rejects the old
-format instead of replacing sealed code.
+Installation validates a sealed registered Project/Manifest and its runtime
+declaration, then writes the launcher and exact systemd unit. The launcher
+requires the registered application environment. Installation does not copy
+RTC source or tests into the application and does not enable or start the unit.
+Old sealed SDK deployments remain untouched and must use their matching pinned
+tools; the registered installer does not convert them.
 
 ## Installed entrypoints
 

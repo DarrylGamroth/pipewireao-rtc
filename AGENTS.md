@@ -58,6 +58,12 @@
   Historical Python tools remain in Git history with their recorded evidence.
 - Live controls use native PipeWire serialization (`RTC-ARCH-024`/`RTC-DEV-030`).
   Saved reports/configuration may use JSON. Saved files never prove live readiness.
+- Deploy PipeWireAORTC as a registered dependency of the sealed application
+  Project/Manifest. Do not copy the RTC package or its development test workspace
+  into application payloads. Keep authored instrument/RTC/simulation data in the
+  instrument repository; generated launchers load the selected dependency.
+  New install/start paths reject copied SDK runtimes. Old sealed applications
+  retain their original tools and are not rewritten during this migration.
 - Session controls do not persist operation history or wait for durable writes.
   Preserve finite deadlines, exact correlation and unknown-outcome handling.
   Archiving is deferred to a separate service; do not add an RTC recording store.

@@ -1,13 +1,10 @@
 module ScienceExport
 
 using JSON
-using SHA
 using PipeWireAO
 using ..Common
 import ..Schemas
-import ..RuntimeExport: copy_file, copy_tree, copy_entries
 
-import ..package_root, ..resource_root, ..source_relative_path
 const RAW_SCHEMA = Schemas.identifier("raw_detector_pixels")
 const ROW_SCHEMA = Schemas.identifier("raw_pixel_row_block")
 const COMMAND_SCHEMA = Schemas.identifier("demanded_pdm_command")
@@ -65,7 +62,6 @@ parameter_dict(p::Parameter) = Dict{String,Any}(
     "schema" => p.schema,
 )
 
-sha256(path::AbstractString) = Common.sha256_file(path)
 write_json(path::AbstractString, value) = Common.write_json(path, value)
 
 # Keep the bare-string subset conservative. Native SPA parsers also recognize
@@ -164,89 +160,6 @@ function write_spa_config(
     mkpath(dirname(path))
     write(path, payload)
     return path
-end
-
-# Shared operational source closure; instrument projects export their own sources.
-# A checkout Manifest is not a deployment dependency closure. Resolve the copied
-# Project or supply a matching registered application Manifest before installation.
-const RUNTIME_ENTRIES = (
-    "Project.toml",
-    "src",
-    "ext",
-    "test",
-    "data",
-    "session_cli.jl",
-    "session_launch.jl",
-    "session_configuration.jl",
-    "session_install.jl",
-)
-const RESOURCE_ENTRYPOINTS = ()
-
-function copy_deployment_runtime(package::AbstractString)
-    # Export a new package without carrying a previous coordinator launcher
-    # or service template forward from a sealed input package.
-    for relative in (
-        "pipewireao-rtc@.service.in",
-        "pipewireao-rtc-systemd@.service.in",
-        "bin/pipewireao-rtc-deploy",
-        "bin/pipewireao-rtc",
-        "bin/pipewireao-rtc@.service.in",
-        "bin/pipewireao-rtc-systemd@.service.in",
-        "bin/placement.py",
-        "wireplumber",
-    )
-        obsolete = joinpath(package, relative)
-        if ispath(obsolete) || islink(obsolete)
-            rm(obsolete; recursive = relative == "wireplumber", force = true)
-        end
-    end
-    target = abspath(joinpath(package, "julia"))
-    ancestor = target
-    while !ispath(ancestor)
-        ancestor = dirname(ancestor)
-    end
-    outside(relative) =
-        relative == ".." ||
-        startswith(relative, ".." * string(Base.Filesystem.path_separator))
-    for directory in (
-        package_root(),
-        joinpath(resource_root(), "hil"),
-        joinpath(resource_root(), "templates"),
-    )
-        source = realpath(directory)
-        outside(relpath(realpath(ancestor), source)) &&
-        (!ispath(target) || outside(relpath(source, realpath(target)))) || throw(
-            ArgumentError(
-                "deployment runtime destination must not overlap copied source: $directory",
-            ),
-        )
-    end
-    ispath(target) && rm(target; recursive = true, force = true)
-    ignored = Set(["__pycache__", ".git"])
-    copy_entries(package_root(), target, RUNTIME_ENTRIES; ignored)
-    union!(
-        ignored,
-        Set(
-            name for name in readdir(joinpath(resource_root(), "hil")) if
-            startswith(name, "test_") || endswith(name, ".py")
-        ),
-    )
-    for directory in ("templates", "hil")
-        destination = joinpath(target, "assets", "deployment", directory)
-        ispath(destination) && rm(destination; recursive = true, force = true)
-        copy_tree(joinpath(resource_root(), directory), destination; ignored)
-    end
-    for name in RESOURCE_ENTRYPOINTS
-        copy_file(
-            joinpath(resource_root(), name), joinpath(target, "assets", "deployment", name)
-        )
-    end
-    session_service = joinpath(resource_root(), "pipewireao-session@.service.in")
-    copy_file(
-        session_service,
-        joinpath(target, "assets/deployment/pipewireao-session@.service.in"),
-    )
-    return target
 end
 
 _payload_dimension(dimension) =
@@ -353,12 +266,20 @@ end
 
 """Generate the headless RTC Julia launcher in a package-owned `rtc/bin` directory.
 
-The launcher loads the package's Julia session policy. The staged tree contains
-only this executable launcher; `validate_rtc` verifies that exact file closure.
+The launcher loads the application environment's RTC dependency. Only `rtc/bin`
+is reserved for generated runtime files; authored RTC configuration is preserved.
 """
 function stage_rtc!(package)
     target = joinpath(package, "rtc")
     islink(target) && throw(ArgumentError("staged RTC directory must not be a symlink"))
+    bin = joinpath(target, "bin")
+    islink(bin) && throw(ArgumentError("staged RTC bin directory must not be a symlink"))
+    if ispath(bin)
+        isdir(bin) && all(name -> name == "pipewireao-rtc", readdir(bin)) ||
+            throw(ArgumentError("staged RTC bin directory contains unowned files"))
+        islink(joinpath(bin, "pipewireao-rtc")) &&
+            throw(ArgumentError("staged RTC launcher must not be a symlink"))
+    end
     temporary = mktempdir(package; prefix = "rtc-stage-")
     try
         launcher = joinpath(temporary, "bin/pipewireao-rtc")
@@ -366,8 +287,8 @@ function stage_rtc!(package)
         write(launcher, rtc_launcher())
         chmod(launcher, 0o755)
         validate_rtc(temporary)
-        ispath(target) && rm(target; recursive = true)
-        mv(temporary, target)
+        mkpath(bin)
+        mv(launcher, joinpath(bin, "pipewireao-rtc"); force = true)
     finally
         ispath(temporary) && rm(temporary; recursive = true)
     end
@@ -376,6 +297,10 @@ function stage_rtc!(package)
 end
 
 function validate_rtc(target)
+    islink(target) && throw(ArgumentError("sealed RTC directory must not be a symlink"))
+    bin = joinpath(target, "bin")
+    isdir(bin) && !islink(bin) ||
+        throw(ArgumentError("sealed RTC bin directory is missing or linked"))
     launcher = joinpath(target, "bin/pipewireao-rtc")
     isfile(launcher) && !islink(launcher) ||
         throw(ArgumentError("sealed RTC Julia launcher is missing"))
@@ -386,56 +311,12 @@ function validate_rtc(target)
             "sealed RTC Julia launcher differs from the selected policy entrypoint"
         ),
     )
-    files = sort!(
-        String[
-            relpath(joinpath(parent, name), target) for
-            (parent, _, names) in walkdir(target) for name in names
-        ],
-    )
-    files == ["bin/pipewireao-rtc"] || throw(
-        ArgumentError("sealed RTC directory contains assets outside the Julia launcher")
+    readdir(bin) == ["pipewireao-rtc"] || throw(
+        ArgumentError(
+            "sealed RTC bin directory contains assets outside the Julia launcher"
+        ),
     )
     return nothing
-end
-
-function revision(root::AbstractString)
-    try
-        return strip(read(`git -C $root rev-parse HEAD`, String))
-    catch
-        return nothing
-    end
-end
-
-# Initial scientist-authored recorded-input assets are accepted as sealed base
-# packages by HILExport. Their development-only generator is outside this
-# operational calibration migration; no generator process is launched here.
-
-"""Hash this package's declared operational sources and resources."""
-function orchestration_sources()
-    files = String[]
-    for relative in RUNTIME_ENTRIES
-        relative == "test" && continue
-        path = joinpath(package_root(), relative)
-        if isfile(path)
-            push!(files, path)
-        elseif isdir(path)
-            for (parent, dirs, names) in walkdir(path)
-                any(name -> islink(joinpath(parent, name)), dirs) &&
-                    throw(ArgumentError("linked operational source directory"))
-                append!(files, joinpath.(Ref(parent), names))
-            end
-        else
-            throw(ArgumentError("missing operational source: $relative"))
-        end
-    end
-    for (parent, dirs, names) in walkdir(resource_root())
-        any(name -> islink(joinpath(parent, name)), dirs) &&
-            throw(ArgumentError("linked operational resource directory"))
-        append!(files, joinpath.(Ref(parent), names))
-    end
-    all(path -> isfile(path) && !islink(path), files) ||
-        throw(ArgumentError("missing or linked operational source"))
-    return Dict(abspath(path) => sha256(path) for path in unique(files))
 end
 
 end # module

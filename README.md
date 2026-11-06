@@ -68,12 +68,16 @@ package pins.
 
 ## Registered applications
 
-A deployment may select `runtime = { kind = registered project = "." }` in
-`deployment.conf`. Its sealed Project/Manifest resolve registered packages;
-no framework source or raw calibration files belong in the application.
-The native PipeWireAO/WirePlumber prefix is supplied explicitly at installation.
-The installer generates its launcher and exact systemd unit, while the Julia
-package supplies the implementation. Existing sealed SDKs retain their path.
+A deployment selects `runtime = { kind = registered project = "." }` in
+`deployment.conf`. Its sealed Project/Manifest resolve registered packages,
+including PipeWireAORTC; the application does not bundle a copy of the RTC
+package or its test workspace. Instrument identity, simulation declarations,
+RTC configuration, graphs and profiles remain authored in the instrument
+repository. The shared build tool prepares those files against the registered
+application environment. The native PipeWireAO prefix is supplied explicitly
+at installation. The installer generates its launcher and exact systemd unit;
+the registered Julia dependency supplies the implementation. Existing sealed
+SDK deployments retain their recorded runtime and require their matching tools.
 
 `GraphOwner.main` accepts existing graph options plus `--fits-bindings PATH`.
 `AOSOwner.main` accepts a simulation configuration through `--config PATH`.
@@ -88,7 +92,10 @@ from `src/configuration/`, `src/deployment/` and the `src/*_cli.jl` modules.
 Control protocol codecs, clients and endpoints live under `src/control/`.
 Correction sequencing lives under `src/correction/`; graph execution and
 simulation preparation live under `src/graphs/` and `src/simulation/`.
-The sealed SDK launch path remains available during application migration.
+The registered application environment is the supported launch path for new
+deployments. Existing sealed SDK deployments retain their recorded runtime and
+must use the matching older tools; the registered installer does not migrate
+their package contents.
 
 The unreleased API cleanup removes the `Native` prefix from Julia control
 modules: for example, use `SessionClient`, `ControlClient` and `ParameterSource`
@@ -162,9 +169,17 @@ session publication. The caller's absolute deadline must also cover installation
 and startup. Live controls and acquisition retain their existing deadlines.
 Budgets above five minutes require the matching RTC owner policy.
 
-Classic's instrument authoring files and build/preflight commands live in the
-[instrument repository](../../adaptive-optics-simulations/README.md).
-Launch its sealed output with `PipeWireAORTC.SessionRuntime.start!` as above.
+Classic's instrument authoring files and shared build commands live in the
+[instrument repository](../../adaptive-optics-simulations/README.md). Its
+physical identity, optical simulation definitions, RTC configuration, graphs
+and deployment profiles stay there as data. The root build tool resolves
+PipeWireAORTC through the selected registered application Manifest; it does not
+copy the RTC source tree into the generated application. The current Classic
+instrument project pins RTC 0.4.4, so it needs a coordinated package and
+launcher declaration update before adopting this dependency-only deployment
+contract. Do not treat the documented historical Classic build as proof of a
+build against the current package. Existing sealed output remains on its
+recorded runtime.
 The former `revolt-classic-rtc` application repository is superseded by
 `adaptive-optics-simulations/revolt-classic`; its checkout is no longer required.
 Dated validation records retain their original application paths and revisions.

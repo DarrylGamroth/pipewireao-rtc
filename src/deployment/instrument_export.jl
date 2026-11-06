@@ -8,6 +8,7 @@ using ..RuntimeExport
 using ..ScienceExport
 using ..InstrumentConfiguration
 import PipeWireAO
+import ..PipeWireAORTC
 import ..Schemas
 import ..Artifacts
 import ..InstrumentDefinition
@@ -500,6 +501,14 @@ function prepare(
     metadata = TOML.parsefile(joinpath(source, "Project.toml"))
     !haskey(metadata, "sources") ||
         throw(ArgumentError("instrument Project.toml must not override package sources"))
+    !haskey(metadata, "workspace") || throw(
+        ArgumentError("instrument application must not declare a development workspace")
+    )
+    get(get(metadata, "deps", Dict()), "PipeWireAORTC", nothing) ==
+    string(Base.PkgId(PipeWireAORTC).uuid) ||
+        throw(ArgumentError("instrument application must depend on PipeWireAORTC"))
+    D.registered_application(authoring) ||
+        throw(ArgumentError("instrument application requires a registered RTC dependency"))
     spec = profile!(substitute(authoring, bindings), profile, bindings)
     uses_aos = any(owner -> get(owner, "kind", nothing) == "aos", spec["owners"])
     prepare_owner_scheduling!(spec, profile)
@@ -587,6 +596,7 @@ function prepare(
             calibration = rtc.calibration,
             configurations,
         )
+        haskey(spec, "session-runtime") && ScienceExport.stage_rtc!(application)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic = true)
         seal!(application)
         D.validate_application(

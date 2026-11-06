@@ -55,8 +55,9 @@ function composition_environment(base, component, base_root, component_root)
         throw(ArgumentError("composed applications require the same runtime declaration"))
     base["environment"] == component["environment"] ||
         throw(ArgumentError("composed application environments differ"))
-    runtime = get(base, "runtime", nothing)
-    runtime === nothing && return nothing
+    D.registered_application(base) ||
+        throw(ArgumentError("composed applications require a registered RTC dependency"))
+    runtime = base["runtime"]
     project = runtime["project"]
     main = TOML.parsefile(joinpath(base_root, project, "Project.toml"))
     extra = TOML.parsefile(joinpath(component_root, project, "Project.toml"))
@@ -287,12 +288,10 @@ function compose(
     !ispath(output) || throw(ArgumentError("composition output must be fresh"))
     # Validate override paths before copying either application.
     selected = Dict{String,String}()
-    runtime_files =
-        haskey(main, "runtime") ?
-        Set(
-            normpath(joinpath(main["runtime"]["project"], file)) for
-            file in ("Project.toml", "Manifest.toml")
-        ) : Set{String}()
+    runtime_files = Set(
+        normpath(joinpath(main["runtime"]["project"], file)) for
+        file in ("Project.toml", "Manifest.toml")
+    )
     for (relative, source) in overrides
         _composition_override(relative, main, runtime_files)
         !isdir(joinpath(base_root, relative)) ||
@@ -313,8 +312,7 @@ function compose(
             joinpath(package, "composition", "base-deployment.conf"),
         )
         spec = deepcopy(main)
-        runtime_project =
-            haskey(spec, "runtime") ? normpath(spec["runtime"]["project"]) : "."
+        runtime_project = normpath(spec["runtime"]["project"])
         shared_project =
             runtime_project == "." ? "@PACKAGE@" : "@PACKAGE@/" * runtime_project
         for owner in spec["owners"]
@@ -428,7 +426,7 @@ function compose(
         seal!(package)
         sealed_spec = Common.read_json(joinpath(package, "deployment.conf"))
         D.validate_application(sealed_spec, joinpath(package, "deployment.conf"), prefix)
-        D.registered_application(sealed_spec) &&
+        isfile(joinpath(package, runtime_project, "Manifest.toml")) &&
             D.application_environment(sealed_spec, package)
         mv(package, output)
     end

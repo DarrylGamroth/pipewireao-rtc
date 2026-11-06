@@ -409,9 +409,7 @@ function start!(
             # Recheck while locked: cleanup may have completed during readiness.
             _same_session(launch_record, session_unit, deadline; clock)
             paths = D.installed_paths(prefix)
-            project =
-                D.registered_application(spec) ?
-                D.application_environment(spec, installed) : joinpath(installed, "julia")
+            project = D.application_environment(spec, installed)
             coordinator = S.Coordinator(
                 String(session_unit), launch_record["invocation"], ""
             )

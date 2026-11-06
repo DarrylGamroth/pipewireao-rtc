@@ -11,8 +11,7 @@ using PipeWireAORTC: SessionLaunch, SessionInstall
     @test occursin(
         "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))", launcher
     )
-    checkout = SessionInstall.installed_launcher("/sdk/bin/julia")
-    @test occursin("--project=\"\$julia_dir\"", checkout)
+    @test_throws UndefKeywordError SessionInstall.installed_launcher("/sdk/bin/julia")
 end
 
 @testset "exact installed graceful stop hook" begin

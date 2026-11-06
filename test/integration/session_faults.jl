@@ -35,9 +35,7 @@ function runtime_cohort(
     launcher_hash = C.sha256_file(launcher)
     get(spec["artifacts"], relative, nothing) == launcher_hash ||
         throw(ArgumentError("RTC launcher differs from the sealed package"))
-    project =
-        D.registered_application(spec) ? D.application_environment(spec, root) :
-        realpath(joinpath(root, "julia"))
+    project = D.application_environment(spec, root)
     project_hashes = Dict{String,String}()
     for name in ("Project.toml", "Manifest.toml")
         path = D.relative_asset(root, relpath(joinpath(project, name), root))

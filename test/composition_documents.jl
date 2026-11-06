@@ -1,5 +1,9 @@
 function composition_fixture(root, name, role, node)
     mkpath(root)
+    write(
+        joinpath(root, "Project.toml"),
+        "[deps]\nPipeWireAORTC = \"a3e2c7da-f73f-4284-8482-36ac422b34e6\"\n",
+    )
     for filename in ("core.conf", "client.conf")
         C.write_json(joinpath(root, filename), Dict())
     end
@@ -40,6 +44,7 @@ function composition_fixture(root, name, role, node)
     roles = ["core", "rtc", role]
     spec = Dict(
         "version" => 1,
+        "runtime" => Dict("kind" => "registered", "project" => "."),
         "name" => name,
         "session" => "session.conf",
         "core" => "core.conf",

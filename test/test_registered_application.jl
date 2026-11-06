@@ -34,6 +34,20 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
         @test D.registered_application(spec)
         @test !D.registered_application(Dict())
         @test D.application_environment(spec, directory) == realpath(directory)
+        @test_throws D.DeploymentError D.application_environment(Dict(), directory)
+        # Deliberate invalid application metadata; production files stay sealed.
+        project_path = joinpath(directory, "Project.toml")
+        original_project = read(project_path, String)
+        project = TOML.parse(original_project)
+        project["workspace"] = Dict("projects" => ["test"])
+        open(project_path, "w") do io
+            TOML.print(io, project)
+        end
+        seal!()
+        @test_throws D.DeploymentError D.application_environment(spec, directory)
+        write(project_path, original_project)
+        seal!()
+        @test D.application_environment(spec, directory) == realpath(directory)
         for field in ("path", "repo-url", "repo-rev")
             original = read(manifest, String)
             write(manifest, original * "$field = \"unsealed\"\n")
@@ -87,7 +101,7 @@ end
     @test occursin(D.shell_quote(environment), launcher)
     @test occursin("PipeWireAORTC.SessionCLI.main(ARGS)", launcher)
     @test !occursin("session_cli.jl", launcher)
-    @test occursin("session_cli.jl", I.installed_launcher("/julia/bin/julia"))
+    @test_throws UndefKeywordError I.installed_launcher("/julia/bin/julia")
 end
 
 @testset "session unit pins its leader within the placement envelope" begin

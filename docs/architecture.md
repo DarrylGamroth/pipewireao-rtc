@@ -570,6 +570,21 @@ declare process arguments, environment, readiness and placement; it must not
 describe or reinterpret scientific operations. Runtime execution must not
 depend on benchmark scripts, temporary evidence directories or git worktrees.
 
+On 2026-11-06 the user selected PipeWireAORTC as a registered application
+dependency rather than a copied SDK tree. New applications seal their Julia
+Project/Manifest and resolve the RTC implementation through that environment.
+Path/source overrides and application development workspaces are rejected.
+The package checkout retains its development test workspace; consuming the
+package as a dependency does not include that workspace in the application's
+dependency closure. Package resources come from the selected installed package.
+
+Instrument repositories own physical identity, simulation definitions, RTC
+configuration, graphs and profiles. Shared export code compiles those declarations
+into a fresh sealed application. Only the small generated RTC shell launcher is
+staged under `rtc/bin`; authored RTC files are preserved. Installation and startup
+use the registered application environment without a copied-source fallback.
+Existing sealed SDKs retain their matching old tools rather than being converted.
+
 Startup loads the stopped session, prepares and warms owners without consuming
 recorded science input, verifies effective thread placement and requested
 resource rights, then explicitly starts the session. An external source must

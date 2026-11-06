@@ -28,10 +28,8 @@ export DeploymentError,
     validate_session_runtime,
     profile,
     substitute,
-    validate_runtime,
     selected_julia_executable,
     shell_quote,
-    installed_wrappers,
     registered_application,
     application_environment
 
@@ -323,9 +321,7 @@ function session_process_binding(
     spec::AbstractDict, package::AbstractString, config::AbstractString
 )
     validate_session_runtime(spec["session-runtime"])
-    launcher_project =
-        registered_application(spec) ? application_environment(spec, package) :
-        realpath(joinpath(package, "julia"))
+    launcher_project = application_environment(spec, package)
     isdir(launcher_project) || fail("selected Julia project environment is unavailable")
     julia = selected_julia_executable(Base.julia_cmd().exec[1])
     return Dict{String,Any}(
@@ -386,6 +382,10 @@ registered_application(spec::AbstractDict) = haskey(spec, "runtime")
 
 """Validate a contained, immutable application environment without resolving packages."""
 function application_environment(spec::AbstractDict, package::AbstractString)
+    require(
+        registered_application(spec),
+        "deployment requires a registered RTC package dependency; copied SDK runtimes are retired",
+    )
     runtime = spec["runtime"]
     validate_registered_runtime(runtime)
     project = runtime["project"]
@@ -406,6 +406,10 @@ function application_environment(spec::AbstractDict, package::AbstractString)
         )
     end
     metadata = TOML.parsefile(joinpath(environment, "Project.toml"))
+    require(
+        !haskey(metadata, "workspace"),
+        "deployed application must not declare a development workspace",
+    )
     direct = get(metadata, "deps", Dict())
     require(
         get(direct, "PipeWireAORTC", nothing) == "a3e2c7da-f73f-4284-8482-36ac422b34e6",
@@ -552,7 +556,7 @@ function profile(
 )
     value = decode(path, prefix)
     result = validate_application(value, path, prefix; legacy_export_input)
-    registered_application(value) && application_environment(value, dirname(path))
+    application_environment(value, dirname(path))
     return result
 end
 
@@ -759,65 +763,6 @@ function substitute(value::AbstractString, bindings::AbstractDict; quoted = fals
     result
 end
 
-function validate_runtime(root::AbstractString)
-    isfile(joinpath(root, "src", "PipeWireAORTC.jl")) || fail(
-        "unsupported legacy include-loaded deployment runtime; preserve this sealed SDK and use its original launcher, or export a new SDK with the named package",
-    )
-    for name in ScienceExport.RUNTIME_ENTRIES
-        expected = joinpath(ScienceExport.package_root(), name)
-        installed = joinpath(root, name)
-        complete = isdir(expected) ? isdir(installed) : isfile(installed)
-        complete && !islink(installed) ||
-            fail("installed Julia deployment runtime is incomplete: $name")
-    end
-    for name in ("test/Project.toml", "test/runtests.jl")
-        isfile(joinpath(root, name)) && !islink(joinpath(root, name)) ||
-            fail("installed Julia deployment runtime is incomplete: $name")
-    end
-    metadata = TOML.parsefile(joinpath(root, "Project.toml"))
-    owner = parentmodule(@__MODULE__)
-    get(metadata, "name", nothing) == "PipeWireAORTC" &&
-    get(metadata, "uuid", nothing) == string(Base.PkgId(owner).uuid) ||
-        fail("installed Julia deployment runtime has an unsupported package identity")
-    version = tryparse(VersionNumber, get(metadata, "version", ""))
-    version !== nothing &&
-    version.major == Base.pkgversion(owner).major &&
-    version.minor == Base.pkgversion(owner).minor ||
-        fail("installed Julia deployment runtime version is unsupported by this installer")
-    source = joinpath(ScienceExport.package_root(), "src")
-    for (parent, _, files) in walkdir(source)
-        for name in files
-            endswith(name, ".jl") || continue
-            relative = relpath(joinpath(parent, name), source)
-            installed = joinpath(root, "src", relative)
-            isfile(installed) && !islink(installed) ||
-                fail("installed Julia deployment runtime is incomplete: src/$relative")
-        end
-    end
-    resources = joinpath(root, "assets", "deployment")
-    for directory in ("hil", "templates")
-        for (parent, dirs, files) in
-            walkdir(joinpath(ScienceExport.resource_root(), directory))
-            filter!(
-                name -> !(name in ("__pycache__", ".git")) && !startswith(name, "test_"),
-                dirs,
-            )
-            for name in files
-                (startswith(name, "test_") || endswith(name, ".py")) && continue
-                relative = relpath(joinpath(parent, name), ScienceExport.resource_root())
-                isfile(joinpath(resources, relative)) &&
-                !islink(joinpath(resources, relative)) ||
-                    fail("installed Julia deployment resources are incomplete: $relative")
-            end
-        end
-    end
-    for name in (ScienceExport.RESOURCE_ENTRYPOINTS..., "pipewireao-session@.service.in")
-        isfile(joinpath(resources, name)) && !islink(joinpath(resources, name)) ||
-            fail("installed Julia deployment resources are incomplete: $name")
-    end
-    return root
-end
-
 function selected_julia_executable(path::AbstractString)
     isabspath(path) &&
     !occursin('\0', path) &&
@@ -856,21 +801,6 @@ function selected_julia_executable(path::AbstractString)
 end
 
 shell_quote(value::AbstractString) = "'" * replace(value, "'" => "'\"'\"'") * "'"
-
-const INSTALLED_ENTRYPOINTS = Dict("rtc-calibrate" => "CalibrationCLI")
-
-function installed_wrappers(julia::AbstractString)
-    executable = shell_quote(julia)
-    scripts = Dict{String,String}()
-    for (name, owner) in INSTALLED_ENTRYPOINTS
-        scripts[name] =
-            "#!/bin/sh\njulia_dir=\"\$(dirname \"\$0\")/../julia\"\n" *
-            "exec $executable --startup-file=no --project=\"\$julia_dir\" -e " *
-            "'using PipeWireAORTC; " *
-            "exit(PipeWireAORTC.$owner.main(ARGS))' -- \"\$@\"\n"
-    end
-    return scripts
-end
 
 decode_fallback(error::SystemError, path, prefix) = rethrow()
 function decode_fallback(error, path, prefix)

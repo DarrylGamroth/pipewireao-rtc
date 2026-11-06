@@ -62,6 +62,22 @@ scientific APIs before deleting RTC copies; NEC-02's Classic capture format need
 an instrument-owned writer/reader/schema interface first. These have active callers.
 The scope follow-up found no additional major implementation proven safely dead.
 
+### RTC dependency instead of copied SDK — 2026-11-06
+
+The user clarified NEC-05: deploy the RTC as a registered package dependency,
+rather than maintain a smaller copied SDK. The copier, runtime source inventory,
+SDK-only validation, wrapper generation and copied-`julia/` launch fallbacks are
+retired. New install/start paths require the sealed registered application
+Project/Manifest and reject an application development workspace. The checkout's
+development workspace stays intact.
+
+Instrument export stages only the generated `rtc/bin` launcher and preserves
+authored RTC configuration. A tiny instrument's actual offline prepare passes;
+structural and broad package checks precede a cold exact-tree registry
+install/relocation gate. The integration record will distinguish this local
+validation from a released package cohort. Existing instrument pins, including
+Classic's RTC 0.4.4 selection, still require a coordinated release update.
+
 ### Lua session policy replacement — 2026-11-04
 
 Implementation is underway on `codex/julia-session-policy-20261104`. The

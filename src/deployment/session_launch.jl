@@ -315,20 +315,13 @@ function parameter_owner!(request, spec, session, bindings, runtime)
     executable = realpath(Base.julia_cmd().exec[1])
     isfile(executable) && Sys.isexecutable(executable) ||
         fail("Current Julia runtime is unavailable for parameter transport")
-    entry = if D.registered_application(spec)
-        environment = D.application_environment(spec, request.package)
-        [
-            "--project=" * environment,
-            "-e",
-            "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)",
-            "--",
-        ]
-    else
-        script = D.relative_asset(
-            request.package, "julia/assets/deployment/hil/parameter_source.jl"
-        )
-        ["--project=" * joinpath(request.package, "julia"), script]
-    end
+    environment = D.application_environment(spec, request.package)
+    entry = [
+        "--project=" * environment,
+        "-e",
+        "using PipeWireAORTC; PipeWireAORTC.ParameterSource.main(ARGS)",
+        "--",
+    ]
     bootstrap = "pipewireao.rtc.bootstrap.parameters"
     control = "pipewireao.rtc.parameters." * spec["name"]
     bindings["BOOTSTRAP_INSTANCE_PARAMETERS"] = string(N.next_instance())
@@ -766,9 +759,7 @@ function prepare!(request::Request; render!::Function)
         record["config"] = String(config)
         launch_record!(runtime, record)
         julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
-        project =
-            D.registered_application(spec) ? D.application_environment(spec, package) :
-            realpath(joinpath(package, "julia"))
+        project = D.application_environment(spec, package)
         isfile(julia) && Sys.isexecutable(julia) ||
             fail("selected Julia runtime is unavailable")
         isdir(project) || fail("selected Julia project environment is unavailable")

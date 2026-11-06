@@ -18,22 +18,6 @@ function resource_root()
     return root
 end
 
-"""Map an operational source to a contained, stable evidence-copy path."""
-function source_relative_path(path::AbstractString)
-    absolute = abspath(path)
-    for (root, prefix) in ((package_root(), "julia"),)
-        relative = relpath(absolute, root)
-        (
-            relative == ".." ||
-            startswith(relative, ".." * string(Base.Filesystem.path_separator))
-        ) && continue
-        # SDK source evidence retains its Julia project prefix after relocation.
-        return isempty(prefix) ? relative : joinpath(prefix, relative)
-    end
-    throw(ArgumentError("source is outside deployment package and resources: $path"))
-end
-
-
 include("common.jl")
 include("schemas.jl")
 include("artifacts.jl")

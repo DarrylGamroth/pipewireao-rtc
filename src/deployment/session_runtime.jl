@@ -511,19 +511,12 @@ function start!(
     mkdir(target; mode = 0o700)
     installed = joinpath(target, "installed")
     julia = Base.julia_cmd().exec[1]
-    installer = if DeploymentConfiguration.registered_application(spec)
-        [
-            "--project=" * DeploymentConfiguration.application_environment(spec, source),
-            "-e",
-            "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))",
-            "--",
-        ]
-    else
-        launcher = joinpath(source, "julia", "session_cli.jl")
-        isfile(launcher) ||
-            throw(ArgumentError("sealed session installer is unavailable"))
-        ["--project=" * joinpath(source, "julia"), launcher]
-    end
+    installer = [
+        "--project=" * DeploymentConfiguration.application_environment(spec, source),
+        "-e",
+        "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))",
+        "--",
+    ]
     checked(
         [
             julia,
