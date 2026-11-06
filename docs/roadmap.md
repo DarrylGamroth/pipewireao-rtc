@@ -45,6 +45,15 @@ Existing AOS transfers were rechecked against actual simulator consumers; no
 hardware-only caller was found. Full-instrument/release qualification remains
 separate, and existing sealed applications are unchanged.
 
+The user requested a broader size/ownership review after generic capture.
+[Findings NEC-09–13](reviews/20261106-runtime-scope/REVIEW.md) identify remaining
+calibration mathematics, simulator execution, parallel graph-host mechanics and
+sparse parameter publication as transfer/consolidation candidates. The current
+source inventory remains 62,339 physical Julia lines; the prior cleanup has not
+removed this broader scope. These are reviewed active responsibilities, not dead
+code or completed transfers. Optional workstation retirement remains a product
+decision, and native application admission/fault policy remains necessary.
+
 The user approved the reviewed cleanup. NEC-07's unused legacy export-input mode
 and marker-validation branches are removed; new declarations require the native
 owner contracts. NEC-08's current runtime/version guidance now matches Julia

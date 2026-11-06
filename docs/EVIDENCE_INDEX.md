@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Remaining runtime/scientific scope — 2026-11-06
+
+The [ownership review](reviews/20261106-runtime-scope/REVIEW.md) identifies active
+calibration mathematics, simulator execution, parallel generic graph hosting and
+sparse publication mechanics remaining in RTC. It distinguishes upstream API
+gaps, necessary application policy and optional workstation product decisions.
+
 ## Generic finite capture — 2026-11-06
 
 The [capture record](reviews/20261106-generic-capture/REVIEW.md) records the shared
