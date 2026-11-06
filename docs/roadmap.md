@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-05. This section is the current delivery summary. Later sections
+Updated 2026-11-06. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -23,6 +23,16 @@ and optional workstation feature decisions. No implementation was removed by the
 review; prior qualification work does not establish that every feature belongs in
 this package. The next cleanup should remove maintained decisions and duplicated
 implementation rather than add wrappers around the current surface.
+
+The user identified a future standalone archiver modeled on SPIDERS
+`~/spiders-working/archiverservice` (2026-11-06). That service records subscribed
+messages verbatim in rolling files, with a SQLite index for queries and replay.
+Recording/storage belongs in that later service rather than another RTC-owned
+archive implementation. Its batched recording does not provide the existing
+journal's write-before-effect guarantee. Removing mandatory RTC journaling would
+therefore retire that guarantee; an asynchronous archiver is not a transparent
+replacement. No archiver implementation or journal removal is delivered here;
+the existing journal selection remains implemented pending its explicit revision.
 
 ### Lua session policy replacement — 2026-11-04
 
