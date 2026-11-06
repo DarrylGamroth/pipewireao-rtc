@@ -10,6 +10,7 @@ using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
+const CaptureFiles = PipeWireAORTC.CaptureFiles
 const Endpoint = PipeWireAORTC.CalibrationEndpoint
 const Actions = PipeWireAORTC.CalibrationActionCodec
 const Client = PipeWireAORTC.CalibrationActionClient
@@ -65,7 +66,7 @@ end
     illumination in ("internal-source", "dark") || error("unsupported capture test graph")
     stage = illumination == "dark" ? "dark" : "lamp-training"
     actions = Any[]
-    descriptor = settings = active = full_domain = closed_owner = nothing
+    descriptor = settings = active = full_domain = closed_owner = contract = nothing
     selected_hashes = Dict{String,String}()
     try
         with_control_private_core(;
@@ -88,6 +89,12 @@ end
                 progress(
                     "preparing one declared $illumination CPU session with capture storage"
                 )
+                selection = Calibration._capture_configuration(
+                    Calibration.read_recipe(application)
+                )
+                contract = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt).calibration_capture_contract(
+                    frontend, SPA.Fraction(UInt32(simulation["rate"]), UInt32(1)), selection
+                )
                 server = Calibration.prepare_initial_calibration(
                     application,
                     remote,
@@ -100,7 +107,7 @@ end
                     simulation_graph = illumination,
                     capture_directory,
                     capture_stage = stage,
-                    capture_maximum_bytes = 3Calibration.CLASSIC_CAPTURE_BYTES,
+                    capture_maximum_bytes = 3contract.bytes,
                 )
                 frontend = command = nothing
                 owner = server.effects
@@ -208,8 +215,7 @@ end
                     nothing
                 descriptor = complete(Actions.Capture(probe, settled.cursor, UInt32(3)))
                 @test descriptor isa Actions.Captured && server.phase === :Captured
-                @test descriptor.frames == 3 &&
-                    descriptor.bytes == 3Calibration.CLASSIC_CAPTURE_BYTES
+                @test descriptor.frames == 3 && descriptor.bytes == 3contract.bytes
                 @test descriptor.cursor == owner.cursor && descriptor.cursor.sequence == 3
                 @test owner.capture_store.used_bytes == descriptor.bytes
                 @test descriptor.manifest == "run-1-serial-5/manifest.json"
@@ -253,10 +259,10 @@ end
         # File use begins only after public Restore/Release and endpoint/core closure.
         @test closed_owner !== nothing && closed_owner.closed
         evidence_before = hashes(capture_directory)
-        result = Calibration.read_capture(
+        result = CaptureFiles.read_capture(
             capture_directory,
             descriptor;
-            expected_profile = "classic",
+            expected_contract = contract,
             expected_stage = stage,
             expected_illumination = illumination,
             expected_settings = settings,
@@ -277,7 +283,7 @@ end
             @test sample.exposure.sequence == index &&
                 sample.exposure.duration_ns == 1_896_000
             @test sample.exposure.domain == 1
-            @test sample.quality["valid_rois"] == count(sample.arrays.validity)
+            @test !haskey(sample, :quality)
             for receipt in values(sample.metadata)
                 @test receipt["identity"]["domain"] == full_domain
                 @test receipt["identity"]["generation"] == sample.exposure.generation
@@ -311,10 +317,10 @@ end
         original = result.samples[1].arrays.raw[1, 1]
         result.samples[1].arrays.raw[1, 1] = xor(original, UInt16(1))
         @test hashes(capture_directory) == evidence_before
-        reread = Calibration.read_capture(
+        reread = CaptureFiles.read_capture(
             capture_directory,
             descriptor;
-            expected_profile = "classic",
+            expected_contract = contract,
             expected_stage = stage,
             expected_illumination = illumination,
             expected_settings = settings,

@@ -32,12 +32,18 @@ decision; no additional large subsystem is proven safely dead.
 
 ### RTC streamlining — 2026-11-06
 
-Generic finite capture is being implemented in the dedicated `CaptureFiles`
+Generic finite capture is implemented in the dedicated `CaptureFiles`
 module, with prepared port/schema contracts and YAML selection. The writer/reader
 passes 278 assertions; schema 5 contains no instrument geometry or quality policy.
 Explicit schema-4 reads share its integrity checks. The [capture record](reviews/20261106-generic-capture/REVIEW.md)
-tracks verified slices and integration limits. Existing AOS transfers were
-rechecked against actual simulator consumers; no hardware-only caller was found.
+tracks verified slices and integration limits. YAML/recipe checks pass 44,
+prepared port/named-command checks pass 109, and actual private-core transport
+plus selected publication/readback passes 173. The full core suite passes 11,032
+assertions in 513 testsets. The producer's required reference-timestamp support
+is upstream in PipeWireAO `bc13c14`; no new native ABI or recorder is introduced.
+Existing AOS transfers were rechecked against actual simulator consumers; no
+hardware-only caller was found. Full-instrument/release qualification remains
+separate, and existing sealed applications are unchanged.
 
 The user approved the reviewed cleanup. NEC-07's unused legacy export-input mode
 and marker-validation branches are removed; new declarations require the native
@@ -53,9 +59,9 @@ RTC removes its node implementation and retains only factory/path composition.
 The receiving AOS 0.3.21 graph suite passes 1,472 assertions, CPU layout passes 76,
 and CUDA/AMDGPU stream/capture each pass 60. RTC factory integration passes 5;
 the full core passes 10,832. These are source-cohort software checks, not a release
-or deadline qualification. Classic capture's generic data/port contract is under
-discussion; the instrument repository remains declarative. Optional workstation
-feature retirement is not implied.
+or deadline qualification. Classic capture's generic data/port contract is now
+implemented above; the instrument repository remains declarative. Optional
+workstation feature retirement is not implied.
 
 ### Session operation journal removal — 2026-11-06
 

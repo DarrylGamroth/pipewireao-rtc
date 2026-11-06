@@ -83,6 +83,10 @@ Base.include(
     Module(:CalibrationCaptureFilesTests),
     joinpath(@__DIR__, "test_calibration_capture_files.jl"),
 )
+Base.include(
+    Module(:CalibrationCaptureTransportTests),
+    joinpath(@__DIR__, "test_calibration_capture.jl"),
+)
 Base.include(Module(:CalibrationOwnerTests), joinpath(@__DIR__, "calibration_owner.jl"))
 include("test_session_configuration.jl")
 include("test_instrument_definition.jl")

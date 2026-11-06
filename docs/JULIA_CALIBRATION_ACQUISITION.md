@@ -242,6 +242,29 @@ and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
 ### Finite capture files
 
+The optional section in `calibration/recipe.yaml` selects existing prepared port
+names and a cumulative payload byte limit:
+
+```yaml
+capture:
+  channels: [raw, slopes, flux, validity]
+  maximum_bytes: 67108864
+```
+
+These names are examples for one frontend. They do not imply required channel
+roles or fixed dimensions. Export compiles this declaration into `recipe.conf`;
+preparation checks it against its authoring YAML and binds the selected prepared
+port formats and schemas. Unknown, repeated and empty selections fail cold.
+YAML does not repeat port types, shapes or rates and supplies no Julia callbacks.
+
+Enable the initial owner's optional native Capture action with a fresh
+`capture_directory` and explicit `capture_stage`. `capture_maximum_bytes=0` uses
+the YAML limit; a nonzero runtime limit may lower it but cannot increase it.
+Without a capture directory, normal acquisition remains unchanged. The collector
+still consumes its complete prepared output cohort; YAML selects only what is
+persisted. Native Capture requests select a probe/cursor/frame count and cannot
+change the cold-bound channel contract.
+
 `PipeWireAORTC.CaptureFiles` owns bounded finite calibration evidence. It has no
 instrument, simulator, transport or continuous-archiving authority. Its `Channel`
 uses the existing `PipeWireAO.NdArrayFormat` and semantic schema; `Contract` binds

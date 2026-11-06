@@ -3,7 +3,6 @@ module CalibrationCapture
 
 using PipeWireAO
 import PipeWireAORTC
-import AdaptiveOpticsSim
 import Clocks
 
 export Capture, arm!, await!, snapshot
@@ -90,13 +89,7 @@ end
 function _slot(spec, ::Type{T}, rank) where {T}
     format = spec.format
     validate_capture_format(format)
-    expected = if T === UInt16
-        NdArray.U16_LE
-    elseif T === Bool
-        NdArray.BOOL8
-    else
-        NdArray.F32_LE
-    end
+    expected = capture_encoding(T)
     format.element_type == expected && length(format.shape) == rank || throw(
         ArgumentError("capture stream element type or rank differs from its declared role"),
     )
@@ -129,22 +122,26 @@ function _slot(spec, ::Type{T}, rank) where {T}
     )
 end
 
+capture_encoding(::Type{UInt16}) = NdArray.U16_LE
+capture_encoding(::Type{Float32}) = NdArray.F32_LE
+capture_encoding(::Type{Bool}) = NdArray.BOOL8
+capture_encoding(::Type) =
+    throw(ArgumentError("capture supports UInt16, Float32 and Bool payloads"))
+capture_element_type(::Val{NdArray.U16_LE}) = UInt16
+capture_element_type(::Val{NdArray.F32_LE}) = Float32
+capture_element_type(::Val{NdArray.BOOL8}) = Bool
+capture_element_type(encoding) =
+    throw(ArgumentError("capture supports UInt16, Float32 and Bool payloads"))
+
 function _slots(declarations::NamedTuple)
-    !isempty(declarations) && first(keys(declarations)) === :raw ||
-        throw(ArgumentError("capture requires raw as its first declaration"))
-    slots = map(keys(declarations), values(declarations)) do name, spec
-        name === :raw && return _slot(spec, UInt16, 2)
+    !isempty(declarations) ||
+        throw(ArgumentError("capture requires a nonempty set of declarations"))
+    slots = map(values(declarations)) do spec
         format = spec.format
         validate_capture_format(format)
         rank = length(format.shape)
-        if format.element_type == NdArray.F32_LE && rank in (1, 2)
-            return _slot(spec, Float32, rank)
-        elseif format.element_type == NdArray.BOOL8 && rank == 1
-            return _slot(spec, Bool, rank)
-        end
-        throw(
-            ArgumentError("capture outputs require Float32 rank one/two or Bool rank one")
-        )
+        rank in (1, 2) || throw(ArgumentError("capture requires rank one or two"))
+        return _slot(spec, capture_element_type(Val(format.element_type)), rank)
     end
     return NamedTuple{keys(declarations)}(slots)
 end
@@ -429,12 +426,11 @@ function PipeWireAO.start!(capture::Capture)
     return capture
 end
 
-"Arm one genuine HIL exposure before its publication; previous data must already be consumed."
-function arm!(capture::Capture, exposure)
-    identity = exposure.identity
+"Arm one declared acquisition interval before publication; prior data must be consumed."
+function arm!(
+    capture::Capture, identity::AcquisitionIdentity, start::Int64, duration::UInt64
+)
     validate_capture_identity(identity)
-    start = AdaptiveOpticsSim.AlgorithmGraphs.model_nanoseconds(exposure.timestamp)
-    duration = exposure.exposure_duration_nanoseconds
     validate_capture_window(start, duration)
     _locked(capture) do
         _usable(capture)

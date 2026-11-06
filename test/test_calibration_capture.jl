@@ -1,7 +1,6 @@
-using Test, PipeWireAO, AdaptiveOpticsSim, PipeWireAORTC
-include(joinpath(@__DIR__, "..", "ext", "calibration_capture.jl"))
+using Test, PipeWireAO, PipeWireAORTC
+Base.include(@__MODULE__, joinpath(@__DIR__, "..", "ext", "calibration_capture.jl"))
 const CC = CalibrationCapture
-const AG = AdaptiveOpticsSim.AlgorithmGraphs
 const PW = PipeWireAO.LibPipeWire
 
 function capture_declarations(prefix = "test.capture")
@@ -63,8 +62,15 @@ identity(sequence = 1, generation = 1) =
     AcquisitionIdentity(DOMAIN, UInt64(generation), UInt64(sequence))
 exposure(sequence = 1, generation = 1) = (;
     identity = identity(sequence, generation),
-    timestamp = AG.ModelTimestamp(100),
+    start_model_ns = Int64(100 + (sequence - 1) * 10),
     exposure_duration_nanoseconds = UInt64(10),
+)
+
+arm_exposure!(capture, exposure) = CC.arm!(
+    capture,
+    exposure.identity,
+    exposure.start_model_ns,
+    exposure.exposure_duration_nanoseconds,
 )
 
 function owned_test_capture(f; declarations = capture_declarations())
@@ -121,8 +127,8 @@ end
 
 @testset "owned acquisition slots preserve row-major values and provenance" begin
     owned_test_capture() do capture
-        CC.arm!(capture, exposure())
-        @test_throws InvalidStateException CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
+        @test_throws InvalidStateException arm_exposure!(capture, exposure())
         @test_throws InvalidStateException CC.snapshot(capture)
         for name in keys(capture.slots)
             slot = getproperty(capture.slots, name)
@@ -152,9 +158,9 @@ end
         @test result.arrays.slopes == Float32[1 2; 3 4]
         @test result.arrays.validity == [false, true] # no implicit scientific policy
         @test result.arrays.raw === capture.slots.raw.array
-        @test_throws ArgumentError CC.arm!(capture, exposure())
-        @test_throws ArgumentError CC.arm!(capture, exposure(3))
-        CC.arm!(capture, exposure(2))
+        @test_throws ArgumentError arm_exposure!(capture, exposure())
+        @test_throws ArgumentError arm_exposure!(capture, exposure(3))
+        arm_exposure!(capture, exposure(2))
         @test capture.phase == CC.ARMED
     end
 end
@@ -175,7 +181,7 @@ end
         :reference_clock,
     )
         owned_test_capture() do capture
-            CC.arm!(capture, exposure())
+            arm_exposure!(capture, exposure())
             fixture = capture_payload(UInt16, 6)
             GC.@preserve fixture begin
                 initialize_payload!(fixture)
@@ -245,7 +251,7 @@ end
         end
     end
     owned_test_capture() do capture
-        CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
         fixture = capture_payload(Bool, 2)
         GC.@preserve fixture begin
             initialize_payload!(fixture)
@@ -255,18 +261,18 @@ end
         end
     end
     owned_test_capture() do capture
-        CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
         @test_throws InvalidStateException CC.await!(
             capture; deadline = PipeWireAORTC.ControlClient.monotonic() + 0.01
         )
         @test capture.failure === :deadline
     end
     owned_test_capture() do capture
-        @test_throws ArgumentError CC.arm!(
+        @test_throws ArgumentError arm_exposure!(
             capture,
             (;
                 identity = identity(),
-                timestamp = AG.ModelTimestamp(typemax(Int64)),
+                start_model_ns = typemax(Int64),
                 exposure_duration_nanoseconds = UInt64(1),
             ),
         )
@@ -275,7 +281,7 @@ end
 
 @testset "close wakes an active capture waiter without closing borrowed wakeups" begin
     owned_test_capture() do capture
-        CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
         waiter = @async try
             CC.await!(capture; deadline = PipeWireAORTC.ControlClient.monotonic() + 5)
         catch error
@@ -287,14 +293,14 @@ end
             capture; deadline = PipeWireAORTC.ControlClient.monotonic() + 1
         )
         close(capture)
-        @test fetch(waiter) isa InvalidStateException
+        @test typeof(fetch(waiter)) === InvalidStateException
         @test !isopen(capture.wakeup)
     end
 end
 
 @testset "scientific rejection policy stays outside the collector" begin
     owned_test_capture() do capture
-        CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
         fixture = capture_payload(Float32, 2)
         GC.@preserve fixture begin
             initialize_payload!(fixture)
@@ -321,27 +327,27 @@ end
     )
     slots = CC._slots(declarations)
     @test keys(slots) == keys(declarations)
-    @test slots[Symbol("reconstruction-pixels")].array isa Matrix{Float32}
-    @test slots[Symbol("mean-pupil-intensity")].array isa Vector{Float32}
-    @test_throws ArgumentError CC._slots((
-        pixels = declarations[Symbol("reconstruction-pixels")],
-    ))
-    @test_throws ArgumentError CC._slots((
-        pixels = declarations[Symbol("reconstruction-pixels")], raw = raw
-    ))
-    @test_throws ArgumentError CC._slots((;
-        raw = descriptor("raw", NdArray.F32_LE, (2, 3))
-    ))
-    for (T, shape) in (
-        (NdArray.U16_LE, (2,)),
-        (NdArray.F64_LE, (2,)),
-        (NdArray.F32_LE, (2, 2, 2)),
-        (NdArray.BOOL8, (2, 2)),
-    )
+    @test typeof(slots[Symbol("reconstruction-pixels")].array) === Matrix{Float32}
+    @test typeof(slots[Symbol("mean-pupil-intensity")].array) === Vector{Float32}
+    @test keys(CC._slots((pixels = declarations[Symbol("reconstruction-pixels")],))) ==
+        (:pixels,)
+    @test keys(
+        CC._slots((pixels = declarations[Symbol("reconstruction-pixels")], raw = raw))
+    ) == (:pixels, :raw)
+    @test eltype(
+        CC._slots((raw = descriptor("raw", NdArray.F32_LE, (2, 3)),)).raw.array
+    ) === Float32
+    @test eltype(
+        CC._slots((samples = descriptor("counts", NdArray.U16_LE, (2,)),)).samples.array
+    ) === UInt16
+    @test eltype(
+        CC._slots((mask = descriptor("mask", NdArray.BOOL8, (2, 2)),)).mask.array
+    ) === Bool
+    for (T, shape) in ((NdArray.F64_LE, (2,)), (NdArray.F32_LE, (2, 2, 2)))
         @test_throws ArgumentError CC._slots((; raw, output = descriptor("bad", T, shape)))
     end
     owned_test_capture(; declarations) do capture
-        CC.arm!(capture, exposure())
+        arm_exposure!(capture, exposure())
         for slot in values(capture.slots)
             T = eltype(slot.wire)
             payload = capture_payload(T, length(slot.wire))
@@ -360,7 +366,9 @@ end
     end
 end
 
-@test !any(id -> id.name in ("CUDA", "AMDGPU"), keys(Base.loaded_modules))
+@test !any(
+    id -> id.name in ("AdaptiveOpticsSim", "CUDA", "AMDGPU"), keys(Base.loaded_modules)
+)
 
 @testset "capture copies independent optional facts under the buffer lease" begin
     for (optical, trigger) in (
@@ -371,7 +379,7 @@ end
         (OPTICAL_MIXED, ACQUISITION_TRIGGER_MIXED),
     )
         owned_test_capture() do capture
-            CC.arm!(capture, exposure())
+            arm_exposure!(capture, exposure())
             storage = capture_payload(UInt16, 6)
             GC.@preserve storage begin
                 initialize_payload!(storage)
@@ -410,7 +418,7 @@ end
     for origin in (Int64(-10), Int64(2)^53 + 1)
         for (current, reason) in ((origin + 1, :deadline), (origin - 1, :clock))
             owned_test_capture() do capture
-                CC.arm!(capture, exposure())
+                arm_exposure!(capture, exposure())
                 clock = CaptureWaitClock([origin, current], 0)
                 @test_throws InvalidStateException CC.await!(
                     capture; deadline = origin + 1, clock
@@ -426,7 +434,7 @@ end
 @testset "completed capture checks expiry after owner supervision" begin
     for origin in (Int64(-10), Int64(2)^53 + 1)
         owned_test_capture() do capture
-            CC.arm!(capture, exposure())
+            arm_exposure!(capture, exposure())
             for name in keys(capture.slots)
                 slot = getproperty(capture.slots, name)
                 fixture = capture_payload(eltype(slot.wire), length(slot.wire))

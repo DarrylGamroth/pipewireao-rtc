@@ -1,4 +1,4 @@
-include("capture_file_inputs.jl")
+Base.include(@__MODULE__, joinpath(@__DIR__, "capture_file_inputs.jl"))
 
 @testset "capture model intervals stay within signed nanosecond range" begin
     interval = Dict(

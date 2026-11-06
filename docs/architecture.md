@@ -804,6 +804,15 @@ campaign owns the files through verification and reduction. Exposure association
 capacity, deadlines and interrupted-stage disposition are specified in
 RTC-DEV-029; interaction response quality requirements remain unchanged.
 
+Finite evidence writing/reading belongs to the shared RTC `CaptureFiles` module.
+Instrument choices remain in calibration YAML: selected existing port names and
+a payload byte limit. Prepared ndarray formats and semantic schemas supply the
+channel contract, including shape, layout and rate. The generic writer does not
+interpret instrument identities or WFS channel names. Scientific quality remains
+with calibration algorithms. New captures use schema 5; historical schema-4
+reading is explicit and cannot establish the schema/rate facts it never recorded.
+This interface adds no session authority, transport executor or recorder service.
+
 The owner observes both the actual demanded figure with constraint feedback and
 the simulator's correlated adoption before generating exposures. Probe tokens
 advance independently of exposure identities. Publication of a detector buffer

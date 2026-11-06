@@ -169,6 +169,20 @@
 
 ## Instrument export checks
 
+- Finite capture selection and payload limits belong in the recipe's `capture`
+  YAML section. Bind existing prepared ports through `CaptureFiles.Channel` and
+  `Contract`; never hard-code instrument geometry or scientific quality in the
+  shared writer. New captures use schema 5; schema-4 reading requires explicit
+  `Val(4)` and establishes no absent schema/rate facts.
+- `test/test_calibration_capture_files.jl` checks finite file contracts and
+  historical reading. `test/test_calibration_capture.jl` is now a core transport
+  selector without AOS. The optional `test/test_calibration_capture_private_core.jl`
+  checks real transport and selected file publication with three default Julia
+  threads and a matching native SDK; its source requires the upstream
+  `submit_array!(...; reference_timestamp=...)` interface (`bc13c14`). It owns only
+  a temporary core. The full Classic selector additionally requires a freshly
+  exported application whose recipe declares capture channels/limits; never
+  modify an existing sealed application to add them.
 - `test/test_instrument_influences.jl` checks measured-influence artifact admission
   without science packages. `test/instrument_influences_science.jl` runs the
   original FITS/resampling/provenance checks with AdaptiveOpticsSim 0.3.21 or newer

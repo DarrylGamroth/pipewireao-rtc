@@ -47,14 +47,94 @@ blocking defect in immutability, arithmetic, metadata correlation, selection,
 path/hash checks or publication. Its incorrect exposure-bound diagnostic was
 corrected; root review also removed duplicated reader control flow.
 
-## Integration in progress
+## YAML, owner and native transport integration
 
 Recipe YAML selects existing prepared channels and a payload limit. Owner
 preparation binds their authoritative formats/schemas, without inferred
 instrument-specific dimensions. The acquisition sink's role-based type ordering
 is removed; its model-time interface accepts explicit native identity/start/
-duration rather than importing AOS. Generic transport and YAML selectors pass;
-private-core and owner integration evidence will be recorded with that slice.
+duration rather than importing AOS. Ordinary Collect retains its complete output
+cohort; only persisted channels are selected. Runtime budget overrides can lower
+the YAML limit, never increase it. Named command provenance has dispatch for
+single and named projections. No Classic identity check remains in new capture
+preparation. Scientific measurement selection and intrinsic validity retain their
+calibration semantics outside the writer.
+
+| Gate | Passing assertions | Log under `/tmp/` |
+| --- | ---: | --- |
+| Recipe YAML/validation order, no science loading | 44 | `rtc-generic-capture-yaml-20261106.log` |
+| Actual prepared Pyramid port binding, quota overrides and named commands | 109 | `rtc-generic-capture-named-verified-20261106.log` |
+| Generic acquisition slots/metadata/deadlines without AOS | 152 | `rtc-generic-capture-transport-20261106.log` |
+| Real private-core transport, subset publication/readback and identity fault | 173, including the 152 above | `rtc-generic-capture-private-core-final-20261106.log` |
+| Capture files/transport inside isolated core-test modules | 430 | `rtc-generic-capture-isolated-modules-20261106.log` |
+| Complete core suite | 11,032 in 513 testsets | `rtc-generic-capture-core-final-20261106.log` |
+
+The native gate reorders the source declarations, persists only YAML-selected
+`validity` and `flux`, derives their formats/schemas from declared ports, checks
+the exact 20-byte two-frame budget, verifies immutable metadata/payloads through
+the reader, then rejects a real-link generation mismatch. The collector still
+acquires all four channels. It uses three default threads plus one interactive
+thread and owns/closes only its temporary core.
+
+### Reference-timestamp source support
+
+Initial native attempts failed during buffer allocation (`-ENOTSUP`) with both
+the core package environment and matching command-endpoint source environment.
+The existing NdArraySource advertises Header, AcquisitionIdentity and
+ExposureTiming but not the ReferenceTimestamp required by the capture sink.
+These source declarations cannot negotiate the complete sink requirement.
+Original failure logs remain `rtc-generic-capture-private-core-20261106.log` and
+`rtc-generic-capture-private-core-matching-20261106.log`.
+
+PipeWireAO commit `bc13c14` on dedicated branch
+`codex/capture-reference-metadata-20261106`, worktree `PipeWireAO-capture-metadata`,
+adds optional ReferenceTimestamp advertisement and an explicitly supplied
+`submit_array!` timestamp. It copies the supplied immutable fact under existing
+ownership/locking and writes it within the existing buffer lease. Omission stays
+absent, including on buffer reuse; no clock or reference fact is fabricated.
+Native SDK code and ABI are unchanged. The focused upstream suite passes 202
+assertions, including exact REALTIME/TAI/high-UInt64 preservation, default clearing
+and 0-byte warmed copy-path checks (`ndarray-capture-metadata-unit.log`).
+
+The passing native capture uses this exact source through a fresh
+`/tmp/rtc-generic-capture-env-20261106` copied from the prior optional environment
+and resolved with Pkg, plus explicit
+`PIPEWIREAO_PREFIX=/tmp/pipewire-command-endpoint-native4-sdk-20261104`.
+No existing environment or published registry is modified. The successful command
+stacks the RTC environment for its direct clock dependency:
+
+```sh
+PIPEWIREAO_PREFIX=/tmp/pipewire-command-endpoint-native4-sdk-20261104 \
+julia --startup-file=no --threads=3,1 \
+  --project=/tmp/rtc-generic-capture-env-20261106 \
+  -e 'push!(LOAD_PATH,pwd()); include("test/test_calibration_capture_private_core.jl")'
+```
+
+### Review and remaining qualification
+
+Independent source review found no integration blocker in YAML/format binding,
+quotas, native admission ordering, named provenance or model-time conversion.
+Root review then aligned the owner's generic output type/rank validation with the
+collector's supported set. Selected scientific measurements still require their
+declared Float32 contract. The full Classic capture selector is migrated to the
+new reader/contract, but requires a freshly exported capture-enabled application
+and is not claimed rerun against the unchanged older application. Software
+private-core evidence does not establish full-instrument science, hardware or
+deadline qualification.
+
+The first core run stopped because the extracted capture test helper used a bare
+`include` inside an isolated test module. It is corrected to explicit
+`Base.include(@__MODULE__, ...)`. The transport selector, now independent of AOS,
+is added to the core suite. The original failure remains in
+`rtc-generic-capture-core-20261106.log`; final core results follow separately.
+
+The corrected full core process exits 0 with 11,032 assertions. Its deliberate
+invalid-object Git test emits the retained `git cat-file` diagnostic; no core
+warning or test failure remains. The isolated module check separately passes 430
+assertions. Formatting/syntax/literal and idempotence checks cover the changed
+Julia integration files. Documentation checks preserve requirement identities,
+links, fences and whitespace. Source and validation are committed in reviewable
+slices; no package or registry release is implied.
 
 ## AOS ownership recheck
 

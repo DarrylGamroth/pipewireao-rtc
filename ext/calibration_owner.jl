@@ -103,7 +103,12 @@ function exposure!(owner::InitialCalibration, deadline)
         owner.hil,
         owner.driver;
         timeout_ns = remaining(owner, deadline),
-        before_publish = value -> CalibrationCapture.arm!(owner.capture, value),
+        before_publish = value -> CalibrationCapture.arm!(
+            owner.capture,
+            value.identity,
+            AdaptiveOpticsSim.AlgorithmGraphs.model_nanoseconds(value.timestamp),
+            value.exposure_duration_nanoseconds,
+        ),
     )
     # This witness observes publication at a source completion callback;
     # only the correlated raw/WFS receipts below prove exposure completion.
@@ -242,7 +247,7 @@ function (owner::InitialCalibration)(action::Actions.Capture, deadline)
     # Only pre-effect validation becomes a known rejection. A write/acquisition
     # failure after admission retains the dispatcher's unknown-outcome fence.
     try
-        Calibration.capture_preflight(
+        PipeWireAORTC.CaptureFiles.capture_preflight(
             owner.capture_store;
             run,
             serial,
@@ -257,7 +262,7 @@ function (owner::InitialCalibration)(action::Actions.Capture, deadline)
         recover_invalid_calibration_evidence(error)
         return Actions.Failed(Actions.InvalidEvidence)
     end
-    return Calibration.capture!(
+    return PipeWireAORTC.CaptureFiles.capture!(
         owner.capture_store,
         () -> exposure!(owner, deadline);
         run,
@@ -444,13 +449,44 @@ copy_figures(figures::NamedTuple) = map(copy, figures)
 probe_figure(figure::AbstractVector, ::Nothing) = figure
 probe_figure(figures::NamedTuple, probe::Symbol) = getproperty(figures, probe)
 
-function require_capture_profile(::GraphProjection, declaration)
-    declaration.document["id"] == "revolt-classic" ||
-        throw(ArgumentError("capture storage requires the declared Classic profile"))
-    return nothing
+"Retain prepared parameter provenance for one or named command projections."
+capture_projection_identities(projection::GraphProjection) = Dict(
+    String(port) => Dict(
+        key => identity[key] for key in
+        ("original_sha256", "sha256", "hdu", "axes", "target_type", "target_shape")
+    ) for (port, identity) in projection.provenance
+)
+capture_projection_identities(projections::NamedGraphProjections) = Dict(
+    String(name) => capture_projection_identities(projection) for
+    (name, projection) in pairs(projections)
+)
+
+"Bind YAML-selected channels to the exact prepared frontend port contracts."
+function calibration_capture_contract(frontend, rate, configuration)
+    outputs = JuliaFilterGraph.output_formats(frontend.graph)
+    haskey(outputs, :raw) && throw(ArgumentError("capture output conflicts with raw input"))
+    formats = (; raw = JuliaFilterGraph.input_formats(frontend.graph).raw, outputs...)
+    all(name -> haskey(formats, name), configuration.channels) ||
+        throw(ArgumentError("capture selects a port absent from the prepared frontend"))
+    channels = NamedTuple{configuration.channels}(
+        map(configuration.channels) do name
+            port = getproperty(formats, name)
+            PipeWireAORTC.CaptureFiles.Channel(capture_format(port, rate), port.schema)
+        end,
+    )
+    return PipeWireAORTC.CaptureFiles.Contract(channels)
 end
-require_capture_profile(::NamedGraphProjections, declaration) =
-    throw(ArgumentError("capture storage requires the declared Classic profile"))
+
+"Runtime limits may lower the YAML capture budget, never increase it."
+function calibration_capture_limit(configuration, limit::Integer)
+    maximum =
+        limit == 0 ? configuration.maximum_bytes : Calibration._capture_byte_limit(limit)
+    maximum <= configuration.maximum_bytes ||
+        throw(ArgumentError("capture runtime budget exceeds the YAML limit"))
+    return maximum
+end
+calibration_capture_limit(configuration, ::Bool) =
+    throw(ArgumentError("capture runtime byte limit must not be Bool"))
 
 command_source_names(::GraphProjection, prefix::AbstractString) = prefix * ".command"
 command_source_names(commands::NamedGraphProjections, prefix::AbstractString) =
@@ -616,13 +652,9 @@ function calibration_measurements(
             throw(ArgumentError("calibration measurements must be Float32 rank one/two"))
     end
     for output in values(outputs)
-        (output.element_type === Float32 && length(output.shape) in (1, 2)) ||
-            (output.element_type === Bool && length(output.shape) == 1) ||
-            throw(
-                ArgumentError(
-                    "capture outputs require Float32 rank one/two or Bool rank one"
-                ),
-            )
+        CalibrationCapture.capture_encoding(output.element_type)
+        length(output.shape) in (1, 2) ||
+            throw(ArgumentError("capture outputs require rank one or two"))
     end
     if haskey(outputs, :validity)
         validate_frozen_active_mask(active, outputs.validity, frontend.parameters)
@@ -693,8 +725,10 @@ while retaining the regular RTC graph and normal production detector nodes.
 `simulation_graph="dark"` selects declared zero incident photon rate with the
 same detector electronics. This models blocked light, not a noise-free camera.
 The ideal diagnostic `calibration` graph is not an operational selection.
-Classic may enable the native Capture action with a fresh `capture_directory`,
-explicit `capture_stage` and positive cumulative `capture_maximum_bytes`.
+The recipe's optional `capture` YAML section selects existing prepared channels
+and a cumulative payload byte limit. Enable native Capture with a fresh
+`capture_directory` and explicit `capture_stage`. A nonzero
+`capture_maximum_bytes` can lower the declared limit but cannot increase it.
 Capture preserves intrinsic invalidity and writes bounded immutable evidence;
 it does not accept interaction responses or replace active calibration.
 `consume(sample, exposure)` optionally reduces each completed Collect exposure
@@ -845,30 +879,12 @@ function Calibration.prepare_initial_calibration(
             throw(ArgumentError("capture settings require a fresh capture directory"))
         nothing
     else
-        require_capture_profile(command, declaration)
-        raw = JuliaFilterGraph.input_formats(frontend.graph).raw
-        for (role, contract) in pairs(Calibration.CLASSIC_CAPTURE_CONTRACTS)
-            payload_format = role === :raw ? raw : getproperty(outputs, role)
-            payload_format.element_type === contract.type &&
-            Tuple(payload_format.shape) == contract.shape || throw(
-                ArgumentError(
-                    "capture graph differs from the fixed Classic payload contract"
-                ),
-            )
-        end
-        validate_capture_stage(capture_stage)
-        identities(projection) = Dict(
-            String(port) => Dict(
-                key => identity[key] for key in (
-                    "original_sha256",
-                    "sha256",
-                    "hdu",
-                    "axes",
-                    "target_type",
-                    "target_shape",
-                )
-            ) for (port, identity) in projection.provenance
+        configuration = Calibration._capture_configuration(Calibration.read_recipe(application))
+        contract = calibration_capture_contract(
+            frontend, SPA.Fraction(UInt32(options.rate), UInt32(1)), configuration
         )
+        maximum_bytes = calibration_capture_limit(configuration, capture_maximum_bytes)
+        validate_capture_stage(capture_stage)
         settings = Dict{String,Any}(
             "simulation_graph" => simulation_graph,
             "prescription_identity" =>
@@ -876,21 +892,22 @@ function Calibration.prepare_initial_calibration(
             "plant_settings" => IC.json_value(configured),
             "detectors" => detectors(production),
             "rtc_graph_sha256" => authority,
-            "frontend_parameters" => identities(frontend),
-            "command_parameters" => identities(command),
+            "frontend_parameters" => capture_projection_identities(frontend),
+            "command_parameters" => capture_projection_identities(command),
             "exposure_ns" => options.exposure_ns,
             "rate" => options.rate,
             "frame_schema" => options.frame_schema,
             "command_schema" => options.command_schema,
             "command_scale" => options.command_scale,
-            "reference" => collect(reference),
+            "reference" => IC.json_value(reference),
         )
-        Calibration.CaptureStore(
-            capture_directory;
+        PipeWireAORTC.CaptureFiles.CaptureStore(
+            capture_directory,
+            contract;
             stage = String(capture_stage),
             illumination = simulation_graph == "production" ? "on-sky" : simulation_graph,
             settings,
-            maximum_bytes = capture_maximum_bytes,
+            maximum_bytes,
             recording_clock = reference_clock,
         )
     end
