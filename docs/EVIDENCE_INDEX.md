@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Remaining package cleanup — 2026-11-06
+
+The [scope follow-up](reviews/20261106-package-scope-followup/REVIEW.md) rechecks
+scientific and instrument-specific ownership transfers after SDK retirement,
+identifies the unused legacy export-input mode and inconsistent current guidance,
+and separates optional workstation product scope from proven dead code.
+
 ## RTC as an application dependency — 2026-11-06
 
 The [deployment record](reviews/20261106-dependency-runtime/REVIEW.md) records

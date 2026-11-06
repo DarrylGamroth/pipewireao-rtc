@@ -24,6 +24,12 @@ review; prior qualification work does not establish that every feature belongs i
 this package. The next cleanup should remove maintained decisions and duplicated
 implementation rather than add wrappers around the current surface.
 
+The [post-dependency scope follow-up](reviews/20261106-package-scope-followup/REVIEW.md)
+rechecks the remaining transfers and identifies an unused legacy export-input mode
+and inconsistent current runtime/version guidance. These are reviewed candidates,
+not implementation changes. Optional workstation features still require a scope
+decision; no additional large subsystem is proven safely dead.
+
 ### Session operation journal removal — 2026-11-06
 
 The user retired the RTC session-operation journal and its write-before-effect
