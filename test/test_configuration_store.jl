@@ -1,10 +1,7 @@
 using Test, PipeWireAORTC, FITSIO, JSON
-using PipeWireAO
 const CS = PipeWireAORTC.ConfigurationStore
 const CLI = PipeWireAORTC.ConfigurationStoreCLI
 const AC = PipeWireAORTC.Artifacts
-const NC = PipeWireAORTC.ControlCodec
-const NR = PipeWireAORTC.RunnerCodec
 
 @testset "full transport cache reuses existing materializations" begin
     mktempdir() do root
@@ -152,121 +149,54 @@ end
     end
 end
 
-@testset "shared journal projection survives reopen" begin
+@testset "catalog creation and legacy operation data preservation" begin
     mktempdir() do root
         store = CS.Store(root)
-        controller = NC.ControllerIdentity(UInt32(21), UInt64(22), Int64(23))
-        header = NC.RequestHeader(
-            controller, Int64(24), Int64(25), UInt32(13), Int64(1_000_000)
-        )
-        command = NR.RunnerCommand(
-            :properties_set,
-            "science",
-            Dict("gain" => NR.RunnerScalar(:float, reinterpret(UInt32, 0.5f0))),
-        )
-        request = NR.encode_request(header, command)
+        tables(store) = CS.database(store) do db
+            Set(
+                String(row.name) for row in CS.DBInterface.execute(
+                    db, "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            )
+        end
+        @test !("operation_events" in tables(store))
+        record = CS.register!(store, Float32[1, 2]; label = "Retained", scope = "science")
+        legacy_schema = "CREATE TABLE operation_events(sequence INTEGER PRIMARY KEY, session_id TEXT, event TEXT, record BLOB)"
         CS.database(store) do db
+            CS.DBInterface.execute(db, legacy_schema)
             CS.DBInterface.execute(
                 db,
-                "INSERT INTO operation_events(session_id,event,record,client_name,client_pid,operation_key) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO operation_events VALUES(1,'legacy','requested',?)",
+                (UInt8[1, 2, 3],),
+            )
+        end
+        reopened = CS.Store(root)
+        CS.database(reopened) do db
+            schema = only([
+                String(row.sql) for row in CS.DBInterface.execute(
+                    db, "SELECT sql FROM sqlite_master WHERE name='operation_events'"
+                )
+            ])
+            @test schema == legacy_schema
+            columns = [
+                String(row.name) for
+                row in CS.DBInterface.execute(db, "PRAGMA table_info(operation_events)")
+            ]
+            @test columns == ["sequence", "session_id", "event", "record"]
+            rows = [
                 (
-                    "session",
-                    "requested",
-                    request.data,
-                    "gui",
-                    123,
-                    CS.header_key("session", header),
-                ),
-            )
+                    Int(row.sequence),
+                    String(row.session_id),
+                    String(row.event),
+                    copy(row.record),
+                ) for row in CS.DBInterface.execute(db, "SELECT * FROM operation_events")
+            ]
+            @test rows == [(1, "legacy", "requested", UInt8[1, 2, 3])]
         end
-        items = CS.history(CS.Store(root))["items"]
-        @test length(items) == 1
-        @test items[1]["outcome"] == "unknown"
-        @test items[1]["graph"] == "science"
-        @test items[1]["controller"]["serial"] == 22
-        @test items[1]["client_name"] == "gui"
-        @test isempty(CS.history(store; session_id = "other")["items"])
-        @test items[1]["changes"]["gain"]["value"] == 0.5f0
-        pod(x) = PipeWireAO.Pod(x)
-        spa(x...) = PipeWireAO.SPA.Struct(PipeWireAO.Pod[x...])
-        ident(x) = pod(PipeWireAO.SPA.Id(UInt32(x)))
-        for (token, outcome, active, event) in (
-            (26, NR.Submitted, false, "completed"),
-            (27, NR.Active, true, "completed"),
-            (28, NR.Submitted, false, "unknown"),
-        )
-            h = NC.RequestHeader(
-                controller, Int64(24), Int64(token), UInt32(13), Int64(1_000_000)
-            )
-            req = NR.encode_request(h, command)
-            rh = NC.ReplyHeader(controller, Int64(24), Int64(token), UInt32(13), Int32(0))
-            generations = spa(
-                pod(spa(pod("node"), pod(Int64(2)), pod(Int64(active ? 2 : 1))))
-            )
-            details = spa(pod("science"), pod(generations), pod(active))
-            completion = NC.encode_completion(
-                rh, spa(ident(NR.Running), ident(outcome), pod(details))
-            )
-            CS.database(store) do db
-                for (kind, record) in (("requested", req.data), (event, completion.data))
-                    CS.DBInterface.execute(
-                        db,
-                        "INSERT INTO operation_events(session_id,event,record,client_name,client_pid,operation_key) VALUES(?,?,?,?,?,?)",
-                        ("session", kind, record, "gui", 123, CS.header_key("session", h)),
-                    )
-                end
-            end
-        end
-        outcomes = CS.history(store)["items"]
-        @test getindex.(outcomes, "outcome") ==
-            ["unknown", "Active", "Submitted", "unknown"]
-        @test length(CS.history(store; limit = 1)["items"]) == 1
-        page = CS.history(store; limit = 2)
-        next = CS.history(store; limit = 2, before_sequence = page["next_before_sequence"])
-        @test getindex.(next["items"], "outcome") == ["Submitted", "unknown"]
-        @test !haskey(outcomes[1], "completion_hex")
-        @test haskey(CS.history(store; include_records = true)["items"][1], "unknown_hex")
-        @test length(CS.history(CS.Store(root))["items"]) == 4
-        # Journal writes can retain a terminal no-effect completion without its request.
-        orphan = NC.ReplyHeader(controller, Int64(24), Int64(29), UInt32(13), Int32(-1))
-        failed = NC.encode_completion(
-            orphan, spa(pod("journal"), pod("no effect"), ident(NR.Ready))
-        )
-        CS.database(store) do db
-            CS.DBInterface.execute(
-                db,
-                "INSERT INTO operation_events(session_id,event,record,operation_key) VALUES(?,?,?,?)",
-                ("session", "completed", failed.data, CS.header_key("session", orphan)),
-            )
-        end
-        @test CS.history(store; limit = 1)["items"][1]["outcome"] == "failed"
-        artifact = CS.register!(
-            store, Float32[1, 2]; label = "Parameter", scope = "science", schema = "f32"
-        )
-        materialized = CS.materialize!(store, artifact["id"])
-        ph = NC.RequestHeader(
-            controller, Int64(24), Int64(30), UInt32(14), Int64(1_000_000)
-        )
-        parameter = NR.encode_request(
-            ph,
-            NR.RunnerCommand(
-                :parameter,
-                "science",
-                "matrix",
-                "F32_LE",
-                UInt32[2],
-                "f32",
-                materialized["prepared_path"],
-            ),
-        )
-        CS.database(store) do db
-            CS.DBInterface.execute(
-                db,
-                "INSERT INTO operation_events(session_id,event,record,operation_key) VALUES(?,?,?,?)",
-                ("session", "requested", parameter.data, CS.header_key("session", ph)),
-            )
-        end
-        @test CS.history(CS.Store(root); limit = 1)["items"][1]["artifact_id"] ==
-            artifact["id"]
+        @test CS.get_artifact(reopened, record["id"])["id"] == record["id"]
+        @test isfile(CS.materialize!(reopened, record["id"])["prepared_path"])
+        @test !CLI.respond(
+            JSON.json(Dict("protocol" => CS.PROTOCOL, "root" => root, "op" => "history"))
+        )["ok"]
     end
 end

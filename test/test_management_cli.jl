@@ -12,14 +12,12 @@ const MC = PipeWireAORTC.ManagementCLI
         reply = MC.respond(JSON.json(request))
         @test reply["ok"]
         @test isempty(reply["result"]["items"])
-        request["op"] = "history"
-        @test MC.respond(JSON.json(request))["ok"]
         for protocol in ("invalid", "pipewireao.management/1")
             request["protocol"] = protocol
             @test !MC.respond(JSON.json(request))["ok"]
         end
         request["protocol"] = "pipewireao.configuration/1"
-        for operation in ("Start", "Stop", "Status", "Reset", "register")
+        for operation in ("Start", "Stop", "Status", "Reset", "register", "history")
             request["op"] = operation
             @test !MC.respond(JSON.json(request))["ok"]
         end

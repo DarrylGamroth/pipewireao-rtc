@@ -1,33 +1,14 @@
-"""Headless, content-addressed configuration artifacts and native operation history."""
+"""Headless, content-addressed configuration artifacts and SQLite catalog."""
 module ConfigurationStore
 
 using SQLite, DBInterface, JSON, SHA, FITSIO
 using ..Artifacts
-using ..ControlCodec
-using ..RunnerCodec
 
 export Store,
-    default_root,
-    register!,
-    list_artifacts,
-    get_artifact,
-    read_artifact,
-    materialize!,
-    history
+    default_root, register!, list_artifacts, get_artifact, read_artifact, materialize!
 
 const PROTOCOL = "pipewireao.configuration/1"
 const MAX_MANIFEST_BYTES = 1024 * 1024
-const OPERATION_SCHEMA = """
-CREATE TABLE IF NOT EXISTS operation_events(
- sequence INTEGER PRIMARY KEY AUTOINCREMENT,
- session_id TEXT NOT NULL,
- operation_key TEXT NOT NULL,
- event TEXT NOT NULL CHECK(event IN ('requested','completed','unknown')),
- record BLOB NOT NULL,
- client_name TEXT NOT NULL DEFAULT '',
- client_pid INTEGER NOT NULL DEFAULT 0,
- recorded_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')))
-"""
 
 "Return the shared per-user configuration store location without opening it."
 function default_root()
@@ -36,7 +17,7 @@ function default_root()
     return joinpath(state_home, "pipewireao", "configuration")
 end
 
-"A headless Git artifact repository and SQLite catalog/journal under one root."
+"A headless Git artifact repository and SQLite catalog under one root."
 struct Store
     root::String
     repository::String
@@ -139,39 +120,6 @@ recorded_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')))""",
                 db,
                 """CREATE TABLE IF NOT EXISTS artifact_materializations(
 path TEXT PRIMARY KEY,artifact_id TEXT NOT NULL,storage_order TEXT NOT NULL,sha256 TEXT NOT NULL)""",
-            )
-            DBInterface.execute(db, OPERATION_SCHEMA)
-            columns = Set(
-                String(row.name) for
-                row in DBInterface.execute(db, "PRAGMA table_info(operation_events)")
-            )
-            "client_name" in columns || DBInterface.execute(
-                db,
-                "ALTER TABLE operation_events ADD COLUMN client_name TEXT NOT NULL DEFAULT ''",
-            )
-            "client_pid" in columns || DBInterface.execute(
-                db,
-                "ALTER TABLE operation_events ADD COLUMN client_pid INTEGER NOT NULL DEFAULT 0",
-            )
-            "operation_key" in columns || DBInterface.execute(
-                db,
-                "ALTER TABLE operation_events ADD COLUMN operation_key TEXT NOT NULL DEFAULT ''",
-            )
-            DBInterface.execute(
-                db,
-                "UPDATE operation_events SET operation_key='legacy:'||sequence WHERE operation_key=''",
-            )
-            DBInterface.execute(
-                db,
-                "CREATE UNIQUE INDEX IF NOT EXISTS operation_events_key_event ON operation_events(operation_key,event)",
-            )
-            DBInterface.execute(
-                db,
-                "CREATE INDEX IF NOT EXISTS operation_events_event_sequence ON operation_events(event,sequence)",
-            )
-            DBInterface.execute(
-                db,
-                "CREATE INDEX IF NOT EXISTS operation_events_session_event_sequence ON operation_events(session_id,event,sequence)",
             )
         end
         chmod(store.database, 0o600)
@@ -547,10 +495,7 @@ end
 
 artifact_cursor(value) = throw(ArgumentError("invalid cursor"))
 artifact_cursor(value::Integer) = value >= 0 ? value : artifact_cursor(nothing)
-history_cursor(value) = throw(ArgumentError("invalid history cursor"))
-history_cursor(value::Integer) = value > 0 ? value : history_cursor(nothing)
-history_records(value::Bool) = value
-history_records(value) = throw(ArgumentError("include_records must be a boolean"))
+
 "List a bounded page in registration order, using an exclusive sequence cursor."
 function list_artifacts(store::Store; limit = 50, after_sequence = 0)
     limit = page_limit(limit)
@@ -577,204 +522,5 @@ function list_artifacts(store::Store; limit = 50, after_sequence = 0)
     )
 end
 
-function header_key(session, header)
-    c = header.controller
-    c === nothing && throw(ArgumentError("history record has no controller"))
-    return join(
-        (
-            session,
-            header.endpoint_instance,
-            c.global_id,
-            reinterpret(Int64, c.serial),
-            c.instance,
-            header.token,
-        ),
-        ":",
-    )
-end
-function header_fields(session, header)
-    c = header.controller
-    return Dict{String,Any}(
-        "key" => header_key(session, header),
-        "session_id" => session,
-        "endpoint_instance" => header.endpoint_instance,
-        "token" => header.token,
-        "controller" => Dict(
-            "global_id" => c.global_id, "serial" => c.serial, "instance" => c.instance
-        ),
-        "operation" => String(RunnerCodec.OPERATIONS[Int(header.operation)]),
-        "graph" => nothing,
-        "changes" => nothing,
-        "outcome" => "unknown",
-        "error" => nothing,
-    )
-end
-function json_value(value::RunnerCodec.RunnerScalar)
-    numeric = if value.kind === :float
-        reinterpret(Float32, value.value)
-    elseif value.kind === :double
-        reinterpret(Float64, value.value)
-    else
-        value.value
-    end
-    result = Dict{String,Any}("kind" => String(value.kind), "value" => numeric)
-    value.kind in (:float, :double) && (result["bits"] = string(value.value))
-    return result
-end
-json_value(value::NamedTuple) =
-    Dict(String(key) => json_value(v) for (key, v) in pairs(value))
-json_value(value::AbstractDict) =
-    Dict(String(key) => json_value(v) for (key, v) in pairs(value))
-json_value(value::Union{AbstractVector,Tuple}) = json_value.(collect(value))
-json_value(value::Enum) = string(value)
-json_value(value) = value
-
-"""Project the shared raw native journal. Missing/unknown completions never imply success.
-
-Pages contain at most `limit` operations and are ordered by first event sequence.
-The cursor excludes newer operations while retaining every event of each returned operation.
-"""
-function history(
-    store::Store;
-    limit = 50,
-    before_sequence = typemax(Int64),
-    session_id = nothing,
-    include_records = false,
-)
-    limit = page_limit(limit)
-    before_sequence = history_cursor(before_sequence)
-    session_id === nothing || bounded_name(session_id, "session_id")
-    include_records = history_records(include_records)
-    items = Dict{String,Any}[]
-    database(store) do db
-        query =
-            """SELECT e.sequence,e.operation_key FROM operation_events e WHERE e.sequence<?
-        AND NOT EXISTS(SELECT 1 FROM operation_events prior
-            WHERE prior.operation_key=e.operation_key AND prior.sequence<e.sequence)""" *
-            (session_id === nothing ? "" : " AND e.session_id=?") *
-            " ORDER BY e.sequence DESC LIMIT ?"
-        args =
-            session_id === nothing ? (before_sequence, limit) :
-            (before_sequence, session_id, limit)
-        # Copy the bounded seed rows before running another statement on this connection.
-        seeds = [
-            (Int(row.sequence), String(row.operation_key)) for
-            row in DBInterface.execute(db, query, args)
-        ]
-        for (start_sequence, key) in seeds
-            item = nothing
-            unresolved = false
-            for row in DBInterface.execute(
-                db,
-                "SELECT sequence,session_id,event,recorded_at,client_name,client_pid,length(record) AS record_size,CASE WHEN length(record)<=65536 THEN record ELSE NULL END AS record FROM operation_events WHERE operation_key=? ORDER BY sequence LIMIT 3",
-                (key,),
-            )
-                sequence = Int(row.sequence)
-                session = String(row.session_id)
-                event = String(row.event)
-                bytes = row.record === missing ? UInt8[] : Vector{UInt8}(row.record)
-                try
-                    Int(row.record_size) <= 65536 || throw(
-                        ArgumentError("journal record exceeds native lifecycle byte limit"),
-                    )
-                    if event in ("completed", "unknown")
-                        completion = RunnerCodec.decode_completion(bytes)
-                        header = completion.header
-                        header_key(session, header) == key || throw(
-                            ArgumentError(
-                                "journal operation key differs from native identity"
-                            ),
-                        )
-                        item === nothing && (item = header_fields(session, header))
-                        item["operation"] ==
-                        String(RunnerCodec.OPERATIONS[Int(header.operation)]) ||
-                            throw(ArgumentError("history operation identity mismatch"))
-                        include_records && (item[event*"_hex"] = bytes2hex(bytes))
-                        unresolved |= event == "unknown"
-                        item["outcome"] = if unresolved
-                            "unknown"
-                        elseif completion.error === nothing
-                            string(completion.result.outcome)
-                        else
-                            "failed"
-                        end
-                        item["error"] =
-                            completion.error === nothing ? nothing :
-                            Dict(
-                                "field" => completion.error.field,
-                                "message" => completion.error.message,
-                                "result" => header.result,
-                            )
-                        if completion.result !== nothing
-                            details = completion.result.details
-                            if haskey(details, :graph)
-                                get(item, "graph", nothing) in (nothing, details.graph) ||
-                                    throw(
-                                        ArgumentError(
-                                            "journal request/completion graph differs"
-                                        ),
-                                    )
-                                item["graph"] = details.graph
-                            end
-                            item["details"] = json_value(details)
-                        end
-                    else
-                        header, payload = ControlCodec.decode_request(bytes)
-                        command = RunnerCodec.decode_request(header, payload)
-                        header_key(session, header) == key || throw(
-                            ArgumentError(
-                                "journal operation key differs from native identity"
-                            ),
-                        )
-                        item === nothing && (item = header_fields(session, header))
-                        item["operation"] ==
-                        String(RunnerCodec.OPERATIONS[Int(header.operation)]) ||
-                            throw(ArgumentError("history operation identity mismatch"))
-                        include_records && (item["request_hex"] = bytes2hex(bytes))
-                        if header.operation in (13, 14)
-                            item["graph"] = command.args[1]
-                            item["changes"] =
-                                header.operation == 13 ? json_value(command.args[2]) :
-                                Dict(
-                                    "parameter" => command.args[2],
-                                    "element_type" => command.args[3],
-                                    "shape" => command.args[4],
-                                    "schema" => command.args[5],
-                                    "path" => command.args[6],
-                                )
-                        end
-                        if header.operation == 14
-                            item["artifact_id"] = nothing
-                            for match in DBInterface.execute(
-                                db,
-                                "SELECT artifact_id FROM artifact_materializations WHERE path=?",
-                                (command.args[6],),
-                            )
-                                item["artifact_id"] = String(match.artifact_id)
-                            end
-                        end
-                    end
-                catch exception
-                    unresolved = true
-                    item === nothing &&
-                        (item = Dict{String,Any}("key" => key, "session_id" => session))
-                    item["outcome"] = "unknown"
-                    item["error"] = sprint(showerror, exception)
-                    include_records && (item["record_hex"] = bytes2hex(bytes))
-                end
-                item["start_sequence"] = start_sequence
-                item["updated_sequence"] = sequence
-                item["recorded_at"] = String(row.recorded_at)
-                item["client_name"] = String(row.client_name)
-                item["client_pid"] = Int(row.client_pid)
-            end
-            item === nothing || push!(items, item)
-        end
-    end
-    return Dict(
-        "items" => items,
-        "next_before_sequence" => isempty(items) ? nothing : items[end]["start_sequence"],
-    )
-end
 
 end

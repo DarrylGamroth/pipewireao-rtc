@@ -173,8 +173,6 @@ end
                 @test size(read(fits[1])) == (2, 3)
             end
         end
-        # The catalog registration has no scientific application side effect.
-        @test isempty(CS.history(store)["items"])
         boundary = CS.register!(
             store,
             Float32[1];

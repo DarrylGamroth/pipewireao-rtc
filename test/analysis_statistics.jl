@@ -141,7 +141,6 @@ observer_bytes(capture, outputs, metadata) =
         FITS(CS.read_artifact(CS.Store(store_path), record["id"])) do fits
             @test read(fits[1]) == fill(2.0f0, 2, 3)
         end
-        @test isempty(CS.history(CS.Store(store_path))["items"])
         for mode in ("sliding", "exponential")
             PipeWireAORTC.ScienceExport.write_spa_config(graph_path, graph_document(mode))
             @test_throws ArgumentError A.configuration(config_path, prefix)

@@ -725,7 +725,7 @@ dispatch (Management *m, const char *line, int fd, gboolean *admitted)
                       || (simulator && !strcmp (op, "start_rebuild"));
   if (!receipt
       && !(configuration
-           && (!strcmp (op, "list") || !strcmp (op, "history") || !strcmp (op, "get")
+           && (!strcmp (op, "list") || !strcmp (op, "get")
                || registration))
       && !(simulator
            && (!strcmp (op, "describe") || !strcmp (op, "start_rebuild") || !strcmp (op, "job"))))

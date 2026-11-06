@@ -219,7 +219,6 @@ function acquire(
             PipeWireAORTC.Artifacts.FITS(CS.read_artifact(store, mean["id"])) do fits
                 @test read(fits[1]) == fill(7.0f0, 2, 2)
             end
-            @test isempty(CS.history(store)["items"])
         end
     catch
         flush(log)

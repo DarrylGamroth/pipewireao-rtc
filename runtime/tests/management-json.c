@@ -127,6 +127,10 @@ invalid_envelopes (void)
                             "1\",\"id\":\"00000000000000000000000000000001\","
                             "\"request\":{\"protocol\":\"pipewireao.configuration/"
                             "1\",\"op\":\"Start\",\"arguments\":{}}}",
+                            "{\"protocol\":\"pipewireao.management/"
+                            "1\",\"id\":\"00000000000000000000000000000001\","
+                            "\"request\":{\"protocol\":\"pipewireao.configuration/"
+                            "1\",\"op\":\"history\",\"arguments\":{}}}",
                             NULL };
   Management management = { 0 };
   for (int i = 0; invalid[i]; i++)

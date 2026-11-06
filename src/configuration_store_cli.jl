@@ -15,7 +15,7 @@ function request_result(request::AbstractDict)
     get(request, "protocol", nothing) == ConfigurationStore.PROTOCOL ||
         throw(ArgumentError("unsupported protocol"))
     operation = get(request, "op", nothing)
-    operation in ("register", "list", "get", "history") ||
+    operation in ("register", "list", "get") ||
         throw(ArgumentError("unknown management operation"))
     arguments = get(request, "arguments", Dict{String,Any}())
     return request_result(request, operation, arguments)
@@ -61,18 +61,6 @@ function request_result(request, operation, arguments::AbstractDict)
             throw(ArgumentError("get requires id and optional layout"))
         return ConfigurationStore.materialize!(
             store, arguments["id"]; storage_order = get(arguments, "layout", "row-major")
-        )
-    else
-        all(
-            k -> k in ("limit", "before_sequence", "session_id", "include_records"),
-            keys(arguments),
-        ) || throw(ArgumentError("unknown history argument"))
-        return ConfigurationStore.history(
-            store;
-            limit = get(arguments, "limit", 50),
-            before_sequence = get(arguments, "before_sequence", typemax(Int64)),
-            session_id = get(arguments, "session_id", nothing),
-            include_records = get(arguments, "include_records", false),
         )
     end
 end
