@@ -1,8 +1,7 @@
 # Optional native selector: two independent conditioner owners on one private
 # core. No optical model, deployed session, device or accelerator is used.
 module CalibrationNamedTransportTests
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 include("calibration_named_commands.jl")
@@ -28,8 +27,7 @@ function named_transport(remote, directory, daemon)
     nodes = Ext.command_graph_names(commands, "test.named")
     actual = map(
         descriptor -> zeros(
-            Float32,
-            only(JuliaFilterGraph.input_formats(descriptor.graph).requested.shape),
+            Float32, only(FilterGraphs.input_formats(descriptor.graph).requested.shape)
         ),
         commands,
     )
@@ -103,7 +101,7 @@ function named_transport(remote, directory, daemon)
                 )
                 push!(sinks, sink)
                 format = Ext.calibration_probe_format(
-                    JuliaFilterGraph.output_formats(descriptor.graph).demanded, 500//1
+                    FilterGraphs.output_formats(descriptor.graph).demanded, 500//1
                 )
                 connect!(
                     sink,
@@ -253,7 +251,7 @@ function named_transport(remote, directory, daemon)
         end
         close(loop)
         foreach(
-            descriptor -> FilterGraphIsland.close_execution(descriptor.graph),
+            descriptor -> FilterGraphPipeWire.close_execution(descriptor.graph),
             values(commands),
         )
         close(condition)

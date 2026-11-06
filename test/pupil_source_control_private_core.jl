@@ -141,7 +141,7 @@ Base.include(@__MODULE__, joinpath(pkgdir(HIL), "test/private_core_helpers.jl"))
         id -> id.name in (
             "FilterGraphAlgorithms",
             "FilterGraphPipeWire",
-            "JuliaFilterGraph",
+            "FilterGraphs",
             "CUDA",
             "AMDGPU",
         ),

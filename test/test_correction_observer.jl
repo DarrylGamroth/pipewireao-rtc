@@ -1,7 +1,7 @@
 import Clocks
 # Optional CPU selector: requires the scientific packages and the native SDK.
 using Test,
-    PipeWireAORTC, PipeWireAO, FilterGraphAlgorithms, FilterGraphPipeWire, JuliaFilterGraph
+    PipeWireAORTC, PipeWireAO, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 
 const Loops = PipeWireAORTC.CorrectionLoops
 
@@ -42,7 +42,7 @@ function correction_graph()
   """,
         )
         flush(io)
-        return JuliaFilterGraph.prepare_graph(
+        return FilterGraphs.prepare_graph(
             path; algorithms = FilterGraphAlgorithms.algorithms()
         )
     end

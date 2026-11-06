@@ -2,7 +2,7 @@
 # The application must be the exact build identified by the acquired bundle.
 using Test, SHA, PipeWireAORTC
 using FilterGraphAlgorithms, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
-using AdaptiveOpticsCalibration, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using AdaptiveOpticsCalibration, FilterGraphPipeWire, FilterGraphs
 
 length(ARGS) == 4 ||
     error("usage: test_calibration_staging.jl SOURCE APPLICATION BUNDLE FRESH_OUTPUT")

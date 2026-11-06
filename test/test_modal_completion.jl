@@ -240,9 +240,8 @@ end
         :AdaptiveOpticsSim,
         :AdaptiveOpticsSimPipeWireHIL,
         :AdaptiveOpticsCalibration,
-        :FilterGraphIsland,
         :FilterGraphPipeWire,
-        :JuliaFilterGraph,
+        :FilterGraphs,
     )
         Base.require(Main, dependency)
     end

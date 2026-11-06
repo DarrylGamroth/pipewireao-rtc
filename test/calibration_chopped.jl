@@ -1,7 +1,6 @@
-# Optional CPU selector: actual FGA/JFG frontend, no core, service or accelerator.
+# Optional CPU selector: actual FGA/FilterGraphs frontend, no core, service or accelerator.
 using Test, PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
-using AdaptiveOpticsCalibration,
-    FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using AdaptiveOpticsCalibration, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 using LinearAlgebra
 const ChoppedCalibration = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 const ChoppedGraphOwner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
@@ -132,7 +131,7 @@ end
         ) == expected
         @test length(frontend.outputs.measurements) == count(mask)
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 
@@ -200,8 +199,7 @@ end
                 PipeWireAO.NDARRAY_FILTER_STATE_UNCONNECTED
             # output_metadata explicitly retains the last product even when
             # unavailable. It is not publication evidence after preparation.
-            @test JuliaFilterGraph.output_metadata(frontend.graph).measurements.sequence ==
-                3
+            @test FilterGraphs.output_metadata(frontend.graph).measurements.sequence == 3
             pair =
                 only(filter(item -> item.name === :pair, frontend.graph.nodes)).prepared.workspace
             @test !chopped_image_is_primed(pair)
@@ -215,7 +213,7 @@ end
                     ntuple(_ -> UInt8(0xd2), 16), 1, 1
                 ),
             )
-            @test JuliaFilterGraph.process!(
+            @test FilterGraphs.process!(
                 frontend.outputs, frontend.graph, (image = fringed,), (image = live,)
             ) === SccPixelResidualIncompletePair
             @test_throws ArgumentError ChoppedGraphOwner.chopped_warmup_samples(
@@ -225,7 +223,7 @@ end
             close(node)
         end
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 
@@ -387,7 +385,7 @@ end
             @test !ispath(joinpath(directory, "changed"))
         end
     finally
-        FilterGraphIsland.close_execution(frontend.graph)
+        FilterGraphPipeWire.close_execution(frontend.graph)
     end
 end
 

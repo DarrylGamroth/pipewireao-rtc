@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Three-package graph reconciliation — 2026-11-06
+
+The [reconciliation record](reviews/20261106-graph-reconciliation/REVIEW.md) records
+the new package identities, public preparation delegation and preserved RTC
+admission, capture, session, clock and deployment boundaries.
+
 ## Remaining runtime/scientific scope — 2026-11-06
 
 The [ownership review](reviews/20261106-runtime-scope/REVIEW.md) identifies active

@@ -1,6 +1,5 @@
 # Optional CPU/private-core transport selector; no instrument optics or devices.
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 const Transport = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
@@ -68,11 +67,7 @@ function transport_test(socket, directory, daemon)
 } }
 """,
         )
-        graph = FilterGraphIsland.prepare_service_graph(
-            FilterGraphIsland.parse_arguments([
-                "--graph", path, "--check", "--execution", "complete-frame"
-            ]),
-        )
+        graph = FilterGraphPipeWire.prepare_service_graph(path)
         projection = Transport.GraphProjection(
             graph;
             document = PipeWireAORTC.DeploymentConfiguration.decode(
@@ -336,7 +331,7 @@ function transport_test(socket, directory, daemon)
             end
         end
         close(loop)
-        graph === nothing || FilterGraphIsland.close_execution(graph)
+        graph === nothing || FilterGraphPipeWire.close_execution(graph)
         close(wake)
     end
 end

@@ -226,7 +226,7 @@ end
         id -> id.name in (
             "FilterGraphAlgorithms",
             "FilterGraphPipeWire",
-            "JuliaFilterGraph",
+            "FilterGraphs",
             "CUDA",
             "AMDGPU",
         ),

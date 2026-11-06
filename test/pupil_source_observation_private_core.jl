@@ -313,7 +313,7 @@ end
             "AMDGPU",
             "FilterGraphAlgorithms",
             "FilterGraphPipeWire",
-            "JuliaFilterGraph",
+            "FilterGraphs",
         ),
         keys(Base.loaded_modules),
     )

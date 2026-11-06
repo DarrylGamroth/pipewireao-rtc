@@ -1,6 +1,6 @@
 # CPU-only numerical-extension test; no server or services needed.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph, FilterGraphAlgorithms
+using FilterGraphPipeWire, FilterGraphs, FilterGraphAlgorithms
 const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 const Clocks = E.Clocks
 
@@ -78,9 +78,9 @@ function prepared_analysis_flux_graph()
     }
     """,
         )
-        options = FilterGraphIsland.parse_arguments(["--graph", path, "--check"])
-        return FilterGraphIsland.prepare_service_graph(
-            options; declarations = (FilterGraphAlgorithms.PyramidPupilFluxU16F64,)
+        options = FilterGraphPipeWire.parse_arguments(["--graph", path, "--check"])
+        return FilterGraphPipeWire.prepare_service_graph(
+            path; algorithms = (FilterGraphAlgorithms.PyramidPupilFluxU16F64,)
         )
     end
 end
@@ -134,8 +134,8 @@ end
     try
         input_owner = E.analysis_input_owner(graph)
         @test input_owner === graph
-        @test JuliaFilterGraph.output_metadata_source_inputs(input_owner) == (1,)
-        @test !(input_owner isa JuliaFilterGraph.PreparedSynchronizedInputs)
+        @test FilterGraphs.output_metadata_source_inputs(input_owner) == (1,)
+        @test !(input_owner isa FilterGraphs.PreparedSynchronizedInputs)
 
         node = FilterGraphPipeWire.PipeWireNode(
             input_owner; name = "analysis-single-input-test", rate = 500//1, connect = false
@@ -147,9 +147,8 @@ end
 
             raw = reshape(UInt16.(1:24), 4, 6)
             pupil_flux = zeros(Float64, 4)
-            @test size(raw) == only(values(JuliaFilterGraph.input_formats(graph))).shape
-            @test size(pupil_flux) ==
-                only(values(JuliaFilterGraph.output_formats(graph))).shape
+            @test size(raw) == only(values(FilterGraphs.input_formats(graph))).shape
+            @test size(pupil_flux) == only(values(FilterGraphs.output_formats(graph))).shape
             header = PipeWireAO.BufferHeader(
                 PipeWireAO.SPA.META_HEADER_FLAG_DISCONT,
                 UInt32(7),
@@ -182,7 +181,7 @@ end
             close(node)
         end
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
@@ -227,7 +226,7 @@ end
         before_return = false
         try
             redirect_stdout(pipe) do
-                monitor = FilterGraphIsland.spawn_monitor() do
+                monitor = FilterGraphPipeWire.spawn_monitor() do
                     @ccall gc_safe = true usleep(100000::Cuint)::Cint
                     E.analysis_ready_notice(config, 4)
                     completed[] = true

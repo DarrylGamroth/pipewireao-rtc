@@ -1,7 +1,7 @@
 # Optional CPU selector: real linear numerical calibration, no core or service.
 using Test, LinearAlgebra, PipeWireAORTC, PipeWireAO
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
-using FilterGraphAlgorithms, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
@@ -176,7 +176,7 @@ end
         @test bundle.report["held_out"]["accepted"]
         invalid_graphs = deepcopy(prepared.graphs)
         first(invalid_graphs.scc["filter.graph"]["nodes"])["label"] = "unsupported-optical-node"
-        @test_throws JuliaFilterGraph.GraphConfigurationError Implementation.publish_optical_bundles(
+        @test_throws FilterGraphs.GraphConfigurationError Implementation.publish_optical_bundles(
             result, joinpath(directory, "unsupported"), invalid_graphs, prepared.contexts
         )
         @test !ispath(joinpath(directory, "unsupported"))
@@ -482,15 +482,15 @@ end
             formats = GraphOwner.read_bindings(
                 joinpath(bundle_path, "graph.conf"), bindings
             )
-            options = FilterGraphIsland.parse_arguments([
+            options = FilterGraphPipeWire.parse_arguments([
                 "--graph",
                 joinpath(bundle_path, "graph.conf"),
                 "--check",
                 "--execution",
                 "complete-frame",
             ])
-            graph = FilterGraphIsland.prepare_service_graph(
-                options; initial_parameters = _ -> collect(formats)
+            graph = FilterGraphPipeWire.prepare_service_graph(
+                options.graph; initial_parameters = _ -> collect(formats)
             )
             try
                 branch = getproperty(calibration.branches, name)
@@ -499,9 +499,7 @@ end
                 )
                 @test all(
                     values(
-                        JuliaFilterGraph.process!(
-                            outputs, graph, (image = branch.reference,)
-                        ),
+                        FilterGraphs.process!(outputs, graph, (image = branch.reference,))
                     ),
                 )
                 @test all(iszero, outputs.modes)
@@ -509,9 +507,7 @@ end
                 image = getproperty(
                     observe(surface(calibration.projection * coefficients)), name
                 )
-                @test all(
-                    values(JuliaFilterGraph.process!(outputs, graph, (image = image,)))
-                )
+                @test all(values(FilterGraphs.process!(outputs, graph, (image = image,))))
                 expected_modes =
                     branch.reconstructor * (
                         Implementation.optical_measurement(image, branch) -
@@ -526,7 +522,7 @@ end
                     calibration.projection * expected_modes atol = 1e-6
                 name == :llowfs && @test outputs.modes[1:2] ≈ coefficients[1:2] atol = 1e-6
             finally
-                FilterGraphIsland.close_execution(graph)
+                FilterGraphPipeWire.close_execution(graph)
             end
         end
     end

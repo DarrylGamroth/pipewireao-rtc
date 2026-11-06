@@ -6,7 +6,7 @@ import Clocks
 import AdaptiveOpticsSimPipeWireHIL as HIL
 import FilterGraphAlgorithms as FGA
 import FilterGraphPipeWire as FGP
-import JuliaFilterGraph as JFG
+import FilterGraphs as FG
 using SHA
 import ThreadPinning
 const Offsets = PipeWireAORTC.PhysicalOffsets
@@ -339,7 +339,7 @@ validate_offset_plan(plan, Q, C, sign) = throw(
     ArgumentError("physical offset graph calibration or sign differs from bound artifacts"),
 )
 function validate_offset_parameter(
-    binding::JFG.ParameterInput{Index,:offset}, ::Val{Index}
+    binding::FG.ParameterInput{Index,:offset}, ::Val{Index}
 ) where {Index}
     return nothing
 end

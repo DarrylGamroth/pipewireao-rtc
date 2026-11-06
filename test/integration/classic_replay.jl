@@ -1,13 +1,13 @@
 "Transport-independent Classic controller oracle shared by opt-in integrations."
 module ClassicReplay
-using Test, PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
+using Test, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 
 const FEEDBACK_IN = Symbol("constraint-feedback")
 const FEEDBACK_OUT = Symbol("controller-constraint-feedback")
 const SCALE = Float32(1e-6)
 
 function prepare_controller(application)
-    options = FilterGraphIsland.parse_arguments([
+    options = FilterGraphPipeWire.parse_arguments([
         "--graph",
         joinpath(application, "graph.conf"),
         "--check",
@@ -15,8 +15,8 @@ function prepare_controller(application)
         "complete-frame",
     ])
     entries = PipeWireAORTC.GraphOwner.bindings(joinpath(application, "parameters.conf"))
-    return FilterGraphIsland.prepare_service_graph(
-        options;
+    return FilterGraphPipeWire.prepare_service_graph(
+        options.graph;
         initial_parameters = formats ->
             PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats),
     )
@@ -38,13 +38,13 @@ function replay(application, frames, adopted)
             format -> zeros(format.element_type, format.shape), graph.output_formats
         )
         load_frame!(raw, frames, 1)
-        JuliaFilterGraph.process!(outputs, graph, inputs)
-        JuliaFilterGraph.reset!(graph)
+        FilterGraphs.process!(outputs, graph, inputs)
+        FilterGraphs.reset!(graph)
         fill!(feedback, 0)
         predicted = similar(adopted)
         for index in axes(frames, 2)
             load_frame!(raw, frames, index)
-            result = JuliaFilterGraph.process!(outputs, graph, inputs)
+            result = FilterGraphs.process!(outputs, graph, inputs)
             @test all(values(result))
             @test all(isfinite, outputs.demanded)
             for actuator in axes(predicted, 1)
@@ -55,7 +55,7 @@ function replay(application, frames, adopted)
         @test predicted == adopted
         return predicted
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 end

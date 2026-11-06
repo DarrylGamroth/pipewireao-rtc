@@ -6,12 +6,11 @@ using PipeWireAO,
     AdaptiveOpticsSimPipeWireHIL,
     FilterGraphAlgorithms,
     FilterGraphPipeWire,
-    JuliaFilterGraph
+    FilterGraphs
 import PipeWireAO_jll
 include(joinpath(pkgdir(AdaptiveOpticsSimPipeWireHIL), "test/private_core_helpers.jl"))
 const HIL = AdaptiveOpticsSimPipeWireHIL
 const FGP = FilterGraphPipeWire
-const JFG = JuliaFilterGraph
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOffsetsExt)
 const Clocks = Ext.Clocks
@@ -63,7 +62,9 @@ include("physical_offsets_documents.jl")
                 )
             end
             prepared = merge(prepared, (; options))
-            observer = Offsets.frame_observer(config, nothing, JFG.output_formats(graph))
+            observer = Offsets.frame_observer(
+                config, nothing, FilterGraphs.output_formats(graph)
+            )
             _with_private_core() do remote
                 remote = joinpath(ENV["PIPEWIREAO_RUNTIME_DIR"], remote)
                 progress("private core ready")

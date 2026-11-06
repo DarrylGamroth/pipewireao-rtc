@@ -499,7 +499,7 @@ qualification. Added native outputs require real consumers and can change
 buffer admission, copying cost and accelerator layouts. `application_accepted`
 remains false; validate command equality and delivery separately. The cold
 compiler/numerical check is `test/calibrated_graph_exports.jl` in an environment
-with FilterGraphIsland, FilterGraphAlgorithms, FilterGraphPipeWire and JuliaFilterGraph.
+with FilterGraphAlgorithms, FilterGraphs and FilterGraphPipeWire.
 The generated destination must be fresh. Standard branch bundles are copied
 unchanged; a shared context, exact-zero Float32 physical command and selection
 receipt are generated there. A generated `rtc.yaml` selects the context and

@@ -396,7 +396,7 @@ function publication(path)
                 )
                 n = length(dm.layout.command_positions)
                 controlled = if haskey(control["shape_control"], "controlled_actuators")
-                    Base.require(Main, :FilterGraphIsland)
+                    Base.require(Main, :FilterGraphPipeWire)
                     Base.invokelatest(
                         controlled_actuators,
                         declaration,

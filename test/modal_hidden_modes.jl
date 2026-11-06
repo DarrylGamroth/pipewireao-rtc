@@ -5,9 +5,8 @@ for dependency in (
     :FilterGraphAlgorithms,
     :AdaptiveOpticsSim,
     :AdaptiveOpticsSimPipeWireHIL,
-    :FilterGraphIsland,
     :FilterGraphPipeWire,
-    :JuliaFilterGraph,
+    :FilterGraphs,
 )
     Base.require(Main, dependency)
 end

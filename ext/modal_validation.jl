@@ -62,11 +62,9 @@ function Calibration._validate_system(
         "passed" => false,
     )
     try
-        inputs = map(
-            f -> zeros(f.element_type, f.shape), JuliaFilterGraph.input_formats(graph)
-        )
+        inputs = map(f -> zeros(f.element_type, f.shape), FilterGraphs.input_formats(graph))
         outputs = map(
-            f -> zeros(f.element_type, f.shape), JuliaFilterGraph.output_formats(graph)
+            f -> zeros(f.element_type, f.shape), FilterGraphs.output_formats(graph)
         )
         commands = map(zero, HIL.hil_command_buffer(system.boundary))
         reference_field = if isnothing(pupil_field_output)
@@ -100,7 +98,7 @@ function Calibration._validate_system(
         end
         for (name, disturbance) in pairs(disturbances)
             HIL.reset_hil_boundary!(system.boundary)
-            JuliaFilterGraph.reset!(graph)
+            FilterGraphs.reset!(graph)
             foreach(c -> fill!(c, 0.0f0), commands)
             fill!(inputs.var"constraint-feedback", 0.0f0)
             copyto!(HIL.graph_input(system.graph, :uncompensated_opd), disturbance)
@@ -129,7 +127,7 @@ function Calibration._validate_system(
                     )
                 end
                 inputs.raw .= round.(UInt16, frame)
-                result = JuliaFilterGraph.process!(outputs, graph, inputs)
+                result = FilterGraphs.process!(outputs, graph, inputs)
                 all(values(result)) ||
                     throw(ArgumentError("controller rejected $name step $step: $result"))
                 for key in keys(commands)
@@ -180,7 +178,7 @@ function Calibration._validate_system(
         report["error"] = sprint(showerror, error)
         rethrow()
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
         PipeWireAORTC.Common.write_yaml(
             report_path,
             report;

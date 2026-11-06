@@ -276,10 +276,10 @@ function Calibration._calibrate_system(
             concrete;
             header = "Generated simulation calibration graph; edit source and regenerate.",
         )
-        graph = JuliaFilterGraph.prepare_graph(graphpath; algorithms = FGA.algorithms())
+        graph = FilterGraphs.prepare_graph(graphpath; algorithms = FGA.algorithms())
         parameters = Dict(
             name => zeros(format.element_type, format.shape) for
-            (name, format) in pairs(JuliaFilterGraph.parameter_formats(graph))
+            (name, format) in pairs(FilterGraphs.parameter_formats(graph))
         )
         fill!(parameters[:flat], adc_scale)
         parameters[:background] .= background

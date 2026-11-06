@@ -510,7 +510,7 @@ function optical_expected_reference(
             flat_raw,
         )
     finally
-        FilterGraphIsland.close_execution(prefix.graph)
+        FilterGraphPipeWire.close_execution(prefix.graph)
     end
 end
 
@@ -567,7 +567,7 @@ function optical_expected_samples(
     end
     function sample_gain(graph, entry)
         HIL.reset_graph!(graph)
-        JuliaFilterGraph.reset!(prefix.graph)
+        FilterGraphs.reset!(prefix.graph)
         copyto!(HIL.graph_input(graph, :photon_rate), entry.rate)
         gains = zeros(Float64, samples)
         uncorrected = similar(gains)
@@ -578,7 +578,7 @@ function optical_expected_samples(
         for sample in 1:samples
             raw = capture(graph)
             copyto!(pin.raw, raw)
-            all(values(JuliaFilterGraph.process!(pout, prefix.graph, pin))) ||
+            all(values(FilterGraphs.process!(pout, prefix.graph, pin))) ||
                 throw(ArgumentError("native pyramid rejected expected-response sample"))
             fluxes[sample] = Float64(only(pout.mean))
             uncorrected[sample] = Float64(FGA.pyramid_normalization_gain(pworkspace))
@@ -689,14 +689,14 @@ function optical_expected_samples(
     rounding_noise = prepare_noise(validation_seed + 1)
     function frontend_rounding(entry, count)
         HIL.reset_graph!(rounding_noise)
-        JuliaFilterGraph.reset!(frontend.graph)
+        FilterGraphs.reset!(frontend.graph)
         copyto!(HIL.graph_input(rounding_noise, :photon_rate), entry.rate)
         errors = zeros(Float64, size(R, 1), count)
         for sample in 0:count
             raw = capture(rounding_noise)
             previous_gain = Float64(FGA.pyramid_normalization_gain(fworkspace))
             copyto!(fin.raw, raw)
-            all(values(JuliaFilterGraph.process!(fout, frontend.graph, fin))) || throw(
+            all(values(FilterGraphs.process!(fout, frontend.graph, fin))) || throw(
                 ArgumentError("complete native frontend rejected rounding validation")
             )
             sample == 0 && continue

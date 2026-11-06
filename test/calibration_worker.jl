@@ -1,9 +1,8 @@
 # Optional private-core selector: --threads=3,1 and the command-endpoint SDK.
 module CalibrationWorkerTests
 
-using Test, Hsm, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, JuliaFilterGraph
-using FilterGraphIsland,
-    AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
+using Test, Hsm, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
+using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 include("calibration_named_commands.jl")
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
@@ -30,7 +29,7 @@ function stopped_before_running(remote, phase, condition, guard)
         )
         machine = Workers.Lifecycle(
             node,
-            Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
+            Tuple(keys(FilterGraphs.output_formats(projection.graph))),
             receipts,
             commands,
             notify,
@@ -55,7 +54,7 @@ function stopped_before_running(remote, phase, condition, guard)
         @test completion.control_thread == Threads.threadid()
     finally
         node === nothing || close(node)
-        FilterGraphIsland.close_execution(projection.graph)
+        FilterGraphPipeWire.close_execution(projection.graph)
     end
 end
 
@@ -74,7 +73,7 @@ function queued_before_run(remote, condition, guard)
         )
         machine = Workers.Lifecycle(
             node,
-            Tuple(keys(JuliaFilterGraph.output_formats(projection.graph))),
+            Tuple(keys(FilterGraphs.output_formats(projection.graph))),
             receipts,
             Channel{Workers.StopGraph}(1),
             notify,
@@ -98,7 +97,7 @@ function queued_before_run(remote, condition, guard)
     finally
         machine === nothing || machine.receiver === nothing || close(machine.receiver)
         node === nothing || close(node)
-        FilterGraphIsland.close_execution(projection.graph)
+        FilterGraphPipeWire.close_execution(projection.graph)
     end
 end
 
@@ -222,7 +221,7 @@ function worker_trials(remote, directory, daemon)
                     worker === nothing || Ext.quit_calibration_graph!(worker)
                     worker === nothing || await(() -> istaskdone(worker.task))
                     worker === nothing || Ext.finish_calibration_graph!(worker)
-                    FilterGraphIsland.close_execution(projection.graph)
+                    FilterGraphPipeWire.close_execution(projection.graph)
                 end
             end
         end
@@ -279,7 +278,7 @@ function worker_trials(remote, directory, daemon)
                 @test_throws Exception Ext.finish_calibration_graph!(worker)
                 Ext.quit_calibration_graph!(worker)
             finally
-                FilterGraphIsland.close_execution(projection.graph)
+                FilterGraphPipeWire.close_execution(projection.graph)
             end
         end
     finally

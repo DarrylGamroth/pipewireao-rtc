@@ -1,11 +1,6 @@
-# Optional no-core check of actual JFG port schemas against session declarations.
+# Optional no-core check of actual FilterGraphs port schemas against session declarations.
 using Test,
-    PipeWireAO,
-    PipeWireAORTC,
-    FilterGraphIsland,
-    FilterGraphPipeWire,
-    JuliaFilterGraph,
-    FilterGraphAlgorithms
+    PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs, FilterGraphAlgorithms
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration

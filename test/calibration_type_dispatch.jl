@@ -1,8 +1,8 @@
 # Optional CPU interface checks using real prepared graph types, without a
 # PipeWire core, optical propagation or device.
 module CalibrationTypeDispatchTests
-using Test, PipeWireAO, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphIsland
-using FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphPipeWire
+using FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 const C = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 const G = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
@@ -147,14 +147,18 @@ function independent_cameras(directory)
             ),
         ),
     )
-    return JuliaFilterGraph.prepare_composition(path; algorithms = FGA.algorithms())
+    return FilterGraphs.prepare_composition(path; algorithms = FGA.algorithms())
 end
 
 @testset "composition warmup dispatch preserves independent and simultaneous arrivals" begin
     mktempdir() do directory
         composition = independent_cameras(directory)
         try
-            formats = JuliaFilterGraph.input_formats(composition)
+            @test G.validate_owner_feedback(composition, nothing) === nothing
+            @test_throws ArgumentError G.validate_owner_feedback(
+                composition, :left_feedback => :right_feedback
+            )
+            formats = FilterGraphs.input_formats(composition)
             input = Symbol("left-image")
             other = Symbol("right-image")
             options = (;
@@ -181,7 +185,7 @@ end
                 composition, options, merge(warmup, (; input = :absent))
             )
         finally
-            FilterGraphIsland.close_execution(composition)
+            FilterGraphPipeWire.close_execution(composition)
         end
     end
 end

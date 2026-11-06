@@ -1,7 +1,7 @@
 # Optional cold CPU selector. Point at a built Classic application; no source
 # instrument, PipeWire core, model stepping or accelerator is used.
 using Test, SHA
-using PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
+using PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
@@ -77,31 +77,31 @@ end
                 ),
             ).source.path for entry in frontend.bindings
         )
-        raw = JuliaFilterGraph.input_formats(frontend.graph).raw
+        raw = FilterGraphs.input_formats(frontend.graph).raw
         @test raw.element_type === UInt16 && raw.shape == (352, 352)
-        measurements = JuliaFilterGraph.output_formats(frontend.graph)
+        measurements = FilterGraphs.output_formats(frontend.graph)
         @test measurements.slopes.element_type === Float32 &&
             measurements.slopes.shape == (188, 2)
         @test measurements.flux.element_type === Float32 &&
             measurements.flux.shape == (188,)
         @test measurements.validity.element_type === Bool &&
             measurements.validity.shape == (188,)
-        requested = JuliaFilterGraph.input_formats(command.graph).requested
-        demanded = JuliaFilterGraph.output_formats(command.graph).demanded
+        requested = FilterGraphs.input_formats(command.graph).requested
+        demanded = FilterGraphs.output_formats(command.graph).demanded
         @test requested.element_type === Float32 && requested.shape == (277,)
         @test demanded.element_type === Float32 && demanded.shape == (277,)
         @test requested.schema == "pipewireao/requested-pdm-command-f32/1"
         @test demanded.schema == "pipewireao/dm-command-opd-um-f32/1"
         authority = Calibration.controller_graph(application)
         try
-            @test demanded == JuliaFilterGraph.output_formats(authority).demanded
+            @test demanded == FilterGraphs.output_formats(authority).demanded
             @test all(
-                getproperty(JuliaFilterGraph.parameter_formats(frontend.graph), name) ==
-                getproperty(JuliaFilterGraph.parameter_formats(authority), name) for
+                getproperty(FilterGraphs.parameter_formats(frontend.graph), name) ==
+                getproperty(FilterGraphs.parameter_formats(authority), name) for
                 name in keys(frontend.parameters)
             )
         finally
-            FilterGraphIsland.close_execution(authority)
+            FilterGraphPipeWire.close_execution(authority)
         end
         @test frontend.source_graph_sha256 ==
             command.source_graph_sha256 ==
@@ -145,18 +145,17 @@ end
                 @test only(aliased.document["filter.graph"]["nodes"]) ==
                     original_nodes["pdm-command"]
                 @test isempty(aliased.document["filter.graph"]["links"])
-                formats = JuliaFilterGraph.output_formats(aliased.graph)
+                formats = FilterGraphs.output_formats(aliased.graph)
                 @test keys(formats) == (:physical, :residual)
                 @test formats.physical == demanded
-                @test formats.residual ==
-                    JuliaFilterGraph.output_formats(command.graph)[Symbol(
+                @test formats.residual == FilterGraphs.output_formats(command.graph)[Symbol(
                     "constraint-feedback"
                 )]
                 @test [
                     port["endpoint"] for port in aliased.document["filter.graph"]["outputs"]
                 ] == ["pdm-command:demanded", "pdm-command:constraint-feedback"]
             finally
-                FilterGraphIsland.close_execution(aliased.graph)
+                FilterGraphPipeWire.close_execution(aliased.graph)
             end
         end
         for selection in (
@@ -209,8 +208,8 @@ end
             @test occursin("missing its FITS binding", sprint(showerror, error))
         end
     finally
-        frontend === nothing || FilterGraphIsland.close_execution(frontend.graph)
-        command === nothing || FilterGraphIsland.close_execution(command.graph)
+        frontend === nothing || FilterGraphPipeWire.close_execution(frontend.graph)
+        command === nothing || FilterGraphPipeWire.close_execution(command.graph)
     end
     @test application_hashes(application) == before
     @test !any(id.name in ("CUDA", "AMDGPU") for id in keys(Base.loaded_modules))

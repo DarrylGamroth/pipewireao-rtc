@@ -2,7 +2,7 @@
 # detector/control transport, Stop, Reset and Quit remain independently usable.
 module ClassicOptionalAnalysis
 using Test, LinearAlgebra, Libdl
-using PipeWireAORTC, PipeWireAO, FilterGraphIsland, JuliaFilterGraph
+using PipeWireAORTC, PipeWireAO, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs: reset_hil_boundary!
 include("classic_wfs_summary.jl")
@@ -114,7 +114,7 @@ function replay_control(application, baseline, records)
         for storage in (current, original)
             W.warm_controller!(storage, records)
             W.process_allocations(storage)
-            JuliaFilterGraph.reset!(storage.graph)
+            FilterGraphs.reset!(storage.graph)
             fill!(storage.feedback, 0)
         end
         for index in 1:W.COUNT
@@ -143,8 +143,8 @@ function replay_control(application, baseline, records)
             end
         end
     finally
-        FilterGraphIsland.close_execution(current.graph)
-        FilterGraphIsland.close_execution(original.graph)
+        FilterGraphPipeWire.close_execution(current.graph)
+        FilterGraphPipeWire.close_execution(original.graph)
     end
     return allocations
 end

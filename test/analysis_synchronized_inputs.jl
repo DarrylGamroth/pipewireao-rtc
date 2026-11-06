@@ -1,6 +1,6 @@
 # Real CPU WFS/Node constructor regression; no core, service or device is opened.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphIsland, FilterGraphPipeWire
+using FilterGraphAlgorithms, FilterGraphs, FilterGraphPipeWire
 
 const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 
@@ -18,14 +18,14 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
     }
     """,
         )
-        options = FilterGraphIsland.parse_arguments(["--graph", path, "--check"])
-        graph = FilterGraphIsland.prepare_service_graph(
-            options; declarations = FilterGraphIsland.algorithm_declarations(options)
+        options = FilterGraphPipeWire.parse_arguments(["--graph", path, "--check"])
+        graph = FilterGraphPipeWire.prepare_service_graph(
+            options.graph; algorithms = FilterGraphPipeWire.algorithm_declarations()
         )
         try
             owner = E.analysis_input_owner(graph)
-            @test owner isa JuliaFilterGraph.PreparedSynchronizedInputs
-            @test length(JuliaFilterGraph.input_formats(graph)) == 3
+            @test owner isa FilterGraphs.PreparedSynchronizedInputs
+            @test length(FilterGraphs.input_formats(graph)) == 3
             config = (;
                 name = "wfs-analysis-constructor-test",
                 capture = nothing,
@@ -50,7 +50,7 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
             @test failure isa PipeWireAO.PipeWireError &&
                 failure.operation == :pw_ndarray_filter_connect
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
     end
 end

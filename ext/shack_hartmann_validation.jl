@@ -100,16 +100,13 @@ function Calibration._validate_system(
             )
             if index == 1
                 all(
-                    values(
-                        JuliaFilterGraph.process!(storage.outputs, graph, storage.inputs)
-                    ),
+                    values(FilterGraphs.process!(storage.outputs, graph, storage.inputs))
                 ) || error("warmup rejected")
-                JuliaFilterGraph.reset!(graph)
+                FilterGraphs.reset!(graph)
                 fill!(storage.feedback, 0)
             end
-            all(
-                values(JuliaFilterGraph.process!(storage.outputs, graph, storage.inputs))
-            ) || error("controller rejected frame")
+            all(values(FilterGraphs.process!(storage.outputs, graph, storage.inputs))) ||
+                error("controller rejected frame")
             commanded = storage.outputs.demanded
             all(
                 i -> isfinite(commanded[i]) && lower[i] <= commanded[i] <= upper[i],
@@ -152,7 +149,7 @@ function Calibration._validate_system(
             )
         end
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     result = Dict(
         "scope" => "Finite seeded simulation validation; no physical device qualification",

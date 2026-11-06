@@ -47,7 +47,7 @@ const GraphOwner = PipeWireAORTC.GraphOwner
     end
 end
 
-module GraphOwnerIsland
+module GraphOwnerPipeWire
 parse_arguments(args) = (; args)
 end
 
@@ -200,8 +200,8 @@ end
     @test GraphOwner._main(
         without_fits;
         with_owner = fake_owner,
-        load_science = () -> (push!(events, :load_science); GraphOwnerIsland),
-        run = (island, options, runtime, entries) -> begin
+        load_science = () -> (push!(events, :load_science); GraphOwnerPipeWire),
+        run = (options, runtime, entries) -> begin
             @test runtime === :runtime
             @test isempty(entries)
             @test isempty(options.correction_properties)
@@ -234,8 +234,7 @@ end
     )
     @test events == [:preparing, :cleanup]
     @test !any(
-        id -> id.name in
-        ("FilterGraphIsland", "JuliaFilterGraph", "FilterGraphPipeWire", "CUDA"),
+        id -> id.name in ("FilterGraphPipeWire", "FilterGraphs", "CUDA"),
         keys(Base.loaded_modules),
     )
 end

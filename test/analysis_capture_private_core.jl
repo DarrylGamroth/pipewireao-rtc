@@ -3,7 +3,7 @@
 # PIPEWIREAO_PREFIX when the packaged SDK is not the selected native target.
 module AnalysisCapturePrivateCoreTests
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphIsland, FilterGraphPipeWire
+using FilterGraphAlgorithms, FilterGraphs, FilterGraphPipeWire
 include("control_private_core.jl")
 const C = PipeWireAORTC.Common
 const CS = PipeWireAORTC.ConfigurationStore

@@ -689,7 +689,7 @@ function prepare!(request::Request; render!::Function)
             )
         end
         # HEART's source command needs the real controller PID. Keep this
-        # necessary stage; ordinary FGN/JFG owners start together below.
+        # necessary stage; ordinary FGN/FilterGraphPipeWire owners start together below.
         staged_roles = Set(["core"])
         for owner in filter(D.uses_heart_protocol, spec["owners"])
             install_owner!(owner)

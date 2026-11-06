@@ -1,7 +1,7 @@
 # Optional cold CPU selector against a built Classic application. It prepares
 # graphs and generated temporary FITS artifacts without stepping or device I/O.
 using Test, SHA
-using PipeWireAORTC, FilterGraphIsland, JuliaFilterGraph
+using PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
@@ -88,8 +88,8 @@ project(; parameter_sources = Dict()) = Calibration.calibration_graph(
                 (port, data) in originals if haskey(base.parameters, port)
             )
             @test all(
-                JuliaFilterGraph.parameter_formats(candidate.graph)[port] == format for
-                (port, format) in pairs(JuliaFilterGraph.parameter_formats(base.graph))
+                FilterGraphs.parameter_formats(candidate.graph)[port] == format for
+                (port, format) in pairs(FilterGraphs.parameter_formats(base.graph))
             )
 
             path = candidate.parameter_sources[:background].path
@@ -137,7 +137,7 @@ project(; parameter_sources = Dict()) = Calibration.calibration_graph(
         end
     finally
         for descriptor in (base, candidate, changed)
-            descriptor === nothing || FilterGraphIsland.close_execution(descriptor.graph)
+            descriptor === nothing || FilterGraphPipeWire.close_execution(descriptor.graph)
         end
     end
     @test originals == original_copies

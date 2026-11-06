@@ -114,7 +114,7 @@ the detector and demanded-command streams carry the mandatory Acquisition identi
 
 Checks cover held startup, backend and calibration identity, complete ordered
 frame/command acquisition identities, PTS association, Float32 micrometre/metre
-conversion, exact direct JFG and noisy plant replay, and finite piston-removed
+conversion, exact direct FilterGraphs and noisy plant replay, and finite piston-removed
 pupil-OPD improvement against the same seeded zero-command trajectory. Raw
 prefix bytes, seen masks and identities remain available on failed collection
 or replay. A success receipt is written only after the outer testset passes.
@@ -289,7 +289,7 @@ cursors. They distinguish held and policy-shutdown proof, reject secondary or
 wrong-incarnation link faults, and exercise delayed receipt/process/cgroup cleanup
 observations with a controlled clock. They preserve failed observations when a
 later read settles. They do not establish live fault recovery. Run each selected
-AOS case against a fresh sealed application separately; for Classic's JFG application,
+AOS case against a fresh sealed application separately; for Classic's FilterGraphs application,
 `--controller-role julia` selects its declared graph owner.
 
 ## Retired production-policy selector

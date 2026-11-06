@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "09085feaaeba7624a27a7bb8e85292a3cee22af6"
+project_hash = "83099a94ec76d1ef2ff90b656f2ec48fba1c2dc3"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -249,23 +249,22 @@ version = "3.0.5"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "b8a58e79a8584658d8c45e9c5aa4082f3dbfb6e5"
-registries = "DarrylGamrothRegistry"
+path = "../PipeWireAO-rtc-reconciliation"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
-version = "0.9.0"
+version = "0.9.2"
 
 [[deps.PipeWireAORTC]]
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.5.0"
+version = "0.6.1"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
-    PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
-    PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphIsland", "FilterGraphPipeWire", "JuliaFilterGraph"]
+    PipeWireAORTCCalibrationExt = ["FilterGraphAlgorithms", "AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "AdaptiveOpticsCalibration", "FilterGraphPipeWire", "FilterGraphs"]
+    PipeWireAORTCGraphExt = ["FilterGraphAlgorithms", "FilterGraphPipeWire", "FilterGraphs"]
     PipeWireAORTCOffsetInputsExt = "AdaptiveOpticsSimPipeWireHIL"
-    PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithms", "FilterGraphPipeWire", "JuliaFilterGraph"]
+    PipeWireAORTCOffsetsExt = ["AdaptiveOpticsSimPipeWireHIL", "FilterGraphAlgorithms", "FilterGraphPipeWire", "FilterGraphs"]
     PipeWireAORTCOpticsExt = "AdaptiveOpticsSim"
 
     [deps.PipeWireAORTC.weakdeps]
@@ -275,16 +274,15 @@ version = "0.5.0"
     AdaptiveOpticsSimPipeWireHIL = "355e2bce-7765-4934-ac1c-873e1c98ec3d"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
     FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
-    FilterGraphIsland = "245ec3f5-bd83-45fe-abab-efac21027a22"
     FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
-    JuliaFilterGraph = "febeb008-6177-4a1b-bafd-f7a6a3435ad8"
+    FilterGraphs = "8053475d-7091-4a8a-adbc-8ed688b6da8d"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "fc7b768477116c3f3955eb1b75420d2793d6acaf"
+git-tree-sha1 = "afe532e368eeebfc50de648b6c50c2432b481f57"
 registries = "DarrylGamrothRegistry"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "4.0.0+0"
+version = "4.0.1+0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]

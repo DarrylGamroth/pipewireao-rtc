@@ -62,7 +62,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "physical_offset_inputs_documents.j
                 "AdaptiveOpticsSim",
                 "AdaptiveOpticsSimPipeWireHIL",
                 "FilterGraphAlgorithms",
-                "JuliaFilterGraph",
+                "FilterGraphs",
                 "CUDA",
                 "AMDGPU",
             ),

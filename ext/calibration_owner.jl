@@ -345,7 +345,7 @@ function Base.close(owner::InitialCalibration)
         for descriptor in
             calibration_descriptors(owner.graphs.frontend, owner.graphs.command)
             try
-                FilterGraphIsland.close_execution(descriptor.graph)
+                FilterGraphPipeWire.close_execution(descriptor.graph)
             catch error
                 push!(errors, error)
             end
@@ -463,9 +463,9 @@ capture_projection_identities(projections::NamedGraphProjections) = Dict(
 
 "Bind YAML-selected channels to the exact prepared frontend port contracts."
 function calibration_capture_contract(frontend, rate, configuration)
-    outputs = JuliaFilterGraph.output_formats(frontend.graph)
+    outputs = FilterGraphs.output_formats(frontend.graph)
     haskey(outputs, :raw) && throw(ArgumentError("capture output conflicts with raw input"))
-    formats = (; raw = JuliaFilterGraph.input_formats(frontend.graph).raw, outputs...)
+    formats = (; raw = FilterGraphs.input_formats(frontend.graph).raw, outputs...)
     all(name -> haskey(formats, name), configuration.channels) ||
         throw(ArgumentError("capture selects a port absent from the prepared frontend"))
     channels = NamedTuple{configuration.channels}(
@@ -500,8 +500,8 @@ command_graph_names(commands::NamedGraphProjections, prefix::AbstractString) =
 function prepare_command_probe(
     core, command::GraphProjection, rate; notify, prefix, reference_clock
 )
-    format = JuliaFilterGraph.input_formats(command.graph).requested
-    feedback = JuliaFilterGraph.output_formats(command.graph)[Symbol("constraint-feedback")]
+    format = FilterGraphs.input_formats(command.graph).requested
+    feedback = FilterGraphs.output_formats(command.graph)[Symbol("constraint-feedback")]
     # The scalar public probe retains its existing default stream names.
     return prepare_calibration_probe(
         core,
@@ -588,8 +588,8 @@ function calibration_command_connections(
 end
 
 function calibration_command(descriptor::GraphProjection, reference, count, schema)
-    inputs = JuliaFilterGraph.input_formats(descriptor.graph)
-    outputs = JuliaFilterGraph.output_formats(descriptor.graph)
+    inputs = FilterGraphs.input_formats(descriptor.graph)
+    outputs = FilterGraphs.output_formats(descriptor.graph)
     keys(inputs) == (:requested,) &&
     Set(keys(outputs)) == Set((:demanded, Symbol("constraint-feedback"))) || throw(
         ArgumentError(
@@ -636,7 +636,7 @@ end
 function calibration_measurements(
     frontend, outputs, measurements, active; consume = nothing
 )
-    inputs = JuliaFilterGraph.input_formats(frontend.graph)
+    inputs = FilterGraphs.input_formats(frontend.graph)
     keys(inputs) == (:raw,) &&
     inputs.raw.element_type === UInt16 &&
     length(inputs.raw.shape) == 2 ||
@@ -783,7 +783,7 @@ function Calibration.prepare_initial_calibration(
     )
     selected = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
     prepared = map(descriptors, Tuple(eachindex(descriptors))) do descriptor, index
-        formats = JuliaFilterGraph.parameter_formats(descriptor.graph)
+        formats = FilterGraphs.parameter_formats(descriptor.graph)
         entries = filter(entry -> haskey(formats, entry.port), selected)
         Set(entry.port for entry in entries) ==
         Set(keys(formats)) ==
@@ -835,8 +835,7 @@ function Calibration.prepare_initial_calibration(
                     "calibration projection parameters differ from the selected FITS inputs"
                 ),
             )
-        isempty(updates) ||
-            JuliaFilterGraph.replace_parameters!(descriptor.graph, updates...)
+        isempty(updates) || FilterGraphs.replace_parameters!(descriptor.graph, updates...)
         provenance = Dict(
             port => filter(pair -> first(pair) != "source", artifact.provenance) for
             (port, artifact) in artifacts
@@ -854,7 +853,7 @@ function Calibration.prepare_initial_calibration(
     reference_clock = PipeWireAORTC.Common.prepare_reference_clock(options)
     references = calibration_commands(command, reference, probe_command, options)
     reference = probe_reference(command, reference, references, probe_command)
-    outputs = JuliaFilterGraph.output_formats(frontend.graph)
+    outputs = FilterGraphs.output_formats(frontend.graph)
     calibration_measurements(frontend, outputs, measurements, active; consume)
     measurement_count =
         measurements === nothing ? 0 : prod(getproperty(outputs, measurements).shape)
@@ -948,7 +947,7 @@ function Calibration.prepare_initial_calibration(
         )
         hil = Wire.prepare_pipewire_calibration(boundary, configuration; reference_clock)
         rate = UInt32(options.rate)//UInt32(1)
-        frame_format = JuliaFilterGraph.input_formats(frontend.graph).raw
+        frame_format = FilterGraphs.input_formats(frontend.graph).raw
         declarations = (;
             raw = (
                 name = name * ".raw",
@@ -1231,7 +1230,7 @@ function Calibration.prepare_initial_calibration(
             if all(calibration_graph_released, workers)
                 for descriptor in calibration_descriptors(frontend, command)
                     try
-                        FilterGraphIsland.close_execution(descriptor.graph)
+                        FilterGraphPipeWire.close_execution(descriptor.graph)
                     catch error
                         push!(errors, error)
                     end

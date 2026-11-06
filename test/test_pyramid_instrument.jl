@@ -189,8 +189,8 @@ end
         id -> id.name in (
             "AdaptiveOpticsSim",
             "AdaptiveOpticsSimPipeWireHIL",
-            "FilterGraphIsland",
-            "JuliaFilterGraph",
+            "FilterGraphPipeWire",
+            "FilterGraphs",
             "CUDA",
             "AMDGPU",
         ),

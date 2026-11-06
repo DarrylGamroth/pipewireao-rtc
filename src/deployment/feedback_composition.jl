@@ -520,7 +520,7 @@ function prepare_feedback(
             sinks,
             node_owners = Dict(sink["node.name"] => role for sink in sinks),
         )
-        Base.require(Main, :FilterGraphIsland)
+        Base.require(Main, :FilterGraphPipeWire)
         Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         Base.invokelatest(
             validate_feedback,

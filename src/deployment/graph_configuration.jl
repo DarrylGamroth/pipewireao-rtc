@@ -172,7 +172,7 @@ function calibrated_graph_exports(graph::AbstractDict, calibrated::AbstractDict)
     end
     # Reuse the owner compiler: it rejects unknown nodes/ports and duplicate
     # effective names, and supplies each existing output's actual typed format.
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     mktempdir() do directory
         path = joinpath(directory, "graph.conf")
         ScienceExport.write_spa_config(path, graph)

@@ -349,8 +349,8 @@ function prepare_calibration_probes(
     failure = Ref{Any}(nothing)
     try
         for (name, descriptor) in pairs(commands)
-            format = JuliaFilterGraph.input_formats(descriptor.graph).requested
-            feedback = JuliaFilterGraph.output_formats(descriptor.graph)[Symbol(
+            format = FilterGraphs.input_formats(descriptor.graph).requested
+            feedback = FilterGraphs.output_formats(descriptor.graph)[Symbol(
                 "constraint-feedback"
             )]
             push!(

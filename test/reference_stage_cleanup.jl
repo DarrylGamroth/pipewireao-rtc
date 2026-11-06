@@ -2,8 +2,7 @@
 # optical samples, source instrument, devices or accelerator are used.
 module ReferenceStageCleanupTests
 
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
@@ -37,9 +36,9 @@ function Calibration.calibration_graph(
     )
 end
 
-JuliaFilterGraph.output_formats(::CleanupGraph) = (; slopes = (; shape = (1,)))
+FilterGraphs.output_formats(::CleanupGraph) = (; slopes = (; shape = (1,)))
 
-function FilterGraphIsland.close_execution(graph::CleanupGraph)
+function FilterGraphPipeWire.close_execution(graph::CleanupGraph)
     push!(graph.application.closed, graph.name)
     graph.name === graph.application.failed_close &&
         error("$(graph.name) projection close failed")

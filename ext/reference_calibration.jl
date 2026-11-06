@@ -192,7 +192,7 @@ function reference_stage(
         measurement_count =
             measurements === nothing ? 0 :
             prod(
-                getproperty(JuliaFilterGraph.output_formats(frontend.graph), measurements).shape,
+                getproperty(FilterGraphs.output_formats(frontend.graph), measurements).shape
             )
         Actions.preflight_collect_reply(measurement_count, counts.samples)
         command = if commands === nothing
@@ -224,7 +224,7 @@ function reference_stage(
                 failures = Exception[primary]
                 for descriptor in reverse(built)
                     try
-                        FilterGraphIsland.close_execution(descriptor.graph)
+                        FilterGraphPipeWire.close_execution(descriptor.graph)
                     catch cleanup
                         push!(failures, cleanup)
                     end
@@ -436,7 +436,7 @@ function reference_stage(
         for descriptor in calibration_descriptors(frontend, command)
             descriptor === nothing && continue
             try
-                FilterGraphIsland.close_execution(descriptor.graph)
+                FilterGraphPipeWire.close_execution(descriptor.graph)
             catch error
                 push!(errors, error)
             end

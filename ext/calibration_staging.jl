@@ -8,11 +8,8 @@ const Artifacts = PipeWireAORTC.Artifacts
 
 function bundle_graph(calibration)
     bundle = Calibration.read_bundle(calibration)
-    options = FilterGraphIsland.parse_arguments([
-        "--graph", bundle.graph, "--check", "--execution", "complete-frame"
-    ])
-    return FilterGraphIsland.prepare_service_graph(
-        options;
+    return FilterGraphPipeWire.prepare_service_graph(
+        bundle.graph;
         initial_parameters = formats -> begin
             Set(string.(keys(formats))) == Set(bundle.parameter_names) || throw(
                 ArgumentError("calibration runtime parameter manifest differs from graph"),
@@ -158,11 +155,8 @@ function Calibration.stage_calibration(source, application, calibration, destina
         )
         # Cold source publication must see the newly selected dimensions and parameters.
         R.copy_file(graphpath, D.relative_asset(staged, recipe["graph"]))
-        options = FilterGraphIsland.parse_arguments([
-            "--graph", graphpath, "--check", "--execution", "complete-frame"
-        ])
-        graph = FilterGraphIsland.prepare_service_graph(
-            options;
+        graph = FilterGraphPipeWire.prepare_service_graph(
+            graphpath;
             initial_parameters = formats -> begin
                 Set(string.(keys(formats))) == Set(bundle.parameter_names) || throw(
                     ArgumentError(
@@ -209,11 +203,11 @@ function Calibration.stage_calibration(source, application, calibration, destina
         try
             # Every selected array has passed the production owner format/byte checks and
             # the scientific parameter replacement contract before publication.
-            length(JuliaFilterGraph.parameter_formats(graph)) == count[] || throw(
+            length(FilterGraphs.parameter_formats(graph)) == count[] || throw(
                 ArgumentError("calibration parameter coverage differs from the graph")
             )
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
         Calibration.read_bundle(selected)
         # Mask publication depends on the newly validated typed startup bindings.

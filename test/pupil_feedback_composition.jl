@@ -7,9 +7,8 @@ using Test,
     AdaptiveOpticsSimPipeWireHIL,
     AdaptiveOpticsCalibration,
     FilterGraphAlgorithms,
-    FilterGraphIsland,
     FilterGraphPipeWire,
-    JuliaFilterGraph
+    FilterGraphs
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration

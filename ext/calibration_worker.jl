@@ -4,7 +4,7 @@ import PipeWireAO as PW
 import PipeWireAORTC
 import FilterGraphAlgorithms
 import FilterGraphPipeWire
-import JuliaFilterGraph
+import FilterGraphs
 import Hsm
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 
@@ -194,13 +194,13 @@ function run_graph(
             connect = false,
             reference_clock,
             input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-                keys(JuliaFilterGraph.input_formats(descriptor.graph));
+                keys(FilterGraphs.input_formats(descriptor.graph));
                 required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
             ),
             output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-                keys(JuliaFilterGraph.output_formats(descriptor.graph)),
-                keys(JuliaFilterGraph.input_formats(descriptor.graph)),
-                JuliaFilterGraph.output_metadata_source_inputs(descriptor.graph);
+                keys(FilterGraphs.output_formats(descriptor.graph)),
+                keys(FilterGraphs.input_formats(descriptor.graph)),
+                FilterGraphs.output_metadata_source_inputs(descriptor.graph);
                 required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
             ),
             fifo_inputs = true,
@@ -209,7 +209,7 @@ function run_graph(
         )
         machine = Lifecycle(
             node,
-            Tuple(keys(JuliaFilterGraph.output_formats(descriptor.graph))),
+            Tuple(keys(FilterGraphs.output_formats(descriptor.graph))),
             receipts,
             commands,
             notify,

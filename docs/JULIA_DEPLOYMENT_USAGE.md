@@ -147,7 +147,7 @@ Ports and 64 channels per Port, with valid UTF-8, nonempty control-free text up 
 bytes. The complete published catalog must fit 16384 bytes. Changing these units
 requires a new source Node. Existing analysis configurations remain valid.
 
-Standalone FilterGraphIsland and RTC GraphOwner launches can use repeated
+Standalone FilterGraphPipeWire and RTC GraphOwner launches can use repeated
 `--channel-unit PORT CHANNEL UNITS` arguments for the same source annotation.
 The authoritative channel meanings and publication contract remain with
 JuliaFilterGraph's `schemas/catalog.toml` and `docs/source-channels.md`.
@@ -180,7 +180,7 @@ restart the RTC deployment. Manually restarting the optional systemd service
 changes its retained invocation identity, so RTC cleanup fences that service
 from cleanup.
 
-This deployment uses locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
+The dated deployment below used locally registered JuliaFilterGraph 0.4.1, FilterGraphPipeWire
 0.1.6 and PipeWireAORTC 0.2.5. See the [optional analysis validation scope](validation/optional-analysis-20261022/README.md)
 and [independent review](reviews/20261022-optional-analysis/REVIEW.md) for
 current evidence and limitations. The finite CPU gate passes 3,944 assertions

@@ -1,7 +1,6 @@
 # Cold CPU contracts and locked named-slot state; no daemon, devices or GPU.
 module CalibrationNamedCommandTests
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 
@@ -34,11 +33,7 @@ function prepare_command(count, schema)
     graph = mktempdir() do directory
         path = joinpath(directory, "graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path, declaration)
-        FilterGraphIsland.prepare_service_graph(
-            FilterGraphIsland.parse_arguments([
-                "--graph", path, "--check", "--execution", "complete-frame"
-            ]),
-        )
+        FilterGraphPipeWire.prepare_service_graph(path)
     end
     return Ext.GraphProjection(
         graph;
@@ -143,11 +138,7 @@ end
     graph = mktempdir() do directory
         path = joinpath(directory, "graph.conf")
         PipeWireAORTC.ScienceExport.write_spa_config(path, declaration)
-        FilterGraphIsland.prepare_service_graph(
-            FilterGraphIsland.parse_arguments([
-                "--graph", path, "--check", "--execution", "complete-frame"
-            ]),
-        )
+        FilterGraphPipeWire.prepare_service_graph(path)
     end
     try
         frontend = Ext.GraphProjection(
@@ -159,7 +150,7 @@ end
             parameter_sources = Dict{Symbol,PipeWireAORTC.Artifacts.FITSArtifact}(),
             parameter_sha256 = Dict{Symbol,String}(),
         )
-        outputs = JuliaFilterGraph.output_formats(graph)
+        outputs = FilterGraphs.output_formats(graph)
         selection = PipeWireAORTC.InstrumentCalibration._capture_configuration(
             Dict(
                 "capture" => Dict(
@@ -174,7 +165,7 @@ end
         @test keys(capture_contract.channels) == (Symbol("reconstruction-pixels"), :raw)
         @test capture_contract.channels.raw.format.element_type == NdArray.U16_LE
         @test capture_contract.channels.raw.schema ==
-            JuliaFilterGraph.input_formats(graph).raw.schema
+            FilterGraphs.input_formats(graph).raw.schema
         @test capture_contract.channels[Symbol("reconstruction-pixels")].format.shape ==
             getproperty(outputs, Symbol("reconstruction-pixels")).shape
         @test Ext.calibration_capture_limit(selection, 0) == selection.maximum_bytes
@@ -207,7 +198,7 @@ end
             frontend, outputs, Symbol("reconstruction-pixels"), trues(6)
         )
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
 end
 
@@ -351,8 +342,8 @@ end
             "projections and references must match", sprint(showerror, precedence)
         )
     finally
-        FilterGraphIsland.close_execution(woofer.graph)
-        FilterGraphIsland.close_execution(tiptilt.graph)
+        FilterGraphPipeWire.close_execution(woofer.graph)
+        FilterGraphPipeWire.close_execution(tiptilt.graph)
     end
 end
 

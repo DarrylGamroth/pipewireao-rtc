@@ -3,7 +3,7 @@ module ClassicWFSSummary
 using Test, Libdl, LinearAlgebra
 using PipeWireAORTC, PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
-using FilterGraphIsland, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphs
 include("classic_managed_replay.jl")
 include("classic_fft_oracle.jl")
 const M = ClassicManagedReplay
@@ -142,13 +142,13 @@ end
 
 function warm_controller!(storage, records)
     M.ClassicReplay.load_frame!(storage.raw, records.detector.values, 1)
-    JuliaFilterGraph.process!(storage.outputs, storage.graph, storage.inputs)
-    JuliaFilterGraph.reset!(storage.graph)
+    FilterGraphs.process!(storage.outputs, storage.graph, storage.inputs)
+    FilterGraphs.reset!(storage.graph)
     fill!(storage.feedback, 0)
 end
 
 process_allocations(storage) =
-    @allocated JuliaFilterGraph.process!(storage.outputs, storage.graph, storage.inputs)
+    @allocated FilterGraphs.process!(storage.outputs, storage.graph, storage.inputs)
 
 function replay_controller(application, records; baseline_application = nothing)
     # Keep the established controller oracle as an independent exact demand check.
@@ -168,11 +168,11 @@ function replay_controller(application, records; baseline_application = nothing)
         baseline === nothing || warm_controller!(baseline, records)
         # Compile the measurement wrapper, then reset the mutated controller.
         process_allocations(current)
-        JuliaFilterGraph.reset!(current.graph)
+        FilterGraphs.reset!(current.graph)
         fill!(current.feedback, 0)
         if baseline !== nothing
             process_allocations(baseline)
-            JuliaFilterGraph.reset!(baseline.graph)
+            FilterGraphs.reset!(baseline.graph)
             fill!(baseline.feedback, 0)
             @test all(name -> hasproperty(current.outputs, name), keys(baseline.outputs))
         end
@@ -206,8 +206,8 @@ function replay_controller(application, records; baseline_application = nothing)
             )
         end
     finally
-        baseline === nothing || FilterGraphIsland.close_execution(baseline.graph)
-        FilterGraphIsland.close_execution(current.graph)
+        baseline === nothing || FilterGraphPipeWire.close_execution(baseline.graph)
+        FilterGraphPipeWire.close_execution(current.graph)
     end
     return Dict(
         "exact_demanded_replay" => true,

@@ -265,7 +265,7 @@ Verification intent (informative): validate the positive and negative
 configuration matrix, realize and inspect the exact factory and port rates,
 run a 100 Hz identity-bearing no-buffer follower behind a selected 1000 Hz
 driver, compare retained Acquisition identity and final command provenance for
-native FGN and JuliaFilterGraph, exercise stop, READY reset, explicit restart,
+native FGN and FilterGraphs, exercise stop, READY reset, explicit restart,
 pool replacement, and cleanup, and measure steady-state allocation and latency.
 
 ### RTC-DEV-011 — Selective execution groups
@@ -408,7 +408,7 @@ PipeWire node. The external declaration MUST identify the exact node, ports,
 directions, element types, shapes, schemas, ownership, and run-control grant.
 Admission MUST NOT depend on a Julia package name, process identity, or another
 implementation-specific property. The initial maintained external processing
-application SHALL be a prepared `JuliaFilterGraph.jl` graph published through
+application SHALL be a prepared `FilterGraphs` graph published through
 `FilterGraphPipeWire`.
 
 When session run control is granted, the runner MUST submit a Version 1
@@ -467,7 +467,7 @@ RTC runner MUST NOT load Julia or interpret simulation internals.
 
 The fixture MUST admit and link the external plant to the maintained REVOLT
 Classic RTC component. It MUST cover a runner-owned `fgn-native` realization
-and an equivalent external `JuliaFilterGraph.jl` realization without changing
+and an equivalent external `FilterGraphs` realization without changing
 the plant adapter or scientific port contracts. Each realization MUST complete
 the session lifecycle, preserve external and unrelated nodes on unload, and
 compare every transported command plus declared plant diagnostics against the

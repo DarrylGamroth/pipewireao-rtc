@@ -8,7 +8,7 @@ using Test, SHA
 using AdaptiveOpticsSim.AlgorithmGraphs, AdaptiveOpticsSim.Backends
 using AdaptiveOpticsSimPipeWireHIL, REVOLTClassicSim
 using PipeWireAO, PipeWireAO_jll, PipeWireAORTC
-using FilterGraphIsland, FilterGraphPipeWire, FilterGraphAlgorithms, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphAlgorithms, FilterGraphs
 
 # Reuse the shared software integration support, including its borrowed-buffer
 # copying and private-core configuration. It only defines helpers on inclusion.
@@ -488,7 +488,7 @@ function run_prefix(application, output, system, count; mode = :none)
                     rethrow()
                 finally
                     controller === nothing || close(controller)
-                    FilterGraphIsland.close_execution(graph)
+                    FilterGraphPipeWire.close_execution(graph)
                 end
             end
             timedwait(
@@ -791,7 +791,7 @@ function run_replay(arguments)
     all(name -> before[name] == declared[name], keys(declared)) ||
         error("application artifact hash mismatch")
     before["deployment.conf"] = digest(joinpath(application, "deployment.conf"))
-    @testset "Classic finite $(options.backend) plant / CPU JFG replay" begin
+    @testset "Classic finite $(options.backend) plant / CPU FilterGraphs replay" begin
         system = REVOLTClassicSim.prepare_hil_system(options.plant.settings; target)
         @test compute_device(system.boundary.frame_output) == target
         @test compute_device(system.boundary.command_input) == target

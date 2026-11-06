@@ -1,8 +1,7 @@
 # Optional public-owner CPU selector. No raw files, GPU, deployed core or device.
 # Set PIPEWIREAORTC_CALIBRATION_APPLICATION to a built CPU Classic application.
 module CalibrationNoResponsePrivateCoreTests
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 include("control_private_core.jl")
 const C = PipeWireAORTC.InstrumentCalibration
@@ -45,8 +44,8 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
                 inputs = (requested = "pdm-command:requested",),
                 outputs = (:demanded, Symbol("constraint-feedback")),
             )
-            count = only(JuliaFilterGraph.input_formats(command.graph).requested.shape)
-            shape = JuliaFilterGraph.input_formats(frontend.graph).raw.shape
+            count = only(FilterGraphs.input_formats(command.graph).requested.shape)
+            shape = FilterGraphs.input_formats(frontend.graph).raw.shape
             reference = zeros(Float32, count)
             name = "test.consumer-only.$(getpid())"
             instance = Int64(501)
@@ -154,7 +153,7 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
             end
             for descriptor in (frontend, command)
                 descriptor === nothing ||
-                    FilterGraphIsland.close_execution(descriptor.graph)
+                    FilterGraphPipeWire.close_execution(descriptor.graph)
             end
         end
     end

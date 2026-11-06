@@ -1,8 +1,8 @@
-# Optional cold-contract and CPU-product checks; requires the JFG and AOS/HIL stacks.
+# Optional cold-contract and CPU-product checks; requires the FilterGraphs and AOS/HIL stacks.
 using Test, Libdl
 using PipeWireAORTC
 using PipeWireAO: METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI
-using FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 
@@ -15,7 +15,7 @@ completed_timing_bytes(timings) = @allocated AOS.completed_frame_timing(timings)
 const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
 reference(pointer) = Dict("\$ref" => pointer)
 
-@testset "session contracts come from the typed rectangular JFG boundary" begin
+@testset "session contracts come from the typed rectangular FilterGraphs boundary" begin
     mktempdir() do directory
         graph_path = joinpath(directory, "graph.conf")
         write(

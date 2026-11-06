@@ -1,8 +1,7 @@
 # Optional CPU/private-core regression for asynchronous graph registration.
 module CalibrationReadinessTests
 
-using Test,
-    PipeWireAO, PipeWireAORTC, FilterGraphIsland, FilterGraphPipeWire, JuliaFilterGraph
+using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
 
 include("control_private_core.jl")
@@ -19,11 +18,7 @@ function registration_trial(remote, registry, path, trial, wakeup, guard)
     notify() = CalibrationEndpoint.wake!(wakeup, guard)
     try
         for name in names
-            graph = FilterGraphIsland.prepare_service_graph(
-                FilterGraphIsland.parse_arguments([
-                    "--graph", path, "--check", "--execution", "complete-frame"
-                ]),
-            )
+            graph = FilterGraphPipeWire.prepare_service_graph(path)
             push!(graphs, graph)
             push!(
                 workers,
@@ -69,7 +64,7 @@ function registration_trial(remote, registry, path, trial, wakeup, guard)
             @test Transport.finish_calibration_graph!(worker).error === nothing
         end
         all(worker -> istaskdone(worker.task), workers) &&
-            foreach(FilterGraphIsland.close_execution, graphs)
+            foreach(FilterGraphPipeWire.close_execution, graphs)
     end
 end
 

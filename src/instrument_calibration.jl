@@ -137,14 +137,14 @@ end
 """
     read_parameters(application)
 
-Load `FilterGraphIsland` and read the built application's graph and FITS
+Load `FilterGraphPipeWire` and read the built application's graph and FITS
 parameter bindings from `rtc/graph.conf` and `rtc/parameters.conf`. Return the
 prepared port-to-array bindings. This cold operation reads saved artifacts;
 it does not query or change a running controller.
 """
 function read_parameters(application)
     # This cold API loads the optional scientific owner; core startup stays independent.
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     return Base.invokelatest(
         GraphOwner.read_bindings,
         joinpath(application, "rtc", "graph.conf"),
@@ -547,7 +547,7 @@ end
 
 "Read estimator dimensions from prepared ports and reject stale calibration declarations."
 function estimator_dimensions(application, estimator)
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     contracts = Base.invokelatest(
         InstrumentExport.graph_port_contracts, joinpath(application, "rtc", "graph.conf")
     )
@@ -631,7 +631,7 @@ function shack_hartmann_configuration end
 Prepare the built application's complete-frame controller graph with its FITS
 parameter bindings, optionally replacing arrays by parameter-port name through
 `overrides`. Requires the optional calibration science extension. The caller
-owns the prepared graph and closes it with `FilterGraphIsland.close_execution`.
+owns the prepared graph and closes it with `FilterGraphPipeWire.close_execution`.
 """
 function controller_graph end
 

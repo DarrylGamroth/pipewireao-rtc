@@ -27,16 +27,21 @@ end
 
 function owner_scheduling!(::Val{:jfg}, owner, process)
     workers = process["workers"]
-    Set(keys(workers)) == Set(["julia"]) ||
-        throw(ArgumentError("JFG owner requires only ordered julia worker CPUs"))
+    Set(keys(workers)) == Set(["julia"]) || throw(
+        ArgumentError("FilterGraphPipeWire owner requires only ordered julia worker CPUs"),
+    )
     cpus = workers["julia"]
-    length(cpus) >= 2 ||
-        throw(ArgumentError("JFG owner requires at least two default Julia threads"))
-    first(cpus) == process["leader-cpu"] ||
-        throw(ArgumentError("JFG thread one must use the process leader CPU"))
+    length(cpus) >= 2 || throw(
+        ArgumentError(
+            "FilterGraphPipeWire owner requires at least two default Julia threads"
+        ),
+    )
+    first(cpus) == process["leader-cpu"] || throw(
+        ArgumentError("FilterGraphPipeWire thread one must use the process leader CPU")
+    )
     argv = owner["argv"]
     any(arg -> first(split(arg, '=')) == "--pin-cpus", argv) &&
-        throw(ArgumentError("launcher owns JFG --pin-cpus"))
+        throw(ArgumentError("launcher owns FilterGraphPipeWire --pin-cpus"))
     julia_threads!(argv, length(cpus))
     append!(argv, ["--pin-cpus", join(cpus, ',')])
     return nothing

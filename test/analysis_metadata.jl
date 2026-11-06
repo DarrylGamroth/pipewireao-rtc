@@ -1,6 +1,6 @@
 # Actual native callback buffers and RTC Node policy; no server or service.
 using Test, PipeWireAORTC, PipeWireAO
-using FilterGraphAlgorithms, JuliaFilterGraph, FilterGraphIsland, FilterGraphPipeWire
+using FilterGraphAlgorithms, FilterGraphs, FilterGraphPipeWire
 const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
 const C = PipeWireAORTC.Common
 
@@ -49,11 +49,11 @@ end
     }
     """,
         )
-        options = FilterGraphIsland.parse_arguments([
+        options = FilterGraphPipeWire.parse_arguments([
             "--graph", path, "--check", "--boundary-layout", "row-major"
         ])
-        graph = FilterGraphIsland.prepare_service_graph(
-            options; declarations = FilterGraphIsland.algorithm_declarations(options)
+        graph = FilterGraphPipeWire.prepare_service_graph(
+            options.graph; algorithms = FilterGraphPipeWire.algorithm_declarations()
         )
         config = (;
             name = "analysis-metadata-test", rate = 500//1, channel_units = NamedTuple()
@@ -67,7 +67,7 @@ end
         )
         try
             FilterGraphPipeWire._prepare_owner(node.owner)
-            @test node.owner.join isa JuliaFilterGraph.PreparedSynchronizedInputs
+            @test node.owner.join isa FilterGraphs.PreparedSynchronizedInputs
             requirements = node.owner.output_records.summary.requirements
             @test Set(r.type for r in requirements) ==
                 Set(r.type for r in C.TELEMETRY_METADATA)
@@ -114,7 +114,7 @@ end
             end
         finally
             close(node)
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
     end
 end

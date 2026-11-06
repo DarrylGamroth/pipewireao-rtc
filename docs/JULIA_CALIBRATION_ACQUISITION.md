@@ -208,7 +208,7 @@ three Julia default threads; the private-core optical selector uses four.
 
 Each graph worker receives bounded stop commands and publishes readiness and
 completion receipts. Its node lifecycle and Hsm stay on a dedicated control
-thread; JuliaFilterGraph processing remains on the PipeWire data thread.
+thread; FilterGraphs processing remains on the PipeWire data thread.
 The controller does not inspect the running graph. Parameter values are bound
 before lending the graph, and these calibration nodes expose no live sparse
 Parameter Ports. Completion must explicitly release storage and the worker task

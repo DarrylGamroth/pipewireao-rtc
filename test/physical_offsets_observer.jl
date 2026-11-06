@@ -1,14 +1,10 @@
 # Cold CPU selector; no native connection or accelerator imports.
 using Test, SHA, LinearAlgebra
 using PipeWireAORTC,
-    AdaptiveOpticsSimPipeWireHIL,
-    FilterGraphAlgorithms,
-    FilterGraphPipeWire,
-    JuliaFilterGraph
+    AdaptiveOpticsSimPipeWireHIL, FilterGraphAlgorithms, FilterGraphPipeWire, FilterGraphs
 const Offsets = PipeWireAORTC.PhysicalOffsets
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOffsetsExt)
 const Calibration = PipeWireAORTC.InstrumentCalibration
-const JFG = JuliaFilterGraph
 const Cal = Calibration
 const Common = PipeWireAORTC.Common
 
@@ -122,12 +118,12 @@ include("physical_offsets_documents.jl")
         end
         Common.write_yaml(path, merge(document, Dict("clock_output" => "absent")))
         @test_throws ArgumentError Offsets.frame_observer(
-            path, nothing, JFG.output_formats(graph)
+            path, nothing, FilterGraphs.output_formats(graph)
         )
         Common.write_yaml(path, document)
-        JFG.replace_parameters!(graph, :q => 2Q)
+        FilterGraphs.replace_parameters!(graph, :q => 2Q)
         @test_throws ArgumentError Offsets.prepare(path, graph)
-        JFG.replace_parameters!(graph, :q => Q, :offset => P * Float32[1e-9, 0])
+        FilterGraphs.replace_parameters!(graph, :q => Q, :offset => P * Float32[1e-9, 0])
         @test_throws ArgumentError Offsets.prepare(path, graph)
     end
 end

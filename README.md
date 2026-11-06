@@ -6,7 +6,7 @@ owns admission, lifecycle and declared application links through its Julia
 may provide site-configured device policy separately. The Julia package provides
 configuration, installation and native clients. systemd user
 services own process lifetime and resource policy. PipeWireAO schedules NDArray transport;
-FGN and JFG execute the scientific graphs. AOS/HIL supplies simulated instrument
+FGN and FilterGraphs execute the scientific graphs. AOS/HIL supplies simulated instrument
 sources and sinks; AOC supplies calibration algorithms.
 
 The Rust Statig runner and Julia `DeploymentRunner` are retired. Scientists
@@ -95,6 +95,14 @@ The registered application environment is the supported launch path for new
 deployments. Existing sealed SDK deployments retain their recorded runtime and
 must use the matching older tools; the registered installer does not migrate
 their package contents.
+
+This cleanup branch prepares RTC 0.6.1 with FilterGraphAlgorithms 0.12,
+FilterGraphs 0.9 and the reconciled FilterGraphPipeWire 0.5.1 / PipeWireAO 0.9.2
+sources. Its development manifest selects the sibling PipeWireAO source;
+command-endpoint validation requires the matching native 4.0.2 SDK. These
+preservation ports are unpublished. See the [source cohort and verification](docs/reviews/20261106-graph-reconciliation/REVIEW.md)
+before building a new registered application; installed applications keep their
+existing sealed dependencies.
 
 The unreleased API cleanup removes the `Native` prefix from Julia control
 modules: for example, use `SessionClient`, `ControlClient` and `ParameterSource`

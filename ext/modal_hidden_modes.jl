@@ -1,4 +1,4 @@
-# Existing JFG projection coordinates, derived from the parent's RMS-weighted TSVD.
+# Existing FilterGraphs projection coordinates, derived from the parent's RMS-weighted TSVD.
 """
     InstrumentCalibration.calibrate_hidden_modes(calibration, output)
 

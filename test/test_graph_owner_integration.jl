@@ -1,20 +1,19 @@
-# Optional science boundary check; run in an environment containing the JFG stack.
+# Optional science boundary check; run in an environment containing
+# FilterGraphs.
 using Test
 using PipeWireAORTC
 
 @test !any(
-    id ->
-        id.name in ("FilterGraphIsland", "JuliaFilterGraph", "FilterGraphPipeWire", "CUDA"),
+    id -> id.name in ("FilterGraphPipeWire", "FilterGraphs", "CUDA"),
     keys(Base.loaded_modules),
 )
 
-using FilterGraphIsland
-using JuliaFilterGraph
 using FilterGraphPipeWire
+using FilterGraphs
 using FilterGraphAlgorithms
 
 @test Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt) !== nothing
-@test hasmethod(PipeWireAORTC.GraphOwner.run_owner, Tuple{Module,Any,Any,Any})
+@test hasmethod(PipeWireAORTC.GraphOwner.run_owner, Tuple{Any,Any,Any})
 
 @testset "FITS graph initial parameters adopt before node publication" begin
     mktempdir() do directory
@@ -50,12 +49,13 @@ filter.graph = {
 """,
         )
         for execution in ("complete-frame", "row-block")
-            options = FilterGraphIsland.parse_arguments([
+            options = FilterGraphPipeWire.parse_arguments([
                 "--graph", graph_path, "--check", "--execution", execution
             ])
             arrays = Ref{Any}(nothing)
-            graph = FilterGraphIsland.prepare_service_graph(
-                options;
+            graph = FilterGraphPipeWire.prepare_service_graph(
+                options.graph;
+                execution = execution == "row-block" ? :row_block : :complete_frame,
                 initial_parameters = formats -> begin
                     arrays[] = PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats)
                     arrays[]
@@ -66,7 +66,7 @@ filter.graph = {
                 @test checked.nodes[1].prepared.plan.background == background
                 last(only(arrays[]))[1] = -1
                 @test checked.nodes[1].prepared.plan.background[1] == 1
-                @test JuliaFilterGraph.parameter_formats(graph).background.shape == (8, 6)
+                @test FilterGraphs.parameter_formats(graph).background.shape == (8, 6)
                 outputs = (; calibrated = zeros(Float32, 2, 6))
                 inputs = (; raw = fill(UInt16(100), 2, 6))
                 for block in 0:3
@@ -75,17 +75,17 @@ filter.graph = {
                             0, 2block; terminal = block == 3
                         )
                     )
-                    JuliaFilterGraph.process!(outputs, graph, inputs, metadata)
+                    FilterGraphs.process!(outputs, graph, inputs, metadata)
                     @test outputs.calibrated ==
                         100.0f0 .- background[(2block+1):(2block+2), :]
                 end
             finally
-                FilterGraphIsland.close_execution(graph)
+                FilterGraphPipeWire.close_execution(graph)
             end
         end
         @test PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:background] ==
             background
-        options = FilterGraphIsland.parse_arguments(["--graph", graph_path, "--check"])
+        options = FilterGraphPipeWire.parse_arguments(["--graph", graph_path, "--check"])
         for (array, axes) in (
             (zeros(Float32, 8, 5), (2, 1)),
             (background, (1, 2)),
@@ -95,8 +95,8 @@ filter.graph = {
             source = PipeWireAORTC.Artifacts.FITSArtifact(path; axes)
             invalid = [PipeWireAORTC.GraphOwner.FITSBinding(:background, source)]
             expected = all(isfinite, array) ? DimensionMismatch : ArgumentError
-            @test_throws expected FilterGraphIsland.prepare_service_graph(
-                options;
+            @test_throws expected FilterGraphPipeWire.prepare_service_graph(
+                options.graph;
                 initial_parameters = formats ->
                     PipeWireAORTC.GraphOwner.prepare_bindings(invalid, formats),
             )
@@ -145,9 +145,9 @@ parameters = [
         write_fits = PipeWireAORTC.InstrumentCalibration.write_fits
         write_fits(mask_path, mask)
         write_fits(origins_path, UInt32[0 0])
-        options = FilterGraphIsland.parse_arguments(["--graph", graph_path, "--check"])
-        prepare() = FilterGraphIsland.prepare_service_graph(
-            options;
+        options = FilterGraphPipeWire.parse_arguments(["--graph", graph_path, "--check"])
+        prepare() = FilterGraphPipeWire.prepare_service_graph(
+            options.graph;
             initial_parameters = formats ->
                 PipeWireAORTC.GraphOwner.prepare_bindings(entries, formats),
         )
@@ -158,14 +158,12 @@ parameters = [
             regions = zeros(Float32, 1, 1, 1)
             outputs = NamedTuple{(Symbol("selected-pixels"), :regions)}((selected, regions))
             @test all(
-                values(
-                    JuliaFilterGraph.process!(outputs, graph, (; image, calibrated = image))
-                ),
+                values(FilterGraphs.process!(outputs, graph, (; image, calibrated = image)))
             )
             @test selected == Float32[2, 4, 6]
             @test regions == ones(Float32, 1, 1, 1)
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
         @test eltype(
             PipeWireAORTC.GraphOwner.read_bindings(graph_path, manifest)[:mask]

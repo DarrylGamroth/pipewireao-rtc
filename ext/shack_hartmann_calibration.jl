@@ -160,7 +160,7 @@ function Calibration._calibrate_system(
             )
             flat_flux = copy(getproperty(flat_output, Symbol(estimator["flux_output"])))
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
         K.replace_dimensions!(
             working,
@@ -266,7 +266,7 @@ function Calibration._calibrate_system(
                 output, report, rtc.calibration, concrete, parameters; diagnostics
             )
         finally
-            FilterGraphIsland.close_execution(graph)
+            FilterGraphPipeWire.close_execution(graph)
         end
     end
 end

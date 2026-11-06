@@ -1,6 +1,22 @@
 const Analysis = PipeWireAORTC.Analysis
 import Clocks
 
+# The blocking native graph loop occupies the owner thread. Analysis keeps its
+# monitors on the reserved second default thread and yields after GC-safe waits.
+function analysis_spawn_monitor(callback)
+    ids = ThreadPinning.threadids(; threadpool = :default)
+    length(ids) >= 2 ||
+        throw(ArgumentError("An analysis monitor requires a second default Julia thread"))
+    return ThreadPinning.@spawnat ids[2] callback()
+end
+
+function analysis_sleep(seconds::Real)
+    microseconds = round(Cuint, seconds * 1e6)
+    @ccall gc_safe = true usleep(microseconds::Cuint)::Cint
+    yield()
+    return nothing
+end
+
 # Cold setup uses one absolute deadline across publication, discovery and linking.
 # The timeout keyword is seconds; all local clock samples and deadlines are ns.
 function analysis_setup_deadline(clock::Clocks.AbstractNanoClock, timeout::Real)
@@ -126,7 +142,7 @@ function analysis_connections(
             clock, previous, deadline, "Analysis node publication timed out"
         )
         PipeWireAO.isrunning(node) && FilterGraphPipeWire.node_id(node) !== nothing && break
-        FilterGraphIsland.deployment_sleep(0.01)
+        analysis_sleep(0.01)
     end
     finished[] && return nothing
     loop = PipeWireAO.ThreadLoop("rtc.analysis.connections")
@@ -185,7 +201,7 @@ function analysis_connections(
                     sources = candidates
                     break
                 end
-                FilterGraphIsland.deployment_sleep(0.02)
+                analysis_sleep(0.02)
             end
             finished[] && return nothing
             source_info = Dict{UInt32,PipeWireAO.NodeInfo}()
@@ -238,7 +254,7 @@ function analysis_connections(
                     true
                 end
                 discovered && break
-                FilterGraphIsland.deployment_sleep(0.02)
+                analysis_sleep(0.02)
             end
             finished[] && return nothing
         end
@@ -294,7 +310,7 @@ function analysis_connections(
                 endpoints = candidates
                 break
             end
-            FilterGraphIsland.deployment_sleep(0.02)
+            analysis_sleep(0.02)
         end
         finished[] && return nothing
         all(
@@ -360,7 +376,7 @@ function analysis_connections(
             all(published, links) &&
                 all(state -> state[] >= Int(PipeWireAO.LINK_STATE_PAUSED), states) &&
                 break
-            FilterGraphIsland.deployment_sleep(0.02)
+            analysis_sleep(0.02)
         end
         finished[] && return nothing
         previous = analysis_setup_time(
@@ -387,7 +403,7 @@ function analysis_connections(
             node_state = FilterGraphPipeWire.node_state(node)
             node_state == PipeWireAO.NDARRAY_FILTER_STATE_ERROR &&
                 error("Analysis graph failed: $(FilterGraphPipeWire.last_error(node))")
-            FilterGraphIsland.deployment_sleep(0.05)
+            analysis_sleep(0.05)
         end
     finally
         FilterGraphPipeWire.quit!(node)
@@ -417,9 +433,9 @@ function analysis_connections(
 end
 
 function analysis_input_owner(graph)
-    input_count = length(JuliaFilterGraph.input_formats(graph))
+    input_count = length(FilterGraphs.input_formats(graph))
     input_count == 1 && return graph
-    return JuliaFilterGraph.prepare_synchronized_inputs(graph; match = :acquisition)
+    return FilterGraphs.prepare_synchronized_inputs(graph; match = :acquisition)
 end
 
 function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
@@ -430,13 +446,13 @@ function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
         name = config.name,
         remote,
         input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            keys(JuliaFilterGraph.input_formats(graph));
+            keys(FilterGraphs.input_formats(graph));
             required = FilterGraphPipeWire.required_input_metadata(graph),
         ),
         output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            keys(JuliaFilterGraph.output_formats(graph)),
-            keys(JuliaFilterGraph.input_formats(graph)),
-            JuliaFilterGraph.output_metadata_source_inputs(graph);
+            keys(FilterGraphs.output_formats(graph)),
+            keys(FilterGraphs.input_formats(graph)),
+            FilterGraphs.output_metadata_source_inputs(graph);
             required = FilterGraphPipeWire.required_input_metadata(graph),
         ),
         rate = config.rate,
@@ -448,34 +464,32 @@ function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
 end
 
 function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256)
-    capture = Analysis.prepare_capture(
-        config.capture, JuliaFilterGraph.output_formats(graph)
-    )
+    capture = Analysis.prepare_capture(config.capture, FilterGraphs.output_formats(graph))
     node = prepare_analysis_node(config, remote, graph, boundary_layout, capture)
     finished = Threads.Atomic{Bool}(false)
     monitor = nothing
     acquisition = nothing
     try
         FilterGraphPipeWire.connect!(node)
-        monitor = FilterGraphIsland.spawn_monitor() do
+        monitor = analysis_spawn_monitor() do
             try
                 analysis_connections(
                     node,
                     config,
                     remote,
                     finished;
-                    output_names = keys(JuliaFilterGraph.output_formats(graph)),
+                    output_names = keys(FilterGraphs.output_formats(graph)),
                 )
             finally
                 FilterGraphPipeWire.quit!(node)
             end
         end
         if capture !== nothing
-            acquisition = FilterGraphIsland.spawn_monitor() do
+            acquisition = analysis_spawn_monitor() do
                 while capture.ready[] == 0 &&
                       !finished[] &&
                       !node.owner.frame_observer.failed[]
-                    FilterGraphIsland.deployment_sleep(0.01)
+                    analysis_sleep(0.01)
                 end
                 FilterGraphPipeWire.quit!(node)
             end
@@ -508,6 +522,7 @@ function run_analysis_graph(config, remote, graph, boundary_layout, graph_sha256
 end
 
 function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
+    isempty(remote) && throw(ArgumentError("analysis remote must not be empty"))
     graph_sha256 = PipeWireAORTC.DeploymentConfiguration.digest(config.graph)
     provenance = config.capture === nothing ? nothing : config.capture.provenance
     provenance === nothing ||
@@ -519,25 +534,11 @@ function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
     provenance === nothing ||
         provenance.fits_bindings_sha256 == bindings_sha256 ||
         throw(ArgumentError("analysis FITS bindings differ from acquisition provenance"))
-    options = FilterGraphIsland.parse_arguments([
-        "--graph",
-        config.graph,
-        "--name",
-        config.name,
-        "--remote",
-        remote,
-        "--rate",
-        "$(numerator(config.rate))/$(denominator(config.rate))",
-        "--boundary-layout",
-        "row-major",
-    ])
-    declarations = FilterGraphIsland.algorithm_declarations(options)
     entries =
         config.fits_bindings === nothing ? PipeWireAORTC.GraphOwner.FITSBinding[] :
         PipeWireAORTC.GraphOwner.bindings(config.fits_bindings)
-    graph = FilterGraphIsland.prepare_service_graph(
-        options;
-        declarations,
+    graph = FilterGraphPipeWire.prepare_service_graph(
+        config.graph;
         initial_parameters = formats -> begin
             artifacts = PipeWireAORTC.GraphOwner.prepare_artifacts(entries, formats)
             if provenance !== nothing
@@ -563,26 +564,26 @@ function Analysis.prepare_graph(config::Analysis.Config, remote::AbstractString)
                 throw(ArgumentError("analysis FITS bindings changed during preparation"))
         end
     catch
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
         rethrow()
     end
-    return (; graph, options, graph_sha256)
+    return (; graph, boundary_layout = FilterGraphAlgorithms.RowMajorLayout(), graph_sha256)
 end
 
 function Analysis.run_graph(config::Analysis.Config, remote::AbstractString)
     prepared = Analysis.prepare_graph(config, remote)
-    graph, options = prepared.graph, prepared.options
+    graph = prepared.graph
     try
         Base.invokelatest(
             run_analysis_graph,
             config,
             remote,
             graph,
-            options.boundary_layout,
+            prepared.boundary_layout,
             prepared.graph_sha256,
         )
     finally
-        FilterGraphIsland.close_execution(graph)
+        FilterGraphPipeWire.close_execution(graph)
     end
     return nothing
 end

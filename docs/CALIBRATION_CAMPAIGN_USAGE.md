@@ -2,7 +2,7 @@
 
 `REVOLTRTC.jl/bin/calibration_campaign.jl` runs a finite, non-actuating Classic
 calibration campaign from an installed CPU base package. The base package may
-use the native FGN graph or the external JuliaFilterGraph (JFG) graph. The
+use the native FGN graph or the external FilterGraphs graph. The
 campaign makes four fresh stage packages and runtimes:
 
 1. **Dark:** capture dark frames and estimate pixel background and sample

@@ -333,7 +333,7 @@ function preflight(application, prefix; sample_count = 40, timeout_seconds = not
     )
     graph_path = asset(application, argument(receiving["argv"], "--graph"))
     binding_path = asset(application, argument(receiving["argv"], "--fits-bindings"))
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
     Base.invokelatest(
         E.validate_feedback,

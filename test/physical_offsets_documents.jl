@@ -16,8 +16,8 @@ filter.graph={nodes=[{type=ndarray name=reference label=physical-offset-referenc
    {name=physical endpoint="reference:physical-offset"}]}
 """,
     )
-    graph = JFG.prepare_graph(file; algorithms = algorithms())
-    JFG.replace_parameters!(graph, :q => Q, :c => C, :offset => zeros(Float32, 4))
+    graph = FilterGraphs.prepare_graph(file; algorithms = algorithms())
+    FilterGraphs.replace_parameters!(graph, :q => Q, :c => C, :offset => zeros(Float32, 4))
     artifacts = Dict{String,Any}()
     for (name, data) in (("projection", P), ("inverse", Q), ("reference", C))
         path = joinpath(directory, name * ".fits")

@@ -1,6 +1,6 @@
-# Optional scientific selector: actual JFG statistics through the shared artifact interface.
-using Test, PipeWireAORTC, FilterGraphAlgorithms, JuliaFilterGraph, PipeWireAO
-using FilterGraphIsland, FilterGraphPipeWire
+# Optional scientific selector: actual FilterGraphs statistics through the shared artifact interface.
+using Test, PipeWireAORTC, FilterGraphAlgorithms, FilterGraphs, PipeWireAO
+using FilterGraphPipeWire
 import FilterGraphAlgorithms: process!
 using PipeWireAORTC.Common: JSON
 using PipeWireAORTC.Artifacts: FITS
@@ -78,7 +78,7 @@ observer_bytes(capture, outputs, metadata) =
         config = A.configuration(config_path, prefix)
         @test config.capture.window_samples == 3
         graph = prepare_graph(graph_path; algorithms = algorithms())
-        capture = A.prepare_capture(config.capture, JuliaFilterGraph.output_formats(graph))
+        capture = A.prepare_capture(config.capture, FilterGraphs.output_formats(graph))
         extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
         node = extension.prepare_analysis_node(
             config, joinpath(root, "absent.sock"), graph, nothing, capture
@@ -91,7 +91,7 @@ observer_bytes(capture, outputs, metadata) =
         end
         output = map(
             format -> zeros(format.element_type, format.shape),
-            JuliaFilterGraph.output_formats(graph),
+            FilterGraphs.output_formats(graph),
         )
         input = (; sample = zeros(Float32, 2, 3))
         for (i, seq) in enumerate((8, 10, 14))
@@ -101,7 +101,7 @@ observer_bytes(capture, outputs, metadata) =
             )
             @test process!(output, graph, input, (; sample = header)) ==
                 map(_ -> true, output)
-            metadata = JuliaFilterGraph.output_metadata(graph)
+            metadata = FilterGraphs.output_metadata(graph)
             capture(Val(:frame), output, metadata)
         end
         @test capture.ready[] == 1
@@ -247,15 +247,15 @@ end
         try
             outputs = map(
                 f -> zeros(f.element_type, f.shape),
-                JuliaFilterGraph.output_formats(prepared.graph),
+                FilterGraphs.output_formats(prepared.graph),
             )
-            @test JuliaFilterGraph.input_formats(prepared.graph).raw.element_type === UInt16
+            @test FilterGraphs.input_formats(prepared.graph).raw.element_type === UInt16
             @test all(
                 values(process!(outputs, prepared.graph, (raw = fill(UInt16(10), 2, 2),)))
             )
             @test outputs.mean == 2.0f0 .* (10.0f0 .- background)
         finally
-            FilterGraphIsland.close_execution(prepared.graph)
+            FilterGraphPipeWire.close_execution(prepared.graph)
         end
         records = Dict{String,Any}[]
         graph_hash = PipeWireAORTC.InstrumentCalibration.digest(graph_path)
@@ -303,10 +303,10 @@ end
                 @test execution.graph_sha256 == graph_hash
                 outputs = map(
                     f -> zeros(f.element_type, f.shape),
-                    JuliaFilterGraph.output_formats(execution.graph),
+                    FilterGraphs.output_formats(execution.graph),
                 )
                 capture = A.prepare_capture(
-                    admitted.capture, JuliaFilterGraph.output_formats(execution.graph)
+                    admitted.capture, FilterGraphs.output_formats(execution.graph)
                 )
                 for n in 1:3
                     header = SampleMetadata(n, 0; terminal = true)
@@ -321,9 +321,7 @@ end
                         ),
                     )
                     capture(
-                        Val(:frame),
-                        outputs,
-                        JuliaFilterGraph.output_metadata(execution.graph),
+                        Val(:frame), outputs, FilterGraphs.output_metadata(execution.graph)
                     )
                 end
                 result = A.register_capture!(
@@ -337,7 +335,7 @@ end
                     hashes
                 @test capture.buffers.mean == coefficient .* (10.0f0 .- background)
             finally
-                FilterGraphIsland.close_execution(execution.graph)
+                FilterGraphPipeWire.close_execution(execution.graph)
             end
             # Square asymmetric data keeps its shape and original byte hash
             # when axes change; the binding identity must still reject it.

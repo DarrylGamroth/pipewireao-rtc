@@ -1,7 +1,7 @@
 # Cold session references use the same JSON Pointer contract as graph authoring.
 # Scientific owners supply metadata; the session keeps its schemas and policies.
 
-"Return the prepared JFG boundary's shape, wire element type and schema, without binding artifacts."
+"Return the prepared FilterGraphs boundary's shape, wire element type and schema, without binding artifacts."
 function graph_port_contracts end
 
 "Return the simulator observation owner's cold port contracts for selected settings."
@@ -158,7 +158,7 @@ end
 reference_roots!(roots, value) = roots
 
 function graph_contract_context(application, declarations, prefix)
-    Base.require(Main, :FilterGraphIsland)
+    Base.require(Main, :FilterGraphPipeWire)
     result = Dict{String,Any}()
     for entry in declarations
         path = D.relative_asset(application, entry["path"])
@@ -181,7 +181,7 @@ end
 function validate_session_graph_contracts(session, contracts)
     for graph in get(session, "graphs", [])
         name = graph["node.name"]
-        haskey(contracts, name) || continue # Other external owners are not JFG declarations.
+        haskey(contracts, name) || continue # Other external owners are not FilterGraphs declarations.
         actual = contracts[name]
         # Reference resolution can infer string-only dictionaries when all
         # numeric metadata was omitted. Widen before adding prepared shapes.
