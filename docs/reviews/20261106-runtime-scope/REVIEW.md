@@ -162,3 +162,14 @@ the cleanup changes before changing runtime ownership; do not replace the cleanu
 tree with the installed older baseline. No source, installed environment, service
 or dependency manifest was changed during this inspection. No new runtime
 qualification is claimed.
+
+## NEC-12 reconciliation disposition
+
+The [cleanup-branch reconciliation](../20261106-graph-reconciliation/REVIEW.md)
+removes CLI-based preparation and delegates prepared graph creation/cleanup to
+public FilterGraphPipeWire APIs. The remaining RTC host composes native admission,
+metadata and application observers. The standalone application's event-file
+orchestration still lacks that admission boundary, so NEC-12 is partially
+implemented, not closed by replacing RTC with its standalone entry point.
+The receiving API preservation ports are unpublished source versions; installed
+applications and historical receipts retain their original cohort.

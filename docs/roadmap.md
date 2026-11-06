@@ -12,19 +12,27 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### Installed graph package baseline — 2026-11-06
+### Graph package reconciliation — 2026-11-06
 
-The user reports, and installed source inspection confirms, FilterGraphAlgorithms
-0.12.0, FilterGraphs 0.9.0 and FilterGraphPipeWire 0.5.0. FilterGraphIsland is
-retired; FilterGraphPipeWire owns the standalone application and public graph
-preparation/cleanup APIs. The [scope review update](reviews/20261106-runtime-scope/REVIEW.md#installed-three-package-baseline-update)
-records exact installed trees and remaining host-composition constraints.
-The installed RTC 0.6.0 carries the downstream naming/preparation migration on an
-earlier baseline. Reconcile it with this cleanup branch before host consolidation;
-preserve current capture, clocks, Hsm, session policy and dependency-only exports.
-Standalone event-file signaling must not replace native RTC admission. This is a
-verified baseline update, not a completed cleanup-branch migration or new runtime
-qualification.
+RTC 0.6.1's cleanup branch now uses FilterGraphAlgorithms 0.12 and FilterGraphs
+0.9, with FilterGraphPipeWire's merged public library preparation interface.
+Graph contracts, calibration projections/staging and analysis no longer build CLI
+options to prepare graphs. Native RTC admission, single session authority,
+message-owned calibration graphs, clocks/Hsm, generic capture and dependency-only
+exports are preserved. The [reconciliation record](reviews/20261106-graph-reconciliation/REVIEW.md)
+records the source cohort, failed-before worker gate and verification.
+
+Installed FGPW 0.5.0, PipeWireAO 0.9.1 and native 4.0.1 omitted the cleanup's
+endpoint APIs. Preservation ports are committed separately as FGPW 0.5.1,
+PipeWireAO 0.9.2 and native 4.0.2 source versions. The native five-suite gate,
+PipeWireAO's 2,315 assertions, FGPW's 55 assertions, RTC's private worker (206)
+and generic capture (173) pass. The final source-cohort core suite passes 11,048
+assertions across 514 testsets.
+The RTC development manifest selects the sibling PipeWireAO source; deployed
+applications still require registered sealed dependencies. Publishing the new
+Julia/native/JLL cohort and qualifying a release remain separate; no installed
+application changed. Standalone event-file signaling cannot replace native RTC
+admission. NEC-12's remaining host-composition hooks remain open.
 
 ### Package necessity before further cleanup — 2026-11-05
 
@@ -62,9 +70,9 @@ separate, and existing sealed applications are unchanged.
 The user requested a broader size/ownership review after generic capture.
 [Findings NEC-09–13](reviews/20261106-runtime-scope/REVIEW.md) identify remaining
 calibration mathematics, simulator execution, parallel graph-host mechanics and
-sparse parameter publication as transfer/consolidation candidates. The current
-source inventory remains 62,339 physical Julia lines; the prior cleanup has not
-removed this broader scope. These are reviewed active responsibilities, not dead
+sparse parameter publication as transfer/consolidation candidates. The review
+inventoried 62,339 physical Julia lines; preparation delegation alone does not
+remove this broader scope. These are reviewed active responsibilities, not dead
 code or completed transfers. Optional workstation retirement remains a product
 decision, and native application admission/fault policy remains necessary.
 
