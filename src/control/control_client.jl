@@ -21,6 +21,8 @@ header and the profile's lifecycle; codecs reject invalid widths, tags and shape
 Server profiles additionally implement `decode_request`, `encode_completion`,
 `encode_rejection` and `encode_failure`. The common endpoint owns envelope
 admission and correlation; a profile must not create another request authority.
+Profiles used by an owned `ControlEndpoint.Transport` also implement
+`command_type`, returning the bounded command type accepted by that protocol.
 
 Independent protocol properties use the traits `reply_endpoint` (`:lifecycle`
 or `:calibration`), `maximum_budget` (seconds), and `node_identity` (an optional
@@ -39,6 +41,8 @@ function decode_rejection end
 function operation_id end
 function encode_request end
 function decode_request end
+"Return the bounded command type accepted by an owned endpoint transport."
+function command_type end
 function encode_completion end
 function encode_rejection end
 function encode_failure end

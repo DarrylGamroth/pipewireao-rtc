@@ -131,6 +131,14 @@ struct Rejection
 end
 
 const Profile = Union{CalibrationLifecycleProfile,CorrectionLifecycleProfile}
+Client.command_type(::Profile) = Union{
+    LifecycleCommand{:status},
+    LifecycleCommand{:pause},
+    LifecycleCommand{:resume},
+    LifecycleCommand{:reset},
+    LifecycleCommand{:connect},
+    LifecycleCommand{:shutdown},
+}
 Client.lifecycle_type(::Profile) = ColdLifecycle
 Client.completion_type(::Profile) = Completion
 Client.rejection_type(::Profile) = Rejection

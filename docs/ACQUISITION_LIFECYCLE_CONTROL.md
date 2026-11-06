@@ -1,9 +1,12 @@
 # acquisition lifecycle codec foundation
 
 Baseline: `60e28b8`, RTC-DEV-030 and phase D of the native control migration.
-This document fixes the Julia wire profile for calibration and finite HEART
-correction owner lifecycle control. It does not claim owner integration or close
-RTC-DEV-030.
+This document fixes the Julia wire profile for calibration and correction owner
+lifecycle control. The shared `ControlEndpoint.Transport` owns native endpoint
+resources; each profile supplies its bounded command type and existing codecs.
+See [acquisition lifecycle helpers](ACQUISITION_LIFECYCLE_HELPERS.md) for the
+current resource API and migration from the retired acquisition-specific
+runtime. This wire contract does not change the existing protocol identities.
 
 ## Profiles and fixed envelope
 
@@ -26,15 +29,19 @@ Cold lifecycle Ids are `Preparing=1`, `Prepared=2`, `Connected=3`, `Fault=4`,
 `Stopped=5`. Scientific `running` and `completed` are snapshot flags. The
 owner's existing serialized dispatcher remains their authority.
 
-`NativeAcquisitionLifecycleRuntime.complete!` accepts `terminal=true` for a
-successful Shutdown after scientific cleanup. The adapter retains the issuing
-controller, publishes Stopped, flushes publication and requires clean controller
-removal before closing its transport, within the original ticket deadline.
-WirePlumber invokes native source Shutdown before graph-owner Shutdown, releases
-its dedicated controller marker after all Stopped replies, and observes the exact
-owner control clients disappear while the private core remains alive. Only then
-does it complete public Quit. Legacy acquisition mailboxes keep their existing
-bootstrap cleanup path. These operations do not change the wire representation.
+`ControlEndpoint.complete!(transport, ticket, lifecycle, details...;
+result, message, terminal)` encodes a completion through the selected profile.
+For successful terminal Shutdown, the owner performs scientific cleanup before
+publishing the terminal reply, then calls `ControlEndpoint.flush_terminal!`
+with the ticket’s original absolute deadline before closing the transport.
+This resource and lifecycle API consolidation preserves the wire representation
+and all protocol IDs and schemas defined above.
+
+Ordinary bootstrap ownership still requires retaining the exact issuing controller
+and observing its clean removal before transport teardown. The bootstrap monitor
+continues to call `ControlEndpoint.retain_controller!` and
+`ControlEndpoint.wait_terminal_release!` under the original deadline. Shared
+resource synchronization does not replace that lifecycle proof.
 
 The completion payload Struct has exactly three fields: lifecycle Id, Snapshot
 Struct or None, and bounded message String (at most 8192 UTF-8 bytes). A
@@ -89,5 +96,5 @@ telemetry phase store to manufacture these labels.
 
 The complete scientific JSON reports remain saved artifacts. The lifecycle
 snapshot supplies bounded live status and does not replace their detailed
-science or evidence fields. Owner endpoint, caller authority and migration of
-the existing file controls remain phase D integration work.
+science or evidence fields. Historical integration receipts and qualification
+records do not define the current endpoint resource API.

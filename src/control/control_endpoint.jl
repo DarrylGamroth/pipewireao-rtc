@@ -779,4 +779,220 @@ function Base.close(endpoint::Endpoint)
     return nothing
 end
 
+"""Owned native resources for a cold control endpoint.
+
+The serialized caller owns resource lifetime and effects. Callback observations
+and endpoint state are protected by the native ThreadLoop lock; `wake` is only an
+atomic notification hint. Registry-listener removal precedes endpoint/core/context
+destruction, and every cleanup failure is retained.
+"""
+mutable struct Transport{P<:Client.AbstractProfile,C,E,L}
+    profile::P
+    loop::ThreadLoop
+    context::Context{ThreadLoop}
+    core::C
+    endpoint::E
+    registry_listener::L
+    acknowledged_sequence::Base.RefValue{Cint}
+    wake::Base.Threads.Atomic{Bool}
+    closed::Bool
+end
+
+"""
+    Transport(profile, remote, name, instance, lifecycle; clock, application_name, loop_name)
+
+Own the ThreadLoop, Context, Core and inactive control endpoint for one serialized
+owner. The profile implements `ControlClient.command_type` and the existing
+server codecs. The caller supplies the initial lifecycle and owns `close`.
+Native callbacks only stage requests and wake hints; they do not apply effects.
+"""
+function Transport(
+    profile::P,
+    remote::AbstractString,
+    name::AbstractString,
+    instance::Int64,
+    lifecycle;
+    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    application_name::Union{Nothing,AbstractString} = nothing,
+    loop_name::AbstractString = "rtc-control",
+) where {P<:Client.AbstractProfile}
+    path = Client.private_remote(remote)
+    commands = Client.command_type(profile)
+    loop = ThreadLoop(loop_name)
+    context = core = endpoint = registry_listener = nothing
+    endpoint_ref = Ref{Union{Nothing,Endpoint}}(nothing)
+    acknowledged_sequence = Ref{Cint}(-1)
+    wake = Base.Threads.Atomic{Bool}(false)
+    connection_failure = Ref{Union{Nothing,String}}(nothing)
+    try
+        with_thread_loop_lock(loop) do _
+            properties =
+                application_name === nothing ? Dict{String,String}() :
+                Dict("application.name" => String(application_name))
+            context = Context(loop; properties)
+            core = CoreConnection(
+                context;
+                properties = Dict("remote.name" => path),
+                on_done = (core, id, sequence) -> begin
+                    id == 0 && (acknowledged_sequence[] = sequence)
+                    nothing
+                end,
+                on_error = (core, id, sequence, error) -> begin
+                    connection_failure[] = sprint(showerror, error)
+                    current = endpoint_ref[]
+                    current === nothing || (current.failure = connection_failure[])
+                    wake[] = true
+                    nothing
+                end,
+            )
+            endpoint = Endpoint(
+                profile,
+                commands,
+                loop,
+                core,
+                name,
+                instance,
+                lifecycle;
+                clock,
+                publisher = (filter, params) -> begin
+                    wake[] = true
+                    update_params!(filter, params)
+                end,
+            )
+            registry_listener = add_listener!(
+                something(endpoint.registry);
+                on_global_added = (registry, global_object) -> (wake[] = true; nothing),
+                on_global_removed = (registry, id) -> (wake[] = true; nothing),
+            )
+            endpoint_ref[] = endpoint
+            connection_failure[] === nothing || (endpoint.failure = connection_failure[])
+        end
+        start!(loop)
+        return Transport(
+            profile,
+            loop,
+            context,
+            core,
+            endpoint,
+            registry_listener,
+            acknowledged_sequence,
+            wake,
+            false,
+        )
+    catch primary
+        failures = Exception[primary]
+        try
+            with_thread_loop_lock(loop) do _
+                for resource in (registry_listener, endpoint, core, context)
+                    resource === nothing && continue
+                    try
+                        close(resource)
+                    catch cleanup
+                        push!(failures, cleanup)
+                    end
+                end
+            end
+        catch cleanup
+            push!(failures, cleanup)
+        end
+        try
+            close(loop)
+        catch cleanup
+            push!(failures, cleanup)
+        end
+        length(failures) == 1 && rethrow()
+        throw(CompositeException(failures))
+    end
+end
+
+"Read the prepared atomic wake hint without polling native objects."
+@inline has_pending(runtime::Transport) = runtime.wake[]
+
+"Consume the old wake hint before polling; callbacks can publish a new hint."
+function poll!(runtime::Transport)
+    Base.Threads.atomic_xchg!(runtime.wake, false)
+    return poll!(runtime.endpoint)
+end
+
+"Take a staged ticket outside callbacks, consuming only the preceding wake hint."
+function take!(runtime::Transport)
+    Base.Threads.atomic_xchg!(runtime.wake, false)
+    return take!(runtime.endpoint)
+end
+"""Publish the result of an accepted ticket after the sole owner has applied it."""
+function complete!(
+    runtime::Transport,
+    ticket::Ticket,
+    lifecycle,
+    details...;
+    result::Int32 = Int32(0),
+    message::AbstractString = "",
+    terminal::Bool = false,
+)
+    header = Envelope.ReplyHeader(
+        ticket.header.controller,
+        runtime.endpoint.instance,
+        ticket.header.token,
+        ticket.header.operation,
+        result,
+    )
+    completion = Client.encode_completion(
+        runtime.profile, header, lifecycle, details..., message
+    )
+    complete!(runtime.endpoint, ticket, completion; terminal)
+    return nothing
+end
+
+"""Synchronize a terminal publication before removing the public endpoint."""
+function flush_terminal!(
+    runtime::Transport, deadline::Union{Int64,Float64}; check = () -> nothing
+)
+    deadline = Client._deadline_ns(deadline)
+    sequence = with_thread_loop_lock(runtime.loop) do _
+        operational(runtime.endpoint)
+        Client._supervise(check)
+        Client.deadline_check(deadline, Client.NO_CHECK, _now!(runtime.endpoint))
+        PipeWireAO.sync!(runtime.core)
+    end
+    while true
+        Client._supervise(check)
+        observed, at = with_thread_loop_lock(runtime.loop) do _
+            operational(runtime.endpoint)
+            at = _now!(runtime.endpoint)
+            Client.deadline_check(deadline, Client.NO_CHECK, at)
+            (runtime.acknowledged_sequence[] == sequence, at)
+        end
+        observed && return nothing
+        sleep(Float64(clamp(Int128(deadline) - at, 0, 5_000_000)) / 1e9)
+    end
+end
+
+function Base.close(runtime::Transport)
+    runtime.closed && return nothing
+    runtime.closed = true
+    failures = Exception[]
+    try
+        with_thread_loop_lock(runtime.loop) do _
+            for resource in
+                (runtime.registry_listener, runtime.endpoint, runtime.core, runtime.context)
+                try
+                    close(resource)
+                catch error
+                    push!(failures, error)
+                end
+            end
+        end
+    catch error
+        push!(failures, error)
+    end
+    try
+        close(runtime.loop)
+    catch error
+        push!(failures, error)
+    end
+    isempty(failures) || throw(CompositeException(failures))
+    return nothing
+end
+
+
 end # module ControlEndpoint

@@ -45,6 +45,23 @@ The [removal record](reviews/20261106-journal-removal/REVIEW.md) records the sco
 public API migration and verification. This supersedes the session-journal
 selection and qualification work recorded in earlier dated increments.
 
+### Shared endpoint resources — 2026-11-06
+
+The NEC-03 duplicate is removed: `ControlEndpoint.Transport` owns one implementation
+of loop/context/core/endpoint creation, callback wake hints, terminal synchronization
+and cleanup. Bootstrap keeps its reserved monitor and wake-consumption policy.
+The test-only acquisition runtime module and bootstrap forwarding wrappers are
+retired; acquisition test owners use the same resource type and existing profile
+codecs. The [resource consolidation record](reviews/20261106-endpoint-resources/REVIEW.md)
+records API migration, source review and focused/native/export evidence.
+
+The next bounded reduction is NEC-05: exclude development tests from deployed
+runtimes by changing the package/workspace closure, exporter and validator
+together. NEC-01 detector execution and influence interpolation require receiving
+scientific APIs before deleting RTC copies; NEC-02's Classic capture format needs
+an instrument-owned writer/reader/schema interface first. These have active callers.
+The scope follow-up found no additional major implementation proven safely dead.
+
 ### Lua session policy replacement — 2026-11-04
 
 Implementation is underway on `codex/julia-session-policy-20261104`. The

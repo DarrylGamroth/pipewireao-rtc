@@ -48,9 +48,10 @@ function measured(remote, directory, daemon)
             )
             # Poll/take cannot erase a wake produced after the consumed hint.
             runtime.transport.wake[] = true
-            R.poll!(runtime.transport)
+            PipeWireAORTC.ControlEndpoint.poll!(runtime.transport.endpoint)
             @test runtime.transport.wake[]
-            @test R.take!(runtime.transport) === nothing
+            @test PipeWireAORTC.ControlEndpoint.take!(runtime.transport.endpoint) ===
+                nothing
             @test runtime.transport.wake[]
             @test R._poll_ready!(runtime.transport)
             for _ in 1:5

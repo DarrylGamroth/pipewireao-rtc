@@ -1,68 +1,69 @@
 # acquisition lifecycle helpers
 
-Current selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md). Commands in dated evidence below retain their original paths.
+These helpers implement the RTC-DEV-030 cold native control boundary for the two
+[acquisition lifecycle profiles](ACQUISITION_LIFECYCLE_CONTROL.md). They stage
+requests and publish correlated replies; the profile's serialized owner applies
+acquisition effects.
+Historical selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md).
 
+## Current transport API
 
-These Julia helpers implement the cold transport portion of RTC-DEV-030 phase D
-for the two [acquisition lifecycle profiles](ACQUISITION_LIFECYCLE_CONTROL.md).
-They do not apply acquisition effects. The scientific and HEART calibration
-owners and the HEART correction owner still need integration with their sole
-serialized dispatchers.
-
-## Runtime API
-
-`PipeWireAORTC.AcquisitionLifecycleRuntime` provides:
-
-```julia
-Runtime(profile, remote::AbstractString, node::AbstractString, instance::Int64)
-has_pending(runtime)::Bool
-poll!(runtime)
-take!(runtime)
-lifecycle!(runtime, state::ColdLifecycle)
-complete!(runtime, ticket, state::ColdLifecycle, snapshot::Union{Nothing,Snapshot};
-          result::Int32=Int32(0), message::AbstractString="")
-flush_terminal!(runtime, deadline::Float64; check=()->nothing)
-close(runtime)
-```
-
-The constructor requires an absolute, owned private PipeWire remote. It
-creates a ThreadLoop, Context, Core and inactive no-port Filter endpoint in
-Preparing. Its Core error callback retains an error even if it occurs before
-the Endpoint object exists. Constructor failure and `close` attempt every
-owned cleanup resource, preserving cleanup errors with the primary error.
-
-`has_pending` reads one prepared atomic wake flag. The endpoint publisher,
-registry global add/remove listener and Core error callback set it. This is
-the only helper call suitable for an idle scientific service hook. It does not
-scan the registry or allocate after compilation. The existing serialized
-owner must call `poll!` and then `take!` together when woken, outside the
-scientific callback and without holding the ThreadLoop lock across effects:
+`PipeWireAORTC.ControlEndpoint.Transport` is the common owner of the
+ThreadLoop, Context, Core, registry listener and inactive no-port endpoint.
+Construct it with a lifecycle profile and an owned private remote:
 
 ```julia
-function service_lifecycle!(runtime)
-    has_pending(runtime) || return nothing
-    poll!(runtime)
-    return take!(runtime)  # apply the returned ticket later at the owner boundary
-end
+ControlEndpoint.Transport(profile, remote, name, instance, initial_lifecycle;
+                          clock=Clocks.SystemNanoClock(), application_name=nothing,
+                          loop_name="rtc-control")
+ControlEndpoint.has_pending(transport)::Bool
+ControlEndpoint.poll!(transport)
+ControlEndpoint.take!(transport)
+ControlEndpoint.state!(transport.endpoint, lifecycle)
+ControlEndpoint.complete!(transport, ticket, lifecycle, details...;
+                          result::Int32=Int32(0), message::AbstractString="", terminal=false)
+ControlEndpoint.flush_terminal!(transport, deadline; check=()->nothing)
+close(transport)
 ```
 
-Both `poll!` and `take!` clear the flag **before** entering the generic
-endpoint. A callback concurrent with either call sets it again. The caller
-must not recheck `has_pending` between `poll!` and `take!`: the first call can
-consume a wake while the accepted ticket remains queued. The runtime starts
-no polling task. When owner effects are paused or a ticket is already being
-applied, the serialized owner must make its next cold check at the relevant
-boundary; the runtime does not grant permission to run effects inside a
-callback.
+Profiles provide the existing server codecs and `ControlClient.command_type`,
+which returns their bounded command union. Calibration and correction use the
+profiles and commands in `AcquisitionLifecycleCodec`; bootstrap uses its
+existing profile. The transport keeps callbacks limited to staging and wake
+hints. The owner applies effects outside callbacks and the PipeWire loop lock.
 
-`complete!` accepts only an applying ticket already taken from the generic
-Endpoint. It encodes a typed completion and uses Endpoint matching, live
-controller and deadline checks for successful results. Negative results may
-truthfully carry no snapshot. For terminal Shutdown, perform the actual owner
-cleanup first, publish the terminal completion, then call `flush_terminal!`
-before removing the endpoint. The latter uses exact public Core `sync!` /
-`on_done` sequence matching under the original absolute deadline. Failure
-to observe synchronization leaves the caller with an unknown outcome.
+`has_pending` reads the atomic notification hint. `poll!` and `take!` consume
+the prior hint before entering the common endpoint; a concurrent callback can
+set a new hint. For serialized acquisition hooks, call `poll!` followed by
+`take!` in the same owner turn when the hint is set. Do not recheck between
+those calls: `poll!` may consume a hint while its staged ticket remains queued.
+The endpoint starts no polling task and does not authorize effects inside a
+callback. Bootstrap retains its reserved monitor: it consumes the old atomic
+wake once, checks the underlying endpoint under its loop lock, then calls the
+endpoint poll/take methods directly.
+
+`ControlEndpoint.complete!(transport, ticket, lifecycle, details...;
+result, message, terminal)` encodes the selected profile's existing typed
+completion. The endpoint checks ticket correlation, controller presence and
+the original deadline for successful results. `state!(transport.endpoint,
+lifecycle)` publishes a lifecycle update. For terminal Shutdown, perform owner
+cleanup, publish the terminal completion, call `flush_terminal!` with the
+ticket's absolute deadline, then remove the endpoint. The flush matches the
+public Core `sync!` / `on_done` sequence; failure to observe it leaves the
+outcome unknown.
+
+When the owner's lifecycle requires controller-release proof, it retains the
+exact controller with `ControlEndpoint.retain_controller!` before terminal
+publication and calls `wait_terminal_release!` before teardown. Bootstrap keeps
+this sequence under the original deadline. A Core synchronization acknowledgement
+alone does not establish controller release.
+
+## Migration note
+
+`AcquisitionLifecycleRuntime` has been removed. Its tests now use the shared
+`ControlEndpoint.Transport`; there is no acquisition-specific resource owner
+or wrapper API. Existing borrowed `ControlEndpoint.Endpoint` constructors
+remain available for loops and cores whose lifetime is owned elsewhere.
 
 ## Client API
 
@@ -86,15 +87,13 @@ returns the typed Completion or Rejection for one of the six fixed operations.
 The generic client serializes requests and uses one absolute deadline. It
 does not rebind or retry an unknown result.
 
-## Integration boundary and evidence
+## Historical integration receipt
 
-The current `_run_locked` deployment sequence still waits for preparation and
-connection files for non-HEART owners. `calibration_source_control!` currently
-removes the native source control node option and adds legacy control request
-and reply paths. Owner integration must update the descriptor and actual
-callers together; these helpers are not a file-marker fallback.
+The following dated receipt describes the earlier integration boundary. Its
+selector and deployment statements are historical and are not current API
+guidance.
 
-The focused CPU 15 private-core fixture exercises both profiles with a
+The focused CPU 15 private-core fixture exercised both profiles with a
 synthetic serialized owner. It checks Preparing/Prepared/Connected status,
 fresh token results, instrument/profile rejection, callback staging with
 effects in the stub dispatcher,

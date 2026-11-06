@@ -96,6 +96,7 @@ properties. Reuse these existing contracts when changing their consumers:
 | Owning interface | Required operations and independent traits | Contract coverage |
 | --- | --- | --- |
 | `ControlClient.AbstractProfile` | The abstract type documents client/server codec methods and correlation. `reply_endpoint`, `maximum_budget` and `node_identity` describe independent wire limits and identity requirements. Clients and endpoints consume those traits without selecting concrete profiles. | `test_control_client.jl`, `control_type_dispatch.jl` and profile/endpoint selectors |
+| `ControlEndpoint.Transport` / `ControlClient.command_type` | One owned ThreadLoop/Core/endpoint lifetime for cold control. Profiles declare their bounded command type; existing codecs encode replies. Bootstrap retains its monitor and consumes wake hints once before polling the underlying Endpoint. Existing-loop owners retain the borrowed Endpoint constructor. | `owner_bootstrap.jl`, `owner_bootstrap_idle.jl`, `acquisition_lifecycle_client.jl`, `control_endpoint_faults.jl` |
 | `CorrectionRecovery.AbstractObservation` / `AbstractLoopObservation` | Identity, token, serial, requested/applied generation and closure accessors accept alternative layouts. `controller_scope` returns `SingleController`, `CoupledControllers{N}` or `nothing` for malformed evidence. Scope is independent of observation inheritance; comparisons preserve ordered, componentwise partial ordering. | `test_recovery_observations.jl`, `test_correction_recovery.jl`, coupled-controller and native-client selectors; [interface guide](RECOVERY_OBSERVATIONS.md) |
 | `MediaSession.AbstractEvent` | Owned records implement `update!(session, event)` after native pumping; shared submission/completion records dispatch directly. No borrowed native pointers cross this boundary. | `media_session_objects.jl`, `media_session_transport.jl`, private-core selectors |
 | `MediaSession.AbstractOwner` / `AbstractSource` | `check_owner!` and `request_owner!` retain exact incarnation and reply correlation. Source methods prepare, connect, operate and shut down through concrete protocol bindings. Initial unconnected Hold retains actual Status evidence rather than inventing a connected cursor or Pause receipt. | `media_session_controls.jl`, `media_session_effects.jl`, `media_session_acquisition_private_core.jl` |
@@ -104,6 +105,18 @@ properties. Reuse these existing contracts when changing their consumers:
 | Calibration preparation/acquisition and correction loops | These are concrete Hsm machines, not missing abstract interfaces. Their event and effect contracts retain run/serial/deadline and restoration/release invariants. Acquisition's parametric `Plan` reuses the codec-owned `AbstractRule` rather than creating another rule hierarchy. | `test_calibration_preparation.jl`, `test_calibration_acquisition.jl`, `test_calibration_procedure.jl`, `test_correction_loops.jl`, `hsm_allocations.jl` |
 
 An internal adapter interface does not by itself promise a public plugin API.
+
+The endpoint resource consolidation (2026-11-06) removes
+`AcquisitionLifecycleRuntime` and the private bootstrap `Transport`. Use
+`ControlEndpoint.Transport` when the caller owns the loop and connection, and
+`ControlEndpoint.Endpoint` for an existing loop/core. Lifecycle updates dispatch
+through `ControlEndpoint.state!(transport.endpoint, state)`; completion and
+terminal synchronization use `ControlEndpoint.complete!` and `flush_terminal!`.
+The old bootstrap forwarding helpers are removed, including its exported
+`flush_terminal!` binding. No compatibility wrappers or new coordinator are added.
+`Transport` retains the established resource meaning; `command_type` follows the
+existing profile `lifecycle_type`/`completion_type` interface naming.
+
 Required method docstrings live beside their owning abstract type; this table
 connects those contracts to the migration and existing tests. Do not add an
 abstract type or trait solely to make every module look alike. In particular,

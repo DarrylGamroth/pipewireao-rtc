@@ -1,11 +1,10 @@
-# Optional native AcquisitionLifecycleRuntime selector with controlled owner
+# Optional owned ControlEndpoint transport selector with controlled owner
 # handlers. This checks RTC/native behavior, not production science or HIL.
 module MediaSessionAcquisitionPrivateCoreTests
 using Test, PipeWireAO, PipeWireAORTC
 
 const S = PipeWireAORTC.MediaSession
 const Acquisition = PipeWireAORTC.AcquisitionLifecycleCodec
-const Runtime = PipeWireAORTC.AcquisitionLifecycleRuntime
 const Endpoint = PipeWireAORTC.ControlEndpoint
 const Client = PipeWireAORTC.ControlClient
 const PROFILE = Acquisition.CALIBRATION_PROFILE
@@ -24,12 +23,12 @@ const INITIAL = Acquisition.Snapshot(
 include("control_private_core.jl")
 
 function respond!(runtime, ticket, ::Acquisition.LifecycleCommand{:status})
-    Runtime.complete!(runtime, ticket, runtime.endpoint.lifecycle, INITIAL)
+    Endpoint.complete!(runtime, ticket, runtime.endpoint.lifecycle, INITIAL)
     return nothing
 end
 function respond!(runtime, ticket, ::Acquisition.LifecycleCommand{:shutdown})
-    Runtime.lifecycle!(runtime, Acquisition.Stopped)
-    Runtime.complete!(runtime, ticket, Acquisition.Stopped, INITIAL)
+    Endpoint.state!(runtime.endpoint, Acquisition.Stopped)
+    Endpoint.complete!(runtime, ticket, Acquisition.Stopped, INITIAL)
     return nothing
 end
 respond!(runtime, ticket, command) =
@@ -42,13 +41,15 @@ function check_initial_quit(socket, directory, daemon, lifecycle)
     quit = Ref(false)
     operations = UInt32[]
     try
-        owner = Runtime.Runtime(PROFILE, socket, "cold-acquisition", SOURCE_INSTANCE)
-        Runtime.lifecycle!(owner, lifecycle)
+        owner = Endpoint.Transport(
+            PROFILE, socket, "cold-acquisition", SOURCE_INSTANCE, Acquisition.Preparing
+        )
+        Endpoint.state!(owner.endpoint, lifecycle)
         worker = let runtime = owner
             @async while !quit[]
-                if Runtime.has_pending(runtime)
-                    Runtime.poll!(runtime)
-                    ticket = Runtime.take!(runtime)
+                if Endpoint.has_pending(runtime)
+                    Endpoint.poll!(runtime)
+                    ticket = Endpoint.take!(runtime)
                     if ticket !== nothing
                         Endpoint.check_ticket(runtime.endpoint, ticket)
                         push!(operations, ticket.header.operation)

@@ -3,15 +3,14 @@ using Test, PipeWireAO, PipeWireAORTC
 include("control_private_core.jl")
 
 const Codec = PipeWireAORTC.AcquisitionLifecycleCodec
-const Runtime = PipeWireAORTC.AcquisitionLifecycleRuntime
 const Caller = PipeWireAORTC.AcquisitionLifecycleClient
 const Generic = PipeWireAORTC.ControlClient
 const Endpoint = PipeWireAORTC.ControlEndpoint
 
 function stub_service_once!(runtime)
-    Runtime.has_pending(runtime) || return nothing
-    Runtime.poll!(runtime)
-    return Runtime.take!(runtime)
+    Endpoint.has_pending(runtime) || return nothing
+    Endpoint.poll!(runtime)
+    return Endpoint.take!(runtime)
 end
 
 mutable struct StubAcquisition
@@ -101,7 +100,7 @@ end
 function run_stub_profile(socket, directory, daemon, profile, instrument, suffix)
     instance = Int64(time_ns() % UInt64(typemax(Int64) - 2)) + 1
     node = "test.native.acquisition.$suffix"
-    runtime = Runtime.Runtime(profile, socket, node, instance)
+    runtime = Endpoint.Transport(profile, socket, node, instance, Codec.Preparing)
     state = StubAcquisition(
         Codec.Preparing,
         instrument,
@@ -135,8 +134,8 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
         with_thread_loop_lock(runtime.loop) do _
             stub_service_once!(runtime)
             stub_service_once!(runtime)
-            @test !Runtime.has_pending(runtime)
-            @test (@allocated Runtime.has_pending(runtime)) == 0
+            @test !Endpoint.has_pending(runtime)
+            @test (@allocated Endpoint.has_pending(runtime)) == 0
             @test (@allocated stub_service_once!(runtime)) == 0
         end
         worker = @async try
@@ -144,15 +143,15 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
             while !quit[]
                 if state.lifecycle === Codec.Preparing && Generic.monotonic() >= ready_at
                     state.lifecycle = Codec.Prepared
-                    Runtime.lifecycle!(runtime, Codec.Prepared)
+                    Endpoint.state!(runtime.endpoint, Codec.Prepared)
                 end
                 ticket = allow_take[] ? stub_service_once!(runtime) : nothing
                 if ticket !== nothing
                     Endpoint.check_ticket(runtime.endpoint, ticket)
                     result, message = stub_effect!(profile, state, ticket, report_path)
                     state.lifecycle == runtime.endpoint.lifecycle ||
-                        Runtime.lifecycle!(runtime, state.lifecycle)
-                    Runtime.complete!(
+                        Endpoint.state!(runtime.endpoint, state.lifecycle)
+                    Endpoint.complete!(
                         runtime,
                         ticket,
                         state.lifecycle,
@@ -161,7 +160,7 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
                         message,
                     )
                     if ticket.command isa Codec.LifecycleCommand{:shutdown}
-                        Runtime.flush_terminal!(
+                        Endpoint.flush_terminal!(
                             runtime, ticket.deadline; check = check_worker
                         )
                         quit[] = true
@@ -335,7 +334,9 @@ function run_stub_profile(socket, directory, daemon, profile, instrument, suffix
             deadline = deadline(),
             check = check_worker,
         )
-        @test_throws Generic.UnknownOutcome Runtime.flush_terminal!(runtime, deadline(-0.1))
+        @test_throws Generic.UnknownOutcome Endpoint.flush_terminal!(
+            runtime, deadline(-0.1)
+        )
         shutdown = Caller.request!(
             client, :shutdown; deadline = deadline(), check = check_worker
         )

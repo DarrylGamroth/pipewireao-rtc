@@ -7,17 +7,13 @@ import Clocks
 import Hsm
 using Hsm: @hsmdef, @statedef, @finaldef, @on_initial, @on_event
 import ThreadPinning
-import ..ControlCodec
 import ..ControlClient
 import ..ControlEndpoint
 import ..OwnerBootstrapCodec
 
-const Envelope = ControlCodec
 const Client = ControlClient
 const Endpoint = ControlEndpoint
 const Codec = OwnerBootstrapCodec
-const Profile = Codec.Profile
-const Commands = Union{Codec.Command{:status},Codec.Command{:connect},Codec.Command{:quit}}
 const POLL_SECONDS = 0.005
 
 export Runtime,
@@ -35,125 +31,10 @@ export Runtime,
     fault!,
     finish!,
     clean_cancel,
-    flush_terminal!,
     with_owner
 
-mutable struct Transport{P<:Profile,C,E,L}
-    profile::P
-    loop::ThreadLoop
-    context::Context
-    core::C
-    endpoint::E
-    registry_listener::L
-    acknowledged_sequence::Base.RefValue{Cint}
-    wake::Base.Threads.Atomic{Bool}
-    closed::Bool
-end
-
-"""Publish Preparing before the existing owner prepares its science or plant."""
-function Transport(
-    profile::P,
-    remote::AbstractString,
-    name::AbstractString,
-    instance::Int64;
-    application_name::AbstractString = name,
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-) where {P<:Profile}
-    path = Client.private_remote(remote)
-    loop = ThreadLoop("rtc-bootstrap")
-    context = core = endpoint = registry_listener = nothing
-    endpoint_ref = Ref{Union{Nothing,Endpoint.Endpoint}}(nothing)
-    acknowledged_sequence = Ref{Cint}(-1)
-    wake = Base.Threads.Atomic{Bool}(false)
-    connection_failure = Ref{Union{Nothing,String}}(nothing)
-    try
-        with_thread_loop_lock(loop) do _
-            context = Context(
-                loop; properties = Dict("application.name" => application_name)
-            )
-            core = CoreConnection(
-                context;
-                properties = Dict("remote.name" => path),
-                on_done = (core, id, sequence) -> begin
-                    id == 0 && (acknowledged_sequence[] = sequence)
-                    nothing
-                end,
-                on_error = (core, id, sequence, error) -> begin
-                    connection_failure[] = sprint(showerror, error)
-                    current = endpoint_ref[]
-                    current === nothing || (current.failure = connection_failure[])
-                    wake[] = true
-                    nothing
-                end,
-            )
-            endpoint = Endpoint.Endpoint(
-                profile,
-                Commands,
-                loop,
-                core,
-                name,
-                instance,
-                Codec.Preparing;
-                clock,
-                publisher = (filter, params) -> begin
-                    wake[] = true
-                    update_params!(filter, params)
-                end,
-            )
-            registry_listener = add_listener!(
-                something(endpoint.registry);
-                on_global_added = (registry, global_object) -> (wake[] = true; nothing),
-                on_global_removed = (registry, id) -> (wake[] = true; nothing),
-            )
-            endpoint_ref[] = endpoint
-            connection_failure[] === nothing || (endpoint.failure = connection_failure[])
-        end
-        start!(loop)
-        return Transport(
-            profile,
-            loop,
-            context,
-            core,
-            endpoint,
-            registry_listener,
-            acknowledged_sequence,
-            wake,
-            false,
-        )
-    catch primary
-        failures = Exception[primary]
-        try
-            with_thread_loop_lock(loop) do _
-                for resource in (registry_listener, endpoint, core, context)
-                    resource === nothing && continue
-                    try
-                        close(resource)
-                    catch cleanup
-                        push!(failures, cleanup)
-                    end
-                end
-            end
-        catch cleanup
-            push!(failures, cleanup)
-        end
-        try
-            close(loop)
-        catch cleanup
-            push!(failures, cleanup)
-        end
-        length(failures) == 1 && rethrow()
-        throw(CompositeException(failures))
-    end
-end
-
-"""Cold ingress hint, including Core error."""
-@inline has_pending(runtime::Transport) = runtime.wake[]
-
-poll!(runtime::Transport) = Endpoint.poll!(runtime.endpoint)
-take!(runtime::Transport) = Endpoint.take!(runtime.endpoint)
-
 "Check quiet transport health without registry traversal; consume only the old wake."
-function _poll_ready!(runtime::Transport)
+function _poll_ready!(runtime::Endpoint.Transport)
     wake = Base.Threads.atomic_xchg!(runtime.wake, false)
     pending = with_thread_loop_lock(runtime.loop) do _
         Endpoint.operational(runtime.endpoint)
@@ -164,89 +45,11 @@ function _poll_ready!(runtime::Transport)
         runtime.endpoint.pending !== nothing
     end
     if wake || pending
-        poll!(runtime)
+        Endpoint.poll!(runtime.endpoint)
         return true
     end
     return false
 end
-function lifecycle!(runtime::Transport, lifecycle::Codec.Lifecycle)
-    Endpoint.state!(runtime.endpoint, lifecycle)
-    return nothing
-end
-
-"""Publish the result of an accepted ticket after the sole owner has applied it."""
-function complete!(
-    runtime::Transport,
-    ticket::Endpoint.Ticket,
-    lifecycle::Codec.Lifecycle;
-    result::Int32 = Int32(0),
-    message::AbstractString = "",
-    terminal::Bool = false,
-)
-    header = Envelope.ReplyHeader(
-        ticket.header.controller,
-        runtime.endpoint.instance,
-        ticket.header.token,
-        ticket.header.operation,
-        result,
-    )
-    completion = Client.encode_completion(runtime.profile, header, lifecycle, message)
-    Endpoint.complete!(runtime.endpoint, ticket, completion; terminal)
-    return nothing
-end
-
-"""Synchronize a terminal publication before removing the public endpoint."""
-function flush_terminal!(
-    runtime::Transport, deadline::Union{Int64,Float64}; check = () -> nothing
-)
-    deadline = Client._deadline_ns(deadline)
-    sequence = with_thread_loop_lock(runtime.loop) do _
-        Endpoint.operational(runtime.endpoint)
-        Client._supervise(check)
-        Client.deadline_check(deadline, Client.NO_CHECK, Endpoint._now!(runtime.endpoint))
-        sync!(runtime.core)
-    end
-    while true
-        Client._supervise(check)
-        observed, at = with_thread_loop_lock(runtime.loop) do _
-            Endpoint.operational(runtime.endpoint)
-            at = Endpoint._now!(runtime.endpoint)
-            Client.deadline_check(deadline, Client.NO_CHECK, at)
-            (runtime.acknowledged_sequence[] == sequence, at)
-        end
-        observed && return nothing
-        sleep(Float64(clamp(Int128(deadline) - at, 0, 5_000_000)) / 1e9)
-    end
-end
-
-function Base.close(runtime::Transport)
-    runtime.closed && return nothing
-    runtime.closed = true
-    failures = Exception[]
-    try
-        with_thread_loop_lock(runtime.loop) do _
-            for resource in
-                (runtime.registry_listener, runtime.endpoint, runtime.core, runtime.context)
-                try
-                    close(resource)
-                catch error
-                    push!(failures, error)
-                end
-            end
-        end
-    catch error
-        push!(failures, error)
-    end
-    try
-        close(runtime.loop)
-    catch error
-        push!(failures, error)
-    end
-    isempty(failures) || throw(CompositeException(failures))
-    return nothing
-end
-
-
 abstract type AbstractConnectionHooks end
 struct Hooks{R,Q} <: AbstractConnectionHooks
     ready::R
@@ -379,7 +182,16 @@ function Runtime(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     validate_threads()
-    transport = Transport(Codec.PROFILE, remote, name, instance; application_name, clock)
+    transport = Endpoint.Transport(
+        Codec.PROFILE,
+        remote,
+        name,
+        instance,
+        Codec.Preparing;
+        application_name,
+        clock,
+        loop_name = "rtc-bootstrap",
+    )
     runtime = Runtime(transport)
     try
         precompile(serve!, (typeof(runtime),)) ||
@@ -614,7 +426,7 @@ end
 function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
     error = _facts(runtime).error
     try
-        complete!(
+        Endpoint.complete!(
             runtime.transport,
             ticket,
             lifecycle;
@@ -628,7 +440,7 @@ function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
                 !Endpoint.controller_present(endpoint, ticket.header.controller)
         end
         neutral || rethrow()
-        complete!(
+        Endpoint.complete!(
             runtime.transport,
             ticket,
             lifecycle;
@@ -642,7 +454,7 @@ _fault_reply!(runtime, ticket, command::Codec.Command{:status}, lifecycle) =
     _apply!(runtime, ticket, command, lifecycle)
 _fault_reply!(
     runtime, ticket, command::Union{Codec.Command{:connect},Codec.Command{:quit}}, lifecycle
-) = complete!(
+) = Endpoint.complete!(
     runtime.transport,
     ticket,
     lifecycle;
@@ -757,7 +569,7 @@ _ready(sm::Monitor) =
 
 function _publish!(sm::Monitor, lifecycle::Codec.Lifecycle)
     sm.lifecycle = lifecycle
-    lifecycle!(sm.runtime.transport, lifecycle)
+    Endpoint.state!(sm.runtime.transport.endpoint, lifecycle)
     _observe!(sm)
     return nothing
 end
@@ -799,7 +611,8 @@ end
 end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::TakeIngress, arg) where {R}
     sm.incoming =
-        sm.active === nothing && sm.ingress ? take!(sm.runtime.transport) : nothing
+        sm.active === nothing && sm.ingress ?
+        Endpoint.take!(sm.runtime.transport.endpoint) : nothing
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::StatusRequested, ticket) where {R}
@@ -807,7 +620,7 @@ end
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::ConnectRequested, ticket) where {R}
-    complete!(
+    Endpoint.complete!(
         sm.runtime.transport,
         ticket,
         sm.lifecycle;
@@ -849,7 +662,7 @@ end
     ticket = something(sm.active)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
     if facts.finished
-        complete!(
+        Endpoint.complete!(
             sm.runtime.transport,
             ticket,
             sm.lifecycle;
@@ -867,7 +680,7 @@ end
             Endpoint.retain_controller!(sm.runtime.transport.endpoint, ticket)
         end
         _publish!(sm, Codec.Connected)
-        complete!(sm.runtime.transport, ticket, sm.lifecycle)
+        Endpoint.complete!(sm.runtime.transport, ticket, sm.lifecycle)
         sm.active = nothing
         _observe!(sm)
         return Hsm.transition!(sm, :Connected)
@@ -879,7 +692,7 @@ end
 ) where {R}
     ticket = something(sm.active)
     Endpoint.check_ticket(sm.runtime.transport.endpoint, ticket)
-    complete!(
+    Endpoint.complete!(
         sm.runtime.transport,
         ticket,
         sm.lifecycle;
@@ -898,7 +711,7 @@ end
         lifecycle = result == 0 ? Codec.Stopped : Codec.Fault
         _publish!(sm, lifecycle)
         result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
-        complete!(
+        Endpoint.complete!(
             runtime.transport,
             ticket,
             lifecycle;
@@ -906,7 +719,7 @@ end
             message = facts.error === nothing ? "" : _message(facts.error),
             terminal = result == 0,
         )
-        flush_terminal!(runtime.transport, ticket.deadline)
+        Endpoint.flush_terminal!(runtime.transport, ticket.deadline)
         result == 0 && Endpoint.wait_terminal_release!(runtime.transport.endpoint, ticket)
         sm.active = nothing
         result == 0 && return Hsm.transition!(sm, :Stopped)
@@ -920,7 +733,7 @@ end
 @on_event function (sm::Monitor{R}, ::Monitoring, ::FinishedObserved, facts) where {R}
     facts.finished && sm.active === nothing || return Hsm.EventHandled
     _publish!(sm, facts.error === nothing ? Codec.Stopped : Codec.Fault)
-    flush_terminal!(
+    Endpoint.flush_terminal!(
         sm.runtime.transport, Base.Checked.checked_add(_now(sm), Int64(5_000_000_000))
     )
     facts.error === nothing && return Hsm.transition!(sm, :Stopped)
@@ -953,7 +766,7 @@ end
                 runtime.transport.endpoint.pending === sm.active &&
                     runtime.transport.endpoint.applying
             end
-            pending && complete!(
+            pending && Endpoint.complete!(
                 runtime.transport,
                 sm.active,
                 failed_lifecycle;
@@ -978,7 +791,7 @@ end
 end
 @on_event function (sm::Monitor{R}, ::Cleanup, ::OwnerObserved, facts) where {R}
     if facts.finished || _now(sm) >= sm.cleanup_deadline
-        flush_terminal!(sm.runtime.transport, sm.cleanup_deadline)
+        Endpoint.flush_terminal!(sm.runtime.transport, sm.cleanup_deadline)
         return Hsm.transition!(sm, :Done)
     end
     return Hsm.EventHandled
@@ -988,8 +801,8 @@ end
 end
 @on_event function (sm::Monitor{R}, ::Cleanup, ::TakeIngress, arg) where {R}
     _stop!(sm)
-    poll!(sm.runtime.transport)
-    sm.incoming = take!(sm.runtime.transport)
+    Endpoint.poll!(sm.runtime.transport.endpoint)
+    sm.incoming = Endpoint.take!(sm.runtime.transport.endpoint)
     return Hsm.EventHandled
 end
 @on_event function (sm::Monitor{R}, ::Cleanup, ::ConnectRequested, ticket) where {R}

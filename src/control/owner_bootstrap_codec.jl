@@ -26,6 +26,7 @@ Client.capability_names(::Profile) = Tuple(
 )
 @enum Lifecycle::UInt32 Preparing = 1 Prepared = 2 Connected = 3 Fault = 4 Stopped = 5
 struct Command{O} end
+Client.command_type(::Profile) = Union{Command{:status},Command{:connect},Command{:quit}}
 const OPERATIONS = ((:status, UInt32(1)), (:connect, UInt32(2)), (:quit, UInt32(3)))
 function Command(operation::Symbol)
     any(pair -> first(pair) === operation, OPERATIONS) ||

@@ -1,5 +1,13 @@
 # Delivery evidence catalog
 
+## Shared endpoint resources — 2026-11-06
+
+The [consolidation record](reviews/20261106-endpoint-resources/REVIEW.md) records the
+single owned ControlEndpoint transport, acquisition runtime removal, preserved
+bootstrap wake/monitor policy, protocol and terminal cleanup checks, warmed idle
+allocation checks, package export validation and independent source review.
+It also records the next scope reductions and their active-caller prerequisites.
+
 ## Package necessity and ownership — 2026-11-05
 
 The [bounded source review](reviews/20261105-package-scope/REVIEW.md) separates
