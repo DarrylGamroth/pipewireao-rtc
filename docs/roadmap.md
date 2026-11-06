@@ -12,6 +12,20 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Installed graph package baseline — 2026-11-06
+
+The user reports, and installed source inspection confirms, FilterGraphAlgorithms
+0.12.0, FilterGraphs 0.9.0 and FilterGraphPipeWire 0.5.0. FilterGraphIsland is
+retired; FilterGraphPipeWire owns the standalone application and public graph
+preparation/cleanup APIs. The [scope review update](reviews/20261106-runtime-scope/REVIEW.md#installed-three-package-baseline-update)
+records exact installed trees and remaining host-composition constraints.
+The installed RTC 0.6.0 carries the downstream naming/preparation migration on an
+earlier baseline. Reconcile it with this cleanup branch before host consolidation;
+preserve current capture, clocks, Hsm, session policy and dependency-only exports.
+Standalone event-file signaling must not replace native RTC admission. This is a
+verified baseline update, not a completed cleanup-branch migration or new runtime
+qualification.
+
 ### Package necessity before further cleanup — 2026-11-05
 
 The user prioritized questioning code ownership and necessity before repairing

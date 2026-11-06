@@ -123,3 +123,42 @@ Reference-frame and Shack–Hartmann paths already delegate core estimates to AO
 moving their entire files would mostly move legitimate orchestration. None of
 the findings authorizes deleting their active callers or numerical safeguards.
 No runtime, hardware or numerical tests were required for this source review.
+
+## Installed three-package baseline update
+
+After this review, the user reported completion and installation of the graph
+package migration. Read-only inspection of `/opt/pipewireao/julia/installed.toml`
+and the installed package sources confirms:
+
+| Package | Version | Registered tree |
+| --- | --- | --- |
+| FilterGraphAlgorithms | 0.12.0 | `a5328618a795224e5f0251087adc133556067b7b` |
+| FilterGraphs | 0.9.0 | `27c610120dadf230b52367e3b860a32c506dcd01` |
+| FilterGraphPipeWire | 0.5.0 | `19d340df2ed7e4083ecb3f38b6a58bae4743e119` |
+
+FilterGraphs has new UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`.
+FilterGraphIsland is retired; its standalone application and preparation API now
+belong to FilterGraphPipeWire. The maintained command remains `filtergraph-island`.
+The graph repository's tagged migration source is `4423eb9`.
+
+This updates NEC-12's receiving-package assumptions. The public programmatic
+`FilterGraphPipeWire.prepare_service_graph(path; algorithms, execution, workers,
+matrix_layout, worker_thread_ids, initial_parameters, parameters, capture_backend)`
+and `close_execution` already exist. RTC should consume these directly instead of
+constructing CLI arguments for graph preparation. Generic preparation is no
+longer a missing receiving interface.
+
+The installed standalone runtime still has prepared/connect/quit event-file
+signaling in `src/application/runtime.jl`. Its `run_service` is not a public
+replacement for RTC's native admission owner. Remaining graph-host consolidation
+must preserve native admission, required metadata, correction/offset hooks and
+single session authority through public library composition.
+
+An installed RTC 0.6.0 source already uses FilterGraphs and the direct preparation
+API, but retains the earlier implementation baseline (including Interpolations
+and no new CaptureFiles module). The cleanup worktree at `77a6b98` still declares
+the old graph package names. Reconcile that existing downstream migration with
+the cleanup changes before changing runtime ownership; do not replace the cleanup
+tree with the installed older baseline. No source, installed environment, service
+or dependency manifest was changed during this inspection. No new runtime
+qualification is claimed.
