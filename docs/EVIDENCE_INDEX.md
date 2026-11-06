@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Generic finite capture — 2026-11-06
+
+The [capture record](reviews/20261106-generic-capture/REVIEW.md) records the shared
+finite-evidence owner, prepared channel contracts, schema-5 publication, explicit
+historical reading, YAML/transport integration and the AOS ownership recheck.
+
 ## RTC streamlining — 2026-11-06
 
 The [implementation record](reviews/20261106-streamlining/REVIEW.md) records

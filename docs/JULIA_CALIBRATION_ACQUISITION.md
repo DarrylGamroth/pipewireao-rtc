@@ -234,11 +234,40 @@ An in-flight synchronous HIL operation resolves or reaches its finite deadline
 before the owner can check revocation. The owner checks the native ticket before
 starting another exposure and during capture notifications. Unknown outcomes
 fence endpoints without restoration or retry. This initial-session API does not
-transfer a running controller's state, actuate devices, publish a calibration
-bundle or implement the optional `Capture` file-export action.
+transfer a running controller's state, actuate devices or publish a calibration
+bundle.
 
 See the [implementation and verification record](validation/calibration-owner-20261027/PLAN.md)
 and [independent review](validation/calibration-owner-20261027/REVIEW.md).
+
+### Finite capture files
+
+`PipeWireAORTC.CaptureFiles` owns bounded finite calibration evidence. It has no
+instrument, simulator, transport or continuous-archiving authority. Its `Channel`
+uses the existing `PipeWireAO.NdArrayFormat` and semantic schema; `Contract` binds
+the selected prepared channels and derives their payload byte count. The initial
+codec supports UInt16, Float32 and Bool arrays of rank one or two with row-major
+wire layout. It preserves nonfinite samples and false validity bits without
+interpreting them as scientific acceptance or rejection.
+
+`CaptureStore(directory, contract; stage, illumination, settings, maximum_bytes)`
+owns a fresh evidence directory. `capture!` reserves the complete request budget
+before acquisition and writes each completed sample before another exposure is
+armed. Interrupted work remains charged. A completed native `Captured` descriptor
+is returned only after immutable payloads and the final manifest are published.
+
+New captures use manifest schema 5, which records every selected channel's type,
+shape, layout, rate and semantic schema. Read with
+`CaptureFiles.read_capture(directory, descriptor; expected_contract,
+expected_stage, expected_illumination, expected_settings)`. The caller supplies
+the expected prepared contract; saved files cannot authorize their own layout.
+This replaces `InstrumentCalibration.read_capture`.
+
+Historical schema-4 files require the explicit
+`CaptureFiles.read_capture(Val(4), directory, descriptor; ...)` interface.
+That format never recorded port schemas or rates; its reader verifies only the
+historically recorded facts and cannot establish those missing contracts.
+Old scientific quality fields are checked only at this compatibility boundary.
 
 ### Source and mechanism preparation
 

@@ -2,7 +2,7 @@ using Test, PipeWireAORTC
 
 const Runner = PipeWireAORTC.RunnerCodec
 const Envelope = PipeWireAORTC.ControlCodec
-const Calibration = PipeWireAORTC.InstrumentCalibration
+const Calibration = PipeWireAORTC.CaptureFiles
 const ActionClient = PipeWireAORTC.CalibrationActionClient
 const Parameters = PipeWireAORTC.ParameterSource
 const Offsets = PipeWireAORTC.PhysicalOffsets

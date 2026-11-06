@@ -4,6 +4,7 @@ module InstrumentCalibration
 using LinearAlgebra, SHA
 import ..Common
 import ..Artifacts
+import ..CaptureFiles
 import ..InstrumentConfiguration
 import ..GraphOwner
 import ..DeploymentConfiguration
@@ -41,7 +42,6 @@ public digest,
     read_bundle,
     write_bundle,
     stage_calibration,
-    read_capture,
     calibrate_references
 
 """
@@ -683,6 +683,5 @@ function calibrate_optical_reference end
 public calibrate_optical, validate_optical, calibrate_optical_reference
 include("calibration_bundle.jl")
 include("calibration_recipe.jl")
-include("calibration_capture_files.jl")
 
 end

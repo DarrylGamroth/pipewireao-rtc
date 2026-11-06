@@ -32,6 +32,13 @@ decision; no additional large subsystem is proven safely dead.
 
 ### RTC streamlining — 2026-11-06
 
+Generic finite capture is being implemented in the dedicated `CaptureFiles`
+module, with prepared port/schema contracts and YAML selection. The writer/reader
+passes 278 assertions; schema 5 contains no instrument geometry or quality policy.
+Explicit schema-4 reads share its integrity checks. The [capture record](reviews/20261106-generic-capture/REVIEW.md)
+tracks verified slices and integration limits. Existing AOS transfers were
+rechecked against actual simulator consumers; no hardware-only caller was found.
+
 The user approved the reviewed cleanup. NEC-07's unused legacy export-input mode
 and marker-validation branches are removed; new declarations require the native
 owner contracts. NEC-08's current runtime/version guidance now matches Julia

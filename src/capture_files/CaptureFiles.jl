@@ -1,4 +1,12 @@
-# Included inside InstrumentCalibration. RTC-DEV-029 capture-file boundary.
+"""Finite calibration evidence: cold-bound channels and immutable, bounded files.
+
+This module owns no live transport, scientific quality policy or recording service.
+"""
+module CaptureFiles
+
+using SHA
+import ..Common
+export Channel, Contract, CaptureStore, capture_preflight, capture!, read_capture
 import ..CalibrationActionCodec
 import ..ControlClient
 import PipeWireAO
@@ -8,13 +16,6 @@ const CAPTURE_HEADER_BYTES = 16 * 1024
 const CAPTURE_EXPOSURE_BYTES = 64 * 1024
 const CAPTURE_METADATA_ABI = 4
 const CAPTURE_BYTE_ORDER = ENDIAN_BOM == 0x04030201 ? "little" : "big"
-const CLASSIC_CAPTURE_CONTRACTS = (
-    raw = (type = UInt16, encoding = "U16_LE", shape = (352, 352), bytes = 247808),
-    slopes = (type = Float32, encoding = "F32_LE", shape = (188, 2), bytes = 1504),
-    flux = (type = Float32, encoding = "F32_LE", shape = (188,), bytes = 752),
-    validity = (type = Bool, encoding = "BOOL8", shape = (188,), bytes = 188),
-)
-const CLASSIC_CAPTURE_BYTES = sum(contract.bytes for contract in CLASSIC_CAPTURE_CONTRACTS)
 
 _capture_require(condition, message) = condition || throw(ArgumentError(message))
 _capture_fields(value, fields) = throw(ArgumentError("capture object fields differ"))
@@ -127,18 +128,128 @@ function _capture_path(path; directory = false)
     return absolute
 end
 
-"""
-    CaptureStore(directory; stage, illumination, settings, maximum_bytes, profile="classic")
+"""One prepared ndarray channel. Type, shape, layout, rate and schema are authoritative.
 
-Own a fresh mode-0700 directory for finite Classic capture evidence. The caller
+The finite file codec supports UInt16, Float32 and Bool with rank one or two and
+explicit row-major layout. No scientific interpretation is assigned to its name.
+"""
+struct Channel{N}
+    format::PipeWireAO.NdArrayFormat{N}
+    schema::String
+    function Channel(format::PipeWireAO.NdArrayFormat{N}, schema::AbstractString) where {N}
+        _capture_require(N in (1, 2), "capture channels require rank one or two")
+        _capture_require(
+            format.element_type in (
+                PipeWireAO.NdArray.U16_LE,
+                PipeWireAO.NdArray.F32_LE,
+                PipeWireAO.NdArray.BOOL8,
+            ),
+            "unsupported capture element type",
+        )
+        _capture_require(
+            format.layout == PipeWireAO.NdArray.ROW_MAJOR,
+            "capture requires explicit row-major layout",
+        )
+        _capture_require(
+            0 < PipeWireAO.payload_size(format) <= MAX_CHANNEL_BYTES,
+            "capture channel exceeds payload bound",
+        )
+        new{N}(format, _capture_text(schema))
+    end
+end
+
+# Native SPA buffer sizes are signed Int32. Aggregate bytes are checked separately.
+const MAX_CHANNEL_BYTES = typemax(Int32)
+const MAX_CHANNELS = 16
+
+_channel_name(name) =
+    throw(ArgumentError("capture channel names must be strings or symbols"))
+function _channel_name(name::Union{AbstractString,Symbol})
+    text = String(name)
+    _capture_require(
+        occursin(r"^[A-Za-z0-9_.-]{1,64}$", text),
+        "capture channel name is not a safe identifier",
+    )
+    return Symbol(text)
+end
+_channel_names(channels) = throw(ArgumentError("capture channels must be a list"))
+function _channel_names(channels::AbstractVector)
+    _capture_require(
+        1 <= length(channels) <= MAX_CHANNELS,
+        "capture requires one to $MAX_CHANNELS channels",
+    )
+    names = Tuple(_channel_name(name) for name in channels)
+    _capture_require(length(unique(names)) == length(names), "duplicate capture channel")
+    return names
+end
+
+"""Cold-bound finite capture channels, at most 16 and a native SPA buffer per channel.
+
+Names must be unique existing prepared port identifiers and safe filename parts.
+`bytes` is the complete per-exposure payload reservation. A request never changes
+this contract. Structural bounds are checked before storage is created.
+"""
+struct Contract{C<:NamedTuple}
+    channels::C
+    bytes::UInt64
+    function Contract(channels::NamedTuple)
+        _channel_names(collect(keys(channels)))
+        total = UInt64(0)
+        for channel in values(channels)
+            bytes = _channel_bytes(channel)
+            _capture_require(
+                bytes <= typemax(UInt64) - total, "capture contract exceeds payload bound"
+            )
+            total += bytes
+        end
+        new{typeof(channels)}(channels, total)
+    end
+end
+_channel_bytes(channel::Channel) = UInt64(PipeWireAO.payload_size(channel.format))
+_channel_bytes(channel) = throw(ArgumentError("capture channels must be Channel values"))
+
+function _channel_payload(channel::Channel)
+    format = channel.format
+    type, encoding = if format.element_type == PipeWireAO.NdArray.U16_LE
+        UInt16, "U16_LE"
+    elseif format.element_type == PipeWireAO.NdArray.F32_LE
+        Float32, "F32_LE"
+    else
+        Bool, "BOOL8"
+    end
+    return (;
+        type, encoding, shape = Tuple(Int.(format.shape)), bytes = _channel_bytes(channel)
+    )
+end
+function _channel_record(channel::Channel)
+    format = channel.format
+    rate = format.rate
+    return Dict(
+        "element_type" => UInt32(format.element_type),
+        "layout" => UInt32(format.layout),
+        "shape" => collect(format.shape),
+        "rate" => rate === nothing ? nothing : [rate.num, rate.denom],
+        "schema" => channel.schema,
+    )
+end
+_channel_records(contract::Contract) = Dict(
+    String(name) => _channel_record(channel) for
+    (name, channel) in pairs(contract.channels)
+)
+
+"""
+    CaptureStore(directory, contract; stage, illumination, settings, maximum_bytes)
+
+Own a fresh mode-0700 directory for finite calibration capture evidence. The caller
 must supply exact detector, source, graph and mask identities in `settings`.
-Only Classic is implemented here; Copper rejects before creating storage.
+The cold-bound contract chooses existing prepared channels; requests cannot change it.
 Payload budget is cumulative and reserved before acquisition, including failed
 requests. Files left by interrupted requests have no completed manifest.
 Exact live probe and after-cursor authority remains with the serialized owner.
 """
-mutable struct CaptureStore
+mutable struct CaptureStore{C<:Contract}
     directory::String
+    contract::C
     stage::String
     illumination::String
     settings::Dict{String,Any}
@@ -151,15 +262,14 @@ mutable struct CaptureStore
     recording_clock::PipeWireAO.MetadataClock
 end
 function CaptureStore(
-    directory;
+    directory,
+    contract::Contract;
     stage::String,
     illumination::String,
     settings::AbstractDict,
     maximum_bytes::Integer,
-    profile = "classic",
     recording_clock::PipeWireAO.MetadataClock = PipeWireAO.METADATA_CLOCK_REALTIME,
 )
-    _capture_require(profile == "classic", "unsupported capture profile")
     _capture_require(
         recording_clock in
         (PipeWireAO.METADATA_CLOCK_REALTIME, PipeWireAO.METADATA_CLOCK_TAI),
@@ -178,13 +288,14 @@ function CaptureStore(
     chmod(root, 0o700)
     return CaptureStore(
         root,
+        contract,
         stage,
         illumination,
         snapshot,
         maximum,
-        0,
-        0,
-        0,
+        UInt64(0),
+        UInt64(0),
+        UInt64(0),
         nothing,
         nothing,
         recording_clock,
@@ -448,22 +559,13 @@ function _capture_check_receipt(value, exposure, domain)
     return full
 end
 
-function _capture_arrays(arrays)
-    _capture_require(
-        Set(keys(arrays)) == Set(keys(CLASSIC_CAPTURE_CONTRACTS)),
-        "capture payload roles differ",
-    )
-    for (role, contract) in pairs(CLASSIC_CAPTURE_CONTRACTS)
-        array = getproperty(arrays, role)
-        _capture_array(array, role, contract)
+function _capture_arrays(arrays, contract::Contract)
+    for (role, channel) in pairs(contract.channels)
+        _capture_require(haskey(arrays, role), "capture payload channel is missing")
+        _capture_array(getproperty(arrays, role), role, _channel_payload(channel))
     end
     return arrays
 end
-_capture_quality(arrays) = Dict(
-    "finite_slopes" => all(isfinite, arrays.slopes),
-    "finite_flux" => all(isfinite, arrays.flux),
-    "valid_rois" => count(arrays.validity),
-)
 function _capture_encode(array)
     dense = collect(array)
     values =
@@ -474,15 +576,14 @@ function _capture_encode(array)
 end
 function _capture_decode(bytes, contract)
     _capture_require(length(bytes) == contract.bytes, "capture payload byte length differs")
-    if contract.type === Bool
-        _capture_require(
-            all(value -> value in (0, 1), bytes), "invalid BOOL8 capture payload"
-        )
-        return Bool.(bytes)
+    values = if contract.type === Bool
+        _capture_require(all(value -> value in (0, 1), bytes), "invalid BOOL8 capture payload")
+        Bool.(bytes)
+    else
+        unsigned = contract.type === Float32 ? UInt32 : UInt16
+        bits = ltoh.(reinterpret(unsigned, bytes))
+        contract.type === Float32 ? collect(reinterpret(Float32, bits)) : collect(bits)
     end
-    unsigned = contract.type === Float32 ? UInt32 : UInt16
-    bits = ltoh.(reinterpret(unsigned, bytes))
-    values = contract.type === Float32 ? collect(reinterpret(Float32, bits)) : collect(bits)
     return length(contract.shape) == 1 ? values :
            permutedims(
         reshape(values, reverse(contract.shape)), reverse(1:length(contract.shape))
@@ -565,7 +666,7 @@ function capture_preflight(
             "capture cursor is stale",
         )
     end
-    bytes = UInt64(frames) * UInt64(CLASSIC_CAPTURE_BYTES)
+    bytes = UInt64(frames) * store.contract.bytes
     _capture_require(
         bytes <= store.maximum_bytes - store.used_bytes, "capture payload budget exhausted"
     )
@@ -576,8 +677,8 @@ function capture_preflight(
         !ispath(directory) && !islink(directory), "capture request directory already exists"
     )
     header = Dict{String,Any}(
-        "schema_version" => 4,
-        "profile" => "classic",
+        "schema_version" => 5,
+        "channels" => _channel_records(store.contract),
         "run" => run,
         "serial" => serial,
         "probe" => probe,
@@ -603,16 +704,15 @@ end
 """
     capture!(store, acquire; run, serial, probe, cursor, frames, deadline, check=()->nothing)
 
-Write each completed sink-owned Classic sample before calling `acquire()` again.
+Write each completed sink-owned selected sample before calling `acquire()` again.
 `acquire()` returns `(sample, exposure)`; samples contain `arrays` and `metadata`.
 A request creates `run-R-serial-S/manifest.json` only after all payloads succeed.
-Manifest version 4 contains a bounded settings header, after/final cursors,
+Manifest version 5 contains a bounded settings header, after/final cursors,
 `domain_mapping` (`coordinator` UInt64 to 16-byte hex `wire` domain), and an
 `exposures` array. Each entry binds native model time, full wire identities,
 all independent clock/header records, explicitly labelled native metadata ABI/byte
-order, intrinsic quality, and four fixed payload
-records (`path`, `encoding`, `layout`, `shape`, `bytes`, `sha256`). A false WFS
-validity bit is preserved and never interpreted as interaction acceptance.
+order, and cold-bound selected payload
+records (`path`, `encoding`, `layout`, `shape`, `bytes`, `sha256`). Boolean payloads are preserved without scientific interpretation.
 """
 function capture!(
     store::CaptureStore,
@@ -641,14 +741,15 @@ function capture!(
         received = _capture_recording_time(store)
         checked()
         exposure = _capture_exposure(_capture_exposure_dict(supplied), after)
-        arrays = _capture_arrays(sample.arrays)
+        arrays = _capture_arrays(sample.arrays, store.contract)
         _capture_require(
-            Set(keys(sample.metadata)) == Set(keys(CLASSIC_CAPTURE_CONTRACTS)),
+            all(role -> haskey(sample.metadata, role), keys(store.contract.channels)),
             "capture receipt roles differ",
         )
         metadata = Dict{String,Any}()
         payloads = Dict{String,Any}()
-        for (role, contract) in pairs(CLASSIC_CAPTURE_CONTRACTS)
+        for (role, channel) in pairs(store.contract.channels)
+            contract = _channel_payload(channel)
             receipt = _capture_receipt(getproperty(sample.metadata, role))
             domain = _capture_check_receipt(receipt, exposure, store.domain)
             store.domain = domain
@@ -669,7 +770,6 @@ function capture!(
             "exposure" => _capture_exposure_dict(exposure),
             "metadata" => metadata,
             "payloads" => payloads,
-            "quality" => _capture_quality(arrays),
             "recording" => Dict(
                 "received" => received,
                 "payload_written" => _capture_recording_time(store),
@@ -677,7 +777,7 @@ function capture!(
         )
         _capture_require(
             ncodeunits(_capture_json(record)) + 1 <= CAPTURE_EXPOSURE_BYTES,
-            "capture exposure metadata exceeds 4096 bytes",
+            "capture exposure metadata exceeds 64 KiB",
         )
         push!(records, record)
         after = _capture_end(exposure)
@@ -766,32 +866,45 @@ function _capture_read(path, maximum)
 end
 
 """
-    read_capture(directory, descriptor; expected_profile, expected_stage,
+    read_capture(directory, descriptor; expected_contract, expected_stage,
         expected_illumination, expected_settings)
 
 Verify a completed immutable capture against caller-selected contracts/settings.
 Returns `(manifest, samples)`, where each sample has fresh owned `arrays` and
-JSON `metadata` receipts, native `exposure`, and intrinsic `quality`. Descriptor
+JSON `metadata` receipts, and native `exposure`. Descriptor
 and payload hashes, exact fields/lengths, full acquisition identities, sequence
 continuity, nonoverlapping model-time intervals and canonical paths are verified
 before returning any sample. The
-manifest cannot choose a profile or relax the expected startup snapshot.
+manifest cannot choose a channel contract or relax the expected startup snapshot.
 """
-function read_capture(
+read_capture(directory, descriptor::CalibrationActionCodec.Captured; kwargs...) =
+    _read_capture(Val(5), directory, descriptor; kwargs...)
+
+_capture_read_contract(::Val{5}, contract::Contract) = (;
+    field = "channels",
+    value = _channel_records(contract),
+    mismatch = "capture channels/stage/illumination/settings differ",
+)
+_capture_record_fields(::Val{5}) = ("exposure", "metadata", "payloads", "recording")
+_capture_read_sample(::Val{5}, arrays, metadata, exposure, record) =
+    (; arrays, metadata, exposure)
+
+function _read_capture(
+    version::Val{V},
     directory,
     descriptor::CalibrationActionCodec.Captured;
-    expected_profile,
+    expected_contract::Contract,
     expected_stage,
     expected_illumination,
     expected_settings,
-)
-    _capture_require(expected_profile == "classic", "unsupported expected capture profile")
+) where {V}
+    selected = _capture_read_contract(version, expected_contract)
     _capture_text(expected_stage)
     _capture_text(expected_illumination)
     settings = _capture_snapshot(expected_settings)
     _capture_require(
         1 <= descriptor.frames <= 4096 &&
-            descriptor.bytes == UInt64(descriptor.frames) * CLASSIC_CAPTURE_BYTES &&
+            descriptor.bytes == UInt64(descriptor.frames) * expected_contract.bytes &&
             0 <
             descriptor.metadata_bytes <=
             CAPTURE_HEADER_BYTES + CAPTURE_EXPOSURE_BYTES * UInt64(descriptor.frames),
@@ -819,7 +932,7 @@ function read_capture(
     )
     fields = (
         "schema_version",
-        "profile",
+        selected.field,
         "run",
         "serial",
         "probe",
@@ -835,12 +948,12 @@ function read_capture(
     )
     _capture_fields(manifest, fields)
     _capture_require(
-        manifest["schema_version"] === 4 &&
-            manifest["profile"] == expected_profile &&
+        manifest["schema_version"] === V &&
+            _capture_same_json(manifest[selected.field], selected.value) &&
             manifest["stage"] == expected_stage &&
             manifest["illumination"] == expected_illumination &&
             _capture_same_json(manifest["settings"], settings),
-        "capture profile/stage/illumination/settings differ",
+        selected.mismatch,
     )
     run, serial = _capture_uint(manifest["run"]), _capture_uint(manifest["serial"])
     _capture_require(
@@ -868,9 +981,7 @@ function read_capture(
     domain = _capture_hash(mapping["wire"]; bytes = 16)
     samples = NamedTuple[]
     for (index, record) in enumerate(records)
-        _capture_fields(
-            record, ("exposure", "metadata", "payloads", "quality", "recording")
-        )
+        _capture_fields(record, _capture_record_fields(version))
         _capture_check_recording(record["recording"], recording_policy)
         _capture_require(
             ncodeunits(_capture_json(record)) + 1 <= CAPTURE_EXPOSURE_BYTES,
@@ -878,10 +989,11 @@ function read_capture(
         )
         exposure = _capture_exposure(record["exposure"], cursor)
         metadata, payloads = record["metadata"], record["payloads"]
-        roles = string.(keys(CLASSIC_CAPTURE_CONTRACTS))
+        roles = string.(keys(expected_contract.channels))
         _capture_fields(metadata, roles)
         _capture_fields(payloads, roles)
-        arrays = map(collect(pairs(CLASSIC_CAPTURE_CONTRACTS))) do (role, contract)
+        arrays = map(collect(pairs(expected_contract.channels))) do (role, channel)
+            contract = _channel_payload(channel)
             domain = _capture_check_receipt(metadata[string(role)], exposure, domain)
             payload = _capture_fields(
                 payloads[string(role)],
@@ -905,12 +1017,8 @@ function read_capture(
             )
             _capture_decode(bytes, contract)
         end
-        arrays = NamedTuple{keys(CLASSIC_CAPTURE_CONTRACTS)}(Tuple(arrays))
-        _capture_require(
-            _capture_same_json(record["quality"], _capture_quality(arrays)),
-            "capture intrinsic quality differs",
-        )
-        push!(samples, (; arrays, metadata, exposure, quality = record["quality"]))
+        arrays = NamedTuple{keys(expected_contract.channels)}(Tuple(arrays))
+        push!(samples, _capture_read_sample(version, arrays, metadata, exposure, record))
         cursor = _capture_end(exposure)
     end
     final_cursor = _capture_read_cursor(manifest["cursor"])
@@ -921,3 +1029,7 @@ function read_capture(
     )
     return (; manifest, samples)
 end
+
+include("legacy.jl")
+
+end # module CaptureFiles

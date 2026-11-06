@@ -1,27 +1,4 @@
-using Test, SHA, PipeWireAORTC
-import PipeWireAO
-const CaptureFiles = PipeWireAORTC.InstrumentCalibration
-const CaptureActions = PipeWireAORTC.CalibrationActionCodec
-const CaptureClock = PipeWireAORTC.ControlClient
-@assert isdefined(CaptureFiles, :CaptureStore)
-
-const capture_settings = Dict{String,Any}(
-    "profile" => "classic",
-    "simulation_graph" => "internal-source",
-    "graph_sha256" => repeat("a", 64),
-    "mask_sha256" => repeat("b", 64),
-    "source_magnitude" => 2.0,
-    "exposure_ns" => 2000000,
-    "photon_noise" => true,
-    "readout_noise" => true,
-    "adc_bits" => 12,
-)
-const capture_domain = PipeWireAO.AcquisitionDomain(ntuple(index -> UInt8(index), 16))
-const capture_generation = UInt64(2)^53 + 7
-const capture_coordinator_domain = UInt64(2)^53 + 11
-capture_cursor(sequence = 0, model = 0) = CaptureActions.AcquisitionCursor(
-    capture_coordinator_domain, capture_generation, UInt64(sequence), UInt64(model)
-)
+include("capture_file_inputs.jl")
 
 @testset "capture model intervals stay within signed nanosecond range" begin
     interval = Dict(
@@ -40,90 +17,12 @@ capture_cursor(sequence = 0, model = 0) = CaptureActions.AcquisitionCursor(
     end
 end
 
-function capture_file_receipt(
-    identity,
-    model,
-    duration;
-    optical = nothing,
-    trigger = nothing,
-    timing = PipeWireAO.ExposureTiming(; duration_nanoseconds = duration),
-    reference_timestamp = PipeWireAO.ReferenceTimestamp(1_730_000_000_000_000_123),
-)
-    header = PipeWireAO.BufferHeader(
-        UInt32(0), UInt32(0), Int64(-17), Int64(-2), identity.sequence + UInt64(100)
-    )
-    requirements = (
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_HEADER),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ACQUISITION_IDENTITY),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_EXPOSURE_TIMING),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_REFERENCE_TIMESTAMP),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_OPTICAL_CHOPPING),
-        PipeWireAO.MetadataRequirement(PipeWireAO.SPA.META_ELECTRICAL_TRIGGER),
-    )
-    records = PipeWireAO.MetadataSnapshot(requirements)
-    writable = PipeWireAO.writable_metadata_records(records)
-    PipeWireAO.set_buffer_header!(writable, header)
-    PipeWireAO.set_acquisition_identity!(writable, identity)
-    PipeWireAO.set_exposure_timing!(writable, timing)
-    PipeWireAO.set_reference_timestamp!(writable, reference_timestamp)
-    optical === nothing || PipeWireAO.set_optical_classification!(writable, optical)
-    trigger === nothing || PipeWireAO.set_trigger_classification!(writable, trigger)
-    return (;
-        identity,
-        model_start_ns = Int64(model),
-        duration_ns = UInt64(duration),
-        header,
-        optical_classification = optical,
-        trigger_classification = trigger,
-        exposure_timing = timing,
-        reference_timestamp,
-        records,
-    )
-end
-
-function capture_source(;
-    start = capture_cursor(),
-    fail = 0,
-    metadata_change = identity,
-    duration = 2000000,
-    period = duration,
-)
-    count = Ref(0)
-    function acquire()
-        count[] += 1
-        count[] == fail && error("interrupted acquisition")
-        sequence = start.sequence + UInt64(count[])
-        model = start.model_ns + UInt64(count[] - 1) * UInt64(period)
-        exposure = CaptureActions.Exposure(
-            start.domain, start.generation, sequence, model, UInt64(duration)
-        )
-        # Asymmetry catches accidental transpose/column-major encoding. Keep
-        # full ADC values including the top UInt16 bit, without electron conversion.
-        raw = reshape(UInt16.(mod.(0:(352*352-1), 65536)), 352, 352)
-        raw[1, 2], raw[2, 1], raw[end, end] = 0x8001, 0x0012, 0xffff
-        arrays = (;
-            raw,
-            slopes = reshape(Float32.(1:376), 188, 2),
-            flux = fill(Float32(count[]), 188),
-            validity = [index != 3 for index in 1:188],
-        )
-        receipt = capture_file_receipt(
-            PipeWireAO.AcquisitionIdentity(capture_domain, start.generation, sequence),
-            model,
-            UInt64(duration),
-        )
-        metadata = metadata_change((;
-            raw = receipt, slopes = receipt, flux = receipt, validity = receipt
-        ))
-        return (; arrays, metadata), exposure
-    end
-    return acquire, count
-end
 function capture_store(
-    parent; name = "capture", maximum = 10CaptureFiles.CLASSIC_CAPTURE_BYTES, kwargs...
+    parent; name = "capture", maximum = 10capture_contract.bytes, kwargs...
 )
     CaptureFiles.CaptureStore(
-        joinpath(parent, name);
+        joinpath(parent, name),
+        capture_contract;
         stage = "lamp-training",
         illumination = "lamp",
         settings = capture_settings,
@@ -150,7 +49,7 @@ end
 capture_read(store, descriptor; kwargs...) = CaptureFiles.read_capture(
     store.directory,
     descriptor;
-    expected_profile = "classic",
+    expected_contract = capture_contract,
     expected_stage = "lamp-training",
     expected_illumination = "lamp",
     expected_settings = capture_settings,
@@ -188,7 +87,7 @@ end
             @test filemode(stat(store.directory)) & 0o777 == 0o700
             descriptor, count = capture_write(store)
             @test count[] == 2
-            @test descriptor.bytes == 2CaptureFiles.CLASSIC_CAPTURE_BYTES
+            @test descriptor.bytes == 2capture_contract.bytes
             @test filesize(joinpath(store.directory, descriptor.manifest)) ==
                 descriptor.metadata_bytes
             result = capture_read(store, descriptor)
@@ -201,14 +100,14 @@ end
             @test sample.arrays.raw[1, 2] == 0x8001
             @test sample.arrays.raw[end, end] == 0xffff
             @test sample.arrays.validity[3] === false
-            @test sample.quality["valid_rois"] == 187
+            @test !haskey(sample, :quality)
             @test sample.exposure.domain == capture_coordinator_domain
             @test sample.metadata["raw"]["identity"]["domain"] ==
                 bytes2hex(collect(capture_domain.bytes))
             @test sample.metadata["raw"]["identity"]["generation"] == capture_generation
             @test sample.metadata["raw"]["header"]["pts"] == -17
             @test sample.metadata["raw"]["header"]["sequence"] == 101
-            @test result.manifest["schema_version"] == 4
+            @test result.manifest["schema_version"] == 5
             @test result.manifest["cursor"]["model_ns"] == 4000000
             @test result.manifest["after"]["generation"] == capture_generation
             @test result.manifest["domain_mapping"]["coordinator"] ==
@@ -229,7 +128,9 @@ end
             @test_throws ArgumentError CaptureFiles.read_capture(
                 store.directory,
                 descriptor;
-                expected_profile = "copper",
+                expected_contract = CaptureFiles.Contract((;
+                    raw = capture_contract.channels.raw
+                )),
                 expected_stage = "lamp-training",
                 expected_illumination = "lamp",
                 expected_settings = capture_settings,
@@ -239,7 +140,7 @@ end
             @test_throws ArgumentError CaptureFiles.read_capture(
                 link,
                 descriptor;
-                expected_profile = "classic",
+                expected_contract = capture_contract,
                 expected_stage = "lamp-training",
                 expected_illumination = "lamp",
                 expected_settings = capture_settings,
@@ -317,11 +218,7 @@ end
     end
     @testset "preflight capacity, stale requests, and bounded settings" begin
         mktempdir() do parent
-            @test_throws ArgumentError capture_store(
-                parent; name = "copper", profile = "copper"
-            )
-            @test !ispath(joinpath(parent, "copper"))
-            store = capture_store(parent; maximum = CaptureFiles.CLASSIC_CAPTURE_BYTES)
+            store = capture_store(parent; maximum = capture_contract.bytes)
             acquire, count = capture_source()
             for frames in (UInt32(0), UInt32(2), UInt32(4097))
                 @test_throws ArgumentError CaptureFiles.capture!(
@@ -378,7 +275,8 @@ end
             next, _ = capture_write(ample; frames = 1, cursor = later, serial = 2)
             @test next.cursor.sequence == 3
             @test_throws ArgumentError CaptureFiles.CaptureStore(
-                joinpath(parent, "too-large");
+                joinpath(parent, "too-large"),
+                capture_contract;
                 stage = "x",
                 illumination = "x",
                 settings = Dict("oversized" => repeat("x", 16385)),
@@ -390,7 +288,7 @@ end
     end
     @testset "preflight rejects without store or acquisition effects" begin
         mktempdir() do parent
-            store = capture_store(parent; maximum = CaptureFiles.CLASSIC_CAPTURE_BYTES)
+            store = capture_store(parent; maximum = capture_contract.bytes)
             acquire, count = capture_source()
             state() = deepcopy((;
                 store.directory,
@@ -415,7 +313,7 @@ end
                 deadline = CaptureClock.monotonic() + 30,
             )
             @test prepared.after == capture_cursor()
-            @test prepared.bytes == CaptureFiles.CLASSIC_CAPTURE_BYTES
+            @test prepared.bytes == capture_contract.bytes
             @test !ispath(prepared.directory)
             @test state() == before
             @test isempty(readdir(store.directory))
@@ -462,7 +360,7 @@ end
             @test isfile(
                 joinpath(store.directory, "run-7-serial-1", "frame-000001-raw.bin")
             )
-            @test store.used_bytes == 2CaptureFiles.CLASSIC_CAPTURE_BYTES
+            @test store.used_bytes == 2capture_contract.bytes
             acquire, count = capture_source()
             @test_throws InvalidStateException CaptureFiles.capture!(
                 store,
@@ -541,7 +439,8 @@ end
             marker = joinpath(parent, "retain.txt")
             write(marker, "keep")
             @test_throws ArgumentError CaptureFiles.CaptureStore(
-                parent;
+                parent,
+                capture_contract;
                 stage = "x",
                 illumination = "x",
                 settings = Dict(),
@@ -579,8 +478,8 @@ end
                     "0", 32
                 )),
                 doc->(doc["exposures"][1]["metadata"]["flux"]["model_start_ns"]=1),
-                doc->(doc["exposures"][1]["quality"]["valid_rois"]=188),
-                doc->(doc["exposures"][1]["quality"]["finite_slopes"]=1),
+                doc->(doc["channels"]["raw"]["schema"]="wrong-schema"),
+                doc->(doc["channels"]["raw"]["rate"]=[501, 1]),
                 doc->(doc["cursor"]["model_ns"]=7),
                 doc->(doc["cursor"]["sequence"]=true),
                 doc->(doc["cursor"]["sequence"]=1.0),
@@ -621,7 +520,7 @@ end
             original = read(manifest_path)
             duplicated = replace(
                 String(copy(original)),
-                "\"schema_version\":4" => "\"schema_version\":4,\"schema_version\":4",
+                "\"schema_version\":5" => "\"schema_version\":5,\"schema_version\":5",
             )
             @test ncodeunits(duplicated) > length(original)
             chmod(manifest_path, 0o600)
@@ -847,4 +746,157 @@ import Clocks
             @test store.run == 0 && store.serial == 0
         end
     end
+end
+
+@testset "capture contracts bind prepared channels without instrument roles" begin
+    P = PipeWireAO
+    channel(type, shape; schema = "generic-v1", rate = P.SPA.Fraction(37, 2)) =
+        CaptureFiles.Channel(
+            P.NdArrayFormat(type, shape; layout = P.NdArray.ROW_MAJOR, rate), schema
+        )
+    @test CaptureFiles._channel_names(["2.camera", "reference-slopes"]) ==
+        (Symbol("2.camera"), Symbol("reference-slopes"))
+    for names in
+        (String[], ["same", "same"], ["../outside"], ["bad/name"], [""], fill("x", 17))
+        @test_throws ArgumentError CaptureFiles._channel_names(names)
+    end
+    @test_throws ArgumentError CaptureFiles.Contract(NamedTuple())
+    @test_throws ArgumentError CaptureFiles.Contract((; detector = nothing))
+    @test_throws ArgumentError channel(P.NdArray.F64_LE, (2, 3))
+    @test_throws ArgumentError channel(P.NdArray.F32_LE, (2, 3, 4))
+    @test_throws ArgumentError channel(P.NdArray.U16_LE, (typemax(Int32),))
+    @test_throws ArgumentError channel(P.NdArray.U16_LE, (2,); schema = "")
+    @test_throws ArgumentError channel(P.NdArray.U16_LE, (2,); schema = repeat("s", 257))
+    @test_throws ArgumentError CaptureFiles.Channel(
+        P.NdArrayFormat(P.NdArray.U16_LE, (2, 3); layout = P.NdArray.COLUMN_MAJOR),
+        "detector",
+    )
+    selected = NamedTuple{(Symbol("2.camera"), :wavefront, :accepted)}((
+        channel(P.NdArray.U16_LE, (3,)),
+        channel(P.NdArray.F32_LE, (2, 3)),
+        channel(P.NdArray.BOOL8, (2, 3)),
+    ))
+    contract = CaptureFiles.Contract(selected)
+    @test contract.bytes == 3 * 2 + 2 * 3 * 4 + 2 * 3
+    arrays = NamedTuple{keys(selected)}((
+        UInt16[0x8001, 2, 0xffff],
+        Float32[1 3 5; 2 4 NaN],
+        Bool[true false true; false true false],
+    ))
+    receipt = capture_file_receipt(
+        P.AcquisitionIdentity(capture_domain, capture_generation, UInt64(1)),
+        0,
+        UInt64(2000000),
+    )
+    sample = (;
+        arrays = merge(arrays, (; unused = "not a selected payload")),
+        metadata = merge(map(_ -> receipt, selected), (; unused = nothing)),
+    )
+    exposure = CaptureActions.Exposure(
+        capture_coordinator_domain,
+        capture_generation,
+        UInt64(1),
+        UInt64(0),
+        UInt64(2000000),
+    )
+    mktempdir() do parent
+        store = CaptureFiles.CaptureStore(
+            joinpath(parent, "evidence"),
+            contract;
+            stage = "arbitrary",
+            illumination = "test",
+            settings = Dict(),
+            maximum_bytes = contract.bytes,
+        )
+        descriptor = CaptureFiles.capture!(
+            store,
+            () -> (sample, exposure);
+            run = UInt64(1),
+            serial = UInt64(1),
+            probe = UInt32(0),
+            cursor = capture_cursor(),
+            frames = UInt32(1),
+            deadline = CaptureClock.monotonic() + 30,
+        )
+        read_selected(expected_contract = contract) = CaptureFiles.read_capture(
+            store.directory,
+            descriptor;
+            expected_contract,
+            expected_stage = "arbitrary",
+            expected_illumination = "test",
+            expected_settings = Dict(),
+        )
+        result = read_selected()
+        @test result.manifest["schema_version"] == 5
+        @test !haskey(result.manifest, "profile")
+        @test !haskey(only(result.manifest["exposures"]), "quality")
+        @test keys(only(result.samples).arrays) == keys(selected)
+        @test isequal(only(result.samples).arrays, arrays)
+        @test length(readdir(dirname(joinpath(store.directory, descriptor.manifest)))) == 4
+        wrong_schema = CaptureFiles.Contract(
+            merge(
+                selected,
+                (; wavefront = channel(P.NdArray.F32_LE, (2, 3); schema = "other")),
+            ),
+        )
+        wrong_rate = CaptureFiles.Contract(
+            merge(
+                selected,
+                (;
+                    wavefront = channel(
+                        P.NdArray.F32_LE, (2, 3); rate = P.SPA.Fraction(37, 1)
+                    )
+                ),
+            ),
+        )
+        @test_throws ArgumentError read_selected(wrong_schema)
+        @test_throws ArgumentError read_selected(wrong_rate)
+    end
+end
+
+@testset "explicit historical schema-4 reader" begin
+    directory = joinpath(@__DIR__, "data", "capture-schema4")
+    generated = PipeWireAORTC.Common.parse_json(
+        read(joinpath(directory, "generated.json"), String)
+    )
+    @test generated["generated"]["source_revision"] ==
+        "94ecd39fe83e5f292c46d2d08f5867d78dd3d02d"
+    value = generated["descriptor"]
+    descriptor = CaptureActions.Captured(
+        CaptureFiles._capture_read_cursor(value["cursor"]),
+        value["manifest"],
+        value["sha256"],
+        UInt32(value["frames"]),
+        UInt64(value["bytes"]),
+        UInt64(value["metadata_bytes"]),
+    )
+    expected = (;
+        expected_contract = capture_contract,
+        expected_stage = "lamp-training",
+        expected_illumination = "lamp",
+        expected_settings = capture_settings,
+    )
+    @test_throws ArgumentError CaptureFiles.read_capture(directory, descriptor; expected...)
+    result = CaptureFiles.read_capture(Val(4), directory, descriptor; expected...)
+    @test result.manifest["schema_version"] == 4
+    @test only(result.samples).quality["valid_rois"] == 187
+    @test only(result.samples).arrays.raw[1, 2] == 0x8001
+    # Schema-4 never recorded schemas/rates; this explicit reader makes no claim
+    # about those caller expectations and only checks the historical payload facts.
+    changed = CaptureFiles.Contract(
+        map(
+            channel -> CaptureFiles.Channel(channel.format, "unrecorded"),
+            capture_contract.channels,
+        ),
+    )
+    @test CaptureFiles.read_capture(
+        Val(4), directory, descriptor; expected..., expected_contract = changed
+    ).manifest["schema_version"] == 4
+    @test_throws ArgumentError CaptureFiles.read_capture(
+        Val(4),
+        directory,
+        descriptor;
+        expected...,
+        expected_contract = CaptureFiles.Contract((; raw = capture_contract.channels.raw)),
+    )
 end

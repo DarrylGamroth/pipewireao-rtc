@@ -42,6 +42,7 @@ include("control/acquisition_lifecycle_codec.jl")
 include("control/calibration_action_codec.jl")
 include("control/acquisition_lifecycle_client.jl")
 include("control/calibration_action_client.jl")
+include("capture_files/CaptureFiles.jl")
 include("control/calibration_endpoint.jl")
 include("calibration_acquisition.jl")
 include("calibration_preparation.jl")
@@ -74,6 +75,7 @@ include("management_cli.jl")
 public Analysis,
     InstrumentExport,
     InstrumentCalibration,
+    CaptureFiles,
     InstrumentConfiguration,
     InstrumentDefinition,
     ConfigurationStore,
