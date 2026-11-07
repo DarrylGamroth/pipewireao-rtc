@@ -25,10 +25,12 @@ CPU gates: FilterGraphs 23,459, FGPW 2,921 plus 6 child assertions, RTC core
 Fresh candidate consumer integrity passes 45 and cold export/install/software
 relocation passes 235. An existing incomplete captured-calibration test plan is
 corrected separately without changing numerical tolerances or production code.
-The verified migration is prepared for RTC 0.7.1 publication. The
-[release record](validation/filtergraphs-010-20261107/publication.md) tracks main
-integration, registration and final public-registry verification. Existing
-sealed applications and live sessions are unchanged.
+The migration is merged into main; RTC 0.7.1 is tagged, published and registered.
+Final public-registry consumer checks pass 45 assertions, and cold
+export/install/software relocation passes 235. The
+[release record](validation/filtergraphs-010-20261107/publication.md) identifies
+the immutable release and registry trees separately from the earlier candidate.
+Existing sealed applications and live sessions are unchanged.
 
 ### Native/JLL 4.0.2 release and graph reconciliation — 2026-11-06
 

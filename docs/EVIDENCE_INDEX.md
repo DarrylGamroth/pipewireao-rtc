@@ -6,7 +6,8 @@ The [migration record](validation/filtergraphs-010-20261107/README.md) identifie
 the preserved cleanup baseline, additive graph API changes, selected package
 cohort and verification results.
 The [publication record](validation/filtergraphs-010-20261107/publication.md)
-tracks the final main/tag/registry identities and public consumer checks.
+records the final main/tag/registry identities, 45 public consumer assertions
+and 235 cold installation/relocation assertions.
 
 ## Native/JLL 4.0.2 package-cohort release — 2026-11-06
 
