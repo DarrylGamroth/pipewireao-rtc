@@ -98,11 +98,23 @@ the JLL artifact explicitly selecting the matching daemon.
 | FITS graph startup integration | 25 |
 | Private-core calibration worker | 206 |
 | Private-core named-command transport | 133 |
-| Documentation links/structure/requirement IDs | 689 |
+| Documentation links/structure/requirement IDs | 690 |
+| Full core suite | 11,058 across 514 summaries |
 
 All focused and private-core selectors exit 0, totaling 255 and 339 assertions
 respectively. All four modified Julia files are formatter-idempotent. The core
-suite is still in progress; its result will be recorded after completion.
+suite also exits 0. Its concurrent snapshot test performs a variable number of
+assertions; counts do not imply new tests. The expected missing-Git-object
+rejection diagnostic remains in the core log.
+
+Implementation is committed as `8028851`. The
+[compressed verification archive](verification.log.gz) retains the temporary
+setup/selector scripts, original process logs and generated science Project and
+Manifest. The core command uses the source package environment and explicitly
+sets `PIPEWIREAO_PREFIX` to the loaded JLL artifact; optional selectors use the
+recorded cohort environment. Private-core worker and named-command selectors
+use `--threads=3,1` and `--threads=4,1`, respectively. No upstream or runtime
+dependency changes were required.
 
 An independent read-only source review found no semantic changes in feedback
 indices, synchronized-input handling, required/optional records, extension load

@@ -20,7 +20,8 @@ RTC retains native admission, declared metadata policy, FITS provenance and
 correction/offset composition. The four repeated metadata-profile assemblies
 now share one private optional graph interface, removing 20 net runtime lines.
 Focused selectors pass 255 assertions; private-core worker/transport selectors
-pass 339. The full core suite remains in progress. The standalone event-file
+pass 339; the full core suite passes 11,058 across 514 summaries. Implementation
+commit `8028851` preserves the 0.7.1 dependency cohort. The standalone event-file
 launcher cannot replace RTC's native lifecycle; remaining observer-status and
 notification representation accesses need upstream public equivalents before
 removal. No second host abstraction or session authority is introduced.
