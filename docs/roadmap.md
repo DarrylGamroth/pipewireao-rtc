@@ -19,14 +19,20 @@ PipeWireAO 0.9.2 / JLL 4.0.2, AOS 0.3.21, HIL 0.5.0 and calibration 0.17.3
 cohort. Existing graph preparation, complete-frame publication and all cleanup
 boundaries are retained. The new controller API is additive; changing controller
 publication semantics is outside this dependency migration. The
-[migration record](validation/filtergraphs-010-20261107/README.md) tracks the
-source comparison, selected packages and verification in progress. Existing
-sealed applications and live sessions are not migrated by these checks.
+[migration record](validation/filtergraphs-010-20261107/README.md) records full
+CPU gates: FilterGraphs 23,459, FGPW 2,921 plus 6 child assertions, RTC core
+11,049, fourteen graph/science selectors 826 and private-core selectors 512.
+Fresh candidate consumer integrity passes 45 and cold export/install/software
+relocation passes 235. An existing incomplete captured-calibration test plan is
+corrected separately without changing numerical tolerances or production code.
+RTC 0.7.1 remains a candidate on the migration branch: only its temporary
+validation registry contains that version; release/shared-registry publication
+is pending. Existing sealed applications and live sessions are unchanged.
 
 ### Native/JLL 4.0.2 release and graph reconciliation — 2026-11-06
 
-RTC 0.7 preserves the completed cleanup and uses registered package dependencies
-with PipeWireAO 0.9.2 / JLL 4.0.2, FGA 0.12, FilterGraphs 0.9 and FGPW 0.5.2.
+The published RTC 0.7.0 baseline preserves the cleanup and uses registered
+dependencies with PipeWireAO 0.9.2 / JLL 4.0.2, FGA 0.12, FilterGraphs 0.9 and FGPW 0.5.2.
 The [release record](validation/rtc-cohort-402-20261106/README.md) identifies
 published sources/artifacts and final verification. The 0.7 minor version covers
 the accepted public module renames. Graph contracts, calibration projections and
@@ -39,9 +45,9 @@ package gates pass: FGA 129,664, FilterGraphs 4,719, PipeWireAO 2,327, FGPW 2,92
 plus 6 child assertions, AOS 12,187 and RTC core 11,048. Native/private-core and
 empty-depot checks are recorded separately. A concurrent controller release
 retains FGPW 0.5.1; its published source/evidence is preserved, while the endpoint
-port uses 0.5.2 and is also checked against FilterGraphs 0.10. RTC still selects
-0.9. Final public-registry consumer checks pass 45 assertions; cold export/install
-and software relocation pass 235. The exact immutable source/artifact trees and
+port uses 0.5.2 and is also checked against FilterGraphs 0.10. That 0.7.0 release
+selects 0.9. Final public-registry consumer checks pass 45 assertions; cold
+export/install and software relocation pass 235. The exact immutable source/artifact trees and
 consumer lock are recorded in the release receipt.
 No live deployment or new hardware/deadline qualification is implied. NEC-12's
 remaining host-composition hooks stay open; standalone event files do not replace

@@ -3,7 +3,7 @@
 Date: 2026-11-07. Baseline: `0048cfc41f7605d125ffcdda05479b40a0e68e18`,
 branch `codex/filtergraphs-010-20261107`, worktree `pipewireao-rtc-fg010`.
 The source worktree was clean; the original checkout and cleanup branch are
-preserved. Verification is in progress.
+preserved. The selected CPU/package-cohort verification is complete.
 
 ## Change and ownership
 
@@ -51,14 +51,16 @@ in its [release receipt](https://github.com/DarrylGamroth/JuliaFilterGraph.jl/bl
 | Gate | Result |
 | --- | --- |
 | FilterGraphs complete CPU suite | 23,459 assertions; pass |
+| FilterGraphPipeWire complete CPU suite, `--threads=4,0` | 2,921 assertions plus 6 child-process assertions; pass |
 | RTC complete core suite | 11,049 assertions; pass |
 | RTC calibration worker / private core | 206 assertions; pass |
 | RTC named-command transport / private core | 133 assertions; pass |
 | RTC capture publication / private core | 173 assertions; pass |
-| Documentation structure, links and requirement IDs | 713 assertions; pass |
+| Documentation structure, links and requirement IDs | 717 assertions; pass |
 | Captured physical/chopped optical calibration, CPU | 47 assertions; pass after correcting test data |
+| Fourteen RTC graph/science selectors, including captured calibration | 826 reported assertions; pass |
 | Fresh candidate consumer integrity and extensions | 45 assertions; pass |
-| Full adapter and cold installation | In progress |
+| Candidate cold export/install/software relocation | 235 assertions; pass |
 
 The development core manifest is regenerated with `Pkg.resolve()` and
 `Pkg.instantiate()`. It does not load optional science packages. The separate
@@ -76,8 +78,39 @@ include("test/runtests.jl")'
 The graph-engine and adapter suites run from their registered package source
 with `--threads=4,0` and the cohort project. Private-core worker selectors use
 their documented interactive-thread layout. Science selectors use CPU
-preparation and do not load an accelerator backend. Logs are retained under
-`/tmp/rtc-fg010-*-20261107.log`; results will be recorded after completion.
+preparation and do not load an accelerator backend. The fourteen selectors cover
+typed calibration dispatch, calibrated exports, synchronized analysis, links,
+metadata, statistics, session schema, chopped calibration, optical publication,
+detector observation, exposure publication, simulator factory delegation,
+captured preparation and captured calibration. All final verification gates exit 0.
+
+The core's concurrent snapshot check performs a variable number of assertions;
+its count was 82 here versus 81 in the previous release run. The unchanged
+missing-Git-object rejection test emits its expected `git cat-file` diagnostic.
+Fresh consumer precompilation downloads MKL's IntelOpenMP/oneTBB artifacts normally.
+
+The [generated cohort receipt](cohort.toml) records all nine installed package
+trees and the actual JLL artifact. The [consumer Project](consumer/Project.toml)
+and [compressed Pkg-generated Manifest](consumer/Manifest.toml.gz) preserve the
+exact candidate environment. The new depot was initially empty except for an
+unchanged General registry snapshot and the temporary candidate registry. Every
+package and artifact was installed normally; there are no source overrides,
+SDK preferences or artifact overrides. The existing 45-assertion verifier was
+reused with only the RTC/FilterGraphs expected versions and provenance header
+updated. The exact verification script is retained in the archive below.
+
+The [compressed verification archive](verification.log.gz) preserves commands,
+setup/verification scripts and raw pass/failure logs captured from
+`/tmp/rtc-fg010-*-20261107.*`. It includes the failed original selector, its
+0.9 baseline reproduction and the successful rerun. The registered runtime
+source under test is commit `650871a`; the separately verified test correction
+is `be47370`. Later evidence-only changes do not change runtime behavior or
+dependency metadata. The candidate registry commit is `45a1cba`; it was not
+pushed to the shared registry, and no release tag was created.
+
+A final independent read-only review confirms cleanup preservation, unchanged
+numerical test expectations, correct dependency metadata, all nine consumer
+hashes and explicit candidate/publication status.
 
 No deployed application is replaced or started. Software tests do not establish
 physical-device, cadence, latency or real-time deadline qualification.
