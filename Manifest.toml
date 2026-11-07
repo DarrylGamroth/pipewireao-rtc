@@ -2,12 +2,12 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "634d31a8de4c5635b80bdbbd965b1213aad8e3ca"
+project_hash = "c72d2d9c20ce069ea873989faf3d3be574fd22a4"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
 git-tree-sha1 = "f2bacca171b41af041eba411ade9a8e9f9e82f99"
-registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
+registries = "DarrylGamrothRegistry"
 uuid = "f7939a7f-2bcc-4096-952b-c44031b5533b"
 version = "0.4.1"
 weakdeps = ["ThreadPinning"]
@@ -52,7 +52,7 @@ version = "4.7.0+0"
 
 [[deps.Clocks]]
 git-tree-sha1 = "89539d1efa5ea79acc58e8cbd8f9a6ea381fc148"
-registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
+registries = "DarrylGamrothRegistry"
 uuid = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
 version = "0.4.0"
 
@@ -107,7 +107,7 @@ version = "0.17.5"
 [[deps.Hsm]]
 deps = ["ValSplit"]
 git-tree-sha1 = "1958e3af28cdc2d9a5baf15af376cbddcd85d606"
-registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
+registries = "DarrylGamrothRegistry"
 uuid = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
 version = "0.3.2"
 

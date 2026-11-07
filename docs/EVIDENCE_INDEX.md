@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Native/JLL 4.0.2 package-cohort release — 2026-11-06
+
+The [release record](validation/rtc-cohort-402-20261106/README.md) records the
+five generated artifacts, strict dependency floors, complete CPU package gates,
+corrected test/setup failures and registry-only consumer validation.
+
 ## Earlier registered graph-cohort migration — 2026-11-06
 
 The [migration receipt](validation/graph-cohort-20261106/README.md) records RTC

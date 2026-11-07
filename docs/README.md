@@ -22,6 +22,7 @@ claim; do not infer completion from prose.
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
 | MediaSession session policy migration | RTC-ARCH-024/026; RTC-DEV-003/004/009/010/012/013/021/022/025/030 | [Current implementation boundary and closure plan](SESSION_POLICY_MIGRATION.md); replacement is under integration, not qualified |
+| Native/JLL 4.0.2 release and registered cohort | Strict SDK bounds; dependency-only deployment and public package identities | [Release verification](validation/rtc-cohort-402-20261106/README.md) |
 | Three-package graph reconciliation | Public FilterGraphAlgorithms 0.12 / FilterGraphs 0.9 / FilterGraphPipeWire 0.5 APIs; preserve RTC admission and completed cleanup | [Implementation and verification](reviews/20261106-graph-reconciliation/REVIEW.md) |
 | Naming cleanup and Julia type dispatch | Preserve protocol vocabulary, scientific behavior and RTC-ARCH-024/026 | [Migration and verification](reviews/20261104-naming-cleanup/REVIEW.md) |
 | Calibration worker messages and native command endpoint | RTC-ARCH-024/026, RTC-DEV-029/030; private graph/control state, bounded stop and explicit storage release | [Implementation, source cohort and verification](reviews/20261104-calibration-worker/REVIEW.md) |

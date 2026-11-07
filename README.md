@@ -109,7 +109,7 @@ must use the matching older tools; the registered installer does not migrate
 their package contents.
 
 RTC 0.7 requires FilterGraphAlgorithms 0.12, FilterGraphs 0.9,
-FilterGraphPipeWire 0.5.1, PipeWireAO 0.9.2 and the native/JLL 4.0.2 SDK.
+FilterGraphPipeWire 0.5.2, PipeWireAO 0.9.2 and the native/JLL 4.0.2 SDK.
 The development manifest and exported applications resolve package dependencies
 from the custom registry. See the [cohort release verification](docs/validation/rtc-cohort-402-20261106/README.md)
 for artifact identities, checks and qualification limits. Installed applications

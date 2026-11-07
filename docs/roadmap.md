@@ -12,27 +12,27 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### Graph package reconciliation — 2026-11-06
+### Native/JLL 4.0.2 release and graph reconciliation — 2026-11-06
 
-RTC 0.6.1's cleanup branch now uses FilterGraphAlgorithms 0.12 and FilterGraphs
-0.9, with FilterGraphPipeWire's merged public library preparation interface.
-Graph contracts, calibration projections/staging and analysis no longer build CLI
-options to prepare graphs. Native RTC admission, single session authority,
-message-owned calibration graphs, clocks/Hsm, generic capture and dependency-only
-exports are preserved. The [reconciliation record](reviews/20261106-graph-reconciliation/REVIEW.md)
-records the source cohort, failed-before worker gate and verification.
+RTC 0.7 preserves the completed cleanup and uses registered package dependencies
+with PipeWireAO 0.9.2 / JLL 4.0.2, FGA 0.12, FilterGraphs 0.9 and FGPW 0.5.2.
+The [release record](validation/rtc-cohort-402-20261106/README.md) identifies
+published sources/artifacts and final verification. The 0.7 minor version covers
+the accepted public module renames. Graph contracts, calibration projections and
+analysis delegate preparation to public FGPW APIs. Native admission, single
+session authority, message-owned calibration graphs, clocks/Hsm, generic capture
+and dependency-only exports remain intact.
 
-Installed FGPW 0.5.0, PipeWireAO 0.9.1 and native 4.0.1 omitted the cleanup's
-endpoint APIs. Preservation ports are committed separately as FGPW 0.5.1,
-PipeWireAO 0.9.2 and native 4.0.2 source versions. The native five-suite gate,
-PipeWireAO's 2,315 assertions, FGPW's 55 assertions, RTC's private worker (206)
-and generic capture (173) pass. The final source-cohort core suite passes 11,048
-assertions across 514 testsets.
-The RTC development manifest selects the sibling PipeWireAO source; deployed
-applications still require registered sealed dependencies. Publishing the new
-Julia/native/JLL cohort and qualifying a release remain separate; no installed
-application changed. Standalone event-file signaling cannot replace native RTC
-admission. NEC-12's remaining host-composition hooks remain open.
+Five native artifacts and the receiving Julia APIs are published. Full CPU
+package gates pass: FGA 129,664, FilterGraphs 4,719, PipeWireAO 2,327, FGPW 2,921
+plus 6 child assertions, AOS 12,187 and RTC core 11,048. Native/private-core and
+empty-depot checks are recorded separately. A concurrent controller release
+retains FGPW 0.5.1; its published source/evidence is preserved, while the endpoint
+port uses 0.5.2 and is also checked against FilterGraphs 0.10. RTC still selects
+0.9. Final registered consumer, install and relocation checks follow publication.
+No live deployment or new hardware/deadline qualification is implied. NEC-12's
+remaining host-composition hooks stay open; standalone event files do not replace
+native RTC admission.
 
 ### Package necessity before further cleanup — 2026-11-05
 
