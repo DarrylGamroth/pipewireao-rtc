@@ -330,7 +330,7 @@ flowchart LR
 | Sink | Consume graph output without addressing or controlling physical hardware. |
 | Observer | Inspect standard PipeWire objects and, where a suitable boundary exists, scientific samples. It is optional and never owns runner lifecycle or graph progress. |
 | AdaptiveOpticsSim | Own the simulated atmosphere, optics, WFS, deformable mirror, science diagnostics, model time, and frame-to-command causality without a PipeWire dependency. |
-| `AdaptiveOpticsSimPipeWireHIL.jl` | Own prepared simulation execution over public PipeWireAO interfaces: lockstep HIL exchange, external-pupil and clocked optical runners. AOS retains numerical models; RTC retains admission and native controls. |
+| `AdaptiveOpticsSimPipeWireHIL.jl` | Own configured and prepared simulation execution over public PipeWireAO interfaces: lockstep HIL exchange, external-pupil and clocked optical runners. Portable products contain resolved AOS graphs, typed bindings and compiled models; AOS retains numerics and RTC retains admission/native controls. |
 | `FilterGraphs` and `FilterGraphPipeWire` | Optionally own and publish one prepared RTC processing graph as an ordinary external PipeWire node. |
 | Instrument directory | Own scientific prescriptions, ordered device geometry, pupil registration, AOS YAML graphs and calibration artifacts; shared RTC code prepares them through AOS and the HIL adapter. Classic is the first migrated instrument. |
 

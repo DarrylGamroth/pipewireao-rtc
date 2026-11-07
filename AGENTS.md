@@ -295,9 +295,14 @@
   private-core integration selectors. HIL receives prepared AOS objects and
   owns scientific cursor, warmup, reset, pacing and completed-exposure batching;
   it must not import RTC configuration or bootstrap implementations.
-- `test/simulation_export.jl` verifies cold standalone HIL export, exact graph
-  and binding preservation, and relocation into a fresh process without RTC or
-  the original authored source. HIL's `test/simulation.jl` owns manifest parsing
-  and numerical preparation checks; its `test/simulation_private_core.jl` owns
-  finite transport and control-failure teardown. The initial manifest supports
-  lockstep only; do not infer HEART or clocked-optical compatibility from it.
+- `test/simulation_export.jl` retains schema-1 lockstep export and relocation.
+  `test/simulation_optical_export.jl` checks schema-2 external/clocked graphs,
+  seeded detector/chopped trajectories, cold Proper loading, actual source
+  planes and a relocated consumer without RTC. `test/simulation_compiled_export.jl`
+  reuses HIL's tiny compiled model data writer and checks RTC asset copying,
+  exact hashes, relocation and tamper rejection; matching development HIL test
+  sources are needed for this selector. These checks open no core or GPU.
+- HIL owns manifest parsing, prepared numerical execution and finite private-core
+  controls/cleanup. Its optional CPU and CUDA selectors check optical, detector,
+  compiled and captured preparation. Clocked sources remain on the host;
+  accelerator optics require capture. Selectors do not qualify HEART plugins.

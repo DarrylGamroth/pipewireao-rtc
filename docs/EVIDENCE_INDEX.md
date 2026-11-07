@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Standalone optical configuration completion — 2026-11-07
+
+The [schema-2 record](reviews/20261107-hil-optical-configuration/REVIEW.md)
+records independent external-pupil/clocked preparation, compiled model export
+and relocation, schema/clock fixes, public AOS contracts and CPU/CUDA/native
+software verification. HEART plugin migration remains deferred.
+
 ## Standalone HIL configuration — 2026-11-07
 
 The [configuration record](reviews/20261107-hil-configuration/REVIEW.md) records

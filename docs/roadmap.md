@@ -24,14 +24,17 @@ runner file is removed from RTC; production code is reduced by over 500 lines.
 The development cohort is RTC 0.7.2 / HIL 0.5.1 / AOS 0.3.22; these sources are
 not registered releases. Installed deployments remain unchanged.
 
-The follow-up [standalone HIL configuration](HIL_CONFIGURATION.md) exports
-resolved lockstep AOS graphs and typed bindings for an HIL runtime that does
-not import RTC. The unresolved instrument/settings compiler remains a cold
-export responsibility. External-pupil/clocked compositions and compiled model
-assets are not yet supported by that manifest. The inspected HEART SPA plugins
-still advertise retired metadata, so their current-cohort interoperability is
-pending a plugin migration and a private-core roundtrip; correlation is not
-relaxed to make configuration appear compatible.
+The [standalone HIL configuration](HIL_CONFIGURATION.md) now exports resolved
+lockstep graphs and schema-2 external-pupil/clocked-optical compositions with
+exact typed bindings and compiled model snapshots. HIL loads the relocated
+product without RTC or the original authoring tree. The unresolved
+instrument/settings compiler remains a cold export responsibility; no resolver
+is copied into HIL. Public AOS boundary-contract queries validate actual source
+and detector schemas, and one public HIL execution-properties query serves both
+the standalone runner and RTC. The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
+records CPU/CUDA and private-core evidence. The user selected finishing this
+configuration before the HEART plugin migration; current-cohort protocol
+interoperability remains deferred. Correlation requirements are unchanged.
 
 ### Remaining graph-host scope — 2026-11-07
 
