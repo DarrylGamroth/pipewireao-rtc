@@ -3,7 +3,7 @@ using Test,
     PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper, PipeWireAO
 using AdaptiveOpticsSim.AlgorithmGraphs
 include(joinpath(@__DIR__, "external_pupil_owner_documents.jl"))
-const WarmOwner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+const WarmOwner = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 
 function warm_science(directory; chopped = false, response = false)
     (; document, config, path, physical, simulation) = external_pupil_owner_documents(

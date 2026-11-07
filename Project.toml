@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -45,7 +45,7 @@ PipeWireAORTCOpticsExt = "AdaptiveOpticsSim"
 AMDGPU = "2.7"
 AdaptiveOpticsCalibration = "0.17.3"
 AdaptiveOpticsSim = "0.3.21"
-AdaptiveOpticsSimPipeWireHIL = "0.5.0"
+AdaptiveOpticsSimPipeWireHIL = "0.5.1"
 Agent = "0.4.1"
 CUDA = "6.4.2"
 Clocks = "0.4.0"

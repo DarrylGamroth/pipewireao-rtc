@@ -1,7 +1,6 @@
 # Optional CPU-only stream/POD checks; no optical preparation or PipeWire core.
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, PipeWireAO
-const StreamOwner =
-    Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+using Test, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, PipeWireAO
+const StreamOwner = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 
 function sensor_stream_science(;
     durations = (llowfs = 2_000_000, scc = 10_000_000), samples = 1, chopped = false
@@ -140,9 +139,8 @@ end
             sensor -> merge(sensor, (; image = T.(sensor.image))), science.sensors
         )
         science = merge(science, (; sensors))
-        execution = StreamOwner.stream_execution(
-            (; version = 4), science, StreamOwner.OwnerState()
-        )
+        execution = StreamOwner.prepare(science)
+        emit = StreamOwner.emitter(execution)
         metadata = (; sequence = UInt64(1))
         image = T[11 12 13; 21 22 23]
         expected = Float32.(image)
@@ -155,21 +153,21 @@ end
         end
         @test execution.buffers[1] !== execution.buffers[2]
         @test execution.frames[1] !== execution.frames[2]
-        execution.emit(:llowfs, image, metadata)
+        emit(:llowfs, image, metadata)
         @test execution.buffers[1] == expected
         @test size(execution.buffers[1]) == (2, 3)
         @test all(iszero, execution.buffers[2])
         fill!(image, 0)
         @test execution.buffers[1] == expected
-        execution.emit(:scc, fill(T(7), 2, 3), metadata)
+        emit(:scc, fill(T(7), 2, 3), metadata)
         @test execution.buffers[1] == expected
         @test execution.buffers[2] == fill(7.0f0, 2, 3)
-        execution.emit(:llowfs, fill(T(floatmax(Float32)), 2, 3), metadata)
+        emit(:llowfs, fill(T(floatmax(Float32)), 2, 3), metadata)
         @test execution.buffers[1] == fill(floatmax(Float32), 2, 3)
-        @test_throws ArgumentError execution.emit(:llowfs, fill(T(NaN), 2, 3), metadata)
-        @test_throws ArgumentError execution.emit(:llowfs, fill(T(Inf), 2, 3), metadata)
+        @test_throws ArgumentError emit(:llowfs, fill(T(NaN), 2, 3), metadata)
+        @test_throws ArgumentError emit(:llowfs, fill(T(Inf), 2, 3), metadata)
         if T === Float64
-            @test_throws ArgumentError execution.emit(
+            @test_throws ArgumentError emit(
                 :llowfs, fill(floatmax(Float64), 2, 3), metadata
             )
         end
@@ -198,8 +196,7 @@ end
             @test stream.format.layout == NdArray.ROW_MAJOR
             @test Dict(stream.properties)["optics.spectral-samples"] == string(samples)
             @test Dict(stream.properties)["pipewireao.header.pts.clock"] == "model"
-            @test Dict(stream.properties)["pipewireao.header.pts.absolute-conversion"] ==
-                "unavailable"
+            @test stream.reference_clock == METADATA_CLOCK_REALTIME
         end
         @test all(r -> r.required, streams[2].metadata)
         @test length(streams[2].metadata) == 3

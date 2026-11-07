@@ -429,7 +429,7 @@ end
 end
 
 @testset "chopped transport records observed model-window gaps and actual phase" begin
-    owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+    owner = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
     science = (; chopping = (scc = (; trigger_high_is_fringed = true),))
     first = (;
         sequence = UInt64(1),

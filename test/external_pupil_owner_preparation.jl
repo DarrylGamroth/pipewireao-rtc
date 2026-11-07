@@ -4,6 +4,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 include(joinpath(@__DIR__, "external_pupil_owner_documents.jl"))
 const ExternalOwner =
     Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
+const Optical = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 const Owner = PipeWireAORTC.AOSOwner
 
 struct OpticalPublicationTransport
@@ -34,18 +35,14 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
         write_external_optical_documents(directory, physical, simulation)
         PipeWireAORTC.Common.write_json(config, document)
         science = Owner.prepare_external_pupil_science(Owner.configuration(config))
-        state = ExternalOwner.OwnerState()
-        state.generation = 7
-        execution = ExternalOwner.stream_execution((; version = 4), science, state)
+        execution = Optical.prepare(science)
+        execution.generation = 7
         transport = OpticalPublicationTransport(Any[])
-        publisher = ExternalOwner.ExposurePublisher(transport)
-        execution.publication[] = publisher
-        ExternalOwner.warmup!(
-            execution.emit, science, execution.packet, execution.frames, execution.buffers
-        )
+        publisher = Optical.ExposurePublisher(transport)
+        Optical.warmup!(execution)
         @test isempty(transport.events)
         @test science.plant.state.sequence == 0
-        execution.publication_enabled[] = true
+        emit = Optical.emitter(execution, publisher)
         execution.packet[2, :, :] .= 1
         domain = AcquisitionDomain(ntuple(UInt8, 16))
         counts = Int[]
@@ -57,10 +54,8 @@ PipeWireAO.trigger_process!(transport::OpticalPublicationTransport) =
                 lost_samples = UInt64(0),
             )
             before = length(transport.events)
-            @test ExternalOwner.publish_exposures!(publisher) do
-                ExternalOwner.feed!(
-                    execution.emit, science.plant, execution.packet, receipt
-                )
+            @test Optical.publish_exposures!(publisher) do
+                Optical.feed!(emit, science.plant, execution.packet, receipt)
             end
             events = transport.events[(before+1):end]
             exposed = count(event -> event !== :trigger, events)
@@ -119,7 +114,12 @@ end
             ExternalOwner.OwnerState(),
         )
         @test checks[] >= 4
-        @test !execution.publication_enabled[] && execution.publication[] === nothing
+        @test Optical.snapshot(execution) == (;
+            generation = Int64(1),
+            sequence = UInt64(0),
+            deadline_ns = Int64(0),
+            upstream_generation = UInt64(0),
+        )
         @test all(iszero, execution.packet) &&
             all(frame -> all(iszero, frame), execution.buffers)
         @test science.plant.state.domain === nothing
@@ -137,9 +137,7 @@ end
         @test contracts["sensors"]["scc"]["shape"] == [8, 8]
         @test contracts["sensors"]["scc"]["schema"] !=
             contracts["sensors"]["llowfs"]["schema"]
-        streams = ExternalOwner.stream_options(
-            science, options.pupil_node, options.sensor_nodes
-        )
+        streams = Optical.stream_options(science, options.pupil_node, options.sensor_nodes)
         @test length(streams) == 3
         @test streams[1].format.rate === nothing
         @test streams[2].format.rate == SPA.Fraction(500, 1)
@@ -204,9 +202,7 @@ end
                 duration = UInt64(2_000_000),
                 lost_samples = UInt64(0),
             )
-            @test ExternalOwner.feed!(
-                science.plant, packet, receipt
-            ) do name, image, metadata
+            @test Optical.feed!(science.plant, packet, receipt) do name, image, metadata
                 push!(emit, (; name, image = copy(image), metadata))
             end
         end
@@ -245,7 +241,7 @@ end
         empty!(simulation["components"])
         write_external_optical_documents(directory, physical, simulation)
         science = ExternalOwner.prepare(path)
-        streams = ExternalOwner.stream_options(
+        streams = Optical.stream_options(
             science, "finite.pupil", (; llowfs = "finite.llowfs", scc = "finite.scc")
         )
         @test streams[1].format.rate === nothing
@@ -273,9 +269,7 @@ end
         PipeWireAORTC.Common.write_json(config, document)
         options = Owner.configuration(config)
         science = Owner.prepare_external_pupil_science(options)
-        streams = ExternalOwner.stream_options(
-            science, options.pupil_node, options.sensor_nodes
-        )
+        streams = Optical.stream_options(science, options.pupil_node, options.sensor_nodes)
         @test all(r -> r.required, streams[2].metadata)
         @test all(r -> r.required, streams[3].metadata)
         @test streams[2].format.rate == SPA.Fraction(500, 1)
@@ -291,9 +285,7 @@ end
                 duration = UInt64(2_000_000),
                 lost_samples = UInt64(0),
             )
-            @test ExternalOwner.feed!(
-                science.plant, packet, receipt
-            ) do name, image, metadata
+            @test Optical.feed!(science.plant, packet, receipt) do name, image, metadata
                 push!(emitted, (; name, metadata))
             end
         end
@@ -304,10 +296,10 @@ end
             [10_000_000, 10_000_000]
         @test getproperty.(getproperty.(scc, :metadata), :chopped_image_kind) ==
             [:fringed, :unfringed]
-        @test [ExternalOwner.sensor_sequence(item.metadata, true) for item in scc] == [1, 4]
-        @test [ExternalOwner.trigger_state(science, :scc, item.metadata) for item in scc] == [ACQUISITION_TRIGGER_HIGH, ACQUISITION_TRIGGER_LOW]
+        @test [Optical.sensor_sequence(item.metadata, true) for item in scc] == [1, 4]
+        @test [Optical.trigger_state(science, :scc, item.metadata) for item in scc] == [ACQUISITION_TRIGGER_HIGH, ACQUISITION_TRIGGER_LOW]
         llowfs = filter(item -> item.name === :llowfs, emitted)
-        @test [ExternalOwner.sensor_sequence(item.metadata, false) for item in llowfs] == collect(1:10)
+        @test [Optical.sensor_sequence(item.metadata, false) for item in llowfs] == collect(1:10)
         reset_external_pupil!(science.plant)
         @test science.plant.state.domain === nothing
         @test all(exposure -> exposure.sequence == 0, values(science.plant.exposures))
@@ -342,7 +334,7 @@ end
                 ),
                 UInt64(0),
             )
-            ExternalOwner.feed!(science.plant, packet, receipt) do name, image, metadata
+            Optical.feed!(science.plant, packet, receipt) do name, image, metadata
                 name === :llowfs && push!(frames, copy(image))
             end
             return only(frames)
@@ -356,8 +348,13 @@ end
         )
         @test first_frame() == expected
         reset_external_pupil!(science.plant)
-        @test !execution.publication_enabled[] && execution.publication[] === nothing
-        @test_throws ArgumentError execution.emit(
+        @test Optical.snapshot(execution) == (;
+            generation = Int64(1),
+            sequence = UInt64(0),
+            deadline_ns = Int64(0),
+            upstream_generation = UInt64(0),
+        )
+        @test_throws ArgumentError Optical.emitter(execution)(
             :llowfs, fill(floatmax(Float64), 8, 8), (; sequence = UInt64(1))
         )
         checks = Ref(0)

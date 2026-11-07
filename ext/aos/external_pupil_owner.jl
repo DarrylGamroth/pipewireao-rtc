@@ -13,11 +13,12 @@ using ..PipeWireAORTCAOSExt:
 using PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract, optical_execution_graph
-using UUIDs, SHA
+using SHA
 import PipeWireAORTC
 import Clocks
 import PipeWireAORTC.Common: prepare_reference_clock
 const IC = PipeWireAORTC.InstrumentConfiguration
+const Optical = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 
 function pupil_contract(declaration, configured)
     optical = declaration.instrument.document["optical_input"]
@@ -166,129 +167,55 @@ function prepare(
     )
 end
 
-function stream_options(
-    science,
-    pupil_node,
-    sensor_nodes;
-    sensor_buffers = 3,
-    input_option = nothing,
-    reference_clock = PipeWireAO.METADATA_CLOCK_REALTIME,
-)
-    pupil =
-        input_option === nothing ?
-        PipeWireArrayStreamOptions(;
-            node_name = pupil_node,
-            media_name = "External pupil field",
-            schema = science.pupil.schema,
-            format = NdArrayFormat(
-                NdArray.F32_LE, science.pupil.shape; layout = NdArray.ROW_MAJOR
-            ),
-            properties = science.pupil.properties,
-            metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
-        ) : input_option
-    sensors = map(keys(science.sensors)) do name
-        sensor = getproperty(science.sensors, name)
-        duration = getproperty(science.plant.exposures, name).duration_ns
-        duration > 0 || throw(ArgumentError("sensor exposure duration must be positive"))
-        rate = 1_000_000_000 // duration
-        PipeWireArrayStreamOptions(;
-            node_name = getproperty(sensor_nodes, name),
-            media_name = string(name),
-            buffers = sensor_buffers,
-            reference_clock,
-            metadata = (
-                PipeWireAO.MetadataRequirement(
-                    PipeWireAO.SPA.META_ACQUISITION_IDENTITY; required = true
-                ),
-                PipeWireAO.MetadataRequirement(
-                    PipeWireAO.SPA.META_EXPOSURE_TIMING; required = true
-                ),
-                PipeWireAO.MetadataRequirement(
-                    PipeWireAO.SPA.META_REFERENCE_TIMESTAMP; required = true
-                ),
-                (
-                    hasproperty(science.chopping, name) ?
-                    (
-                        PipeWireAO.MetadataRequirement(
-                            PipeWireAO.SPA.META_OPTICAL_CHOPPING; required = true
-                        ),
-                        PipeWireAO.MetadataRequirement(
-                            PipeWireAO.SPA.META_ELECTRICAL_TRIGGER; required = true
-                        ),
-                    ) : ()
-                )...,
-            ),
-            schema = sensor.schema,
-            format = NdArrayFormat(
-                NdArray.F32_LE,
-                size(sensor.image);
-                layout = NdArray.ROW_MAJOR,
-                rate = SPA.Fraction(numerator(rate), denominator(rate)),
-            ),
-            properties = merge(
-                sensor.properties, Dict("pipewireao.header.pts.clock" => "model")
-            ),
-        )
-    end
-    return (pupil, sensors...)
-end
-
-"Adapt the public transport receipt without changing physical axes or units."
-function feed!(emit, plant, packet::Array{Float32,3}, receipt)
-    size(packet) == (2, size(plant.pupil_opd)...) ||
-        throw(DimensionMismatch("external pupil packet shape"))
-    identity = receipt.identity
-    return step_external_pupil!(
-        emit,
-        plant,
-        view(packet, 1, :, :),
-        view(packet, 2, :, :),
-        ModelTimestamp(receipt.pts),
-        ModelDuration(receipt.duration);
-        domain = identity.domain.bytes,
-        generation = identity.generation,
-        sequence = identity.sequence,
-        lost_samples = receipt.lost_samples,
+# RTC resolves authored assets; HIL receives only prepared AOS values.
+function prepare_clocked_source(options, science; check = () -> nothing)
+    source = IC.prepare_system(
+        options.plant.definition;
+        settings = options.plant.settings,
+        simulation_graph = options.source_graph,
+        target = Backends.HostComputeDevice(),
+    )
+    declaration = IC.load_simulation(options.plant.definition)
+    configured = IC.settings(declaration, options.plant.settings)
+    size(graph_input(source.graph, options.command_input)) == (options.command_count,) ||
+        throw(DimensionMismatch("clocked source command differs from declared count"))
+    amplitude = IC.binding_values(
+        declaration,
+        configured,
+        declaration.document["bindings"][options.source_amplitude_binding],
+    )
+    return Optical.prepare_clocked_source(
+        science;
+        source,
+        command_input = options.command_input,
+        amplitude,
+        pupil_axes = options.source_pupil_axes,
+        period_ns = options.period_ns,
+        check,
     )
 end
 
-# Runtime startup exercises the same feed and emitter as acquisition. Publication
-# remains disabled until all synthetic optical/response history has been reset.
-# Detector graph reset restores its construction RNG seed (Host or counter RNG).
-function warmup!(emit, science, packet, frames, buffers; check = () -> nothing)
-    durations = map(exposure -> exposure.duration_ns, values(science.plant.exposures))
-    step = reduce(gcd, durations)
-    horizon = Base.checked_mul(maximum(durations), Int64(2))
-    samples = div(horizon, step)
-    0 < samples <= 4096 ||
-        throw(ArgumentError("external-pupil warmup exceeds 4096 samples"))
-    try
-        fill!(packet, 0)
-        view(packet, 2, :, :) .= 1.0f0
-        # Local receipt only, matching live feed specialization. Its isolated
-        # identity never reaches transport or changes the live owner identity.
-        identity_domain = AcquisitionDomain(ntuple(index -> UInt8(index), 16))
-        for sequence in 1:samples
-            check()
-            receipt = PipeWireArrayReceipt(
-                Int64((sequence - 1) * step),
-                UInt64(step),
-                AcquisitionIdentity(identity_domain, UInt64(1), UInt64(sequence)),
-                UInt64(0),
-            )
-            feed!(emit, science.plant, packet, receipt) ||
-                error("external-pupil warmup sample rejected")
-        end
-    finally
-        reset_external_pupil!(science.plant)
-        fill!(packet, 0)
-        foreach(frame -> fill!(frame, 0), frames)
-        foreach(buffer -> fill!(buffer, 0), buffers)
-    end
-    return nothing
+function clocked_command_option(options)
+    return PipeWireArrayStreamOptions(;
+        node_name = options.command_node,
+        media_name = options.mirror * " native command",
+        buffers = options.command_buffers,
+        reference_clock = prepare_reference_clock(options),
+        metadata = (
+            MetadataRequirement(SPA.META_REFERENCE_TIMESTAMP; required = true),
+            MetadataRequirement(SPA.META_ACQUISITION_IDENTITY),
+            MetadataRequirement(SPA.META_EXPOSURE_TIMING),
+        ),
+        schema = options.command_schema,
+        format = NdArrayFormat(
+            NdArray.F32_LE, (options.command_count,); layout = NdArray.ROW_MAJOR
+        ),
+        properties = Dict(
+            "optics.command-units" => options.command_units,
+            "optics.calibration-identity" => options.calibration_identity,
+        ),
+    )
 end
-
-include("clocked_optical_source.jl")
 
 function Owner.prepare_external_pupil_science(options; check = () -> nothing)
     check()
@@ -315,43 +242,6 @@ function PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(
             (name, sensor) in pairs(science.sensors)
         ),
     )
-end
-
-function trigger_state(science, name, metadata)
-    hasproperty(science.chopping, name) || return ACQUISITION_TRIGGER_ABSENT
-    kind = get(metadata, :chopped_image_kind, nothing)
-    kind === :mixed && return ACQUISITION_TRIGGER_MIXED
-    kind in (:fringed, :unfringed) ||
-        throw(ArgumentError("chopped exposure lacks its actual optical phase"))
-    high =
-        (kind === :fringed) == getproperty(science.chopping, name).trigger_high_is_fringed
-    return high ? ACQUISITION_TRIGGER_HIGH : ACQUISITION_TRIGGER_LOW
-end
-
-# Optical exposure classification is authored by the optics, independently of
-# the explicitly authored electrical trigger mapping.
-function sensor_optical_classification(science, name, metadata)
-    hasproperty(science.chopping, name) || return PipeWireAO.OPTICAL_ABSENT
-    kind = get(metadata, :chopped_image_kind, nothing)
-    kind === :fringed && return PipeWireAO.OPTICAL_FRINGED
-    kind === :unfringed && return PipeWireAO.OPTICAL_UNFRINGED
-    kind === :mixed && return PipeWireAO.OPTICAL_MIXED
-    throw(ArgumentError("chopped exposure lacks its actual optical classification"))
-end
-
-function sensor_sequence(metadata, chopped::Bool)
-    chopped || return metadata.sequence
-    # AOS complete exposures occupy aligned windows of its zero-origin model
-    # clock. The wire identity records the observed window ordinal so missing
-    # whole windows cannot appear adjacent. Optical phase is never inferred here.
-    pts, duration = metadata.pts, metadata.duration
-    validate_chopped_window(pts, duration)
-    return Base.checked_add(div(UInt64(pts), duration), UInt64(1))
-end
-
-function domain()
-    value = uuid4().value
-    return AcquisitionDomain(ntuple(i -> UInt8((value >> (8(i - 1))) & 0xff), 16))
 end
 
 function report!(options, mailbox, state)
@@ -390,202 +280,34 @@ function consume_control!(
     return nothing
 end
 
-function publish_sensor!(
-    owner,
-    index,
-    buffer,
-    identity,
-    pts,
-    duration,
-    classification;
-    optical_classification = nothing,
-)
-    properties = optical_classification === nothing ? (;) : (; optical_classification)
-    stage_pipewire_array!(
-        owner,
-        index,
-        buffer;
-        identity,
-        pts,
-        duration,
-        trigger_state = classification,
-        properties...,
-    )
-    # Any sensor may be a non-driving peer of the elected graph driver. Also
-    # retry an already pending sample when a newer exposure could not be staged.
-    trigger_process!(owner)
+# This adapter owns RTC decisions only. Simulation state belongs to HIL.
+function sync_state!(state, execution)
+    status = Optical.snapshot(execution)
+    state.generation = status.generation
+    state.sequence = status.sequence
+    state.deadline_ns = status.deadline_ns
     return nothing
 end
 
-mutable struct ExposurePublisher{O}
-    owner::O
-    active::Bool
-    pending::Bool
-    failed::Bool
-end
-ExposurePublisher(owner) = ExposurePublisher(owner, false, false, false)
-
-"Stage a completed exposure inside the current optical source step."
-function stage_exposure!(
-    publisher::ExposurePublisher,
-    index,
-    buffer,
-    identity,
-    pts,
-    duration,
-    classification;
-    optical_classification = nothing,
-)
-    publisher.failed &&
-        throw(ArgumentError("failed exposure publisher requires transport teardown"))
-    publisher.active ||
-        throw(ArgumentError("exposure publication requires a source-step boundary"))
-    properties = optical_classification === nothing ? (;) : (; optical_classification)
-    # A rejected newer exposure can leave an older sample pending for retry.
-    publisher.pending = true
-    try
-        return stage_pipewire_array!(
-            publisher.owner,
-            index,
-            buffer;
-            identity,
-            pts,
-            duration,
-            trigger_state = classification,
-            properties...,
-        )
-    catch
-        publisher.failed = true
-        rethrow()
-    end
+struct Control{O,M,S,F}
+    options::O
+    mailbox::M
+    state::S
+    filter::F
 end
 
-"""
-    publish_exposures!(operation, publisher)
-
-Stage completed exposures during `operation()`, then trigger the connected graph
-once. A step without exposures does not trigger. A nonthrowing staging rejection
-still retries retained HIL samples. Staging is not transactional: after an error,
-the publisher cannot be reused and its transport must be closed, so partial
-staging cannot escape during a later source step.
-"""
-function publish_exposures!(operation, publisher::ExposurePublisher)
-    publisher.failed &&
-        throw(ArgumentError("failed exposure publisher requires transport teardown"))
-    publisher.active &&
-        throw(ArgumentError("exposure publication boundaries cannot be nested"))
-    publisher.active = true
-    publisher.pending = false
-    try
-        result = operation()
-        publisher.failed &&
-            throw(ArgumentError("failed exposure publisher requires transport teardown"))
-        publisher.pending && trigger_process!(publisher.owner)
-        return result
-    catch
-        publisher.failed = true
-        rethrow()
-    finally
-        publisher.active = false
-        publisher.pending = false
+function (control::Control)(execution, streams, now_ns::Int64)
+    (; options, mailbox, state, filter) = control
+    sync_state!(state, execution)
+    SourceControl.observe_clock!(state, now_ns)
+    Bootstrap.cancelled(options.bootstrap_runtime) && return Optical.Stop()
+    reset_owner! = () -> begin
+        Optical.reset!(execution, streams)
+        sync_state!(state, execution)
     end
-end
-
-function stream_execution(options, science, state)
-    names = keys(science.sensors)
-    clocked = options.version == 6
-    packet = zeros(Float32, science.pupil.shape)
-    command = clocked ? zeros(Float32, options.command_count) : Float32[]
-    incoming_command = similar(command)
-    frames = map(
-        sensor -> zeros(eltype(sensor.image), size(sensor.image)), values(science.sensors)
-    )
-    # Always own the host copy of borrowed optical products. Float32 frames
-    # already satisfy the transport type and need no conversion storage.
-    buffers = map(
-        frame -> eltype(frame) === Float32 ? frame : zeros(Float32, size(frame)), frames
-    )
-    domains = map(_ -> domain(), names)
-    publication_enabled = Ref(false)
-    publication = Ref{Any}(nothing)
-    chopping = science.chopping
-    emit = function (name, image, metadata)
-        index = findfirst(==(name), names)
-        copyto!(frames[index], image)
-        if buffers[index] !== frames[index]
-            buffers[index] .= frames[index]
-        end
-        all(isfinite, buffers[index]) ||
-            throw(ArgumentError("optical product exceeds Float32 transport range"))
-        sequence = sensor_sequence(metadata, hasproperty(chopping, name))
-        classification = trigger_state((; chopping), name, metadata)
-        if publication_enabled[]
-            identity = AcquisitionIdentity(domains[index], UInt64(state.generation), sequence)
-            stage_exposure!(
-                publication[],
-                index + 1,
-                buffers[index],
-                identity,
-                metadata.pts,
-                metadata.duration,
-                classification;
-                optical_classification = sensor_optical_classification(
-                    (; chopping), name, metadata
-                ),
-            )
-        end
-        return nothing
-    end
-    return (;
-        packet,
-        command,
-        incoming_command,
-        frames,
-        buffers,
-        domains,
-        publication_enabled,
-        publication,
-        emit,
-    )
-end
-
-# Compile the concrete transport calls without staging synthetic camera frames.
-function warmup_stream_transport!(owner, execution, clocked)
-    input = clocked ? execution.incoming_command : execution.packet
-    publisher = execution.publication[]
-    precompile(drain_pipewire_array!, (typeof(input), typeof(owner), Int)) ||
-        error("external-pupil input transport preparation failed")
-    for buffer in execution.buffers
-        precompile(
-            stage_exposure!,
-            (
-                typeof(publisher),
-                Int,
-                typeof(buffer),
-                AcquisitionIdentity,
-                Int64,
-                UInt64,
-                typeof(ACQUISITION_TRIGGER_ABSENT),
-            ),
-        ) || error("external-pupil output transport preparation failed")
-        precompile(
-            Core.kwcall,
-            (
-                NamedTuple{
-                    (:optical_classification,),Tuple{PipeWireAO.OpticalClassification}
-                },
-                typeof(stage_exposure!),
-                typeof(publisher),
-                Int,
-                typeof(buffer),
-                AcquisitionIdentity,
-                Int64,
-                UInt64,
-                typeof(ACQUISITION_TRIGGER_ABSENT),
-            ),
-        ) || error("external-pupil optical property transport preparation failed")
-    end
-    return nothing
+    consume_control!(options, mailbox, filter, state, reset_owner!; now_ns)
+    Bootstrap.cancelled(options.bootstrap_runtime) && return Optical.Stop()
+    return state.running ? Optical.Run(state.deadline_ns) : Optical.Hold()
 end
 
 Base.@nospecializeinfer function run_streams!(
@@ -602,10 +324,6 @@ Base.@nospecializeinfer function run_streams!(
     runtime = options.bootstrap_runtime
     transport = runtime.transport
     clocked = options.version == 6
-    (; packet, command, incoming_command, emit, publication_enabled, publication) =
-        execution
-    publisher = ExposurePublisher(owner)
-    publication[] = publisher
     filter = nothing
     try
         with_thread_loop_lock(transport.loop) do _
@@ -664,82 +382,28 @@ Base.@nospecializeinfer function run_streams!(
         @info "Optical owner startup" phase = :transport_warmup_begin at_ns = Clocks.time_nanos(
             clock
         )
-        warmup_stream_transport!(owner, execution, clocked)
+        Optical.prepare_transport!(execution, owner)
         Bootstrap.check_connect!(runtime, ticket)
         @info "Optical owner startup" phase = :transport_warmup_end at_ns = Clocks.time_nanos(
             clock
         )
-        publication_enabled[] = true
+        control = Control(options, mailbox, state, filter)
+        precompile(
+            Core.kwcall,
+            (
+                NamedTuple{(:clock,),Tuple{typeof(clock)}},
+                typeof(Optical.run!),
+                typeof(control),
+                typeof(execution),
+                typeof(owner),
+            ),
+        ) || error("external-pupil admitted loop preparation failed")
+        Bootstrap.check_connect!(runtime, ticket)
         Bootstrap.connected!(runtime, ticket)
         Bootstrap.await_connected!(runtime, ticket)
-        upstream_generation = UInt64(0)
-        reset_owner! =
-            () -> begin
-                state.generation = Base.checked_add(state.generation, Int64(1))
-                reset_external_pupil!(science.plant)
-                if clocked
-                    reset_clocked_source!(science)
-                    fill!(command, 0)
-                    fill!(incoming_command, 0)
-                    state.sequence = 0
-                    state.deadline_ns = 0
-                end
-                for index in eachindex(owner.streams)
-                    reset_pipewire_array!(owner, index)
-                end
-                upstream_generation = UInt64(0)
-            end
-        while !Bootstrap.cancelled(runtime)
-            now_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
-            consume_control!(options, mailbox, filter, state, reset_owner!; now_ns)
-            Bootstrap.cancelled(runtime) && break
-            all(
-                index -> !array_stream_status(owner, index).failed, eachindex(owner.streams)
-            ) || error("external-pupil array transport failed")
-            if clocked
-                receipt = drain_pipewire_array!(incoming_command, owner, 1)
-                if receipt !== nothing
-                    all(isfinite, incoming_command) &&
-                    maximum(abs, incoming_command) <= options.command_limit || throw(
-                        ArgumentError(
-                            "native optical command exceeds its declared finite amplitude domain",
-                        ),
-                    )
-                    copyto!(command, incoming_command)
-                end
-                if !state.running ||
-                    (options.pacing_period_ns != 0 && now_ns < state.deadline_ns)
-                    sleep(0.001)
-                    continue
-                end
-                state.sequence = publish_exposures!(publisher) do
-                    step_clocked_source!(
-                        emit, science, command; generation = UInt64(state.generation)
-                    )
-                end
-                # This owner intentionally waits one period after actual step completion.
-                finished_ns = SourceControl.observe_clock!(state, Clocks.time_nanos(clock))
-                state.deadline_ns =
-                    options.pacing_period_ns == 0 ? Int64(0) :
-                    Base.checked_add(finished_ns, options.pacing_period_ns)
-                continue
-            end
-            receipt = drain_pipewire_array!(packet, owner, 1)
-            if receipt === nothing || !state.running
-                sleep(0.001)
-                continue
-            end
-            if upstream_generation != 0 &&
-                upstream_generation != receipt.identity.generation
-                state.generation = Base.checked_add(state.generation, Int64(1))
-            end
-            upstream_generation = receipt.identity.generation
-            accepted = publish_exposures!(publisher) do
-                feed!(emit, science.plant, packet, receipt)
-            end
-            accepted && (state.sequence = Base.checked_add(state.sequence, UInt64(1)))
-        end
+        Optical.run!(control, execution, owner; clock)
     finally
+        sync_state!(state, execution)
         Bootstrap.finishing!(runtime)
         with_thread_loop_lock(transport.loop) do _
             filter === nothing || close(filter)
@@ -748,9 +412,7 @@ Base.@nospecializeinfer function run_streams!(
     return nothing
 end
 
-# Model warming belongs to Preparing. The same quiet emitter checks conversion,
-# sequence and chopping contracts here and later publishes real camera frames.
-# Its transport reference remains empty until Connect; no warmup frame escapes.
+# Warm the prepared model without publishing synthetic camera frames.
 function prepare_stream_execution!(
     options,
     science,
@@ -759,40 +421,21 @@ function prepare_stream_execution!(
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
     options.owner_check()
-    execution = stream_execution(options, science, state)
-    @info "Optical owner startup" phase = :warmup_begin at_ns = Clocks.time_nanos(clock)
-    try
-        if options.version == 6
-            warmup_clocked_source!(
-                execution.emit, science, execution.command; check = options.owner_check
-            )
-        else
-            warmup!(
-                execution.emit,
-                science,
-                execution.packet,
-                execution.frames,
-                execution.buffers;
-                check = options.owner_check,
-            )
-        end
-    finally
-        fill!(execution.packet, 0)
-        fill!(execution.command, 0)
-        fill!(execution.incoming_command, 0)
-        foreach(frame -> fill!(frame, 0), execution.frames)
-        foreach(buffer -> fill!(buffer, 0), execution.buffers)
-    end
-    @info "Optical owner startup" phase = :warmup_end at_ns = Clocks.time_nanos(clock)
+    clocked = options.version == 6
+    execution = Optical.prepare(
+        science;
+        clocked,
+        command_count = clocked ? options.command_count : 0,
+        command_limit = clocked ? options.command_limit : Inf,
+        pacing_period_ns = clocked ? options.pacing_period_ns : 0,
+    )
+    Optical.warmup!(execution; check = options.owner_check)
     options.owner_check()
-    @info "Optical owner startup" phase = :precompile_begin at_ns = Clocks.time_nanos(clock)
-    ready = precompile(
+    precompile(
         run_streams!,
         (Any, typeof(science), typeof(mailbox), typeof(state), typeof(execution), Any, Any),
-    )
-    @info "Optical owner startup" phase = :precompile_end at_ns = Clocks.time_nanos(clock)
+    ) || error("external-pupil control-loop preparation failed")
     options.owner_check()
-    ready || error("external-pupil control-loop preparation failed")
     return execution
 end
 
@@ -810,7 +453,7 @@ function Owner.run_external_pupil_owner(
     try
         science = Owner.prepare_external_pupil_science(options; check = options.owner_check)
         report!(options, mailbox, state)
-        streams = stream_options(
+        streams = Optical.stream_options(
             science,
             options.pupil_node,
             options.sensor_nodes;
@@ -859,16 +502,5 @@ function Owner.run_external_pupil_owner(
         throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
 end
-function validate_chopped_window(pts::Int64, duration::UInt64)
-    pts >= 0 && 0 < duration <= typemax(Int64) && UInt64(pts) % duration == 0 || throw(
-        ArgumentError(
-            "chopped exposure must occupy an aligned nonnegative model-time window"
-        ),
-    )
-    return nothing
-end
-validate_chopped_window(pts, duration) = throw(
-    ArgumentError("chopped exposure must occupy an aligned nonnegative model-time window"),
-)
 
 end

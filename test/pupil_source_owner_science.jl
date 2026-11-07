@@ -255,7 +255,7 @@ end
     )
     names = (; llowfs = "llowfs", scc = "scc")
     for count in (2, 3, 64)
-        streams = Ext.ExternalPupilOwner.stream_options(
+        streams = AdaptiveOpticsSimPipeWireHIL.ExternalPupil.stream_options(
             optical, "pupil", names; sensor_buffers = count
         )
         @test first(streams).buffers == 2
