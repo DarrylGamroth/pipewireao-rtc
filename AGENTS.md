@@ -289,6 +289,9 @@
   `test/external_pupil_owner_preparation.jl` checks actual monochromatic,
   finite-channel and chopped preparation with AOS/HIL/Proper. Keep both selectors
   outside the core suite, which must not load optional science packages.
-- `test/optical_exposure_publication.jl` uses the same optional science environment
-  to check coincident/single/zero exposure publication, retained-sample retry and
-  failed-step teardown. It opens no core and imports no GPU or Proper backend.
+- Optical publication and runner unit checks now live in
+  AdaptiveOpticsSimPipeWireHIL's `test/optical_exposure_publication.jl` and
+  `test/external_pupil_execution.jl`. RTC retains configuration/admission and
+  private-core integration selectors. HIL receives prepared AOS objects and
+  owns scientific cursor, warmup, reset, pacing and completed-exposure batching;
+  it must not import RTC configuration or bootstrap implementations.

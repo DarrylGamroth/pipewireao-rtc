@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## External-pupil and clocked-optical execution extraction — 2026-11-07
+
+The [extraction record](reviews/20261107-hil-extraction/REVIEW.md) records the
+whole-runner transfer, independent prepared-model interface, public AOS input
+copy, source/native integration checks and corrected test contracts.
+
 ## Remaining graph-host scope — 2026-11-07
 
 The [NEC-12 follow-up](reviews/20261107-graph-host/REVIEW.md) records current

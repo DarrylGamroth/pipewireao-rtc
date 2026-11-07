@@ -12,6 +12,18 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### External-pupil and clocked-optical extraction — 2026-11-07
+
+The user selected whole-runner extraction into AdaptiveOpticsSimPipeWireHIL.
+HIL now accepts prepared AOS graphs/contracts and owns warmup, scientific
+sequence/generation, reset, pacing, command draining and exposure publication.
+RTC retains configuration binding and its native admission/source-control
+adapter. The [extraction record](reviews/20261107-hil-extraction/REVIEW.md)
+identifies source commits, dependency floors and verification. The old clocked
+runner file is removed from RTC; production code is reduced by over 500 lines.
+The development cohort is RTC 0.7.2 / HIL 0.5.1 / AOS 0.3.22; these sources are
+not registered releases. Installed deployments remain unchanged.
+
 ### Remaining graph-host scope — 2026-11-07
 
 The [NEC-12 follow-up](reviews/20261107-graph-host/REVIEW.md) confirms that graph
@@ -401,7 +413,8 @@ trigger. Rejected staging retains the HIL retry behavior. A failed step requires
 transport teardown because staged latest slots cannot be rolled back safely.
 The shared boundary preserves acquisition metadata and quiet startup warmup;
 it does not change native async scheduling or callback thread ownership.
-Focused CPU validation is in `test/optical_exposure_publication.jl`; private-core
+The publication selector now resides in AdaptiveOpticsSimPipeWireHIL's
+`test/optical_exposure_publication.jl`; private-core
 continuous feedback remains an instrument application gate, separate from
 cadence, deadlines and physical-loop qualification.
 Julia 1.13.3 at `-O0` passes 378 checks across exposure publication, stream
