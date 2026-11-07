@@ -295,3 +295,9 @@
   private-core integration selectors. HIL receives prepared AOS objects and
   owns scientific cursor, warmup, reset, pacing and completed-exposure batching;
   it must not import RTC configuration or bootstrap implementations.
+- `test/simulation_export.jl` verifies cold standalone HIL export, exact graph
+  and binding preservation, and relocation into a fresh process without RTC or
+  the original authored source. HIL's `test/simulation.jl` owns manifest parsing
+  and numerical preparation checks; its `test/simulation_private_core.jl` owns
+  finite transport and control-failure teardown. The initial manifest supports
+  lockstep only; do not infer HEART or clocked-optical compatibility from it.

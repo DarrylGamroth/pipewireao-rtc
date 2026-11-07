@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Standalone HIL configuration | Resolved AOS graphs and exact bindings; independent runtime, external link authority | [Configuration and compatibility scope](HIL_CONFIGURATION.md) |
 | External-pupil and clocked-optical execution ownership | HIL owns prepared simulation execution; RTC owns configuration/admission and source controls | [Extraction and verification](reviews/20261107-hil-extraction/REVIEW.md) |
 | Remaining graph-host scope | NEC-12; public library delegation, native admission and declared metadata contracts | [Review and verification](reviews/20261107-graph-host/REVIEW.md) |
 | FilterGraphs 0.10 migration | Public graph preparation and complete-frame execution; preserve optional science and dependency-only deployment | [Cohort verification](validation/filtergraphs-010-20261107/README.md) |

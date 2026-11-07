@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## Standalone HIL configuration — 2026-11-07
+
+The [configuration record](reviews/20261107-hil-configuration/REVIEW.md) records
+the initial resolved lockstep product, runtime independence, numerical/cadence
+checks and the observed current HEART metadata compatibility gap. External and
+clocked optical configuration remains a follow-up.
+
 ## External-pupil and clocked-optical execution extraction — 2026-11-07
 
 The [extraction record](reviews/20261107-hil-extraction/REVIEW.md) records the

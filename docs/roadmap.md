@@ -24,6 +24,15 @@ runner file is removed from RTC; production code is reduced by over 500 lines.
 The development cohort is RTC 0.7.2 / HIL 0.5.1 / AOS 0.3.22; these sources are
 not registered releases. Installed deployments remain unchanged.
 
+The follow-up [standalone HIL configuration](HIL_CONFIGURATION.md) exports
+resolved lockstep AOS graphs and typed bindings for an HIL runtime that does
+not import RTC. The unresolved instrument/settings compiler remains a cold
+export responsibility. External-pupil/clocked compositions and compiled model
+assets are not yet supported by that manifest. The inspected HEART SPA plugins
+still advertise retired metadata, so their current-cohort interoperability is
+pending a plugin migration and a private-core roundtrip; correlation is not
+relaxed to make configuration appear compatible.
+
 ### Remaining graph-host scope — 2026-11-07
 
 The [NEC-12 follow-up](reviews/20261107-graph-host/REVIEW.md) confirms that graph
