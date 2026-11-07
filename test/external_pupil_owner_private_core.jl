@@ -25,6 +25,8 @@ function external_pupil_delivery(remote, options)
         PipeWireArrayStreamOptions(
             node_name = "test.optical.peer.$index",
             media_name = "test",
+            # Fixed source and sink buffer pools must agree at link negotiation.
+            buffers = index == 1 ? 2 : options.sensor_buffers,
             metadata = PipeWireAORTC.Common.ACQUISITION_METADATA,
             schema = schemas[index],
             format = NdArrayFormat(
