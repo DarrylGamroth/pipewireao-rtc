@@ -19,6 +19,7 @@ public load,
     pupil_output,
     scientific_definition,
     prepare_system,
+    export_simulation,
     prepare_external_pupil,
     prepare_publication,
     prepare_simulation_configuration!,
@@ -42,6 +43,22 @@ and HIL packages. It creates no RTC session. The loaded extension documents
 compute-target and execution-policy keywords.
 """
 function prepare_system end
+
+"""
+    export_simulation(path, destination; configuration, settings=NamedTuple(),
+        simulation_graph="production")
+
+Resolve an authored simulation into a portable HIL simulation directory. The
+directory contains a standard AOS graph, exact typed FITS bindings and HIL's
+configuration, with no RTC runtime dependency. `configuration` is a HIL
+`PipeWireHILConfiguration`; its schemas and units must match the simulation's
+declared wire contracts. The destination must not exist. Requires AOS and HIL.
+
+The initial export supports lockstep graphs. External-pupil/clocked optical
+composition and compiled optical model assets require their own export contract
+and are rejected. Export neither opens a core nor creates links or services.
+"""
+function export_simulation end
 
 """
     prepare_external_pupil(path; settings=NamedTuple(), kwargs...)

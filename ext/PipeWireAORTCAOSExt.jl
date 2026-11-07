@@ -25,6 +25,7 @@ configured_graph_node_types(directory = nothing) =
     instrument_optical_factories(builtin_graph_node_types(), directory)
 
 include("aos/instruments.jl")
+include("aos/simulation_export.jl")
 include("aos/pupil_output.jl")
 
 mutable struct OwnerState

@@ -164,6 +164,15 @@ function configuration_binding_names(document, factories)
     return unique!(names)
 end
 
+function runtime_binding_names(document)
+    names = Symbol[]
+    for (section, field) in
+        (("inputs", "binding"), ("parameters", "binding"), ("delayed_links", "initial"))
+        append!(names, (Symbol(entry[field]) for entry in get(document, section, [])))
+    end
+    return unique!(names)
+end
+
 function prepare_bindings(
     declaration, configured, names; target = Backends.HostComputeDevice(), target_names = ()
 )
@@ -273,14 +282,7 @@ function Instruments.prepare_system(
         declaration, configured; calibration, simulation_graph
     )
     factories = configured_graph_node_types(declaration.directory)
-    runtime_names = Symbol[]
-    for (section, field) in
-        (("inputs", "binding"), ("parameters", "binding"), ("delayed_links", "initial"))
-        for entry in get(document, section, [])
-            push!(runtime_names, Symbol(entry[field]))
-        end
-    end
-    unique!(runtime_names)
+    runtime_names = runtime_binding_names(document)
     names = unique(vcat(runtime_names, configuration_binding_names(document, factories)))
     bindings = prepare_bindings(
         declaration, configured, names; target, target_names = runtime_names
@@ -339,6 +341,19 @@ end
 configured_command_inputs(value::AbstractString) = Symbol(value)
 configured_command_inputs(value::AbstractVector) = Tuple(Symbol.(value))
 
+function configured_wire_contracts(declaration)
+    return Tuple(
+        (;
+            frame_encoding = Symbol(entry["frame_encoding"]),
+            frame_schema = entry["frame_schema"],
+            command_schema = Instruments._instrument_seal(entry["command_schema"]),
+            command_scale = configured_command_scales(
+                Instruments._instrument_seal(entry["command_scale"])
+            ),
+        ) for entry in declaration.document["wire_contracts"]
+    )
+end
+
 function prepare_configured_science(options, device; check = () -> nothing)
     execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
     system = Instruments.prepare_system(
@@ -357,16 +372,7 @@ function prepare_configured_science(options, device; check = () -> nothing)
         frame_shape = options.frame_shape,
     )
     declaration = Instruments.load_simulation(options.plant.definition)
-    contracts = Tuple(
-        (;
-            frame_encoding = Symbol(entry["frame_encoding"]),
-            frame_schema = entry["frame_schema"],
-            command_schema = Instruments._instrument_seal(entry["command_schema"]),
-            command_scale = configured_command_scales(
-                Instruments._instrument_seal(entry["command_scale"])
-            ),
-        ) for entry in declaration.document["wire_contracts"]
-    )
+    contracts = configured_wire_contracts(declaration)
     AdaptiveOpticsSimPipeWireHIL.validate_wire_contract(
         options.frame_encoding,
         options.frame_schema,
