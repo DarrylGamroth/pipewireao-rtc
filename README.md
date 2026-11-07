@@ -42,8 +42,8 @@ The shared Julia package is `PipeWireAORTC` (UUID
 to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
 native protocol names and v1 records retain their identities.
 
-Version 0.7 includes the optional graph dependency migration. The graph cohort
-uses `FilterGraphAlgorithms` 0.12, `FilterGraphs` 0.9
+Version 0.7.1 selects the updated optional graph dependency cohort, which
+uses `FilterGraphAlgorithms` 0.12, `FilterGraphs` 0.10
 (UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`) and `FilterGraphPipeWire` 0.5.
 `FilterGraphs` replaces the former `JuliaFilterGraph` package identity;
 `FilterGraphPipeWire` now also owns the standalone launcher previously supplied
@@ -108,11 +108,12 @@ deployments. Existing sealed SDK deployments retain their recorded runtime and
 must use the matching older tools; the registered installer does not migrate
 their package contents.
 
-RTC 0.7 requires FilterGraphAlgorithms 0.12, FilterGraphs 0.9,
+RTC 0.7.1 requires FilterGraphAlgorithms 0.12, FilterGraphs 0.10,
 FilterGraphPipeWire 0.5.2, PipeWireAO 0.9.2 and the native/JLL 4.0.2 SDK.
 The development manifest and exported applications resolve package dependencies
-from the custom registry. See the [cohort release verification](docs/validation/rtc-cohort-402-20261106/README.md)
-for artifact identities, checks and qualification limits. Installed applications
+from the custom registry. See the [FilterGraphs 0.10 migration](docs/validation/filtergraphs-010-20261107/README.md)
+and [artifact release verification](docs/validation/rtc-cohort-402-20261106/README.md)
+for source identities, checks and qualification limits. Installed applications
 keep their existing sealed dependencies until explicitly rebuilt and installed.
 
 The 0.7 API cleanup removes the `Native` prefix from Julia control modules:

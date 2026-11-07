@@ -6,11 +6,22 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-06. This section is the current delivery summary. Later sections
+Updated 2026-11-07. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### FilterGraphs 0.10 migration — 2026-11-07
+
+RTC 0.7.1 selects FilterGraphs 0.10 with the published FGA 0.12, FGPW 0.5.2,
+PipeWireAO 0.9.2 / JLL 4.0.2, AOS 0.3.21, HIL 0.5.0 and calibration 0.17.3
+cohort. Existing graph preparation, complete-frame publication and all cleanup
+boundaries are retained. The new controller API is additive; changing controller
+publication semantics is outside this dependency migration. The
+[migration record](validation/filtergraphs-010-20261107/README.md) tracks the
+source comparison, selected packages and verification in progress. Existing
+sealed applications and live sessions are not migrated by these checks.
 
 ### Native/JLL 4.0.2 release and graph reconciliation — 2026-11-06
 

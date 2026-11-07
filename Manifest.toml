@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "c72d2d9c20ce069ea873989faf3d3be574fd22a4"
+project_hash = "85841a033fc06fa7d07bee32b1a86936aae78986"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -258,7 +258,7 @@ version = "0.9.2"
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.0"
+version = "0.7.1"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]

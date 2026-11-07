@@ -157,12 +157,12 @@
 - Keep observed, derived and unconfirmed conclusions distinct. A functional
   check/microbenchmark does not establish deadline, tail-latency, physical-loop,
   safety or real-time qualification. Preserve failed gates and their scope.
-- The calibration worker command selectors require the upstream accessor SDK,
-  PipeWireAO 0.9.1 and FilterGraphPipeWire 0.4.1. The registered native artifact
-  does not contain the accessor. Select the client library through JLL path
-  preferences in a validation environment declaring `PipeWireAO_jll` directly,
-  and select the same daemon SDK with `PIPEWIREAO_PREFIX`. See the
-  [source cohort and commands](docs/reviews/20261104-calibration-worker/REVIEW.md).
+- The calibration worker command selectors require native/JLL 4.0.2,
+  PipeWireAO 0.9.2 and FilterGraphPipeWire 0.5.2 or newer compatible releases.
+  The registered artifact contains the loop accessor; no JLL path preferences
+  are needed. Set `PIPEWIREAO_PREFIX` to that artifact to select the matching
+  private-core daemon. See the [artifact release evidence](docs/validation/rtc-cohort-402-20261106/README.md)
+  and [worker protocol and selectors](docs/reviews/20261104-calibration-worker/REVIEW.md).
 - Maintain current work in the roadmap's **Current work** section. Keep dated
   integration/review/validation records as evidence, indexed in
   `docs/EVIDENCE_INDEX.md`; do not append another competing status narrative.

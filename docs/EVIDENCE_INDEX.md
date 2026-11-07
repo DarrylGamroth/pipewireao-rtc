@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## FilterGraphs 0.10 migration — 2026-11-07
+
+The [migration record](validation/filtergraphs-010-20261107/README.md) identifies
+the preserved cleanup baseline, additive graph API changes, selected package
+cohort and verification results.
+
 ## Native/JLL 4.0.2 package-cohort release — 2026-11-06
 
 The [release record](validation/rtc-cohort-402-20261106/README.md) records the
