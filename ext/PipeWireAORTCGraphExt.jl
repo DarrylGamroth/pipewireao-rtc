@@ -77,6 +77,26 @@ function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(
     end
 end
 
+function Owner.metadata_profiles(graph; feedback = nothing)
+    inputs = keys(FilterGraphs.input_formats(graph))
+    outputs = keys(FilterGraphs.output_formats(graph))
+    sources = NamedTuple{outputs}(FilterGraphs.output_metadata_source_inputs(graph))
+    public_inputs = feedback === nothing ? inputs : filter(!=(first(feedback)), inputs)
+    public_outputs = feedback === nothing ? outputs : filter(!=(last(feedback)), outputs)
+    required = FilterGraphPipeWire.required_input_metadata(graph)
+    return (;
+        input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
+            public_inputs; required
+        ),
+        output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
+            public_outputs,
+            inputs,
+            map(name -> getproperty(sources, name), public_outputs);
+            required,
+        ),
+    )
+end
+
 function PipeWireAORTC.InstrumentExport.graph_port_contracts(
     path::AbstractString; metadata::Bool = false
 )
@@ -93,17 +113,9 @@ function PipeWireAORTC.InstrumentExport.graph_port_contracts(
             )
         )
         if metadata
-            required = FilterGraphPipeWire.required_input_metadata(graph)
-            inputs = keys(FilterGraphs.input_formats(graph))
-            outputs = keys(FilterGraphs.output_formats(graph))
+            boundary = Owner.metadata_profiles(graph)
             profiles = (
-                inputs = PipeWireAORTC.Common.telemetry_metadata_ports(inputs; required),
-                outputs = PipeWireAORTC.Common.telemetry_metadata_ports(
-                    outputs,
-                    inputs,
-                    FilterGraphs.output_metadata_source_inputs(graph);
-                    required,
-                ),
+                inputs = boundary.input_metadata, outputs = boundary.output_metadata
             )
             for section in (:inputs, :outputs),
                 (name, profile) in pairs(getproperty(profiles, section))
@@ -263,30 +275,13 @@ function run_prepared(options, runtime, graph)
             )
         )
     reference_clock = PipeWireAORTC.Common.prepare_reference_clock(options)
-    input_names = keys(FilterGraphs.input_formats(graph))
-    output_names = keys(FilterGraphs.output_formats(graph))
-    if options.feedback !== nothing
-        input_names = filter(!=(first(options.feedback)), input_names)
-        output_names = filter(!=(last(options.feedback)), output_names)
-    end
-    source_indices = NamedTuple{Tuple(keys(FilterGraphs.output_formats(graph)))}(
-        FilterGraphs.output_metadata_source_inputs(graph)
-    )
     common = (;
         reference_clock,
         recovery...,
         name = options.name,
         remote = options.remote,
         rate = options.rate,
-        input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            input_names; required = FilterGraphPipeWire.required_input_metadata(graph)
-        ),
-        output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            output_names,
-            keys(FilterGraphs.input_formats(graph)),
-            map(name -> getproperty(source_indices, name), output_names);
-            required = FilterGraphPipeWire.required_input_metadata(graph),
-        ),
+        Owner.metadata_profiles(graph; feedback = options.feedback)...,
         connect = false,
         run_control = options.session_run_control,
         channel_units = options.channel_units,

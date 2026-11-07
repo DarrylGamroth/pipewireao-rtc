@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Remaining graph-host scope — 2026-11-07
+
+The [NEC-12 follow-up](reviews/20261107-graph-host/REVIEW.md) records current
+upstream delegation, retained RTC responsibilities, metadata-policy
+consolidation and remaining public integration limits.
+
 ## FilterGraphs 0.10 migration — 2026-11-07
 
 The [migration record](validation/filtergraphs-010-20261107/README.md) identifies

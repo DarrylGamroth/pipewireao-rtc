@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Remaining graph-host scope — 2026-11-07
+
+The [NEC-12 follow-up](reviews/20261107-graph-host/REVIEW.md) confirms that graph
+execution, preparation and workers already use public FilterGraphPipeWire APIs.
+RTC retains native admission, declared metadata policy, FITS provenance and
+correction/offset composition. The four repeated metadata-profile assemblies
+now share one private optional graph interface, removing 20 net runtime lines.
+Focused selectors pass 255 assertions; private-core worker/transport selectors
+pass 339. The full core suite remains in progress. The standalone event-file
+launcher cannot replace RTC's native lifecycle; remaining observer-status and
+notification representation accesses need upstream public equivalents before
+removal. No second host abstraction or session authority is introduced.
+
 ### FilterGraphs 0.10 migration — 2026-11-07
 
 RTC 0.7.1 selects FilterGraphs 0.10 with the published FGA 0.12, FGPW 0.5.2,

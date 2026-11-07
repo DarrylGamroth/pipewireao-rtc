@@ -445,16 +445,7 @@ function prepare_analysis_node(config, remote, graph, boundary_layout, capture)
         input_owner;
         name = config.name,
         remote,
-        input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            keys(FilterGraphs.input_formats(graph));
-            required = FilterGraphPipeWire.required_input_metadata(graph),
-        ),
-        output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-            keys(FilterGraphs.output_formats(graph)),
-            keys(FilterGraphs.input_formats(graph)),
-            FilterGraphs.output_metadata_source_inputs(graph);
-            required = FilterGraphPipeWire.required_input_metadata(graph),
-        ),
+        Owner.metadata_profiles(graph)...,
         rate = config.rate,
         boundary_layout,
         connect = false,

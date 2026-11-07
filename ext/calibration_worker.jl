@@ -193,16 +193,7 @@ function run_graph(
             rate,
             connect = false,
             reference_clock,
-            input_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-                keys(FilterGraphs.input_formats(descriptor.graph));
-                required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
-            ),
-            output_metadata = PipeWireAORTC.Common.telemetry_metadata_ports(
-                keys(FilterGraphs.output_formats(descriptor.graph)),
-                keys(FilterGraphs.input_formats(descriptor.graph)),
-                FilterGraphs.output_metadata_source_inputs(descriptor.graph);
-                required = FilterGraphPipeWire.required_input_metadata(descriptor.graph),
-            ),
+            PipeWireAORTC.GraphOwner.metadata_profiles(descriptor.graph)...,
             fifo_inputs = true,
             parameter_ports = false,
             boundary_layout = FilterGraphAlgorithms.RowMajorLayout(),

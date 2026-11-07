@@ -21,6 +21,7 @@ claim; do not infer completion from prose.
 
 | Task | Relevant contract/design | Working guide or evidence |
 | --- | --- | --- |
+| Remaining graph-host scope | NEC-12; public library delegation, native admission and declared metadata contracts | [Review and verification](reviews/20261107-graph-host/REVIEW.md) |
 | FilterGraphs 0.10 migration | Public graph preparation and complete-frame execution; preserve optional science and dependency-only deployment | [Cohort verification](validation/filtergraphs-010-20261107/README.md) |
 | MediaSession session policy migration | RTC-ARCH-024/026; RTC-DEV-003/004/009/010/012/013/021/022/025/030 | [Current implementation boundary and closure plan](SESSION_POLICY_MIGRATION.md); replacement is under integration, not qualified |
 | Native/JLL 4.0.2 release and registered cohort | Strict SDK bounds; dependency-only deployment and public package identities | [Release verification](validation/rtc-cohort-402-20261106/README.md) |
