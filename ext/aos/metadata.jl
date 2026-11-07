@@ -2,6 +2,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs:
     MultiLayerAtmosphereOPDNodeConfig,
     CMOSDetectorAcquisitionNodeConfig,
     EMCCDDetectorAcquisitionNodeConfig
+using AdaptiveOpticsSimPipeWireHIL.ExternalPupil: execution_properties
 
 atmosphere_seed(config) = nothing
 atmosphere_seed(config::MultiLayerAtmosphereOPDNodeConfig) = config.rng_seed
@@ -12,14 +13,6 @@ detector_seed(config::EMCCDDetectorAcquisitionNodeConfig) = config.rng_seed
 function single_seed(definition::AlgorithmGraphDefinition, select)
     seeds = filter(!isnothing, map(node -> select(node.config), definition.nodes))
     return length(seeds) == 1 ? only(seeds) : nothing
-end
-
-# Read the prepared execution, never infer capture from a backend label.
-function execution_properties(graph; prefix = "aos.simulation.")
-    return Dict(
-        prefix * "execution" => string(nameof(typeof(graph_execution_policy(graph)))),
-        prefix * "captured-node-count" => string(captured_graph_node_count(graph)),
-    )
 end
 
 """
@@ -84,6 +77,7 @@ function simulation_properties(options, science)
     )
         seed === nothing || (properties["aos.simulation."*name] = string(seed))
     end
-    hasproperty(science, :graph) && merge!(properties, execution_properties(science.graph))
+    hasproperty(science, :graph) &&
+        merge!(properties, execution_properties(science.graph; prefix = "aos.simulation."))
     return properties
 end

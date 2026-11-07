@@ -46,17 +46,17 @@ function prepare_system end
 
 """
     export_simulation(path, destination; configuration, settings=NamedTuple(),
-        simulation_graph="production")
+        simulation_graph="production", chopping=NamedTuple())
 
 Resolve an authored simulation into a portable HIL simulation directory. The
 directory contains a standard AOS graph, exact typed FITS bindings and HIL's
-configuration, with no RTC runtime dependency. `configuration` is a HIL
-`PipeWireHILConfiguration`; its schemas and units must match the simulation's
-declared wire contracts. The destination must not exist. Requires AOS and HIL.
-
-The initial export supports lockstep graphs. External-pupil/clocked optical
-composition and compiled optical model assets require their own export contract
-and are rejected. Export neither opens a core nor creates links or services.
+configuration, with no RTC runtime dependency. A HIL `PipeWireHILConfiguration`
+selects a schema-1 lockstep product; its schemas and units must match the declared
+wire contracts. A mapping or YAML filename with `mode`, `pipewire` and optional
+`source`/`chopping` selects schema-2 external-pupil or clocked-optical composition.
+Compiled optical models and their declared arrays are copied with unchanged
+hashes. The destination must not exist. Requires AOS/HIL and the declared optional
+scientific packages. Export opens no core and creates no links or services.
 """
 function export_simulation end
 

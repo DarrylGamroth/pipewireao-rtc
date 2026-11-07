@@ -275,7 +275,9 @@ end
             @test map(p -> p.metadata, again) == map(p -> p.metadata, observed)
             @test all(a.image ≈ b.image for (a, b) in zip(again, observed))
             execution_graph = optical_execution_graph(actual, :scc)
-            properties = Extension.execution_properties(execution_graph)
+            properties = AdaptiveOpticsSimPipeWireHIL.ExternalPupil.execution_properties(
+                execution_graph; prefix = "aos.simulation."
+            )
             @test properties["aos.simulation.execution"] ==
                 string(nameof(typeof(graph_execution_policy(execution_graph))))
             @test parse(Int, properties["aos.simulation.captured-node-count"]) ==
