@@ -35,7 +35,11 @@ capture and dependency-only exports remain as implemented by the cleanup.
 | AdaptiveOpticsCalibration | 0.17.3 |
 
 Except for RTC, packages resolve from the public registry without source
-overrides. The [previous release receipt](../rtc-cohort-402-20261106/README.md)
+overrides. RTC 0.7.1 has no release tag or shared-registry entry: cold installation
+uses a temporary candidate registry containing commit `650871a`, tree
+`a8e6530bb07d2c475228960979b2ea03f56d5300`, from the canonical public repository.
+The shared registry and existing immutable releases are unchanged.
+The [previous release receipt](../rtc-cohort-402-20261106/README.md)
 provides full native/artifact, PipeWireAO, FGA and AOS CPU gates on the same
 immutable sources and artifacts. Those unchanged package gates are reused;
 graph-engine, adapter and affected RTC integration gates are rerun on 0.10.
@@ -47,11 +51,14 @@ in its [release receipt](https://github.com/DarrylGamroth/JuliaFilterGraph.jl/bl
 | Gate | Result |
 | --- | --- |
 | FilterGraphs complete CPU suite | 23,459 assertions; pass |
+| RTC complete core suite | 11,049 assertions; pass |
 | RTC calibration worker / private core | 206 assertions; pass |
 | RTC named-command transport / private core | 133 assertions; pass |
 | RTC capture publication / private core | 173 assertions; pass |
 | Documentation structure, links and requirement IDs | 713 assertions; pass |
-| RTC core, full adapter, remaining science and cold installation | In progress |
+| Captured physical/chopped optical calibration, CPU | 47 assertions; pass after correcting test data |
+| Fresh candidate consumer integrity and extensions | 45 assertions; pass |
+| Full adapter and cold installation | In progress |
 
 The development core manifest is regenerated with `Pkg.resolve()` and
 `Pkg.instantiate()`. It does not load optional science packages. The separate
@@ -74,3 +81,23 @@ preparation and do not load an accelerator backend. Logs are retained under
 
 No deployed application is replaced or started. Software tests do not establish
 physical-device, cadence, latency or real-time deadline qualification.
+
+## Corrected test setup
+
+The original optional `test/captured_optical_calibration.jl` selector stopped with
+one passing assertion and a `KeyError("selected_pixel_count")`. Its hand-built
+publication plan omitted the selected-pixel dimension and per-branch frame
+contract required by `optical_chopped_template`. The same incomplete dimensions
+reproduce that exception on the published RTC 0.7.0 / FilterGraphs 0.9 cohort,
+before graph preparation. This is an existing test-data defect, not a 0.10
+execution regression.
+
+The test now declares the full image shape, its derived pixel count, and the
+existing `test.relative-image/1` frame schema. The same shape supplies the
+template and calibration mask. The unchanged Float32/Float64 numerical and
+held-out checks then pass all 47 assertions; no production implementation,
+coefficient, tolerance or expected numerical result changes. Repository
+formatting also passes. The original failure, baseline reproduction and passing
+rerun logs are retained as `/tmp/rtc-fg010-captured_optical_calibration-20261107.log`,
+`/tmp/rtc-fg010-captured-calibration-baseline-20261107.log` and
+`/tmp/rtc-fg010-captured_optical_calibration-after-20261107.log`.

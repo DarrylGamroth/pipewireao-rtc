@@ -71,18 +71,28 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "chopped_calibration_documents.jl")
                     trigger_high_is_fringed = true,
                 ),
             )
+            image_shape = (8, 8)
             plan = (;
                 rtc = (;
                     document = Dict(
-                        "dimensions" => Dict("image_rows" => 8, "image_columns" => 8)
+                        "dimensions" => Dict(
+                            "image_rows" => image_shape[1],
+                            "image_columns" => image_shape[2],
+                            "selected_pixel_count" => prod(image_shape),
+                        ),
                     ),
                     controls = Dict("deformable_mirrors" => Dict()),
                 ),
-                frames = Dict(),
+                frames = Dict(
+                    "scc" => Dict(
+                        "frame_schema" => "test.relative-image/1",
+                        "image_shape" => collect(image_shape),
+                    ),
+                ),
                 instrument = Dict(
                     "deformable_mirrors" => Dict(), "wavefront_sensors" => Dict()
                 ),
-                templates = (scc = chopped_calibration_document((8, 8)),),
+                templates = (scc = chopped_calibration_document(image_shape),),
                 chopping,
             )
             options = (;
@@ -128,7 +138,7 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "chopped_calibration_documents.jl")
             calibration_options = (;
                 pupil_support = actual.pupil_support,
                 branch_modes = (scc = 1:2,),
-                pixel_masks = (scc = trues(8, 8),),
+                pixel_masks = (scc = trues(image_shape),),
                 poke_m = 1e-8,
                 tsvd_rtol = 1e-5,
                 derivative_tolerance = 0.05,
