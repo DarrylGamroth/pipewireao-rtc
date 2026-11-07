@@ -4,6 +4,10 @@ Date: 2026-11-07. Baseline: `0048cfc41f7605d125ffcdda05479b40a0e68e18`,
 branch `codex/filtergraphs-010-20261107`, worktree `pipewireao-rtc-fg010`.
 The source worktree was clean; the original checkout and cleanup branch are
 preserved. The selected CPU/package-cohort verification is complete.
+This record describes the candidate checks before publication. The
+[publication follow-up](publication.md) records the final release source and
+public-registry verification; candidate receipts below retain their original
+source identities.
 
 ## Change and ownership
 
@@ -35,10 +39,10 @@ capture and dependency-only exports remain as implemented by the cleanup.
 | AdaptiveOpticsCalibration | 0.17.3 |
 
 Except for RTC, packages resolve from the public registry without source
-overrides. RTC 0.7.1 has no release tag or shared-registry entry: cold installation
-uses a temporary candidate registry containing commit `650871a`, tree
+overrides. At this stage RTC 0.7.1 had no release tag or shared-registry entry:
+cold installation used a temporary candidate registry containing commit `650871a`, tree
 `a8e6530bb07d2c475228960979b2ea03f56d5300`, from the canonical public repository.
-The shared registry and existing immutable releases are unchanged.
+The shared registry and existing immutable releases were unchanged by those checks.
 The [previous release receipt](../rtc-cohort-402-20261106/README.md)
 provides full native/artifact, PipeWireAO, FGA and AOS CPU gates on the same
 immutable sources and artifacts. Those unchanged package gates are reused;

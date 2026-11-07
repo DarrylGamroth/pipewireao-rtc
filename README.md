@@ -42,7 +42,7 @@ The shared Julia package is `PipeWireAORTC` (UUID
 to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
 native protocol names and v1 records retain their identities.
 
-The 0.7.1 candidate selects the updated optional graph dependency cohort, which
+Version 0.7.1 selects the updated optional graph dependency cohort, which
 uses `FilterGraphAlgorithms` 0.12, `FilterGraphs` 0.10
 (UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`) and `FilterGraphPipeWire` 0.5.
 `FilterGraphs` replaces the former `JuliaFilterGraph` package identity;
@@ -110,9 +110,9 @@ their package contents.
 
 RTC 0.7.1 requires FilterGraphAlgorithms 0.12, FilterGraphs 0.10,
 FilterGraphPipeWire 0.5.2, PipeWireAO 0.9.2 and the native/JLL 4.0.2 SDK.
-RTC 0.7.1 is pending release and shared-registry publication; its cold installation
-checks use a temporary candidate registry. The public RTC 0.7.0 release retains
-FilterGraphs 0.9.
+The [0.7.1 release record](docs/validation/filtergraphs-010-20261107/publication.md)
+tracks publication and final public-registry verification. RTC 0.7.0 retains
+FilterGraphs 0.9 in its sealed cohort.
 The development manifest and exported applications resolve package dependencies
 from the custom registry. See the [FilterGraphs 0.10 migration](docs/validation/filtergraphs-010-20261107/README.md)
 and [artifact release verification](docs/validation/rtc-cohort-402-20261106/README.md)
