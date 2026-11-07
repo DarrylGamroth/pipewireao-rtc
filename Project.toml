@@ -1,6 +1,6 @@
 name = "PipeWireAORTC"
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["Darryl Gamroth <dgamroth@rubus.ca>"]
 
 [workspace]
@@ -32,9 +32,6 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 FilterGraphAlgorithms = "8914fa96-dfe6-4d3c-aced-40e6da1f6420"
 FilterGraphPipeWire = "0366a544-13dd-48a3-a3d6-bd2ba4547294"
 FilterGraphs = "8053475d-7091-4a8a-adbc-8ed688b6da8d"
-
-[sources]
-PipeWireAO = {path = "../PipeWireAO-rtc-reconciliation"}
 
 [extensions]
 PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]

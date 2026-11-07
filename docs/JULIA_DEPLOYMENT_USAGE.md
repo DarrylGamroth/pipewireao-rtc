@@ -150,7 +150,7 @@ requires a new source Node. Existing analysis configurations remain valid.
 Standalone FilterGraphPipeWire and RTC GraphOwner launches can use repeated
 `--channel-unit PORT CHANNEL UNITS` arguments for the same source annotation.
 The authoritative channel meanings and publication contract remain with
-JuliaFilterGraph's `schemas/catalog.toml` and `docs/source-channels.md`.
+the graph repository's `schemas/catalog.toml` and `docs/source-channels.md`.
 
 The current REVOLT Classic profile computes this packet in a separate optional
 JFG analysis process. The required WFS/controller graph remains unchanged. Its

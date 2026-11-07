@@ -2,12 +2,12 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "83099a94ec76d1ef2ff90b656f2ec48fba1c2dc3"
+project_hash = "634d31a8de4c5635b80bdbbd965b1213aad8e3ca"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
 git-tree-sha1 = "f2bacca171b41af041eba411ade9a8e9f9e82f99"
-registries = "DarrylGamrothRegistry"
+registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
 uuid = "f7939a7f-2bcc-4096-952b-c44031b5533b"
 version = "0.4.1"
 weakdeps = ["ThreadPinning"]
@@ -52,7 +52,7 @@ version = "4.7.0+0"
 
 [[deps.Clocks]]
 git-tree-sha1 = "89539d1efa5ea79acc58e8cbd8f9a6ea381fc148"
-registries = "DarrylGamrothRegistry"
+registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
 uuid = "6b5ade5d-6e95-4584-b343-73eec2e8782b"
 version = "0.4.0"
 
@@ -107,7 +107,7 @@ version = "0.17.5"
 [[deps.Hsm]]
 deps = ["ValSplit"]
 git-tree-sha1 = "1958e3af28cdc2d9a5baf15af376cbddcd85d606"
-registries = "DarrylGamrothRegistry"
+registries = ["DarrylGamrothRegistry", "DarrylGamrothRegistry"]
 uuid = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
 version = "0.3.2"
 
@@ -242,14 +242,15 @@ version = "2.0.3"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools"]
-git-tree-sha1 = "91503bbab255aec9374145accd1b09c7e108cd54"
+git-tree-sha1 = "e5ae52d1f4f19a9591d615cb0f1ef8d415b40933"
 registries = "General"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "3.0.5"
+version = "3.0.6"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-path = "../PipeWireAO-rtc-reconciliation"
+git-tree-sha1 = "afd8f98bde54afed35ca1a9478c45348903d0495"
+registries = "DarrylGamrothRegistry"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 version = "0.9.2"
 
@@ -257,7 +258,7 @@ version = "0.9.2"
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.6.1"
+version = "0.7.0"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
@@ -279,10 +280,10 @@ version = "0.6.1"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "afe532e368eeebfc50de648b6c50c2432b481f57"
+git-tree-sha1 = "e72d799afe8f304b662ecd6db358f2f08a1dab88"
 registries = "DarrylGamrothRegistry"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "4.0.1+0"
+version = "4.0.2+0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]

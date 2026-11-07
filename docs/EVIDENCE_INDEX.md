@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Earlier registered graph-cohort migration — 2026-11-06
+
+The [migration receipt](validation/graph-cohort-20261106/README.md) records RTC
+0.6.0 against the earlier installed graph cohort. The cleanup reconciliation and
+4.0.2 release checks have separate source/dependency identities.
+
 ## Three-package graph reconciliation — 2026-11-06
 
 The [reconciliation record](reviews/20261106-graph-reconciliation/REVIEW.md) records

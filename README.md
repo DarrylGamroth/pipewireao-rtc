@@ -42,6 +42,18 @@ The shared Julia package is `PipeWireAORTC` (UUID
 to `using PipeWireAORTC` and resolve the environment after upgrading. Existing
 native protocol names and v1 records retain their identities.
 
+Version 0.7 includes the optional graph dependency migration. The graph cohort
+uses `FilterGraphAlgorithms` 0.12, `FilterGraphs` 0.9
+(UUID `8053475d-7091-4a8a-adbc-8ed688b6da8d`) and `FilterGraphPipeWire` 0.5.
+`FilterGraphs` replaces the former `JuliaFilterGraph` package identity;
+`FilterGraphPipeWire` now also owns the standalone launcher previously supplied
+by `FilterGraphIsland`. The `filtergraph-island` command keeps its name.
+Programmatic admission uses `FilterGraphPipeWire.prepare_service_graph(path;
+initial_parameters=...)`; command parsing belongs to launchers. This source
+cohort requires PipeWireAO 0.9.2 and native SDK/JLL 4.0.2. Development validation can
+select local package sources. Installed applications resolve the released cohort
+from the existing custom registry.
+
 The callable session modules use application names. Update former
 `WirePlumber*` module references to the following bindings when upgrading:
 
@@ -96,18 +108,16 @@ deployments. Existing sealed SDK deployments retain their recorded runtime and
 must use the matching older tools; the registered installer does not migrate
 their package contents.
 
-This cleanup branch prepares RTC 0.6.1 with FilterGraphAlgorithms 0.12,
-FilterGraphs 0.9 and the reconciled FilterGraphPipeWire 0.5.1 / PipeWireAO 0.9.2
-sources. Its development manifest selects the sibling PipeWireAO source;
-command-endpoint validation requires the matching native 4.0.2 SDK. These
-preservation ports are unpublished. See the [source cohort and verification](docs/reviews/20261106-graph-reconciliation/REVIEW.md)
-before building a new registered application; installed applications keep their
-existing sealed dependencies.
+RTC 0.7 requires FilterGraphAlgorithms 0.12, FilterGraphs 0.9,
+FilterGraphPipeWire 0.5.1, PipeWireAO 0.9.2 and the native/JLL 4.0.2 SDK.
+The development manifest and exported applications resolve package dependencies
+from the custom registry. See the [cohort release verification](docs/validation/rtc-cohort-402-20261106/README.md)
+for artifact identities, checks and qualification limits. Installed applications
+keep their existing sealed dependencies until explicitly rebuilt and installed.
 
-The unreleased API cleanup removes the `Native` prefix from Julia control
-modules: for example, use `SessionClient`, `ControlClient` and `ParameterSource`
-in place of their former `Native*` names. See the
-[complete migration mapping](docs/reviews/20261104-package-cleanup/REVIEW.md#pkg-04--public-names-repeat-the-selected-transport).
+The 0.7 API cleanup removes the `Native` prefix from Julia control modules:
+for example, use `SessionClient`, `ControlClient` and `ParameterSource` in place
+of their former `Native*` names. See the [complete migration mapping](docs/reviews/20261104-package-cleanup/REVIEW.md#pkg-04--public-names-repeat-the-selected-transport).
 Update source callers and regenerate deployments with the matching package
 version; existing sealed applications retain their pinned APIs and files.
 
