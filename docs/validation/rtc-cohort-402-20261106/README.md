@@ -1,7 +1,7 @@
 # RTC package cohort with native/JLL 4.0.2
 
-This release follows the cleanup-branch reconciliation. This record distinguishes verified source/package gates from the final cold
-registered installation checks.
+This release follows the cleanup-branch reconciliation. Started 2026-11-06; completed 2026-11-07. This record covers the verified source,
+artifact, public-registry and cold registered installation gates.
 The original checkout, deployed applications and live sessions remain unchanged.
 
 ## Selected cohort
@@ -17,7 +17,7 @@ The original checkout, deployed applications and live sessions remain unchanged.
 | AdaptiveOpticsSim | 0.3.21 | Published `06482bc8`; full CPU gate passes 12,187 assertions |
 | AdaptiveOpticsSimPipeWireHIL | 0.5.0 | Existing registered adapter, selected for integration |
 | AdaptiveOpticsCalibration | 0.17.3 | Existing registered calibration APIs |
-| PipeWireAORTC | 0.7.0 | Registry-only dependency lock; full core gate passes 11,048 assertions |
+| PipeWireAORTC | 0.7.0 | Published tag at `4252cab`; registry-only lock and full core gate pass |
 
 RTC uses a minor release because the accepted cleanup renames public modules from
 RTC 0.6.0. Existing pinned applications retain their matching APIs and environments.
@@ -55,7 +55,8 @@ unnecessary: the new artifact header exactly matches the prior generated source.
 | RTC generic capture/private core | 173 assertions; pass |
 | Offline export and package metadata | 54 assertions; pass |
 | Empty-depot public registry/JLL download and library load | Pass; no source paths, preferences or artifact overrides |
-| Registered RTC consumer, cold installation and relocation | Pending final publication check |
+| Complete registered consumer integrity and extension activation | 45 assertions; pass |
+| Public-registry cold export/install/software relocation | 235 assertions; pass |
 
 The first FilterGraphPipeWire run used `--threads=4,1`; only two standalone
 placement checks failed because that deployment contract requires `N,0`.
@@ -83,6 +84,42 @@ Its compatibility includes both graph versions, with 714 targeted assertions on
 0.10 in addition to the full 0.9 gate. RTC 0.7 continues to select FilterGraphs
 0.9; this work does not silently migrate RTC to 0.10.
 
+## Public registry and installation receipts
+
+All selected package versions are published in DarrylGamrothRegistry. The complete
+consumer first resolved the exact release candidate from a private registry copy
+with canonical public package repository URLs. After registry commit
+`e01d79787d80cd7469ad4ebc3087e38f25d97ef4` was pushed, that copy was removed from
+the consumer depot and the registry was cloned from GitHub. Re-resolution changed
+neither Project nor Manifest. The same 45 checks and the 235-assertion cold
+installation/relocation selector then passed against public registry metadata.
+
+The [generated package/artifact receipt](registered-cohort.toml) records actual
+versions, source trees and loaded artifact. The [consumer Project](consumer/Project.toml)
+and [Manifest](consumer/Manifest.toml) reproduce the exact selected environment.
+There are no path/repository tracking overrides, SDK preferences or artifact
+Overrides.toml files. Every selected package tree and the complete JLL artifact
+tree matches its immutable hash. Core import stays science-independent; optional
+extensions activate only after their packages load. The installed application
+manifest excludes the development workspace, source overrides and Test; no RTC
+or test source trees are copied into the application.
+
+A first consumer bootstrap failed because its generated compat string incorrectly
+included JLL build metadata (`=4.0.2+0`). Regenerating the constraint as `=4.0.2`
+fixed parsing; the manifest and verifier still pin/check build `4.0.2+0`. This was
+validation-environment setup, not a package or native defect. The original log
+remains `/tmp/rtc-complete-consumer-install-20261106.log`.
+
+Published releases: [native SDK](https://github.com/DarrylGamroth/PipeWireAO/releases/tag/v4.0.2),
+[JLL](https://github.com/DarrylGamroth/PipeWireAO_jll.jl/releases/tag/PipeWireAO-v4.0.2%2B0),
+[PipeWireAO.jl](https://github.com/DarrylGamroth/PipeWireAO.jl/releases/tag/v0.9.2),
+[FilterGraphPipeWire](https://github.com/DarrylGamroth/JuliaFilterGraph.jl/releases/tag/FilterGraphPipeWire-v0.5.2),
+[AOS](https://github.com/DarrylGamroth/AdaptiveOpticsSim.jl/releases/tag/v0.3.21)
+and [RTC](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.0).
+FilterGraphs itself needs no change for the borrowed-loop accessor. Its existing
+0.10 controller release and [PR 47](https://github.com/DarrylGamroth/JuliaFilterGraph.jl/pull/47)
+are preserved; RTC's selected engine remains 0.9.
+
 ## Commands, artifacts and limits
 
 Full and focused logs use `/tmp/rtc-release-*.log`,
@@ -90,7 +127,10 @@ Full and focused logs use `/tmp/rtc-release-*.log`,
 `/tmp/rtc-fga-fg-core-DSiGGy/{fga,fg}.log`. The exact artifact metadata and build
 commands are in the BinaryBuilder receipt above. The empty-depot check uses
 `/tmp/rtc-cold-native-depot-20261106` and its log is
-`/tmp/rtc-cold-native-public-20261106.log`.
+`/tmp/rtc-cold-native-public-20261106.log`. Final public metadata, consumer and
+installation logs are `/tmp/rtc-complete-consumer-public-resolve-20261106.log`,
+`/tmp/rtc-complete-consumer-public-check-20261106.log` and
+`/tmp/rtc-release-public-cold-install-relocate-20261106.log`.
 
 After resolving the listed versions from the public registry, run
 `julia --project=CONSUMER verify.jl OUTPUT.toml` to verify package tree hashes,

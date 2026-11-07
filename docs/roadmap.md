@@ -29,7 +29,9 @@ plus 6 child assertions, AOS 12,187 and RTC core 11,048. Native/private-core and
 empty-depot checks are recorded separately. A concurrent controller release
 retains FGPW 0.5.1; its published source/evidence is preserved, while the endpoint
 port uses 0.5.2 and is also checked against FilterGraphs 0.10. RTC still selects
-0.9. Final registered consumer, install and relocation checks follow publication.
+0.9. Final public-registry consumer checks pass 45 assertions; cold export/install
+and software relocation pass 235. The exact immutable source/artifact trees and
+consumer lock are recorded in the release receipt.
 No live deployment or new hardware/deadline qualification is implied. NEC-12's
 remaining host-composition hooks stay open; standalone event files do not replace
 native RTC admission.
