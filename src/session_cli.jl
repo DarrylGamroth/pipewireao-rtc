@@ -232,15 +232,15 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
         Base.checked_mul(Int64(D.startup_timeout_ms(package)), Int64(1_000_000)) :
         Int64(240_000_000_000)
     deadline = Base.checked_add(previous, startup_ns)
+    # The RTC prepares its dispatch paths before publishing the control node.
+    # Discovery and warmup share the startup deadline. Admission has its own bound.
     client = Client.connect(
         Profile.Profile(),
         remote,
         node,
         UInt32(pid),
         expected;
-        deadline = min(
-            deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000))
-        ),
+        deadline,
         clock,
         controller_instance = Int64(record["admission_controller_instance"]),
     )
@@ -256,7 +256,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
             warm = Client.request!(
                 client,
                 Session.WarmupCommand();
-                deadline = min(deadline, Base.checked_add(current, Int64(10_000_000_000))),
+                deadline,
             )
             warmup_complete(warm) && break
             sleep(min(Int64(100_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
