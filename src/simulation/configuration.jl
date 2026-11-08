@@ -13,7 +13,7 @@ import ..DeploymentConfiguration
 import ..InstrumentDefinition
 import ..InstrumentConfiguration
 
-public plant_settings, plant_declaration
+public configuration, requires_proper, load_instrument, plant_settings, plant_declaration
 
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
 const ELEMENT_TYPES = Dict(string(T) => T for T in Artifacts.TARGET_TYPES)

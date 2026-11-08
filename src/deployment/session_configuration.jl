@@ -6,6 +6,15 @@ function graph_port_contracts end
 
 "Return the simulator observation owner's cold port contracts for selected settings."
 function simulator_port_contracts end
+"""
+    prepare_external_pupil_ports(path; settings=NamedTuple(), chopping=NamedTuple(),
+                                 target, check=()->nothing)
+
+Prepare authored optical graphs and resolve the pupil and detector port contracts.
+The result owns its scientific storage and opens no PipeWire core.
+"""
+function prepare_external_pupil_ports end
+
 "Return the external-pupil input and independent sensor contracts on the CPU."
 function external_pupil_port_contracts end
 "Return the optional scientific pupil source contract without preparing execution."

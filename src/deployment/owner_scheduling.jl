@@ -1,5 +1,6 @@
 # Framework adapters interpret worker roles. Application role names identify
 # instances only; executable strings and observed OS thread names select nothing.
+"Set the default Julia thread count for a declared process launcher."
 function julia_threads!(argv, count)
     positions = findall(arg -> startswith(arg, "--threads="), argv)
     length(positions) <= 1 && !("--threads" in argv) && !("-t" in argv) ||
@@ -42,8 +43,14 @@ function owner_scheduling!(::Val{:jfg}, owner, process)
     return nothing
 end
 
+"Apply the selected process placement adapter before sealing a deployment."
 owner_scheduling!(kind::Val, owner, process) =
     throw(ArgumentError("unknown owner scheduling kind $kind"))
+
+owner_scheduling!(kind, owner, process) =
+    throw(ArgumentError("owner kind must be a string"))
+owner_scheduling!(kind::AbstractString, owner, process) =
+    owner_scheduling!(Val(Symbol(kind)), owner, process)
 
 function prepare_owner_scheduling!(spec, profile)
     processes = profile["scheduling"]["processes"]
@@ -61,8 +68,7 @@ function prepare_owner_scheduling!(spec, profile)
             isempty(processes[role]["workers"]) ||
                 throw(ArgumentError("worker placement requires an explicit owner kind"))
         else
-            kind == "jfg" || throw(ArgumentError("unknown owner kind $kind"))
-            owner_scheduling!(Val(Symbol(kind)), owner, processes[role])
+            owner_scheduling!(kind, owner, processes[role])
         end
     end
     owners = Set(owner["role"] for owner in spec["owners"])

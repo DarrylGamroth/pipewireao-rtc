@@ -5,6 +5,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
 using SHA
 import PipeWireAORTC
+import PipeWireAORTC.InstrumentExport: prepare_external_pupil_ports
 const IC = PipeWireAORTC.InstrumentConfiguration
 using AdaptiveOpticsSimPipeWireHIL.ExternalPupil: execution_properties
 
@@ -105,7 +106,7 @@ function sensor_contract(declaration, configured, plant, name, identity)
     )
 end
 
-function prepare(
+function prepare_external_pupil_ports(
     path;
     settings = NamedTuple(),
     target = Backends.HostComputeDevice(),
@@ -141,7 +142,7 @@ end
 function PipeWireAORTC.InstrumentExport.external_pupil_port_contracts(
     path; settings = NamedTuple(), chopping = NamedTuple()
 )
-    science = prepare(path; settings, chopping)
+    science = prepare_external_pupil_ports(path; settings, chopping)
     contract(format, schema) =
         Dict("shape" => collect(format), "element-type" => "F32_LE", "schema" => schema)
     return Dict(

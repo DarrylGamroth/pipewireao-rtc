@@ -302,7 +302,7 @@ function export_optical_simulation(
 )
     output = abspath(destination)
     ispath(output) && throw(ArgumentError("simulation export destination already exists"))
-    science = ExternalPupilOwner.prepare(path; settings, chopping)
+    science = PipeWireAORTC.InstrumentExport.prepare_external_pupil_ports(path; settings, chopping)
     declaration, configured = science.declaration, science.configured
     paths = Dict()
     for name in keys(science.plant.graphs)
