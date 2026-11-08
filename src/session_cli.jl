@@ -40,9 +40,9 @@ prepared_identity(name, source_role, record) =
     throw(ArgumentError("deployment identity differs from prepared invocation"))
 
 function warmup_complete(reply::Session.AdministrativeCompletion)
+    reply.error === nothing || throw(ArgumentError(reply.error.message))
     reply.header.operation == UInt32(15) &&
     reply.header.result == 0 &&
-    reply.error === nothing &&
     reply.lifecycle == Session.Runner.Configuring ||
         throw(ArgumentError("direct session warmup query did not retain Configuring"))
     return reply.warmed === true

@@ -1027,7 +1027,10 @@ end
     return Hsm.transition!(m, :Ready)
 end
 @on_event function (m::Machine, ::Root, ::WarmupRequested, r)
-    _reply!(m, r, :Failed; error = "Resource admission is not available in this state")
+    _reply!(
+        m, r, :Failed;
+        error = something(m.failure, "Resource admission is not available in this state"),
+    )
     return Hsm.EventHandled
 end
 
