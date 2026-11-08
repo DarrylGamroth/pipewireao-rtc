@@ -85,3 +85,35 @@ establishing which object was retired or whether the observer contributed.
 The full seven-profile admission and Link gate remains open. The results cover
 software startup and the stated partial Link observation. The standalone source
 checks and the focused RTC Link ownership test remain separate evidence.
+
+## Repeat with registry-based binding
+
+The repeat used RTC `2c1e462`, HIL `6e8a489`, and the same AOS, instrument,
+graph and native revisions above. Pkg regenerated the launcher manifest. The
+previous manifest lacked the HIL extension registration, which reproduced the
+missing `managed_main` method. The resolved environment passed 18 cold managed
+HIL checks and 33 standalone optical checks on private cores. The launcher
+implementation needed no change.
+
+All seven CPU profiles exported with the standard instrument exporter. A
+temporary local registry supplied the unpublished package trees to the normal
+sealed deployment path. The fitted export used the existing generated optical
+bundle in a scratch instrument copy. The run used `SessionRuntime.start!` and
+`ready` before observing the private registry with `pwao-dump`. The observer
+matched exact Node names and Client PIDs, resolved Port directions and IDs, and
+checked each Link's state and RTC Client PID.
+
+| Profile | Result |
+| --- | --- |
+| Classic | Ready. All 25 declared Nodes and 20 RTC-owned Links matched. Shutdown lost the RTC control proxy before the reply. The final receipt confirmed cleanup and retained the service failure. |
+| GPI2 | HIL reported Prepared. Admission timed out while RTC was observing a bootstrap owner. Native teardown then reported SIGSEGV. The final receipt confirmed cleanup. |
+| GPI2 pupil source | The ordinary composition rejected the original calibrated mirror prescription before RTC launch. The cold HIL launcher passed ten transport checks with the existing synthetic P/Q receiver. |
+| CAL2 external pupil | Admission timed out while RTC was enumerating a bootstrap owner. Timeout teardown reported a wrong-context PipeWire call and SIGABRT. The final receipt confirmed cleanup. |
+| SPIDERS nominal | The SCC host rejected the configured recovery controller because it requires a CPU closed-loop correction workspace. |
+| SPIDERS Proper | The SCC host reported the same recovery workspace rejection. |
+| SPIDERS fitted | The SCC host reported the same recovery workspace rejection. |
+
+The three SPIDERS attempts stopped after the owner rejection was observed.
+All six launched invocations retained complete cleanup and unit-file removal
+receipts. Classic closed the admission and Link gate for its CPU profile.
+The other six profiles still require successful full admission.
