@@ -223,7 +223,9 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "composition_documents.jl"))
             joinpath(output, "generated/physical-offset-calibration/rtc.yaml")
         @test all(read(joinpath(base, file)) == bytes for (file, bytes) in source_before)
         @test C.sha256_file(joinpath(directory, "llowfs/result.yaml")) == bundle_before
-        @test D.profile(joinpath(output, "deployment.conf"), PREFIX) !== nothing
+        # This cold composition has an authored Project but no resolved Manifest.
+        deployment = joinpath(output, "deployment.conf")
+        @test D.validate_application(D.decode(deployment, PREFIX), deployment, PREFIX) !== nothing
         # A real changed physical response rejects before publishing an output.
         changed = joinpath(temporary, "changed")
         cp(base, changed)

@@ -16,7 +16,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 const C = PipeWireAORTC.Common
 const Optical = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 const Simulation = AdaptiveOpticsSimPipeWireHIL.Simulation
-const Owner = PipeWireAORTC.AOSOwner
+const Preparation = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
 
 mutable struct ExportExposureTransport
     events::Vector{Any}
@@ -196,7 +196,7 @@ prepared = AdaptiveOpticsSimPipeWireHIL.Simulation.prepare(
         write_external_optical_documents(source, physical, simulation)
         C.write_json(config, document)
         before = authored_snapshot(source)
-        expected_science = Owner.prepare_external_pupil_science(Owner.configuration(config))
+        expected_science = Preparation.prepare(path; chopping)
         expected_execution = Optical.prepare(expected_science)
         Optical.warmup!(expected_execution)
         expected = optical_trajectory(expected_execution)
@@ -410,9 +410,7 @@ end
         @test prepared.execution.command == zeros(Float32, 2)
         @test authored_snapshot(source) == before
         expected_source = IC.prepare_system(path; simulation_graph = "source")
-        reference_science = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner.prepare(
-            path
-        )
+        reference_science = Preparation.prepare(path)
         declaration = IC.load_simulation(path)
         amplitude = IC.binding_values(
             declaration,

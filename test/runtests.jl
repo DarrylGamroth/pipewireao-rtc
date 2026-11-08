@@ -39,7 +39,6 @@ for name in (
     "graph_owner",
     "aos_owner",
     "aos_graph_selection",
-    "phase_timing",
     "registered_application",
 )
     Base.include(Module(gensym(:ArtifactSuite)), joinpath(@__DIR__, "test_" * name * ".jl"))

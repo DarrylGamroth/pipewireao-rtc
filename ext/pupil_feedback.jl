@@ -133,16 +133,34 @@ function Export.validate_pupil_source(application, simulation_path, receiver_pat
         options.command_order,
         options.calibration_identity,
     )
-    science = PipeWireAORTC.AOSOwner.prepare_pupil_source_science(
-        merge(options, (; backend = :cpu, device = 0))
+    system = IC.prepare_system(
+        options.plant.definition;
+        settings = options.plant.settings,
+        simulation_graph = options.plant.graph,
     )
-    try
-        length(prepared.inputs.total) == length(science.command) ||
-            throw(DimensionMismatch("source command differs from receiver"))
-    finally
-        Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).PupilOutput.close!(
-            science.publisher
-        )
-    end
+    system.boundary === nothing ||
+        throw(ArgumentError("pupil source cannot have an HIL camera boundary"))
+    command = HIL.graph_input(system.graph, options.command_input)
+    eltype(command) === Float32 && size(command) == size(prepared.inputs.total) ||
+        throw(DimensionMismatch("source command differs from the Float32 receiver"))
+    all(iszero, command) ||
+        throw(ArgumentError("pupil source physical command must start at zero"))
+
+    # Exercise the actual cold graph and packet layout without a publisher.
+    source = IC.load_simulation(options.plant.definition)
+    configured = IC.settings(source, options.plant.settings)
+    selected = options.plant.graph
+    output = IC.pupil_output(source, configured; simulation_graph = selected)
+    pupil = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).PupilOutput
+    contract = pupil.contract(source, configured; simulation_graph = selected)
+    amplitude = IC.binding_values(
+        source, configured, source.document["bindings"][string(output.amplitude)]
+    )
+    HIL.step_graph!(system.graph)
+    pupil.pack!(
+        Array{Float32}(undef, contract.shape),
+        HIL.graph_output(system.graph, output.opd),
+        amplitude,
+    )
     return nothing
 end

@@ -94,7 +94,7 @@ function prepare_ideal_pupil_relay!(node, graph)
     )
     source_link in graph["links"] && destination_link in graph["links"] ||
         throw(ArgumentError("ideal pupil relay preparation must match actual graph links"))
-    Owner.load_instrument(:Proper)
+    AOSOwner.load_instrument(:Proper)
     factory = AlgorithmGraphs.proper_optical_train_node_factory(T = Float32)
     definition = Base.invokelatest(
         factory, Symbol(source["name"]), Instruments._instrument_seal(sc), (;), (;)
@@ -186,7 +186,7 @@ function prepare_bindings(
                 declaration, configured, specs[string(name)]
             )
             bytes = Base.checked_mul(sizeof(eltype(source)), length(source))
-            bytes <= Owner.MAX_RETAINED_BYTES - retained[] ||
+            bytes <= AOSOwner.MAX_RETAINED_BYTES - retained[] ||
                 throw(ArgumentError("instrument bindings exceed 512 MiB"))
             retained[] += bytes
             name in target_names ? copy_to_target(target, source) : source
@@ -201,7 +201,7 @@ function PipeWireAORTC.InstrumentExport.simulator_port_contracts(
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
     if Instruments.graph_requires_proper(declaration, configured; simulation_graph)
-        Owner.load_instrument(:Proper)
+        AOSOwner.load_instrument(:Proper)
     end
     # Loading Proper extends native node factories in a newer world.
     return Base.invokelatest(
@@ -354,54 +354,9 @@ function configured_wire_contracts(declaration)
     )
 end
 
-function prepare_configured_science(options, device; check = () -> nothing)
-    execution = options.backend === :cpu ? StreamGraphExecution() : CapturedGraphExecution()
-    system = Instruments.prepare_system(
-        options.plant.definition;
-        settings = options.plant.settings,
-        simulation_graph = get(options.plant, :graph, "production"),
-        target = device,
-        execution,
-    )
-    check()
-    AdaptiveOpticsSimPipeWireHIL.validate_hil_system(
-        system;
-        command_input = options.command_input,
-        frame_output = options.frame_output,
-        command_shape = Owner.command_shapes(options.command_count),
-        frame_shape = options.frame_shape,
-    )
-    declaration = Instruments.load_simulation(options.plant.definition)
-    contracts = configured_wire_contracts(declaration)
-    AdaptiveOpticsSimPipeWireHIL.validate_wire_contract(
-        options.frame_encoding,
-        options.frame_schema,
-        options.command_schema,
-        options.command_scale,
-        contracts,
-    )
-    configuration = wire_configuration(options)
-    validate_configuration(configuration, options)
-    round(UInt64, Float64(system.frame_period_s) * 1e9) == options.period_ns ||
-        throw(ArgumentError("instrument cadence differs from the application"))
-    # Validate actual node timing, independently of declaration metadata.
-    for node in system.definition.nodes
-        validate_node_timing(node.config, options)
-    end
-    return (;
-        system.definition,
-        system.graph,
-        system.boundary,
-        target = device,
-        artifacts = (),
-        configuration,
-    )
-end
-
 configured_command_scales(value::Real) = Float32(value)
 configured_command_scales(values::NamedTuple) = map(Float32, values)
 
-validate_node_timing(config, options) = nothing
 validate_sample_period(config, period) = nothing
 if isdefined(AlgorithmGraphs, :SecondOrderResponseNodeConfig)
     function validate_sample_period(
@@ -414,31 +369,6 @@ if isdefined(AlgorithmGraphs, :SecondOrderResponseNodeConfig)
         )
         return nothing
     end
-    function validate_node_timing(
-        config::AlgorithmGraphs.SecondOrderResponseNodeConfig, options
-    )
-        round(UInt64, config.sample_period_s * 1e9) == options.period_ns ||
-            throw(ArgumentError("response sample period differs from configured cadence"))
-        return nothing
-    end
-end
-function validate_node_timing(
-    config::AlgorithmGraphs.MultiLayerAtmosphereOPDNodeConfig, options
-)
-    round(UInt64, Float64(config.atmosphere_step) * 1e9) == options.period_ns ||
-        throw(ArgumentError("atmosphere step differs from configured cadence"))
-end
-function validate_node_timing(
-    config::AlgorithmGraphs.CMOSDetectorAcquisitionNodeConfig, options
-)
-    round(UInt64, Float64(config.exposure_duration_s) * 1e9) == options.exposure_ns ||
-        throw(ArgumentError("detector exposure differs from configured acquisition"))
-end
-function validate_node_timing(
-    config::AlgorithmGraphs.EMCCDDetectorAcquisitionNodeConfig, options
-)
-    round(UInt64, Float64(config.exposure_duration_s) * 1e9) == options.exposure_ns ||
-        throw(ArgumentError("detector exposure differs from configured acquisition"))
 end
 
 # These cold bindings reuse AOS's telescope definition, including its aperture

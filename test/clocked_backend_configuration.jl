@@ -74,28 +74,3 @@ using Test, PipeWireAORTC
         @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
     end
 end
-
-# Transport construction remains cold: no graph preparation, GPU import or core.
-using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
-@testset "clocked command transport uses the resolved buffer contract" begin
-    options = PipeWireAORTC.AOSOwner.configuration(abspath(only(ARGS)))
-    owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt).ExternalPupilOwner
-    @test isdefined(owner, :prepare_reference_clock)
-    if isdefined(owner, :prepare_reference_clock)
-        @test owner.prepare_reference_clock === PipeWireAORTC.Common.prepare_reference_clock
-    end
-    @test options.command_buffers == 3
-    @test owner.clocked_command_option(options).buffers == 3
-    for buffers in (2, 64)
-        selected = merge(options, (; command_buffers = buffers))
-        transport = owner.clocked_command_option(selected)
-        @test transport.buffers == buffers
-        @test any(
-            r ->
-                r.type == AdaptiveOpticsSimPipeWireHIL.SPA.META_REFERENCE_TIMESTAMP &&
-                r.required,
-            transport.metadata,
-        )
-    end
-    @test !any(id -> id.name in ("Proper", "CUDA", "AMDGPU"), keys(Base.loaded_modules))
-end

@@ -41,37 +41,6 @@ const C = PipeWireAORTC.Common
             @test Owner.configuration(config).backend === Symbol(backend)
         end
         C.write_json(config, document)
-        args = [
-            "--config",
-            config,
-            "--remote",
-            "/tmp/pupil-source-test",
-            "--control-node",
-            "plant-control",
-            "--bootstrap-node",
-            "rtc.bootstrap.plant",
-            "--bootstrap-instance",
-            "7",
-        ]
-        @test_throws ArgumentError Owner._main(
-            args; load_science = () -> error("must reject before science")
-        )
-        args = [args; "--physical-offsets"; joinpath(directory, "offsets.yaml")]
-        events = Symbol[]
-        with_owner = (f, o) -> begin
-            push!(events, :preparing)
-            f(merge(o, (; owner_check = () -> nothing)))
-        end
-        @test Owner._main(
-            args;
-            with_owner,
-            load_science = () -> push!(events, :science),
-            run = o -> begin
-                @test o.physical_offsets == joinpath(directory, "offsets.yaml")
-                push!(events, :run)
-            end,
-        ) == 0
-        @test events == [:preparing, :science, :run]
         fixture = C.read_yaml(joinpath(directory, "simulation/definition.yaml"))
         for mutate in (
             g -> (g["links"][1]["destination"] = "composition.uncompensated_opd"),

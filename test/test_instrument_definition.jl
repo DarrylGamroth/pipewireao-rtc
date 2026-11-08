@@ -591,44 +591,10 @@ end
         @test selected.instrument == joinpath(package, "instrument.json")
         @test selected.plant.package === :InstrumentPlantForTest
         @test Instrument.verify_plant(selected, InstrumentPlantForTest) === nothing
-        argv = [
-            "--config",
-            path,
-            "--remote",
-            "/tmp/instrument-test",
-            "--control-node",
-            "simulator-wfs",
-            "--bootstrap-node",
-            "rtc.bootstrap.aos",
-            "--bootstrap-instance",
-            "7",
-        ]
-        with_owner = (f, admitted) -> f(merge(admitted, (; owner_check = () -> nothing)))
-        ran = Ref(false)
-        run = admitted -> begin
-            @test admitted.plant_module === InstrumentPlantForTest
-            ran[] = true
-        end
-        @test PipeWireAORTC.AOSOwner._main(
-            argv;
-            with_owner,
-            load_science = () -> nothing,
-            load_plant = package -> InstrumentPlantForTest,
-            run,
-        ) == 0
-        @test ran[]
-        ran[] = false
         incompatible = deepcopy(instrument)
         incompatible["scientific_identity"] = "sha256:" * repeat("b", 64)
         write(joinpath(package, "instrument.json"), JSON.json(incompatible))
-        @test_throws ArgumentError PipeWireAORTC.AOSOwner._main(
-            argv;
-            with_owner,
-            load_science = () -> nothing,
-            load_plant = package -> InstrumentPlantForTest,
-            run,
-        )
-        @test !ran[]
+        @test_throws ArgumentError Instrument.verify_plant(selected, InstrumentPlantForTest)
         write(joinpath(package, "instrument.json"), JSON.json(instrument))
         delete!(document, "instrument")
         write(path, JSON.json(document))

@@ -74,7 +74,7 @@ package pins. Development and release tooling require Julia 1.13 or newer.
 | `CalibrationCLI`, `SessionCLI` | Translate command arguments and reports |
 | `OwnerBootstrapRuntime`, `ParameterSource`, `SourceControl` | Cold admission, parameter publication and source controls |
 | `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
-| `GraphOwner`, `AOSOwner` | Package-owned optional scientific owners, configured with graphs and FITS bindings |
+| `GraphOwner` | Optional FilterGraphPipeWire process with RTC admission and FITS bindings |
 
 ## Registered applications
 
@@ -89,19 +89,18 @@ at installation. The installer generates its launcher and exact systemd unit;
 the registered Julia dependency supplies the implementation. Existing sealed
 SDK deployments retain their recorded runtime and require their matching tools.
 
-`GraphOwner.main` accepts existing graph options plus `--fits-bindings PATH`.
-`AOSOwner.main` accepts a simulation configuration through `--config PATH`.
-Both publish native Preparing before optional scientific packages load. These
-modules load no science during an ordinary operational client import. See the
-[Classic delivery and validation record](docs/CLASSIC_REGISTERED_DEPLOYMENT.md).
+`GraphOwner.main` accepts graph options and `--fits-bindings PATH`. It publishes
+Preparing before loading optional graph packages. Simulation runs in a separate
+AdaptiveOpticsSimPipeWireHIL process using the declared PipeWire ports. See
+[standalone HIL configuration and migration](docs/HIL_CONFIGURATION.md).
 
 For example, `PipeWireAORTC.SessionCLI.main(["sessions"])` is the callable
 counterpart of the root `session_cli.jl` command. Root `session_*.jl`
 files are thin command entry points; their implementation loads with the package
 from `src/configuration/`, `src/deployment/` and the `src/*_cli.jl` modules.
 Control protocol codecs, clients and endpoints live under `src/control/`.
-Correction sequencing lives under `src/correction/`; graph execution and
-simulation preparation live under `src/graphs/` and `src/simulation/`.
+Correction sequencing lives under `src/correction/`. Graph hosting lives under
+`src/graphs/`. Cold readers for calibration assets live under `src/simulation/`.
 The registered application environment is the supported launch path for new
 deployments. Existing sealed SDK deployments retain their recorded runtime and
 must use the matching older tools; the registered installer does not migrate

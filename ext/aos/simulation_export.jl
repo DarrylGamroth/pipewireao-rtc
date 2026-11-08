@@ -157,7 +157,7 @@ function validate_simulation_graph_product(::Val{1}, document)
 end
 
 function simulation_asset_product(source, destination, directory, digest)
-    maximum = Owner.MAX_RETAINED_BYTES
+    maximum = AOSOwner.MAX_RETAINED_BYTES
     isfile(source) && filesize(source) <= maximum ||
         throw(ArgumentError("compiled optical asset is missing or exceeds 512 MiB"))
     bytes = open(source) do io
@@ -231,7 +231,7 @@ function export_simulation(
         ),
         selections,
     )
-        Owner.load_instrument(:Proper)
+        AOSOwner.load_instrument(:Proper)
     end
     # Loading an optional scientific extension creates methods in a newer world.
     return Base.invokelatest(

@@ -11,7 +11,6 @@ const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 const AOS = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
 const Observation = AOS.OpticalObservation
-completed_timing_bytes(timings) = @allocated AOS.completed_frame_timing(timings)
 const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
 reference(pointer) = Dict("\$ref" => pointer)
 
@@ -163,7 +162,7 @@ function observation_definition(sensor, resolution)
     )
 end
 
-@testset "cold SH and Pyramid observation contracts match actual CPU products" begin
+@testset "cold SH and Pyramid observation port shapes" begin
     clocks = [METADATA_CLOCK_REALTIME, METADATA_CLOCK_TAI]
     sensors = (
         (
@@ -205,60 +204,6 @@ end
         @test contracts["focal-image"]["shape"] == [2resolution, 2resolution]
         @test contracts["residual-wavefront"]["shape"] == [resolution, resolution]
         @test contracts["wavefront-rms"]["shape"] == [1, 2]
-        graph = prepare_algorithm_graph(definition)
-        observation = Observation.prepare(definition, graph)
-        try
-            sources = Observation.source_options(observation)
-            @test length(sources) == 3
-            @test all(source -> source.reference_clock == METADATA_CLOCK_REALTIME, sources)
-            for clock in clocks
-                clocked_sources = Observation.source_options(
-                    observation; reference_clock = clock
-                )
-                @test length(clocked_sources) == 3
-                # Cover focal, residual-wavefront and RMS keyword forwarding.
-                @test all(source -> source.reference_clock == clock, clocked_sources)
-            end
-            for (index, product, values) in (
-                (1, "focal-image", observation.values),
-                (2, "residual-wavefront", observation.wavefront),
-                (3, "wavefront-rms", observation.rms),
-            )
-                @test collect(sources[index].shape) == contracts[product]["shape"]
-                @test E.wire_element_type(eltype(values)) ==
-                    contracts[product]["element-type"]
-            end
-            @test_throws DimensionMismatch Observation.verify_product(
-                zeros(Float32, resolution, resolution), contracts["focal-image"]
-            )
-            graph_input(graph, Val(:uncorrected)) .=
-                reshape(Float32.(1:(resolution^2)), resolution, resolution) .* 1.0f-9
-            step_graph!(graph)
-            @test Observation.submit!(observation; generation = UInt64(1))
-            @test Observation.poll!(observation)
-            try
-                opd = copy(graph_output(graph, Val(:pupil_opd)))
-                Observation.form_products!(observation)
-                raw_focal = AdaptiveOpticsSim.Optics.intensity_values(
-                    AdaptiveOpticsSim.Optics.direct_imaging_output(observation.imaging)
-                )
-                @test observation.values == reverse(permutedims(raw_focal); dims = 1)
-                piston = sum(Float64, opd[observation.pupil]) / count(observation.pupil)
-                raw_wavefront = map(opd, observation.pupil) do value, transmitting
-                    transmitting ? Float32((Float64(value) - piston) * 1e9) : NaN32
-                end
-                @test isequal(
-                    observation.wavefront, reverse(permutedims(raw_wavefront); dims = 1)
-                )
-                @test observation.rms[1, 2] ==
-                    Observation.pupil_rms_nm(opd, observation.pupil)
-                @test graph_output(graph, Val(:pupil_opd)) == opd
-            finally
-                Observation.release!(observation)
-            end
-        finally
-            Observation.close!(observation)
-        end
         @test !haskey(
             Observation.port_contracts(definition.nodes; atmosphere = false),
             "wavefront-rms",
@@ -396,48 +341,6 @@ end
     end
 end
 
-@testset "named simulator warmup and diagnostics use every command" begin
-    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
-    commands = (;
-        tweeter = fill(1.0f0, 5), woofer = fill(2.0f0, 3), tiptilt = fill(3.0f0, 2)
-    )
-    @test isnothing(
-        extension.validate_command_buffers(
-            commands, (; woofer = 3, tweeter = 5, tiptilt = 2)
-        ),
-    )
-    @test_throws DimensionMismatch extension.validate_command_buffers(
-        commands, (; woofer = 3, tweeter = 5, tiptilt = 3)
-    )
-    @test_throws ArgumentError extension.validate_command_buffers(
-        commands, (; woofer = 3, tweeter = 5)
-    )
-    extension.zero_command_buffers!(commands)
-    @test all(command -> all(iszero, command), values(commands))
-    timing = AdaptiveOpticsSimPipeWireHIL.PipeWireFrameCommandTiming
-    timings = (;
-        woofer = timing(UInt64(2), Int64(100), Int64(110)),
-        tweeter = timing(UInt64(2), Int64(100), Int64(135)),
-        tiptilt = timing(UInt64(2), Int64(100), Int64(120)),
-    )
-    completed = extension.completed_frame_timing(timings)
-    @test completed.sequence == 2
-    @test completed.source_published_nanoseconds == 100
-    @test completed.command_received_nanoseconds == 135
-    completed_timing_bytes(timings) # warm the concrete successful call and measurement
-    @test completed_timing_bytes(timings) == 0
-    @test_throws ErrorException extension.completed_frame_timing(
-        merge(timings, (; woofer = timing(UInt64(3), Int64(100), Int64(110))))
-    )
-    @test extension.applied_command_names(
-        (; woofer = "woofer", tweeter = "tweeter", tiptilt = "tiptilt"), true
-    ) == (;
-        woofer = "woofer-applied", tweeter = "tweeter-applied", tiptilt = "tiptilt-applied"
-    )
-    @test extension.applied_command_names("command", true) == "simulator-applied-command"
-    @test extension.applied_command_names((; woofer = "woofer"), false) === nothing
-end
-
 @testset "explicit science imaging keeps guide fallback and composed OPD direction" begin
     Optics = AdaptiveOpticsSim.Optics
     source = Dict{String,Any}(
@@ -465,45 +368,19 @@ end
         photon_rate_schema = "test.observation.frame/1",
     )
     definition = observation_definition(sensor, 16)
-    graph = prepare_algorithm_graph(definition)
-    imaging = Observation.imaging_configuration((; document))
-    @test Observation.imaging_configuration((; document = Dict())).source === nothing
-    @test Observation.owner_imaging_configuration((; version = 1)) ==
-        Observation.default_imaging()
-    function image(imaging)
-        observation = Observation.prepare(definition, graph; imaging)
-        try
-            fill!(Observation.snapshot_values(observation.snapshot), 0)
-            fill!(Observation.snapshot_values(observation.atmosphere_snapshot), 0)
-            Observation.form_products!(observation)
-            output = Optics.direct_imaging_output(observation.imaging)
-            return copy(observation.values), output.metadata
-        finally
-            Observation.close!(observation)
-        end
-    end
-    fallback, fallback_metadata = image(Observation.default_imaging())
     source["source_position_angle_deg"] = 123.0 # On-axis position angle does not alter direction.
     imaging = Observation.imaging_configuration((; document))
-    explicit, metadata = image(imaging)
-    @test explicit == fallback
-    @test metadata == fallback_metadata
+    @test Observation.port_contracts(definition; imaging) ==
+        Observation.port_contracts(definition)
     source["source_wavelength_m"] = 1.65e-6
     source["source_magnitude"] = 3.0
     document["imaging"]["zero_padding"] = 3
     science = Observation.imaging_configuration((; document))
-    values, metadata = image(science)
-    @test size(values) == (48, 48)
     @test Observation.port_contracts(definition; imaging = science)["focal-image"]["shape"] ==
         [48, 48]
-    @test metadata.spectral.wavelength_m == Float32(1.65e-6)
-    @test metadata.normalization isa Optics.PhotonRateNormalization
-    @test sum(values) / sum(fallback) ≈ 10.0^(-0.4) rtol = 2e-6
-    @test metadata.sampling != fallback_metadata.sampling
     source["source_separation_arcsec"] = 1.0
     mismatched = Observation.imaging_configuration((; document))
     @test_throws ArgumentError Observation.port_contracts(definition; imaging = mismatched)
-    @test_throws ArgumentError Observation.prepare(definition, graph; imaging = mismatched)
     positive = Optics.Source(
         band = :R, separation_arcsec = 2, position_angle_deg = 210, T = Float32
     )

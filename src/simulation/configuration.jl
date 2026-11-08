@@ -1,4 +1,4 @@
-"""Cold declarations for optional graph and instrument AOS owners."""
+"""Read authored simulation and calibration assets from existing instrument bundles."""
 module AOSOwner
 
 import ..Schemas
@@ -12,11 +12,9 @@ using ..Common: reference_clock_configuration
 import ..DeploymentConfiguration
 import ..InstrumentDefinition
 import ..InstrumentConfiguration
-import ..OwnerBootstrapRuntime
 
-public main, plant_settings, plant_declaration
+public plant_settings, plant_declaration
 
-const Bootstrap = OwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
 const ELEMENT_TYPES = Dict(string(T) => T for T in Artifacts.TARGET_TYPES)
 
@@ -160,104 +158,6 @@ end
 
 plant_settings_object(value::AbstractDict) = plant_settings(value)
 plant_settings_object(value) = throw(ArgumentError("plant settings must be an object"))
-
-"Parse the complete native bootstrap invocation without loading science."
-function arguments(args)
-    values = Dict{String,String}()
-    required = (
-        "--config", "--remote", "--control-node", "--bootstrap-node", "--bootstrap-instance"
-    )
-    optional = (
-        "--phase-timing-directory", "--phase-timing-frames", "--phase-timing-warmup"
-    )
-    allowed = (
-        required...,
-        optional...,
-        "--pipewire-cpu",
-        "--optical-diagnostics-cpu",
-        "--pupil-output-cpu",
-        "--physical-offsets",
-    )
-    iseven(length(args)) || throw(ArgumentError("each AOS owner option requires a value"))
-    for index in 1:2:length(args)
-        key, value = args[index], args[index+1]
-        key in allowed || throw(ArgumentError("unknown AOS owner option $key"))
-        haskey(values, key) && throw(ArgumentError("duplicate $key"))
-        values[key] = text(value, key)
-    end
-    all(key -> haskey(values, key), required) || throw(
-        ArgumentError(
-            "AOS owner requires --config, --remote, --control-node, --bootstrap-node and --bootstrap-instance",
-        ),
-    )
-    remote = values["--remote"]
-    isabspath(remote) ||
-        throw(ArgumentError("AOS owner requires an absolute private remote"))
-    control_node = node_name(values["--control-node"], "control node")
-    bootstrap_node = node_name(values["--bootstrap-node"], "bootstrap node")
-    control_node != bootstrap_node ||
-        throw(ArgumentError("source and bootstrap nodes must differ"))
-    instance = tryparse(Int64, values["--bootstrap-instance"])
-    instance !== nothing && instance > 0 ||
-        throw(ArgumentError("bootstrap instance must be positive"))
-    pipewire_cpu = nothing
-    if haskey(values, "--pipewire-cpu")
-        pipewire_cpu = tryparse(Int, values["--pipewire-cpu"])
-        pipewire_cpu !== nothing && pipewire_cpu >= 2 || throw(
-            ArgumentError("PipeWire loop CPU must be an integer excluding CPUs 0 and 1")
-        )
-    end
-    optical_diagnostics_cpu = nothing
-    if haskey(values, "--optical-diagnostics-cpu")
-        optical_diagnostics_cpu = tryparse(Int, values["--optical-diagnostics-cpu"])
-        optical_diagnostics_cpu !== nothing && optical_diagnostics_cpu >= 2 ||
-            throw(ArgumentError("optical diagnostics CPU must exclude CPUs 0 and 1"))
-    end
-    requested_timing = any(key -> haskey(values, key), optional)
-    pupil_output_cpu = nothing
-    if haskey(values, "--pupil-output-cpu")
-        pupil_output_cpu = tryparse(Int, values["--pupil-output-cpu"])
-        pupil_output_cpu !== nothing && pupil_output_cpu >= 2 ||
-            throw(ArgumentError("pupil output CPU must exclude CPUs 0 and 1"))
-        pupil_output_cpu != optical_diagnostics_cpu || throw(
-            ArgumentError("pupil output and optical diagnostics require distinct CPUs")
-        )
-    end
-    timing_directory = nothing
-    timing_frames = timing_warmup = 0
-    if requested_timing
-        all(key -> haskey(values, key), optional[1:2]) || throw(
-            ArgumentError(
-                "phase timing requires --phase-timing-directory and --phase-timing-frames",
-            ),
-        )
-        timing_directory = values["--phase-timing-directory"]
-        isabspath(timing_directory) ||
-            throw(ArgumentError("phase timing directory must be absolute"))
-        timing_directory = abspath(timing_directory)
-        timing_frames = tryparse(Int, values["--phase-timing-frames"])
-        timing_warmup = tryparse(Int, get(values, "--phase-timing-warmup", "512"))
-        timing_frames !== nothing && 1 <= timing_frames <= 65_536 ||
-            throw(ArgumentError("phase timing frames must be in 1:65536"))
-        timing_warmup !== nothing && 0 <= timing_warmup <= 65_536 ||
-            throw(ArgumentError("phase timing warmup must be in 0:65536"))
-    end
-    return (;
-        remote,
-        control_node,
-        bootstrap_node,
-        bootstrap_instance = instance,
-        config = abspath(values["--config"]),
-        phase_timing_directory = timing_directory,
-        phase_timing_frames = timing_frames,
-        phase_timing_warmup = timing_warmup,
-        pipewire_cpu,
-        optical_diagnostics_cpu,
-        pupil_output_cpu,
-        physical_offsets = haskey(values, "--physical-offsets") ?
-                           abspath(values["--physical-offsets"]) : nothing,
-    )
-end
 
 # Version 3 can use the public HIL named-command boundary. All maps are
 # sealed in the input declaration order before they reach execution ownership.
@@ -636,82 +536,8 @@ function prepare_bindings(entries; check = () -> nothing)
     return prepared
 end
 
-function prepare_science end
-function run_owner end
-function prepare_external_pupil_science end
-function run_external_pupil_owner end
-function prepare_pupil_source_science end
-function run_pupil_source_owner end
-
 include("external_pupil_configuration.jl")
 include("pupil_source_configuration.jl")
-
-"The private invocation directory owns this small operational report."
-report_path(options) =
-    joinpath(dirname(options.remote), options.control_node * "-report.json")
-
-"""Save an atomic operational cursor record, without scientific arrays or timing claims."""
-function write_report(options, state, generation, source_instance; failures = ())
-    generation === nothing &&
-        isempty(failures) &&
-        throw(ArgumentError("an unknown report generation requires a recorded failure"))
-    record = (;
-        version = 1,
-        kind = "pipewireao.rtc.aos-owner-report/1",
-        bootstrap_instance = integer(
-            options.bootstrap_instance, "bootstrap_instance", 1, typemax(Int64)
-        ),
-        source_instance = integer(source_instance, "source_instance", 1, typemax(Int64)),
-        owner_pid = getpid(),
-        generation = generation === nothing ? nothing :
-                     integer(generation, "generation", 1, typemax(Int64)),
-        sequence = integer(state.sequence, "sequence", 0, typemax(Int64)),
-        running = state.running,
-        completed = state.completed,
-        backend = string(options.backend),
-        graph = options.graph,
-        graph_sha256 = get(options, :graph_sha256, nothing),
-        configuration = get(options, :config_path, nothing),
-        configuration_sha256 = get(options, :configuration_sha256, nothing),
-        plant = get(options, :plant, nothing),
-        failures = [
-            first(replace(sprint(showerror, error), '\0' => '?'), 1024) for
-            error in failures
-        ],
-    )
-    calibration_identity = get(options, :calibration_identity, nothing)
-    calibration_identity === nothing ||
-        (record = merge(record, (; startup_calibration_identity = calibration_identity)))
-    pupil_output = get(options, :pupil_output_status, () -> nothing)()
-    pupil_output === nothing || (record = merge(record, (; pupil_output)))
-    path = report_path(options)
-    mkpath(dirname(path))
-    temporary, io = mktemp(dirname(path))
-    errors = Exception[]
-    try
-        close(io)
-        Common.write_json(temporary, record)
-        # Same-directory rename replaces the complete file atomically and
-        # preserves a conflicting directory when replacement fails.
-        Base.rename(temporary, path)
-    catch error
-        push!(errors, error)
-    finally
-        try
-            isopen(io) && close(io)
-        catch error
-            push!(errors, error)
-        end
-        try
-            ispath(temporary) && rm(temporary)
-        catch error
-            push!(errors, error)
-        end
-    end
-    isempty(errors) ||
-        throw(length(errors) == 1 ? only(errors) : CompositeException(errors))
-    return nothing
-end
 
 "Load only the exact plant dependency declared by the active application."
 function load_instrument(package::Symbol)
@@ -765,137 +591,5 @@ function requires_proper(options)
         declaration, configured; simulation_graph = get(options.plant, :graph, "production")
     )
 end
-
-# The application declares optional science packages as its direct dependencies.
-function _main(
-    args;
-    with_owner = Bootstrap.with_owner,
-    load_science = () -> begin
-        Base.require(Main, :AdaptiveOpticsSim)
-        Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
-    end,
-    load_cuda = () -> Base.require(Main, :CUDA),
-    load_amdgpu = () -> Base.require(Main, :AMDGPU),
-    load_plant = load_instrument,
-    load_proper = () -> load_instrument(:Proper),
-    run = run_owner,
-)
-    invocation = arguments(args)
-    options = configuration(invocation.config)
-    data_nodes = if options.version == 5
-        (
-            "simulator-pupil-output",
-            (
-                options.applied_command_observation ?
-                ("simulator-" * options.mirror * "-applied",) : ()
-            )...,
-        )
-    elseif options.version in (4, 6)
-        (
-            options.version == 6 ? options.command_node : options.pupil_node,
-            values(options.sensor_nodes)...,
-        )
-    else
-        command_items(options.command_node)
-    end
-    (options.version == 5) == (invocation.physical_offsets !== nothing) || throw(
-        ArgumentError(
-            "pupil sources require --physical-offsets; other AOS versions do not accept it",
-        ),
-    )
-    options.version == 5 &&
-        (
-            invocation.phase_timing_directory !== nothing ||
-            invocation.optical_diagnostics_cpu !== nothing
-        ) &&
-        throw(
-            ArgumentError(
-                "pupil sources have no HIL phase timing or optical diagnostic worker"
-            ),
-        )
-    all(
-        name -> name != invocation.control_node && name != invocation.bootstrap_node,
-        data_nodes,
-    ) || throw(ArgumentError("bootstrap, frame and command nodes must differ"))
-    options.version in (4, 6) &&
-        (
-            invocation.phase_timing_directory !== nothing ||
-            invocation.optical_diagnostics_cpu !== nothing ||
-            invocation.pupil_output_cpu !== nothing
-        ) &&
-        throw(
-            ArgumentError(
-                "external-pupil owners use their input clock and do not support HIL diagnostic workers",
-            ),
-        )
-    with_owner(merge(options, invocation)) do admitted
-        admitted.owner_check()
-        load_science()
-        admitted.owner_check()
-        admitted.backend === :cuda && load_cuda()
-        admitted.backend === :amdgpu && load_amdgpu()
-        admitted.owner_check()
-        if admitted.version in (3, 4, 5, 6)
-            if requires_proper(admitted)
-                load_proper()
-                admitted.owner_check()
-            end
-            # Optional science loads add graph preparation methods in a newer
-            # world; declaration verification resolves those same graph methods.
-            verify = if admitted.version == 5
-                verify_pupil_source_declaration
-            elseif admitted.version in (4, 6)
-                verify_external_pupil_declaration
-            else
-                InstrumentDefinition.verify_declaration
-            end
-            Base.invokelatest(verify, admitted)
-        elseif admitted.plant !== nothing
-            plant_module = load_plant(admitted.plant.package)
-            admitted.owner_check()
-            InstrumentDefinition.verify_plant(admitted, plant_module)
-            admitted = merge(admitted, (; plant_module))
-        end
-        selected_run = run === run_owner ? if admitted.version == 5
-            run_pupil_source_owner
-        elseif admitted.version in (4, 6)
-            run_external_pupil_owner
-        else
-            run
-        end : run
-        Base.invokelatest(selected_run, admitted)
-    end
-    return 0
-end
-
-"""
-    main(args)
-
-Run a native AOS scientific owner from `--config PATH`, with explicit `--remote`,
-`--control-node`, `--bootstrap-node` and `--bootstrap-instance`. The version 1
-SPA-JSON configuration declares the simulation YAML graph and FITS bindings;
-version 2 selects an instrument package and immutable settings. Version 3 selects
-a simulation definition and immutable settings without an instrument package.
-Its optional `plant.graph` selects a declared graph and defaults to `production`.
-Only selected native PROPER nodes load the application's direct Proper dependency,
-after bootstrap Preparing publication. Version 3 also accepts an array of command_input names with matching
-command_count, command_node, command_schema and command_scale maps. Named
-commands retain independent shapes and wire units; physical mirror commands
-match their declared mirror names. All versions declare command/frame names,
-extents, timing and backend/device. Paths are relative to the configuration. Preparing is published before optional science imports.
-Version 5 selects `mode: pupil-source`: one named non-HIL graph owns the physical
-mirror command and publishes the declared grey scientific pupil. It requires
-`--physical-offsets PATH` selecting a version-2 P/Q-only receiving contract;
-there is no camera frame, receiving WFS reference or graph parameter transaction.
-FITS preparation is cold startup only; RTC retains lifecycle authority.
-
-Version 4 selects `mode="external-pupil"` and declares a mirror-free plant,
-one `pupil_node`, and a `sensor_nodes` map naming every physical optical path.
-It consumes coherent external OPD/amplitude packets and publishes independent
-Float32 sensor streams at their declared exposure durations. Its timing comes
-from the input model timestamps; supported backends are CPU and AMDGPU. The
-ordinary native bootstrap and source run/pause/reset controls remain authoritative.
-"""
-main(args) = _main(args)
 
 end

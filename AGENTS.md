@@ -66,8 +66,11 @@
   retain their original tools and are not rewritten during this migration.
 - Session controls do not persist operation history or wait for durable writes.
   Preserve finite deadlines, exact correlation and unknown-outcome handling.
-  Archiving is deferred to a separate service; do not add an RTC recording store.
-  Artifact provenance and management job receipts retain their separate contracts.
+  Archiving is deferred to a separate service. Artifact provenance and catalog
+  management receipts retain their separate contracts.
+- AdaptiveOpticsSimPipeWireHIL owns the simulator process and its startup settings.
+  RTC keeps cold export and calibration assets plus the existing PipeWire ports
+  and source-control contracts for independent providers.
 - Native PipeWire configuration uses maintained standard relaxed SPA-JSON.
   Human-authored instrument, simulation, RTC, process/profile, calibration and
   GUI configuration uses bounded YAML and is compiled to existing native runtime
@@ -203,26 +206,8 @@
 - `test/session_graph_schema.jl` uses the optional JFG environment to check actual
   prepared port schemas against session declarations and native-command limiter
   equivalence. It opens no core, service or device.
-- `julia --project=. test/test_aos_graph_selection.jl` checks version-3 graph
-  selection and Preparing-before-Proper load order without science packages.
-  `julia --project=/path/to/science-environment test/aos_selected_graph_loading.jl`
-  checks the real optional loaders and selected CPU optics/observation contracts
-  in a fresh process, without a PipeWire core.
-- `julia --project=/path/to/science-environment test/aos_owner_science_loading.jl
-  /path/to/built-application/simulation.conf` checks the version-4 owner's real
-  optional science/Proper loaders in a fresh process. Supply a real built
-  external-pupil configuration and direct AOS/HIL/Proper dependencies; do not
-  preload those packages. The selector explicitly chooses CPU preparation,
-  injects only the bootstrap boundary and prepares the declared optics without
-  a PipeWire core, service, GPU import or instrument/configuration mutation.
-  This catches extension world-age failures; it does not qualify native owner
-  lifecycle or the application's selected accelerator execution.
-- `julia --project=/path/to/science-environment test/aos_generated_owner_loading.jl
-  /path/to/built-application/simulation.conf` checks a real version-3 generated
-  HIL application cold, including metadata before bootstrap/science loading,
-  actual CPU preparation and rejection of stale generated optical provenance.
-  It injects only bootstrap, owns no core/service and mutates only a temporary
-  copy for rejection testing. Direct AOS/HIL/Proper dependencies are required.
+- `julia --project=. test/test_aos_graph_selection.jl` checks cold graph selection
+  and Proper detection without scientific imports.
 - `julia --project=. test/test_zemax_components.jl` checks composable imported
   optics, physical pupil-plane metadata and named HIL graph selection without
   scientific packages. `julia --project=/path/to/science-environment
@@ -231,13 +216,8 @@
   in the instrument source.
 - `julia --project=/path/to/science-environment test/test_session_configuration_integration.jl`
   checks session metadata against the optional JFG and AOS/HIL packages. It
-  prepares small CPU Shack-Hartmann and Pyramid products without a live session
-  or GPU access; the core exporter selector remains independent of these packages.
-- The optional CPU selector `test/aos_instrument_preparation.jl cpu` requires
-  `REVOLT_CLASSIC_MIRROR_DESCRIPTION` to name `mirrors/alpao/hsdm277.yaml`
-  in the instrument repository, in addition to the scientific test environment.
-  The test serializes that authoring YAML to native JSON for the legacy package
-  reader; the source and live deployment remain untouched.
+  checks small CPU Shack-Hartmann and Pyramid port contracts without a live
+  session or GPU access. The core exporter runs independently.
 - Instrument-source build/calibration/private-core selectors live in the
   instrument repository. Its README owns environment prerequisites and commands.
   Builds do not install or launch sessions. Keep source files and live RTCs
@@ -253,11 +233,11 @@
   metadata against physical sensor dimensions. These tests do not qualify a rolling loop.
 - `test/test_pupil_source_owner.jl` and `test/test_physical_offset_inputs.jl`
   check the version-5 clocked pupil source and version-2 P/Q-only receiver cold,
-  without optional science packages. The optional CPU selectors
-  `test/pupil_source_owner_science.jl` and `test/pupil_feedback_composition.jl`
-  exercise actual mirror response, model chronology and sealed preparation.
-- The optional `test/physical_offset_inputs_private_core.jl` and
-  `test/pupil_source_control_private_core.jl` require three default Julia threads;
+  without optional science packages. The optional CPU selector
+  `test/pupil_feedback_composition.jl` exercises actual mirror response and
+  sealed calibration preparation.
+- The optional `test/physical_offset_inputs_private_core.jl` requires three
+  default Julia threads.
   `test/physical_offsets_private_core.jl` requires `--threads=4,0`.
   Their imported HIL helper selects the daemon with
   `PIPEWIREAO_HIL_TEST_PREFIX`, defaulting to the JLL artifact. Set that variable
@@ -283,18 +263,15 @@
   chopped measurement frontend. It checks capture counts, changed-command replay,
   CPU equivalence and full/half-poke plus held-out calibration gates. It does not
   acquire a full-instrument calibration or broaden upstream reference targets.
-- `julia --project=/path/to/science-environment test/external_pupil_stream_formats.jl`
-  checks exact sensor exposure rates and native POD formats without Proper,
-  GPU imports or a core. The optional CPU selector
-  `test/external_pupil_owner_preparation.jl` checks actual monochromatic,
-  finite-channel and chopped preparation with AOS/HIL/Proper. Keep both selectors
-  outside the core suite, which must not load optional science packages.
 - Optical publication and runner unit checks now live in
   AdaptiveOpticsSimPipeWireHIL's `test/optical_exposure_publication.jl` and
-  `test/external_pupil_execution.jl`. RTC retains configuration/admission and
-  private-core integration selectors. HIL receives prepared AOS objects and
-  owns scientific cursor, warmup, reset, pacing and completed-exposure batching;
-  it must not import RTC configuration or bootstrap implementations.
+  `test/external_pupil_execution.jl`. Its
+  `test/external_pupil_stream_formats.jl` checks exact exposure rates and compact
+  metadata. RTC retains cold configuration export and
+  calibration selectors. HIL owns scientific cursor, warmup, reset, pacing and
+  completed-exposure batching.
+  RTC publishes the source-control and bootstrap interfaces for external
+  providers that implement the managed source contract.
 - `test/simulation_export.jl` retains schema-1 lockstep export and relocation.
   `test/simulation_optical_export.jl` checks schema-2 external/clocked graphs,
   seeded detector/chopped trajectories, cold Proper loading, actual source

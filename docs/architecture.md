@@ -273,25 +273,9 @@ define application configuration, calibration bindings and one-shot deployment
 and control commands. The GUI observes these owners and submits operator
 requests.
 
-Selected on 2026-10-21, cold simulator settings management is a narrow
-application-replacement operation. Plants declare immutable defaults and JSON
-Schema metadata for their startup settings. A separate headless management
-interface describes that saved configuration and accepts a candidate for a
-systemd-owned, finite one-shot deployment job. The job prepares the candidate
-using the pinned application environment before requesting any old-session
-effect. It then uses the existing native RTC Quit/Status/Start controls
-and ordinary installation/admission path. Management messages carry candidate
-configuration and deployment receipts; they do not proxy live Start, Stop,
-Reset, properties, parameters or authoritative status. The artifact/catalog
-management interface above is unchanged.
-
-The GUI renders the declared settings in the simulator panel's Settings area.
-It does not write configuration files, prepare science, stop owners or manage
-links. A cold replacement resets scientific/controller state and reloads saved
-startup configuration; preserving unsaved runtime changes through a checkpoint
-remains deferred. The old saved application and operation receipts remain
-available for explicit recovery. GUI exit ends observation of an accepted job,
-without cancelling it or authorizing a retry.
+Standalone HIL owns simulation startup configuration and execution. The RTC
+management endpoint handles the artifact catalog. The earlier cold replacement
+service and its GUI request domain are retired.
 
 ```mermaid
 flowchart LR
@@ -617,8 +601,9 @@ science topology remains unchanged, including extrapolation, limits and clipping
 feedback. Detector backgrounds, Classic sensing references and Copper's PDM
 flat follow the simulated plant as specified by RTC-DEV-027. A simulator backend
 is selected independently of the RTC graph owner.
-CPU, CUDA and AMDGPU select explicit AOS execution targets; an unavailable
-selected device fails preparation rather than falling back to CPU.
+CPU, CUDA and AMDGPU select explicit AOS execution targets. An unavailable
+selected device fails preparation. HIL is the simulation process. RTC's
+cold authoring and calibration tools may resolve the same scientific assets.
 
 In the selected workstation session integration, AOS HIL is an optional
 instrument provider that becomes a required session participant when selected.
@@ -1109,10 +1094,9 @@ Each process declares native `data-loops` by their existing PipeWire loop names
 and optional framework `workers` by role. All assigned CPUs must belong to that
 process's CPU envelope. The builder writes each process's affinity and priority
 into its own native context. Application owners explicitly select `kind: jfg`
-or `kind: aos`; shared launcher adapters derive Julia thread counts and worker
-arguments. JFG's ordered `workers.julia` starts with the process leader CPU.
-AOS's `workers.pipewire` places its PipeWire loop; optional
-`workers.optical-diagnostics` places diagnostics separately from its source thread.
+to derive Julia thread counts and graph worker arguments. Ordered `workers.julia`
+starts with the process leader CPU. External providers configure their own
+workers and use the process placement declared for their role.
 Application role names and executable strings do not select adapters. The shared
 core's `rtc-data-loop` carries control-path data; `telemetry-loop` serves monitoring
 queue outputs. Native loop names are local to their process, not shared threads.

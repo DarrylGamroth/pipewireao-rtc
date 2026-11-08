@@ -1,7 +1,7 @@
 # Local RTC management endpoint
 
 Selected implementation contract, 2026-11-03. Implements the agreed RTC-owned
-management boundary alongside RTC-ARCH-026 and RTC-DEV-030/031. Management is
+management boundary alongside RTC-ARCH-026 and RTC-DEV-030. Management is
 local Linux IPC; all live controls/status remain on their existing typed native
 interface. It is not a new session authority or remote gateway.
 
@@ -133,19 +133,14 @@ request ID for deliberate recovery through owner tooling.
 
 The RTC owner installs/activates units; GUI clients never run systemctl or a
 helper command.
-When upgrading an existing installation, select its existing configuration and
-simulator roots in `ManagementCLI.install`; the configuration root selects the
-artifact catalog, while the management state root holds durable operation
-receipts. Former GUI root overrides are not migrated or merged
-automatically; root selection and any reconciliation are owner operations. The native companion accepts trusted owner options (`--socket`, `--state-root`,
-`--configuration-root`, `--worker-argv`, `--operation-timeout`,
-`--describe-timeout`, `--idle-timeout`) for socket,
-worker argv, store/state roots and deadlines. Worker argv is a JSON argument
-array supplied by the owner, never a client field. Production installation uses
-the current Julia executable and selected tooling project. Reuse existing native
-GIO/WirePlumber JSON facilities; do not revive the retired Rust RTC coordinator.
+When upgrading an existing installation, select its existing artifact catalog
+and management state roots in `ManagementCLI.install`. Management state holds
+the catalog operation receipts. The companion accepts trusted installation
+options for the socket, worker argv, catalog/state roots and deadlines.
+Production installation uses the current Julia executable and selected
+tooling project.
 
-The legacy Julia stdio CLIs remain supported for direct owner tools. Migrated GUI
+The catalog's Julia stdio CLI remains available to direct owner tools. Migrated GUI
 clients use only the endpoint and ignore the former helper command/root variables;
 there is no automatic fallback. Missing/incompatible endpoints make optional
 management unavailable while native observation/control remain independent.

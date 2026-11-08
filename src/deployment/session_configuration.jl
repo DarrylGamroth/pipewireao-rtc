@@ -51,10 +51,6 @@ function prepare_pupil_output!(application, spec, files, prefix)
     get(simulation, "version", nothing) in (3, 5) ||
         throw(ArgumentError("pupil_output requires version 3 or 5"))
     role = spec["source-owner"]
-    owner = only(filter(owner -> owner["role"] == role, spec["owners"]))
-    "--pupil-output-cpu" in owner["argv"] && "--threads=3,0" in owner["argv"] || throw(
-        ArgumentError("pupil_output requires a dedicated pupil-output worker placement")
-    )
     Base.require(Main, :AdaptiveOpticsSim)
     Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
     plant = simulation["plant"]

@@ -821,6 +821,10 @@ and validate encoding, order and unit conversion against a direct oracle.
 
 ### RTC-DEV-025 — Acknowledged simulator admission and controls
 
+This section applies to a source admitted through a managed RTC profile. The
+provider owns the process-side bootstrap and SourceControl implementation.
+RTC owns admission, links and ordering across the declared endpoints.
+
 The source owner MUST warm and reset before reporting prepared, connect held,
 and publish no frame before explicit release following effective placement and
 the headless RTC admission acknowledgement. One frame and same-sequence command MAY
@@ -1172,10 +1176,9 @@ on public PipeWire owner nodes. JSON embedded in a POD MUST NOT be treated as
 native serialization. Saved configuration and scientific artifacts MAY retain
 JSON; their existence MUST NOT substitute for a fresh live completion.
 
-Cold application replacement under RTC-DEV-031 is deployment management, not
-a second live-control endpoint. Its candidate documents and saved job receipts
-MAY use JSON. Every live session effect and authoritative session observation
-within that operation MUST still use this native contract.
+The standalone simulator reads its own startup configuration. A provider
+participating in a managed RTC session MUST use the declared native bootstrap
+and live-control contracts.
 
 Each live authority MUST have one owner. The headless RTC application MUST own
 session lifecycle and admission; FGN/JFG and AOS MUST retain their owner-local scientific
@@ -1249,6 +1252,10 @@ Classic/Copper functional, scientific and allocation gates remain distinct from
 CPU transport tests or host real-time qualification.
 
 ## RTC-DEV-031 — Cold simulator configuration replacement
+
+Status: retired with the RTC simulator launcher. The clauses below record the
+former managed replacement contract. The artifact catalog remains available
+through the local management endpoint.
 
 The local [management endpoint](MANAGEMENT_ENDPOINT.md) is an RTC-owned client
 access boundary for the tooling below. It does not replace native live controls

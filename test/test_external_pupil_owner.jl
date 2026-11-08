@@ -55,31 +55,6 @@ const C = PipeWireAORTC.Common
         C.write_json(config, cuda)
         @test_throws ArgumentError Owner.configuration(config)
         C.write_json(config, document)
-        events = Symbol[]
-        args = [
-            "--config",
-            config,
-            "--remote",
-            "/tmp/external-pupil-test",
-            "--control-node",
-            "optical-control",
-            "--bootstrap-node",
-            "rtc.bootstrap.optics",
-            "--bootstrap-instance",
-            "7",
-        ]
-        with_owner = (f, options) -> begin
-            push!(events, :preparing)
-            f(merge(options, (; owner_check = () -> nothing)))
-        end
-        @test Owner._main(
-            args;
-            with_owner,
-            load_science = () -> push!(events, :science),
-            load_proper = () -> push!(events, :proper),
-            run = options -> push!(events, :run),
-        ) == 0
-        @test events == [:preparing, :science, :proper, :run]
     end
     @test all(
         id ->

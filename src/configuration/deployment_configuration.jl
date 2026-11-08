@@ -1045,6 +1045,10 @@ function validate_owner_argv(argv::AbstractVector)
         1 <= length(argv) <= 256 && all(valid_argv_argument, argv) && !isempty(argv[1]),
         "owner argv must be a nonempty bounded string list",
     )
+    require(
+        !any(arg -> occursin(r"\bAOSOwner\s*\.\s*main\b", arg), argv),
+        "AOSOwner.main has been retired. Export the simulation for AdaptiveOpticsSimPipeWireHIL and launch it separately.",
+    )
     return nothing
 end
 

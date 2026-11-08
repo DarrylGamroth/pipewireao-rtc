@@ -19,54 +19,24 @@ end
             "leader-cpu" => 4,
             "workers" => Dict("julia" => [4, 5, 6]),
         ),
-        "plant" => process(Dict("pipewire" => [3], "optical-diagnostics" => [2])),
     )
     spec = Dict(
         "owners" => [
             owner("jfg", "controller-a"),
             owner("jfg", "controller-b"),
-            owner("aos", "plant"),
         ],
     )
     E.prepare_owner_scheduling!(spec, Dict("scheduling" => Dict("processes" => processes)))
-    a, b, plant = spec["owners"]
+    a, b = spec["owners"]
     @test !haskey(a, "kind")
     @test "--threads=2,0" in a["argv"]
     @test a["argv"][(end-1):end] == ["--pin-cpus", "3,2"]
     @test "--threads=3,0" in b["argv"]
     @test b["argv"][(end-1):end] == ["--pin-cpus", "4,5,6"]
-    @test plant["argv"][(end-3):end] ==
-        ["--pipewire-cpu", "3", "--optical-diagnostics-cpu", "2"]
-    @test isempty(plant["environment"])
-    @test "--threads=2,0" in plant["argv"]
-    pupil = owner("aos", "plant")
-    E.owner_scheduling!(
-        Val(:aos),
-        pupil,
-        process(
-            Dict("pipewire" => [3], "optical-diagnostics" => [2], "pupil-output" => [4])
-        ),
-    )
-    @test "--threads=3,0" in pupil["argv"]
-    @test pupil["argv"][(end-1):end] == ["--pupil-output-cpu", "4"]
-    for cpu in (2, 3)
-        @test_throws ArgumentError E.owner_scheduling!(
-            Val(:aos),
-            owner("aos", "plant"),
-            process(
-                Dict(
-                    "pipewire" => [3], "optical-diagnostics" => [2], "pupil-output" => [cpu]
-                ),
-            ),
-        )
-    end
     for (kind, workers) in (
         ("jfg", Dict("julia" => [3])),
         ("jfg", Dict("julia" => [2, 3])),
         ("jfg", Dict("unknown" => [3, 2])),
-        ("aos", Dict("optical-diagnostics" => [2])),
-        ("aos", Dict("pipewire" => [2, 3])),
-        ("aos", Dict("pipewire" => [2], "optical-diagnostics" => [3])),
         ("unknown", Dict()),
     )
         @test_throws ArgumentError E.owner_scheduling!(
@@ -77,11 +47,6 @@ end
     append!(declared["argv"], ["--pin-cpus", "3,2"])
     @test_throws ArgumentError E.owner_scheduling!(
         Val(:jfg), declared, process(Dict("julia" => [3, 2]))
-    )
-    declared = owner("aos", "instance")
-    declared["environment"]["PIPEWIREAO_OPTICAL_CPU"] = "2"
-    @test_throws ArgumentError E.owner_scheduling!(
-        Val(:aos), declared, process(Dict("pipewire" => [3], "optical-diagnostics" => [2]))
     )
     missing = owner("jfg", "instance")
     delete!(missing, "kind")
@@ -132,8 +97,6 @@ end
     for (kind, workers) in (
         (:jfg, Dict("julia" => [3, 2])),
         (:jfg, Dict("julia" => [3, 2, 4])),
-        (:aos, Dict("pipewire" => [2])),
-        (:aos, Dict("pipewire" => [2], "pupil-output" => [4])),
     )
         explicit = owner(string(kind), "science")
         explicit["argv"] = [

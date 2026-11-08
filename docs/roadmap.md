@@ -12,29 +12,23 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
-### External-pupil and clocked-optical extraction — 2026-11-07
+### Standalone simulator ownership — 2026-11-07
 
-The user selected whole-runner extraction into AdaptiveOpticsSimPipeWireHIL.
-HIL now accepts prepared AOS graphs/contracts and owns warmup, scientific
-sequence/generation, reset, pacing, command draining and exposure publication.
-RTC retains configuration binding and its native admission/source-control
-adapter. The [extraction record](reviews/20261107-hil-extraction/REVIEW.md)
-identifies source commits, dependency floors and verification. The old clocked
-runner file is removed from RTC; production code is reduced by over 500 lines.
-The development cohort is RTC 0.7.2 / HIL 0.5.1 / AOS 0.3.22; these sources are
-not registered releases. Installed deployments remain unchanged.
+AdaptiveOpticsSimPipeWireHIL owns simulation execution and startup settings.
+RTC retired its lockstep, external-pupil and pupil-source launch paths, their
+workers and timing recorder, and the simulator settings/rebuild service.
+Cold graph resolution, export of portable HIL bundles, calibration preparation
+and exact PipeWire endpoint contracts remain in RTC. The
+[application migration](HIL_CONFIGURATION.md#migrate-an-rtc-application)
+covers existing profiles and independent launch.
 
-The [standalone HIL configuration](HIL_CONFIGURATION.md) now exports resolved
-lockstep graphs and schema-2 external-pupil/clocked-optical compositions with
-exact typed bindings and compiled model snapshots. HIL loads the relocated
-product without RTC or the original authoring tree. The unresolved
-instrument/settings compiler remains a cold export responsibility; no resolver
-is copied into HIL. Public AOS boundary-contract queries validate actual source
-and detector schemas, and one public HIL execution-properties query serves both
-the standalone runner and RTC. The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
-records CPU/CUDA and private-core evidence. The user selected finishing this
-configuration before the HEART plugin migration; current-cohort protocol
-interoperability remains deferred. Correlation requirements are unchanged.
+The user-selected runtime boundary supersedes the initial extraction's
+RTC launch adapter. Managed source profiles still require providers of the
+declared bootstrap and SourceControl protocols. RTC-DEV-025 continues to
+govern admission for those profiles. Existing sealed profiles use their
+pinned version. The [initial extraction record](reviews/20261107-hil-extraction/REVIEW.md)
+and [standalone optical export record](reviews/20261107-hil-optical-configuration/REVIEW.md)
+retain the earlier implementation and qualification scope.
 
 ### Remaining graph-host scope — 2026-11-07
 

@@ -190,25 +190,16 @@ end
     )
 end
 
-@testset "auxiliary source authoring requires AOS adapter and SourceControl" begin
-    process = Dict("workers" => Dict("pipewire" => [2]), "leader-cpu" => 1)
+@testset "auxiliary source authoring uses the declared SourceControl protocol" begin
+    process = Dict("workers" => Dict(), "leader-cpu" => 2)
     profile = Dict("scheduling" => Dict("processes" => Dict("optical" => process)))
     source = source_declaration("optical")
-    source["kind"] = "aos"
+    argv = copy(source["argv"])
     spec = Dict("owners" => [source], "auxiliary-source-owners" => ["optical"])
     @test E.prepare_owner_scheduling!(spec, profile) === spec
-    @test !haskey(source, "kind") && "--pipewire-cpu" in source["argv"]
-    for kind in (nothing, "jfg")
-        source = source_declaration("optical")
-        kind === nothing || (source["kind"] = kind)
-        @test_throws ArgumentError E.prepare_owner_scheduling!(
-            Dict("owners" => [source], "auxiliary-source-owners" => ["optical"]), profile
-        )
-    end
-    source = source_declaration("optical")
+    @test source["argv"] == argv
     source["kind"] = "aos"
+    @test_throws ArgumentError E.prepare_owner_scheduling!(spec, profile)
     delete!(source, "control-protocol")
-    @test_throws ArgumentError E.prepare_owner_scheduling!(
-        Dict("owners" => [source], "auxiliary-source-owners" => ["optical"]), profile
-    )
+    @test_throws ArgumentError E.prepare_owner_scheduling!(spec, profile)
 end

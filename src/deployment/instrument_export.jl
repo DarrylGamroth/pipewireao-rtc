@@ -510,7 +510,6 @@ function prepare(
     D.registered_application(authoring) ||
         throw(ArgumentError("instrument application requires a registered RTC dependency"))
     spec = profile!(substitute(authoring, bindings), profile, bindings)
-    uses_aos = any(owner -> get(owner, "kind", nothing) == "aos", spec["owners"])
     prepare_owner_scheduling!(spec, profile)
     mkpath(dirname(destination))
     staging = mktempdir(dirname(destination); prefix = "instrument-export-")
@@ -564,8 +563,6 @@ function prepare(
                 configuration,
             )
             simulation_override!(application, profile)
-            selected = D.decode(joinpath(application, "simulation.conf"), prefix)
-            uses_aos && prepare_backend_environment!(application, selected["backend"])
         end
         for backend in runtime_backends(profile)
             prepare_backend_environment!(application, backend; required = true)

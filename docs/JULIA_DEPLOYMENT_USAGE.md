@@ -213,113 +213,10 @@ new session owner or a prerequisite for native GUI operation.
 
 ## Optional simulator wavefront images
 
-### Headless RMS measurements
-
-With `optical_observation = true` and an atmospheric graph declaring both
-`:atmosphere_opd` and `:pupil_opd`, the shared observer publishes
-`simulator-wavefront-rms` (media
-`wavefront-rms`). Its row-major F32 array has shape `(1, 2)` and schema
-`org.calculon.ao.pupil-opd-rms.nm.f32/1`. Zero-based channel 0 is uncorrected
-atmospheric pupil OPD RMS; channel 1 is corrected pupil OPD RMS. Both are spatial
-population RMS in nm after subtracting pupil piston, using the same transmitting
-pupil mask; tip/tilt remain included. This comparison includes all modeled
-corrections in `:pupil_opd`. The atmospheric reference excludes any additional
-non-atmospheric aberrations a future plant might introduce.
-
-The producer captures both graph outputs before advancing the model. One bounded
-cohort stays owned until both snapshots are transferred and consumed. Both RMS
-values travel in one sample with the originating sequence, PTS and acquisition
-generation, so independent observer drops cannot mispair the curves. No zero-DM
-run, changed controller gain or second atmosphere simulation is used. The RMS
-calculation runs in the optional headless optical worker, not the GUI or required
-controller callback. Scripts and GUI clients can observe the same measurement
-stream through an ordinary capacity-one copy/drop-oldest queue.
-
-The RTC declares the immutable `pipewireao.ndarray.channels` source metadata for
-this two-value packet. Its zero-based channels are
-`uncorrected_atmosphere_rms` (title “Uncorrected atmosphere RMS”) and
-`corrected_pupil_rms` (title “Corrected pupil RMS”); both declare `nm OPD`.
-These names identify the existing values without changing their calculation or
-frame representation. A graph without an atmospheric reference has no RMS
-source and publishes no channel catalog.
-
-Graphs without an atmospheric output retain their ordinary optical images and
-do not advertise this comparison stream. No uncorrected value is synthesized.
-The diagnostic is sampled at most 20 times per wall-clock second and is not a
-full-rate telemetry recorder or cadence guarantee. Generic GUI time-series views
-can select the declared channels. Source Header PTS gives wall-clock elapsed
-time; a declared fixed model period times Header sequence differences gives
-simulation elapsed time. The CPU development session advances model time more
-slowly than wall time; the graph must label which basis it uses.
-
-### Pupil image
-
-`optical_observation = true` enables the shared AOS optical observer. It uses
-the declared guide-sensor aperture and the completed `pupil_opd` graph output;
-the GUI needs no instrument-specific rendering code. Alongside the ideal
-focal photon-rate image, it publishes `simulator-residual-wavefront` with media
-name `residual-wavefront` and schema
-`org.calculon.ao.residual-pupil-opd.nm.f32/1`.
-
-The optional `imaging` section in `simulation/definition.yaml` selects a named
-entry from `sources` for ideal direct imaging. It can set `zero_padding` (integer
-1–16; default 2). For example:
-
-```yaml
-sources:
-  science:
-    source_band: H
-    source_magnitude: 2.0
-    source_wavelength_m: 1.65e-6
-    source_separation_arcsec: 0.0
-    source_position_angle_deg: 0.0
-imaging:
-  source: science
-  zero_padding: 2
-```
-
-Source photometry and wavelength are independent of the guide sensor. Imaging
-uses the same completed pupil OPD, so its source direction must match the guide
-source; a different line of sight requires a separately rendered pupil OPD.
-Finite source height is not admitted by this declaration. With no `imaging`
-section, the observer retains the exact guide source and padding 2. Both modes
-publish cell-integrated focal photon rate, without detector exposure/noise,
-long-exposure accumulation or a Strehl estimate. Cold session contracts use the
-selected padding, so rebuilding updates ordinary focal-image port shapes.
-
-The Float32 image contains pupil OPD in nm after subtracting the mean over
-transmitting pupil samples. Tip/tilt remain included. Obscured and outside-pupil
-pixels contain NaN. The generic ndarray viewer excludes these pixels from
-scaling and measurements; its whole-image RMS is therefore the pupil
-piston-removed wavefront error, with uniform sample weighting. This is simulated
-optical truth, not a wavefront reconstructed from the detector.
-
-Both images originate from the same bounded snapshot and carry its acquisition
-generation, sequence and original WFS PTS. Each image source may drop snapshots
-independently. Slow or absent GUI consumers cannot gate the WFS/control exchange.
-Observation is capped at 20 snapshots per wall second and runs outside PipeWire
-callbacks; the diagnostic is not a recording or timing qualification.
-
-The application declares its ordinary image queue, source/sink shapes and link,
-then places an existing ndarray view in the Simulator navigation group:
-
-```toml
-[[view]]
-id = "residual-wavefront"
-kind = "ndarray"
-group = "simulator"
-title = "Residual wavefront · nm OPD"
-source = { node_name = "simulator-residual-wavefront-queue-output", media_name = "residual-wavefront" }
-
-[view.egui]
-open_on_start = true
-preserve_square_elements = true
-colormap = "viridis"
-measurements = { scope = "whole_image", selected = ["root_mean_square"] }
-```
-
-The view group is presentation only. Array transport, metadata, rendering and
-measurement selection use the existing interfaces for every simulator.
+An external provider can publish the declared focal photon-rate,
+residual-wavefront and wavefront-RMS ports. RTC resolves their declared shapes
+and schemas during export. The simulator-specific publisher has been retired.
+Generic observation clients can still subscribe to the same PipeWire ports.
 
 ## REVOLT instrument entrypoints
 
@@ -744,26 +641,11 @@ Set startup values in the standalone HIL configuration and launch the selected
 simulation using its own project. RTC's management service handles the artifact
 catalog. The former simulator settings and rebuild request domain is retired.
 
-## Managed external-pupil applications
+## External-pupil applications
 
-`AOSOwner.main` accepts a version-4 `mode: external-pupil` configuration through
-its ordinary native bootstrap. The strict fields are `version`, `mode`,
-`plant: {definition, settings, chopping?}`, `pupil_node`, `sensor_nodes`, `backend`, `device`,
-`instrument`, `rtc_configuration`, `calibration_identity` and
-`prescription_identity`. `sensor_nodes` names every physical optical path.
-The instrument has zero deformable mirrors and empty mirror controls; it does
-not acquire a synthetic DM or controller command boundary. CPU uses device 0;
-AMDGPU uses an explicit positive device ordinal. Export prepares port contracts
-on the CPU, without importing a GPU package.
-
-The source publishes Preparing before optional scientific imports, then Prepared
-and Connected through the existing bootstrap. Connected starts held. Native
-SourceControl run/pause/reset and bootstrap Quit retain their existing meanings.
-Reset requires a held source and serialized input processing; it clears pending
-transport admission, partial exposures and detector history, increments output
-generation and permits a new input domain. No second session supervisor is used.
-For a composed session the native authority holds all sources before reset,
-starts consumers, then auxiliary sources, and starts the primary source last.
+Use [standalone HIL configuration](HIL_CONFIGURATION.md) to launch a
+mirror-free optical simulation in its own process. RTC can resolve optical
+port metadata during export or calibration preparation.
 
 `InstrumentExport.external_pupil_port_contracts(definition; settings)` supplies
 cold pupil/sensor shape, element type and schema declarations. The pupil is one
@@ -792,7 +674,7 @@ plant:
 
 The ordinary branch graph is fringed. AOS selects the two static graphs at its
 model exposure boundaries and reports the completed exposure's actual optical
-kind. RTC maps that kind through the explicit trigger polarity into Acquisition
+kind. The HIL publisher maps that kind through the explicit trigger polarity into Acquisition
 Version 3. It never derives optical kind from received-frame parity. Missing
 whole windows remain visible: for these chopped outputs only, acquisition and
 Header sequence equal `pts / duration + 1`, requiring aligned, nonnegative model
@@ -816,120 +698,16 @@ preparation does not qualify cadence, GPU graph execution or a coupled loop.
 
 ### Clocked optical applications
 
-Version 6, `mode: clocked-optical`, advances a source graph on model time and
-feeds its entrance-pupil OPD and physical mirror OPD to separate optical planes.
-It accepts a native Float32 mirror command and publishes completed optical
-exposures. The static pupil amplitude is an explicitly typed, hashed FITS
-binding; `source_pupil_axes` declares the entrance OPD transform and
-`source_dm_axes` declares the mirror raster axes. The owner checks the mirror
-port schema, units and command limit against the source graph and RTC mirror
-controls, and checks each optical mirror plane's schema, shape and sampling.
-Command and sensor streams use Header plus independently negotiated SPA records.
-Each port profile declares the records it requires; commands need no invented
-camera identity. Absolute event times use REALTIME by default, with explicit
-validated TAI available. Model time and Header PTS keep their own meanings.
-Physical acquisition identity and exposure duration are independent of Header
-publication sequence and PTS. Sensor optical and electrical classifications are
-explicit, independent facts; the former metadata-version selectors are rejected.
+Use [schema 2](HIL_CONFIGURATION.md#clocked-optical-source) to drive a source
+graph from a declared Float32 command and publish completed sensor exposures.
+The standalone process owns timing, data buffers and optical execution. Use
+the declared PipeWire link endpoints and compact metadata profiles.
 
-Version-4 external-pupil and version-6 clocked optical applications always
-publish typed exposure facts. The former `sensor_buffer_properties` profile
-opt-in is rejected. This changes transport metadata without rewriting frozen
-optical definitions, plant settings, exposure rates or calibration receipts.
-
-A simulation definition may list `binding_files` relative to the instrument
-root. Each YAML file contributes named bindings; duplicate names are rejected.
-Compiled optical model paths remain package-relative and are verified against
-the declared content hash before preparation. Choose a new cold configuration
-and matching calibration when changing a model or its bindings.
-
-The focused offline checks use an environment containing the optional science
-packages, with no PipeWire service or accelerator required:
-
-```sh
-julia --project=/path/to/science-env test/test_clocked_plane_contract.jl
-julia --project=/path/to/science-env test/calibration_optical.jl
-julia --project=/path/to/science-env test/calibration_chopped.jl
-julia --project=/path/to/science-env test/calibration_command_domain.jl
-```
-
-### Managed clocked pupil source
-
-A version-5 `mode: pupil-source` simulation configuration selects a named,
-non-HIL AOS graph through `plant: {definition, graph, settings}`. It declares
-`command_input`, the physical `mirror`, integer model `rate`, independent
-`pacing_rate_hz`, and explicit `backend`/`device`. The ordinary exporter fills
-`instrument`, `rtc_configuration`, `calibration_identity` and
-`prescription_identity` from the selected source and RTC declarations. The
-command input must bind that existing physical mirror's `pdm_command` in metres
-OPD. Its count and command-order identity come from the physical description;
-they are not inferred from another stream. Its array binding must be exclusive
-to that input, including graph parameters, delayed initial values and node
-construction bindings. The declared pupil is either that
-mirror's direct surface OPD, or the existing additive pupil composition with a
-direct mirror surface input and an independent residual dependency closure,
-including delayed links. Scaling, transpose or further propagation on that
-route requires separate calibration. Exact transfer checks concern the physical
-DM operator; residual-plus-surface subtraction is subject to Float32 rounding.
-No camera, full GPI frontend or CAL2 mirror is created.
-
-The existing AOS owner requires `--physical-offsets PATH`, three default Julia
-threads and an explicitly placed pupil-output worker. It owns the named graph,
-model clock and physical command buffer. A version-2 receiver contract contains
-only `version`, `command_limit_m`, `projection`, `inverse`,
-`calibration_identity`, `command_order` and `branches`. P/Q use the existing
-hashed, typed FITS descriptors; branch schema, explicit disjoint modes, command
-and coefficient limits, model age, wall silence and optional acquisition version
-retain their version-1 meanings. No C matrix or receiving graph parameter is
-invented. Loading this adapter needs HIL, without loading FGA, FGP or JFG.
-
-Preparing warms a real graph step and pupil packing without publication, then
-resets the graph, command and model phase. Ready holds zero. Run polls each
-branch without waiting, expires invalid contributions, sums the admitted
-absolute vectors on the source task and advances its own model clock. Missing
-controller output, including chopped priming, does not stall the source.
-Snapshots carry the actual source sequence and model interval; a busy serializer
-may leave a visible publication gap. Pause freezes new steps at its acknowledged
-committed cursor. An already committed snapshot or packet at or below that
-watermark may finish; Run resumes the same generation and clock. Held Reset
-flushes inputs/output, fences old branch cohorts, clears commands and starts a
-new source generation at model time zero. Quit closes the existing owned streams
-and worker. This is a simulation owner, not physical device qualification.
-
-Optional `applied_command_observation: true` reuses the existing
-`simulator-<mirror>-applied` source and
-`pipewireao/applied-dm-command-opd-um-f32/1` schema. After each successful model
-step it publishes the adopted total in micrometres OPD with that tick's actual
-model interval and source identity. A preallocated conversion and owned staging
-copy do not borrow a concurrently changing command. Its fixed three-buffer pool
-supports the existing capacity-one copy queue; absent or slow observers never
-gate the model. This observes model input adoption, not mechanical settling.
-
-The v4 external-pupil and v6 clocked optical owners default to three sensor
-buffers (`sensor_buffers`, integer 2:64).
-This matches a capacity-one observation queue's retained sample and two handoff
-buffers. Explicit two-buffer settings remain available for compatible consumers;
-every connected consumer must accept the selected fixed count. The pupil input
-and scientific pupil output pools keep their existing allocation contracts.
-
-The v4 external-pupil owner also admits an explicitly selected CUDA device
-(ordinal zero or higher); AMDGPU ordinals start at one and CPU uses zero.
-Metadata parsing and hash checks do not import accelerators. Backend availability
-and the actual optical/DM algorithms remain execution-time checks.
-
-Shared `InstrumentConfiguration.prepare_system` and `prepare_external_pupil`
-select stream execution on CPU and captured execution on accelerators. Every
-optical variant and post-exposure response uses that policy. An explicit
-non-captured accelerator policy or unsupported capture node fails preparation;
-there is no stream fallback. CPU reference policies and AOS's lower-level API
-remain available independently.
-
-Read-only `aos.simulation.execution` and `aos.simulation.captured-node-count`
-source properties report the actual prepared policy and captured node count.
-External sensor nodes report these as `optics.execution` and
-`optics.captured-node-count`; chopped variants use `optics.unfringed.*`, and
-post-exposure response graphs use `detector.*`. These properties come from AOS's
-public prepared-graph queries, not the backend label, and are not writable controls.
+Existing version-5 pupil-source assets can still be read for cold
+physical-offset and calibration preparation. The standalone optical modes do
+not provide that profile's coupled physical-offset receiver and scientific
+pupil output as a managed source. Any external provider used for that profile
+must implement its declared bootstrap, SourceControl and data port contracts.
 
 ### Sealed composition and feedback preparation
 

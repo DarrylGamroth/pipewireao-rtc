@@ -453,6 +453,16 @@ function application_spec()
     )
 end
 
+@testset "deployment rejects the retired simulator command" begin
+    for launcher in (
+        "using PipeWireAORTC; PipeWireAORTC.AOSOwner.main(ARGS)",
+        "using PipeWireAORTC: AOSOwner; AOSOwner . main(ARGS)",
+    )
+        @test_throws D.DeploymentError D.validate_owner_argv(["julia", "-e", launcher])
+    end
+    @test D.validate_owner_argv(["julia", "external-owner.jl"]) === nothing
+end
+
 @testset "instrument exporter profile bindings" begin
     profile = export_profile()
     bindings = E.profile_bindings(profile, "/julia/bin/julia")

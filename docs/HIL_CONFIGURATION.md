@@ -150,15 +150,23 @@ identify host timestamp readings; they do not establish clock synchronization
 or physical acquisition time. Execution/capture properties are refreshed from
 actual prepared owners, including after changing the compute target.
 
-## SPA protocol compatibility and verification
+## Migrate an RTC application
 
-SPA plugins own protocol packetization and decoding. Their schemas, encoding,
-units, actuator order, metadata requirements and clock meaning must agree with
-the simulation ports. The inspected HEART revision `9aeea533` advertises retired
-monolithic acquisition metadata, and its UDP protocol does not preserve the
-complete identity/exposure facts required by modern lockstep HIL. Its migration
-and an actual protocol roundtrip remain deferred by the user's selected order.
-No correlation requirement is weakened or fabricated here.
+Export the simulation from the selected instrument declaration before changing
+its application profile. Use the generated manifest in a separate HIL project
+with the selected science dependencies. Match the remote, node names, shapes,
+element types, schemas, command units and metadata to the receiving RTC profile
+or SPA plugin. The session authority owns links and admission.
+
+RTC export rejects application commands that invoke the retired `AOSOwner.main`.
+Remove that command and its `kind: aos` scheduling declaration from migrated
+profiles. A managed `source-owner` or auxiliary source still needs a provider
+that implements its declared bootstrap and SourceControl interfaces. The
+standalone HIL runner's callback API is a process-local control boundary.
+Existing sealed managed profiles require their pinned RTC version until an
+external provider for those controls is selected. Version-5 pupil-source
+composition also needs an external provider for its coupled offset and pupil
+ports. Read existing calibration inputs through the cold asset reader.
 
 The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
 records exact source cohorts and CPU/CUDA, relocation, schema and private-core

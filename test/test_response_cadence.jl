@@ -13,8 +13,6 @@ const X = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
     ).config
     @test X.validate_sample_period(config, 0.0005) === nothing
     @test_throws ArgumentError X.validate_sample_period(config, 0.001)
-    @test X.validate_node_timing(config, (; period_ns = 500000)) === nothing
-    @test_throws ArgumentError X.validate_node_timing(config, (; period_ns = 1000000))
 end
 
 @testset "configured response precedes its optical consumer" begin
