@@ -175,19 +175,6 @@ function source_control_pod(;
         ),
     )
 end
-function run_status(token, state; result = Int32(0))
-    prefix = "pipewireao.run-control."
-    Pod(
-        PipeWireAO.props_param(
-            SPA.Props([
-                prefix * "version" => Pod(Int32(1)),
-                prefix * "completed-token" => Pod(Int64(token)),
-                prefix * "result" => Pod(result),
-                prefix * "actual-state" => Pod(state),
-            ]),
-        ),
-    )
-end
 @testset "session native owner correlation and one-shot effects" begin
     runtime = Runtime([
         [capability(; token = Int64(50))],
@@ -232,30 +219,32 @@ end
     runtime.token = typemax(Int64)
     @test_throws ArgumentError next_control_token!(runtime)
 end
-@testset "finite source ACK and report publication" begin
+@testset "finite source operations return one correlated status" begin
     previous = source_control_snapshot(named_values(source_control_pod()), Int64(17))
-    records = control_records(
-        [
-            source_control_pod(;
-                kind = SourceControl.RUN, token = Int64(1), running = true
-            ),
-            run_status(1, "running"),
-        ],
-        Int64(17),
-    )
+    running = source_control_pod(; kind = SourceControl.RUN, token = Int64(1), running = true)
+    records = control_records([running], Int64(17))
     @test matching_source_control_record(records, :run, Int64(1), "running", previous).running
-    mismatch = control_records(
-        [
-            source_control_pod(;
-                kind = SourceControl.RUN, token = Int64(1), running = true
-            ),
-            run_status(1, "stopped"),
-        ],
-        Int64(17),
-    )
     @test_throws ArgumentError matching_source_control_record(
-        mismatch, :run, Int64(1), "running", previous
+        records, :run, Int64(1), "stopped", previous
     )
+    properties = Dict(
+        "pipewireao.source-control.instance" => "17",
+        "pipewireao.source-control.owner-pid" => "19",
+    )
+    for (kind, receipt, expected_generation) in (
+        (:run, running, 1),
+        (:run, source_control_pod(; kind = SourceControl.RUN, token = Int64(1)), 1),
+        (:reset, source_control_pod(;
+            kind = SourceControl.RESET, token = Int64(1), generation = Int64(2)
+        ), 2),
+    )
+        runtime = Runtime([[source_control_pod()], [receipt]]; properties)
+        source = SourceControlBinding(UInt64(1), UInt32(19), Int64(17), nothing)
+        status = source_operation!(runtime, job(runtime), source, kind; running = receipt === running)
+        @test status.generation == expected_generation
+        @test status.details.token == 1
+        @test runtime.mutations == 1 && runtime.queries == 0
+    end
     incomplete = control_records(
         [
             source_control_pod(;

@@ -755,13 +755,6 @@ function matching_source_control_record(
     end
     snapshot.details.kind == expected ||
         throw(ArgumentError("source completion kind mismatch"))
-    if kind !== :query
-        ack = kind === :run ? records.run : records.reset
-        (ack === nothing || ack.token != token) && return nothing
-        ack.result == snapshot.details.result &&
-        (kind !== :run || (ack.state == "running") == snapshot.running) ||
-            throw(ArgumentError("native ACK and source snapshot disagree"))
-    end
     snapshot.generation > previous.generation ||
         (
             snapshot.generation == previous.generation &&
@@ -797,7 +790,7 @@ function node_operation!(runtime, job, handle::UInt64, kind::Symbol, argument = 
     instance =
         raw_instance === nothing ? nothing :
         identity_integer(runtime, handle, "pipewireao.source-control.instance")
-    # Source-control operations additionally require the snapshot/native ACK join.
+    # A managed source acknowledges the applied operation with its cursor.
     if instance !== nothing
         pid = identity_integer(runtime, handle, "pipewireao.source-control.owner-pid")
         0 < pid < typemax(UInt32) || throw(ArgumentError("invalid source owner PID"))
@@ -861,12 +854,9 @@ function source_operation!(
     runtime, job, source::SourceControlBinding, kind::Symbol; running = false
 )
     kind in (:run, :query, :reset) || throw(ArgumentError("invalid acquisition operation"))
-    if kind !== :query
-        source_control_operation!(
-            runtime, job, source, kind, running ? "running" : "stopped"
-        )
-    end
-    snapshot = source_control_operation!(runtime, job, source, :query)
+    snapshot = source_control_operation!(
+        runtime, job, source, kind, running ? "running" : "stopped"
+    )
     validate_source_operation(snapshot, kind, running)
     return snapshot
 end

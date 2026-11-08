@@ -838,7 +838,9 @@ ordering belongs solely to the headless RTC.
 Complete-frame simulator live controls MUST use native SPA `Props` parameters
 on the exact owned source-node incarnation. They MUST retain native Version 1
 run/reset contracts and use versioned source-query and source-snapshot schemas.
-They MUST use bounded prepared storage, positive request tokens, matching
+For Run, Pause and Reset, RTC MUST use the correlated owner-applied source
+status as the completion. Query is an independent request for fresh status.
+These controls MUST use bounded prepared storage, positive request tokens, matching
 owner-applied completions and one finite overall request deadline. Initial
 native-client discovery and static compilation MUST use a separate bounded
 preparation phase while the source is held, before the first real request. This
