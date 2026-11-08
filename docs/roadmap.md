@@ -6,11 +6,20 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-07. This section is the current delivery summary. Later sections
+Updated 2026-11-08. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Managed instrument HIL — 2026-11-08
+
+Classic, GPI2, CAL2 and SPIDERS select the HIL launcher in their instrument
+profiles. The optional HIL extension uses the existing RTC bootstrap and
+SourceControl protocols. The source process prepares the simulation and
+publishes its data Nodes. RTC admits the endpoint set and owns its Links.
+[Managed HIL migration evidence](reviews/20261108-managed-hil/REVIEW.md)
+records the selected development cohort and private-core checks.
 
 ### Standalone simulator ownership — 2026-11-07
 

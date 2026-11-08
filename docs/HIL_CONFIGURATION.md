@@ -158,15 +158,26 @@ with the selected science dependencies. Match the remote, node names, shapes,
 element types, schemas, command units and metadata to the receiving RTC profile
 or SPA plugin. The session authority owns links and admission.
 
-RTC export rejects application commands that invoke the retired `AOSOwner.main`.
-Remove that command and its `kind: aos` scheduling declaration from migrated
-profiles. A managed `source-owner` or auxiliary source still needs a provider
-that implements its declared bootstrap and SourceControl interfaces. The
-standalone HIL runner's callback API is a process-local control boundary.
-Existing sealed managed profiles require their pinned RTC version until an
-external provider for those controls is selected. Version-5 pupil-source
-composition also needs an external provider for its coupled offset and pupil
-ports. Read existing calibration inputs through the cold asset reader.
+For a managed instrument profile, select `kind: hil` and start the HIL package's
+`src/managed.jl` launcher in a separate process. The launcher publishes
+Preparing before loading HIL and AOS. Its optional PipeWireAORTC extension
+accepts the existing sealed `simulation.conf`, the private remote and the
+specified control and bootstrap identities. Cold authoring and calibration preparation use the
+shared configuration APIs. HIL owns simulation execution and publishes the
+data and source-control Nodes. RTC verifies the incarnation, admits the
+endpoint set and creates the Links.
+
+The same device boundary applies to cameras and DMs. A driver publishes the
+Nodes and Ports that carry device data. A filter graph host publishes its graph
+Nodes and Ports. RTC binds the declared endpoints and coordinates lifecycle
+through their controls. A PipeWire `Device` object can describe the physical
+driver's device. Links connect Ports.
+
+The profile keeps its original endpoint names, metadata and source-control
+protocol. A version-5 pupil-source profile supplies the existing
+`--physical-offsets` receiver configuration. The managed HIL extension uses
+that receiver and publishes the scientific pupil and declared applied command.
+The ordinary standalone loader and callback API serve independent consumers.
 
 The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
 records exact source cohorts and CPU/CUDA, relocation, schema and private-core

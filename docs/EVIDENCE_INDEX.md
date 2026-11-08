@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Managed instrument HIL — 2026-11-08
+
+The [migration record](reviews/20261108-managed-hil/REVIEW.md) describes the
+process and control boundaries, the profile migrations and private-core
+verification.
+
 ## Simulator runtime retirement — 2026-11-07
 
 The [retirement record](reviews/20261107-simulator-retirement/REVIEW.md) lists
