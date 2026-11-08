@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Full RTC verification of managed HIL profiles — 2026-11-08
+
+The [full-profile record](reviews/20261108-full-managed-rtc/REVIEW.md) retains
+cold deployment, live registry and Link observations, startup fixes and the
+remaining admission failures.
+
 ## Managed instrument HIL — 2026-11-08
 
 The [migration record](reviews/20261108-managed-hil/REVIEW.md) describes the
