@@ -572,7 +572,7 @@ function _fixed_format(parameter::Pod)
     return SPA.Parameter(SPA.Object(object.type, object.id, properties))
 end
 
-function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
+function _prepare_source!(source::Source, transport, runtime::Bootstrap.Runtime)
     source.bootstrap = runtime
     source.stream = Stream(
         transport.core,
@@ -658,9 +658,25 @@ function _connect_source!(source::Source, transport, runtime::Bootstrap.Runtime)
             source.parameters...,
         ),
     )
-    # Ordinary sparse transport registration; no driver, links, or session decisions.
-    set_active!(source.stream, true)
     return nothing
+end
+
+function _control_endpoint(options, transport, clock, wake)
+    return Endpoint.Endpoint(
+        PROFILE,
+        Command,
+        transport.loop,
+        transport.core,
+        options.control_node,
+        options.control_instance,
+        Connected;
+        clock,
+        publisher = (filter, params) -> begin
+            update_params!(filter, params)
+            notify(wake)
+            nothing
+        end,
+    )
 end
 
 function _completion!(endpoint, ticket, source, result::Int32, message)
@@ -704,6 +720,14 @@ function run_owner(
         ) || throw(
             ArgumentError("parameter data and control endpoint names must be distinct")
         )
+        with_thread_loop_lock(transport.loop) do _
+            for source in sources
+                _prepare_source!(source, transport, runtime)
+            end
+        end
+        precompile(
+            _control_endpoint, (typeof(options), typeof(transport), typeof(clock), typeof(wake))
+        )
         Bootstrap.prepared!(runtime)
         connect_ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.connecting!(
@@ -725,23 +749,9 @@ function run_owner(
         Bootstrap.check_connect!(runtime, connect_ticket)
         with_thread_loop_lock(transport.loop) do _
             for source in sources
-                _connect_source!(source, transport, runtime)
+                set_active!(something(source.stream), true)
             end
-            endpoint = Endpoint.Endpoint(
-                PROFILE,
-                Command,
-                transport.loop,
-                transport.core,
-                options.control_node,
-                options.control_instance,
-                Connected;
-                clock,
-                publisher = (filter, params) -> begin
-                    update_params!(filter, params)
-                    notify(wake)
-                    nothing
-                end,
-            )
+            endpoint = _control_endpoint(options, transport, clock, wake)
             listener = add_listener!(
                 something(endpoint.registry);
                 on_global_added = (registry, object) -> (notify(wake); nothing),
