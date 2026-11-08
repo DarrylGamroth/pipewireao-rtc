@@ -20,7 +20,9 @@ workers and timing recorder, and the simulator settings/rebuild service.
 Cold graph resolution, export of portable HIL bundles, calibration preparation
 and exact PipeWire endpoint contracts remain in RTC. The
 [application migration](HIL_CONFIGURATION.md#migrate-an-rtc-application)
-covers existing profiles and independent launch.
+covers existing profiles and independent launch. The
+[retirement record](reviews/20261107-simulator-retirement/REVIEW.md) records
+the commits and checks.
 
 The user-selected runtime boundary supersedes the initial extraction's
 RTC launch adapter. Managed source profiles still require providers of the

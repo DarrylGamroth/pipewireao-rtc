@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Simulator runtime retirement — 2026-11-07
+
+The [retirement record](reviews/20261107-simulator-retirement/REVIEW.md) lists
+the removed launch paths, preserved contracts, migration limits and
+verification across RTC and standalone HIL.
+
 ## Standalone optical configuration completion — 2026-11-07
 
 The [schema-2 record](reviews/20261107-hil-optical-configuration/REVIEW.md)
