@@ -297,6 +297,10 @@ function check_transport_cleanup(socket, directory, daemon, emergency)
             active.negotiated && !active.pending
         end, pump)
         @test active.id !== nothing && active.negotiated
+        @test find_global(session.registry, peer.id) !== nothing
+        @test !haskey(session.objects, peer.id)
+        @test !haskey(session.objects, active.id)
+        @test all(id -> !haskey(session.objects, id), keys(node_serials))
         pending = owned_link!(session, outputs[2], inputs[2], UInt64(2), destroyed)
         push!(owned, (pending.proxy, pending.listener))
         @test pending.pending && pending.id === nothing

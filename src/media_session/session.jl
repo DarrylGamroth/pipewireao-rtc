@@ -328,7 +328,12 @@ function controller_fact(session, object, info::NodeInfo)
     instance === nothing && return nothing
     pid === nothing && return nothing
     # The advertised PID is checked against the server-owned ClientInfo record.
-    find_object(session, name, pid) === object || return nothing
+    id = _node_client(object)
+    id === nothing && return nothing
+    client = find_object(session, id)
+    client !== nothing && !client.removed && client_pid(client) == pid || return nothing
+    registry_serial(session, id) == client.serial || return nothing
+    registry_serial(session, object.id) == object.serial || return nothing
     mask =
         PipeWireAO.NODE_CHANGE_INPUT_PORTS | PipeWireAO.NODE_CHANGE_OUTPUT_PORTS |
         PipeWireAO.NODE_CHANGE_PROPERTIES
@@ -374,6 +379,19 @@ function observe_controllers!(session::Session)
     end
     return nothing
 end
+function update!(session::Session, event::ControllerAdded)
+    object = PipeWireAO.find_global(session.registry, event.id)
+    object === nothing && return nothing
+    _serial(object.properties) == event.serial || return nothing
+    id = tryparse(UInt32, get(object.properties, "client.id", ""))
+    id === nothing && return nothing
+    client = PipeWireAO.find_global(session.registry, id)
+    client === nothing && return nothing
+    client.type == "PipeWire:Interface:Client" || return nothing
+    bind_object!(session, client)
+    bind_object!(session, object)
+    return nothing
+end
 function update!(session::Session, event::GlobalRemoved)
     object = find_object(session, event.id)
     object === nothing ||
@@ -395,8 +413,7 @@ function perform!(session::Session, job, ::RemoveControls)
     synchronize!(session, job)
     await_condition!(session, job) do
         all(session.retired) do (id, serial)
-            object = find_object(session, id)
-            object === nothing || object.serial != serial
+            registry_serial(session, id) != serial
         end
     end
     return nothing
@@ -523,6 +540,7 @@ function Session(
     isdefined(PipeWireAO, :iterate!) ||
         throw(ArgumentError("MediaSession requires PipeWireAO's owner-thread iterate! API"))
     queue = EventQueue()
+    objects = Dict{UInt32,Object}()
     loop = MainLoop()
     context = nothing
     core = nothing
@@ -543,10 +561,22 @@ function Session(
                 stage!(queue, ClientBound(local_id, global_id)),
         )
         registry = Registry(core)
+        controller_name = configuration["controller.node.name"]
         listener = add_listener!(
             registry;
-            on_global_added = (_, object) -> stage!(queue, GlobalAdded(object)),
-            on_global_removed = (_, id) -> stage!(queue, GlobalRemoved(id)),
+            on_global_added = (_, object) -> begin
+                if object.type == "PipeWire:Interface:Node"
+                    name = get(object.properties, "node.name", "")
+                    if name == controller_name || startswith(name, ControlClient.CONTROLLER_NODE_PREFIX)
+                        stage!(queue, ControllerAdded(object.id, _serial(object.properties)))
+                    end
+                end
+                nothing
+            end,
+            on_global_removed = (_, id) -> begin
+                haskey(objects, id) && stage!(queue, GlobalRemoved(id))
+                nothing
+            end,
         )
         instance = parse(Int64, configuration["instance"])
         controller_instance = parse(Int64, configuration["controller.instance"])
@@ -598,7 +628,7 @@ function Session(
             machine,
             ingress,
             queue,
-            Dict{UInt32,Object}(),
+            objects,
             Dict{UInt32,Captured}(),
             Dict{UInt32,UInt64}(),
             Dict{String,UInt64}(),

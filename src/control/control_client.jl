@@ -9,6 +9,7 @@ const Envelope = ControlCodec
 const SPA = PipeWireAO.SPA
 const PROTOCOL = "pipewireao.rtc-control/1"
 const CONTROLLER_PROFILE = "pipewireao.rtc.controller/1"
+const CONTROLLER_NODE_PREFIX = "pipewireao.rtc.controller."
 """Interface for one versioned owner-control protocol.
 
 A client profile implements `profile_name`, `capability_names`, `lifecycle_type`,
@@ -691,7 +692,7 @@ function connect(
     _check_controller_instance(controller_instance)
     instance =
         controller_instance === nothing ? next_instance() : Int64(controller_instance)
-    marker_name = "pipewireao.rtc.controller.julia.$(getpid()).$instance"
+    marker_name = "$(CONTROLLER_NODE_PREFIX)julia.$(getpid()).$instance"
     observation = Observation(profile, Int64(expected_instance), UInt32(expected_pid))
     client = Client(
         ThreadLoop("deployment.native-control"),

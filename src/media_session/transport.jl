@@ -53,8 +53,9 @@ function next_event!(queue::EventQueue)
     return event
 end
 
-struct GlobalAdded <: AbstractEvent
-    global_object::Global
+struct ControllerAdded <: AbstractEvent
+    id::UInt32
+    serial::UInt64
 end
 struct GlobalRemoved <: AbstractEvent
     id::UInt32
@@ -150,7 +151,6 @@ function update!(runtime, event::ParamReceived)
     end
     return nothing
 end
-update!(runtime, event::GlobalAdded) = add_object!(runtime, event.global_object)
 update!(runtime, event::GlobalRemoved) = remove_object!(runtime, event.id)
 function update!(runtime, event::CoreUpdated)
     previous = runtime.core_info

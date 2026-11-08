@@ -66,6 +66,14 @@ cleanup. Native destruction accounts for pending callbacks. No borrowed native
 pointer escapes a callback. This cold-control boundary makes no zero-allocation
 or GC-independent callback claim.
 
+The PipeWire registry supplies discovery and presence. RTC binds declared Nodes,
+Ports, and their Client or SPA factory owners as needed. It binds controller
+candidates with the existing `pipewireao.rtc.controller.` name prefix or the
+configured RTC controller name, then checks their full identity and Client
+provenance. Each RTC-created Link has one proxy for negotiation and loss.
+Withdrawal checks the registry for that Link's serial and requested path after
+Core sync.
+
 Effects run outside Hsm dispatch as coroutines on the same owner thread.
 Completion carries session, operation epoch, effect serial, kind and target.
 Retirement fences the epoch before cancellation; late replies cannot advance

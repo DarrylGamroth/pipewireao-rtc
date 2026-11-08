@@ -3,7 +3,7 @@
 # independent Julia implementation using PipeWireAO's public proxies and info
 # records; no upstream policy, daemon layouts or WirePlumber objects are used.
 
-const ObjectInfo = Union{NodeInfo,PortInfo,ClientInfo,FactoryInfo,LinkInfo}
+const ObjectInfo = Union{NodeInfo,PortInfo,ClientInfo,FactoryInfo}
 mutable struct Object{P,I<:ObjectInfo}
     id::UInt32
     serial::UInt64
@@ -139,6 +139,10 @@ function property(runtime, handle::UInt64, key::AbstractString)
     return get(object_properties(object), key, nothing)
 end
 find_object(runtime, id::Integer) = get(runtime.objects, UInt32(id), nothing)
+function registry_serial(runtime, id)
+    object = PipeWireAO.find_global(runtime.registry, id)
+    return object === nothing ? nothing : _serial(object.properties)
+end
 function _serial(properties)
     value = tryparse(UInt64, get(properties, "object.serial", ""))
     value !== nothing && value > 0 ||
@@ -150,29 +154,25 @@ function _object_error!(runtime, message)
     return nothing
 end
 
-# Withdrawal permits destruction of these exact session-created incarnations.
-# It does not waive captured owner, graph or foreign-Link identity requirements.
-_retiring_link(::Object, records) = false
-_retiring_link(object::Object{P,LinkInfo}, records) where {P} = any(
-    record ->
-        record.retiring && record.id == object.id && record.serial == object.serial,
-    records,
-)
-
 # Wire tags are normalized only at registry admission. Runtime behavior uses
 # concrete proxy/info types, including sparse-info merge and state validation.
 _proxy_type(::Val{Symbol("PipeWire:Interface:Node")}) = (Node, NodeInfo)
 _proxy_type(::Val{Symbol("PipeWire:Interface:Port")}) = (Port, PortInfo)
 _proxy_type(::Val{Symbol("PipeWire:Interface:Client")}) = (Client, ClientInfo)
 _proxy_type(::Val{Symbol("PipeWire:Interface:Factory")}) = (Factory, FactoryInfo)
-_proxy_type(::Val{Symbol("PipeWire:Interface:Link")}) = (PipeWireAO.Link, LinkInfo)
 _proxy_type(::Val) = nothing
-function add_object!(runtime, global_object::Global)
+function bind_object!(runtime, global_object::Global)
     types = _proxy_type(Val(Symbol(global_object.type)))
     types === nothing && return nothing
-    return _add_object!(runtime, global_object, types...)
+    return _bind_object!(runtime, global_object, types...)
 end
-function _add_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
+function bind_object!(runtime, id::UInt32, interface::AbstractString)
+    global_object = PipeWireAO.find_global(runtime.registry, id)
+    global_object === nothing && return nothing
+    global_object.type == interface || throw(ArgumentError("registry object type differs"))
+    return bind_object!(runtime, global_object)
+end
+function _bind_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
     id, serial = global_object.id, _serial(global_object.properties)
     old = find_object(runtime, id)
     if old !== nothing
@@ -197,6 +197,7 @@ function _add_object!(runtime, global_object, ::Type{P}, ::Type{I}) where {P,I}
 end
 _bind_object(registry, global_object, ::Type{P}, callbacks, queue, id) where {P} =
     bind(registry, global_object, P; callbacks...)
+
 function _bind_object(
     registry, global_object, ::Type{P}, callbacks, queue, id
 ) where {P<:Union{Node,Port}}
@@ -356,9 +357,7 @@ function update!(runtime, event::ObjectError)
         !parameter_error!(runtime, event.id, event.sequence, event.message) ||
         return nothing
     object.removed = true
-    haskey(runtime.captured, event.id) &&
-        !_retiring_link(object, runtime.links) &&
-        _object_error!(runtime, event.message)
+    haskey(runtime.captured, event.id) && _object_error!(runtime, event.message)
     return nothing
 end
 function remove_object!(runtime, id::UInt32)
@@ -367,7 +366,7 @@ function remove_object!(runtime, id::UInt32)
     object.removed = true
     if haskey(runtime.captured, id)
         delete!(runtime.captured, id)
-        _retiring_link(object, runtime.links) || _object_error!(
+        _object_error!(
             runtime,
             "Required registry incarnation removed: id=$id serial=$(object.serial)",
         )
@@ -386,8 +385,8 @@ function dispose_objects!(runtime)
     return nothing
 end
 
-_retirement_client_pid(object::Object) = nothing
-function _retirement_client_pid(object::Object{P,ClientInfo}) where {P}
+client_pid(object::Object) = nothing
+function client_pid(object::Object{P,ClientInfo}) where {P}
     object.info === nothing && return nothing
     return tryparse(UInt32, get(object.info.properties, "application.process.id", ""))
 end
@@ -450,7 +449,7 @@ function retire_owner!(runtime, owner::Owner{OwnerBootstrapCodec.Profile})
         client = find_object(runtime, client_id)
         client !== nothing &&
         !client.removed &&
-        _retirement_client_pid(client) == owner.pid ||
+        client_pid(client) == owner.pid ||
             throw(ArgumentError("retiring node has a foreign or unproven native client"))
         push!(nodes, object.id)
         push!(clients, client_id)
@@ -500,7 +499,7 @@ function refresh_object!(runtime, id::UInt32)
         throw(ArgumentError("cannot refresh a changed registry incarnation"))
     close(object.proxy)
     delete!(runtime.objects, id)
-    replacement = add_object!(runtime, global_object)
+    replacement = bind_object!(runtime, global_object)
     replacement.info = object.info
     haskey(runtime.captured, id) && assert_identity!(runtime, UInt64(id))
     return replacement
@@ -547,7 +546,9 @@ function assert_identity!(runtime, handle::UInt64)
     object !== nothing && !object.removed && object.serial == captured.serial ||
         throw(ArgumentError("object incarnation changed"))
     properties, info = object_properties(object), info_properties(object.info)
-    _serial(properties) == captured.serial || throw(ArgumentError("object serial changed"))
+    _serial(properties) == captured.serial &&
+    registry_serial(runtime, id) == captured.serial ||
+        throw(ArgumentError("object serial changed"))
     for (key, value) in captured.properties
         get(properties, key, nothing) == value ||
             throw(ArgumentError("object identity property changed: $key"))
@@ -584,19 +585,24 @@ function _core_factory(runtime, object, name, pid)
         throw(ArgumentError("declared core process differs"))
     id = tryparse(UInt32, get(object_properties(object), "factory.id", ""))
     id === nothing && return nothing
-    factory = find_object(runtime, id)
+    factory = bind_object!(runtime, id, "PipeWire:Interface:Factory")
     factory === nothing && return nothing
     _spa_factory(factory) ||
         throw(ArgumentError("declared core node has an unsupported factory"))
     return factory
 end
-function find_object(runtime, name::AbstractString, pid::Integer)
-    matches = Object[
-        object for object in values(runtime.objects) if _named_node(object, name)
-    ]
+function named_node!(runtime, name)
+    matches = find_globals(
+        runtime.registry;
+        interface = "PipeWire:Interface:Node",
+        properties = ("node.name" => name,),
+    )
     length(matches) <= 1 || throw(ArgumentError("ambiguous declared node: $name"))
-    isempty(matches) && return nothing
-    object = only(matches)
+    return isempty(matches) ? nothing : bind_object!(runtime, only(matches))
+end
+function find_object(runtime, name::AbstractString, pid::Integer)
+    object = named_node!(runtime, name)
+    object === nothing && return nothing
     object.removed && throw(ArgumentError("declared node binding failed: $name"))
     object.info === nothing && return nothing
     properties = object_properties(object)
@@ -604,13 +610,10 @@ function find_object(runtime, name::AbstractString, pid::Integer)
     if client_id !== nothing
         id = tryparse(UInt32, client_id)
         id !== nothing || throw(ArgumentError("invalid node client identity"))
-        client = find_object(runtime, id)
+        client = bind_object!(runtime, id, "PipeWire:Interface:Client")
         client === nothing && return nothing
         client.info === nothing && return nothing
-        actual = tryparse(
-            UInt32, get(object_properties(client), "application.process.id", "")
-        )
-        actual !== nothing && actual == pid ||
+        client_pid(client) == pid ||
             throw(ArgumentError("declared node has an unexpected process owner: $name"))
     else
         _core_factory(runtime, object, name, pid) === nothing && return nothing
@@ -652,25 +655,32 @@ function _endpoint_address(address)
         throw(ArgumentError("invalid declared endpoint"))
     return parts
 end
-_port_matches(object::Object, node, name, direction) = false
-function _port_matches(object::Object{P,PortInfo}, node, name, direction) where {P}
-    properties = object_properties(object)
-    return get(properties, "node.id", nothing) == string(node) &&
-           get(properties, "port.name", nothing) == name &&
-           object.info !== nothing &&
-           object.info.direction == direction
+function declared_port!(runtime, node, name, direction, address)
+    direction_name = direction == PipeWireAO.DIRECTION_OUTPUT ? "out" : "in"
+    matches = find_globals(
+        runtime.registry;
+        interface = "PipeWire:Interface:Port",
+        properties = (
+            "node.id" => string(node), "port.name" => name, "port.direction" => direction_name
+        ),
+    )
+    length(matches) <= 1 || throw(ArgumentError("ambiguous declared port: $address"))
+    isempty(matches) && return nothing
+    port = bind_object!(runtime, only(matches))
+    port.info === nothing && return nothing
+    properties = object_properties(port)
+    port.info.direction == direction &&
+    get(properties, "node.id", nothing) == string(node) &&
+    get(properties, "port.name", nothing) == name ||
+        throw(ArgumentError("bound Port differs from its registry declaration: $address"))
+    return port
 end
 function _endpoint!(runtime, job, address, direction)
     name, port_name = _endpoint_address(address)
     pid = runtime.configuration["node.pids"][name]
     node = UInt32(node!(runtime, job, name, pid))
     port = await_condition!(runtime, job) do
-        matches = Object[
-            o for
-            o in values(runtime.objects) if _port_matches(o, node, port_name, direction)
-        ]
-        length(matches) <= 1 || throw(ArgumentError("ambiguous declared port: $address"))
-        isempty(matches) ? nothing : only(matches)
+        declared_port!(runtime, node, port_name, direction, address)
     end
     declaration = nothing
     for role in ("sources", "graphs", "sinks"),
@@ -795,8 +805,7 @@ function update!(runtime, event::LinkBound)
         )
     record.id = event.id
     record.pending = false
-    object = find_object(runtime, event.id)
-    object === nothing || (record.serial = object.serial)
+    record.serial === nothing && (record.serial = registry_serial(runtime, event.id))
     return nothing
 end
 function _validate_link!(runtime, record::LinkRecord, info::LinkInfo)
@@ -972,15 +981,12 @@ function create_links!(runtime, job)
         await_condition!(runtime, job) do
             record.failure === nothing || throw(ArgumentError(record.failure))
             if record.id !== nothing
-                object = find_object(runtime, record.id)
-                if object !== nothing
-                    record.serial === nothing && (record.serial = object.serial)
-                    object.serial == record.serial ||
+                serial = registry_serial(runtime, record.id)
+                if serial !== nothing
+                    record.serial === nothing && (record.serial = serial)
+                    serial == record.serial ||
                         throw(ArgumentError("created Link registry incarnation changed"))
-                    if record.negotiated && !record.pending
-                        capture!(runtime, UInt64(record.id))
-                        return true
-                    end
+                    record.negotiated && !record.pending && return true
                 end
             end
             return nothing
@@ -993,15 +999,12 @@ _destroy_created!(core, ::Nothing) = nothing
 _destroy_created!(core, proxy::PipeWireAO.Link) = destroy_object!(core, proxy)
 _close_listener!(::Nothing) = nothing
 _close_listener!(listener::PipeWireAO.ManagedListener) = close(listener)
-function _correlated_link(object::Object, records)
-    return false
-end
-function _correlated_link(object::Object{P,LinkInfo}, records) where {P}
-    path = get(object_properties(object), "object.path", nothing)
+registry_links(runtime) = find_globals(runtime.registry; interface = "PipeWire:Interface:Link")
+function _correlated_link(object::Global, records)
+    path = get(object.properties, "object.path", nothing)
+    serial = _serial(object.properties)
     return any(
-        record ->
-            (record.id == object.id && record.serial == object.serial) ||
-            record.path == path,
+        record -> (record.id == object.id && record.serial == serial) || record.path == path,
         records,
     )
 end
@@ -1023,7 +1026,7 @@ function remove_links!(runtime, job)
         ) ? true : nothing
     end
     synchronize!(runtime, job)
-    any(object -> _correlated_link(object, runtime.links), values(runtime.objects)) &&
+    any(object -> _correlated_link(object, runtime.links), registry_links(runtime)) &&
         throw(ArgumentError("correlated Link remains after destruction and Core sync"))
     for record in runtime.links
         _close_listener!(record.listener)

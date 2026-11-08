@@ -391,7 +391,7 @@ function refresh_controllers!(endpoint::Endpoint)
         any(controller -> controller.global_id == global_object.id, endpoint.controllers) &&
             continue
         name = get(global_object.properties, "node.name", "")
-        startswith(name, "pipewireao.rtc.controller.") || continue
+        startswith(name, Client.CONTROLLER_NODE_PREFIX) || continue
         serial = tryparse(UInt64, get(global_object.properties, "object.serial", ""))
         if isempty(name) ||
             ncodeunits(name) > 128 ||

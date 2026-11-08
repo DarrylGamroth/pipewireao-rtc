@@ -39,6 +39,7 @@ mutable struct TestRuntime{C,R,L,F}
     loop::L
     configuration::F
     objects::Dict{UInt32,Object}
+    globals::Vector{Global}
     captured::Dict{UInt32,Captured}
     retired::Dict{UInt32,UInt64}
     graphs::Dict{String,UInt64}
@@ -65,6 +66,7 @@ function TestRuntime(
         loop,
         configuration,
         Dict{UInt32,Object}(),
+        Global[],
         Dict{UInt32,Captured}(),
         Dict{UInt32,UInt64}(),
         Dict{String,UInt64}(),
@@ -79,6 +81,20 @@ function TestRuntime(
         false,
     )
 end
+const LocalRuntime = TestRuntime{Nothing,Nothing,Nothing}
+function registry_serial(runtime::LocalRuntime, id)
+    object = find_object(runtime, id)
+    return object === nothing ? nothing : object.serial
+end
+bind_object!(runtime::LocalRuntime, id::UInt32, ::AbstractString) =
+    find_object(runtime, id)
+function named_node!(runtime::LocalRuntime, name)
+    matches = filter(object -> _named_node(object, name), collect(values(runtime.objects)))
+    length(matches) <= 1 || throw(ArgumentError("ambiguous declared node: $name"))
+    return isempty(matches) ? nothing : only(matches)
+end
+registry_links(runtime::LocalRuntime) = runtime.globals
+
 const SPA = PolicySPA
 const CONTRACT = PortContract(
     "F32_LE",
@@ -472,9 +488,6 @@ end
 end
 
 
-struct Added <: AbstractEvent
-    global_object::Global
-end
 struct Removed <: AbstractEvent
     id::UInt32
 end
@@ -484,7 +497,6 @@ end
 struct Done <: AbstractEvent
     sequence::Cint
 end
-update!(runtime, event::Added) = add_object!(runtime, event.global_object)
 update!(runtime, event::Removed) = remove_object!(runtime, event.id)
 update!(runtime, event::CoreUpdated) = (runtime.core_info = event.info; nothing)
 update!(runtime, event::Done) = (push!(runtime.done, event.sequence); nothing)
@@ -664,30 +676,7 @@ end
     @test length(runtime.machine.losses) == 1
     @test occursin("Required object changed", only(runtime.machine.losses))
 
-    runtime = TestRuntime()
-    runtime.client_id = UInt32(7)
-    runtime.withdrawing = true
-    record = link_record()
-    record.id, record.serial = UInt32(31), UInt64(310)
-    record.retiring = true
-    push!(runtime.links, record)
-    for (id, serial) in ((UInt32(31), UInt64(310)), (UInt32(32), UInt64(320)))
-        info = link_info(record; id)
-        properties = merge(copy(info.properties), Dict("object.serial" => string(serial)))
-        object = Object{TestProxy,LinkInfo}(
-            id, serial, properties, TestProxy(false), info, false
-        )
-        runtime.objects[id] = object
-        capture!(runtime, UInt64(id))
-    end
-    # Only the exact retiring incarnation may disappear, even if another Link
-    # copies its path. Native proxy destruction and absence fences still apply.
-    remove_object!(runtime, UInt32(31))
-    @test isempty(runtime.machine.losses)
-    @test record.retiring && !record.destroyed
-    remove_object!(runtime, UInt32(32))
-    @test length(runtime.machine.losses) == 1
-    @test occursin("id=32", only(runtime.machine.losses))
+
 end
 
 @testset "Withdrawal retains captured controls through terminal owner receipts" begin
@@ -836,14 +825,12 @@ end
     @test isempty(runtime.done)
     record.creation_pending = false
     properties = Dict("object.serial" => "31", "object.path" => record.path)
-    runtime.objects[UInt32(31)] = Object{TestProxy,LinkInfo}(
-        UInt32(31), UInt64(31), properties, TestProxy(false), link_info(record), false
-    )
+    push!(runtime.globals, Global(31, 0, "PipeWire:Interface:Link", 3, properties))
     @test_throws ArgumentError remove_links!(
         runtime, (; ticket = (; deadline = now(runtime) + SECOND))
     )
     @test Cint(1) in runtime.done && !isempty(runtime.links) && runtime.withdrawing
-    empty!(runtime.objects)
+    empty!(runtime.globals)
     remove_links!(runtime, (; ticket = (; deadline = now(runtime) + SECOND)))
     @test isempty(runtime.links) && !runtime.withdrawing
 end
@@ -863,11 +850,6 @@ include("control_private_core.jl")
             on_done = (_, id, sequence) -> stage!(queue, Done(sequence)),
         )
         registry = Registry(core)
-        listener = add_listener!(
-            registry;
-            on_global_added = (_, global_object) -> stage!(queue, Added(global_object)),
-            on_global_removed = (_, id) -> stage!(queue, Removed(id)),
-        )
         declaration(name, direction, port) = Dict(
             "node.name" => name,
             "ownership" => "external",
@@ -899,6 +881,13 @@ include("control_private_core.jl")
             ),
         )
         runtime = TestRuntime(core, registry, loop; configuration, queue)
+        listener = add_listener!(
+            registry;
+            on_global_removed = (_, id) -> begin
+                haskey(runtime.objects, id) && stage!(queue, Removed(id))
+                nothing
+            end,
+        )
         source = NdArraySource(
             core, "objects-source", zeros(Float32, 2), FORMAT; schema = CONTRACT.schema
         )
@@ -950,8 +939,10 @@ include("control_private_core.jl")
             @test isempty(runtime.links) &&
                 !isempty(runtime.captured) &&
                 !runtime.withdrawing
-            @test find_object(runtime, retained) !== nothing
-            @test !any(object -> _correlated_link(object, [old]), values(runtime.objects))
+            @test PipeWireAO.find_global(registry, retained) !== nothing
+            @test find_object(runtime, retained) === nothing
+            @test !any(object -> _correlated_link(object, [old]), registry_links(runtime))
+            @test length(runtime.objects) == 5
             # Cancel before bound/Format events are consumed. Local destruction
             # receipts plus the server sync must fence pending creation.
             fresh = (;
@@ -970,6 +961,14 @@ include("control_private_core.jl")
             remove_links!(runtime, fresh)
             @test pending.destroyed && !pending.pending
             @test isempty(runtime.links) && isopen(unrelated)
+
+            create_links!(runtime, fresh)
+            lost = only(runtime.links)
+            close(sink)
+            await_condition!(runtime, fresh) do
+                lost.failure
+            end
+            @test occursin("Link", lost.failure)
         finally
             runtime.withdrawing = true
             for record in runtime.links
