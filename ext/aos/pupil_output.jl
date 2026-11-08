@@ -34,20 +34,6 @@ function contract(declaration, configured; simulation_graph = "production")
     return boundary
 end
 
-"One-based host snapshot [x,y] becomes [quantity,y,x]; no display transform."
-function pack!(
-    packet::Array{Float32,3}, opd::AbstractMatrix{Float32}, amplitude::Matrix{Float32}
-)
-    Base.require_one_based_indexing(opd)
-    axes(opd) == axes(amplitude) && size(packet) == (2, size(opd, 2), size(opd, 1)) ||
-        throw(DimensionMismatch("scientific pupil packet axes differ"))
-    for x in axes(opd, 1), y in axes(opd, 2)
-        value = opd[x, y]
-        isfinite(value) || throw(ArgumentError("scientific pupil OPD must be finite"))
-        packet[1, y, x] = value
-        packet[2, y, x] = amplitude[x, y]
-    end
-    return packet
-end
+import AdaptiveOpticsSimPipeWireHIL.ExternalPupil: pack_pupil! as pack!
 
 end
