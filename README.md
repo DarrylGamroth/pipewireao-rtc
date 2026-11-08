@@ -70,7 +70,6 @@ package pins. Development and release tooling require Julia 1.13 or newer.
 | `SessionClient` | Send controls to a selected session |
 | `ConfigurationStore` | Register and retrieve Git artifacts through a SQLite catalog |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
-| `SimulatorConfiguration` | Describe declared simulator settings and submit/observe cold application replacement jobs |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
 | `CalibrationCLI`, `SessionCLI` | Translate command arguments and reports |
 | `OwnerBootstrapRuntime`, `ParameterSource`, `SourceControl` | Cold admission, parameter publication and source controls |

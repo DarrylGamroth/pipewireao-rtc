@@ -22,7 +22,6 @@ Base.include(
 for name in (
     "configuration_store",
     "management_cli",
-    "simulator_configuration",
     "artifacts",
     "parameter_fits",
     "owner_entrypoints",

@@ -14,10 +14,9 @@ interface. It is not a new session authority or remote gateway.
   inside owned 0700 directories. `PIPEWIREAO_MANAGEMENT_SOCKET` selects an explicit
   absolute local endpoint for clients/tests, never a program or store root.
 - `pipewireao.management/1`: local transport envelope and receipt queries.
-  Existing `pipewireao.configuration/1` and `pipewireao.simulator-settings/1`
-  identify the unchanged request domains. Existing operations keep their names.
+  `pipewireao.configuration/1` identifies the artifact catalog request domain.
 - `PipeWireAORTC.ManagementCLI`: owner-side dispatcher/installation tooling that
-  reuses ConfigurationStoreCLI and SimulatorConfiguration; GUI never loads it.
+  uses ConfigurationStoreCLI.
 
 These names are generic protocol/installation boundaries. Artifact, session,
 configuration, job and receipt retain their meanings in architecture.md and
@@ -43,8 +42,7 @@ The owner rejects unknown domains/operations and client-supplied roots. Its
 installation selects the configuration-store root and durable management state.
 The default configuration root remains ConfigurationStore.default_root(). It
 stores artifact catalog data; session-operation journaling is retired. Management
-receipts remain in the separate management state root. Simulator jobs retain
-their existing configured owner root. Live RPC operations such as
+receipts remain in the separate management state root. Live RPC operations such as
 Start/Stop/Reset/Status are not admitted through management.
 
 For `register`, client opens the bounded regular FITS input before submitting and
@@ -67,10 +65,9 @@ are sent, connection/input failure is Not sent. Replies verify protocol and exac
 request identity. A verified peer may reject before reading a request at the
 connection limit using `id:"",ok:false,admitted:false,error:STRING`, without
 `result` or `unavailable`; this sole unmatched-ID sentinel means Not sent. All
-other identity mismatches remain Unknown. Simulator replies are bounded to 1 MiB; configuration replies to 16 MiB,
+other identity mismatches remain Unknown. Configuration replies are bounded to 16 MiB,
 including framing. Receipt-query replies are bounded to 16 MiB + 4 KiB, allowing
-a retained configuration response plus its identity/receipt wrapper. This does
-not widen the original simulator response limit. No artifact payload bytes use JSON.
+a retained configuration response plus its identity/receipt wrapper. This preserves the framing limit. No artifact payload bytes use JSON.
 
 ## Admission, execution and retention
 
@@ -81,7 +78,7 @@ session controls remain available through their separate interface. A response
 may consume at most its domain limit; a slow reader cannot accumulate multiple
 large owner responses.
 
-The companion owns one cached worker for both management domains. By default it
+The companion owns one cached worker for the artifact catalog. By default it
 runs the configured tooling environment with `using PipeWireAORTC;
 PipeWireAORTC.ManagementCLI.serve()`. Only explicit management work starts that
 worker. The owner retires it after 60 idle seconds following a complete reply.
@@ -89,18 +86,13 @@ No operation is interrupted by idle expiry. Ordinary viewing creates no Julia
 work, and opening a second GUI does not create a second private runtime.
 
 Generated worker commands use `--heap-size-hint=256M` to collect temporary
-compiler/validation allocations sooner. The pinned description subprocess uses
-`--heap-size-hint=128M` with its existing `-O0`; compilation remains enabled.
-These are soft GC targets, not process limits. Actual memory includes code, native
-libraries and live allocations. Backend preflight and independent rebuild jobs
-retain their normal compilation and heap policy.
+compiler/validation allocations sooner. The hint guides GC and allows actual
+memory use to include code, libraries and live allocations.
 
-Operation deadline: 60 seconds, except simulator `describe` at 120 seconds for
-cold verification plus its pinned description worker. Trusted installation/test
-configuration may shorten deadlines/idle grace; it cannot be supplied by clients.
-Timeout/loss kills and reaps only the companion worker process group before
-releasing input descriptors. Independently accepted systemd rebuild jobs survive.
-Shutdown retires that worker group, not any RTC/scientific service.
+The catalog operation deadline defaults to 60 seconds. Trusted installation
+and test configuration may shorten deadlines and idle grace. Timeout or worker
+loss kills and reaps the companion worker process group before releasing input
+descriptors. Shutdown retires that worker group independently of RTC sessions.
 
 The owner retains materialized bytes under the existing ConfigurationStore rules;
 there is no new automatic materialization garbage collector. Native adapters
@@ -111,13 +103,13 @@ payload. Stored materializations are not connection-scoped.
 
 ## Durable receipts and uncertainty
 
-Before dispatching `register`, `get` or `start_rebuild`, reserve the fresh request
+Before dispatching `register` or `get`, reserve the fresh request
 ID in an owner-only durable receipt under its state root. Retain at most 256 such
 records; capacity exhaustion rejects new mutations, never deletes recovery data.
 Write acceptance before dispatch; write the complete worker reply durably before
 publishing success. Receipt writes use atomic replacement with file and directory
 synchronization. Duplicate IDs reject without redispatch, even after restart.
-Read-only list/describe/job and receipt lookup do not consume retained receipt
+Read-only list and receipt lookup do not consume retained receipt
 capacity. These durable management receipts are separate from the retired RTC
 session-operation history.
 
@@ -125,14 +117,7 @@ A service restart marks interrupted accepted records Unknown. Worker loss or
 possible effect followed by a lost reply remains Unknown; the service never
 re-executes it. A client disappearing does not cancel an admitted operation.
 The owner closes its input descriptor only after execution is finished or its
-worker group has been reaped. A rebuild's own durable job/attempt records and
-2,400-second systemd lifetime remain independently authoritative. For an endpoint
-`start_rebuild`, the companion injects its accepted ID into the trusted worker
-request. ManagementCLI passes it as the owner's `request_id` keyword, and the
-job uses that same ID for its durable directory/unit. Direct legacy tooling
-retains random UUID job IDs. Thus an explicit `job` read using the original
-management ID can recover an accepted job even if the companion dies before
-recording its completion reply; neither lookup re-executes the rebuild.
+worker group has been reaped.
 
 Explicit receipt lookup uses a fresh envelope ID and nested request
 `{"protocol":"pipewireao.management/1","op":"receipt","arguments":{"id":"original id"}}`.

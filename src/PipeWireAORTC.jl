@@ -69,7 +69,6 @@ include("correction/supervision.jl")
 include("graphs/runtime.jl")
 include("deployment/instrument_export.jl")
 include("instrument_calibration.jl")
-include("simulator_configuration.jl")
 include("management_cli.jl")
 
 public Analysis,
@@ -80,7 +79,6 @@ public Analysis,
     InstrumentDefinition,
     ConfigurationStore,
     ConfigurationStoreCLI,
-    SimulatorConfiguration,
     ManagementCLI,
     AOSOwner,
     Artifacts,

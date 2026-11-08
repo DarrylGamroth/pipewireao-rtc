@@ -72,7 +72,6 @@ end
             unit_directory = joinpath(root, "units"),
             root = state,
             configuration_root = joinpath(root, "catalog"),
-            simulator_root = joinpath(root, "jobs"),
         )
         marker = joinpath(root, "worker-pids")
         script = joinpath(root, "worker \$value.jl")

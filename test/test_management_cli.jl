@@ -12,7 +12,7 @@ const MC = PipeWireAORTC.ManagementCLI
         reply = MC.respond(JSON.json(request))
         @test reply["ok"]
         @test isempty(reply["result"]["items"])
-        for protocol in ("invalid", "pipewireao.management/1")
+        for protocol in ("invalid", "pipewireao.management/1", "pipewireao.simulator-settings/1")
             request["protocol"] = protocol
             @test !MC.respond(JSON.json(request))["ok"]
         end
@@ -45,7 +45,6 @@ end
             unit_directory = directory,
             configuration_root = joinpath(root, "catalog"),
             root = joinpath(root, "receipts"),
-            simulator_root = joinpath(root, "jobs"),
         )
         @test Set(keys(paths)) ==
             Set(["pipewireao-management.service", "pipewireao-management.socket"])
@@ -69,58 +68,5 @@ end
         @test read(paths["pipewireao-management.service"], String) == service
         @test_throws ArgumentError MC.unit_texts("relative"; project)
         @test_throws ArgumentError MC.unit_texts(prefix; project = "/invalid\nproject")
-    end
-end
-
-@testset "durable rebuild identity survives loss of management completion" begin
-    S = PipeWireAORTC.SimulatorConfiguration
-    C = PipeWireAORTC.Common
-    mktempdir() do root
-        identity = Dict("session_id" => "test-session", "configuration_sha256" => "a"^64)
-        selected = (;
-            identity,
-            application = "/saved/application",
-            prefix = "/installed/prefix",
-            relative = "simulation.conf",
-        )
-        launches = String[]
-        id = "b"^32
-        result = S.start_rebuild(
-            "test-session",
-            "a"^64,
-            Dict();
-            root,
-            request_id = id,
-            select = session -> (@test session == "test-session"; selected),
-            launch = directory -> push!(launches, basename(directory)),
-        )
-        @test result["id"] == id
-        @test launches == [id]
-        @test C.read_json(joinpath(root, id, "request.json"))["id"] == id
-        # The native companion may lose its reply before persisting completion.
-        # The independent job can still be read by the original accepted ID.
-        receipt = S.job(
-            id; root, inspect = (unit; extra) -> Dict("ActiveState" => "active")
-        )
-        @test receipt["state"] == "queued"
-        @test receipt["id"] == id
-        @test_throws Base.IOError S.start_rebuild(
-            "test-session",
-            "a"^64,
-            Dict();
-            root,
-            request_id = id,
-            select = _ -> selected,
-            launch = _ -> push!(launches, "unexpected"),
-        )
-        @test launches == [id]
-        @test_throws ArgumentError S.start_rebuild(
-            "test-session",
-            "a"^64,
-            Dict();
-            root,
-            request_id = "invalid",
-            select = _ -> error("must reject before native selection"),
-        )
     end
 end
