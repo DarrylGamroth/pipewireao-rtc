@@ -1,5 +1,8 @@
 # Native callbacks only append owned records to this owner-thread queue. All
 # application observations and Hsm events are applied after iterate! returns.
+# A single dispatch can deliver registry, bound and info records for the
+# nodes, ports, clients and links of a full session.
+const MAX_OBSERVATION_RECORDS = 2048
 const MAX_OBSERVATION_BYTES = 4 * 1024 * 1024
 const MAX_ENUMERATION_BYTES = 4 * 1024 * 1024
 const MAX_ENUMERATION_RECORDS = 4096
@@ -11,7 +14,10 @@ mutable struct EventQueue
     byte_limit::Int
     overflow::Bool
 end
-EventQueue(capacity::Integer = 256; byte_limit::Integer = MAX_OBSERVATION_BYTES) = (
+EventQueue(
+    capacity::Integer = MAX_OBSERVATION_RECORDS;
+    byte_limit::Integer = MAX_OBSERVATION_BYTES,
+) = (
     capacity > 0 && byte_limit > 0 ||
         throw(ArgumentError("invalid event queue bounds"));
     EventQueue(
