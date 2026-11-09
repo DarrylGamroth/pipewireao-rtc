@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Matched GPI2 timing through PipeWire — 2026-11-09
+
+The [matched comparison](validation/gpi2-matched-20261109/README.md) retains
+the calibrated command parity check, fixed-arrival timing and scheduling
+evidence for the CUDA and external CPU controller paths.
+
 ## GPI2 captured controller through PipeWire — 2026-11-09
 
 The [connected GPI2 timing record](validation/gpi2-connected-20261109/README.md)
