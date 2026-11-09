@@ -176,7 +176,11 @@ julia --startup-file=no --project=. -e '
 ```
 
 The default PipeWireAO prefix is `/opt/pipewireao`. Select another installed
-prefix with the helper's `prefix` keyword. Startup verifies actual process
+prefix with the helper's `prefix` keyword. A Julia-only install can use
+`PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir` as its native prefix.
+RTC adds the registered queue module to the core's module search path.
+Select additional SPA plugins through the application's native configuration.
+Startup verifies actual process
 incarnations, native readiness and declared placement before acquisition is
 released. Packages missing the headless RTC or required library assets are rejected.
 Old sealed deployments keep their recorded runtime; generate a new package to

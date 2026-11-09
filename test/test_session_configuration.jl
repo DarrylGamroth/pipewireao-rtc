@@ -524,3 +524,19 @@ end
     input["schema"] = output["schema"]
     @test D.validate_session_links(session) === links
 end
+
+@testset "Registered SDK uses its original artifact" begin
+    launch = PipeWireAORTC.SessionLaunch
+    sdk = String(launch.LibPipeWire.PipeWireAO_jll.artifact_dir)
+    paths = PipeWireAORTC.DeploymentConfiguration.installed_paths(sdk)
+    spec = Dict("owners" => ["simulator"])
+    mktempdir() do runtime
+        launch.prepare_julia_overlay!((; prefix = sdk), paths, spec, runtime)
+        @test isempty(readdir(runtime))
+
+        custom = mkdir(joinpath(runtime, "site-sdk"))
+        launch.prepare_julia_overlay!((; prefix = custom), paths, spec, runtime)
+        @test islink(joinpath(runtime, "native-prefix", "lib"))
+        @test isfile(joinpath(runtime, "julia-depot", "artifacts", "Overrides.toml"))
+    end
+end
