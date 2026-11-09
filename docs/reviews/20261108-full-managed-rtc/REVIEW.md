@@ -278,3 +278,43 @@ accepted native Quit, and the session and all owners exited successfully.
 The receipt confirms cleanup and unit-file removal. The journals show no
 wrong-context teardown warnings, crash signals or SIGKILL. This is functional
 software admission and teardown evidence for the held CPU profile.
+
+## Released CAL2 cohort
+
+The verified instrument calibration and its FilterGraph pins are on instrument
+`main` at `8e66280`. The package releases use the following immutable source
+trees from [DarrylGamrothRegistry](https://github.com/DarrylGamroth/PackageRegistry/commit/9f4d898294f2d0931b96f458e8d88c8001f6cb54).
+
+| Package | Version | Registered tree |
+| --- | --- | --- |
+| AdaptiveOpticsSim | 0.3.22 | `d0b755226a0af8df1dabd34e3c3e40bd447b85c7` |
+| AdaptiveOpticsSimPipeWireHIL | 0.5.1 | `86606c9e97347083ad6667c510c649103418a3ef` |
+| PipeWireAORTC | 0.7.2 | `0b81cc36a9bfadc8648ae39ab59771d3d67efe72` |
+
+Julia 1.13.3 instantiated an empty depot from General and the public registry.
+HIL package fetch used authenticated Git because its repository is private.
+The package and artifact verifier passed 59 assertions, including the
+FilterGraph releases above, Proper 0.4.1, the PipeWireAO 4.0.2 artifact and
+extension activation. HIL also loaded independently in a separate process.
+The sealed application manifest matched the registered consumer trees.
+
+CAL2 uses the separately distributed queue module alongside the freshly
+downloaded JLL. The private SDK added the verified `1119e13` module described
+above, with SHA-256 `d7b64cf0a86111f8ca2589b2887ac6fa8dfb77f760a4814dd0428d2a18267f49`.
+The test scoped the new depot to its exact systemd unit through a runtime
+drop-in. The exported application and installed unit used the standard
+installer and launchers.
+
+Invocation `c2d75fa819d843ab8e89366971f8b4e3` reached Ready after 337 seconds.
+The RTC, HIL and both graph owners used the isolated depot and the owners'
+per-invocation cache. The live registry matched all 13 Nodes and 10 RTC-owned
+Links, including both camera Links. PipeWire logged the same mixer setup
+warnings during startup. The installed service acknowledged native Quit,
+and every process exited successfully. The receipt confirmed cleanup and
+generated unit-file removal. The journals showed no wrong-context warnings
+during teardown, crash signals or SIGKILL.
+
+The GitHub releases are
+[AdaptiveOpticsSim 0.3.22](https://github.com/DarrylGamroth/AdaptiveOpticsSim.jl/releases/tag/v0.3.22),
+[AdaptiveOpticsSimPipeWireHIL 0.5.1](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl/releases/tag/v0.5.1)
+and [PipeWireAORTC 0.7.2](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.2).

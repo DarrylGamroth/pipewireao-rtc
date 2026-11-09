@@ -24,6 +24,9 @@ CAL2's refreshed CPU calibration matches both camera Links. The installed
 profile reached Ready with all ten declared Links and acknowledged Quit on a
 private core. The [CAL2 record](reviews/20261108-full-managed-rtc/REVIEW.md#cal2-matched-cpu-calibration)
 records the numerical and runtime checks.
+RTC 0.7.2, HIL 0.5.1 and AOS 0.3.22 are released and registered. The
+[released CAL2 cohort](reviews/20261108-full-managed-rtc/REVIEW.md#released-cal2-cohort)
+repeats admission and native Quit from an empty Julia depot.
 
 ### Standalone simulator ownership — 2026-11-07
 
