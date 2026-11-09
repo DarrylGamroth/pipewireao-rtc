@@ -286,11 +286,7 @@ expected_stage, expected_illumination, expected_settings)`. The caller supplies
 the expected prepared contract; saved files cannot authorize their own layout.
 This replaces `InstrumentCalibration.read_capture`.
 
-Historical schema-4 files require the explicit
-`CaptureFiles.read_capture(Val(4), directory, descriptor; ...)` interface.
-That format never recorded port schemas or rates; its reader verifies only the
-historically recorded facts and cannot establish those missing contracts.
-Old scientific quality fields are checked only at this compatibility boundary.
+The reader accepts schema 5. Historical schema-4 files remain frozen evidence.
 
 ### Source and mechanism preparation
 

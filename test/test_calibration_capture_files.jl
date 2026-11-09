@@ -854,7 +854,7 @@ end
     end
 end
 
-@testset "explicit historical schema-4 reader" begin
+@testset "reject historical schema-4 captures" begin
     directory = joinpath(@__DIR__, "data", "capture-schema4")
     generated = PipeWireAORTC.Common.parse_json(
         read(joinpath(directory, "generated.json"), String)
@@ -877,26 +877,4 @@ end
         expected_settings = capture_settings,
     )
     @test_throws ArgumentError CaptureFiles.read_capture(directory, descriptor; expected...)
-    result = CaptureFiles.read_capture(Val(4), directory, descriptor; expected...)
-    @test result.manifest["schema_version"] == 4
-    @test only(result.samples).quality["valid_rois"] == 187
-    @test only(result.samples).arrays.raw[1, 2] == 0x8001
-    # Schema-4 never recorded schemas/rates; this explicit reader makes no claim
-    # about those caller expectations and only checks the historical payload facts.
-    changed = CaptureFiles.Contract(
-        map(
-            channel -> CaptureFiles.Channel(channel.format, "unrecorded"),
-            capture_contract.channels,
-        ),
-    )
-    @test CaptureFiles.read_capture(
-        Val(4), directory, descriptor; expected..., expected_contract = changed
-    ).manifest["schema_version"] == 4
-    @test_throws ArgumentError CaptureFiles.read_capture(
-        Val(4),
-        directory,
-        descriptor;
-        expected...,
-        expected_contract = CaptureFiles.Contract((; raw = capture_contract.channels.raw)),
-    )
 end

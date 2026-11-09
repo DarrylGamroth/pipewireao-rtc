@@ -155,7 +155,7 @@ decision; no additional large subsystem is proven safely dead.
 Generic finite capture is implemented in the dedicated `CaptureFiles`
 module, with prepared port/schema contracts and YAML selection. The writer/reader
 passes 278 assertions; schema 5 contains no instrument geometry or quality policy.
-Explicit schema-4 reads share its integrity checks. The [capture record](reviews/20261106-generic-capture/REVIEW.md)
+RTC now accepts schema 5 for capture readback. The [capture record](reviews/20261106-generic-capture/REVIEW.md)
 tracks verified slices and integration limits. YAML/recipe checks pass 44,
 prepared port/named-command checks pass 109, and actual private-core transport
 plus selected publication/readback passes 173. The full core suite passes 11,032

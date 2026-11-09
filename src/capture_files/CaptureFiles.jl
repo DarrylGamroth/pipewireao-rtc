@@ -7,6 +7,8 @@ module CaptureFiles
 using SHA
 import ..Common
 export Channel, Contract, CaptureStore, capture_preflight, capture!, read_capture
+
+const CAPTURE_SCHEMA_VERSION = 5
 import ..CalibrationActionCodec
 import ..ControlClient
 import PipeWireAO
@@ -677,7 +679,7 @@ function capture_preflight(
         !ispath(directory) && !islink(directory), "capture request directory already exists"
     )
     header = Dict{String,Any}(
-        "schema_version" => 5,
+        "schema_version" => CAPTURE_SCHEMA_VERSION,
         "channels" => _channel_records(store.contract),
         "run" => run,
         "serial" => serial,
@@ -877,28 +879,14 @@ continuity, nonoverlapping model-time intervals and canonical paths are verified
 before returning any sample. The
 manifest cannot choose a channel contract or relax the expected startup snapshot.
 """
-read_capture(directory, descriptor::CalibrationActionCodec.Captured; kwargs...) =
-    _read_capture(Val(5), directory, descriptor; kwargs...)
-
-_capture_read_contract(::Val{5}, contract::Contract) = (;
-    field = "channels",
-    value = _channel_records(contract),
-    mismatch = "capture channels/stage/illumination/settings differ",
-)
-_capture_record_fields(::Val{5}) = ("exposure", "metadata", "payloads", "recording")
-_capture_read_sample(::Val{5}, arrays, metadata, exposure, record) =
-    (; arrays, metadata, exposure)
-
-function _read_capture(
-    version::Val{V},
+function read_capture(
     directory,
     descriptor::CalibrationActionCodec.Captured;
     expected_contract::Contract,
     expected_stage,
     expected_illumination,
     expected_settings,
-) where {V}
-    selected = _capture_read_contract(version, expected_contract)
+)
     _capture_text(expected_stage)
     _capture_text(expected_illumination)
     settings = _capture_snapshot(expected_settings)
@@ -932,7 +920,7 @@ function _read_capture(
     )
     fields = (
         "schema_version",
-        selected.field,
+        "channels",
         "run",
         "serial",
         "probe",
@@ -948,12 +936,12 @@ function _read_capture(
     )
     _capture_fields(manifest, fields)
     _capture_require(
-        manifest["schema_version"] === V &&
-            _capture_same_json(manifest[selected.field], selected.value) &&
+        manifest["schema_version"] === CAPTURE_SCHEMA_VERSION &&
+            _capture_same_json(manifest["channels"], _channel_records(expected_contract)) &&
             manifest["stage"] == expected_stage &&
             manifest["illumination"] == expected_illumination &&
             _capture_same_json(manifest["settings"], settings),
-        selected.mismatch,
+        "capture schema, channels, stage, illumination or settings differ",
     )
     run, serial = _capture_uint(manifest["run"]), _capture_uint(manifest["serial"])
     _capture_require(
@@ -981,7 +969,7 @@ function _read_capture(
     domain = _capture_hash(mapping["wire"]; bytes = 16)
     samples = NamedTuple[]
     for (index, record) in enumerate(records)
-        _capture_fields(record, _capture_record_fields(version))
+        _capture_fields(record, ("exposure", "metadata", "payloads", "recording"))
         _capture_check_recording(record["recording"], recording_policy)
         _capture_require(
             ncodeunits(_capture_json(record)) + 1 <= CAPTURE_EXPOSURE_BYTES,
@@ -1018,7 +1006,7 @@ function _read_capture(
             _capture_decode(bytes, contract)
         end
         arrays = NamedTuple{keys(expected_contract.channels)}(Tuple(arrays))
-        push!(samples, _capture_read_sample(version, arrays, metadata, exposure, record))
+        push!(samples, (; arrays, metadata, exposure))
         cursor = _capture_end(exposure)
     end
     final_cursor = _capture_read_cursor(manifest["cursor"])
@@ -1030,6 +1018,5 @@ function _read_capture(
     return (; manifest, samples)
 end
 
-include("legacy.jl")
 
 end # module CaptureFiles

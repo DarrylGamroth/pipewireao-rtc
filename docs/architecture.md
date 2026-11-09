@@ -794,8 +794,7 @@ Instrument choices remain in calibration YAML: selected existing port names and
 a payload byte limit. Prepared ndarray formats and semantic schemas supply the
 channel contract, including shape, layout and rate. The generic writer does not
 interpret instrument identities or WFS channel names. Scientific quality remains
-with calibration algorithms. New captures use schema 5; historical schema-4
-reading is explicit and cannot establish the schema/rate facts it never recorded.
+with calibration algorithms. The writer and reader use schema 5. Historical schema-4 files remain frozen evidence.
 This interface adds no session authority, transport executor or recorder service.
 
 The owner observes both the actual demanded figure with constraint feedback and
