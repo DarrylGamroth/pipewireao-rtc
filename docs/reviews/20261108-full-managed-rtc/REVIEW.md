@@ -238,3 +238,43 @@ The managed Preparing selector exercised that signal directly. The session
 and all owners stopped without PipeWire wrong-context warnings, SIGSEGV,
 SIGABRT or SIGKILL. The retained receipt confirmed cleanup and generated
 unit-file removal.
+
+## CAL2 matched CPU calibration
+
+The selected historical calibration bound CAL2 prescription `cdc2e50f`
+and upstream GPI2 prescription `6b960d1e`. The current sealed applications
+identify them as `485b800e` and `053f7521`. The old controller inputs therefore
+disagreed with the camera schemas. The CAL2 recipe now references the generated
+GPI2 definition that the sealed application executes with its `optical-reference`
+graph.
+
+The shared optical calibrator ran the authored probes and Host expected-reference
+method against both sealed applications. Each branch retained rank eight. The
+full/half-probe derivative error was 0.0043% for LLOWFS and 0.060% for SCC.
+The largest held-out reconstruction error was 0.126%. The upstream expected-reference
+derivative upper estimate was 0.438%, within the authored 5% bound.
+Materialization selected calibration
+`sha256:df64cea5b7c02af1d7f9a931cde15470b2b850edeb9a23ba33bc5c0f9a2cc054`
+in `generated/chopped-calibration-cpu-20261109`. The historical bundles retain
+their original bytes.
+
+The controller export kept both camera Links. Its LLOWFS and SCC ends matched
+the camera schemas at `0e9deef1` and `ce65b4da`, respectively. RTC `67bb46d`
+rejects a conflict between two explicit schemas at export and keeps the
+existing behavior for an omitted schema. The full RTC suite passed 10,704
+assertions. The instrument CLI and mode selector passed 59.
+
+Instrument commits `ffc501e`, `200ca1d` and `07ed194` update the calibration
+launcher, recipe and selected artifacts. The CPU GPI2–CAL2 feedback
+composition sealed successfully with the new bindings. The installed
+standalone CAL2 run used RTC `67bb46d`, HIL `a4265ff` and the same FilterGraph
+releases as the shutdown repeat.
+
+Invocation `8e8a06261d634046a79e384a37e966a7` reached Ready after 421 seconds
+on its private core. The registry matched all 13 declared Nodes and 10
+RTC-owned Links, including both camera-to-controller image Links. PipeWire
+logged mixer setup warnings during startup. The installed `ExecStop`
+accepted native Quit, and the session and all owners exited successfully.
+The receipt confirms cleanup and unit-file removal. The journals show no
+wrong-context teardown warnings, crash signals or SIGKILL. This is functional
+software admission and teardown evidence for the held CPU profile.

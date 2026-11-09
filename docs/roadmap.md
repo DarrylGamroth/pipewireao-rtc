@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-08. This section is the current delivery summary. Later sections
+Updated 2026-11-09. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -20,6 +20,10 @@ SourceControl protocols. The source process prepares the simulation and
 publishes its data Nodes. RTC admits the endpoint set and owns its Links.
 [Managed HIL migration evidence](reviews/20261108-managed-hil/REVIEW.md)
 records the selected development cohort and private-core checks.
+CAL2's refreshed CPU calibration matches both camera Links. The installed
+profile reached Ready with all ten declared Links and acknowledged Quit on a
+private core. The [CAL2 record](reviews/20261108-full-managed-rtc/REVIEW.md#cal2-matched-cpu-calibration)
+records the numerical and runtime checks.
 
 ### Standalone simulator ownership — 2026-11-07
 
