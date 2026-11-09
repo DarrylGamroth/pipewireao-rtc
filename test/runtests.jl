@@ -144,6 +144,7 @@ for name in (
     "pipewire_configuration",
     "instrument_authoring",
     "instrument_dimensions",
+    "mode_inheritance",
     "instrument_export",
     "graph_configuration",
 )

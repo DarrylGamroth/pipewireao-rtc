@@ -865,7 +865,8 @@ name. Export and admission use the same parsed declaration and preserve the
 names in native configuration. `passive` is a Boolean with a default of
 `false`. An ingress Link into an execution group requires `passive: true`.
 
-Mode core fragments can explicitly select a bounded telemetry queue template:
+To publish a telemetry queue from a mode, supply the queue Node name, the
+playback media name and a session Link from the producer's output Port.
 
 ```yaml
 core:
@@ -875,12 +876,26 @@ core:
         node.name: residual-queue
         playback.props:
           media.name: residual
+session:
+  links:
+    - output: controller:modal-residual
+      input: residual-queue-input:playback_1
 ```
 
-Export expands this to `libpipewire-module-queue`: `application/ndarray`, one
-buffer, copy storage and drop-oldest overflow. Capture runs on `rtc-data-loop`
-with the `-input` node suffix; playback runs on `telemetry-loop` with `-output`,
-`device.api: pipewireao.queue` and `media.class: Data/Source`. Playback repeats
+The Link must target the queue's capture Node and its `playback_1` Port.
+For an ndarray template, export generates the session sink with the linked
+producer's shape, element type, schema, layout and rate after resolving
+references and preparing graph port contracts. The producer must be a
+declared source or graph output Port. Each generated sink requires exactly
+one producer Link and gets the `core` role in `node-owners` when the
+application uses an explicit ownership map. Existing explicit sink
+declarations are also supported.
+
+Export expands the template to `libpipewire-module-queue` with
+`application/ndarray`, one buffer, copy storage and drop-oldest overflow.
+Capture runs on `rtc-data-loop` with the `-input` Node suffix. Playback runs on
+`telemetry-loop` with the `-output` Node suffix, `device.api: pipewireao.queue`
+and `media.class: Data/Source`. Playback repeats
 queue policy as string properties. Explicit supported arguments and capture or
 playback properties override these values; an explicit playback policy remains
 independent. Unknown template names and fields are rejected. Native module

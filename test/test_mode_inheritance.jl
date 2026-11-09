@@ -63,7 +63,7 @@ end
         ),
     )
     core = Dict("context.modules" => Any[deepcopy(native), deepcopy(entry)])
-    E.queue_templates!(core)
+    @test E.queue_templates!(core) == [E.D.PortAddress("residual-queue-input", "playback_1")]
     @test core["context.modules"][1] == native
     @test PipeWireAORTC.Common.metadata_json(core["context.modules"][1]) ==
         PipeWireAORTC.Common.metadata_json(native)
@@ -114,6 +114,65 @@ end
             Dict("context.modules" => Any[invalid])
         )
     end
+end
+
+@testset "telemetry queue sinks inherit the linked output Port" begin
+    input = E.D.PortAddress("residual-queue-input", "playback_1")
+    output = E.D.PortAddress("camera", "output_1")
+    producer = Dict(
+        "name" => output.port,
+        "direction" => "output",
+        "rate" => "500/1",
+        "layout" => "ROW_MAJOR",
+        "shape" => [4, 6],
+        "element-type" => "U16_LE",
+        "schema" => "test/detector/1",
+    )
+    link = Dict("input" => string(input), "output" => string(output), "passive" => false)
+    session = Dict(
+        "sources" => [Dict("node.name" => output.node, "ports" => [producer])],
+        "links" => [link],
+    )
+    sink = Dict(
+        "node.name" => input.node,
+        "ownership" => "external",
+        "ports" => [merge(producer, Dict("name" => input.port, "direction" => "input"))],
+    )
+    owners = Dict(output.node => "camera")
+    mktempdir() do directory
+        spec = Dict(
+            "session" => "session.conf",
+            "core" => "core.conf",
+            "node-owners" => owners,
+        )
+        path = joinpath(directory, spec["session"])
+        E.ScienceExport.write_spa_config(path, session)
+        E.ScienceExport.write_spa_config(joinpath(directory, spec["core"]), Dict())
+        prefix = ENV["PIPEWIREAO_PREFIX"]
+        E.prepare_session_configuration!(
+            directory, spec, [], nothing, prefix; queue_inputs = [input]
+        )
+        @test E.D.decode(path, prefix) == merge(session, Dict("sinks" => [sink]))
+        @test owners == Dict(output.node => "camera", input.node => "core")
+    end
+    explicit = merge(session, Dict("sinks" => [sink]))
+    @test !E.queue_sinks!(explicit, [input], E.D.session_links(explicit), nothing)
+    @test explicit["sinks"] == [sink]
+
+    typed = E.D.link_declaration(link)
+    for links in (
+        [],
+        [typed, E.D.LinkDeclaration(E.D.PortAddress("second", "output_1"), input, false)],
+        [E.D.LinkDeclaration(E.D.PortAddress(output.node, "missing"), input, false)],
+    )
+        @test_throws ArgumentError E.queue_sinks!(deepcopy(session), [input], links, nothing)
+    end
+    incomplete = deepcopy(session)
+    delete!(only(only(incomplete["sources"])["ports"]), "rate")
+    @test_throws ArgumentError E.queue_sinks!(incomplete, [input], [typed], nothing)
+    @test_throws ArgumentError E.queue_sinks!(
+        deepcopy(session), [input], [typed], Dict(input.node => "camera")
+    )
 end
 
 @testset "telemetry metadata profiles preserve explicit extensible layouts" begin

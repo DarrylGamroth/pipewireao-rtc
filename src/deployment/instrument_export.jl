@@ -525,7 +525,7 @@ function prepare(
             checked_path(manifest), joinpath(application, "Manifest.toml")
         )
         render_templates!(application, spec, profile, prefix)
-        prepare_mode!(
+        queue_inputs = prepare_mode!(
             application,
             spec,
             mode,
@@ -595,6 +595,7 @@ function prepare(
             mirror_controls = rtc.controls["deformable_mirrors"],
             calibration = rtc.calibration,
             configurations,
+            queue_inputs,
         )
         haskey(spec, "session-runtime") && ScienceExport.stage_rtc!(application)
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic = true)

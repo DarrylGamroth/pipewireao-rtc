@@ -53,8 +53,11 @@ function queue_metadata!(args; defaults = true)
     return args
 end
 
+const QUEUE_CAPTURE_PORT = "playback_1"
+
 # Explicit authoring templates compile to the native queue contract.
 function queue_templates!(core; metadata_defaults = true)
+    queue_inputs = D.PortAddress[]
     for (index, entry) in enumerate(get(core, "context.modules", []))
         _queue_module(entry)
         haskey(entry, "template") || continue
@@ -139,14 +142,60 @@ function queue_templates!(core; metadata_defaults = true)
         core["context.modules"][index] = Dict(
             "name" => "libpipewire-module-queue", "args" => resolved
         )
+        if resolved["queue.media"] == "application/ndarray"
+            capture = InstrumentConfiguration._declaration_text(
+                resolved["capture.props"]["node.name"], "telemetry capture Node name"
+            )
+            push!(queue_inputs, D.PortAddress(capture, QUEUE_CAPTURE_PORT))
+        end
     end
-    return core
+    return queue_inputs
+end
+
+# Resolve only template sinks omitted from the session. The queue copies the
+# linked producer's ndarray representation and does not convert its format.
+function queue_sinks!(session, queue_inputs, links, owners)
+    isempty(queue_inputs) && return false
+    sinks = get!(session, "sinks", [])
+    changed = false
+    for input in queue_inputs
+        any(sink -> sink["node.name"] == input.node, sinks) && continue
+        outputs = [link.output for link in links if link.input == input]
+        length(outputs) == 1 ||
+            throw(ArgumentError("telemetry queue $input requires exactly one producer Link"))
+        output = only(outputs)
+        ports = [
+            port for section in ("sources", "graphs") for node in get(session, section, ())
+            if node["node.name"] == output.node for port in node["ports"] if
+            port["name"] == output.port && port["direction"] == "output"
+        ]
+        length(ports) == 1 ||
+            throw(ArgumentError("telemetry queue $input requires a declared output Port $output"))
+        producer = only(ports)
+        port = Dict{String,Any}("name" => input.port, "direction" => "input")
+        for field in ("shape", "element-type", "schema", "layout", "rate")
+            haskey(producer, field) || throw(
+                ArgumentError("telemetry queue $input requires $field on producer $output"),
+            )
+            port[field] = deepcopy(producer[field])
+        end
+        if owners !== nothing
+            get!(owners, input.node, "core") == "core" ||
+                throw(ArgumentError("telemetry queue $(input.node) belongs to the core"))
+        end
+        push!(
+            sinks,
+            Dict("node.name" => input.node, "ownership" => "external", "ports" => [port]),
+        )
+        changed = true
+    end
+    return changed
 end
 
 # Final source profiles and session links are available only after mode and
 # scientific contract resolution. Keep inferred slots optional; explicit authored
 # layouts remain authoritative and must be able to preserve their linked source.
-function queue_metadata_profiles!(core, session, contracts, simulation)
+function queue_metadata_profiles!(core, links, contracts, simulation)
     classifications = Set(
         UInt32.((
             PipeWireAO.SPA.META_OPTICAL_CHOPPING, PipeWireAO.SPA.META_ELECTRICAL_TRIGGER
@@ -173,7 +222,6 @@ function queue_metadata_profiles!(core, session, contracts, simulation)
             get(get(module_, "args", Dict()), "queue.media", nothing) ==
             "application/ndarray"
     ]
-    links = D.session_links(session)
     inferred = [
         Set(
             UInt32(record["type"]) for

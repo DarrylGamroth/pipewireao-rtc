@@ -118,13 +118,14 @@ function prepare_mode!(
     prefix;
     configuration = "rtc/configuration.yaml",
 )
+    queue_inputs = D.PortAddress[]
     for (field, path) in (("session", spec["session"]), ("core", spec["core"]))
         fullpath = D.relative_asset(application, path)
         original = D.decode(fullpath, prefix)
         combined = merge_configuration(original, get(mode, field, Dict()))
         combined = substitute(combined, bindings)
         if field == "core"
-            queue_templates!(combined; metadata_defaults = false)
+            queue_inputs = queue_templates!(combined; metadata_defaults = false)
             telemetry_queues!(combined; metadata_defaults = false)
             validate_telemetry_groups(combined)
         end
@@ -165,5 +166,5 @@ function prepare_mode!(
         filter!(view -> !(view["id"] in omitted), views["view"])
         Common.write_yaml(path, views)
     end
-    return nothing
+    return queue_inputs
 end

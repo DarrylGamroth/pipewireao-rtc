@@ -211,7 +211,7 @@ end
                 ) for name in ("strict", "ordinary")
             ],
         )
-        E.queue_metadata_profiles!(core, session, contracts, Dict())
+        E.queue_metadata_profiles!(core, E.D.session_links(session), contracts, Dict())
         profiles = Dict(
             m["args"]["node.name"] => Set(r["type"] for r in m["args"]["metadata"]) for
             m in core["context.modules"]
