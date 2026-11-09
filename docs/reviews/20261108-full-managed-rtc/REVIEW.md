@@ -159,3 +159,54 @@ session-unit logs.
 
 The focused startup, launcher/transport, and deployment/export selectors
 reported 206, 86, and 422 passing assertions, respectively.
+
+## Installed shutdown repeat
+
+The sealed CPU applications reused the private 4.0.2 SDK above. They resolved
+PipeWireAO 0.9.2, PipeWireAO_jll 4.0.2, AOS `c058f32f`, HIL `6e8a489` and
+the following FilterGraph releases. The registry tree hashes matched the
+corresponding release tags.
+
+| Package | Version | Git tree |
+| --- | --- | --- |
+| FilterGraphs | 0.10.2 | `8edab78006cd7bf2d602383412da48e32d01a827` |
+| FilterGraphAlgorithms | 0.12.2 | `4c419e7fc636909cc7c8ccb4eb82bb452b1c67e3` |
+| FilterGraphPipeWire | 0.5.3 | `c34b29490f83167a14cc834a0c884822ddd2c568` |
+
+GPI2 used the declared CPU profile and the separate leader CPUs from the
+previous run. During owner Quit, a graph owner closes its data Nodes and Ports
+before publishing its correlated `Stopped` reply. Commit `ddfc616` allows that
+exact data cohort to withdraw once RTC starts the owner's Quit. RTC still
+requires the bootstrap Node and its reply.
+
+CAL2 used a temporary copy of the external-pupil CPU profile with the two
+incompatible camera-to-controller image Links omitted. This allowed the sealed
+export and the existing schema validation to run. The test stops systemd
+startup after the publisher connects to the private core. CAL2 admission with
+the original Links still requires matching calibration.
+
+Commit `fefb72c` makes the configuring HSM start Quit when the exact publisher
+that requested Warmup disappears. In the installed run at `ddfc616`, the
+publisher exited via `InterruptException`, RTC reported an expired effect and
+settled in a held fault, and systemd sent SIGKILL to the RTC process after its
+stop deadline. Commit `597ba3d` carries local Quit through the existing
+source-first fault cleanup and closes the RTC connection even if that cleanup
+fails or expires. The deterministic regression failed six assertions before
+that change and passed all 51 afterward.
+
+The final runs used RTC `597ba3d` on separate private cores.
+
+| Profile | Observed result | systemd invocation |
+| --- | --- | --- |
+| GPI2 | Ready after 491 seconds. All 41 declared Nodes and 32 RTC-owned Links matched the registry. The installed `ExecStop` accepted the native Quit reply and the unit exited successfully. | `3d6d7a149f384faa9cdeb43d7c67aff7` |
+| CAL2 external pupil | The publisher unwound during Warmup. RTC closed its connection and returned status 1 about four seconds after the interrupt was logged. The session and its owners stopped without SIGKILL. | `3db13de81a7d492d86b6094d149bbe7f` |
+
+Both retained receipts confirm cleanup and generated unit-file removal. The
+CAL2 graph owners reported that their bootstrap controller was revoked. The
+simulator exited on SIGTERM and emitted PipeWire wrong-context warnings during teardown.
+The session and owner journals show no SIGSEGV or SIGABRT in the final runs.
+
+The core suite passed the HSM and private Link selectors. It stopped at an
+existing composition test that expects a port with an omitted schema to link
+to a port with an explicit schema. The same assertion failed independently
+with the `ddfc616` package and the same dependencies.
