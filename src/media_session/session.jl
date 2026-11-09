@@ -398,8 +398,12 @@ function update!(session::Session, event::ControllerAdded)
 end
 function update!(session::Session, event::GlobalRemoved)
     object = find_object(session, event.id)
-    object === nothing ||
+    if object !== nothing
         Ingress.controller_removed!(session.ingress, event.id, object.serial)
+        Hsm.dispatch!(
+            session.machine, :AdmissionControllerRemoved, (; id = event.id, object.serial)
+        )
+    end
     remove_object!(session, event.id)
     return nothing
 end

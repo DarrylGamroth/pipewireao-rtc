@@ -1005,6 +1005,16 @@ end
     _reply!(m, r, :Failed; error = "Session is offline")
     return Hsm.EventHandled
 end
+@on_event function (m::Machine, ::Configuring, ::AdmissionControllerRemoved, event)
+    launcher = m.admission_controller
+    launcher !== nothing && launcher.global_id == event.id &&
+    launcher.serial == event.serial || return Hsm.EventHandled
+    _begin_quit!(m, Request(Quit()))
+    return Hsm.transition!(m, :HoldingQuitSources)
+end
+@on_event function (m::Machine, ::Root, ::AdmissionControllerRemoved, _)
+    return Hsm.EventHandled
+end
 @on_event function (m::Machine, ::Configuring, ::WarmupRequested, r)
     if r.controller === nothing ||
         (m.admission_controller !== nothing && r.controller != m.admission_controller)
