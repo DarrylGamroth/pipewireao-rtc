@@ -5,7 +5,7 @@ source_path, evidence_root = ARGS[1:2]
 stop_test_event(name) = write(joinpath(evidence_root, name), string(time_ns()))
 stop_test_event("helper-launch")
 using PipeWireAORTC
-source_path = joinpath(PipeWireAORTC.package_root(), "src", "session_cli.jl")
+source_path = joinpath(PipeWireAORTC.package_root(), "src", "deployment", "session_cli.jl")
 source = read(source_path, String)
 first_byte = findfirst("function stop!(args)", source)
 last_byte = findnext("\n\"List local POD hints", source, last(first_byte))

@@ -93,17 +93,17 @@ end
 
 function controlled_actuators end
 
-include("instruments/settings.jl")
-include("instruments/geometry.jl")
-include("instruments/influence_functions.jl")
-include("instruments/schema.jl")
-include("instruments/catalogs.jl")
-include("instruments/spectra.jl")
-include("instruments/dimensions.jl")
-include("instruments/components.jl")
-include("instruments/responses.jl")
-include("instruments/masks.jl")
-include("instruments/observations.jl")
+include("settings.jl")
+include("geometry.jl")
+include("influence_functions.jl")
+include("schema.jl")
+include("catalogs.jl")
+include("spectra.jl")
+include("dimensions.jl")
+include("components.jl")
+include("responses.jl")
+include("masks.jl")
+include("observations.jl")
 
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value, key), required) ||
@@ -112,7 +112,7 @@ function fields(value::AbstractDict, allowed, required, label)
 end
 fields(value, allowed, required, label) = throw(ArgumentError("$label must be an object"))
 
-include("instruments/calibration.jl")
+include("calibration.jl")
 
 function bounded_yaml(path)
     document = Schemas.resolve(Common.read_yaml(path))
@@ -1040,7 +1040,7 @@ end
 binding_values(kind::Val, declaration, configured, binding) =
     throw(ArgumentError("unknown instrument binding kind $kind"))
 
-include("instruments/metadata.jl")
+include("metadata.jl")
 
 binding_files(value) = throw(
     ArgumentError("simulation binding_files requires at most eight relative filenames")

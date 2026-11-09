@@ -9,7 +9,7 @@ import ..ConfigurationStore
 import ..Artifacts
 import ..PipeWireAORTC
 
-include("analysis_capture.jl")
+include("capture.jl")
 
 public Config, Endpoint, LinkSpec, configuration, main
 const D = DeploymentConfiguration

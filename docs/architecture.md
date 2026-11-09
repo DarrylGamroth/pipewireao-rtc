@@ -816,6 +816,12 @@ supervised HEART wrapper. The completed simulator source path retains its
 prepared native SPA run/reset/query contract. Persisted configuration, recipes,
 immutable captures and reports retain their current formats.
 
+PipeWire and PipeWireAO own SPA POD serialization and the Node, parameter,
+registry and loop primitives. The RTC defines the acquisition lifecycle
+profile carried over them. It includes the calibration cursor, hold and
+restore state, and the operations supported by the calibration owner.
+The generic control envelope is a separate layer from those profile fields.
+
 Existing owners and their serialized dispatchers remain authoritative. Cold
 owners may publish an inactive Filter with no ports or process callback; it
 owns no scientific graph, frame queue or scheduling policy. A callback stages

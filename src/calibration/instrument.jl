@@ -681,7 +681,7 @@ function validate_optical end
 "Calibrate the deployed upstream sensor residual response to optical physical modes."
 function calibrate_optical_reference end
 public calibrate_optical, validate_optical, calibrate_optical_reference
-include("calibration_bundle.jl")
-include("calibration_recipe.jl")
+include("bundle.jl")
+include("recipe.jl")
 
 end

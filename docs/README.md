@@ -4,6 +4,15 @@ Start with [current work](roadmap.md#current-work). Read the row matching the
 change, then the affected clauses and their dependencies.
 The runner delegates science execution to FGN/FilterGraphs and transport to PipeWireAO.
 
+## Source layout
+
+`src/control` contains the native control protocols and clients.
+`src/media_session` owns admission and declared Links.
+`src/deployment` contains export, installation and systemd supervision.
+`src/configuration` and `src/instruments` read deployment and instrument declarations.
+`src/calibration` owns calibration orchestration and finite capture files.
+`src/analysis` owns optional observation and analysis.
+
 ## Authorities
 
 | Authority | Purpose |

@@ -293,7 +293,7 @@ function document(result::Result)
     )
 end
 
-include("calibration_procedure.jl")
+include("procedure.jl")
 
 # Enter the prepared exchange before starting the action's budget. Compiling a
 # consumer/procedure specialization is cold preparation, not endpoint latency.

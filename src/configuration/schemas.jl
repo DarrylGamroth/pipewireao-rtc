@@ -2,8 +2,9 @@
 module Schemas
 
 import ..Common
+import ..package_root
 
-const CATALOG_PATH = joinpath(@__DIR__, "..", "data", "schemas.yaml")
+const CATALOG_PATH = joinpath(package_root(), "data", "schemas.yaml")
 Base.include_dependency(CATALOG_PATH)
 const CATALOG = Common.read_yaml(CATALOG_PATH)
 const BY_ID = Dict(contract["id"] => contract for contract in values(CATALOG))
