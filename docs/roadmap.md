@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 captured controller replay — 2026-11-09
+
+The [connected CUDA replay](validation/gpi2-connected-20261109/README.md)
+offers every 500 µs release through a private core. It records receipt of
+the three command streams, callback allocation and GC, and the effect of
+the workstation's data-loop scheduling configuration. This commands-only
+profile uses fixed calibration. Target and physical-device timing remain
+separate gates.
+
 ### GPI2 data-thread timing — 2026-11-09
 
 The [private-core characterization](validation/gpi2-data-thread-20261109/README.md)

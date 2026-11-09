@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 captured controller through PipeWire — 2026-11-09
+
+The [connected GPI2 timing record](validation/gpi2-connected-20261109/README.md)
+retains fixed-arrival CUDA command latency, callback allocations, GC hooks,
+scheduling and deadline evidence with a workstation comparison.
+
 ## GPI2 PipeWire data-thread timing — 2026-11-09
 
 The [GPI2 timing record](validation/gpi2-data-thread-20261109/README.md) retains
