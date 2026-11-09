@@ -93,6 +93,23 @@ end
 function validate_session_links(session)
     links = get(session, "links", Any[])
     validate_links(links)
+    schemas = Dict{Tuple{String,String},Union{Nothing,String}}()
+    for role in ("sources", "graphs", "sinks"),
+        node in get(session, role, ()),
+        port in get(node, "ports", ())
+
+        address = string(node["node.name"], ':', port["name"])
+        schemas[(address, port["direction"])] = get(port, "schema", nothing)
+    end
+    isempty(schemas) && return links
+    for link in links
+        output, input = (link["output"], "output"), (link["input"], "input")
+        haskey(schemas, output) && haskey(schemas, input) || continue
+        require(
+            schemas[output] == schemas[input],
+            "linked port schemas differ: $(output[1]) → $(input[1])",
+        )
+    end
     return links
 end
 

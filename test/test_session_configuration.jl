@@ -508,3 +508,19 @@ end
     end
     @test PipeWireAORTC.MediaSession.MAX_LINKS == D.MAX_SESSION_LINKS
 end
+
+
+@testset "Incompatible calibrated sensor link fails before launch" begin
+    D = PipeWireAORTC.DeploymentConfiguration
+    output = Dict("name" => "image", "direction" => "output", "schema" => "sensor/current")
+    input = Dict("name" => "image", "direction" => "input", "schema" => "sensor/calibrated")
+    links = [Dict("output" => "source:image", "input" => "controller:image")]
+    session = Dict(
+        "sources" => [Dict("node.name" => "source", "ports" => [output])],
+        "graphs" => [Dict("node.name" => "controller", "ports" => [input])],
+        "links" => links,
+    )
+    @test_throws D.DeploymentError D.validate_session_links(session)
+    input["schema"] = output["schema"]
+    @test D.validate_session_links(session) === links
+end
