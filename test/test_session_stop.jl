@@ -11,6 +11,7 @@ using PipeWireAORTC: SessionLaunch, SessionInstall
     @test occursin(
         "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))", launcher
     )
+    @test occursin("Base.exit_on_sigint(false)", launcher)
     @test_throws UndefKeywordError SessionInstall.installed_launcher("/sdk/bin/julia")
 end
 
@@ -44,5 +45,6 @@ end
     @test first(findfirst("ExecStop=", template)) <
         first(findfirst("ExecStopPost=", template))
     @test "KillMode=control-group" in split(template, '\n')
+    @test "KillSignal=SIGINT" in split(template, '\n')
     @test "TimeoutStopSec=300" in split(template, '\n')
 end

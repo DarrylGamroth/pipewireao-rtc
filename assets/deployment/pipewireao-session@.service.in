@@ -17,6 +17,7 @@ LimitRTPRIO=95
 LimitMEMLOCK=4294967296
 CPUAffinity=@CPUS@
 KillMode=control-group
+KillSignal=SIGINT
 TimeoutStartSec=300
 TimeoutStopSec=300
 Restart=no

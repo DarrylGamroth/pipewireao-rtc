@@ -6,7 +6,7 @@ const R = PipeWireAORTC.RunnerCodec
 const D = PipeWireAORTC.DeploymentConfiguration
 const Common = PipeWireAORTC.Common
 include("control_private_core.jl")
-@testset "Public session process, saved binding and startup Quit" begin
+@testset "Public session process, saved binding and startup $termination" for termination in (:quit, :interrupt)
     with_control_private_core() do socket, directory, daemon
         chmod(dirname(socket), 0o700)
         uuid = "e10d4214-9c5f-4a61-b584-69b65b2193f6"
@@ -104,10 +104,14 @@ include("control_private_core.jl")
                 client, R.RunnerCommand(:groups); deadline = C.monotonic() + 60
             )
             @test isempty(groups.result.details.groups)
-            quit = C.request!(client, R.RunnerCommand(:quit); deadline = C.monotonic() + 60)
-            @test quit.lifecycle == R.Offline && quit.result.details.shutdown
-            timedwait(() -> process_exited(child), 10; pollint = 0.01) == :ok ||
-                error("session did not exit after Quit")
+            if termination === :quit
+                quit = C.request!(client, R.RunnerCommand(:quit); deadline = C.monotonic() + 60)
+                @test quit.lifecycle == R.Offline && quit.result.details.shutdown
+            else
+                kill(child, Base.SIGINT)
+            end
+            timedwait(() -> process_exited(child), 60; pollint = 0.01) == :ok ||
+                error("session did not exit after $termination")
             wait(child)
             @test success(child)
         catch

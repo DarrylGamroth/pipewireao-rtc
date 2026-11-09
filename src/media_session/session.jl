@@ -262,7 +262,11 @@ function start_effect!(session::Session)
                 ticket, result, Clocks.time_nanos(session.source_clock)
             )
         catch error
-            session.effect_result = EffectFailed(ticket, sprint(showerror, error), false)
+            if error isa InterruptException
+                stage!(session.queue, ShutdownRequested())
+            else
+                session.effect_result = EffectFailed(ticket, sprint(showerror, error), false)
+            end
         end
     end
     return nothing
@@ -439,20 +443,23 @@ Agent.on_close(::Session) = nothing
 function serve!(session::Session)
     current_task() === session.owner || error("session belongs to another task")
     invoker = Agent.AgentInvoker(session)
-    signals = [
-        SignalSource(
-            session.loop, signal, (_, number) -> stage!(session.queue, ShutdownRequested())
-        ) for signal in (Base.SIGINT, Base.SIGTERM)
-    ]
+    terminate = SignalSource(
+        session.loop, Base.SIGTERM, (_, _) -> stage!(session.queue, ShutdownRequested())
+    )
     try
         Agent.start(invoker)
         while !session.done
-            Agent.invoke_unchecked(invoker)
-            sleep(SESSION_IDLE_SECONDS)
+            try
+                Base.disable_sigint(() -> Agent.invoke_unchecked(invoker))
+                sleep(SESSION_IDLE_SECONDS)
+            catch error
+                error isa InterruptException || rethrow()
+                stage!(session.queue, ShutdownRequested())
+            end
         end
     finally
         close(invoker)
-        foreach(close, signals)
+        close(terminate)
     end
     return session.exitcode
 end
