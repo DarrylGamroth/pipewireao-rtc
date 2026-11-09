@@ -117,3 +117,45 @@ The three SPIDERS attempts stopped after the owner rejection was observed.
 All six launched invocations retained complete cleanup and unit-file removal
 receipts. Classic closed the admission and Link gate for its CPU profile.
 The other six profiles still require successful full admission.
+
+## Bootstrap and cancellation investigation
+
+Both profiles configure a 900-second startup window. The old default
+`SessionRuntime.start!` deadline bounded the entire operation to 430 seconds.
+After installation and unit setup, the original runs reached only 399 seconds
+of systemd startup for GPI2 and 389 for CAL2. With an explicit deadline covering
+the configured window, the same GPI2 profile reached Ready in 845 seconds and
+matched 41 Nodes and 32 RTC-owned Links. A sample during the wait showed the
+graph owner compiling in LLVM while RTC continued to receive PipeWire replies.
+Commit `83b4070` derives the default deadline from the configured window and
+preserves an explicit caller deadline.
+
+With the full window, CAL2 completed bootstrap and proceeded to Link creation.
+The core reported invalid ndarray format and the LLOWFS owner exited with
+`EINVAL`. The compiled CAL2 optical prescription starts with `485b800e`.
+The accepted calibration names `cdc2e50f`. The exported LLOWFS camera schema
+starts with `0e9deef1`; its controller requires `02a24c6a`. The SCC camera
+and controller schemas also differ. Commit `9eeecfe` rejects those incompatible
+declarations in the existing deployment validation. The focused checks accepted
+the sealed GPI2 application and rejected the CAL2 LLOWFS Link before launch.
+The retained CAL2 calibration still needs an accepted selection for the
+current prescription.
+
+The earlier SIGSEGV and SIGABRT came from the startup publisher. The stacks
+show Julia's SIGTERM exit hook calling PipeWire finalizers outside their owning
+loop. Commit `d2beef3` routes systemd cancellation through Julia's interrupt
+unwinding. RTC dispatches its existing shutdown event at a duty boundary. The
+private process test passed native Quit and interruption. In a deliberate
+installed CAL2 cancellation, the publisher had an open connection to the
+private core and exited with `InterruptException`.
+The RTC main process reached systemd's existing SIGKILL fallback. The initial
+cleanup observer expired, then reconciliation verified the retained cleanup
+and unit-file removal. The installed GPI2 rerun used the default deadline and
+separated the graph and simulator leader CPUs from the RTC leader. It reached
+Ready in 416 seconds and again matched 41 Nodes and 32 Links. The orderly Quit
+reply was lost and systemd retained a service failure. Both installed reruns
+confirmed cleanup, with no SIGSEGV, SIGABRT or wrong-context warning in their
+session-unit logs.
+
+The focused startup, launcher/transport, and deployment/export selectors
+reported 206, 86, and 422 passing assertions, respectively.
