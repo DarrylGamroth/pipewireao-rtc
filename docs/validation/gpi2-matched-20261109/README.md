@@ -83,13 +83,14 @@ continues releasing frames. Its latency distribution describes the
 subset with complete first command sets. HEART's timings include both
 loopback protocol bridges and the single-partition workstation build.
 
-Both replays acknowledged shutdown and exited successfully. The CUDA
-preflight independently checked its first 400 output triples against the
+All owned processes exited successfully. HEART acknowledged its SHUTDOWN
+command and the CUDA owner exited after the launcher issued its quit request.
+The CUDA preflight independently checked its first 400 output triples against the
 same calibrated CPU graph within 0.0070 nm. A separate instrument job ran
 on the host during this comparison. The CUDA owner warmed up while another
 process held a CUDA context, and the replay waited for that context to
-exit. Only the measured CUDA graph owned a compute context when its source
-was released. Other CPU activity varied between the trials. The receipts
+exit. The preflight immediately before CUDA replay showed only the measured
+graph's compute context. Other CPU activity varied between the trials. The receipts
 include host snapshots and the frame-thread policies for each run.
 
 ## RTX 3080 target
