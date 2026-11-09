@@ -491,19 +491,28 @@ end
 
 """Install a fresh sealed package and start one unique instance. Never retry a
 start whose outcome is uncertain; stop that exact reserved name on failure.
+The default deadline includes the deployment's startup timeout and time for
+installation and verification. An explicit deadline bounds the entire operation.
 """
 function start!(
     package::AbstractString,
     base::AbstractString;
     prefix::AbstractString = "/opt/pipewireao",
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(430_000_000_000)),
+    deadline = nothing,
 )
-    deadline = S.deadline_ns(deadline)
     source = realpath(package)
     spec = DeploymentConfiguration.profile(joinpath(source, "deployment.conf"), prefix)
     haskey(spec, "session-runtime") && haskey(spec, "node-owners") ||
         throw(ArgumentError("calibration package has no RTC session contract"))
+    startup_ms = DeploymentConfiguration.startup_timeout_ms(spec)
+    if deadline === nothing
+        # Allow for installation and verification outside the configured systemd start.
+        budget_ns = Int64(startup_ms) * 1_000_000 + Int64(130_000_000_000)
+        deadline = Base.checked_add(Clocks.time_nanos(clock), budget_ns)
+    else
+        deadline = S.deadline_ns(deadline)
+    end
     target = abspath(base)
     !ispath(target) && !islink(target) ||
         throw(ArgumentError("session stage runtime must be fresh"))
@@ -558,7 +567,7 @@ function start!(
             ["systemctl", "--user", "start", unit],
             deadline;
             clock,
-            limit = DeploymentConfiguration.startup_timeout_ms(spec) / 1000,
+            limit = startup_ms / 1000,
         )
         handle = _identity(unit, root; deadline, clock)
         launch_record = _ledger(handle)
