@@ -125,7 +125,7 @@ function apply!(session::Session, action::Ingress.DispatchRequest)
             ticket.header.endpoint_instance,
             ticket.header.token,
             operation,
-            Int32(-116),
+            Int32(-Base.Libc.ESTALE),
         )
         payload = policy_struct(
             Pod("session"),
@@ -186,7 +186,7 @@ reply_details(::Val{:Lifecycle}, reply) =
 reply_details(::Val, reply) = reply.details::SPA.Struct
 function reply_pod(ticket::Ingress.AbstractTicket, reply::Reply)
     h = ticket.header
-    result = reply.error === nothing ? Int32(0) : Int32(-5)
+    result = reply.error === nothing ? Int32(0) : Int32(-Base.Libc.EIO)
     header = ControlCodec.ReplyHeader(
         h.controller, h.endpoint_instance, h.token, h.operation, result
     )

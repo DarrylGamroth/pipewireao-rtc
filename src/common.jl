@@ -1,6 +1,14 @@
 module Common
 
 import PipeWireAO
+
+"Return the nonnegative time to a deadline, saturated to signed nanoseconds."
+function remaining_ns(deadline::Int64, now::Int64)
+    deadline <= now && return Int64(0)
+    remaining, overflow = Base.sub_with_overflow(deadline, now)
+    return overflow ? typemax(Int64) : remaining
+end
+
 # Optional scientific facts preserved by RTC graph and observation boundaries.
 # Required acquisition facts remain the consuming algorithm/profile's contract.
 const TELEMETRY_METADATA = Tuple(

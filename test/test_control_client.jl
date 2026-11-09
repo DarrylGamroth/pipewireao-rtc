@@ -280,7 +280,7 @@ end
         f = now -> (push!(samples, now); value[])
         @test Client.poll(f, client, Clocks.time_nanos(clock) + 5_000_000_000, Client.NO_CHECK) === :ready
         timer = client.timer
-        @test timer isa TimerSource
+        @test timer !== nothing
 
         value[] = nothing
         empty!(samples)

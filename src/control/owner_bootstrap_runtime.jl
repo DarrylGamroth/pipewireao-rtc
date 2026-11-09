@@ -444,7 +444,7 @@ function _apply!(runtime::Runtime, ticket, ::Codec.Command{:status}, lifecycle)
             runtime.transport,
             ticket,
             lifecycle;
-            result = Int32(-110),
+            result = Int32(-Base.Libc.ETIMEDOUT),
             message = "Status expired or controller removed",
         )
     end
@@ -458,7 +458,7 @@ _fault_reply!(
     runtime.transport,
     ticket,
     lifecycle;
-    result = Int32(-5),
+    result = Int32(-Base.Libc.EIO),
     message = "owner cleanup after failure",
 )
 
@@ -624,7 +624,7 @@ end
         sm.runtime.transport,
         ticket,
         sm.lifecycle;
-        result = Int32(-22),
+        result = Int32(-Base.Libc.EINVAL),
         message = "Connect requires Prepared",
     )
     return Hsm.EventHandled
@@ -666,7 +666,7 @@ end
             sm.runtime.transport,
             ticket,
             sm.lifecycle;
-            result = Int32(-5),
+            result = Int32(-Base.Libc.EIO),
             message = "owner stopped before Connect registered",
         )
         sm.active = nothing
@@ -696,7 +696,7 @@ end
         sm.runtime.transport,
         ticket,
         sm.lifecycle;
-        result = Int32(-5),
+        result = Int32(-Base.Libc.EIO),
         message = _message(something(facts.error)),
     )
     sm.active = nothing
@@ -707,7 +707,7 @@ end
     ticket = something(sm.active)
     Endpoint.check_ticket(runtime.transport.endpoint, ticket)
     if facts.finished
-        result = facts.error === nothing ? Int32(0) : Int32(-5)
+        result = facts.error === nothing ? Int32(0) : Int32(-Base.Libc.EIO)
         lifecycle = result == 0 ? Codec.Stopped : Codec.Fault
         _publish!(sm, lifecycle)
         result == 0 && Endpoint.retain_controller!(runtime.transport.endpoint, ticket)
@@ -770,7 +770,7 @@ end
                 runtime.transport,
                 sm.active,
                 failed_lifecycle;
-                result = Int32(-5),
+                result = Int32(-Base.Libc.EIO),
                 message = _message(error),
             )
         end

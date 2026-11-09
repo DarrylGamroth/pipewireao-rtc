@@ -300,14 +300,14 @@ function Endpoint(
     end
 end
 
-"""Wait until a predicate succeeds using signed nanosecond decision samples.
+"""Wait until the callback returns a result using signed nanosecond decision samples.
 
 Float64 deadlines are the existing seconds compatibility boundary. The caller
 owns cached-clock updates. One source sample starts each wait iteration; Timer
 alone receives seconds. Native effect admission performs its own fresh checks.
 """
 function await(
-    predicate,
+    f,
     condition::Base.AsyncCondition,
     guard::ReentrantLock,
     deadline::Union{Int64,Float64};
@@ -317,7 +317,7 @@ function await(
     at = Clocks.time_nanos(clock)::Int64
     previous = at
     timer = Timer(
-        _ -> wake!(condition, guard), Float64(max(Int128(0), Int128(deadline) - at)) / 1e9
+        _ -> wake!(condition, guard), Client.remaining_ns(deadline, at) / 1e9
     )
     try
         while true
@@ -325,7 +325,7 @@ function await(
                 throw(Client.UnknownOutcome("calibration owner clock regressed"))
             previous = at
             Client.deadline_check(deadline, Client.NO_CHECK, at)
-            value = predicate()
+            value = f()
             value === nothing || value === false || return value
             wait(condition)
             at = Clocks.time_nanos(clock)::Int64

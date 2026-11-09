@@ -709,6 +709,7 @@ function run_owner(
     active = selected = nothing
     failures = Exception[]
     try
+        timer = TimerSource(transport.loop, (_, _) -> notify(wake))
         sources = read_declarations(
             options.config, wake; check = () -> Bootstrap.preparation_check!(runtime)
         )
@@ -782,11 +783,8 @@ function run_owner(
                 active = Endpoint.take!(endpoint)
                 if active !== nothing
                     selected = nothing
-                    timer = Timer(
-                        Float64(max(Int128(1_000), Int128(active.deadline) - at)) / 1e9
-                    ) do _
-                        notify(wake)
-                    end
+                    delay = max(1, Common.remaining_ns(active.deadline, at)) / 1e9
+                    update_timer!(timer; delay)
                     staged = false
                     try
                         graph, inlet, element_type, shape, schema, path =
@@ -850,7 +848,8 @@ function run_owner(
                             expired_or_revoked =
                                 (selected !== nothing && selected.revoked !== nothing) ||
                                 Endpoint._now!(endpoint) >= active.deadline
-                            result = expired_or_revoked ? Int32(-110) : Int32(-22)
+                            result = expired_or_revoked ?
+                                Int32(-Base.Libc.ETIMEDOUT) : Int32(-Base.Libc.EINVAL)
                             _completion!(
                                 endpoint,
                                 active,
@@ -859,8 +858,7 @@ function run_owner(
                                 _message(error),
                             )
                         end
-                        close(timer)
-                        timer = nothing
+                        update_timer!(timer; delay = nothing)
                         active = selected = nothing
                     end
                 end
@@ -870,13 +868,13 @@ function run_owner(
                     result = Int32(0)
                     message = ""
                     if selected.revoked !== nothing
-                        result = Int32(-110)
+                        result = Int32(-Base.Libc.ETIMEDOUT)
                         message = _message(selected.revoked)
                     else
                         try
                             Endpoint.check_ticket(endpoint, active)
                         catch error
-                            result = Int32(-110)
+                            result = Int32(-Base.Libc.ETIMEDOUT)
                             message = _message(error)
                         end
                     end
@@ -885,8 +883,7 @@ function run_owner(
                         selected.phase = IDLE
                         selected.publication = nothing
                         selected.revoked = nothing
-                        close(timer)
-                        timer = nothing
+                        update_timer!(timer; delay = nothing)
                         active = selected = nothing
                     end
                 end

@@ -12,6 +12,7 @@ const Envelope = ControlCodec
 const Client = ControlClient
 const SPA = PipeWireAO.SPA
 const MAX_CONTROLLERS = 32
+const REPLAY_REQUEST = Int32(1)
 
 "One actual registry incarnation, verified using full NodeInfo."
 mutable struct Controller
@@ -112,15 +113,15 @@ Base.propertynames(endpoint::Endpoint, private::Bool = false) =
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::Pending, ::AdmissionChecked, result)
-    result[] = Int32(-16)
+    result[] = Int32(-Base.Libc.EBUSY)
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::TerminalApplying, ::AdmissionChecked, result)
-    result[] = Int32(-108)
+    result[] = Int32(-Base.Libc.ESHUTDOWN)
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::AdmissionClosed, ::AdmissionChecked, result)
-    result[] = Int32(-108)
+    result[] = Int32(-Base.Libc.ESHUTDOWN)
     return Hsm.EventHandled
 end
 
@@ -128,7 +129,7 @@ end
     _replay_or_reject!(endpoint, request) && return Hsm.EventHandled
     ticket = _ticket(endpoint, request)
     if ticket === nothing
-        _reject!(endpoint, request.header, Int32(-22))
+        _reject!(endpoint, request.header, Int32(-Base.Libc.EINVAL))
         return Hsm.EventHandled
     end
     endpoint.pending = ticket
@@ -138,15 +139,15 @@ end
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::Pending, ::Requested, request)
-    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-16))
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-Base.Libc.EBUSY))
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::TerminalApplying, ::Requested, request)
-    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-108))
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-Base.Libc.ESHUTDOWN))
     return Hsm.EventHandled
 end
 @on_event function (endpoint::Endpoint, ::AdmissionClosed, ::Requested, request)
-    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-108))
+    _replay_or_reject!(endpoint, request) || _reject!(endpoint, request.header, Int32(-Base.Libc.ESHUTDOWN))
     return Hsm.EventHandled
 end
 
@@ -159,7 +160,7 @@ end
             endpoint.instance,
             ticket.header.token,
             ticket.header.operation,
-            Int32(-110),
+            Int32(-Base.Libc.ETIMEDOUT),
         )
         endpoint.completion = Client.encode_failure(
             endpoint.profile, header, endpoint.lifecycle, ticket.command
@@ -498,7 +499,7 @@ function wait_terminal_release!(endpoint::Endpoint, ticket::Ticket)
         at = with_thread_loop_lock(endpoint.loop) do _
             something(endpoint.last_at)
         end
-        sleep(Float64(clamp(Int128(ticket.deadline) - at, 0, 5_000_000)) / 1e9)
+        sleep(min(Client.remaining_ns(ticket.deadline, at), Client.SUPERVISION_INTERVAL_NS) / 1e9)
     end
 end
 
@@ -523,18 +524,18 @@ function _reject!(endpoint::Endpoint, header, result)
 end
 
 function _correlation(endpoint::Endpoint, header::Envelope.RequestHeader, bytes)
-    header.endpoint_instance == endpoint.instance || return Int32(-116)
-    controller_present(endpoint, header.controller) || return Int32(-116)
-    header.token < endpoint.last_token && return Int32(-116)
+    header.endpoint_instance == endpoint.instance || return Int32(-Base.Libc.ESTALE)
+    controller_present(endpoint, header.controller) || return Int32(-Base.Libc.ESTALE)
+    header.token < endpoint.last_token && return Int32(-Base.Libc.ESTALE)
     for previous in (endpoint.pending, endpoint.terminal_request)
         previous === nothing && continue
         if header.token == previous.header.token
             return header.controller == previous.header.controller &&
                    header.operation == previous.header.operation &&
-                   bytes == previous.payload ? Int32(1) : Int32(-114)
+                   bytes == previous.payload ? REPLAY_REQUEST : Int32(-Base.Libc.EALREADY)
         end
     end
-    header.token > endpoint.last_token || return Int32(-116)
+    header.token > endpoint.last_token || return Int32(-Base.Libc.ESTALE)
     return nothing
 end
 
@@ -549,7 +550,7 @@ end
 function _replay_or_reject!(endpoint::Endpoint, request)
     result = _correlation(endpoint, request.header, request.bytes)
     result === nothing && return false
-    if result == 1
+    if result == REPLAY_REQUEST
         publish!(endpoint)
     else
         _reject!(endpoint, request.header, result)
@@ -590,7 +591,7 @@ function stage!(endpoint::Endpoint{P,C}, pod::Pod) where {P,C}
         command = Client.decode_request(endpoint.profile, header, payload)
         (command, copy(Pod(payload).data))
     catch error
-        return rejection!(endpoint, header, Int32(-22))
+        return rejection!(endpoint, header, Int32(-Base.Libc.EINVAL))
     end
     command, bytes = decoded
     Hsm.dispatch!(endpoint, :Requested, (; header, command, bytes, received))
@@ -621,7 +622,7 @@ function Endpoint(
         endpoint = Client.reply_endpoint(profile),
     )
     rejected = Client.encode_rejection(
-        profile, Envelope.ReplyHeader(instance, Int32(-22)), lifecycle
+        profile, Envelope.ReplyHeader(instance, Int32(-Base.Libc.EINVAL)), lifecycle
     )
     endpoint = Endpoint{P,C,L,typeof(publisher),typeof(clock)}(
         profile,
@@ -963,7 +964,7 @@ function flush_terminal!(
             (runtime.acknowledged_sequence[] == sequence, at)
         end
         observed && return nothing
-        sleep(Float64(clamp(Int128(deadline) - at, 0, 5_000_000)) / 1e9)
+        sleep(min(Client.remaining_ns(deadline, at), Client.SUPERVISION_INTERVAL_NS) / 1e9)
     end
 end
 

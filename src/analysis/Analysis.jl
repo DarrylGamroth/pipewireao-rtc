@@ -14,6 +14,7 @@ include("capture.jl")
 public Config, Endpoint, LinkSpec, configuration, main
 const D = DeploymentConfiguration
 const S = SystemdOwners
+const LOCK_RETRY_INTERVAL_NS = Int64(20_000_000)
 
 """
     Endpoint(node, port)
@@ -352,9 +353,9 @@ function with_lifecycle_lock(
                 )
                 locked = ccall(:flock, Cint, (Cint, Cint), fd(io), 2 | 4) == 0
                 locked && break
-                Base.Libc.errno() in (4, 11) ||
+                Base.Libc.errno() in (Base.Libc.EINTR, Base.Libc.EAGAIN) ||
                     throw(SystemError("optional analysis flock", Base.Libc.errno()))
-                sleep(Float64(min(Int128(20_000_000), Int128(deadline) - current)) / 1e9)
+                sleep(min(LOCK_RETRY_INTERVAL_NS, Common.remaining_ns(deadline, current)) / 1e9)
             end
             return action()
         finally

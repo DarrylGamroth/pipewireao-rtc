@@ -208,7 +208,7 @@ function _reject!(gate, header, result, message)
     _publish!(gate)
 end
 _failure(gate, ticket, message) = Envelope.encode_completion(
-    _reply_header(gate, ticket.header, -5),
+    _reply_header(gate, ticket.header, -Base.Libc.EIO),
     _error_payload(gate, message);
     endpoint = :lifecycle,
 )
@@ -251,7 +251,7 @@ function _candidate!(gate, pod, received::Int64)
         canonical = _canonical(header, command)
         controller = _controller(gate, header)
         if header.endpoint_instance != gate.instance || controller === nothing
-            _reject!(gate, header, -116, "Stale endpoint/controller incarnation")
+            _reject!(gate, header, -Base.Libc.ESTALE, "Stale endpoint/controller incarnation")
             return nothing
         end
         if _duplicate(gate, header, canonical.data)
@@ -263,17 +263,19 @@ function _candidate!(gate, pod, received::Int64)
         return Ticket(header, command, copy(canonical.data), deadline, controller.identity)
     catch
         # Malformed requests never acquire a trusted request identity.
-        _reject!(gate, nothing, -22, "Malformed session request")
+        _reject!(gate, nothing, -Base.Libc.EINVAL, "Malformed session request")
         return nothing
     end
 end
 function _accept!(gate, ticket)
     if ticket.header.token <= gate.last_token
-        _reject!(gate, ticket.header, -116, "Session token already used or superseded")
+        _reject!(gate, ticket.header, -Base.Libc.ESTALE, "Session token already used or superseded")
         return false
     end
     if _now(gate) >= ticket.deadline
-        _reject!(gate, ticket.header, -110, "Request budget expired in transport handoff")
+        _reject!(
+            gate, ticket.header, -Base.Libc.ETIMEDOUT, "Request budget expired in transport handoff"
+        )
         return false
     end
     gate.last_token = ticket.header.token
@@ -369,14 +371,14 @@ end
     ticket = _candidate!(gate, event.pod, event.received)
     ticket === nothing && return Hsm.EventHandled
     if ticket.header.operation != QUIT_OPERATION
-        _reject!(gate, ticket.header, -16, "Session operation already pending")
+        _reject!(gate, ticket.header, -Base.Libc.EBUSY, "Session operation already pending")
         return Hsm.EventHandled
     end
     if ticket.header.token <= gate.last_token || _now(gate) >= ticket.deadline
         _reject!(
             gate,
             ticket.header,
-            ticket.header.token <= gate.last_token ? -116 : -110,
+            ticket.header.token <= gate.last_token ? -Base.Libc.ESTALE : -Base.Libc.ETIMEDOUT,
             "Stale or expired shutdown request",
         )
         return Hsm.EventHandled
@@ -401,7 +403,7 @@ end
 @on_event function (gate::Gate, ::Closing, ::Received, event)
     ticket = _candidate!(gate, event.pod, event.received)
     ticket === nothing ||
-        _reject!(gate, ticket.header, -108, "Session shutdown already accepted")
+        _reject!(gate, ticket.header, -Base.Libc.ESHUTDOWN, "Session shutdown already accepted")
     return Hsm.EventHandled
 end
 @on_event function (gate::Gate, ::Root, ::Controllers, observed)
@@ -510,7 +512,7 @@ function Gate(
     initial = Envelope.ReplyHeader(Int64(instance), Int32(0))
     completion = Envelope.encode_completion(initial, _struct(); endpoint = :lifecycle)
     rejection = Envelope.encode_rejection(
-        Envelope.ReplyHeader(Int64(instance), Int32(-11)),
+        Envelope.ReplyHeader(Int64(instance), Int32(-Base.Libc.EAGAIN)),
         _struct(
             Pod("session"),
             Pod("No rejected request"),

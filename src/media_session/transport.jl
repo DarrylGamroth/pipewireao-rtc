@@ -120,10 +120,10 @@ function check_job(runtime, job::Job)
     check_core!(runtime)
     return nothing
 end
-function await_condition!(predicate, runtime, job)
+function await_condition!(f, runtime, job)
     while true
         check_job(runtime, job)
-        result = predicate()
+        result = f()
         result === nothing || result === false || return result
         sleep(0.001)
     end

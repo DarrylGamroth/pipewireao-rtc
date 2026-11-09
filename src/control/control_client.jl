@@ -3,6 +3,7 @@ module ControlClient
 
 using PipeWireAO
 import ..ControlCodec
+import ..Common: remaining_ns
 import Clocks
 
 const Envelope = ControlCodec
@@ -76,13 +77,6 @@ const NEXT_INSTANCE = Ref(Int64(0))
 monotonic() = Clocks.time_nanos(Clocks.SystemNanoClock()) / 1.0e9
 const NO_CHECK = () -> nothing
 const SUPERVISION_INTERVAL_NS = Int64(5_000_000)
-
-"Return the nonnegative time to a deadline, saturated to signed nanoseconds."
-function remaining_ns(deadline::Int64, now::Int64)
-    deadline <= now && return Int64(0)
-    remaining, overflow = Base.sub_with_overflow(deadline, now)
-    return overflow ? typemax(Int64) : remaining
-end
 
 # Convert only the existing public seconds input. New callers pass Clocks'
 # Int64 nanoseconds directly; every internal deadline and receipt stays signed.
@@ -565,6 +559,7 @@ function fail!(client::Client, message; kwargs...)
 end
 
 function poll(f, client::Client, deadline::Int64, check; verify_health = true)
+    # Registry, reply and timer callbacks wake the same waiting task.
     timer = client.timer
     if timer === nothing
         timer = TimerSource(client.loop, (_, _) -> wake!(client))

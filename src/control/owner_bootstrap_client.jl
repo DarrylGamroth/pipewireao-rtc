@@ -114,7 +114,7 @@ function connect_owner!(
         reply.lifecycle === Codec.Prepared && break
         reply.lifecycle === Codec.Preparing ||
             error("bootstrap owner is not Prepared: $(reply.lifecycle): $(reply.message)")
-        sleep(min(0.005, Float64(max(Int128(0), Int128(deadline) - current)) / 1e9))
+        sleep(min(Client.SUPERVISION_INTERVAL_NS, Client.remaining_ns(deadline, current)) / 1e9)
     end
     reply = request!(connection, :connect; deadline, check)
     _require_connected(reply)
