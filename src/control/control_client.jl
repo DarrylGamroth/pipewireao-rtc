@@ -62,7 +62,7 @@ function budget_ns(profile::AbstractProfile, remaining::Float64)
     return nanoseconds >= Float64(typemax(Int64)) ? typemax(Int64) :
            max(Int64(1), floor(Int64, nanoseconds))
 end
-function budget_ns(profile::AbstractProfile, remaining::Union{Int64,Int128})
+function budget_ns(profile::AbstractProfile, remaining::Int64)
     remaining > 0 || throw(ArgumentError("invalid native request budget"))
     limit = budget_ns(profile, maximum_budget(profile))
     return Int64(min(remaining, limit))
@@ -75,6 +75,14 @@ const NEXT_INSTANCE = Ref(Int64(0))
 "Return monotonic seconds for existing public seconds-based tool APIs."
 monotonic() = Clocks.time_nanos(Clocks.SystemNanoClock()) / 1.0e9
 const NO_CHECK = () -> nothing
+const SUPERVISION_INTERVAL_NS = Int64(5_000_000)
+
+"Return the nonnegative time to a deadline, saturated to signed nanoseconds."
+function remaining_ns(deadline::Int64, now::Int64)
+    deadline <= now && return Int64(0)
+    remaining, overflow = Base.sub_with_overflow(deadline, now)
+    return overflow ? typemax(Int64) : remaining
+end
 
 # Convert only the existing public seconds input. New callers pass Clocks'
 # Int64 nanoseconds directly; every internal deadline and receipt stays signed.
@@ -377,6 +385,7 @@ mutable struct Client{O<:Observation,C<:Clocks.AbstractNanoClock}
     request_lock::ReentrantLock
     wakeup::Base.AsyncCondition
     wakeup_lock::ReentrantLock
+    timer::Union{Nothing,TimerSource}
     registry_listener::Union{Nothing,ManagedListener}
     clock::C
     last_at::Union{Nothing,Int64}
@@ -431,6 +440,7 @@ function Client(
         request_lock,
         Base.AsyncCondition(),
         ReentrantLock(),
+        nothing,
         nothing,
         clock,
         nothing,
@@ -554,44 +564,34 @@ function fail!(client::Client, message; kwargs...)
     return nothing
 end
 
-function poll(predicate, client::Client, deadline::Int64, check; verify_health = true)
-    # Completion/discovery wakes this task. A single deadline timer bounds an
-    # otherwise idle connection. Legacy check hooks may supervise external
-    # processes, so retain their periodic invocation only when one is supplied.
-    started = Clocks.time_nanos(client.clock)
-    remaining = max(Int128(0), Int128(deadline) - started)
-    timer_fired = Threads.Atomic{Bool}(false)
-    timer = Timer(Float64(remaining) / 1.0e9) do _
-        timer_fired[] = true
-        wake!(client)
+function poll(f, client::Client, deadline::Int64, check; verify_health = true)
+    timer = client.timer
+    if timer === nothing
+        timer = TimerSource(client.loop, (_, _) -> wake!(client))
+        client.timer = timer
     end
-    supervision =
-        check === NO_CHECK ? nothing : Timer(_ -> wake!(client), 0.005; interval = 0.005)
     try
         while true
             current = Clocks.time_nanos(client.clock)
             verify_health && deadline_check(client, deadline, check, current)
+            remaining = remaining_ns(deadline, current)
+            if remaining > 0
+                delay = check === NO_CHECK ? remaining : min(remaining, SUPERVISION_INTERVAL_NS)
+                update_timer!(timer; delay = delay / 1.0e9)
+            end
             value = with_thread_loop_lock(client.loop) do _
                 verify_health && healthy(client)
-                predicate(current)
+                f(current)
             end
             if value !== nothing && value !== false
                 verify_health && deadline_check(client, deadline, check, current)
                 return value
             end
             deadline_check(client, deadline, check, current)
-            # A deadline notification may arrive while the predicate is busy.
-            # Start the next decision cycle rather than losing that wake-up or
-            # obtaining a second clock sample in this one.
-            if timer_fired[]
-                yield()
-                continue
-            end
             wait(client.wakeup)
         end
     finally
-        close(timer)
-        supervision === nothing || close(supervision)
+        update_timer!(timer; delay = nothing)
     end
 end
 
@@ -894,7 +894,7 @@ function request!(client::Client, command; deadline::Union{Int64,Float64}, check
         end
         # Cold validation/compilation must not inflate the transmitted budget.
         deadline_check(client, deadline, check)
-        remaining = Int128(deadline) - something(client.last_at)
+        remaining = remaining_ns(deadline, something(client.last_at))
         budget = budget_ns(client.observation.profile, remaining)
         header = Envelope.RequestHeader(
             something(client.identity),
@@ -960,6 +960,7 @@ function Base.close(client::Client)
         client.closed = true
         with_thread_loop_lock(client.loop) do _
             for resource in (
+                client.timer,
                 client.node,
                 client.marker_node,
                 client.marker,

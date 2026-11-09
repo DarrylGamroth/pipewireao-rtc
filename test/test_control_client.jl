@@ -227,7 +227,7 @@ end
         end
         @test result === :finished
         @test samples == [-20]
-        @test clock.reads == 2 # Timer setup and the one decision iteration.
+        @test clock.reads == 1 # One sample arms the timer and drives the decision.
 
         clock.reads = 0
         clock.value = 10
@@ -256,17 +256,50 @@ end
             nothing
         end
         @test samples == [0, 20]
-        @test clock.reads == 3
+        @test clock.reads == 2
     finally
         close(client)
     end
 
     @test Client.budget_ns(TestProfile(), Int64(1)) === Int64(1)
-    @test Client.budget_ns(TestProfile(), Int128(typemax(Int64)) - typemin(Int64)) ==
-        30_000_000_000
+    @test Client.remaining_ns(typemax(Int64), typemin(Int64)) === typemax(Int64)
+    @test Client.remaining_ns(typemin(Int64), typemax(Int64)) === Int64(0)
+    @test Client.budget_ns(TestProfile(), typemax(Int64)) == 30_000_000_000
     @test Client._deadline_ns(Int64(2)^53 + 1) === Int64(2)^53 + 1
     @test_throws ArgumentError Client._deadline_ns(Inf)
     @test_throws ArgumentError Client._deadline_ns(Float64(typemax(Int64)) / 1e9)
+end
+
+@testset "native timer wakes an idle control client" begin
+    clock = Clocks.SystemNanoClock()
+    client = clock_client(clock)
+    try
+        start!(client.loop)
+        value = Ref{Union{Nothing,Symbol}}(:ready)
+        samples = Int64[]
+        f = now -> (push!(samples, now); value[])
+        @test Client.poll(f, client, Clocks.time_nanos(clock) + 5_000_000_000, Client.NO_CHECK) === :ready
+        timer = client.timer
+        @test timer isa TimerSource
+
+        value[] = nothing
+        empty!(samples)
+        deadline = Clocks.time_nanos(clock) + 50_000_000
+        @test_throws Client.UnknownOutcome Client.poll(f, client, deadline, Client.NO_CHECK)
+        @test first(samples) < deadline
+        @test client.timer === timer
+
+        checks = Ref(0)
+        supervise = () -> begin
+            checks[] += 1
+            checks[] >= 3 && (value[] = :supervised)
+            return nothing
+        end
+        @test Client.poll(f, client, Clocks.time_nanos(clock) + 5_000_000_000, supervise) === :supervised
+        @test client.timer === timer
+    finally
+        close(client)
+    end
 end
 
 struct DeadlineProbe{C}
