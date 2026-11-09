@@ -210,3 +210,31 @@ The core suite passed the HSM and private Link selectors. It stopped at an
 existing composition test that expects a port with an omitted schema to link
 to a port with an explicit schema. The same assertion failed independently
 with the `ddfc616` package and the same dependencies.
+
+## CAL2 simulator process interruption
+
+CAL2 selects the shared HIL external-pupil runner through YAML. Its
+configuration supplies the optical graph and named SCC and LLOWFS outputs.
+The earlier warning occurred while the managed launcher was still loading
+Julia packages, after the bootstrap endpoint had been opened. Systemd's
+SIGTERM sent Julia through process exit and the subsequent PipeWire
+finalizers reported calls outside the owning context.
+
+RTC `81bd10c` validates and renders the optional owner stop signal in the
+generated service. HIL `a4265ff` selects SIGINT for its managed launcher.
+The Julia interrupt unwinds the owner scope and dispatches cancellation to the
+existing bootstrap HSM. The managed private-core selector passed 18 native
+Quit assertions and four Preparing interruption assertions. The standalone
+optical selector passed 33 assertions without loading RTC.
+
+The sealed CAL2 repeat used the same FilterGraph releases and temporary
+two-Link omission as the shutdown repeat. Systemd invocation
+`cdad109354264cc2af1c8f51a2936914` was canceled during Warmup on its private
+core. The generated simulator unit selected SIGINT and retained its
+15-second stop deadline and SIGKILL fallback. In this run the simulator
+observed the bootstrap controller's disappearance and exited with status 1
+before systemd stopped the core, so the installed run did not need the signal.
+The managed Preparing selector exercised that signal directly. The session
+and all owners stopped without PipeWire wrong-context warnings, SIGSEGV,
+SIGABRT or SIGKILL. The retained receipt confirmed cleanup and generated
+unit-file removal.
