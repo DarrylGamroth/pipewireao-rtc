@@ -77,7 +77,7 @@ heap bytes. Two allocated 64 bytes each. The same size appeared once in
 warmup. The three events are approximately 10 seconds apart. Their source
 was not determined. All allocation intervals were valid. There were no GC
 hook intervals during the measured window and no callback epoch crossings.
-The two recorded premeasurement GC spans were 53.16 and 101.92 ms.
+The recorded GC spans were 101.92 ms before measurement and 53.16 ms afterward.
 The graph callback had 331 µs p50, 375 µs p99, and a 612 µs maximum.
 Five callback bodies exceeded 500 µs. The p99 publication-to-callback-start
 delay was 267 µs. The p99 absolute cadence error between consecutive
