@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## GPI2 deadline miss investigation — 2026-11-09
+
+The [tail investigation](validation/gpi2-deadline-misses-20261109/README.md)
+records the original miss cluster and its timed callback and device repeats.
+
 ## Matched GPI2 timing through PipeWire — 2026-11-09
 
 The [matched comparison](validation/gpi2-matched-20261109/README.md) retains
