@@ -78,6 +78,7 @@ function service_unit(
     part_of = String[],
     requisite = String[],
     ordinary = false,
+    stop_signal = "SIGTERM",
 )
     service.state == :pending || fail("owner unit rendering requires a pending handle")
     unit = _unit_name(service.unit, "owner")
@@ -132,6 +133,8 @@ function service_unit(
         push!(lines, "Environment=" * unit_argument(key * "=" * environment[key]))
     end
     ordinary && append!(lines, ["RestrictRealtime=yes", "Nice=10"])
+    stop_signal in ("SIGINT", "SIGTERM") || fail("invalid owner stop signal")
+    stop_signal == "SIGTERM" || push!(lines, "KillSignal=$stop_signal")
     append!(
         lines,
         [

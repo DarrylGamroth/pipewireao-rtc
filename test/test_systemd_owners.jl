@@ -236,6 +236,14 @@ end
     before = copy(environment)
     unit = SO.service_unit(service, ["/usr/bin/julia"], environment, "/tmp", placement)
     @test "Environment=\"HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0\"" in split(unit, '\n')
+    @test !occursin("KillSignal=", unit)
+    interruptible = SO.service_unit(
+        service, ["/usr/bin/julia"], environment, "/tmp", placement; stop_signal = "SIGINT"
+    )
+    @test "KillSignal=SIGINT" in split(interruptible, '\n')
+    @test_throws SO.OwnerError SO.service_unit(
+        service, ["/usr/bin/julia"], environment, "/tmp", placement; stop_signal = "SIGKILL"
+    )
     @test environment == before
     environment["HSA_OVERRIDE_CPU_AFFINITY_DEBUG"] = "0"
     before = copy(environment)

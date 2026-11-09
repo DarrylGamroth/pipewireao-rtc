@@ -1142,6 +1142,10 @@ function validate_external_owner!(owner::AbstractDict, source_role, auxiliary, r
     else
         Set(["role", "argv", "environment", "bootstrap-protocol", "bootstrap-node"])
     end
+    if haskey(owner, "stop-signal")
+        require(owner["stop-signal"] in ("SIGINT", "SIGTERM"), "invalid owner stop signal")
+        push!(fields, "stop-signal")
+    end
     if uses_bootstrap_protocol(owner)
         node = get(owner, "bootstrap-node", nothing)
         require(

@@ -683,6 +683,7 @@ function prepare!(request::Request; render!::Function)
                     joinpath(runtime, role),
                     spec["placement"][role];
                     after = [core.unit],
+                    stop_signal = get(owner, "stop-signal", "SIGTERM"),
                 ),
                 runtime,
                 record,
