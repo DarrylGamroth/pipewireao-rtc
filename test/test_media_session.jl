@@ -365,6 +365,41 @@ end
     @test m.effect === nothing && m.failure == "required source lost"
 end
 
+@testset "Startup cancellation disconnects after failed owner shutdown" begin
+    for cleanup in (:complete, :fail, :expire)
+        clock = zero_clock()
+        m = S.Machine(101; clock)
+        S.submit!(m, S.Request(S.InspectWarmup(); controller = LAUNCHER))
+        S.take_replies!(m)
+        Hsm.dispatch!(
+            m, :AdmissionControllerRemoved, (; id = LAUNCHER.global_id, LAUNCHER.serial)
+        )
+        S.take_cancelled!(m)
+        sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks, S.ShutdownSources))
+        @test m.effect.effect === S.ShutdownOwners()
+        Clocks.update!(clock, m.deadline)
+        S.tick!(m)
+        S.take_cancelled!(m)
+        sequence!(m, (S.HoldSources, S.HoldGraphs))
+        @test m.effect.effect === S.WithdrawLinks()
+        if cleanup === :complete
+            acknowledge!(m)
+        elseif cleanup === :fail
+            S.fail!(m, m.effect, "Link withdrawal failed")
+        else
+            Clocks.update!(clock, m.deadline)
+            S.tick!(m)
+            S.take_cancelled!(m)
+        end
+        @test Hsm.current(m) === :EmergencyDisconnect
+        @test m.effect !== nothing && m.effect.effect === S.Disconnect()
+        if m.effect !== nothing
+            acknowledge!(m)
+            @test only(S.take_replies!(m)).outcome === :Failed
+        end
+    end
+end
+
 @testset "Accepted Quit precedes publication fence and survives fence failure" begin
     for disposition in (:complete, :fail, :expire)
         clock = Clocks.CachedNanoClock(0)

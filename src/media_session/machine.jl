@@ -574,6 +574,19 @@ function _fault_reply!(m::Machine)
     r === nothing || _reply!(m, r, :Failed; error = m.failure, unknown = m.fault_unknown)
     return nothing
 end
+_local_quit(::Union{Nothing,Request}) = false
+_local_quit(r::Request{Quit}) = r.token == 0 && r.controller === nothing
+
+function _finish_fault_cleanup!(m::Machine)
+    # A local Quit ends the process even when cleanup cannot be confirmed.
+    # Keep its failure until transport closes and systemd can reap the owners.
+    if _local_quit(m.fault_request)
+        _issue!(m, Disconnect())
+        return true
+    end
+    _fault_reply!(m)
+    return false
+end
 function _refuse_operation!(m::Machine, reason)
     _retire!(m)
     r, m.request = m.request, nothing
@@ -836,7 +849,9 @@ end
 end
 @on_event function (m::Machine, ::WithdrawingFaultLinks, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
-    _fault_reply!(m)
+    if _finish_fault_cleanup!(m)
+        return Hsm.transition!(m, :EmergencyDisconnect)
+    end
     return Hsm.transition!(m, :HeldFault)
 end
 @on_event function (m::Machine, ::EmergencyDisconnect, ::Completion, event)
@@ -940,7 +955,9 @@ end
 @on_event function (m::Machine, ::Fault, ::Failure, event)
     _receive_failure!(m, event) || return Hsm.EventHandled
     _cleanup_failed!(m, event.reason)
-    _fault_reply!(m)
+    if _finish_fault_cleanup!(m)
+        return Hsm.transition!(m, :EmergencyDisconnect)
+    end
     return Hsm.transition!(m, :HeldFault)
 end
 
@@ -961,14 +978,18 @@ end
 @on_event function (m::Machine, ::Fault, ::Tick, event)
     m.effect !== nothing && _now(m) >= m.deadline || return Hsm.EventHandled
     _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
-    _fault_reply!(m)
+    if _finish_fault_cleanup!(m)
+        return Hsm.transition!(m, :EmergencyDisconnect)
+    end
     return Hsm.transition!(m, :HeldFault)
 end
 
 @on_event function (m::Machine, ::Fault, ::Completion, event)
     _matches(m, event.ticket) || return Hsm.EventHandled
     _cleanup_failed!(m, "Fault cleanup expired; outcome unknown")
-    _fault_reply!(m)
+    if _finish_fault_cleanup!(m)
+        return Hsm.transition!(m, :EmergencyDisconnect)
+    end
     return Hsm.transition!(m, :HeldFault)
 end
 # Completion handlers above must handle success before Fault's expiry fallback.
