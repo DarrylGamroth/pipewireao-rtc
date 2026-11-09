@@ -93,13 +93,15 @@ end
 function validate_session_links(session)
     links = get(session, "links", Any[])
     validate_links(links)
-    schemas = Dict{Tuple{String,String},Union{Nothing,String}}()
+    schemas = Dict{Tuple{String,String},String}()
     for role in ("sources", "graphs", "sinks"),
         node in get(session, role, ()),
         port in get(node, "ports", ())
 
+        schema = get(port, "schema", nothing)
+        schema === nothing && continue
         address = string(node["node.name"], ':', port["name"])
-        schemas[(address, port["direction"])] = get(port, "schema", nothing)
+        schemas[(address, port["direction"])] = schema
     end
     isempty(schemas) && return links
     for link in links
