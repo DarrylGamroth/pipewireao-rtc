@@ -80,6 +80,7 @@ function after_completion!(session, ::PublishQuit)
     return nothing
 end
 function after_completion!(session, ::Disconnect)
+    @error "Session disconnected during cleanup" failure=session.machine.failure cleanup=session.machine.cleanup_failure
     session.exitcode = 1
     session.done = true
     return nothing
@@ -414,8 +415,7 @@ function perform!(session::Session, job, ::RemoveControls)
         object = find_object(session, identity.global_id)
         object !== nothing && object.serial == identity.serial ||
             throw(ArgumentError("session controller changed before retirement"))
-        delete!(session.captured, identity.global_id)
-        session.retired[identity.global_id] = identity.serial
+        retire_object!(session, identity.global_id)
     end
     close(session.controller_endpoint)
     synchronize!(session, job)

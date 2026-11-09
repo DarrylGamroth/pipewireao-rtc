@@ -306,7 +306,8 @@ function shutdown_owner!(runtime::Runtime, job, owner::S.Owner)
     owner.retired = true
     return nothing
 end
-function retire_owner!(runtime::Runtime, owner::S.Owner{Bootstrap.Profile})
+function retire_owner!(quit::Function, runtime::Runtime, owner::S.Owner{Bootstrap.Profile})
+    quit()
     owner.retired || error("retirement requires terminal acknowledgement")
     runtime.retirement_proofs[owner.handle] = owner.retired
     push!(runtime.trace, (:retire_owner, owner.handle))

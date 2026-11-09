@@ -399,17 +399,13 @@ function _node_client(object::Object{P,NodeInfo}) where {P}
     return tryparse(UInt32, get(object_properties(object), "client.id", ""))
 end
 
-"""Retire a declared process cohort after its validated bootstrap Quit receipt.
+"""Submit an exact bootstrap Quit with the data endpoints fenced for withdrawal.
 
-`owner.retired` must already record successful validation of that receipt. An
-acquisition Shutdown proves acquisition cleanup, not process shutdown, and does
-not admit this operation. Captures remain required until this explicit handoff.
-Only declared nodes with matching native ClientInfo provenance, their ports and
-unshared client parents are retired. Exact `(global ID, serial)` absence targets
-remain in `runtime.retired`; this method neither removes nor destroys objects.
+The owner closes its data Nodes and Ports before it publishes Stopped. Verify
+the captured cohort before Quit, then allow those incarnations to disappear.
+The bootstrap endpoint stays required until its correlated receipt arrives.
 """
-function retire_owner!(runtime, owner::Owner{OwnerBootstrapCodec.Profile})
-    owner.retired || throw(ArgumentError("owner has no validated bootstrap Quit receipt"))
+function retire_owner!(quit::F, runtime, owner::Owner{OwnerBootstrapCodec.Profile}) where {F}
     assert_identity!(runtime, owner.handle)
     endpoint = something(find_object(runtime, owner.handle))
     properties = object_properties(endpoint)
@@ -474,15 +470,23 @@ function retire_owner!(runtime, owner::Owner{OwnerBootstrapCodec.Profile})
     for id in targets
         haskey(runtime.captured, id) && assert_identity!(runtime, UInt64(id))
     end
+    bootstrap = UInt32(owner.handle)
     for id in targets
-        object = something(find_object(runtime, id))
-        runtime.retired[id] = object.serial
-        delete!(runtime.captured, id)
+        id == bootstrap || retire_object!(runtime, id)
     end
+    quit()
+    owner.retired || throw(ArgumentError("owner has no validated bootstrap Quit receipt"))
+    retire_object!(runtime, bootstrap)
     return nothing
 end
-retire_owner!(runtime, owner::Owner) =
+retire_owner!(quit, runtime, owner::Owner) =
     throw(ArgumentError("process retirement requires a bootstrap Quit receipt"))
+
+function retire_object!(runtime, id::UInt32)
+    runtime.retired[id] = something(find_object(runtime, id)).serial
+    delete!(runtime.captured, id)
+    return nothing
+end
 
 """Replace a failed local bind after a correlated read-only request has ended.
 

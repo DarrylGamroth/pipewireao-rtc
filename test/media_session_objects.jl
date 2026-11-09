@@ -679,17 +679,20 @@ end
 
 end
 
-@testset "Withdrawal retains captured controls through terminal owner receipts" begin
+@testset "Quit allows data Nodes to close before the bootstrap receipt" begin
     runtime, owner = shutdown_cohort()
     before = copy(runtime.captured)
     remove_links!(runtime, (; ticket = (; deadline = now(runtime) + SECOND)))
     @test runtime.captured == before
     @test assert_identity!(runtime, owner.handle) === nothing
     @test isempty(runtime.machine.losses)
-    @test_throws ArgumentError retire_owner!(runtime, owner)
-    @test runtime.captured == before && isempty(runtime.retired)
-    owner.retired = true # The control adapter sets this only after validating Stopped.
-    @test retire_owner!(runtime, owner) === nothing
+    @test retire_owner!(runtime, owner) do
+        @test haskey(runtime.captured, UInt32(owner.handle))
+        remove_object!(runtime, UInt32(14))
+        remove_object!(runtime, UInt32(12))
+        @test isempty(runtime.machine.losses)
+        owner.retired = true
+    end === nothing
     @test runtime.retired == Dict(
         UInt32(10) => UInt64(100),
         UInt32(11) => UInt64(110),
@@ -709,17 +712,20 @@ end
 
 @testset "Retirement cannot weaken unacknowledged or foreign ownership proofs" begin
     runtime, owner = shutdown_cohort()
+    @test_throws ArgumentError retire_owner!(() -> nothing, runtime, owner)
+    @test haskey(runtime.captured, UInt32(11))
+    @test !haskey(runtime.retired, UInt32(11))
     remove_object!(runtime, UInt32(11))
     @test length(runtime.machine.losses) == 1
-    @test isempty(runtime.retired)
+    @test !haskey(runtime.retired, UInt32(11))
     runtime, owner = shutdown_cohort(; graph_client = UInt32(20))
     before = copy(runtime.captured)
     owner.retired = true
-    @test_throws ArgumentError retire_owner!(runtime, owner)
+    @test_throws ArgumentError retire_owner!(() -> nothing, runtime, owner)
     @test runtime.captured == before && isempty(runtime.retired)
     runtime, owner = shutdown_cohort(; shared_client = true)
     owner.retired = true
-    retire_owner!(runtime, owner)
+    retire_owner!(() -> nothing, runtime, owner)
     @test haskey(runtime.captured, UInt32(10)) && haskey(runtime.captured, UInt32(13))
     @test !haskey(runtime.retired, UInt32(10))
     remove_object!(runtime, UInt32(13))
@@ -727,7 +733,7 @@ end
     runtime, owner = shutdown_cohort()
     owner.retired = true
     runtime.configuration["owners"][1]["bootstrap-instance"] = "18"
-    @test_throws ArgumentError retire_owner!(runtime, owner)
+    @test_throws ArgumentError retire_owner!(() -> nothing, runtime, owner)
     @test isempty(runtime.retired) && haskey(runtime.captured, UInt32(11))
     acquisition = Owner(
         AcquisitionLifecycleCodec.CALIBRATION_PROFILE,
@@ -739,7 +745,7 @@ end
         Int64(17),
         true,
     )
-    @test_throws ArgumentError retire_owner!(runtime, acquisition)
+    @test_throws ArgumentError retire_owner!(() -> nothing, runtime, acquisition)
 end
 
 @testset "Execution-group grants, passive boundaries and graph coverage" begin

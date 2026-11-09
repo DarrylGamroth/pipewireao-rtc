@@ -281,8 +281,9 @@ function perform!(runtime, job, ::ShutdownOwners)
 end
 function _shutdown_bootstrap!(runtime, job, owner::Owner{OwnerBootstrapCodec.Profile})
     owner.retired && return nothing
-    shutdown_owner!(runtime, job, owner)
-    retire_owner!(runtime, owner)
+    retire_owner!(runtime, owner) do
+        shutdown_owner!(runtime, job, owner)
+    end
     return nothing
 end
 
