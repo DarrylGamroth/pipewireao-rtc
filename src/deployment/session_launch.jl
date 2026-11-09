@@ -250,7 +250,7 @@ function prepare_julia_overlay!(request, paths, spec, runtime)
     return nothing
 end
 
-function parameter_owner!(request, spec, session, bindings, runtime)
+function parameter_owner!(request, spec, session, declared_links, bindings, runtime)
     sources = filter(
         source -> get(source, "factory", nothing) == "pipewireao.runtime-parameter",
         session["sources"],
@@ -274,16 +274,14 @@ function parameter_owner!(request, spec, session, bindings, runtime)
         port["direction"] == "output" &&
         port["name"] == "output_1" &&
         port["element-type"] == "F32_LE" || fail("unsupported parameter source contract")
-        address = source["node.name"] * ":" * port["name"]
-        links = filter(link -> link["output"] == address, session["links"])
+        address = D.PortAddress(source["node.name"], port["name"])
+        links = filter(link -> link.output == address, declared_links)
         length(links) == 1 || fail("parameter source needs one exact declared destination")
-        target = only(links)["input"]
-        names = split(target, ':'; limit = 2)
-        length(names) == 2 || fail("invalid parameter destination")
-        graphs = filter(graph -> graph["node.name"] == names[1], session["graphs"])
+        target = only(links).input
+        graphs = filter(graph -> graph["node.name"] == target.node, session["graphs"])
         length(graphs) == 1 || fail("parameter destination graph is undeclared")
         inputs = filter(
-            input -> input["name"] == names[2] && input["direction"] == "input",
+            input -> input["name"] == target.port && input["direction"] == "input",
             only(graphs)["ports"],
         )
         length(inputs) == 1 || fail("parameter destination port is undeclared")
@@ -297,14 +295,14 @@ function parameter_owner!(request, spec, session, bindings, runtime)
             fail("parameter layouts differ")
         row = Dict{String,Any}(
             "node_name" => source["node.name"],
-            "graph" => String(names[1]),
-            "inlet" => String(names[2]),
+            "graph" => target.node,
+            "inlet" => target.port,
             "shape" => port["shape"],
             "element_type" => "F32_LE",
             "schema" => get(port, "schema", ""),
             "layout" => layout == "ROW_MAJOR" ? "row-major" : "column-major",
         )
-        initial = get(get(session, "parameters", Dict()), target, nothing)
+        initial = get(get(session, "parameters", Dict()), string(target), nothing)
         if initial !== nothing
             _initial_parameter_binding(initial)
             value = get(spec["environment"], initial, nothing)
@@ -566,7 +564,8 @@ function prepare!(request::Request; render!::Function)
         (bindings["SOURCE_OWNER_INSTANCE"] = string(N.next_instance()))
     paths = D.installed_paths(prefix)
     session = render_inputs!(request, spec, bindings, runtime)
-    parameters = parameter_owner!(request, spec, session, bindings, runtime)
+    declared_links = D.session_links(session)
+    parameters = parameter_owner!(request, spec, session, declared_links, bindings, runtime)
     if parameters !== nothing
         push!(spec["owners"], parameters)
         spec["placement"]["parameters"] = deepcopy(spec["placement"]["session"])
@@ -738,7 +737,9 @@ function prepare!(request::Request; render!::Function)
         S.reload_fragments!(record)
         S.verify!(core)
         S.start_services!(cohort, record["cohort_unit"], runtime, record)
-        config = render!(spec, session, bindings, deepcopy(owner_records), runtime)
+        config = render!(
+            spec, session, bindings, deepcopy(owner_records), runtime; links = declared_links
+        )
         _rendered_session_configuration(config, runtime)
         generated = D.decode(String(config), prefix)
         all(

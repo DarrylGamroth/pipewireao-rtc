@@ -859,6 +859,12 @@ owners and configuration-file selections. Missing parents, cycles, unknown
 fields and inheritance deeper than 16 modes are rejected. Ordinary application
 and native session/core composition still appends arrays as before.
 
+Each session Link declares an `output` and an `input` as exact `node:port`
+addresses. The first colon separates the PipeWire Node name from the Port
+name. Export and admission use the same parsed declaration and preserve the
+names in native configuration. `passive` is a Boolean with a default of
+`false`. An ingress Link into an execution group requires `passive: true`.
+
 Mode core fragments can explicitly select a bounded telemetry queue template:
 
 ```yaml

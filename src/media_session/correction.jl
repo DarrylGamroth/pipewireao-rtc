@@ -338,9 +338,10 @@ function submit_parameter!(runtime, job, payload::Tuple)
     spec = runtime.configuration["session"]
     for publisher in spec["sources"]
         if get(publisher, "factory", nothing) == "pipewireao.runtime-parameter"
-            for link in spec["links"]
-                if link["output"] == publisher["node.name"] * ":output_1" &&
-                    link["input"] == name * ":" * inlet
+            for link in runtime.declared_links
+                if link.output.node == publisher["node.name"] &&
+                    link.output.port == "output_1" &&
+                    link.input.node == name && link.input.port == inlet
                     declaration === nothing ||
                         throw(ArgumentError("ambiguous parameter source"))
                     declaration = publisher

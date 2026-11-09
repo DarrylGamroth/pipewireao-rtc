@@ -12,7 +12,8 @@ import PipeWireAORTC:
     AcquisitionLifecycleCodec,
     RunnerCodec,
     SourceControl,
-    ParameterSource
+    ParameterSource,
+    DeploymentConfiguration
 import PipeWireAORTC.MediaSession: AbstractOrigin, ReadyOrigin, RunningOrigin
 include(joinpath(@__DIR__, "..", "src", "media_session", "controls.jl"))
 include(joinpath(@__DIR__, "..", "src", "media_session", "correction.jl"))
@@ -28,6 +29,7 @@ struct Group
 end
 mutable struct Runtime{C,P,K<:Clocks.AbstractNanoClock}
     configuration::C
+    declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
     parameters::P
     controller::CC.ControllerIdentity
     token::Int64
@@ -61,6 +63,7 @@ function Runtime(
 )
     Runtime(
         configuration,
+        DeploymentConfiguration.session_links(get(configuration, "session", Dict())),
         parameters,
         IDENTITY,
         Int64(0),

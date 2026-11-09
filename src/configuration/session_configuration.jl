@@ -201,17 +201,19 @@ function owner_record(role, declaration, records, bindings)
 end
 
 """
-    session_configuration(spec, session, bindings, records; node_owners)
+    session_configuration(spec, session, bindings, records; node_owners, links)
 
 Validate exact node owners and retained process identities, then return the
-RTC configuration for this invocation. This does not start a session.
+RTC configuration for this invocation. Pass `links` from the same session
+document to reuse its parsed Link declarations. This does not start a session.
 """
 function session_configuration(
-    spec, session, bindings, records; node_owners::Dict{String,String}
+    spec, session, bindings, records;
+    node_owners::Dict{String,String}, links = D.session_links(session)
 )
-    isempty(D.validate_session_links(session)) &&
-        fail("native session requires at least one declared connection")
-    D.validate_execution_groups(session)
+    D.validate_session_links(session, links)
+    isempty(links) && fail("native session requires at least one declared connection")
+    D.validate_execution_groups(session, links)
     name = session_name(get(spec, "name", nothing))
     source_role = declared_source_role(get(spec, "source-owner", nothing))
     verified_pid(records, source_role)
@@ -296,11 +298,12 @@ Write validated native configuration below `runtime` and return its path.
 The runtime must match the invocation's `RUNTIME` binding.
 """
 function write_session_config(
-    spec, session, bindings, records, runtime; node_owners::Dict{String,String}
+    spec, session, bindings, records, runtime;
+    node_owners::Dict{String,String}, links = D.session_links(session)
 )
     get(bindings, "RUNTIME", nothing) == runtime ||
         fail("configuration runtime differs from launch binding")
-    config = session_configuration(spec, session, bindings, records; node_owners)
+    config = session_configuration(spec, session, bindings, records; node_owners, links)
     directory = joinpath(runtime, "rtc")
     mkpath(directory)
     path = joinpath(directory, "rtc.conf")

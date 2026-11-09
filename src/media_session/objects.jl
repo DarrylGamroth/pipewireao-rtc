@@ -653,12 +653,6 @@ function PortContract(value::AbstractDict)
         rate,
     )
 end
-function _endpoint_address(address)
-    parts = split(String(address), ':'; limit = 2)
-    length(parts) == 2 && all(!isempty, parts) ||
-        throw(ArgumentError("invalid declared endpoint"))
-    return parts
-end
 function declared_port!(runtime, node, name, direction, address)
     direction_name = direction == PipeWireAO.DIRECTION_OUTPUT ? "out" : "in"
     matches = find_globals(
@@ -679,8 +673,8 @@ function declared_port!(runtime, node, name, direction, address)
         throw(ArgumentError("bound Port differs from its registry declaration: $address"))
     return port
 end
-function _endpoint!(runtime, job, address, direction)
-    name, port_name = _endpoint_address(address)
+function _endpoint!(runtime, job, address::DeploymentConfiguration.PortAddress, direction)
+    name, port_name = address.node, address.port
     pid = runtime.configuration["node.pids"][name]
     node = UInt32(node!(runtime, job, name, pid))
     port = await_condition!(runtime, job) do
@@ -909,16 +903,16 @@ end
 function create_links!(runtime, job)
     isempty(runtime.links) && !runtime.withdrawing ||
         throw(ArgumentError("old Link cohort remains"))
-    declarations = runtime.configuration["session"]["links"]
+    declarations = runtime.declared_links
     1 <= length(declarations) <= MAX_LINKS ||
         throw(ArgumentError("invalid declared Link count"))
     rows = Tuple{Endpoint,Endpoint,Bool}[]
     for declaration in declarations
         output = _endpoint!(
-            runtime, job, declaration["output"], PipeWireAO.DIRECTION_OUTPUT
+            runtime, job, declaration.output, PipeWireAO.DIRECTION_OUTPUT
         )
-        input = _endpoint!(runtime, job, declaration["input"], PipeWireAO.DIRECTION_INPUT)
-        push!(rows, (output, input, get(declaration, "passive", false)))
+        input = _endpoint!(runtime, job, declaration.input, PipeWireAO.DIRECTION_INPUT)
+        push!(rows, (output, input, declaration.passive))
     end
     prefix = "pipewireao/session/$(job.ticket.session)/$(job.ticket.epoch)/"
     for index in _link_order(rows)
@@ -1103,16 +1097,14 @@ function discover_graphs!(runtime, job)
     has_graph &&
         !all(name -> haskey(membership, name), required) &&
         throw(ArgumentError("eligible graph or sink has no execution group"))
-    for link in spec["links"]
-        output, input = first(_endpoint_address(link["output"])),
-        first(_endpoint_address(link["input"]))
+    for link in runtime.declared_links
+        output, input = link.output.node, link.input.node
         from, to = get(membership, output, nothing), get(membership, input, nothing)
         from === nothing ||
             to === nothing ||
             from == to ||
             throw(ArgumentError("Link crosses execution groups"))
-        passive = get(link, "passive", false)
-        passive == (from === nothing && to !== nothing) ||
+        link.passive == (from === nothing && to !== nothing) ||
             throw(ArgumentError("invalid execution-group passive boundary"))
     end
     return nothing

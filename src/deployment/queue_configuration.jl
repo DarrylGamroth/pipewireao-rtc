@@ -152,9 +152,9 @@ function queue_metadata_profiles!(core, session, contracts, simulation)
             PipeWireAO.SPA.META_OPTICAL_CHOPPING, PipeWireAO.SPA.META_ELECTRICAL_TRIGGER
         )),
     )
-    profiles = Dict{String,Set{UInt32}}()
+    profiles = Dict{D.PortAddress,Set{UInt32}}()
     for (node, contract) in contracts, (port, output) in contract["outputs"]
-        profiles[node*":"*port] = Set(
+        profiles[D.PortAddress(node, port)] = Set(
             UInt32(r["type"]) for
             r in get(output, "metadata", []) if r["type"] in classifications
         )
@@ -164,7 +164,7 @@ function queue_metadata_profiles!(core, session, contracts, simulation)
         for name in keys(get(get(simulation, "plant", Dict()), "chopping", Dict()))
             haskey(sensors, name) ||
                 throw(ArgumentError("chopping names an unknown sensor: $name"))
-            profiles[sensors[name]*":output_1"] = copy(classifications)
+            profiles[D.PortAddress(sensors[name], "output_1")] = copy(classifications)
         end
     end
     queues = [
@@ -173,7 +173,7 @@ function queue_metadata_profiles!(core, session, contracts, simulation)
             get(get(module_, "args", Dict()), "queue.media", nothing) ==
             "application/ndarray"
     ]
-    links = get(session, "links", [])
+    links = D.session_links(session)
     inferred = [
         Set(
             UInt32(record["type"]) for
@@ -190,14 +190,14 @@ function queue_metadata_profiles!(core, session, contracts, simulation)
                 get(args, "playback.props", Dict()), "node.name", name * "-output"
             )
             for link in links
-                first(split(link["input"], ':'; limit = 2)) == capture || continue
+                link.input.node == capture || continue
                 before = length(inferred[index])
-                union!(inferred[index], get(profiles, link["output"], Set{UInt32}()))
+                union!(inferred[index], get(profiles, link.output, Set{UInt32}()))
                 changed |= length(inferred[index]) != before
             end
             for link in links
-                first(split(link["output"], ':'; limit = 2)) == playback || continue
-                previous = get!(profiles, link["output"], Set{UInt32}())
+                link.output.node == playback || continue
+                previous = get!(profiles, link.output, Set{UInt32}())
                 before = length(previous)
                 union!(previous, inferred[index])
                 changed |= length(previous) != before

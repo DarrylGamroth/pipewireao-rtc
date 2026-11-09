@@ -38,6 +38,7 @@ mutable struct TestRuntime{C,R,L,F}
     registry::R
     loop::L
     configuration::F
+    declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
     objects::Dict{UInt32,Object}
     globals::Vector{Global}
     captured::Dict{UInt32,Captured}
@@ -65,6 +66,7 @@ function TestRuntime(
         registry,
         loop,
         configuration,
+        DeploymentConfiguration.session_links(get(configuration, "session", Dict())),
         Dict{UInt32,Object}(),
         Global[],
         Dict{UInt32,Captured}(),

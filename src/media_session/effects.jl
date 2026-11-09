@@ -303,9 +303,8 @@ function graph_order(runtime, running::Bool, group = nothing)
     names = _graph_names(runtime, group)
     members = Set(names)
     successors = Dict(name => Set{String}() for name in names)
-    for link in runtime.configuration["session"]["links"]
-        output, input = first(_endpoint_address(link["output"])),
-        first(_endpoint_address(link["input"]))
+    for link in runtime.declared_links
+        output, input = link.output.node, link.input.node
         output in members && input in members && push!(successors[output], input)
     end
     depths, visiting = Dict{String,Int}(), Set{String}()

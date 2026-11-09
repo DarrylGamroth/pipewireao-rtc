@@ -12,6 +12,7 @@ Scientific graph state remains in its separate process and data thread.
 """
 mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     configuration::Dict{String,Any}
+    declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
     loop::MainLoop
     context::Context{MainLoop}
     core::C
@@ -542,9 +543,10 @@ function Session(
             ),
         )
     end
-    isempty(DeploymentConfiguration.validate_session_links(configuration["session"])) &&
-        throw(ArgumentError("session requires a declared connection"))
-    DeploymentConfiguration.validate_execution_groups(configuration["session"])
+    spec = configuration["session"]
+    declared_links = DeploymentConfiguration.validate_session_links(spec)
+    isempty(declared_links) && throw(ArgumentError("session requires a declared connection"))
+    DeploymentConfiguration.validate_execution_groups(spec, declared_links)
     modules = [entry["name"] for entry in config["context.modules"]]
     modules == ["libpipewire-module-protocol-native", "libpipewire-module-client-node"] ||
         throw(ArgumentError("session configuration has unsupported context modules"))
@@ -626,6 +628,7 @@ function Session(
         ingress = Ingress.Gate(instance; clock = cached)
         session = Session(
             configuration,
+            declared_links,
             loop,
             context,
             core,

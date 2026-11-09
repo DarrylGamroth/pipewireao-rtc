@@ -88,28 +88,69 @@ function decode(path::AbstractString, prefix::AbstractString)
     end
 end
 
+"""An exact PipeWire Node and Port name from a session Link declaration."""
+struct PortAddress
+    node::String
+    port::String
+end
+
+Base.:(==)(a::PortAddress, b::PortAddress) = a.node == b.node && a.port == b.port
+Base.hash(address::PortAddress, h::UInt) = hash(address.port, hash(address.node, h))
+Base.print(io::IO, address::PortAddress) = print(io, address.node, ':', address.port)
+
+port_address(value) = fail("Link address must be a node:port string")
+function port_address(value::AbstractString)
+    parts = split(value, ':'; limit = 2, keepempty = true)
+    require(
+        length(parts) == 2 && all(!isempty, parts) && !occursin('\0', value),
+        "invalid Link address: $value",
+    )
+    return PortAddress(parts...)
+end
+
+"""A declared output-to-input Link and its PipeWire passive flag."""
+struct LinkDeclaration
+    output::PortAddress
+    input::PortAddress
+    passive::Bool
+end
+
+link_declaration(row) = fail("session Link declaration must be a mapping")
+function link_declaration(row::AbstractDict)
+    return LinkDeclaration(
+        port_address(get(row, "output", nothing)),
+        port_address(get(row, "input", nothing)),
+        link_passive(get(row, "passive", false)),
+    )
+end
+link_passive(value) = fail("Link passive flag must be Boolean")
+link_passive(value::Bool) = value
+
+function link_declarations(rows)
+    validate_links(rows)
+    return LinkDeclaration[link_declaration(row) for row in rows]
+end
+session_links(session) = link_declarations(get(session, "links", []))
+
 # Offline optical-calibration exports may have no operational connections.
 # An actual native session additionally requires at least one connection.
-function validate_session_links(session)
-    links = get(session, "links", Any[])
-    validate_links(links)
-    schemas = Dict{Tuple{String,String},String}()
+function validate_session_links(session, links = session_links(session))
+    schemas = Dict{Tuple{PortAddress,String},String}()
     for role in ("sources", "graphs", "sinks"),
         node in get(session, role, ()),
         port in get(node, "ports", ())
 
         schema = get(port, "schema", nothing)
         schema === nothing && continue
-        address = string(node["node.name"], ':', port["name"])
-        schemas[(address, port["direction"])] = schema
+        schemas[(PortAddress(node["node.name"], port["name"]), port["direction"])] = schema
     end
     isempty(schemas) && return links
     for link in links
-        output, input = (link["output"], "output"), (link["input"], "input")
+        output, input = (link.output, "output"), (link.input, "input")
         haskey(schemas, output) && haskey(schemas, input) || continue
         require(
             schemas[output] == schemas[input],
-            "linked port schemas differ: $(output[1]) → $(input[1])",
+            "linked port schemas differ: $(link.output) → $(link.input)",
         )
     end
     return links
@@ -117,7 +158,7 @@ end
 
 # Mirror native session policy before owners are launched. Ownership and a
 # processing graph's run-control grant are separate declarations (RTC-DEV-016).
-function validate_execution_groups(session)
+function validate_execution_groups(session, links = session_links(session))
     controlled = Dict{String,Bool}()
     required = Set{String}()
     processing = Set{String}()
@@ -140,17 +181,17 @@ function validate_execution_groups(session)
             )
         end
     end
-    for link in get(session, "links", Any[])
-        output, input = link["output"], link["input"]
-        from = get(membership, first(split(output, ':'; limit = 2)), nothing)
-        to = get(membership, first(split(input, ':'; limit = 2)), nothing)
+    for link in links
+        output, input = link.output, link.input
+        from = get(membership, output.node, nothing)
+        to = get(membership, input.node, nothing)
         require(
             from === nothing || to === nothing || from == to,
             "link crosses execution groups: $output → $input",
         )
         boundary = from === nothing && to !== nothing
         require(
-            (get(link, "passive", false) === true) == boundary,
+            link.passive == boundary,
             "invalid execution-group passive boundary: $output → $input (passive must be $boundary)",
         )
     end
@@ -677,8 +718,8 @@ function validate_application(value::AbstractDict, path, prefix)
     relative_asset(dirname(path), value["core"])
     validate_deployment_artifacts(value["artifacts"], path)
     session = decode(relative_asset(dirname(path), value["session"]), prefix)
-    validate_session_links(session)
-    validate_execution_groups(session)
+    links = validate_session_links(session)
+    validate_execution_groups(session, links)
     if haskey(value, "node-owners")
         mapping = value["node-owners"]
         mapping = node_owners(mapping)

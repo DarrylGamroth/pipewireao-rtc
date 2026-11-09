@@ -1,7 +1,5 @@
 _collect_queue_node!(nodes, node) = nothing
 _collect_queue_node!(nodes, node::String) = push!(nodes, node)
-_composition_links(links) = throw(ArgumentError("composition links must be a list"))
-_composition_links(::AbstractVector) = nothing
 _component_owner_role(role) =
     throw(ArgumentError("component owner roles must be distinct and new"))
 _component_owner_role(role::String) =
@@ -187,7 +185,6 @@ function merge_composition_session(base, component, links)
     ]
     length(unique(names)) == length(names) ||
         throw(ArgumentError("component node names collide"))
-    _composition_links(links)
     append!(get!(merged, "links", Any[]), deepcopy(links))
     return merged
 end
@@ -199,29 +196,26 @@ function validate_composition_links(session, links)
         node["node.name"] => node for section in ("sources", "graphs", "sinks") for
         node in get(session, section, [])
     )
-    declared(endpoint, direction) = nothing
-    function declared(endpoint::AbstractString, direction)
-        parts = split(endpoint, ':'; keepempty = true)
-        length(parts) == 2 || return nothing
-        node = get(nodes, first(parts), nothing)
+    function declared(endpoint::D.PortAddress, direction)
+        node = get(nodes, endpoint.node, nothing)
         node === nothing && return nothing
         matches = filter(
             port ->
-                get(port, "name", nothing) == last(parts) &&
+                get(port, "name", nothing) == endpoint.port &&
                 get(port, "direction", nothing) == direction,
             get(node, "ports", []),
         )
         return isempty(matches) ? nothing : only(matches)
     end
     for link in links
-        output = declared(link["output"], "output")
-        input = declared(link["input"], "input")
+        output = declared(link.output, "output")
+        input = declared(link.input, "input")
         (output === nothing || input === nothing) && continue
         for field in ("shape", "element-type", "layout", "schema")
             if haskey(output, field) && haskey(input, field)
                 output[field] == input[field] || throw(
                     ArgumentError(
-                        "composition link $field mismatch: $(link["output"]) → $(link["input"])",
+                        "composition link $field mismatch: $(link.output) → $(link.input)",
                     ),
                 )
             end
@@ -255,6 +249,7 @@ function compose(
     sinks::AbstractVector = Any[],
     node_owners::AbstractDict = Dict(),
 )
+    declared_links = D.link_declarations(links)
     occursin(r"^[a-z][a-z0-9-]{0,31}$", namespace) ||
         throw(ArgumentError("invalid component namespace"))
     isempty(overrides) && throw(
@@ -387,7 +382,7 @@ function compose(
         isempty(intersect(existing_nodes, Set(keys(node_owners)))) ||
             throw(ArgumentError("additional sink names collide"))
         append!(get!(session, "sinks", Any[]), deepcopy(sinks))
-        validate_composition_links(session, links)
+        validate_composition_links(session, declared_links)
         core = merge_composition_core(
             D.decode(joinpath(base_root, main["core"]), prefix),
             composition_rebase(

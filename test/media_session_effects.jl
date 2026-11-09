@@ -30,8 +30,11 @@ import PipeWireAORTC.MediaSession:
     await_condition!,
     retire_owner!
 
+import PipeWireAORTC.DeploymentConfiguration
+
 mutable struct Runtime{D}
     configuration::D
+    declared_links::Vector{DeploymentConfiguration.LinkDeclaration}
     owners::Vector{S.AbstractOwner}
     sources::Vector{S.AbstractSource}
     parameters::Union{Nothing,S.AbstractOwner}
@@ -171,6 +174,7 @@ function Runtime()
     )
     runtime = Runtime(
         configuration,
+        DeploymentConfiguration.session_links(get(configuration, "session", Dict())),
         S.AbstractOwner[],
         S.AbstractSource[],
         nothing,
@@ -570,8 +574,10 @@ end
     @test_throws ArgumentError S.perform!(runtime, job(), S.RunGraphs("missing"))
     @test isempty(runtime.trace)
     push!(
-        runtime.configuration["session"]["links"],
-        Dict("output" => "right:out", "input" => "upstream:in"),
+        runtime.declared_links,
+        DeploymentConfiguration.link_declaration(
+            Dict("output" => "right:out", "input" => "upstream:in")
+        ),
     )
     @test_throws ArgumentError S.perform!(runtime, job(), S.RunGraphs())
     @test isempty(runtime.trace)

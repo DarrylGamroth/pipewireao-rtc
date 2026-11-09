@@ -95,9 +95,9 @@ end
 confirm_shutdown(reply) =
     throw(ArgumentError("native systemd Quit did not complete Offline"))
 
-function render!(spec, session, bindings, records, runtime)
+function render!(spec, session, bindings, records, runtime; links = D.session_links(session))
     return SessionConfiguration.write_session_config(
-        spec, session, bindings, records, runtime; node_owners = node_owners(spec)
+        spec, session, bindings, records, runtime; node_owners = node_owners(spec), links
     )
 end
 

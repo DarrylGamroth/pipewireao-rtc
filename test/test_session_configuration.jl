@@ -108,11 +108,16 @@ using PipeWireAORTC: SessionConfiguration
     @test isempty(policy["core.owner"]["nodes"])
     mktempdir() do runtime
         private = merge(bindings, Dict("RUNTIME" => runtime))
+        D = PipeWireAORTC.DeploymentConfiguration
+        links = D.session_links(session)
         path = SessionConfiguration.write_session_config(
-            spec, session, private, records, runtime; node_owners = mapping
+            spec, session, private, records, runtime; node_owners = mapping, links
         )
         @test path == joinpath(runtime, "rtc/rtc.conf")
         @test isfile(path)
+        prefix = String(PipeWireAORTC.SessionLaunch.LibPipeWire.PipeWireAO_jll.artifact_dir)
+        saved = D.decode(path, prefix)["pipewireao.session"]["session"]
+        @test saved["links"] == session["links"]
     end
     for count in (1, 36, 64)
         selected = merge(session, Dict("links" => fill(only(session["links"]), count)))
@@ -499,9 +504,9 @@ end
     D = PipeWireAORTC.DeploymentConfiguration
     @test D.MAX_SESSION_LINKS == 64
     @test isempty(D.validate_session_links(Dict("links" => [])))
+    link = Dict("output" => "source:out", "input" => "sink:in")
     for count in (36, 64)
-        @test length(D.validate_session_links(Dict("links" => fill(Dict(), count)))) ==
-            count
+        @test length(D.validate_session_links(Dict("links" => fill(link, count)))) == count
     end
     for links in (fill(Dict(), 65), "not a list")
         @test_throws D.DeploymentError D.validate_session_links(Dict("links" => links))
@@ -522,7 +527,16 @@ end
     )
     @test_throws D.DeploymentError D.validate_session_links(session)
     input["schema"] = output["schema"]
-    @test D.validate_session_links(session) === links
+    declaration = only(D.validate_session_links(session))
+    @test string(declaration.output) == links[1]["output"]
+    @test string(declaration.input) == links[1]["input"]
+    @test !declaration.passive
+    @test D.port_address("node:algorithm:input") == D.PortAddress("node", "algorithm:input")
+    @test string(D.port_address("node:algorithm:input")) == "node:algorithm:input"
+    for address in ("node", ":input", "node:", "node:in\0put", 12)
+        @test_throws D.DeploymentError D.port_address(address)
+    end
+    @test_throws D.DeploymentError D.link_declaration(merge(only(links), Dict("passive" => "false")))
 end
 
 @testset "Registered SDK uses its original artifact" begin
