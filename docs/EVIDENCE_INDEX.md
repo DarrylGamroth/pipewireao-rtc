@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## Managed SPIDERS fitted-dual CPU startup — 2026-11-09
+
+The [managed validation](validation/spiders-managed-startup-20261109/README.md)
+records the cold-start phases, live Link and dual-camera command checks, and
+the native Quit timeout with confirmed emergency cleanup.
+
 ## GPI2 deadline miss investigation — 2026-11-09
 
 The [tail investigation](validation/gpi2-deadline-misses-20261109/README.md)

@@ -49,6 +49,11 @@ RTC 0.7.3 adds the separate registered queue artifact. The
 [queue verification](reviews/20261108-full-managed-rtc/REVIEW.md#registered-pipewire-queue)
 repeats CAL2 admission and shutdown with the original SDK artifact.
 
+The [SPIDERS fitted-dual CPU check](validation/spiders-managed-startup-20261109/README.md)
+reached Ready within the 900 s budget, verified all 21 Links and observed
+correction commands from both cameras. Native Quit expired and the emergency
+hook completed cleanup.
+
 ### Standalone simulator ownership — 2026-11-07
 
 AdaptiveOpticsSimPipeWireHIL owns simulation execution and startup settings.
