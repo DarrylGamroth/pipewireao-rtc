@@ -318,3 +318,40 @@ The GitHub releases are
 [AdaptiveOpticsSim 0.3.22](https://github.com/DarrylGamroth/AdaptiveOpticsSim.jl/releases/tag/v0.3.22),
 [AdaptiveOpticsSimPipeWireHIL 0.5.1](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl/releases/tag/v0.5.1)
 and [PipeWireAORTC 0.7.2](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.2).
+
+## Registered PipeWire queue
+
+`PipeWireAOQueue_jll` 0.1.0+0 supplies the existing PipeWire queue module as a
+separate artifact. The queue-only Meson build at `a8f24e1` passed all 21 native
+tests. BinaryBuilder recipe `841b837cf` produced Linux glibc x86-64 and aarch64
+artifacts. Both binaries exported the module initializer, and the packaged
+x86-64 binary passed the private-core metadata transport test.
+[Queue release](https://github.com/DarrylGamroth/pipewireao-spa-plugins-core/releases/tag/PipeWireAOQueue-v0.1.0%2B0)
+
+RTC `98f66ac` depends on that JLL and appends its module directory to the
+core's search path. The selected SDK's module directory has precedence.
+The registered SDK runs directly from its artifact directory. An explicit
+site SDK retains the existing compatibility path for external owners.
+The full RTC suite passed 10,786 assertions.
+
+The fresh consumer resolved RTC 0.7.3 and the queue dependency from registry
+commit `081ddfe`. It retained the previous CAL2 scientific package versions.
+The package and artifact verifier passed 65 assertions. The x86-64 queue
+artifact tree was `20afa07132938ae663c7cf4c10f00172ca40e70f`.
+
+Instrument commit `e55cf2c` selects RTC 0.7.3 for CAL2 and GPI2. The test used
+the sealed CAL2 CPU profile from that revision. The first invocation reached
+Ready and acknowledged Quit, but the verifier's direct Julia read of
+`/proc/PID/maps` returned only the initial chunk. The repeat used a complete
+read and cross-checked the registered module filenames against PipeWire.
+
+Invocation `4ff2e8a1053c4447a00d2a9cd0915fad` reached Ready after 350 seconds.
+The daemon executable came from the original `PipeWireAO_jll` artifact.
+Its maps and all eight queue instances identified the separate queue artifact.
+The invocation created neither an SDK overlay nor an artifact override.
+The private registry matched 13 Nodes and 10 RTC-owned Links, including both
+image Links. PipeWire emitted mixer setup warnings during startup. The session
+acknowledged native Quit, and all units exited successfully. The cleanup
+receipt confirms generated unit-file removal. The journals showed no
+wrong-context teardown warnings, crash signals or SIGKILL.
+[RTC 0.7.3 release](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.3)

@@ -180,9 +180,16 @@ prefix with the helper's `prefix` keyword. A Julia-only install can use
 `PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir` as its native prefix.
 RTC adds the registered queue module to the core's module search path.
 Select additional SPA plugins through the application's native configuration.
-Startup verifies actual process
-incarnations, native readiness and declared placement before acquisition is
-released. Packages missing the headless RTC or required library assets are rejected.
+
+A site-managed prefix supplies the daemon and the first directory searched
+for native modules. The Julia environment still resolves its JLL packages.
+To use the site PipeWireAO library in every Julia process as well, configure
+a deployment-depot artifact override to an ABI-compatible SDK with the JLL's
+expected directory layout.
+
+Startup verifies actual process incarnations, native readiness and declared
+placement before acquisition is released. Packages missing the headless RTC or
+required library assets are rejected.
 Old sealed deployments keep their recorded runtime; generate a new package to
 use this ownership change. There is no fallback to the WirePlumber daemon.
 

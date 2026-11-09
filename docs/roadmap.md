@@ -27,6 +27,9 @@ records the numerical and runtime checks.
 RTC 0.7.2, HIL 0.5.1 and AOS 0.3.22 are released and registered. The
 [released CAL2 cohort](reviews/20261108-full-managed-rtc/REVIEW.md#released-cal2-cohort)
 repeats admission and native Quit from an empty Julia depot.
+RTC 0.7.3 adds the separate registered queue artifact. The
+[queue verification](reviews/20261108-full-managed-rtc/REVIEW.md#registered-pipewire-queue)
+repeats CAL2 admission and shutdown with the original SDK artifact.
 
 ### Standalone simulator ownership — 2026-11-07
 
