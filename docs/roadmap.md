@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 data-thread timing — 2026-11-09
+
+The [private-core characterization](validation/gpi2-data-thread-20261109/README.md)
+measured zero warmed Julia heap allocation on the CPU controller callback.
+The current CPU graph exceeded the nominal 500 µs period in every measured
+callback. The standalone CPU simulator's optical step also limited HIL
+cadence. The RTC session manager remains in Julia. Target-host timing and
+physical device qualification remain deferred.
+
 ### Managed instrument HIL — 2026-11-08
 
 Classic, GPI2, CAL2 and SPIDERS select the HIL launcher in their instrument

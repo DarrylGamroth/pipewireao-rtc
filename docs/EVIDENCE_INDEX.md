@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 PipeWire data-thread timing — 2026-11-09
+
+The [GPI2 timing record](validation/gpi2-data-thread-20261109/README.md) retains
+live callback allocation, graph-process GC, scheduling and deadline evidence
+from the calibrated CPU controller and standalone HIL profile on private cores.
+
 ## Full RTC verification of managed HIL profiles — 2026-11-08
 
 The [full-profile record](reviews/20261108-full-managed-rtc/REVIEW.md) retains
