@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 managed native Quit — 2026-11-10
+
+The [shutdown verification](validation/gpi2-native-quit-20261110/README.md)
+records the reproduced shutdown deadline failure, cold dispatch preparation,
+and the passing private-core native Quit and owner cleanup.
+
 ## RTC 0.7.7 GPI2 startup and controls — 2026-11-10
 
 The [release verification](validation/rtc-077-20261110/README.md) records

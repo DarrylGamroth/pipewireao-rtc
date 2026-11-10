@@ -20,6 +20,11 @@ each applied one request with all 32 session Links active. The native Quit
 outcome was unknown, and emergency cleanup removed the private core and
 owners. [Release verification](validation/rtc-077-20261110/README.md)
 
+Preparing the admitted shutdown effects before readiness fixed the cold
+Quit timeout. A new private-core run acknowledged native Quit and systemd
+confirmed clean exit of the session and all four owners.
+[Shutdown verification](validation/gpi2-native-quit-20261110/README.md)
+
 ### GPI2 captured controller replay — 2026-11-09
 
 The [connected CUDA replay](validation/gpi2-connected-20261109/README.md)
