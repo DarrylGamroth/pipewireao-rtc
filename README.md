@@ -106,7 +106,7 @@ With Julia 1.13 and DarrylGamrothRegistry available, install the operator CLI
 from the registry.
 
 ```sh
-julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(name="PipeWireAORTC", version="0.7.5")'
+julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(name="PipeWireAORTC", version="0.7.6")'
 export PATH="$HOME/.julia/bin:$PATH"
 pipewireao-rtc-session sessions
 ```
