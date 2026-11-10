@@ -530,6 +530,18 @@ function prepare_dispatch!(session::Session)
         job = Job{EffectTicket{parameter_effect,origin}}
         Base.precompile(request_owner!, (typeof(session), job, parameter_owner, parameter_command))
     end
+    bootstrap = OwnerBootstrapCodec.PROFILE
+    bootstrap_owner = Owner{
+        typeof(bootstrap),
+        ControlClient.Observation{
+            typeof(bootstrap),ControlClient.lifecycle_type(bootstrap),
+            ControlClient.completion_type(bootstrap),ControlClient.rejection_type(bootstrap)
+        }
+    }
+    for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
+        job = Job{EffectTicket{ShutdownOwners,origin}}
+        Base.precompile(_shutdown_bootstrap!, (typeof(session), job, bootstrap_owner))
+    end
     for payload in ((), nothing)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
@@ -537,9 +549,13 @@ function prepare_dispatch!(session::Session)
         for _ in 1:MAX_DISPATCH_PREPARATION_EFFECTS
             ticket = machine.effect
             ticket === nothing && break
-            Base.precompile(
-                perform!, (typeof(session), Job{typeof(ticket)}, typeof(ticket.effect))
-            )
+            # The simulated Quit discovers the effect sequence while Configuring.
+            # Real Ready and Running requests use distinct backend job types.
+            effect = typeof(ticket.effect)
+            for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
+                job = Job{EffectTicket{effect,origin}}
+                Base.precompile(perform!, (typeof(session), job, effect))
+            end
             submitted!(machine, ticket)
             complete!(machine, ticket)
             take_replies!(machine)
