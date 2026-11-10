@@ -42,7 +42,7 @@ removed the private core and owners.
 [Admission-clock verification](validation/gpi2-quit-admission-clock-20261110/README.md)
 
 RTC 0.7.9 is published and registered. The managed GPI2 CPU profile
-reached Ready in 446.49 s from a fresh registry-only depot, entered
+reached Ready in 445.49 s from a fresh registry-only depot, entered
 Running and acknowledged native Quit. Systemd removed the private core
 and all owners cleanly. Instrument main now selects RTC 0.7.9.
 [Release verification](validation/rtc-079-20261110/README.md)

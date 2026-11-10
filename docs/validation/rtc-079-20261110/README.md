@@ -18,8 +18,8 @@ PipeWireAO 4.0.2 artifact. The workspace Manifest SHA-256 is
 The run began with an empty Julia depot. Pkg fetched General at tree
 `85379065f6fab71fc829afb4c8ffda8e8da68e77` and DarrylGamrothRegistry at
 `3c671408fce93e464451598e673f9af73ecceefa` from its public GitHub repository.
-Pkg resolved the GPI2 Project from instrument commit
-`76c958c634e5145bec1c6400bc14a5a2ffad95c0` with the RTC 0.7.9 pin. The
+Pkg resolved the GPI2 Project with the RTC 0.7.9 pin later merged as
+instrument commit `76c958c634e5145bec1c6400bc14a5a2ffad95c0`. The
 resolved Manifest differed from the RTC 0.7.8 GPI2 release run only in
 the RTC entry. Its SHA-256 is
 `42905dfc8f11e0c7242074f2d47d1f7a30a33ced7bb571abfbedb01e4774cdfd`.
@@ -41,7 +41,7 @@ The installed managed GPI2 CPU profile used the same 10 Hz host
 configuration and 900 s service budget as the [0.7.8 check](../rtc-078-20261110/README.md).
 Dependency resolution and installation took about 4 min 52 s. Export
 and package precompilation took 10 min 47 s before the service started.
-Systemd reached Ready in **445.49 s**, and a native Start
+The session reached Ready in **445.49 s**, and a native Start
 transitioned the admitted session to Running.
 
 The installed stop hook attempted one native Quit and recorded
