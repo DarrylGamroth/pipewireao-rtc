@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.4 telemetry queue export — 2026-11-09
+
+The [release verification](validation/rtc-074-20261109/README.md) records the
+public registry installation and sealed SPIDERS and CAL2 exports.
+
 ## Managed SPIDERS fitted-dual CPU startup — 2026-11-09
 
 The [managed validation](validation/spiders-managed-startup-20261109/README.md)

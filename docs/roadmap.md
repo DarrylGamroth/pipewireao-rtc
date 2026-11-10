@@ -54,6 +54,10 @@ reached Ready within the 900 s budget, verified all 21 Links and observed
 correction commands from both cameras. Native Quit expired and the emergency
 hook completed cleanup.
 
+RTC 0.7.4 derives telemetry queue sink formats from the linked producer Port.
+SPIDERS and CAL2 use the simplified declarations on instrument main after
+passing the [registry-only CPU export checks](validation/rtc-074-20261109/README.md).
+
 ### Standalone simulator ownership — 2026-11-07
 
 AdaptiveOpticsSimPipeWireHIL owns simulation execution and startup settings.
