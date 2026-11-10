@@ -100,8 +100,29 @@ Preparing before loading optional graph packages. Simulation runs in a separate
 AdaptiveOpticsSimPipeWireHIL process using the declared PipeWire ports. See
 [standalone HIL configuration and migration](docs/HIL_CONFIGURATION.md).
 
-For example, `PipeWireAORTC.SessionCLI.main(["sessions"])` is the callable
-counterpart of the root `session_cli.jl` command. Root `session_*.jl`
+### Install the operator CLI with Pkg Apps
+
+With Julia 1.13 and DarrylGamrothRegistry available, install the operator CLI
+from a committed checkout that includes the app declaration.
+
+```sh
+julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(path=pwd())'
+export PATH="$HOME/.julia/bin:$PATH"
+pipewireao-rtc-session sessions
+```
+
+If the depot is elsewhere, use its `bin` directory. Use a leading `--` when
+an RTC command contains its own argument separator.
+
+```sh
+pipewireao-rtc-session -- control --session SESSION -- status
+```
+
+Pkg Apps installs the operator command in its own Julia environment. The
+systemd unit and its local launcher use the instrument's verified Project and
+Manifest. Julia callers can use `PipeWireAORTC.SessionCLI.main(["sessions"])`.
+
+Root `session_*.jl`
 files are thin command entry points; their implementation loads with the package
 from `src/configuration/`, `src/deployment/` and the `src/*_cli.jl` modules.
 Control protocol codecs, clients and endpoints live under `src/control/`.

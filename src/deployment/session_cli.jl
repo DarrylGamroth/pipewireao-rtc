@@ -618,4 +618,6 @@ function main(argv = ARGS)
     return 0
 end
 
+@main
+
 end # module
