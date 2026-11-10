@@ -4,6 +4,34 @@ Scientific algorithms and frame execution remain in their owning packages.
 """
 module PipeWireAORTC
 
+public Analysis,
+    InstrumentExport,
+    InstrumentCalibration,
+    CaptureFiles,
+    InstrumentConfiguration,
+    InstrumentDefinition,
+    ConfigurationStore,
+    ConfigurationStoreCLI,
+    ManagementCLI,
+    AOSOwner,
+    Artifacts,
+    SessionConfiguration,
+    SessionInstall,
+    SessionRuntime,
+    SessionClient,
+    CalibrationEndpoint,
+    CalibrationAcquisition,
+    CalibrationPreparation,
+    CalibrationCLI,
+    SessionCLI,
+    OwnerBootstrapRuntime,
+    ParameterSource,
+    SourceControl,
+    GraphOwner,
+    CorrectionRecovery,
+    CorrectionSupervision,
+    MediaSession
+
 VERSION >= v"1.13" || error("PipeWireAORTC requires Julia 1.13 or newer; found $VERSION")
 
 """Return this package's current location, including after precompiled relocation."""
@@ -69,34 +97,6 @@ include("graphs/runtime.jl")
 include("deployment/instrument_export.jl")
 include("calibration/instrument.jl")
 include("deployment/management_cli.jl")
-
-public Analysis,
-    InstrumentExport,
-    InstrumentCalibration,
-    CaptureFiles,
-    InstrumentConfiguration,
-    InstrumentDefinition,
-    ConfigurationStore,
-    ConfigurationStoreCLI,
-    ManagementCLI,
-    AOSOwner,
-    Artifacts,
-    SessionConfiguration,
-    SessionInstall,
-    SessionRuntime,
-    SessionClient,
-    CalibrationEndpoint,
-    CalibrationAcquisition,
-    CalibrationPreparation,
-    CalibrationCLI,
-    SessionCLI,
-    OwnerBootstrapRuntime,
-    ParameterSource,
-    SourceControl,
-    GraphOwner,
-    CorrectionRecovery,
-    CorrectionSupervision,
-    MediaSession
 
 include("media_session/MediaSession.jl")
 

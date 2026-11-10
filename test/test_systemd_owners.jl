@@ -1,4 +1,5 @@
 using Test, PipeWireAORTC
+import Clocks
 import Hsm
 
 const SO = PipeWireAORTC.SystemdOwners
@@ -441,7 +442,6 @@ for name in ("checked", "wait_empty")
 end
 end
 
-import Clocks
 mutable struct OwnerClock <: Clocks.AbstractNanoClock
     ticks::Vector{Int64}
     reads::Int

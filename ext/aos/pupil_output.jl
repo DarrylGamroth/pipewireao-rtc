@@ -1,6 +1,7 @@
 module PupilOutput
 
 import PipeWireAORTC
+import AdaptiveOpticsSimPipeWireHIL.ExternalPupil: pack_pupil! as pack!
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
 using PipeWireAO: NdArray
 
@@ -33,7 +34,5 @@ function contract(declaration, configured; simulation_graph = "production")
     PipeWireAORTC.Artifacts.checked_shape(boundary.shape, sizeof(Float32))
     return boundary
 end
-
-import AdaptiveOpticsSimPipeWireHIL.ExternalPupil: pack_pupil! as pack!
 
 end

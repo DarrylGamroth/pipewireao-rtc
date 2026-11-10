@@ -5,11 +5,12 @@ import Clocks
 import ..ControlClient
 import ..CalibrationActionCodec
 import ..AcquisitionLifecycleCodec
+
+export Binding, Connection, connect, request!, complete!, action, document
+
 const Client = ControlClient
 const Codec = CalibrationActionCodec
 const Lifecycle = AcquisitionLifecycleCodec
-
-export Binding, Connection, connect, request!, complete!, action, document
 
 struct Binding
     remote::String

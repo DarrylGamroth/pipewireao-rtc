@@ -9,9 +9,10 @@ import ..ConfigurationStore
 import ..Artifacts
 import ..PipeWireAORTC
 
+public Config, Endpoint, LinkSpec, configuration, main
+
 include("capture.jl")
 
-public Config, Endpoint, LinkSpec, configuration, main
 const D = DeploymentConfiguration
 const S = SystemdOwners
 const LOCK_RETRY_INTERVAL_NS = Int64(20_000_000)

@@ -3,18 +3,6 @@ module SessionDiscovery
 
 using PipeWireAO
 
-const SPA = PipeWireAO.SPA
-const Pod = PipeWireAO.Pod
-const SCHEMA_VERSION = Int32(1)
-const MAX_RECORD_BYTES = 4096
-const MAX_ENTRIES = 128
-const MAX_LABEL_BYTES = 256
-const MAX_REMOTE_BYTES = 2048
-const MAX_NODE_NAME_BYTES = 128
-const MAX_DETAIL_BYTES = 512
-const RECORD_SUFFIX = ".pod"
-const RECORD_PREFIX = "session-"
-
 export SessionRecord,
     Verification,
     DiscoveryEntry,
@@ -28,6 +16,18 @@ export SessionRecord,
     remove!,
     list_sessions,
     select_session
+
+const SPA = PipeWireAO.SPA
+const Pod = PipeWireAO.Pod
+const SCHEMA_VERSION = Int32(1)
+const MAX_RECORD_BYTES = 4096
+const MAX_ENTRIES = 128
+const MAX_LABEL_BYTES = 256
+const MAX_REMOTE_BYTES = 2048
+const MAX_NODE_NAME_BYTES = 128
+const MAX_DETAIL_BYTES = 512
+const RECORD_SUFFIX = ".pod"
+const RECORD_PREFIX = "session-"
 
 @enum Verification::UInt8 Unverified = 1 Verified = 2 Inaccessible = 3 Replaced = 4 Malformed =
     5

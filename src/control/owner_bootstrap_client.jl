@@ -3,9 +3,11 @@ module OwnerBootstrapClient
 import Clocks
 import ..ControlClient
 import ..OwnerBootstrapCodec
+
+export Binding, Connection, connect, status, request!, connect_owner!, quit!
+
 const Client = ControlClient
 const Codec = OwnerBootstrapCodec
-export Binding, Connection, connect, status, request!, connect_owner!, quit!
 struct Binding
     remote::String
     node::String

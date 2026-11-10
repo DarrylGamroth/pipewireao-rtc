@@ -5,11 +5,6 @@ using PipeWireAO
 import ..ControlCodec
 import ..ControlClient
 
-const Envelope = ControlCodec
-const Client = ControlClient
-const SPA = PipeWireAO.SPA
-const Pod = PipeWireAO.Pod
-
 export CalibrationLifecycleProfile,
     CorrectionLifecycleProfile,
     CALIBRATION_PROFILE,
@@ -28,6 +23,11 @@ export CalibrationLifecycleProfile,
     LifecycleCommand,
     Completion,
     Rejection
+
+const Envelope = ControlCodec
+const Client = ControlClient
+const SPA = PipeWireAO.SPA
+const Pod = PipeWireAO.Pod
 
 struct CalibrationLifecycleProfile <: Client.AbstractProfile end
 struct CorrectionLifecycleProfile <: Client.AbstractProfile end

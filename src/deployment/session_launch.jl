@@ -19,6 +19,8 @@ import ..PipeWireAORTC
 using Sockets
 using UUIDs
 
+export Request, Prepared, prepare!, cleanup_invocation!, main
+
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
@@ -34,8 +36,6 @@ function validate_ledger(record::AbstractDict)
         throw(ArgumentError("unsupported launch ledger version"))
     return nothing
 end
-
-export Request, Prepared, prepare!, cleanup_invocation!, main
 
 struct LaunchError <: Exception
     message::String

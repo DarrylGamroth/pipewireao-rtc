@@ -1,7 +1,6 @@
 # Initial sessions own their graphs and held-probe endpoints exclusively. All
 # scientific samples arrive over the same transport as deployed measurements.
 using PipeWireAO
-import Clocks
 using UUIDs: uuid4
 const Actions = PipeWireAORTC.CalibrationActionCodec
 const Endpoint = PipeWireAORTC.CalibrationEndpoint

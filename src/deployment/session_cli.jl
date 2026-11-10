@@ -11,6 +11,8 @@ import ..SessionConfiguration
 import ..SessionLaunch
 import ..SessionInstall
 
+export main
+
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
 const S = PipeWireAORTC.SystemdOwners
@@ -21,8 +23,6 @@ const Session = PipeWireAORTC.SessionCodec
 const Profile = PipeWireAORTC.SessionProfile
 const SessionClient = PipeWireAORTC.SessionClient
 const Commands = PipeWireAORTC.RunnerCommands
-
-export main
 
 node_owners(spec) = node_owner_mapping(get(spec, "node-owners", nothing))
 node_owner_mapping(mapping::AbstractDict) = Dict{String,String}(mapping)

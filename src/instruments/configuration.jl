@@ -8,7 +8,6 @@ module InstrumentConfiguration
 import JSON, SHA, FITSIO
 import ..Schemas
 import ..Common, ..DeploymentConfiguration, ..InstrumentDefinition, ..Artifacts
-const D = DeploymentConfiguration
 
 public load,
     load_simulation,
@@ -31,6 +30,8 @@ public load,
     source_grid_coordinates,
     configuration_context,
     calibration_context
+
+const D = DeploymentConfiguration
 
 """
     prepare_system(path; settings=NamedTuple(), calibration=false,

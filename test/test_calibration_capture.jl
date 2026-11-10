@@ -1,4 +1,5 @@
 using Test, PipeWireAO, PipeWireAORTC
+import Clocks
 Base.include(@__MODULE__, joinpath(@__DIR__, "..", "ext", "calibration_capture.jl"))
 const CC = CalibrationCapture
 const PW = PipeWireAO.LibPipeWire
@@ -405,7 +406,6 @@ end
     end
 end
 
-import Clocks
 mutable struct CaptureWaitClock <: Clocks.AbstractNanoClock
     values::Vector{Int64}
     reads::Int

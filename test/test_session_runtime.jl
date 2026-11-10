@@ -1,4 +1,5 @@
 using Test, PipeWireAORTC
+import Clocks
 const Runtime = PipeWireAORTC.SessionRuntime
 
 source_endpoint(profile, instance) = Dict{String,Any}(
@@ -53,7 +54,6 @@ end
     @test_throws ArgumentError Runtime.source_status(Dict(), "unsupported"; deadline = 0)
 end
 
-import Clocks
 module SessionClockBoundary
 import Clocks
 import PipeWireAORTC

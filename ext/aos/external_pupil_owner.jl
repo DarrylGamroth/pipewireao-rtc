@@ -4,10 +4,11 @@ using PipeWireAO, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
 using AdaptiveOpticsSim.AlgorithmGraphs
 using AdaptiveOpticsSim.AlgorithmGraphs: external_pupil_contract
 using SHA
+using AdaptiveOpticsSimPipeWireHIL.ExternalPupil: execution_properties
 import PipeWireAORTC
 import PipeWireAORTC.InstrumentExport: prepare_external_pupil_ports
+
 const IC = PipeWireAORTC.InstrumentConfiguration
-using AdaptiveOpticsSimPipeWireHIL.ExternalPupil: execution_properties
 
 function pupil_contract(declaration, configured)
     optical = declaration.instrument.document["optical_input"]

@@ -3,13 +3,6 @@ module ControlCodec
 
 using PipeWireAO
 
-const SPA = PipeWireAO.SPA
-const _MAX_REQUEST = 16 * 1024
-const _MAX_LIFECYCLE_REPLY = 64 * 1024
-const _MAX_CALIBRATION_REPLY = 128 * 1024
-const _VERSION = Int32(1)
-const _INVALID_ID = typemax(UInt32)
-
 export ControllerIdentity,
     RequestHeader,
     ReplyHeader,
@@ -19,6 +12,13 @@ export ControllerIdentity,
     decode_completion,
     encode_rejection,
     decode_rejection
+
+const SPA = PipeWireAO.SPA
+const _MAX_REQUEST = 16 * 1024
+const _MAX_LIFECYCLE_REPLY = 64 * 1024
+const _MAX_CALIBRATION_REPLY = 128 * 1024
+const _VERSION = Int32(1)
+const _INVALID_ID = typemax(UInt32)
 
 struct ControllerIdentity
     global_id::UInt32

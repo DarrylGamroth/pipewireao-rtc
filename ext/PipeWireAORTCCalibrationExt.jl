@@ -6,6 +6,18 @@ import FilterGraphs
 import AdaptiveOpticsSim
 import AdaptiveOpticsSimPipeWireHIL
 import AdaptiveOpticsCalibration
+import Clocks
+import FilterGraphAlgorithms
+import PipeWireAO as PW
+
+include("calibration_worker.jl")
+using .CalibrationWorkers:
+    CalibrationGraphWorker,
+    start_calibration_graph,
+    quit_calibration_graph!,
+    calibration_graph_status,
+    finish_calibration_graph!,
+    calibration_graph_released
 
 const Calibration = PipeWireAORTC.InstrumentCalibration
 const GraphOwner = PipeWireAORTC.GraphOwner

@@ -6,6 +6,7 @@ import FilterGraphs
 import PipeWireAO
 import FilterGraphAlgorithms
 import ThreadPinning
+import Clocks
 
 const Owner = PipeWireAORTC.GraphOwner
 const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime

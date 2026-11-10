@@ -36,6 +36,10 @@
 
 ## Implementation
 
+- Put `using`, `import`, `export` and `public` at the top of each Julia
+  module or script. Include a child module before importing its names.
+  Preserve optional package loading and tests that measure import order.
+
 - Follow the package-wide [Julia design conventions](docs/architecture.md#julia-design-conventions).
   Reuse existing interfaces and codecs; document required interface methods and
   trait results beside their definitions. Record consequential exceptions in the

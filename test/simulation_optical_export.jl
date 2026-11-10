@@ -6,6 +6,7 @@ using Test,
     AdaptiveOpticsSimPipeWireHIL,
     Proper,
     PipeWireAO
+using PipeWireAORTC.InstrumentExport: prepare_external_pupil_ports
 using AdaptiveOpticsSim.AlgorithmGraphs
 import AdaptiveOpticsSimPipeWireHIL:
     stage_pipewire_array!, drain_pipewire_array!, array_stream_status
@@ -16,7 +17,6 @@ const IC = PipeWireAORTC.InstrumentConfiguration
 const C = PipeWireAORTC.Common
 const Optical = AdaptiveOpticsSimPipeWireHIL.ExternalPupil
 const Simulation = AdaptiveOpticsSimPipeWireHIL.Simulation
-using PipeWireAORTC.InstrumentExport: prepare_external_pupil_ports
 
 mutable struct ExportExposureTransport
     events::Vector{Any}

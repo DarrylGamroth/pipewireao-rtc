@@ -1,6 +1,5 @@
 # Finite, simulation-local modal calibration using existing AOS and FGA owners.
 import LinearAlgebra
-import FilterGraphAlgorithms
 const IC = PipeWireAORTC.InstrumentConfiguration
 const FGA = FilterGraphAlgorithms
 const LA = LinearAlgebra

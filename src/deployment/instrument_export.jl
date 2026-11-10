@@ -15,6 +15,11 @@ import ..InstrumentDefinition
 import ..AOSOwner
 import ..DeploymentConfiguration as D
 import ..resource_root
+import ..Common:
+    configuration_value as graph_configuration_value,
+    configuration_pointer as graph_pointer,
+    configuration_reference_pointer as graph_reference_pointer,
+    configuration_reference as graph_reference
 
 public prepare,
     load_profile,
@@ -102,7 +107,7 @@ function application_files(root)
     return sort!(files)
 end
 
-"""Seal every regular application file except the deployment manifest itself."""
+"""Record SHA-256 checksums for application files in the deployment catalog."""
 function seal!(application::AbstractString)
     root = checked_path(application)
     deployment = joinpath(root, "deployment.conf")
@@ -462,7 +467,8 @@ end
 
 A supplied registered Manifest is validated through the ordinary deployment
 contract. Without one the result supports offline preparation only; the normal
-installer still requires a sealed registered dependency closure.
+installer requires a registered dependency closure and checks the exported files
+against the deployment catalog.
 """
 function prepare(
     source::AbstractString,

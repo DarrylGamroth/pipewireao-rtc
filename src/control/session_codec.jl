@@ -5,12 +5,6 @@ using PipeWireAO
 import ..RunnerCodec
 import ..ControlCodec
 
-const PROFILE = "pipewireao.rtc.session/1"
-const Runner = RunnerCodec
-const Envelope = ControlCodec
-const SPA = PipeWireAO.SPA
-const Pod = PipeWireAO.Pod
-
 export PROFILE,
     RunnerCommand,
     RunnerScalar,
@@ -28,6 +22,12 @@ export PROFILE,
     encode_request,
     decode_completion,
     decode_rejection
+
+const PROFILE = "pipewireao.rtc.session/1"
+const Runner = RunnerCodec
+const Envelope = ControlCodec
+const SPA = PipeWireAO.SPA
+const Pod = PipeWireAO.Pod
 
 const RunnerCommand = Runner.RunnerCommand
 const RunnerScalar = Runner.RunnerScalar

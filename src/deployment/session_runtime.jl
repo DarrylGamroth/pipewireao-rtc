@@ -18,13 +18,6 @@ import ..AcquisitionLifecycleClient
 import ..AcquisitionLifecycleCodec
 import ..PipeWireAORTC
 
-const S = SystemdOwners
-const Discovery = SessionDiscovery
-const Session = SessionClient
-const Acquisition = AcquisitionLifecycleClient
-const AcquisitionCodec = AcquisitionLifecycleCodec
-const UNIT = r"^pipewireao-session@([a-z0-9][a-z0-9-]{0,39})\.service$"
-
 export Handle,
     start!,
     attach,
@@ -38,6 +31,13 @@ export Handle,
     reconcile_cleanup!,
     reconcile_stop!,
     final_record
+
+const S = SystemdOwners
+const Discovery = SessionDiscovery
+const Session = SessionClient
+const Acquisition = AcquisitionLifecycleClient
+const AcquisitionCodec = AcquisitionLifecycleCodec
+const UNIT = r"^pipewireao-session@([a-z0-9][a-z0-9-]{0,39})\.service$"
 
 """
     Handle(unit, runtime_root, invocation, main_pid, start_ticks, cgroup,

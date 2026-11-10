@@ -6,6 +6,8 @@ import ..ControlCodec
 import ..Common: remaining_ns
 import Clocks
 
+export AbstractProfile, Client, connect, request!, UnknownOutcome
+
 const Envelope = ControlCodec
 const SPA = PipeWireAO.SPA
 const PROTOCOL = "pipewireao.rtc-control/1"
@@ -104,8 +106,6 @@ function next_instance()
         instance
     end
 end
-
-export AbstractProfile, Client, connect, request!, UnknownOutcome
 
 struct UnknownOutcome <: Exception
     message::String

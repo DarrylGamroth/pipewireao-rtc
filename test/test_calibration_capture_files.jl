@@ -1,3 +1,5 @@
+import Clocks
+
 Base.include(@__MODULE__, joinpath(@__DIR__, "capture_file_inputs.jl"))
 
 @testset "capture model intervals stay within signed nanosecond range" begin
@@ -688,7 +690,6 @@ end
     end
 end
 
-import Clocks
 @testset "capture preflight retains signed deadline and fresh I/O guards" begin
     mktempdir() do parent
         for (index, origin) in enumerate((Int64(-10), Int64(2)^53 + 1))

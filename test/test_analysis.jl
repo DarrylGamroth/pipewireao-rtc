@@ -1,4 +1,5 @@
 using Test, PipeWireAORTC
+import Clocks
 
 const A = PipeWireAORTC.Analysis
 const D = PipeWireAORTC.DeploymentConfiguration
@@ -545,7 +546,6 @@ end
         ["core", "simulator", "julia", "required fragments removed", "optional cleanup"]
 end
 
-import Clocks
 mutable struct AnalysisClock <: Clocks.AbstractNanoClock
     value::Int64
     reads::Int

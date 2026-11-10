@@ -8,10 +8,10 @@ module SessionConfiguration
 
 import ..PipeWireAORTC
 
+export session_configuration, write_session_config
+
 const Export = PipeWireAORTC.ScienceExport
 const D = PipeWireAORTC.DeploymentConfiguration
-
-export session_configuration, write_session_config
 
 struct ConfigurationError <: Exception
     message::String

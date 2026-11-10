@@ -12,11 +12,8 @@ import ..ScienceExport
 import ..InstrumentExport
 import ..AOSOwner
 
-public modal_completion
-"Prepare physical mirror completion using the optional calibration extension."
-function modal_completion end
-
-public digest,
+public modal_completion,
+    digest,
     source_completion,
     read_parameters,
     write_fits,
@@ -42,7 +39,14 @@ public digest,
     read_bundle,
     write_bundle,
     stage_calibration,
-    calibrate_references
+    calibrate_references,
+    prepare_initial_calibration,
+    calibrate_optical,
+    validate_optical,
+    calibrate_optical_reference
+
+"Prepare physical mirror completion using the optional calibration extension."
+function modal_completion end
 
 """
     lowpass_coefficients(T; cutoff_frequency_hz, sample_rate_hz)
@@ -154,7 +158,6 @@ end
 
 "Cold projection of an existing built graph for initial calibration (optional science extension)."
 function calibration_graph end
-public calibration_graph
 
 "Prepare a native CPU initial-calibration endpoint from the regular graph projections."
 function prepare_initial_calibration end
@@ -169,7 +172,6 @@ no default remote or hardware connection is selected. Output is a candidate
 reference product, not an activatable interaction-matrix bundle.
 """
 function calibrate_references end
-public prepare_initial_calibration
 
 "Reject source instruments before numerical calibration or validation starts."
 function require_prepared_application(application)
@@ -680,7 +682,6 @@ function calibrate_optical end
 function validate_optical end
 "Calibrate the deployed upstream sensor residual response to optical physical modes."
 function calibrate_optical_reference end
-public calibrate_optical, validate_optical, calibrate_optical_reference
 include("bundle.jl")
 include("recipe.jl")
 

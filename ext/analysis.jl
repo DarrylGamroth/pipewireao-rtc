@@ -1,5 +1,4 @@
 const Analysis = PipeWireAORTC.Analysis
-import Clocks
 
 # The blocking native graph loop occupies the owner thread. Analysis keeps its
 # monitors on the reserved second default thread and yields after GC-safe waits.

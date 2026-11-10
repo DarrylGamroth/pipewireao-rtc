@@ -10,12 +10,14 @@ import ..Common
 import ..CalibrationActionClient
 import ..CalibrationActionCodec
 import ..ControlClient
+
+export Plan, Timeouts, acquire!, acquire, read_plan, document, Cancelled
+export Procedure, complete!, cancel!, expire!, fail!
+
 const ActionClient = CalibrationActionClient
 const Codec = CalibrationActionCodec
 const Client = ControlClient
 
-export Plan, Timeouts, acquire!, acquire, read_plan, document, Cancelled
-export Procedure, complete!, cancel!, expire!, fail!
 const MAX_PLAN_BYTES = 16 * 1024 * 1024
 const MAX_RECORD_BYTES = 512 * 1024 * 1024
 

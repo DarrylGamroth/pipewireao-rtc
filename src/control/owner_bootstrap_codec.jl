@@ -3,9 +3,7 @@ module OwnerBootstrapCodec
 using PipeWireAO
 import ..ControlCodec
 import ..ControlClient
-const Envelope = ControlCodec
-const Client = ControlClient
-const SPA = PipeWireAO.SPA
+
 export Profile,
     PROFILE,
     Lifecycle,
@@ -17,6 +15,10 @@ export Profile,
     Command,
     Completion,
     Rejection
+
+const Envelope = ControlCodec
+const Client = ControlClient
+const SPA = PipeWireAO.SPA
 struct Profile <: Client.AbstractProfile end
 const PROFILE = Profile()
 Client.profile_name(::Profile) = "pipewireao.rtc.owner-bootstrap/1"

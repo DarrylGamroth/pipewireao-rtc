@@ -4,6 +4,20 @@ module RunnerCodec
 using PipeWireAO
 using ..ControlCodec
 
+export RunnerCommand,
+    RunnerScalar,
+    RunnerResult,
+    RunnerError,
+    Completion,
+    Rejection,
+    Lifecycle,
+    Outcome,
+    GroupState,
+    operation_id,
+    encode_request,
+    decode_completion,
+    decode_rejection
+
 const SPA = PipeWireAO.SPA
 const Envelope = ControlCodec
 const Pod = PipeWireAO.Pod
@@ -26,20 +40,6 @@ const OPERATIONS = (
     :properties_set,
     :parameter,
 )
-
-export RunnerCommand,
-    RunnerScalar,
-    RunnerResult,
-    RunnerError,
-    Completion,
-    Rejection,
-    Lifecycle,
-    Outcome,
-    GroupState,
-    operation_id,
-    encode_request,
-    decode_completion,
-    decode_rejection
 
 @enum Lifecycle::UInt32 Offline = 1 Configuring = 2 Ready = 3 Running = 4 Fault = 5
 @enum Outcome::UInt32 Accepted = 1 Observed = 2 Requested = 3 Completed = 4 Active = 5 Submitted =

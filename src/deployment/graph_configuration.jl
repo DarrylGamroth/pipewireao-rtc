@@ -53,12 +53,6 @@ function pixel_to_image(shape)
     return [1 / columns, 1 / rows]
 end
 
-import ..Common:
-    configuration_value as graph_configuration_value,
-    configuration_pointer as graph_pointer,
-    configuration_reference_pointer as graph_reference_pointer,
-    configuration_reference as graph_reference
-
 "Resolve explicit references in node configuration, preserving topology and other fields."
 function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
     result = deepcopy(graph)

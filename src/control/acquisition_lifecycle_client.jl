@@ -6,11 +6,11 @@ using PipeWireAO: with_thread_loop_lock
 import ..ControlClient
 import ..AcquisitionLifecycleCodec
 
+export Connection, connect, connect_owner!, status, request!
+
 const Client = ControlClient
 const Codec = AcquisitionLifecycleCodec
 const Profile = Codec.Profile
-
-export Connection, connect, connect_owner!, status, request!
 
 struct Connection{P<:Profile,C<:Client.Client}
     profile::P

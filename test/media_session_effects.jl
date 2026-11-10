@@ -1,13 +1,6 @@
 module MediaSessionEffectsTests
 using Test, PipeWireAO, PipeWireAORTC
 import Clocks
-const S = PipeWireAORTC.MediaSession
-const R = PipeWireAORTC.RunnerCodec
-const C = PipeWireAORTC.ControlCodec
-const Client = PipeWireAORTC.ControlClient
-const Bootstrap = PipeWireAORTC.OwnerBootstrapCodec
-const Acquisition = PipeWireAORTC.AcquisitionLifecycleCodec
-const SPA = PipeWireAO.SPA
 import PipeWireAORTC.MediaSession:
     node!,
     find_object,
@@ -31,6 +24,14 @@ import PipeWireAORTC.MediaSession:
     retire_owner!
 
 import PipeWireAORTC.DeploymentConfiguration
+
+const S = PipeWireAORTC.MediaSession
+const R = PipeWireAORTC.RunnerCodec
+const C = PipeWireAORTC.ControlCodec
+const Client = PipeWireAORTC.ControlClient
+const Bootstrap = PipeWireAORTC.OwnerBootstrapCodec
+const Acquisition = PipeWireAORTC.AcquisitionLifecycleCodec
+const SPA = PipeWireAO.SPA
 
 mutable struct Runtime{D}
     configuration::D

@@ -1,15 +1,3 @@
-import PipeWireAO as PW
-import FilterGraphAlgorithms
-
-include("calibration_worker.jl")
-using .CalibrationWorkers:
-    CalibrationGraphWorker,
-    start_calibration_graph,
-    quit_calibration_graph!,
-    calibration_graph_status,
-    finish_calibration_graph!,
-    calibration_graph_released
-
 mutable struct CalibrationProbe{L,F}
     loop::L
     source::Union{Nothing,PW.Stream}

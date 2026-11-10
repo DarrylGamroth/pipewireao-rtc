@@ -10,6 +10,22 @@ import ...ControlCodec
 import ...ControlClient
 import ...RunnerCodec
 import ...SessionCodec
+
+export Gate,
+    Controller,
+    Ticket,
+    AbstractAction,
+    DispatchRequest,
+    PublishRecords,
+    AuthorityFailed,
+    receive!,
+    controllers!,
+    controller_removed!,
+    state!,
+    tick!,
+    complete!,
+    take_actions!
+
 const SPA = PipeWireAO.SPA
 const Envelope = ControlCodec
 const PREFIX = "pipewireao.rtc.session."
@@ -556,18 +572,4 @@ complete!(gate::Gate, ticket::AbstractTicket, pod::Pod; unknown = false, termina
     (Hsm.dispatch!(gate, :Completed, (; ticket, pod, unknown, terminal)); nothing)
 take_actions!(gate::Gate) = (Hsm.dispatch!(gate, :TakeActions); gate.delivery)
 
-export Gate,
-    Controller,
-    Ticket,
-    AbstractAction,
-    DispatchRequest,
-    PublishRecords,
-    AuthorityFailed,
-    receive!,
-    controllers!,
-    controller_removed!,
-    state!,
-    tick!,
-    complete!,
-    take_actions!
 end

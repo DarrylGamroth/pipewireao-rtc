@@ -1,6 +1,12 @@
 module Common
 
 import PipeWireAO
+using JSON
+using SHA
+using YAML
+
+export read_json,
+    read_yaml, parse_json, write_json, write_yaml, sha256_file, cli_arguments, run_checked
 
 "Return the nonnegative time to a deadline, saturated to signed nanoseconds."
 function remaining_ns(deadline::Int64, now::Int64)
@@ -76,14 +82,6 @@ function prepare_reference_clock(options)
     return clock === :realtime ? PipeWireAO.METADATA_CLOCK_REALTIME :
            PipeWireAO.METADATA_CLOCK_TAI
 end
-
-
-using JSON
-using SHA
-using YAML
-
-export read_json,
-    read_yaml, parse_json, write_json, write_yaml, sha256_file, cli_arguments, run_checked
 
 "Read a single bounded YAML configuration, rejecting duplicate mapping keys."
 function read_yaml(path::AbstractString; maximum::Integer = 1024 * 1024)

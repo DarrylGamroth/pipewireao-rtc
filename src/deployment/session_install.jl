@@ -4,10 +4,10 @@ module SessionInstall
 import ..PipeWireAORTC
 using JSON
 
+export install, main
+
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
-
-export install, main
 
 "Generate a one-shot client launcher bound to the installed application environment."
 function installed_launcher(julia::AbstractString; environment::AbstractString)

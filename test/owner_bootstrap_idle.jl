@@ -1,11 +1,11 @@
 using Test, PipeWireAO, PipeWireAORTC
+import ThreadPinning
 include("control_private_core.jl")
 include("bootstrap_monitor_gate.jl")
 const R = PipeWireAORTC.OwnerBootstrapRuntime
 const B = PipeWireAORTC.OwnerBootstrapClient
 const C = PipeWireAORTC.ControlClient
 const P = PipeWireAORTC.OwnerBootstrapCodec
-import ThreadPinning
 function idle_window()
     before = Base.gc_num()
     @ccall gc_safe = true usleep(Cuint(500_000)::Cuint)::Cint

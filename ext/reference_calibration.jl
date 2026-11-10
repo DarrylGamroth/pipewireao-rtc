@@ -3,7 +3,6 @@
 const ReferenceFrames = AdaptiveOpticsCalibration.ReferenceFrames
 const Preparation = PipeWireAORTC.CalibrationPreparation
 const ReferenceClient = PipeWireAORTC.CalibrationActionClient
-import Clocks
 
 function reference_counts(recipe)
     spec = get(recipe, "references", nothing)

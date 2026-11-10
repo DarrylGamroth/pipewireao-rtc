@@ -5,13 +5,6 @@ using PipeWireAO
 import ..ControlCodec
 import ..ControlClient
 import ..AcquisitionLifecycleCodec
-const Envelope = ControlCodec
-const Client = ControlClient
-const Lifecycle = AcquisitionLifecycleCodec
-const SPA = PipeWireAO.SPA
-const Pod = PipeWireAO.Pod
-const ColdLifecycle = Lifecycle.ColdLifecycle
-const AcquisitionCursor = Lifecycle.AcquisitionCursor
 
 export PROFILE,
     CalibrationActionProfile,
@@ -47,6 +40,14 @@ export PROFILE,
     Rejection,
     collect_reply_size,
     preflight_collect_reply
+
+const Envelope = ControlCodec
+const Client = ControlClient
+const Lifecycle = AcquisitionLifecycleCodec
+const SPA = PipeWireAO.SPA
+const Pod = PipeWireAO.Pod
+const ColdLifecycle = Lifecycle.ColdLifecycle
+const AcquisitionCursor = Lifecycle.AcquisitionCursor
 
 struct CalibrationActionProfile <: Client.AbstractProfile end
 const PROFILE = CalibrationActionProfile()

@@ -5,11 +5,12 @@ import ..Common
 import ..CalibrationAcquisition
 import ..CalibrationActionClient
 import ..CalibrationActionCodec
+
+public main
+
 const Acquisition = CalibrationAcquisition
 const ActionClient = CalibrationActionClient
 const Codec = CalibrationActionCodec
-
-public main
 
 const MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
 mutable struct Journal{F}

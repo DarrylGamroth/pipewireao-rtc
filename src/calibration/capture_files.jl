@@ -6,14 +6,14 @@ module CaptureFiles
 
 using SHA
 import ..Common
-export Channel, Contract, CaptureStore, capture_preflight, capture!, read_capture
-
-const CAPTURE_SCHEMA_VERSION = 5
 import ..CalibrationActionCodec
 import ..ControlClient
 import PipeWireAO
 import Clocks
 
+export Channel, Contract, CaptureStore, capture_preflight, capture!, read_capture
+
+const CAPTURE_SCHEMA_VERSION = 5
 const CAPTURE_HEADER_BYTES = 16 * 1024
 const CAPTURE_EXPOSURE_BYTES = 64 * 1024
 const CAPTURE_METADATA_ABI = 4

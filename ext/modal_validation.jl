@@ -1,5 +1,4 @@
 # Array validation of the same calibrated graph and complete named command set.
-import Clocks
 
 function Calibration._validate_system(
     ::Val{:pyramid},

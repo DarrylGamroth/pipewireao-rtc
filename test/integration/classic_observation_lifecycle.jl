@@ -1,8 +1,9 @@
 #!/usr/bin/env julia
 # Optional observer client. The caller owns the already Running cohort.
-include("classic_observation.jl")
 import PipeWireAORTC
 using Test
+
+include("classic_observation.jl")
 
 function _classic_observation_successor(previous, current)
     previous["remote"] == current["remote"] || error("Classic observation remote changed")

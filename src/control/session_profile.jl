@@ -5,6 +5,8 @@ using PipeWireAO
 import ..ControlClient
 import ..SessionCodec
 
+export Profile
+
 const Codec = SessionCodec
 const CAP_NAMES = (
     "pipewireao.rtc.session.version",
@@ -50,7 +52,5 @@ function _session_uuid(value::AbstractString)
         throw(ArgumentError("invalid direct session UUID metadata"))
     return value
 end
-
-export Profile
 
 end # module SessionProfile

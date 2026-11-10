@@ -12,18 +12,6 @@ import ..ControlEndpoint
 import ..RunnerCodec
 import ..OwnerBootstrapRuntime
 
-const Envelope = ControlCodec
-const Client = ControlClient
-const Endpoint = ControlEndpoint
-const Runner = RunnerCodec
-const Bootstrap = OwnerBootstrapRuntime
-const SPA = PipeWireAO.SPA
-const MAX_BYTES = 512 * 1024 * 1024
-const MAX_SOURCES = 32
-const IDLE = UInt8(0)
-const PENDING = UInt8(1)
-const SUBMITTED = UInt8(2)
-
 export Profile,
     PROFILE,
     Lifecycle,
@@ -38,6 +26,18 @@ export Profile,
     run_owner,
     read_declarations,
     main
+
+const Envelope = ControlCodec
+const Client = ControlClient
+const Endpoint = ControlEndpoint
+const Runner = RunnerCodec
+const Bootstrap = OwnerBootstrapRuntime
+const SPA = PipeWireAO.SPA
+const MAX_BYTES = 512 * 1024 * 1024
+const MAX_SOURCES = 32
+const IDLE = UInt8(0)
+const PENDING = UInt8(1)
+const SUBMITTED = UInt8(2)
 
 """Native `pipewireao.rtc.parameter-source/1` control profile."""
 struct Profile <: Client.AbstractProfile end

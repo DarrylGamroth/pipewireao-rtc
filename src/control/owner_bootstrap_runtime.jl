@@ -11,11 +11,6 @@ import ..ControlClient
 import ..ControlEndpoint
 import ..OwnerBootstrapCodec
 
-const Client = ControlClient
-const Endpoint = ControlEndpoint
-const Codec = OwnerBootstrapCodec
-const POLL_SECONDS = 0.005
-
 export Runtime,
     validate_threads,
     preparation_check!,
@@ -32,6 +27,11 @@ export Runtime,
     finish!,
     clean_cancel,
     with_owner
+
+const Client = ControlClient
+const Endpoint = ControlEndpoint
+const Codec = OwnerBootstrapCodec
+const POLL_SECONDS = 0.005
 
 "Check quiet transport health without registry traversal; consume only the old wake."
 function _poll_ready!(runtime::Endpoint.Transport)

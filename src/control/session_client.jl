@@ -10,11 +10,11 @@ import ..SessionCodec
 import ..SessionProfile
 import ..RunnerCommands
 
+export Connection, select_session, select_direct_session, request!, lifecycle, render_direct
+
 const Discovery = SessionDiscovery
 const Runner = RunnerCodec
 const Session = SessionCodec
-
-export Connection, select_session, select_direct_session, request!, lifecycle, render_direct
 
 "A verified listing and the exact native client used to verify it."
 struct Connection{C}
