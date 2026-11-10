@@ -48,6 +48,46 @@ const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
     end
 end
 
+@testset "Shack–Hartmann projection follows declared estimator Ports" begin
+    node = Dict(
+        "label" => "shack-hartmann-image-f32",
+        "config" => Dict(
+            "image_size" => [2, 2],
+            "subaperture_size" => [1, 1],
+            "subaperture_count" => 1,
+            "coordinate_scale" => 1,
+        ),
+    )
+    ports = Dict(
+        :centroids => (; node = "centroid-estimator"),
+        :brightness => (; node = "centroid-estimator"),
+        :eligible => (; node = "centroid-estimator"),
+    )
+    graph = (;
+        nodes = Dict("centroid-estimator" => node),
+        inputs = Dict(:detector => (; endpoint = "adc-calibration:raw")),
+        outputs = ports,
+    )
+    estimator = Dict(
+        "raw_input" => "detector",
+        "slopes_output" => "centroids",
+        "flux_output" => "brightness",
+        "validity_output" => "eligible",
+    )
+    parameters = Dict(
+        :background => zeros(Float32, 2, 2),
+        Symbol("reference-slopes") => zeros(Float32, 1, 2),
+        :active => [true],
+        :thresholds => zeros(Float32, 1, 2),
+        :coordinates => zeros(Float32, 1, 2),
+    )
+    geometry = E.reference_geometry(graph, parameters, estimator)
+    @test geometry.raw_input == "adc-calibration:raw"
+    @test geometry.outputs == (slopes = :centroids, flux = :brightness, validity = :eligible)
+    ports[:eligible] = (; node = "other-estimator")
+    @test_throws ArgumentError E.reference_geometry(graph, parameters, estimator)
+end
+
 function reference_recipe()
     Dict(
         "references" => Dict(

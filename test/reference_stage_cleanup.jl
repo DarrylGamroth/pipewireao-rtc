@@ -76,6 +76,8 @@ end
                 nothing,
                 () -> nothing,
                 (sample, exposure) -> nothing;
+                raw_input = "pixel-calibration:raw",
+                frontend_outputs = (:slopes, :flux, :validity),
                 commands,
                 probe_command = :woofer,
             )

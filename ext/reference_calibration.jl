@@ -34,17 +34,44 @@ function reference_counts(recipe)
     return NamedTuple{(:dark, :lamp, :qualification)}(counts)
 end
 
-function reference_geometry(application, parameters)
-    prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+function reference_graph(application)
     document = PipeWireAORTC.DeploymentConfiguration.decode(
-        joinpath(application, "rtc", "graph.conf"), prefix
+        joinpath(application, "rtc", "graph.conf"),
+        get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     )
-    node = only(
-        filter(node -> node["name"] == "shack-hartmann", document["filter.graph"]["nodes"])
+    graph = document["filter.graph"]
+    return (;
+        nodes = Dict(node["name"] => node for node in graph["nodes"]),
+        inputs = Dict(port.name => port for port in map(calibration_port, graph["inputs"])),
+        outputs = Dict(port.name => port for port in map(calibration_port, graph["outputs"])),
+        links = graph["links"],
     )
+end
+
+function reference_command(graph, name)
+    port = graph.outputs[name]
+    port.endpoint == port.node * ":demanded" ||
+        throw(ArgumentError("reference command must select a conditioner demanded output"))
+    return (;
+        requested = port.node * ":requested",
+        demanded = name,
+        feedback = port.node * ":constraint-feedback",
+    )
+end
+
+function reference_geometry(graph, parameters, estimator)
+    outputs = (;
+        slopes = Symbol(estimator["slopes_output"]),
+        flux = Symbol(estimator["flux_output"]),
+        validity = Symbol(estimator["validity_output"]),
+    )
+    ports = map(name -> graph.outputs[name], outputs)
+    node = graph.nodes[ports.slopes.node]
+    all(port -> port.node == ports.slopes.node, values(ports)) &&
     node["label"] == "shack-hartmann-image-f32" || throw(
         ArgumentError("reference procedure requires the declared image centroid estimator"),
     )
+    raw_input = graph.inputs[Symbol(estimator["raw_input"])].endpoint
     config = node["config"]
     config["coordinate_scale"] == 1 ||
         throw(ArgumentError("reference centroids require pixel coordinate scale one"))
@@ -71,7 +98,7 @@ function reference_geometry(application, parameters)
             "centroid coordinates must be the declared centered detector-pixel axes"
         ),
     )
-    return (; rows, columns, count)
+    return (; rows, columns, count, raw_input, outputs)
 end
 
 function reference_source!(directory, name, values; artifacts = nothing)
@@ -142,6 +169,17 @@ function reference_restoration!(client, reference, deadline::Int64)
     return nothing
 end
 
+function reference_command_projection(application, specification)
+    return Calibration.calibration_graph(
+        application;
+        inputs = (requested = specification.requested,),
+        outputs = (
+            demanded = specification.demanded,
+            var"constraint-feedback" = specification.feedback,
+        ),
+    )
+end
+
 function reference_stage(
     application,
     remote,
@@ -158,8 +196,9 @@ function reference_stage(
     configuration,
     check_application,
     reduce;
-    frontend_outputs = (:slopes, :flux, :validity),
-    commands = nothing,
+    raw_input,
+    frontend_outputs,
+    commands,
     probe_command = nothing,
     measurements::Union{Nothing,Symbol} = :slopes,
 )
@@ -184,7 +223,7 @@ function reference_stage(
     try
         frontend = Calibration.calibration_graph(
             application;
-            inputs = (raw = "pixel-calibration:raw",),
+            inputs = (raw = raw_input,),
             outputs = frontend_outputs,
             parameter_sources = sources,
         )
@@ -194,12 +233,8 @@ function reference_stage(
                 getproperty(FilterGraphs.output_formats(frontend.graph), measurements).shape
             )
         Actions.preflight_collect_reply(measurement_count, counts.samples)
-        command = if commands === nothing
-            Calibration.calibration_graph(
-                application;
-                inputs = (requested = "pdm-command:requested",),
-                outputs = (:demanded, Symbol("constraint-feedback")),
-            )
+        command = if probe_command === nothing
+            reference_command_projection(application, only(commands))
         else
             # Names and endpoints come from the declared instrument graph. Each
             # projection keeps its own conditioner, units and physical shape.
@@ -208,14 +243,7 @@ function reference_stage(
                 for specification in values(commands)
                     push!(
                         built,
-                        Calibration.calibration_graph(
-                            application;
-                            inputs = (requested = specification.requested,),
-                            outputs = (
-                                demanded = specification.demanded,
-                                var"constraint-feedback" = specification.feedback,
-                            ),
-                        ),
+                        reference_command_projection(application, specification),
                     )
                 end
                 NamedTuple{keys(commands)}(Tuple(built))
@@ -519,12 +547,17 @@ _calibrate_references(::Val{Kind}, args...; kwargs...) where {Kind} =
     throw(ArgumentError("unsupported reference calibration sensor procedure: $Kind"))
 
 function _calibrate_references(
-    ::Val{:shack_hartmann}, application, output, _recipe, counts, options, declaration;
+    ::Val{:shack_hartmann}, application, output, recipe, counts, options, declaration;
     remote, reference, run, timeout_s, cancelled, confirm,
 )
     validate_reference_figure(reference)
     parameters = Calibration.read_parameters(application)
-    geometry = reference_geometry(application, parameters)
+    graph = reference_graph(application)
+    geometry = reference_geometry(graph, parameters, recipe["estimator"])
+    commands = (reference_command(graph, :demanded),)
+    stage_options = (;
+        raw_input = geometry.raw_input, frontend_outputs = geometry.outputs, commands,
+    )
     length(reference) == options.command_count && all(isfinite, reference) ||
         throw(ArgumentError("reference figure differs from the declared physical command"))
     reference = collect(reference)
@@ -556,7 +589,13 @@ function _calibrate_references(
         ),
     )
     production = IC.graph_document(declaration, configured)
-    detector = only(filter(node -> node["type"] == "detector", production["nodes"]))
+    frame = only(
+        port for port in production["outputs"] if port["name"] == string(options.frame_output)
+    )
+    detector = only(filter(
+        node -> node["type"] == "detector" && frame["source"] == node["name"] * ".frame",
+        production["nodes"],
+    ))
     bits = detector["config"]["bits"]
     validate_reference_adc_bits(bits)
     rail = UInt32(1) << bits
@@ -602,7 +641,8 @@ function _calibrate_references(
                 check_application,
                 (sample, exposure) -> AdaptiveOpticsCalibration.process!(
                     dark_state, dark_plan, sample.arrays.raw
-                ),
+                );
+                stage_options...,
             ),
         )
         dark = reference_product(dark_plan, dark_state)
@@ -636,7 +676,8 @@ function _calibrate_references(
                 check_application,
                 (sample, exposure) -> reference_lamp_update!(
                     lamp_state, lamp_plan, sample, universe, zero_reference
-                ),
+                );
+                stage_options...,
             ),
         )
         lamp = reference_product(lamp_plan, lamp_state)
@@ -686,7 +727,8 @@ function _calibrate_references(
                         sample,
                         indices,
                         frozen_reference,
-                    ),
+                    );
+                    stage_options...,
                 ),
             )
             qualification = reference_product(qualification_plan, qualification_state)

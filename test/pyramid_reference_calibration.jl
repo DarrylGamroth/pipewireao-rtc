@@ -314,8 +314,8 @@ if application !== nothing
         @test geometry.row_units == fill("m OPD", geometry.modes)
         dark = C.calibration_graph(
             application;
-            inputs = (raw = "pixel-calibration:raw",),
-            outputs = (calibrated = "pixel-calibration:calibrated",),
+            inputs = (raw = geometry.raw_input,),
+            outputs = (calibrated = geometry.calibrated,),
         )
         try
             @test FilterGraphs.output_formats(dark.graph).calibrated.shape ==
@@ -329,7 +329,7 @@ if application !== nothing
         end
         frontend = C.calibration_graph(
             application;
-            inputs = (raw = "pixel-calibration:raw",),
+            inputs = (raw = geometry.raw_input,),
             outputs = (
                 reconstruction_pixels = Symbol("reconstruction-pixels"),
                 mean_pupil_intensity = Symbol("mean-pupil-intensity"),

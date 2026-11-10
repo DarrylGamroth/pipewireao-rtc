@@ -422,11 +422,12 @@ Shack–Hartmann or pyramid procedure. Supply a caller-owned private core path
 for `remote` or a separate path for each stage
 `(dark=..., lamp=..., qualification=...)`.
 For Shack–Hartmann, `reference` explicitly supplies the absolute Float32 physical
-mirror figure in the existing command units. Every stage has a fresh native owner and simulator
-acquisition domain, a correlated `CalibrationPreparation` gate and known
-Restore/Release completion before the next stage. The stage deadline includes
-preparation and acquisition; one additional equal timeout bounds cleanup and the
-server lifetime. Unknown native outcomes fence the candidate without retry.
+mirror figure in the existing command units. The recipe's estimator Port names
+select the raw frame and the slopes, flux and validity outputs. Each stage has
+a fresh native owner and simulator acquisition domain, a correlated
+`CalibrationPreparation` gate and known Restore/Release completion before the
+next stage. The stage deadline includes preparation and acquisition. One
+additional equal timeout bounds cleanup and the server lifetime. Unknown native outcomes fence the candidate without retry.
 Cancellation is observed at completed-action and sample boundaries, followed by
 restoration only when the native outcome permits it.
 
@@ -451,14 +452,16 @@ ineligible lamp product can be retained as a rejected candidate; if no ROI is
 eligible, qualification is explicitly skipped.
 
 Pyramid acquisition takes a NamedTuple of explicit Float32 figures for all
-declared command Ports. GPI2 declares woofer, tweeter and tip/tilt Ports. Every command adoption and
-restoration verifies that complete set under one token, including conditioner
-feedback. Native v1 action vectors address the first mirror in the declared
-calibration recipe; other ports retain their immutable references. Names, physical
+declared command Ports. GPI2 declares woofer, tweeter and tip/tilt Ports. Every
+command adoption and restoration verifies that complete set under one token,
+including conditioner feedback. Native v1 action vectors address the first
+mirror in the declared calibration recipe. Other ports retain their immutable
+references. Names, physical
 schemas and shapes come from the regular graph and simulator declarations.
 
-For GPI dark acquisition the frontend projects the normal pixel-calibration node,
-while the reducer consumes separately captured raw ADC data. The cold selection
+For pyramid dark acquisition the frontend projects the pixel-calibration Node
+connected to the declared pupil processor. The reducer consumes separately
+captured raw ADC data. The cold selection
 `measurements=nothing` requires that synchronous consumer and requests a Collect
 with zero response measurements: the reply carries complete exposure receipts,
 while the full raw arrays go directly to AOC. This additive native v1 value-domain
