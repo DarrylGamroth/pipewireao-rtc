@@ -12,6 +12,14 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### GPI2 managed startup and controls — 2026-11-10
+
+RTC 0.7.7 and FilterGraphPipeWire 0.5.4 reached Ready within the 900 s budget
+on a private core after a registry-only install. Open loop and Woofer Shape
+each applied one request with all 32 session Links active. The native Quit
+outcome was unknown, and emergency cleanup removed the private core and
+owners. [Release verification](validation/rtc-077-20261110/README.md)
+
 ### GPI2 captured controller replay — 2026-11-09
 
 The [connected CUDA replay](validation/gpi2-connected-20261109/README.md)

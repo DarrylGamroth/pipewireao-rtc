@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## RTC 0.7.7 GPI2 startup and controls — 2026-11-10
+
+The [release verification](validation/rtc-077-20261110/README.md) records
+registry-only installation, private-core admission, Open loop and Woofer
+Shape with FilterGraphPipeWire 0.5.4, and the stop-hook failure with confirmed
+emergency cleanup.
+
 ## RTC 0.7.6 generic calibration — 2026-11-10
 
 The [release verification](validation/rtc-076-20261110/README.md) records the
