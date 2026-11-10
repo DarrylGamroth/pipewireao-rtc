@@ -1,4 +1,4 @@
-# GPI pyramid references consume the normal FGA outputs unchanged. AOC owns
+# Pyramid references consume the normal FGA outputs unchanged. AOC owns
 # means and negative pupil-major reconstruction; this file only sequences the
 # existing native acquisition owner and records candidate FITS artifacts.
 
@@ -288,8 +288,9 @@ function pyramid_reference_adc(production, options)
     return (; rail = UInt32(range[2]), detector, frame_layout)
 end
 
-function pyramid_references(
-    application, output; remote, reference, run, timeout_s, cancelled, confirm
+function _calibrate_references(
+    ::Val{:pyramid}, application, output, recipe, counts, options, declaration;
+    remote, reference, run, timeout_s, cancelled, confirm,
 )
     application_hashes = reference_application_hashes(application)
     function check_application()
@@ -297,19 +298,10 @@ function pyramid_references(
             error("built application changed during pyramid reference acquisition")
         return nothing
     end
-    recipe = Calibration.read_recipe(application)
-    counts = reference_counts(recipe)
     counts.lamp.discard >= 1 || throw(
         ArgumentError(
             "pyramid lamp training must discard its initial normalization exposure"
         ),
-    )
-    options = PipeWireAORTC.AOSOwner.configuration(joinpath(application, "simulation.conf"))
-    options.backend === :cpu && options.frame_encoding === :uint16 ||
-        throw(ArgumentError("pyramid references require the normal UInt16 CPU detector"))
-    declaration = IC.load_simulation(options.plant.definition)
-    declaration.document["id"] == "gpi2" || throw(
-        ArgumentError("pyramid reference procedure requires the declared GPI instrument"),
     )
     validate_pyramid_owner_threads(options.command_input)
     reference = pyramid_reference_figures(reference, options)

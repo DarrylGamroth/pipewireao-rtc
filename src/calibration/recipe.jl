@@ -36,11 +36,7 @@ function read_recipe(application)
     declaration = InstrumentConfiguration.load_simulation(
         joinpath(application, recipe["simulation"])
     )
-    sensor = get(
-        declaration.instrument.document["wavefront_sensors"], recipe["sensor"], nothing
-    )
-    sensor === nothing && throw(ArgumentError("calibration sensor is not declared"))
-    kind = InstrumentConfiguration.sensor_kind(sensor)
+    kind = recipe_sensor_kind(recipe, declaration)
     sensor_fields = _sensor_recipe_fields(kind)
     Set(keys(recipe)) ⊆ Set((common..., sensor_fields.extra..., "capture")) ||
         throw(ArgumentError("unknown calibration recipe fields"))
@@ -96,6 +92,13 @@ function read_recipe(application)
         ),
     )
     return recipe
+end
+
+function recipe_sensor_kind(recipe, declaration)
+    sensors = declaration.instrument.document["wavefront_sensors"]
+    sensor = get(sensors, recipe["sensor"], nothing)
+    sensor === nothing && throw(ArgumentError("calibration sensor is not declared"))
+    return InstrumentConfiguration.sensor_kind(sensor)
 end
 
 """Validate YAML capture selection; prepared ports supply formats and schemas."""
@@ -212,9 +215,7 @@ function calibrate_system(application, output; kwargs...)
     declaration = InstrumentConfiguration.load_simulation(
         joinpath(application, recipe["simulation"])
     )
-    kind = InstrumentConfiguration.sensor_kind(
-        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
-    )
+    kind = recipe_sensor_kind(recipe, declaration)
     load_calibration_optics(declaration, recipe)
     # Optional optical extensions must be visible throughout the procedure,
     # including its prepared graph's stepping methods.
@@ -235,9 +236,7 @@ function validate_system(application, calibration, output; kwargs...)
     declaration = InstrumentConfiguration.load_simulation(
         joinpath(application, recipe["simulation"])
     )
-    kind = InstrumentConfiguration.sensor_kind(
-        declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
-    )
+    kind = recipe_sensor_kind(recipe, declaration)
     bundle = read_bundle(calibration)
     # Recipes in the receipt describe the acquisition; current authoring cannot
     # silently change settings, normalization or controller policy during replay.

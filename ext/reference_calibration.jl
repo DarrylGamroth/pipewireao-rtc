@@ -462,24 +462,24 @@ reference_remotes(_) =
     calibrate_references(application, output; remote, reference, run=1,
         timeout_s=300, cancelled=()->false, confirm=nothing)
 
-Produce a fresh candidate directory from a built Classic or GPI CPU application's
-declared `references` recipe. Classic trains full-ROI centroid references and a
-frozen eligible mask. GPI averages the normal normalized pyramid pupil pixels
-and maps them through the frozen reconstructor. Both compare a later independent
-reset-simulator window against the frozen training result. `remote`
-is an explicit private core path, or `(dark=...,lamp=...,qualification=...)`.
-The caller owns those cores. `reference` is the explicit absolute Float32 mirror
-figure in the existing command port's units, or a NamedTuple of figures for all
-declared GPI command ports. GPI requires one thread per command projection plus
-the frontend and control owner (at least five default threads). No detector or source setting is
-changed. Each stage restores/releases before the next starts; unknown outcomes
-fence the campaign. Cancellation is checked at completed-action/sample boundaries.
+Produce a fresh candidate directory from a built CPU application's declared
+`references` recipe. The recipe's selected sensor determines the procedure.
+Shack–Hartmann trains full-ROI centroid references and a frozen eligible mask.
+Pyramid averages normalized pupil pixels and maps them through the frozen
+reconstructor. Both compare an independent reset-simulator window against the
+frozen training result.
+
+`remote` is a private core path or `(dark=..., lamp=..., qualification=...)`.
+The caller owns those cores. Supply the absolute Float32 command figure for
+Shack–Hartmann or a named figure for each declared pyramid command Port.
+Pyramid requires one thread per command projection plus the frontend and
+control owner. Each stage completes restoration and release before the next.
+Cancellation is checked at completed-action and sample boundaries.
 
 `confirm(request,witness)` optionally supplies correlated simulator preparation
 evidence after native hold/authority preparation. This endpoint supports the CPU
-simulator only; this seam does not authorize physical devices. No raw recorder is
-required. AOC numerical status and qualification diagnostics do not establish
-precision, physical readiness, deadline performance or interaction-matrix acceptance.
+simulator. AOC numerical status and qualification diagnostics describe the
+candidate produced by those simulator exposures.
 """
 function Calibration.calibrate_references(
     application,
@@ -508,21 +508,21 @@ function Calibration.calibrate_references(
     options.backend === :cpu && options.frame_encoding === :uint16 ||
         throw(ArgumentError("reference acquisition requires a UInt16 CPU detector"))
     declaration = IC.load_simulation(options.plant.definition)
-    if declaration.document["id"] == "gpi2"
-        return pyramid_references(
-            application,
-            output;
-            remote = remotes,
-            reference,
-            run,
-            timeout_s,
-            cancelled,
-            confirm,
-        )
-    end
-    declaration.document["id"] == "revolt-classic" ||
-        throw(ArgumentError("unsupported reference instrument"))
-    validate_classic_reference(reference)
+    kind = Calibration.recipe_sensor_kind(recipe, declaration)
+    return _calibrate_references(
+        kind, application, output, recipe, counts, options, declaration;
+        remote = remotes, reference, run, timeout_s, cancelled, confirm,
+    )
+end
+
+_calibrate_references(::Val{Kind}, args...; kwargs...) where {Kind} =
+    throw(ArgumentError("unsupported reference calibration sensor procedure: $Kind"))
+
+function _calibrate_references(
+    ::Val{:shack_hartmann}, application, output, _recipe, counts, options, declaration;
+    remote, reference, run, timeout_s, cancelled, confirm,
+)
+    validate_reference_figure(reference)
     parameters = Calibration.read_parameters(application)
     geometry = reference_geometry(application, parameters)
     length(reference) == options.command_count && all(isfinite, reference) ||
@@ -587,7 +587,7 @@ function Calibration.calibrate_references(
             reports,
             reference_stage(
                 application,
-                remotes.dark,
+                remote.dark,
                 Dict(),
                 reference,
                 UInt64(run),
@@ -621,7 +621,7 @@ function Calibration.calibrate_references(
             reports,
             reference_stage(
                 application,
-                remotes.lamp,
+                remote.lamp,
                 sources,
                 reference,
                 UInt64(run),
@@ -667,7 +667,7 @@ function Calibration.calibrate_references(
                 reports,
                 reference_stage(
                     application,
-                    remotes.qualification,
+                    remote.qualification,
                     sources,
                     reference,
                     UInt64(run),
@@ -832,9 +832,9 @@ confirm_reference_settling(settled) = error("reference settling boundary was not
 confirm_reference_collection(response::Actions.Responses) = nothing
 confirm_reference_collection(response) = error("reference collection was not confirmed")
 
-validate_classic_reference(reference::AbstractVector{Float32}) = nothing
-validate_classic_reference(reference) =
-    throw(ArgumentError("Classic requires one explicit Float32 command figure"))
+validate_reference_figure(reference::AbstractVector{Float32}) = nothing
+validate_reference_figure(reference) =
+    throw(ArgumentError("Shack–Hartmann references require one explicit Float32 command figure"))
 
 function validate_reference_adc_bits(bits::Integer)
     1 <= bits <= 16 ||

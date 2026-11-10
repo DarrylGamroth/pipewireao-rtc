@@ -416,11 +416,13 @@ masks, thresholds, filters and gains retain their own acceptance requirements.
 ### CPU simulator reference candidates
 
 `InstrumentCalibration.calibrate_references(application, output; remote,
-reference, run=1, timeout_s=300, cancelled=()->false)` consumes the built Classic
-recipe's `references` section. `remote` is a caller-owned private core path or
-`(dark=..., lamp=..., qualification=...)`; no default core is selected.
-`reference` explicitly supplies the absolute Float32 physical mirror figure in
-the existing command units. Every stage has a fresh native owner and simulator
+reference, run=1, timeout_s=300, cancelled=()->false)` consumes the built
+recipe's `references` section. The recipe's `sensor` selects the declared
+Shack–Hartmann or pyramid procedure. Supply a caller-owned private core path
+for `remote` or a separate path for each stage
+`(dark=..., lamp=..., qualification=...)`.
+For Shack–Hartmann, `reference` explicitly supplies the absolute Float32 physical
+mirror figure in the existing command units. Every stage has a fresh native owner and simulator
 acquisition domain, a correlated `CalibrationPreparation` gate and known
 Restore/Release completion before the next stage. The stage deadline includes
 preparation and acquisition; one additional equal timeout bounds cleanup and the
@@ -448,8 +450,8 @@ diagnostics are reported separately from interaction-matrix acceptance. An
 ineligible lamp product can be retained as a rejected candidate; if no ROI is
 eligible, qualification is explicitly skipped.
 
-GPI uses the same entry point with a NamedTuple of explicit Float32 figures for
-all declared woofer, tweeter and tip/tilt ports. Every command adoption and
+Pyramid acquisition takes a NamedTuple of explicit Float32 figures for all
+declared command Ports. GPI2 declares woofer, tweeter and tip/tilt Ports. Every command adoption and
 restoration verifies that complete set under one token, including conditioner
 feedback. Native v1 action vectors address the first mirror in the declared
 calibration recipe; other ports retain their immutable references. Names, physical

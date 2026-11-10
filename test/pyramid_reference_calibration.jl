@@ -8,7 +8,23 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 const C = PipeWireAORTC.InstrumentCalibration
 const R = AdaptiveOpticsCalibration.ReferenceFrames
 const A = AdaptiveOpticsCalibration
-@test Ext !== nothing && isdefined(Ext, :pyramid_references)
+@test Ext !== nothing
+
+@testset "the declared sensor selects the reference procedure" begin
+    for (id, sensor, kind) in (
+        ("another-pyramid-instrument", "camera", "pyramid"),
+        ("another-sh-instrument", "wfs", "shack_hartmann"),
+    )
+        declaration = (; instrument = (; document = Dict(
+            "id" => id, "wavefront_sensors" => Dict(sensor => Dict("kind" => kind)),
+        )))
+        selected = C.recipe_sensor_kind(Dict("sensor" => sensor), declaration)
+        @test selected === Val(Symbol(kind))
+        method = which(Ext._calibrate_references, Tuple{typeof(selected), Vararg{Any,6}})
+        @test method.sig.parameters[2] === typeof(selected)
+        @test_throws ArgumentError C.recipe_sensor_kind(Dict("sensor" => "missing"), declaration)
+    end
+end
 
 @testset "pyramid references require every named physical command explicitly" begin
     options = (
