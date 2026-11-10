@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 native Quit admission clock — 2026-11-10
+
+The [validation record](validation/gpi2-quit-admission-clock-20261110/README.md)
+records the reproduced deadline failure, per-owner timings, the admission
+clock fix and the passing fresh-depot private-core check.
+
 ## GPI2 Quit deadline and startup trace — 2026-11-10
 
 The [diagnostic record](validation/gpi2-quit-deadline-20261110/README.md)

@@ -33,6 +33,14 @@ including 1.28 s of RTC compilation. Additional precompilation passed
 the software suites but still missed the live Quit deadline on the
 registry-only GPI2 trial. [Diagnostic record](validation/gpi2-quit-deadline-20261110/README.md)
 
+A controlled ingress delay on 0.7.8 reproduced the stale-clock failure
+while waiting for the controller owner.
+The RTC now starts the shared native Quit deadline at Hsm admission and
+continues to honor an earlier client deadline. The candidate reached Ready
+in 504.04 s from a fresh registry-only installation, acknowledged Quit and
+removed the private core and owners.
+[Admission-clock verification](validation/gpi2-quit-admission-clock-20261110/README.md)
+
 ### GPI2 captured controller replay — 2026-11-09
 
 The [connected CUDA replay](validation/gpi2-connected-20261109/README.md)
