@@ -103,8 +103,16 @@ function update!(session::Session, event::FilterChanged)
     return nothing
 end
 function update!(session::Session, ::ShutdownRequested)
-    submit!(session.machine, Request(Quit()))
+    submit!(session, Request(Quit()))
     return nothing
+end
+
+submit!(session::Session, request::Request) = submit!(session.machine, request)
+function submit!(session::Session, request::Request{Quit})
+    # Ingress can consume part of a duty cycle before it admits Quit. Start
+    # the effect budget at admission and leave the client's deadline intact.
+    admitted_at = Clocks.time_nanos(session.source_clock)
+    return submit!(session.machine, request, admitted_at)
 end
 
 request_payload(command::RunnerCodec.RunnerCommand) = command.args
@@ -145,7 +153,7 @@ function apply!(session::Session, action::Ingress.DispatchRequest)
     token = session.next_request
     session.requests[token] = ticket
     submit!(
-        session.machine,
+        session,
         Request(
             operation;
             token,

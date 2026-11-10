@@ -593,8 +593,9 @@ function _refuse_operation!(m::Machine, reason)
     _reply!(m, something(r), :Failed; error = reason)
     return nothing
 end
-function _begin_quit!(m::Machine, r::Request)
-    deadline = min(r.deadline, _deadline(m, SESSION_EFFECT_TIMEOUT_NS))
+function _begin_quit!(m::Machine, r::Request{Quit}, admitted_at::Int64)
+    effect_deadline = Base.Checked.checked_add(admitted_at, SESSION_EFFECT_TIMEOUT_NS)
+    deadline = min(r.deadline, effect_deadline)
     _retire!(m)
     old, m.request = m.request, nothing
     old === nothing ||
@@ -1014,23 +1015,23 @@ end
     return Hsm.transition!(m, :WithdrawingFaultLinks)
 end
 
-@on_event function (m::Machine, ::Managed, ::QuitRequested, r)
-    _begin_quit!(m, r)
+@on_event function (m::Machine, ::Managed, ::QuitRequested, event)
+    _begin_quit!(m, event.request, event.admitted_at)
     return Hsm.transition!(m, :HoldingQuitSources)
 end
-@on_event function (m::Machine, ::ShuttingDown, ::QuitRequested, r)
-    _reply!(m, r, :Failed; error = "Session shutdown already pending")
+@on_event function (m::Machine, ::ShuttingDown, ::QuitRequested, event)
+    _reply!(m, event.request, :Failed; error = "Session shutdown already pending")
     return Hsm.EventHandled
 end
-@on_event function (m::Machine, ::Root, ::QuitRequested, r)
-    _reply!(m, r, :Failed; error = "Session is offline")
+@on_event function (m::Machine, ::Root, ::QuitRequested, event)
+    _reply!(m, event.request, :Failed; error = "Session is offline")
     return Hsm.EventHandled
 end
 @on_event function (m::Machine, ::Configuring, ::AdmissionControllerRemoved, event)
     launcher = m.admission_controller
     launcher !== nothing && launcher.global_id == event.id &&
     launcher.serial == event.serial || return Hsm.EventHandled
-    _begin_quit!(m, Request(Quit()))
+    _begin_quit!(m, Request(Quit()), _now(m))
     return Hsm.transition!(m, :HoldingQuitSources)
 end
 @on_event function (m::Machine, ::Root, ::AdmissionControllerRemoved, _)
@@ -1070,7 +1071,6 @@ end
     return Hsm.EventHandled
 end
 
-_event(::Quit) = :QuitRequested
 _event(::InspectWarmup) = :WarmupRequested
 _event(::Admit) = :AdmissionRequested
 _event(::Groups) = :GroupsRequested
@@ -1276,6 +1276,11 @@ function Machine(
     return m
 end
 submit!(m::Machine, r::Request) = (Hsm.dispatch!(m, _event(r.command), r); nothing)
+submit!(m::Machine, request::Request{Quit}) = submit!(m, request, _now(m))
+function submit!(m::Machine, request::Request{Quit}, admitted_at::Int64)
+    Hsm.dispatch!(m, :QuitRequested, (; request, admitted_at))
+    return nothing
+end
 submitted!(m::Machine, t::EffectTicket) =
     (Hsm.dispatch!(m, :Submitted, EffectSubmitted(t)); nothing)
 complete!(m::Machine, t::EffectTicket, result = nothing; at::Int64 = _now(m)) =

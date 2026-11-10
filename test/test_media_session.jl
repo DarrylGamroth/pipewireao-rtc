@@ -400,6 +400,24 @@ end
     end
 end
 
+@testset "Quit budget starts at admission and respects the client's deadline" begin
+    for client_deadline in (9SECOND, 5SECOND + SECOND ÷ 2)
+        clock = zero_clock()
+        m = running(; clock)
+        request = S.Request(S.Quit(); token = 2, deadline = client_deadline)
+        admitted_at = SECOND
+        expected = min(client_deadline, admitted_at + S.SESSION_EFFECT_TIMEOUT_NS)
+        S.submit!(m, request, admitted_at)
+        @test Clocks.time_nanos(clock) == 0
+        @test m.deadline == expected
+        Clocks.update!(clock, 5SECOND + 1)
+        tickets = sequence!(m, SHUTDOWN)
+        @test all(ticket -> ticket.deadline == expected, tickets)
+        @test only(S.take_replies!(m)).outcome === :Quit
+        @test Hsm.current(m) === :Offline
+    end
+end
+
 @testset "Accepted Quit precedes publication fence and survives fence failure" begin
     for disposition in (:complete, :fail, :expire)
         clock = Clocks.CachedNanoClock(0)
