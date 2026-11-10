@@ -103,10 +103,10 @@ AdaptiveOpticsSimPipeWireHIL process using the declared PipeWire ports. See
 ### Install the operator CLI with Pkg Apps
 
 With Julia 1.13 and DarrylGamrothRegistry available, install the operator CLI
-from a committed checkout that includes the app declaration.
+from the registry.
 
 ```sh
-julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(path=pwd())'
+julia --startup-file=no -e 'using Pkg; Pkg.Apps.add(name="PipeWireAORTC", version="0.7.5")'
 export PATH="$HOME/.julia/bin:$PATH"
 pipewireao-rtc-session sessions
 ```
