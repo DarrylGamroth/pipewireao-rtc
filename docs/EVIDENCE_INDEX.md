@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## RTC 0.7.6 generic calibration — 2026-11-10
+
+The [release verification](validation/rtc-076-20261110/README.md) records the
+registry-only Classic and GPI2 reference campaigns on private PipeWire cores.
+The [GitHub review](validation/rtc-076-20261110/github-triage.md) records the
+disposition of open issues and the CAL2 draft pull request.
+
 ## RTC 0.7.5 operator CLI — 2026-11-10
 
 The [release verification](validation/rtc-075-20261110/README.md) records the

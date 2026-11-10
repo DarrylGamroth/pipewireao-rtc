@@ -6,7 +6,7 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-09. This section is the current delivery summary. Later sections
+Updated 2026-11-10. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
@@ -62,6 +62,11 @@ RTC 0.7.5 provides the operator command through Pkg Apps and limits deployment
 checksums to runtime inputs outside the Julia package environment. The
 [release verification](validation/rtc-075-20261110/README.md) covers the installed
 command and software relocation. Systemd uses the instrument environment.
+
+RTC 0.7.6 selects reference calibration from the YAML sensor declaration and
+resolves acquisition from the declared graph Ports and Links. The
+[registry-only checks](validation/rtc-076-20261110/README.md) cover the Classic
+and GPI2 CPU reference campaigns on private cores.
 
 ### Standalone simulator ownership — 2026-11-07
 
