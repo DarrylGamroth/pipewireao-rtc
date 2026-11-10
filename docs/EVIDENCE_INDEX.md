@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## GPI2 Quit deadline and startup trace — 2026-11-10
+
+The [diagnostic record](validation/gpi2-quit-deadline-20261110/README.md)
+records startup compilation by owner, the remaining Quit latency and the
+failed registry-only precompilation trial.
+
 ## RTC 0.7.8 release and GPI2 Quit — 2026-11-10
 
 The [release verification](validation/rtc-078-20261110/README.md) records the

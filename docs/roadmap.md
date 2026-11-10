@@ -28,6 +28,11 @@ its RTC 0.7.7 pin pending a passing release check.
 [Candidate verification](validation/gpi2-native-quit-20261110/README.md),
 [Release verification](validation/rtc-078-20261110/README.md)
 
+The follow-up trace measured 3.93 s for an acknowledged native Quit,
+including 1.28 s of RTC compilation. Additional precompilation passed
+the software suites but still missed the live Quit deadline on the
+registry-only GPI2 trial. [Diagnostic record](validation/gpi2-quit-deadline-20261110/README.md)
+
 ### GPI2 captured controller replay — 2026-11-09
 
 The [connected CUDA replay](validation/gpi2-connected-20261109/README.md)
