@@ -55,10 +55,12 @@ does not establish scientific equivalence.
 `read_bundle` verifies these bytes without loading a sensor or accelerator;
 sensor procedures own array interpretation and optical checks. Authored recipes
 live in the instrument source at `calibration/recipe.yaml`. Its `graph_source`
-selects the retained authored graph template; `graph` selects the compiled
-execution graph for typed contracts. Both are carried in the built application,
-and calibration
-consumes the built application. CLI commands follow the same flow:
+selects the retained graph template and `graph` selects the compiled execution
+graph for typed contracts. Calibration consumes both from the built application.
+Shack–Hartmann interaction calibration recompiles the application's declared
+controller graph template when it updates controller dimensions or mirror limits.
+
+The shared CLI commands use this built application.
 
 ```sh
 julia --project=/path/to/environment tools/calibrate.jl APPLICATION FRESH_BUNDLE [cpu|cuda|amdgpu]

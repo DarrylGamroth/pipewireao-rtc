@@ -457,6 +457,7 @@ _dimension_reference(value) = false
     replace_dimensions!(application, parameters, n; kwargs...)
 
 Update declared controller dimensions and artifacts in a prepared application.
+Recompile the controller graph from the template declared in the application.
 """
 function replace_dimensions!(
     application,
@@ -530,24 +531,33 @@ function replace_dimensions!(
         expected_count == size(parameters[Symbol("vdm-to-pdm")], 1) || throw(
             DimensionMismatch("calibration command count differs from selected mirror")
         )
-        limiter = rtc.control_authoring["deformable_mirrors"][selected]["limiter"]
-        limiter["lower"], limiter["upper"] = limits.lower, limits.upper
+        for controls in (rtc.control_authoring, rtc.controls)
+            limiter = controls["deformable_mirrors"][selected]["limiter"]
+            limiter["lower"], limiter["upper"] = limits.lower, limits.upper
+        end
     end
-    graph_path = joinpath(application, "rtc", "graph.conf")
-    graph = DeploymentConfiguration.decode(
-        graph_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+    graph_name = "rtc/graph.conf"
+    graphs = authoring["graph-configurations"]
+    entry = only(filter(entry -> entry["path"] == graph_name, graphs))
+    source = get(entry, "source", graph_name)
+    source_path = DeploymentConfiguration.relative_asset(application, source)
+    graph_path = DeploymentConfiguration.relative_asset(application, graph_name)
+    source_path != graph_path ||
+        throw(ArgumentError("calibration requires a distinct controller graph template"))
+    context = InstrumentExport.graph_context(
+        InstrumentConfiguration.json_value(
+            InstrumentConfiguration.physical_definition(rtc.instrument)
+        );
+        dimensions = expected,
+        mirror_controls = rtc.controls["deformable_mirrors"],
+        calibration = rtc.calibration,
     )
-    for node in graph["filter.graph"]["nodes"]
-        config, name = node["config"], node["name"]
-        name == "reconstruction" && (config["reconstructed_count"] = n)
-        name == "closed-loop-correction" && (config["state_length"] = n)
-        for key in ("active_vdm_count", "controller_command_count")
-            haskey(config, key) && (config[key] = n)
-        end
-        if name == "pdm-command" && limits !== nothing
-            config["command_limits"] = [limits.lower, limits.upper]
-        end
-    end
+    graph = InstrumentExport.resolve_graph_configuration(
+        DeploymentConfiguration.decode(
+            source_path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
+        ),
+        context,
+    )
     ScienceExport.write_spa_config(graph_path, graph)
     path = joinpath(application, "rtc", "parameters.conf")
     document = DeploymentConfiguration.decode(
