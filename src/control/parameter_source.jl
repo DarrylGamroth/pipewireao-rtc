@@ -52,6 +52,7 @@ const PROFILE = Profile()
 @doc "The parameter source has stopped." Stopped
 """Runner parameter command, restricted to the `:parameter` operation."""
 const Command = Runner.RunnerCommand{:parameter}
+const Arguments = Tuple{String,String,String,Vector{UInt32},String,String}
 Client.profile_name(::Profile) = "pipewireao.rtc.parameter-source/1"
 Client.capability_names(::Profile) = Tuple(
     "pipewireao.rtc.parameter-source." * name for name in
@@ -664,6 +665,12 @@ function _prepare_source!(source::Source, transport, runtime::Bootstrap.Runtime)
     return nothing
 end
 
+parameter_publisher(wake) = (filter, params) -> begin
+    update_params!(filter, params)
+    notify(wake)
+    nothing
+end
+
 function _control_endpoint(options, transport, clock, wake)
     return Endpoint.Endpoint(
         PROFILE,
@@ -674,11 +681,7 @@ function _control_endpoint(options, transport, clock, wake)
         options.control_instance,
         Connected;
         clock,
-        publisher = (filter, params) -> begin
-            update_params!(filter, params)
-            notify(wake)
-            nothing
-        end,
+        publisher = parameter_publisher(wake),
     )
 end
 
@@ -699,6 +702,84 @@ function _completion!(endpoint, ticket, source, result::Int32, message)
     )
     Endpoint.complete!(endpoint, ticket, completion)
     return nothing
+end
+
+function stage_parameter!(runtime, endpoint, active, sources)
+    selected = nothing
+    staged = false
+    try
+        graph, inlet, element_type, shape, schema, path = active.command.args::Arguments
+        index = findfirst(
+            source -> source.graph == graph && source.inlet == inlet,
+            sources,
+        )
+        index === nothing && throw(ArgumentError("no declared parameter mapping"))
+        selected = sources[index]
+        element_type == "F32_LE" &&
+        shape == selected.shape &&
+        schema == selected.schema || throw(
+            ArgumentError(
+                "parameter request differs from declared type, shape, or schema",
+            ),
+        )
+        with_thread_loop_lock(endpoint.loop) do _
+            selected.phase == IDLE || throw(
+                ArgumentError("parameter publication already pending")
+            )
+        end
+        _read_payload!(
+            selected.bytes,
+            path;
+            check = () -> begin
+                Bootstrap.preparation_check!(runtime)
+                Endpoint.check_ticket(endpoint, active)
+            end,
+        )
+        with_thread_loop_lock(endpoint.loop) do _
+            Endpoint.check_ticket(endpoint, active)
+            selected.sequence < typemax(Int64) ||
+                throw(ArgumentError("parameter sequence exhausted"))
+            selected.sequence += 1
+            selected.initial_pending = false
+            selected.publication = Publication(endpoint, active)
+            selected.revoked = nothing
+            selected.phase = PENDING
+            staged = true
+            stream = something(selected.stream)
+            # A paused stream has no process callback. Queue an
+            # available output buffer now; callbacks retry later.
+            _publish_pending!(selected, stream)
+            selected.failure === nothing || throw(selected.failure)
+            selected.revoked === nothing || throw(selected.revoked)
+            if selected.phase == PENDING &&
+                selected.failure === nothing &&
+                stream_state(stream) ==
+                PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
+                trigger_process!(stream)
+            end
+        end
+    catch error
+        with_thread_loop_lock(endpoint.loop) do _
+            if staged && selected.phase == PENDING
+                selected.phase = IDLE
+                selected.publication = nothing
+            end
+            expired_or_revoked =
+                (selected !== nothing && selected.revoked !== nothing) ||
+                Endpoint._now!(endpoint) >= active.deadline
+            result = expired_or_revoked ?
+                Int32(-Base.Libc.ETIMEDOUT) : Int32(-Base.Libc.EINVAL)
+            _completion!(
+                endpoint,
+                active,
+                staged ? selected : nothing,
+                result,
+                _message(error),
+            )
+        end
+        return nothing
+    end
+    return selected
 end
 
 """
@@ -736,6 +817,22 @@ function run_owner(
         precompile(
             _control_endpoint, (typeof(options), typeof(transport), typeof(clock), typeof(wake))
         )
+        # Compile the first sparse update before reporting the owner prepared.
+        # The actual endpoint, ticket and payload remain operator-owned.
+        endpoint_type = Endpoint.Endpoint{
+            Profile,Command,Lifecycle,typeof(parameter_publisher(wake)),typeof(clock)
+        }
+        ticket_type = Endpoint.Ticket{Command}
+        command_type = Runner.RunnerCommand{:parameter,Arguments}
+        precompile(Runner.encode_request, (Envelope.RequestHeader, command_type))
+        precompile(Client.decode_request, (Profile, Envelope.RequestHeader, SPA.Struct))
+        precompile(Endpoint.take!, (endpoint_type,))
+        precompile(
+            stage_parameter!,
+            (typeof(runtime), endpoint_type, ticket_type, typeof(sources)),
+        )
+        precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
+        precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
         Bootstrap.prepared!(runtime)
         connect_ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.connecting!(
@@ -792,81 +889,10 @@ function run_owner(
                     selected = nothing
                     delay = max(1, Common.remaining_ns(active.deadline, at)) / 1e9
                     update_timer!(timer; delay)
-                    staged = false
-                    try
-                        graph, inlet, element_type, shape, schema, path =
-                            active.command.args
-                        index = findfirst(
-                            source -> source.graph == graph && source.inlet == inlet,
-                            sources,
-                        )
-                        index === nothing &&
-                            throw(ArgumentError("no declared parameter mapping"))
-                        selected = sources[index]
-                        element_type == "F32_LE" &&
-                        shape == selected.shape &&
-                        schema == selected.schema || throw(
-                            ArgumentError(
-                                "parameter request differs from declared type, shape, or schema",
-                            ),
-                        )
-                        with_thread_loop_lock(transport.loop) do _
-                            selected.phase == IDLE || throw(
-                                ArgumentError("parameter publication already pending")
-                            )
-                        end
-                        _read_payload!(
-                            selected.bytes,
-                            path;
-                            check = () -> begin
-                                Bootstrap.preparation_check!(runtime)
-                                Endpoint.check_ticket(endpoint, active)
-                            end,
-                        )
-                        with_thread_loop_lock(transport.loop) do _
-                            Endpoint.check_ticket(endpoint, active)
-                            selected.sequence < typemax(Int64) ||
-                                throw(ArgumentError("parameter sequence exhausted"))
-                            selected.sequence += 1
-                            selected.initial_pending = false
-                            selected.publication = Publication(endpoint, active)
-                            selected.revoked = nothing
-                            selected.phase = PENDING
-                            staged = true
-                            stream = something(selected.stream)
-                            # A paused stream has no process callback. Queue an
-                            # available output buffer now; callbacks retry later.
-                            _publish_pending!(selected, stream)
-                            selected.failure === nothing || throw(selected.failure)
-                            selected.revoked === nothing || throw(selected.revoked)
-                            if selected.phase == PENDING &&
-                                selected.failure === nothing &&
-                                stream_state(stream) ==
-                                PipeWireAO.LibPipeWire.PW_STREAM_STATE_STREAMING
-                                trigger_process!(stream)
-                            end
-                        end
-                    catch error
-                        with_thread_loop_lock(transport.loop) do _
-                            if staged && selected.phase == PENDING
-                                selected.phase = IDLE
-                                selected.publication = nothing
-                            end
-                            expired_or_revoked =
-                                (selected !== nothing && selected.revoked !== nothing) ||
-                                Endpoint._now!(endpoint) >= active.deadline
-                            result = expired_or_revoked ?
-                                Int32(-Base.Libc.ETIMEDOUT) : Int32(-Base.Libc.EINVAL)
-                            _completion!(
-                                endpoint,
-                                active,
-                                staged ? selected : nothing,
-                                result,
-                                _message(error),
-                            )
-                        end
+                    selected = stage_parameter!(runtime, endpoint, active, sources)
+                    if selected === nothing
                         update_timer!(timer; delay = nothing)
-                        active = selected = nothing
+                        active = nothing
                     end
                 end
             end

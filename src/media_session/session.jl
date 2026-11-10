@@ -484,16 +484,52 @@ end
 
 const MAX_DISPATCH_PREPARATION_EFFECTS = 32
 
-"""Prepare cold cleanup dispatch before the public endpoint accepts requests.
+"""Prepare cold control dispatch before the public endpoint accepts requests.
 
-An unpublished machine with a private cached clock exercises only Hsm events.
-Backend methods are compiled without executing them: no scientific command,
-native mutation or readiness observation is produced. The bounded walk prepares
-both public Quit and signal cancellation without spending a caller's deadline.
+An unpublished machine with a private cached clock exercises cleanup events.
+RTC requests and backend methods compile without executing, so no native
+mutation or readiness observation is produced.
 """
 function prepare_dispatch!(session::Session)
     Base.precompile(update!, (typeof(session), EffectCompleted{Nothing}))
+    Base.precompile(update!, (typeof(session), EffectCompleted{SPA.Struct}))
     Base.precompile(update!, (typeof(session), EffectFailed))
+    controls = (
+        (Status, Tuple{}, QueryStatus),
+        (Properties, Tuple{String}, QueryProperties{Tuple{String}}),
+        (PropertyGeneration, Tuple{String,String}, QueryPropertyGeneration{Tuple{String,String}}),
+        (ParameterGeneration, Tuple{String,String}, QueryParameterGeneration{Tuple{String,String}}),
+        (
+            SetProperties,
+            Tuple{String,Dict{String,RunnerCodec.RunnerScalar}},
+            UpdateProperties{Tuple{String,Dict{String,RunnerCodec.RunnerScalar}}},
+        ),
+        (
+            SetParameter,
+            ParameterSource.Arguments,
+            SubmitParameter{ParameterSource.Arguments},
+        ),
+    )
+    for (command, payload, effect) in controls
+        Base.precompile(submit!, (typeof(session.machine), Request{command,payload}))
+        for origin in (ReadyOrigin, RunningOrigin)
+            job = Job{EffectTicket{effect,origin}}
+            Base.precompile(perform!, (typeof(session), job, effect))
+        end
+    end
+    parameter_owner = Owner{
+        ParameterSource.Profile,
+        ControlClient.Observation{
+            ParameterSource.Profile,ParameterSource.Lifecycle,
+            ParameterSource.Completion,ParameterSource.Rejection
+        }
+    }
+    parameter_command = RunnerCodec.RunnerCommand{:parameter,ParameterSource.Arguments}
+    parameter_effect = SubmitParameter{ParameterSource.Arguments}
+    for origin in (ReadyOrigin, RunningOrigin)
+        job = Job{EffectTicket{parameter_effect,origin}}
+        Base.precompile(request_owner!, (typeof(session), job, parameter_owner, parameter_command))
+    end
     for payload in ((), nothing)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
