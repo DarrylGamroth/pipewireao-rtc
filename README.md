@@ -79,7 +79,7 @@ package pins. Development and release tooling require Julia 1.13 or newer.
 ## Registered applications
 
 A deployment selects `runtime = { kind = registered project = "." }` in
-`deployment.conf`. Its sealed Project/Manifest resolve registered packages,
+`deployment.conf`. Its Project and Manifest resolve registered packages,
 including PipeWireAORTC; the application does not bundle a copy of the RTC
 package or its test workspace. Instrument identity, simulation declarations,
 RTC configuration, graphs and profiles remain authored in the instrument
@@ -88,6 +88,10 @@ application environment. The native PipeWireAO prefix is supplied explicitly
 at installation. The installer generates its launcher and exact systemd unit;
 the registered Julia dependency supplies the implementation. Existing sealed
 SDK deployments retain their recorded runtime and require their matching tools.
+
+The exporter records SHA-256 checksums for the application files in the
+`artifacts` mapping of `deployment.conf`. The installer compares the files
+with that catalog before using them. Older guides call this a *sealed* export.
 
 `GraphOwner.main` accepts graph options and `--fits-bindings PATH`. It publishes
 Preparing before loading optional graph packages. Simulation runs in a separate
@@ -151,7 +155,9 @@ against the configuration file. This is cold FITS preload support. Native v1 liv
 requests retain their raw-file contract; FITS live replacement remains a separate
 owner/adoption interface. See [migration contracts and evidence gates](docs/REGISTERED_RTC_MIGRATION.md).
 
-## Launch a sealed session package
+<a id="launch-a-sealed-session-package"></a>
+
+## Launch an exported session package
 
 Instantiate the one-shot tooling environment:
 
@@ -159,7 +165,7 @@ Instantiate the one-shot tooling environment:
 julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
-A sealed application includes its scientific configurations, calibration artifacts,
+A session export includes its scientific configurations, calibration artifacts,
 owner declarations, generated RTC launcher and registered Project/Manifest.
 Instantiate its selected dependencies before launch; RTC and scientific code load
 from those packages. The selected PipeWireAO prefix supplies the native runtime.
@@ -172,7 +178,7 @@ julia --startup-file=no --project=. -e '
     using PipeWireAORTC
     W = PipeWireAORTC.SessionRuntime
     println(W.start!(ARGS[1], ARGS[2]))
-' /absolute/sealed-package /absolute/fresh-stage
+' /absolute/exported-package /absolute/fresh-stage
 ```
 
 The default PipeWireAO prefix is `/opt/pipewireao`. Select another installed
