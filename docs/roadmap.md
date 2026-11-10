@@ -20,10 +20,13 @@ each applied one request with all 32 session Links active. The native Quit
 outcome was unknown, and emergency cleanup removed the private core and
 owners. [Release verification](validation/rtc-077-20261110/README.md)
 
-Preparing the admitted shutdown effects before readiness fixed the cold
-Quit timeout. A new private-core run acknowledged native Quit and systemd
-confirmed clean exit of the session and all four owners.
-[Shutdown verification](validation/gpi2-native-quit-20261110/README.md)
+Preparing the admitted shutdown effects before readiness allowed a candidate
+to acknowledge native Quit on a private core. The RTC 0.7.8 registry-only
+run reached Ready in 516.36 s. The RTC and simulator reported expired Quit
+deadlines, and emergency cleanup completed. GPI2 retains
+its RTC 0.7.7 pin pending a passing release check.
+[Candidate verification](validation/gpi2-native-quit-20261110/README.md),
+[Release verification](validation/rtc-078-20261110/README.md)
 
 ### GPI2 captured controller replay — 2026-11-09
 

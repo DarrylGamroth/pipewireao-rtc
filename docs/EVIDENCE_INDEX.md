@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## RTC 0.7.8 release and GPI2 Quit — 2026-11-10
+
+The [release verification](validation/rtc-078-20261110/README.md) records the
+refreshed workspace, passing core suite, registry-only GPI2 startup and the
+failed native Quit gate on the released cohort.
+
 ## GPI2 managed native Quit — 2026-11-10
 
 The [shutdown verification](validation/gpi2-native-quit-20261110/README.md)
