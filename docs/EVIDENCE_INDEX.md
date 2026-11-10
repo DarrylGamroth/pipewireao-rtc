@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## RTC 0.7.9 release and GPI2 native Quit — 2026-11-10
+
+The [release verification](validation/rtc-079-20261110/README.md) records
+the registered release, the fresh-depot GPI2 startup and native Quit, and
+the verified instrument pin.
+
 ## GPI2 native Quit admission clock — 2026-11-10
 
 The [validation record](validation/gpi2-quit-admission-clock-20261110/README.md)

@@ -23,8 +23,8 @@ owners. [Release verification](validation/rtc-077-20261110/README.md)
 Preparing the admitted shutdown effects before readiness allowed a candidate
 to acknowledge native Quit on a private core. The RTC 0.7.8 registry-only
 run reached Ready in 516.36 s. The RTC and simulator reported expired Quit
-deadlines, and emergency cleanup completed. GPI2 retains
-its RTC 0.7.7 pin pending a passing release check.
+deadlines, and emergency cleanup completed. GPI2 retained RTC 0.7.7
+through the failed 0.7.8 release check.
 [Candidate verification](validation/gpi2-native-quit-20261110/README.md),
 [Release verification](validation/rtc-078-20261110/README.md)
 
@@ -40,6 +40,12 @@ continues to honor an earlier client deadline. The candidate reached Ready
 in 504.04 s from a fresh registry-only installation, acknowledged Quit and
 removed the private core and owners.
 [Admission-clock verification](validation/gpi2-quit-admission-clock-20261110/README.md)
+
+RTC 0.7.9 is published and registered. The managed GPI2 CPU profile
+reached Ready in 446.49 s from a fresh registry-only depot, entered
+Running and acknowledged native Quit. Systemd removed the private core
+and all owners cleanly. Instrument main now selects RTC 0.7.9.
+[Release verification](validation/rtc-079-20261110/README.md)
 
 ### GPI2 captured controller replay — 2026-11-09
 
