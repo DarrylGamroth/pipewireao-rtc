@@ -39,7 +39,7 @@ mutable struct Connection{C}
     can_restore::Bool
 end
 """
-    connect(binding, run, timeout_ns; command_count=277, kwargs...)
+    connect(binding, run, timeout_ns; command_count, kwargs...)
 
 Connect to the exact calibration owner and wait for its Connected state. Use the supplied
 run ID, command count and nanosecond timeout for subsequent requests.
@@ -48,7 +48,7 @@ function connect(
     binding::Binding,
     run::Integer,
     timeout_ns::Integer;
-    command_count::Int = 277,
+    command_count::Int,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     deadline::Union{Int64,Float64} = Base.Checked.checked_add(
         Clocks.time_nanos(clock), Int64(timeout_ns)

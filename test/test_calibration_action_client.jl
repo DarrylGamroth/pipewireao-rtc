@@ -54,6 +54,15 @@ function change_request!(supplied::AbstractDict)
     supplied["kind"] = "changed"
 end
 change_request!(supplied::Codec.Adopt) = (supplied.figure[1] = 99)
+@testset "acquisition command count is explicit" begin
+    @test_throws UndefKeywordError CalibrationActionClient.connect(binding, 1, 1_000_000)
+    for count in (0, 4097)
+        @test_throws ArgumentError CalibrationActionClient.connect(
+            binding, 1, 1_000_000; command_count = count
+        )
+    end
+end
+
 @testset "native calibration action client preserves correlation and known outcomes" begin
     cursor = Codec.AcquisitionCursor(typemax(UInt64), UInt64(1) << 63, UInt64(0), UInt64(0))
     client = connection(Codec.Held(cursor))
