@@ -58,6 +58,11 @@ RTC 0.7.4 derives telemetry queue sink formats from the linked producer Port.
 SPIDERS and CAL2 use the simplified declarations on instrument main after
 passing the [registry-only CPU export checks](validation/rtc-074-20261109/README.md).
 
+RTC 0.7.5 provides the operator command through Pkg Apps and limits deployment
+checksums to runtime inputs outside the Julia package environment. The
+[release verification](validation/rtc-075-20261110/README.md) covers the installed
+command and software relocation. Systemd uses the instrument environment.
+
 ### Standalone simulator ownership — 2026-11-07
 
 AdaptiveOpticsSimPipeWireHIL owns simulation execution and startup settings.

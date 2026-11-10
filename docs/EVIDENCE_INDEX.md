@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.5 operator CLI — 2026-11-10
+
+The [release verification](validation/rtc-075-20261110/README.md) records the
+public registry installation, installed command checks and software relocation.
+
 ## RTC 0.7.4 telemetry queue export — 2026-11-09
 
 The [release verification](validation/rtc-074-20261109/README.md) records the
