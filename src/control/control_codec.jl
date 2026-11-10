@@ -318,7 +318,11 @@ function _envelope(
     return pod
 end
 
-"Encode one bounded request envelope."
+"""
+    encode_request(header, payload)
+
+Encode one bounded request envelope.
+"""
 function encode_request(header::RequestHeader, payload::SPA.Struct)
     return _envelope(:request, _header_values(header), payload, _MAX_REQUEST)
 end
@@ -337,8 +341,18 @@ function _encode_reply(
     end
     return _envelope(kind, _header_values(header), payload, _limit(Val(:reply), endpoint))
 end
+"""
+    encode_completion(header, payload; endpoint=:lifecycle)
+
+Encode a completion envelope with the given correlation header and endpoint payload.
+"""
 encode_completion(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol = :lifecycle) =
     _encode_reply(:completion, header, payload, endpoint)
+"""
+    encode_rejection(header, payload; endpoint=:lifecycle)
+
+Encode a rejection envelope with the given correlation header and endpoint payload.
+"""
 encode_rejection(header::ReplyHeader, payload::SPA.Struct; endpoint::Symbol = :lifecycle) =
     _encode_reply(:rejection, header, payload, endpoint)
 
@@ -382,6 +396,11 @@ function _decode_identity(values)
     return controller, token, operation
 end
 
+"""
+    decode_request(input)
+
+Decode a request envelope from a POD or its bytes and validate its wire fields.
+"""
 function decode_request(pod::PipeWireAO.Pod)
     values, payload = _decode(:request, pod, _MAX_REQUEST)
     version = _int(values[1])
@@ -420,8 +439,18 @@ function _decode_reply(kind::Symbol, pod::PipeWireAO.Pod, endpoint::Symbol)
     end
     return header, payload
 end
+"""
+    decode_completion(input; endpoint=:lifecycle)
+
+Decode a completion POD or its bytes for the selected endpoint profile.
+"""
 decode_completion(pod::PipeWireAO.Pod; endpoint::Symbol = :lifecycle) =
     _decode_reply(:completion, pod, endpoint)
+"""
+    decode_rejection(input; endpoint=:lifecycle)
+
+Decode a rejection POD or its bytes for the selected endpoint profile.
+"""
 decode_rejection(pod::PipeWireAO.Pod; endpoint::Symbol = :lifecycle) =
     _decode_reply(:rejection, pod, endpoint)
 decode_request(bytes::AbstractVector{UInt8}) =

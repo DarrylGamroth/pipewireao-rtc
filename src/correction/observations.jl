@@ -88,22 +88,49 @@ struct ReleaseObservation{V} <: AbstractObservation
     ready::Bool
 end
 
-"Return the exact owner incarnation that produced the observation."
+"""
+    owner_instance(observation)
+
+Return the exact owner incarnation that produced the observation.
+"""
 owner_instance(observation::AbstractObservation) = observation.owner_instance
-"Return the operation token, with zero reserved for initial qualification."
+"""
+    operation_token(observation)
+
+Return the operation token, with zero reserved for initial qualification.
+"""
 operation_token(observation::AbstractObservation) = observation.token
-"Return the owner-assigned acquisition serial; adapters must not relabel it."
+"""
+    observation_serial(observation)
+
+Return the acquisition serial assigned by the owner.
+"""
 observation_serial(observation::AbstractObservation) = observation.serial
-"Return the requested controller generation or ordered generation tuple."
+"""
+    requested_generation(observation)
+
+Return the requested controller generation or ordered generation tuple.
+"""
 requested_generation(observation::Union{AbstractLoopObservation,RecoveryObservation}) =
     observation.requested_generation
-"Return the applied controller generation or ordered generation tuple."
+"""
+    active_generation(observation)
+
+Return the applied controller generation or ordered generation tuple.
+"""
 active_generation(observation::Union{AbstractLoopObservation,RecoveryObservation}) =
     observation.active_generation
-"Return the applied Boolean closure or ordered controller selection."
+"""
+    closed(observation)
+
+Return the applied Boolean closure or ordered controller selection.
+"""
 closed(observation::Union{AbstractLoopObservation,ReleaseObservation}) = observation.closed
 
-"""Return SingleController or CoupledControllers{N} for valid evidence.
+"""
+    controller_scope(observation)
+
+Return SingleController or CoupledControllers{N} for valid evidence.
 
 Both requested and active generations and every closure component must have
 the declared representation. Return `nothing` for malformed evidence. This is
@@ -123,32 +150,51 @@ _closure_scope(::Bool) = SingleController()
 _closure_scope(::NTuple{N,Bool}) where {N} = CoupledControllers{N}()
 _closure_scope(_) = nothing
 
-"Return whether evidence has the same scalar/coupled representation and controller count."
+"""
+    same_scope(a, b)
+
+Return whether evidence has the same scalar/coupled representation and controller count.
+"""
 same_scope(a, b) = same_scope(controller_scope(a), controller_scope(b))
 same_scope(::AbstractControllerScope, ::AbstractControllerScope) = false
 same_scope(::S, ::S) where {S<:AbstractControllerScope} = true
 same_scope(::Nothing, ::Union{Nothing,AbstractControllerScope}) = false
 same_scope(::AbstractControllerScope, ::Nothing) = false
 
-"Return whether every controller is open; a mixed coupled selection is false."
+"""
+    all_open(observation)
+
+Return whether every controller in the selection is open.
+"""
 all_open(observation::Union{AbstractLoopObservation,ReleaseObservation}) =
     all_open(controller_scope(observation), observation)
 all_open(::SingleController, observation) = !closed(observation)
 all_open(::CoupledControllers, observation) = all(!, closed(observation))
 all_open(::Nothing, observation) = false
-"Return whether every controller is closed; a mixed coupled selection is false."
+"""
+    all_closed(observation)
+
+Return whether every controller in the selection is closed.
+"""
 all_closed(observation::Union{AbstractLoopObservation,ReleaseObservation}) =
     all_closed(controller_scope(observation), observation)
 all_closed(::SingleController, observation) = closed(observation)
 all_closed(::CoupledControllers, observation) = all(identity, closed(observation))
 all_closed(::Nothing, observation) = false
 
-"Return whether all requested controller generations have been adopted."
+"""
+    generations_match(observation)
+
+Return whether all requested controller generations have been adopted.
+"""
 generations_match(observation::AbstractLoopObservation) =
     controller_scope(observation) !== nothing &&
     requested_generation(observation) == active_generation(observation)
 
-"""Return whether the requested generation precedes the bound generation.
+"""
+    requested_before(observation, generation)
+
+Return whether the requested generation precedes the bound generation.
 
 For coupled controllers this is strict componentwise partial ordering: every
 component must be at most its bound and at least one must be smaller.
@@ -165,7 +211,11 @@ function requested_before(
     return requested != generation && all(map(<=, requested, generation))
 end
 
-"Return whether applied evidence precedes the bound, using componentwise ordering."
+"""
+    active_before(observation, generation)
+
+Return whether applied evidence precedes the bound, using componentwise ordering.
+"""
 active_before(observation::AbstractLoopObservation, generation) =
     active_before(controller_scope(observation), observation, generation)
 active_before(::SingleController, observation, generation::UInt64) =
@@ -177,7 +227,11 @@ function active_before(
     return active != generation && all(map(<=, active, generation))
 end
 
-"Return whether each applied controller generation is at most its bound."
+"""
+    active_at_most(observation, generation)
+
+Return whether each applied controller generation is at most its bound.
+"""
 active_at_most(observation::AbstractLoopObservation, generation) =
     active_at_most(controller_scope(observation), observation, generation)
 active_at_most(::SingleController, observation, generation::UInt64) =
@@ -186,7 +240,11 @@ active_at_most(
     ::CoupledControllers{N}, observation, generation::NTuple{N,UInt64}
 ) where {N} = all(map(<=, active_generation(observation), generation))
 
-"Return whether each applied controller generation is at least its baseline."
+"""
+    active_at_least(observation, generation)
+
+Return whether each applied controller generation is at least its baseline.
+"""
 active_at_least(observation::AbstractLoopObservation, generation) =
     active_at_least(controller_scope(observation), observation, generation)
 active_at_least(::SingleController, observation, generation::UInt64) =

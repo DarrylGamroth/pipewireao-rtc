@@ -499,7 +499,10 @@ function recovery_error(operation::Operation, error)
     return RecoveryError(operation, sprint(showerror, error))
 end
 
-"""Atomically inhibit closure and open/reset the scoped recovery, then leave Holding.
+"""
+    protective_open!(connection, graph; kwargs...)
+
+Atomically inhibit closure and open/reset the scoped recovery, then leave Holding.
 
 The recovery request is the first native mutation; ordinary open is never sent.
 Every query uses the signed Int64 nanosecond deadline and cancellation check. Native
@@ -681,7 +684,10 @@ function restore_reference!(
     return operation
 end
 
-"""Explicitly resume this held operation, with fresh readiness and reference evidence.
+"""
+    resume!(operation; deadline, check=ControlClient.NO_CHECK, controllers=nothing)
+
+Explicitly resume this held operation, with fresh readiness and reference evidence.
 
 Release and close are each sent once. A refused, uncertain or expired release
 never sends CloseLoop and the coordinator remains latched for reconciliation.

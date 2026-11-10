@@ -201,7 +201,11 @@ function _validate_sensor_recipe(::Val{:pyramid}, application, recipe, declarati
     return nothing
 end
 
-"Run a declared sensor procedure and produce the standard calibration bundle."
+"""
+    calibrate_system(application, output; kwargs...)
+
+Run a declared sensor procedure and produce the standard calibration bundle.
+"""
 function calibrate_system(application, output; kwargs...)
     output = _calibration_output((application,), output)
     recipe = read_recipe(application)
@@ -220,7 +224,11 @@ function calibrate_system(application, output; kwargs...)
 end
 function _calibrate_system end
 
-"Validate a standard calibration bundle against its declared instrument model."
+"""
+    validate_system(application, calibration, output; kwargs...)
+
+Validate a standard calibration bundle against its declared instrument model.
+"""
 function validate_system(application, calibration, output; kwargs...)
     output = _calibration_output((application, calibration), output)
     recipe = read_recipe(application)
@@ -253,7 +261,11 @@ function load_calibration_optics(declaration, recipe)
     end
     return nothing
 end
-"Stage a bundle verified against its built application into a fresh authored source copy."
+"""
+    stage_calibration(source, application, calibration, destination)
+
+Stage a bundle verified against its built application into a fresh authored source copy.
+"""
 function stage_calibration end
 
 function _calibration_output(inputs, output)

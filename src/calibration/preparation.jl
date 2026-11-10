@@ -296,21 +296,33 @@ function complete!(p::Procedure, confirmation::Confirmation)
     return confirmation
 end
 
-"Cancel pending or ready preparation without retry or hardware effects."
+"""
+    cancel!(p)
+
+Cancel pending or ready preparation without retry or hardware effects.
+"""
 function cancel!(p::Procedure)
     _owner(p)
     Hsm.dispatch!(p, :Cancel)
     return nothing
 end
 
-"Expire pending or ready preparation when its absolute deadline has elapsed."
+"""
+    expire!(p)
+
+Expire pending or ready preparation when its absolute deadline has elapsed.
+"""
 function expire!(p::Procedure)
     _owner(p)
     Hsm.dispatch!(p, :Expire)
     return nothing
 end
 
-"Fence preparation on observed condition/authority loss; reasons are at most 1024 bytes."
+"""
+    invalidate!(p, reason)
+
+Fence preparation when a required condition or authority is lost. Limit the reason to 1024 bytes.
+"""
 function invalidate!(p::Procedure, reason::AbstractString)
     _owner(p)
     reason = _text(reason, "reason", 1024)
@@ -318,7 +330,11 @@ function invalidate!(p::Procedure, reason::AbstractString)
     return nothing
 end
 
-"Return the confirmation only while ready and unexpired; otherwise throw ArgumentError."
+"""
+    check_current!(p)
+
+Return the confirmation while ready and unexpired. Throw `ArgumentError` otherwise.
+"""
 function check_current!(p::Procedure)
     _owner(p)
     Hsm.dispatch!(p, :Expire)

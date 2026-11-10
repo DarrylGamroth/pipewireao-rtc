@@ -1,10 +1,19 @@
 # Cold session references use the same JSON Pointer contract as graph authoring.
 # Scientific owners supply metadata; the session keeps its schemas and policies.
 
-"Return the prepared FilterGraphs boundary's shape, wire element type and schema, without binding artifacts."
+"""
+    graph_port_contracts(path; metadata=false)
+
+Return the prepared FilterGraphs boundary's shape, wire element type and schema, without
+binding artifacts.
+"""
 function graph_port_contracts end
 
-"Return the simulator observation owner's cold port contracts for selected settings."
+"""
+    simulator_port_contracts(path; settings=Dict(), simulation_graph="production")
+
+Return the simulator observation owner's cold port contracts for selected settings.
+"""
 function simulator_port_contracts end
 """
     prepare_external_pupil_ports(path; settings=NamedTuple(), chopping=NamedTuple(),
@@ -218,7 +227,11 @@ function validate_session_graph_contracts(session, contracts)
     return nothing
 end
 
-"Resolve references across the composed session and core before validation and sealing."
+"""
+    prepare_session_configuration!(application, spec, declarations, instrumentpath, prefix; kwargs...)
+
+Resolve references across the composed session and core before validation and sealing.
+"""
 function prepare_session_configuration!(
     application,
     spec,

@@ -178,6 +178,11 @@ function _node_name(value::AbstractString)
 end
 _filename(record::SessionRecord) = RECORD_PREFIX * record.session_id * RECORD_SUFFIX
 
+"""
+    encode_record(record)
+
+Encode a validated session discovery record as a POD.
+"""
 function encode_record(record::SessionRecord)
     pod = Pod(
         _struct(
@@ -216,6 +221,11 @@ function _decode_record(pod::Pod)
     )
 end
 
+"""
+    decode_record(input)
+
+Decode and validate a session discovery record from a POD or its bytes.
+"""
 function decode_record(bytes::AbstractVector{UInt8})
     length(bytes) <= MAX_RECORD_BYTES ||
         throw(ArgumentError("session discovery record exceeds 4 KiB"))
@@ -269,7 +279,11 @@ function _ensure_private_child(parent::String, name::String)
     return path
 end
 
-"Create or validate XDG_RUNTIME_DIR/pipewireao-rtc/sessions (mode 0700)."
+"""
+    registry_directory(runtime_dir=get(ENV, "XDG_RUNTIME_DIR", ""))
+
+Create or validate XDG_RUNTIME_DIR/pipewireao-rtc/sessions (mode 0700).
+"""
 function registry_directory(runtime_dir::AbstractString = get(ENV, "XDG_RUNTIME_DIR", ""))
     isempty(runtime_dir) &&
         throw(ArgumentError("XDG_RUNTIME_DIR is required for local session discovery"))
@@ -278,7 +292,11 @@ function registry_directory(runtime_dir::AbstractString = get(ENV, "XDG_RUNTIME_
     return _ensure_private_child(app, "sessions")
 end
 
-"Validate an existing registry without creating directories or lock files."
+"""
+    existing_registry_directory(runtime_dir=get(ENV, "XDG_RUNTIME_DIR", ""))
+
+Validate an existing registry without creating directories or lock files.
+"""
 function existing_registry_directory(
     runtime_dir::AbstractString = get(ENV, "XDG_RUNTIME_DIR", "")
 )
@@ -357,7 +375,11 @@ function _atomic_replace(directory::String, path::String, pod::Pod)
     return path
 end
 
-"Atomically publish this process's locator under its stable session UUID."
+"""
+    publish!(directory, record)
+
+Atomically publish this process's locator under its stable session UUID.
+"""
 function publish!(directory::AbstractString, record::SessionRecord)
     record.owner_pid == UInt32(getpid()) ||
         throw(ArgumentError("only the owning session may publish its locator"))
@@ -370,7 +392,11 @@ function publish!(directory::AbstractString, record::SessionRecord)
     end
 end
 
-"Remove only this incarnation's record; a replacement incarnation is retained."
+"""
+    remove!(directory, expected)
+
+Remove the discovery record when it belongs to this incarnation.
+"""
 function remove!(directory::AbstractString, expected::SessionRecord)
     expected.owner_pid == UInt32(getpid()) ||
         throw(ArgumentError("only the owning session may remove its locator"))
@@ -408,7 +434,11 @@ function _entry(path::String)
     end
 end
 
-"List bounded owner-published records. No liveness or lifecycle is inferred."
+"""
+    list_sessions(directory)
+
+List bounded owner-published records. No liveness or lifecycle is inferred.
+"""
 function list_sessions(directory::AbstractString)
     dir = _check_registry(directory)
     files = filter(name -> endswith(name, RECORD_SUFFIX), readdir(dir; join = true))
@@ -430,7 +460,11 @@ function _matches(record::SessionRecord, status::FreshSessionStatus)
            status.authority === :rtc_session
 end
 
-"Verify an explicitly selected listing against a fresh native session status callback."
+"""
+    select_session(entry, verifier)
+
+Verify an explicitly selected listing against a fresh native session status callback.
+"""
 function select_session(entry::DiscoveryEntry, verifier)
     entry.record === nothing &&
         return DiscoveryEntry(nothing, Malformed, "record cannot be selected")

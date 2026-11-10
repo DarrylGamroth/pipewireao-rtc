@@ -31,7 +31,11 @@ function _checked(connection::Connection, reply::Codec.Completion)
     return reply
 end
 
-"""Send one typed operation through the bound owner incarnation, without retry."""
+"""
+    request!(connection, operation; deadline, check=()->nothing)
+
+Send one typed operation through the bound owner incarnation, without retry.
+"""
 function request!(
     connection::Connection,
     operation::Symbol;
@@ -83,7 +87,11 @@ end
 _require_connected(reply::Codec.Rejection) =
     _reply_failure("acquisition owner Connect did not complete", reply)
 
-"""Return a fresh successful status completion from this exact owner."""
+"""
+    status(connection; deadline, check=()->nothing)
+
+Return a fresh successful status completion from this exact owner.
+"""
 function status(
     connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
 )
@@ -91,7 +99,11 @@ function status(
     return _require_status(reply)
 end
 
-"""Discover Prepared or Connected, then require a fresh matching Status result."""
+"""
+    connect(profile, remote, node, pid, instance, instrument; kwargs...)
+
+Discover Prepared or Connected, then require a fresh matching Status result.
+"""
 function connect(
     profile::P,
     remote::AbstractString,
@@ -128,7 +140,11 @@ function connect(
     end
 end
 
-"""Apply Connect and require a truthful Connected completion."""
+"""
+    connect_owner!(connection; deadline, check=()->nothing)
+
+Apply Connect and require a truthful Connected completion.
+"""
 function connect_owner!(
     connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
 )

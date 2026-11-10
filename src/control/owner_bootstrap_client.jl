@@ -45,12 +45,22 @@ struct Connection{C<:Client.Client}
     binding::Binding
     client::C
 end
+"""
+    request!(connection, operation; deadline, check=()->nothing)
+
+Send the named bootstrap operation and return the correlated native reply before `deadline`.
+"""
 request!(
     connection::Connection,
     operation::Symbol;
     deadline::Union{Int64,Float64},
     check = () -> nothing,
 ) = Client.request!(connection.client, Codec.Command(operation); deadline, check)
+"""
+    status(connection; deadline, check=()->nothing)
+
+Request and validate a fresh bootstrap status reply.
+"""
 function status(
     connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
 )
@@ -58,7 +68,11 @@ function status(
     _require_status(reply)
     return reply
 end
-"""Bind exact PID/incarnation and require fresh Status, including Preparing."""
+"""
+    connect(binding; deadline, check=()->nothing, clock=Clocks.SystemNanoClock())
+
+Bind exact PID/incarnation and require fresh Status, including Preparing.
+"""
 function connect(
     binding::Binding;
     deadline::Union{Int64,Float64},
@@ -100,6 +114,11 @@ function connect(
 )
     return connect(Binding(remote, node, pid, instance); deadline, check, clock)
 end
+"""
+    connect_owner!(connection; deadline, check=()->nothing)
+
+Wait for the bound owner to reach Prepared, send Connect and return its Connected reply.
+"""
 function connect_owner!(
     connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
 )
@@ -122,6 +141,11 @@ function connect_owner!(
     _require_connected(reply)
     return reply
 end
+"""
+    quit!(connection; deadline, check=()->nothing)
+
+Send Quit to the bound owner and require a Stopped reply.
+"""
 function quit!(
     connection::Connection; deadline::Union{Int64,Float64}, check = () -> nothing
 )

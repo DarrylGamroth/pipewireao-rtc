@@ -137,7 +137,11 @@ mutable struct Supervisor
     end
 end
 
-"""Return `:Disabled`, `:Unknown`, `:Clear`, `:Pending` or retained `:Tripped`."""
+"""
+    state(supervisor)
+
+Return `:Disabled`, `:Unknown`, `:Clear`, `:Pending` or retained `:Tripped`.
+"""
 state(supervisor::Supervisor) =
     if !supervisor.configuration.enabled
         :Disabled
@@ -151,7 +155,11 @@ state(supervisor::Supervisor) =
         :Clear
     end
 
-"""Return the latched trip cause, or `nothing` before a trip/after explicit rearm."""
+"""
+    reason(supervisor)
+
+Return the latched trip cause, or `nothing` before a trip/after explicit rearm.
+"""
 reason(supervisor::Supervisor) = supervisor.trip_reason
 
 function reject!(supervisor::Supervisor, cause::Symbol)
@@ -161,7 +169,10 @@ function reject!(supervisor::Supervisor, cause::Symbol)
     return Recommendation(:none, cause, supervisor.tripped)
 end
 
-"""Observe clipping feedback for an exact owner, sequence and monotonic timestamp.
+"""
+    observe!(supervisor, owner_instance, sequence, sample_ns, clipping_fraction; now_ns)
+
+Observe clipping feedback for an exact owner, sequence and monotonic timestamp.
 
 Pass `nothing` for missing feedback. Malformed, wrong-owner, repeated, stale and
 future samples invalidate pending continuity and rearm eligibility; they never
@@ -231,7 +242,10 @@ function observe!(
     return Recommendation(:none, supervisor.pending ? :pending : :clear, false)
 end
 
-"""Explicitly rearm a tripped supervisor after higher-level recovery.
+"""
+    rearm!(supervisor, owner_instance, sequence; now_ns)
+
+Explicitly rearm a tripped supervisor after higher-level recovery.
 
 Return `true` only for the exact owner and latest observed sequence with valid
 feedback at/below the clear threshold that remains fresh at `now_ns`. Retain

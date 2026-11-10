@@ -51,10 +51,20 @@ struct AdministrativeCompletion
     error::Union{Nothing,RunnerError}
 end
 
+"""
+    operation_id(command)
+
+Return the native session operation identifier for `command`.
+"""
 operation_id(command::RunnerCommand) = Runner.operation_id(command)
 operation_id(::WarmupCommand) = UInt32(15)
 operation_id(::AdmitCommand) = UInt32(16)
 
+"""
+    encode_request(header, command)
+
+Encode a session command with the given request header.
+"""
 encode_request(header::Envelope.RequestHeader, command::RunnerCommand) =
     Runner.encode_request(header, command)
 function encode_request(
@@ -65,6 +75,11 @@ function encode_request(
     return Envelope.encode_request(header, SPA.Struct(Pod[]))
 end
 
+"""
+    decode_completion(input)
+
+Decode a session completion and its typed operation result.
+"""
 function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
     header, payload = Envelope.decode_completion(input; endpoint = :lifecycle)
     header.operation in (15, 16) || return Runner.decode_completion(input)
@@ -93,6 +108,11 @@ function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
     return AdministrativeCompletion(header, state, warmed, nothing)
 end
 
+"""
+    decode_rejection(input)
+
+Decode a session rejection and its reported error.
+"""
 decode_rejection(input::Union{Pod,AbstractVector{UInt8}}) = Runner.decode_rejection(input)
 
 end # module SessionCodec

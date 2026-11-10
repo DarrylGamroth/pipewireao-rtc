@@ -284,7 +284,10 @@ function _initial_payload(initial::Union{Nothing,AbstractString}, declaration; c
     return bytes, nothing
 end
 
-"""Read saved JSON declarations, checking all mappings before opening any artifact.
+"""
+    read_declarations(path, wake; check=()->nothing)
+
+Read saved JSON declarations, checking all mappings before opening any artifact.
 
 The root object has exactly `version=1` and `sources`. Each source declares
 `node_name`, `graph`, `inlet`, `element_type="F32_LE"`, positive `shape`,
@@ -698,7 +701,11 @@ function _completion!(endpoint, ticket, source, result::Int32, message)
     return nothing
 end
 
-"""Run one ordinary owner; no links, graph state, science, or adoption decisions."""
+"""
+    run_owner(options, runtime; clock=runtime.transport.endpoint.clock)
+
+Run one ordinary owner and supervise its process lifetime.
+"""
 function run_owner(
     options, runtime; clock::Clocks.AbstractNanoClock = runtime.transport.endpoint.clock
 )

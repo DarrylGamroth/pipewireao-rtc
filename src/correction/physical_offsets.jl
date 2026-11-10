@@ -190,6 +190,12 @@ function limit_violation(receiver::Receiver, combined)
     return nothing
 end
 
+"""
+    disarm!(receiver[, branch]; reason=:disarmed)
+
+Clear the retained physical offsets for one branch or all branches. Record the supplied
+reason.
+"""
 function disarm!(receiver::Receiver, branch::Symbol; reason::Symbol = :disarmed)
     contribution = receiver.branches[branch]
     changed = contribution.armed || contribution.present || any(!iszero, contribution.value)
@@ -221,7 +227,11 @@ function disarm!(receiver::Receiver; reason::Symbol = :disarmed)
     return receiver
 end
 
-"Explicitly bind a stopped/reset branch to a source cohort; rearming always begins at zero."
+"""
+    arm!(receiver, branch, identity)
+
+Bind a stopped or reset branch to a source cohort and rearm it at zero.
+"""
 function arm!(receiver::Receiver, branch::Symbol, identity::AcquisitionIdentity)
     identity.generation > 0 && identity.sequence == 0 ||
         throw(ArgumentError("arming requires positive generation and sequence zero"))
@@ -245,7 +255,12 @@ function exposure_end(pts::Int64, duration::UInt64)
     return Base.checked_add(pts, Int64(duration))
 end
 
-"Observe actual upstream acquisition time; a changed cohort clears every downstream contribution."
+"""
+    observe_clock!(receiver, identity, pts, duration)
+
+Observe the upstream acquisition time. A changed cohort clears every downstream
+contribution.
+"""
 function observe_clock!(
     receiver::Receiver, identity::AcquisitionIdentity, pts::Int64, duration::UInt64
 )
@@ -276,7 +291,10 @@ function _observe_host!(receiver::Receiver, now_ns::Int64)
     return true
 end
 
-"""Validate and hold one complete absolute command using signed host nanoseconds.
+"""
+    accept!(receiver, branch, values, identity, pts, duration; kwargs...)
+
+Validate and hold one complete absolute command using signed host nanoseconds.
 
 The caller passes one sampled host tick to every acceptance/expiry in a poll.
 A host regression clears all branches sharing that clock; model resets and
@@ -348,7 +366,10 @@ function accept!(
     return true
 end
 
-"""Clear stale branches using signed host silence and separate model-age limits.
+"""
+    expire!(receiver, now_ns)
+
+Clear stale branches using signed host silence and separate model-age limits.
 
 An exact silence limit remains held, preserving the existing strict `>` rule.
 The widened elapsed comparison handles the full signed tick range without
@@ -366,6 +387,11 @@ function expire!(receiver::Receiver, now_ns::Int64)
     end
     return receiver
 end
+"""
+    total!(destination, receiver)
+
+Sum the retained branch offsets into `destination` in physical command order and return it.
+"""
 function total!(destination::AbstractVector{Float32}, receiver::Receiver)
     Base.require_one_based_indexing(destination)
     length(destination) == length(first(values(receiver.branches)).value) ||
@@ -377,7 +403,12 @@ function total!(destination::AbstractVector{Float32}, receiver::Receiver)
     return destination
 end
 
-"Run a native array receiver within the existing graph-owner lifecycle (optional HIL extension)."
+"""
+    with_receiver(f, prepared; remote, kwargs...)
+
+Run a native array receiver within the existing graph-owner lifecycle (optional HIL
+extension).
+"""
 function with_receiver end
 
 "Prepare and verify receiver calibration against a concrete ordinary graph before publication."

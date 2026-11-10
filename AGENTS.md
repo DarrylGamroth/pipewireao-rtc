@@ -39,6 +39,9 @@
 - Put `using`, `import`, `export` and `public` at the top of each Julia
   module or script. Include a child module before importing its names.
   Preserve optional package loading and tests that measure import order.
+- Use `#` for implementation comments. Document exported and public functions
+  with a triple-quoted Julia docstring, an indented signature and an imperative
+  summary. Describe units, ownership and failure behavior where they matter.
 
 - Follow the package-wide [Julia design conventions](docs/architecture.md#julia-design-conventions).
   Reuse existing interfaces and codecs; document required interface methods and

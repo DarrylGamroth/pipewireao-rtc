@@ -53,11 +53,36 @@ struct DeploymentError <: Exception
     message::String
 end
 Base.showerror(io::IO, error::DeploymentError) = print(io, error.message)
+"""
+    fail(message)
+
+Throw a `DeploymentError` with the given diagnostic message.
+"""
 fail(message) = throw(DeploymentError(message))
+"""
+    require(condition, message)
+
+Throw a `DeploymentError` with `message` when `condition` is false.
+"""
 require(condition, message) = condition || fail(message)
+"""
+    digest(path)
+
+Return the hexadecimal SHA-256 checksum of the file at `path`.
+"""
 digest(path::AbstractString) = Common.sha256_file(path)
+"""
+    atomic_record(path, value)
+
+Write a JSON record by atomically replacing the file at `path`.
+"""
 atomic_record(path::AbstractString, value) = Common.write_json(path, value; atomic = true)
 
+"""
+    installed_paths(prefix)
+
+Find and validate the PipeWireAO daemon, parser and library directories under `prefix`.
+"""
 function installed_paths(prefix::AbstractString)
     candidates = [joinpath(prefix, "lib"), joinpath(prefix, "lib64")]
     lib = joinpath(prefix, "lib")
@@ -79,6 +104,12 @@ function installed_paths(prefix::AbstractString)
     paths
 end
 
+"""
+    decode(path, prefix)
+
+Read a bounded deployment document as JSON or relaxed SPA-JSON. Use the parser at `prefix`
+for SPA-JSON.
+"""
 function decode(path::AbstractString, prefix::AbstractString)
     filesize(path) <= MAX_CONFIG_BYTES || fail("deployment configuration exceeds 16 MiB")
     try
@@ -198,6 +229,12 @@ function validate_execution_groups(session, links = session_links(session))
     return nothing
 end
 
+"""
+    validate_environment(value, label)
+
+Require a mapping from valid environment variable names to strings. Use `label` in
+validation errors.
+"""
 validate_environment(value, label) =
     fail("$label environment must map valid names to strings")
 function validate_environment(value::AbstractDict, label)
@@ -210,6 +247,11 @@ valid_environment_entry(key, item) = false
 valid_environment_entry(key::String, item::String) =
     !isempty(key) && !occursin('=', key) && !occursin('\0', key) && !occursin('\0', item)
 
+"""
+    relative_asset(package, name)
+
+Resolve a relative asset name to a regular file contained in the application directory.
+"""
 relative_asset(package::AbstractString, name) =
     fail("installed asset must be a package-relative path")
 function relative_asset(package::AbstractString, name::String)
@@ -226,28 +268,60 @@ function relative_asset(package::AbstractString, name::String)
     candidate
 end
 
+"""
+    valid_cpu_list(value)
+
+Validate the declared CPU list and return its set of CPU numbers. Reserve CPUs 0 and 1.
+"""
 valid_cpu_list(value::AbstractVector) = Placement.cpu_set(value)
 valid_cpu_list(value) = fail("process CPU envelope must be a list")
 
-"Return whether a declaration selects the exact OwnerBootstrap protocol."
+"""
+    uses_bootstrap_protocol(owner)
+
+Return whether a declaration selects the exact OwnerBootstrap protocol.
+"""
 uses_bootstrap_protocol(owner) =
     get(owner, "bootstrap-protocol", nothing) ==
     ControlClient.profile_name(OwnerBootstrapCodec.PROFILE)
+"""
+    bootstrap_instance_key(role)
+
+Return the uppercase bootstrap instance binding name for an owner role.
+"""
 bootstrap_instance_key(role::AbstractString) =
     "BOOTSTRAP_INSTANCE_" * replace(uppercase(role), "-" => "_")
 
-"Return whether a declaration selects the existing HEART wrapper control protocol."
+"""
+    uses_heart_protocol(owner)
+
+Return whether a declaration selects the existing HEART wrapper control protocol.
+"""
 uses_heart_protocol(owner) =
     get(owner, "control-protocol", nothing) == "pipewireao.rtc.heart/1"
 
-"Return whether a declaration selects the SourceControl protocol."
+"""
+    uses_source_control_protocol(owner)
+
+Return whether a declaration selects the SourceControl protocol.
+"""
 uses_source_control_protocol(owner) =
     get(owner, "control-protocol", nothing) == "pipewireao.source-control/1"
 
-"Return whether a declaration selects a calibration or correction acquisition-lifecycle protocol."
+"""
+    uses_acquisition_protocol(owner)
+
+Return whether a declaration selects a calibration or correction acquisition-lifecycle
+protocol.
+"""
 uses_acquisition_protocol(owner) = get(owner, "control-protocol", nothing) in
 ("pipewireao.rtc.calibration-lifecycle/1", "pipewireao.rtc.correction-lifecycle/1")
 
+"""
+    validate_acquisition_arguments(owner)
+
+Check that the owner arguments agree with its declared acquisition control binding.
+"""
 function validate_acquisition_arguments(owner)
     argv = owner["argv"]
     for flag in (
@@ -277,6 +351,11 @@ function validate_acquisition_arguments(owner)
     return nothing
 end
 
+"""
+    validate_bootstrap_arguments(owner)
+
+Check that the owner arguments agree with its declared bootstrap binding.
+"""
 function validate_bootstrap_arguments(owner)
     argv = owner["argv"]
     for flag in (
@@ -347,7 +426,11 @@ const SESSION_PRIVATE_ENVIRONMENT = Set([
     "PIPEWIREAORTC_PROJECT",
 ])
 
-"Validate the sole headless RTC executable and its exact invocation."
+"""
+    validate_session_runtime(value)
+
+Validate the sole headless RTC executable and its exact invocation.
+"""
 validate_session_runtime(value) = fail("session-runtime requires argv and environment")
 function validate_session_runtime(value::AbstractDict)
     require(
@@ -437,14 +520,22 @@ function startup_timeout_ms(spec::AbstractDict)
     return Int(value)
 end
 
-"""Whether this deployment obtains its executable implementation from Julia packages."""
+"""
+    registered_application(spec)
+
+Whether this deployment obtains its executable implementation from Julia packages.
+"""
 registered_application(spec::AbstractDict) = haskey(spec, "runtime")
 
 julia_environment_file(name) =
     name in ("Project.toml", "JuliaProject.toml") ||
     occursin(r"^(?:Julia)?Manifest(?:-v[0-9]+\.[0-9]+)?\.toml$", name)
 
-"""Validate the registered Julia environment without resolving packages."""
+"""
+    application_environment(spec, package)
+
+Validate the registered Julia environment without resolving packages.
+"""
 function application_environment(spec::AbstractDict, package::AbstractString)
     require(
         registered_application(spec),
@@ -617,6 +708,12 @@ function validate_placements(placements::AbstractDict, roles)
     return nothing
 end
 
+"""
+    profile(path, prefix)
+
+Read and validate a deployment description and its registered Julia environment. Return the
+validated description.
+"""
 function profile(path::AbstractString, prefix::AbstractString)
     value = decode(path, prefix)
     result = validate_application(value, path, prefix)
@@ -792,6 +889,12 @@ function validate_application(value::AbstractDict, path, prefix)
     Dict{String,Any}(value)
 end
 
+"""
+    substitute(value, bindings; quoted=false)
+
+Replace deployment binding tokens and reject unresolved tokens. Use `quoted=true` to escape
+replacements within JSON strings.
+"""
 function substitute(value::AbstractString, bindings::AbstractDict; quoted = false)
     result = String(value)
     for (name, replacement) in bindings
@@ -803,6 +906,12 @@ function substitute(value::AbstractString, bindings::AbstractDict; quoted = fals
     result
 end
 
+"""
+    selected_julia_executable(path)
+
+Probe an absolute Julia executable and return the resolved path of the Julia runtime it
+launches.
+"""
 function selected_julia_executable(path::AbstractString)
     isabspath(path) &&
     !occursin('\0', path) &&
@@ -840,6 +949,11 @@ function selected_julia_executable(path::AbstractString)
     return realpath(fields[2])
 end
 
+"""
+    shell_quote(value)
+
+Quote a string for use as one POSIX shell argument.
+"""
 shell_quote(value::AbstractString) = "'" * replace(value, "'" => "'\"'\"'") * "'"
 
 decode_fallback(error::SystemError, path, prefix) = rethrow()

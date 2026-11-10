@@ -1,4 +1,8 @@
-"""Read a bounded, generic physical mirror description into immutable values."""
+"""
+    read_mirror_description(path)
+
+Read a bounded, generic physical mirror description into immutable values.
+"""
 function read_mirror_description(path::AbstractString)
     document = InstrumentDefinition._mirror_description(path).document
     return _instrument_seal(document)
@@ -126,7 +130,11 @@ function clear_aperture(description::NamedTuple, registration::NamedTuple)
     return (; clear_aperture = aperture)
 end
 
-"Build a command-indexed source-grid map from a physical-order mirror description."
+"""
+    actuator_index_map(description)
+
+Build a command-indexed source-grid map from a physical-order mirror description.
+"""
 function actuator_index_map(description::NamedTuple)
     columns, rows = description.layout.grid_shape
     index_map = zeros(UInt16, rows, columns)
@@ -137,6 +145,8 @@ function actuator_index_map(description::NamedTuple)
 end
 
 """
+    actuator_coordinates(description, ::Type{T}=Float32; pupil_registration)
+
 Return command-indexed normalized pupil x/y coordinates. Native mirror x points
 right and y upward; registration subtracts the pupil-center offset, reflects y
 when requested, then rotates counterclockwise. Command order is unchanged.
@@ -200,7 +210,11 @@ function actuator_grid_indices(
     return indices
 end
 
-"""Return normalized source-grid positions for Zernike and Fourier sampling."""
+"""
+    source_grid_coordinates(description)
+
+Return normalized source-grid positions for Zernike and Fourier sampling.
+"""
 function source_grid_coordinates(description::NamedTuple)
     columns, rows = description.layout.grid_shape
     positions = description.layout.command_positions

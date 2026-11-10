@@ -10,7 +10,11 @@ export Store,
 const PROTOCOL = "pipewireao.configuration/1"
 const MAX_MANIFEST_BYTES = 1024 * 1024
 
-"Return the shared per-user configuration store location without opening it."
+"""
+    default_root()
+
+Return the shared per-user configuration store location without opening it.
+"""
 function default_root()
     state_home = get(ENV, "XDG_STATE_HOME", "")
     isabspath(state_home) || (state_home = joinpath(homedir(), ".local", "state"))
@@ -192,7 +196,11 @@ artifact_scope(scope) = bounded_name(scope, "scope")
 checked_metadata(metadata::AbstractDict) = metadata
 checked_metadata(metadata) = throw(ArgumentError("metadata must be a JSON object"))
 
-"""Capture and validate the original FITS once, then pin Git objects before indexing them."""
+"""
+    register!(store, source, ::Type{T}, shape; label, scope, metadata=Dict{String, Any}(), schema="")
+
+Capture and validate the original FITS once, then pin Git objects before indexing them.
+"""
 function register!(
     store::Store,
     source::Artifacts.FITSArtifact,
@@ -283,7 +291,10 @@ function fits_units(units::AbstractString)
     return String(units)
 end
 
-"""Register generated host arrays through the same FITS preparation contract.
+"""
+    register!(store, data; label, scope, metadata=Dict{String, Any}(), schema="", units=nothing)
+
+Register generated host arrays through the same FITS preparation contract.
 
 Optional `units` writes the FITS BUNIT card, retained in the prepared artifact
 contract. Units are declared, not converted or inferred from a schema.
@@ -359,7 +370,11 @@ function page_limit(limit::Integer)
     1 <= limit <= 100 || throw(ArgumentError("limit must be in 1:100"))
     return Int(limit)
 end
-"Return catalog metadata after verifying the pinned Git manifest, tree and original bytes."
+"""
+    get_artifact(store, id)
+
+Return catalog metadata after verifying the pinned Git manifest, tree and original bytes.
+"""
 function get_artifact(store::Store, id::AbstractString)
     id = checked_oid(store, id)
     record = database(store) do db
@@ -383,10 +398,18 @@ function get_artifact(store::Store, id::AbstractString)
     read_blob(store, record["content_oid"])
     return record
 end
-"Read and verify the exact original FITS bytes by immutable catalog identity."
+"""
+    read_artifact(store, id)
+
+Read and verify the exact original FITS bytes by immutable catalog identity.
+"""
 read_artifact(store::Store, id::AbstractString) =
     read_blob(store, get_artifact(store, id)["content_oid"])
-"Publish verified read-only transport cache bytes; retain them until explicit maintenance."
+"""
+    materialize!(store, id; storage_order="row-major")
+
+Publish verified read-only transport cache bytes and retain them until explicit maintenance.
+"""
 function materialize!(store::Store, id::AbstractString; storage_order = "row-major")
     storage_order in ("row-major", "column-major") ||
         throw(ArgumentError("unsupported storage order"))
@@ -496,7 +519,11 @@ end
 artifact_cursor(value) = throw(ArgumentError("invalid cursor"))
 artifact_cursor(value::Integer) = value >= 0 ? value : artifact_cursor(nothing)
 
-"List a bounded page in registration order, using an exclusive sequence cursor."
+"""
+    list_artifacts(store; limit=50, after_sequence=0)
+
+List a bounded page in registration order, using an exclusive sequence cursor.
+"""
 function list_artifacts(store::Store; limit = 50, after_sequence = 0)
     limit = page_limit(limit)
     after_sequence = artifact_cursor(after_sequence)

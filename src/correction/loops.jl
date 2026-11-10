@@ -244,10 +244,17 @@ function Loop(
     )
 end
 
-"""Return `Unknown`, `Open`, `Closing`, `Closed`, or `Opening` as a Symbol."""
+"""
+    state(sm)
+
+Return `Unknown`, `Open`, `Closing`, `Closed`, or `Opening` as a Symbol.
+"""
 state(sm::Loop) = sm.failure === nothing ? Hsm.current(sm) : :Unknown
 
-"""Latch an unknown outcome through the `Unknown` event without issuing a write.
+"""
+    unknown!(sm, reason=:unknown)
+
+Latch an unknown outcome through the `Unknown` event without issuing a write.
 
 The event retains the first failure reason. If Hsm itself throws before it can
 handle the event, retain a publication failure without escaping the observer.
@@ -264,7 +271,10 @@ function unknown!(sm::Loop, reason::Symbol = :unknown)
     return nothing
 end
 
-"""Observe an accepted Boolean write; acceptance is not applied adoption.
+"""
+    requested!(sm, instance, requested_generation, active_generation, closed)
+
+Observe acceptance of a Boolean write by the owner.
 
 The native owner enforces its busy slot before acceptance. Duplicate callbacks
 are harmless; a conflicting accepted write while pending is an unknown outcome,
@@ -283,7 +293,10 @@ function requested!(
     return nothing
 end
 
-"""Observe one coherent applied snapshot for this owner incarnation.
+"""
+    observed!(sm, instance, requested_generation, active_generation, closed)
+
+Observe one coherent applied snapshot for this owner incarnation.
 
 Only exact requested/active generation equality and the accepted Boolean value
 confirm a pending change. Stale snapshots and other owner incarnations cannot
@@ -353,7 +366,10 @@ function Observer(
     )
 end
 
-"""Attach disarmed PipeWire timers to an initialized graph owner.
+"""
+    attach_timers!(observer, loop, wake)
+
+Attach disarmed PipeWire timers to an initialized graph owner.
 
 Entry to Opening/Closing arms a one-shot timer; exit cancels it. `wake()` runs
 on the supplied native ThreadLoop and must only request control-loop work, not
@@ -398,7 +414,11 @@ function Base.close(observer::Observer)
     return nothing
 end
 
-"""Require initial authoritative Boolean readback before owner admission."""
+"""
+    check_ready(observer)
+
+Require initial authoritative Boolean readback before owner admission.
+"""
 function check_ready(observer::Observer)
     for sm in observer.loops
         sm.initialized &&
@@ -500,7 +520,10 @@ function fault(sm::Loop)
     return "Correction outcome is unknown"
 end
 
-"""Describe the read-only correction-control status properties.
+"""
+    property_info(observer)
+
+Describe the read-only correction-control status properties.
 
 The actual Boolean target and its existing requested/active node generations
 remain the authoritative graph properties; these descriptions add status only.

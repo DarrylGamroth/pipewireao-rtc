@@ -85,7 +85,10 @@ function merge_profile(profile::AbstractDict, host::AbstractDict, path = "")
     return combined
 end
 
-"""Combine portable instrument choices and host configuration without overriding values.
+"""
+    combine_profile(profile, host=nothing)
+
+Combine portable instrument choices and host configuration without overriding values.
 
 The instrument profile accepts `application`, `mode`, device `bindings`, `devices` and
 `calibration`. The host accepts `scheduling`, non-scheduling `bindings`, `environment`,
@@ -122,7 +125,11 @@ function combine_profile(profile, host = nothing)
     return merge_profile(profile, compiled)
 end
 
-"Read bounded YAML instrument and optional host profiles before export."
+"""
+    load_profile(path; host=nothing)
+
+Read bounded YAML instrument and optional host profiles before export.
+"""
 function load_profile(path::AbstractString; host = nothing)
     profile = InstrumentConfiguration.bounded_yaml(path)
     host_profile = host === nothing ? nothing : InstrumentConfiguration.bounded_yaml(host)

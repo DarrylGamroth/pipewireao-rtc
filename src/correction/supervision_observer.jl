@@ -212,7 +212,10 @@ function snapshot(binding::FeedbackObservation)
     return nothing
 end
 
-"""Read bounded, coherent snapshots without touching frame-owned mutable state.
+"""
+    snapshot(observer)
+
+Read bounded, coherent snapshots without touching frame-owned mutable state.
 
 A busy writer yields `nothing` for that output after three attempts. This is
 unavailable evidence, not permission to act; retry only on a later ordinary poll.
@@ -340,7 +343,10 @@ function invalidate_observations!(observer::Observer, cause::Symbol)
     return nothing
 end
 
-"""Stage explicit rearm intent for this exact owner, returning its token.
+"""
+    request_rearm!(observer, owner_instance)
+
+Stage explicit rearm intent for this exact owner, returning its token.
 
 Zero means refused (wrong owner, busy mailbox or exhausted token space). A token
 is not rearm success. The frame writer consumes it once on a later successful
@@ -420,7 +426,11 @@ function adopt_rearm!(observer::Observer, token::UInt64, now::Int64)
     return nothing
 end
 
-"Read bounded coherent frame-writer rearm acknowledgement, or nothing if busy."
+"""
+    rearm_status(observer)
+
+Read bounded coherent frame-writer rearm acknowledgement, or nothing if busy.
+"""
 function rearm_status(observer::Observer)
     mailbox = observer.rearm
     for _ in 1:3

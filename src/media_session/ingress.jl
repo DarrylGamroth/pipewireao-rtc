@@ -554,22 +554,57 @@ function Gate(
     Hsm.dispatch!(gate, :Boot)
     return gate
 end
-"""Receive an owned native POD with its producer's signed nanosecond receipt.
+"""
+    receive!(gate, pod, received)
+
+Receive an owned native POD with its producer's signed nanosecond receipt.
 
 The receipt and clock share the Clocks.time_nanos domain. Queue delay consumes
 the original budget; an unrepresentable deadline rejects before admission.
 """
 receive!(gate::Gate, pod::Union{Nothing,Pod}, received::Int64) =
     (Hsm.dispatch!(gate, :Received, (; pod, received)); nothing)
+"""
+    controllers!(gate, observed)
+
+Dispatch the observed controller identities and properties to the admission gate.
+"""
 controllers!(gate::Gate, observed::Vector{Controller}) =
     (Hsm.dispatch!(gate, :Controllers, observed); nothing)
+"""
+    controller_removed!(gate, global_id, serial)
+
+Notify the gate that the controller with the given PipeWire global ID and serial left the
+registry.
+"""
 controller_removed!(gate::Gate, global_id::UInt32, serial::UInt64) =
     (Hsm.dispatch!(gate, :ControllerRemoved, (; global_id, serial)); nothing)
+"""
+    state!(gate, lifecycle)
+
+Notify the gate of the observed RTC lifecycle state.
+"""
 state!(gate::Gate, lifecycle::RunnerCodec.Lifecycle) =
     (Hsm.dispatch!(gate, :LifecycleObserved, lifecycle); nothing)
+"""
+    tick!(gate)
+
+Dispatch a clock tick so the gate can expire pending work.
+"""
 tick!(gate::Gate) = (Hsm.dispatch!(gate, :Tick); nothing)
+"""
+    complete!(gate, ticket, pod; unknown=false, terminal=false)
+
+Dispatch a correlated terminal reply to the gate. Record the unknown or terminal status
+indicated by the caller.
+"""
 complete!(gate::Gate, ticket::AbstractTicket, pod::Pod; unknown = false, terminal = false) =
     (Hsm.dispatch!(gate, :Completed, (; ticket, pod, unknown, terminal)); nothing)
+"""
+    take_actions!(gate)
+
+Take the effects the gate has queued for its owner to execute.
+"""
 take_actions!(gate::Gate) = (Hsm.dispatch!(gate, :TakeActions); gate.delivery)
 
 end

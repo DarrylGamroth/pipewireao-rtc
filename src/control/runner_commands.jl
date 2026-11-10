@@ -112,7 +112,11 @@ function _command(fields::Vector{String})
     throw(ArgumentError("unknown or malformed runner command"))
 end
 
-"Parse the existing runner argv command surface without opening parameter paths."
+"""
+    parse(argv)
+
+Parse the existing runner argv command surface without opening parameter paths.
+"""
 function parse(argv::AbstractVector)
     length(argv) <= MAX_ARGUMENTS ||
         throw(ArgumentError("at most $MAX_ARGUMENTS command fields are allowed"))
@@ -238,6 +242,11 @@ function _render_error(header, lifecycle, failure; request_id)
     )
 end
 
+"""
+    render(reply; request_id=nothing)
+
+Convert a native completion or rejection to the CLI response mapping.
+"""
 function render(reply::Completion; request_id = nothing)
     if reply.error !== nothing
         return _render_error(reply.header, reply.lifecycle, reply.error; request_id)

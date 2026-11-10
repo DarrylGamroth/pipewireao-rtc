@@ -121,7 +121,11 @@ function bounded_yaml(path)
     return document
 end
 
-"Read a physical instrument declaration without loading simulation or RTC configuration."
+"""
+    load(path)
+
+Read a physical instrument declaration without loading simulation or RTC configuration.
+"""
 function load(path::AbstractString)
     document = bounded_yaml(path)
     declaration = (; path = abspath(path), directory = dirname(abspath(path)), document)
@@ -323,7 +327,10 @@ function resolve_simulation_settings!(document, authoring, instrument)
     return nothing
 end
 
-"""Read an executable simulation definition and its shared physical instrument.
+"""
+    load_simulation(path; validate_optics=true)
+
+Read an executable simulation definition and its shared physical instrument.
 
 `validate_optics=false` reads metadata before optional science packages load.
 It retains structural validation; execution must use the default full validation
@@ -366,7 +373,10 @@ function load_simulation(path::AbstractString; validate_optics::Bool = true)
     return declaration
 end
 
-"""Read authored simulation metadata before any generated optical model exists.
+"""
+    load_simulation_source(path)
+
+Read authored simulation metadata before any generated optical model exists.
 
 Prepared optical sources support settings profiles and bindings. Components,
 profile nodes/parameters and settings bindings require declared authored response
@@ -534,7 +544,11 @@ function load_simulation_source(path::AbstractString)
     return declaration
 end
 
-"Read RTC dimensions and mirror-control definitions independently of the simulator."
+"""
+    load_rtc(path)
+
+Read RTC dimensions and mirror-control definitions independently of the simulator.
+"""
 function load_rtc(path::AbstractString)
     authoring = bounded_yaml(path)
     document = deepcopy(authoring)
@@ -626,7 +640,11 @@ function load_rtc(path::AbstractString)
     )
 end
 
-"Merge the declared defaults and validate the selected profile's startup settings."
+"""
+    settings(declaration, overrides=Dict{String, Any}())
+
+Merge the declared defaults and validate the selected profile's startup settings.
+"""
 function settings(declaration::NamedTuple, overrides::AbstractDict = Dict{String,Any}())
     document = declaration.document
     profile = get(overrides, "profile", get(document["defaults"], "profile", nothing))
@@ -708,7 +726,11 @@ function mirror(declaration, configured, name)
     return (; description, registration)
 end
 
-"Build the cold reference context from selected settings and physical mirror descriptions."
+"""
+    configuration_context(declaration, configured)
+
+Build the cold reference context from selected settings and physical mirror descriptions.
+"""
 function configuration_context(declaration, configured)
     instrument = deepcopy(physical(declaration).document)
     for (name, spec) in instrument["deformable_mirrors"]

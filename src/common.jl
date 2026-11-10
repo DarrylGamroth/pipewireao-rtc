@@ -8,7 +8,12 @@ using YAML
 export read_json,
     read_yaml, parse_json, write_json, write_yaml, sha256_file, cli_arguments, run_checked
 
-"Return the nonnegative time to a deadline, saturated to signed nanoseconds."
+"""
+    remaining_ns(deadline, now)
+
+Return the nonnegative time to a deadline as signed nanoseconds. Saturate
+differences outside the signed range at `typemax(Int64)`.
+"""
 function remaining_ns(deadline::Int64, now::Int64)
     deadline <= now && return Int64(0)
     remaining, overflow = Base.sub_with_overflow(deadline, now)
@@ -64,7 +69,12 @@ function telemetry_metadata_ports(names, input_names, sources; required = NamedT
     return telemetry_metadata_ports(names; optional)
 end
 
-"Parse a reference clock selection without reading a device or preparing science."
+"""
+    reference_clock_configuration([value])
+
+Parse `"realtime"` or `"tai"` as the corresponding clock symbol. Omit `value`
+or pass `nothing` to select `:realtime`.
+"""
 reference_clock_configuration() = reference_clock_configuration(nothing)
 reference_clock_configuration(::Nothing) = :realtime
 function reference_clock_configuration(value::AbstractString)
@@ -75,7 +85,12 @@ end
 reference_clock_configuration(value) =
     throw(ArgumentError("reference_clock must select realtime or tai"))
 
-"Prepare the selected reference clock before native endpoints are created."
+"""
+    prepare_reference_clock(options)
+
+Return the PipeWire metadata clock for `options.reference_clock`. The default is
+`:realtime`. A selection other than `:realtime` or `:tai` throws `ArgumentError`.
+"""
 function prepare_reference_clock(options)
     clock = get(options, :reference_clock, :realtime)
     clock in (:realtime, :tai) || throw(ArgumentError("unsupported reference clock"))
@@ -83,7 +98,11 @@ function prepare_reference_clock(options)
            PipeWireAO.METADATA_CLOCK_TAI
 end
 
-"Read a single bounded YAML configuration, rejecting duplicate mapping keys."
+"""
+    read_yaml(path; maximum=1024 * 1024)
+
+Read a single bounded YAML configuration, rejecting duplicate mapping keys.
+"""
 function read_yaml(path::AbstractString; maximum::Integer = 1024 * 1024)
     maximum >= 0 || throw(ArgumentError("negative YAML size bound"))
     isfile(path) && filesize(path) <= maximum ||
@@ -140,7 +159,11 @@ function json_number(value::AbstractDict)
 end
 json_number(value::AbstractVector) = Any[json_number(item) for item in value]
 
-"""Read bounded JSON with exact 64-bit integer identities and distinct decimal values."""
+"""
+    parse_json(payload)
+
+Read bounded JSON with exact 64-bit integer identities and distinct decimal values.
+"""
 function parse_json(payload::AbstractString)
     isvalid(payload) || throw(ArgumentError("JSON input is not UTF-8"))
     token = strip(payload, [' ', '\t', '\n', '\r'])
@@ -196,6 +219,11 @@ function finite_json(value::Union{AbstractVector,Tuple})
     return value
 end
 
+"""
+    read_json(path; maximum=16 * 1024 * 1024)
+
+Read a bounded JSON file and preserve exact integer identities. The size limit is in bytes.
+"""
 function read_json(path::AbstractString; maximum::Integer = 16 * 1024 * 1024)
     maximum >= 0 || throw(ArgumentError("negative JSON size bound"))
     isfile(path) || throw(ArgumentError("JSON input must be a regular file: $path"))
@@ -209,6 +237,12 @@ function read_json(path::AbstractString; maximum::Integer = 16 * 1024 * 1024)
     return parse_json(String(payload))
 end
 
+"""
+    write_json(path, value; atomic=false)
+
+Write a JSON value to `path`. With `atomic=true`, replace the target after writing a
+temporary file in the same directory.
+"""
 function write_json(path::AbstractString, value; atomic::Bool = false)
     finite_json(value)
     payload = JSON.json(value) * "\n"
@@ -267,6 +301,8 @@ function generated_header(header::AbstractString)
 end
 
 """
+    write_yaml(path, value; atomic=false, header=nothing)
+
 Write YAML configuration with a generated-file header, optionally atomically.
 
 Numeric vectors of at most eight elements and 80 characters use inline arrays;
@@ -297,9 +333,20 @@ function write_yaml(path::AbstractString, value; atomic::Bool = false, header = 
     return path
 end
 
+"""
+    sha256_file(path)
+
+Return the lowercase hexadecimal SHA-256 checksum of the file at `path`.
+"""
 sha256_file(path::AbstractString) = open(io -> bytes2hex(SHA.sha256(io)), path)
 
-"""Parse a thin CLI; option-specific numeric and semantic validation stays with its owner."""
+"""
+    cli_arguments(argv=ARGS; flags=String[], repeats=String[], required=String[],
+                  defaults=NamedTuple(), positional=String[], allowed=String[])
+
+Parse named command-line options and switches into a named tuple.
+The caller validates option-specific values.
+"""
 function cli_arguments(
     argv = ARGS;
     flags = String[],
@@ -371,10 +418,16 @@ function cli_arguments(
     return (; (key => value for (key, value) in values)...)
 end
 
-"""Run cold preparation under a deadline, collecting bounded stdout and stderr."""
 prepare_command(argv::Cmd) = argv
 prepare_command(argv) = Cmd(String.(argv))
 
+"""
+    run_checked(argv; env=Dict(), timeout=30, cwd=nothing,
+                stdout_path=nothing, stderr_path=nothing, maximum_output_bytes=16 * 1024 * 1024)
+
+Run a subprocess under a deadline in seconds and return its stdout, stderr and exit status.
+Apply `env` to the child and bound the captured output in bytes.
+"""
 function run_checked(
     argv;
     env = Dict{String,String}(),

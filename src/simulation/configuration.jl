@@ -76,7 +76,11 @@ end
 boolean(value::Bool, label) = value
 boolean(value, label) = throw(ArgumentError("$label must be Boolean"))
 
-"Seal a bounded JSON value into concrete, immutable cold settings."
+"""
+    plant_settings(value)
+
+Seal a bounded JSON value into concrete, immutable cold settings.
+"""
 Base.@nospecializeinfer function plant_settings(
     @nospecialize(value), remaining = Ref(4096), depth = 0
 )
@@ -216,7 +220,11 @@ function mirror_description(declaration, ::Symbol)
     ) : nothing
 end
 
-"Validate every configuration declaration before preparing any FITS artifact."
+"""
+    configuration(path)
+
+Validate every configuration declaration before preparing any FITS artifact.
+"""
 function configuration(path::AbstractString)
     document = DeploymentConfiguration.decode(
         path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
@@ -539,7 +547,11 @@ end
 include("external_pupil_configuration.jl")
 include("pupil_source_configuration.jl")
 
-"Load only the exact plant dependency declared by the active application."
+"""
+    load_instrument(package)
+
+Load only the exact plant dependency declared by the active application.
+"""
 function load_instrument(package::Symbol)
     project = Base.active_project()
     project !== nothing && isfile(project) || throw(
@@ -568,6 +580,11 @@ plant_dependency_identity(uuid::String, name) = Base.PkgId(UUIDs.UUID(uuid), nam
 plant_dependency_identity(uuid, name) =
     throw(ArgumentError("plant dependency $name must declare a UUID"))
 
+"""
+    requires_proper(options)
+
+Return whether the selected simulator graphs require the Proper backend.
+"""
 function requires_proper(options)
     options.version in (3, 4, 5, 6) || return false
     # Node types decide whether Proper must load; generated optical provenance

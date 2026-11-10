@@ -460,7 +460,10 @@ function fail!(p::Procedure, reason::AbstractString; known::Bool = false)
     return p.command
 end
 
-"""Mark cancellation; resolve the in-flight action before restoring/releasing.
+"""
+    cancel!(p)
+
+Mark cancellation. Resolve the in-flight action before restoration or release.
 Cancellation never interrupts recovery or establishes an unknown command outcome.
 """
 function cancel!(p::Procedure)
@@ -468,7 +471,10 @@ function cancel!(p::Procedure)
     return nothing
 end
 
-"""Deliver a deadline event. Early events do nothing; an expired in-flight
+"""
+    expire!(p)
+
+Deliver a deadline event. The procedure acts when the deadline expires. An expired in-flight
 command has unknown outcome and faults without submitting a restore or retry.
 """
 function expire!(p::Procedure)

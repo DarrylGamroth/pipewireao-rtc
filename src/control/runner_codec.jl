@@ -102,6 +102,11 @@ struct Rejection
 end
 
 _op(::RunnerCommand{O}) where {O} = UInt32(findfirst(==(O), OPERATIONS)::Int)
+"""
+    operation_id(command)
+
+Return the native operation identifier for a runner command.
+"""
 operation_id(command::RunnerCommand) = _op(command)
 _pod(x) = Pod(x)
 _struct(fields::AbstractVector{Pod}) = SPA.Struct(fields)
@@ -386,7 +391,11 @@ function _request_fields(::RunnerCommand{O}, args) where {O}
     throw(ArgumentError("unknown runner operation"))
 end
 
-"""Encode one exact runner command under the common 16 KiB request envelope."""
+"""
+    encode_request(header, command)
+
+Encode one exact runner command under the common 16 KiB request envelope.
+"""
 function encode_request(header::RequestHeader, command::RunnerCommand)
     header.operation == _op(command) ||
         throw(ArgumentError("header/command operation mismatch"))
@@ -596,7 +605,11 @@ function _error(fields)
     return RunnerError(_string(fields[1]), _string(fields[2])), _lifecycle(fields[3])
 end
 
-"""Decode an exact typed successful or failed runner completion."""
+"""
+    decode_completion(input)
+
+Decode an exact typed successful or failed runner completion.
+"""
 function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
     header, payload = Envelope.decode_completion(input; endpoint = :lifecycle)
     header.controller === nothing &&
@@ -617,7 +630,11 @@ function decode_completion(input::Union{Pod,AbstractVector{UInt8}})
     return Completion(header, state, result, nothing)
 end
 
-"""Decode an independent admission rejection, including the zero sentinel."""
+"""
+    decode_rejection(input)
+
+Decode an independent admission rejection, including the zero sentinel.
+"""
 function decode_rejection(input::Union{Pod,AbstractVector{UInt8}})
     header, payload = Envelope.decode_rejection(input; endpoint = :lifecycle)
     error, state = _error(_fields(payload))

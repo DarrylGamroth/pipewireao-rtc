@@ -23,7 +23,11 @@ struct Connection{C}
 end
 Base.close(connection::Connection) = close(connection.client)
 
-"Return the direct session lifecycle without projecting it through a runner wrapper."
+"""
+    lifecycle(completion)
+
+Return the direct session lifecycle without projecting it through a runner wrapper.
+"""
 function lifecycle(completion::Session.Completion)
     completion.header.result == 0 || throw(ArgumentError("native session Status failed"))
     completion.header.operation == UInt32(3) ||
@@ -53,11 +57,19 @@ function _fresh_session_status(record::Discovery.SessionRecord, client, completi
     end
 end
 
-"Select only RTC; coordinator fallback and automatic rebinding are forbidden."
+"""
+    select_session(entry; kwargs...)
+
+Select the exact RTC session and retain its binding.
+"""
 select_session(entry::Discovery.DiscoveryEntry; kwargs...) =
     select_direct_session(entry; kwargs...)
 
-"Select an RTC session using only the direct native session profile."
+"""
+    select_direct_session(entry; deadline, check=()->nothing, clock=Clocks.SystemNanoClock())
+
+Select an RTC session using only the direct native session profile.
+"""
 function select_direct_session(
     entry::Discovery.DiscoveryEntry;
     deadline::Union{Int64,Float64},
@@ -103,11 +115,19 @@ function _retain(failure::Discovery.DiscoveryEntry, client)
     return failure
 end
 
-"Send an explicit operator command on the already verified endpoint; never rebind."
+"""
+    request!(connection, command; kwargs...)
+
+Send an operator command on the retained, verified endpoint.
+"""
 request!(connection::Connection, command::Runner.RunnerCommand; kwargs...) =
     ControlClient.request!(connection.client, command; kwargs...)
 
-"Render a direct typed reply with the selected session UUID, without supervisor fields."
+"""
+    render_direct(connection, reply)
+
+Render a direct typed reply with the selected session UUID, without supervisor fields.
+"""
 function render_direct(
     connection::Connection, reply::Union{Session.Completion,Session.Rejection}
 )

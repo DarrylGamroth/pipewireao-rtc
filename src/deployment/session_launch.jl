@@ -508,7 +508,10 @@ function atomic_environment(path, values)
     return path
 end
 
-"""Prepare a fresh invocation in ExecStartPre. The callback writes standard
+"""
+    prepare!(request; render!)
+
+Prepare a fresh invocation in ExecStartPre. The callback writes standard
 RTC SPA-JSON and returns its absolute path. It receives the validated
 deployment spec, decoded rendered session, resolved bindings, exact owner
 records, and invocation runtime.
@@ -862,7 +865,10 @@ function cleanup_role!(
     return nothing
 end
 
-"""ExecStopPost fallback. Revoke the private core and held source before any
+"""
+    cleanup_invocation!(runtime_root, id; source_role, clock=Clocks.SystemNanoClock())
+
+ExecStopPost fallback. Revoke the private core and held source before any
 consumer; each stop must confirm its cgroup is empty. A failed core/source
 stop fences later cleanup and leaves diagnostics for operator recovery.
 """
@@ -1009,7 +1015,10 @@ function cleanup_record!(
     return nothing
 end
 
-"""Thin CLI adapter for an installed launcher entrypoint. The entrypoint
+"""
+    main(argv=ARGS; render!=nothing)
+
+Thin CLI adapter for an installed launcher entrypoint. The entrypoint
 provides the session renderer; this module supplies no fallback policy.
 """
 function main(argv = ARGS; render! = nothing)

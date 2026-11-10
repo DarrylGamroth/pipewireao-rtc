@@ -68,7 +68,11 @@ end
 configuration_store(root::AbstractString) = ConfigurationStore.Store(root)
 configuration_store(root) = throw(ArgumentError("root must be a string"))
 
-"Return a management response, including structured errors for malformed requests."
+"""
+    respond(line)
+
+Return a management response, including structured errors for malformed requests.
+"""
 function respond(line::AbstractString)
     try
         ncodeunits(line) <= MAX_LINE_BYTES ||
@@ -99,7 +103,11 @@ function bounded_line(input)
     overflow && return nothing
     return String(bytes)
 end
-"Serve bounded JSON-lines requests until EOF; materializations survive client exit."
+"""
+    serve(input=stdin, output=stdout; responder=respond)
+
+Serve bounded JSON-lines requests until EOF. Materializations persist after the client exits.
+"""
 function serve(input::IO = stdin, output::IO = stdout; responder = respond)
     while !eof(input)
         line = bounded_line(input)
@@ -112,7 +120,11 @@ function serve(input::IO = stdin, output::IO = stdout; responder = respond)
     end
     return 0
 end
-"Run a JSON-lines server or a one-shot JSON management request."
+"""
+    main(args=ARGS; input=stdin, output=stdout)
+
+Run a JSON-lines server or a one-shot JSON management request.
+"""
 function main(args = ARGS; input::IO = stdin, output::IO = stdout)
     if args == ["serve"] || isempty(args)
         return serve(input, output)

@@ -474,7 +474,11 @@ protocol position; it does not independently establish graph adoption.
 """
 state(sm::Coordinator) = Hsm.current(sm)
 
-"""Latch failure; uncertain effects become Unverified and are never replayed."""
+"""
+    failed!(sm, reason; uncertain=true)
+
+Latch failure and mark uncertain effects Unverified.
+"""
 function failed!(sm::Coordinator, reason::Symbol; uncertain::Bool = true)
     Hsm.dispatch!(sm, :Failed, (; reason, uncertain))
     return nothing
@@ -672,13 +676,21 @@ function recovery_outcome(sm, observation)
     return :applied
 end
 
-"""Qualify only a new coordinator from exact current applied loop readback."""
+"""
+    qualify!(sm, observation)
+
+Qualify only a new coordinator from exact current applied loop readback.
+"""
 function qualify!(sm::Coordinator, observation::AbstractLoopObservation)
     Hsm.dispatch!(sm, :Qualified, observation)
     return nothing
 end
 
-"""Admit one protective operation. `:saturation` is a reason, not a threshold policy."""
+"""
+    request_protection!(sm, owner_instance, token; reason=:operator)
+
+Admit one protective operation. `:saturation` is a reason, not a threshold policy.
+"""
 function request_protection!(
     sm::Coordinator, owner_instance::Int64, token::UInt64; reason::Symbol = :operator
 )
@@ -706,7 +718,11 @@ function staged!(sm::Coordinator, effect::CloseLoop, generation)
     return nothing
 end
 
-"""Observe exact forced-open/close adoption without emitting another stage."""
+"""
+    observe_loop!(sm, observation)
+
+Observe exact forced-open/close adoption without emitting another stage.
+"""
 function observe_loop!(sm::Coordinator, observation::AbstractLoopObservation)
     matches(sm, observation) || return nothing
     same_scope(sm, observation) || return failed!(sm, :loop_scope_mismatch)
@@ -763,7 +779,10 @@ function observe_reference!(sm::Coordinator, observation::ReferenceObservation)
     return nothing
 end
 
-"""Explicit close intent: release inhibition, then revalidate before issuing close.
+"""
+    request_close!(sm, owner_instance, token; closed=close_target(controller_scope(sm)), released=false)
+
+Explicit close intent: release inhibition, then revalidate before issuing close.
 
 Recovery completion leaves Holding. Stale evidence or early closure is refused
 without effects. A successful request emits only ReleaseRecovery; the owner must
@@ -803,7 +822,10 @@ function observe_release!(sm::Coordinator, observation::ReleaseObservation)
     return CloseLoop(sm.owner_instance, sm.token)
 end
 
-"""Cancel sequencing without undoing or replaying any effect already handed off.
+"""
+    cancel!(sm, owner_instance, token)
+
+Cancel sequencing without undoing or replaying any effect already handed off.
 
 Cancellation cannot claim a restored reference or revoke an applied command.
 The outcome stays Unverified and existing graph inhibition remains authoritative.
@@ -813,7 +835,11 @@ function cancel!(sm::Coordinator, owner_instance::Int64, token::UInt64)
     return nothing
 end
 
-"""Invalidate this incarnation; construct and qualify a new owner separately."""
+"""
+    owner_replaced!(sm, owner_instance)
+
+Invalidate this incarnation. Construct and qualify a new owner separately.
+"""
 function owner_replaced!(sm::Coordinator, owner_instance::Int64)
     owner_instance == sm.owner_instance || failed!(sm, :owner_replaced)
     return nothing

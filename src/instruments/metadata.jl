@@ -321,7 +321,11 @@ function physical_definition(declaration)
     )
 end
 
-"Resolve simulation geometry and prescription identity independently of RTC mirror controls."
+"""
+    scientific_definition(path, overrides=NamedTuple())
+
+Resolve simulation geometry and prescription identity independently of RTC mirror controls.
+"""
 function scientific_definition(path::AbstractString, overrides = NamedTuple())
     declaration = load_simulation(path)
     configured = settings(declaration, overrides)
@@ -478,7 +482,11 @@ function publication(path)
     return result
 end
 
-"Resolve simulator references in a copied application before its existing parser runs."
+"""
+    prepare_simulation_configuration!(application; simulation="simulation.conf", configuration=nothing)
+
+Resolve simulator references in a copied application before its existing parser runs.
+"""
 function prepare_simulation_configuration!(
     application::AbstractString; simulation = "simulation.conf", configuration = nothing
 )

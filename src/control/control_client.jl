@@ -657,7 +657,6 @@ Pass an `Int64` deadline in nanoseconds from `clock::Clocks.AbstractNanoClock`.
 The `Float64` seconds signature is retained as an entry compatibility boundary;
 injected clocks and deadlines must belong to the same monotonic domain.
 """
-
 function connect(
     profile::AbstractProfile,
     remote::AbstractString,
@@ -852,7 +851,6 @@ Pass an `Int64` nanosecond deadline from the client's clock. `Float64` seconds
 are converted once on entry for compatibility. Polling retains one decision
 sample per iteration; native submission independently checks the fresh clock.
 """
-
 function request!(client::Client, command; deadline::Union{Int64,Float64}, check = NO_CHECK)
     deadline = _deadline_ns(deadline)
     client.closed && throw(UnknownOutcome("client is closed"))

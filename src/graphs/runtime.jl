@@ -270,7 +270,12 @@ function run_owner end
 "Return RTC metadata profiles for the optional graph integration's public data ports."
 function metadata_profiles end
 
-"""Read FITS startup arrays against a graph's typed parameter formats (optional graph extension)."""
+"""
+    read_bindings(graph_path, binding_path)
+
+Read FITS startup arrays against a graph's typed parameter formats (optional graph
+extension).
+"""
 function read_bindings end
 
 function _main(

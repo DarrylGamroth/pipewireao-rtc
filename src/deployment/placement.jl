@@ -12,6 +12,11 @@ end
 Base.showerror(io::IO, error::PlacementError) = print(io, error.message)
 fail(message) = throw(PlacementError(message))
 
+"""
+    cpu_set(values)
+
+Validate a nonempty list of distinct CPU numbers above 1 and return it as a set.
+"""
 cpu_set(values) = fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
 _cpu(cpu) = fail("CPU lists must be distinct integers excluding CPUs 0 and 1")
 _cpu(cpu::Int) =
@@ -46,8 +51,18 @@ function proc_field(path, key)
     fail("missing $key in $path")
 end
 
+"""
+    inherited_cpus()
+
+Return the set of Linux CPUs allowed by the current process's inherited affinity.
+"""
 inherited_cpus() = Set(cpus_from_list(proc_field("/proc/self/status", "Cpus_allowed_list")))
 
+"""
+    pin_supervisor(cpu)
+
+Pin the supervisor's threads to the housekeeping CPU and verify their affinity.
+"""
 function pin_supervisor(cpu::Integer)
     cpu >= 2 || fail("supervisor housekeeping CPU must exclude CPUs 0 and 1")
     process = string(getpid())
@@ -177,6 +192,12 @@ function limit_value(line)
     (convert(fields[2]), convert(fields[3]))
 end
 
+"""
+    credentials(priority, locked_bytes, latency_us)
+
+Check the current process's realtime priority, memlock and optional latency device access.
+Return the effective credential and limit details.
+"""
 function credentials(priority::Integer, locked_bytes::Integer, latency_us)
     limits = read("/proc/self/limits", String)
     rt = mem = nothing
@@ -225,6 +246,12 @@ function scheduler(tid)
     parse(Int, priority.captures[1])
 end
 
+"""
+    snapshot(pid, contract)
+
+Collect thread placement and scheduling for `pid` and check it against the declared
+contract.
+"""
 function snapshot(pid::Integer, contract::AbstractDict)
     envelope = cpu_set(contract["cpus"])
     task = "/proc/$pid/task"

@@ -130,7 +130,11 @@ function deployment_input(path)
     ))
 end
 
-"""Record SHA-256 checksums for runtime files outside the Julia environment."""
+"""
+    seal!(application)
+
+Record SHA-256 checksums for runtime files outside the Julia environment.
+"""
 function seal!(application::AbstractString)
     root = checked_path(application)
     deployment = joinpath(root, "deployment.conf")
@@ -486,11 +490,14 @@ function copy_source(
     return destination
 end
 
-"""Copy an instrument into a fresh application and record runtime input checksums.
+"""
+    prepare(source, destination; profile, manifest=nothing, julia=Base.julia_cmd().exec[1],
+            prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
 
-A supplied registered Manifest is validated through the ordinary deployment
-contract. Without one the result supports offline preparation only; the normal
-installer requires a registered dependency closure and checks the exported files
+Copy an instrument into a fresh application and record runtime input checksums.
+
+Supply a registered `manifest` to prepare an installable application.
+Omit it for offline preparation. The installer checks exported runtime inputs
 against the deployment catalog.
 """
 function prepare(

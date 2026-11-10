@@ -52,7 +52,11 @@ function registration(request, arguments, path::AbstractString, parent)
     end
 end
 
-"Dispatch only the existing management domains; live native controls stay separate."
+"""
+    respond(line)
+
+Dispatch a command to one of the supported management domains.
+"""
 function respond(line::AbstractString)
     try
         # The companion enforces 64 KiB on the wire; trusted root/descriptor
@@ -85,7 +89,11 @@ function request_response(request::AbstractDict)
     throw(ArgumentError("unsupported management request domain"))
 end
 
-"Serve the companion's bounded stdio worker; this is not a socket listener."
+"""
+    serve(input=stdin, output=stdout)
+
+Serve the companion's bounded requests over standard input and output.
+"""
 serve(input::IO = stdin, output::IO = stdout) =
     ConfigurationStoreCLI.serve(input, output; responder = respond)
 
@@ -189,7 +197,10 @@ function unit_texts(
     )
 end
 
-"""Install owner activation units without activating or restarting any service.
+"""
+    install(prefix; kwargs...)
+
+Install owner activation units without activating or restarting any service.
 
 The caller selects the installed native prefix and pinned management tooling
 project. Existing units are not overwritten; the operator owns replacement and

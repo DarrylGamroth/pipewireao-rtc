@@ -293,26 +293,47 @@ function _request!(runtime::Runtime, message::AbstractOwnerMessage; cleanup::Boo
     return reply.ticket
 end
 
-"Atomic immutable status read; this does not establish scientific cleanup."
+"""
+    cancelled(runtime)
+
+Read the immutable status atomically. Use the scientific owner's cleanup result to verify cleanup.
+"""
 cancelled(runtime::Runtime) = _status(runtime).cancelled
+"""
+    clean_cancel(runtime)
+
+Return whether the bootstrap runtime has recorded cancellation without a failure.
+"""
 function clean_cancel(runtime::Runtime)
     status = _status(runtime)
     return status.cancelled && status.failure === nothing
 end
-"Check recorded failure/cancellation without queueing work or allocating."
+"""
+    preparation_check!(runtime)
+
+Check recorded failure/cancellation without queueing work or allocating.
+"""
 function preparation_check!(runtime::Runtime)
     status = _status(runtime)
     status.failure === nothing || throw(status.failure)
     status.cancelled && throw(InterruptException())
     return nothing
 end
-"Signal prepared facts to the monitor; science/lifecycle publication stays separate."
+"""
+    prepared!(runtime)
+
+Signal prepared facts to the monitor. The owner publishes its science and lifecycle records separately.
+"""
 function prepared!(runtime::Runtime)
     preparation_check!(runtime)
     _request!(runtime, OwnerPrepared(Channel{OwnerReply}(1)))
     return nothing
 end
-"Wait for and claim the monitor's exact Connect ticket once."
+"""
+    take_connect!(runtime)
+
+Wait for and claim the monitor's exact Connect ticket once.
+"""
 function take_connect!(runtime::Runtime)
     _owner_thread()
     while true
@@ -328,13 +349,20 @@ function take_connect!(runtime::Runtime)
         sleep(POLL_SECONDS)
     end
 end
-"Validate the exact Connect through its monitor owner and native loop transaction."
+"""
+    check_connect!(runtime, ticket)
+
+Validate the exact Connect through its monitor owner and native loop transaction.
+"""
 function check_connect!(runtime::Runtime, ticket::Endpoint.Ticket)
     preparation_check!(runtime)
     _request!(runtime, ConnectChecked(Channel{OwnerReply}(1), ticket))
     return nothing
 end
-"""Register public any-thread native readiness/quit capabilities for Connect.
+"""
+    connecting!(runtime, ticket; ready, quit)
+
+Register public any-thread native readiness/quit capabilities for Connect.
 
 The monitor owns these hooks after acceptance. They must not execute science or
 mutate owner Julia state. A Quit capability must wake blocking native run! even
@@ -348,13 +376,21 @@ function connecting!(runtime::Runtime, ticket::Endpoint.Ticket; ready, quit)
     )
     return nothing
 end
-"Signal completed connection facts; only the monitor completes the native ticket."
+"""
+    connected!(runtime, ticket)
+
+Signal connection completion to the monitor that owns the native ticket.
+"""
 function connected!(runtime::Runtime, ticket::Endpoint.Ticket)
     preparation_check!(runtime)
     _request!(runtime, ConnectCompleted(Channel{OwnerReply}(1), ticket))
     return nothing
 end
-"Wait for exact native Connected completion using immutable monitor observations."
+"""
+    await_connected!(runtime, ticket)
+
+Wait for exact native Connected completion using immutable monitor observations.
+"""
 function await_connected!(runtime::Runtime, ticket::Endpoint.Ticket)
     _owner_thread()
     while true
@@ -378,22 +414,38 @@ function _cleanup_request!(runtime::Runtime, message::AbstractOwnerMessage)
     end
     return nothing
 end
-"Synchronously acknowledge hook exclusion before scientific close."
+"""
+    finishing!(runtime)
+
+Synchronously acknowledge hook exclusion before scientific close.
+"""
 function finishing!(runtime::Runtime)
     _cleanup_request!(runtime, HooksExcluded(Channel{OwnerReply}(1)))
     return nothing
 end
-"Request cooperative native wake/cancellation without claiming scientific cleanup."
+"""
+    cancel!(runtime)
+
+Request cooperative native wake/cancellation without claiming scientific cleanup.
+"""
 function cancel!(runtime::Runtime)
     _cleanup_request!(runtime, OwnerCancelled(Channel{OwnerReply}(1)))
     return nothing
 end
-"Retain the first owner failure on the monitor; closed cleanup cannot revive it."
+"""
+    fault!(runtime, error)
+
+Retain the first owner failure on the monitor through cleanup.
+"""
 function fault!(runtime::Runtime, error::Exception)
     _cleanup_request!(runtime, OwnerFault(Channel{OwnerReply}(1), error))
     return nothing
 end
-"Acknowledge scientific cleanup, then wait for monitor terminal publication/release."
+"""
+    finish!(runtime)
+
+Acknowledge scientific cleanup, then wait for monitor terminal publication/release.
+"""
 function finish!(runtime::Runtime)
     finishing!(runtime)
     _cleanup_request!(runtime, OwnerFinished(Channel{OwnerReply}(1)))

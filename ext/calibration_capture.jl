@@ -426,7 +426,12 @@ function PipeWireAO.start!(capture::Capture)
     return capture
 end
 
-"Arm one declared acquisition interval before publication; prior data must be consumed."
+"""
+    arm!(capture, identity, start, duration)
+
+Arm one acquisition interval before publication. Consume the previous capture
+before arming again.
+"""
 function arm!(
     capture::Capture, identity::AcquisitionIdentity, start::Int64, duration::UInt64
 )
@@ -473,7 +478,12 @@ function _snapshot(capture)
     )
 end
 
-"Read owned arrays/provenance after completion; arrays remain valid only until the next arm!."
+"""
+    snapshot(capture)
+
+Return completed capture arrays and metadata. The arrays borrow capture
+storage until the next call to `arm!`.
+"""
 function snapshot(capture::Capture)
     return _locked(capture) do
         _usable(capture)
@@ -486,7 +496,10 @@ function snapshot(capture::Capture)
     end
 end
 
-"""Wait for capture using a signed nanosecond deadline in `clock`'s domain.
+"""
+    await!(capture; deadline, check=()->nothing, clock=Clocks.SystemNanoClock())
+
+Wait for capture using a signed nanosecond deadline in `clock`'s domain.
 
 Float64 seconds remain an entry compatibility boundary. Each locked decision
 samples once after `check`, which must throw on owner loss. Clock regression fails capture.

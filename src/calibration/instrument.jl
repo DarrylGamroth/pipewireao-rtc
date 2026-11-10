@@ -45,7 +45,11 @@ public modal_completion,
     validate_optical,
     calibrate_optical_reference
 
-"Prepare physical mirror completion using the optional calibration extension."
+"""
+    modal_completion(mirror, registration, policy; obstruction, kwargs...)
+
+Prepare physical mirror completion using the optional calibration extension.
+"""
 function modal_completion end
 
 """
@@ -126,10 +130,18 @@ function _tiptilt_temporal(recipe, frame_period_s)
     return (; coefficients, description)
 end
 
-"Return the SHA-256 digest of a file's bytes."
+"""
+    digest(path)
+
+Return the SHA-256 digest of a file's bytes.
+"""
 digest(path) = bytes2hex(sha256(read(path)))
 
-"Read a reviewed command-completion artifact with an explicit logical shape."
+"""
+    source_completion(path; expected_sha256, shape, axes=(2, 1))
+
+Read a reviewed command-completion artifact with an explicit logical shape.
+"""
 function source_completion(path; expected_sha256, shape, axes = (2, 1))
     source = Artifacts.FITSArtifact(path; axes)
     bytes = Artifacts.snapshot(String(path); check = () -> nothing)
@@ -156,10 +168,19 @@ function read_parameters(application)
     )
 end
 
-"Cold projection of an existing built graph for initial calibration (optional science extension)."
+"""
+    calibration_graph(application; inputs, outputs, parameter_sources=Dict())
+
+Cold projection of an existing built graph for initial calibration (optional science
+extension).
+"""
 function calibration_graph end
 
-"Prepare a native CPU initial-calibration endpoint from the regular graph projections."
+"""
+    prepare_initial_calibration(application, remote, frontend, command; kwargs...)
+
+Prepare a native CPU initial-calibration endpoint from the regular graph projections.
+"""
 function prepare_initial_calibration end
 
 """
@@ -173,7 +194,11 @@ reference product, not an activatable interaction-matrix bundle.
 """
 function calibrate_references end
 
-"Reject source instruments before numerical calibration or validation starts."
+"""
+    require_prepared_application(application)
+
+Reject source instruments before numerical calibration or validation starts.
+"""
 function require_prepared_application(application)
     for path in ("deployment.conf", "instrument.json", joinpath("rtc", "parameters.conf"))
         isfile(joinpath(application, path)) || throw(
@@ -191,7 +216,11 @@ function fits_units(value::AbstractString)
     return String(value)
 end
 
-"Write the existing row-major calibration FITS convention with native generation headers."
+"""
+    write_fits(path, array; units=nothing)
+
+Write the existing row-major calibration FITS convention with native generation headers.
+"""
 function write_fits(path, array; units = nothing)
     isfile(path) && rm(path)
     Artifacts.FITSIO.FITS(path, "w") do file
@@ -217,6 +246,8 @@ function write_fits(path, array; units = nothing)
 end
 
 """
+    heart_completion(path; expected_sha256, shape)
+
 Read the archived zero-based row,column,value convention, with its original
 `-32 2 rows columns` header. This is an archive reader, not a current HEART loader.
 The supplied digest identifies the reviewed input; no instrument path is implied.
@@ -277,7 +308,11 @@ function controlled_rows(completion)
     end
 end
 
-"Complete obscured coordinates by the discrete harmonic extension of their neighbours."
+"""
+    central_completion(original, obstruction, mirror; pupil_registration)
+
+Complete obscured coordinates by the discrete harmonic extension of their neighbours.
+"""
 function central_completion(original, obstruction, mirror; pupil_registration)
     size(original, 1) == InstrumentConfiguration.command_count(mirror) ||
         throw(DimensionMismatch("completion rows differ from physical mirror commands"))
@@ -344,7 +379,11 @@ function initialize_shape_offsets!(parameters::AbstractDict, prefix::AbstractStr
     return parameters
 end
 
-"Prepare controller allocation matrices with explicit measurement dimensions."
+"""
+    allocation_parameters(parameters, completion, controlled; measurement_count, feedback=nothing)
+
+Prepare controller allocation matrices with explicit measurement dimensions.
+"""
 function allocation_parameters(
     parameters, completion, controlled; measurement_count, feedback = nothing
 )
@@ -394,7 +433,11 @@ command_limit(::Type{T}, value, count) where {T<:AbstractFloat} =
 limit_at(value::Real, index) = value
 limit_at(value::AbstractVector, index) = value[index]
 
-"Validate scalar or per-actuator limits without changing their representation."
+"""
+    checked_command_limits(::Type{T}, lower, upper, count)
+
+Validate scalar or per-actuator limits without changing their representation.
+"""
 function checked_command_limits(
     ::Type{T}, lower, upper, count::Integer
 ) where {T<:AbstractFloat}
@@ -410,7 +453,11 @@ end
 _dimension_reference(value::AbstractDict) = haskey(value, "\$ref")
 _dimension_reference(value) = false
 
-"Update declared controller dimensions and artifacts in a prepared application."
+"""
+    replace_dimensions!(application, parameters, n; kwargs...)
+
+Update declared controller dimensions and artifacts in a prepared application.
+"""
 function replace_dimensions!(
     application,
     parameters,
@@ -547,7 +594,11 @@ function replace_dimensions!(
     return nothing
 end
 
-"Read estimator dimensions from prepared ports and reject stale calibration declarations."
+"""
+    estimator_dimensions(application, estimator)
+
+Read estimator dimensions from prepared ports and reject stale calibration declarations.
+"""
 function estimator_dimensions(application, estimator)
     Base.require(Main, :FilterGraphPipeWire)
     contracts = Base.invokelatest(
@@ -676,11 +727,25 @@ the saved parent calibration is preserved. Its loaded method documents artifact
 and dimensional requirements.
 """
 function calibrate_hidden_modes end
-"Cold model-derived optical interaction calibration; extended by the science environment."
+"""
+    calibrate_optical(surface, observe[, command_projection]; kwargs...)
+    calibrate_optical(upstream_application, optical_application[, output]; kwargs...)
+    calibrate_optical(calibration, output; report, context, concrete_graph, branch=nothing)
+
+Derive an optical interaction calibration using the optional science extension.
+"""
 function calibrate_optical end
-"Validate a model-derived optical calibration against held-out physical commands."
+"""
+    validate_optical(surface, observe, calibration; coefficients, reconstruction_tolerance=0.1)
+
+Validate a model-derived optical calibration against held-out physical commands.
+"""
 function validate_optical end
-"Calibrate the deployed upstream sensor residual response to optical physical modes."
+"""
+    calibrate_optical_reference(upstream_application, calibration; kwargs...)
+
+Calibrate the deployed upstream sensor residual response to optical physical modes.
+"""
 function calibrate_optical_reference end
 include("bundle.jl")
 include("recipe.jl")

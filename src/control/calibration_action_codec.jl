@@ -441,7 +441,11 @@ function _completion_size(result_size, message_bytes)
         _add(48, _add(result_size, _string_size(message_bytes))),
     )
 end
-"Exact successful Collect completion extent with the supplied UTF-8 message byte count."
+"""
+    collect_reply_size(measurements, frames; message_bytes=0)
+
+Exact successful Collect completion extent with the supplied UTF-8 message byte count.
+"""
 function collect_reply_size(measurements::Integer, frames::Integer; message_bytes::Int = 0)
     _measurements(measurements)
     _frames(frames)
@@ -450,6 +454,12 @@ function collect_reply_size(measurements::Integer, frames::Integer; message_byte
         message_bytes,
     )
 end
+"""
+    preflight_collect_reply(measurements, frames; message_bytes=0)
+
+Return the encoded Collect reply size in bytes. Reject replies larger than 128 KiB before
+acquisition.
+"""
 function preflight_collect_reply(
     measurements::Integer, frames::Integer; message_bytes::Int = 0
 )

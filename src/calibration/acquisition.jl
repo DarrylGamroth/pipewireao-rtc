@@ -315,7 +315,10 @@ include("procedure.jl")
     return answer, received
 end
 
-"""Acquire a plan using the event-driven `Procedure` on the caller's task.
+"""
+    acquire!(connection, input; kwargs...)
+
+Acquire a plan using the event-driven `Procedure` on the caller's task.
 `consume(probe, batch)` processes validated candidate responses during acquisition.
 Native callbacks wake the task; no frame-count sleep advances the procedure.
 Unknown transport outcomes retire the connection without another submission.
@@ -359,7 +362,11 @@ function acquire!(
     return something(procedure.result)
 end
 
-"Prove an explicit native binding, acquire, and always close that controller."
+"""
+    acquire(binding, plan; kwargs...)
+
+Prove an explicit native binding, acquire, and always close that controller.
+"""
 function acquire(binding::ActionClient.Binding, plan::Plan; kwargs...)
     connection = ActionClient.connect(
         binding, plan.run, plan.timeouts.ownership; command_count = length(plan.reference)

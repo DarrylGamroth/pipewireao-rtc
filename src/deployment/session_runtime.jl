@@ -489,7 +489,10 @@ function _reconcile_failed_start!(
     return nothing
 end
 
-"""Install a fresh sealed package and start one unique instance. Never retry a
+"""
+    start!(package, base; prefix="/opt/pipewireao", clock=Clocks.SystemNanoClock(), deadline=nothing)
+
+Install a fresh sealed package and start one unique instance. Never retry a
 start whose outcome is uncertain; stop that exact reserved name on failure.
 The default deadline includes the deployment's startup timeout and time for
 installation and verification. An explicit deadline bounds the entire operation.
@@ -617,7 +620,11 @@ function start!(
     end
 end
 
-"Attach to an exact installed session unit or a stage receipt."
+"""
+    attach(path; kwargs...)
+
+Attach to an exact installed session unit or a stage receipt.
+"""
 function attach(
     path::AbstractString;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -771,7 +778,11 @@ function _source_endpoint(source)
     )
 end
 
-"Return a compatibility view built from a live direct Status and exact launch ledger."
+"""
+    ready(handle; kwargs...)
+
+Return a compatibility view built from a live direct Status and exact launch ledger.
+"""
 function ready(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -831,7 +842,11 @@ ready(
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(30_000_000_000)),
 ) = ready(attach(path; deadline, clock); deadline, clock)
 
-"Start a held Ready session once, then require a fresh native Running Status."
+"""
+    running!(handle; kwargs...)
+
+Start a held Ready session once, then require a fresh native Running Status.
+"""
 function running!(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -851,7 +866,11 @@ function running!(
     return observed
 end
 
-"Send one typed native session command on the verified direct connection."
+"""
+    control!(handle, command; kwargs...)
+
+Send one typed native session command on the verified direct connection.
+"""
 function control!(
     handle::Handle,
     command;
@@ -880,7 +899,11 @@ function control!(
     end
 end
 
-"Query the acquisition owner directly after public Release."
+"""
+    source_status(ready_record, instrument; kwargs...)
+
+Query the acquisition owner directly after public Release.
+"""
 function source_status(
     ready_record,
     instrument::AbstractString;
@@ -996,7 +1019,11 @@ function _retain_stopped!(
     return record
 end
 
-"Read-only cleanup after an attempted native Quit, including an unknown reply."
+"""
+    reconcile_cleanup!(handle; kwargs...)
+
+Read-only cleanup after an attempted native Quit, including an unknown reply.
+"""
 function reconcile_cleanup!(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -1008,7 +1035,11 @@ function reconcile_cleanup!(
     return _retain_stopped!(handle, deadline; clock)
 end
 
-"Confirm cleanup only after a successful native Quit completion proved Offline."
+"""
+    reconcile_shutdown!(handle; kwargs...)
+
+Confirm cleanup only after a successful native Quit completion proved Offline.
+"""
 function reconcile_shutdown!(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -1083,7 +1114,11 @@ function shutdown!(
     return reconcile_shutdown!(handle; deadline, clock)
 end
 
-"Reconcile a submitted stop without repeating its effect."
+"""
+    reconcile_stop!(handle; kwargs...)
+
+Reconcile a submitted stop without repeating its effect.
+"""
 function reconcile_stop!(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -1094,7 +1129,11 @@ function reconcile_stop!(
     return _retain_stopped!(handle, deadline; clock)
 end
 
-"Stop only the retained unit incarnation; verify ExecStopPost's cleanup receipt."
+"""
+    stop!(handle; kwargs...)
+
+Stop the retained unit incarnation and verify its `ExecStopPost` cleanup receipt.
+"""
 function stop!(
     handle::Handle;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
@@ -1130,7 +1169,11 @@ function stop!(
     end
 end
 
-"Read the retained stopped ledger, including its invocation identity."
+"""
+    final_record(path; invocation=nothing, unit=nothing)
+
+Read the retained stopped ledger, including its invocation identity.
+"""
 function final_record(path::AbstractString; invocation = nothing, unit = nothing)
     base = abspath(path)
     receipt_path = joinpath(base, "session.json")

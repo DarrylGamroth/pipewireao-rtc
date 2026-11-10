@@ -38,6 +38,12 @@ mutable struct Connection{C}
     records::Vector{Dict{String,Any}}
     can_restore::Bool
 end
+"""
+    connect(binding, run, timeout_ns; command_count=277, kwargs...)
+
+Connect to the exact calibration owner and wait for its Connected state. Use the supplied
+run ID, command count and nanosecond timeout for subsequent requests.
+"""
 function connect(
     binding::Binding,
     run::Integer,
@@ -151,6 +157,12 @@ function _rule(value)
     end
     throw(ArgumentError("unknown calibration settling rule"))
 end
+"""
+    action(value)
+
+Convert a calibration action mapping to the corresponding typed command. Pass a typed
+command through unchanged.
+"""
 function action(value::AbstractDict)
     kind = _get(value, "kind")
     if kind == "hold"
@@ -210,6 +222,11 @@ _kind(::Codec.Captured) = "captured"
 _kind(::Codec.Restored) = "restored"
 _kind(::Codec.Released) = "released"
 _kind(::Codec.Failed) = "failed"
+"""
+    document(result)
+
+Convert a typed calibration result into a mapping suitable for JSON reports.
+"""
 document(r::Codec.Held) = Dict("kind" => "held", "cursor" => _cursor_document(r.cursor))
 document(r::Codec.Adopted) = Dict(
     "kind" => "adopted",
@@ -367,7 +384,11 @@ _action_document(a::Codec.Settle) = Dict(
 )
 _action_document(a::Codec.Restore) =
     Dict("kind" => "restore", "figure" => a.figure, "rule" => _rule_document(a.rule))
-"Return the correlated typed terminal result, including an action-level Failed."
+"""
+    complete!(connection, value; kwargs...)
+
+Return the correlated typed terminal result, including an action-level Failed.
+"""
 function complete!(connection::Connection, value; kwargs...)
     try
         return _complete!(connection, value; kwargs...)
@@ -379,6 +400,12 @@ end
 _successful(result::Codec.AbstractResult) = result
 _successful(result::Codec.Failed) =
     throw(ArgumentError("calibration action failed: $(document(result))"))
+"""
+    request!(connection, value, expected; kwargs...)
+
+Send a calibration action and return its successful result as a mapping. Close the
+connection if the completion kind differs from `expected`.
+"""
 function request!(connection::Connection, value, expected::AbstractString; kwargs...)
     result = _successful(complete!(connection, value; kwargs...))
     if _kind(result) != expected

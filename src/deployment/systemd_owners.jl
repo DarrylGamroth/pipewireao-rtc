@@ -350,6 +350,11 @@ function validate_placement(placement::AbstractDict)
     return cpu, sort(cpus)
 end
 
+"""
+    pid(service)
+
+Return the main PID retained for the owner service.
+"""
 pid(service::Service) = service.main_pid
 function check_failure!(service::Service)
     if isempty(service.error) && !alive(service)
@@ -364,10 +369,20 @@ function check_failure!(service::Service)
     end
     return nothing
 end
+"""
+    failure(service)
+
+Check the owner service for failure and return the retained diagnostic string.
+"""
 function failure(service::Service)
     Hsm.dispatch!(service, :FailureChecked)
     return service.error
 end
+"""
+    record(service)
+
+Return the owner service's retained identity, state and diagnostic fields as a mapping.
+"""
 function record(service::Service)
     Dict{String,Any}(
         "unit" => service.unit,
@@ -380,6 +395,12 @@ function record(service::Service)
     )
 end
 
+"""
+    alive(service)
+
+Return whether the retained running owner process still has the expected identity and
+cgroup.
+"""
 function alive(service::Service)
     service.state == :running || return false
     process_identity(service.main_pid, service.start_ticks, service.cgroup)
@@ -394,6 +415,11 @@ function verify_identity(service::Service)
     alive(service) || fail("owner systemd identity differs from retained incarnation")
     return nothing
 end
+"""
+    verify!(service)
+
+Verify the retained service identity against systemd and return the service.
+"""
 function verify!(service::Service)
     Hsm.dispatch!(service, :Verified)
     return service
@@ -512,6 +538,12 @@ function stop_impl!(
     return nothing
 end
 
+"""
+    stop!(service, grace=0; clock=Clocks.SystemNanoClock())
+
+Stop the exact retained owner service and wait for cleanup within the requested grace
+period.
+"""
 function stop!(
     service::Service,
     grace::Real = 0;

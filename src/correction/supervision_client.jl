@@ -46,7 +46,10 @@ function Client(
     return Client(channel, String(graph), outputs, Int64(0), :Monitoring)
 end
 
-"""Read one correlated native snapshot and consume at most one protective trip.
+"""
+    poll!(client; deadline, check=ControlClient.NO_CHECK)
+
+Read one correlated native snapshot and consume at most one protective trip.
 
 Use an absolute signed Int64 nanosecond deadline. A replacement owner, unavailable observation,
 malformed publication or uncertain native request cannot authorize an effect.

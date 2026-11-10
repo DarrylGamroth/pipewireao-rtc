@@ -1,6 +1,10 @@
 # Framework adapters interpret worker roles. Application role names identify
 # instances only; executable strings and observed OS thread names select nothing.
-"Set the default Julia thread count for a declared process launcher."
+"""
+    julia_threads!(argv, count)
+
+Set the default Julia thread count for a declared process launcher.
+"""
 function julia_threads!(argv, count)
     positions = findall(arg -> startswith(arg, "--threads="), argv)
     length(positions) <= 1 && !("--threads" in argv) && !("-t" in argv) ||
@@ -43,7 +47,11 @@ function owner_scheduling!(::Val{:jfg}, owner, process)
     return nothing
 end
 
-"Apply the selected process placement adapter before sealing a deployment."
+"""
+    owner_scheduling!(kind, owner, process)
+
+Apply the selected process placement adapter before sealing a deployment.
+"""
 owner_scheduling!(kind::Val, owner, process) =
     throw(ArgumentError("unknown owner scheduling kind $kind"))
 
