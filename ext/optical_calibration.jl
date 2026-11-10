@@ -1647,6 +1647,10 @@ function optical_reference_response(measure, calibration, amplitudes, derivative
 end
 
 """
+    calibrate_optical_reference(upstream_application, calibration;
+        simulation, mirror, raw_endpoint, residual_endpoint, poke_amplitudes_m,
+        derivative_tolerance, kwargs...)
+
 Calibrate `C_fast[:,j] = (r(+hP[:,j])-r(-hP[:,j]))/(2h)` using the built
 upstream AOS calibration plant and the existing projected deployed UInt16
 pixel-calibration/pyramid/reconstruction frontend. Probe the explicitly supplied
@@ -1668,13 +1672,13 @@ Poisson/Gaussian simulation law, not finite-PRNG or hardware certificates.
 function Calibration.calibrate_optical_reference(
     upstream_application::AbstractString,
     calibration;
-    simulation = "simulation/definition.yaml",
+    simulation,
+    mirror,
+    raw_endpoint,
+    residual_endpoint,
+    poke_amplitudes_m,
+    derivative_tolerance,
     settings = Dict(),
-    mirror = "tweeter",
-    raw_endpoint = "pixel-calibration:raw",
-    residual_endpoint = "reconstruction:reconstructed",
-    poke_amplitudes_m = [5e-9, 1e-8, 2e-8],
-    derivative_tolerance = 0.05,
     method = "held-frame",
     samples = 512,
     rounding_samples = 128,

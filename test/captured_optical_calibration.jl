@@ -168,7 +168,16 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "chopped_calibration_documents.jl")
             # CUDA optical calibration does not broaden the separate qualified upstream reference law.
             if backend == "cuda"
                 @test_throws ArgumentError Calibration.calibrate_optical_reference(
-                    "unused", observed; target, method = "host-expectation"
+                    "unused",
+                    observed;
+                    simulation = "simulation/definition.yaml",
+                    mirror = "dm",
+                    raw_endpoint = "frontend:raw",
+                    residual_endpoint = "reconstructor:residual",
+                    poke_amplitudes_m = [5e-9],
+                    derivative_tolerance = 0.05,
+                    target,
+                    method = "host-expectation",
                 )
             end
         end

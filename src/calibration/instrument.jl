@@ -742,9 +742,12 @@ Validate a model-derived optical calibration against held-out physical commands.
 """
 function validate_optical end
 """
-    calibrate_optical_reference(upstream_application, calibration; kwargs...)
+    calibrate_optical_reference(upstream_application, calibration;
+        simulation, mirror, raw_endpoint, residual_endpoint, poke_amplitudes_m,
+        derivative_tolerance, kwargs...)
 
 Calibrate the deployed upstream sensor residual response to optical physical modes.
+The built-application procedure supplies these inputs from the optical YAML recipe.
 """
 function calibrate_optical_reference end
 include("bundle.jl")

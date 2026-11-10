@@ -419,8 +419,14 @@ remote command. No phase-command feedforward, carrier/FIR/ROI choice, pipelined
 closed-loop stability or noisy simultaneous-loop acceptance follows from the
 static calibration tests.
 
-The optional upstream reference method `host-expectation` estimates the mean
-residual of the executed stochastic detector and frozen frontend. For example:
+An upstream optical reference takes its simulation and mirror from the optical
+recipe. Its `upstream_reference` section declares the raw and residual
+endpoints, probe amplitudes and derivative tolerance. The lower-level Julia
+entry point requires the same inputs.
+
+The optional `host-expectation` method estimates the mean residual of the
+executed stochastic detector and frozen frontend. CAL2 declares the following
+settings.
 
 ```yaml
 upstream_reference:

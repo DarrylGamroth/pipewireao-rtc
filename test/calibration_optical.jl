@@ -25,6 +25,12 @@ if Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt) === nothing
     end
 end
 
+@testset "upstream optical reference requires declared inputs" begin
+    @test_throws UndefKeywordError OpticalCalibration.calibrate_optical_reference(
+        "unused", nothing
+    )
+end
+
 @testset "native mirror units normalize through the measured OPD response" begin
     # A 1 µm/native-unit response used to fail a dimensionful null-mode test.
     surface =
