@@ -261,6 +261,9 @@ end
         component = composition_fixture(
             joinpath(directory, "component"), "component", "simulator", "sensor"
         )
+        write(joinpath(component, "entry.jl"), "nothing\n")
+        E.seal!(component)
+        write(joinpath(component, "README.md"), "# Operator notes\n")
         replacement = joinpath(directory, "prepared-graph.conf")
         write(replacement, "{\"prepared\":true}")
         original = C.sha256_file(joinpath(component, "deployment.conf"))
@@ -288,7 +291,9 @@ end
         @test length(session["sources"]) == 2 &&
             only(session["links"])["output"] == "pupil:output_1"
         @test spec["node-owners"] == Dict("pupil" => "simulator", "sensor" => "cal2-optics")
-        @test haskey(spec["artifacts"], "composition/receipt.yaml")
+        @test !haskey(spec["artifacts"], "composition/receipt.yaml")
+        @test !haskey(spec["artifacts"], "components/cal2/Project.toml")
+        @test haskey(spec["artifacts"], "components/cal2/entry.jl")
         @test E.sealed_application(output, PREFIX)[2] == spec
         @test auxiliary["bootstrap-node"] == "cal2.sensor-bootstrap"
         arguments = copy(
@@ -338,7 +343,7 @@ end
             options...,
             overrides = Dict("../escape" => replacement),
         )
-        # An input's undeclared file is not admitted by a partial seal.
+        # A new owner input requires a checksum before composition.
         write(joinpath(component, "unsealed"), "new bytes")
         @test_throws ArgumentError E.compose(
             base, component, joinpath(directory, "unsealed"); options...

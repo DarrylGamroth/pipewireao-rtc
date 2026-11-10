@@ -510,11 +510,20 @@ end
     @test prepared["analysis"][1]["cpus"] == [3]
 end
 
-@testset "instrument application seal and contained paths" begin
+@testset "deployment input checksums and contained paths" begin
     mktempdir() do directory
         source = joinpath(directory, "source")
         mkpath(joinpath(source, "nested"))
         write(joinpath(source, "nested", "data.json"), "{\"data\":1}\n")
+        for name in (
+            "README.md", "Project.toml", "Manifest.toml", "profiles/cpu.yaml",
+            "rtc/modes.yaml", "rtc/application-fitted.yaml",
+            "components/cal2/Manifest-v1.13.toml", "components/cal2/profiles/cpu.yaml",
+        )
+            path = joinpath(source, name)
+            mkpath(dirname(path))
+            write(path, "outside the runtime catalog")
+        end
         C.write_json(joinpath(source, "deployment.conf"), Dict("version" => 1))
         E.seal!(source)
         sealed = C.read_json(joinpath(source, "deployment.conf"))

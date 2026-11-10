@@ -89,9 +89,11 @@ at installation. The installer generates its launcher and exact systemd unit;
 the registered Julia dependency supplies the implementation. Existing sealed
 SDK deployments retain their recorded runtime and require their matching tools.
 
-The exporter records SHA-256 checksums for the application files in the
-`artifacts` mapping of `deployment.conf`. The installer compares the files
-with that catalog before using them. Older guides call this a *sealed* export.
+Pkg manages the registered dependency environment from the exported Project
+and Manifest. The exporter records SHA-256 checksums for application runtime
+inputs such as PipeWire configuration and calibration files in the `artifacts`
+mapping of `deployment.conf`. The installer checks the listed files before
+using them. Older guides call this a *sealed* export.
 
 `GraphOwner.main` accepts graph options and `--fits-bindings PATH`. It publishes
 Preparing before loading optional graph packages. Simulation runs in a separate

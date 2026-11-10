@@ -440,7 +440,11 @@ end
 """Whether this deployment obtains its executable implementation from Julia packages."""
 registered_application(spec::AbstractDict) = haskey(spec, "runtime")
 
-"""Validate a contained, immutable application environment without resolving packages."""
+julia_environment_file(name) =
+    name in ("Project.toml", "JuliaProject.toml") ||
+    occursin(r"^(?:Julia)?Manifest(?:-v[0-9]+\.[0-9]+)?\.toml$", name)
+
+"""Validate the registered Julia environment without resolving packages."""
 function application_environment(spec::AbstractDict, package::AbstractString)
     require(
         registered_application(spec),
@@ -456,16 +460,18 @@ function application_environment(spec::AbstractDict, package::AbstractString)
         environment == root || startswith(environment, root * "/"),
         "runtime project escapes the application",
     )
-    sealed = get(spec, "artifacts", Dict())
-    for filename in ("Project.toml", "Manifest.toml")
-        relative = normpath(joinpath(project, filename))
-        file = relative_asset(root, relative)
-        require(
-            get(sealed, relative, nothing) == digest(file),
-            "application environment must be sealed: $relative",
-        )
-    end
-    metadata = TOML.parsefile(joinpath(environment, "Project.toml"))
+    # Match the files Julia actually uses. A versioned input Manifest is copied
+    # to Manifest.toml by the exporter.
+    require(
+        all(
+            name -> name in ("Project.toml", "Manifest.toml") || !julia_environment_file(name),
+            readdir(environment),
+        ),
+        "runtime environment must use Project.toml and Manifest.toml",
+    )
+    project_path = relative_asset(root, normpath(joinpath(project, "Project.toml")))
+    manifest_path = relative_asset(root, normpath(joinpath(project, "Manifest.toml")))
+    metadata = TOML.parsefile(project_path)
     require(
         !haskey(metadata, "workspace"),
         "deployed application must not declare a development workspace",
@@ -479,7 +485,7 @@ function application_environment(spec::AbstractDict, package::AbstractString)
         !haskey(metadata, "sources"),
         "registered application must not override package sources",
     )
-    manifest = TOML.parsefile(joinpath(environment, "Manifest.toml"))
+    manifest = TOML.parsefile(manifest_path)
     dependencies = get(manifest, "deps", nothing)
     validate_manifest_dependencies(dependencies)
     for (name, uuid) in direct

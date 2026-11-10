@@ -555,8 +555,10 @@ describe or reinterpret scientific operations. Runtime execution must not
 depend on benchmark scripts, temporary evidence directories or git worktrees.
 
 On 2026-11-06 the user selected PipeWireAORTC as a registered application
-dependency rather than a copied SDK tree. New applications seal their Julia
-Project/Manifest and resolve the RTC implementation through that environment.
+dependency rather than a copied SDK tree. New applications resolve the RTC
+implementation through their exported Project and Manifest. Pkg manages the
+registered dependency closure. The deployment catalog checksums runtime inputs
+outside that environment.
 Path/source overrides and application development workspaces are rejected.
 The package checkout retains its development test workspace; consuming the
 package as a dependency does not include that workspace in the application's
@@ -564,7 +566,7 @@ dependency closure. Package resources come from the selected installed package.
 
 Instrument repositories own physical identity, simulation definitions, RTC
 configuration, graphs and profiles. Shared export code compiles those declarations
-into a fresh sealed application. Only the small generated RTC shell launcher is
+into a fresh application. Only the small generated RTC shell launcher is
 staged under `rtc/bin`; authored RTC files are preserved. Installation and startup
 use the registered application environment without a copied-source fallback.
 Existing sealed SDKs retain their matching old tools rather than being converted.
@@ -1391,11 +1393,10 @@ queue fragments under `rtc/`, optional analysis under `analysis/`, GUI views
 under `gui/`, and calibration recipe/inputs/artifacts/records under `calibration/`.
 `InstrumentExport.prepare` copies this source into fresh output, applies an
 explicit host deployment profile, renders shared core/client templates, generates
-the publication and seals the deployment catalog. Source contains neither a
-sealed runtime deployment nor a generated publication. Registered dependency
-validation is unchanged: output without a matching sealed registered Manifest
-is usable only for offline preparation, not installation. The exporter owns no
-processes, links or live controls.
+the publication and records runtime input checksums in the deployment catalog.
+A matching registered Manifest is required for installation. Output without
+a Manifest supports offline preparation. The exporter owns no processes,
+links or live controls.
 
 Authoring `rtc/application.conf` may additionally declare `graph-configurations`,
 an array of `{path}` entries, optionally with a `source` filename inside the

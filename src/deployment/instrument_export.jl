@@ -107,14 +107,37 @@ function application_files(root)
     return sort!(files)
 end
 
-"""Record SHA-256 checksums for application files in the deployment catalog."""
+# Keep opaque owner inputs in the catalog. The application layout reserves
+# Markdown and the named export inputs below for documentation and authoring.
+function deployment_input(path)
+    parts = splitpath(path)
+    first_part = 1
+    while length(parts) - first_part >= 2 && parts[first_part] == "components"
+        first_part += 2
+    end
+    relative = joinpath(parts[first_part:end]...)
+    name = last(parts)
+    D.julia_environment_file(name) && return false
+    lowercase(splitext(name)[2]) == ".md" && return false
+    startswith(relative, "profiles/") && return false
+    occursin(r"^rtc/application(?:-[^/]+)?\.ya?ml$", relative) && return false
+    return !(relative in (
+        "deployment.conf",
+        "rtc/application.conf",
+        "rtc/modes.yaml",
+        "composition/base-deployment.conf",
+        "composition/receipt.yaml",
+    ))
+end
+
+"""Record SHA-256 checksums for runtime files outside the Julia environment."""
 function seal!(application::AbstractString)
     root = checked_path(application)
     deployment = joinpath(root, "deployment.conf")
     spec = Common.read_json(deployment)
     spec["artifacts"] = Dict(
         path => Common.sha256_file(joinpath(root, path)) for
-        path in application_files(root) if path != "deployment.conf"
+        path in application_files(root) if deployment_input(path)
     )
     Common.write_json(deployment, spec; atomic = true)
     return deployment
@@ -463,7 +486,7 @@ function copy_source(
     return destination
 end
 
-"""Copy an instrument into a fresh application and seal its prepared files.
+"""Copy an instrument into a fresh application and record runtime input checksums.
 
 A supplied registered Manifest is validated through the ordinary deployment
 contract. Without one the result supports offline preparation only; the normal

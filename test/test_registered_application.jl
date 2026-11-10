@@ -24,18 +24,10 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
 """,
         )
         spec = Dict("runtime" => Dict("kind" => "registered", "project" => "."))
-        seal!() = (
-            spec["artifacts"] = Dict(
-                name => D.digest(joinpath(directory, name)) for
-                name in ("Project.toml", "Manifest.toml")
-            )
-        )
-        seal!()
         @test D.registered_application(spec)
         @test !D.registered_application(Dict())
         @test D.application_environment(spec, directory) == realpath(directory)
         @test_throws D.DeploymentError D.application_environment(Dict(), directory)
-        # Deliberate invalid application metadata; production files stay sealed.
         project_path = joinpath(directory, "Project.toml")
         original_project = read(project_path, String)
         project = TOML.parse(original_project)
@@ -43,18 +35,14 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
         open(project_path, "w") do io
             TOML.print(io, project)
         end
-        seal!()
         @test_throws D.DeploymentError D.application_environment(spec, directory)
         write(project_path, original_project)
-        seal!()
         @test D.application_environment(spec, directory) == realpath(directory)
         for field in ("path", "repo-url", "repo-rev")
             original = read(manifest, String)
             write(manifest, original * "$field = \"unsealed\"\n")
-            seal!()
             @test_throws D.DeploymentError D.application_environment(spec, directory)
             write(manifest, original)
-            seal!()
         end
         original = read(manifest, String)
         for invalid in (
@@ -69,14 +57,16 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
             ),
         )
             write(manifest, invalid)
-            seal!()
             @test_throws D.DeploymentError D.application_environment(spec, directory)
         end
         write(manifest, original)
-        seal!()
-        delete!(spec["artifacts"], "Manifest.toml")
-        @test_throws D.DeploymentError D.application_environment(spec, directory)
-        seal!()
+        for name in ("JuliaProject.toml", "JuliaManifest.toml", "Manifest-v1.13.toml")
+            alternative = joinpath(directory, name)
+            write(alternative, original)
+            @test_throws D.DeploymentError D.application_environment(spec, directory)
+            rm(alternative)
+        end
+        @test D.application_environment(spec, directory) == realpath(directory)
         for runtime in (
             Dict("kind" => "copied", "project" => "."),
             Dict("kind" => "registered", "project" => dirname(directory)),
@@ -87,7 +77,6 @@ git-tree-sha1 = "0000000000000000000000000000000000000000"
                 Dict("runtime" => runtime), directory
             )
         end
-        seal!()
         open(joinpath(directory, "Project.toml"), "a") do io
             write(io, "\n[sources]\nPipeWireAORTC = {path=\"../source\"}\n")
         end

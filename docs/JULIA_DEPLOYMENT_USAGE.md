@@ -10,7 +10,7 @@ The Julia DeploymentRunner and supervisor launchers are retired. Use the
 one-shot RTC session tools described in the [repository quickstart](../README.md#launch-an-exported-session-package).
 The native session client controls admission and graph operations; local owner
 interfaces retain calibration acquisition actions. New applications declare
-PipeWireAORTC as a registered Julia dependency in their sealed Project/Manifest.
+PipeWireAORTC as a registered Julia dependency in their Project and Manifest.
 The installation launcher uses that exact application environment; the
 application does not contain a copied RTC implementation or test workspace.
 Existing sealed SDK deployments retain their recorded runtime and must use
@@ -283,13 +283,24 @@ template as package resources. Resource lookup is relative to the installed
 registered package, not to a copied SDK directory. The repository's maintained
 scripts use Julia.
 
-Installation checks the exported files against the SHA-256 checksums in
-`deployment.conf` and validates the registered Project, Manifest and runtime
-declaration. It then writes the launcher and exact systemd unit. The launcher
-requires the registered application environment. Installation does not copy
-RTC source or tests into the application and does not enable or start the unit.
-Old sealed SDK deployments remain untouched and must use their matching pinned
-tools; the registered installer does not convert them.
+Pkg instantiates the registered dependency environment. The exporter copies a
+supplied Manifest into `Manifest.toml`, including when the source Manifest uses
+a Julia-versioned filename. The runtime directory uses `Project.toml` and
+`Manifest.toml`.
+
+The exporter records checksums for runtime inputs outside the package
+environment, including configuration, graphs, calibration data and
+files used by external owners. Markdown documentation, the `profiles/`
+authoring directory, the RTC application and mode authoring files,
+the generated `rtc/application.conf` and composition receipts stay outside
+the checksum catalog. Put owner inputs outside those reserved paths.
+Julia Project and Manifest files are also outside the catalog.
+
+Installation checks the recorded checksums and validates the registered
+environment before generating the launcher and systemd unit. Use an RTC
+version that supports this checksum scope for export, installation and the
+installed runtime. The updated tools also accept older checksum catalogs.
+Installation stages the systemd unit for explicit startup.
 
 ## Installed entrypoints
 
