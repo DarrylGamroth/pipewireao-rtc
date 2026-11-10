@@ -46,7 +46,7 @@ function remaining(owner::InitialCalibration, deadline::Int64)
         at >= owner.last_at ||
         throw(Control.UnknownOutcome("initial calibration clock regressed"))
     owner.last_at = at
-    budget = UInt64(Control.budget_ns(Actions.PROFILE, Int128(deadline) - at))
+    budget = UInt64(Control.budget_ns(Actions.PROFILE, Control.remaining_ns(deadline, at)))
     return min(budget, owner.hil.configuration.timeout_ns)
 end
 
@@ -942,7 +942,9 @@ function Calibration.prepare_initial_calibration(
             exposure_duration_ns = options.exposure_ns,
             frame_encoding = options.frame_encoding,
             command_scale = options.command_scale,
-            timeout_ns = UInt64(Control.budget_ns(Actions.PROFILE, Int128(deadline) - at)),
+            timeout_ns = UInt64(
+                Control.budget_ns(Actions.PROFILE, Control.remaining_ns(deadline, at))
+            ),
         )
         hil = Wire.prepare_pipewire_calibration(boundary, configuration; reference_clock)
         rate = UInt32(options.rate)//UInt32(1)
