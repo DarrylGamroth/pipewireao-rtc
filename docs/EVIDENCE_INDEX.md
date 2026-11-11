@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Live detector flux labels — 2026-11-11
+
+The [browser verification](validation/live-flux-labels-20261111/README.md)
+records live plot and overlay labels and private-core shutdown.
+
 ## GPI2 FIFO host profile — 2026-11-11
 
 The [private-core check](validation/gpi2-fifo-host-20261111/README.md)
