@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC startup, optional analysis, and shutdown scope — 2026-11-11
+
+The [scope review](reviews/20261111-startup-shutdown-scope/REVIEW.md)
+records code paths to remove or transfer and how to reuse a warm session.
+
 ## Live detector flux labels — 2026-11-11
 
 The [browser verification](validation/live-flux-labels-20261111/README.md)
