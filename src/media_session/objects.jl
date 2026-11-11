@@ -474,6 +474,11 @@ function retire_owner!(quit::F, runtime, owner::Owner{OwnerBootstrapCodec.Profil
     for id in targets
         id == bootstrap || retire_object!(runtime, id)
     end
+    for link in runtime.links
+        if link.output.node in nodes || link.input.node in nodes
+            link.retiring = true
+        end
+    end
     quit()
     owner.retired || throw(ArgumentError("owner has no validated bootstrap Quit receipt"))
     retire_object!(runtime, bootstrap)

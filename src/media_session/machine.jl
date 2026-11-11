@@ -217,6 +217,8 @@ struct ResetSources <: AbstractEffect end
 
 struct ResetGraphs <: AbstractEffect end
 
+struct ShutdownGraphOwners <: AbstractEffect end
+
 struct WithdrawLinks <: AbstractEffect end
 
 struct ShutdownSources <: AbstractEffect end
@@ -435,6 +437,8 @@ end
 @statedef Machine :HoldingQuitSources :ShuttingDown
 
 @statedef Machine :HoldingQuitGraphs :ShuttingDown
+
+@statedef Machine :ShuttingGraphOwners :ShuttingDown
 
 @statedef Machine :WithdrawingQuitLinks :ShuttingDown
 
@@ -735,6 +739,12 @@ end
 end
 
 @on_event function (m::Machine, ::HoldingQuitGraphs, ::Completion, event)
+    _accept!(m, event) || return Hsm.EventNotHandled
+    _issue!(m, ShutdownGraphOwners())
+    return Hsm.transition!(m, :ShuttingGraphOwners)
+end
+
+@on_event function (m::Machine, ::ShuttingGraphOwners, ::Completion, event)
     _accept!(m, event) || return Hsm.EventNotHandled
     _issue!(m, WithdrawLinks())
     return Hsm.transition!(m, :WithdrawingQuitLinks)

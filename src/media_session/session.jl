@@ -554,8 +554,11 @@ function prepare_dispatch!(session::Session)
         }
     }
     for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
-        job = Job{EffectTicket{ShutdownOwners,origin}}
-        Base.precompile(_shutdown_bootstrap!, (typeof(session), job, bootstrap_owner))
+        for effect in (ShutdownGraphOwners, ShutdownOwners)
+            job = Job{EffectTicket{effect,origin}}
+            Base.precompile(perform!, (typeof(session), job, effect))
+            Base.precompile(_shutdown_bootstrap!, (typeof(session), job, bootstrap_owner))
+        end
     end
     for payload in ((), nothing)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))

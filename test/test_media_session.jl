@@ -36,6 +36,7 @@ const PREPARATION = (
 const SHUTDOWN = (
     S.HoldSources,
     S.HoldGraphs,
+    S.ShutdownGraphOwners,
     S.WithdrawLinks,
     S.ShutdownSources,
     S.ShutdownOwners,
@@ -269,7 +270,7 @@ end
     @test m.lifecycle == R.Fault && m.deadline == 16 * SECOND
     @test S.take_cancelled!(m) !== nothing
     @test isempty(S.take_replies!(m))
-    sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks))
+    sequence!(m, (S.HoldSources, S.HoldGraphs, S.ShutdownGraphOwners, S.WithdrawLinks))
     @test only(S.take_replies!(m)).unknown
     @test Hsm.current(m) === :HeldFault
 
@@ -294,7 +295,7 @@ end
     @test isempty(S.take_replies!(m))
     sequence!(m, (S.HoldSources,))
     S.fail!(m, m.effect, "graph hold failed"; submitted = true)
-    @test m.effect.effect === S.WithdrawLinks()
+    @test m.effect.effect === S.ShutdownGraphOwners()
     acknowledge!(m)
     @test Hsm.current(m) === :HeldFault && m.lifecycle == R.Fault
     @test only(S.take_replies!(m)).unknown
@@ -375,13 +376,13 @@ end
             m, :AdmissionControllerRemoved, (; id = LAUNCHER.global_id, LAUNCHER.serial)
         )
         S.take_cancelled!(m)
-        sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks, S.ShutdownSources))
+        sequence!(m, (S.HoldSources, S.HoldGraphs, S.ShutdownGraphOwners, S.WithdrawLinks, S.ShutdownSources))
         @test m.effect.effect === S.ShutdownOwners()
         Clocks.update!(clock, m.deadline)
         S.tick!(m)
         S.take_cancelled!(m)
         sequence!(m, (S.HoldSources, S.HoldGraphs))
-        @test m.effect.effect === S.WithdrawLinks()
+        @test m.effect.effect === S.ShutdownGraphOwners()
         if cleanup === :complete
             acknowledge!(m)
         elseif cleanup === :fail

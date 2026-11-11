@@ -269,6 +269,24 @@ function _bootstrap_order(runtime, index::Int, owner::Owner{OwnerBootstrapCodec.
         throw(ArgumentError("captured bootstrap control node differs"))
     return (declaration["role"] != runtime.configuration["source"]["role"], index)
 end
+function perform!(runtime, job, ::ShutdownGraphOwners)
+    # A held ndarray graph can still own input buffers. Closing its filter
+    # releases them before explicit Link withdrawal can revoke them.
+    source_pids = Set(binding.pid for binding in runtime.sources if binding isa SourceControlBinding)
+    for binding in runtime.sources
+        binding isa AcquisitionBinding && push!(source_pids, binding.owner.pid)
+    end
+    pids = get(runtime.configuration, "node.pids", Dict{String,Int}())
+    for name in graph_order(runtime, true)
+        pid = get(pids, name, nothing)
+        (pid === nothing || pid in source_pids) && continue
+        for owner in runtime.owners
+            owner.pid == pid && _shutdown_bootstrap!(runtime, job, owner)
+        end
+    end
+    return nothing
+end
+
 function perform!(runtime, job, ::ShutdownOwners)
     order = sort!(
         collect(eachindex(runtime.owners));
