@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## GPI2 FIFO host profile — 2026-11-11
+
+The [private-core check](validation/gpi2-fifo-host-20261111/README.md)
+records the actual scheduler policy, priority and affinity after admission.
+
 ## SPIDERS fitted-dual native Quit — 2026-11-11
 
 The [private CPU validation](validation/spiders-native-quit-20261111/README.md)
