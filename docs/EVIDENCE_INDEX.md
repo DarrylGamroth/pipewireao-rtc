@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Classic managed Quit timing — 2026-11-11
+
+The [owner and hook trace](validation/classic-quit-timing-20261111/README.md)
+records native Quit, per-owner exit timing and CPU samples from both stop hooks.
+
 ## RTC 0.7.13 release — 2026-11-11
 
 The [registry-only Classic check](validation/rtc-0713-20261111/README.md)
