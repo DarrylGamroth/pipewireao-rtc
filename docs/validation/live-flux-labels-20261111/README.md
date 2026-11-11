@@ -29,3 +29,33 @@ reported Running and no page errors.
 The browser detached before the stop hook sent native Quit. The RTC
 accepted Quit and exited successfully. The required and optional owners
 stopped without SIGKILL. Cleanup removed the socket and unit files.
+
+## GPI2
+
+The first GPI2 run hit an optical-worker preparation timeout before
+admission. Fault cleanup used SIGKILL for its controller. The successful
+repeat started after the Classic test, on a new private core.
+
+The separate analysis check reproduced the GPI2 unit-annotation
+conflict with the released FilterGraphPipeWire channel publisher. Its
+fixed four-pupil schema declares `ADC counts per exposure`. Instrument
+commit `d7fe306` removes the redundant override, and the rebuilt
+analysis owner publishes all four channels using the schema. The GUI
+continues to display ADU. The older bridge rejected the current ADU
+GUI configuration, so the repeat used the bridge and browser rebuilt
+from GUI `1b865b6`.
+
+The corrected deployment reached Ready in 375.93 s and entered
+Running. The live plot displayed **Raw pupil flux (ADU per exposure)**
+and labeled all four channels **ADU per exposure**. The plot grew
+from 31 to 34 points while the flux queue advanced from publication
+441 to 444. The pyramid overlay displayed **4536890 ADU per exposure**
+for pupil 1. Its detector image and flux both had publication sequence
+409 and the same SPA Header timestamp. The browser reported Running
+and no page errors.
+[Plot](gpi2-plot.png) · [Overlay](gpi2-overlay.png)
+
+The browser detached before the stop hook sent native Quit. The RTC
+accepted Quit and exited successfully. The required and optional
+owners stopped without SIGKILL, the socket and unit files were
+removed, and both loopback bridge listeners were closed.
