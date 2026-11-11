@@ -81,9 +81,54 @@ cancellation callback type. Compare the specialization in image creation
 with the one loaded by the managed owner before adding more workloads.
 The trace timings include instrumentation and are separate from the table.
 
-For deployment, use the installed manifest and CPU target when creating
-the image, and retain the generated startup package and matching cache
-in the deployment depot. The preparation workload and the native owner
-need shared, stable preparation signatures. Start by measuring a private
-managed launch using the image and requiring fresh Running Status and
-advancing optical samples. That check is outside this benchmark.
+## Installed CPU profiles
+
+The session installer builds an image for each managed CPU optical owner
+that has a supported optical configuration and workload dependencies.
+The installed application retains the per-owner package and cache under
+`optical-startup/<role>`. The owner loads it after establishing its
+bootstrap connection. Offline image creation and the owner share the HIL
+preparation and warmup function, including the type used to check for
+cancellation. The offline callback has no connection to PipeWire.
+
+Installation builds the image once for that installation. Starting the
+installed systemd service reuses it. The convenience API
+`SessionRuntime.start!` installs into a fresh directory before it starts
+the service, so its elapsed time includes the installation and image
+build. A new installation builds a new image for its manifest and
+optical configuration. Accelerator, lockstep, and pupil-source modes
+follow their usual startup paths.
+
+
+### Fresh private RTC launches
+
+Installed source candidates were RTC `6fb6c25` and HIL `a46dcb8` with
+AOS 0.3.23, FilterGraphPipeWire 0.5.5, PipeWireAO 4.0.2 and Julia 1.13.3.
+The standalone CAL2 and fitted-dual SPIDERS CPU profiles were run
+sequentially with the same placement as their earlier registered runs.
+The CAL2 profile is the standalone optical and controller deployment.
+The prior 9:25 CAL2 measurement included a separate upstream test plant.
+
+| CPU profile | Earlier time to Ready | Fresh time to Ready | One-time image build | Image |
+| --- | ---: | ---: | ---: | ---: |
+| Standalone CAL2 | 439.7 s | 252.2 s | 224.3 s | 70 MiB |
+| Fitted-dual SPIDERS | 508.1 s | 228.6 s | 288.7 s | 83 MiB |
+
+Ready time runs from systemd start to service activation, following
+installation. Earlier times are separate archived runs of the same
+profiles, with the prior registered code and no optical startup image.
+Full installation took 262.3 s for CAL2 and 329.3 s for SPIDERS,
+including their image builds.
+
+Both fresh native simulator processes mapped their installed package
+image, verified using the process memory maps. CAL2 optical preparation
+and warmup took 51.1 and 78.0 s. SPIDERS took 99.7 and 21.7 s. The
+remaining SPIDERS controller preparation and warmup overlapped the
+optical work and finished later.
+
+Each session passed a fresh native Ready check, Start, and a fresh
+Running check. CAL2 acknowledged native Quit. The SPIDERS stop attempt
+failed after the RTC reported a required object's serial had changed.
+The private cohort stopped and its ledger confirmed cleanup and unit
+removal. GPI2 stayed stopped. The focused session runtime, installed
+session and owner entrypoint suites passed 273 assertions.
