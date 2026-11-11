@@ -674,6 +674,8 @@ function prepare!(request::Request; render!::Function)
         S.start_services!([core], core.unit, runtime, record)
         wait_core!(core, remote)
 
+        project = D.application_environment(spec, package)
+        hil_startup = PipeWireAORTC.HILStartup.interface(project)
         function install_owner!(owner)
             role = owner["role"]
             env = owner_environment(paths, spec, bindings, runtime, role)
@@ -682,7 +684,7 @@ function prepare!(request::Request; render!::Function)
             end
             private_remote_environment(env, runtime, bindings)
             argv = [D.substitute(arg, bindings) for arg in owner["argv"]]
-            PipeWireAORTC.OpticalStartup.configure_owner!(argv, env, request.package, owner)
+            PipeWireAORTC.HILStartup.configure_owner!(hil_startup, argv, env, package, owner)
             S.install_fragment!(
                 services[role].unit,
                 S.service_unit(
@@ -771,7 +773,6 @@ function prepare!(request::Request; render!::Function)
         record["config"] = String(config)
         launch_record!(runtime, record)
         julia = D.selected_julia_executable(Base.julia_cmd().exec[1])
-        project = D.application_environment(spec, package)
         isfile(julia) && Sys.isexecutable(julia) ||
             fail("selected Julia runtime is unavailable")
         isdir(project) || fail("selected Julia project environment is unavailable")

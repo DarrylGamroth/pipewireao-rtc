@@ -19,27 +19,6 @@ arguments(options = OPTIONS) = reduce(
     (["--" * replace(string(key), "_" => "-"), value] for (key, value) in pairs(options)),
 )
 
-@testset "load the optical image before the managed entry" begin
-    optical = PipeWireAORTC.OpticalStartup
-    owner = Dict("role" => "simulator")
-    command = ["julia", "-e", optical.MANAGED_ENTRY, "--", "--config", "simulation.conf"]
-    mktempdir() do package
-        argv = copy(command)
-        env = Dict("JULIA_DEPOT_PATH" => "/depot")
-        optical.configure_owner!(argv, env, package, owner)
-        @test argv == command
-        @test !haskey(env, "PIPEWIREAO_OPTICAL_STARTUP")
-
-        path = mkpath(optical.directory(package, owner["role"]))
-        touch(joinpath(path, "ready"))
-        optical.configure_owner!(argv, env, package, owner)
-        @test argv[2:3] == ["--compiled-modules=existing", "--pkgimages=existing"]
-        @test argv[5] == "using PipeWireAOOpticalStartup; " * optical.MANAGED_ENTRY
-        @test argv[6:end] == command[4:end]
-        @test env["PIPEWIREAO_OPTICAL_STARTUP"] == path
-    end
-end
-
 @testset "parameter owner arguments preserve endpoint contract" begin
     admitted = Parameters._owner_options(arguments())
     @test Dict(pairs(admitted)) == Dict(

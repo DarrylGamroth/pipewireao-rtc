@@ -509,10 +509,8 @@ function start!(
     haskey(spec, "session-runtime") && haskey(spec, "node-owners") ||
         throw(ArgumentError("calibration package has no RTC session contract"))
     startup_ms = DeploymentConfiguration.startup_timeout_ms(spec)
-    optical = any(
-        owner -> PipeWireAORTC.OpticalStartup.configuration(source, owner) !== nothing,
-        spec["owners"],
-    )
+    environment = DeploymentConfiguration.application_environment(spec, source)
+    optical = PipeWireAORTC.HILStartup.requested(environment, source, spec["owners"])
     install_seconds = optical ? startup_ms / 1000 + 120 : 120
     if deadline === nothing
         # Allow for installation and verification outside the configured systemd start.
@@ -529,7 +527,7 @@ function start!(
     installed = joinpath(target, "installed")
     julia = Base.julia_cmd().exec[1]
     installer = [
-        "--project=" * DeploymentConfiguration.application_environment(spec, source),
+        "--project=" * environment,
         "-e",
         "using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))",
         "--",
