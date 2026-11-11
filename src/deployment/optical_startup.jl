@@ -80,7 +80,11 @@ end
 function configure_owner!(argv, env, package, owner)
     path = directory(package, owner["role"])
     isfile(joinpath(path, "ready")) || return nothing
-    # Reuse the installation's image without building a new one during launch.
+    # Load the image before the managed entry imports RTC and its dependencies.
+    # Loading those dependencies first can select an incompatible Julia cache.
+    entry = findfirst(==(MANAGED_ENTRY), argv)
+    entry === nothing && throw(ArgumentError("optical startup requires the managed entry"))
+    argv[entry] = "using $NAME; " * argv[entry]
     insert!(argv, 2, "--compiled-modules=existing")
     insert!(argv, 3, "--pkgimages=existing")
     env["PIPEWIREAO_OPTICAL_STARTUP"] = path
