@@ -18,7 +18,7 @@ function configuration(package, owner)
     index !== nothing && index < length(argv) || return nothing
     config = argv[index + 1]
     startswith(config, "@PACKAGE@/") || return nothing
-    path = D.relative_asset(package, chopprefix(config, "@PACKAGE@/"))
+    path = D.relative_asset(package, String(chopprefix(config, "@PACKAGE@/")))
     document = Common.read_json(path)
     get(document, "backend", nothing) == "cpu" &&
         get(document, "version", nothing) in (4, 6) || return nothing
@@ -27,6 +27,12 @@ end
 
 function build!(package, environment, owner, config, prefix)
     path = directory(package, owner["role"])
+    manifest = joinpath(environment, "Manifest.toml")
+    if !haskey(TOML.parsefile(manifest)["deps"], "PrecompileTools")
+        @info "Optical startup image unavailable in the installed environment" owner=owner["role"]
+        return nothing
+    end
+    !(ispath(path) || islink(path)) || throw(ArgumentError("optical startup directory must be new"))
     mkpath(joinpath(path, "src"))
     project = TOML.parsefile(joinpath(environment, "Project.toml"))
     project["name"] = NAME
@@ -34,12 +40,14 @@ function build!(package, environment, owner, config, prefix)
     project["version"] = "0.1.0"
     project["deps"]["PrecompileTools"] = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
     open(io -> TOML.print(io, project; sorted = true), joinpath(path, "Project.toml"), "w")
-    cp(joinpath(environment, "Manifest.toml"), joinpath(path, "Manifest.toml"))
+    cp(manifest, joinpath(path, "Manifest.toml"))
+    optics_import = haskey(project["deps"], "Proper") ? "using Proper" : ""
     write(
         joinpath(path, "src", NAME * ".jl"),
         """
         module $NAME
         using PipeWireAORTC, AdaptiveOpticsSimPipeWireHIL
+        $optics_import
         using PrecompileTools: @compile_workload
         const Simulation = AdaptiveOpticsSimPipeWireHIL.Simulation
         if isdefined(Simulation, :prepare_optical_startup)
