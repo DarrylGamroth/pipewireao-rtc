@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.14 release — 2026-11-11
+
+The [public-registry Classic check](validation/rtc-0714-20261111/README.md)
+records installed shutdown timings and native Quit acknowledgement.
+
 ## Classic shutdown compilation — 2026-11-11
 
 The [hook compilation traces](validation/classic-stop-precompile-20261111/README.md)
