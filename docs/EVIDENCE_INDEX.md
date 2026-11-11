@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Classic shutdown compilation — 2026-11-11
+
+The [hook compilation traces](validation/classic-stop-precompile-20261111/README.md)
+record first-use compilation in both installed shutdown hooks.
+
 ## Classic managed Quit timing — 2026-11-11
 
 The [owner and hook trace](validation/classic-quit-timing-20261111/README.md)
