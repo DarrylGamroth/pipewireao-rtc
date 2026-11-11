@@ -247,8 +247,6 @@ end
             UInt64(1),
             "/test",
             false,
-            false,
-            false,
             nothing,
         )
         C.write_json(

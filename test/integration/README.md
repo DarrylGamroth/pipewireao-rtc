@@ -3,8 +3,8 @@
 ## Classic CPU Ready-to-Quit regression
 
 `classic_shutdown.jl CPU_APPLICATION FRESH_STAGE NATIVE_PREFIX` starts a fresh
-non-actuating CPU session, requests one native Quit and checks exact owned
-process/cgroup cleanup. Use the registered Classic project and pinned depot,
+non-actuating CPU session, stops it through systemd, and verifies the native
+Quit acknowledgement and exact process/cgroup cleanup. Use the registered Classic project and pinned depot,
 the prefix's client config/module/SPA/library paths, and empty CUDA/ROCm device
 visibility. Automatic package GC and precompilation should be disabled.
 The test retains native identities, installed hashes and manager/owner journals;

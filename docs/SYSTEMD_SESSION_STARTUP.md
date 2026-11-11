@@ -21,21 +21,21 @@ cannot silently restart either after its identity was retained.
 
 Target activation is not proof that every owner started. Check each loaded unit
 definition and actual active PID, invocation, start time and cgroup. Then render
-application configuration from those retained identities. Existing native
-warmup, placement inspection and Lua admission remain mandatory before release.
+application configuration from those retained identities. Native warmup,
+placement inspection and MediaSession admission precede release.
 
 ## Cleanup
 
 An explicit service stop first runs the installed `ExecStop` one-shot client.
 It verifies the exact service invocation, main PID/start time, caller cgroup,
-and native session UUID, then requests native Quit once from an admitted healthy
-session. The headless RTC retains authority for source hold and outstanding command
-adoption, graph stop, link withdrawal and terminal owner acknowledgements. The
-client uses the existing eight-second request bound; Lua retains its five-second
-effect deadline. It records the attempt before submission and waits for the
-same RTC process to exit within its cooperative 30-second helper budget.
-That budget begins after package load and does not interrupt compilation, I/O
-or client close; systemd's unchanged 300-second watchdog bounds the process.
+and native session UUID, then requests native Quit once. The session HSM
+decides whether to accept the command. It coordinates source hold and
+outstanding command adoption, graph stop, Link withdrawal and terminal owner
+acknowledgements within its five-second effect deadline. ExecStop records
+the attempt before submission, uses an eight-second request bound, and
+waits for the same RTC process to exit within its 30-second helper budget.
+That budget begins after package load. systemd's 300-second watchdog also
+bounds compilation, I/O and client close.
 A failed, missing or unknown acknowledgement is not retried.
 
 Fresh invocation names are exclusive and services use `Restart=no`. On failure
@@ -45,8 +45,8 @@ quiescence. Remove only exact invocation-owned runtime unit links and files;
 retain the launch ledger and fence cleanup on identity or ownership uncertainty.
 An unreadable ledger permits ingress revocation but fences consumer/file removal.
 
-No `PartOf`, `BindsTo` or `Requires` adds a competing automatic consumer shutdown
-path. No persistent Julia coordinator or frame scheduler is added.
+The session HSM coordinates required owner shutdown. Optional analysis units
+follow the session unit lifetime through `PartOf` and share invocation cleanup.
 
 ## Implementation and validation
 

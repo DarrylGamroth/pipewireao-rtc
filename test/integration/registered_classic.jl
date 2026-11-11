@@ -1,5 +1,6 @@
 # Opt-in non-actuating application integration. Only fresh owned units are used.
 using Test, PipeWireAORTC, PipeWireAO, TOML
+import PipeWireAORTC.SessionRuntime: Clocks
 
 include("classic_observation.jl")
 
@@ -8,13 +9,16 @@ const W = R.SessionRuntime
 const C = R.Common
 const Commands = R.RunnerCommands
 
+clock() = Clocks.time_nanos(Clocks.SystemNanoClock())
+deadline_after(seconds) = Base.checked_add(clock(), R.SystemdOwners.duration_ns(seconds))
+
 function checked(condition, message)
     @test condition
     condition || error(message)
 end
 
 function request(handle, stage, name, fields)
-    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic() + 15)
+    reply = W.control!(handle, Commands.parse(fields); deadline = deadline_after(15))
     C.write_json(joinpath(stage, name * ".json"), reply)
     checked(reply["ok"] === true, "$name rejected")
     println("CLASSIC_CHECK ", name, " state=", reply["state"])
@@ -152,7 +156,7 @@ function check_invalid_control(handle, stage, graph, properties)
     # The supported CLI accepts Bool, but PropInfo declares this property Float.
     # The headless RTC rejects this mismatch before issuing a property transaction.
     fields = ["property", graph, key, "bool", "true"]
-    reply = W.control!(handle, Commands.parse(fields); deadline = W.monotonic() + 15)
+    reply = W.control!(handle, Commands.parse(fields); deadline = deadline_after(15))
     C.write_json(
         joinpath(stage, "invalid-control.json"), Dict("argv" => fields, "reply" => reply)
     )
@@ -229,7 +233,7 @@ function save_cadence_window(
 end
 
 function adopted(handle, stage, name, kind, graph, node; baseline = 0)
-    deadline = W.monotonic() + 10
+    deadline = deadline_after(10)
     while true
         reply = W.control!(handle, Commands.parse([kind, graph, node]); deadline)
         checked(reply["ok"] === true, "generation query rejected")
@@ -239,7 +243,7 @@ function adopted(handle, stage, name, kind, graph, node; baseline = 0)
             C.write_json(joinpath(stage, name * ".json"), reply)
             return reply
         end
-        W.monotonic() < deadline || error("active adoption was not observed")
+        clock() < deadline || error("active adoption was not observed")
         sleep(0.05)
     end
 end
@@ -314,7 +318,7 @@ function check_updates(handle, application, stage, graph, properties)
 end
 
 function main(application, stage, prefix)
-    handle = W.start!(application, stage; prefix, deadline = W.monotonic() + 1030)
+    handle = W.start!(application, stage; prefix, deadline = deadline_after(1030))
     try
         ready = request(handle, stage, "ready", ["status"])
         checked(ready["state"] == "Ready", "source was not held at startup")
@@ -405,25 +409,18 @@ function main(application, stage, prefix)
         )
     finally
         try
-            W.shutdown!(handle; deadline = W.monotonic() + 320)
-        catch quit_error
-            failures = Exception[quit_error]
+            final = W.stop!(handle)
+            checked(final["systemd_quit"]["accepted"] === true, "native Quit was not acknowledged")
+        catch stop_error
             try
                 C.write_json(
                     joinpath(stage, "quit-failure.json"),
-                    Dict("error" => sprint(showerror, quit_error)),
+                    Dict("error" => sprint(showerror, stop_error)),
                 )
             catch diagnostic_error
-                push!(failures, diagnostic_error)
+                throw(CompositeException([stop_error, diagnostic_error]))
             end
-            # Failed tests still own their exact unit. Revoke that unit through
-            # the bounded emergency cleanup API; never repeat the native Quit.
-            try
-                W.stop!(handle; deadline = W.monotonic() + 320)
-            catch cleanup_error
-                push!(failures, cleanup_error)
-            end
-            throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
+            rethrow()
         end
     end
     record = W.final_record(stage)

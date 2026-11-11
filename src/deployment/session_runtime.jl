@@ -25,9 +25,6 @@ export Handle,
     control!,
     source_status,
     stop!,
-    shutdown!,
-    reconcile_shutdown!,
-    reconcile_cleanup!,
     reconcile_stop!,
     final_record
 
@@ -40,13 +37,13 @@ const UNIT = r"^pipewireao-session@([a-z0-9][a-z0-9-]{0,39})\.service$"
 
 """
     Handle(unit, runtime_root, invocation, main_pid, start_ticks, cgroup,
-        stop_attempted, shutdown_attempted, shutdown_accepted, stage_root)
+        stop_attempted, stage_root)
 
 Retained identity and client-side operation state for one RTC session.
 
 Handles are returned by [`start!`](@ref) or [`attach`](@ref) after checking the
 exact systemd unit, runtime root, invocation ID, main PID and start ticks, and
-cgroup. The shutdown/stop flags record operations attempted through this handle.
+cgroup. The stop flag records whether this handle has submitted a systemd stop.
 A handle is not live readiness evidence: query the native session for current
 status before relying on readiness.
 """
@@ -58,8 +55,6 @@ mutable struct Handle
     start_ticks::UInt64
     cgroup::String
     stop_attempted::Bool
-    shutdown_attempted::Bool
-    shutdown_accepted::Bool
     stage_root::Union{Nothing,String}
 end
 
@@ -249,8 +244,6 @@ function _identity(
         pid,
         S.start_ticks(pid),
         cgroup,
-        false,
-        false,
         false,
         nothing,
     )
@@ -628,15 +621,6 @@ function attach(
             saved["cgroup"],
         ) || throw(ArgumentError("session unit incarnation differs from its stage receipt"))
         handle.stage_root = root
-        attempt = joinpath(root, "shutdown-attempt.json")
-        if isfile(attempt)
-            saved_attempt = Common.read_json(attempt; maximum = 4096)
-            saved_attempt["unit"] == handle.unit &&
-            saved_attempt["invocation"] == handle.invocation ||
-                throw(ArgumentError("native Quit attempt belongs to another session"))
-            handle.shutdown_attempted = true
-            handle.shutdown_accepted = get(saved_attempt, "accepted", false) === true
-        end
         return handle
     end
     matched = match(r"^pipewireao-session-([a-z0-9][a-z0-9-]{0,39})$", basename(root))
@@ -826,7 +810,6 @@ function control!(
     command;
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
     deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
-    before_request = () -> nothing,
 )
     deadline = S.deadline_ns(deadline)
     live = _identity(handle.unit, handle.runtime_root; deadline, clock)
@@ -841,7 +824,6 @@ function control!(
         status.incarnation == record["session_control_instance"] &&
         status.remote == record["remote"] ||
             throw(ArgumentError("direct control selected a different RTC session"))
-        before_request()
         reply = Session.request!(connection, command; deadline = S.deadline_ns(deadline))
         return Session.render_direct(connection, reply)
     finally
@@ -970,101 +952,6 @@ function _retain_stopped!(
 end
 
 """
-    reconcile_cleanup!(handle; kwargs...)
-
-Read-only cleanup after an attempted native Quit, including an unknown reply.
-"""
-function reconcile_cleanup!(
-    handle::Handle;
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
-)
-    handle.shutdown_attempted ||
-        handle.stop_attempted ||
-        throw(ArgumentError("session cleanup has not been attempted"))
-    return _retain_stopped!(handle, deadline; clock)
-end
-
-"""
-    reconcile_shutdown!(handle; kwargs...)
-
-Confirm cleanup only after a successful native Quit completion proved Offline.
-"""
-function reconcile_shutdown!(
-    handle::Handle;
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
-)
-    handle.shutdown_accepted ||
-        throw(ArgumentError("native Quit has no accepted Offline completion"))
-    return _retain_stopped!(handle, deadline; clock)
-end
-
-"Send one public native Quit, then observe the unit and ExecStopPost cleanup."
-function _native_quit!(send, handle::Handle)
-    handle.shutdown_attempted &&
-        throw(ArgumentError("native Quit was already attempted for this session"))
-    handle.stop_attempted &&
-        throw(ArgumentError("emergency stop was already attempted for this session"))
-    mark_attempt!() = begin
-        handle.stage_root === nothing || Common.write_json(
-            joinpath(handle.stage_root, "shutdown-attempt.json"),
-            Dict(
-                "unit" => handle.unit,
-                "invocation" => handle.invocation,
-                "accepted" => false,
-            );
-            atomic = true,
-        )
-        handle.shutdown_attempted = true
-    end
-    completion = send(mark_attempt!)
-    handle.shutdown_attempted ||
-        throw(ArgumentError("native Quit sender omitted its attempt fence"))
-    completion["ok"] === true &&
-    completion["state"] == "Offline" &&
-    get(completion["result"], "shutdown", false) === true ||
-        throw(ArgumentError("native Quit did not complete Offline"))
-    handle.shutdown_accepted = true
-    handle.stage_root === nothing || Common.write_json(
-        joinpath(handle.stage_root, "shutdown-attempt.json"),
-        Dict("unit" => handle.unit, "invocation" => handle.invocation, "accepted" => true);
-        atomic = true,
-    )
-    return completion
-end
-
-"""
-    shutdown!(handle; deadline, clock=Clocks.SystemNanoClock())
-
-Send one native Quit to the retained session incarnation and wait for its
-correlated Offline completion and exact service/owner cleanup. Returns the
-retained cleanup record. `deadline` accepts signed Int64 nanoseconds or the existing Float64 seconds input.
-If the request outcome is uncertain or cleanup is incomplete, this throws and
-the handle records the attempt; do not call `shutdown!` again. Use
-[`reconcile_cleanup!`](@ref) to inspect cleanup without replaying Quit.
-"""
-function shutdown!(
-    handle::Handle;
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
-    deadline = Base.checked_add(Clocks.time_nanos(clock), Int64(320_000_000_000)),
-)
-    _native_quit!(handle) do mark_attempt!
-        control!(
-            handle,
-            SessionCodec.RunnerCommand(:quit);
-            deadline = min(
-                S.deadline_ns(deadline),
-                Base.checked_add(Clocks.time_nanos(clock), Int64(8_000_000_000)),
-            ),
-            clock,
-            before_request = mark_attempt!,
-        )
-    end
-    return reconcile_shutdown!(handle; deadline, clock)
-end
-
-"""
     reconcile_stop!(handle; kwargs...)
 
 Reconcile a submitted stop without repeating its effect.
@@ -1082,7 +969,10 @@ end
 """
     stop!(handle; kwargs...)
 
-Stop the retained unit incarnation and verify its `ExecStopPost` cleanup receipt.
+Stop the retained systemd unit and verify its `ExecStopPost` cleanup record.
+When `ExecStop` sends native Quit, the record contains its attempt and
+acknowledgement in `systemd_quit`. Use [`reconcile_stop!`](@ref) to observe
+cleanup after an uncertain stop.
 """
 function stop!(
     handle::Handle;

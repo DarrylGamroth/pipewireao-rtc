@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Managed stop and direct native Quit — 2026-11-11
+
+The [private Classic checks](validation/managed-stop-20261111/README.md)
+record managed stop, direct native Quit, and exact cleanup.
+
 ## Direct native Quit from systemd — 2026-11-11
 
 The [private-core checks](validation/direct-systemd-quit-20261111/README.md)

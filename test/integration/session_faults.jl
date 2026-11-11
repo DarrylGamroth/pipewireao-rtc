@@ -221,7 +221,7 @@ end
 
 function verify_owners(ledger; missing = nothing)
     for (role, owner) in ledger["owners"]
-        role == missing && continue
+        (role == missing || PipeWireAORTC.SessionLaunch.is_optional(owner)) && continue
         values = S.properties(owner["unit"]; deadline = clock() + 8)
         checked(
             values["InvocationID"] == owner["invocation"], "owner invocation changed: $role"
@@ -354,6 +354,10 @@ function cleanup_checks(handle, record)
         "manager_cgroup_empty" => S.cgroup_empty(handle.cgroup),
     )
     for (role, owner) in record["owners"]
+        if PipeWireAORTC.SessionLaunch.is_optional(owner)
+            checks[role*"_quiescent"] = S.quiescent_unit(owner["unit"]; deadline = clock() + 8)
+            continue
+        end
         checks[role*"_exited"] =
             !S.old_process_exists(owner["pid"], UInt64(owner["start-ticks"]))
         checks[role*"_cgroup_empty"] = S.cgroup_empty(owner["cgroup"])
@@ -950,6 +954,7 @@ function run_case(selected; progress = _no_session_progress)
             handle.invocation != ledger["invocation"], "fresh session reused invocation"
         )
         for (role, old) in ledger["owners"]
+            PipeWireAORTC.SessionLaunch.is_optional(old) && continue
             new = second["owners"][role]
             checked(
                 (new["pid"], new["start-ticks"], new["invocation"]) !=

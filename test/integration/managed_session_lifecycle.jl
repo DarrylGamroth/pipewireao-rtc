@@ -16,7 +16,7 @@ const SOURCE_SHA256 = C.sha256_file(@__FILE__)
 
 function request(handle, stage, name, fields)
     reply = W.control!(
-        handle, R.RunnerCommands.parse(fields); deadline = W.monotonic() + 30
+        handle, R.RunnerCommands.parse(fields); deadline = Faults.clock() + 30
     )
     C.write_json(joinpath(stage, name * ".json"), reply)
     Faults.checked(reply["ok"] === true, "native lifecycle request rejected: $name")
@@ -175,8 +175,8 @@ end
 
 function shutdown(handle, stage)
     started = time_ns()
-    final = W.shutdown!(handle; deadline = W.monotonic() + 320)
-    Faults.checked(handle.shutdown_accepted, "native Quit was not acknowledged")
+    final = W.stop!(handle)
+    Faults.checked(final["systemd_quit"]["accepted"] === true, "native Quit was not acknowledged")
     Faults.observe_cleanup!(handle, stage; failed = false)
     return Dict(
         "elapsed_seconds" => (time_ns() - started) / 1e9,
@@ -206,7 +206,7 @@ function lifecycle_case(application, stage, prefix; running)
             application,
             stage;
             prefix,
-            deadline = W.monotonic() + Faults.startup_budget(spec),
+            deadline = Faults.clock() + Faults.startup_budget(spec),
         )
         ledger = W._ledger(handle)
         receipt["rtc_runtime"] = Faults.runtime_cohort(

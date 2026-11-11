@@ -11,7 +11,10 @@ const SOURCE_SHA256 = C.sha256_file(@__FILE__)
 
 function audit(handle, stage)
     ledger = W._ledger(handle)
-    processes = Dict(role => record["pid"] for (role, record) in ledger["owners"])
+    processes = Dict(
+        role => record["pid"] for (role, record) in ledger["owners"]
+        if !R.SessionLaunch.is_optional(record)
+    )
     processes["rtc"] = handle.main_pid
     result = Dict{String,Any}()
     for (role, pid) in processes
@@ -42,7 +45,7 @@ function main(application, stage, prefix)
     report = nothing
     cohort = Cleanup.runtime_cohort(application, spec, prefix)
     @testset "Classic CPU Ready to Quit" begin
-        handle = W.start!(application, stage; prefix, deadline = W.monotonic() + 600)
+        handle = W.start!(application, stage; prefix, deadline = Cleanup.clock() + 600)
         ledger = W._ledger(handle)
         failures = Exception[]
         try
@@ -53,17 +56,17 @@ function main(application, stage, prefix)
                 process = (pid = handle.main_pid, binding = ledger["session_process"]),
             )
             reply = W.control!(
-                handle, R.RunnerCommands.parse(["status"]); deadline = W.monotonic() + 20
+                handle, R.RunnerCommands.parse(["status"]); deadline = Cleanup.clock() + 20
             )
             C.write_json(joinpath(stage, "ready.json"), reply)
             @test reply["ok"] === true && reply["state"] == "Ready"
             audit(handle, stage)
             started = time_ns()
-            println("Ready; requesting one native Quit")
+            println("Ready; stopping the managed session")
             flush(stdout)
-            final = W.shutdown!(handle; deadline = W.monotonic() + 320)
+            final = W.stop!(handle)
             elapsed = (time_ns() - started) / 1e9
-            @test handle.shutdown_accepted
+            @test final["systemd_quit"]["accepted"] === true
             @test final["phase"] == "stopped" && final["cleanup_complete"] === true
             @test get(final, "error", nothing) === nothing
             Cleanup.observe_cleanup!(handle, stage; failed = false)
@@ -71,7 +74,7 @@ function main(application, stage, prefix)
                 "complete" => true,
                 "backend" => "cpu",
                 "started" => false,
-                "native_quit_accepted" => handle.shutdown_accepted,
+                "native_quit_accepted" => final["systemd_quit"]["accepted"],
                 "shutdown_and_cleanup_seconds" => elapsed,
                 "session_uuid" => ledger["session_uuid"],
                 "unit" => handle.unit,
@@ -99,6 +102,7 @@ function main(application, stage, prefix)
                     handle.unit, handle.invocation, handle.main_pid, stage, "rtc"
                 )
                 for (role, owner) in ledger["owners"]
+                    R.SessionLaunch.is_optional(owner) && continue
                     Cleanup.journal_records(
                         owner["unit"], owner["invocation"], owner["pid"], stage, role
                     )

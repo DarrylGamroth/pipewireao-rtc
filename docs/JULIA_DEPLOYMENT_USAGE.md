@@ -368,11 +368,14 @@ the headless RTC runs. HEART retains its necessary controller-PID launch stage.
 See [startup and cleanup](SYSTEMD_SESSION_STARTUP.md) for identity checks and
 ingress-first removal of the generated runtime units.
 
-Clients send native session controls. Normal `shutdown!` requires a correlated
-Quit→Offline acknowledgement and then observes exact systemd/owner cleanup.
-Emergency `stop!` is a distinct process-cleanup operation; it cannot establish
-successful public shutdown. Unknown Quit outcomes prohibit another Quit.
-The same retained invocation is used to reconcile cleanup without replay.
+Stop an installed session with `SessionRuntime.stop!` or `systemctl --user stop`.
+ExecStop sends native Quit and retains the correlated Offline acknowledgement
+in the invocation's `systemd_quit` record. ExecStopPost verifies exact
+systemd/owner cleanup. If the manager stop outcome is uncertain,
+`SessionRuntime.reconcile_stop!` observes cleanup without replaying it.
+Direct PipeWire clients can send native Quit and receive its terminal reply.
+Use `SessionRuntime.final_record` to read the retained cleanup result after
+the unit exits.
 
 Owner services use fresh names and `Restart=no`. Restart the session as a new
 whole cohort; do not restart a required owner in place. Retained runtime files
