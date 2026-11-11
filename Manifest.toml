@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "88701f23cb4006df2c604581be6e3b1e75fbfc92"
+project_hash = "f5424ababf987cb801413fe512131aa4ab52cb41"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -262,7 +262,7 @@ uuid = "30c7d52a-5243-5e1f-b778-22f49ec5fee3"
 version = "0.1.0+0"
 
 [[deps.PipeWireAORTC]]
-deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
+deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
 version = "0.7.13"

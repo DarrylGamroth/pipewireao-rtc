@@ -5,6 +5,7 @@ module SessionCLI
 import ..PipeWireAORTC
 using PipeWireAO: with_thread_loop_lock
 using JSON
+using PrecompileTools: @compile_workload
 import Clocks
 
 import ..SessionConfiguration
@@ -613,5 +614,46 @@ function main(argv = ARGS)
 end
 
 @main
+
+# Compile the installed CLI entry and shutdown specializations without opening a
+# PipeWire connection or contacting the user systemd manager.
+precompile(main, (Vector{String},))
+precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
+precompile(
+    Core.kwcall,
+    (
+        NamedTuple{(:source_role,),Tuple{String}},
+        typeof(SessionLaunch.cleanup_invocation!),
+        String,
+        String,
+    ),
+)
+
+precompile(
+    Core.kwcall,
+    (
+        NamedTuple{(:clock,),Tuple{Clocks.SystemNanoClock}},
+        typeof(SessionLaunch.cleanup_record!),
+        String,
+        Dict{String,Any},
+        String,
+        String,
+    ),
+)
+precompile(
+    Core.kwcall,
+    (NamedTuple{(:atomic,),Tuple{Bool}}, typeof(C.write_json), String, Dict{String,Any}),
+)
+
+# Both hooks read and update the invocation record. Exercise the bounded JSON
+# codec in memory so its dynamically dispatched object and array readers are cached.
+@compile_workload begin
+    record = C.parse_json("""
+        {"phase":"stopped","owners":{"core":{"pid":42}},"links":[1,2],
+         "systemd_quit":{"attempted":true,"accepted":true}}
+        """)
+    C.finite_json(record)
+    JSON.json(record)
+end
 
 end # module
