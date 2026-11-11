@@ -14,7 +14,7 @@ Client.encode_rejection(::Profile.Profile, header, lifecycle) = Envelope.encode_
     header, SPA.Struct(Pod(""), Pod("request rejected"), Pod(SPA.Id(UInt32(lifecycle))))
 )
 Client.encode_failure(::Profile.Profile, header, lifecycle) = Envelope.encode_completion(
-    header, SPA.Struct(Pod(""), Pod("request expired"), Pod(SPA.Id(UInt32(lifecycle))))
+    header, SPA.Struct(Pod(""), Pod("request failed"), Pod(SPA.Id(UInt32(lifecycle))))
 )
 
 function main(root, remote, unit, mode)
@@ -71,31 +71,27 @@ function main(root, remote, unit, mode)
                     Int32(0),
                 )
                 if ticket.header.operation == 3
-                    state = mode == "fault" ? Codec.Runner.Fault : Codec.Runner.Running
-                    details = SPA.Struct(
-                        Pod(true),
-                        Pod(Int64(1)),
-                        Pod(Int64(1)),
-                        Pod(Int64(0)),
-                        Pod(SPA.Struct()),
-                    )
-                    Endpoint.complete!(
-                        endpoint,
-                        ticket,
-                        Envelope.encode_completion(
-                            header,
-                            SPA.Struct(
-                                Pod(SPA.Id(UInt32(state))),
-                                Pod(SPA.Id(UInt32(2))),
-                                Pod(details),
-                            ),
-                        ),
-                    )
+                    # A stalled science Status must not prevent the stop hook
+                    # from submitting Quit. This ticket deliberately has no reply.
+                    event("status-request")
                 elseif ticket.header.operation == 1
                     open(joinpath(root, "quit-submissions"), "a") do io
                         println(io, ticket.header.token)
                     end
                     event("quit-entry")
+                    if mode == "fault"
+                        failed = Envelope.ReplyHeader(
+                            ticket.header.controller,
+                            endpoint.instance,
+                            ticket.header.token,
+                            ticket.header.operation,
+                            Int32(-Base.Libc.ESHUTDOWN),
+                        )
+                        Endpoint.complete!(
+                            endpoint, ticket, Client.encode_failure(Profile.Profile(), failed, Codec.Runner.Fault)
+                        )
+                        continue
+                    end
                     if mode == "unknown"
                         close(endpoint)
                         endpoint = nothing

@@ -6,14 +6,13 @@ const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
 const repo = dirname(@__DIR__)
 const julia = Base.julia_cmd().exec[1]
-const baseline = "--baseline" in ARGS
 const user_runtime = ENV["XDG_RUNTIME_DIR"]
 const user_bus = get(
     ENV, "DBUS_SESSION_BUS_ADDRESS", "unix:path=" * joinpath(ENV["XDG_RUNTIME_DIR"], "bus")
 )
 const evidence = joinpath(
     get(ENV, "RTC_STOP_EVIDENCE_ROOT", dirname(tempdir())),
-    "systemd-stop-$(getpid())-$(baseline ? "before" : "after")",
+    "systemd-stop-$(getpid())",
 )
 mkpath(evidence)
 
@@ -22,7 +21,9 @@ function stop_case(remote, directory, mode)
     mkpath(root)
     unit = "codex-rtc-stop-$(getpid())-$(mode).service"
     fragment = joinpath(root, unit)
-    hook = "ExecStop=$julia --startup-file=no --project=$repo $repo/test/systemd_stop_launcher.jl $repo/session_cli.jl $root stop --unit $unit --runtime-root $root"
+    hook = "ExecStop=$julia --startup-file=no --optimize=0 --project=$repo " *
+           "-e \"using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))\" -- " *
+           "stop --unit $unit --runtime-root $root"
     environment = join(
         [
             "Environment=" * String(JSON.json(key * "=" * ENV[key])) for key in (
@@ -39,8 +40,9 @@ function stop_case(remote, directory, mode)
         """
 [Service]
 Type=exec
-ExecStart=$julia --startup-file=no --project=$repo $repo/test/systemd_stop_owner.jl $root $remote $unit $mode
-$(baseline ? "" : hook)
+# Use low optimization for the stand-in to limit first-use compilation.
+ExecStart=$julia --startup-file=no --optimize=0 --project=$repo $repo/test/systemd_stop_owner.jl $root $remote $unit $mode
+$hook
 ExecStopPost=/usr/bin/touch $root/cleanup
 KillMode=control-group
 # Test-only forced revocation: Julia signal diagnostics/finalizers are a
@@ -69,6 +71,8 @@ $environment
             record["session_pid"] += 1
         elseif mode == "wrong-ticks"
             record["session_start_ticks"] += 1
+        elseif mode == "wrong-instance"
+            record["session_control_instance"] += 1
         elseif mode == "wrong-version"
             record["version"] = 1
         elseif mode == "wrong-uuid"
@@ -96,9 +100,6 @@ $environment
                   time_ns() / 1e9 < deadline
                 sleep(0.005)
             end
-            baseline && println(
-                "SYSTEMD_STOP_BASELINE owner_revoked=$(Base.process_exited(stopping)) quit_entered=$(isfile(joinpath(root, "quit-entry"))) command_adopted=$(isfile(joinpath(root, "command-adopted")))",
-            )
             @test isfile(joinpath(root, "quit-entry"))
             isfile(joinpath(root, "quit-entry")) ||
                 error("systemd revoked the session before native Quit drained its command")
@@ -116,7 +117,8 @@ $environment
         mode == "missing-ledger" || (record = C.read_json(ledger))
         submissions_path = joinpath(root, "quit-submissions")
         submissions = isfile(submissions_path) ? length(readlines(submissions_path)) : 0
-        @test submissions == (mode in ("normal", "unknown") ? 1 : 0)
+        @test submissions == (mode in ("normal", "fault", "unknown") ? 1 : 0)
+        @test !isfile(joinpath(root, "status-request"))
         if mode == "normal"
             @test success(stopping)
             @test record["systemd_quit"]["accepted"] === true
@@ -131,7 +133,7 @@ $environment
             @test all(name -> isfile(joinpath(root, name)), events)
             stamps = [parse(UInt64, read(joinpath(root, name), String)) for name in events]
             @test issorted(stamps)
-        elseif mode == "unknown"
+        elseif mode in ("fault", "unknown")
             @test record["systemd_quit"]["attempted"] === true
             @test record["systemd_quit"]["accepted"] === false
             @test !isfile(joinpath(root, "graph-stopped"))
@@ -146,29 +148,6 @@ $environment
         println(
             "SYSTEMD_STOP mode=$mode cleanup=true quiescent=true quit_submissions=$submissions accepted=$(get(get(record,"systemd_quit",Dict()),"accepted",false))",
         )
-        timing_names = [
-            "helper-launch",
-            "helper-loaded",
-            "helper-budget-start",
-            "connect-begin",
-            "connect-end",
-            "status-request",
-            "status-complete",
-            "quit-request",
-            "quit-entry",
-            "command-adopted",
-            "quit-complete",
-            "client-close-begin",
-            "client-close-end",
-            "mainpid-exit-observed",
-            "helper-finish",
-        ]
-        for name in timing_names
-            path = joinpath(root, name)
-            isfile(path) && println(
-                "SYSTEMD_STOP_TIME mode=$mode stage=$name monotonic_ns=$(read(path,String))",
-            )
-        end
     finally
         if S.properties(unit)["MainPID"] != "0"
             run(
@@ -200,19 +179,17 @@ end
             "DBUS_SESSION_BUS_ADDRESS" => user_bus, "XDG_RUNTIME_DIR" => user_runtime
         ) do
             for mode in (
-                baseline ? ["normal"] :
-                [
-                    "normal",
-                    "fault",
-                    "unknown",
-                    "wrong-pid",
-                    "wrong-ticks",
-                    "wrong-version",
-                    "wrong-uuid",
-                    "submitted",
-                    "missing-ledger",
-                    "exited",
-                ]
+                "normal",
+                "fault",
+                "unknown",
+                "wrong-pid",
+                "wrong-ticks",
+                "wrong-instance",
+                "wrong-version",
+                "wrong-uuid",
+                "submitted",
+                "missing-ledger",
+                "exited",
             )
                 stop_case(remote, directory, mode)
             end

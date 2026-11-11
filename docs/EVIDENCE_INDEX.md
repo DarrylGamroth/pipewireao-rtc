@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Direct native Quit from systemd — 2026-11-11
+
+The [private-core checks](validation/direct-systemd-quit-20261111/README.md)
+record exact identity fencing, the stalled Status regression and Classic cleanup.
+
 ## Optional analysis in the RTC systemd invocation — 2026-11-11
 
 The [private-core check](validation/optional-analysis-systemd-20261111/README.md)

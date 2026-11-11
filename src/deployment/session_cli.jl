@@ -73,16 +73,6 @@ function confirm_ready(reply::Session.Completion)
 end
 confirm_ready(reply) = throw(ArgumentError("fresh direct Status did not confirm Ready"))
 
-function confirm_stoppable(reply::Session.Completion)
-    reply.header.result == 0 &&
-    reply.error === nothing &&
-    reply.lifecycle in (Session.Runner.Ready, Session.Runner.Running) ||
-        throw(ArgumentError("native stop requires an admitted healthy session"))
-    return nothing
-end
-confirm_stoppable(reply) =
-    throw(ArgumentError("native stop requires an admitted healthy session"))
-
 function confirm_shutdown(reply::Session.Completion)
     reply.header.result == 0 &&
     reply.error === nothing &&
@@ -418,8 +408,8 @@ function stop!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock())
         clock,
     )
     try
-        status = Client.request!(client, Session.RunnerCommand(:status); deadline)
-        confirm_stoppable(status)
+        # Discovery already bound the control node to this PID and instance.
+        # Check its UUID locally. The session HSM owns admission of Quit.
         with_thread_loop_lock(client.loop) do _
             Client.healthy(client)
             client.observation.node_identity == record["session_uuid"] ||
