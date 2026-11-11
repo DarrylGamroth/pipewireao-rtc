@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## HIL-owned optical startup images — 2026-11-11
+
+The [private-core checks](validation/hil-startup-image-20261111/README.md)
+record image loading, startup and clean Quit for CAL2 and SPIDERS.
+
 ## RTC startup, optional analysis, and shutdown scope — 2026-11-11
 
 The [scope review](reviews/20261111-startup-shutdown-scope/REVIEW.md)
