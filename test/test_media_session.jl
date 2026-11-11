@@ -270,7 +270,7 @@ end
     @test m.lifecycle == R.Fault && m.deadline == 16 * SECOND
     @test S.take_cancelled!(m) !== nothing
     @test isempty(S.take_replies!(m))
-    sequence!(m, (S.HoldSources, S.HoldGraphs, S.ShutdownGraphOwners, S.WithdrawLinks))
+    sequence!(m, (S.HoldSources, S.HoldGraphs, S.WithdrawLinks))
     @test only(S.take_replies!(m)).unknown
     @test Hsm.current(m) === :HeldFault
 
@@ -295,7 +295,7 @@ end
     @test isempty(S.take_replies!(m))
     sequence!(m, (S.HoldSources,))
     S.fail!(m, m.effect, "graph hold failed"; submitted = true)
-    @test m.effect.effect === S.ShutdownGraphOwners()
+    @test m.effect.effect === S.WithdrawLinks()
     acknowledge!(m)
     @test Hsm.current(m) === :HeldFault && m.lifecycle == R.Fault
     @test only(S.take_replies!(m)).unknown
@@ -382,7 +382,7 @@ end
         S.tick!(m)
         S.take_cancelled!(m)
         sequence!(m, (S.HoldSources, S.HoldGraphs))
-        @test m.effect.effect === S.ShutdownGraphOwners()
+        @test m.effect.effect === S.WithdrawLinks()
         if cleanup === :complete
             acknowledge!(m)
         elseif cleanup === :fail

@@ -460,6 +460,30 @@ end
     @test isempty(runtime.owners) && isempty(runtime.captured)
 end
 
+@testset "Quit retires independent graph owners ahead of Link withdrawal" begin
+    runtime = Runtime()
+    runtime.configuration["node.pids"] = Dict(
+        "upstream" => 2002, "left" => 2001, "right" => 2001, "independent" => 2004
+    )
+    S.perform!(runtime, job(), S.CaptureOwners())
+    capture_sources!(runtime)
+    empty!(runtime.trace)
+    S.perform!(runtime, job(), S.ShutdownGraphOwners())
+    S.perform!(runtime, job(), S.WithdrawLinks())
+    S.perform!(runtime, job(), S.ShutdownSources())
+    S.perform!(runtime, job(), S.ShutdownOwners())
+    @test runtime.trace == [
+        (:shutdown_owner, UInt64(11)),
+        (:retire_owner, UInt64(11)),
+        (:withdraw_links, UInt64(0)),
+        (:shutdown_source, UInt64(22)),
+        (:shutdown_owner, UInt64(21)),
+        (:retire_owner, UInt64(21)),
+        (:shutdown_owner, UInt64(41)),
+        (:retire_owner, UInt64(41)),
+    ]
+end
+
 @testset "Publisher and source capture are bounded and do not duplicate bootstrap shutdown" begin
     runtime = Runtime()
     S.perform!(runtime, job(), S.CaptureOwners())
