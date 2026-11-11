@@ -332,6 +332,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
     record["discovery_locator"] = joinpath(directory, "session-" * uuid * ".pod")
     C.write_json(ledger, record; atomic = true)
     _verified_discovery!(record, session_record)
+    SessionLaunch.start_analysis!(args.package, args.prefix, package, record; deadline, clock)
     return nothing
 end
 

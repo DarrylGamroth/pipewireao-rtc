@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Optional analysis in the RTC systemd invocation — 2026-11-11
+
+The [private-core check](validation/optional-analysis-systemd-20261111/README.md)
+records Classic admission with working and failed analysis units and shared cleanup.
+
 ## RTC 0.7.12 and HIL 0.5.4 release — 2026-11-11
 
 The [registry-only verification](validation/rtc-0712-hil-054-20261111/README.md)

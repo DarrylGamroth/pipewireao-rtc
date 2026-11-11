@@ -24,7 +24,6 @@ function install_fragment!(
     text,
     runtime,
     record;
-    save = save_unit_record!,
     deadline = nothing,
     clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
 )
@@ -46,7 +45,7 @@ function install_fragment!(
         ispath(temporary) && rm(temporary)
     end
     record["unit_files"][unit] = Dict("path" => path, "sha256" => Common.sha256_file(path))
-    save(runtime, record) # Retain intent before installing the manager link.
+    save_unit_record!(runtime, record) # Retain intent before installing the manager link.
     symlink(path, link) # Exclusive creation; never replace an existing unit.
     return path
 end
@@ -160,47 +159,51 @@ function cancel_start_jobs!(
     fail("invocation start jobs did not quiesce")
 end
 
+function verify_cleanup_fragment!(
+    runtime, record, unit, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
+)
+    entry = record["unit_files"][unit]
+    directory = runtime_unit_directory()
+    removing = get(record, "unit_file_removal_started", false)
+    path = joinpath(runtime, "units", unit)
+    entry["path"] == path &&
+    !islink(path) &&
+    (
+        (isfile(path) && Common.sha256_file(path) == entry["sha256"]) ||
+        (removing && !ispath(path))
+    ) || fail("cleanup unit fragment differs: $unit")
+    link = joinpath(directory, unit)
+    (islink(link) && readlink(link) == path) ||
+        (!ispath(link) && !islink(link)) ||
+        fail("cleanup unit link differs: $unit")
+    values = properties(unit; extra = "FragmentPath,DropInPaths", deadline, clock)
+    isempty(values["DropInPaths"]) && (
+        values["LoadState"] == "not-found" ||
+        (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
+        (removing && !ispath(path) && values["FragmentPath"] in (path, link))
+    ) || fail("cleanup loaded unit definition differs: $unit")
+    return nothing
+end
+
 function remove_fragments!(
-    runtime,
-    record,
-    deadline;
-    roles = keys(record["owners"]),
-    save = save_unit_record!,
-    clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock(),
+    runtime, record, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
     files = get(record, "unit_files", Dict())
     isempty(files) && return nothing # Older launch records have transient services.
     directory = runtime_unit_directory()
     prefix = PREFIX * record["invocation"] * "-"
-    removing = get(record, "unit_file_removal_started", false)
-    # Validate the entire set before removing any file. The ledger alone is
-    # insufficient: links, contents and manager definitions must still match.
-    for (unit, entry) in files
+    roles = keys(record["owners"])
+    # Validate the entire set before removing any file.
+    for unit in keys(files)
         (
             unit == cohort_name(record["invocation"]) ||
             unit in (prefix * role * ".service" for role in roles)
         ) || fail("cleanup ledger names a foreign unit")
-        path = joinpath(runtime, "units", unit)
-        entry["path"] == path &&
-        !islink(path) &&
-        (
-            (isfile(path) && Common.sha256_file(path) == entry["sha256"]) ||
-            (removing && !ispath(path))
-        ) || fail("cleanup unit fragment differs: $unit")
-        link = joinpath(directory, unit)
-        (islink(link) && readlink(link) == path) ||
-            (!ispath(link) && !islink(link)) ||
-            fail("cleanup unit link differs: $unit")
-        values = properties(unit; extra = "FragmentPath,DropInPaths", deadline, clock)
-        isempty(values["DropInPaths"]) && (
-            values["LoadState"] == "not-found" ||
-            (isfile(values["FragmentPath"]) && realpath(values["FragmentPath"]) == path) ||
-            (removing && !ispath(path) && values["FragmentPath"] in (path, link))
-        ) || fail("cleanup loaded unit definition differs: $unit")
+        verify_cleanup_fragment!(runtime, record, unit, deadline; clock)
         quiescent_unit(unit; deadline, clock) || fail("cleanup unit remains active: $unit")
     end
     record["unit_file_removal_started"] = true
-    save(runtime, record) # Recovery can recognize our own partial removal.
+    save_unit_record!(runtime, record) # Recovery can recognize our own partial removal.
     for (unit, entry) in files
         link = joinpath(directory, unit)
         islink(link) && rm(link)

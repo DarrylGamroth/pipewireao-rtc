@@ -106,6 +106,13 @@ coordinated loop; independent corrector closure requires an allocation policy.
 
 ## Headless WFS measurements
 
+After the RTC reports native Ready, the systemd startup hook submits the
+declared optional analysis units without waiting for their graphs to start.
+Their unit definitions are retained in the same invocation's `launch.json`.
+A failed analysis service is visible in its systemd status and journal. RTC
+admission and live readiness depend only on required owners. The invocation's
+cleanup removes both required and optional units.
+
 An optional analysis graph uses the ordinary `shack-hartmann-summary-f32`
 Algorithm with `slopes`, `flux` and `validity` from observation queues. Configure
 the subaperture count, export `summary`, and connect it to an exclusive

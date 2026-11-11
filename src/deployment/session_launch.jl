@@ -845,6 +845,15 @@ function _retained_service(record, role, item::AbstractDict)
     return service
 end
 
+include("analysis_services.jl")
+
+is_optional(item) = get(item, "optional", false) === true
+
+function optional_role(record, role)
+    item = get(record["owners"], role, nothing)
+    return item === nothing ? startswith(role, "analysis-") : is_optional(item)
+end
+
 function cleanup_role!(
     record, role, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
 )
@@ -853,6 +862,16 @@ function cleanup_role!(
     unit = S.PREFIX * invocation * "-" * role * ".service"
     for job in S.listed_jobs(invocation; deadline, clock)
         job.second == unit && S.cancel_job(job.first; deadline, clock)
+    end
+    if optional_role(record, role)
+        # An optional service is submitted asynchronously. Its exact fragment
+        # authorizes cleanup even if no MainPID was observed by ExecStartPost.
+        if haskey(get(record, "unit_files", Dict()), unit)
+            S.verify_cleanup_fragment!(record["runtime"], record, unit, deadline; clock)
+        else
+            S.properties(unit; deadline, clock)["LoadState"] == "not-found" ||
+                fail("optional owner lacks its retained fragment: $unit")
+        end
     end
     retained = retained_service(record, role)
     if retained === nothing
@@ -947,9 +966,8 @@ function cleanup_record!(
         role in roles || continue
         cleanup_role!(record, role, deadline; clock)
     end
-    optional(role) = startswith(role, "analysis-") && !haskey(record["owners"], role)
-    for role in sort!(collect(setdiff(roles, Set(["core", String(source_role)]))))
-        optional(role) && continue
+    cleanup_order(role) = (optional_role(record, role), role)
+    for role in sort!(collect(setdiff(roles, Set(["core", String(source_role)]))); by = cleanup_order)
         cleanup_role!(record, role, deadline; clock)
     end
     # Start requests may materialize after the first enumeration. Repeat the
@@ -962,16 +980,8 @@ function cleanup_record!(
             fail("invocation cleanup clock regressed")
         previous = current
         current < deadline || break
-        units = filter(S.listed_units(invocation; deadline, clock)) do unit
-            role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
-            !optional(role)
-        end
-        jobs = filter(S.listed_jobs(invocation; deadline, clock)) do job
-            unit = job.second
-            endswith(unit, ".service") || return true
-            role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
-            !optional(role)
-        end
+        units = S.listed_units(invocation; deadline, clock)
+        jobs = S.listed_jobs(invocation; deadline, clock)
         if isempty(jobs) && all(unit -> S.quiescent_unit(unit; deadline, clock), units)
             quiet += 1
             quiet >= 3 && break
@@ -983,7 +993,7 @@ function cleanup_record!(
         for role in ("core", String(source_role))
             cleanup_role!(record, role, deadline; clock)
         end
-        for unit in units
+        for unit in sort!(units; by = unit -> startswith(unit, prefix * "analysis-"))
             startswith(unit, prefix) && endswith(unit, ".service") || continue
             role = unit[(ncodeunits(prefix)+1):(end-ncodeunits(".service"))]
             role in ("core", source_role) && continue
@@ -1000,7 +1010,6 @@ function cleanup_record!(
     end
     get(record, "unit_files_removed", false) ||
         S.remove_fragments!(runtime, record, deadline; clock)
-    PipeWireAORTC.Analysis.cleanup!(runtime, record, deadline; clock)
     result = get(ENV, "SERVICE_RESULT", "")
     record["service_result"] = result
     record["cleanup_complete"] = true

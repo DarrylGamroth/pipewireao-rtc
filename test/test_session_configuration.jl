@@ -321,10 +321,7 @@ end
         @test_throws ArgumentError R.stop!(handle; deadline = 0.0)
         @test !handle.stop_attempted && read(path) == before
         @test_throws ArgumentError PipeWireAORTC.SessionCLI.retire_record!(old, nothing)
-        @test_throws ArgumentError PipeWireAORTC.Analysis.start!(root, old, handle.unit)
-        @test_throws ArgumentError PipeWireAORTC.Analysis.cleanup!(runtime, old, 0.0)
-        @test !ispath(joinpath(runtime, "analysis.lock"))
-        @test !ispath(joinpath(runtime, "analysis.json"))
+        @test_throws ArgumentError L.start_analysis!(root, "", Dict(), old; deadline = 0, clock = nothing)
         @test read(path) == before
         L.launch_record!(runtime, retained)
         @test C.read_json(path) == retained

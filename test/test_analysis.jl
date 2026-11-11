@@ -5,6 +5,7 @@ const A = PipeWireAORTC.Analysis
 const D = PipeWireAORTC.DeploymentConfiguration
 const C = PipeWireAORTC.Common
 const S = PipeWireAORTC.SystemdOwners
+const L = PipeWireAORTC.SessionLaunch
 const INVOCATION = "0123456789abcdef0123456789abcdef"
 
 @testset "analysis channel units reject malformed UTF-8" begin
@@ -318,13 +319,11 @@ end
         Dict(),
         "/tmp",
         Dict("cpus" => [7, 6], "leader-cpu" => 6);
-        requisite = [coordinator.unit],
         part_of = [coordinator.unit],
         ordinary = true,
     )
     lines = split(unit, '\n')
     for line in (
-        "Requisite=$(coordinator.unit)",
         "PartOf=$(coordinator.unit)",
         "CPUAffinity=6 7",
         "Nice=10",
@@ -339,11 +338,15 @@ end
         line ->
             startswith(line, "Requires=") ||
             startswith(line, "Wants=") ||
+            startswith(line, "Requisite=") ||
             startswith(line, "BindsTo="),
         lines,
     )
     @test !any(line -> startswith(line, "After=") || startswith(line, "Before="), lines)
-    env = A.environment("/private/runtime", "/private/prefix", "/private/lib")
+    paths = Dict("library" => "/private/lib", "modules" => "/private/modules", "spa" => "/private/spa")
+    env = L.analysis_environment(paths, "/private/runtime", "analysis-wfs", "/private/prefix", "core")
+    @test env["PIPEWIRE_REMOTE"] == "core"
+    @test env["PIPEWIREAO_CONFIG_DIR"] == "/private/runtime/analysis-wfs"
     for key in ("CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES")
         @test env[key] == ""
     end
@@ -360,21 +363,15 @@ end
             "invocation" => INVOCATION,
             "owners" => Dict("core" => Dict("unit" => "required-core")),
         )
-        before = deepcopy(launch)
-        @test_logs (:warn, r"Optional analysis startup failed") A.start!(
-            joinpath(runtime, "missing"), launch, coordinator.unit
+        clock = Clocks.CachedNanoClock(10)
+        @test_logs (:warn, r"Optional analysis startup failed") L.start_analysis!(
+            runtime, "/missing", Dict("analysis" => [Dict()]), launch; deadline = 10, clock
         )
-        @test launch == before
-        receipt = C.read_json(joinpath(runtime, "analysis.json"))
-        @test length(receipt["errors"]) == 1
-        @test isempty(receipt["analysis"])
-        @test_logs (:warn, r"Optional analysis start already attempted") A.start!(
-            runtime, launch, coordinator.unit
-        )
-        @test C.read_json(joinpath(runtime, "analysis.json")) == receipt
-        receipt["invocation"] = repeat("f", 32)
-        C.write_json(joinpath(runtime, "analysis.json"), receipt)
-        @test_throws ArgumentError A.cleanup!(runtime, launch, S.monotonic() + 1)
+        record = C.read_json(joinpath(runtime, "launch.json"))
+        @test length(record["analysis_errors"]) == 1
+        @test record["owners"] == launch["owners"]
+        @test !ispath(joinpath(runtime, "analysis.json"))
+        @test !ispath(joinpath(runtime, "analysis.lock"))
     end
 end
 
@@ -410,13 +407,13 @@ end
             symlink(path, link)
             receipt = Dict{String,Any}(
                 "invocation" => INVOCATION,
+                "owners" => Dict("analysis-wfs" => Dict()),
                 "unit_files" =>
                     Dict(unit => Dict("path" => path, "sha256" => C.sha256_file(path))),
             )
             F.observations[unit] = Dict(
                 "LoadState" => "loaded", "FragmentPath" => path, "DropInPaths" => ""
             )
-            save = (runtime, receipt) -> nothing
             merge!(
                 F.observations[unit],
                 Dict(
@@ -438,29 +435,29 @@ end
                 unit, receipt; placement, ordinary = true
             )
             F.observations[unit]["RestrictRealtime"] = "yes"
-            @test_throws ArgumentError F.remove_fragments!(
-                runtime, receipt, Inf; roles = ["analysis-foreign"], save
-            )
+            delete!(receipt["owners"], "analysis-wfs")
+            @test_throws ArgumentError F.remove_fragments!(runtime, receipt, Inf)
+            receipt["owners"]["analysis-wfs"] = Dict()
             @test isfile(path) && islink(link)
             write(path, "tampered definition")
             @test_throws ArgumentError F.remove_fragments!(
-                runtime, receipt, Inf; roles = ["analysis-wfs"], save
+                runtime, receipt, Inf
             )
             write(path, "retained definition")
             F.observations[unit]["DropInPaths"] = "/foreign.conf"
             @test_throws ArgumentError F.remove_fragments!(
-                runtime, receipt, Inf; roles = ["analysis-wfs"], save
+                runtime, receipt, Inf
             )
             F.observations[unit]["DropInPaths"] = ""
             rm(link)
             symlink("/foreign-definition", link)
             @test_throws ArgumentError F.remove_fragments!(
-                runtime, receipt, Inf; roles = ["analysis-wfs"], save
+                runtime, receipt, Inf
             )
             rm(link)
             symlink(path, link)
             @test F.remove_fragments!(
-                runtime, receipt, Inf; roles = ["analysis-wfs"], save
+                runtime, receipt, Inf
             ) === nothing
             @test !ispath(path) && !islink(link)
             @test receipt["unit_files_removed"]
@@ -469,36 +466,11 @@ end
     end
 end
 
-@testset "optional lifecycle lock bounds waits and releases on failure" begin
-    mktempdir() do runtime
-        held, release = Channel{Nothing}(1), Channel{Nothing}(1)
-        owner = @async A.with_lifecycle_lock(runtime, S.monotonic() + 5) do
-            put!(held, nothing)
-            take!(release)
-        end
-        take!(held)
-        @test_throws ArgumentError A.with_lifecycle_lock(
-            () -> error("must not acquire"), runtime, S.monotonic() + 0.05
-        )
-        put!(release, nothing)
-        wait(owner)
-        @test A.with_lifecycle_lock(() -> :acquired, runtime, S.monotonic() + 1) ==
-            :acquired
-        @test_throws ErrorException A.with_lifecycle_lock(
-            () -> error("injected installer failure"), runtime, S.monotonic() + 1
-        )
-        @test A.with_lifecycle_lock(() -> :released, runtime, S.monotonic() + 1) ==
-            :released
-        @test stat(joinpath(runtime, "analysis.lock")).mode & 0o777 == 0o600
-    end
-end
-
-module RequiredCleanupProof
+module InvocationCleanupProof
 import Clocks
-import PipeWireAORTC.SessionLaunch: validate_ledger
+import PipeWireAORTC.SessionLaunch: validate_ledger, optional_role
 const events = String[]
 const invocation = "0123456789abcdef0123456789abcdef"
-const clock = Ref(0.0)
 module S
 import ..events, ..invocation
 const PREFIX = "pipewireao-owner-"
@@ -507,89 +479,30 @@ name(role) = PREFIX * invocation * "-" * role * ".service"
 listed_units(args...; kwargs...) = name.(["core", "simulator", "julia", "analysis-wfs"])
 listed_jobs(args...; kwargs...) = Pair{String,String}[]
 cancel_start_jobs!(args...; kwargs...) = nothing
-quiescent_unit(unit; kwargs...) = unit != name("analysis-wfs")
-remove_fragments!(args...; kwargs...) = push!(events, "required fragments removed")
-end
-module PipeWireAORTC
-module Analysis
-import ...events
-verify_cleanup!(args...; kwargs...) = error("optional receipt invalid")
-cleanup!(args...; kwargs...) =
-    (push!(events, "optional cleanup"); error("optional receipt invalid"))
-end
+quiescent_unit(unit; kwargs...) = true
+remove_fragments!(args...; kwargs...) = push!(events, "remove fragments")
 end
 cleanup_role!(record, role, deadline; kwargs...) = push!(events, role)
-monotonic() = (clock[] += 50.0)
 fail(message) = error(message)
 launch_record!(args...) = nothing
 end
 
-@testset "invalid optional receipt cannot strand required consumers" begin
-    # Run the maintained cleanup function against a deterministic manager. The
-    # optional unit remains non-quiescent and its receipt refuses cleanup.
+@testset "analysis is stopped and removed in the invocation sweep" begin
     source = read(
         joinpath(pkgdir(PipeWireAORTC), "src/deployment/session_launch.jl"), String
     )
     position = first(findfirst("function cleanup_record!", source))
     expression, _ = Meta.parse(source, position)
-    Core.eval(RequiredCleanupProof, expression)
+    Core.eval(InvocationCleanupProof, expression)
+    owners = Dict(role => Dict{String,Any}() for role in ("core", "simulator", "julia"))
+    owners["analysis-wfs"] = Dict("optional" => true)
     record = Dict{String,Any}(
-        "version" => 2,
-        "invocation" => INVOCATION,
-        "owners" => Dict(role => Dict() for role in ("core", "simulator", "julia")),
-        "error" => nothing,
+        "version" => 2, "invocation" => INVOCATION, "owners" => owners, "error" => nothing,
     )
-    @test_throws ErrorException RequiredCleanupProof.cleanup_record!(
+    @test InvocationCleanupProof.cleanup_record!(
         "/unused", record, INVOCATION, "simulator"
-    )
-    @test RequiredCleanupProof.events ==
-        ["core", "simulator", "julia", "required fragments removed", "optional cleanup"]
-end
-
-mutable struct AnalysisClock <: Clocks.AbstractNanoClock
-    value::Int64
-    reads::Int
-end
-function Clocks.time_nanos(clock::AnalysisClock)
-    clock.reads += 1
-    return clock.value
-end
-
-@testset "analysis lifecycle lock uses signed decision ticks" begin
-    mktempdir() do runtime
-        for origin in (Int64(-10), Int64(2)^53 + 1)
-            clock = AnalysisClock(origin, 0)
-            @test A.with_lifecycle_lock(() -> :acquired, runtime, origin + 1; clock) ===
-                :acquired
-            @test clock.reads == 1
-            @test_throws ArgumentError A.with_lifecycle_lock(
-                () -> error("expired lock acquired"), runtime, origin; clock
-            )
-            @test clock.reads == 2
-        end
-        @test_throws S.OwnerError A.with_lifecycle_lock(() -> nothing, runtime, Inf)
-        held, release = Channel{Nothing}(1), Channel{Nothing}(1)
-        owner = @async A.with_lifecycle_lock(runtime, S.monotonic() + 5) do
-            put!(held, nothing)
-            take!(release)
-        end
-        take!(held)
-        clock = AnalysisClock(10, 0)
-        waiting = @async A.with_lifecycle_lock(
-            () -> error("contended lock acquired"), runtime, Int64(100); clock
-        )
-        try
-            yield()
-            @test clock.reads == 1
-            clock.value = 9
-            @test_throws TaskFailedException wait(waiting)
-            @test clock.reads == 2
-        finally
-            put!(release, nothing)
-            wait(owner)
-        end
-        @test A.with_lifecycle_lock(
-            () -> :released, runtime, Int64(11); clock = Clocks.CachedNanoClock(10)
-        ) === :released
-    end
+    ) === nothing
+    @test InvocationCleanupProof.events ==
+        ["core", "simulator", "julia", "analysis-wfs", "remove fragments"]
+    @test record["cleanup_complete"] === true
 end

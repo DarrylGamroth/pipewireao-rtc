@@ -7,7 +7,6 @@ module SessionRuntime
 
 using UUIDs
 import Clocks
-import ..Analysis
 import ..Common
 import ..DeploymentConfiguration
 import ..SystemdOwners
@@ -583,25 +582,6 @@ function start!(
             throw(ArgumentError("RTC session did not retain prepared launch evidence"))
         handle.stage_root = target
         _receipt(target, handle)
-        Analysis.start!(
-            installed,
-            launch_record,
-            unit;
-            prefix,
-            deadline = min(
-                deadline, Base.checked_add(Clocks.time_nanos(clock), Int64(20_000_000_000))
-            ),
-            clock,
-            ready = () -> _analysis_ready(
-                handle,
-                launch_record,
-                min(
-                    deadline,
-                    Base.checked_add(Clocks.time_nanos(clock), Int64(10_000_000_000)),
-                );
-                clock,
-            ),
-        )
         return handle
     catch primary
         try
@@ -695,46 +675,6 @@ function _selected(
     return connection
 end
 
-# Optional graphs are submitted only after a fresh native Ready/Running status.
-# This bounded wait belongs to optional startup and never changes RTC readiness.
-function _analysis_ready(
-    handle, record, deadline; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock()
-)
-    last_error = nothing
-    deadline = S.deadline_ns(deadline)
-    previous = nothing
-    while true
-        current = Clocks.time_nanos(clock)
-        previous === nothing ||
-            current >= previous ||
-            throw(ArgumentError("session clock regressed"))
-        previous = current
-        current < deadline || break
-        connection = nothing
-        try
-            connection = _selected(record, deadline; clock)
-            status = connection.selected.status
-            status.lifecycle in (:ready, :running) &&
-            status.owner_pid == UInt32(handle.main_pid) &&
-            status.incarnation == record["session_control_instance"] &&
-            status.remote == record["remote"] ||
-                throw(ArgumentError("optional analysis requires an admitted RTC status"))
-            return nothing
-        catch error
-            last_error = error
-        finally
-            connection === nothing || close(connection)
-        end
-        sleep(min(Int64(50_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
-    end
-    throw(
-        ArgumentError(
-            "RTC was not ready for optional analysis: " *
-            (last_error === nothing ? "deadline expired" : sprint(showerror, last_error)),
-        ),
-    )
-end
-
 function _verify_owners(
     handle::Handle,
     record,
@@ -743,6 +683,7 @@ function _verify_owners(
 )
     coordinator = S.Coordinator(handle.unit, handle.invocation, handle.cgroup)
     for (role, item) in record["owners"]
+        PipeWireAORTC.SessionLaunch.is_optional(item) && continue
         item["state"] == "running" ||
             throw(ArgumentError("recorded owner $role is not running"))
         service = S.Service(coordinator, role)
@@ -824,7 +765,7 @@ function ready(
             "invocation" => item["invocation"],
             "start-ticks" => item["start-ticks"],
             "cgroup" => item["cgroup"],
-        ) for (role, item) in record["owners"]
+        ) for (role, item) in record["owners"] if !PipeWireAORTC.SessionLaunch.is_optional(item)
     )
     return Dict{String,Any}(
         "unit" => handle.unit,
