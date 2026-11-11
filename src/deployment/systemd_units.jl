@@ -133,7 +133,8 @@ function service_unit(
         push!(lines, "Environment=" * unit_argument(key * "=" * environment[key]))
     end
     ordinary && append!(lines, ["RestrictRealtime=yes", "Nice=10"])
-    stop_signal in ("SIGINT", "SIGTERM") || fail("invalid owner stop signal")
+    (stop_signal in ("SIGINT", "SIGTERM") || (ordinary && stop_signal == "SIGHUP")) ||
+        fail("invalid owner stop signal")
     stop_signal == "SIGTERM" || push!(lines, "KillSignal=$stop_signal")
     append!(
         lines,

@@ -321,10 +321,12 @@ end
         Dict("cpus" => [7, 6], "leader-cpu" => 6);
         part_of = [coordinator.unit],
         ordinary = true,
+        stop_signal = "SIGHUP",
     )
     lines = split(unit, '\n')
     for line in (
         "PartOf=$(coordinator.unit)",
+        "KillSignal=SIGHUP",
         "CPUAffinity=6 7",
         "Nice=10",
         "RestrictRealtime=yes",

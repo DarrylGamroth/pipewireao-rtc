@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Optional analysis startup cancellation — 2026-11-11
+
+The [private Classic check](validation/analysis-cancellation-20261111/README.md)
+records native Quit and optional worker termination before analysis readiness.
+
 ## Managed stop and direct native Quit — 2026-11-11
 
 The [private Classic checks](validation/managed-stop-20261111/README.md)

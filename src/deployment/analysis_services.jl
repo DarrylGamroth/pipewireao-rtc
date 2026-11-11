@@ -50,8 +50,18 @@ function install_analysis!(entry, package, prefix, paths, project, client, recor
     env = analysis_environment(paths, runtime, role, prefix, basename(record["remote"]))
     # Native Ready has already been proved. The parent is still activating
     # during ExecStartPost, so avoid a dependency on its systemd active state.
+    # Julia handles SIGTERM through its runtime exit path, which can stall
+    # during compilation. SIGHUP terminates this independent process and its
+    # compiler children through the OS. PipeWire releases their objects on disconnect.
     text = S.service_unit(
-        service, argv, env, package, placement; part_of = [coordinator.unit], ordinary = true
+        service,
+        argv,
+        env,
+        package,
+        placement;
+        part_of = [coordinator.unit],
+        ordinary = true,
+        stop_signal = "SIGHUP",
     )
     S.install_fragment!(service.unit, text, runtime, record; deadline, clock)
     return service
