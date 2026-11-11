@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## SPIDERS fitted-dual native Quit — 2026-11-11
+
+The [private CPU validation](validation/spiders-native-quit-20261111/README.md)
+records graph retirement before link withdrawal and the native Offline receipt.
+
 ## CAL2 and SPIDERS CPU startup — 2026-11-11
 
 The [startup and browser validation](validation/optical-startup-20261111/README.md)
