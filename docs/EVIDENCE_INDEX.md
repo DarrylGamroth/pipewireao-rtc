@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.13 release — 2026-11-11
+
+The [registry-only Classic check](validation/rtc-0713-20261111/README.md)
+records native Quit while the optional WFS analysis service was starting.
+
 ## Optional analysis startup cancellation — 2026-11-11
 
 The [private Classic check](validation/analysis-cancellation-20261111/README.md)
