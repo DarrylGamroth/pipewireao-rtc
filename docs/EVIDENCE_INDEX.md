@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.12 and HIL 0.5.4 release — 2026-11-11
+
+The [registry-only verification](validation/rtc-0712-hil-054-20261111/README.md)
+records release trees, CAL2 and SPIDERS startup image loading, and clean Quit.
+
 ## HIL-owned optical startup images — 2026-11-11
 
 The [private-core checks](validation/hil-startup-image-20261111/README.md)
