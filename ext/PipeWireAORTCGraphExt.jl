@@ -189,18 +189,20 @@ function Owner.run_owner(options, runtime, entries)
         formats -> Owner.prepare_bindings(
             entries, formats; check = () -> Bootstrap.preparation_check!(runtime)
         )
-    graph = FilterGraphPipeWire.prepare_service_graph(
-        options.graph;
-        algorithms = declarations,
-        execution = Symbol(replace(options.execution, '-' => '_')),
-        workers = options.row_workers,
-        matrix_layout = options.matrix_layout,
-        worker_thread_ids = workers,
-        initial_parameters,
-        parameters = options.parameters,
-        capture_backend = options.capture_backend === nothing ? nothing :
-                          Symbol(options.capture_backend),
-    )
+    graph = PipeWireAORTC.Common.startup_phase(options.name, "prepare graph") do
+        FilterGraphPipeWire.prepare_service_graph(
+            options.graph;
+            algorithms = declarations,
+            execution = Symbol(replace(options.execution, '-' => '_')),
+            workers = options.row_workers,
+            matrix_layout = options.matrix_layout,
+            worker_thread_ids = workers,
+            initial_parameters,
+            parameters = options.parameters,
+            capture_backend = options.capture_backend === nothing ? nothing :
+                              Symbol(options.capture_backend),
+        )
+    end
     try
         # Optional provider methods loaded by declarations must be visible here.
         Base.invokelatest(run_prepared, options, runtime, graph)
@@ -309,12 +311,14 @@ function run_prepared(options, runtime, graph)
             samples =
                 warmup === nothing ? nothing :
                 chopped_warmup_samples(graph, options, warmup)
-            FilterGraphPipeWire.prepare!(
-                node;
-                execution = options.execution == "row-block" ? :row_block : :complete_frame,
-                required_outputs = options.warmup_outputs,
-                samples,
-            )
+            PipeWireAORTC.Common.startup_phase(options.name, "warm up graph") do
+                FilterGraphPipeWire.prepare!(
+                    node;
+                    execution = options.execution == "row-block" ? :row_block : :complete_frame,
+                    required_outputs = options.warmup_outputs,
+                    samples,
+                )
+            end
         end
         Bootstrap.preparation_check!(runtime)
         Bootstrap.prepared!(runtime)

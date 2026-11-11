@@ -289,7 +289,9 @@ function _main(
     )
     with_owner(binding) do admitted
         admitted.owner_check()
-        filter_graph_pipewire = load_science()
+        filter_graph_pipewire = Common.startup_phase(
+            load_science, binding.bootstrap_node, "load FilterGraphPipeWire"
+        )
         offsets_path === nothing || Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         admitted.owner_check()
         options = merge(

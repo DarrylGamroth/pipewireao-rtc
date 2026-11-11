@@ -525,6 +525,13 @@ function prepare_dispatch!(session::Session)
             Base.precompile(perform!, (typeof(session), job, effect))
         end
     end
+    # Start has one shared effect budget for enabling graphs and releasing sources.
+    # Prepare those paths before the first live Start request.
+    Base.precompile(submit!, (typeof(session.machine), Request{Start,Tuple{}}))
+    for effect in (RunGraphs{Nothing}, RunSources)
+        job = Job{EffectTicket{effect,ReadyOrigin}}
+        Base.precompile(perform!, (typeof(session), job, effect))
+    end
     parameter_owner = Owner{
         ParameterSource.Profile,
         ControlClient.Observation{
@@ -729,7 +736,9 @@ function Session(
             false,
             1,
         )
-        prepare_dispatch!(session)
+        Common.startup_phase("RTC", "prepare control dispatch") do
+            prepare_dispatch!(session)
+        end
         # The real startup budget begins after offline code preparation. No
         # public Filter has connected yet, so no caller's receipt is deferred.
         Clocks.update!(cached, Clocks.time_nanos(clock))

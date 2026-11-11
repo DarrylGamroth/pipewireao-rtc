@@ -6,6 +6,7 @@ import Hsm
 import Clocks
 import ..Identity
 import ..QUIT_OPERATION
+import ..STATUS_OPERATION
 import ...ControlCodec
 import ...ControlClient
 import ...RunnerCodec
@@ -316,8 +317,11 @@ function _finish!(gate, ticket, pod)
     _publish!(gate)
 end
 function _cancel!(gate, ticket, message)
-    _emit!(gate, AuthorityFailed(message * "; effect outcome unknown"))
-    _finish!(gate, ticket, _failure(gate, ticket, message * "; effect outcome unknown"))
+    if ticket.header.operation != STATUS_OPERATION
+        message *= "; effect outcome unknown"
+        _emit!(gate, AuthorityFailed(message))
+    end
+    _finish!(gate, ticket, _failure(gate, ticket, message))
     return nothing
 end
 function _check!(gate)

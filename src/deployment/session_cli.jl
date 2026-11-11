@@ -226,7 +226,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
     uuid = String(record["session_uuid"])
     remote = String(record["remote"])
     node = "pipewireao.rtc.session." * name
-    previous = Clocks.time_nanos(clock)
+    started = previous = Clocks.time_nanos(clock)
     startup_ns =
         haskey(package, "startup-timeout-ms") ?
         Base.checked_mul(Int64(D.startup_timeout_ms(package)), Int64(1_000_000)) :
@@ -234,6 +234,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
     deadline = Base.checked_add(previous, startup_ns)
     # The RTC prepares its dispatch paths before publishing the control node.
     # Discovery and warmup share the startup deadline. Admission has its own bound.
+    @info "Waiting for RTC control endpoint" unit=args.unit
     client = Client.connect(
         Profile.Profile(),
         remote,
@@ -244,6 +245,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
         clock,
         controller_instance = Int64(record["admission_controller_instance"]),
     )
+    @info "Waiting for owner preparation and RTC warmup" unit=args.unit
     snapshots = nothing
     try
         while true
@@ -261,6 +263,7 @@ function publish!(args; clock::Clocks.AbstractNanoClock = Clocks.SystemNanoClock
             warmup_complete(warm) && break
             sleep(min(Int64(100_000_000), Base.checked_sub(deadline, current)) / 1.0e9)
         end
+        @info "RTC warmup completed" unit=args.unit wall_seconds=(Clocks.time_nanos(clock) - started) / 1e9
         latest_pid, latest_ticks, latest_group = _unit_identity(
             args.unit, invocation, args.runtime_root, launcher, source_role
         )

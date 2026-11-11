@@ -566,12 +566,14 @@ function start!(
         checked(["systemctl", "--user", "daemon-reload"], deadline; clock)
         _assert_installed_instance!(unit, root, unit_file, deadline; clock)
         start_attempted = true
-        checked(
-            ["systemctl", "--user", "start", unit],
-            deadline;
-            clock,
-            limit = startup_ms / 1000,
-        )
+        Common.startup_phase(unit, "start services and admit session") do
+            checked(
+                ["systemctl", "--user", "start", unit],
+                deadline;
+                clock,
+                limit = startup_ms / 1000,
+            )
+        end
         handle = _identity(unit, root; deadline, clock)
         launch_record = _ledger(handle)
         launch_record["phase"] == "prepared" ||
@@ -858,7 +860,11 @@ function running!(
             handle, SessionCodec.RunnerCommand(:session_start); deadline, clock
         )
         completion["ok"] === true && completion["state"] == "Running" ||
-            throw(ArgumentError("RTC session Start did not complete Running"))
+            throw(ArgumentError(
+                "RTC session Start did not complete Running: " *
+                string(get(completion, "error", nothing) === nothing ?
+                    get(completion, "result", nothing) : completion["error"]),
+            ))
         observed = ready(handle; deadline, clock)
     end
     observed["phase"] == "running" ||

@@ -3,7 +3,7 @@ using Test, PipeWireAO, PipeWireAORTC
 import Clocks
 import PipeWireAORTC: ControlCodec, ControlClient, RunnerCodec, SessionCodec
 module Session
-import PipeWireAORTC.MediaSession: Identity, QUIT_OPERATION
+import PipeWireAORTC.MediaSession: Identity, QUIT_OPERATION, STATUS_OPERATION
 include(joinpath(@__DIR__, "..", "src", "media_session", "ingress.jl"))
 end
 const I = Session.Ingress
@@ -195,6 +195,23 @@ end
     @test length(select_actions(I.AuthorityFailed, I.take_actions!(g))) == 1
     @test completion(g).result == -5
 end
+@testset "abandoned Status does not revoke the session" begin
+    for cause in (:expiry, :controller_loss)
+        g, clock = gate()
+        ticket = only(select_actions(I.DispatchRequest, admit!(g, request(1, :status)))).ticket
+        if cause === :expiry
+            Clocks.update!(clock, ticket.deadline)
+            I.tick!(g)
+        else
+            I.controller_removed!(g, FACTS.identity.global_id, FACTS.identity.serial)
+        end
+        @test isempty(select_actions(I.AuthorityFailed, I.take_actions!(g)))
+        @test g.pending === nothing
+        @test completion(g).result == -5
+        @test !occursin("outcome unknown", R.decode_completion(g.completion).error.message)
+    end
+end
+
 @testset "property and parameter changes proceed without persistence" begin
     parameter = R.RunnerCommand(
         :parameter, "graph", "matrix", "F32_LE", UInt32[2, 2], "schema", "/tmp/parameter"

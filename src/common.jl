@@ -8,6 +8,20 @@ using YAML
 export read_json,
     read_yaml, parse_json, write_json, write_yaml, sha256_file, cli_arguments, run_checked
 
+# Use only during cold preparation, before accepting deadline-bound work.
+function startup_phase(f, owner, phase)
+    @info "Startup phase started" owner phase
+    started = time_ns()
+    try
+        result = @timed f()
+        @info "Startup phase completed" owner phase wall_seconds=result.time compile_seconds=result.compile_time
+        return result.value
+    catch
+        @info "Startup phase interrupted" owner phase wall_seconds=(time_ns() - started) / 1e9
+        rethrow()
+    end
+end
+
 """
     remaining_ns(deadline, now)
 
