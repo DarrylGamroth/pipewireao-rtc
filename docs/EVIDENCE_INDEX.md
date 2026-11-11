@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## CAL2 and SPIDERS CPU startup — 2026-11-11
+
+The [startup and browser validation](validation/optical-startup-20261111/README.md)
+records per-owner compilation, the SPIDERS post-Start control failure,
+and the diagnostics verified on private CPU sessions.
+
 ## RTC 0.7.9 release and GPI2 native Quit — 2026-11-10
 
 The [release verification](validation/rtc-079-20261110/README.md) records
