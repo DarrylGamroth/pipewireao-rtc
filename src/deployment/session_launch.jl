@@ -682,6 +682,7 @@ function prepare!(request::Request; render!::Function)
             end
             private_remote_environment(env, runtime, bindings)
             argv = [D.substitute(arg, bindings) for arg in owner["argv"]]
+            PipeWireAORTC.OpticalStartup.configure_owner!(argv, env, request.package, owner)
             S.install_fragment!(
                 services[role].unit,
                 S.service_unit(

@@ -509,9 +509,14 @@ function start!(
     haskey(spec, "session-runtime") && haskey(spec, "node-owners") ||
         throw(ArgumentError("calibration package has no RTC session contract"))
     startup_ms = DeploymentConfiguration.startup_timeout_ms(spec)
+    optical = any(
+        owner -> PipeWireAORTC.OpticalStartup.configuration(source, owner) !== nothing,
+        spec["owners"],
+    )
+    install_seconds = optical ? startup_ms / 1000 + 120 : 120
     if deadline === nothing
         # Allow for installation and verification outside the configured systemd start.
-        budget_ns = Int64(startup_ms) * 1_000_000 + Int64(130_000_000_000)
+        budget_ns = Int64(startup_ms) * 1_000_000 + round(Int64, (install_seconds + 10) * 1e9)
         deadline = Base.checked_add(Clocks.time_nanos(clock), budget_ns)
     else
         deadline = S.deadline_ns(deadline)
@@ -544,7 +549,7 @@ function start!(
         ],
         deadline;
         clock,
-        limit = 120,
+        limit = install_seconds,
     )
     suffix = first(replace(string(uuid4()), "-" => ""), 12)
     unit = "pipewireao-session@" * suffix * ".service"

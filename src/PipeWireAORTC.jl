@@ -83,6 +83,7 @@ include("instruments/definition.jl")
 include("instruments/configuration.jl")
 include("analysis/Analysis.jl")
 include("simulation/configuration.jl")
+include("deployment/optical_startup.jl")
 include("deployment/session_runtime.jl")
 
 include("configuration/session_configuration.jl")

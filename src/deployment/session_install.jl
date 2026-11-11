@@ -121,6 +121,11 @@ function install(options)
         write(launcher, script)
     end
     chmod(launcher, 0o755)
+    for owner in installed_spec["owners"]
+        config = PipeWireAORTC.OpticalStartup.configuration(destination, owner)
+        config === nothing ||
+            PipeWireAORTC.OpticalStartup.build!(destination, environment, owner, config, prefix)
+    end
     template = read(
         joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String
     )
