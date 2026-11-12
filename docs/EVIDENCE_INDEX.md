@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.17 release — 2026-11-12
+
+The [registry-only Classic staging check](validation/rtc-0717-20261112/README.md)
+records fresh calibration, export and relocation with the shared instrument tool.
+
 ## Calibration staging transfer — 2026-11-12
 
 The [Classic staging check](validation/calibration-staging-transfer-20261112/README.md)
