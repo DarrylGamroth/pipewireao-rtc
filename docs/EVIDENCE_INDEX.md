@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.18 release — 2026-11-12
+
+The [registry-only CAL2 CPU check](validation/rtc-0718-20261112/README.md)
+records fresh export and optical calibration with the shared instrument tool.
+
 ## Offline optical calibration transfer — 2026-11-12
 
 The [CAL2 CPU comparison](validation/optical-campaign-transfer-20261112/README.md)
