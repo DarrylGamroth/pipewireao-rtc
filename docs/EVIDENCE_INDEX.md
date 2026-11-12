@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Remaining calibration and simulation export scope — 2026-11-12
+
+The [scope review](reviews/20261112-remaining-rtc-scope/REVIEW.md) identifies
+offline calibration and simulation export paths and their current callers.
+
 ## RTC 0.7.18 release — 2026-11-12
 
 The [registry-only CAL2 CPU check](validation/rtc-0718-20261112/README.md)
