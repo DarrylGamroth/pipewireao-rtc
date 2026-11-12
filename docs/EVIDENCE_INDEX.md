@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Calibration capture-file retirement — 2026-11-12
+
+The [retirement verification](validation/calibration-capture-retirement-20261112/README.md)
+records protocol compatibility, live Collect and private-core reference calibration.
+
 ## Calibration and capture-file scope — 2026-11-12
 
 The [scope review](reviews/20261112-calibration-scope/REVIEW.md) records

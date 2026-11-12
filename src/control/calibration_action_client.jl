@@ -188,13 +188,6 @@ function action(value::AbstractDict)
             UInt32(_integer(value["measurements"], 0, 131072)),
             UInt32(_integer(value["frames"], 1, 4096)),
         )
-    elseif kind == "capture"
-        _fields(value, ("kind", "probe", "after", "frames"))
-        return Codec.Capture(
-            UInt32(_integer(value["probe"], 0, 16383)),
-            _cursor(value["after"]),
-            UInt32(_integer(value["frames"], 1, 4096)),
-        )
     elseif kind == "restore"
         _fields(value, ("kind", "figure", "rule"))
         rule = _rule(value["rule"])
@@ -218,7 +211,6 @@ _kind(::Codec.Held) = "held"
 _kind(::Codec.Adopted) = "adopted"
 _kind(::Codec.Settled) = "settled"
 _kind(::Codec.Responses) = "responses"
-_kind(::Codec.Captured) = "captured"
 _kind(::Codec.Restored) = "restored"
 _kind(::Codec.Released) = "released"
 _kind(::Codec.Failed) = "failed"
@@ -249,15 +241,6 @@ document(r::Codec.Responses) = Dict(
         ) for e in r.exposures
     ],
     "valid" => r.valid,
-)
-document(r::Codec.Captured) = Dict(
-    "kind" => "captured",
-    "cursor" => _cursor_document(r.cursor),
-    "manifest" => r.manifest,
-    "sha256" => r.sha256,
-    "frames" => r.frames,
-    "bytes" => r.bytes,
-    "metadata_bytes" => r.metadata_bytes,
 )
 document(r::Codec.Restored) =
     Dict("kind" => "restored", "figure" => r.figure, "clipped" => r.clipped)
@@ -358,12 +341,6 @@ _action_document(::Codec.Hold) = Dict("kind" => "hold")
 _action_document(::Codec.Release) = Dict("kind" => "release")
 _action_document(a::Codec.Adopt) =
     Dict("kind" => "adopt", "probe" => a.probe, "figure" => a.figure)
-_action_document(a::Codec.Capture) = Dict(
-    "kind" => "capture",
-    "probe" => a.probe,
-    "after" => _cursor_document(a.after),
-    "frames" => a.frames,
-)
 _action_document(a::Codec.Collect) = Dict(
     "kind" => "collect",
     "probe" => a.probe,

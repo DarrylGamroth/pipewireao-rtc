@@ -153,7 +153,6 @@ end
         "settle-model" =>
             Codec.Settle(UInt32(2), cursor, Codec.ModelTime(UInt64(typemax(Int64)))),
         "collect" => Codec.Collect(UInt32(16383), cursor, UInt32(131072), UInt32(4096)),
-        "capture" => Codec.Capture(UInt32(16383), cursor, UInt32(4096)),
         "restore" => Codec.Restore(Float32[1.0, -1.0], Codec.Immediate()),
         "release" => Codec.Release(),
     )
@@ -173,18 +172,10 @@ end
         "adopted" => Codec.Adopted(cursor, Float32[0.0, -0.0, 1.25], false),
         "settled" => Codec.Settled(cursor),
         "responses" => Codec.Responses(Float32[1.0, -1.0], [exposure], false),
-        "captured" => Codec.Captured(
-            cursor,
-            "run-1/manifest.json",
-            "a"^64,
-            UInt32(4096),
-            typemax(UInt64),
-            UInt64(1) << 63,
-        ),
         "restored" => Codec.Restored(Float32[1.0, -1.0], true),
         "released" => Codec.Released(),
     )
-    for (op, (name, result)) in enumerate(results)
+    for (op, (name, result)) in zip((1, 2, 3, 4, 6, 7), results)
         pod = Client.encode_completion(
             profile,
             reply(op),
@@ -331,20 +322,12 @@ end
             Pod(true),
         ),
     )
-    for manifest in ("/absolute", "../escape", "a/../escape", "a//b", "a\\b", "")
-        result = Codec.Captured(cursor, manifest, "a"^64, UInt32(1), UInt64(1), UInt64(1))
-        @test_throws ArgumentError Client.encode_completion(
-            profile, reply(5), Lifecycle.Connected, UInt64(1), UInt64(1), result, ""
-        )
-    end
-    @test_throws ArgumentError Client.encode_completion(
-        profile,
-        reply(5),
-        Lifecycle.Connected,
-        UInt64(1),
-        UInt64(1),
-        Codec.Captured(cursor, "manifest", "A"^64, UInt32(1), UInt64(1), UInt64(1)),
-        "",
+    # Preserve the historical wire records and reject the retired operation and tag.
+    @test_throws ArgumentError Client.decode_request(
+        profile, Pod(read(joinpath(data_dir, "request-capture.pod")))
+    )
+    @test_throws ArgumentError Client.decode_completion(
+        profile, Pod(read(joinpath(data_dir, "reply-captured.pod")))
     )
     @test_throws ArgumentError Client.encode_completion(
         profile, reply(1), Lifecycle.Connected, UInt64(1), UInt64(1), nothing, ""

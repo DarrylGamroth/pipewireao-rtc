@@ -1,5 +1,9 @@
 # calibration action control
 
+> Historical protocol and qualification record. Current calibration action
+> admission is specified in [RTC-DEV-029](operations.md#rtc-dev-029--operational-interaction-calibration).
+> Operation ID 5 and result tag 5 are reserved after the retirement of file capture.
+
 Current selector names are mapped in the [naming migration](reviews/20261104-naming-cleanup/REVIEW.md). Commands in dated evidence below retain their original paths.
 
 

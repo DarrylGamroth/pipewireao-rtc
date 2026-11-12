@@ -19,7 +19,6 @@ const P = PipeWireAORTC
     @test all(name -> !haskey(project["deps"], name), graph_packages)
     @test all(name -> haskey(project["deps"], name), ("Agent", "Clocks", "Hsm"))
     @test project["extensions"]["PipeWireAORTCOpticsExt"] == "AdaptiveOpticsSim"
-    @test Base.ispublic(P, :CaptureFiles)
 end
 
 @testset "callable package modules and operational scripts" begin

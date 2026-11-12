@@ -28,7 +28,6 @@ end
 @statedef Protocol :Adopted :Acquisition
 @statedef Protocol :Settled :Acquisition
 @statedef Protocol :Responses :Acquisition
-@statedef Protocol :Captured :Acquisition
 @statedef Protocol :Restored :Active
 @statedef Protocol :Fault :Active
 @statedef Protocol :Released
@@ -52,11 +51,6 @@ end
     return admit!(sm, command)
 end
 @on_event function (
-    sm::Protocol, ::Captured, ::Requested, command::Actions.Command{<:Actions.Adopt}
-)
-    return admit!(sm, command)
-end
-@on_event function (
     sm::Protocol, ::Adopted, ::Requested, command::Actions.Command{<:Actions.Settle}
 )
     return admit!(sm, command)
@@ -65,7 +59,7 @@ end
     sm::Protocol,
     ::Settled,
     ::Requested,
-    command::Actions.Command{<:Union{Actions.Collect,Actions.Capture}},
+    command::Actions.Command{<:Actions.Collect},
 )
     return admit!(sm, command)
 end
@@ -100,10 +94,6 @@ end
 @on_event function (sm::Protocol, ::Root, ::Completed, result::Actions.Responses)
     record_result!(sm, result)
     return Hsm.transition!(sm, :Responses)
-end
-@on_event function (sm::Protocol, ::Root, ::Completed, result::Actions.Captured)
-    record_result!(sm, result)
-    return Hsm.transition!(sm, :Captured)
 end
 @on_event function (sm::Protocol, ::Root, ::Completed, result::Actions.Restored)
     record_result!(sm, result)
@@ -341,7 +331,6 @@ matches(::Actions.Hold, ::Actions.Held) = true
 matches(::Actions.Adopt, ::Actions.Adopted) = true
 matches(::Actions.Settle, ::Actions.Settled) = true
 matches(::Actions.Collect, ::Actions.Responses) = true
-matches(::Actions.Capture, ::Actions.Captured) = true
 matches(::Actions.Restore, ::Actions.Restored) = true
 matches(::Actions.Release, ::Actions.Released) = true
 

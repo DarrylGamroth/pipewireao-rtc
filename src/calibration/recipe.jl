@@ -38,9 +38,8 @@ function read_recipe(application)
     )
     kind = recipe_sensor_kind(recipe, declaration)
     sensor_fields = _sensor_recipe_fields(kind)
-    Set(keys(recipe)) ⊆ Set((common..., sensor_fields.extra..., "capture")) ||
+    Set(keys(recipe)) ⊆ Set((common..., sensor_fields.extra...)) ||
         throw(ArgumentError("unknown calibration recipe fields"))
-    haskey(recipe, "capture") && _capture_configuration(recipe)
     for key in ("poke_m", "tsvd_rtol")
         value = recipe[key]
         InstrumentConfiguration.isfinite_real(value) &&
@@ -100,26 +99,6 @@ function recipe_sensor_kind(recipe, declaration)
     sensor === nothing && throw(ArgumentError("calibration sensor is not declared"))
     return InstrumentConfiguration.sensor_kind(sensor)
 end
-
-"""Validate YAML capture selection; prepared ports supply formats and schemas."""
-function _capture_configuration(recipe::AbstractDict)
-    capture = get(recipe, "capture", nothing)
-    InstrumentConfiguration.fields(
-        capture, ("channels", "maximum_bytes"), ("channels", "maximum_bytes"), "capture"
-    )
-    channels = CaptureFiles._channel_names(capture["channels"])
-    maximum_bytes = _capture_byte_limit(capture["maximum_bytes"])
-    return (; channels, maximum_bytes)
-end
-
-function _capture_byte_limit(value::Integer)
-    0 < value <= typemax(UInt64) ||
-        throw(ArgumentError("capture maximum_bytes must be a positive UInt64 byte limit"))
-    return UInt64(value)
-end
-_capture_byte_limit(::Bool) = throw(ArgumentError("capture maximum_bytes must not be Bool"))
-_capture_byte_limit(value) =
-    throw(ArgumentError("capture maximum_bytes must be an integer"))
 
 _recipe_version(value) = throw(ArgumentError("unsupported calibration recipe version"))
 _recipe_version(::Bool) = throw(ArgumentError("unsupported calibration recipe version"))

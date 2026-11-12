@@ -2,7 +2,6 @@ using Test, PipeWireAORTC
 
 const Runner = PipeWireAORTC.RunnerCodec
 const Envelope = PipeWireAORTC.ControlCodec
-const CaptureFiles = PipeWireAORTC.CaptureFiles
 const ActionClient = PipeWireAORTC.CalibrationActionClient
 const Parameters = PipeWireAORTC.ParameterSource
 const Offsets = PipeWireAORTC.PhysicalOffsets
@@ -53,35 +52,8 @@ const Offsets = PipeWireAORTC.PhysicalOffsets
     )
 end
 
-@testset "capture JSON comparison preserves numeric representations" begin
-    pairs = (
-        (true, 1, false),
-        (false, 0, false),
-        (Int32(1), UInt64(1), true),
-        (1, 1.0, false),
-        (UInt64(2)^53 + 1, Float64(2)^53, false),
-        (-0.0, 0.0, false),
-        (NaN, NaN, true),
-        (Dict("enabled" => true), Dict("enabled" => 1), false),
-        (Dict("count" => Int32(1)), Dict("count" => UInt64(1)), true),
-        ([1, 2], UInt64[1, 2], true),
-        ([1, 2], [1.0, 2.0], false),
-        (Dict("count" => 1), [1], false),
-    )
-    for (left, right, expected) in pairs
-        @test CaptureFiles._capture_same_json(left, right) === expected
-        @test CaptureFiles._capture_same_json(right, left) === expected
-    end
-end
-
 @testset "boundary dispatch rejects invalid representation before conversion" begin
     for value in (true, 1.0, "1", nothing)
-        @test_throws ArgumentError("invalid capture integer") CaptureFiles._capture_uint(
-            value
-        )
-        @test_throws ArgumentError("invalid signed capture integer") CaptureFiles._capture_int(
-            value
-        )
         @test_throws ArgumentError("calibration integer out of range") ActionClient._integer(
             value, 1, 5
         )
@@ -89,21 +61,6 @@ end
             value, Int64
         )
     end
-    @test CaptureFiles._capture_uint(typemax(UInt64)) === typemax(UInt64)
-    @test CaptureFiles._capture_int(typemin(Int64)) === typemin(Int64)
-    @test_throws ArgumentError("invalid capture integer") CaptureFiles._capture_uint(-1)
-    @test_throws ArgumentError("invalid capture integer") CaptureFiles._capture_uint(
-        big(typemax(UInt64)) + 1
-    )
-    @test_throws ArgumentError("invalid signed capture integer") CaptureFiles._capture_int(
-        typemax(UInt64)
-    )
-    @test_throws ArgumentError("unsupported capture setting") CaptureFiles._capture_settings(
-        Dict("value" => 1 + im)
-    )
-    @test_throws ArgumentError("capture settings require string keys") CaptureFiles._capture_settings(
-        Dict(1 => "value")
-    )
     for version in (true, Int32(1), 1.0, "1", nothing)
         @test_throws ArgumentError("invalid parameter source configuration") Parameters._declaration_config(
             Dict("version" => version, "sources" => [])

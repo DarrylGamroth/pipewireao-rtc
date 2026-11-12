@@ -4,7 +4,6 @@ module InstrumentCalibration
 using LinearAlgebra, SHA
 import ..Common
 import ..Artifacts
-import ..CaptureFiles
 import ..InstrumentConfiguration
 import ..GraphOwner
 import ..DeploymentConfiguration

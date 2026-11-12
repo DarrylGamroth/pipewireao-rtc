@@ -16,7 +16,6 @@ function actions()
         A.Adopt(UInt32(0), Float32[1]),
         A.Settle(UInt32(0), CURSOR, A.Immediate()),
         A.Collect(UInt32(0), CURSOR, UInt32(1), UInt32(1)),
-        A.Capture(UInt32(0), CURSOR, UInt32(1)),
         A.Restore(Float32[0], A.Immediate()),
         A.Release(),
     )
@@ -25,8 +24,6 @@ result(::A.Hold) = A.Held(CURSOR)
 result(action::A.Adopt) = A.Adopted(CURSOR, copy(action.figure), false)
 result(::A.Settle) = A.Settled(CURSOR)
 result(::A.Collect) = A.Responses(Float32[1], A.Exposure[], true)
-result(::A.Capture) =
-    A.Captured(CURSOR, "/tmp/calibration-capture", "a"^64, UInt32(1), UInt64(4), UInt64(8))
 result(action::A.Restore) = A.Restored(copy(action.figure), false)
 result(::A.Release) = A.Released()
 
@@ -43,23 +40,21 @@ end
         :Adopted,
         :Settled,
         :Responses,
-        :Captured,
         :Restored,
         :Released,
         :Fault,
     )
-    # Columns are Hold, Adopt, Settle, Collect, Capture, Restore and Release.
+    # Columns are Hold, Adopt, Settle, Collect, Restore and Release.
     # This is the retained native action contract, independently of the Hsm hierarchy.
     allowed = (
-        (true, false, false, false, false, true, false),
-        (false, true, false, false, false, true, false),
-        (false, false, true, false, false, true, false),
-        (false, false, false, true, true, true, false),
-        (false, true, false, false, false, true, false),
-        (false, true, false, false, false, true, false),
-        (false, false, false, false, false, true, true),
-        (false, false, false, false, false, false, false),
-        (false, false, false, false, false, true, false),
+        (true, false, false, false, true, false),
+        (false, true, false, false, true, false),
+        (false, false, true, false, true, false),
+        (false, false, false, true, true, false),
+        (false, true, false, false, true, false),
+        (false, false, false, false, true, true),
+        (false, false, false, false, false, false),
+        (false, false, false, false, true, false),
     )
     for (row, phase) in enumerate(phases), (column, action) in enumerate(actions())
         sm = at_phase(phase)

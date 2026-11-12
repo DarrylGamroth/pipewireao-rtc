@@ -7,7 +7,6 @@ module PipeWireAORTC
 public Analysis,
     InstrumentExport,
     InstrumentCalibration,
-    CaptureFiles,
     InstrumentConfiguration,
     InstrumentDefinition,
     ConfigurationStore,
@@ -69,7 +68,6 @@ include("control/acquisition_lifecycle_codec.jl")
 include("control/calibration_action_codec.jl")
 include("control/acquisition_lifecycle_client.jl")
 include("control/calibration_action_client.jl")
-include("calibration/capture_files.jl")
 include("control/calibration_endpoint.jl")
 include("calibration/acquisition.jl")
 include("calibration/preparation.jl")

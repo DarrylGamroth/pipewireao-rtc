@@ -149,27 +149,9 @@ end
             ) read_recipe(directory, recipe)
             capture = Dict("channels" => ["raw", "slopes"], "maximum_bytes" => 65536)
             selected = merge(recipe, Dict("capture" => capture))
-            @test_throws ArgumentError(
-                "compiled calibration graph differs from its retained template; rebuild the application",
-            ) read_recipe(directory, selected)
-            @test C._capture_configuration(selected) ==
-                (channels = (:raw, :slopes), maximum_bytes = UInt64(65536))
-            for invalid in (
-                Dict("channels" => [], "maximum_bytes" => 1),
-                Dict("channels" => ["raw", "raw"], "maximum_bytes" => 1),
-                Dict("channels" => "raw", "maximum_bytes" => 1),
-                Dict("channels" => [true], "maximum_bytes" => 1),
-                Dict("channels" => ["../raw"], "maximum_bytes" => 1),
-                Dict("channels" => ["raw"], "maximum_bytes" => 0),
-                Dict("channels" => ["raw"], "maximum_bytes" => -1),
-                Dict("channels" => ["raw"], "maximum_bytes" => true),
-                Dict("channels" => ["raw"], "maximum_bytes" => 1.5),
-                Dict("channels" => ["raw"], "maximum_bytes" => 1, "shape" => [352, 352]),
+            @test_throws ArgumentError("unknown calibration recipe fields") read_recipe(
+                directory, selected
             )
-                @test_throws ArgumentError read_recipe(
-                    directory, merge(recipe, Dict("capture" => invalid))
-                )
-            end
             unknown = merge(recipe, Dict("unknown" => true, "poke_m" => 0))
             @test_throws ArgumentError("unknown calibration recipe fields") read_recipe(
                 directory, unknown

@@ -77,7 +77,7 @@ const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
             )
             frontend = command = nothing
             owner = server.effects
-            @test owner.measurements === nothing && owner.capture_store === nothing
+            @test owner.measurements === nothing
             serving = @async try
                 E.serve!(server; deadline = deadline + 600)
                 nothing

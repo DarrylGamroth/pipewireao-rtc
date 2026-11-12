@@ -782,22 +782,11 @@ parameter update is not used as evidence of adoption. Stage results remain
 candidates; successful acquisition does not establish matrix precision,
 reconstructor acceptance, closed-loop correction or instrument cadence.
 
-For finite dark/training evidence, the calibration owner may write bounded
-immutable raw and WFS payloads to an explicitly selected local staging directory
-outside callbacks. The completion channel returns a manifest descriptor and
-digest after publication completes. This is a temporary calibration evidence
-transfer, not an RTC recording service or graph configuration format. The
-campaign owns the files through verification and reduction. Exposure association,
-capacity, deadlines and interrupted-stage disposition are specified in
-RTC-DEV-029; interaction response quality requirements remain unchanged.
-
-Finite evidence writing/reading belongs to the shared RTC `CaptureFiles` module.
-Instrument choices remain in calibration YAML: selected existing port names and
-a payload byte limit. Prepared ndarray formats and semantic schemas supply the
-channel contract, including shape, layout and rate. The generic writer does not
-interpret instrument identities or WFS channel names. Scientific quality remains
-with calibration algorithms. The writer and reader use schema 5. Historical schema-4 files remain frozen evidence.
-This interface adds no session authority, transport executor or recorder service.
+Dark and training reference campaigns consume bounded correlated exposures
+through live Collect. The calibration owner passes the declared sample arrays
+to the online reducer before admitting another exposure. The campaign owns the
+published numerical products. Historical finite capture files remain evidence;
+the live calibration owner no longer publishes them.
 
 The owner observes both the actual demanded figure with constraint feedback and
 the simulator's correlated adoption before generating exposures. Probe tokens

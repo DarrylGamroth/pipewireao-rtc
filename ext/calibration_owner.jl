@@ -7,11 +7,10 @@ const Endpoint = PipeWireAORTC.CalibrationEndpoint
 const Control = PipeWireAORTC.ControlClient
 const Wire = AdaptiveOpticsSimPipeWireHIL
 
-mutable struct InitialCalibration{P,D,C,T,W,G,S,F,R,N<:Clocks.AbstractNanoClock}
+mutable struct InitialCalibration{P,D,C,T,W,G,F,R,N<:Clocks.AbstractNanoClock}
     hil::P
     driver::D
     capture::C
-    capture_store::S
     consume::F
     consumer_failed::Bool
     transport::T
@@ -237,44 +236,6 @@ function (owner::InitialCalibration)(::Actions.Release, deadline)
     stop!(owner.hil)
     return Actions.Released()
 end
-function (owner::InitialCalibration)(action::Actions.Capture, deadline)
-    owner.capture_store === nothing && return Actions.Failed(Actions.InvalidEvidence)
-    action.probe == owner.probe && action.after == owner.cursor ||
-        return Actions.Failed(Actions.InvalidEvidence)
-    check(owner)
-    run, serial = owner.control.run, owner.control.serial
-    # Only pre-effect validation becomes a known rejection. A write/acquisition
-    # failure after admission retains the dispatcher's unknown-outcome fence.
-    try
-        PipeWireAORTC.CaptureFiles.capture_preflight(
-            owner.capture_store;
-            run,
-            serial,
-            probe = action.probe,
-            cursor = owner.cursor,
-            frames = action.frames,
-            deadline,
-            clock = owner.clock,
-            check = () -> check(owner),
-        )
-    catch error
-        recover_invalid_calibration_evidence(error)
-        return Actions.Failed(Actions.InvalidEvidence)
-    end
-    return PipeWireAORTC.CaptureFiles.capture!(
-        owner.capture_store,
-        () -> exposure!(owner, deadline);
-        run,
-        serial,
-        probe = action.probe,
-        cursor = owner.cursor,
-        frames = action.frames,
-        deadline,
-        clock = owner.clock,
-        check = () -> check(owner),
-    )
-end
-
 function Base.close(owner::InitialCalibration)
     owner.closed && return nothing
     owner.closed = true
@@ -447,45 +408,6 @@ copy_figures(figure::AbstractVector) = copy(figure)
 copy_figures(figures::NamedTuple) = map(copy, figures)
 probe_figure(figure::AbstractVector, ::Nothing) = figure
 probe_figure(figures::NamedTuple, probe::Symbol) = getproperty(figures, probe)
-
-"Retain prepared parameter provenance for one or named command projections."
-capture_projection_identities(projection::GraphProjection) = Dict(
-    String(port) => Dict(
-        key => identity[key] for key in
-        ("original_sha256", "sha256", "hdu", "axes", "target_type", "target_shape")
-    ) for (port, identity) in projection.provenance
-)
-capture_projection_identities(projections::NamedGraphProjections) = Dict(
-    String(name) => capture_projection_identities(projection) for
-    (name, projection) in pairs(projections)
-)
-
-"Bind YAML-selected channels to the exact prepared frontend port contracts."
-function calibration_capture_contract(frontend, rate, configuration)
-    outputs = FilterGraphs.output_formats(frontend.graph)
-    haskey(outputs, :raw) && throw(ArgumentError("capture output conflicts with raw input"))
-    formats = (; raw = FilterGraphs.input_formats(frontend.graph).raw, outputs...)
-    all(name -> haskey(formats, name), configuration.channels) ||
-        throw(ArgumentError("capture selects a port absent from the prepared frontend"))
-    channels = NamedTuple{configuration.channels}(
-        map(configuration.channels) do name
-            port = getproperty(formats, name)
-            PipeWireAORTC.CaptureFiles.Channel(capture_format(port, rate), port.schema)
-        end,
-    )
-    return PipeWireAORTC.CaptureFiles.Contract(channels)
-end
-
-"Runtime limits may lower the YAML capture budget, never increase it."
-function calibration_capture_limit(configuration, limit::Integer)
-    maximum =
-        limit == 0 ? configuration.maximum_bytes : Calibration._capture_byte_limit(limit)
-    maximum <= configuration.maximum_bytes ||
-        throw(ArgumentError("capture runtime budget exceeds the YAML limit"))
-    return maximum
-end
-calibration_capture_limit(configuration, ::Bool) =
-    throw(ArgumentError("capture runtime byte limit must not be Bool"))
 
 command_source_names(::GraphProjection, prefix::AbstractString) = prefix * ".command"
 command_source_names(commands::NamedGraphProjections, prefix::AbstractString) =
@@ -691,8 +613,7 @@ end
     prepare_initial_calibration(application, remote, frontend, command;
         reference, name, instance, deadline, active=get(frontend.parameters,:active,nothing),
         measurements=:slopes, probe_command=nothing,
-        simulation_graph="production", capture_directory=nothing,
-        capture_stage=nothing, capture_maximum_bytes=0)
+        simulation_graph="production")
 
 `deadline` is absolute signed Int64 nanoseconds; Float64 seconds remain an input
 compatibility boundary. `clock` accepts a Clocks.AbstractNanoClock directly and
@@ -724,16 +645,10 @@ while retaining the regular RTC graph and normal production detector nodes.
 `simulation_graph="dark"` selects declared zero incident photon rate with the
 same detector electronics. This models blocked light, not a noise-free camera.
 The ideal diagnostic `calibration` graph is not an operational selection.
-The recipe's optional `capture` YAML section selects existing prepared channels
-and a cumulative payload byte limit. Enable native Capture with a fresh
-`capture_directory` and explicit `capture_stage`. A nonzero
-`capture_maximum_bytes` can lower the declared limit but cannot increase it.
-Capture preserves intrinsic invalidity and writes bounded immutable evidence;
-it does not accept interaction responses or replace active calibration.
 `consume(sample, exposure)` optionally reduces each completed Collect exposure
 on the control task, before another exposure. Sample arrays are borrowed read-only until
 the callback returns; retain only owned numerical state or explicit copies.
-Discarded settling, restoration and Capture exposures are not delivered to it.
+Discarded settling and restoration exposures are not delivered to it.
 The callback must do bounded work. A callback exception latches
 `effects.consumer_failed`, completes the current bounded batch with false
 validity and rejects later Collect requests; explicit Restore/Release remain
@@ -757,9 +672,6 @@ function Calibration.prepare_initial_calibration(
     measurements::Union{Nothing,Symbol} = :slopes,
     probe_command::Union{Nothing,Symbol} = nothing,
     simulation_graph::AbstractString = "production",
-    capture_directory = nothing,
-    capture_stage = nothing,
-    capture_maximum_bytes::Integer = 0,
     consume = nothing,
 )
     deadline = Control._deadline_ns(deadline)
@@ -872,43 +784,6 @@ function Calibration.prepare_initial_calibration(
             "operational calibration must retain normal production detector configuration",
         ),
     )
-    capture_store = if capture_directory === nothing
-        capture_stage === nothing && capture_maximum_bytes == 0 ||
-            throw(ArgumentError("capture settings require a fresh capture directory"))
-        nothing
-    else
-        configuration = Calibration._capture_configuration(Calibration.read_recipe(application))
-        contract = calibration_capture_contract(
-            frontend, SPA.Fraction(UInt32(options.rate), UInt32(1)), configuration
-        )
-        maximum_bytes = calibration_capture_limit(configuration, capture_maximum_bytes)
-        validate_capture_stage(capture_stage)
-        settings = Dict{String,Any}(
-            "simulation_graph" => simulation_graph,
-            "prescription_identity" =>
-                IC.prescription_identity(declaration, configured),
-            "plant_settings" => IC.json_value(configured),
-            "detectors" => detectors(production),
-            "rtc_graph_sha256" => authority,
-            "frontend_parameters" => capture_projection_identities(frontend),
-            "command_parameters" => capture_projection_identities(command),
-            "exposure_ns" => options.exposure_ns,
-            "rate" => options.rate,
-            "frame_schema" => options.frame_schema,
-            "command_schema" => options.command_schema,
-            "command_scale" => options.command_scale,
-            "reference" => IC.json_value(reference),
-        )
-        PipeWireAORTC.CaptureFiles.CaptureStore(
-            capture_directory,
-            contract;
-            stage = String(capture_stage),
-            illumination = simulation_graph == "production" ? "on-sky" : simulation_graph,
-            settings,
-            maximum_bytes,
-            recording_clock = reference_clock,
-        )
-    end
     wakeup, guard = Base.AsyncCondition(), ReentrantLock()
     notify() = Endpoint.wake!(wakeup, guard)
     hil = capture = probe = registry = listener = frame_listener = owner = nothing
@@ -1136,7 +1011,6 @@ function Calibration.prepare_initial_calibration(
             hil,
             science.driver,
             capture,
-            capture_store,
             consume,
             false,
             probe,
@@ -1315,6 +1189,3 @@ function validate_frozen_active_mask(active::AbstractVector{Bool}, validity, par
 end
 validate_frozen_active_mask(active, validity, parameters) =
     throw(ArgumentError("frozen active mask must match estimator validity"))
-
-validate_capture_stage(stage::AbstractString) = nothing
-validate_capture_stage(stage) = throw(ArgumentError("capture stage must be explicit"))

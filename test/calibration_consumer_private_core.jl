@@ -212,7 +212,6 @@ end
                 )
                 frontend = command = nothing
                 owner = owner_ref[] = server.effects
-                @test owner.capture_store === nothing
                 @test owner.consume === consume
                 @test !owner.consumer_failed
                 @test any(owner.active)
@@ -379,7 +378,6 @@ end
                 @test all(stream -> !isopen(stream), values(owner.capture.streams))
                 @test Wire.pipewire_calibration_status(owner.hil).pending_exposure ===
                     nothing
-                @test owner.capture_store === nothing
             finally
                 client === nothing || close(client)
                 server === nothing || close(server)

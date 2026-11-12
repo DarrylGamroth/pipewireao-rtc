@@ -16,7 +16,6 @@ export PROFILE,
     Adopt,
     Settle,
     Collect,
-    Capture,
     Restore,
     Release,
     Immediate,
@@ -26,7 +25,6 @@ export PROFILE,
     Adopted,
     Settled,
     Responses,
-    Captured,
     Restored,
     Released,
     Failed,
@@ -85,11 +83,6 @@ struct Collect <: AbstractAction
     measurements::UInt32
     frames::UInt32
 end
-struct Capture <: AbstractAction
-    probe::UInt32
-    after::AcquisitionCursor
-    frames::UInt32
-end
 struct Restore{V<:AbstractVector{Float32},R<:AbstractRule} <: AbstractAction
     figure::V
     rule::R
@@ -104,7 +97,7 @@ _operation(::Hold) = UInt32(1)
 _operation(::Adopt) = UInt32(2)
 _operation(::Settle) = UInt32(3)
 _operation(::Collect) = UInt32(4)
-_operation(::Capture) = UInt32(5)
+# Operation ID 5 and result tag 5 are reserved for the retired file capture.
 _operation(::Restore) = UInt32(6)
 _operation(::Release) = UInt32(7)
 Client.operation_id(::CalibrationActionProfile, command::Command) =
@@ -134,14 +127,6 @@ struct Responses{V<:AbstractVector{Float32},E<:AbstractVector{Exposure}} <: Abst
     exposures::E
     valid::Bool
 end
-struct Captured <: AbstractResult
-    cursor::AcquisitionCursor
-    manifest::String
-    sha256::String
-    frames::UInt32
-    bytes::UInt64
-    metadata_bytes::UInt64
-end
 struct Restored{V<:AbstractVector{Float32}} <: AbstractResult
     figure::V
     clipped::Bool
@@ -155,7 +140,6 @@ _tag(::Held) = UInt32(1)
 _tag(::Adopted) = UInt32(2)
 _tag(::Settled) = UInt32(3)
 _tag(::Responses) = UInt32(4)
-_tag(::Captured) = UInt32(5)
 _tag(::Restored) = UInt32(6)
 _tag(::Released) = UInt32(7)
 _tag(::Failed) = UInt32(8)
@@ -282,8 +266,6 @@ _args_size(action::Collect) = (
     _frames(action.frames);
     128
 )
-_args_size(action::Capture) =
-    (_probe(action.probe); _cursor(action.after); _frames(action.frames); 112)
 _args_size(action::Restore) = (
     _vector(action.figure, 4096);
     _validate(action.rule);
@@ -300,7 +282,6 @@ _args(a::Adopt) = _struct(_id(a.probe), _float_pod(a.figure, 4096))
 _args(a::Settle) = _struct(_id(a.probe), Pod(_cursor_pod(a.after)), Pod(_rule_pod(a.rule)))
 _args(a::Collect) =
     _struct(_id(a.probe), Pod(_cursor_pod(a.after)), _id(a.measurements), _id(a.frames))
-_args(a::Capture) = _struct(_id(a.probe), Pod(_cursor_pod(a.after)), _id(a.frames))
 _args(a::Restore) = _struct(_float_pod(a.figure, 4096), Pod(_rule_pod(a.rule)))
 function Client.encode_request(
     profile::CalibrationActionProfile, header::Envelope.RequestHeader, command::Command
@@ -329,9 +310,6 @@ function _decode_action(operation, pod)
     elseif operation == 4
         _arity(f, 4)
         return Collect(_read_id(f[1]), _decode_cursor(f[2]), _read_id(f[3]), _read_id(f[4]))
-    elseif operation == 5
-        _arity(f, 3)
-        return Capture(_read_id(f[1]), _decode_cursor(f[2]), _read_id(f[3]))
     elseif operation == 6
         _arity(f, 2)
         return Restore(_decode_float(f[1], 4096), _decode_rule(f[2]))
@@ -396,25 +374,6 @@ function _decode_exposures(pod)
     ]
     return _exposures(values)
 end
-function _capture(result::Captured)
-    _cursor(result.cursor)
-    _frames(result.frames)
-    Lifecycle._checked_string(result.manifest; empty = false, limit = 512)
-    _check(
-        !startswith(result.manifest, "/") &&
-            !occursin('\\', result.manifest) &&
-            all(
-                part -> !isempty(part) && !(part in (".", "..")),
-                split(result.manifest, '/'),
-            ),
-        "manifest must be a relative path without traversal",
-    )
-    _check(
-        ncodeunits(result.sha256) == 64 &&
-            all(c -> c in '0':'9' || c in 'a':'f', result.sha256),
-        "invalid SHA256",
-    )
-end
 _result_size(r::Union{Held,Settled}) = (_cursor(r.cursor); 96)
 _result_size(r::Adopted) = (
     _cursor(r.cursor);
@@ -426,8 +385,6 @@ _result_size(r::Responses) = (
     _exposures(r.exposures);
     _add(40, _add(_array_size(length(r.values), 4), _array_size(length(r.exposures), 40)))
 )
-_result_size(r::Captured) =
-    (_capture(r); _add(144, _add(_string_size(ncodeunits(r.manifest)), _string_size(64))))
 _result_size(r::Restored) =
     (_vector(r.figure, 4096); _add(40, _array_size(length(r.figure), 4)))
 _result_size(::Released) = 24
@@ -477,15 +434,6 @@ _result(r::Responses) = _struct(
     _exposure_pod(r.exposures),
     Pod(r.valid),
 )
-_result(r::Captured) = _struct(
-    _id(5),
-    Pod(_cursor_pod(r.cursor)),
-    Pod(r.manifest),
-    Pod(r.sha256),
-    _id(r.frames),
-    _long(r.bytes),
-    _long(r.metadata_bytes),
-)
 _result(r::Restored) = _struct(_id(6), _float_pod(r.figure, 4096), Pod(r.clipped))
 _result(::Released) = _struct(_id(7))
 _result(r::Failed) = _struct(_id(8), _id(r.reason))
@@ -506,16 +454,6 @@ function _decode_result(pod)
         _arity(f, 4)
         return Responses(
             _decode_float(f[2], 131072; minimum = 0), _decode_exposures(f[3]), _bool(f[4])
-        )
-    elseif tag == 5
-        _arity(f, 7)
-        return Captured(
-            _decode_cursor(f[2]),
-            _string(f[3]; limit = 512),
-            _string(f[4]; limit = 64),
-            _read_id(f[5]),
-            _read_long(f[6]),
-            _read_long(f[7]),
         )
     elseif tag == 6
         _arity(f, 3)

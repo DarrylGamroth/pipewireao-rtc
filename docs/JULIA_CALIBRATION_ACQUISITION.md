@@ -220,54 +220,6 @@ bundle.
 See the [implementation and verification record](validation/calibration-owner-20261027/PLAN.md)
 and [independent review](validation/calibration-owner-20261027/REVIEW.md).
 
-### Finite capture files
-
-The optional section in `calibration/recipe.yaml` selects existing prepared port
-names and a cumulative payload byte limit:
-
-```yaml
-capture:
-  channels: [raw, slopes, flux, validity]
-  maximum_bytes: 67108864
-```
-
-These names are examples for one frontend. They do not imply required channel
-roles or fixed dimensions. Export compiles this declaration into `recipe.conf`;
-preparation checks it against its authoring YAML and binds the selected prepared
-port formats and schemas. Unknown, repeated and empty selections fail cold.
-YAML does not repeat port types, shapes or rates and supplies no Julia callbacks.
-
-Enable the initial owner's optional native Capture action with a fresh
-`capture_directory` and explicit `capture_stage`. `capture_maximum_bytes=0` uses
-the YAML limit; a nonzero runtime limit may lower it but cannot increase it.
-Without a capture directory, normal acquisition remains unchanged. The collector
-still consumes its complete prepared output cohort; YAML selects only what is
-persisted. Native Capture requests select a probe/cursor/frame count and cannot
-change the cold-bound channel contract.
-
-`PipeWireAORTC.CaptureFiles` owns bounded finite calibration evidence. It has no
-instrument, simulator, transport or continuous-archiving authority. Its `Channel`
-uses the existing `PipeWireAO.NdArrayFormat` and semantic schema; `Contract` binds
-the selected prepared channels and derives their payload byte count. The initial
-codec supports UInt16, Float32 and Bool arrays of rank one or two with row-major
-wire layout. It preserves nonfinite samples and false validity bits without
-interpreting them as scientific acceptance or rejection.
-
-`CaptureStore(directory, contract; stage, illumination, settings, maximum_bytes)`
-owns a fresh evidence directory. `capture!` reserves the complete request budget
-before acquisition and writes each completed sample before another exposure is
-armed. Interrupted work remains charged. A completed native `Captured` descriptor
-is returned only after immutable payloads and the final manifest are published.
-
-New captures use manifest schema 5, which records every selected channel's type,
-shape, layout, rate and semantic schema. Read with
-`CaptureFiles.read_capture(directory, descriptor; expected_contract,
-expected_stage, expected_illumination, expected_settings)`. The caller supplies
-the expected prepared contract; saved files cannot authorize their own layout.
-This replaces `InstrumentCalibration.read_capture`.
-
-The reader accepts schema 5. Historical schema-4 files remain frozen evidence.
-
 ### Source and mechanism preparation
 
 The shared Julia boundary is `CalibrationPreparation`. Its `Request` identifies
@@ -297,10 +249,9 @@ illuminated acquisition uses a declared source and optical path. A reference
 additionally binds the nominal mirror figure and mechanism positions. An
 illuminated image is not automatically a detector flat field or a WFS reference;
 these remain separate scientific operations.
-Dark reduction consumes raw ADC images. Capture retains the deployed WFS
-validity flags even when unilluminated ROIs are invalid; interaction-response
-eligibility is not reused as a dark-image acceptance rule. Detector quality and
-background-estimation acceptance need their own declared checks.
+Dark reduction consumes raw ADC images through Collect. The reducer applies
+its own detector and background checks because unilluminated WFS measurements
+can be intrinsically invalid.
 
 | Endpoint | Preparation owner | Evidence needed before acquisition |
 | --- | --- | --- |

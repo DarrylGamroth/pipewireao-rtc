@@ -151,33 +151,6 @@ end
             parameter_sha256 = Dict{Symbol,String}(),
         )
         outputs = FilterGraphs.output_formats(graph)
-        selection = PipeWireAORTC.InstrumentCalibration._capture_configuration(
-            Dict(
-                "capture" => Dict(
-                    "channels" => ["reconstruction-pixels", "raw"],
-                    "maximum_bytes" => 4096,
-                ),
-            ),
-        )
-        capture_contract = Ext.calibration_capture_contract(
-            frontend, SPA.Fraction(500, 1), selection
-        )
-        @test keys(capture_contract.channels) == (Symbol("reconstruction-pixels"), :raw)
-        @test capture_contract.channels.raw.format.element_type == NdArray.U16_LE
-        @test capture_contract.channels.raw.schema ==
-            FilterGraphs.input_formats(graph).raw.schema
-        @test capture_contract.channels[Symbol("reconstruction-pixels")].format.shape ==
-            getproperty(outputs, Symbol("reconstruction-pixels")).shape
-        @test Ext.calibration_capture_limit(selection, 0) == selection.maximum_bytes
-        @test Ext.calibration_capture_limit(selection, 1000) == 1000
-        for limit in (-1, 4097, false, true)
-            @test_throws ArgumentError Ext.calibration_capture_limit(selection, limit)
-        end
-        @test_throws ArgumentError Ext.calibration_capture_contract(
-            frontend,
-            SPA.Fraction(500, 1),
-            (; channels = (:missing,), maximum_bytes = UInt64(4096)),
-        )
         @test outputs[Symbol("reconstruction-pixels")].shape == (4, 6)
         @test Ext.calibration_measurements(
             frontend, outputs, Symbol("reconstruction-pixels"), nothing
@@ -299,22 +272,6 @@ end
             actual_copy.tiptilt !== staged.tiptilt
         @test Ext.probe_figure(actual_copy, :woofer) === actual_copy.woofer
         @test Ext.probe_figure(scalar_copy, nothing) === scalar_copy
-        capture_metadata = Dict(
-            :requested => Dict(
-                "original_sha256" => "original",
-                "sha256" => "prepared",
-                "hdu" => 1,
-                "axes" => [1],
-                "target_type" => "Float32",
-                "target_shape" => [2],
-            ),
-        )
-        capturable = Ext.GraphProjection(woofer; provenance = capture_metadata)
-        @test Ext.capture_projection_identities(capturable)["requested"] ==
-            capture_metadata[:requested]
-        @test keys(
-            Ext.capture_projection_identities((woofer = capturable, tiptilt = capturable))
-        ) == Set(["woofer", "tiptilt"])
         provenance = Dict(:requested => Dict("sha256" => "prepared"))
         prepared = Ext.GraphProjection(woofer; provenance)
         @test !ismutabletype(typeof(prepared))

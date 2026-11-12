@@ -96,34 +96,6 @@ end
             roundtrip(core)
             start!(capture)
             foreach(start!, sources)
-            files = PipeWireAORTC.CaptureFiles
-            actions = PipeWireAORTC.CalibrationActionCodec
-            selection_path = joinpath(directory, "capture.yaml")
-            PipeWireAORTC.Common.write_yaml(
-                selection_path,
-                Dict(
-                    "capture" =>
-                        Dict("channels" => ["validity", "flux"], "maximum_bytes" => 20),
-                ),
-            )
-            configuration = PipeWireAORTC.InstrumentCalibration._capture_configuration(
-                PipeWireAORTC.Common.read_yaml(selection_path)
-            )
-            selected = NamedTuple{configuration.channels}(
-                map(configuration.channels) do name
-                    declaration = getproperty(declarations, name)
-                    files.Channel(declaration.format, declaration.schema)
-                end,
-            )
-            contract = files.Contract(selected)
-            store = files.CaptureStore(
-                joinpath(directory, "evidence"),
-                contract;
-                stage = "native-transport",
-                illumination = "synthetic",
-                settings = Dict("source" => "private-core"),
-                maximum_bytes = configuration.maximum_bytes,
-            )
             sequence_counter = Ref(0)
             function acquire()
                 sequence = sequence_counter[] += 1
@@ -165,40 +137,9 @@ end
                     values(result.metadata),
                 )
                 @test all(slot -> slot.buffer.handle == C_NULL, values(capture.slots))
-                return result,
-                actions.Exposure(
-                    UInt64(1),
-                    UInt64(1),
-                    UInt64(sequence),
-                    exposure(sequence).start_model_ns,
-                    UInt64(10),
-                )
             end
-            descriptor = files.capture!(
-                store,
-                acquire;
-                run = UInt64(1),
-                serial = UInt64(1),
-                probe = UInt32(0),
-                cursor = actions.AcquisitionCursor(
-                    UInt64(1), UInt64(1), UInt64(0), Int64(100)
-                ),
-                frames = UInt32(2),
-                deadline = PipeWireAORTC.ControlClient.monotonic() + 15,
-            )
-            recorded = files.read_capture(
-                store.directory,
-                descriptor;
-                expected_contract = contract,
-                expected_stage = store.stage,
-                expected_illumination = store.illumination,
-                expected_settings = store.settings,
-            )
-            @test descriptor.bytes == 2contract.bytes == configuration.maximum_bytes
-            @test length(recorded.samples) == 2
-            @test keys(recorded.samples[1].arrays) == (:validity, :flux)
-            @test recorded.samples[1].arrays.flux == Float32[1, 2]
-            @test recorded.samples[2].exposure.start_model_ns == 110
+            acquire()
+            acquire()
             # A full identity mismatch over a real link faults the armed capture.
             arm_exposure!(capture, exposure(3))
             source = sources[findfirst(==(:raw), keys(declarations))]
