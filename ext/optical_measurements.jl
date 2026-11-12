@@ -29,11 +29,8 @@ optical_measurement(::CenterOfGravity, image, branch) =
 
 optical_fitted_modes(::SelectedPixels, selected, count) = collect(1:count)
 optical_fitted_modes(::CenterOfGravity, selected, count) = selected
-optical_recovery_error(::SelectedPixels, recovery, selection, selected) =
-    LA.norm(recovery - selection) / sqrt(length(selected))
-optical_recovery_error(::CenterOfGravity, recovery, selection, selected) =
-    LA.norm(recovery[selected, selected] - selection[selected, selected]) /
-    sqrt(length(selected))
+optical_recovery_modes(::SelectedPixels, selected) = Colon()
+optical_recovery_modes(::CenterOfGravity, selected) = selected
 
 optical_branch(kind::SelectedPixels, branch, coordinates, reference) =
     merge(branch, (; measurement_kind = kind))

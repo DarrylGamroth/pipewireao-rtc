@@ -48,7 +48,7 @@ PipeWireAORTCOpticsExt = "AdaptiveOpticsSim"
 
 [compat]
 AMDGPU = "2.7"
-AdaptiveOpticsCalibration = "0.17.3"
+AdaptiveOpticsCalibration = "0.17.4"
 AdaptiveOpticsSim = "0.3.21"
 AdaptiveOpticsSimPipeWireHIL = "0.5.1"
 Agent = "0.4.1"

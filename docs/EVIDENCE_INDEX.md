@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Optical reconstruction transfer — 2026-11-12
+
+The [CPU parity check](validation/optical-reconstruction-transfer-20261112/README.md)
+compares optical and chopped calibration before and after the numerical transfer.
+
 ## AdaptiveOpticsCalibration ownership — 2026-11-12
 
 The [numerical ownership review](reviews/20261112-calibration-numerics/REVIEW.md)

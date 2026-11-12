@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "f5424ababf987cb801413fe512131aa4ab52cb41"
+project_hash = "db0f2128bc4283a046524bf1998e8077c90af880"
 
 [[deps.Agent]]
 deps = ["StableTasks"]

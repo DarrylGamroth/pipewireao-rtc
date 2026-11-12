@@ -809,63 +809,36 @@ function optical_nulling_projection(calibration, name::Symbol; tsvd_rtol::Real)
     require_optical_centroid(branch.measurement_kind)
     isfinite(tsvd_rtol) && 0 < tsvd_rtol < 1 ||
         throw(ArgumentError("invalid measurement nulling TSVD cutoff"))
-    P = Matrix{Float32}(calibration.projection)
+    reconstructors = AdaptiveOpticsCalibration.Reconstructors
     D = branch.interaction
-    owned = branch.modes
-    unowned = setdiff(1:size(P, 2), owned)
-    isempty(unowned) &&
-        throw(ArgumentError("measurement nulling requires unowned command modes"))
-    inverse = AdaptiveOpticsCalibration.process(
-        AdaptiveOpticsCalibration.prepare(
-            AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(rtol = Float32(tsvd_rtol)),
-            AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
-                size(D, 1), length(owned), Float32
-            ),
-        ),
-        AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:, owned]),
-    )
-    AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse) == size(D, 1) || throw(
-        ArgumentError(
-            "owned centroid response must retain full row rank for measurement nulling"
-        ),
-    )
-    coefficients =
-        Matrix(AdaptiveOpticsCalibration.Reconstructors.reconstructor(inverse)) *
-        D[:, unowned]
-    P[:, unowned] .-= P[:, owned] * coefficients
-    scales = [maximum(abs, column) for column in eachcol(P)]
-    all(scale -> isfinite(scale) && scale > 0, scales) && all(isfinite, P) || throw(
-        ArgumentError("measurement nulling produced null or nonfinite command columns")
-    )
-    P ./= permutedims(scales)
-    residual = LA.norm(D[:, unowned] - D[:, owned] * coefficients)
-    response_norm = LA.norm(D[:, unowned])
-    relative_null_residual =
-        iszero(response_norm) ? (iszero(residual) ? 0.0 : Inf) : residual / response_norm
+    method = reconstructors.MeasurementNulling(branch.modes; rtol = Float32(tsvd_rtol))
+    specification = reconstructors.ReconstructorSpecification(size(D)..., Float32)
+    plan = AdaptiveOpticsCalibration.prepare(method, specification)
+    result = AdaptiveOpticsCalibration.process(plan, (calibration.projection, D))
     record = Dict{String,Any}(
         "branch" => string(name),
-        "owned_modes" => collect(owned),
-        "unowned_modes" => unowned,
+        "owned_modes" => result.owned_modes,
+        "unowned_modes" => result.unowned_modes,
         "source_calibration_identity" => calibration.report["calibration_identity"],
         "source_status" => calibration.report["status"],
         "source_cross_talk" => branch.cross_talk,
         "source_held_out" => deepcopy(calibration.report["held_out"]),
         "tsvd_rtol" => tsvd_rtol,
-        "retained_rank" => AdaptiveOpticsCalibration.Reconstructors.effective_rank(inverse),
+        "retained_rank" => result.retained_rank,
         "response_units" =>
             calibration.report["branches"][string(name)]["measurement_units"] * " / m OPD",
-        "owned_response" => [collect(row) for row in eachrow(D[:, owned])],
-        "unowned_response" => [collect(row) for row in eachrow(D[:, unowned])],
-        "coefficients" => [collect(row) for row in eachrow(coefficients)],
+        "owned_response" => [collect(row) for row in eachrow(result.owned_response)],
+        "unowned_response" => [collect(row) for row in eachrow(result.unowned_response)],
+        "coefficients" => [collect(row) for row in eachrow(result.coefficients)],
         "coefficient_units" => "1",
-        "relative_null_residual" => relative_null_residual,
-        "column_scales" => scales,
+        "relative_null_residual" => result.relative_null_residual,
+        "column_scales" => result.scales,
         "column_scale_units" =>
             calibration.report["physical_projection"]["command_projection_units"],
         "construction_order" => "source basis, measurement nulling, unit-maximum command columns, remeasured pupil RMS normalization",
         "final_basis" => "unowned modes include compensating owned components; pupil tip/tilt orthogonality is not imposed after measurement nulling",
     )
-    return (; projection = P, record)
+    return (; result.projection, record)
 end
 
 """
@@ -1062,79 +1035,61 @@ function Calibration.calibrate_optical(
         reference -> zeros(Float32, length(reference), n), reference_measurements
     )
     half_interactions = map(similar, interactions)
-    for (amplitude, matrices) in ((h, interactions), (h / 2, half_interactions)), j in 1:n
-        measurements = map((1.0f0, -1.0f0)) do sign
-            command .= (sign * amplitude) .* view(projection, :, j)
-            images = observe(optical_surface(surface, command, pupil_support))
-            validate_optical_probe_branches(images, authority)
-            NamedTuple{keys(authority)}(
-                map(name -> measure(getproperty(images, name), name), keys(authority))
-            )
-        end
-        for name in keys(authority)
-            getproperty(matrices, name)[:, j] .=
-                (getproperty(measurements[1], name) .- getproperty(measurements[2], name)) ./
-                (2amplitude)
+    for (amplitude, matrices) in ((h, interactions), (h / 2, half_interactions))
+        method = AdaptiveOpticsCalibration.InteractionMatrices.CentralDifference(amplitude)
+        plans = map(matrix -> AdaptiveOpticsCalibration.prepare(method, size(matrix, 1)), matrices)
+        for j in 1:n
+            measurements = map((1.0f0, -1.0f0)) do sign
+                command .= (sign * amplitude) .* view(projection, :, j)
+                images = observe(optical_surface(surface, command, pupil_support))
+                validate_optical_probe_branches(images, authority)
+                NamedTuple{keys(authority)}(
+                    map(name -> measure(getproperty(images, name), name), keys(authority))
+                )
+            end
+            for name in keys(authority)
+                AdaptiveOpticsCalibration.process!(
+                    view(getproperty(matrices, name), :, j),
+                    getproperty(plans, name),
+                    (getproperty(measurements[1], name), getproperty(measurements[2], name)),
+                )
+            end
         end
     end
+    reconstructors = AdaptiveOpticsCalibration.Reconstructors
     branches = map(keys(authority)) do name
         D = getproperty(interactions, name)
         half = getproperty(half_interactions, name)
         selected = getproperty(authority, name)
-        # A two-coordinate centroid estimates only its owned tip/tilt columns.
-        # Other columns remain measured, so their cross-talk stays observable.
+        # A centroid estimates only its owned tip/tilt columns. Other columns
+        # remain measured so their cross-talk stays observable.
         kind = getproperty(measurement_kinds, name)
-        fitted = optical_fitted_modes(kind, selected, n)
-        inverse = AdaptiveOpticsCalibration.process(
-            AdaptiveOpticsCalibration.prepare(
-                AdaptiveOpticsCalibration.Reconstructors.TSVDInverse(
-                    rtol = Float32(tsvd_rtol)
-                ),
-                AdaptiveOpticsCalibration.Reconstructors.ReconstructorSpecification(
-                    size(D, 1), length(fitted), Float32
-                ),
-            ),
-            AdaptiveOpticsCalibration.Reconstructors.SVDReconstructorInputs(D[:, fitted]),
+        method = reconstructors.ModalReconstructor(
+            selected,
+            optical_fitted_modes(kind, selected, n);
+            recovery_modes = optical_recovery_modes(kind, selected),
+            rtol = Float32(tsvd_rtol),
         )
-        reconstructor = zeros(Float32, n, size(D, 1))
-        reconstructor[fitted, :] .= AdaptiveOpticsCalibration.Reconstructors.reconstructor(
-            inverse
-        )
-        selection = zeros(Float32, n, n)
-        for j in selected
-            selection[j, j] = 1
-        end
-        for j in setdiff(1:n, selected)
-            reconstructor[j, :] .= 0
-        end
-        recovery = reconstructor * D
-        recovery_error = optical_recovery_error(kind, recovery, selection, selected)
-        derivative_error = LA.norm(D - half) / max(LA.norm(half), eps(Float32))
-        unowned = setdiff(1:n, selected)
-        cross_talk =
-            isempty(unowned) ? 0.0 :
-            LA.norm(recovery[selected, unowned]) / sqrt(length(selected))
+        specification = reconstructors.ReconstructorSpecification(size(D)..., Float32)
+        plan = AdaptiveOpticsCalibration.prepare(method, specification)
+        result = AdaptiveOpticsCalibration.process(plan, (D, half))
         accepted =
-            recovery_error <= reconstruction_tolerance &&
-            derivative_error <= derivative_tolerance
+            result.recovery_error <= reconstruction_tolerance &&
+            result.derivative_error <= derivative_tolerance
         branch = (;
             reference = getproperty(references, name),
             mask = getproperty(masks, name),
             interaction = D,
             half_interaction = half,
-            reconstructor,
-            selection,
-            recovery,
+            result.reconstructor,
+            result.selection,
+            result.recovery,
             modes = selected,
-            retained_rank = AdaptiveOpticsCalibration.Reconstructors.effective_rank(
-                inverse
-            ),
-            singular_values = AdaptiveOpticsCalibration.Reconstructors.singular_values(
-                inverse
-            ),
-            recovery_error,
-            derivative_error,
-            cross_talk,
+            result.retained_rank,
+            result.singular_values,
+            result.recovery_error,
+            result.derivative_error,
+            result.cross_talk,
             accepted,
         )
         return optical_branch(
@@ -1393,6 +1348,12 @@ function Calibration.validate_optical(
         throw(ArgumentError("invalid held-out reconstruction tolerance"))
     support = calibration.pupil_support
     flat = optical_surface(surface, zeros(Float32, size(P, 1)), support)
+    diagnostics = AdaptiveOpticsCalibration.Diagnostics
+    reconstruction_plan =
+        AdaptiveOpticsCalibration.prepare(diagnostics.HeldOutReconstruction(), size(P, 2))
+    pupil_plan =
+        AdaptiveOpticsCalibration.prepare(diagnostics.PupilResidualRatio(), count(support))
+    reconstructors = map(branch -> branch.reconstructor, values(calibration.branches))
     errors = Float64[]
     ratios = Float64[]
     for column in eachcol(coefficients)
@@ -1402,27 +1363,29 @@ function Calibration.validate_optical(
         images = observe(opd)
         keys(images) == keys(calibration.branches) ||
             throw(ArgumentError("held-out optical branches differ"))
-        estimate = zeros(Float32, size(P, 2))
-        for (name, branch) in pairs(calibration.branches)
+        residuals = map(keys(calibration.branches)) do name
+            branch = getproperty(calibration.branches, name)
             signed =
                 get(
                     calibration.report["branches"][string(name)],
                     "measurement_kind",
                     "intensity",
                 ) == "chopped-pixel-residual"
-            residual =
-                optical_measurement(
-                    optical_image(getproperty(images, name); signed), branch
-                ) .- optical_measurement(branch.reference, branch)
-            estimate .+= branch.reconstructor * residual
+            return optical_measurement(
+                optical_image(getproperty(images, name); signed), branch
+            ) .- optical_measurement(branch.reference, branch)
         end
-        push!(errors, LA.norm(estimate - column) / LA.norm(column))
-        corrected = optical_surface(surface, command - P * estimate, support)
-        before = (opd-flat)[support]
-        after = (corrected-flat)[support]
-        before .-= sum(before) / length(before)
-        after .-= sum(after) / length(after)
-        push!(ratios, LA.norm(after) / max(LA.norm(before), eps(Float64)))
+        result = AdaptiveOpticsCalibration.process(
+            reconstruction_plan, (reconstructors, residuals, column)
+        )
+        push!(errors, result.reconstruction_error)
+        corrected = optical_surface(surface, command - P * result.estimate, support)
+        push!(
+            ratios,
+            AdaptiveOpticsCalibration.process(
+                pupil_plan, ((opd - flat)[support], (corrected - flat)[support])
+            ),
+        )
     end
     accepted = maximum(errors) <= reconstruction_tolerance && maximum(ratios) < 1
     return (;
