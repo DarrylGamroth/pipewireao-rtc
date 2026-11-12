@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.16 release — 2026-11-12
+
+The [registry-only reference calibration check](validation/rtc-0716-20261112/README.md)
+records Classic and GPI2 qualification on private cores using the shared instrument tools.
+
 ## Reference campaign transfer — 2026-11-12
 
 The [private-core verification](validation/reference-campaign-transfer-20261112/README.md)
