@@ -29,7 +29,7 @@ function Calibration._validate_system(
         joinpath(application, specification["simulation"])
     )
     bundle = K.read_bundle(calibration)
-    configured = calibration_settings(application, specification, declaration)
+    configured = K.calibration_settings(application, specification, declaration)
     Instruments.prescription_identity(declaration, configured) ==
     bundle.report["source_prescription_identity"] ||
         throw(ArgumentError("calibration belongs to another source prescription"))
@@ -83,7 +83,7 @@ function Calibration._validate_system(
     clipped_by_actuator = zeros(Int, physical_count)
     peaks, central_peaks = zeros(Float32, frames), zeros(Float32, frames)
     roles = zeros(UInt8, physical_count)
-    graph = bundle_graph(calibration)
+    graph = Calibration.prepare_bundle_graph(calibration)
     try
         storage = K.controller_storage(
             graph;

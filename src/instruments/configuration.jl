@@ -31,7 +31,9 @@ public load,
     configuration_context,
     calibration_context,
     fields,
-    prescription_identity
+    prescription_identity,
+    bounded_yaml,
+    publication
 
 const D = DeploymentConfiguration
 
@@ -123,6 +125,11 @@ fields(value, allowed, required, label) = throw(ArgumentError("$label must be an
 
 include("calibration.jl")
 
+"""
+    bounded_yaml(path)
+
+Read authored YAML, resolve schema references and enforce declaration size limits.
+"""
 function bounded_yaml(path)
     document = Schemas.resolve(Common.read_yaml(path))
     InstrumentDefinition.bounded(document, Ref(131072))

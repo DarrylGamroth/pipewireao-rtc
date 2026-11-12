@@ -60,7 +60,10 @@ graph for typed contracts. Calibration consumes both from the built application.
 Shack–Hartmann interaction calibration recompiles the application's declared
 controller graph template when it updates controller dimensions or mirror limits.
 
-The shared CLI commands use this built application.
+Run the shared CLI commands from the
+[adaptive-optics-simulations instrument repository](https://github.com/DarrylGamroth/adaptive-optics-simulations).
+Its staging tool uses the RTC bundle graph and export APIs to validate a
+candidate before writing a fresh authored source copy.
 
 ```sh
 julia --project=/path/to/environment tools/calibrate.jl APPLICATION FRESH_BUNDLE [cpu|cuda|amdgpu]

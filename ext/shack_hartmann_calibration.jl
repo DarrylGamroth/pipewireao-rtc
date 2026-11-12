@@ -35,7 +35,7 @@ function calibration_settings!(simulation, specification, declaration)
 end
 
 # Match acquisition settings when checking source identity during replay/staging.
-function calibration_settings(application, recipe, declaration)
+function Calibration.calibration_settings(application, recipe, declaration)
     kind = IC.sensor_kind(
         declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
     )

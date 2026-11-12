@@ -22,6 +22,10 @@ import ..Common:
     configuration_reference as graph_reference
 
 public prepare,
+    checked_path,
+    copy_source,
+    graph_context,
+    resolve_graph_configuration,
     load_profile,
     combine_profile,
     seal!,
@@ -75,6 +79,11 @@ include("feedback_composition.jl")
 outside(path) =
     path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 
+"""
+    checked_path(path)
+
+Return an absolute export path, rejecting symbolic links in the path or its parents.
+"""
 function checked_path(path)
     absolute = abspath(path)
     current = dirname(absolute)
@@ -451,7 +460,13 @@ function localize_optical_preparation!(source, destination)
     )
 end
 
-"Copy instrument source, localizing shared descriptions and palettes for independent deployment."
+"""
+    copy_source(source, destination; runtime_configurations=true)
+
+Copy authored source into a fresh directory and localize shared mirror
+descriptions and palettes. Set `runtime_configurations=false` to keep the
+copy in authored form without generating runtime configuration files.
+"""
 function copy_source(
     source::AbstractString, destination::AbstractString; runtime_configurations::Bool = true
 )

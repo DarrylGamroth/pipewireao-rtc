@@ -246,11 +246,21 @@ function load_calibration_optics(declaration, recipe)
     return nothing
 end
 """
-    stage_calibration(source, application, calibration, destination)
+    calibration_settings(application, recipe, declaration)
 
-Stage a bundle verified against its built application into a fresh authored source copy.
+Resolve the simulation settings used by the recipe's sensor procedure.
+Use the optional calibration extension to reproduce its prescription identity.
 """
-function stage_calibration end
+function calibration_settings end
+
+"""
+    prepare_bundle_graph(directory)
+
+Read a verified calibration bundle and prepare its graph with each FITS
+parameter checked against the typed formats. The caller owns the returned
+execution and closes it with `FilterGraphPipeWire.close_execution`.
+"""
+function prepare_bundle_graph end
 
 """
     require_fresh_output(inputs, output)

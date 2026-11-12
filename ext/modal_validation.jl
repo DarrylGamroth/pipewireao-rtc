@@ -39,7 +39,7 @@ function Calibration._validate_system(
         joinpath(calibration, "graph.conf"), "/opt/pipewireao"
     )
     results = Dict{String,Any}()
-    graph = bundle_graph(calibration)
+    graph = Calibration.prepare_bundle_graph(calibration)
     report = Dict(
         "graph_sha256" => receipt["graph_sha256"],
         "prescription_identity" => expected,

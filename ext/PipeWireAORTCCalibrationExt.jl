@@ -1,6 +1,7 @@
 module PipeWireAORTCCalibrationExt
 
 import PipeWireAORTC
+import PipeWireAORTC.DeploymentConfiguration as D
 import PipeWireAORTC.InstrumentCalibration: calibration_endpoint, calibration_port
 import FilterGraphPipeWire
 import FilterGraphs
@@ -92,7 +93,6 @@ include("calibration_transport.jl")
 include("calibration_capture.jl")
 include("calibration_owner.jl")
 include("shack_hartmann_calibration.jl")
-include("calibration_staging.jl")
 include("modal_hidden_modes.jl")
 include("modal_validation.jl")
 include("shack_hartmann_validation.jl")

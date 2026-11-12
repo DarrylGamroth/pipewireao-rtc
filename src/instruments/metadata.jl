@@ -387,7 +387,12 @@ limit_values(value::AbstractVector, count) =
 limit_values(value, count) =
     throw(ArgumentError("mirror limits must be numeric scalars or arrays"))
 
-"Materialize the RTC publication from physical geometry and RTC-owned mirror controls."
+"""
+    publication(path)
+
+Materialize and validate the RTC publication from the authored RTC configuration,
+physical geometry and mirror controls.
+"""
 function publication(path)
     declaration = load_rtc(path)
     calibration_identity = declaration.document["calibration_identity"]

@@ -384,3 +384,26 @@ validate_parameter_override_artifact(artifact::PipeWireAORTC.Artifacts.FITSArtif
     nothing
 validate_parameter_override_artifact(artifact) =
     throw(ArgumentError("Parameter Port override must be a FITSArtifact"))
+
+function Calibration.prepare_bundle_graph(calibration::AbstractString)
+    bundle = Calibration.read_bundle(calibration)
+    return FilterGraphPipeWire.prepare_service_graph(
+        bundle.graph;
+        initial_parameters = formats -> begin
+            Set(string.(keys(formats))) == Set(bundle.parameter_names) || throw(
+                ArgumentError("calibration runtime parameter manifest differs from graph"),
+            )
+            entries = [
+                GraphOwner.FITSBinding(
+                    name,
+                    PipeWireAORTC.Artifacts.FITSArtifact(
+                        bundle.artifacts[bundle.parameter_files[string(name)]];
+                        axes = length(format.shape) > 1 ?
+                               collect(reverse(1:length(format.shape))) : nothing,
+                    ),
+                ) for (name, format) in pairs(formats)
+            ]
+            GraphOwner.prepare_bindings(entries, formats)
+        end,
+    )
+end

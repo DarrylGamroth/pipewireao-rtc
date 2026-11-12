@@ -59,7 +59,8 @@
   Independent WirePlumber may supply site/device policy. Follow upstream
   media-session terminology with idiomatic Julia names; do not copy C prefixes
   or introduce parallel names for PipeWire objects and operations.
-- The shared instrument tools own dark, lamp and qualification campaigns.
+- The shared instrument tools own dark, lamp and qualification campaigns and
+  standard calibration bundle staging. RTC retains bundle validation and export.
   RTC owns calibration projections, the native acquisition endpoint and
   client, and preparation evidence. AdaptiveOpticsCalibration owns numerical
   reductions. Maintained repository scripts and scripting tests use Julia;

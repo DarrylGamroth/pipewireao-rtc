@@ -1,6 +1,13 @@
 # Cold graph authoring references. Native consumers receive only concrete values.
 
-"Build reference data from resolved geometry and declared instrument dimensions."
+"""
+    graph_context(instrument; dimensions, mirror_controls, calibration)
+    graph_context(rtc)
+
+Build graph reference values from resolved geometry and calibration.
+Pass the declaration from `InstrumentConfiguration.load_rtc` to use its
+instrument, dimensions, mirror controls and calibration together.
+"""
 function graph_context(
     instrument::AbstractDict;
     dimensions::AbstractDict = Dict(),
@@ -36,6 +43,17 @@ function graph_context(
     return context
 end
 
+function graph_context(rtc::NamedTuple)
+    return graph_context(
+        InstrumentConfiguration.json_value(
+            InstrumentConfiguration.physical_definition(rtc.instrument)
+        );
+        dimensions = rtc.document["dimensions"],
+        mirror_controls = rtc.controls["deformable_mirrors"],
+        calibration = rtc.calibration,
+    )
+end
+
 function sensor_context(layout)
     haskey(layout, "detector_shape") || return Dict{String,Any}()
     fields = Dict{String,Any}("pixel_to_image" => pixel_to_image(layout["detector_shape"]))
@@ -53,7 +71,12 @@ function pixel_to_image(shape)
     return [1 / columns, 1 / rows]
 end
 
-"Resolve explicit references in node configuration, preserving topology and other fields."
+"""
+    resolve_graph_configuration(graph, context)
+
+Resolve explicit node configuration references using `context` while preserving
+the declared topology and other fields.
+"""
 function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
     result = deepcopy(graph)
     if haskey(result, "filter.composition")
