@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## AdaptiveOpticsCalibration ownership — 2026-11-12
+
+The [numerical ownership review](reviews/20261112-calibration-numerics/REVIEW.md)
+identifies optical reconstruction and diagnostics that can move to AdaptiveOpticsCalibration.
+
 ## Calibration capture-file retirement — 2026-11-12
 
 The [retirement verification](validation/calibration-capture-retirement-20261112/README.md)
