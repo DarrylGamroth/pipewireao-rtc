@@ -17,7 +17,7 @@ function Calibration._validate_system(
     C, D = PipeWireAORTC.Common, PipeWireAORTC.DeploymentConfiguration
     K.require_prepared_application(application)
     harness_sha256 = K.digest(@__FILE__)
-    preparation_path = joinpath(pkgdir(PipeWireAORTC), "src", "instrument_calibration.jl")
+    preparation_path = joinpath(pkgdir(PipeWireAORTC), "src", "calibration", "instrument.jl")
     preparation_sha256 = K.digest(preparation_path)
     extension_path = joinpath(
         pkgdir(PipeWireAORTC), "ext", "PipeWireAORTCCalibrationExt.jl"

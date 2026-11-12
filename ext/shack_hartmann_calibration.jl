@@ -64,7 +64,7 @@ function Calibration._calibrate_system(
         C, D = PipeWireAORTC.Common, PipeWireAORTC.DeploymentConfiguration
         calibrator_sha256 = K.digest(@__FILE__)
         preparation_path = joinpath(
-            pkgdir(PipeWireAORTC), "src", "instrument_calibration.jl"
+            pkgdir(PipeWireAORTC), "src", "calibration", "instrument.jl"
         )
         preparation_sha256 = K.digest(preparation_path)
         extension_path = joinpath(
@@ -262,8 +262,19 @@ function Calibration._calibrate_system(
             # The shape-offset algorithm initializes this optional startup port to zero.
             # Seal that neutral value explicitly so the bundle covers every graph parameter.
             get!(parameters, Symbol("shape-offset"), zeros(Float32, physical_count))
+            # When the bundle replaces calibration/artifacts, its geometry
+            # input must keep the bytes that identify the source prescription.
+            sensor = declaration.instrument.document["wavefront_sensors"][specification["sensor"]]
+            origins = sensor["subaperture_origins"]["path"]
+            origin_name = splitext(basename(origins))[1]
+            artifact_sources = Dict{String,String}()
+            if dirname(origins) == joinpath("calibration", "artifacts") &&
+               haskey(parameters, Symbol(origin_name))
+                artifact_sources[origin_name] = D.relative_asset(source, origins)
+            end
             return K.write_bundle(
-                output, report, rtc.calibration, concrete, parameters; diagnostics
+                output, report, rtc.calibration, concrete, parameters;
+                diagnostics, artifact_sources,
             )
         finally
             FilterGraphPipeWire.close_execution(graph)

@@ -230,4 +230,27 @@ end
         @test_throws ArgumentError C.read_bundle(joinpath(root, "bundle-link"))
     end
 end
+
+@testset "Retain a prescription FITS input only for identical array values" begin
+    mktempdir() do root
+        saved = bundle(joinpath(root, "original"))
+        input = joinpath(root, "input.fits")
+        C.write_fits(input, saved.parameters[:reconstructor]; units = "pixels")
+        sources = Dict("reconstructor" => input)
+        destination = joinpath(root, "retained")
+        C.write_bundle(
+            destination, saved.report, saved.context, saved.graph, saved.parameters;
+            artifact_sources = sources,
+        )
+        retained = C.read_bundle(destination)
+        @test read(retained.artifacts["reconstructor.fits"]) == read(input)
+        bad = joinpath(root, "rejected")
+        @test_throws ArgumentError C.write_bundle(
+            bad, saved.report, saved.context, saved.graph,
+            Dict(:reconstructor => zeros(Float32, 2, 2)); artifact_sources = sources,
+        )
+        @test !ispath(bad)
+    end
+end
+
 end

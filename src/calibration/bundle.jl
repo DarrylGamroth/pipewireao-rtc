@@ -180,12 +180,15 @@ function read_bundle(directory::AbstractString)
 end
 
 """
-    write_bundle(directory, report, context, concrete_graph, parameters; diagnostics=Dict())
+    write_bundle(directory, report, context, concrete_graph, parameters;
+                 diagnostics=Dict(), artifact_units=Dict(), artifact_sources=Dict())
 
 Publish a fresh version-1 calibration bundle by renaming a complete sibling
 staging directory. Parameters and diagnostics map port/artifact stems to arrays;
 only parameters are listed in parameter_names. Generated integrity fields cannot
-be supplied in report. Return the generated report.
+be supplied in report. Use `artifact_sources` to retain the exact bytes of
+an existing FITS input keyed by artifact stem. Its primary image must match
+the supplied array in the bundle's axis order. Return the generated report.
 """
 function write_bundle(
     directory::AbstractString,
@@ -195,6 +198,7 @@ function write_bundle(
     parameters;
     diagnostics = Dict(),
     artifact_units = Dict(),
+    artifact_sources = Dict{String,String}(),
 )
     _bundle_report(report)
     any(key -> haskey(report, key), _BUNDLE_INTEGRITY_FIELDS) && throw(
@@ -214,6 +218,8 @@ function write_bundle(
             runtime && push!(parameter_names, name)
         end
     end
+    all(name -> haskey(arrays, name) && !haskey(artifact_units, name), keys(artifact_sources)) ||
+        throw(ArgumentError("retained FITS sources require a matching array and original units"))
     target = abspath(directory)
     !ispath(target) && !islink(target) ||
         throw(ArgumentError("calibration output must be fresh: $target"))
@@ -226,7 +232,18 @@ function write_bundle(
         hashes = Dict{String,String}()
         for name in sort!(collect(keys(arrays)))
             path = joinpath(temporary, "artifacts", name * ".fits")
-            write_fits(path, arrays[name]; units = get(artifact_units, name, nothing))
+            array = arrays[name]
+            if haskey(artifact_sources, name)
+                axes = ntuple(index -> ndims(array) + 1 - index, ndims(array))
+                source = Artifacts.FITSArtifact(artifact_sources[name]; axes)
+                bytes = Artifacts.snapshot(source.path; check = () -> nothing)
+                retained = Artifacts.prepare_snapshot(source, eltype(array), size(array), bytes)
+                isequal(retained.data, array) ||
+                    throw(ArgumentError("retained FITS data differ from calibration array: $name"))
+                write(path, bytes)
+            else
+                write_fits(path, array; units = get(artifact_units, name, nothing))
+            end
             hashes[name*".fits"] = Common.sha256_file(path)
         end
         result = Dict{String,Any}(report)
