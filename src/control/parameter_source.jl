@@ -833,6 +833,11 @@ function run_owner(
         )
         precompile(_completion!, (endpoint_type, ticket_type, Source, Int32, String))
         precompile(Endpoint.complete!, (endpoint_type, ticket_type, Pod))
+        precompile(close, (typeof(timer),))
+        precompile(close, (endpoint_type,))
+        for source in sources
+            precompile(close, (typeof(source.stream),))
+        end
         Bootstrap.prepared!(runtime)
         connect_ticket = Bootstrap.take_connect!(runtime)
         Bootstrap.connecting!(

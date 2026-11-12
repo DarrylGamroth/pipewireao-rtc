@@ -409,14 +409,16 @@ function retire_owner!(quit::F, runtime, owner::Owner{OwnerBootstrapCodec.Profil
     assert_identity!(runtime, owner.handle)
     endpoint = something(find_object(runtime, owner.handle))
     properties = object_properties(endpoint)
-    declarations = [
-        declaration for declaration in get(runtime.configuration, "owners", []) if
-        get(declaration, "pid", nothing) == owner.pid &&
-            haskey(declaration, "bootstrap-node")
-    ]
-    length(declarations) == 1 ||
+    declaration = nothing
+    for candidate in get(runtime.configuration, "owners", [])
+        get(candidate, "pid", nothing) == owner.pid && haskey(candidate, "bootstrap-node") ||
+            continue
+        declaration === nothing ||
+            throw(ArgumentError("process retirement requires one declared bootstrap owner"))
+        declaration = candidate
+    end
+    declaration === nothing &&
         throw(ArgumentError("process retirement requires one declared bootstrap owner"))
-    declaration = only(declarations)
     get(properties, "node.name", nothing) == declaration["bootstrap-node"] &&
     tryparse(Int64, string(declaration["bootstrap-instance"])) == owner.instance &&
     get(properties, "pipewireao.rtc-control.protocol", nothing) == ControlClient.PROTOCOL &&
@@ -426,18 +428,17 @@ function retire_owner!(quit::F, runtime, owner::Owner{OwnerBootstrapCodec.Profil
     owner.instance &&
     tryparse(UInt32, get(properties, "pipewireao.rtc-control.owner-pid", "")) == owner.pid ||
         throw(ArgumentError("bootstrap receipt differs from the declared native owner"))
-    names = Set{String}(
-        name for
-        (name, pid) in get(runtime.configuration, "node.pids", Dict{String,Int}()) if
-        pid == owner.pid
-    )
+    names = Set{String}()
+    for (name, pid) in get(runtime.configuration, "node.pids", Dict{String,Int}())
+        pid == owner.pid && push!(names, name)
+    end
     push!(names, String(declaration["bootstrap-node"]))
     control_name = get(declaration, "control-node", nothing)
     control_name === nothing || push!(names, String(control_name))
     nodes, clients = Set{UInt32}(), Set{UInt32}()
     for object in values(runtime.objects)
         haskey(runtime.captured, object.id) || continue
-        any(name -> _named_node(object, name), names) || continue
+        _named_node(object, names) || continue
         assert_identity!(runtime, UInt64(object.id))
         client_id = _node_client(object)
         client_id === nothing &&
@@ -457,16 +458,12 @@ function retire_owner!(quit::F, runtime, owner::Owner{OwnerBootstrapCodec.Profil
         haskey(runtime.captured, object.id) || continue
         _retirement_port_parent(object) in nodes && push!(targets, object.id)
     end
-    for id in clients
-        shared = any(
-            object ->
-                haskey(runtime.captured, object.id) &&
-                !(object.id in nodes) &&
-                _node_client(object) == id,
-            values(runtime.objects),
-        )
-        shared || push!(targets, id)
+    for object in values(runtime.objects)
+        haskey(runtime.captured, object.id) && !(object.id in nodes) || continue
+        client_id = _node_client(object)
+        client_id === nothing || delete!(clients, client_id)
     end
+    union!(targets, clients)
     for id in targets
         haskey(runtime.captured, id) && assert_identity!(runtime, UInt64(id))
     end
@@ -578,6 +575,8 @@ end
 _named_node(object::Object, name) = false
 _named_node(object::Object{P,NodeInfo}, name) where {P} =
     get(object_properties(object), "node.name", nothing) == name
+_named_node(object::Object{P,NodeInfo}, names::Set{String}) where {P} =
+    get(object_properties(object), "node.name", nothing) in names
 _spa_factory(object::Object) = false
 function _spa_factory(object::Object{P,FactoryInfo}) where {P}
     properties = object_properties(object)

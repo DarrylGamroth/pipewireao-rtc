@@ -265,18 +265,22 @@ function start_effect!(session::Session)
     ready_for_effect(session, ticket.effect) || return nothing
     job = Job(ticket, false)
     session.active_job = job
-    session.active_task = @async begin
-        try
-            result = perform!(session, job, ticket.effect)
-            session.effect_result = EffectCompleted(
-                ticket, result, Clocks.time_nanos(session.source_clock)
-            )
-        catch error
-            if error isa InterruptException
-                stage!(session.queue, ShutdownRequested())
-            else
-                session.effect_result = EffectFailed(ticket, sprint(showerror, error), false)
-            end
+    session.active_task = @async execute_effect!(session, job)
+    return nothing
+end
+
+function execute_effect!(session::Session, job::Job)
+    ticket = job.ticket
+    try
+        result = perform!(session, job, ticket.effect)
+        session.effect_result = EffectCompleted(
+            ticket, result, Clocks.time_nanos(session.source_clock)
+        )
+    catch error
+        if error isa InterruptException
+            stage!(session.queue, ShutdownRequested())
+        else
+            session.effect_result = EffectFailed(ticket, sprint(showerror, error), false)
         end
     end
     return nothing
@@ -560,6 +564,14 @@ function prepare_dispatch!(session::Session)
             Base.precompile(_shutdown_bootstrap!, (typeof(session), job, bootstrap_owner))
         end
     end
+    quit_ticket = Ingress.Ticket{RunnerCodec.RunnerCommand{:quit,Tuple{}}}
+    Base.precompile(reply_pod, (quit_ticket, Reply{Bool}))
+    Base.precompile(Ingress._finish!, (typeof(session.ingress), quit_ticket, Pod))
+    Base.precompile(close, (typeof(session),))
+    for resource in (session.endpoint, session.controller_endpoint, session.registry_listener)
+        Base.precompile(_close_resource!, (Vector{Exception}, typeof(resource)))
+    end
+    Base.precompile(close, (typeof(session.controller_endpoint),))
     for payload in ((), nothing)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
@@ -572,7 +584,7 @@ function prepare_dispatch!(session::Session)
             effect = typeof(ticket.effect)
             for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
                 job = Job{EffectTicket{effect,origin}}
-                Base.precompile(perform!, (typeof(session), job, effect))
+                Base.precompile(execute_effect!, (typeof(session), job))
             end
             submitted!(machine, ticket)
             complete!(machine, ticket)

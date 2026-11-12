@@ -197,6 +197,13 @@ function Runtime(
         precompile(serve!, (typeof(runtime),)) ||
             error("cannot compile native bootstrap monitor before startup")
         _precompile_owner_routes!(Monitor{typeof(runtime),typeof(clock)})
+        precompile(finish!, (typeof(runtime),))
+        precompile(close, (typeof(runtime),))
+        precompile(Endpoint.flush_terminal!, (typeof(transport), Int64))
+        endpoint_type = typeof(transport.endpoint)
+        ticket_type = Endpoint.Ticket{Client.command_type(Codec.PROFILE)}
+        precompile(Endpoint.retain_controller!, (endpoint_type, ticket_type))
+        precompile(Endpoint.wait_terminal_release!, (endpoint_type, ticket_type))
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime; clock)
         started = Clocks.time_nanos(clock)::Int64
         deadline = Base.Checked.checked_add(started, Int64(5_000_000_000))
@@ -371,6 +378,9 @@ before the owner closes its scientific node.
 """
 function connecting!(runtime::Runtime, ticket::Endpoint.Ticket; ready, quit)
     preparation_check!(runtime)
+    # The monitor invokes this capability through invokelatest. Compile the
+    # concrete hook before registration without requesting native shutdown.
+    precompile(quit, ())
     _request!(
         runtime, ConnectionRegistered(Channel{OwnerReply}(1), ticket, Hooks(ready, quit))
     )
@@ -1011,6 +1021,8 @@ _dispatch_owner!(sm, message::OwnerClosed) = Hsm.dispatch!(sm, :ClosedByOwner, m
 _dispatch_owner!(sm, message::OwnerCancelled) =
     Hsm.dispatch!(sm, :CancelledByOwner, message)
 function _precompile_owner_routes!(::Type{M}) where {M<:Monitor}
+    ticket_type = Endpoint.Ticket{Client.command_type(Codec.PROFILE)}
+    precompile(_dispatch_request!, (M, ticket_type, Codec.Command{:quit}))
     # Channel erases the concrete message type at the consumer boundary. Warm
     # every bounded route before admission; first-use compilation of registration
     # must not consume an already accepted native ticket's deadline.

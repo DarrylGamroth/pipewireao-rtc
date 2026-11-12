@@ -93,3 +93,47 @@ selection, DAG combining and compiler pass management. These counts
 are shares of sampled CPU time. They establish that Julia compilation
 continued in the separate owners during shutdown, without assigning
 a wall duration to that compilation or identifying its Julia callers.
+
+## Verified candidate
+
+The final candidate also prepares the bootstrap monitor's Quit route,
+terminal fence and owner finish and close calls, plus each concrete
+quit callback before registration. The parameter publisher prepares
+its stream, endpoint and timer close methods. These are compile
+requests. They send no PipeWire commands and close no resources.
+
+A new Classic install selected the candidate from a temporary local
+registry (test-only version `0.7.19`, source tree
+`37e814eb40e9bcff1031c51e6b6f95a9e25ccd5a`). Every other dependency
+entry matched the traced baseline. The installed Project and Manifest
+matched the resolved copies. No in-process tracing was enabled.
+The existing five-second effect deadline and all receipt and identity
+checks remained in force.
+
+| Measurement | RTC 0.7.14 release run | Final candidate |
+| --- | ---: | ---: |
+| Managed stop elapsed | 14.71 s | 12.42 s |
+| Stop job to submission fence observed | 4.59 s | 4.13 s |
+| Submission fence to acknowledgement observed | 5.40 s | 3.98 s |
+| First post-stop sample to core PID gone | 2.61 s | 2.50 s |
+
+The candidate reached Ready in 383.3 s. Its RTC control dispatch
+preparation took 41.2 s, compared with 31.4 s in the 0.7.14 release run
+and 35.3 s in the traced baseline. These are separate runs on a shared
+host. The preparation difference includes host variability and the
+additional compilation before admission.
+
+The WFS analysis worker was still starting at stop and exited in
+33 ms. The native Quit was accepted, all owners exited, and the private
+socket and invocation unit files were removed. No SIGKILL was recorded.
+
+At 49 Hz, the final run recorded fewer libLLVM samples during the
+fence-to-exit windows than the RTC-only candidate. The counts were
+36 vs 83 for the RTC, 22 vs 38 for the controller, 29 vs 47 for the
+parameter publisher and 32 vs 44 for the simulator. LLVM still appeared
+in each profile. Sampling covers different wall-time intervals and
+cannot assign the reduction to individual methods.
+
+The MediaSession machine, object, effect and ingress tests and the
+owner bootstrap codec and entrypoint tests passed with the matching
+PipeWireAO JLL artifact.
