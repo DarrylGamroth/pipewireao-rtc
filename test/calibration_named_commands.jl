@@ -2,6 +2,7 @@
 module CalibrationNamedCommandTests
 using Test, PipeWireAO, PipeWireAORTC, FilterGraphPipeWire, FilterGraphs
 using AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, AdaptiveOpticsCalibration
+using PipeWireAORTC.InstrumentCalibration: calibration_port
 const Ext = Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt)
 
 function prepare_command(count, schema)
@@ -47,12 +48,12 @@ function prepare_command(count, schema)
 end
 
 @testset "projection declaration forms dispatch with parser validation ordering" begin
-    @test Ext.calibration_port("node:value") ==
+    @test calibration_port("node:value") ==
         (endpoint = "node:value", node = "node", name = :value)
     original = Dict{String,Any}(
         "endpoint" => "node:value", "name" => "external", "details" => [1, 2]
     )
-    @test Ext.calibration_port(original) ==
+    @test calibration_port(original) ==
         (endpoint = "node:value", node = "node", name = :external)
     copied = Ext.calibration_output(original, :alias)
     @test copied["name"] == "alias" && original["name"] == "external"
@@ -61,15 +62,15 @@ end
     @test Ext.calibration_output("node:value", :alias) ==
         Dict("endpoint" => "node:value", "name" => "alias")
     failure = try
-        Ext.calibration_port(Dict("endpoint" => Int64(1)))
+        calibration_port(Dict("endpoint" => Int64(1)))
         nothing
     catch error
         error
     end
     @test failure isa ArgumentError
     @test occursin("endpoint must be a string", sprint(showerror, failure))
-    @test_throws KeyError Ext.calibration_port(Dict("endpoint" => "node:value"))
-    @test_throws ArgumentError Ext.calibration_port(Dict("endpoint" => "node:value:extra"))
+    @test_throws KeyError calibration_port(Dict("endpoint" => "node:value"))
+    @test_throws ArgumentError calibration_port(Dict("endpoint" => "node:value:extra"))
     @test Ext.calibration_output_selection((:one, :two)) == ((:one, :two), (:one, :two))
     aliases = (one = :external, two = "node:value")
     @test Ext.calibration_output_selection(aliases) ==

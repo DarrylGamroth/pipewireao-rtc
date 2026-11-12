@@ -38,7 +38,10 @@ public modal_completion,
     read_bundle,
     write_bundle,
     stage_calibration,
-    calibrate_references,
+    acquisition_domain,
+    calibration_port,
+    require_fresh_output,
+    recipe_sensor_kind,
     prepare_initial_calibration,
     calibrate_optical,
     validate_optical,
@@ -170,8 +173,10 @@ end
 """
     calibration_graph(application; inputs, outputs, parameter_sources=Dict())
 
-Cold projection of an existing built graph for initial calibration (optional science
-extension).
+Project a built graph for initial calibration using the optional science
+extension. The returned projection exposes its prepared `graph`, original
+`source_graph_sha256` and `parameter_sha256` by Port. Close the projection
+if it is never transferred to a prepared initial-calibration endpoint.
 """
 function calibration_graph end
 
@@ -183,15 +188,36 @@ Prepare a native CPU initial-calibration endpoint from the regular graph project
 function prepare_initial_calibration end
 
 """
-    calibrate_references(application, output; remote, kwargs...)
+    acquisition_domain(endpoint)
 
-Collect declared dark, lamp-training and separate qualification exposures through
-the initial-calibration endpoint and reduce them online with AOC. The optional
-CPU/SH extension implements this procedure. The caller owns the private core;
-no default remote or hardware connection is selected. Output is a candidate
-reference product, not an activatable interaction-matrix bundle.
+Return the immutable acquisition domain of a prepared initial-calibration
+endpoint. Use this identity to correlate preparation evidence and live samples.
 """
-function calibrate_references end
+function acquisition_domain end
+
+calibration_endpoint(value) = throw(ArgumentError("graph endpoint must be a string"))
+function calibration_endpoint(value::AbstractString)
+    parts = split(value, ':'; keepempty = true)
+    length(parts) == 2 && all(!isempty, parts) ||
+        throw(ArgumentError("graph endpoint must be NODE:PORT"))
+    return String(value), String(first(parts))
+end
+
+"""
+    calibration_port(declaration)
+
+Return the endpoint string, Node name and external Port name from a built graph
+Port declaration. Accept a `node:port` string or a mapping with `endpoint` and
+`name` entries.
+"""
+function calibration_port(value::AbstractString)
+    endpoint, node = calibration_endpoint(value)
+    return (; endpoint, node, name = Symbol(last(split(endpoint, ':'))))
+end
+function calibration_port(value)
+    endpoint, node = calibration_endpoint(value["endpoint"])
+    return (; endpoint, node, name = Symbol(value["name"]))
+end
 
 """
     require_prepared_application(application)

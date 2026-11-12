@@ -70,7 +70,7 @@ end
     @test answer["cursor"]["domain"] == typemax(UInt64)
     @test only(client.client.commands).run == typemax(UInt64)
     @test only(client.client.commands).serial == 1
-    @test client.can_restore && length(client.records) == 1
+    @test CalibrationActionClient.can_restore(client) && length(client.records) == 1
     @test client.records[1]["reply"]["run"] == typemax(UInt64)
     for reason in
         (Codec.Endpoint, Codec.Cancelled, Codec.ProbeClipped, Codec.InvalidEvidence)
@@ -78,7 +78,7 @@ end
         @test_throws ArgumentError CalibrationActionClient.request!(
             client, Codec.Hold(), "held"
         )
-        @test client.can_restore == (reason === Codec.InvalidEvidence)
+        @test CalibrationActionClient.can_restore(client) == (reason === Codec.InvalidEvidence)
         @test !client.client.closed
     end
     client = connection(Codec.Released(); op = 7)
@@ -129,14 +129,14 @@ end
         @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
             client, requested, "held"
         )
-        @test !client.can_restore && client.client.closed
+        @test !CalibrationActionClient.can_restore(client) && client.client.closed
     end
     client = connection(Codec.Held(cursor))
     client.client.failure = Generic.UnknownOutcome("private core disconnected")
     @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
         client, Codec.Hold(), "held"
     )
-    @test client.client.closed && !client.can_restore
+    @test client.client.closed && !CalibrationActionClient.can_restore(client)
     @test_throws Generic.UnknownOutcome CalibrationActionClient.request!(
         client, Codec.Hold(), "held"
     )
@@ -197,7 +197,7 @@ end
     result = CalibrationActionClient.complete!(client, supplied)
     @test isempty(result.values) && length(result.exposures) == 1 && result.valid
     @test only(client.client.commands).action.measurements == 0
-    @test client.can_restore
+    @test CalibrationActionClient.can_restore(client)
     for (measurements, frames, result) in (
         (1, 1, Codec.Responses(Float32[], [exposure], true)),
         (0, 1, Codec.Responses(Float32[1], [exposure], true)),
@@ -208,7 +208,7 @@ end
         # The terminal outcome is known. Scientific dimensions are checked by
         # the caller, which must retain explicit restoration on invalid evidence.
         @test CalibrationActionClient.complete!(client, action) === result
-        @test !client.client.closed && client.can_restore
+        @test !client.client.closed && CalibrationActionClient.can_restore(client)
     end
 end
 end

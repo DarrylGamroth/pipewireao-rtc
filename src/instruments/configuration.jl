@@ -29,7 +29,9 @@ public load,
     actuator_index_map,
     source_grid_coordinates,
     configuration_context,
-    calibration_context
+    calibration_context,
+    fields,
+    prescription_identity
 
 const D = DeploymentConfiguration
 
@@ -106,6 +108,12 @@ include("responses.jl")
 include("masks.jl")
 include("observations.jl")
 
+"""
+    fields(value, allowed, required, label)
+
+Return the configuration mapping after checking its allowed and required fields.
+Use `label` to identify invalid input.
+"""
 function fields(value::AbstractDict, allowed, required, label)
     all(key -> key in allowed, keys(value)) && all(key -> haskey(value, key), required) ||
         throw(ArgumentError("invalid $label fields"))

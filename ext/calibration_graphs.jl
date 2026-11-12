@@ -62,29 +62,17 @@ function GraphProjection(
     )
 end
 
+# An untransferred projection owns the prepared execution.
+function Base.close(projection::GraphProjection)
+    return FilterGraphPipeWire.close_execution(projection.graph)
+end
+
 "An ordered complete set of explicitly named command graph projections."
 const NamedGraphProjections =
     NamedTuple{Names,T} where {Names,T<:Tuple{Vararg{GraphProjection}}}
 
 # Generated initial-calibration graphs retain the built regular graph as their
 # sole scientific authority. This walk is cold configuration work, not execution.
-calibration_endpoint(value) = throw(ArgumentError("graph endpoint must be a string"))
-function calibration_endpoint(value::AbstractString)
-    parts = split(value, ':'; keepempty = true)
-    length(parts) == 2 && all(!isempty, parts) ||
-        throw(ArgumentError("graph endpoint must be NODE:PORT"))
-    return String(value), String(first(parts))
-end
-
-function calibration_port(value::AbstractString)
-    endpoint, node = calibration_endpoint(value)
-    return (; endpoint, node, name = Symbol(last(split(endpoint, ':'))))
-end
-function calibration_port(value)
-    endpoint, node = calibration_endpoint(value["endpoint"])
-    return (; endpoint, node, name = Symbol(value["name"]))
-end
-
 function calibration_output(value::AbstractString, name)
     return Dict{String,Any}("endpoint" => String(value), "name" => String(name))
 end

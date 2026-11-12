@@ -344,87 +344,32 @@ cannot change a frozen training mask. Optional recording supports diagnosis and
 replay while scientific consumers reduce candidate data online. Source levels,
 masks, thresholds, filters and gains retain their own acceptance requirements.
 
-### CPU simulator reference candidates
+### CPU simulator reference campaigns
 
-`InstrumentCalibration.calibrate_references(application, output; remote,
-reference, run=1, timeout_s=300, cancelled=()->false)` consumes the built
-recipe's `references` section. The recipe's `sensor` selects the declared
-Shack–Hartmann or pyramid procedure. Supply a caller-owned private core path
-for `remote` or a separate path for each stage
-`(dark=..., lamp=..., qualification=...)`.
-For Shack–Hartmann, `reference` explicitly supplies the absolute Float32 physical
-mirror figure in the existing command units. The recipe's estimator Port names
-select the raw frame and the slopes, flux and validity outputs. Each stage has
-a fresh native owner and simulator acquisition domain, a correlated
-`CalibrationPreparation` gate and known Restore/Release completion before the
-next stage. The stage deadline includes preparation and acquisition. One
-additional equal timeout bounds cleanup and the server lifetime. Unknown native outcomes fence the candidate without retry.
-Cancellation is observed at completed-action and sample boundaries, followed by
-restoration only when the native outcome permits it.
+The shared instrument tool `tools/calibrate-references.jl` in
+[adaptive-optics-simulations](https://github.com/DarrylGamroth/adaptive-optics-simulations)
+owns dark, lamp training and independent qualification. Its
+`ReferenceCalibration.calibrate_references` Julia entry point replaces
+`InstrumentCalibration.calibrate_references`. The built application's recipe
+still selects the sensor, ports and sample windows. Candidate publication and
+acceptance stay with the campaign. AdaptiveOpticsCalibration owns the numerical
+reductions.
 
-Dark samples reduce raw UInt16 ADC images online through AOC 0.17.2
-`DarkFrameState`; WFS validity does not decide dark acceptance. Lamp training
-uses the new Float32 background, the full declared ROI universe, zero subtraction
-reference and the original per-ROI thresholds. The procedure checks that the
-production coordinates are centered pixel axes with scale one, then supplies
-interleaved absolute x/y centroids to AOC `LampReferenceState`. The resulting
-eligible mask and Float32 reference are frozen as typed FITS inputs to a fresh
-qualification stage. Qualification reconstructs absolute centroids from measured
-residuals plus that frozen reference and processes explicit active ROI indices.
-Its data never retune the training mask or reference.
+A campaign calls `InstrumentCalibration.calibration_graph` for the declared
+frontend and command projections, then passes them to
+`prepare_initial_calibration` on a validated caller-owned private socket.
+Close untransferred projections with `close`. After successful preparation
+the endpoint owns the executions and closes them at retirement.
+`InstrumentCalibration.acquisition_domain(endpoint)` returns the identity
+used to correlate the preparation witness and live exposures.
 
-The detector's normal photon/readout noise, ADC bit depth, seed and source level
-are retained. Because each simulator stage resets with the same seed, the
-qualification discard count must cover the entire lamp discard-plus-training
-window. The authored 16 dark, 16 lamp and 16 later qualification exposures are a
-bounded pilot, with no precision claim. AOC eligibility and reference-difference
-diagnostics are reported separately from interaction-matrix acceptance. An
-ineligible lamp product can be retained as a rejected candidate; if no ROI is
-eligible, qualification is explicitly skipped.
-
-Pyramid acquisition takes a NamedTuple of explicit Float32 figures for all
-declared command Ports. GPI2 declares woofer, tweeter and tip/tilt Ports. Every
-command adoption and restoration verifies that complete set under one token,
-including conditioner feedback. Native v1 action vectors address the first
-mirror in the declared calibration recipe. Other ports retain their immutable
-references. Names, physical
-schemas and shapes come from the regular graph and simulator declarations.
-
-For pyramid dark acquisition the frontend projects the pixel-calibration Node
-connected to the declared pupil processor. The reducer consumes separately
-captured raw ADC data. The cold selection
-`measurements=nothing` requires that synchronous consumer and requests a Collect
-with zero response measurements: the reply carries complete exposure receipts,
-while the full raw arrays go directly to AOC. This additive native v1 value-domain
-extension retains the existing layout and 128 KiB reply bound. Earlier endpoints
-reject zero before acquisition; there is no retry or synthetic scalar fallback.
-Ordinary interaction calibration retains positive measurement dimensions. This
-avoids requiring illuminated pyramid processing or recording raw files for a dark. Lamp and qualification project the
-normal normalized pupil pixels and mean-intensity diagnostic; the first successful
-lamp frame is discarded because normalization uses the previous successful
-frame's full-pupil mean, including masked pixels. AOC averages these already
-normalized pixels without renormalization and computes the candidate modal
-reference as the negative frozen reconstructor times the pupil-major mean.
-Explicit selection matrices, mirror OPD units and the retained calibration
-normalization establish row units. The original flat, pupil mask, pupil origins
-and reconstructor remain frozen; only background is overridden. Comparison
-errors are dimensionless pupil-pixel differences, with no invented ROI eligibility
-or acceptance threshold. Modal-reference candidates are not activated in the
-upstream sensor projection. GPI requires at least five default Julia threads;
-`test/pyramid_reference_calibration.jl` supplies the cold and optional private-core
-selectors. This extension is still under qualification.
-
-The fresh output directory is published atomically after all successful native
-cleanup. Generated FITS and YAML record types, shapes, axis order, byte hashes,
-stage sample boundaries, simulator identities and input provenance. Built
-application hashes are checked across the campaign. No raw recorder is required,
-and nothing activates or stages these products into the application. This CPU
-simulator procedure does not qualify physical preparation, timing or hardware.
-The optional `confirm(request,witness)` seam supplies correlated simulator
-preparation evidence after the owner exists; it does not add a physical adapter.
-The focused selector is `test/reference_calibration.jl`; set
-`PIPEWIREAORTC_REFERENCE_APPLICATION` and run with at least four Julia threads to
-include the caller-owned private-core campaign.
+Drive `CalibrationActionClient` with the existing Hold, Adopt, Settle,
+Collect, Restore and Release actions. The synchronous Collect consumer borrows
+each frame for reduction. A zero-measurement Collect still returns exposure
+receipts and requires a consumer for the raw frames. Query
+`CalibrationActionClient.can_restore(connection)` before recovery. Unknown
+transport outcomes fence the connection. The moved Classic and GPI2 selectors
+live with the instrument tools and run on caller-owned private cores.
 
 ### Delivery state and next gates
 

@@ -208,7 +208,14 @@ end
 Return transient little-endian, row-major bytes of the artifact's current data.
 Bool values use zero/one bytes. This operation does not write files.
 """
-pack(artifact::PreparedArtifact; check = () -> nothing) = packed_bytes(artifact.data; check)
+pack(artifact::PreparedArtifact; check = () -> nothing) = pack(artifact.data; check)
+
+"""
+    pack(data::Array; check=()->nothing)
+
+Return transient little-endian, row-major bytes of a logical array.
+"""
+pack(data::Array; check = () -> nothing) = packed_bytes(data; check)
 
 """
     prepare(source::FITSArtifact, ::Type{T}, shape; check=()->nothing)

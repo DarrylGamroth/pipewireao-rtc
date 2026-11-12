@@ -8,6 +8,8 @@ import Clocks
 
 export AbstractProfile, Client, connect, request!, UnknownOutcome
 
+public private_remote
+
 const Envelope = ControlCodec
 const SPA = PipeWireAO.SPA
 const PROTOCOL = "pipewireao.rtc-control/1"
@@ -441,6 +443,12 @@ function Client(
     )
 end
 
+"""
+    private_remote(remote)
+
+Resolve and validate an absolute path to a caller-owned PipeWire socket.
+Require a private parent directory and an owned socket without a symlink.
+"""
 function private_remote(remote::AbstractString)
     isabspath(remote) ||
         throw(ArgumentError("native remote must be an absolute socket path"))

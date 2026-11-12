@@ -2672,7 +2672,7 @@ function Calibration.calibrate_optical(
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
     target = AdaptiveOpticsSim.Backends.HostComputeDevice(),
 )
-    destination = Calibration._calibration_output(
+    destination = Calibration.require_fresh_output(
         (upstream_application, optical_application_path), output
     )
     Export = PipeWireAORTC.InstrumentExport

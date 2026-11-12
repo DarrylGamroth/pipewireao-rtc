@@ -8,6 +8,8 @@ import ..AcquisitionLifecycleCodec
 
 export Binding, Connection, connect, request!, complete!, action, document
 
+public can_restore
+
 const Client = ControlClient
 const Codec = CalibrationActionCodec
 const Lifecycle = AcquisitionLifecycleCodec
@@ -38,6 +40,15 @@ mutable struct Connection{C}
     records::Vector{Dict{String,Any}}
     can_restore::Bool
 end
+
+"""
+    can_restore(connection)
+
+Return whether the last correlated calibration outcome permits restoration.
+An unknown outcome fences the connection and clears this permission.
+"""
+can_restore(connection::Connection) = connection.can_restore
+
 """
     connect(binding, run, timeout_ns; command_count, kwargs...)
 

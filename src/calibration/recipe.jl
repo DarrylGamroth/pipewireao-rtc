@@ -93,6 +93,12 @@ function read_recipe(application)
     return recipe
 end
 
+"""
+    recipe_sensor_kind(recipe, declaration)
+
+Return the `Val` sensor kind selected by the calibration recipe and instrument
+declaration. Reject a recipe whose named wavefront sensor is absent.
+"""
 function recipe_sensor_kind(recipe, declaration)
     sensors = declaration.instrument.document["wavefront_sensors"]
     sensor = get(sensors, recipe["sensor"], nothing)
@@ -189,7 +195,7 @@ end
 Run a declared sensor procedure and produce the standard calibration bundle.
 """
 function calibrate_system(application, output; kwargs...)
-    output = _calibration_output((application,), output)
+    output = require_fresh_output((application,), output)
     recipe = read_recipe(application)
     declaration = InstrumentConfiguration.load_simulation(
         joinpath(application, recipe["simulation"])
@@ -210,7 +216,7 @@ function _calibrate_system end
 Validate a standard calibration bundle against its declared instrument model.
 """
 function validate_system(application, calibration, output; kwargs...)
-    output = _calibration_output((application, calibration), output)
+    output = require_fresh_output((application, calibration), output)
     recipe = read_recipe(application)
     declaration = InstrumentConfiguration.load_simulation(
         joinpath(application, recipe["simulation"])
@@ -246,7 +252,13 @@ Stage a bundle verified against its built application into a fresh authored sour
 """
 function stage_calibration end
 
-function _calibration_output(inputs, output)
+"""
+    require_fresh_output(inputs, output)
+
+Return the absolute path for a fresh calibration output outside every input
+directory. Reject existing paths and symbolic links.
+"""
+function require_fresh_output(inputs, output)
     destination = InstrumentExport.checked_path(output)
     !ispath(destination) && !islink(destination) ||
         throw(ArgumentError("calibration output must be fresh"))

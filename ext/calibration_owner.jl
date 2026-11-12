@@ -39,6 +39,9 @@ mutable struct InitialCalibration{P,D,C,T,W,G,F,R,N<:Clocks.AbstractNanoClock}
     last_at::Union{Nothing,Int64}
 end
 
+Calibration.acquisition_domain(endpoint::Endpoint.Endpoint{<:InitialCalibration}) =
+    endpoint.effects.acquisition_domain
+
 function remaining(owner::InitialCalibration, deadline::Int64)
     at = Clocks.time_nanos(owner.clock)::Int64
     owner.last_at === nothing ||

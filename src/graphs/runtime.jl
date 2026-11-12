@@ -9,7 +9,7 @@ import ..CorrectionSupervision
 import ..Common
 import ..Schemas
 
-public main, read_bindings
+public main, read_bindings, bindings, FITSBinding
 
 const Bootstrap = OwnerBootstrapRuntime
 const MAX_RETAINED_BYTES = 512 * 1024 * 1024
@@ -178,11 +178,23 @@ function arguments(arguments)
     get(values, "--chopped-warmup", nothing)
 end
 
+"""
+    FITSBinding(port, source)
+
+Associate a graph Parameter Port with its FITS artifact declaration.
+"""
 struct FITSBinding
     port::Symbol
     source::Artifacts.FITSArtifact
 end
 
+"""
+    bindings(path)
+    bindings(path, document)
+
+Read declared FITS Parameter Port bindings without loading image data.
+When `document` is supplied, resolve its relative paths beside `path`.
+"""
 function bindings(path::AbstractString)
     document = DeploymentConfiguration.decode(
         path, get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")

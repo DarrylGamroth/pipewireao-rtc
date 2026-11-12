@@ -124,6 +124,12 @@ function simulation_catalog_identities(authoring)
     return identities
 end
 
+"""
+    prescription_identity(declaration, configured)
+
+Return the scientific identity of the selected simulation prescription,
+including its graph sources and structural settings.
+"""
 function prescription_identity(declaration, configured)
     if haskey(declaration.document, "optical_model") && haskey(declaration.document, "hil")
         # Generated locations are execution details, not a new prescription.

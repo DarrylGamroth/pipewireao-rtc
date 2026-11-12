@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Reference campaign transfer — 2026-11-12
+
+The [private-core verification](validation/reference-campaign-transfer-20261112/README.md)
+records Classic and GPI2 campaigns run from the shared instrument tools.
+
 ## Optical reconstruction transfer — 2026-11-12
 
 The [CPU parity check](validation/optical-reconstruction-transfer-20261112/README.md)
