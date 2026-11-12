@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.15 release — 2026-11-11
+
+The [public-registry Classic check](validation/rtc-0715-20261111/README.md)
+records managed Quit timing after RTC and owner precompilation.
+
 ## Classic first QuitRequested timing — 2026-11-11
 
 The [RTC trace](validation/classic-quit-event-20261111/README.md)
