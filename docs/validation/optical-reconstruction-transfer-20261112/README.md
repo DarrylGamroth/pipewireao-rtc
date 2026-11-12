@@ -35,4 +35,5 @@ assertions. The optical publication selector passed 72 assertions.
 AdaptiveOpticsCalibration's `Pkg.test()` passed 2,751 assertions,
 including the signed-probe, zero-response, rank and held-out boundary checks.
 
-The checks ran on CPU and used local development paths for the new release.
+The full RTC core suite passed 10,482 assertions with the registered
+PipeWireAO_jll prefix. The checks ran on CPU and used local development paths for the new release.
