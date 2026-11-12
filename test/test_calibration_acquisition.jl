@@ -7,7 +7,6 @@ const C = PipeWireAORTC.CalibrationActionCodec
 const G = PipeWireAORTC.ControlClient
 const E = PipeWireAORTC.ControlCodec
 const L = PipeWireAORTC.AcquisitionLifecycleCodec
-const CLI = PipeWireAORTC.CalibrationCLI
 const Common = PipeWireAORTC.Common
 const ID = E.ControllerIdentity(UInt32(8), typemax(UInt64), Int64(11))
 const BINDING = N.Binding("/tmp/test-core", "test.actions", 7, 42)
@@ -158,7 +157,7 @@ end
         @test all(b -> b.values == Float32[3, 4] && b.valid, result.responses)
         document = A.document(result)
         @test document["run"] == typemax(UInt64)
-        @test Common.parse_json(PipeWireAORTC.CalibrationCLI.JSON.json(document)) ==
+        @test Common.parse_json(Common.JSON.json(document)) ==
             document
         @test all(b -> length(b["exposures"]) == 2, document["responses"])
         @test_throws ArgumentError A.acquire!(client, plan(rule))
@@ -384,7 +383,7 @@ end
             write(io, UInt8(' '))
         end
         @test_throws ArgumentError A.read_plan(path)
-        payload = CLI.JSON.json(plan_document())
+        payload = Common.JSON.json(plan_document())
         write(path, payload)
         @test A.read_plan(path).run == typemax(UInt64)
         for duplicate in (
@@ -398,76 +397,6 @@ end
             write(path, duplicate)
             @test_throws ArgumentError A.read_plan(path)
         end
-    end
-end
-
-@testset "journal output retains completed calibration snapshots" begin
-    mktempdir() do root
-        path = joinpath(root, "evidence.jsonl")
-        journal = CLI.Journal(path, 1)
-        action = C.Adopt(UInt32(0), Float32[1, 2])
-        cursor = C.AcquisitionCursor(1, 1, 0, 0)
-        result = C.Adopted(cursor, Float32[1, 2], false)
-        CLI.observe!(journal, action, result, UInt64(1), UInt64(1))
-        action.figure[1] = 99
-        result.figure[2] = 99
-        CLI.finish!(journal, Dict("phase" => "complete"))
-        evidence = Common.parse_json.(readlines(path))
-        @test evidence[2]["action"]["figure"] == [1, 2]
-        @test evidence[2]["result"]["figure"] == [1, 2]
-        @test last(evidence)["result"]["phase"] == "complete"
-    end
-end
-
-@testset "one-shot CLI and bounded exclusive evidence" begin
-    mktempdir() do root
-        path = joinpath(root, "plan.json")
-        Common.write_json(path, plan_document())
-        args = [
-            "--remote",
-            BINDING.remote,
-            "--node",
-            BINDING.node,
-            "--owner-pid",
-            "7",
-            "--owner-instance",
-            "42",
-            "--plan",
-            path,
-            "--evidence",
-            joinpath(root, "evidence.jsonl"),
-        ]
-        output = joinpath(root, "stdout")
-        open(output, "w") do io
-            redirect_stdout(io) do
-                @test CLI.run(
-                    args;
-                    acquire = (b, p; kwargs...) -> A.acquire!(connection(), p; kwargs...),
-                ) == 0
-            end
-        end
-        report = Common.read_json(output)
-        @test report["phase"] == "complete" && report["resume_permitted"]
-        evidence = Common.parse_json.(readlines(args[end]))
-        @test first(evidence)["version"] == 2 && length(evidence) == 11
-        @test last(evidence)["event"] == "acquisition"
-        @test evidence[2]["serial"] == 1 && evidence[2]["result"]["kind"] == "held"
-        @test_throws Base.IOError CLI.run(
-            args; acquire = (_...) -> error("must not connect")
-        )
-        @test length(readlines(args[end])) == 11
-        @test_throws ArgumentError CLI.run(vcat(args, ["--plan", path]))
-        @test_throws ArgumentError CLI.run(["--endpoint", "old"])
-        journal = CLI.Journal(joinpath(root, "bounded"), 1)
-        called = Ref(false)
-        CLI.record!(journal, CLI.MAX_EVIDENCE_BYTES) do
-            called[] = true
-            Dict()
-        end
-        @test !called[] && isempty(journal.records) && journal.error !== nothing
-        @test_throws ArgumentError CLI.finish!(journal, report)
-        @test Common.parse_json(last(readlines(joinpath(root, "bounded"))))["event"] ==
-            "evidence_error"
     end
 end
 end # module

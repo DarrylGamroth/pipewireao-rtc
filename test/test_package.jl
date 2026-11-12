@@ -43,7 +43,6 @@ end
         :SessionClient,
         :CalibrationEndpoint,
         :CalibrationAcquisition,
-        :CalibrationCLI,
         :SessionCLI,
         :OwnerBootstrapRuntime,
         :ParameterSource,

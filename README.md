@@ -71,7 +71,7 @@ package pins. Development and release tooling require Julia 1.13 or newer.
 | `ConfigurationStore` | Register and retrieve Git artifacts through a SQLite catalog |
 | `ConfigurationStoreCLI` | Headless management interface used by GUI, CLI and scripts |
 | `CalibrationAcquisition` | Sequence calibration acquisition actions |
-| `CalibrationCLI`, `SessionCLI` | Translate command arguments and reports |
+| `SessionCLI` | Translate command arguments and reports |
 | `OwnerBootstrapRuntime`, `ParameterSource`, `SourceControl` | Cold admission, parameter publication and source controls |
 | `Artifacts` | Select FITS images and prepare owned arrays and transient wire bytes |
 | `GraphOwner` | Optional FilterGraphPipeWire process with RTC admission and FITS bindings |

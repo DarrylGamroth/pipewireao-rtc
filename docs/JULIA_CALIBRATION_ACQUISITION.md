@@ -8,26 +8,8 @@ names, optical algorithms, graph scheduling or session lifecycle policy.
 
 ## Entry points
 
-A fresh calibration export provides `bin/rtc-calibrate` as a thin Julia
-entrypoint. The exporter includes and seals the operational package; an external
-Rust calibrator is no longer an export input. The native binding flags, saved
-v1 plan and stdout result shape are retained:
-
-```sh
-PACKAGE/bin/rtc-calibrate \
-  --remote /absolute/path/to/private-core \
-  --node declared-calibration-owner.actions \
-  --owner-pid OWNER_PID --owner-instance OWNER_INSTANCE \
-  --plan /absolute/path/to/prepared-plan.json
-```
-
-Binding values are hints until the native client proves the current owner and
-controller. Start/admit the selected session through the existing systemd and
-WirePlumber tools first. This command does not start a session or grant physical
-actuation authority. Existing sealed exports keep their original executable;
-create a fresh export to select the Julia driver.
-
-The reusable Julia API uses the same driver:
+Start and admit the selected session through systemd. Binding values are hints
+until the native client proves the current owner and controller.
 
 ```julia
 using PipeWireAORTC
@@ -68,8 +50,6 @@ submissions; there is no automatic retry, reconnect or rebind. A fault report
 cannot authorize resume. `acquire` closes its own controller on every exit;
 `acquire!` leaves ordinary connection cleanup with its caller.
 
-A successful CLI run exits 0. A completed aborted/fault acquisition exits 1 and
-prints its v1 result. Input, binding or diagnostic-output failure exits 2.
 Scientific acceptance remains the instrument/AOC consumer's responsibility.
 
 ## Event-driven procedures and online numerical consumers
@@ -529,15 +509,5 @@ before Hold. Projected retained figures/responses are limited to 512 MiB,
 including a conservative per-probe metadata charge. This payload bound is not
 an allocator-independent Julia heap/RSS limit. Acquisition and serialization
 are cold control work; the driver imposes no new allocation in frame callbacks.
-
-Optional `--evidence NEW_PATH` creates an exclusive file before connecting and
-retains a completion journal until the workflow returns. It performs no file
-writes from the completion observer while ownership is held. The charged
-journal budget is 64 MiB; exhausting it does not interrupt safe recovery, and
-finalization reports the diagnostic failure. Journal **version 2** records typed
-completed actions and the final acquisition outcome. It does not claim that an
-unconfirmed request was accepted and is not byte-compatible with the temporary
-Rust journal. Saved plans, reports and this journal use JSON; live controls use
-native SPA PODs throughout.
 
 See [software/native verification and limitations](validation/julia-acquisition-20261008/README.md).

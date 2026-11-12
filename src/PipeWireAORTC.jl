@@ -22,7 +22,6 @@ public Analysis,
     CalibrationEndpoint,
     CalibrationAcquisition,
     CalibrationPreparation,
-    CalibrationCLI,
     SessionCLI,
     OwnerBootstrapRuntime,
     ParameterSource,
@@ -74,7 +73,6 @@ include("calibration/capture_files.jl")
 include("control/calibration_endpoint.jl")
 include("calibration/acquisition.jl")
 include("calibration/preparation.jl")
-include("calibration/cli.jl")
 include("control/runner_commands.jl")
 include("control/session_discovery.jl")
 include("control/session_client.jl")
