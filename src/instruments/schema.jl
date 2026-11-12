@@ -389,6 +389,11 @@ function _validate_limiter(value)
     return nothing
 end
 
+"""
+    isfinite_real(value)
+
+Return whether a configuration value is a finite real number. Boolean values are rejected.
+"""
 isfinite_real(value::Real) = isfinite(value)
 isfinite_real(::Bool) = false
 isfinite_real(value) = false
@@ -693,10 +698,15 @@ function _validate_artifact(value, directory, label)
         ("path", "hdu", "axes", "type", "shape"),
         label,
     )
-    return _validate_artifact_values(artifact, directory, label)
+    return validate_artifact_values(artifact, directory, label)
 end
 
-function _validate_artifact_values(artifact, directory, label; check_file = true)
+"""
+    validate_artifact_values(artifact, directory, label; check_file=true)
+
+Validate the typed FITS declaration and its file when requested.
+"""
+function validate_artifact_values(artifact, directory, label; check_file = true)
     path = artifact["path"]
     InstrumentDefinition.nonempty_text(path) && !occursin('\0', path) && !isabspath(path) ||
         throw(ArgumentError("$label path must be a relative filename"))
@@ -914,7 +924,7 @@ function _validate_bindings(
                 ("kind", "path", "hdu", "axes", "type", "shape"),
                 "FITS binding $name",
             )
-            _validate_artifact_values(
+            validate_artifact_values(
                 binding, directory, "FITS binding $name"; check_file = false
             )
             haskey(binding, "sha256") &&

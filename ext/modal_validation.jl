@@ -69,7 +69,7 @@ function Calibration._validate_system(
         reference_field = if isnothing(pupil_field_output)
             nothing
         else
-            modal_frame!(system, commands)
+            Calibration.calibration_frame!(system, commands)
             Array(HIL.graph_output(system.graph, Symbol(pupil_field_output)))
         end
         support = IC.binding_values(
@@ -109,7 +109,7 @@ function Calibration._validate_system(
             isnothing(reference_field) || (case["pupil_field_overlap"] = overlap)
             for step in 1:steps
                 started = Clocks.time_nanos(clock)
-                frame = modal_frame!(system, commands)
+                frame = Calibration.calibration_frame!(system, commands)
                 residual = Float64(rms(HIL.graph_output(system.graph, :pupil_opd)))
                 isfinite(residual) ||
                     throw(ArgumentError("nonfinite residual for $name step $step"))

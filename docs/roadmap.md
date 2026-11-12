@@ -12,6 +12,13 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Offline optical calibration campaign — 2026-11-12
+
+Shared instrument tools run the optical campaign from built applications and
+YAML. RTC retains live acquisition, graph preparation and calibration artifact
+validation. The [CAL2 CPU comparison](validation/optical-campaign-transfer-20261112/README.md)
+records the transfer and the regression checks.
+
 ### GPI2 managed startup and controls — 2026-11-10
 
 RTC 0.7.7 and FilterGraphPipeWire 0.5.4 reached Ready within the 900 s budget

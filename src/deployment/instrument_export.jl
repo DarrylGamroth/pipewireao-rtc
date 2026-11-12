@@ -22,6 +22,10 @@ import ..Common:
     configuration_reference as graph_reference
 
 public prepare,
+    sealed_application,
+    calibrated_centroid_references,
+    external_pupil_port_contracts,
+    outside,
     checked_path,
     copy_source,
     graph_context,
@@ -76,6 +80,11 @@ include("application_composition.jl")
 include("calibration_materialization.jl")
 include("feedback_composition.jl")
 
+"""
+    outside(path)
+
+Return whether a relative path escapes its root through a parent component.
+"""
 outside(path) =
     path == ".." || startswith(path, ".." * string(Base.Filesystem.path_separator))
 

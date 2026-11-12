@@ -43,10 +43,10 @@ function Export.validate_pupil_equivalence(
     report["provenance"]["mirror_component"] == mirror ||
         throw(ArgumentError("physical transfer names a different calibrated mirror"))
     owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
-    actual = physical_mirror_response(
+    actual = IC.prepare_mirror_response(
         source, settings, mirror; simulation_graph = simulation["plant"]["graph"]
     )
-    calibrated = physical_mirror_response(upstream, original, mirror)
+    calibrated = IC.prepare_mirror_response(upstream, original, mirror)
     IC.json_value(actual.geometry.description) ==
     IC.json_value(calibrated.geometry.description) &&
     actual.geometry.registration == calibrated.geometry.registration &&

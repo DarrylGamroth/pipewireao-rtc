@@ -38,6 +38,11 @@ _composition_override_source(source::AbstractString) =
     throw(ArgumentError("composition override must name a regular prepared file"))
 
 # Compose already-built applications without introducing another runtime authority.
+"""
+    sealed_application(path, prefix)
+
+Validate a built application and its runtime checksums. Return its root and deployment declaration.
+"""
 function sealed_application(path, prefix)
     root = checked_path(path)
     spec = D.decode(joinpath(root, "deployment.conf"), prefix)

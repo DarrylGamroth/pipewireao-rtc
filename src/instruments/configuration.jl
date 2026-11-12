@@ -33,9 +33,34 @@ public load,
     fields,
     prescription_identity,
     bounded_yaml,
-    publication
+    publication,
+    prepare_mirror_response,
+    graph_node_types,
+    binding_values,
+    canonical,
+    json_value,
+    merge_settings,
+    isfinite_real,
+    limit_values,
+    validate_artifact_values
 
 const D = DeploymentConfiguration
+
+"""
+    prepare_mirror_response(declaration, configured, mirror; simulation_graph, target)
+
+Prepare the declared mirror component with its original bindings. Return the
+mirror geometry, node declaration, prepared graph and command-to-OPD callback.
+"""
+function prepare_mirror_response end
+
+"""
+    graph_node_types()
+
+Return the registered AOS graph factories for in-memory instrument projections.
+Load the optional AOS and HIL dependencies before calling.
+"""
+function graph_node_types end
 
 """
     prepare_system(path; settings=NamedTuple(), calibration=false,
@@ -1016,6 +1041,11 @@ function validate_dark_graph(graph, bindings)
     return nothing
 end
 
+"""
+    binding_values(declaration, configured, binding)
+
+Prepare the array selected by an authored instrument binding.
+"""
 function binding_values(declaration, configured, binding::AbstractDict)
     kind = Val(Symbol(binding["kind"]))
     return binding_values(kind, declaration, configured, binding)

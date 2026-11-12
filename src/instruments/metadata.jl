@@ -1,5 +1,10 @@
 # Scientific metadata and provenance are resolved from the same declaration
 # used to prepare the plant; operator views contain only references to it.
+"""
+    canonical(value)
+
+Canonicalize nested mappings in sorted key order for scientific identity calculation.
+"""
 canonical(value::AbstractDict) = NamedTuple{Tuple(Symbol.(sort!(collect(keys(value)))))}(
     Tuple(canonical(value[key]) for key in sort!(collect(keys(value))))
 )
@@ -380,6 +385,11 @@ function scientific_definition(path::AbstractString, overrides = NamedTuple())
     )
 end
 
+"""
+    limit_values(value, count)
+
+Return a scalar limit expanded to command extent or validate an existing command-sized vector.
+"""
 limit_values(value::Real, count) = ntuple(_ -> Float64(value), count)
 limit_values(value::AbstractVector, count) =
     length(value) == count ? Tuple(value) :

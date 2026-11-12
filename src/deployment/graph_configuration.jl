@@ -93,7 +93,11 @@ function resolve_graph_configuration(graph::AbstractDict, context::AbstractDict)
     return result
 end
 
-"Bind a calibrated CoG flat reference before comparing an authored branch graph."
+"""
+    calibrated_centroid_references(graph, calibration)
+
+Apply calibrated center-of-gravity references to a copy of the authored graph.
+"""
 function calibrated_centroid_references(graph::AbstractDict, calibration::AbstractDict)
     result = deepcopy(graph)
     body = result["filter.graph"]

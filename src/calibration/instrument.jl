@@ -43,10 +43,7 @@ public modal_completion,
     calibration_port,
     require_fresh_output,
     recipe_sensor_kind,
-    prepare_initial_calibration,
-    calibrate_optical,
-    validate_optical,
-    calibrate_optical_reference
+    prepare_initial_calibration
 
 """
     modal_completion(mirror, registration, policy; obstruction, kwargs...)
@@ -745,8 +742,10 @@ function measure! end
 
 """
     calibration_frame!(system, physical)
+    calibration_frame!(system, commands::NamedTuple)
 
-Adopt a physical command vector at the current HIL sequence and step one frame.
+Adopt a physical command vector or a complete named set of vectors at the
+current HIL sequence and step one frame.
 The first frame must use an all-zero command. Return the system's reused HIL
 frame buffer; copy it before advancing again if it must be retained. This
 mutates simulation state and requires the optional calibration science extension.
@@ -763,29 +762,7 @@ the saved parent calibration is preserved. Its loaded method documents artifact
 and dimensional requirements.
 """
 function calibrate_hidden_modes end
-"""
-    calibrate_optical(surface, observe[, command_projection]; kwargs...)
-    calibrate_optical(upstream_application, optical_application[, output]; kwargs...)
-    calibrate_optical(calibration, output; report, context, concrete_graph, branch=nothing)
 
-Derive an optical interaction calibration using the optional science extension.
-"""
-function calibrate_optical end
-"""
-    validate_optical(surface, observe, calibration; coefficients, reconstruction_tolerance=0.1)
-
-Validate a model-derived optical calibration against held-out physical commands.
-"""
-function validate_optical end
-"""
-    calibrate_optical_reference(upstream_application, calibration;
-        simulation, mirror, raw_endpoint, residual_endpoint, poke_amplitudes_m,
-        derivative_tolerance, kwargs...)
-
-Calibrate the deployed upstream sensor residual response to optical physical modes.
-The built-application procedure supplies these inputs from the optical YAML recipe.
-"""
-function calibrate_optical_reference end
 include("bundle.jl")
 include("recipe.jl")
 

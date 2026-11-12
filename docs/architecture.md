@@ -788,6 +788,11 @@ to the online reducer before admitting another exposure. The campaign owns the
 published numerical products. Historical finite capture files remain evidence;
 the live calibration owner no longer publishes them.
 
+The shared instrument tools run offline optical calibration from built
+applications and instrument YAML. AdaptiveOpticsCalibration supplies numerical
+operations. RTC supplies graph preparation, typed artifact admission and the
+live acquisition interface.
+
 The owner observes both the actual demanded figure with constraint feedback and
 the simulator's correlated adoption before generating exposures. Probe tokens
 advance independently of exposure identities. Publication of a detector buffer

@@ -314,18 +314,18 @@ validation and a locked test remain necessary for that decision.
 
 ## Optical branch calibration and generated selection
 
-`InstrumentCalibration.calibrate_optical(upstream_built, optical_built,
-fresh_bundle; recipe="calibration/optical.yaml", target=..., prefix=...)`
-consumes sealed built applications. By default,
+The instrument repository’s `tools/calibrate-optical.jl` consumes built
+applications. The shared `OpticalCalibration` module runs the offline campaign
+against the declared recipe and uses RTC’s graph and export APIs. By default,
 `configuration="calibration/materialize.yaml"` selects its `graphs` mapping of
 branch names to retained authored templates; `graphs=...` can select that mapping
-explicitly. After acquisition, the shared extension resolves those templates
+explicitly. After offline measurement, the shared tool resolves those templates
 using actual measured masks, native sensor schemas and cold RTC dimensions. It
 checks R/P shapes and prepares each published graph with its real typed FITS
 parameters before publishing the index. Existing callers may still supply both
-`concrete_graphs` and `contexts` NamedTuples. The shared optional extension owns numerical
-acquisition and AOC inversion. The callback path uses the actual native
-`PupilOutput.pack!` orientation, then packet `[quantity,y,x]` planes, for the
+`concrete_graphs` and `contexts` NamedTuples through the module API.
+AdaptiveOpticsCalibration supplies reconstruction and diagnostics. The callback
+path uses the HIL pupil packer and packet `[quantity,y,x]` planes for the
 external optical input. A direct GPI `[x,y]` copy is not equivalent.
 
 The first optical build needs no controller calibration. Use an ordinary
@@ -335,10 +335,9 @@ configuration retains the future controller dimensions and omits `calibration`
 until selection. The default controller mode adds the controller declarations;
 it rejects missing calibration rather than substituting zero R/P arrays.
 Mode-selected runtime YAML is compiled after application composition. The
-shared API accepts an explicit Host, AMDGPU or CUDA target. Acquisition never
-installs or starts a session.
-Optical calibration uses the existing RTC execution policy: CPU graphs stream;
-accelerator mirror and optical F/U graphs require captured execution. Command
+shared API accepts an explicit Host, AMDGPU or CUDA target. Offline measurement
+runs without installing or starting a session. CPU graphs stream. Accelerator
+mirror and optical F/U graphs require captured execution. Command
 and pupil uploads and output readback use each graph's retained device context.
 The chopped measurement frontend remains the authored CPU graph. The separate
 upstream reference acquisition retains its existing target restrictions;

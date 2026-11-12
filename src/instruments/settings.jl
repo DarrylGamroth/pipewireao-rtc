@@ -1,8 +1,18 @@
 settings_mismatch(error::ArgumentError) = false
 settings_mismatch(error) = rethrow()
 
+"""
+    json_value(value)
+
+Convert typed metadata to the representation used by the JSON configuration contracts.
+"""
 json_value(@nospecialize(value)) = Common.parse_json(String(Common.metadata_json(value)))
 
+"""
+    merge_settings(base, overrides, schema)
+
+Apply settings overrides using the declared schema and its replacement rules.
+"""
 function merge_settings(
     defaults::AbstractDict, overrides::AbstractDict, schema::AbstractDict
 )

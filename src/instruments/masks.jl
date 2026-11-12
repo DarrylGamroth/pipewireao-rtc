@@ -9,7 +9,7 @@ function mask_artifact(reference, directory, label; amplitude = false)
         label;
         check_hash = false,
     )
-    _validate_artifact_values(reference, directory, label)
+    validate_artifact_values(reference, directory, label)
     length(reference["shape"]) == 2 || throw(ArgumentError("$label must have rank two"))
     reference["type"] in ("Float32", "Float64") ||
         throw(ArgumentError("$label requires Float32 or Float64"))

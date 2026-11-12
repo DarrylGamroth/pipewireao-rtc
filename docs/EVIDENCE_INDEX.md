@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Offline optical calibration transfer — 2026-11-12
+
+The [CAL2 CPU comparison](validation/optical-campaign-transfer-20261112/README.md)
+records the shared instrument tool and the retained RTC acquisition interface.
+
 ## RTC 0.7.17 release — 2026-11-12
 
 The [registry-only Classic staging check](validation/rtc-0717-20261112/README.md)

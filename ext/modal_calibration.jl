@@ -6,7 +6,7 @@ const LA = LinearAlgebra
 
 include("modal_completion.jl")
 
-function modal_frame!(system, commands::NamedTuple)
+function Calibration.calibration_frame!(system, commands::NamedTuple)
     boundary = system.boundary
     sequence = HIL.hil_boundary_status(boundary).frame_sequence
     if sequence == 0
@@ -67,7 +67,7 @@ function Calibration._calibrate_system(
         execution,
     )
     commands = map(zero, HIL.hil_command_buffer(system.boundary))
-    flat = copy(modal_frame!(system, commands))
+    flat = copy(Calibration.calibration_frame!(system, commands))
     sensor = declaration.instrument.document["wavefront_sensors"][recipe["sensor"]]
     layout = IC.sensor_layout(declaration, sensor)
     pupil_size = layout.pupil_shape
@@ -155,7 +155,7 @@ function Calibration._calibrate_system(
     for actuator in eachindex(physical)
         fill!(physical, 0)
         physical[actuator] = poke
-        modal_frame!(system, commands)
+        Calibration.calibration_frame!(system, commands)
         response[:, actuator] .=
             vec(Array(HIL.graph_output(system.graph, Symbol(coupled * "_opd"))))[valid] ./
             poke
@@ -196,7 +196,7 @@ function Calibration._calibrate_system(
                 getproperty(commands, name) .=
                     view(getproperty(command_projection, name), :, mode) .* (sign * poke)
             end
-            raw = modal_frame!(system, commands)
+            raw = Calibration.calibration_frame!(system, commands)
             if sign > 0
                 opd = vec(Array(HIL.graph_output(system.graph, :pupil_opd)))[valid]
                 centered = opd .- sum(opd) / length(opd)

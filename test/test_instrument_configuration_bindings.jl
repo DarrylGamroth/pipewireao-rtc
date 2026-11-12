@@ -62,14 +62,14 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             "type" => "Float32",
             "shape" => [7, 9],
         )
-        @test IC._validate_artifact_values(
+        @test IC.validate_artifact_values(
             artifact, directory, "calibration"; check_file = false
         ) === nothing
-        @test_throws Base.IOError IC._validate_artifact_values(
+        @test_throws Base.IOError IC.validate_artifact_values(
             artifact, directory, "calibration"
         )
         for path in ("../outside.fits", "/outside.fits", "", "bad\0.fits")
-            @test_throws ArgumentError IC._validate_artifact_values(
+            @test_throws ArgumentError IC.validate_artifact_values(
                 merge(artifact, Dict("path" => path)),
                 directory,
                 "calibration";

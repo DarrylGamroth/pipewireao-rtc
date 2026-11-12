@@ -10,7 +10,8 @@ The runner delegates science execution to FGN/FilterGraphs and transport to Pipe
 `src/media_session` owns admission and declared Links.
 `src/deployment` contains export, installation and systemd supervision.
 `src/configuration` and `src/instruments` read deployment and instrument declarations.
-`src/calibration` owns calibration orchestration.
+`src/calibration` owns live acquisition and its control contracts. Shared
+instrument tools own offline optical calibration campaigns.
 `src/analysis` owns optional observation and analysis.
 
 ## Authorities

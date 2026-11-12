@@ -8,6 +8,8 @@ end
 
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
+Instruments.graph_node_types() = configured_graph_node_types()
+
 function Instruments.validate_prepared_optics(declaration::NamedTuple)
     AdaptiveOpticsSim.Optics.Zemax.validate_provenance(declaration.instrument.directory)
     return nothing
@@ -613,3 +615,68 @@ function validate_observation_sampling(sampling::AbstractVector)
 end
 validate_observation_sampling(sampling) =
     throw(ArgumentError("observation detector requires metric row/column pixel_sampling_m"))
+
+function Instruments.prepare_mirror_response(
+    upstream,
+    upstream_configuration,
+    mirror;
+    simulation_graph = "calibration",
+    target = Backends.HostComputeDevice(),
+)
+    geometry = Instruments.mirror(upstream, upstream_configuration, mirror)
+    document = Instruments.graph_document(upstream, upstream_configuration; simulation_graph)
+    nodes = filter(node -> node["name"] == mirror, document["nodes"])
+    length(nodes) == 1 || throw(
+        ArgumentError("calibration must select one declared upstream mirror component")
+    )
+    node = only(nodes)
+    # Select the existing typed node unchanged, including its construction and
+    # parameter bindings. This preserves grid/coordinate/measured response and
+    # physical command order instead of recreating an influence-function model.
+    inputs = filter(
+        entry -> entry["destination"] == mirror * ".pdm_command", document["inputs"]
+    )
+    length(inputs) == 1 ||
+        throw(ArgumentError("mirror must have one complete physical command input"))
+    selected_input = merge(only(inputs), Dict("name" => "command"))
+    parameters = filter(
+        entry -> startswith(entry["destination"], mirror * "."),
+        get(document, "parameters", []),
+    )
+    response_document = Dict(
+        "schema_version" => 1,
+        "name" => "optical_calibration_mirror",
+        "nodes" => [node],
+        "inputs" => [selected_input],
+        "parameters" => parameters,
+        "outputs" => [Dict("name" => "opd", "source" => mirror * ".surface_opd")],
+    )
+    factories = configured_graph_node_types()
+    names = unique(
+        vcat(
+            [Symbol(selected_input["binding"])],
+            Symbol[Symbol(entry["binding"]) for entry in parameters],
+            configuration_binding_names(response_document, factories),
+        ),
+    )
+    bindings = prepare_bindings(
+        upstream, upstream_configuration, names; target, target_names = names
+    )
+    definition = AlgorithmGraphs.load_algorithm_graph(
+        response_document; bindings, node_types = factories
+    )
+    execution = instrument_execution(target, nothing)
+    mirror_graph = AlgorithmGraphs.prepare_algorithm_graph(definition; target, execution)
+
+    surface =
+        command -> begin
+            AlgorithmGraphs._with_prepared_device_execution_context(mirror_graph.context) do
+                copyto!(AlgorithmGraphs.graph_input(mirror_graph, :command), command)
+            end
+            AlgorithmGraphs.step_graph!(mirror_graph)
+            AlgorithmGraphs._with_prepared_device_execution_context(mirror_graph.context) do
+                Array(AlgorithmGraphs.graph_output(mirror_graph, :opd))
+            end
+        end
+    return (; geometry, node, mirror_graph, surface)
+end
