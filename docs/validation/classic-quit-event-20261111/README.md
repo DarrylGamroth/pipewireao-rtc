@@ -34,10 +34,62 @@ Link withdrawal. After the last receipt, RTC still had to remove controls
 and publish the correlated terminal reply. The WFS analysis worker was
 stopped separately by systemd in 65 ms.
 
-Julia emitted 60 trace entries through the observed acknowledgement,
-with reported durations totaling 1.53 s. This includes compilation
+Julia emitted 61 trace entries through the observed acknowledgement,
+with reported durations totaling 1.56 s. This includes compilation
 for the diagnostic output and is not an exclusive wall-time accounting.
 Examples include the retirement declaration and node-set iterators,
 the typed effect task, and the native reply encoder and ingress
 completion. The largest single trace entry after the acknowledgement
 was 170 ms for a Filter close specialization.
+
+## Candidate with tracing
+
+The candidate prepares typed effect execution, native Quit reply encoding
+and ingress completion, and session close before exposing the control
+endpoint. The first owner uses direct declaration and node-set iteration.
+The change preserves native identity checks, the order of owner and Link
+retirement, and the five-second RTC effect deadline.
+
+The same temporary build and instrumentation were used for two candidate
+runs. RTC compiler trace entries before the controller Quit call fell
+from 32 entries (725 ms reported) to 20 (385 ms and 366 ms). The
+corresponding interval from RTC Quit entry to the controller Quit call
+fell from 0.808 s to 0.480 s and 0.455 s.
+
+| Owner request call to validated receipt | Baseline | Candidate 1 | Candidate 2 |
+| --- | ---: | ---: | ---: |
+| Julia controller | 0.682 s | 0.816 s | 0.992 s |
+| Standalone HIL simulator | 1.353 s | 2.182 s | 1.912 s |
+| Parameter publisher | 0.868 s | Deadline expired | 1.162 s |
+
+Both instrumented candidate runs expired at the five-second effect
+deadline. The first expired while waiting for the parameter publisher.
+The second received all three owner receipts, with the last arriving
+about 4.996 s after Quit entry. Control removal and reply publication
+still had to follow. systemd fallback completed in both cases and all
+recorded owner MainPIDs were zero. These traces locate the additional
+wall time in owner round trips. They do not identify the cause inside
+the owner processes.
+
+## Owner CPU sampling
+
+The same candidate source without in-process tracing was installed from
+the temporary registry and run on another private core. The stop
+completed fallback cleanup in 22.92 s after another native deadline
+failure. Starting at the observed submission fence, `perf record`
+sampled each process with `cpu-clock:u` at 49 Hz until it exited.
+The interval includes time before and after the individual bootstrap
+requests and, for the RTC, failure cleanup.
+
+| Process | Samples | Samples in libLLVM |
+| --- | ---: | ---: |
+| RTC | 140 | 59.29% |
+| Julia controller | 55 | 69.09% |
+| Standalone HIL simulator | 116 | 37.93% |
+| Parameter publisher | 68 | 69.12% |
+
+No samples were lost. The owner profiles include LLVM instruction
+selection, DAG combining and compiler pass management. These counts
+are shares of sampled CPU time. They establish that Julia compilation
+continued in the separate owners during shutdown, without assigning
+a wall duration to that compilation or identifying its Julia callers.
