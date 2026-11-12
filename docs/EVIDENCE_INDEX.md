@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Calibration and capture-file scope — 2026-11-12
+
+The [scope review](reviews/20261112-calibration-scope/REVIEW.md) records
+optional capture and CLI retirement candidates and campaign ownership boundaries.
+
 ## RTC 0.7.15 release — 2026-11-11
 
 The [public-registry Classic check](validation/rtc-0715-20261111/README.md)
