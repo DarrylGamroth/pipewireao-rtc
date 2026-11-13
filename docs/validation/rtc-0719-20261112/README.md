@@ -32,3 +32,13 @@ traces and scientific report fields matched after excluding per-step elapsed
 times. Both runs checked the hashes in their generated bundles and matched
 each validation report to the corresponding bundle. These are offline CPU
 checks with simulated inputs.
+
+## SPIDERS fitted-dual attempt
+
+The same registry environment exported the fitted-dual optical calibration
+CPU profile using the locally staged compiled model. The shared optical
+launcher used that application for both inputs and selected
+`calibration/optical-dual.yaml` and `calibration/materialize-dual.yaml`.
+The process ended with exit status 143 before publishing a bundle. The
+export succeeded and the campaign has no acceptance result from this run.
+No service or private core was started.
