@@ -69,3 +69,53 @@ the differences above. Their cause was not isolated.
 The staging selector used the candidate Classic bundle. The live selector
 completed dark, lamp-training and qualification stages on an isolated
 PipeWire core. Neither result qualifies physical devices or timing.
+
+## GPI2 FFT planning isolation
+
+The follow-up uses the same built GPI2 application, recipe, package cohort,
+and CPU settings. It repeats the original RTC launcher with default planning
+and compares both launchers with a controlled planning policy. The controls
+run in fresh processes and modify no production source or calibration assets.
+
+Two preparations of the same GPI2 calibration plant used identical zero
+and positive woofer commands over 13 frames, with detector noise disabled
+by the authored graph. Their pupil OPD matched bit-for-bit. FFTW selected
+different single-precision plans. The pyramid photon-rate arrays differed in
+all 13 frames. Nearest-even UInt16 ADC rounding changed five pixel samples
+by one code across four frames. Replaying each preparation's FFTW wisdom
+reproduced its own photon-rate and detector arrays byte-for-byte. Changing
+only the repeated host FFT planning policy to `FFTW.ESTIMATE` yielded
+identical OPD, photon-rate and detector arrays in two fresh processes.
+
+This locates the observed differences upstream of the estimator and SVD.
+Different FFT arithmetic order perturbs photon rates near an ADC rounding
+boundary. The interaction matrix divides the signed response difference by
+twice the probe amplitude. The reconstructor then inverts the weighted
+interaction matrix with the recipe's existing rank cutoff.
+
+The [probe](probe-plans.jl) accepts the built application, planning mode and
+an existing output directory. Use `measure` to export wisdom and arrays, or
+`replay` with `GPI2_FFT_WISDOM` pointing to a recorded wisdom file.
+The [campaign runner](run-gpi2.jl) accepts the planning mode, original or moved
+launcher path, application, fresh output and, for validation, its input bundle.
+It uses [the same planning control](fft-control.jl) in calibration and
+validation. Use `OPENBLAS_NUM_THREADS=1` in each science environment.
+
+| FITS artifact | Original versus original repeat, relative L2 | Original versus moved, relative L2 |
+| --- | ---: | ---: |
+| Interaction matrix | 0.00200720 | 0.00202122 |
+| Reconstructor | 0.00847850 | 0.00840645 |
+| Singular values | 0.0000242475 | 0.0000292969 |
+| Modal reference | 0.0287186 | 0.0291819 |
+
+The original repeat changed the same four artifacts. Its maximum absolute
+modal-reference difference was 1.750×10⁻⁹. The original repeat retained rank
+1,445 and passed all four replay cases. Its worst residual ratio was 0.007354.
+
+With the repeated FFT policy held at `ESTIMATE` in both environments, the
+full 1,509-mode calibration produced byte-identical graphs, contexts, result
+reports and all 36 FITS files. Both retained rank 1,445. All four 48-step
+validation traces and scientific metrics matched exactly after excluding
+per-step elapsed time. The worst residual ratio was 0.00738855.
+The [comparison](check-fft-parity.jl) verifies hashes and report equality.
+The experiment leaves default production FFT planning intact.
