@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Hidden-mode controller preparation transfer — 2026-11-13
+
+The [GPI2 CPU comparison](validation/hidden-mode-transfer-20261113/README.md)
+records byte parity and shared tool export.
+
 ## RTC 0.7.19 release — 2026-11-12
 
 The [registry-only Classic and GPI2 check](validation/rtc-0719-20261112/README.md)

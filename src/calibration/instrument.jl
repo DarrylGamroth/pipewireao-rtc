@@ -27,7 +27,6 @@ public modal_completion,
     controller_graph,
     calibration_graph,
     calibration_frame!,
-    calibrate_hidden_modes,
     lowpass_coefficients,
     read_recipe,
     read_bundle,
@@ -730,17 +729,6 @@ frame buffer; copy it before advancing again if it must be retained. This
 mutates simulation state and requires the optional calibration science extension.
 """
 function calibration_frame! end
-
-"""
-    calibrate_hidden_modes(calibration, output)
-
-Derive hidden-coordinate FITS transforms from a saved modal calibration into
-a fresh output directory. The discarded pupil-RMS-weighted TSVD modes need not
-be exact optical nulls. Requires the optional calibration science extension;
-the saved parent calibration is preserved. Its loaded method documents artifact
-and dimensional requirements.
-"""
-function calibrate_hidden_modes end
 
 include("bundle.jl")
 include("recipe.jl")

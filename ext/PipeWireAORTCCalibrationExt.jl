@@ -6,7 +6,6 @@ import FilterGraphPipeWire
 import FilterGraphs
 import AdaptiveOpticsSim
 import AdaptiveOpticsSimPipeWireHIL
-import AdaptiveOpticsCalibration
 import Clocks
 import FilterGraphAlgorithms as FGA
 import LinearAlgebra as LA
@@ -77,6 +76,5 @@ include("calibration_transport.jl")
 include("calibration_capture.jl")
 include("calibration_owner.jl")
 include("calibration_settings.jl")
-include("modal_hidden_modes.jl")
 
 end
