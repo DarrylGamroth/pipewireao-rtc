@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## SPIDERS fitted-dual offline calibration — 2026-11-13
+
+The [SPIDERS CPU check](validation/spiders-optical-cpu-20261113/README.md)
+records both branch results, held-out validation, FITS publication and runtime.
+
 ## Hidden-mode controller preparation transfer — 2026-11-13
 
 The [GPI2 CPU comparison](validation/hidden-mode-transfer-20261113/README.md)
