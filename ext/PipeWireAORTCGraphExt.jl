@@ -45,37 +45,39 @@ function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(
         calibration = declaration.calibration,
     )
     concrete = E.resolve_graph_configuration(D.decode(source, prefix), context)
-    return mktempdir() do directory
-        path = joinpath(directory, "graph.conf")
-        PipeWireAORTC.ScienceExport.write_spa_config(path, concrete)
-        updates = Pair{Symbol,Array}[]
-        graph = FilterGraphPipeWire.prepare_service_graph(
-            path;
-            initial_parameters = formats -> begin
-                append!(updates, Owner.prepare_bindings(selected, formats))
-                updates
-            end,
-        )
-        try
-            values = Dict(updates)
-            completion, inverse = map(name -> values[name], names)
-            ndims(completion) == ndims(inverse) == 2 ||
-                throw(DimensionMismatch("shape selection requires two matrix parameters"))
-            eltype(completion) === eltype(inverse) === Float32 ||
-                throw(ArgumentError("shape selection requires Float32 projections"))
-            size(inverse, 2) == count || throw(
-                DimensionMismatch(
-                    "shape projection physical extent differs from mirror commands"
-                ),
-            )
-            plan = FilterGraphAlgorithms.VdmShapeOffsetPlan(
-                completion, inverse, zeros(Float32, count)
-            )
-            return Tuple(plan.controlled_actuators)
-        finally
-            FilterGraphPipeWire.close_execution(graph)
-        end
+    formats = shape_parameter_formats(concrete, names, count)
+    completion, inverse = last.(Owner.prepare_bindings(selected, formats))
+    plan = FilterGraphAlgorithms.VdmShapeOffsetPlan(
+        completion, inverse, zeros(Float32, count)
+    )
+    return Tuple(plan.controlled_actuators)
+end
+
+function shape_parameter_formats(document, names, count)
+    graph = document["filter.graph"]
+    endpoints = map(names) do name
+        entry = only(filter(input -> input isa AbstractDict &&
+            get(input, "name", nothing) == String(name), graph["inputs"]))
+        return FilterGraphs.Endpoint(entry["endpoint"])
     end
+    completion, inverse = endpoints
+    completion.node === inverse.node &&
+        completion.port === Symbol("active-to-full") &&
+        inverse.port === Symbol("pdm-to-vdm") ||
+        throw(ArgumentError("shape projections must bind the two Parameter Ports of one VDM shape node"))
+    node = only(filter(node -> get(node, "name", nothing) == String(completion.node), graph["nodes"]))
+    node["label"] == "vdm-shape-offset-f32" ||
+        throw(ArgumentError("shape projections require a vdm-shape-offset-f32 node"))
+    config = node["config"]
+    active, full, physical = (config[key] for key in
+        ("active_vdm_count", "full_vdm_count", "physical_actuator_count"))
+    all(n -> n isa Integer && !(n isa Bool) && n > 0, (active, full, physical)) &&
+        active <= full && physical == count ||
+        throw(ArgumentError("shape projection dimensions differ from the mirror command contract"))
+    return NamedTuple{names}((
+        (; element_type=Float32, shape=(full, active)),
+        (; element_type=Float32, shape=(full, physical)),
+    ))
 end
 
 function Owner.metadata_profiles(graph; feedback = nothing)

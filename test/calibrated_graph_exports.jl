@@ -117,3 +117,31 @@ end
     end
     @test !any(id -> id.name in ("AMDGPU", "CUDA", "Proper"), keys(Base.loaded_modules))
 end
+
+@testset "controlled actuator projection formats without graph preparation" begin
+    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
+    names = (:completion, :inverse)
+    shape = Dict(
+        "type" => "ndarray",
+        "name" => "shape",
+        "label" => "vdm-shape-offset-f32",
+        "config" => Dict(
+            "active_vdm_count" => 2,
+            "full_vdm_count" => 3,
+            "physical_actuator_count" => 4,
+        ),
+    )
+    inputs = [
+        Dict("name" => "completion", "endpoint" => "shape:active-to-full"),
+        Dict("name" => "inverse", "endpoint" => "shape:pdm-to-vdm"),
+    ]
+    graph = Dict("filter.graph" => Dict("nodes" => [shape], "inputs" => inputs))
+    @test extension.shape_parameter_formats(graph, names, 4) == (
+        completion = (element_type = Float32, shape = (3, 2)),
+        inverse = (element_type = Float32, shape = (3, 4)),
+    )
+    @test_throws ArgumentError extension.shape_parameter_formats(graph, names, 3)
+    @test_throws ArgumentError extension.shape_parameter_formats(graph, reverse(names), 4)
+    inputs[2]["endpoint"] = "other:pdm-to-vdm"
+    @test_throws ArgumentError extension.shape_parameter_formats(graph, names, 4)
+end
