@@ -2,16 +2,11 @@
 
 ## Built-application calibration bundles — 2026-10-26
 
-`PipeWireAORTC.InstrumentCalibration` provides one shared API for calibration
-procedures selected from a built instrument application:
-
-- `calibrate_system(application, fresh_bundle; target=...)` reads the compiled
-  instrument recipe and dispatches to the declared sensor procedure.
-- `validate_system(application, bundle, fresh_report; target=...)` checks that
-  the selected recipe matches the bundle before finite model validation.
-- `stage_calibration(source, application, bundle, fresh_destination)` verifies bundle and
-  source identities, then copies the authored source and selects the calibrated startup context
-  in a fresh destination.
+The shared instrument tools select the offline procedure from the built
+application's calibration recipe. Run `tools/calibrate.jl` to produce a fresh
+bundle, `tools/validate-calibration.jl` to replay the calibrated model, and
+`tools/stage-calibration.jl` to select the bundle for a fresh export. RTC supplies
+the recipe, typed graph and bundle APIs and owns live acquisition.
 
 Since RTC 0.2.51, optical interaction calibration accepts an explicit CUDA target.
 The mirror and optical graphs use captured execution, with uploads and readback

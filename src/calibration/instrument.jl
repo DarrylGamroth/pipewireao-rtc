@@ -24,20 +24,18 @@ public modal_completion,
     require_prepared_application,
     estimator_dimensions,
     checked_command_limits,
-    shack_hartmann_configuration,
     controller_graph,
     calibration_graph,
-    controller_storage,
-    measure!,
     calibration_frame!,
-    calibrate_system,
     calibrate_hidden_modes,
-    validate_system,
     lowpass_coefficients,
     read_recipe,
     read_bundle,
     write_bundle,
     calibration_settings,
+    apply_calibration_settings!,
+    tiptilt_temporal,
+    initialize_shape_offsets!,
     prepare_bundle_graph,
     acquisition_domain,
     calibration_port,
@@ -94,7 +92,12 @@ end
 
 # Validate before preparing the optical plant. Only the existing tip/tilt cascade
 # is selected here; absent configuration retains its identity coefficients.
-function _tiptilt_temporal(recipe, frame_period_s)
+"""
+    tiptilt_temporal(recipe, frame_period_s)
+
+Resolve and validate temporal tip/tilt coefficients for the recipe's sample period.
+"""
+function tiptilt_temporal(recipe, frame_period_s)
     InstrumentConfiguration.isfinite_real(frame_period_s) && frame_period_s > 0 ||
         throw(ArgumentError("simulation frame_period_s must be finite and positive"))
     period = Float64(frame_period_s)
@@ -386,7 +389,11 @@ function central_completion(original, obstruction, mirror; pupil_registration)
     return (; completion, controlled = controlled[retained], obscured = controlled[removed])
 end
 
-"Initialize a shape calibration pair, retaining an unbound shape offset's zero default."
+"""
+    initialize_shape_offsets!(parameters, prefix="")
+
+Initialize declared shape-offset parameters in the controller's command coordinates.
+"""
 function initialize_shape_offsets!(parameters::AbstractDict, prefix::AbstractString = "")
     names = map(
         suffix -> Symbol(prefix * suffix),
@@ -703,15 +710,6 @@ end
 
 # Scientific/graph dependencies remain optional and extend these cold APIs.
 """
-    shack_hartmann_configuration(system)
-
-Return the sole Shack-Hartmann rate-node configuration in a prepared AOS
-system's graph definition. Reject systems with zero or multiple matching nodes.
-Requires the optional calibration science extension.
-"""
-function shack_hartmann_configuration end
-
-"""
     controller_graph(application; overrides=Dict())
 
 Prepare the built application's complete-frame controller graph with its FITS
@@ -720,25 +718,6 @@ parameter bindings, optionally replacing arrays by parameter-port name through
 owns the prepared graph and closes it with `FilterGraphPipeWire.close_execution`.
 """
 function controller_graph end
-
-"""
-    controller_storage(graph; raw_input=:raw, feedback_input=Symbol("constraint-feedback"))
-
-Allocate zeroed input and output arrays from the prepared controller's port
-formats. Return `(raw, feedback, inputs, outputs)` for reuse by [`measure!`](@ref).
-Requires the optional calibration science extension.
-"""
-function controller_storage end
-
-"""
-    measure!(storage, graph, frame)
-
-Round `frame` into `storage.raw`, reset the controller, clear feedback, and
-process one frame into `storage.outputs`. Return those reused output arrays;
-copy values that must survive the next call. Reject a frame if any graph output
-is invalid. Requires the optional calibration science extension.
-"""
-function measure! end
 
 """
     calibration_frame!(system, physical)

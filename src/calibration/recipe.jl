@@ -185,66 +185,10 @@ function _validate_sensor_recipe(::Val{:pyramid}, application, recipe, declarati
     limits = recipe["tiptilt"]["command_limits_m"]
     _recipe_tiptilt_limits(limits)
     checked_command_limits(Float32, limits..., 2)
-    _tiptilt_temporal(recipe, declaration.document["frame_period_s"])
+    tiptilt_temporal(recipe, declaration.document["frame_period_s"])
     return nothing
 end
 
-"""
-    calibrate_system(application, output; kwargs...)
-
-Run a declared sensor procedure and produce the standard calibration bundle.
-"""
-function calibrate_system(application, output; kwargs...)
-    output = require_fresh_output((application,), output)
-    recipe = read_recipe(application)
-    declaration = InstrumentConfiguration.load_simulation(
-        joinpath(application, recipe["simulation"])
-    )
-    kind = recipe_sensor_kind(recipe, declaration)
-    load_calibration_optics(declaration, recipe)
-    # Optional optical extensions must be visible throughout the procedure,
-    # including its prepared graph's stepping methods.
-    return Base.invokelatest(
-        _calibrate_system, kind, application, recipe, output; kwargs...
-    )
-end
-function _calibrate_system end
-
-"""
-    validate_system(application, calibration, output; kwargs...)
-
-Validate a standard calibration bundle against its declared instrument model.
-"""
-function validate_system(application, calibration, output; kwargs...)
-    output = require_fresh_output((application, calibration), output)
-    recipe = read_recipe(application)
-    declaration = InstrumentConfiguration.load_simulation(
-        joinpath(application, recipe["simulation"])
-    )
-    kind = recipe_sensor_kind(recipe, declaration)
-    bundle = read_bundle(calibration)
-    # Recipes in the receipt describe the acquisition; current authoring cannot
-    # silently change settings, normalization or controller policy during replay.
-    recipe == bundle.report["recipe"] ||
-        throw(ArgumentError("calibration recipe differs from the selected application"))
-    load_calibration_optics(declaration, recipe)
-    return Base.invokelatest(
-        _validate_system, kind, application, recipe, calibration, output; kwargs...
-    )
-end
-function _validate_system end
-
-function load_calibration_optics(declaration, recipe)
-    configured = InstrumentConfiguration.settings(
-        declaration, get(recipe, "settings", Dict())
-    )
-    if InstrumentConfiguration.graph_requires_proper(
-        declaration, configured; simulation_graph = "calibration"
-    )
-        AOSOwner.load_instrument(:Proper)
-    end
-    return nothing
-end
 """
     calibration_settings(application, recipe, declaration)
 
@@ -252,6 +196,13 @@ Resolve the simulation settings used by the recipe's sensor procedure.
 Use the optional calibration extension to reproduce its prescription identity.
 """
 function calibration_settings end
+
+"""
+    apply_calibration_settings!(simulation, recipe, declaration)
+
+Resolve Shack–Hartmann calibration settings and update the simulation plant mapping.
+"""
+function apply_calibration_settings! end
 
 """
     prepare_bundle_graph(directory)

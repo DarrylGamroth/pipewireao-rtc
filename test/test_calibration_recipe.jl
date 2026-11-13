@@ -193,10 +193,6 @@ end
             recipe = recipe_application(directory, kind)
             error = ArgumentError("unsupported calibration sensor procedure: $kind")
             @test_throws error read_recipe(directory, recipe)
-            @test_throws error C.calibrate_system(directory, directory * "-calibration")
-            @test_throws error C.validate_system(
-                directory, directory, directory * "-validation"
-            )
             @test !ispath(directory * "-calibration") && !ispath(directory * "-validation")
         end
     end

@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Offline interaction calibration transfer — 2026-11-12
+
+The [Classic and GPI2 CPU comparison](validation/interaction-campaign-transfer-20261112/README.md)
+records the shared campaign transfer and the live acquisition regression.
+
 ## Remaining calibration and simulation export scope — 2026-11-12
 
 The [scope review](reviews/20261112-remaining-rtc-scope/REVIEW.md) identifies

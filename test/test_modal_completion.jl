@@ -234,31 +234,4 @@ end
         mirror, (; actuator_pitch_pupil_radius = 10), POLICY; obstruction = 0.2
     )
 end
-
-@testset "Completion cannot replace the coupled tip/tilt basis" begin
-    for dependency in (
-        :AdaptiveOpticsSim,
-        :AdaptiveOpticsSimPipeWireHIL,
-        :AdaptiveOpticsCalibration,
-        :FilterGraphPipeWire,
-        :FilterGraphs,
-    )
-        Base.require(Main, dependency)
-    end
-    recipe = Dict(
-        "mirrors" => [Dict("name" => "woofer", "completion" => POLICY)],
-        "tiptilt" => Dict("mirror" => "woofer"),
-    )
-    mktempdir() do temporary
-        output = joinpath(temporary, "unwritten")
-        @test_throws ArgumentError Base.invokelatest(
-            PipeWireAORTC.InstrumentCalibration._calibrate_system,
-            Val(:pyramid),
-            "source-must-not-be-read",
-            recipe,
-            output,
-        )
-        @test !ispath(output)
-    end
-end
 end

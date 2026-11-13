@@ -50,7 +50,7 @@ const A = PipeWireAORTC.Artifacts
 end
 
 @testset "bounded optional temporal recipe and declared cadence" begin
-    absent = K._tiptilt_temporal(Dict(), 0.001)
+    absent = K.tiptilt_temporal(Dict(), 0.001)
     @test absent.coefficients == Float32[1, 0, 0, 0, 0]
     @test absent.description == Dict(
         "frame_period_s" => 0.001,
@@ -61,7 +61,7 @@ end
         "temporal" =>
             Dict("tiptilt" => Dict("kind" => "lowpass", "cutoff_frequency_hz" => 25)),
     )
-    prepared = K._tiptilt_temporal(recipe, 0.001)
+    prepared = K.tiptilt_temporal(recipe, 0.001)
     @test prepared.coefficients ==
         K.lowpass_coefficients(Float32; cutoff_frequency_hz = 25, sample_rate_hz = 1000)
     @test prepared.description["tiptilt"] == recipe["temporal"]["tiptilt"]
@@ -84,10 +84,10 @@ end
             "sample_rate_hz" => 1000,
         ),
     )
-        @test_throws ArgumentError K._tiptilt_temporal(Dict("temporal" => temporal), 0.001)
+        @test_throws ArgumentError K.tiptilt_temporal(Dict("temporal" => temporal), 0.001)
     end
     for period in (0, -1, Inf, NaN, true, "0.001", nextfloat(0.0))
-        @test_throws ArgumentError K._tiptilt_temporal(recipe, period)
+        @test_throws ArgumentError K.tiptilt_temporal(recipe, period)
     end
 end
 
