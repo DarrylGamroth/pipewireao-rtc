@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.19 release — 2026-11-12
+
+The [registry-only Classic and GPI2 check](validation/rtc-0719-20261112/README.md)
+records the shared offline calibration and validation results.
+
 ## Offline interaction calibration transfer — 2026-11-12
 
 The [Classic and GPI2 CPU comparison](validation/interaction-campaign-transfer-20261112/README.md)
