@@ -277,12 +277,19 @@ function Instruments.prepare_system(
     target = Backends.HostComputeDevice(),
     execution = nothing,
 )
-    execution = instrument_execution(target, execution)
     declaration = Instruments.load_simulation(path)
     configured = Instruments.settings(declaration, settings)
     document = Instruments.graph_document(
         declaration, configured; calibration, simulation_graph
     )
+    return Instruments.prepare_system((; declaration, configured, document); target, execution)
+end
+
+function Instruments.prepare_system(
+    prepared::NamedTuple; target, execution
+)
+    (; declaration, configured, document) = prepared
+    execution = instrument_execution(target, execution)
     factories = configured_graph_node_types(declaration.directory)
     runtime_names = runtime_binding_names(document)
     names = unique(vcat(runtime_names, configuration_binding_names(document, factories)))

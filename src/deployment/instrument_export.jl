@@ -630,6 +630,9 @@ function prepare(
         for backend in runtime_backends(profile)
             prepare_backend_environment!(application, backend; required = true)
         end
+        if isfile(joinpath(application, "simulation.conf"))
+            Base.invokelatest(InstrumentConfiguration.stage_simulator_preparation!, application, prefix)
+        end
         rtc = InstrumentConfiguration.load_rtc(
             D.relative_asset(
                 application, something(configuration, "rtc/configuration.yaml")

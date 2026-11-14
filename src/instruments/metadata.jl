@@ -551,6 +551,77 @@ function prepare_simulation_configuration!(
     return concrete
 end
 
+const SIMULATOR_PREPARATION = joinpath("generated", "startup-preparation.json")
+
+function stage_simulator_preparation!(application, prefix)
+    path = joinpath(application, "simulation.conf")
+    source = D.decode(path, prefix)
+    get(source, "version", nothing) == 3 || return nothing
+    manifest = joinpath(application, "Manifest.toml")
+    isfile(manifest) || return nothing
+    owner = getproperty(parentmodule(@__MODULE__), :AOSOwner)
+    options = owner.configuration(path, source)
+    Base.require(Main, :AdaptiveOpticsSim)
+    Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
+    Base.invokelatest(write_simulator_preparation!, application, options, manifest)
+    return nothing
+end
+
+function write_simulator_preparation!(application, options, manifest)
+    InstrumentDefinition.verify_declaration(options)
+    declaration = load_simulation(options.plant.definition)
+    configured = settings(declaration, options.plant.settings)
+    document = graph_document(declaration, configured; simulation_graph = options.plant.graph)
+    path = joinpath(application, SIMULATOR_PREPARATION)
+    mkpath(dirname(path))
+    Common.write_json(path, (;
+        version = 1,
+        generated_by = "PipeWireAORTC.InstrumentExport",
+        manifest_sha256 = Common.sha256_file(manifest),
+        configuration_sha256 = Common.sha256_file(options.config_path),
+        options.prescription_identity,
+        options.calibration_identity,
+        graph = options.plant.graph,
+        document,
+    ); atomic = true)
+    return nothing
+end
+
+"""
+    read_simulator_preparation(options)
+
+Read a sealed export graph after checking its runtime inputs and publication contract.
+Return `nothing` for an application without an export receipt.
+"""
+function read_simulator_preparation(options)
+    root = dirname(options.config_path)
+    path = joinpath(root, SIMULATOR_PREPARATION)
+    ispath(path) || return nothing
+    deployment = joinpath(root, "deployment.conf")
+    artifacts = Common.read_json(deployment)["artifacts"]
+    for file in (path, options.config_path, options.instrument,
+                 options.rtc_configuration, options.plant.definition)
+        rel = relpath(file, root)
+        haskey(artifacts, rel) ||
+            throw(ArgumentError("simulator preparation input is not sealed: $rel"))
+    end
+    D.validate_deployment_artifacts(artifacts, deployment)
+    receipt = Common.read_json(path)
+    receipt["version"] === 1 &&
+    receipt["manifest_sha256"] == Common.sha256_file(joinpath(root, "Manifest.toml")) &&
+    receipt["configuration_sha256"] == artifacts[relpath(options.config_path, root)] &&
+    receipt["prescription_identity"] == options.prescription_identity &&
+    receipt["calibration_identity"] == options.calibration_identity &&
+    receipt["graph"] == options.plant.graph ||
+        throw(ArgumentError("startup preparation differs from the sealed application"))
+    InstrumentDefinition.verify_publication_contract(
+        InstrumentDefinition.load(options.instrument).document, options
+    )
+    declaration = load_simulation(options.plant.definition)
+    configured = settings(declaration, options.plant.settings)
+    return (; declaration, configured, document = receipt["document"])
+end
+
 """
     prepare_publication(application; configuration="rtc/configuration.yaml")
 

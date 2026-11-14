@@ -673,6 +673,10 @@ function verify_declaration(options)
     options.prescription_identity ==
     declaration.prescription_identity(simulation, configured) ||
         throw(ArgumentError("simulation prescription differs from its prepared identity"))
+    return verify_publication_contract(actual, options)
+end
+
+function verify_publication_contract(actual, options)
     mirrors, sensors = actual["deformable_mirrors"], actual["wavefront_sensors"]
     length(sensors) == 1 || throw(ArgumentError("this AOS boundary requires one WFS"))
     wfs = only(values(sensors))
