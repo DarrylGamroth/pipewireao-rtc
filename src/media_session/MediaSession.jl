@@ -5,10 +5,13 @@ effects outside dispatch; native callbacks transfer owned observations only.
 Scientific graphs retain their separate processes and PipeWire data threads.
 """
 module MediaSession
+# Reduce startup code generation cost in the session control process.
+Base.Experimental.@optlevel 1
 
 import Hsm
 import Clocks
 import Agent
+using PrecompileTools: @compile_workload
 using Hsm: @hsmdef, @statedef, @on_initial, @on_event
 import ..Common
 import ..RunnerCodec

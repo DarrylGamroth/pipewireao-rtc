@@ -494,6 +494,37 @@ function endpoint_properties(profile, instance, name)
     return properties
 end
 
+session_core(context, remote, queue) =
+    CoreConnection(
+        context;
+        properties = Dict("remote.name" => remote),
+        on_info = (_, info) -> stage!(queue, CoreUpdated(info)),
+        on_done = (_, id, sequence) -> stage!(queue, CoreDone(id, sequence)),
+        on_error = (_, id, sequence, error) ->
+            stage!(queue, CoreError(id, sequence, sprint(showerror, error))),
+        on_bound_id = (_, local_id, global_id) ->
+            stage!(queue, ClientBound(local_id, global_id)),
+    )
+
+session_controller(core, controller_properties) =
+    Filter(core, "RTC controller"; properties = controller_properties)
+
+session_endpoint(core, properties, queue, clock) =
+    Filter(
+        core,
+        "RTC session";
+        properties,
+        max_param_bytes = ControlCodec._limit(Val(:request), nothing),
+        on_state_changed = (_, previous, state, message) ->
+            stage!(queue, FilterChanged(state, message)),
+        on_param_changed = (_, port, id, pod) ->
+            id == SPA.PARAM_PROPS &&
+            stage!(queue, RequestReceived(pod, Clocks.time_nanos(clock))),
+        on_param_rejected = (_, port, id, size) ->
+            id == SPA.PARAM_PROPS &&
+            stage!(queue, RequestReceived(nothing, Clocks.time_nanos(clock))),
+    )
+
 const MAX_DISPATCH_PREPARATION_EFFECTS = 32
 
 """Prepare cold control dispatch before the public endpoint accepts requests.
@@ -502,10 +533,12 @@ An unpublished machine with a private cached clock exercises cleanup events.
 RTC requests and backend methods compile without executing, so no native
 mutation or readiness observation is produced.
 """
-function prepare_dispatch!(session::Session)
-    Base.precompile(update!, (typeof(session), EffectCompleted{Nothing}))
-    Base.precompile(update!, (typeof(session), EffectCompleted{SPA.Struct}))
-    Base.precompile(update!, (typeof(session), EffectFailed))
+prepare_dispatch!(session::Session) = prepare_dispatch!(typeof(session))
+
+function prepare_dispatch!(::Type{T}) where {T<:Session}
+    Base.precompile(update!, (T, EffectCompleted{Nothing}))
+    Base.precompile(update!, (T, EffectCompleted{SPA.Struct}))
+    Base.precompile(update!, (T, EffectFailed))
     controls = (
         (Status, Tuple{}, QueryStatus),
         (Properties, Tuple{String}, QueryProperties{Tuple{String}}),
@@ -523,18 +556,18 @@ function prepare_dispatch!(session::Session)
         ),
     )
     for (command, payload, effect) in controls
-        Base.precompile(submit!, (typeof(session.machine), Request{command,payload}))
+        Base.precompile(submit!, (fieldtype(T, :machine), Request{command,payload}))
         for origin in (ReadyOrigin, RunningOrigin)
             job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (typeof(session), job, effect))
+            Base.precompile(perform!, (T, job, effect))
         end
     end
     # Start has one shared effect budget for enabling graphs and releasing sources.
     # Prepare those paths before the first live Start request.
-    Base.precompile(submit!, (typeof(session.machine), Request{Start,Tuple{}}))
+    Base.precompile(submit!, (fieldtype(T, :machine), Request{Start,Tuple{}}))
     for effect in (RunGraphs{Nothing}, RunSources)
         job = Job{EffectTicket{effect,ReadyOrigin}}
-        Base.precompile(perform!, (typeof(session), job, effect))
+        Base.precompile(perform!, (T, job, effect))
     end
     parameter_owner = Owner{
         ParameterSource.Profile,
@@ -547,7 +580,7 @@ function prepare_dispatch!(session::Session)
     parameter_effect = SubmitParameter{ParameterSource.Arguments}
     for origin in (ReadyOrigin, RunningOrigin)
         job = Job{EffectTicket{parameter_effect,origin}}
-        Base.precompile(request_owner!, (typeof(session), job, parameter_owner, parameter_command))
+        Base.precompile(request_owner!, (T, job, parameter_owner, parameter_command))
     end
     bootstrap = OwnerBootstrapCodec.PROFILE
     bootstrap_owner = Owner{
@@ -560,18 +593,18 @@ function prepare_dispatch!(session::Session)
     for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
         for effect in (ShutdownGraphOwners, ShutdownOwners)
             job = Job{EffectTicket{effect,origin}}
-            Base.precompile(perform!, (typeof(session), job, effect))
-            Base.precompile(_shutdown_bootstrap!, (typeof(session), job, bootstrap_owner))
+            Base.precompile(perform!, (T, job, effect))
+            Base.precompile(_shutdown_bootstrap!, (T, job, bootstrap_owner))
         end
     end
     quit_ticket = Ingress.Ticket{RunnerCodec.RunnerCommand{:quit,Tuple{}}}
     Base.precompile(reply_pod, (quit_ticket, Reply{Bool}))
-    Base.precompile(Ingress._finish!, (typeof(session.ingress), quit_ticket, Pod))
-    Base.precompile(close, (typeof(session),))
-    for resource in (session.endpoint, session.controller_endpoint, session.registry_listener)
-        Base.precompile(_close_resource!, (Vector{Exception}, typeof(resource)))
+    Base.precompile(Ingress._finish!, (fieldtype(T, :ingress), quit_ticket, Pod))
+    Base.precompile(close, (T,))
+    for name in (:endpoint, :controller_endpoint, :registry_listener)
+        Base.precompile(_close_resource!, (Vector{Exception}, fieldtype(T, name)))
     end
-    Base.precompile(close, (typeof(session.controller_endpoint),))
+    Base.precompile(close, (fieldtype(T, :controller_endpoint),))
     for payload in ((), nothing)
         machine = Machine(1; clock = Clocks.CachedNanoClock(0))
         submit!(machine, Request(Quit(); payload))
@@ -584,7 +617,7 @@ function prepare_dispatch!(session::Session)
             effect = typeof(ticket.effect)
             for origin in (ConfiguringOrigin, ReadyOrigin, RunningOrigin)
                 job = Job{EffectTicket{effect,origin}}
-                Base.precompile(execute_effect!, (typeof(session), job))
+                Base.precompile(execute_effect!, (T, job))
             end
             submitted!(machine, ticket)
             complete!(machine, ticket)
@@ -645,16 +678,7 @@ function Session(
     controller = nothing
     try
         context = Context(loop; properties = Dict("config.name" => file))
-        core = CoreConnection(
-            context;
-            properties = Dict("remote.name" => config["context.properties"]["remote.name"]),
-            on_info = (_, info) -> stage!(queue, CoreUpdated(info)),
-            on_done = (_, id, sequence) -> stage!(queue, CoreDone(id, sequence)),
-            on_error = (_, id, sequence, error) ->
-                stage!(queue, CoreError(id, sequence, sprint(showerror, error))),
-            on_bound_id = (_, local_id, global_id) ->
-                stage!(queue, ClientBound(local_id, global_id)),
-        )
+        core = session_core(context, config["context.properties"]["remote.name"], queue)
         registry = Registry(core)
         controller_name = configuration["controller.node.name"]
         listener = add_listener!(
@@ -680,25 +704,12 @@ function Session(
             controller_instance,
             configuration["controller.node.name"],
         )
-        controller = Filter(core, "RTC controller"; properties = controller_properties)
+        controller = session_controller(core, controller_properties)
         properties = merge(
             Dict{String,String}(configuration["properties"]),
             endpoint_properties(SessionCodec.PROFILE, instance, configuration["node.name"]),
         )
-        endpoint = Filter(
-            core,
-            "RTC session";
-            properties,
-            max_param_bytes = ControlCodec._limit(Val(:request), nothing),
-            on_state_changed = (_, previous, state, message) ->
-                stage!(queue, FilterChanged(state, message)),
-            on_param_changed = (_, port, id, pod) ->
-                id == SPA.PARAM_PROPS &&
-                stage!(queue, RequestReceived(pod, Clocks.time_nanos(clock))),
-            on_param_rejected = (_, port, id, size) ->
-                id == SPA.PARAM_PROPS &&
-                stage!(queue, RequestReceived(nothing, Clocks.time_nanos(clock))),
-        )
+        endpoint = session_endpoint(core, properties, queue, clock)
         cached = Clocks.CachedNanoClock(Clocks.time_nanos(clock))
         machine = Machine(
             instance;
@@ -863,4 +874,19 @@ function main(arguments = ARGS)
     end
     close(session)
     return result
+end
+
+# Infer the same concrete wrappers as live construction without opening a core.
+@compile_workload begin
+    clock = Clocks.SystemNanoClock
+    core = Core.Compiler.return_type(session_core, Tuple{Context{MainLoop},String,EventQueue})
+    registry = Core.Compiler.return_type(Registry, Tuple{core})
+    endpoint = Core.Compiler.return_type(
+        session_endpoint, Tuple{core,Dict{String,String},EventQueue,clock}
+    )
+    controller = Core.Compiler.return_type(session_controller, Tuple{core,Dict{String,String}})
+    types = (core, registry, endpoint, controller)
+    if all(isconcretetype, types)
+        prepare_dispatch!(Session{types...,clock})
+    end
 end
