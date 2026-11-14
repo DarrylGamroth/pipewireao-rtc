@@ -99,9 +99,21 @@ function perform!(runtime, job, ::CaptureOwners)
 end
 
 function perform!(runtime, job, ::ConnectOwners)
-    for owner in runtime.owners
-        connect_owner!(runtime, job, owner)
+    failures = Exception[]
+    # Stay on the session thread; each owner has its own observation and
+    # correlated native reply. Join all tasks before completing the effect.
+    @sync for owner in runtime.owners
+        @async try
+            connect_owner!(runtime, job, owner)
+        catch error
+            if !job.cancelled
+                push!(failures, error)
+                job.cancelled = true
+            end
+        end
     end
+    isempty(failures) || throw(first(failures))
+    check_job(runtime, job)
     return nothing
 end
 

@@ -304,6 +304,8 @@ function capture_owner(
     push!(runtime.trace, (:capture_owner, handle))
     return owner(handle, profile, pid, instance)
 end
+S.check_job(::Runtime, job::S.Job) =
+    job.cancelled ? throw(S.Cancelled()) : nothing
 connect_owner!(runtime::Runtime, job, owner::S.Owner) =
     (push!(runtime.trace, (:connect, owner.handle)); nothing)
 function shutdown_owner!(runtime::Runtime, job, owner::S.Owner)
@@ -426,7 +428,11 @@ end
         values(runtime.captured),
     )
     empty!(runtime.trace)
-    S.perform!(runtime, job(), S.ConnectOwners())
+    ticket = S.EffectTicket(
+        UInt64(1), UInt64(1), UInt64(1), UInt32(0), S.ConfiguringOrigin(),
+        Int64(5_000_000_000), S.ConnectOwners(), nothing
+    )
+    S.perform!(runtime, S.Job(ticket, false), S.ConnectOwners())
     @test runtime.trace ==
         [(:connect, UInt64(11)), (:connect, UInt64(21)), (:connect, UInt64(41))]
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
