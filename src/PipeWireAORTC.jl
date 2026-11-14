@@ -80,6 +80,7 @@ include("instruments/configuration.jl")
 include("analysis/Analysis.jl")
 include("simulation/configuration.jl")
 include("deployment/hil_startup.jl")
+include("deployment/graph_startup.jl")
 include("deployment/session_runtime.jl")
 
 include("configuration/session_configuration.jl")

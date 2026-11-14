@@ -277,6 +277,8 @@ function prepare_bindings(entries, formats; check = () -> nothing)
     ]
 end
 
+function precompile_graph_warmup end
+
 function run_owner end
 
 "Return RTC metadata profiles for the optional graph integration's public data ports."
@@ -289,6 +291,23 @@ Read FITS startup arrays against a graph's typed parameter formats (optional gra
 extension).
 """
 function read_bindings end
+
+function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
+                       recovery_nodes, supervision_path, offsets_path, warmup_path)
+    return merge(
+        Base.invokelatest(fgp.parse_arguments, graph_arguments),
+        (;
+            correction_properties,
+            correction_timeout_ms = timeout_ms,
+            recovery_nodes,
+            physical_offsets = offsets_path,
+            supervision = supervision_path === nothing ? () :
+                          read_supervision(supervision_path),
+            chopped_warmup = warmup_path === nothing ? nothing :
+                             read_chopped_warmup(warmup_path),
+        ),
+    )
+end
 
 function _main(
     args;
@@ -306,18 +325,9 @@ function _main(
         )
         offsets_path === nothing || Base.require(Main, :AdaptiveOpticsSimPipeWireHIL)
         admitted.owner_check()
-        options = merge(
-            Base.invokelatest(filter_graph_pipewire.parse_arguments, graph_arguments),
-            (;
-                correction_properties,
-                correction_timeout_ms,
-                recovery_nodes,
-                physical_offsets = offsets_path,
-                supervision = supervision_path === nothing ? () :
-                              read_supervision(supervision_path),
-                chopped_warmup = warmup_path === nothing ? nothing :
-                                 read_chopped_warmup(warmup_path),
-            ),
+        options = graph_options(
+            filter_graph_pipewire, graph_arguments, correction_properties,
+            correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, warmup_path,
         )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()

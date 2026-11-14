@@ -122,6 +122,7 @@ function install(options)
     end
     chmod(launcher, 0o755)
     PipeWireAORTC.HILStartup.install!(environment, destination, installed_spec["owners"], prefix)
+    PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, installed_spec["owners"])
     template = read(
         joinpath(runtime, "assets/deployment/pipewireao-session@.service.in"), String
     )

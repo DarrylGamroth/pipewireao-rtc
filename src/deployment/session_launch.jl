@@ -685,6 +685,7 @@ function prepare!(request::Request; render!::Function)
             private_remote_environment(env, runtime, bindings)
             argv = [D.substitute(arg, bindings) for arg in owner["argv"]]
             PipeWireAORTC.HILStartup.configure_owner!(hil_startup, argv, env, package, owner)
+            PipeWireAORTC.GraphStartup.configure_owner!(argv, package, owner)
             S.install_fragment!(
                 services[role].unit,
                 S.service_unit(

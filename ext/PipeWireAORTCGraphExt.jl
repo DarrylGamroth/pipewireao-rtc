@@ -220,8 +220,7 @@ function validate_owner_feedback(::FilterGraphs.PreparedComposition, feedback)
     return nothing
 end
 
-function run_prepared(options, runtime, graph)
-    Bootstrap.preparation_check!(runtime)
+function graph_node(options, graph, instance)
     validate_owner_feedback(graph, options.feedback)
     correction_properties = options.correction_properties
     !isempty(correction_properties) &&
@@ -235,10 +234,10 @@ function run_prepared(options, runtime, graph)
         isempty(correction_properties) ? nothing :
         PipeWireAORTC.CorrectionLoops.Observer(
             correction_properties,
-            runtime.transport.endpoint.instance;
+            instance;
             timeout_ms = options.correction_timeout_ms,
         )
-    supervision = prepare_supervision(options, runtime.transport.endpoint.instance, graph)
+    supervision = prepare_supervision(options, instance, graph)
     observation = correction_observation(observer, supervision)
     offsets_path = get(options, :physical_offsets, nothing)
     offsets_path === nothing ||
@@ -301,6 +300,62 @@ function run_prepared(options, runtime, graph)
             fifo_inputs = options.fifo_inputs,
             feedback = options.feedback,
         ) : FilterGraphPipeWire.PipeWireNode(graph; common...)
+    return (; node, observer, offset_receiver, offset_clock)
+end
+
+function warm_graph!(node, graph, options)
+    warmup = get(options, :chopped_warmup, nothing)
+    samples = warmup === nothing ? nothing : chopped_warmup_samples(graph, options, warmup)
+    FilterGraphPipeWire.prepare!(
+        node;
+        execution = options.execution == "row-block" ? :row_block : :complete_frame,
+        required_outputs = options.warmup_outputs,
+        samples,
+    )
+    return nothing
+end
+
+function Owner.precompile_graph_warmup(args)
+    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, warmup =
+        Owner.arguments(args)
+    options = Owner.graph_options(
+        FilterGraphPipeWire, graph_args, properties, timeout, recovery, supervision, offsets, warmup,
+    )
+    # Offline construction is limited to complete-frame CPU owners without
+    # optional physical offset transport or progressive worker placement.
+    options.capture_backend === nothing && options.execution == "complete-frame" &&
+        options.row_workers == 0 && offsets === nothing || return nothing
+    entries = fits === nothing ? Owner.FITSBinding[] : Owner.bindings(fits)
+    declarations = FilterGraphPipeWire.algorithm_declarations(;
+        packages = options.packages, algorithms = options.algorithms, builtins = options.builtins,
+    )
+    graph = FilterGraphPipeWire.prepare_service_graph(
+        options.graph; algorithms = declarations, execution = :complete_frame,
+        matrix_layout = options.matrix_layout, initial_parameters = formats ->
+            Owner.prepare_bindings(entries, formats), parameters = options.parameters,
+    )
+    try
+        (; node, observer) = graph_node(options, graph, Int64(1))
+        try
+            warm_graph!(node, graph, options)
+        finally
+            try
+                close(node)
+            finally
+                isnothing(observer) || close(observer)
+            end
+        end
+    finally
+        FilterGraphPipeWire.close_execution(graph)
+    end
+    return nothing
+end
+
+function run_prepared(options, runtime, graph)
+    Bootstrap.preparation_check!(runtime)
+    (; node, observer, offset_receiver, offset_clock) =
+        graph_node(options, graph, runtime.transport.endpoint.instance)
+    offsets_path = get(options, :physical_offsets, nothing)
     try
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.check_ready(observer)
         isnothing(observer) || PipeWireAORTC.CorrectionLoops.attach_timers!(
@@ -309,17 +364,8 @@ function run_prepared(options, runtime, graph)
             () -> PipeWireAO.notify_properties!(node.filter),
         )
         if isnothing(options.capture_backend)
-            warmup = get(options, :chopped_warmup, nothing)
-            samples =
-                warmup === nothing ? nothing :
-                chopped_warmup_samples(graph, options, warmup)
             PipeWireAORTC.Common.startup_phase(options.name, "warm up graph") do
-                FilterGraphPipeWire.prepare!(
-                    node;
-                    execution = options.execution == "row-block" ? :row_block : :complete_frame,
-                    required_outputs = options.warmup_outputs,
-                    samples,
-                )
+                warm_graph!(node, graph, options)
             end
         end
         Bootstrap.preparation_check!(runtime)

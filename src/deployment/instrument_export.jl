@@ -13,6 +13,7 @@ import ..Schemas
 import ..Artifacts
 import ..InstrumentDefinition
 import ..AOSOwner
+import ..GraphStartup
 import ..DeploymentConfiguration as D
 import ..resource_root
 import ..Common:
@@ -661,6 +662,7 @@ function prepare(
             queue_inputs,
         )
         haskey(spec, "session-runtime") && ScienceExport.stage_rtc!(application)
+        GraphStartup.stage!(application, spec["owners"])
         Common.write_json(joinpath(application, "deployment.conf"), spec; atomic = true)
         seal!(application)
         D.validate_application(
