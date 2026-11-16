@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## RTC 0.7.20 and HIL 0.5.8 release candidate — 2026-11-16
+
+The [cohort check](validation/rtc-0720-hil-058-20261116/README.md) records
+the GPU checks and the intermittent HIL receiver gate.
+
 ## SPIDERS fitted-dual offline calibration — 2026-11-13
 
 The [SPIDERS CPU check](validation/spiders-optical-cpu-20261113/README.md)
