@@ -96,6 +96,7 @@ for name in (
     "schemas",
     "common",
     "runtime_export",
+    "git_export",
     "spa_config",
     "loop_placement",
     "systemd_owners",

@@ -311,6 +311,36 @@ version that supports this checksum scope for export, installation and the
 installed runtime. The updated tools also accept older checksum catalogs.
 Installation stages the systemd unit for explicit startup.
 
+## Git verification for project exports
+
+The simulation project's `tools/build.jl` writes a sibling
+`<export>.git` repository when Git and a PipeWireAORTC version that supports
+Git exports are available. Keep it alongside the
+export directory. The session installer automatically uses its HEAD commit.
+A Git mismatch stops installation. The Git repository contains the complete
+export, including the Project, Manifest and materialized FITS files.
+
+To install from another Git repository, supply its Git directory and the
+full export commit ID explicitly.
+
+```sh
+julia --startup-file=no --project=. session_cli.jl install \
+  --package /absolute/exported-package \
+  --destination /absolute/fresh-installation \
+  --pipewire-prefix /opt/pipewireao \
+  --git-repository /absolute/project-exports.git \
+  --git-commit "$export_commit"
+```
+
+The installer checks the copied files against the pinned tree before generating
+the launchers and caches. The installed launcher pins the commit and checks the
+tracked files using Git's index. The index lets Git check unchanged files
+without reading their contents again. Git verification leaves deployment and
+scientific validation in place. Re-export and reinstall to change the tracked
+payload. Without a sibling repository or a Git executable, the default
+installer uses the export's checksum catalog. An explicit repository and
+commit request requires Git.
+
 ## Installed entrypoints
 
 Install an exported session package using the one-shot CLI.

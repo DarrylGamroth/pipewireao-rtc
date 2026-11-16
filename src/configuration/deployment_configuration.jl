@@ -4,6 +4,7 @@ using JSON, TOML
 using ..Common
 using ..Placement
 import ..PipeWireAORTC
+import ..GitExport
 import ..ScienceExport
 import ..ControlClient
 import ..OwnerBootstrapCodec
@@ -1479,9 +1480,18 @@ required_thread_cpu_set(cpus) = fail("required thread CPUs must be a list")
 validate_deployment_artifacts(artifacts, path) =
     fail("deployment artifacts must be a path/hash mapping")
 function validate_deployment_artifacts(artifacts::AbstractDict, path)
+    package = dirname(path)
+    verified = GitExport.verified_paths(package)
     for (name, sha) in artifacts
-        asset = relative_asset(dirname(path), name)
-        validate_artifact_hash(sha, asset, name)
+        asset = relative_asset(package, name)
+        if verified === nothing
+            validate_artifact_hash(sha, asset, name)
+        else
+            require(
+                name in verified && sha isa String && occursin(r"^[0-9a-f]{64}$", sha),
+                "invalid or untracked deployment artifact: $name",
+            )
+        end
     end
     return nothing
 end

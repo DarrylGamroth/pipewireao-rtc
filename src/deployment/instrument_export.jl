@@ -9,6 +9,7 @@ using ..ScienceExport
 using ..InstrumentConfiguration
 import PipeWireAO
 import ..PipeWireAORTC
+import ..GitExport
 import ..Schemas
 import ..Artifacts
 import ..InstrumentDefinition
@@ -516,14 +517,15 @@ function copy_source(
 end
 
 """
-    prepare(source, destination; profile, manifest=nothing, julia=Base.julia_cmd().exec[1],
-            prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
+    prepare(source, destination; profile, manifest=nothing, git_export=false,
+            julia=Base.julia_cmd().exec[1], prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
 
 Copy an instrument into a fresh application and record runtime input checksums.
 
 Supply a registered `manifest` to prepare an installable application.
 Omit it for offline preparation. The installer checks exported runtime inputs
-against the deployment catalog.
+against the deployment catalog. Set `git_export=true` to record a sibling
+Git repository for the completed export when Git is available.
 """
 function prepare(
     source::AbstractString,
@@ -531,6 +533,7 @@ function prepare(
     profile::AbstractDict,
     julia = Base.julia_cmd().exec[1],
     manifest = nothing,
+    git_export::Bool = false,
     prefix = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"),
 )
     source, destination = checked_path(source), checked_path(destination)
@@ -673,6 +676,14 @@ function prepare(
         !isfile(joinpath(application, "Manifest.toml")) ||
             D.profile(joinpath(application, "deployment.conf"), prefix)
         mv(application, destination)
+        if git_export
+            try
+                GitExport.snapshot!(destination)
+            catch
+                rm(destination; recursive = true)
+                rethrow()
+            end
+        end
     finally
         rm(staging; force = true, recursive = true)
     end
