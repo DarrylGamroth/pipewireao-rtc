@@ -1,5 +1,6 @@
 module GraphStartup
 
+using ..DeploymentConfiguration: bootstrap_instance_key
 
 const ENTRY = "using PipeWireAORTC; PipeWireAORTC.GraphOwner.main(ARGS)"
 const DIRECTORY = "graph-startup"
@@ -39,7 +40,7 @@ function stage!(package, owners)
                         "PACKAGE" => root,
                         "RUNTIME" => tempdir(),
                         "REMOTE" => "offline-graph-warmup",
-                        $(repr("BOOTSTRAP_INSTANCE_" * uppercase(role))) => "1",
+                        $(repr(bootstrap_instance_key(role))) => "1",
                     )
                     args = map(arg -> rtc.DeploymentConfiguration.substitute(arg, bindings), $(repr(args)))
                     @eval PrecompileTools.@compile_workload Base.invokelatest(rtc.GraphOwner.precompile_graph_warmup, args)
