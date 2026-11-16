@@ -26,6 +26,11 @@ function retained_authority(remote, directory, daemon)
     chmod(dirname(remote), 0o700)
     runtime, client = connected_owner(remote, "test.bootstrap.retained", Int64(52))
     try
+        # The offline workload must infer the exact transport used by the live owner.
+        @test Core.Compiler.return_type(
+            E.Transport,
+            Tuple{typeof(P.PROFILE),String,String,Int64,typeof(P.Preparing)},
+        ) === typeof(runtime.transport)
         @test B.status(client; deadline = remaining()).lifecycle === P.Connected
         before = globals(something(runtime.transport.endpoint.registry))
         @test_throws C.UnknownOutcome B.connect(

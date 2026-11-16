@@ -826,13 +826,14 @@ function Transport(
     wake = Base.Threads.Atomic{Bool}(false)
     connection_failure = Ref{Union{Nothing,String}}(nothing)
     try
-        with_thread_loop_lock(loop) do _
+        transport = with_thread_loop_lock(loop) do _
             properties =
                 application_name === nothing ? Dict{String,String}() :
                 Dict("application.name" => String(application_name))
-            context = Context(loop; properties)
-            core = CoreConnection(
-                context;
+            opened_context = Context(loop; properties)
+            context = opened_context
+            opened_core = CoreConnection(
+                opened_context;
                 properties = Dict("remote.name" => path),
                 on_done = (core, id, sequence) -> begin
                     id == 0 && (acknowledged_sequence[] = sequence)
@@ -846,11 +847,12 @@ function Transport(
                     nothing
                 end,
             )
-            endpoint = Endpoint(
+            core = opened_core
+            opened_endpoint = Endpoint(
                 profile,
                 commands,
                 loop,
-                core,
+                opened_core,
                 name,
                 instance,
                 lifecycle;
@@ -860,26 +862,25 @@ function Transport(
                     update_params!(filter, params)
                 end,
             )
-            registry_listener = add_listener!(
-                something(endpoint.registry);
+            endpoint = opened_endpoint
+            # Endpoint opened its registry on this core. Keep that concrete
+            # type for the listener and the enclosing transport.
+            registry = something(opened_endpoint.registry)::Registry{typeof(opened_core)}
+            listener = add_listener!(
+                registry;
                 on_global_added = (registry, global_object) -> (wake[] = true; nothing),
                 on_global_removed = (registry, id) -> (wake[] = true; nothing),
             )
-            endpoint_ref[] = endpoint
-            connection_failure[] === nothing || (endpoint.failure = connection_failure[])
+            registry_listener = listener
+            endpoint_ref[] = opened_endpoint
+            connection_failure[] === nothing || (opened_endpoint.failure = connection_failure[])
+            Transport(
+                profile, loop, opened_context, opened_core, opened_endpoint,
+                listener, acknowledged_sequence, wake, false,
+            )
         end
         start!(loop)
-        return Transport(
-            profile,
-            loop,
-            context,
-            core,
-            endpoint,
-            registry_listener,
-            acknowledged_sequence,
-            wake,
-            false,
-        )
+        return transport
     catch primary
         failures = Exception[primary]
         try

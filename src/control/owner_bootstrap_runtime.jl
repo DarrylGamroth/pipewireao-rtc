@@ -6,6 +6,7 @@ import Agent
 import Clocks
 import Hsm
 using Hsm: @hsmdef, @statedef, @finaldef, @on_initial, @on_event
+using PrecompileTools: @compile_workload
 import ThreadPinning
 import ..ControlClient
 import ..ControlEndpoint
@@ -194,16 +195,7 @@ function Runtime(
     )
     runtime = Runtime(transport)
     try
-        precompile(serve!, (typeof(runtime),)) ||
-            error("cannot compile native bootstrap monitor before startup")
-        _precompile_owner_routes!(Monitor{typeof(runtime),typeof(clock)})
-        precompile(finish!, (typeof(runtime),))
-        precompile(close, (typeof(runtime),))
-        precompile(Endpoint.flush_terminal!, (typeof(transport), Int64))
-        endpoint_type = typeof(transport.endpoint)
-        ticket_type = Endpoint.Ticket{Client.command_type(Codec.PROFILE)}
-        precompile(Endpoint.retain_controller!, (endpoint_type, ticket_type))
-        precompile(Endpoint.wait_terminal_release!, (endpoint_type, ticket_type))
+        _precompile_runtime!(typeof(runtime), typeof(clock))
         runtime.monitor = ThreadPinning.@spawnat 2 serve!(runtime; clock)
         started = Clocks.time_nanos(clock)::Int64
         deadline = Base.Checked.checked_add(started, Int64(5_000_000_000))
@@ -1203,6 +1195,37 @@ function _with_owner(f, options, runtime)
     isempty(failures) ||
         throw(length(failures) == 1 ? only(failures) : CompositeException(failures))
     return nothing
+end
+
+function _precompile_runtime!(
+    ::Type{Runtime{T}}, ::Type{N}
+) where {T<:Endpoint.Transport,N<:Clocks.AbstractNanoClock}
+    kwargs = NamedTuple{(:clock,),Tuple{N}}
+    precompile(Core.kwcall, (kwargs, typeof(serve!), Runtime{T})) ||
+        error("cannot compile native bootstrap monitor before startup")
+    _precompile_owner_routes!(Monitor{Runtime{T},N})
+    precompile(finish!, (Runtime{T},))
+    precompile(close, (Runtime{T},))
+    precompile(Endpoint.flush_terminal!, (T, Int64))
+    endpoint = fieldtype(T, :endpoint)
+    ticket = Endpoint.Ticket{Client.command_type(Codec.PROFILE)}
+    precompile(Endpoint.retain_controller!, (endpoint, ticket))
+    precompile(Endpoint.wait_terminal_release!, (endpoint, ticket))
+    return nothing
+end
+
+# Infer the production transport without opening a PipeWire core or spawning a
+# monitor at package build time. The constructor also covers cache misses and
+# non-default clock types before it starts servicing requests.
+@compile_workload begin
+    clock = Clocks.SystemNanoClock
+    transport = Core.Compiler.return_type(
+        Endpoint.Transport,
+        Tuple{typeof(Codec.PROFILE),String,String,Int64,typeof(Codec.Preparing)},
+    )
+    if isconcretetype(transport)
+        _precompile_runtime!(Runtime{transport}, clock)
+    end
 end
 
 end # module OwnerBootstrapRuntime
