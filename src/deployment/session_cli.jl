@@ -618,6 +618,8 @@ end
 # Compile the installed CLI entry and shutdown specializations without opening a
 # PipeWire connection or contacting the user systemd manager.
 precompile(main, (Vector{String},))
+precompile(D.profile, (String, String))
+precompile(D.validate_application, (Dict{String,Any}, String, String))
 precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
 precompile(
     Core.kwcall,
