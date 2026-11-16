@@ -1,4 +1,6 @@
-# RTC 0.7.20 and HIL 0.5.8 release candidate
+# RTC 0.7.20 and HIL 0.5.8 verification
+
+## Initial candidate
 
 The candidate combines RTC `44d2f2a` and HIL `1c10499` with registered
 AdaptiveOpticsSim 0.3.25, FilterGraphAlgorithms 0.12.5, FilterGraphs 0.10.3,
@@ -29,8 +31,8 @@ implementation and test are identical in the two HIL source trees. This
 establishes that the crash predates the release candidate. The lifetime or
 scheduling condition that causes it remains unconfirmed.
 
-Release and registry publication are pending receiver verification. No SPIDERS
-timing was collected on this candidate.
+Release and registry publication were held pending receiver verification. No SPIDERS
+timing was collected on the initial candidate.
 
 ## Teardown and allocation fixes
 
@@ -69,3 +71,42 @@ All five published JLL archives matched the generated download hashes.
 | PipeWireAO_jll 4.0.3+0 | [Linux artifacts](https://github.com/DarrylGamroth/PipeWireAO_jll.jl/releases/tag/PipeWireAO-v4.0.3%2B0) |
 | PipeWireAO.jl 0.9.3 | [GC-safe stream teardown](https://github.com/DarrylGamroth/PipeWireAO.jl/releases/tag/v0.9.3) |
 | AdaptiveOpticsSimPipeWireHIL 0.5.8 | [Task allocation checks, GC-safe receiver retirement and lockstep caching](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl/releases/tag/v0.5.8) |
+
+## Registered verification
+
+The RTC core suite passed against registered PipeWireAO.jl 0.9.3 and
+PipeWireAO_jll 4.0.3+0. The RTC source release includes that development
+Manifest. The registry also published 4.0.4+0, which contains the stream fix
+and changes the progressive ndarray filter-chain validator. The final
+cohort used 4.0.4+0 from the same registry. [RTC 0.7.20](https://github.com/DarrylGamroth/pipewireao-rtc/releases/tag/v0.7.20), [RTC registration](https://github.com/DarrylGamroth/PackageRegistry/commit/1fed0ba), [HIL registration](https://github.com/DarrylGamroth/PackageRegistry/commit/72667bc), [PipeWireAO 4.0.4](https://github.com/DarrylGamroth/PipeWireAO/releases/tag/v4.0.4)
+
+Julia 1.13.3 resolved the cohort in a new project using General and
+DarrylGamrothRegistry at `3f2d0d0`. The writable depot reused package,
+artifact and precompile caches. The project had no source or artifact
+overrides. The resolved RTC, HIL and PipeWireAO.jl trees matched their
+release tags. Each GPU executed a KernelAbstractions kernel with scalar
+indexing disabled. The integrated Radeon used
+`HSA_OVERRIDE_GFX_VERSION=10.3.0`.
+
+| Package | Version | Git tree |
+| --- | --- | --- |
+| AMDGPU | 2.11.0 | `339be76666103bf8a2c7b2dd638a80336e9b1fda` |
+| AdaptiveOpticsCalibration | 0.17.4 | `3091300ace8597034aab04f9bb9e2063079a5d0a` |
+| AdaptiveOpticsSim | 0.3.25 | `c70375cef34067b30e8710bca1ab3ee15bccedb7` |
+| AdaptiveOpticsSimPipeWireHIL | 0.5.8 | `14915e51f11fdf1b07bb8e8688d515d2085e52b0` |
+| CUDA | 6.5.1 | `c82345f5d7e0d902793b4ad5ddf61c2a8b6aac75` |
+| FilterGraphAlgorithms | 0.12.5 | `9cfb5cda70fe7ccfe8c0632ce00cdc475ca256dd` |
+| FilterGraphPipeWire | 0.5.6 | `e623c4a71756cc298d03a116391d5a2d42831ada` |
+| FilterGraphs | 0.10.3 | `1e07f87c5ef74a4c747c81415d494aed4647298b` |
+| KernelAbstractions | 0.10.7 | `08b081d7d69e3cc989babee2c74c1d16c0f6baa1` |
+| PipeWireAO | 0.9.3 | `d7878497e9a7a5d1a141307721a0f39542f5758d` |
+| PipeWireAORTC | 0.7.20 | `6ac8e8bc9d2c287f8c176c863390c587d21fe3cd` |
+| PipeWireAO_jll | 4.0.4+0 | `d9fe9c1a8b854c019e1f6d3143f0de0ac015cd75` |
+
+The first registry-installed HIL 4.0.3+0 suite timed out waiting for the
+second command in the synchronous receiver selector. Sixty isolated runs
+of that selector passed on the same package and artifact with the
+allocation assertions enabled, 30 with debug logging and 30 without. The
+full 4.0.3+0 suite passed on retry. The final full 4.0.4+0 run passed all
+3,714 HIL assertions, including the private-core teardown selectors. The
+cause of the earlier command delivery timeout remains unconfirmed.
