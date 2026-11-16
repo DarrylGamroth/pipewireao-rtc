@@ -333,7 +333,11 @@ end
         @test !ispath(joinpath(directory, "generated"))
         bad_hash = deepcopy(source.document["bindings"]["mtf_transfer"])
         bad_hash["sha256"] = repeat("0", 64)
-        @test_throws ArgumentError IC.binding_values(source, IC.settings(source), bad_hash)
+        @test IC.binding_values(source, IC.settings(source), bad_hash) == ones(Float32, 8, 8)
+        no_hash = deepcopy(simulation)
+        delete!(no_hash["bindings"]["mtf_transfer"], "sha256")
+        write_external_optical_documents(directory, physical, no_hash)
+        @test IC.load_simulation_source(path) isa typeof(source)
         for mutate! in (
             doc -> (doc["observations"]["low_order"]["graph"] = "simulation/missing.yaml"),
             doc -> (
@@ -348,8 +352,7 @@ end
                 )
             ),
             doc -> (doc["components"]["low_order_detector"]["sensor"] = "scc"),
-            doc -> delete!(doc["bindings"]["mtf_transfer"], "sha256"),
-            doc -> (doc["bindings"]["mtf_transfer"]["sha256"] = repeat("0", 64)),
+            doc -> (doc["bindings"]["mtf_transfer"]["sha256"] = "invalid"),
             doc -> (doc["bindings"]["mtf_transfer"]["shape"] = [7, 8]),
         )
             invalid = deepcopy(simulation)

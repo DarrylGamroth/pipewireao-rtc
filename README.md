@@ -90,10 +90,11 @@ the registered Julia dependency supplies the implementation. Existing sealed
 SDK deployments retain their recorded runtime and require their matching tools.
 
 Pkg manages the registered dependency environment from the exported Project
-and Manifest. The exporter records SHA-256 checksums for application runtime
-inputs such as PipeWire configuration and calibration files in the `artifacts`
-mapping of `deployment.conf`. The installer checks the listed files before
-using them. Older guides call this a *sealed* export.
+and Manifest. The `artifacts` mapping in `deployment.conf` lists application
+runtime inputs. The installer verifies the exported files against the Git
+snapshot when one is configured. Applications without a snapshot use the same
+file, schema and scientific data validation on load. Older guides call this a
+*sealed* export.
 
 `GraphOwner.main` accepts graph options and `--fits-bindings PATH`. It publishes
 Preparing before loading optional graph packages. Simulation runs in a separate

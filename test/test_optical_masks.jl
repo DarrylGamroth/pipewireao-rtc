@@ -115,15 +115,15 @@ end
         selected = IC.load_simulation(path)
         @test !haskey(selected.document["bindings"], "lyot_reflected_amplitude")
         @test IC.prescription_identity(selected, IC.settings(selected)) != identity
-        # Revalidate the bytes captured for binding preparation after cold loading.
+        # Decode the current snapshot. Export-level verification is handled by Git.
         FITS(joinpath(directory, "optics", "mask.fits"), "w") do fits
             write(fits, fill(Float32(0.5), 3, 2))
         end
-        @test_throws ArgumentError IC.binding_values(
+        @test IC.binding_values(
             declaration,
             configured,
             declaration.document["bindings"]["apodizer_transmitted_amplitude"],
-        )
+        ) == fill(Float32(0.5), 2, 3)
         @test IC.prescription_identity(declaration, configured) != identity
         @test_throws ArgumentError IC.load(joinpath(directory, "instrument.yaml"))
     end
@@ -138,6 +138,9 @@ end
 @testset "strict physical mask declarations and FITS snapshots" begin
     mktempdir() do directory
         physical, simulation = optical_mask_documents(directory)
+        legacy = deepcopy(physical)
+        legacy["optical_masks"]["measured"]["transmitted"]["amplitude"]["sha256"] = "0"^64
+        IC.validate_declaration(legacy, directory)
         for mutate! in (
             mask -> empty!(mask),
             mask -> (mask["unknown"] = 1),
@@ -150,7 +153,7 @@ end
             mask -> (mask["transmitted"]["outside_phase_rad"] = Inf),
             mask ->
                 (mask["transmitted"]["amplitude"]["path"] = "optics/../optics/mask.fits"),
-            mask -> (mask["transmitted"]["amplitude"]["sha256"] = "0"^64),
+            mask -> (mask["transmitted"]["amplitude"]["sha256"] = "invalid"),
             mask -> (mask["transmitted"]["amplitude"]["hdu"] = 3),
             mask -> (mask["transmitted"]["amplitude"]["axes"] = [1, 2]),
             mask -> (mask["transmitted"]["amplitude"]["type"] = "UInt16"),

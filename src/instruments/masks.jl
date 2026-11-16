@@ -6,8 +6,7 @@ function mask_artifact(reference, directory, label; amplitude = false)
     _validate_optical_asset(
         Dict(key => reference[key] for key in ("path", "sha256")),
         directory,
-        label;
-        check_hash = false,
+        label,
     )
     validate_artifact_values(reference, directory, label)
     length(reference["shape"]) == 2 || throw(ArgumentError("$label must have rank two"))
@@ -19,11 +18,9 @@ function mask_artifact(reference, directory, label; amplitude = false)
         hdu = reference["hdu"],
         axes = reference["axes"],
     )
-    prepared = Artifacts.prepare(source, T, reference["shape"])
-    prepared.provenance["original_sha256"] == reference["sha256"] ||
-        throw(ArgumentError("$label SHA-256 mismatch"))
+    data = Artifacts.read_fits_data(source, T, reference["shape"])
     amplitude &&
-        !all(value -> 0 <= value <= 1, prepared.data) &&
+        !all(value -> 0 <= value <= 1, data) &&
         throw(ArgumentError("$label field amplitude must be in [0,1]"))
     return nothing
 end

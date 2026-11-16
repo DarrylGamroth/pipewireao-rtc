@@ -69,8 +69,6 @@ sha_identity(value::String) = occursin(r"^sha256:[0-9a-f]{64}$", value)
 sha_identity(value) = false
 absolute_package(value::String) = isabspath(value)
 absolute_package(value) = false
-sealed_hash(value::String, expected) = value == expected
-sealed_hash(value, expected) = false
 
 function validate(document)
     object_value(document) &&
@@ -411,10 +409,9 @@ function publication(spec, bindings)
     absolute_package(package) ||
         throw(ArgumentError("instrument publication requires the installed application"))
     path = D.relative_asset(package, spec["instrument"])
-    expected = get(get(spec, "artifacts", Dict()), spec["instrument"], nothing)
+    haskey(get(spec, "artifacts", Dict()), spec["instrument"]) ||
+        throw(ArgumentError("instrument publication is missing from the deployment inventory"))
     definition = load(path)
-    sealed_hash(expected, definition.sha256) ||
-        throw(ArgumentError("instrument publication is not sealed"))
     return Dict(PROPERTY => definition.json, HASH_PROPERTY => definition.sha256)
 end
 

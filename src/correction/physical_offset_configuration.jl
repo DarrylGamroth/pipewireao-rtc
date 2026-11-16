@@ -59,10 +59,7 @@ function matrix(path, selection)
     hash = selection["sha256"]
     _projection_hash(hash)
     artifact = Artifacts.FITSArtifact(file; axes = selection["axes"])
-    prepared = Artifacts.prepare(artifact, Float32, selection["shape"])
-    prepared.provenance["original_sha256"] == hash ||
-        throw(ArgumentError("physical projection content hash mismatch"))
-    return _projection_matrix(prepared.data)
+    return _projection_matrix(Artifacts.read_fits_data(artifact, Float32, selection["shape"]))
 end
 
 

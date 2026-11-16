@@ -249,15 +249,20 @@ end
 checked_image(image::ImageHDU) = image
 checked_image(image) = throw(ArgumentError("artifact HDU must contain an image"))
 
-# Internal shared preparation boundary: the catalog retains exactly these bytes.
-function prepare_snapshot(
-    source::FITSArtifact, ::Type{T}, shape, original::Vector{UInt8}; check = () -> nothing
-) where {T}
+function read_fits_data(source::FITSArtifact, ::Type{T}, shape) where {T}
+    check = Returns(nothing)
+    original = snapshot(source.path; check)
+    return decode_fits(source, T, shape, original; check) do data, _...
+        data
+    end
+end
+
+function decode_fits(
+    f::F, source::FITSArtifact, ::Type{T}, shape, original::Vector{UInt8}; check
+) where {F,T}
     check()
     T in TARGET_TYPES || throw(ArgumentError("unsupported artifact target type: $T"))
     target_shape = checked_shape(shape, sizeof(T))
-    original_hash = bytes2hex(SHA.sha256(original))
-    check()
     # A byte-vector FITS handle has no filename parser and cannot reopen the source.
     return FITS(original, "r") do fits
         source.hdu <= length(fits) ||
@@ -282,6 +287,18 @@ function prepare_snapshot(
         logical = PermutedDimsArray(source_data, permutation)
         data = Array{T}(undef, target_shape)
         convert_values!(data, logical, check)
+        return f(data, image, header, permutation, source_shape, target_shape)
+    end
+end
+
+# Internal shared preparation boundary: the catalog retains exactly these bytes.
+function prepare_snapshot(
+    source::FITSArtifact, ::Type{T}, shape, original::Vector{UInt8}; check = () -> nothing
+) where {T}
+    check()
+    original_hash = bytes2hex(SHA.sha256(original))
+    return decode_fits(source, T, shape, original; check) do data, image, header,
+            permutation, source_shape, target_shape
         provenance = Dict{String,Any}(
             "source" => source.path,
             "original_sha256" => original_hash,

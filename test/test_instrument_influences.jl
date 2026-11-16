@@ -41,7 +41,7 @@ const IC = PipeWireAORTC.InstrumentConfiguration
         load_influences(input, registration = (; actuator_pitch_pupil_radius = 1.0)) =
             IC._load_influence_functions(input, description, 2, registration)
         @test_throws r"requires loading AdaptiveOpticsSim" load_influences(admitted)
-        @test_throws r"SHA-256" load_influences(
+        @test_throws r"requires loading AdaptiveOpticsSim" load_influences(
             merge(admitted, (; sha256 = repeat("0", 64)))
         )
         @test_throws r"nonidentity pupil registration" load_influences(

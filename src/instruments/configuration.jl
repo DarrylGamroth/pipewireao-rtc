@@ -553,14 +553,6 @@ function load_simulation_source(path::AbstractString)
             expanded.graphs;
             source = true,
         )
-        for binding in values(response_document["bindings"])
-            binding["kind"] == "fits" || continue
-            haskey(binding, "sha256") || throw(
-                ArgumentError(
-                    "authored observations require SHA-256 for each FITS binding"
-                ),
-            )
-        end
         for key in ("bindings", "settings_bindings", "profiles")
             document[key] = response_document[key]
         end
@@ -1100,11 +1092,7 @@ function binding_values(::Val{:fits}, declaration, configured, binding)
         hdu = binding["hdu"],
         axes = binding["axes"],
     )
-    prepared = Artifacts.prepare(source, T, Tuple(binding["shape"]))
-    haskey(binding, "sha256") &&
-        prepared.provenance["original_sha256"] != binding["sha256"] &&
-        throw(ArgumentError("FITS binding SHA-256 mismatch"))
-    return prepared.data
+    return Artifacts.read_fits_data(source, T, binding["shape"])
 end
 binding_values(kind::Val, declaration, configured, binding) =
     throw(ArgumentError("unknown instrument binding kind $kind"))
