@@ -122,8 +122,16 @@ function prepare_external_pupil_ports(
     identity = IC.prescription_identity(declaration, configured)
     check()
     plant = IC.prepare_external_pupil(path; settings, target, chopping)
-    # Establish immutable optical sampling without consuming detector draws.
-    foreach(step_graph!, values(plant.graphs))
+    # Only probe sampling owners that need propagation to report output pitch.
+    for (name, graph) in pairs(plant.graphs)
+        owner = AlgorithmGraphs.prepared_graph_node(
+            graph, getproperty(plant.observations, name).sampling_node
+        )
+        if !isdefined(AlgorithmGraphs, :optical_sampling_requires_step) ||
+                AlgorithmGraphs.optical_sampling_requires_step(owner)
+            step_graph!(graph)
+        end
+    end
     sensors = map(keys(plant.graphs)) do name
         sensor_contract(declaration, configured, plant, name, identity)
     end
