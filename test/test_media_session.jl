@@ -90,6 +90,22 @@ end
     @test Hsm.current(m) === :Ready
 end
 
+@testset "Connect failure prevents admission and retains the failure" begin
+    m = S.Machine(101; clock = zero_clock())
+    sequence!(m, (S.CaptureOwners,))
+    ticket = m.effect
+    @test ticket.effect isa S.ConnectOwners
+    S.submitted!(m, ticket)
+    S.fail!(m, ticket, "first owner rejected Connect")
+    @test m.lifecycle === R.Fault
+    @test m.failure == "first owner rejected Connect"
+    @test !m.warmed
+    S.complete!(m, ticket)
+    S.submit!(m, S.Request(S.Admit(); controller = LAUNCHER))
+    @test only(S.take_replies!(m)).outcome === :Failed
+    @test m.lifecycle === R.Fault
+end
+
 @testset "Lifecycle effect order, source-end proof and unchanged wire IDs" begin
     m = ready()
     S.submit!(m, S.Request(S.Start(); token = 2))

@@ -308,6 +308,56 @@ S.check_job(::Runtime, job::S.Job) =
     job.cancelled ? throw(S.Cancelled()) : nothing
 connect_owner!(runtime::Runtime, job, owner::S.Owner) =
     (push!(runtime.trace, (:connect, owner.handle)); nothing)
+struct FailingConnectRuntime
+    owners::Vector{S.AbstractOwner}
+    sibling_started::Channel{Nothing}
+    sibling_joined::Ref{Bool}
+    failure::ArgumentError
+end
+
+S.check_job(::FailingConnectRuntime, job::S.Job) =
+    job.cancelled ? throw(S.Cancelled()) : nothing
+
+function connect_owner!(runtime::FailingConnectRuntime, job, owner::S.Owner)
+    if owner === first(runtime.owners)
+        timedwait(() -> isready(runtime.sibling_started), 5) === :ok ||
+            error("second owner did not begin Connect")
+        take!(runtime.sibling_started)
+        throw(runtime.failure)
+    end
+    put!(runtime.sibling_started, nothing)
+    try
+        timedwait(() -> job.cancelled, 5) === :ok ||
+            error("second owner did not receive cancellation")
+        S.check_job(runtime, job)
+    finally
+        runtime.sibling_joined[] = true
+    end
+end
+
+@testset "Failed Connect retires an in-flight sibling before returning" begin
+    owners = S.AbstractOwner[
+        owner(11, Bootstrap.PROFILE, 2001, 111),
+        owner(21, Bootstrap.PROFILE, 2002, 121),
+    ]
+    rejection = ArgumentError("first owner rejected Connect")
+    runtime = FailingConnectRuntime(owners, Channel{Nothing}(1), Ref(false), rejection)
+    ticket = S.EffectTicket(
+        UInt64(1), UInt64(1), UInt64(1), UInt32(0), S.ConfiguringOrigin(),
+        Int64(5_000_000_000), S.ConnectOwners(), nothing,
+    )
+    job = S.Job(ticket, false)
+    failure = try
+        S.perform!(runtime, job, S.ConnectOwners())
+        nothing
+    catch error
+        error
+    end
+    @test failure === rejection
+    @test job.cancelled
+    @test runtime.sibling_joined[]
+end
+
 function shutdown_owner!(runtime::Runtime, job, owner::S.Owner)
     push!(runtime.trace, (:shutdown_owner, owner.handle))
     owner.retired = true
