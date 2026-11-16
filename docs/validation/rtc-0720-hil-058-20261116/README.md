@@ -31,3 +31,41 @@ scheduling condition that causes it remains unconfirmed.
 
 Release and registry publication are pending receiver verification. No SPIDERS
 timing was collected on this candidate.
+
+## Teardown and allocation fixes
+
+A repeated receiver selector reproduced SIGSEGV with PipeWireAO_jll 4.0.2.
+GDB stopped in `do_trigger_driver+0x22` at the call through the node
+callbacks. The queued invocation outlived the callback table, which native
+node destruction clears. PipeWireAO 4.0.3 drains the stream's data-loop queue
+after marking it as disconnecting and before destroying the node. The same
+receiver selector passed 12 consecutive runs with the patched library. This
+comparison isolated the crash by omitting allocation assertions.
+
+The first packaged-artifact HIL run reached named calibration teardown and
+hung with PipeWireAO.jl 0.9.2. GDB showed the closing Julia thread in
+`pw_stream_destroy → stream_disconnect → loop_invoke → eventfd read`. The
+callback thread had entered Julia inference and was waiting for that caller in
+`jl_gc_wait_for_the_world`. PipeWireAO.jl 0.9.3 marks both stream teardown
+calls GC-safe. HIL marks its command receiver's native destroy call GC-safe at
+its own FFI boundary. PipeWireAO.jl 0.9.3 rejects a loaded 4.0.2 library.
+
+The old allocation assertions counted process-wide Julia heap traffic during
+concurrent PipeWire activity. Full sampling reported zero allocations on the
+calling Julia task for warmed command polling, stream health polling, idle
+triggering and mixed camera staging. The revised HIL tests assert that
+per-task budget. The checks cover those operations on the calling task.
+
+The candidate with both teardown fixes passed the full HIL suite, including
+3,714 checks and the live receiver and named calibration selectors on
+disposable cores. The standalone export selector passed 18 checks, and the
+lockstep startup cache selector passed 16. The PipeWireAO.jl suite passed with
+a registered 4.0.3+0 artifact, including rejection of a 4.0.2 SDK override.
+All five published JLL archives matched the generated download hashes.
+
+| Component | Change |
+| --- | --- |
+| PipeWireAO 4.0.3 | [Drain the stream loop before disconnect](https://github.com/DarrylGamroth/PipeWireAO/commit/2b40ac4bb) |
+| PipeWireAO_jll 4.0.3+0 | [Linux artifacts](https://github.com/DarrylGamroth/PipeWireAO_jll.jl/releases/tag/PipeWireAO-v4.0.3%2B0) |
+| PipeWireAO.jl 0.9.3 | [GC-safe stream teardown](https://github.com/DarrylGamroth/PipeWireAO.jl/releases/tag/v0.9.3) |
+| AdaptiveOpticsSimPipeWireHIL 0.5.8 | [Task allocation checks, GC-safe receiver retirement and lockstep caching](https://github.com/DarrylGamroth/AdaptiveOpticsSimPipeWireHIL.jl/releases/tag/v0.5.8) |
