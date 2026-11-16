@@ -876,8 +876,42 @@ function main(arguments = ARGS)
     return result
 end
 
+# Compile native session construction without creating a PipeWire context.
+precompile(Session, (String,))
+precompile(main, (Vector{String},))
+
+function precompile_ingress()
+    clock = Clocks.CachedNanoClock(Int64(0))
+    gate = Ingress.Gate(1; clock, owner_pid = 2)
+    Ingress.take_actions!(gate)
+    identity = Identity(3, 4, 5, 6)
+    Ingress.controllers!(gate, [Ingress.Controller(identity, "precompile")])
+    Ingress.state!(gate, RunnerCodec.Configuring)
+    Ingress.tick!(gate)
+    Ingress.take_actions!(gate)
+
+    controller = ControlCodec.ControllerIdentity(identity.global_id, identity.serial, Int64(identity.instance))
+    commands = ((SessionCodec.WarmupCommand(), RunnerCodec.Configuring),
+                (SessionCodec.AdmitCommand(), RunnerCodec.Ready))
+    for (token, (command, lifecycle)) in enumerate(commands)
+        operation = SessionCodec.operation_id(command)
+        request = ControlCodec.RequestHeader(controller, Int64(1), Int64(token), operation, Int64(1_000_000))
+        Ingress.receive!(gate, SessionCodec.encode_request(request, command), Int64(0))
+        ticket = gate.pending
+        ticket === nothing && error("startup ingress workload did not admit its request")
+        header = ControlCodec.ReplyHeader(controller, Int64(1), Int64(token), operation, Int32(0))
+        payload = SPA.Struct(Pod[Pod(SPA.Id(UInt32(lifecycle))), Pod(true)])
+        Ingress.complete!(gate, ticket, ControlCodec.encode_completion(header, payload; endpoint = :lifecycle))
+        Ingress.take_actions!(gate)
+    end
+    Ingress.controller_removed!(gate, identity.global_id, identity.serial)
+    Ingress.take_actions!(gate)
+    return nothing
+end
+
 # Infer the same concrete wrappers as live construction without opening a core.
 @compile_workload begin
+    precompile_ingress()
     clock = Clocks.SystemNanoClock
     core = Core.Compiler.return_type(session_core, Tuple{Context{MainLoop},String,EventQueue})
     registry = Core.Compiler.return_type(Registry, Tuple{core})
