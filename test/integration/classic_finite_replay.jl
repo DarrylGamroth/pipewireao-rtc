@@ -788,8 +788,6 @@ function run_replay(arguments)
     mkpath(output)
     declared = PipeWireAORTC.Common.read_json(joinpath(application, "deployment.conf"))["artifacts"]
     before = Dict(name => digest(joinpath(application, name)) for name in keys(declared))
-    all(name -> before[name] == declared[name], keys(declared)) ||
-        error("application artifact hash mismatch")
     before["deployment.conf"] = digest(joinpath(application, "deployment.conf"))
     @testset "Classic finite $(options.backend) plant / CPU FilterGraphs replay" begin
         system = REVOLTClassicSim.prepare_hil_system(options.plant.settings; target)

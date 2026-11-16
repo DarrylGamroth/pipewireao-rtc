@@ -297,19 +297,16 @@ supplied Manifest into `Manifest.toml`, including when the source Manifest uses
 a Julia-versioned filename. The runtime directory uses `Project.toml` and
 `Manifest.toml`.
 
-The exporter records checksums for runtime inputs outside the package
-environment, including configuration, graphs, calibration data and
-files used by external owners. Markdown documentation, the `profiles/`
-authoring directory, the RTC application and mode authoring files,
-the generated `rtc/application.conf` and composition receipts stay outside
-the checksum catalog. Put owner inputs outside those reserved paths.
-Julia Project and Manifest files are also outside the catalog.
+The exporter records the runtime file inventory in `deployment.conf`. The
+inventory lists configuration, graphs, calibration data and other owner inputs.
+Markdown, the `profiles/` authoring directory, RTC application and mode authoring
+files, the generated `rtc/application.conf`, composition receipts, and the
+Julia Project and Manifest stay outside this inventory.
 
-Installation checks the recorded checksums and validates the registered
-environment before generating the launcher and systemd unit. Use an RTC
-version that supports this checksum scope for export, installation and the
-installed runtime. The updated tools also accept older checksum catalogs.
-Installation stages the systemd unit for explicit startup.
+Use the matching RTC tooling to install and launch a new export. New inventory
+entries have a `null` value. Existing exports with checksum strings still load.
+Installation validates the application schemas and registered Julia environment
+and stages the systemd unit for explicit startup.
 
 ## Git verification for project exports
 
@@ -338,7 +335,7 @@ tracked files using Git's index. The index lets Git check unchanged files
 without reading their contents again. Git verification leaves deployment and
 scientific validation in place. Re-export and reinstall to change the tracked
 payload. Without a sibling repository or a Git executable, the default
-installer uses the export's checksum catalog. An explicit repository and
+installer checks the application contracts and file inventory. An explicit repository and
 commit request requires Git.
 
 ## Installed entrypoints

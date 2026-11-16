@@ -609,7 +609,7 @@ function read_simulator_preparation(options)
     receipt = Common.read_json(path)
     receipt["version"] === 1 &&
     receipt["manifest_sha256"] == Common.sha256_file(joinpath(root, "Manifest.toml")) &&
-    receipt["configuration_sha256"] == artifacts[relpath(options.config_path, root)] &&
+    receipt["configuration_sha256"] == Common.sha256_file(options.config_path) &&
     receipt["prescription_identity"] == options.prescription_identity &&
     receipt["calibration_identity"] == options.calibration_identity &&
     receipt["graph"] == options.plant.graph ||

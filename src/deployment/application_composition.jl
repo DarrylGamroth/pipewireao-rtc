@@ -41,7 +41,7 @@ _composition_override_source(source::AbstractString) =
 """
     sealed_application(path, prefix)
 
-Validate a built application and its runtime checksums. Return its root and deployment declaration.
+Validate a built application and its runtime file inventory. Return its root and deployment declaration.
 """
 function sealed_application(path, prefix)
     root = checked_path(path)
@@ -50,7 +50,7 @@ function sealed_application(path, prefix)
     all(
         path -> !deployment_input(path) || haskey(spec["artifacts"], path),
         application_files(root),
-    ) || throw(ArgumentError("composition input is missing a runtime file checksum"))
+    ) || throw(ArgumentError("composition input is missing a runtime file from its inventory"))
     return root, spec
 end
 
@@ -238,7 +238,7 @@ core and session authority. `roles` maps every component owner to a distinct rol
 `links` declares cross-application links. Nonempty `overrides` explicitly maps
 base-relative graph, parameter and configuration assets to prepared files. No
 process is launched, and the component application remains unchanged beneath
-`components/namespace`. The output checksums cover the resulting runtime inputs.
+`components/namespace`. The output inventory lists the resulting runtime inputs.
 Optional `owner_arguments` maps existing base owner roles to complete, explicitly
 prepared argument vectors; normal bootstrap validation also applies to replacements.
 """

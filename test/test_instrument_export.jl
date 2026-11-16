@@ -379,8 +379,7 @@ end
         end
         C.write_json(joinpath(directory, "deployment.conf"), spec)
         E.seal!(directory)
-        @test C.read_json(joinpath(directory, "deployment.conf"))["artifacts"][spec["session"]] ==
-            C.sha256_file(joinpath(directory, spec["session"]))
+        @test C.read_json(joinpath(directory, "deployment.conf"))["artifacts"][spec["session"]] === nothing
 
         # A later invalid core reference must leave both authored files intact.
         for invalid in (
@@ -510,7 +509,7 @@ end
     @test prepared["analysis"][1]["cpus"] == [3]
 end
 
-@testset "deployment input checksums and contained paths" begin
+@testset "deployment inventory and contained paths" begin
     mktempdir() do directory
         source = joinpath(directory, "source")
         mkpath(joinpath(source, "nested"))
@@ -528,11 +527,11 @@ end
         E.seal!(source)
         sealed = C.read_json(joinpath(source, "deployment.conf"))
         @test Set(keys(sealed["artifacts"])) == Set(["nested/data.json"])
-        @test sealed["artifacts"]["nested/data.json"] ==
-            C.sha256_file(joinpath(source, "nested", "data.json"))
+        @test sealed["artifacts"]["nested/data.json"] === nothing
         write(joinpath(source, "nested", "data.json"), "{\"data\":2}\n")
-        @test sealed["artifacts"]["nested/data.json"] !=
-            C.sha256_file(joinpath(source, "nested", "data.json"))
+        @test D.validate_deployment_artifacts(
+            sealed["artifacts"], joinpath(source, "deployment.conf")
+        ) === nothing
         @test_throws ArgumentError E.prepare(
             source, joinpath(source, "output"); profile = export_profile()
         )

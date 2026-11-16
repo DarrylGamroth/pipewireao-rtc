@@ -41,7 +41,14 @@ const Deployment = PipeWireAORTC.DeploymentConfiguration
         run(`touch -r $asset $timestamp`)
         write(asset, UInt8[0x01, 0x02, 0x04])
         run(`touch -r $timestamp $asset`)
-        @test_throws ArgumentError Export.verified_paths(install)
+        @test_throws ArgumentError Deployment.validate_deployment_artifacts(
+            Dict("asset.fits" => nothing), joinpath(install, "deployment.conf")
+        )
+        withenv("PATH" => root) do
+            @test Deployment.validate_deployment_artifacts(
+                Dict("asset.fits" => repeat("0", 64)), joinpath(install, "deployment.conf")
+            ) === nothing
+        end
         tampered = mkdir(joinpath(root, "tampered"))
         cp(asset, joinpath(tampered, "asset.fits"))
         cp(joinpath(source, ".gitattributes"), joinpath(tampered, ".gitattributes"))

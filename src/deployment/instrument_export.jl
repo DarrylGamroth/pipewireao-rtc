@@ -153,14 +153,14 @@ end
 """
     seal!(application)
 
-Record SHA-256 checksums for runtime files outside the Julia environment.
+Record the runtime files outside the Julia environment.
 """
 function seal!(application::AbstractString)
     root = checked_path(application)
     deployment = joinpath(root, "deployment.conf")
     spec = Common.read_json(deployment)
     spec["artifacts"] = Dict(
-        path => Common.sha256_file(joinpath(root, path)) for
+        path => nothing for
         path in application_files(root) if deployment_input(path)
     )
     Common.write_json(deployment, spec; atomic = true)
@@ -520,11 +520,11 @@ end
     prepare(source, destination; profile, manifest=nothing, git_export=false,
             julia=Base.julia_cmd().exec[1], prefix=get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao"))
 
-Copy an instrument into a fresh application and record runtime input checksums.
+Copy an instrument into a fresh application and record the runtime file inventory.
 
 Supply a registered `manifest` to prepare an installable application.
 Omit it for offline preparation. The installer checks exported runtime inputs
-against the deployment catalog. Set `git_export=true` to record a sibling
+against the deployment inventory. Set `git_export=true` to record a sibling
 Git repository for the completed export when Git is available.
 """
 function prepare(

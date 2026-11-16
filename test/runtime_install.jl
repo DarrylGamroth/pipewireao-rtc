@@ -182,26 +182,19 @@ end
         ) == source
         @test file_hashes(authored) == authored_before
         @test TOML.parsefile(joinpath(source, "Project.toml")) == project
-        checksums = D.profile(joinpath(source, "deployment.conf"), prefix)["artifacts"]
+        inventory = D.profile(joinpath(source, "deployment.conf"), prefix)["artifacts"]
         @test all(
-            !haskey(checksums, name) for name in
+            !haskey(inventory, name) for name in
             ("Project.toml", "Manifest.toml", "README.md", "rtc/application.yaml")
         )
         @test all(
-            haskey(checksums, name) for name in
+            haskey(inventory, name) for name in
             ("session.conf", "shared-runtime/core.conf.in", "instrument.json")
         )
         session = joinpath(source, "session.conf")
-        session_bytes = read(session)
         open(session, "a") do io
             write(io, "\n# changed after export\n")
         end
-        invalid = joinpath(directory, "modified input")
-        @test_throws D.DeploymentError P.SessionInstall.install((;
-            package = source, destination = invalid, pipewire_prefix = prefix
-        ))
-        @test !ispath(invalid)
-        write(session, session_bytes)
         for name in ("Project.toml", "Manifest.toml", "README.md")
             open(joinpath(source, name), "a") do io
                 write(io, "\n# additional comment\n")
@@ -216,11 +209,9 @@ end
         @test !ispath(joinpath(destination, "julia"))
         @test !ispath(joinpath(destination, "test"))
         @test D.profile(joinpath(destination, "deployment.conf"), prefix)["artifacts"] ==
-            checksums
-        @test all(
-            P.Common.sha256_file(joinpath(destination, name)) == hash for
-            (name, hash) in checksums
-        )
+            inventory
+        @test all(isnothing, values(inventory))
+        @test read(joinpath(destination, "session.conf")) == read(session)
         launcher = P.Common.run_checked(
             [
                 joinpath(destination, "bin/pipewireao-rtc-session"),

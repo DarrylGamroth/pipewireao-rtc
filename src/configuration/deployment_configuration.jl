@@ -1247,15 +1247,6 @@ function validate_client_roles(clients::AbstractDict, client_roles)
     return nothing
 end
 
-validate_artifact_hash(sha, asset, name) = fail("deployment artifact hash mismatch: $name")
-function validate_artifact_hash(sha::String, asset, name)
-    require(
-        occursin(r"^[0-9a-f]{64}$", sha) && digest(asset) == sha,
-        "deployment artifact hash mismatch: $name",
-    )
-    return nothing
-end
-
 node_owners(mapping) = fail("node-owners must map exact node names to owner roles")
 node_owners(mapping::AbstractDict) =
     Dict{String,String}(node_owner_pair(key, role) for (key, role) in mapping)
@@ -1478,20 +1469,20 @@ required_thread_cpu_set(cpus::AbstractVector) = Placement.cpu_set(cpus)
 required_thread_cpu_set(cpus) = fail("required thread CPUs must be a list")
 
 validate_deployment_artifacts(artifacts, path) =
-    fail("deployment artifacts must be a path/hash mapping")
+    fail("deployment artifacts must be a path mapping")
 function validate_deployment_artifacts(artifacts::AbstractDict, path)
     package = dirname(path)
     verified = GitExport.verified_paths(package)
-    for (name, sha) in artifacts
-        asset = relative_asset(package, name)
-        if verified === nothing
-            validate_artifact_hash(sha, asset, name)
-        else
-            require(
-                name in verified && sha isa String && occursin(r"^[0-9a-f]{64}$", sha),
-                "invalid or untracked deployment artifact: $name",
-            )
-        end
+    for (name, entry) in artifacts
+        relative_asset(package, name)
+        require(
+            entry === nothing || entry isa String && occursin(r"^[0-9a-f]{64}$", entry),
+            "invalid deployment artifact entry: $name",
+        )
+        require(
+            verified === nothing || name in verified,
+            "untracked deployment artifact: $name",
+        )
     end
     return nothing
 end
