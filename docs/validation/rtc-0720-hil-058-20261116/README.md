@@ -110,3 +110,54 @@ allocation assertions enabled, 30 with debug logging and 30 without. The
 full 4.0.3+0 suite passed on retry. The final full 4.0.4+0 run passed all
 3,714 HIL assertions, including the private-core teardown selectors. The
 cause of the earlier command delivery timeout remains unconfirmed.
+
+## SPIDERS fitted-dual CUDA calibration
+
+A fresh Julia 1.13.3 process used the registered cohort above, Proper 0.4.2,
+and the RTX 3080. The run reused the prior built application, compiled
+optical model, and instrument tools from `ff07f84`. It used
+`calibration/optical-dual.yaml` and `calibration/materialize-dual.yaml`
+for both the upstream and optical inputs. Their hashes match the
+[CPU reference](../spiders-optical-cpu-20261113/README.md). The timed
+launcher added synchronized wall and Julia host compilation counters around
+graph preparation and publication. Host compilation timing started after
+imports, as in the previous CUDA run. Both runs used CUDA 6.5.1 and
+KernelAbstractions 0.10.7. The previous run used RTC 0.7.19, AOS 0.3.22, HIL
+0.5.1, Proper 0.4.1, FilterGraphAlgorithms 0.12.2, FilterGraphs 0.10.2,
+FilterGraphPipeWire 0.5.3 and PipeWireAO.jl 0.9.2 with JLL 4.0.2+0.
+
+| Measurement | Previous CUDA | Registered cohort |
+| --- | ---: | ---: |
+| Campaign wall | 871.215 s | 324.151 s |
+| Package and launcher load wall | 52.553 s | 5.026 s |
+| Campaign wall after imports | 818.661 s | 319.125 s |
+| Host compilation after imports | 619.710 s | 159.144 s |
+| Graph preparation wall / host compilation | — | 86.542 s / 60.175 s |
+| Publication wall / host compilation | — | 12.992 s / 12.599 s |
+| Wall for all 89 synchronized observations | 12.025 s | 3.123 s |
+| Host compilation within observations | 3.632 s | 0.814 s |
+| Observation median after the first two | 87.4 ms | 25.4 ms |
+| Observation p95 after the first two | 90.4 ms | 27.3 ms |
+
+Campaign wall after imports fell 61.0% and measured host compilation fell
+74.3%. The new process reused package caches, so package-load times are
+reported separately. The timing compares two cohorts with several changed
+dependencies. Julia's host counter does not break out device compilation,
+synchronization or compute. The service reported 5.2 GiB peak memory and no
+swap. This was an offline calibration run with the upstream fast loop held.
+
+Both branches passed and published deployable bundles. An independent read
+validated the two reports, all 60 artifact entries, and the five shared
+projection hashes. Mode counts, retained ranks, parameter names and
+discrete FITS selections matched the previous CUDA run. The largest relative
+norm difference was 0.301% in the LLOWFS half-poke interaction matrix. The
+LLOWFS and SCC full/half derivative errors were 2.177% and 0.00591%,
+respectively. The three held-out mixtures passed with a maximum relative
+reconstruction error of 1.259% and a maximum corrected-to-uncorrected
+pupil RMS ratio of 0.01271.
+
+| Product | SHA-256 |
+| --- | --- |
+| `calibration.yaml` | `ed9da24e442455436de7f5a054db09d7ae924dd43163e57c91d5c45355995a26` |
+| `llowfs/result.yaml` | `fc6c7bc7d092659bc666dded6f0243bdb3bd8a8620021f0e5a21a39c3bb68023` |
+| `scc/result.yaml` | `4e6cf469d64ad3d9c107ea0f2ae4080de22ec9eb304e1c8e324a48ff2ec3058f` |
