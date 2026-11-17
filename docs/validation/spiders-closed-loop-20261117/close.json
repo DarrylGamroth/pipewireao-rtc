@@ -1,0 +1,1 @@
+{"authority":"rtc_session","error":null,"id":"207","ok":true,"owner_pid":1392724,"result":{"active_adoption_observed":true,"graph":"spiders-controller","outcome":"active","property_generations":[{"active":1,"node":"correction","requested":1}]},"session_id":"03ac0e2c-d825-4da1-be8a-c11f072a111f","state":"Running","version":1}
