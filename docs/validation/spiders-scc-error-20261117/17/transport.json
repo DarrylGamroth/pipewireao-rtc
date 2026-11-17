@@ -1,0 +1,17 @@
+{
+  "admitted": true,
+  "core_pid": 1804699,
+  "hil_pid": 1804758,
+  "hil_gpu_memory_mib": 2528,
+  "active_adoption_observed": true,
+  "correction_generations": [
+    {
+      "active": 1,
+      "node": "correction",
+      "requested": 1
+    }
+  ],
+  "quit_acknowledged": true,
+  "cleanup_complete": true,
+  "private_socket_removed": true
+}
