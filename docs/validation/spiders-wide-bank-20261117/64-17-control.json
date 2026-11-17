@@ -1,0 +1,23 @@
+{
+  "close": {
+    "active_adoption_observed": true,
+    "graph": "spiders-controller",
+    "outcome": "active",
+    "property_generations": [
+      {
+        "active": 1,
+        "node": "correction",
+        "requested": 1
+      }
+    ]
+  },
+  "demand": {
+    "open_peak": 0.0,
+    "closed_peak": 0.00146648
+  },
+  "quit": {
+    "accepted": true,
+    "attempted": true
+  },
+  "cleanup_complete": true
+}
