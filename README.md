@@ -267,6 +267,18 @@ julia --startup-file=no --project=. session_cli.jl control --session UUID -- pro
 julia --startup-file=no --project=. session_cli.jl control --session UUID -- quit
 ```
 
+Restart the simulation in its existing session with the installed launcher:
+
+```sh
+./bin/pipewireao-rtc-session restart --session UUID
+```
+
+Restart holds the source and controller graphs, resets them to Ready, then
+starts the new run. It sends all three commands over the verified session
+connection. The JSON report includes the native replies and elapsed times
+to the reset Ready state and to Running, in nanoseconds. A failed or unknown
+completion stops the sequence.
+
 Gain updates and sparse ndarray parameter publication use the same endpoint.
 Submission and graph adoption are separate observations. Clients never
 reconnect or repeat a request after an unknown outcome. Normal Quit requests
