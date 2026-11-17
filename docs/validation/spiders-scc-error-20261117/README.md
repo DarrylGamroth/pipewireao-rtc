@@ -7,6 +7,40 @@ has its own fitted-dual application and private PipeWire core. The detector
 model has photon noise disabled. SCC uses gain −0.05 and pole 1 around the
 same optimized DM bias. LLOWFS stays open.
 
+## Operating point
+
+The experimental DM shape was obtained before the live run. The offline
+CUDA search tried positive and negative moves along 64 modal directions
+and kept moves that reduced the simulated unfringed mask mean. The run
+applied the resulting fixed shape in the shared DM graph. The chopped
+reference and response were calibrated around that shape. LLOWFS was
+open. The results therefore measure SCC tracking about a supplied dark
+hole. They do not establish that the SCC loop can form the hole from
+the instrument's ordinary DM flat.
+The offline search and static comparison are recorded in commit `edbc795`.
+
+For camera-driven acquisition, the SCC target and interaction matrix
+need to describe the same camera measurement. The earlier SPIDERS
+generator `sccservice/scripts/generate-scc-im.jl` applies a spot mask to
+each measured probe response before inversion and writes a zero
+reference image. The live `choppedframesortservice` publishes a rolling
+fringed-minus-unfringed image. The live `sccservice` subtracts its
+configured reference and reconstructs the result. The current fitted
+RTC graph instead binds the measured chopped image at its calibration
+flat as the target.
+
+An artifact-only check applied each fitted reconstructor to its bound
+reference vector. In the 10-coordinate instrument bundle, the norm of
+`R * reference` was 7.63 × 10⁻⁹ in the calibrated modal coordinates.
+In the experimental 66-coordinate bundle it was 3.31 × 10⁻⁸. This is
+the modal offset introduced at the respective calibration flat by
+changing just the reference from its bound image to zero. A live
+test of the earlier zero-reference convention needs its matched
+measurement and response.
+
+The proposed gain sweep at the supplied DM shape was stopped before
+starting a private core. It produced no gain measurements or images.
+
 ## Result
 
 Closing SCC removed most of the persistent error in the controller's active
