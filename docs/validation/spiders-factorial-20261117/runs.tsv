@@ -1,0 +1,10 @@
+# Generated from the native readiness, adoption, device, and stop receipts.
+seed	bank	inverse	core_pid	hil_pid	gpu_mib	admitted	requested_generation	active_generation	biased_open_max_dm_delta	closed_max_dm_delta	quit_accepted	cleanup_complete	socket_removed
+17	64	tsvd	1581205	1581287	2496	true	1	1	0.0	0.0023513325	true	true	true
+17	64	legacy	1611985	1612050	2528	true	1	1	0.0	0.0021453798	true	true	true
+17	112	tsvd	1651629	1651671	2496	true	1	1	0.0	0.0039604683	true	true	true
+17	112	legacy	1705471	1705627	2528	true	1	1	0.0	0.0032428629	true	true	true
+73	64	tsvd	1623088	1623911	2496	true	1	1	0.0	0.0025577769	true	true	true
+73	64	legacy	1653851	1653881	2496	true	1	1	0.0	0.0023459233	true	true	true
+73	112	tsvd	1703275	1703655	2496	true	1	1	0.0	0.0036117542	true	true	true
+73	112	legacy	1723997	1724024	2496	true	1	1	0.0	0.0024243668	true	true	true

@@ -1,0 +1,54 @@
+# Host setup for the CUDA private-core comparison.
+simulation:
+  backend: cuda
+  device: 0
+scheduling:
+  processes:
+    core:
+      cpus:
+        - 2
+        - 3
+      leader-cpu: 3
+      data-loops:
+        rtc-data-loop:
+          - 2
+        telemetry-loop:
+          - 3
+    rtc:
+      cpus:
+        - 2
+        - 3
+      leader-cpu: 3
+      data-loops:
+        rtc-data-loop:
+          - 2
+    session:
+      cpus:
+        - 2
+        - 3
+      leader-cpu: 3
+      data-loops:
+        rtc-data-loop:
+          - 2
+    simulator:
+      cpus:
+        - 6
+        - 7
+      leader-cpu: 6
+      workers:
+        pipewire:
+          - 7
+    spiders-scc:
+      cpus:
+        - 8
+        - 9
+      leader-cpu: 9
+      data-loops:
+        julia-data-loop:
+          - 8
+      workers:
+        julia:
+          - 9
+          - 8
+runtime-backends:
+  - cuda

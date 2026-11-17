@@ -1,0 +1,6 @@
+e7f885b0912509c402630419715557134a942d5a61ab7facbb28d8d75c44bfba  64-source/generated/dual-calibration/scc/artifacts/scc-pixel-mask.fits
+c02dc13e23fcf800a6ece69cc2e5b72b67977fb89ad7852ef27dbc1b3a2f937d  64-source/generated/dual-calibration/scc/artifacts/scc-reference-difference.fits
+820afdc413a46a51ff2ba8bd9120d3deaaa6a8f1b8118355d7d5321376e82eeb  64-source/calibration/system-flat.fits
+e7f885b0912509c402630419715557134a942d5a61ab7facbb28d8d75c44bfba  112-source/generated/dual-calibration/scc/artifacts/scc-pixel-mask.fits
+c02dc13e23fcf800a6ece69cc2e5b72b67977fb89ad7852ef27dbc1b3a2f937d  112-source/generated/dual-calibration/scc/artifacts/scc-reference-difference.fits
+820afdc413a46a51ff2ba8bd9120d3deaaa6a8f1b8118355d7d5321376e82eeb  112-source/calibration/system-flat.fits
