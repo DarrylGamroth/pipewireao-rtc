@@ -1,0 +1,216 @@
+spatial_frequencies:
+  -
+    - 2.0
+    - 0.0
+  -
+    - 1.8477590650225735
+    - 0.7653668647301796
+  -
+    - 1.4142135623730951
+    - 1.414213562373095
+  -
+    - 0.7653668647301796
+    - 1.8477590650225735
+  -
+    - 0.0
+    - 2.0
+  -
+    - -0.7653668647301796
+    - 1.8477590650225735
+  -
+    - -1.4142135623730951
+    - 1.414213562373095
+  -
+    - -1.8477590650225735
+    - 0.7653668647301796
+  -
+    - 3.0
+    - 0.0
+  -
+    - 2.77163859753386
+    - 1.1480502970952693
+  -
+    - 2.121320343559643
+    - 2.1213203435596424
+  -
+    - 1.1480502970952693
+    - 2.77163859753386
+  -
+    - 0.0
+    - 3.0
+  -
+    - -1.1480502970952693
+    - 2.77163859753386
+  -
+    - -2.121320343559643
+    - 2.1213203435596424
+  -
+    - -2.77163859753386
+    - 1.1480502970952693
+  -
+    - 4.0
+    - 0.0
+  -
+    - 3.695518130045147
+    - 1.5307337294603591
+  -
+    - 2.8284271247461903
+    - 2.82842712474619
+  -
+    - 1.5307337294603591
+    - 3.695518130045147
+  -
+    - 0.0
+    - 4.0
+  -
+    - -1.5307337294603591
+    - 3.695518130045147
+  -
+    - -2.8284271247461903
+    - 2.82842712474619
+  -
+    - -3.695518130045147
+    - 1.5307337294603591
+  -
+    - 5.0
+    - 0.0
+  -
+    - 4.619397662556434
+    - 1.913417161825449
+  -
+    - 3.5355339059327378
+    - 3.5355339059327373
+  -
+    - 1.913417161825449
+    - 4.619397662556434
+  -
+    - 0.0
+    - 5.0
+  -
+    - -1.913417161825449
+    - 4.619397662556434
+  -
+    - -3.5355339059327378
+    - 3.5355339059327373
+  -
+    - -4.619397662556434
+    - 1.913417161825449
+reconstruction_tolerance: 0.05
+optical_simulation: "generated/fitted-exposure/definition.yaml"
+mirror: "dm"
+measurements:
+  llowfs:
+    kind: "center-of-gravity"
+  scc:
+    kind: "chopped-pixel-residual"
+version: 1
+branches:
+  llowfs: "llowfs"
+  scc: "scc"
+poke_m: 5.0e-9
+upstream_simulation: "generated/fitted-exposure/definition.yaml"
+tsvd_rtol: 0.0001
+tip_tilt: true
+pixels:
+  branches:
+    llowfs:
+      kind: "rectangle"
+      columns:
+        - 1
+        - 160
+      rows:
+        - 1
+        - 256
+    scc:
+      binding: "fitted_scc_pixel_mask"
+  kind: "fits"
+command_completion:
+  binding: "dm_completion"
+  controlled: "dm_direct"
+controlled_actuators:
+  binding:
+    binding: "dm_healthy"
+  kind: "fits"
+measurement_nulling:
+  - "llowfs"
+kind: "relative-intensity-optical"
+mirror_response:
+  graph: "dm_calibration"
+  pupil_amplitude: "pupil_amplitude"
+  input: "dm_opd"
+  coordinates: "dm_coordinates"
+  support:
+    binding: "dm_support"
+  normalization_probe: 0.005
+  command_units: "native command"
+  coordinate_radius: 0.9847615622370303
+derivative_tolerance: 0.05
+branch_modes:
+  llowfs:
+    - 1
+    - 2
+  scc:
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+    - 64
+    - 65
+    - 66

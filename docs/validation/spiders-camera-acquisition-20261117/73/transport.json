@@ -1,0 +1,52 @@
+{
+  "admitted": true,
+  "core_pid": 1881873,
+  "hil_pid": 1881939,
+  "hil_gpu_memory_mib": 2496,
+  "initial_flat": {
+    "demand_observed": false,
+    "peak": null
+  },
+  "reset_flat": {
+    "demand_observed": false,
+    "peak": null
+  },
+  "llowfs_adoption": [
+    {
+      "active": 1,
+      "node": "llowfs-correction",
+      "requested": 1
+    }
+  ],
+  "llowfs_open_adoption": [
+    {
+      "active": 2,
+      "node": "llowfs-correction",
+      "requested": 2
+    }
+  ],
+  "scc_and_llowfs_adoption": [
+    {
+      "active": 1,
+      "node": "correction",
+      "requested": 1
+    },
+    {
+      "active": 3,
+      "node": "llowfs-correction",
+      "requested": 3
+    }
+  ],
+  "restart_elapsed_ns": 1940480881,
+  "command_check_error": "AssertionError: closed.peak_correction > 0.0f0",
+  "quit_acknowledged": true,
+  "cleanup_complete": true,
+  "unit_files_removed": true,
+  "private_socket_removed": true,
+  "command_receiver_retry": {
+    "error": "pw_core failed: no more output formats (-22)",
+    "quit_acknowledged": true,
+    "cleanup_complete": true,
+    "unit_files_removed": true
+  }
+}

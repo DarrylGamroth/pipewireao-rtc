@@ -179,7 +179,7 @@ function collect_epoch!(wire, label, generation, mask, command, basis, images, b
     error("Timed out collecting $label exposures (camera=$last_image, pixels=$last_pixel, modes=$last_mode)")
 end
 
-function write_evidence(out, biased, closed, images, mask, basis)
+function write_evidence(out, biased, closed, images, mask, basis; require_fixed_baseline=true)
     common = intersect(keys(biased.camera), keys(closed.camera), keys(biased.pixels),
         keys(closed.pixels), keys(biased.modes), keys(closed.modes))
     indices = sort!(collect(common))
@@ -214,7 +214,8 @@ function write_evidence(out, biased, closed, images, mask, basis)
         Float64.(mask); dims=3)
     RTC.InstrumentCalibration.write_fits(joinpath(out, "unfringed-means.fits"), normalized;
         units="electron")
-    @assert biased.peak_correction <= 1f-6 && closed.peak_correction > 0f0
+    require_fixed_baseline && (@assert biased.peak_correction <= 1f-6)
+    @assert closed.peak_correction > 0f0
     RTC.Common.write_json(joinpath(out, "measurement.json"),
         (; biased_open_peak=biased.peak_correction, closed_peak=closed.peak_correction,
             matched_exposures=length(indices), image_sequences=images.sequences,
@@ -227,19 +228,11 @@ function stream(name, schema, shape; metadata=MEASUREMENT_METADATA)
         buffers=3, format=NdArrayFormat(NdArray.F32_LE, shape; layout=NdArray.ROW_MAJOR), metadata)
 end
 
-function verify(root, runtime, out, command_path)
+function with_observer(f, root, runtime, out, command_path)
     rt = RTC.SessionRuntime
     handle = rt.attach(runtime)
     held = rt.ready(handle)
     control(words...) = rt.control!(handle, RTC.RunnerCommands.parse(collect(words)))
-    function closure()
-        response = control("properties", GRAPH)
-        @assert response["ok"]
-        props = response["result"]["properties"]
-        @assert props["pipewireao-recovery:version"]["value"] == 2
-        @assert props["llowfs-correction:closed"]["value"] === false
-        return props["correction:closed"]["value"]
-    end
     try
         mask = read_asset(root, REGION) .!= 0
         @assert size(mask) == (221, 221) && count(mask) == 12703
@@ -270,24 +263,11 @@ function verify(root, runtime, out, command_path)
                 end
                 ready = rt.running!(handle)
                 RTC.Common.write_json(joinpath(out, "ready.json"), ready; atomic=true)
-                @assert closure() === false
                 gpu = read(`nvidia-smi --query-compute-apps=pid,used_memory --format=csv`, String)
                 pid = ready["processes"]["simulator"]["pid"]
                 @assert any(startswith("$pid,"), split(gpu, '\n'))
                 write(joinpath(out, "gpu.csv"), gpu)
-                images = Images(size(mask))
-                biased = collect_epoch!(wire, "open", 1, mask, command, basis, images, Dict{Int,CameraSample}())
-                write(joinpath(out, "open-complete"), string(length(biased.camera)))
-                launcher = joinpath(root, "bin", "pipewireao-rtc-session")
-                session = ready["ready"]["session_id"]
-                restart = read(`$launcher restart --session $session`, String)
-                write(joinpath(out, "restart.json"), restart)
-                result = control("property", GRAPH, "correction:closed", "bool", "true")
-                RTC.Common.write_json(joinpath(out, "close.json"), result; atomic=true)
-                @assert result["ok"] && closure() === true
-                closed = collect_epoch!(wire, "closed", 2, mask, command, basis, images, biased.camera)
-                @assert closure() === true
-                write_evidence(out, biased, closed, images, mask, basis)
+                f(wire, control, mask, command, basis, ready)
             finally
                 HIL.with_array_stream(wire, 1) do _
                     foreach(close, reverse(links))
@@ -302,4 +282,39 @@ function verify(root, runtime, out, command_path)
     end
 end
 
-verify(ARGS...)
+function graph_properties(control)
+    response = control("properties", GRAPH)
+    @assert response["ok"]
+    props = response["result"]["properties"]
+    @assert props["pipewireao-recovery:version"]["value"] == 2
+    return props
+end
+
+function verify(root, runtime, out, command_path)
+    with_observer(root, runtime, out, command_path) do wire, control, mask, command, basis, ready
+        function closure()
+            props = graph_properties(control)
+            @assert props["llowfs-correction:closed"]["value"] === false
+            return props["correction:closed"]["value"]
+        end
+        @assert closure() === false
+        images = Images(size(mask))
+        biased = collect_epoch!(wire, "open", 1, mask, command, basis, images, Dict{Int,CameraSample}())
+        write(joinpath(out, "open-complete"), string(length(biased.camera)))
+        launcher = joinpath(root, "bin", "pipewireao-rtc-session")
+        session = ready["ready"]["session_id"]
+        restart = read(`$launcher restart --session $session`, String)
+        write(joinpath(out, "restart.json"), restart)
+        result = control("property", GRAPH, "correction:closed", "bool", "true")
+        RTC.Common.write_json(joinpath(out, "close.json"), result; atomic=true)
+        @assert result["ok"] && closure() === true
+        closed = collect_epoch!(wire, "closed", 2, mask, command, basis, images, biased.camera)
+        @assert closure() === true
+        write_evidence(out, biased, closed, images, mask, basis)
+
+    end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    verify(ARGS...)
+end

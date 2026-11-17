@@ -78,33 +78,44 @@ function report_window(label, matched, coordinates, window, region_pixels)
     return nothing
 end
 
-function summarize(root, seed)
+function summarize(root, seed; replay_biased_baseline=true, require_command_receipt=true)
     println("\nSeed ", seed)
     path = joinpath(root, string(seed))
-    receipt = C.read_json(joinpath(path, "measurement.json"))
     _, matched = read_paired(joinpath(path, "paired.csv"))
     coordinates = fits_cube(joinpath(path, "coordinate-means.fits"))
-    @assert size(matched, 2) == receipt["matched_exposures"]
-    @assert size(coordinates) == (receipt["controllable_rank"], 5, 4)
-    check_baseline(seed, matched)
-    report_window("Full late window", matched, coordinates, 1, receipt["region_pixels"])
+    images = fits_cube(joinpath(path, "unfringed-means.fits"))
+    region = view(images, :, :, 3) .!= 0
+    region_pixels = count(region)
+    @assert allunique(view(matched, 1, :))
+    if require_command_receipt
+        receipt = C.read_json(joinpath(path, "measurement.json"))
+        @assert size(matched, 2) == receipt["matched_exposures"]
+        @assert size(coordinates) == (receipt["controllable_rank"], 5, 4)
+        @assert region_pixels == receipt["region_pixels"]
+        image_label = "Image means over $(length(receipt["image_sequences"])) matched unfringed exposures"
+    else
+        @assert size(matched, 2) >= 0.95 * 4 * WIDTH
+        @assert size(coordinates) == (64, 5, 4) && region_pixels == 12703
+        image_label = "Mean images from the matched unfringed exposures"
+    end
+    replay_biased_baseline && check_baseline(seed, matched)
+    report_window("Full late window", matched, coordinates, 1, region_pixels)
     start = 2049
     for window in 2:5
         indices = findall(index -> start <= index < start + WIDTH, view(matched, 1, :))
         @assert length(indices) >= 0.9 * WIDTH
         report_window("Sequences $(start)–$(start + WIDTH - 1)", view(matched, :, indices),
-            coordinates, window, receipt["region_pixels"])
+            coordinates, window, region_pixels)
         start += WIDTH
     end
-    images = fits_cube(joinpath(path, "unfringed-means.fits"))
-    region = view(images, :, :, 3) .!= 0
-    @assert count(region) == receipt["region_pixels"]
-    println("Image means over ", length(receipt["image_sequences"]), " matched unfringed exposures")
+    println(image_label)
     image_mean(index) = mean(view(images, :, :, index)[region]) / PEAK_ELECTRONS
     compare("Image mean contrast", (image_mean(1), image_mean(2)))
     return nothing
 end
 
-for seed in (17, 73)
-    summarize(only(ARGS), seed)
+if abspath(PROGRAM_FILE) == @__FILE__
+    for seed in (17, 73)
+        summarize(only(ARGS), seed)
+    end
 end
