@@ -67,9 +67,7 @@ function _validate_optical_planes(value)
     return nothing
 end
 
-function _validate_optical_asset(
-    value, directory, label; prescription = false, check_hash = true
-)
+function _validate_optical_asset(value, directory, label; prescription = false)
     required = prescription ? ("format", "path", "sha256") : ("path", "sha256")
     allowed = prescription ? (required..., "catalog_archive") : required
     asset = _declaration_fields(value, allowed, required, label)
@@ -86,10 +84,7 @@ function _validate_optical_asset(
         throw(ArgumentError("$label sha256 must be a lowercase SHA-256 hash"))
     isfile(joinpath(directory, path)) ||
         throw(ArgumentError("$label must reference an existing file"))
-    file = D.relative_asset(directory, path)
-    check_hash &&
-        Common.sha256_file(file) != hash &&
-        throw(ArgumentError("$label SHA-256 mismatch"))
+    D.relative_asset(directory, path)
     return nothing
 end
 

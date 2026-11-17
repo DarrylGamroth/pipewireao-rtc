@@ -29,12 +29,16 @@ Base.include(@__MODULE__, joinpath(@__DIR__, "physical_offset_inputs_documents.j
             c in values(prepared.inputs.receiver.branches)
         )
         @test !haskey(prepared.inputs.declaration, "reference")
+        legacy = deepcopy(document)
+        legacy["projection"]["sha256"] = repeat("0", 64)
+        C.write_yaml(path, legacy)
+        @test prepare().inputs.names == (:llowfs, :scc)
         for change in (
             d -> (d["version"] = 1),
             d -> (d["reference"] = deepcopy(d["inverse"])),
             d -> (d["command_order"] = "other"),
             d -> (d["calibration_identity"] = "other"),
-            d -> (d["projection"]["sha256"] = repeat("0", 64)),
+            d -> (d["projection"]["sha256"] = "invalid"),
             d -> (d["branches"]["scc"]["modes"] = [1]),
             d -> (d["branches"]["scc"]["node_name"] = "receive-llowfs"),
             d -> (d["branches"]["scc"]["acquisition_version"] = true),

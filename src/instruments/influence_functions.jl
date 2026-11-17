@@ -145,7 +145,7 @@ Snapshot a supplied FITS calibration and prepare dimensionless, physical-command
 ordered response columns. FITS logical spatial samples refer to the intrinsic
 mirror source grid. Bilinear interpolation covers the entire square pupil; no
 extrapolation, aperture masking, normalization, or reflection factor is added.
-The required SHA-256 identifies the original snapshot; `type` selects Float32 or
+The declaration retains the source identity. The `type` selects Float32 or
 Float64 decoding before interpolation, and `shape` is in logical axis order.
 The separable source-grid interpolation supports identity pupil registration
 only; other registrations require a general two-dimensional resampler.
@@ -169,11 +169,8 @@ function _load_influence_functions(
     )
     _require_pupil_geometry(description, registration)
     source = Artifacts.FITSArtifact(spec.path; hdu = metadata.hdu, axes = metadata.axes)
-    snapshot = Artifacts.snapshot(source.path; check = () -> nothing)
-    bytes2hex(SHA.sha256(snapshot)) == metadata.sha256 ||
-        throw(ArgumentError("influence SHA-256 differs from the file snapshot"))
     T = metadata.type == "Float32" ? Float32 : Float64
-    prepared = Artifacts.prepare_snapshot(source, T, metadata.shape, snapshot)
+    prepared = Artifacts.prepare(source, T, metadata.shape)
     spatial_shape = (metadata.shape[1], metadata.shape[2])
     # Preparation can follow explicit optional-package loading in the same call.
     modes = Base.invokelatest(

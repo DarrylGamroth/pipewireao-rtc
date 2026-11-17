@@ -60,15 +60,18 @@ const IC = PipeWireAORTC.InstrumentConfiguration
             missing = copy(reference)
             delete!(missing, key)
             # A map without kind is ordinary metadata, not a FITS reference.
-            key == "kind" && continue
+            key in ("kind", "sha256") && continue
             @test_throws ArgumentError IC.calibration_context(missing, directory)
         end
+        @test IC.calibration_context(merge(reference, Dict("sha256" => "0"^64)), directory) ==
+            IC.calibration_context(reference, directory)
+        @test IC.calibration_context(filter(pair -> first(pair) != "sha256", reference), directory) ==
+            IC.calibration_context(reference, directory)
         for replacement in (
             Dict("unknown" => true),
             Dict("storage_order" => "column-major"),
             Dict("type" => "Float16"),
             Dict("type" => 1),
-            Dict("sha256" => "0"^64),
             Dict("sha256" => "sha256:" * reference["sha256"]),
             Dict("sha256" => "a"^65),
             Dict("sha256" => "z"^64),

@@ -130,7 +130,7 @@ end
         sealed = bytes2hex(sha256(read(path)))
         spec = Dict{String,Any}(
             "instrument" => "instrument.json",
-            "artifacts" => Dict("instrument.json" => sealed),
+            "artifacts" => Dict("instrument.json" => nothing),
         )
         bindings = Dict("PACKAGE" => package)
         loaded = Instrument.load(path)
@@ -147,12 +147,12 @@ end
         @test_throws ArgumentError Instrument.publication(
             merge(spec, Dict("artifacts" => Dict())), bindings
         )
-        @test_throws ArgumentError Instrument.publication(
-            merge(spec, Dict("artifacts" => Dict("instrument.json" => repeat("0", 64)))),
-            bindings,
-        )
+        legacy = merge(spec, Dict("artifacts" => Dict("instrument.json" => repeat("0", 64))))
+        @test Instrument.publication(legacy, bindings) == Instrument.publication(spec, bindings)
         write(path, json * " ")
-        @test_throws ArgumentError Instrument.publication(spec, bindings)
+        @test Instrument.publication(spec, bindings)[Instrument.PROPERTY] == json * " "
+        @test Instrument.publication(spec, bindings)[Instrument.HASH_PROPERTY] ==
+            Instrument.digest(json * " ")
         write(path, json)
 
         outside = joinpath(root, "outside.json")
