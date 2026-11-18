@@ -126,10 +126,10 @@ version = "3.3.0"
 
 [[deps.Hwloc_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XML2_jll", "Xorg_libpciaccess_jll"]
-git-tree-sha1 = "cbbd99d516990d05c02aa132aa077b2bf50ae323"
+git-tree-sha1 = "550c21420b96b46f2f0abe8fc4c9430cd55649e3"
 registries = "General"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
-version = "2.15.0+0"
+version = "2.15.0+3"
 
 [[deps.InlineStrings]]
 git-tree-sha1 = "6e0a59a838f58259f49474e913e39c23e8ca1366"
@@ -265,7 +265,7 @@ version = "0.1.0+0"
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.20"
+version = "0.7.22"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]
@@ -287,17 +287,17 @@ version = "0.7.20"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "5b6ca499f796ecb20ecb37d5b970fa9a67c19308"
+git-tree-sha1 = "d9fe9c1a8b854c019e1f6d3143f0de0ac015cd75"
 registries = "DarrylGamrothRegistry"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "4.0.3+0"
+version = "4.0.4+0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
-git-tree-sha1 = "edbeefc7a4889f528644251bdb5fc9ab5348bc2c"
+git-tree-sha1 = "1e697ad6f68af89cd3651bbe9b4a7b5d800adf5a"
 registries = "General"
 uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-version = "1.3.4"
+version = "1.4.0"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -363,10 +363,10 @@ version = "0.3.7"
 
 [[deps.StructUtils]]
 deps = ["Dates", "UUIDs"]
-git-tree-sha1 = "b04bfab37484defe300b2f9ed64469abab2431ff"
+git-tree-sha1 = "d9cfc07e1d1a8985aa9d03870d642b5d7ab2cf33"
 registries = "General"
 uuid = "ec057cc2-7a8d-4b58-b3b3-92acb9f63b42"
-version = "2.12.0"
+version = "2.12.1"
 
     [deps.StructUtils.extensions]
     StructUtilsDBInterfaceExt = ["DBInterface", "Tables"]

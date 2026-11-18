@@ -1,5 +1,11 @@
 # Delivery evidence catalog
 
+## RTC 0.7.22 GPI2 and Classic startup and Quit — 2026-11-16
+
+The [private-core check](validation/rtc-0722-gpi2-classic-20261116/README.md)
+records successful startup for both profiles, Classic's acknowledged Quit,
+and the two expired GPI2 Quit attempts.
+
 ## RTC 0.7.20 and HIL 0.5.8 verification — 2026-11-16
 
 The [cohort check](validation/rtc-0720-hil-058-20261116/README.md) records
