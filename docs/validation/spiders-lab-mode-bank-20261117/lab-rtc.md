@@ -11,6 +11,39 @@ Both designs form a rolling fringed-minus-unfringed SCC image, apply a calibrate
 
 The **650 lab probes** and **144 active SCC coordinates** count different things. These runs compare two camera-driven controllers fitted to the same simulator. They do not measure how they rank against a particular night or bench configuration. The modeled camera has 10 ms exposures with photon noise disabled and no wall-clock pacing. The lab launcher's late-data cutoffs are 500 μs for LOWFS and 5 ms for SCC; those settings give neither a measured cadence nor end-to-end latency. The archive contains gain and flat files, but no physical closed-loop receipt was found that ties a particular gain, flat, inverse or frame rate to a measured lab contrast.
 
+## Independent rates on one mirror
+
+The lab design allows LLOWFS to correct the shared mirror more frequently
+than SCC. A fresh low-order estimate updates the integrator as soon as it
+arrives. This timing requirement also applies to the fitted RTC. Its graph
+uses independent inputs, updates the branch with fresh evidence, holds the
+other branch's previous correction and publishes the combined demand.
+The standalone HIL source applies the latest demand on its next optical
+step. If LLOWFS is the only camera with a staged frame, HIL still triggers
+the elected PipeWire driver. An earlier private-core regression exercised
+that case with SCC silent.
+
+Both camera ports in this particular experiment declare 100 Hz in model
+time. After SCC is primed, its rolling F−U pair can update on each
+successive opposite-phase exposure. A 50 Hz chop cycle therefore does
+not imply a 50 Hz SCC update rate. These trials measure steady-window
+contrast at the declared rates. They do not exercise unequal-rate timing.
+
+A dedicated low-order DM or fast steering mirror is a possible instrument
+upgrade. The measured configuration uses one BAX307. A two-device profile
+would need an independently calibrated low-order actuator mapping and a
+second command endpoint; an FSM would receive tip/tilt, while a dedicated
+DM could support additional calibrated low-order modes.
+
+The independent-input configuration is in FilterGraphPipeWire 0.5.6
+(`src/composition.jl`, around line 116). The per-arrival update and held
+corrections are in FilterGraphs 0.10.3 (`src/composition.jl`, around
+lines 314–406). AdaptiveOpticsSimPipeWireHIL 0.5.9 triggers staged outputs
+in `src/array_streams.jl` around line 329. The instrument repository
+at `58ecd8ac842a789c8df06586a2875273b0b80042` records the earlier independent
+arrival test in `test/spiders_dual_transport.jl` around line 375 and its
+verification in `spiders/ANALYSIS_PLAN.md` around line 2633.
+
 ## Checking the comparison
 
 The line references below identify local files in the lab working copy. The manifests identify the versions of the source and FITS files used for this review. Check them with `sha256sum -c` from `~/spiders-working` and `/mnt/datadrive/DATA`, respectively. [Service files](lab-services.sha256) · [Lab assets](lab-files.sha256)
