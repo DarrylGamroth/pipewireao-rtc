@@ -1,0 +1,16 @@
+--- a/probe.jl
++++ b/probe.jl
+@@ -46 +46 @@
+-function qualify(root, runtime, out, zero_path)
++function qualify(root, runtime, out, zero_path, expected_modes)
+@@ -55 +55 @@
+-    with_observer(root, runtime, out, zero_path) do wire, demand, control, mask, basis, ready
++    with_observer(root, runtime, out, zero_path, parse(Int, expected_modes)) do wire, demand, control, mask, basis, ready
+--- a/observe.jl
++++ b/observe.jl
+@@ -412 +412 @@
+-function with_observer(f, root, runtime, out, command_path)
++function with_observer(f, root, runtime, out, command_path, expected_modes)
+@@ -422 +422 @@
+-        @assert size(interaction) == (count(mask), 114)
++        @assert size(interaction) == (count(mask), expected_modes + 2)

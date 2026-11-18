@@ -1,0 +1,421 @@
+{
+  "admitted": true,
+  "core": 2196065,
+  "simulator": 2196091,
+  "gpu": "pid, used_gpu_memory [MiB]\n2196091, 2496 MiB\n",
+  "initial_controller_properties": {
+    "correction:closed": {
+      "type": "bool",
+      "value": false
+    },
+    "correction:gain": {
+      "bits": 3175926989,
+      "type": "float"
+    },
+    "correction:pole": {
+      "bits": 1065353216,
+      "type": "float"
+    },
+    "llowfs-correction:closed": {
+      "type": "bool",
+      "value": false
+    },
+    "llowfs-correction:gain": {
+      "bits": 3175926989,
+      "type": "float"
+    },
+    "llowfs-correction:pole": {
+      "bits": 1065353216,
+      "type": "float"
+    }
+  },
+  "actuator_conditioning": {
+    "command_limits": [
+      -0.5,
+      0.5
+    ],
+    "count": 468,
+    "demanded_schema": "pipewireao/demanded-pdm-command-f32/1",
+    "dither_seed": null,
+    "feedback_schema": "pipewireao/pdm-constraint-feedback-f32/1",
+    "initial_current": null,
+    "quantization_origin": null,
+    "quantization_step": null,
+    "requested_schema": "pipewireao/requested-pdm-command-f32/1",
+    "slew_limit": null
+  },
+  "sampled_limiter_headroom": {
+    "baseline": 0.49968627005,
+    "closed": 0.43971817
+  },
+  "initial_flat": {
+    "generation": 1,
+    "demand_observed": true,
+    "candidate_peak": 0.0,
+    "candidate_identity": {
+      "domain": "da442518fb96cdae444e431a074440fd",
+      "generation": 3,
+      "sequence": 330
+    },
+    "preceding": null,
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 326,
+        "gaps": 2,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "reset_flat": {
+    "generation": 2,
+    "demand_observed": true,
+    "candidate_peak": 0.0,
+    "candidate_identity": {
+      "domain": "da442518fb96cdae444e431a074440fd",
+      "generation": 4,
+      "sequence": 35
+    },
+    "preceding": {
+      "domain": "da442518fb96cdae444e431a074440fd",
+      "generation": 3,
+      "sequence": 4096
+    },
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 714,
+        "gaps": 3,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "restart": {
+    "hold": {
+      "authority": "rtc_session",
+      "error": null,
+      "id": "1651",
+      "ok": true,
+      "owner_pid": 2196148,
+      "result": {
+        "outcome": "completed",
+        "session_state": "READY"
+      },
+      "session_id": "e2615290-187a-49d8-8094-c80d6191ca7e",
+      "state": "Ready",
+      "version": 1
+    },
+    "reset": {
+      "authority": "rtc_session",
+      "error": null,
+      "id": "1652",
+      "ok": true,
+      "owner_pid": 2196148,
+      "result": {
+        "outcome": "completed",
+        "session_state": "Ready"
+      },
+      "session_id": "e2615290-187a-49d8-8094-c80d6191ca7e",
+      "state": "Ready",
+      "version": 1
+    },
+    "start": {
+      "authority": "rtc_session",
+      "error": null,
+      "id": "1653",
+      "ok": true,
+      "owner_pid": 2196148,
+      "result": {
+        "outcome": "completed",
+        "session_state": "RUNNING"
+      },
+      "session_id": "e2615290-187a-49d8-8094-c80d6191ca7e",
+      "state": "Running",
+      "version": 1
+    },
+    "ready_elapsed_ns": 1744453219,
+    "running_elapsed_ns": 1859902760
+  },
+  "baseline": {
+    "generation": 1,
+    "camera_domain": "0ea2ea67683ec5b5524641cb329db143",
+    "count": 3628,
+    "identified_count": 3628,
+    "late_count": 0,
+    "command_cohorts": [
+      {
+        "domain": "da442518fb96cdae444e431a074440fd",
+        "generation": 3,
+        "count": 3628
+      }
+    ],
+    "first_sequence": 469,
+    "last_sequence": 4096,
+    "last_identity": {
+      "domain": "da442518fb96cdae444e431a074440fd",
+      "generation": 3,
+      "sequence": 4096
+    },
+    "peak": 0.00031372995,
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 463,
+        "gaps": 3,
+        "rejected": 0,
+        "failed": false
+      }
+    },
+    "retained": {
+      "camera": 2047,
+      "selected_residuals": 2048,
+      "modal_residual": 2048
+    },
+    "stream_counters": {
+      "camera": {
+        "pending": false,
+        "dropped": 467,
+        "gaps": 1,
+        "rejected": 0,
+        "failed": false
+      },
+      "selected_residuals": {
+        "pending": false,
+        "dropped": 464,
+        "gaps": 2,
+        "rejected": 0,
+        "failed": false
+      },
+      "modal_residual": {
+        "pending": false,
+        "dropped": 463,
+        "gaps": 2,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "closed": {
+    "generation": 2,
+    "camera_domain": "0ea2ea67683ec5b5524641cb329db143",
+    "count": 4027,
+    "identified_count": 4027,
+    "late_count": 0,
+    "command_cohorts": [
+      {
+        "domain": "da442518fb96cdae444e431a074440fd",
+        "generation": 4,
+        "count": 4027
+      }
+    ],
+    "first_sequence": 69,
+    "last_sequence": 4096,
+    "last_identity": {
+      "domain": "da442518fb96cdae444e431a074440fd",
+      "generation": 4,
+      "sequence": 4096
+    },
+    "peak": 0.06028183,
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 744,
+        "gaps": 7,
+        "rejected": 1,
+        "failed": false
+      }
+    },
+    "retained": {
+      "camera": 2046,
+      "selected_residuals": 2048,
+      "modal_residual": 2048
+    },
+    "stream_counters": {
+      "camera": {
+        "pending": false,
+        "dropped": 753,
+        "gaps": 3,
+        "rejected": 0,
+        "failed": false
+      },
+      "selected_residuals": {
+        "pending": false,
+        "dropped": 745,
+        "gaps": 6,
+        "rejected": 0,
+        "failed": false
+      },
+      "modal_residual": {
+        "pending": false,
+        "dropped": 743,
+        "gaps": 6,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "baseline_adoption": [
+    {
+      "active": 1,
+      "node": "llowfs-correction",
+      "requested": 1
+    }
+  ],
+  "baseline_open_adoption": [
+    {
+      "active": 2,
+      "node": "llowfs-correction",
+      "requested": 2
+    }
+  ],
+  "closed_adoption": [
+    {
+      "active": 1,
+      "node": "correction",
+      "requested": 1
+    },
+    {
+      "active": 3,
+      "node": "llowfs-correction",
+      "requested": 3
+    }
+  ],
+  "quit": true,
+  "cleanup": true,
+  "unit_files_removed": true,
+  "private_socket_removed": true
+}
