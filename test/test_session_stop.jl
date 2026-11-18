@@ -1,6 +1,12 @@
 using Test, PipeWireAORTC
 using PipeWireAORTC: SessionLaunch, SessionInstall
 
+@testset "installed restart requires an explicit valid session" begin
+    main = PipeWireAORTC.SessionCLI.main
+    @test_throws ArgumentError main(["restart"])
+    @test_throws ArgumentError main(["restart", "--session", "not-a-uuid"])
+end
+
 @testset "installed session launcher keeps the selected Julia project" begin
     launcher = SessionInstall.installed_launcher(
         "/sdk path/bin/julia"; environment = "/app path/env"

@@ -562,12 +562,26 @@ function prepare_dispatch!(::Type{T}) where {T<:Session}
             Base.precompile(perform!, (T, job, effect))
         end
     end
-    # Start has one shared effect budget for enabling graphs and releasing sources.
-    # Prepare those paths before the first live Start request.
+    # Prepare the native restart sequence before its first live request.
+    # Each command's effects share its deadline.
     Base.precompile(submit!, (fieldtype(T, :machine), Request{Start,Tuple{}}))
     for effect in (RunGraphs{Nothing}, RunSources)
         job = Job{EffectTicket{effect,ReadyOrigin}}
         Base.precompile(perform!, (T, job, effect))
+    end
+    for (command, operation, origins, effects) in (
+        (Stop, :session_stop, (ReadyOrigin, RunningOrigin), (HoldSources, HoldGraphs)),
+        (Reset, :reset, (ReadyOrigin,), (HoldSources, HoldGraphs, ResetSources, ResetGraphs)),
+    )
+        Base.precompile(submit!, (fieldtype(T, :machine), Request{command,Tuple{}}))
+        ticket = Ingress.Ticket{RunnerCodec.RunnerCommand{operation,Tuple{}}}
+        Base.precompile(reply_pod, (ticket, Reply{Nothing}))
+        Base.precompile(Ingress._finish!, (fieldtype(T, :ingress), ticket, Pod))
+        for origin in origins, effect in effects
+            job = Job{EffectTicket{effect,origin}}
+            Base.precompile(perform!, (T, job, effect))
+            Base.precompile(execute_effect!, (T, job))
+        end
     end
     parameter_owner = Owner{
         ParameterSource.Profile,

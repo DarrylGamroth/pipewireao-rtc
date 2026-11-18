@@ -550,6 +550,31 @@ function _control_arguments(argv)
     return args.session, command
 end
 
+function restart_step!(connection, operation, state, deadline)
+    command = Session.RunnerCommand(operation)
+    completion = SessionClient.request!(connection, command; deadline)
+    reply = SessionClient.render_direct(connection, completion)
+    reply["ok"] === true && reply["state"] == state ||
+        throw(ArgumentError("RTC $operation did not complete in $state: $(reply["error"])"))
+    return reply
+end
+
+function restart_session(session_id::AbstractString; clock = Clocks.SystemNanoClock())
+    started = Clocks.time_nanos(clock)
+    deadline = Base.checked_add(started, S.duration_ns(30))
+    connection = select_direct_session(session_id; deadline, clock)
+    try
+        hold = restart_step!(connection, :session_stop, "Ready", deadline)
+        reset = restart_step!(connection, :reset, "Ready", deadline)
+        ready_elapsed_ns = Clocks.time_nanos(clock) - started
+        start = restart_step!(connection, :session_start, "Running", deadline)
+        running_elapsed_ns = Clocks.time_nanos(clock) - started
+        return (; hold, reset, start, ready_elapsed_ns, running_elapsed_ns)
+    finally
+        close(connection)
+    end
+end
+
 """
     main(argv=ARGS)
 
@@ -560,7 +585,7 @@ throw; the executable wrapper preserves Julia's error reporting and exit status.
 function main(argv = ARGS)
     isempty(argv) && throw(
         ArgumentError(
-            "expected install, prepare, publish, stop, cleanup, sessions, select-session or control",
+            "expected install, prepare, publish, stop, cleanup, sessions, select-session, control or restart",
         ),
     )
     command = first(argv)
@@ -607,6 +632,9 @@ function main(argv = ARGS)
     elseif command == "control"
         session_id, fields = _control_arguments(rest)
         println(JSON.json(control_session(session_id, fields)))
+    elseif command == "restart"
+        args = C.cli_arguments(rest; required = ["session"])
+        println(JSON.json(restart_session(args.session)))
     else
         throw(ArgumentError("unknown one-shot RTC command"))
     end
