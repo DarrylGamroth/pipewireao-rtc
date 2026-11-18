@@ -1,0 +1,10 @@
+--- a/push-pull.jl
++++ b/push-pull.jl
+@@ -70 +70 @@
+-    @assert size(projection, 2) == size(raw, 2) == size(half, 2) == 114
++    @assert size(projection, 2) == size(raw, 2) == size(half, 2) == 146
+--- a/reconstruct.jl
++++ b/reconstruct.jl
+@@ -120 +120 @@
+-    @assert modes == collect(3:114) && length(modes) == 2length(frequencies)
++    @assert modes == collect(3:146) && length(modes) == 2length(frequencies)

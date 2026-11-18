@@ -1,0 +1,39 @@
+--- a/campaign.jl
++++ b/campaign.jl
+@@ -564,0 +565 @@
++    laboratory_basis = nothing,
+@@ -585,0 +587,9 @@
++    if laboratory_basis !== nothing
++        laboratory_modes = laboratory_basis.projection
++        nr, nm = size(laboratory_modes)
++        size(projection, 1) == nr && 0 < nm <= count && iseven(nm) &&
++            all(isfinite, laboratory_modes) || throw(
++                ArgumentError("laboratory commands must match trailing direct projection columns"),
++            )
++        projection[:, (end-nm+1):end] .= laboratory_modes
++    end
+@@ -634,0 +645,5 @@
++    if laboratory_basis !== nothing
++        provenance["basis"]["kind"] = "tip-tilt-sinusoidal-and-transferred-laboratory"
++        provenance["basis"]["mode_order"] = "tip X, tilt Y, synthetic sine/cosine pairs, then selected laboratory FITS phase pairs in recorded order"
++        provenance["basis"]["laboratory_transfer"] = laboratory_basis.record
++    end
+@@ -742,0 +758 @@
++    laboratory_basis = nothing,
+@@ -925,0 +942 @@
++        laboratory_basis,
+@@ -1395 +1412 @@
+-    1 <= length(rows) <= 32 || throw(
++    1 <= length(rows) <= 72 || throw(
+@@ -1397 +1414 @@
+-            "optical recipe requires 1:32 finite two-coordinate spatial frequencies"
++            "optical recipe requires 1:72 finite two-coordinate spatial frequencies"
+@@ -1404 +1421 @@
+-    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
++    ArgumentError("optical recipe requires 1:72 finite two-coordinate spatial frequencies"),
+@@ -1410 +1427 @@
+-            "optical recipe requires 1:32 finite two-coordinate spatial frequencies"
++            "optical recipe requires 1:72 finite two-coordinate spatial frequencies"
+@@ -1416 +1433 @@
+-    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
++    ArgumentError("optical recipe requires 1:72 finite two-coordinate spatial frequencies"),
