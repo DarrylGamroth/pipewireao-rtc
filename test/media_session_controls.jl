@@ -421,6 +421,88 @@ end
     @test correction_status_field(prefix * ".state")
     @test !correction_status_field(prefix * ".unsupported")
 end
+@testset "coupled recovery admission follows the indexed controller proof" begin
+    config = Dict(
+        "node.pids" => Dict("graph" => 19),
+        "owners" => [Dict("pid" => 19, "bootstrap-node" => "bootstrap", "bootstrap-instance" => "17")],
+    )
+    runtime = Runtime(Vector{Pod}[]; configuration = config)
+    p = RECOVERY_PREFIX
+    values = Dict(
+        CORRECTION_PREFIX * "version" => Pod(Int32(1)),
+        CORRECTION_PREFIX * "owner-instance" => Pod(Int64(17)),
+        "pipewireao.run-control.actual-state" => Pod("running"),
+        p * "version" => Pod(Int32(2)),
+        p * "controller-count" => Pod(Int32(2)),
+        p * "state" => Pod("idle"),
+        p * "closure-inhibited" => Pod(false),
+        p * "request-token" => Pod(Int64(0)),
+        p * "requested-generation" => Pod(Int64(0)),
+        p * "active-generation" => Pod(Int64(0)),
+        p * "recovery-generation" => Pod(Int64(0)),
+        p * "release-token" => Pod(Int64(0)),
+        p * "reference-reached" => Pod(false),
+        p * "reference-timeout-ms" => Pod(Int32(100)),
+        p * "observation-sequence" => Pod(Int64(50)),
+        p * "observation-monotonic-nanoseconds" => Pod(now(runtime)),
+    )
+    for (index, name) in enumerate(("correction", "llowfs-correction"))
+        field = p * "controller-$index"
+        values[field] = Pod(name)
+        values[field * "-ready"] = Pod(false)
+        values[field * "-close-guarded"] = Pod(false)
+        values[field * "-observation-sequence"] = Pod(Int64(51))
+        values[field * "-observation-monotonic-nanoseconds"] = Pod(now(runtime))
+        target = name * ":closed"
+        key = CORRECTION_PREFIX * target
+        values[target] = Pod(false)
+        values[key * ".state"] = Pod("Open")
+        values[key * ".fault"] = Pod("")
+        values[key * ".requested"] = Pod(false)
+        values[name * ":requested-generation"] = Pod(Int64(0))
+        values[name * ":active-generation"] = Pod(Int64(0))
+    end
+    check(updates; origin = RunningOrigin()) =
+        check_correction!(runtime, origin, "graph", values, updates, Dict())
+    close_scc = Dict("correction:closed" => Pod(true))
+    close_llowfs = Dict("llowfs-correction:closed" => Pod(true))
+    @test check(close_scc) === nothing
+    @test check(close_llowfs) === nothing
+    @test_throws ArgumentError check(close_scc; origin = ReadyOrigin())
+    @test check(Dict(p * "request-token" => Pod(Int64(1)))) === nothing
+
+    release = Dict(p * "release-token" => Pod(Int64(1)))
+    values[p*"state"] = Pod("applied")
+    values[p*"closure-inhibited"] = Pod(true)
+    values[p*"recovery-generation"] = Pod(Int64(1))
+    @test_throws ArgumentError check(release)
+    @test_throws ArgumentError check(close_llowfs)
+    values[p*"reference-reached"] = Pod(true)
+    @test check(release) === nothing
+
+    values[p*"state"] = Pod("released")
+    values[p*"closure-inhibited"] = Pod(false)
+    values[p*"release-token"] = Pod(Int64(1))
+    values[p*"controller-1-close-guarded"] = Pod(true)
+    values[p*"controller-2-close-guarded"] = Pod(true)
+    values[p*"controller-2-ready"] = Pod(true)
+    @test_throws ArgumentError check(close_scc)
+    @test check(close_llowfs) === nothing
+    @test_throws ArgumentError check(merge(close_scc, close_llowfs))
+
+    values[p*"controller-2-close-guarded"] = Pod(false)
+    values["llowfs-correction:closed"] = Pod(true)
+    values[CORRECTION_PREFIX*"llowfs-correction:closed.state"] = Pod("Closed")
+    values[CORRECTION_PREFIX*"llowfs-correction:closed.requested"] = Pod(true)
+    values[p*"reference-reached"] = Pod(false)
+    values[p*"controller-1-ready"] = Pod(true)
+    @test check(close_scc) === nothing
+    values[p*"controller-1-observation-monotonic-nanoseconds"] =
+        Pod(now(runtime) - Int64(100_000_000))
+    @test_throws ArgumentError check(close_scc)
+    values[p*"controller-2"] = Pod("correction")
+    @test_throws ArgumentError check(close_llowfs)
+end
 @testset "typed scalar admission and bitwise adoption" begin
     info = Pod(
         PipeWireAO.prop_info_param(

@@ -69,6 +69,109 @@ function recovery_reference_confirmed(values, current_ns::Int64)
         correction_long(values, RECOVERY_PREFIX * "observation-sequence") > 0 &&
         recovery_reference_fresh(values, current_ns)
 end
+function coupled_recovery_controllers(values)
+    count = correction_int(values, RECOVERY_PREFIX * "controller-count")
+    1 <= count <= 16 || throw(ArgumentError("invalid recovery controller count"))
+    controllers = map(1:Int(count)) do index
+        field = RECOVERY_PREFIX * "controller-$index"
+        name = correction_text(values, field)
+        occursin(r"^[a-zA-Z0-9_.-]{1,128}$", name) ||
+            throw(ArgumentError("invalid recovery controller"))
+        guarded = correction_bool(values, field * "-close-guarded")
+        ready = correction_bool(values, field * "-ready")
+        sequence = correction_long(values, field * "-observation-sequence")
+        timestamp = correction_long(values, field * "-observation-monotonic-nanoseconds")
+        sequence >= 0 && timestamp >= 0 ||
+            throw(ArgumentError("invalid recovery controller observation"))
+        (; name, guarded, ready, sequence, timestamp)
+    end
+    allunique(controller -> controller.name, controllers) ||
+        throw(ArgumentError("duplicate recovery controllers"))
+    return controllers
+end
+
+function require_coherent_controller(values, controller)
+    target = controller * ":closed"
+    key = CORRECTION_PREFIX * target
+    current = correction_text(values, key * ".state")
+    current in ("Open", "Closed") || throw(ArgumentError("correction state is not ready"))
+    isempty(correction_text(values, key * ".fault")) ||
+        throw(ArgumentError("correction fault is latched"))
+    requested = correction_long(values, controller * ":requested-generation")
+    requested >= 0 &&
+    requested == correction_long(values, controller * ":active-generation") ||
+        throw(ArgumentError("correction property adoption is pending"))
+    active = correction_bool(values, target)
+    (current == "Closed") == active && correction_bool(values, key * ".requested") == active ||
+        throw(ArgumentError("inconsistent correction state"))
+    return active
+end
+
+function check_coupled_recovery!(runtime, origin, name, values, updates, request, release)
+    controllers = coupled_recovery_controllers(values)
+    state = correction_text(values, RECOVERY_PREFIX * "state")
+    inhibited = correction_bool(values, RECOVERY_PREFIX * "closure-inhibited")
+    state in ("idle", "pending", "applied", "release_pending", "release_refused", "released") ||
+        throw(ArgumentError("unknown recovery state"))
+    inhibited == (state in ("pending", "applied", "release_pending", "release_refused")) ||
+        throw(ArgumentError("inconsistent recovery inhibition"))
+    if request === nothing && release === nothing
+        !inhibited ||
+            throw(ArgumentError("protective recovery inhibits scientific updates"))
+        closes = filter(controllers) do controller
+            close = get(updates, controller.name * ":closed", nothing)
+            controller.guarded && close !== nothing && policy_bool(close)
+        end
+        isempty(closes) && return nothing
+        all(updates) do update
+            property, value = update
+            any(controller -> property == controller.name * ":closed", controllers) &&
+                policy_bool(value)
+        end || throw(ArgumentError("recovery close cannot mix other control requests"))
+        correction_running!(runtime, origin, name, values)
+        foreach(controller -> require_coherent_controller(values, controller.name), controllers)
+        generation = correction_long(values, RECOVERY_PREFIX * "recovery-generation")
+        state == "released" && generation > 0 &&
+        correction_long(values, RECOVERY_PREFIX * "release-token") == generation &&
+        correction_long(values, RECOVERY_PREFIX * "requested-generation") ==
+        correction_long(values, RECOVERY_PREFIX * "active-generation") ||
+            throw(ArgumentError("recovery release has not been adopted"))
+        timeout = correction_int(values, RECOVERY_PREFIX * "reference-timeout-ms")
+        current_ns = now(runtime)
+        1 <= timeout <= 60000 && all(closes) do controller
+            controller.ready && controller.sequence > 0 &&
+            0 < controller.timestamp <= current_ns &&
+            current_ns - controller.timestamp < Int64(timeout) * 1_000_000
+        end || throw(ArgumentError("selected controller recovery reference is not confirmed"))
+        return nothing
+    end
+
+    length(updates) == 1 && !(request !== nothing && release !== nothing) ||
+        throw(ArgumentError("recovery requires one unmixed control request"))
+    correction_running!(runtime, origin, name, values)
+    correction_int(values, CORRECTION_PREFIX * "version") == 1 ||
+        throw(ArgumentError("unsupported correction-control version"))
+    closed = map(controller -> require_coherent_controller(values, controller.name), controllers)
+    correction_long(values, RECOVERY_PREFIX * "requested-generation") ==
+    correction_long(values, RECOVERY_PREFIX * "active-generation") ||
+        throw(ArgumentError("recovery adoption is pending"))
+    if request !== nothing
+        !inhibited || throw(ArgumentError("protective recovery is already inhibited"))
+        token = policy_long(request)
+        token > 0 && token > correction_long(values, RECOVERY_PREFIX * "request-token") ||
+            throw(ArgumentError("recovery request token must advance"))
+    else
+        inhibited && !any(closed) ||
+            throw(ArgumentError("recovery release requires inhibited open controllers"))
+        generation = correction_long(values, RECOVERY_PREFIX * "recovery-generation")
+        generation > 0 && policy_long(release) == generation ||
+            throw(ArgumentError("recovery release generation mismatch"))
+        state in ("applied", "release_refused") && recovery_reference_confirmed(values, now(runtime)) ||
+            throw(ArgumentError("recovery command reference is not confirmed"))
+    end
+    return nothing
+end
+
 function check_recovery!(
     runtime, origin::AbstractOrigin, name, values, updates, declarations
 )
@@ -80,8 +183,10 @@ function check_recovery!(
         request !== nothing ||
         release !== nothing ||
         return nothing
-    version !== nothing && policy_int(version) == 1 ||
-        throw(ArgumentError("unsupported recovery-control version"))
+    version === nothing && throw(ArgumentError("missing recovery-control version"))
+    schema = policy_int(version)
+    schema == 2 && return check_coupled_recovery!(runtime, origin, name, values, updates, request, release)
+    schema == 1 || throw(ArgumentError("unsupported recovery-control version"))
     inhibited = correction_bool(values, RECOVERY_PREFIX * "closure-inhibited")
     if request === nothing && release === nothing
         !inhibited ||
@@ -145,7 +250,7 @@ function check_recovery!(
 end
 function check_parameter_correction(values)
     if haskey(values, RECOVERY_PREFIX * "version")
-        correction_int(values, RECOVERY_PREFIX * "version") == 1 ||
+        correction_int(values, RECOVERY_PREFIX * "version") in (1, 2) ||
             throw(ArgumentError("unsupported recovery-control version"))
         !correction_bool(values, RECOVERY_PREFIX * "closure-inhibited") ||
             throw(ArgumentError("protective recovery inhibits scientific updates"))
