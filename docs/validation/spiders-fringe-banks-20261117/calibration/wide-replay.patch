@@ -1,0 +1,75 @@
+--- a/push-pull.jl
++++ b/push-pull.jl
+@@ -7,0 +8,4 @@
++module FilteredReconstruction
++    include("reconstruct.jl")
++end
++
+@@ -58 +62 @@
+-function main(app, assets, output)
++function replay_pokes(assets, output, prepared)
+@@ -60 +64 @@
+-    (; callbacks, flat_error, mask, projection, completion, step) = prepare_pokes(app, assets)
++    (; callbacks, flat_error, mask, projection, completion, step) = prepared
+@@ -66,2 +70,2 @@
+-    @assert size(projection, 2) == size(raw, 2) == 66
+-    full = zeros(Float32, size(mask)..., 66, 2)
++    @assert size(projection, 2) == size(raw, 2) == size(half, 2) == 114
++    full = zeros(Float32, size(mask)..., size(raw, 2), 2)
+@@ -90 +94 @@
+-function first_step(app, assets, output)
++function first_step(output, prepared)
+@@ -92,2 +96 @@
+-    (; callbacks, calibration_difference, flat_error, mask, projection, completion, step) =
+-        prepare_pokes(app, assets)
++    (; callbacks, calibration_difference, flat_error, mask, projection, completion, step) = prepared
+@@ -117,0 +121,2 @@
++    gain = 0.05f0
++    actual = mean_unfringed(gain * magnitude)
+@@ -118,0 +124,2 @@
++        actual_first_step_mean_unfringed_electrons = actual,
++        actual_first_step_relative_change = (actual - scale) / scale,
+@@ -127,5 +134,5 @@
+-    if length(ARGS) == 5 && ARGS[5] == "first-step"
+-        first_step(ARGS[2:4]...)
+-    else
+-        main(ARGS[2:4]...)
+-    end
++    app, assets, output = ARGS[2:4]
++    prepared = prepare_pokes(app, assets)
++    replay_pokes(assets, output, prepared)
++    FilteredReconstruction.main(app, assets, output)
++    first_step(output, prepared)
+--- a/reconstruct.jl
++++ b/reconstruct.jl
+@@ -120 +120 @@
+-    @assert modes == collect(3:66) && length(modes) == 2length(frequencies)
++    @assert modes == collect(3:114) && length(modes) == 2length(frequencies)
+@@ -129 +128,0 @@
+-    isfile(joinpath(output, "full-half-interaction.fits")) || return nothing
+@@ -138 +137 @@
+-    @assert size(full_half) == size(full) == (size(mask)..., 66)
++    @assert size(full_half) == size(full) == (size(mask)..., maximum(modes))
+@@ -141,0 +141,5 @@
++    filtered_half = hcat(map(modes) do mode
++        filter_image(Float64.(view(full_half, :, :, mode)), band)[indices]
++    end...)
++    raw_probe_change = norm(raw - half) / norm(raw)
++    filtered_probe_change = norm(filtered - filtered_half) / norm(filtered)
+@@ -149,2 +152,0 @@
+-    reference_only_path = normpath(joinpath(source, "..", "reference-only-selected.fits"))
+-    pinhole_only = isfile(reference_only_path) ? load_array(reference_only_path) : nothing
+@@ -160,2 +161,0 @@
+-            pinhole_only_modal_norm_m =
+-                pinhole_only === nothing ? nothing : norm(active * pinhole_only),
+@@ -166 +166 @@
+-        if selected === nothing && report.retained_modes == length(modes) &&
++        if name == "band-only" && report.retained_modes == length(modes) &&
+@@ -191 +191 @@
+-        spectra, full_replay_error, half_replay_error, diagnostics)
++        spectra, full_replay_error, half_replay_error, raw_probe_change, filtered_probe_change, diagnostics)
+@@ -195 +195,3 @@
+-main(ARGS...)
++if abspath(PROGRAM_FILE) == @__FILE__
++    main(ARGS...)
++end

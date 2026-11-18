@@ -1,0 +1,17 @@
+--- a/campaign.jl
++++ b/campaign.jl
+@@ -1395 +1395 @@
+-    1 <= length(rows) <= 32 || throw(
++    1 <= length(rows) <= 56 || throw(
+@@ -1397 +1397 @@
+-            "optical recipe requires 1:32 finite two-coordinate spatial frequencies"
++            "optical recipe requires 1:56 finite two-coordinate spatial frequencies"
+@@ -1404 +1404 @@
+-    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
++    ArgumentError("optical recipe requires 1:56 finite two-coordinate spatial frequencies"),
+@@ -1410 +1410 @@
+-            "optical recipe requires 1:32 finite two-coordinate spatial frequencies"
++            "optical recipe requires 1:56 finite two-coordinate spatial frequencies"
+@@ -1416 +1416 @@
+-    ArgumentError("optical recipe requires 1:32 finite two-coordinate spatial frequencies"),
++    ArgumentError("optical recipe requires 1:56 finite two-coordinate spatial frequencies"),
