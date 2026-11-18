@@ -4,6 +4,8 @@ using Statistics
 include("banks.jl")
 
 function plot_banks(narrow, wide, destination)
+    a_modes, b_modes = bank_modes.((narrow, wide))
+    @assert a_modes < b_modes
     samples = map((17, 73)) do seed
         small, large = [image_planes(joinpath(directory, "filtered-$seed")) for directory in (narrow, wide)]
         @assert small.mask == large.mask
@@ -33,7 +35,7 @@ function plot_banks(narrow, wide, destination)
             println(io, "array mask_means[8] = [", join(mask_means, ","), "]")
         end
         cd(directory) do
-            run(`$(get(ENV, "GNUPLOT", "gnuplot")) -c $(joinpath(@__DIR__, "images.gp")) $limit`)
+            run(`$(get(ENV, "GNUPLOT", "gnuplot")) -c $(joinpath(@__DIR__, "images.gp")) $limit $a_modes $b_modes`)
             cp("figure.png", destination; force = true)
         end
     end

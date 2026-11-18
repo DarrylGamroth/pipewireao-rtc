@@ -20,7 +20,7 @@ set ytics (-10,0,10) nomirror out scale .35
 set border 3
 set tics font ',11'
 unset key
-array titles[4] = ['LLOWFS only', '64 SCC modes', '112 SCC modes', '112 minus 64  (×10^{-6})']
+array titles[4] = ['LLOWFS only', sprintf('%s SCC modes',ARG2), sprintf('%s SCC modes',ARG3), sprintf('%s minus %s  (×10^{-6})',ARG3,ARG2)]
 array left[4] = [.060, .292, .524, .765]
 limit = int(ARG1)
 load 'means.gp'
