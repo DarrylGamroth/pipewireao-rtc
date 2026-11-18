@@ -1,0 +1,19 @@
+Protective recovery gate: before_reset at tick 1801
+Protective recovery gate: reset_applied_cameras_silent at tick 1801
+Protective recovery gate: fresh_llowfs_flat_reference at tick 1801
+Protective recovery gate: scc_primed_without_demand at tick 1801
+Protective recovery gate: fresh_llowfs_flat_reference at tick 1802
+Protective recovery gate: release_leaves_both_open at tick 1802
+Protective recovery gate: fresh_branch_2 at tick 1803
+Protective recovery gate: closed_branch_2 at tick 1803
+Protective recovery gate failed (fresh branch proof before correction:closed)
+  "correction:closed" => false
+  "llowfs-correction:closed" => true
+  "pipewireao-recovery:controller-1-close-guarded" => true
+  "pipewireao-recovery:controller-1-observation-sequence" => 0
+  "pipewireao-recovery:controller-1-ready" => false
+  "pipewireao-recovery:controller-2-close-guarded" => false
+  "pipewireao-recovery:controller-2-observation-sequence" => 2355
+  "pipewireao-recovery:controller-2-ready" => false
+  "pipewireao-recovery:reference-reached" => false
+  "pipewireao-recovery:state" => "released"
