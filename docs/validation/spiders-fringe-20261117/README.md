@@ -56,3 +56,39 @@ reference. Re-run the first command with an additional `first-step`
 argument for the directional check. MODULE is the shared instrument
 tools' OpticalCalibration.jl. ASSETS is the normal-flat SCC artifact
 directory from the preceding acquisition experiment.
+
+## Closed-loop acquisition from the normal flat
+
+Both private PipeWire cores ran the standalone fitted CUDA simulator.
+The CPU controller started with zero incremental DM command. Each seed
+ran 4,096 exposures with LLOWFS active, restarted the source and
+controller, then ran 4,096 with LLOWFS and filtered SCC active. Both
+loops used gain −0.05 and pole 1. The simulator received the combined
+DM demand. Each pair below has matching camera sequence, model timestamp
+and chopping phase, and both native residual streams present. Contrast is
+mean unfringed intensity over the same 12,703 selected pixels divided by
+the fitted unocculted stellar peak. The late window is exposures 2,049–4,096.
+
+| Seed | Matched unfringed exposures | LLOWFS only | Filtered SCC + LLOWFS | Change |
+| --- | ---: | ---: | ---: | ---: |
+| 17 | 1,013 | 1.52721 × 10⁻⁵ | 1.31105 × 10⁻⁵ | −14.15% |
+| 73 | 1,012 | 1.52170 × 10⁻⁵ | 1.31502 × 10⁻⁵ | −13.58% |
+
+All eight late blocks darkened. The correction formed from live camera
+feedback with the ordinary instrument flat and no precomputed dark-hole
+shape. Both cores acknowledged Quit and removed their private sockets.
+The image averages use every matched unfringed frame available to the
+image observer. The table also requires both residual streams.
+
+![Mean unfringed images with the fitted half-plane outlined](dark-hole.png)
+
+The passive observer bound the 468-element physical DM demand at 100 Hz.
+The calibration's 334-element zero is in active virtual-actuator coordinates.
+Demand packets carry a different acquisition domain and generation from
+the camera. The updated observer saves actual command identities and
+groups demand by observation epoch. It measured 4,070 and 4,068 commands
+during SCC closure, with peak absolute demands of 0.01938 and 0.01915
+in native command units. The observer measures the controller output.
+Its late command averages correspond to the camera time window without
+an exposure-by-exposure identity match. [Seed 17](filtered-17/transport.json)
+· [Seed 73](filtered-73/transport.json)
