@@ -1,0 +1,165 @@
+--- a/observe.jl
++++ b/observe.jl
+@@ -71,0 +72 @@
++    identity::AcquisitionIdentity
+@@ -79,0 +81 @@
++    pixel_columns::Matrix{Float32}
+@@ -85 +87,2 @@
+-    open_frames::Dict{Int,Matrix{Float32}}
++    open_frames::Array{Float32,3}
++    open_present::BitVector
+@@ -91 +94,5 @@
+-Images(shape) = Images(Dict{Int,Matrix{Float32}}(), zeros(shape), zeros(shape), Int[])
++function Images(shape)
++    frames = (LAST_EXPOSURE - BURN_IN) ÷ 2
++    return Images(Array{Float32}(undef, shape..., frames), falses(frames),
++        zeros(shape), zeros(shape), sizehint!(Int[], frames))
++end
+@@ -101,0 +109 @@
++    slot = (index - BURN_IN) ÷ 2
+@@ -103,2 +111,3 @@
+-        images.open_frames[index] = copy(image)
+-    elseif haskey(images.open_frames, index)
++        copyto!(view(images.open_frames, :, :, slot), image)
++        images.open_present[slot] = true
++    elseif images.open_present[slot]
+@@ -106 +115 @@
+-        images.open_sum .+= images.open_frames[index]
++        images.open_sum .+= view(images.open_frames, :, :, slot)
+@@ -132,0 +142 @@
++    last_identity = nothing
+@@ -136,3 +146,6 @@
+-    camera = Dict{Int,CameraSample}()
+-    pixels = Dict{Int,ResidualSample}()
+-    modes = Dict{Int,ResidualSample}()
++    observations = LAST_EXPOSURE - BURN_IN
++    camera = sizehint!(Dict{Int,CameraSample}(), observations)
++    pixels = sizehint!(Dict{Int,ResidualSample}(), observations)
++    pixel_columns = Matrix{Float32}(undef, count(mask), observations)
++    modes = sizehint!(Dict{Int,ResidualSample}(), observations)
++    pixel_coordinates = Float64[]
+@@ -173,0 +187 @@
++                last_identity = identity
+@@ -192,3 +206,4 @@
+-                residual = Float64.(pixel_error)
+-                pixels[index] = ResidualSample(pixel_receipt.pts, sum(abs2, residual),
+-                    transpose(basis) * residual)
++                copyto!(view(pixel_columns, :, index - BURN_IN), pixel_error)
++                pixels[index] = ResidualSample(something(pixel_receipt.identity),
++                    pixel_receipt.pts, sum(value -> abs2(Float64(value)), pixel_error),
++                    pixel_coordinates)
+@@ -204 +219,2 @@
+-                modes[index] = ResidualSample(mode_receipt.pts, sum(abs2, active_error), active_error)
++                modes[index] = ResidualSample(something(mode_receipt.identity),
++                    mode_receipt.pts, sum(abs2, active_error), active_error)
+@@ -221 +237,7 @@
+-                first_sequence, last_sequence, peak, transport=demand_snapshot(wire, demand),
++                first_sequence, last_sequence, last_identity=command_identity(last_identity),
++                peak, transport=demand_snapshot(wire, demand),
++                retained=(; camera=length(camera), selected_residuals=length(pixels),
++                    modal_residual=length(modes)),
++                stream_counters=(; camera=HIL.array_stream_status(wire, 1),
++                    selected_residuals=HIL.array_stream_status(wire, 3),
++                    modal_residual=HIL.array_stream_status(wire, 4)),
+@@ -225 +247 @@
+-            return Epoch(camera, pixels, modes, observation)
++            return Epoch(camera, pixels, pixel_columns, modes, observation)
+@@ -230 +252,4 @@
+-        frame === nothing && pixel_receipt === nothing && mode_receipt === nothing && yield()
++        if frame === nothing && receipt === nothing && pixel_receipt === nothing && mode_receipt === nothing
++            # Keep an idle observer from contending with publication for each one-frame slot.
++            sleep(0.001)
++        end
+@@ -249,0 +275,4 @@
++    # Project after acquisition, so the matrix multiplication cannot delay draining the next frame.
++    projection(epoch) = transpose(basis) * Float64.(view(epoch.pixel_columns, :, indices .- BURN_IN))
++    open_coordinates = projection(biased)
++    closed_coordinates = projection(closed)
+@@ -254 +283 @@
+-        for index in indices
++        for (column, index) in enumerate(indices)
+@@ -259,0 +289,5 @@
++            for (residual, epoch) in ((p, biased), (m, biased), (q, closed), (n, closed))
++                identity = residual.identity
++                @assert identity.sequence == index && identity.generation == epoch.demand.generation
++                @assert domain_hex(identity.domain) == epoch.demand.camera_domain
++            end
+@@ -262 +296,2 @@
+-                p.power, q.power, sum(abs2, p.coordinates), sum(abs2, q.coordinates),
++                p.power, q.power, sum(abs2, view(open_coordinates, :, column)),
++                sum(abs2, view(closed_coordinates, :, column)),
+@@ -269,4 +304,7 @@
+-    coordinates = [
+-        reduce(hcat, (mean(records[index].coordinates for index in window) for window in windows))
+-        for records in (biased.pixels, closed.pixels, biased.modes, closed.modes)
+-    ]
++    column_indices = Dict(index => column for (column, index) in enumerate(indices))
++    pixel_means(projected) = reduce(hcat, (vec(mean(view(projected, :,
++        [column_indices[index] for index in window]); dims=2)) for window in windows))
++    modal_means(records) = reduce(hcat,
++        (mean(records[index].coordinates for index in window) for window in windows))
++    coordinates = (pixel_means(open_coordinates), pixel_means(closed_coordinates),
++        modal_means(biased.modes), modal_means(closed.modes))
+@@ -291 +329,4 @@
+-            region_pixels=count(mask), controllable_rank=size(basis, 2)); atomic=true)
++            region_pixels=count(mask), controllable_rank=size(basis, 2),
++            baseline_camera_domain=biased.demand.camera_domain,
++            closed_camera_domain=closed.demand.camera_domain,
++            residual_identity_matches=length(indices)); atomic=true)
+@@ -381 +422 @@
+-        @assert size(interaction) == (count(mask), 66)
++        @assert size(interaction) == (count(mask), 114)
+@@ -383 +424 @@
+-        factor = svd(Float64.(view(interaction, :, 3:66)))
++        factor = svd(Float64.(view(interaction, :, 3:size(interaction, 2))))
+@@ -454,0 +496 @@
++
+--- a/probe.jl
++++ b/probe.jl
+@@ -22 +22 @@
+-function observe_flat(wire, demand, control, generation)
++function observe_flat(wire, demand, control, generation; preceding=nothing)
+@@ -27,6 +27,17 @@
+-    receipt = HIL.drain_pipewire_array!(actual, wire, DEMAND_INDEX)
+-    # A single pending demand packet does not establish freshness after Restart.
+-    return (; generation, demand_observed=receipt !== nothing,
+-        candidate_peak=receipt === nothing ? nothing : maximum(abs, actual),
+-        candidate_identity=receipt === nothing ? nothing : command_identity(receipt.identity),
+-        transport=demand_snapshot(wire, demand))
++    clock = RTC.SessionRuntime.Clocks.SystemNanoClock()
++    deadline = RTC.SessionRuntime.Clocks.time_nanos(clock) + 10_000_000_000
++    while RTC.SessionRuntime.Clocks.time_nanos(clock) < deadline
++        receipt = HIL.drain_pipewire_array!(actual, wire, DEMAND_INDEX)
++        if receipt !== nothing && receipt.identity !== nothing
++            identity = command_identity(receipt.identity)
++            if preceding === nothing ||
++                    (identity.domain == preceding.domain && identity.generation > preceding.generation)
++                demand_peak = maximum(abs, actual)
++                @assert iszero(demand_peak)
++                return (; generation, demand_observed=true, candidate_peak=demand_peak,
++                    candidate_identity=identity, preceding, transport=demand_snapshot(wire, demand))
++            end
++        end
++        yield()
++    end
++    error("Timed out waiting for identified zero DM demand before camera generation $generation")
+@@ -35,0 +47,8 @@
++    graph = RTC.DeploymentConfiguration.decode(joinpath(root, "rtc", "shared-dm.conf"),
++        ENV["PIPEWIREAO_PREFIX"])
++    limiter = only(node["config"] for node in graph["filter.graph"]["nodes"]
++        if node["name"] == "dm-command" && node["label"] == "vector-conditioning-f32")
++    @assert limiter["count"] == 468 && limiter["command_limits"] == [-0.5, 0.5]
++    @assert all(isnothing(limiter[option]) for option in (
++        "slew_limit", "quantization_origin", "quantization_step", "dither_seed"))
++    RTC.Common.write_json(joinpath(out, "actuator-conditioning.json"), limiter; atomic=true)
+@@ -38,0 +58 @@
++        write_record("initial-properties.json", graph_properties(control))
+@@ -49 +69,2 @@
+-        write_record("reset-flat.json", observe_flat(wire, demand, control, 2))
++        preceding = something(biased.demand.last_identity)
++        write_record("reset-flat.json", observe_flat(wire, demand, control, 2; preceding))
+@@ -52,0 +74 @@
++        @assert biased.demand.camera_domain == closed.demand.camera_domain
+@@ -57,0 +80,2 @@
++            any(counts -> counts.failed, status.stream_counters) &&
++                error("$label camera or residual readback failed")

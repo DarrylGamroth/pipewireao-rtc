@@ -1,0 +1,10 @@
+{
+  "seed": 17,
+  "result": "excluded",
+  "paired_camera_and_residuals": 1861,
+  "required_paired_camera_and_residuals": 1946,
+  "paired_unfringed_images": 968,
+  "required_paired_unfringed_images": 973,
+  "quit_accepted": true,
+  "cleanup_complete": true
+}

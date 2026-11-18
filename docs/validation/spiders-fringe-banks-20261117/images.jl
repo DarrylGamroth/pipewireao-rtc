@@ -13,7 +13,11 @@ function plot_banks(narrow, wide, destination)
     span = maximum(s -> quantile(abs.(s.delta[s.small.mask]), 0.98), samples)
     limit = max(1, ceil(Int, span * 1e6))
     mktempdir() do directory
+        # Each FITS cube averages phase-matched open and closed images within one bank.
+        mask_means = Float64[]
         for (; seed, small, large, delta) in samples
+            a, b, c = [mean(plane[small.mask]) for plane in (small.baseline, small.closed, large.closed)]
+            append!(mask_means, (1e5*a, 1e5*b, 1e5*c, 100*(c/b-1)))
             open(joinpath(directory, "seed-$seed.dat"), "w") do io
                 for y in axes(small.mask, 1)
                     for x in axes(small.mask, 2)
@@ -24,6 +28,9 @@ function plot_banks(narrow, wide, destination)
                     println(io)
                 end
             end
+        end
+        open(joinpath(directory, "means.gp"), "w") do io
+            println(io, "array mask_means[8] = [", join(mask_means, ","), "]")
         end
         cd(directory) do
             run(`$(get(ENV, "GNUPLOT", "gnuplot")) -c $(joinpath(@__DIR__, "images.gp")) $limit`)

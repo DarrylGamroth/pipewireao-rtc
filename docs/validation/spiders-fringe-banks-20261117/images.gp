@@ -12,7 +12,7 @@ set terminal pngcairo size 1650,940 enhanced font 'DejaVu Sans,14'
 set output 'figure.png'
 set multiplot
 set label 1 'SPIDERS   /   SCC mode bank comparison' at screen .06,.955 font ',26'
-set label 2 'Mean unfringed contrast   ·   normal DM flat   ·   LLOWFS active   ·   detector coordinates in λ/D' at screen .06,.91
+set label 2 'Unfringed intensity / stellar peak   ·   normal DM flat   ·   LLOWFS active   ·   outlined dark-hole region   ·   detector axes in λ/D' at screen .06,.91
 set xrange [-14.06:14.06]
 set yrange [-14.06:14.06]
 set xtics (-10,0,10) nomirror out scale .35
@@ -23,6 +23,8 @@ unset key
 array titles[4] = ['LLOWFS only', '64 SCC modes', '112 SCC modes', '112 minus 64  (×10^{-6})']
 array left[4] = [.060, .292, .524, .765]
 limit = int(ARG1)
+load 'means.gp'
+set style textbox opaque margins .5,.35 fillcolor rgb '#ffffff' noborder
 
 do for [row=1:2] {
     seed = row == 1 ? 17 : 73
@@ -55,7 +57,11 @@ do for [row=1:2] {
                 set cbtics ('10^{-6}' 1e-6,'10^{-5}' 1e-5,'10^{-4}' 1e-4) scale 0
             }
         }
-        plot filename using 1:2:(column(col+2)) with image, 'mask.dat' using 1:2 with lines lw .85 lc rgb '#74acac'
+        value = mask_means[4*(row-1)+col]
+        caption = col == 4 ? sprintf('Mask mean   %+.1f%%',value) : sprintf('Mask mean   %.3f ×10^{-5}',value)
+        set label 3 caption at graph .035,.075 font ',12' textcolor rgb '#142537' boxed front
+        plot filename using 1:2:(column(col+2)) with image, 'mask.dat' using 1:2 with lines lw 2 lc rgb '#25494a', \
+            'mask.dat' using 1:2 with lines lw 1.1 lc rgb '#a9e2df'
         unset label 1
         unset label 2
     }
