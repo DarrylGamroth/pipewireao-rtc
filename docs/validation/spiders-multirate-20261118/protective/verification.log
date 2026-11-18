@@ -1,0 +1,7 @@
+Pulse and protective runs match through tick 1800
+Late nonzero branch command steps: LLOWFS 51 (last tick 2550), SCC 17 (last tick 2548)
+Last 300 model ticks
+arm,mean_unfringed_contrast,llowfs_tip_tilt_rms_m
+control,1.1258570053729e-05,4.8288467810491e-09
+pulse,0.00036339928748531,2.7157191783473e-06
+recovery,1.12483535876e-05,4.8301630675667e-09

@@ -53,7 +53,7 @@ function summarize(trace, ticks)
         peak=maximum(values_in(trace.peak, ticks)), step=maximum(values_in(trace.steps, ticks)))
 end
 
-function compare(fault_dir, control_dir, output)
+function compare(fault_dir, control_dir, output, protective_dir=nothing)
     fault, control = load_trace.((fault_dir, control_dir))
     @assert keys(fault.phases) == keys(control.phases)
     @assert keys(fault.contrast) == keys(control.contrast)
@@ -82,6 +82,28 @@ function compare(fault_dir, control_dir, output)
             @printf(io, "%d,%d,%.2f,%.10g,%.10g,%+.5f,%.7g,%.7g,%.8g,%.8g\n",
                 first(window), last(window), (start-first_release)/100, a.contrast, b.contrast,
                 100*(a.contrast/b.contrast-1), a.residual_nm, b.residual_nm, a.step, b.step)
+        end
+    end
+    if protective_dir !== nothing
+        protected = load_trace(protective_dir)
+        @assert keys(protected.contrast) == keys(control.contrast)
+        open(joinpath(output, "protective-timeline.csv"), "w") do io
+            println(io, "model_s,contrast,llowfs_rms_nm,max_step")
+            for start in 1:10:last(ticks)
+                window = start:min(start + 9,last(ticks))
+                a = summarize(protected, window)
+                @printf(io,"%.3f,%.10g,%.7g,%.8g\n",
+                    (mean(window)-1)/100, a.contrast, a.residual_nm, a.step)
+            end
+        end
+        open(joinpath(output, "protective-windows.csv"), "w") do io
+            println(io, "tick_first,tick_last,contrast,control_contrast,llowfs_rms_nm,control_llowfs_rms_nm,max_step,control_max_step")
+            for window in (1653:1800, 1801:1804, 1805:1904, 1905:2004, 2102:2550, 2451:2550)
+                a, b = summarize(protected, window), summarize(control, window)
+                @printf(io, "%d,%d,%.10g,%.10g,%.7g,%.7g,%.8g,%.8g\n",
+                    first(window), last(window), a.contrast, b.contrast, a.residual_nm,
+                    b.residual_nm, a.step, b.step)
+            end
         end
     end
     open(joinpath(output, "timeline.csv"), "w") do io

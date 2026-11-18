@@ -24,10 +24,16 @@ const MONITORED = (Symbol("modal-residual"), Symbol("llowfs-modal-residual"),
 
 include(ENV["SPIDERS_TRANSPORT_SELECTOR"])
 const TRANSPORT = SpidersDualTransport
+include("protective_recovery.jl")
 include("measure.jl")
 
 function phase_at(tick, variant=:experiment)
-    if variant === :pulse
+    if variant === :recovery
+        RESET_TICK <= tick <= RELEASE_TICK && return :protective_reset
+        LLOWFS_RECLOSE_TICK <= tick <= SCC_RECLOSE_TICK && return :reclose
+        tick > SCC_RECLOSE_TICK && return :post_reclose
+    end
+    if variant in (:pulse,:recovery)
         tick == 1652 && return :saturate
         tick > 1652 && return :release
         tick >= 1201 && return :resume
@@ -91,7 +97,7 @@ function prepare_stimulus(application, variant)
     peak = maximum(abs, p * direction)
     isfinite(peak) && peak > 0 || error("sealing calibration produced a zero tip/tilt stimulus")
     # The pulse crosses the bound for one LLOWFS-only event.
-    factor = variant === :pulse ? 1.15 : 2.0
+    factor = variant in (:pulse,:recovery) ? 1.15 : 2.0
     delta = direction * Float32(factor * 0.5 / (0.05 * peak))
     return (; baseline, biased=baseline+delta, delta, peak)
 end
@@ -240,9 +246,12 @@ function run_events!(application, out, variant, preparation, state, observer, ev
     quiet = EXT.emitter(execution)
     command = execution.command
     stimulus = prepare_stimulus(application, variant)
-    bias_at = variant === :pulse ? 1652 : first(PHASES.saturate)
-    restore_at = variant === :pulse ? 1653 : first(PHASES.release)
-    biased_trial = variant in (:experiment, :pulse)
+    bias_at = variant in (:pulse,:recovery) ? 1652 : first(PHASES.saturate)
+    restore_at = variant in (:pulse,:recovery) ? 1653 : first(PHASES.release)
+    biased_trial = variant in (:experiment, :pulse, :recovery)
+    recovery_trial = variant === :recovery
+    recovery_trace = Dict{String,Any}("gates"=>Any[])
+    recovery_trial && (evidence["protective_recovery"] = recovery_trace)
     evidence["stimulus"] = (; stimulus.peak, reference_delta=stimulus.delta, command_limit=options.command_limit, bias_at, restore_at, enabled=biased_trial)
     previous_command = nothing
     previous_scc = nothing
@@ -271,7 +280,10 @@ function run_events!(application, out, variant, preparation, state, observer, ev
                 ticks = variant === :smoke ? 18 : LAST_TICK
                 for tick in 1:ticks
                     phase = phase_at(tick,variant)
-                    if tick == 5
+                    if recovery_trial && tick==RESET_TICK
+                        reset_protection!(recovery_trace,state,remote,observed,tick,previous_command)
+                        previous_scc = nothing
+                    elseif tick == 5
                         props = close_branch!(state, remote, observed, "llowfs-correction:closed")
                         close_receipts["llowfs"] = Dict("closed"=>props["llowfs-correction:closed"], "tick"=>tick)
                     elseif tick == first(PHASES.closed)
@@ -297,7 +309,8 @@ function run_events!(application, out, variant, preparation, state, observer, ev
                         error("plant model clock lost its fixed step")
                     science.source_command == command || error("native demand was not applied to plant input")
                     any(!iszero,science.source_dm_opd) && (counts["dm_nonzero"]+=1)
-                    sent_scc = mod(tick-1,SCC_PERIOD)==0 && (!biased_trial || phase !== :dropout)
+                    sent_scc = mod(tick-1,SCC_PERIOD)==0 && (!biased_trial || phase !== :dropout) &&
+                        (!recovery_trial || tick != RESET_TICK)
                     for (index,camera) in pairs(keys(science.sensors))
                         meta = metadata[camera]
                         meta.pts == (tick-1)*FIRST_TIME_NS && meta.duration == FIRST_TIME_NS ||
@@ -306,7 +319,8 @@ function run_events!(application, out, variant, preparation, state, observer, ev
                         identity = published ? camera_identity(execution,index,camera,meta,tick) : nothing
                         record_optical(observer,tick,phase,camera,execution.buffers[index],meta,published,identity)
                     end
-                    for camera in (:llowfs,:scc)
+                    cameras = recovery_trial && tick==SCC_RECLOSE_TICK ? (:scc,:llowfs) : (:llowfs,:scc)
+                    for camera in cameras
                         camera === :scc && !sent_scc && continue
                         identity = publish_camera!(inbox,publisher,execution,camera,metadata[camera],tick,phase)
                         counts[String(camera)]+=1
@@ -324,28 +338,48 @@ function run_events!(application, out, variant, preparation, state, observer, ev
                             rethrow()
                         end
                         record_samples(observer,tick,phase,state,samples)
-                        receipt === nothing && continue
+                        if receipt === nothing
+                            if recovery_trial && tick==SCC_PRIME_TICK && camera===:scc
+                                confirm_scc_priming!(recovery_trace,state,remote,observed,tick,identity)
+                            end
+                            continue
+                        end
                         shared = receipt.identity
                         shared === nothing && error("shared demand omitted acquisition identity")
                         shared.domain != identity.domain || error("shared demand carried camera identity")
                         if previous_command !== nothing
-                            previous_command.domain==shared.domain && previous_command.generation==shared.generation &&
-                                previous_command.sequence+1==shared.sequence || error("shared command cohort or sequence changed")
+                            same_cohort = previous_command.domain==shared.domain && previous_command.generation==shared.generation &&
+                                previous_command.sequence+1==shared.sequence
+                            new_reset_cohort = recovery_trial && tick==RESET_TICK && camera===:llowfs &&
+                                previous_command.domain==shared.domain && shared.generation==previous_command.generation+1 &&
+                                shared.sequence==1
+                            same_cohort || new_reset_cohort || error("shared command cohort or sequence changed")
                         end
                         previous_command = shared
                         max_command = maximum(abs,execution.incoming_command)
                         all(isfinite,execution.incoming_command) && max_command <= options.command_limit ||
                             error("native DM limit violated")
-                        copyto!(command,execution.incoming_command)
-                        record_native(observer,tick,phase,COMMAND,command,shared,receipt.pts)
-                        consumed+=1
-                        counts["command"]+=1
                         limiter = only(filter(s -> s.identity == shared, samples[LIMITER]))
                         feedback = reinterpret(Float32,limiter.payload)
+                        record_native(observer,tick,phase,COMMAND,execution.incoming_command,shared,receipt.pts)
+                        consumed+=1
+                        counts["command"]+=1
                         any(!iszero,feedback) && (counts["clipping"]+=1)
                         println(application_log,tick,',',phase,',',camera,',',identity.sequence,',',
                             identity_record(shared).domain,',',shared.generation,',',shared.sequence,',',
                             max_command,',',time_ns())
+                        if recovery_trial && phase===:protective_reset && camera===:llowfs
+                            held = capture_reset_reference!(recovery_trace,state,remote,observed,tick,
+                                identity,shared,command,execution.incoming_command,feedback)
+                            if tick==RELEASE_TICK
+                                release_protection!(recovery_trace,state,remote,observed,tick,held,identity,shared)
+                            end
+                        elseif recovery_trial && ((tick==LLOWFS_RECLOSE_TICK && camera===:llowfs) ||
+                                (tick==SCC_RECLOSE_TICK && camera===:scc))
+                            slot = camera===:llowfs ? 2 : 1
+                            reclose_protection!(recovery_trace,state,remote,observed,tick,identity,shared,slot)
+                        end
+                        copyto!(command,execution.incoming_command)
                     end
                     if biased_trial && tick in (bias_at,restore_at)
                         applied[String(phase)*"_processed"] = FGP.parameter_status(state.node, Symbol("llowfs-reference"))
@@ -389,7 +423,7 @@ end
 
 function main(application,out,variant; prepared=nothing)
     application = abspath(application)
-    variant in (:experiment,:control,:pulse,:smoke) || error("unknown experiment variant")
+    variant in (:experiment,:control,:pulse,:recovery,:smoke) || error("unknown experiment variant")
     observer = isdefined(Main,:MultirateMeasurement) && variant !== :smoke ?
         MultirateMeasurement.Observer(application) : nothing
     preparation = prepared === nothing ? prepare(application) : prepared
@@ -409,9 +443,10 @@ function main(application,out,variant; prepared=nothing)
             JSON.json(output,evidence)
             println(output)
         end
-        observer === nothing || MultirateMeasurement.finish!(observer,out)
+        observer === nothing || MultirateMeasurement.finish!(observer,out;
+            scc_resets=variant===:recovery && length(evidence["protective_recovery"]["gates"]) >= 2 ? [RESET_TICK] : Int[])
     end
-    if variant in (:experiment,:pulse)
+    if variant in (:experiment,:pulse,:recovery)
         phases = evidence["phases"]
         phases["dropout"]["scc"] == 0 && phases["dropout"]["llowfs"] == length(PHASES.dropout) ||
             error("dropout did not isolate SCC")
@@ -419,7 +454,8 @@ function main(application,out,variant; prepared=nothing)
             error("SCC did not reprime and return")
         phases["saturate"]["clipping"] > 0 && phases["release"]["dm_nonzero"] > 0 ||
             error("missing physical saturation or post-release optical feedback")
-        all(p -> p["dm_nonzero"] > 0, values(phases)) || error("native DM never reached plant for a phase")
+        all(name -> phases[name]["dm_nonzero"] > 0, ("baseline","closed","dropout","resume","saturate","release")) ||
+            error("native DM never reached plant for an affected phase")
     end
     println("SPIDERS_MULTIRATE_PASS ",variant); flush(stdout)
     return preparation

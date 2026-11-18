@@ -286,7 +286,7 @@ function phase_summary(phase, observer, commands)
     return result
 end
 
-function pair_history(observer)
+function pair_history(observer; scc_resets=Int[])
     receipts = Dict{Tuple{Identity,Int64},NativeSample}()
     for row in observer.native
         row.stream === PAIR_STATUS && row.identity !== nothing || continue
@@ -303,6 +303,9 @@ function pair_history(observer)
     first_complete_after_dropout = nothing
     for row in observer.optical
         row.camera === :scc && row.published || continue
+        if previous !== nothing && any(tick -> previous.tick < tick <= row.tick, scc_resets)
+            previous = nothing
+        end
         key = (row.identity, row.model_pts_ns)
         actual = pop!(receipts, key, nothing)
         expected = previous !== nothing && adjacent(previous.identity, row.identity) &&
@@ -358,7 +361,7 @@ end
 Write raw scalar receipts, paired native-command measurements and phase coverage.
 Return the same summary record written to `measurement.json`.
 """
-function finish!(observer::Observer, outdir)
+function finish!(observer::Observer, outdir; scc_resets=Int[])
     mkpath(outdir)
     commands, unpaired_feedback = measure_commands(observer)
     write_optical(joinpath(outdir, "optical.csv"), observer.optical)
@@ -373,7 +376,7 @@ function finish!(observer::Observer, outdir)
         missing_command_feedback=count(row -> row.clamp_consistent === nothing, commands),
         out_of_bounds_commands=count(row -> !row.bounded, commands),
         inconsistent_clamps=count(row -> row.clamp_consistent === false, commands),
-        scc_pair_history=pair_history(observer),
+        scc_pair_history=pair_history(observer; scc_resets),
         recovery=recovery_summary(commands))
     PipeWireAORTC.Common.write_json(joinpath(outdir, "measurement.json"), summary; atomic=true)
     return summary

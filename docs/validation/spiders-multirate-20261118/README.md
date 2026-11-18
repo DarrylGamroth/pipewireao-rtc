@@ -15,12 +15,35 @@ clipped 144 actuators. Late mean unfringed contrast reached 3.69 × 10⁻⁴,
 32.7 times the matched reference. Restoring the sensor reference alone
 did not recover the dark hole within this window.
 
+**Protective Reset recovered the dark hole.** A third run matched the pulse
+run through tick 1800. Its first LLOWFS return after Reset (tick 1801) drove
+the clipped mirror to its calibrated flat in one step of 0.5 peak and
+0.340 RMS native units. The generation-matched Release left both branches
+open. LLOWFS closed at tick 1806 and SCC at tick 1807, after a fresh pair
+acquired on the flat. All 998 subsequent commands starting with the flat
+were unclipped. During the final three model seconds, mean unfringed
+contrast was 1.12484 × 10⁻⁵ versus 1.12586 × 10⁻⁵ uninterrupted;
+LLOWFS residual was 4.830 versus 4.829 nm RMS. Both branches continued
+contributing demand. [Native gate receipts](protective/transport.json) ·
+[Protective recovery verification](protective/verification.log).
+
+Reclose order mattered on the shared mirror. In the [first
+ordering](reclose-order/README.md), LLOWFS made a nonzero correction
+before SCC had its flat evidence and SCC's close guard stayed set. In the
+successful arm the harness withheld the SCC exposure at Reset while the
+plant still saw the old clipped demand. SCC primed on tick 1804. At tick
+1807 it received the other phase ahead of that tick's LLOWFS update.
+This verifies the existing protocol under a coordinated sequence of
+events. The 0.5 return-to-flat step is a measured command discontinuity;
+physical slew and safety limits were outside this test.
+
 | Phase | LLOWFS RMS (nm OPD) | Mean unfringed contrast | Largest native DM step |
 |---|---:|---:|---:|
 | Both loops closed before dropout | 4.50 | 1.119 × 10⁻⁵ | 0.00118 |
 | SCC paused, LLOWFS running | 4.95 | 1.119 × 10⁻⁵ | 0.0000220 |
 | SCC resumed, before the pulse | 4.31 | 1.124 × 10⁻⁵ | 0.000605 |
 | After restoring the reference, final 449 ticks | 2,739 | 3.689 × 10⁻⁴ | 0.00219 |
+| After protective reset and reclose, same final ticks | 4.63 | 1.123 × 10⁻⁵ | 0.000473 |
 | Matched uninterrupted reference, same final ticks | 4.64 | 1.127 × 10⁻⁵ | 0.000488 |
 
 ![Matched LLOWFS, contrast and actuator step traces](recovery.png)
@@ -96,14 +119,17 @@ With `app`, `out` and `here` set to absolute paths:
 
 ```sh
 (cd "$app" && sha256sum -c "$here/app-inputs.sha256")
-mkdir -p "$out/control" "$out/experiment"
+mkdir -p "$out/control" "$out/experiment" "$out/protective"
 export TMPDIR="$(mktemp -d /tmp/spiders-rate.XXXXXX)"
 export CUDA_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 JULIA_LOAD_PATH="@:@stdlib"
 julia -O0 --startup-file=no --threads=3,1 --project="$app" \
   "$here/run.jl" "$app" "$out/control" control "$out/experiment" pulse
-julia --project="$app" "$here/verify.jl" "$out/experiment" "$out/control"
-julia "$here/paired.jl" "$out/experiment" "$out/control" "$out"
+julia -O0 --startup-file=no --threads=3,1 --project="$app" \
+  "$here/run.jl" "$app" "$out/protective" recovery
+bash "$here/verify-protective.sh" "$out/protective" "$out/experiment" "$out/control"
+julia "$here/paired.jl" "$out/experiment" "$out/control" "$out" "$out/protective"
 (cd "$out" && gnuplot "$here/timeline.gp")
+julia --project="$app" "$here/verify.jl" "$out/experiment" "$out/control"
 ```
 
 The capture and transport checks passed. The final assertion in
