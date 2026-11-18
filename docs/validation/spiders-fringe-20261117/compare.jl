@@ -55,4 +55,6 @@ function compare(directory, seed)
     end
 end
 
-foreach(seed -> compare(only(ARGS), seed), (17, 73))
+if abspath(PROGRAM_FILE) == @__FILE__
+    foreach(seed -> compare(only(ARGS), seed), (17, 73))
+end
