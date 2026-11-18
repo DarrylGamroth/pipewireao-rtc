@@ -227,7 +227,7 @@ function collect_epoch!(wire, demand, label, generation, mask, basis, images, ba
         if last_image !== nothing && last_image > LAST_EXPOSURE + BLOCK
             error("Native residual stream did not keep up with $label camera (pixels=$last_pixel, modes=$last_mode)")
         end
-        frame === nothing && pixel_receipt === nothing && mode_receipt === nothing && sleep(0.001)
+        frame === nothing && pixel_receipt === nothing && mode_receipt === nothing && yield()
     end
     error("Timed out collecting $label exposures (camera=$last_image, pixels=$last_pixel, modes=$last_mode)")
 end
@@ -247,8 +247,6 @@ function write_evidence(out, biased, closed, images, mask, basis)
     common = intersect(keys(biased.camera), keys(closed.camera), keys(biased.pixels),
         keys(closed.pixels), keys(biased.modes), keys(closed.modes))
     indices = sort!(collect(common))
-    @assert length(indices) >= 0.95 * (LAST_EXPOSURE - BURN_IN)
-    @assert length(images.sequences) >= 0.95 * ((LAST_EXPOSURE - BURN_IN) ÷ 2)
     open(joinpath(out, "paired.csv"), "w") do io
         println(io, "sequence,phase,pts_ns,open_electrons,closed_electrons," *
             "open_pixel_power,closed_pixel_power,open_controllable_power,closed_controllable_power," *
@@ -291,6 +289,8 @@ function write_evidence(out, biased, closed, images, mask, basis)
             closed_command_matched_count=closed.demand.late_count,
             matched_exposures=length(indices), image_sequences=images.sequences,
             region_pixels=count(mask), controllable_rank=size(basis, 2)); atomic=true)
+    @assert length(indices) >= 0.95 * (LAST_EXPOSURE - BURN_IN)
+    @assert length(images.sequences) >= 0.95 * ((LAST_EXPOSURE - BURN_IN) ÷ 2)
     return nothing
 end
 

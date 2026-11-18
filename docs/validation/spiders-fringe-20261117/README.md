@@ -92,3 +92,56 @@ in native command units. The observer measures the controller output.
 Its late command averages correspond to the camera time window without
 an exposure-by-exposure identity match. [Seed 17](filtered-17/transport.json)
 · [Seed 73](filtered-73/transport.json)
+
+## Matched unfiltered control
+
+The unfiltered control fits the same 64 SCC directions around the normal
+flat. Each fit sets the Tikhonov parameter to the smallest retained singular
+value of its own response matrix. The two fits share the zero camera
+reference, detector selection, LLOWFS configuration, gains, command mapping
+and seeded CUDA trajectories. Of the seven recorded input hashes for each
+seed, only the reconstructor differs.
+
+The camera's first correction at the static flat points in different
+directions for the two fits (cosine similarity 0.762). Applying that one
+correction to the static CPU optical model lowers unfringed intensity by
+1.22% with the unfiltered fit and 2.04% with the filtered fit. The
+held-out closed-loop runs below measure what happens after repeated
+camera corrections. [Single-step comparison](compare-first-step.json)
+
+For the direct comparison, `julia compare.jl .` takes the intersection of
+camera and residual exposure IDs across all four epochs for each seed.
+It checks chopping phase, model timestamp and input hashes. The table
+uses the shared unfringed exposures. The paired modal RMS changes in the
+[block results](comparison.txt) are relative to each fit's own LLOWFS-only
+baseline. Different reconstructors estimate different modal amplitudes from
+the same camera signal, so the unfringed photometry is the common measure.
+
+| Seed | Shared unfringed exposures | LLOWFS only¹ | Unfiltered SCC + LLOWFS | Filtered SCC + LLOWFS |
+| --- | ---: | ---: | ---: | ---: |
+| 17 | 954 | 1.52764 × 10⁻⁵ | 2.15914 × 10⁻⁵ (+41.34%) | 1.31127 × 10⁻⁵ (−14.16%) |
+| 73 | 964 | 1.52131 × 10⁻⁵ | 2.16743 × 10⁻⁵ (+42.47%) | 1.31497 × 10⁻⁵ (−13.56%) |
+
+¹ The two LLOWFS-only means agree to the precision shown. Percentages use
+each run's own baseline. In all eight shared blocks the unfiltered loop
+brightened the region while the fringe-filtered loop darkened it. The
+unfiltered modal RMS fell by 83–84% on closure even as the science image
+brightened. A smaller modal residual alone does not establish a darker image.
+
+Both filtered runs and the seed 73 unfiltered run met the 95% camera
+and residual collection gates. The first seed 17 unfiltered run captured
+1,944 of 2,048 fully paired exposures, two below the residual gate. Its
+repeat captured 1,843. Both passed the independent camera-image gate
+with 993 and 976 of 1,024 unfringed pairs. Their image means showed
++41.35% and +41.34% respectively. The table uses the first run for
+seed 17. The reruns used a yielding passive observer and saved the
+coverage counts before evaluating the same thresholds. All four
+configurations acknowledged Quit. [Seed 17 control](raw64-17/transport.json)
+· [Seed 17 repeat](raw64-17-retry/measurement.json)
+· [Seed 73 control](raw64-73/transport.json)
+
+The filtered correction darkened 7,071 and 7,100 of the 12,703 detector
+pixels. Residual speckles are visible. The result establishes mean
+contrast improvement in this fitted, photon-noise-disabled simulator
+on two trajectories. The laboratory comparison validates the stored
+calibration calculation. No physical mirror was driven.

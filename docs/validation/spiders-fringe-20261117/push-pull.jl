@@ -10,12 +10,16 @@ load_array(path) = FITS(path) do file
     return ndims(image) == 2 ? permutedims(image) : image
 end
 
-function prepare_pokes(app, assets)
+function prepare_pokes(app, assets; use_gpu = true)
     OC = OpticalCalibration
     B = AdaptiveOpticsSim.Backends
-    CUDA.allowscalar(false)
     BLAS.set_num_threads(1)
-    target = B.AcceleratorComputeDevice(B.CUDABackend(), 0)
+    target = if use_gpu
+        CUDA.allowscalar(false)
+        B.AcceleratorComputeDevice(B.CUDABackend(), 0)
+    else
+        B.HostComputeDevice()
+    end
     recipe = OC.optical_recipe(app, "calibration/optical-dark-hole.yaml")
     plan = OC.optical_publication_plan(
         app, recipe;
@@ -118,9 +122,11 @@ function first_step(app, assets, output)
     println(report)
 end
 
-include(ARGS[1])
-if length(ARGS) == 5 && ARGS[5] == "first-step"
-    first_step(ARGS[2:4]...)
-else
-    main(ARGS[2:4]...)
+if abspath(PROGRAM_FILE) == @__FILE__
+    include(ARGS[1])
+    if length(ARGS) == 5 && ARGS[5] == "first-step"
+        first_step(ARGS[2:4]...)
+    else
+        main(ARGS[2:4]...)
+    end
 end

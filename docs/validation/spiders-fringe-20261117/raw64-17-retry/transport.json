@@ -1,0 +1,146 @@
+{
+  "admitted": true,
+  "core": 2076365,
+  "simulator": 2076411,
+  "gpu": "pid, used_gpu_memory [MiB]\n2076411, 2496 MiB\n",
+  "baseline": {
+    "generation": 1,
+    "camera_domain": "afeac955cdcfe380e34fa900eb8825a0",
+    "count": 3628,
+    "identified_count": 3628,
+    "late_count": 0,
+    "command_cohorts": [
+      {
+        "domain": "dc7c8f0d25d564912a4e3047590ba923",
+        "generation": 3,
+        "count": 3628
+      }
+    ],
+    "first_sequence": 391,
+    "last_sequence": 4095,
+    "peak": 0.00041895194,
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 457,
+        "gaps": 8,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "closed": {
+    "generation": 2,
+    "camera_domain": "afeac955cdcfe380e34fa900eb8825a0",
+    "count": 3971,
+    "identified_count": 3971,
+    "late_count": 0,
+    "command_cohorts": [
+      {
+        "domain": "dc7c8f0d25d564912a4e3047590ba923",
+        "generation": 4,
+        "count": 3971
+      }
+    ],
+    "first_sequence": 58,
+    "last_sequence": 4096,
+    "peak": 0.021758454,
+    "transport": {
+      "source_node": "spiders-controller",
+      "source_port": "dm-command",
+      "target_node": "scc-error-command",
+      "target_port": "input_1",
+      "passive": true,
+      "state": "3",
+      "link": {
+        "id": 208,
+        "state": "LINK_STATE_ACTIVE",
+        "error": null,
+        "output_node": 137,
+        "output_port": 164,
+        "input_node": 201,
+        "input_port": 202,
+        "negotiated": {
+          "schema": "pipewireao/demanded-pdm-command-f32/1",
+          "element_type": "F32_LE",
+          "shape": [
+            468
+          ],
+          "layout": "ROW_MAJOR",
+          "rate": "100/1"
+        }
+      },
+      "contract": {
+        "schema": "pipewireao/demanded-pdm-command-f32/1",
+        "element_type": "F32_LE",
+        "shape": [
+          468
+        ],
+        "layout": "ROW_MAJOR",
+        "rate": "100/1"
+      },
+      "counters": {
+        "pending": false,
+        "dropped": 784,
+        "gaps": 11,
+        "rejected": 0,
+        "failed": false
+      }
+    }
+  },
+  "baseline_adoption": [
+    {
+      "active": 1,
+      "node": "llowfs-correction",
+      "requested": 1
+    }
+  ],
+  "closed_adoption": [
+    {
+      "active": 1,
+      "node": "correction",
+      "requested": 1
+    },
+    {
+      "active": 3,
+      "node": "llowfs-correction",
+      "requested": 3
+    }
+  ],
+  "quit": true,
+  "cleanup": true,
+  "private_socket_removed": true
+}
