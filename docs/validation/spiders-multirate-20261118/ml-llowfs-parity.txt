@@ -1,0 +1,31 @@
+Julia 1.13.3 | FilterGraphAlgorithms 0.12.5 | SimpleChains 0.4.8
+Lab source: /home/dgamroth/spiders-working/mllowfsservice/src/state-machine.jl
+Lab source SHA-256: b3f824c32351d0e634bb864c88c94fd88d48fbc70f8aa25c8a8d8a6f8d61a8f3
+Input: /mnt/datadrive/DATA/MLLOWFS/training_data.fits | HDU 1, image 1
+Input cube: (20, 20, 203088) Float64
+Input FITS SHA-256: 8d88a15189938de3b7a8257dee1207d3d741240831b6550abc9947be314dda35
+Input crop SHA-256 (decoded Float64): eab99af37d09b79b4c1e91b82e3bbb96257b896a30f245aac0ff01fff35f24c9
+Model input SHA-256 (decoded Float32): 7c3a44ea4307b94ad2d7e718f508eebf97721c36ea3b63c63085369112c12aff
+Weights: /mnt/datadrive/DATA/MLLOWFS/ml-llowfs-best-params.fits | HDU 1, (240584,) Float32
+Weights FITS SHA-256: 0ce7aed7837209f4dac00b7788a07844dc1714f606c51e6d9b46f62be78a30a9
+Legacy input shape: (20, 20, 1) | Registered input shape: (1, 20, 20)
+Normalization: divide by summed flux, subtract mean, divide by sample standard deviation
+Normalization values: (flux = 198691.36f0, center = 0.0025f0, deviation = 0.0037086483f0)
+Process status: nothing
+Mode          Legacy      Registered
+   1  -0.0482344776  -0.0482344776
+   2  -0.1080955863  -0.1080955863
+   3  -0.0495136082  -0.0495136082
+   4   0.0074942424   0.0074942424
+   5   0.0213184431   0.0213184431
+   6   0.0270234719   0.0270234719
+   7  -0.0153653249  -0.0153653249
+   8   0.0188214183   0.0188214183
+   9   0.0106329303   0.0106329303
+  10   0.0199843515   0.0199843515
+  11   0.0032789179   0.0032789179
+  12   0.0223428104   0.0223428104
+  13  -0.0022108844  -0.0022108844
+  14   0.0073917168   0.0073917168
+Exact Float32 equality: true
+Maximum absolute difference: 0.0
