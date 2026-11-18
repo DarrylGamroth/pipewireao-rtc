@@ -1,0 +1,11 @@
+# Generated from the fitted sky model, held-out camera settings, and instrument exposure.
+exposure_seconds = 0.01
+photon_noise = false
+photons_per_second_per_unit_intensity = 1.0e6
+quantum_efficiency = 0.8
+unocculted_star_peak = 0.0022846784685399586
+
+[input_sha256]
+"generated/held-out/definition.yaml" = "28f1ae640b5b79bf11b4c0df6d30bd398d42947d30ffdfbd9652463211ca0d91"
+"instrument.yaml" = "92dde90f5d738979f22d778db7418b0bbb88bde2769ad9baa1c2bbe0daffbf17"
+"optics/generated/fitted/sky.yaml" = "18a3e6c2c658bb23e5f83434c816c8f06784e7c1c83fa318998559760f88b969"

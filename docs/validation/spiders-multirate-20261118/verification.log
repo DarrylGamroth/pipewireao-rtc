@@ -1,0 +1,14 @@
+Release: 1197/1197 clipped commands, last release tick 2550
+Verified /home/dgamroth/workspaces/spiders-fringe.zfHLf3/multirate/seed17-pulse4: 2550 LLOWFS residuals, 3348 consumed native commands, 1198 clipped commands
+Verified /home/dgamroth/workspaces/spiders-fringe.zfHLf3/multirate/seed17-control4: 2550 LLOWFS residuals, 3399 consumed native commands, 0 clipped commands
+ERROR: LoadError: AssertionError: The natural release did not establish sustained unclipped native demand
+Stacktrace:
+ [1] top-level scope
+   @ ~/workspaces/spiders-fringe.zfHLf3/multirate-measure/verify.jl:86
+ [2] include(mod::Module, _path::String)
+   @ Base ./Base.jl:309
+ [3] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:344
+ [4] _start()
+   @ Base ./client.jl:577
+in expression starting at /home/dgamroth/workspaces/spiders-fringe.zfHLf3/multirate-measure/verify.jl:82
