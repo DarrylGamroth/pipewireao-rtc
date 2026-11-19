@@ -645,35 +645,37 @@ end
 
 # Compile the installed CLI entry and shutdown specializations without opening a
 # PipeWire connection or contacting the user systemd manager.
-precompile(main, (Vector{String},))
-precompile(D.profile, (String, String))
-precompile(D.validate_application, (Dict{String,Any}, String, String))
-precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
-precompile(
-    Core.kwcall,
-    (
-        NamedTuple{(:source_role,),Tuple{String}},
-        typeof(SessionLaunch.cleanup_invocation!),
-        String,
-        String,
-    ),
-)
+@compile_workload begin
+    precompile(main, (Vector{String},))
+    precompile(D.profile, (String, String))
+    precompile(D.validate_application, (Dict{String,Any}, String, String))
+    precompile(stop!, (NamedTuple{(:unit, :runtime_root),Tuple{String,String}},))
+    precompile(
+        Core.kwcall,
+        (
+            NamedTuple{(:source_role,),Tuple{String}},
+            typeof(SessionLaunch.cleanup_invocation!),
+            String,
+            String,
+        ),
+    )
 
-precompile(
-    Core.kwcall,
-    (
-        NamedTuple{(:clock,),Tuple{Clocks.SystemNanoClock}},
-        typeof(SessionLaunch.cleanup_record!),
-        String,
-        Dict{String,Any},
-        String,
-        String,
-    ),
-)
-precompile(
-    Core.kwcall,
-    (NamedTuple{(:atomic,),Tuple{Bool}}, typeof(C.write_json), String, Dict{String,Any}),
-)
+    precompile(
+        Core.kwcall,
+        (
+            NamedTuple{(:clock,),Tuple{Clocks.SystemNanoClock}},
+            typeof(SessionLaunch.cleanup_record!),
+            String,
+            Dict{String,Any},
+            String,
+            String,
+        ),
+    )
+    precompile(
+        Core.kwcall,
+        (NamedTuple{(:atomic,),Tuple{Bool}}, typeof(C.write_json), String, Dict{String,Any}),
+    )
+end
 
 # Both hooks read and update the invocation record. Exercise the bounded JSON
 # codec in memory so its dynamically dispatched object and array readers are cached.

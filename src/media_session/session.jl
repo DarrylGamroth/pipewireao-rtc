@@ -891,8 +891,10 @@ function main(arguments = ARGS)
 end
 
 # Compile native session construction without creating a PipeWire context.
-precompile(Session, (String,))
-precompile(main, (Vector{String},))
+@compile_workload begin
+    precompile(Session, (String,))
+    precompile(main, (Vector{String},))
+end
 
 function precompile_ingress()
     clock = Clocks.CachedNanoClock(Int64(0))
