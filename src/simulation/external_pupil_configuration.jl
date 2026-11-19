@@ -106,7 +106,7 @@ function external_pupil_configuration(path, document)
             "rate",
             "pacing_rate_hz",
         ) : ("pupil_node",)
-    optional = clocked ? ("command_buffers",) : ()
+    optional = clocked ? ("command_buffers", "applied_command_observation") : ()
     InstrumentConfiguration.fields(
         document,
         (required..., "sensor_buffers", "reference_clock", additional..., optional...),
@@ -316,6 +316,9 @@ function external_pupil_configuration(path, document)
             command_units = text(document["command_units"], "optical command units"),
             command_limit = Float32(limit),
             command_buffers,
+            applied_command_observation = boolean(
+                get(document, "applied_command_observation", false), "applied_command_observation"
+            ),
             mirror,
             rate,
             period_ns,

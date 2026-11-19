@@ -179,6 +179,12 @@ protocol. A version-5 pupil-source profile supplies the existing
 that receiver and publishes the scientific pupil and declared applied command.
 The ordinary standalone loader and callback API serve independent consumers.
 
+A managed version-6 clocked source can enable `applied_command_observation`.
+When enabled, declare `simulator-<mirror>-applied:output_1` as a Float32
+ndarray source with the `applied_pdm_command` schema and link it to the
+observation queue. Each sample reports the physical command used by a
+completed model step, in its declared command units.
+
 The [optical configuration record](reviews/20261107-hil-optical-configuration/REVIEW.md)
 records exact source cohorts and CPU/CUDA, relocation, schema and private-core
 checks. RTC selectors are `test/simulation_export.jl`,

@@ -657,6 +657,10 @@ pupil_opd_rms_nm:
   id: "pipewireao/pupil-opd-rms-nm-f32/1"
   element_type: "Float32"
   wire_type: "F32_LE"
+applied_pdm_command:
+  id: "pipewireao/applied-pdm-command-f32/1"
+  element_type: "Float32"
+  wire_type: "F32_LE"
 applied_dm_command_opd_um:
   id: "pipewireao/applied-dm-command-opd-um-f32/1"
   element_type: "Float32"
