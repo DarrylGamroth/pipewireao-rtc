@@ -443,6 +443,11 @@ function chopped_warmup_samples(graph, options, warmup)
         sequence -> FilterGraphAlgorithms.SampleAcquisitionIdentity(
             ntuple(_ -> UInt8(0xa5), 16), UInt64(1), UInt64(sequence)
         )
+    detector_difference = any(values(FilterGraphs.output_formats(graph))) do output
+        output.schema == FilterGraphAlgorithms.SCC_CHOPPED_IMAGE_DIFFERENCE_V1 &&
+            length(output.shape) == 2
+    end
+    priming = detector_difference ? nothing : FilterGraphAlgorithms.SccPixelResidualIncompletePair
     samples = ntuple(3) do index
         fringed = isodd(index)
         metadata = FilterGraphAlgorithms.SampleMetadata(
@@ -457,8 +462,7 @@ function chopped_warmup_samples(graph, options, warmup)
         (;
             inputs = NamedTuple{(warmup.input,)}((ones(Float32, format.shape),)),
             metadata = NamedTuple{(warmup.input,)}((metadata,)),
-            expected = index == 1 ? FilterGraphAlgorithms.SccPixelResidualIncompletePair :
-                       nothing,
+            expected = index == 1 ? priming : nothing,
         )
     end
     return chopped_warmup_samples(graph, formats, warmup, samples)

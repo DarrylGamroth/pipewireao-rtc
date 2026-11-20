@@ -362,8 +362,8 @@ typed graph outputs. Monitor-only is the default and never changes closure.
 (1–60000 ms, default 5000). Expiry reports Unknown without a control retry.
 `--chopped-warmup PATH` selects bounded version-1 YAML with an image `input`,
 `exposure_duration_ns` and explicit `trigger_high_is_fringed`. Three unpublished
-synthetic F/U/F samples must prime then complete SCC pixel residuals; finally
-the Graph is reset. The owner requires explicit identity, exposure timing and optical chopping records.
+synthetic F/U/F samples prime either the detector pair or the SCC pixel
+residual before completion. The Graph is then reset. The owner requires explicit identity, exposure timing and optical chopping records.
 """
 main(args) = _main(args)
 

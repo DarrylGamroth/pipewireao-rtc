@@ -189,4 +189,40 @@ end
         end
     end
 end
+
+@testset "detector warmup publishes a priming result" begin
+    mktempdir() do directory
+        path = joinpath(directory, "detector-difference.conf")
+        write(
+            path,
+            """
+            filter.graph = {
+                nodes = [
+                    { name = pair type = ndarray label = chopped-detector-difference-f32
+                      config = { image_size = [ 2 3 ] input_schema = "test/image/1" } }
+                ]
+                inputs = [ { name = image endpoint = "pair:image" } ]
+                outputs = [
+                    { name = difference endpoint = "pair:difference" }
+                    { name = pair-status endpoint = "pair:pair-status" }
+                ]
+            }
+            """,
+        )
+        graph = FilterGraphPipeWire.prepare_service_graph(path; algorithms = FGA.algorithms())
+        try
+            options = (;
+                execution = "complete-frame", feedback = nothing, capture_backend = nothing
+            )
+            warmup = (;
+                input = :image, exposure_duration_ns = 10_000_000, trigger_high_is_fringed = true
+            )
+            samples = G.chopped_warmup_samples(graph, options, warmup)
+            @test length(samples) == 3
+            @test all(sample -> sample.expected === nothing, samples)
+        finally
+            FilterGraphPipeWire.close_execution(graph)
+        end
+    end
+end
 end
