@@ -702,6 +702,7 @@ function settings(declaration::NamedTuple, overrides::AbstractDict = Dict{String
     selected_optical_mask_responses(document, physical(declaration).document, paths, result)
     return result
 end
+settings(declaration::NamedTuple, ::NamedTuple{()}) = settings(declaration)
 settings(declaration::NamedTuple, overrides::NamedTuple) =
     settings(declaration, json_value(overrides))
 
