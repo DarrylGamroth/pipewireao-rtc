@@ -9,7 +9,7 @@ using AdaptiveOpticsSim.AlgorithmGraphs
 const E = PipeWireAORTC.InstrumentExport
 const C = PipeWireAORTC.Common
 const D = PipeWireAORTC.DeploymentConfiguration
-const AOS = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+const AOS = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
 const Observation = AOS.OpticalObservation
 const PREFIX = get(ENV, "PIPEWIREAO_PREFIX", "/opt/pipewireao")
 reference(pointer) = Dict("\$ref" => pointer)

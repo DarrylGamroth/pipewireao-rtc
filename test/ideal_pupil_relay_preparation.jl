@@ -1,6 +1,6 @@
 # Cold, generic graph relationships; no instrument names or live services.
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper
-const RELAY_EXT = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+using Test, PipeWireAORTC, AdaptiveOpticsSim
+const RELAY_EXT = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
 function relay_preparation_fixture()
     source = Dict(
         "name" => "optics",
@@ -45,9 +45,11 @@ function relay_preparation_fixture()
     )
 end
 @testset "Ideal pupil relay derives grids from connected declarations" begin
+    @test Base.get_extension(AdaptiveOpticsSim, :AdaptiveOpticsSimProperExt) === nothing
     graph = relay_preparation_fixture()
     relay = graph["nodes"][2]
     RELAY_EXT.prepare_ideal_pupil_relay!(relay, graph)
+    @test Base.get_extension(AdaptiveOpticsSim, :AdaptiveOpticsSimProperExt) !== nothing
     @test !haskey(relay, "preparation")
     @test relay["config"]["input_size"] == [16, 16]
     @test relay["config"]["output_size"] == [8, 8]

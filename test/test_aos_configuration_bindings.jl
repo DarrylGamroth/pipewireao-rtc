@@ -1,11 +1,11 @@
-# Optional CPU selector; requires RTC, AOS and AOS HIL in the active environment.
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+# Optional CPU selector; requires RTC and AOS in the active environment.
+using Test, PipeWireAORTC, AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
 
 const IC = PipeWireAORTC.InstrumentConfiguration
 const C = PipeWireAORTC.Common
 const F = PipeWireAORTC.Artifacts.FITSIO
-const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+const E = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
 const Detectors = AdaptiveOpticsSim.Detectors
 
 function write_image(path, values)

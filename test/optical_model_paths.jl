@@ -1,4 +1,4 @@
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL, Proper
+using Test, PipeWireAORTC, AdaptiveOpticsSim, Proper
 import AdaptiveOpticsSim.AlgorithmGraphs as AOG
 
 struct OpticalPathFactoryProbe end
@@ -8,7 +8,7 @@ AOG.graph_node_bindings(::OpticalPathFactoryProbe, config::NamedTuple) =
     (Symbol(config.reference),)
 
 @testset "Instrument model paths resolve at construction, retaining portable graph identity" begin
-    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
     mktempdir() do directory
         write(joinpath(directory, "model.yaml"), "schema_version: 1\n")
         factory = extension.InstrumentOpticalPathsFactory(

@@ -59,7 +59,7 @@ function prepare_mirror_response end
     graph_node_types()
 
 Return the registered AOS graph factories for in-memory instrument projections.
-Load the optional AOS and HIL dependencies before calling.
+Load AdaptiveOpticsSim and any packages that register the selected node factories.
 """
 function graph_node_types end
 
@@ -68,10 +68,10 @@ function graph_node_types end
         simulation_graph=calibration ? "calibration" : "production", kwargs...)
 
 Prepare the selected AOS graph and its bindings from a simulation declaration.
-The result retains the prepared `graph`, `declaration` and `configured` settings;
-standalone graphs have no HIL `boundary` or `driver`. Requires the optional AOS
-and HIL packages. It creates no RTC session. The loaded extension documents
-compute-target and execution-policy keywords.
+The result retains the prepared `graph`, `declaration` and `configured` settings.
+A declared in-memory frame/command boundary also supplies a model-time driver.
+Load AdaptiveOpticsSim and any packages required by the selected graph. The
+loaded extension documents compute-target and execution-policy keywords.
 """
 function prepare_system end
 
@@ -95,10 +95,10 @@ function export_simulation end
     prepare_external_pupil(path; settings=NamedTuple(), kwargs...)
 
 Prepare standalone optical paths and optional post-exposure response graphs
-from a simulation declaration. Requires the optional AOS and HIL packages;
-declarations containing an HIL boundary are rejected. AOS owns exposure
-accumulation and numerical execution. The loaded extension documents the
-returned optical/response collections and compute-target options.
+from a standalone simulation declaration. Load AdaptiveOpticsSim and any
+packages required by the selected optical graphs. Declarations containing a
+`hil` key are rejected. AOS owns exposure accumulation and numerical execution.
+The loaded extension documents compute-target options.
 """
 function prepare_external_pupil end
 function optical_graph_document(declaration, configured, mode)
@@ -109,7 +109,7 @@ end
 function prepare_optical_components!(graph, declaration, configured)
     any(node -> haskey(node, "preparation"), graph["nodes"]) && throw(
         ArgumentError(
-            "Zemax component preparation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL",
+            "Zemax component preparation requires AdaptiveOpticsSim",
         ),
     )
     return graph
@@ -117,7 +117,7 @@ end
 function validate_prepared_optics(declaration)
     throw(
         ArgumentError(
-            "generated Zemax component validation requires AdaptiveOpticsSim and AdaptiveOpticsSimPipeWireHIL",
+            "generated Zemax component validation requires AdaptiveOpticsSim",
         ),
     )
 end

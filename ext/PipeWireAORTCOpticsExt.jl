@@ -1,10 +1,30 @@
-"""Scientific preparation requiring AOS without a transport or HIL dependency."""
+"""Scientific preparation for authored AOS instrument graphs."""
 module PipeWireAORTCOpticsExt
 
+using AdaptiveOpticsSim
+using AdaptiveOpticsSim.AlgorithmGraphs
 import AdaptiveOpticsSim.Optics
-import PipeWireAORTC.InstrumentConfiguration as IC
+import PipeWireAORTC
+import PipeWireAORTC: AOSOwner
 
-function IC._influence_modes(
+const Backends = AdaptiveOpticsSim.Backends
+
+include("aos/optical_observation.jl")
+include("aos/optical_model_paths.jl")
+
+"Compose AOS scientific factories with application-relative optical model paths."
+configured_graph_node_types(directory = nothing) =
+    instrument_optical_factories(builtin_graph_node_types(), directory)
+
+function copy_to_target(device, values)
+    destination = Backends.allocate_device_array(device, eltype(values), size(values)...)
+    copyto!(destination, values)
+    return destination
+end
+
+include("aos/instruments.jl")
+
+function Instruments._influence_modes(
     samples::AbstractArray{<:AbstractFloat,3},
     grid_shape,
     metadata,
