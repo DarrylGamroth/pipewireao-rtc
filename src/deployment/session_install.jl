@@ -159,8 +159,9 @@ function finish_install(destination, prefix, julia, commit)
         write(launcher, script)
     end
     chmod(launcher, 0o755)
-    PipeWireAORTC.HILStartup.install!(environment, destination, installed_spec["owners"], prefix)
+    # Graph preparation validates controller recovery before the optical image build.
     PipeWireAORTC.GraphStartup.precompile!(julia, destination, environment, installed_spec["owners"])
+    PipeWireAORTC.HILStartup.install!(environment, destination, installed_spec["owners"], prefix)
     template = read(
         joinpath(PipeWireAORTC.package_root(), "assets/deployment/pipewireao-session@.service.in"), String
     )
