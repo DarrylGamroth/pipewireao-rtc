@@ -1,11 +1,14 @@
 # Optional CPU integration: RTC composes the AOS builtins without implementing them.
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+using Test, PipeWireAORTC, AdaptiveOpticsSim
 using AdaptiveOpticsSim.AlgorithmGraphs
 
 @testset "RTC delegates detector layout to the AOS builtin factory" begin
-    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
+    @test Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt) === nothing
+    @test hasmethod(PipeWireAORTC.InstrumentConfiguration.prepare_external_pupil, (String,))
+    @test hasmethod(PipeWireAORTC.InstrumentConfiguration.prepare_system, (String,))
     builtin = builtin_graph_node_types()
-    registry = extension.configured_graph_node_types()
+    registry = PipeWireAORTC.InstrumentConfiguration.graph_node_types()
     @test keys(registry) == keys(builtin)
     @test registry.detector_frame_layout_f32 === builtin.detector_frame_layout_f32
     mktempdir() do directory

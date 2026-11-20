@@ -135,6 +135,17 @@ function PipeWireAORTC.InstrumentExport.graph_port_contracts(
     end
 end
 
+function PipeWireAORTC.InstrumentCalibration.controller_graph(application; overrides = Dict())
+    entries = Owner.bindings(joinpath(application, "rtc", "parameters.conf"))
+    return FilterGraphPipeWire.prepare_service_graph(
+        joinpath(application, "rtc", "graph.conf");
+        initial_parameters = formats -> [
+            port => get(overrides, port, data) for
+            (port, data) in Owner.prepare_bindings(entries, formats)
+        ],
+    )
+end
+
 function Owner.read_bindings(graph_path::AbstractString, binding_path::AbstractString)
     entries = Owner.bindings(binding_path)
     updates = Pair{Symbol,Array}[]

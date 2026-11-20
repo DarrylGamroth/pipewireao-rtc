@@ -1,7 +1,7 @@
-# Optional AOS/HIL contract selector: no optical preparation or native core.
-using Test, PipeWireAORTC, AdaptiveOpticsSim, AdaptiveOpticsSimPipeWireHIL
+# Optional AOS contract selector: no optical preparation or native core.
+using Test, PipeWireAORTC, AdaptiveOpticsSim
 const AG = AdaptiveOpticsSim.AlgorithmGraphs
-const X = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+const X = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
 @testset "response cadence admission" begin
     config = AG.second_order_response_node(
         :response;

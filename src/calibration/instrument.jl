@@ -713,8 +713,9 @@ end
 
 Prepare the built application's complete-frame controller graph with its FITS
 parameter bindings, optionally replacing arrays by parameter-port name through
-`overrides`. Requires the optional calibration science extension. The caller
-owns the prepared graph and closes it with `FilterGraphPipeWire.close_execution`.
+`overrides`. Load FilterGraphPipeWire, FilterGraphs and FilterGraphAlgorithms.
+The caller owns the prepared graph and closes it with
+`FilterGraphPipeWire.close_execution`.
 """
 function controller_graph end
 

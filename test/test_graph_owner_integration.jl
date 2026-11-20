@@ -14,6 +14,12 @@ using FilterGraphAlgorithms
 
 @test Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt) !== nothing
 @test hasmethod(PipeWireAORTC.GraphOwner.run_owner, Tuple{Any,Any,Any})
+@test hasmethod(PipeWireAORTC.InstrumentCalibration.controller_graph, (String,))
+@test Base.get_extension(PipeWireAORTC, :PipeWireAORTCCalibrationExt) === nothing
+@test !any(
+    id -> id.name in ("AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL", "CUDA", "AMDGPU"),
+    keys(Base.loaded_modules),
+)
 
 @testset "FITS graph initial parameters adopt before node publication" begin
     mktempdir() do directory

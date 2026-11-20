@@ -43,6 +43,7 @@ function Export.validate_pupil_equivalence(
     report["provenance"]["mirror_component"] == mirror ||
         throw(ArgumentError("physical transfer names a different calibrated mirror"))
     owner = Base.get_extension(PipeWireAORTC, :PipeWireAORTCAOSExt)
+    optics = Base.get_extension(PipeWireAORTC, :PipeWireAORTCOpticsExt)
     actual = IC.prepare_mirror_response(
         source, settings, mirror; simulation_graph = simulation["plant"]["graph"]
     )
@@ -68,10 +69,10 @@ function Export.validate_pupil_equivalence(
     a.schema == b.schema && a.shape == b.shape ||
         throw(ArgumentError("physical transfer pupil contracts differ"))
     amplitude =
-        owner.prepare_bindings(source, settings, (declared.amplitude,)) |>
+        optics.prepare_bindings(source, settings, (declared.amplitude,)) |>
         x -> getproperty(x, declared.amplitude)
     original_amplitude =
-        owner.prepare_bindings(upstream, original, (previous.amplitude,)) |>
+        optics.prepare_bindings(upstream, original, (previous.amplitude,)) |>
         x -> getproperty(x, previous.amplitude)
     amplitude == original_amplitude &&
     eltype(amplitude) === eltype(original_amplitude) === Float32 ||

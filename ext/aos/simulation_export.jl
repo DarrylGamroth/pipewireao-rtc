@@ -2,6 +2,30 @@
 import FITSIO
 import SHA
 
+function PipeWireAORTC.InstrumentExport.localize_optical_preparation!(
+    source::AbstractString, destination::AbstractString
+)
+    Zemax.validate_provenance(source)
+    Zemax.prepare(destination; yamlfmt = nothing)
+    return nothing
+end
+
+function configured_wire_contracts(declaration)
+    return Tuple(
+        (;
+            frame_encoding = Symbol(entry["frame_encoding"]),
+            frame_schema = entry["frame_schema"],
+            command_schema = Instruments._instrument_seal(entry["command_schema"]),
+            command_scale = configured_command_scales(
+                Instruments._instrument_seal(entry["command_scale"])
+            ),
+        ) for entry in declaration.document["wire_contracts"]
+    )
+end
+
+configured_command_scales(value::Real) = Float32(value)
+configured_command_scales(values::NamedTuple) = map(Float32, values)
+
 function Instruments.export_simulation(
     path::AbstractString,
     destination::AbstractString;
@@ -75,7 +99,9 @@ function export_simulation(
             AdaptiveOpticsSimPipeWireHIL.Simulation.load(manifest_path)
         )
         for node in prepared.definition.nodes
-            validate_sample_period(node.config, declaration.document["frame_period_s"])
+            OpticsExt.validate_sample_period(
+                node.config, declaration.document["frame_period_s"]
+            )
         end
         mv(temporary, output)
         return joinpath(output, "simulation.yaml")
@@ -113,14 +139,14 @@ function simulation_graph_product(
         declaration, configured; simulation_graph = selection
     )
     validate_simulation_graph_product(version, document)
-    factories = configured_graph_node_types(declaration.directory)
+    factories = OpticsExt.configured_graph_node_types(declaration.directory)
     names = unique!(
         vcat(
-            runtime_binding_names(document),
-            configuration_binding_names(document, factories),
+            OpticsExt.runtime_binding_names(document),
+            OpticsExt.configuration_binding_names(document, factories),
         ),
     )
-    values = prepare_bindings(declaration, configured, names)
+    values = OpticsExt.prepare_bindings(declaration, configured, names)
     bindings = Dict(
         string(name) => simulation_binding_product(
             getproperty(values, name),

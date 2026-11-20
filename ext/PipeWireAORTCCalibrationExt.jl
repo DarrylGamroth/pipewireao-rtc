@@ -25,17 +25,6 @@ const Calibration = PipeWireAORTC.InstrumentCalibration
 const GraphOwner = PipeWireAORTC.GraphOwner
 const HIL = AdaptiveOpticsSim.AlgorithmGraphs
 
-function Calibration.controller_graph(application; overrides = Dict())
-    entries = GraphOwner.bindings(joinpath(application, "rtc", "parameters.conf"))
-    return FilterGraphPipeWire.prepare_service_graph(
-        joinpath(application, "rtc", "graph.conf");
-        initial_parameters = formats -> [
-            port => get(overrides, port, data) for
-            (port, data) in GraphOwner.prepare_bindings(entries, formats)
-        ],
-    )
-end
-
 function Calibration.calibration_frame!(system, physical)
     boundary = system.boundary
     sequence = HIL.hil_boundary_status(boundary).frame_sequence

@@ -1,11 +1,3 @@
-function PipeWireAORTC.InstrumentExport.localize_optical_preparation!(
-    source::AbstractString, destination::AbstractString
-)
-    AdaptiveOpticsSim.Optics.Zemax.validate_provenance(source)
-    AdaptiveOpticsSim.Optics.Zemax.prepare(destination; yamlfmt = nothing)
-    return nothing
-end
-
 const Instruments = PipeWireAORTC.InstrumentConfiguration
 
 Instruments.graph_node_types() = configured_graph_node_types()
@@ -349,22 +341,6 @@ end
 
 configured_command_inputs(value::AbstractString) = Symbol(value)
 configured_command_inputs(value::AbstractVector) = Tuple(Symbol.(value))
-
-function configured_wire_contracts(declaration)
-    return Tuple(
-        (;
-            frame_encoding = Symbol(entry["frame_encoding"]),
-            frame_schema = entry["frame_schema"],
-            command_schema = Instruments._instrument_seal(entry["command_schema"]),
-            command_scale = configured_command_scales(
-                Instruments._instrument_seal(entry["command_scale"])
-            ),
-        ) for entry in declaration.document["wire_contracts"]
-    )
-end
-
-configured_command_scales(value::Real) = Float32(value)
-configured_command_scales(values::NamedTuple) = map(Float32, values)
 
 validate_sample_period(config, period) = nothing
 if isdefined(AlgorithmGraphs, :SecondOrderResponseNodeConfig)
