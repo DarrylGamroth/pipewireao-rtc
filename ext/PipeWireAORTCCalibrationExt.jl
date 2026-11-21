@@ -10,6 +10,7 @@ import Clocks
 import FilterGraphAlgorithms as FGA
 import LinearAlgebra as LA
 import PipeWireAO as PW
+using PrecompileTools: @compile_workload
 
 include("calibration_worker.jl")
 using .CalibrationWorkers:
@@ -65,5 +66,11 @@ include("calibration_transport.jl")
 include("calibration_capture.jl")
 include("calibration_owner.jl")
 include("calibration_settings.jl")
+
+# Calibration worker states add methods to the shared Hsm dispatch. Cache
+# bootstrap monitor routes with those methods present.
+@compile_workload begin
+    PipeWireAORTC.OwnerBootstrapRuntime._precompile_runtime!()
+end
 
 end

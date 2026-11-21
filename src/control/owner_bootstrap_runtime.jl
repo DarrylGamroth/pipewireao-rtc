@@ -1219,7 +1219,7 @@ end
 # Infer the production transport without opening a PipeWire core or spawning a
 # monitor at package build time. The constructor also covers cache misses and
 # non-default clock types before it starts servicing requests.
-@compile_workload begin
+function _precompile_runtime!()
     clock = Clocks.SystemNanoClock
     transport = Core.Compiler.return_type(
         Endpoint.Transport,
@@ -1228,6 +1228,11 @@ end
     if isconcretetype(transport)
         _precompile_runtime!(Runtime{transport}, clock)
     end
+    return nothing
+end
+
+@compile_workload begin
+    _precompile_runtime!()
 end
 
 end # module OwnerBootstrapRuntime
