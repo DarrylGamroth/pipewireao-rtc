@@ -795,7 +795,9 @@ end
 end
 
 function _record_cleanup_failure!(sm::Monitor, cleanup)
-    sm.failure = CompositeException([something(sm.failure), cleanup])
+    # Give CompositeException its backing vector type directly. Converting a
+    # narrower vector lets optional array packages invalidate monitor code.
+    sm.failure = CompositeException(Any[something(sm.failure), cleanup])
     _observe!(sm)
     return nothing
 end
@@ -810,7 +812,7 @@ end
     try
         _publish!(sm, failed_lifecycle)
     catch publication
-        sm.failure = CompositeException([error, publication])
+        sm.failure = CompositeException(Any[error, publication])
         _observe!(sm)
     end
     try

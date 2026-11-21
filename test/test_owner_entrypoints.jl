@@ -191,16 +191,21 @@ end
 
 # No native core or science: mailbox acceptance, reply/exclusion, immutable
 # observations, and the Agent duty clock are tested at the transport boundary.
-struct MonitorEndpoint
+mutable struct MonitorEndpoint
     publications::Vector{PipeWireAORTC.OwnerBootstrapCodec.Lifecycle}
+    publication_failure::Union{Nothing,Exception}
 end
+MonitorEndpoint() = MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[], nothing)
 mutable struct MonitorTransport
     endpoint::MonitorEndpoint
     flushes::Vector{Int64}
     failure::Union{Nothing,Exception}
 end
-PipeWireAORTC.ControlEndpoint.state!(endpoint::MonitorEndpoint, lifecycle) =
-    (push!(endpoint.publications, lifecycle); nothing)
+function PipeWireAORTC.ControlEndpoint.state!(endpoint::MonitorEndpoint, lifecycle)
+    endpoint.publication_failure === nothing || throw(endpoint.publication_failure)
+    push!(endpoint.publications, lifecycle)
+    return nothing
+end
 PipeWireAORTC.ControlEndpoint.flush_terminal!(
     transport::MonitorTransport, deadline; check = () -> nothing
 ) = (push!(transport.flushes, deadline); nothing)
@@ -216,11 +221,7 @@ mutable struct CountingNanoClock <: Clocks.AbstractNanoClock
 end
 Clocks.time_nanos(clock::CountingNanoClock) = (clock.reads += 1; clock.at)
 function monitor_runtime(; clock = Clocks.CachedNanoClock(10_000_000_000))
-    runtime = Bootstrap.Runtime(
-        MonitorTransport(
-            MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[]), Int64[], nothing
-        ),
-    )
+    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], nothing))
     monitor = Bootstrap.Monitor(runtime; clock)
     invoker = Agent.AgentInvoker(monitor)
     Agent.start(invoker)
@@ -409,6 +410,27 @@ end
     @test Bootstrap.finishing!(runtime) === nothing
 end
 
+@testset "bootstrap monitor preserves failure identities and order" begin
+    runtime, monitor, invoker = monitor_runtime()
+    Agent.invoke_unchecked(invoker)
+    primary = ErrorException("transport failed")
+    publication = ArgumentError("publication failed")
+    cleanup = DomainError(:cleanup, "cleanup failed")
+    runtime.transport.endpoint.publication_failure = publication
+
+    Hsm.dispatch!(monitor, :MonitorFailed, primary)
+    publication_failure = runtime.failure
+    @test Hsm.current(monitor) === :Cleanup
+    @test publication_failure isa CompositeException
+    @test Tuple(publication_failure.exceptions) === (primary, publication)
+
+    Hsm.dispatch!(monitor, :MonitorFailed, cleanup)
+    @test Hsm.iscomplete(monitor)
+    @test runtime.failure isa CompositeException
+    @test Tuple(runtime.failure.exceptions) === (publication_failure, cleanup)
+    close(invoker)
+end
+
 @testset "bootstrap samples its source clock once per duty cycle" begin
     source = CountingNanoClock(10_000_000_000, 0)
     runtime, monitor, invoker = monitor_runtime(; clock = source)
@@ -493,11 +515,7 @@ end
     @test typeof(monitor.source_clock) === Clocks.CachedNanoClock
     @test monitor.source_clock !== monitor.clock
     close(invoker)
-    runtime = Bootstrap.Runtime(
-        MonitorTransport(
-            MonitorEndpoint(PipeWireAORTC.OwnerBootstrapCodec.Lifecycle[]), Int64[], nothing
-        ),
-    )
+    runtime = Bootstrap.Runtime(MonitorTransport(MonitorEndpoint(), Int64[], nothing))
     monitor = Bootstrap.Monitor(runtime)
     @test typeof(monitor.source_clock) === Clocks.SystemNanoClock
     @test typeof(monitor.clock) === Clocks.CachedNanoClock
