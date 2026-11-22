@@ -50,6 +50,7 @@ mutable struct Session{C,R,F,G,S<:Clocks.AbstractNanoClock}
     withdrawing::Bool
     overflow_seen::Bool
     transport_error::Union{Nothing,String}
+    fault_reported::Bool
     done::Bool
     exitcode::Int
 end
@@ -327,6 +328,18 @@ function Agent.do_work(session::Session)
     )
     drain!(session)
     start_effect!(session)
+    # HeldFault has finished compensation. Emergency Disconnect already logs.
+    if !session.done && !session.fault_reported && Hsm.current(session.machine) === :HeldFault
+        session.fault_reported = true
+        @error(
+            "Session fault handling settled",
+            session_instance = session.machine.session,
+            lifecycle = session.machine.lifecycle,
+            failure = session.machine.failure,
+            cleanup = session.machine.cleanup_failure,
+            outcome_unknown = session.machine.fault_unknown,
+        )
+    end
     return work
 end
 
@@ -769,6 +782,7 @@ function Session(
             false,
             false,
             nothing,
+            false,
             false,
             1,
         )

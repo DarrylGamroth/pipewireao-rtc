@@ -1,9 +1,11 @@
 # Optional source-cohort selector; see docs/SESSION_POLICY_MIGRATION.md.
 module MediaSessionPrivateCoreTests
 using PipeWireAORTC, PipeWireAO, Test
+using Base.CoreLogging: with_logger
 const S = PipeWireAORTC.MediaSession
 const Agent = S.Agent
 const Clocks = S.Clocks
+const R = PipeWireAORTC.RunnerCodec
 include("control_private_core.jl")
 @testset "Owner-thread native discovery and startup cancellation" begin
     with_control_private_core() do socket, directory, daemon
@@ -89,9 +91,11 @@ const LINK_CONTRACT = S.PortContract(
     "F32_LE", Int32[2], LINK_SCHEMA, "ROW_MAJOR", PipeWireAO.SPA.Fraction(100, 1)
 )
 
-function cleanup_session(socket, directory, daemon)
+function cleanup_session(
+    socket, directory, daemon; instance = 101, clock = Clocks.SystemNanoClock()
+)
     policy = Dict{String,Any}(
-        "instance" => "101",
+        "instance" => string(instance),
         "controller.instance" => "102",
         "admission.controller-instance" => "103",
         "node.name" => "cleanup-session",
@@ -133,7 +137,7 @@ function cleanup_session(socket, directory, daemon)
     )
     path = joinpath(directory, "cleanup-session.conf")
     PipeWireAORTC.ScienceExport.write_spa_config(path, configuration)
-    return S.Session(path)
+    return S.Session(path; clock)
 end
 
 function wait_native(f, pump)
@@ -331,10 +335,13 @@ function check_transport_cleanup(socket, directory, daemon, emergency)
             @test S.perform!(session, S.Job(ticket, false), ticket.effect) === nothing
             disconnected_before_receipt = !isopen(session.core) && !session.done
             @test disconnected_before_receipt
-            S.update!(
-                session,
-                S.EffectCompleted(ticket, nothing, Clocks.time_nanos(session.source_clock)),
-            )
+            @test_logs (:error, "Session disconnected during cleanup") begin
+                S.update!(
+                    session,
+                    S.EffectCompleted(ticket, nothing, Clocks.time_nanos(session.source_clock)),
+                )
+                Agent.do_work(session)
+            end
             @test session.done && session.exitcode == 1
             @test isopen(session.context)
         else
@@ -403,6 +410,68 @@ end
     with_control_private_core(; allow_passive = true) do socket, directory, daemon
         check_transport_cleanup(socket, directory, daemon, false)
         check_transport_cleanup(socket, directory, daemon, true)
+    end
+end
+
+@testset "Report a settled fault once per session" begin
+    for submitted in (false, true)
+        with_control_private_core() do socket, directory, daemon
+            instance = submitted ? 104 : 101
+            session = cleanup_session(
+                socket, directory, daemon; instance, clock = Clocks.CachedNanoClock(0)
+            )
+            try
+                machine = session.machine
+                if submitted
+                    for _ in 1:9
+                        S.complete!(machine, something(machine.effect))
+                    end
+                    launcher = S.Identity(11, 12, 13, 14)
+                    S.submit!(machine, S.Request(S.InspectWarmup(); controller = launcher))
+                    S.take_replies!(machine)
+                    S.submit!(machine, S.Request(S.Admit(); controller = launcher))
+                    S.take_replies!(machine)
+                    @test machine.lifecycle == R.Ready
+                    request = S.Request(S.SetProperties(); token = 1, payload = "graph")
+                    S.submit!(machine, request)
+                    S.submitted!(machine, something(machine.effect))
+                end
+                logger = Test.TestLogger()
+                with_logger(logger) do
+                    S.required_lost!(machine, "required Link removed")
+                    Agent.do_work(session)
+                    wait(something(session.active_task))
+                    result = something(session.effect_result)
+                    session.effect_result = nothing
+                    S.update!(session, result)
+                    @test machine.effect.effect === S.HoldGraphs()
+                    @test isempty(logger.logs)
+                    if submitted
+                        S.fail!(machine, something(machine.effect), "graph Hold failed")
+                    else
+                        S.complete!(machine, something(machine.effect))
+                    end
+                    S.complete!(machine, something(machine.effect))
+                    Agent.do_work(session)
+                    S.required_lost!(machine, "another required Link removed")
+                    Agent.do_work(session)
+                end
+                @test machine.lifecycle == R.Fault
+                @test !session.done && isopen(session.core)
+                @test length(logger.logs) == 1
+                cleanup = submitted ? "graph Hold failed" : nothing
+                for log in logger.logs
+                    @test log.message == "Session fault handling settled"
+                    @test log.kwargs[:session_instance] == instance
+                    @test log.kwargs[:lifecycle] == R.Fault
+                    @test log.kwargs[:failure] == "required Link removed"
+                    @test log.kwargs[:cleanup] == cleanup
+                    @test log.kwargs[:outcome_unknown] == submitted
+                end
+            finally
+                close(session)
+            end
+        end
     end
 end
 
