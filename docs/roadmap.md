@@ -17,9 +17,10 @@ chronology. Architecture/requirement decisions remain authoritative.
 MediaSession uses the same admitted controller record for local discovery and
 owner capture. The [verification record](validation/session-orchestration-20261121/README.md)
 covers the released PipeWireAO.jl binding and three instrument topologies.
-The [binding review](reviews/20261121-pipewireao-julia/REVIEW.md) identifies two
-behavioral differences to address upstream and the RTC format checks that can
-then share the native parser.
+MediaSession and ParameterSource use the PipeWireAO.jl 0.9.4 candidate to
+decode fixed NDArray formats. Each still enforces its own admission contract.
+The [binding review](reviews/20261121-pipewireao-julia/REVIEW.md) records the
+format and metadata fixes and their verification.
 
 ### Offline optical calibration campaign — 2026-11-12
 

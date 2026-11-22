@@ -551,29 +551,24 @@ function _publish_pending!(source::Source, stream)
 end
 (callback::Process)(stream) = _publish_pending!(callback.source, stream)
 
-function _fixed_format(parameter::Pod)
-    object = pod_value(SPA.Parameter, parameter).object
-    properties = SPA.Property[]
-    for property in object.properties
-        value = property.value
-        if pod_type(value) == SPA.POD_CHOICE
-            # Fixation selects the default but can retain trailing alternatives.
-            data = value.data
-            length(data) >= 24 || throw(ArgumentError("truncated parameter format Choice"))
-            words = reinterpret(UInt32, @view data[9:24])
-            child_size = Int(words[3])
-            extent = length(data) - 24
-            words[1] == UInt32(SPA.CHOICE_NONE) &&
-            words[2] == 0 &&
-            child_size > 0 &&
-            extent >= child_size &&
-            extent % child_size == 0 ||
-                throw(ArgumentError("parameter format is not fixed"))
-            value = Pod(copy(@view data[17:(24+child_size)]))
-        end
-        push!(properties, SPA.Property(property.key, value; flags = property.flags))
-    end
-    return SPA.Parameter(SPA.Object(object.type, object.id, properties))
+function _validate_format(parameter::Pod, declared::NdArrayFormat, schema::String)
+    format = NdArrayFormat(
+        parameter; expected_rank = length(declared.shape), require_fixed = true
+    )
+    received_schema = ndarray_schema(parameter)
+    # An undeclared rate is unconstrained. Sparse publication remains request driven.
+    format.element_type == declared.element_type &&
+    format.shape == declared.shape &&
+    format.layout == declared.layout &&
+    (declared.rate === nothing || format.rate == declared.rate) &&
+    something(received_schema, "") == schema || throw(
+        ArgumentError(
+            "negotiated parameter format differs from declaration: " *
+            "received $(repr((format.element_type, format.shape, format.layout, format.rate, received_schema))); " *
+            "expected $(repr((declared.element_type, declared.shape, declared.layout, declared.rate, schema)))",
+        ),
+    )
+    return nothing
 end
 
 function _prepare_source!(source::Source, transport, runtime::Bootstrap.Runtime)
@@ -617,21 +612,7 @@ function _prepare_source!(source::Source, transport, runtime::Bootstrap.Runtime)
         on_param_changed = (stream, id, parameter) -> begin
             id == SPA.PARAM_FORMAT && parameter !== nothing || return nothing
             try
-                fixed = _fixed_format(parameter)
-                format = NdArrayFormat(fixed)
-                # An undeclared rate is unconstrained; the graph may fix its rate.
-                # Sparse payload publication remains request driven.
-                format.element_type == source.format.element_type &&
-                format.shape == source.format.shape &&
-                format.layout == source.format.layout &&
-                (source.format.rate === nothing || format.rate == source.format.rate) &&
-                something(ndarray_schema(fixed), "") == source.schema || throw(
-                    ArgumentError(
-                        "negotiated parameter format differs from declaration: " *
-                        "received $(repr((format.element_type, format.shape, format.layout, format.rate, ndarray_schema(fixed)))); " *
-                        "expected $(repr((source.format.element_type, source.format.shape, source.format.layout, source.format.rate, source.schema)))",
-                    ),
-                )
+                _validate_format(parameter, source.format, source.schema)
                 update_params!(stream, source.parameters)
             catch error
                 source.failure = error

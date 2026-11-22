@@ -3,9 +3,10 @@ using Test, PipeWireAO, PipeWireAORTC
 module MediaSessionObjectsTests
 using Test, PipeWireAO
 import Clocks
-import PipeWireAORTC.MediaSession: policy_id, policy_text, Owner
+import PipeWireAORTC.MediaSession: Owner
 import PipeWireAORTC:
-    OwnerBootstrapCodec, ControlClient, AcquisitionLifecycleCodec, DeploymentConfiguration
+    OwnerBootstrapCodec, ControlClient, AcquisitionLifecycleCodec, DeploymentConfiguration,
+    ParameterSource
 const PolicySPA = PipeWireAO.SPA
 const PolicyPod = PipeWireAO.Pod
 const SECOND = Int64(1_000_000_000)
@@ -214,7 +215,68 @@ end
     fixed = Pod(SPA.Parameter(SPA.Object(object.type, object.id, properties)))
     before = copy(fixed.data)
     @test validate_format(fixed, CONTRACT) === nothing
+    @test ParameterSource._validate_format(fixed, FORMAT, CONTRACT.schema) === nothing
     @test fixed.data == before
+end
+
+@testset "RTC admission of decoded ndarray formats" begin
+    object = pod_value(SPA.Object, native_format())
+    with_extra(extra) = Pod(SPA.Object(object.type, object.id, [object.properties; extra]))
+    unknown = SPA.Property(0x70000001, Pod(SPA.Choice(SPA.CHOICE_ENUM, Int32[1, 2])))
+    @test validate_format(with_extra([unknown]), CONTRACT) === nothing
+    @test_throws ArgumentError ParameterSource._validate_format(
+        with_extra([unknown]), FORMAT, CONTRACT.schema
+    )
+    @test_throws ArgumentError validate_format(with_extra([unknown, unknown]), CONTRACT)
+    oversized = SPA.Property(0x70000002, Pod(SPA.Bytes(zeros(UInt8, 65_536))))
+    @test_throws ArgumentError validate_format(with_extra([oversized]), CONTRACT)
+    extras = [
+        SPA.Property(0x70000000 + UInt32(i), Pod(Int32(i))) for
+        i in 1:(33-length(object.properties))
+    ]
+    @test validate_format(with_extra(extras[1:end-1]), CONTRACT) === nothing
+    @test_throws ArgumentError validate_format(with_extra(extras), CONTRACT)
+    higher_rank = ndarray_format(
+        NdArrayFormat(NdArray.F32_LE, ntuple(_ -> 1, 80); layout = NdArray.ROW_MAJOR);
+        schema = CONTRACT.schema,
+    )
+    @test_throws ArgumentError validate_format(higher_rank, CONTRACT)
+    @test_throws ArgumentError ParameterSource._validate_format(
+        higher_rank, FORMAT, CONTRACT.schema
+    )
+    @test_throws ArgumentError validate_format(
+        Pod(SPA.Object(object.type, SPA.PARAM_BUFFERS, object.properties)), CONTRACT
+    )
+    for schema in (repeat("a", 4096), repeat("a", 4097), String(UInt8[0xff]))
+        declaration = PortContract("F32_LE", Int32[2], schema, CONTRACT.layout, CONTRACT.rate)
+        pod = ndarray_format(FORMAT; schema)
+        if ncodeunits(schema) == 4096
+            @test validate_format(pod, declaration) === nothing
+        else
+            @test_throws ArgumentError validate_format(pod, declaration)
+        end
+    end
+
+    unconstrained = NdArrayFormat(NdArray.F32_LE, (2,); layout = NdArray.ROW_MAJOR)
+    @test ParameterSource._validate_format(
+        native_format(), unconstrained, CONTRACT.schema
+    ) === nothing
+    @test ParameterSource._validate_format(ndarray_format(FORMAT), FORMAT, "") === nothing
+    @test_throws ArgumentError ParameterSource._validate_format(
+        native_format(), FORMAT, "other/1"
+    )
+    for declared in (
+        NdArrayFormat(NdArray.F64_LE, (2,); layout = NdArray.ROW_MAJOR),
+        NdArrayFormat(NdArray.F32_LE, (3,); layout = NdArray.ROW_MAJOR),
+        NdArrayFormat(NdArray.F32_LE, (2,); layout = NdArray.COLUMN_MAJOR),
+        NdArrayFormat(
+            NdArray.F32_LE, (2,); layout = NdArray.ROW_MAJOR, rate = SPA.Fraction(101, 1)
+        ),
+    )
+        @test_throws ArgumentError ParameterSource._validate_format(
+            native_format(), declared, CONTRACT.schema
+        )
+    end
 end
 
 @testset "Owned sparse object updates preserve identity and detect deletion" begin

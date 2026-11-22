@@ -1,13 +1,13 @@
 # PipeWireAO.jl and native PipeWireAO ownership
 
-The first change I would make is to delegate NDArray format parsing to the
-SDK's SPA library behind a checked Julia interface. Two RTC callers could
-then remove their own SPA Choice decoding while retaining admission checks. A second fix is to pass metadata requirements to the native validator
-as one list. Both differences reproduce with the released libraries.
+On PipeWireAO.jl 0.9.3 the binding rejected a fixed format accepted by SPA
+and accepted duplicate metadata requirements when given a vector. Both fixes
+and the RTC consumer changes are recorded in the
+[verification below](#format-and-metadata-fix-verification).
 
 ## Scope
 
-The RTC Manifest selects PipeWireAO.jl **0.9.3** (`46f32308`) and
+The RTC Manifest at the review baseline selected PipeWireAO.jl **0.9.3** (`46f32308`) and
 PipeWireAO_jll **4.0.4+0**. The JLL records native source `d20e7669`.
 I compared the binding's public surface and handwritten source with that
 source, checked symbols in both installed shared libraries, and traced callers
@@ -160,8 +160,8 @@ iterations. One iteration may dispatch several callbacks. That belongs in the bi
 
 The [comparison script](compare.jl) reproduces the NDArray and metadata
 differences and looks up representative symbols in both installed libraries.
-The reviewed RTC Manifest and the two-thread Julia command below are
-sufficient. The package's selected tests also passed. Seven selectors covering
+Run the comparison script with the RTC Manifest from commit `5242c5a`.
+It asserts the historical 0.9.3 behavior. The package's selected tests also passed. Seven selectors covering
 the tracker, hook removal, run control, Props, metadata, filter and exchange
 reported 977 assertions in named testsets. The command endpoint, registry
 tracking and private-core exchange selectors reported 210. The private cores
@@ -178,10 +178,51 @@ for name in ARGS
 end' current_info hook_removal run_control props_buffer metadata_records ndarray_filter ndarray_exchange command_endpoint registry_tracking ndarray_exchange_private_core
 ```
 
-Fix PWJL-01 and PWJL-02 first, verifying both container forms and fixed
-formats before removing RTC decoding workarounds. The run/reset builders and
-hook removal can migrate independently under their existing parity and
+The run/reset builders and hook removal can migrate independently under their existing parity and
 lifetime tests. For the tracker, verify sparse updates, retained snapshots and
 raw bad-then-good event ordering before changing the RTC consumer. Relocating
 the exchange or task bridges affects exported APIs and requires a caller
-migration. This review changed documentation and added a standalone probe.
+migration.
+
+## Format and metadata fix verification
+
+**PWJL-01 and PWJL-02 are fixed in the PipeWireAO.jl 0.9.4 candidate.**
+The binding calls `spa_format_ndarray_ext_parse` for the representation and
+`spa_format_ndarray_parse_string` for the optional schema. It checks the
+POD and selected child extents before passing pointers to SPA and copies the
+schema into a Julia string. Reading a schema from an offer works before its
+element type is fixed. Tuple and vector requirements now reach
+`spa_meta_records_validate` as a complete list. The warmed tuple and vector
+validation paths measured zero Julia heap bytes in the allocation tests.
+
+MediaSession still rejects oversize PODs, excess or duplicate properties,
+invalid schema text and mismatches with the declared element type, shape,
+layout, rate or schema. ParameterSource still requires all top-level Choices
+to be fixed and accepts a negotiated rate when its declaration omits one.
+Both supply the declared rank before the binding constructs a Julia shape tuple.
+
+The RTC Manifest selects the tree from PipeWireAO.jl commit `63fd75b`. A
+temporary local registry supplied the unreleased 0.9.4 entry for the install
+check. Pkg also brought the existing Hsm 0.3.3 and RTC 0.7.27 declarations
+into sync with the Manifest. Fresh external installations need the binding
+release in their registry.
+
+| Software verification on Julia 1.13.4, x86-64 Linux | Result |
+| --- | --- |
+| Released binding 0.9.3, JLL 4.0.4+0 | The same fixed offer passed in C and failed in Julia. Duplicate requirements failed as a tuple and passed as a vector. |
+| Candidate binding, JLL 4.0.4+0 | Full suite passed 2,369 assertions. The private-core exchange passed 136 assertions and the private-core metadata callback passed 18. |
+| Candidate binding, JLL 4.0.6+0 | SPA and metadata selectors passed 636 assertions. |
+| RTC consumer, JLL 4.0.4+0 | The object, sparse parameter preload and MediaSession private-core selectors passed 210 assertions, including 31 direct format and admission checks. |
+| RTC core suite with the registry-installed candidate | Stopped at calibration materialization with 110 passes and 12 failures. All twelve matched the baseline test locations and expressions for invalid nested hashes and paths. [Earlier baseline](../../validation/session-orchestration-20261121/README.md) |
+
+Run the focused RTC checks from the package directory with the candidate
+binding installed and the matching JLL prefix.
+
+```sh
+julia --startup-file=no --project=. -e '
+using PipeWireAO
+ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+for file in ARGS
+    Base.include(Module(gensym(:AdmissionTests)), abspath(file))
+end' test/media_session_objects.jl test/test_parameter_fits.jl test/media_session_private_core.jl
+```

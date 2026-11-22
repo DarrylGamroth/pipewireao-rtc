@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "af33550d075ce8b31e0bcb7b8f65bb67505b32bb"
+project_hash = "e96ae4e639f2ae569103d959a03a944949a1aec1"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -106,10 +106,10 @@ version = "0.17.5"
 
 [[deps.Hsm]]
 deps = ["ValSplit"]
-git-tree-sha1 = "1958e3af28cdc2d9a5baf15af376cbddcd85d606"
+git-tree-sha1 = "f576e2747a2b03cb335907c4bbbe578696cc8031"
 registries = "DarrylGamrothRegistry"
 uuid = "ae4ab49b-60bf-4949-b8fd-fb49b1a0d067"
-version = "0.3.2"
+version = "0.3.3"
 
 [[deps.Hwloc]]
 deps = ["CEnum", "Hwloc_jll", "Printf"]
@@ -249,10 +249,10 @@ version = "3.0.6"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "d7878497e9a7a5d1a141307721a0f39542f5758d"
+git-tree-sha1 = "2fecf2c1c292f9eb7d178b92a274e59aaf733e99"
 registries = "DarrylGamrothRegistry"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
-version = "0.9.3"
+version = "0.9.4"
 
 [[deps.PipeWireAOQueue_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "PipeWireAO_jll"]
@@ -265,7 +265,7 @@ version = "0.1.0+0"
 deps = ["Agent", "Clocks", "DBInterface", "FITSIO", "Hsm", "JSON", "LinearAlgebra", "PipeWireAO", "PipeWireAOQueue_jll", "PrecompileTools", "SHA", "SQLite", "Sockets", "TOML", "ThreadPinning", "UUIDs", "YAML"]
 path = "."
 uuid = "a3e2c7da-f73f-4284-8482-36ac422b34e6"
-version = "0.7.25"
+version = "0.7.27"
 
     [deps.PipeWireAORTC.extensions]
     PipeWireAORTCAOSExt = ["AdaptiveOpticsSim", "AdaptiveOpticsSimPipeWireHIL"]

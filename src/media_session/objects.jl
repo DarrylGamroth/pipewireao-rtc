@@ -711,67 +711,25 @@ function _endpoint!(runtime, job, address::DeploymentConfiguration.PortAddress, 
     return Endpoint(node, port.id, parent, PortContract(declaration))
 end
 
-# Fixed Choice.None defaults may legally retain trailing alternatives. Read
-# only the public SPA wire header and the complete selected primitive; never
-# recursively decode unused format fields or reinterpret their payloads.
-function _fixed_value(value::PolicyPod, tag::UInt32, width::Union{Nothing,Int})
-    PipeWireAO.pod_type(value) == PolicySPA.POD_CHOICE || return value
-    data = value.data
-    length(data) >= 24 || throw(ArgumentError("truncated fixed format choice"))
-    kind, child_size, child_type = reinterpret(UInt32, data[9:24])[[1, 3, 4]]
-    kind == UInt32(PolicySPA.CHOICE_NONE) && child_type == tag && child_size > 0 ||
-        throw(ArgumentError("negotiated format retains an unfixed or incompatible choice"))
-    width === nothing ||
-        child_size == width ||
-        throw(ArgumentError("invalid selected format width"))
-    length(data) >= 24 + child_size ||
-        throw(ArgumentError("incomplete fixed format default"))
-    header = collect(reinterpret(UInt8, UInt32[child_size, child_type]))
-    return PolicyPod(vcat(header, data[25:(24+Int(child_size))]))
-end
 function validate_format(pod::PolicyPod, contract::PortContract)
-    16 <= length(pod.data) <= 65536 || throw(ArgumentError("invalid Format size"))
+    16 <= sizeof(pod) <= 65_536 || throw(ArgumentError("invalid Format size"))
     object = PipeWireAO.pod_value(PolicySPA.Object, pod)
-    object.type == UInt32(PipeWireAO.LibPipeWire.SPA_TYPE_OBJECT_Format) &&
+    object.type == PolicySPA.OBJECT_FORMAT &&
     object.id in (PolicySPA.PARAM_FORMAT, PolicySPA.PARAM_ENUM_FORMAT) ||
         throw(ArgumentError("expected native Format"))
     length(object.properties) <= 32 || throw(ArgumentError("too many Format fields"))
-    ids = Set{UInt32}()
-    selected = PolicySPA.Property[]
-    for property in object.properties
-        property.key in ids && throw(ArgumentError("duplicate Format field"))
-        push!(ids, property.key)
-        key, value = property.key, property.value
-        if key in (
-            PolicySPA.FORMAT_MEDIA_TYPE,
-            PolicySPA.FORMAT_MEDIA_SUBTYPE,
-            PolicySPA.FORMAT_NDARRAY_ELEMENT_TYPE,
-            PolicySPA.FORMAT_NDARRAY_LAYOUT,
-        )
-            value = _fixed_value(value, PolicySPA.POD_ID, 4)
-            policy_id(value)
-        elseif key == PolicySPA.FORMAT_NDARRAY_RATE
-            value = _fixed_value(value, PolicySPA.POD_FRACTION, 8)
-            length(value.data) == 16 ||
-                throw(ArgumentError("invalid format Fraction width"))
-        elseif key == PolicySPA.FORMAT_NDARRAY_SHAPE
-            value = _fixed_value(value, PolicySPA.POD_ARRAY, nothing)
-            shape = PipeWireAO.pod_value(PolicySPA.Array{Int32}, value).values
-            length(shape) == length(contract.shape) && shape == contract.shape ||
-                throw(ArgumentError("negotiated ndarray shape differs"))
-        elseif key == PolicySPA.FORMAT_NDARRAY_SCHEMA
-            value = _fixed_value(value, PolicySPA.POD_STRING, nothing)
-            policy_text(value; limit = 4096)
-        else
-            continue
-        end
-        push!(selected, PolicySPA.Property(key, value; flags = property.flags))
+    allunique(property -> property.key, object.properties) ||
+        throw(ArgumentError("duplicate Format field"))
+
+    format = NdArrayFormat(pod; expected_rank = length(contract.shape))
+    schema = PipeWireAO.ndarray_schema(pod)
+    if schema !== nothing
+        isvalid(schema) && ncodeunits(schema) <= 4096 ||
+            throw(ArgumentError("invalid negotiated schema text"))
     end
-    fixed = PolicySPA.Parameter(PolicySPA.Object(object.type, object.id, selected))
-    format = NdArrayFormat(fixed)
-    string(format.element_type) == contract.element_type &&
-    collect(format.shape) == contract.shape &&
-    PipeWireAO.ndarray_schema(fixed) == contract.schema ||
+    format.shape == Tuple(contract.shape) ||
+        throw(ArgumentError("negotiated ndarray shape differs"))
+    string(format.element_type) == contract.element_type && schema == contract.schema ||
         throw(ArgumentError("negotiated ndarray element type/schema differs"))
     contract.layout === nothing ||
         string(format.layout) == contract.layout ||
