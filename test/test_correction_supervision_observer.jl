@@ -289,13 +289,17 @@ end
     observer, clock, _ = observer_inputs()
     outputs = (feedback = zeros(Float32, 4),)
     successful_frame_allocation(observer, clock, outputs)
-    @test successful_frame_allocation(observer, clock, outputs) == 0
+    @test_logs min_level=Base.CoreLogging.Debug begin
+        @test successful_frame_allocation(observer, clock, outputs) == 0
+    end
     observer, clock, _ = trip_observer!()
     CSO.request_rearm!(observer, 701)
     successful_frame_allocation(observer, clock, outputs) # Warm specialization/rearm branch.
     observer, clock, _ = trip_observer!()
     CSO.request_rearm!(observer, 701)
-    @test successful_frame_allocation(observer, clock, outputs) == 0
+    @test_logs min_level=Base.CoreLogging.Debug begin
+        @test successful_frame_allocation(observer, clock, outputs) == 0
+    end
 end
 
 @testset "Concurrent snapshots never expose mixed frame records" begin
