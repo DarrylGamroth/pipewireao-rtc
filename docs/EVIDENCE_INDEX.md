@@ -25,6 +25,8 @@ The [fix verification](reviews/20261121-pipewireao-julia/REVIEW.md#format-and-me
 covers native fixation, whole-list metadata validation and RTC admission.
 The [0.9.4 integration results](reviews/20261121-pipewireao-julia/REVIEW.md#rtc-integration-of-pipewireaojl-094)
 record admission and RTC core results with the merged wrapper.
+The [native API review](reviews/20261121-pipewireao-julia/REVIEW.md#native-api-priorities-after-094)
+records the installed merge and format-builder symbols and the raw Link update probe.
 
 ## Session controller admission — 2026-11-21
 

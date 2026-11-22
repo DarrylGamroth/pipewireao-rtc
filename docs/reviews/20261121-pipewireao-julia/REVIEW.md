@@ -247,6 +247,8 @@ external optical references and declarations. Rerunning both affected files
 on pre-merge RTC `987296b` with PipeWireAO.jl 0.9.3 and the same native JLL
 reproduced all 15 at the same assertions with the same outcomes. The
 baseline selectors reported 289 passes and 15 failures.
+The [RTC follow-up](../../EVIDENCE_INDEX.md#calibration-and-optical-reference-verification--2026-11-21)
+records the calibration and optical reference corrections.
 
 To run every core selector even when an earlier testset fails, use an outer
 testset from the RTC package directory.
@@ -259,3 +261,39 @@ ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact
     include("test/runtests.jl")
 end'
 ```
+
+## Native API priorities after 0.9.4
+
+The installed PipeWireAO_jll 4.0.4+0 exports all six Node, Port, Device,
+Link, Client and Factory `pw_*_info_merge` functions. PipeWireAO.jl
+`728d065` already generates bindings to them. The SPA library also exports
+`spa_format_ndarray_ext_build` and `spa_format_ndarray_ext_build_choices`.
+The wrapper generator currently excludes both builders.
+
+1. **Use the native info merges in the wrapper's `InfoTracker`.** The listener
+   can merge each borrowed C update during its callback, keep one current
+   native record per tracker, release it on close and expose an owned Julia
+   value through `current_info`. RTC admission still needs each raw delta in
+   arrival order. In a two-update probe against 4.0.4, the second raw Link
+   update reported input Port 99 while the merged record still reported its
+   initial Port 14. Port direction is also set on the first native merge.
+   Verify sparse property and parameter updates, closure and a bad Link event
+   immediately followed by a good one. This needs no new C API.
+   [Native info merges](https://github.com/DarrylGamroth/PipeWireAO/blob/v4.0.4/src/pipewire/introspect.c#L249)
+   · [RTC event-order tests](../../../test/media_session_objects.jl)
+2. **Consolidate NDArray format construction.** Julia still writes fixed and
+   enumerated format properties itself. SPA builds those representations, but
+   its builder has no schema argument. The native NDArray filter has a private
+   fixed-format writer that adds the schema. A shared schema-aware builder
+   could serve both callers while keeping Julia's owned POD interface. Test
+   fixed and enumerated offers, optional schema and rate, and insufficient
+   output space against the existing readers before migrating either caller.
+   [SPA offer builder](https://github.com/DarrylGamroth/PipeWireAO/blob/v4.0.4/spa/include/spa/param/ndarray-utils.h#L336)
+   · [Filter format writer](https://github.com/DarrylGamroth/PipeWireAO/blob/v4.0.4/src/pipewire/ndarray-filter.c#L559)
+
+Keep frozen calibration-bundle integrity, optical prescription identity and
+exact session admission in RTC. Each interprets an RTC or instrument
+declaration. The FITS reader already uses FITSIO, and these checks run during
+preparation. The wrapper's one-shot NDArray exchange is a separate candidate
+only if another production client needs its particular arm, match and
+completion semantics.
