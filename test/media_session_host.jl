@@ -74,7 +74,10 @@ end
 
 function prepare_host!(session)
     wait_host(session) do
-        session.controller !== nothing && haskey(session.objects, node_id(session.endpoint))
+        session.controller === nothing && return false
+        # The test sends commands through a client proxy for the session endpoint.
+        endpoint = S.bind_object!(session, node_id(session.endpoint), "PipeWire:Interface:Node")
+        return endpoint !== nothing && endpoint.info !== nothing
     end
     stop_effect_task!(session)
     # These receipts prepare only the policy test. No scientific owner exists.
@@ -183,8 +186,10 @@ end
                     prepare_host!(session)
                     S.submit!(session.machine, S.Request(S.Quit()))
                     S.drain!(session)
-                    for _ in 1:6
-                        S.complete!(session.machine, something(session.machine.effect))
+                    for _ in 1:16
+                        pending = something(session.machine.effect)
+                        pending.effect isa S.PublishQuit && break
+                        S.complete!(session.machine, pending)
                     end
                     ticket = something(session.machine.effect)
                     @test ticket.effect === S.PublishQuit()
