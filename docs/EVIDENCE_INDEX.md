@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## PipeWireAO.jl binding and native behavior — 2026-11-21
+
+The [source comparison and probes](reviews/20261121-pipewireao-julia/REVIEW.md)
+cover negotiated NDArray formats, metadata, native codecs and RTC ownership.
+
 ## Session controller admission — 2026-11-21
 
 The [admission and instrument checks](validation/session-orchestration-20261121/README.md)
