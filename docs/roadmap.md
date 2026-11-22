@@ -6,11 +6,24 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-21. This section is the current delivery summary. Later sections
+Updated 2026-11-22 UTC. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Native object tracking and NDArray offers — 2026-11-22 UTC
+
+PipeWireAO.jl 0.9.5 uses the native PipeWire info mergers and the schema-aware
+NDArray writer in PipeWireAO 4.0.7. MediaSession retains raw, ordered admission
+events. The [session design review](reviews/20261121-pipewireao-julia/REVIEW.md#pipewire-session-design-for-ao)
+identifies which exported graph boundaries can be simplified for each instrument.
+
+Before the next native change, rebase the PipeWireAO fork on upstream
+PipeWire's `master` in a dedicated worktree. On 2026-11-22 UTC the packaged
+native tip `e717a434d` and upstream `ae1213417` shared base `d80b80602`.
+Keep the 4.0.7 evidence tied to its built revision. Verify the rebased series
+with the native selectors, regenerated Julia bindings and RTC admission.
 
 ### Calibration and optical reference validation — 2026-11-21
 
@@ -24,7 +37,7 @@ See the [verification results](EVIDENCE_INDEX.md#calibration-and-optical-referen
 MediaSession uses the same admitted controller record for local discovery and
 owner capture. The [verification record](validation/session-orchestration-20261121/README.md)
 covers the released PipeWireAO.jl binding and three instrument topologies.
-The RTC Manifest selects PipeWireAO.jl 0.9.4 at `728d065`. MediaSession and
+The 0.9.4 verification used PipeWireAO.jl at `728d065`. MediaSession and
 ParameterSource enforce their own admission contracts on native NDArray
 formats. The same binding uses native run/reset builders and listener removal.
 The [integration results](reviews/20261121-pipewireao-julia/REVIEW.md#rtc-integration-of-pipewireaojl-094)

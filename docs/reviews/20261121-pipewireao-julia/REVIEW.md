@@ -297,3 +297,93 @@ declaration. The FITS reader already uses FITSIO, and these checks run during
 preparation. The wrapper's one-shot NDArray exchange is a separate candidate
 only if another production client needs its particular arm, match and
 completion semantics.
+
+## Native tracking and format construction in 0.9.5
+
+One native record per tracker now merges Node, Port, Device and Link updates.
+The binding validates each borrowed update before merging. A malformed update
+therefore leaves the last usable record available for the next valid delta.
+The public snapshot owns its data and remains readable after closure. Raw
+listeners continue to deliver the individual updates used by RTC admission.
+
+The native NDArray filter, filter-chain module and Julia wrapper share one SPA
+writer for fixed and enumerated offers. Tests cover wire equivalence, extended
+shapes, schema and rate choices, insufficient builder space and SPA's maximum
+POD body size. The binding generator reproduces the checked-in FFI from the
+installed 4.0.7 headers.
+
+Against native `af76bb732` and binding `728d065`, the handwritten Julia
+production sources shrink by 55 lines. The native header and its two callers
+grow by 42 lines, including API documentation and size validation. This is a
+net reduction of 13 lines across those sources. The generated FFI grows by 35
+lines. Tests and documentation outside those sources are excluded. The three
+callers now share one wire-format implementation, and PipeWire owns the rules
+for merging the four tracked object types. Neither change runs on each frame.
+
+## PipeWire session design for AO
+
+**Keep MediaSession as a headless client and let the detector drive the graph.**
+A PipeWire client can create Links through the standard link factory. The
+main loop handles discovery, negotiation and graph configuration. Data threads
+run the activated nodes against buffers prepared in advance. Ardour describes
+a similar split for its JACK backend, with the engine running the process
+callback and other threads handling operator requests and disk I/O. Moving
+the RTC into a daemon module would couple instrument policy to the core
+without removing an activation or a copy from the detector handoff.
+[PipeWire scheduling](https://docs.pipewire.org/page_scheduling.html) ·
+[Link factory](https://docs.pipewire.org/page_module_link_factory.html) ·
+[Ardour transport threads](https://ardour.org/transport_threading.html)
+
+| Where to simplify | What it saves | What must still hold |
+| --- | --- | --- |
+| Deliver the raw info delta and its merged value from the same binding callback if MediaSession adopts native merges. | RTC could retire its field-by-field Node, Port, Link, Client and Factory cache updates. The current public tracker covers the first three of these types and Device. | Preserve event order and the object's incarnation. Check raw ID, Port direction and owned Link endpoints, including a bad event immediately followed by a good one. Add Client and Factory coverage and verify parameter change semantics before deleting the RTC code. |
+| Keep fixed numerical stages with the same owner, clock and failure policy inside their existing FilterGraphs graph. Expose independently operated devices and controllers as multi-port nodes. | Each internal edge avoids an exported Port pair, a session Link and the associated admission and teardown work. | Keep independent rates, row-block delivery, calibration endpoints, restart boundaries and separately controlled groups where an instrument declares them. |
+| Connect optional consumers at a bounded observer branch. | Displays can use the existing capacity-one, drop-oldest queue. The controller pool needs to cover outstanding buffer use only. | A passive Link controls activation. It does not give a slow reader an independent copy or a recorder a history. Give recording its own retention budget when required. |
+
+The second change depends on the instrument. GPI2 already has one frame graph
+with woofer, tweeter and tip/tilt outputs. CAL2's SCC and LLOWFS controllers
+publish independent offset returns. SPIDERS feeds both sensors into one DM
+controller and has a separate SCC differential graph. Those are meaningful
+boundaries. Retain explicit links and exact owner admission for science and
+commands. WirePlumber's standard linking policy selects default or best audio
+and video devices and supplies no instrument-specific NDArray admission.
+[Instrument topologies](../../validation/session-orchestration-20261121/README.md)
+· [Filter API](https://docs.pipewire.org/group__pw__filter.html)
+· [WirePlumber linking policy](https://pipewire.pages.freedesktop.org/wireplumber/policies/linking.html)
+· [RTC admission](../../../src/media_session/objects.jl)
+
+A separate control-loop opportunity is the 1 ms idle sleep in `serve!` and
+the 1 ms condition polling in `await_condition!`. MediaSession already issues
+a sequenced core sync and receives its completion. It could wake the owner
+task on PipeWire readiness, a local request or the next monotonic deadline.
+Keep dispatch on the creating thread and allow Julia effect tasks to run while
+the owner waits. Test quiet-graph Quit, an idle deadline, a lost core and
+bursts of registry events. Measure idle CPU and command completion before
+adopting this change. These sleeps are outside the detector-to-controller path.
+[Session duty cycle](../../../src/media_session/session.jl)
+· [Control transactions](../../../src/media_session/transport.jl)
+
+**Buffer depth follows reader lifetime.** C HEART's GPI2 reconstructor can
+start on a committed prefix of a circular-buffer bucket. The raw detector ring
+also retains frames for a slower telemetry reader. MagAO-X configures its WFS
+camera with one public image slice and separate acquisition buffers. Its
+ImageStreamIO monitor waits on a semaphore and reads the current slice. A
+synchronous PipeWire consumer can hold a dequeued buffer until it returns it.
+These support different requirements for partial frames, loss, history and
+storage reuse. An application can choose two negotiated MemFd buffers for a
+short handoff and give telemetry separate storage.
+[HEART architecture](https://ao4elt6.copl.ulaval.ca/proceedings/401-C2S7-251.pdf)
+· [MagAO-X WFS configuration](https://github.com/magao-x/config/blob/6b408c51a9368efb904e627d9d0610984e6690a5/camwfs.conf#L7-L14)
+· [ImageStreamIO](https://github.com/milk-org/ImageStreamIO)
+· [MagAO-X monitor](https://github.com/magao-x/MagAOX/blob/bd338e263d5b5ffaa4a95e992ea187c3d25d24a1/libMagAOX/app/dev/shmimMonitor.hpp)
+
+The earlier GPI2 two-process MemFd replay at 2 kHz measured 16.691 µs
+queue-to-dequeue and 37.496 µs nominal-release-to-receipt at p99.9 with
+FIFO priority 15. It missed zero of 96,000 measured 500 µs deadlines.
+Ordinary scheduling missed 106 of 96,000. A separate FIFO pool-depth trial
+met all 48,000 deadlines at each of two and eight buffers. The record is in
+RTC commit `c84cee4`, `docs/validation/gpi2-handoff-20261121/README.md`,
+and commit `7e5b7b1`, `docs/reviews/20261121-rtc-transport/BUFFER_OWNERSHIP.md`.
+These measurements cover replay through receipt on the tested host. Hardware
+readout, reconstruction, mirror delivery, CAL2, SPIDERS and performance parity
+with HEART or CACAO need their own end-to-end measurements.

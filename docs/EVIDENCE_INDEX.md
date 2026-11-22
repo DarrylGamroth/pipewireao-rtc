@@ -1,5 +1,38 @@
 # Delivery evidence catalog
 
+## Native tracking, format construction and RTC admission — 2026-11-22 UTC
+
+Native PipeWireAO 4.0.7 at `e717a434d` passed four Meson selectors covering
+SPA formats, the NDArray filter, admission and filter-chain properties. The
+oversized-schema regression failed on the earlier candidate and passed on
+this revision. PipeWireAO.jl 0.9.5 at `59ccd6b` passed 2,941 assertions on
+Julia 1.13.4 with both the source-built SDK and the registered AVX2 JLL.
+Coverage includes malformed-update recovery,
+wire parity, detached snapshots and rejection of the retired ABI. Two
+additional private-core buffer and metadata selectors passed 166 assertions.
+An ad hoc packaged launcher imported both Pkg and PipeWireAO into the test
+namespace, making `Registry` ambiguous. One run with that launcher reported
+a ThreadLoop finalizer error and segfaulted during the hook-removal selector.
+The cause of the segfault is unconfirmed. With an isolated test module the
+packaged suite passed twice, including 2,941 assertions with the retired
+SDK check and 2,929 without it. Five additional hook-removal runs with
+garbage collection between them passed all 280 assertions.
+
+The full RTC suite passed all 10,578 assertions in 8 min 50 s with the
+registered wrapper and JLL, selecting the AVX2 artifact
+`bfe75c99bcbcb40085af6110cfeb60cdbe848101`. The concurrent snapshot
+selector made 79 assertions in this run and 81 in the earlier 0.9.4 run.
+It checks snapshots while its writer is active, so its assertion count varies.
+The five Linux SDK archives were built and their SHA-256 and Git tree hashes
+verified locally. Runtime tests used x86-64 AVX2. Publication is pending.
+
+The RTC object, parameter and private-core selectors passed 210 assertions
+and the CAL2, SPIDERS and GPI2 declarations at `1b1b302` passed 26.
+The [binding verification](reviews/20261121-pipewireao-julia/REVIEW.md#native-tracking-and-format-construction-in-095)
+and [session design review](reviews/20261121-pipewireao-julia/REVIEW.md#pipewire-session-design-for-ao)
+describe ownership, remaining duplication and the scope of the earlier
+two-process GPI2 latency measurements.
+
 ## Calibration and optical reference verification — 2026-11-21
 
 On RTC `e546dcc`, eight failing assertions exposed missing manifest checks

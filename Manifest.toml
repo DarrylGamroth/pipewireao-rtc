@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "e96ae4e639f2ae569103d959a03a944949a1aec1"
+project_hash = "d3f7d0277584ffb315cc2e488c9c5d224b149d44"
 
 [[deps.Agent]]
 deps = ["StableTasks"]
@@ -249,10 +249,10 @@ version = "3.0.6"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "5b2b8556a2ec065ec228a645ee54933bbedf4bf3"
+git-tree-sha1 = "fb2ede5ef1ba02a6705e16926730603a2217c99a"
 registries = "DarrylGamrothRegistry"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
-version = "0.9.4"
+version = "0.9.5"
 
 [[deps.PipeWireAOQueue_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "PipeWireAO_jll"]
@@ -287,10 +287,10 @@ version = "0.7.27"
 
 [[deps.PipeWireAO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "d9fe9c1a8b854c019e1f6d3143f0de0ac015cd75"
+git-tree-sha1 = "d7aa485ea9d830530ae8835fb6ce20c5ceef284d"
 registries = "DarrylGamrothRegistry"
 uuid = "cde84cf6-9a21-5ce0-b5e3-1526e778c30b"
-version = "4.0.4+0"
+version = "4.0.7+0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
