@@ -14,8 +14,8 @@ chronology. Architecture/requirement decisions remain authoritative.
 
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
-RTC now selects the registered PipeWireAO.jl 0.9.6 and PipeWireAO_jll
-4.0.8+0 packages. Native 4.0.8 incorporates upstream PipeWire at
+The [clean install of RTC 0.7.28](EVIDENCE_INDEX.md#pipewireaortc-0728-clean-install--2026-11-22)
+resolves PipeWireAO.jl 0.9.6 and PipeWireAO_jll 4.0.8+0. Native 4.0.8 incorporates upstream PipeWire at
 `ae1213417`. MediaSession retains raw, ordered admission events while
 the wrapper uses the native info mergers and schema-aware NDArray writer.
 The [release verification](reviews/20261122-upstream-spa/REVIEW.md#published-packages)
