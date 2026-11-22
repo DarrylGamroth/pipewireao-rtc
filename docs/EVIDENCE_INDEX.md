@@ -1,5 +1,14 @@
 # Delivery evidence catalog
 
+## Published PipeWireAO 4.0.8 SDK and Julia 0.9.6 wrapper — 2026-11-22
+
+A fresh depot resolved the registered wrapper and JLL and verified the
+AVX2 artifact loaded by the RTC. The full RTC suite passed 10,587 assertions
+with the committed Julia 1.13.3 lockfile and 10,584 on Julia 1.13.4.
+The packaged wrapper passed 2,942 assertions and 174 private-core checks.
+The [publication record](reviews/20261122-upstream-spa/REVIEW.md#published-packages)
+includes the release and registry identities, checksums and platform scope.
+
 ## Rebased SDK and logging on the RTC control thread — 2026-11-22 UTC
 
 PipeWireAO 4.0.8 at `2080cba77` integrates upstream `ae1213417` and passed

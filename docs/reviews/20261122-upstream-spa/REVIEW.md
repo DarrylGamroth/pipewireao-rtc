@@ -24,8 +24,9 @@ The source SDK is version 4.0.8. Upstream introduced
 PipeWireAO.jl 0.9.6 at `978f2ea` regenerates its binding and requires
 that SDK. A C layout probe, a callable-symbol check, byte-identical binding
 regeneration and rejection of the old SDK cover the binding change.
-The registered RTC environment still resolves PipeWireAO.jl 0.9.5 and SDK
-4.0.7. The 0.9.6/4.0.8 results below use a source installation.
+The pre-release comparison used RTC's earlier 0.9.5 / 4.0.7 environment
+and a source installation of 0.9.6 / 4.0.8. The
+[packaged verification](#published-packages) uses the published binaries.
 
 ## Where to implement a component
 
@@ -150,7 +151,6 @@ The candidate tests used Julia 1.13.4 on x86-64, the source-built SDK and
 a local JLL shim that resolves the client library, support plugin, daemon,
 modules and SPA libraries from that installation. The recorded profile
 checks used the GPI2, CAL2 and SPIDERS declarations at `1b1b302`.
-Building and registering deployable SDK and wrapper releases is pending.
 
 | Software check | Passing result |
 | --- | ---: |
@@ -183,3 +183,48 @@ julia --startup-file=no --threads=1,0 --project="$rtc_env" test/media_session_pr
 julia --startup-file=no --threads=1,0 --project="$rtc_env" test/media_session_host.jl
 julia --startup-file=no --project="$rtc_env" docs/validation/session-orchestration-20261121/profiles.jl "$instruments"
 ```
+
+## Published packages
+
+| Release | Source commit | Julia package Git tree |
+| --- | --- | --- |
+| [PipeWireAO v4.0.8](https://github.com/DarrylGamroth/PipeWireAO/releases/tag/v4.0.8) | `2080cba77` | — |
+| [PipeWireAO_jll 4.0.8+0](https://github.com/DarrylGamroth/PipeWireAO_jll.jl/releases/tag/PipeWireAO-v4.0.8%2B0) | `b0fca498` | `4a17dca6880c2bb53c3783fddce18dc129e6b696` |
+| [PipeWireAO.jl v0.9.6](https://github.com/DarrylGamroth/PipeWireAO.jl/releases/tag/v0.9.6) | `978f2ead` | `bee94d9a9446d3db6a6ab5c475bf42a79310d5fb` |
+
+The DarrylGamrothRegistry registers both package trees. Five Linux glibc SDKs
+cover AArch64, x86-64 baseline (tagged and untagged), AVX2 and AVX-512. All
+five SDKs and five build logs were downloaded from the published JLL release
+and matched their build-time SHA-256 checksums. Each downloaded SDK also
+matched its artifact Git tree in the registered JLL. The two x86-64 baseline
+archives are identical. Baseline and AVX2 daemons ran on the x86-64 host and
+reported compiled and linked version 4.0.8. AArch64 and AVX-512 received
+cross-build and static checks. BinaryBuilder's ISA warnings identified the same
+55 distinct warnings as the 4.0.6 build.
+[Registry commit](https://github.com/DarrylGamroth/PackageRegistry/commit/6b6d8159eec09983cd01a03417a4ee86b162664e)
+· [BinaryBuilder recipe](https://github.com/DarrylGamroth/Yggdrasil/blob/c448557582f71d03f2db074d8aad2580d349d01d/P/PipeWireAO/build_tarballs.jl)
+
+The consumer verification started with an empty Julia depot, added General
+and DarrylGamrothRegistry from their published sources, and installed the
+registered packages. The host selected the AVX2 artifact
+`77da251765f3124df77322c562e67a7c7742ab1d` with archive SHA-256
+`508f4b032d508b252452e367b9bece5de6e90d7c772790e3ab0e3f446493c5cb`.
+The test launcher verified its tree, the paths of the mapped client and SPA
+libraries, and the locations of the daemon modules, SPA plugins and
+configuration. Private test daemons used that same prefix.
+
+| Consumer test on the published AVX2 SDK | Passing assertions |
+| --- | ---: |
+| Full RTC with its Julia 1.13.3 lockfile | 10,587 |
+| Full RTC resolved on Julia 1.13.4 | 10,584 |
+| Registered PipeWireAO.jl on Julia 1.13.4 | 2,942 plus 174 private-core assertions |
+| MediaSession private-core and host terminal paths | 124 |
+| GPI2, CAL2 and SPIDERS profile declarations | 26 |
+
+The concurrent snapshot selector sampled 86 times on Julia 1.13.3 and
+83 times on Julia 1.13.4. The RTC package and test projects now require
+PipeWireAO.jl 0.9.6. Regenerating the committed lockfile with Julia 1.13.3
+changed only the wrapper and JLL package records and the project hash.
+The ordinary workstation depot also instantiated this lockfile and loaded
+the same AVX2 artifact. These checks exercised software and package
+installation on the test host.
