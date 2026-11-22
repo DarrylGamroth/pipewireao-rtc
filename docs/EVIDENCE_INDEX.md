@@ -6,6 +6,8 @@ The [source comparison and probes](reviews/20261121-pipewireao-julia/REVIEW.md)
 cover negotiated NDArray formats, metadata, native codecs and RTC ownership.
 The [fix verification](reviews/20261121-pipewireao-julia/REVIEW.md#format-and-metadata-fix-verification)
 covers native fixation, whole-list metadata validation and RTC admission.
+The [0.9.4 integration results](reviews/20261121-pipewireao-julia/REVIEW.md#rtc-integration-of-pipewireaojl-094)
+record admission and RTC core results with the merged wrapper.
 
 ## Session controller admission — 2026-11-21
 

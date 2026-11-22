@@ -249,7 +249,7 @@ version = "3.0.6"
 
 [[deps.PipeWireAO]]
 deps = ["PipeWireAO_jll", "UnsafeArrays"]
-git-tree-sha1 = "2fecf2c1c292f9eb7d178b92a274e59aaf733e99"
+git-tree-sha1 = "5b2b8556a2ec065ec228a645ee54933bbedf4bf3"
 registries = "DarrylGamrothRegistry"
 uuid = "5d815c25-fdf3-4508-8205-db8be38ea5d0"
 version = "0.9.4"

@@ -178,8 +178,7 @@ for name in ARGS
 end' current_info hook_removal run_control props_buffer metadata_records ndarray_filter ndarray_exchange command_endpoint registry_tracking ndarray_exchange_private_core
 ```
 
-The run/reset builders and hook removal can migrate independently under their existing parity and
-lifetime tests. For the tracker, verify sparse updates, retained snapshots and
+For the tracker, verify sparse updates, retained snapshots and
 raw bad-then-good event ordering before changing the RTC consumer. Relocating
 the exchange or task bridges affects exported APIs and requires a caller
 migration.
@@ -201,7 +200,7 @@ layout, rate or schema. ParameterSource still requires all top-level Choices
 to be fixed and accepts a negotiated rate when its declaration omits one.
 Both supply the declared rank before the binding constructs a Julia shape tuple.
 
-The RTC Manifest selects the tree from PipeWireAO.jl commit `63fd75b`. A
+The initial RTC check used the tree from PipeWireAO.jl commit `63fd75b`. A
 temporary local registry supplied the unreleased 0.9.4 entry for the install
 check. Pkg also brought the existing Hsm 0.3.3 and RTC 0.7.27 declarations
 into sync with the Manifest. Fresh external installations need the binding
@@ -215,8 +214,8 @@ release in their registry.
 | RTC consumer, JLL 4.0.4+0 | The object, sparse parameter preload and MediaSession private-core selectors passed 210 assertions, including 31 direct format and admission checks. |
 | RTC core suite with the registry-installed candidate | Stopped at calibration materialization with 110 passes and 12 failures. All twelve matched the baseline test locations and expressions for invalid nested hashes and paths. [Earlier baseline](../../validation/session-orchestration-20261121/README.md) |
 
-Run the focused RTC checks from the package directory with the candidate
-binding installed and the matching JLL prefix.
+Run the focused RTC checks from the package directory with its resolved
+binding and the matching JLL prefix.
 
 ```sh
 julia --startup-file=no --project=. -e '
@@ -225,4 +224,38 @@ ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact
 for file in ARGS
     Base.include(Module(gensym(:AdmissionTests)), abspath(file))
 end' test/media_session_objects.jl test/test_parameter_fits.jl test/media_session_private_core.jl
+```
+
+## RTC integration of PipeWireAO.jl 0.9.4
+
+The RTC Manifest and the local registry select the same tree,
+`5b2b8556a2ec065ec228a645ee54933bbedf4bf3`, from PipeWireAO.jl
+commit `728d065`. The integration checks verified the installed source tree
+and used its PipeWireAO_jll 4.0.4+0 prefix on Julia 1.13.4. The four
+allocating run/reset constructors use native builders and own their POD
+storage. Listener close calls native `spa_hook_remove` once for a linked hook.
+
+The three RTC selectors above passed all 210 assertions, including 31 direct
+format and admission checks. They also exercised native discovery, exact Link
+ownership, withdrawal and close on private cores. The instrument profile
+selector passed 26 assertions across CAL2, SPIDERS and GPI2 with instrument
+declarations at `1b1b302`. [Profile selector](../../validation/session-orchestration-20261121/profiles.jl)
+
+The full RTC suite reported 10,554 passes and 15 failures. Twelve failures
+concerned nested calibration artifact hashes and paths. Three concerned
+external optical references and declarations. Rerunning both affected files
+on pre-merge RTC `987296b` with PipeWireAO.jl 0.9.3 and the same native JLL
+reproduced all 15 at the same assertions with the same outcomes. The
+baseline selectors reported 289 passes and 15 failures.
+
+To run every core selector even when an earlier testset fails, use an outer
+testset from the RTC package directory.
+
+```sh
+julia --startup-file=no --project=. -e '
+using Test, PipeWireAO
+ENV["PIPEWIREAO_PREFIX"] = String(PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir)
+@testset "RTC core" begin
+    include("test/runtests.jl")
+end'
 ```
