@@ -1,5 +1,27 @@
 # Delivery evidence catalog
 
+## Rebased SDK and logging on the RTC control thread — 2026-11-22 UTC
+
+PipeWireAO 4.0.8 at `2080cba77` integrates upstream `ae1213417` and passed
+all 82 native tests. The source-built SDK and PipeWireAO.jl 0.9.6 at
+`978f2ea` passed 2,942 binding assertions and 174 private-core assertions.
+Both refcounted tee overload and incomplete FGN feedback delivered their
+diagnostic outside the processing callback. A local tee test exercised
+three drops and recovery with zero calls to six monitored libc heap
+functions in the publication interval.
+
+The full RTC suite at `7f30ca3` passed 10,583 assertions on the registered
+0.9.5 / 4.0.7 environment and 10,572 on the candidate 0.9.6 / 4.0.8.
+The concurrent snapshot test accounts for all 11 additional assertions.
+The candidate passed 78 MediaSession private-core checks and 46 host
+terminal checks against the candidate. All 26 GPI2, CAL2 and SPIDERS
+configuration checks passed. With a debug-enabled Julia logger, 20,000
+warmed correction-supervision frames allocated zero Julia heap bytes and
+made zero logger calls. Full test scope and the plugin ownership decisions
+are in the [integration review](reviews/20261122-upstream-spa/REVIEW.md).
+The measurements cover software on x86-64. Instrument timing and hardware
+qualification remain open.
+
 ## Native tracking, format construction and RTC admission — 2026-11-22 UTC
 
 Native PipeWireAO 4.0.7 at `e717a434d` passed four Meson selectors covering

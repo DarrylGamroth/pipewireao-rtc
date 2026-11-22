@@ -19,11 +19,12 @@ NDArray writer in PipeWireAO 4.0.7. MediaSession retains raw, ordered admission
 events. The [session design review](reviews/20261121-pipewireao-julia/REVIEW.md#pipewire-session-design-for-ao)
 identifies which exported graph boundaries can be simplified for each instrument.
 
-Before the next native change, rebase the PipeWireAO fork on upstream
-PipeWire's `master` in a dedicated worktree. On 2026-11-22 UTC the packaged
-native tip `e717a434d` and upstream `ae1213417` shared base `d80b80602`.
-Keep the 4.0.7 evidence tied to its built revision. Verify the rebased series
-with the native selectors, regenerated Julia bindings and RTC admission.
+The local native integration branch now rebases PipeWireAO on upstream
+`ae1213417`. The 4.0.8 SDK and regenerated 0.9.6 binding have distinct
+identities. The [integration and logging review](reviews/20261122-upstream-spa/REVIEW.md)
+records their verification, the scope of the buffer-lifetime tests and the
+SPA, module and RTC boundaries for GPI2, CAL2 and SPIDERS. Packaging the
+rebased SDK and updating the registered dependency remain open.
 
 ### Calibration and optical reference validation — 2026-11-21
 

@@ -19,6 +19,21 @@ See the [migration contract and gates](../docs/SESSION_POLICY_MIGRATION.md) and
 receipts retain their historical scope; Meson no longer builds or installs the
 retired session executable, plugins or scripts.
 
+## Session fault diagnostics
+
+Read the session service journal with
+`journalctl --user -u "pipewireao-session@${instance}.service" -b`, where
+`instance` is the installed session name. After fault handling settles,
+MediaSession reports the session instance, original failure, any cleanup
+failure and whether the interrupted effect's outcome is unknown. An
+emergency disconnect has its own error record. Use the native command
+completion for the outcome of an individual request.
+
+The session task emits these records. Normal frame delivery and the
+correction observer run in the graph owners. For per-frame diagnosis,
+the [native logging and trace review](../docs/reviews/20261122-upstream-spa/REVIEW.md#logging-and-the-data-loop)
+describes capture scope and the cost of enabling PipeWire TRACE.
+
 ## Compiled management companion
 
 `pipewireao-management` supplies the existing local management socket, peer
