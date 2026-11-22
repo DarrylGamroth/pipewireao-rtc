@@ -40,6 +40,7 @@ mutable struct Runtime{D}
     sources::Vector{S.AbstractSource}
     parameters::Union{Nothing,S.AbstractOwner}
     controller::Union{Nothing,C.ControllerIdentity}
+    ingress::S.Ingress.Gate{Clocks.CachedNanoClock}
     core_info::Union{Nothing,CoreInfo}
     client_id::UInt32
     objects::Dict{UInt32,S.Object}
@@ -180,6 +181,7 @@ function Runtime()
         S.AbstractSource[],
         nothing,
         controller,
+        S.Ingress.Gate(17; clock = Clocks.CachedNanoClock(0)),
         core,
         UInt32(9),
         Dict{UInt32,S.Object}(),
@@ -206,7 +208,16 @@ function Runtime()
         Tuple{Symbol,UInt64}[],
         Dict{String,Pod}(),
     )
-    object!(runtime, 7, "session-controller", getpid(); instance = Int64(17))
+    controller_node = object!(runtime, 7, "session-controller", getpid(); instance = Int64(17))
+    controller_node.global_properties["client.id"] = "9"
+    client_properties = Dict(
+        "application.process.id" => string(getpid()), "object.serial" => "1009"
+    )
+    client = ClientInfo(UInt32(9), UInt64(1), client_properties)
+    runtime.objects[client.id] = S.Object{Nothing,ClientInfo}(
+        client.id, UInt64(1009), client_properties, nothing, client, false
+    )
+    S.Ingress.controllers!(runtime.ingress, [S.controller_fact(runtime, controller_node)])
     object!(
         runtime,
         11,
@@ -284,6 +295,7 @@ function node!(runtime::Runtime, job, name::AbstractString, pid::Integer)
     return handle
 end
 find_object(runtime::Runtime, id::Integer) = get(runtime.objects, UInt32(id), nothing)
+S.registry_serial(runtime::Runtime, id) = runtime.objects[UInt32(id)].serial
 property(runtime::Runtime, handle::UInt64, key::AbstractString) =
     get(S.object_properties(runtime.objects[UInt32(handle)]), key, nothing)
 function capture!(runtime::Runtime, handle::UInt64; core = nothing)
@@ -490,6 +502,17 @@ end
     runtime.controller = C.ControllerIdentity(UInt32(7), UInt64(1008), Int64(17))
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
     @test isempty(runtime.owners)
+    runtime = Runtime()
+    runtime.objects[UInt32(9)].removed = true
+    @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
+    @test isempty(runtime.captured)
+    runtime = Runtime()
+    # The same observations can return after an incarnation has lost authority.
+    fact = S.controller_fact(runtime, runtime.objects[UInt32(7)])
+    S.Ingress.controllers!(runtime.ingress, S.Ingress.Controller[])
+    S.Ingress.controllers!(runtime.ingress, [fact])
+    @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())
+    @test isempty(runtime.captured)
     runtime = Runtime()
     runtime.client_id = UInt32(0)
     @test_throws ArgumentError S.perform!(runtime, job(), S.CaptureOwners())

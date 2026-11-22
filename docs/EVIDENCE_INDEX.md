@@ -1,5 +1,10 @@
 # Delivery evidence catalog
 
+## Session controller admission — 2026-11-21
+
+The [admission and instrument checks](validation/session-orchestration-20261121/README.md)
+cover the RTC client and the CAL2, SPIDERS and GPI2 session declarations.
+
 ## RTC 0.7.22 GPI2 and Classic startup and Quit — 2026-11-16
 
 The [private-core check](validation/rtc-0722-gpi2-classic-20261116/README.md)

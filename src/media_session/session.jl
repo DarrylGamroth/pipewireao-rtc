@@ -365,6 +365,17 @@ function controller_fact(session, object, info::NodeInfo)
         full_info = info.change_mask & mask == mask,
     )
 end
+function local_controller(runtime, id::UInt32)
+    facts = Ingress.admitted_controller(runtime.ingress, id)
+    facts === nothing && return nothing
+    identity = facts.identity
+    facts.name == runtime.configuration["controller.node.name"] &&
+    identity.instance == _declared_instance(runtime.configuration, "controller.instance") &&
+    identity.pid == getpid() || return nothing
+    object = find_object(runtime, id)
+    object !== nothing && controller_fact(runtime, object) == facts || return nothing
+    return ControlCodec.ControllerIdentity(id, identity.serial, Int64(identity.instance))
+end
 function observe_controllers!(session::Session)
     observations = Ingress.Controller[]
     for object in values(session.objects)
@@ -377,23 +388,8 @@ function observe_controllers!(session::Session)
         Ingress.controllers!(session.ingress, observations)
         session.controller_facts = observations
     end
-    if session.controller === nothing
-        name = session.configuration["controller.node.name"]
-        instance = parse(UInt64, session.configuration["controller.instance"])
-        for fact in observations
-            if fact.name == name &&
-                fact.identity.instance == instance &&
-                fact.identity.pid == getpid() &&
-                fact.full_info &&
-                fact.input_ports == 0 &&
-                fact.output_ports == 0
-                identity = fact.identity
-                session.controller = ControlCodec.ControllerIdentity(
-                    identity.global_id, identity.serial, Int64(instance)
-                )
-                break
-            end
-        end
+    if session.controller === nothing && isopen(session.controller_endpoint)
+        session.controller = local_controller(session, node_id(session.controller_endpoint))
     end
     return nothing
 end

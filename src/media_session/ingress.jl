@@ -164,16 +164,26 @@ _same_incarnation(a::Identity, b::Identity) =
     a.global_id == b.global_id && a.serial == b.serial && a.instance == b.instance
 _same_facts(a::Controller, b::Controller) =
     a.identity == b.identity && a.name == b.name && _valid(b)
-function _controller(gate, header)
+"""
+    admitted_controller(gate, id)
+
+Return the admitted controller facts for a global Node ID, or `nothing` if absent or retired.
+"""
+function admitted_controller(gate::Gate, id::UInt32)
     for record in gate.controllers
-        i = record.facts.identity
-        !record.retired &&
-            i.global_id == header.controller.global_id &&
-            i.serial == header.controller.serial &&
-            i.instance == UInt64(header.controller.instance) &&
+        if !record.retired && record.facts.identity.global_id == id
             return record.facts
+        end
     end
     return nothing
+end
+function _controller(gate, header)
+    expected = header.controller
+    facts = admitted_controller(gate, expected.global_id)
+    facts === nothing && return nothing
+    identity = facts.identity
+    return identity.serial == expected.serial && identity.instance == expected.instance ?
+           facts : nothing
 end
 function _capability(gate)
     rows = Pod[]

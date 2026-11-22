@@ -29,33 +29,6 @@ function _declared_instance(declaration, key)
     return instance
 end
 
-function _assert_controller!(runtime, object::Object{P,NodeInfo}) where {P}
-    controller = runtime.controller
-    object.id == controller.global_id && object.serial == controller.serial ||
-        throw(ArgumentError("session controller registry incarnation differs"))
-    info = object.info
-    mask =
-        PipeWireAO.NODE_CHANGE_INPUT_PORTS | PipeWireAO.NODE_CHANGE_OUTPUT_PORTS |
-        PipeWireAO.NODE_CHANGE_PROPERTIES
-    info !== nothing &&
-    info.change_mask & mask == mask &&
-    info.n_input_ports == 0 &&
-    info.n_output_ports == 0 ||
-        throw(ArgumentError("session controller needs complete zero-port NodeInfo"))
-    handle = UInt64(object.id)
-    property(runtime, handle, "pipewireao.rtc-control.protocol") ==
-    ControlClient.PROTOCOL &&
-    property(runtime, handle, "pipewireao.rtc-control.profile") ==
-    ControlClient.CONTROLLER_PROFILE &&
-    identity_integer(runtime, handle, "pipewireao.rtc-control.instance") ==
-    controller.instance &&
-    controller.instance ==
-    _declared_instance(runtime.configuration, "controller.instance") &&
-    identity_integer(runtime, handle, "pipewireao.rtc-control.owner-pid") == getpid() ||
-        throw(ArgumentError("session controller metadata differs"))
-    return nothing
-end
-
 function perform!(runtime, job, ::CaptureOwners)
     isempty(runtime.owners) || throw(ArgumentError("bootstrap owners are already captured"))
     await_condition!(runtime, job) do
@@ -70,8 +43,8 @@ function perform!(runtime, job, ::CaptureOwners)
     controller = node!(
         runtime, job, runtime.configuration["controller.node.name"], getpid()
     )
-    object = something(find_object(runtime, controller))
-    _assert_controller!(runtime, object)
+    local_controller(runtime, UInt32(controller)) == runtime.controller ||
+        throw(ArgumentError("session controller no longer matches its admitted identity"))
     capture!(runtime, controller; core)
     declarations = runtime.configuration["owners"]
     length(declarations) <= DeploymentConfiguration.MAX_EXTERNAL_OWNERS ||

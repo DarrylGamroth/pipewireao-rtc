@@ -57,6 +57,8 @@ include("control_private_core.jl")
                 sleep(0.001)
             end
             @test session.controller !== nothing
+            @test session.controller.global_id == node_id(session.controller_endpoint)
+            @test S.local_controller(session, session.controller.global_id) == session.controller
             @test session.client_id > 0
             @test session.machine.lifecycle == PipeWireAORTC.RunnerCodec.Configuring
             S.observe_controllers!(session)

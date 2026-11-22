@@ -137,6 +137,7 @@ remain evidence for their original provider and scope.
 | Independent WirePlumber, when declared | Provide separately configured site/device policy; do not own RTC application lifecycle, admission or declared application links. |
 | systemd | Start, stop, reap and supervise processes and apply configured service resource policy. |
 | PipeWireAO | Negotiate and transport NDArray buffers, schedule published nodes, expose native controls and host FGN. |
+| PipeWireAO.jl | Bind the native PipeWireAO and PipeWire interfaces for Julia callers. Manage Julia/native lifetimes and copy borrowed records when exposing owned values. |
 | FGN/JFG | Prepare and execute scientific graphs, manage workspaces/workers, and apply owner-local controls and adoption. |
 | AOS and its HIL adapter | Own instrument physics, model time and frame/command causality, and publish declared sources and sinks. |
 | AOC and Julia calibration clients | Own calibration algorithms/estimates and coordinate acquisition through deployed endpoints. |
@@ -146,6 +147,14 @@ The headless executable uses PipeWireAO.jl's public discovery, proxy, Link and
 main-loop interfaces from its Julia `MediaSession` owner. The RTC does not load
 Lua policy or libwireplumber. Scientific owners retain internal graphs and
 workers. Startup alone does not authorize source release.
+
+Add new transport behavior in native PipeWireAO before exposing it through the
+Julia binding. Keep instrument policy in the systemd-managed RTC client. CAL2,
+SPIDERS and GPI2 supply that client with different Link and execution-group
+declarations. Loading their policy into a daemon module would couple its
+lifecycle to the PipeWire core. Detector frames travel directly between
+scientific nodes in either arrangement.
+[Controller admission and instrument profiles](validation/session-orchestration-20261121/README.md)
 
 ## Earlier active scope (superseded)
 

@@ -6,11 +6,17 @@ Initial plan date: 2026-09-04
 
 ## Current work
 
-Updated 2026-11-10. This section is the current delivery summary. Later sections
+Updated 2026-11-21. This section is the current delivery summary. Later sections
 preserve the original dependency sequence and dated increments; their “next”,
 “in progress”, “pending” and “complete” labels describe those recorded stages.
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
+
+### Session controller admission — 2026-11-21
+
+MediaSession uses the same admitted controller record for local discovery and
+owner capture. The [verification record](validation/session-orchestration-20261121/README.md)
+covers the released PipeWireAO.jl binding and three instrument topologies.
 
 ### Offline optical calibration campaign — 2026-11-12
 

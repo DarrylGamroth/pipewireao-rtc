@@ -20,7 +20,9 @@
 - This repository owns the non-actuating development RTC. Under RTC-ARCH-026,
   [MediaSession](src/media_session/MediaSession.jl) is the sole application
   authority for lifecycle, exact admission, declared PipeWire Links and
-  execution groups. It uses public PipeWireAO.jl APIs. systemd owns process
+  execution groups. Use the public PipeWireAO.jl bindings to native APIs.
+  Keep RTC policy in MediaSession and implement new transport behavior in
+  native PipeWireAO before exposing it in the binding. systemd owns process
   lifetime. GUI and CLI tools are clients. Independent WirePlumber may provide
   site/device policy. Keep Lua, libwireplumber and retired coordinators out of
   the RTC runtime.
