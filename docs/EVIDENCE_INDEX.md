@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Agent.jl polling in MediaSession — 2026-11-22
+
+Across three paired private-core runs, median public control acknowledgement
+fell from 3.886 to 1.762 ms at 100 scheduled requests/s and from 4.502 to
+2.390 ms in serial bursts. Quiet CPU ranges overlapped and the largest
+observed deadline overshoot occurred in the candidate. All 9,216 timed
+replies correlated. The [trial record](validation/session-agent-idle-20261122/README.md)
+covers task fairness, effect scheduling, process shutdown and the limits
+of this software fixture.
+
 ## PipeWireAORTC 0.7.28 clean install — 2026-11-22
 
 With an empty project and depot on Julia 1.13.3, adding only

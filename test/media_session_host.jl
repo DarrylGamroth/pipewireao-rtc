@@ -148,6 +148,25 @@ function drain_failure(session)
 end
 
 @testset "Native host terminal paths" begin
+    @testset "A quiet deadline schedules fault compensation as work" begin
+        with_control_private_core() do socket, directory, daemon
+            session = host_session(socket, directory, daemon)
+            try
+                prepare_host!(session)
+                wait_proof(() -> iszero(S.Agent.do_work(session)), 10, "idle owner turn")
+                S.submit!(session.machine, S.Request(S.SetProperties(); payload = "graph"))
+                ticket = something(session.machine.effect)
+                S.submitted!(session.machine, ticket)
+                Clocks.update!(session.source_clock, ticket.deadline)
+                @test S.Agent.do_work(session) > 0
+                @test something(session.active_job).ticket.effect === S.HoldSources()
+                @test S.start_effect!(session) == 0
+            finally
+                close(session)
+            end
+        end
+    end
+
     for operation in (:quit, :properties_set)
         @testset "Disconnect with mapped ingress, operation=$operation" begin
             with_control_private_core() do socket, directory, daemon

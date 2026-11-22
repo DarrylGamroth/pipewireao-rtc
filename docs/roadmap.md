@@ -12,6 +12,15 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### MediaSession control polling — 2026-11-22
+
+The [Agent.jl polling trial](validation/session-agent-idle-20261122/README.md)
+keeps `AgentInvoker` on the task that creates the PipeWire loop. The owner
+sleeps on empty turns and yields after work, including a newly scheduled
+effect. The trial covers quiet startup expiry, idle CPU, correlated status
+and groups requests, and shutdown with a request outstanding. The next
+instrument check is a sealed GPI2 CPU session through public Ready and Quit.
+
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
 The [clean install of RTC 0.7.28](EVIDENCE_INDEX.md#pipewireaortc-0728-clean-install--2026-11-22)
