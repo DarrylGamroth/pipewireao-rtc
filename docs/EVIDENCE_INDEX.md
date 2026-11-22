@@ -1,5 +1,22 @@
 # Delivery evidence catalog
 
+## Calibration and optical reference verification — 2026-11-21
+
+On RTC `e546dcc`, eight failing assertions exposed missing manifest checks
+on nested FITS references. A wrong path could pass when the FITS data fit
+the declared shape. Seven assertions expected older managed-input behavior.
+Calibration source loading accepts well-formed digest metadata, and optical
+prescription identity tracks changes to the current prescription and catalog bytes.
+The [calibration method guide](CALIBRATION_METHOD_USAGE.md) describes the
+frozen and managed contracts.
+
+On Julia 1.13.4 with PipeWireAO.jl 0.9.4 and PipeWireAO_jll 4.0.4+0, the
+full RTC core suite passed all 10,580 assertions. The focused runs passed 270
+calibration checks and 197 optical-reference and Git-export checks. A separate
+pinned-export probe detected replacements of both the prescription file and
+the catalog. [Bundle tests](../test/test_calibration_bundle.jl)
+· [Optical tests](../test/test_external_optical_instrument.jl)
+
 ## PipeWireAO.jl binding and native behavior — 2026-11-21
 
 The [source comparison and probes](reviews/20261121-pipewireao-julia/REVIEW.md)

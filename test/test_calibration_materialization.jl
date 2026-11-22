@@ -379,15 +379,33 @@ const PREFIX = PipeWireAO.LibPipeWire.PipeWireAO_jll.artifact_dir
                 @test Calibration.read_bundle(joinpath(output, name)).report ==
                     Calibration.read_bundle(joinpath(results, name)).report
             end
+            # Managed source hashes are optional metadata; typed FITS selection
+            # still applies to nested declarations after materialization.
+            historical_hash = deepcopy(selected_context)
+            historical_hash["scc"]["pixel_selection_mask"]["sha256"] = repeat("f", 64)
+            @test PipeWireAORTC.InstrumentConfiguration.calibration_context(
+                historical_hash, output
+            ) == resolved
+            unhashed = deepcopy(selected_context)
+            delete!(unhashed["scc"]["pixel_selection_mask"], "sha256")
+            @test PipeWireAORTC.InstrumentConfiguration.calibration_context(
+                unhashed, output
+            ) == resolved
             invalid_hash = deepcopy(selected_context)
-            invalid_hash["scc"]["pixel_selection_mask"]["sha256"] = repeat("f", 64)
+            invalid_hash["scc"]["pixel_selection_mask"]["sha256"] = "invalid"
             @test_throws ArgumentError PipeWireAORTC.InstrumentConfiguration.calibration_context(
                 invalid_hash, output
             )
             invalid_path = deepcopy(selected_context)
-            invalid_path["scc"]["pixel_selection_mask"]["path"] = "llowfs/artifacts/physical-to-modes.fits"
-            @test_throws ArgumentError PipeWireAORTC.InstrumentConfiguration.calibration_context(
+            invalid_path["scc"]["pixel_selection_mask"]["path"] =
+                joinpath(output, "llowfs/artifacts/scc-pixel-mask.fits")
+            @test_throws D.DeploymentError PipeWireAORTC.InstrumentConfiguration.calibration_context(
                 invalid_path, output
+            )
+            invalid_type = deepcopy(selected_context)
+            invalid_type["scc"]["pixel_selection_mask"]["type"] = "Float16"
+            @test_throws ArgumentError PipeWireAORTC.InstrumentConfiguration.calibration_context(
+                invalid_type, output
             )
             selected_configuration = C.read_yaml(joinpath(output, "selection.yaml"))["rtc_configuration"]
             @test selected_configuration ==

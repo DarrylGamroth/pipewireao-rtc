@@ -12,6 +12,13 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Calibration and optical reference validation — 2026-11-21
+
+Frozen calibration bundles verify nested FITS references against their
+artifact manifest and decode the verified bytes. Managed optical references
+contribute current prescription and catalog bytes to scientific identity.
+See the [verification results](EVIDENCE_INDEX.md#calibration-and-optical-reference-verification--2026-11-21).
+
 ### Session controller admission — 2026-11-21
 
 MediaSession uses the same admitted controller record for local discovery and

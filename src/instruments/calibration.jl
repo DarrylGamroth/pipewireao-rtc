@@ -11,7 +11,14 @@ Prepared arrays together must fit the existing artifact image byte limit.
 calibration_context(document, directory) =
     _calibration_context(document, directory, Ref(Artifacts.MAX_IMAGE_BYTES))
 
-function _calibration_context(document::AbstractDict, directory, remaining)
+_calibration_context(document, directory, remaining) = _calibration_context(
+    document,
+    directory,
+    remaining,
+    (source, T, shape, _) -> Artifacts.read_fits_data(source, T, shape),
+)
+
+function _calibration_context(document::AbstractDict, directory, remaining, read_fits)
     if get(document, "kind", nothing) == "fits"
         required = (
             "kind", "path", "hdu", "axes", "shape", "type", "storage_order"
@@ -39,17 +46,17 @@ function _calibration_context(document::AbstractDict, directory, remaining)
         bytes <= remaining[] ||
             throw(ArgumentError("calibration FITS arrays together exceed 256 MiB"))
         remaining[] -= bytes
-        data = Artifacts.read_fits_data(source, T, shape)
+        data = read_fits(source, T, shape, document)
         return vec(permutedims(data, Tuple(reverse(1:ndims(data)))))
     end
     return Dict(
-        key => _calibration_context(value, directory, remaining) for
+        key => _calibration_context(value, directory, remaining, read_fits) for
         (key, value) in document
     )
 end
-_calibration_context(document::AbstractVector, directory, remaining) =
-    map(value -> _calibration_context(value, directory, remaining), document)
-_calibration_context(document, directory, remaining) = deepcopy(document)
+_calibration_context(document::AbstractVector, directory, remaining, read_fits) =
+    map(value -> _calibration_context(value, directory, remaining, read_fits), document)
+_calibration_context(document, directory, remaining, read_fits) = deepcopy(document)
 calibration_axes(value::Union{Tuple,AbstractVector}) = value
 calibration_axes(value) =
     throw(ArgumentError("calibration FITS axes must be an explicit permutation"))

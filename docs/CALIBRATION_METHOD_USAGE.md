@@ -18,12 +18,19 @@ The version-1 bundle contains `result.yaml`, `context.yaml`, concrete
 graph and artifacts. Git retains earlier selections and provenance; staging
 does not copy archive directories or create `history_sha256` manifests.
 
-Calibration context uses the existing FITS binding terms: a `kind: fits` entry
-declares `path`, `hdu`, `axes`, logical `shape`, `type`, `sha256` and
-`storage_order: row-major`. Paths are relative to `context.yaml`. Cold preparation
-checks one bounded file snapshot and resolves it to a flat typed row-major
-vector. Boolean values must be exactly zero or one. The context remains a small
-declaration; GPI2 construction and runtime use the same `pupil-mask.fits` bytes.
+A `kind: fits` context entry declares `path`, `hdu`, `axes`, logical `shape`,
+`type` and `storage_order: row-major`. Paths resolve inside the directory
+containing `context.yaml`. A frozen bundle verifies each artifact against
+`result.yaml` even when the context omits `sha256`. A supplied `sha256` must
+match the selected file, including a retained input outside the artifact
+manifest. References to files with identical bytes can use different paths.
+
+When loading an RTC configuration, the FITS loader accepts an optional
+lowercase SHA-256 field and resolves current file bytes to a flat typed
+row-major vector. It checks the HDU, shape, axes and values. Boolean values
+must be exactly zero or one. An installed application with a pinned Git
+export verifies file integrity against that snapshot. GPI2 construction and
+runtime use the same `pupil-mask.fits` input.
 RTC configuration selects `calibration/context.yaml`, without a duplicate
 `rtc/calibration.yaml`. The regular instrument graph still supplies topology.
 Generated YAML writes short numeric vectors inline, including coordinate pairs,

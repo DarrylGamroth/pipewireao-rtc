@@ -166,6 +166,8 @@ end
     load(path)
 
 Read a physical instrument declaration without loading simulation or RTC configuration.
+Validate optical prescription and catalog paths and the syntax of their declared
+SHA-256 values. `prescription_identity` hashes the current bytes of both files.
 """
 function load(path::AbstractString)
     document = bounded_yaml(path)

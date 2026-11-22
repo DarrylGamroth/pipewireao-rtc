@@ -90,13 +90,44 @@ _bundle_array(array, name) =
     throw(ArgumentError("calibration artifact $name must be an array"))
 _bundle_array(::AbstractArray, name) = nothing
 
+# Frozen bundle descriptors bind manifested artifacts or retained input bytes.
+function _bundle_fits_data(source, T, shape, reference, hashes, verified)
+    manifested = haskey(hashes, source.path)
+    declared = get(reference, "sha256", nothing)
+    expected = get(hashes, source.path, declared)
+    if manifested && declared !== nothing && declared != expected
+        throw(
+            ArgumentError(
+                "calibration context FITS sha256 differs from bundle artifact manifest: " *
+                reference["path"],
+            ),
+        )
+    end
+    expected === nothing && return Artifacts.read_fits_data(source, T, shape)
+    # Hash and decode one bounded snapshot, including hashless manifested refs.
+    # Retained inputs use their declared digest without joining the manifest.
+    check = Returns(nothing)
+    original = Artifacts.snapshot(source.path; check)
+    bytes2hex(sha256(original)) == expected || throw(
+        ArgumentError(
+            "calibration context FITS sha256 differs from bundle file snapshot: " *
+            reference["path"],
+        ),
+    )
+    manifested && push!(verified, source.path)
+    return Artifacts.decode_fits(source, T, shape, original; check) do data, _...
+        data
+    end
+end
+
 """
     read_bundle(directory)
 
 Validate a version-1 calibration bundle without loading scientific packages.
 Return the report, parsed context, graph path, artifact paths keyed by FITS
-basename, and runtime parameter names. Every file is hashed before return;
-array interpretation belongs to the caller.
+basename, and runtime parameter names. Verify context, graph and artifact
+hashes and any declared FITS reference hashes before return. Scientific array
+interpretation belongs to the caller.
 """
 function read_bundle(directory::AbstractString)
     isdir(directory) && !islink(directory) ||
@@ -146,17 +177,29 @@ function read_bundle(directory::AbstractString)
         ),
     )
     artifacts = Dict{String,String}()
+    hashes = Dict{String,String}()
     for (name, expected) in manifest
         path = _bundle_file(artifact_directory, name)
-        # Reuse the bounded no-follow FITS snapshot reader, including inode checks.
-        bytes = Artifacts.snapshot(path; check = () -> nothing)
-        bytes2hex(sha256(bytes)) == _bundle_hash(expected, "artifact $name") ||
-            throw(ArgumentError("calibration artifact hash mismatch: $name"))
         artifacts[name] = path
+        hashes[path] = _bundle_hash(expected, "artifact $name")
     end
-    # Construction-time values use the same bounded, hash-verified FITS inputs
-    # as cold RTC preparation; the stored context remains a small declaration.
-    InstrumentConfiguration.calibration_context(context, directory)
+    # Reuse cold preparation's typed and aggregate size checks while preserving
+    # the frozen bundle's declared hashes. The stored context stays compact.
+    verified = Set{String}()
+    InstrumentConfiguration._calibration_context(
+        context,
+        directory,
+        Ref(Artifacts.MAX_IMAGE_BYTES),
+        (source, T, shape, reference) ->
+            _bundle_fits_data(source, T, shape, reference, hashes, verified),
+    )
+    for (name, path) in artifacts
+        path in verified && continue
+        # Unreferenced artifacts still require the bounded no-follow snapshot.
+        bytes = Artifacts.snapshot(path; check = Returns(nothing))
+        bytes2hex(sha256(bytes)) == hashes[path] ||
+            throw(ArgumentError("calibration artifact hash mismatch: $name"))
+    end
     parameter_names = report["parameter_names"]
     _bundle_parameter_names(parameter_names)
     length(unique(parameter_names)) == length(parameter_names) ||

@@ -155,6 +155,82 @@ end
     end
 end
 
+@testset "Frozen bundle FITS references bind declared hashes" begin
+    mktempdir() do root
+        saved = bundle(joinpath(root, "original"))
+        array = saved.parameters[:reconstructor]
+        reference = Dict{String,Any}(
+            "kind" => "fits",
+            "path" => "artifacts/reconstructor.fits",
+            "hdu" => 1,
+            "axes" => [2, 1],
+            "shape" => [2, 2],
+            "type" => "Float32",
+            "sha256" => saved.result["artifact_sha256"]["reconstructor.fits"],
+            "storage_order" => "row-major",
+        )
+        context(reference) = Dict("branches" => [Dict("reference" => reference)])
+        diagnostics = Dict("copy" => array, "other" => zeros(Float32, 2, 2))
+        for (name, selection) in (
+            "hashed" => reference,
+            "unhashed" => filter(pair -> first(pair) != "sha256", reference),
+            "alternate" => merge(reference, Dict("path" => "artifacts/copy.fits")),
+            "normalized" => merge(
+                reference, Dict("path" => "artifacts/../artifacts/reconstructor.fits")
+            ),
+        )
+            directory = joinpath(root, name)
+            C.write_bundle(
+                directory, saved.report, context(selection), saved.graph,
+                saved.parameters; diagnostics,
+            )
+            @test C.read_bundle(directory).context == context(selection)
+        end
+        for (name, replacement) in (
+            "wrong-hash" => Dict("sha256" => repeat("f", 64)),
+            "wrong-artifact" => Dict("path" => "artifacts/other.fits"),
+        )
+            directory = joinpath(root, name)
+            @test_throws ArgumentError C.write_bundle(
+                directory, saved.report, context(merge(reference, replacement)),
+                saved.graph, saved.parameters; diagnostics,
+            )
+            @test !ispath(directory)
+        end
+
+        unhashed = joinpath(root, "unhashed")
+        C.write_fits(joinpath(unhashed, reference["path"]), zeros(Float32, 2, 2))
+        @test_throws ArgumentError C.read_bundle(unhashed)
+
+        # Retained inputs are supported without an artifact manifest entry.
+        # Their declared digest must bind the same bounded snapshot we decode.
+        directory = joinpath(root, "hashed")
+        mkdir(joinpath(directory, "inputs"))
+        input = joinpath(directory, "inputs/reconstructor.fits")
+        cp(joinpath(directory, "artifacts/reconstructor.fits"), input)
+        selection = merge(reference, Dict("path" => "inputs/reconstructor.fits"))
+        declaration = context(selection)
+        report = C.read_bundle(directory).report
+        function save_context!()
+            path = joinpath(directory, "context.yaml")
+            Common.write_yaml(path, declaration)
+            report["context_sha256"] = Common.sha256_file(path)
+            Common.write_yaml(joinpath(directory, "result.yaml"), report)
+        end
+        save_context!()
+        @test C.read_bundle(directory).context == declaration
+        C.write_fits(input, zeros(Float32, 2, 2))
+        @test_throws ArgumentError C.read_bundle(directory)
+        delete!(selection, "sha256")
+        save_context!()
+        loaded = C.read_bundle(directory)
+        @test loaded.context == declaration
+        @test PipeWireAORTC.InstrumentConfiguration.calibration_context(
+            loaded.context, directory
+        )["branches"][1]["reference"] == zeros(Float32, 4)
+    end
+end
+
 @testset "Authored inputs and Git-only calibration history" begin
     mktempdir() do root
         directory = joinpath(root, "calibration")

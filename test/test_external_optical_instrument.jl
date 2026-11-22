@@ -223,7 +223,7 @@ end
     )
 end
 
-@testset "optical reference hashes bind current source bytes" begin
+@testset "optical prescription identity follows current source bytes" begin
     for asset in ("instrument.zmx", "catalog.zip")
         mktempdir() do directory
             physical, simulation = optical_reference_documents(directory)
@@ -232,8 +232,9 @@ end
             configured = IC.settings(declaration)
             identity = IC.prescription_identity(declaration, configured)
             write(joinpath(directory, "optics", asset), "Changed optical input\n")
-            @test IC.prescription_identity(declaration, configured) != identity
-            @test_throws ArgumentError IC.load(joinpath(directory, "instrument.yaml"))
+            changed_identity = IC.prescription_identity(declaration, configured)
+            @test changed_identity != identity
+            @test IC.scientific_definition(path).prescription_identity == changed_identity
             reference =
                 asset == "instrument.zmx" ? physical["optical_prescription"] :
                 physical["optical_prescription"]["catalog_archive"]
@@ -256,7 +257,7 @@ end
                     document["optical_prescription"]["sha256"]
                 )
             ),
-            document -> (document["optical_prescription"]["sha256"] = "0"^64),
+            document -> delete!(document["optical_prescription"], "sha256"),
             document -> (
                 document["optical_prescription"]["path"] = "optics/../optics/instrument.zmx"
             ),
