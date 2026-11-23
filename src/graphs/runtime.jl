@@ -107,6 +107,7 @@ function arguments(arguments)
             "--physical-offsets",
             "--chopped-warmup",
             "--reference-clock",
+            "--prime-on-output",
         )
             key in ("--correction-property", "--recovery-node") ||
                 !haskey(values, key) ||
@@ -183,6 +184,16 @@ function arguments(arguments)
     supervision === nothing ||
         length(correction_properties) == 1 ||
         throw(ArgumentError("supervision requires one declared correction property"))
+    prime_on_output = get(values, "--prime-on-output", nothing)
+    if prime_on_output !== nothing
+        occursin(r"^[a-zA-Z0-9_.-]{1,128}$", prime_on_output) ||
+            throw(ArgumentError("--prime-on-output requires a Graph output name"))
+        length(correction_properties) == 1 &&
+            endswith(only(correction_properties), ":closed") ||
+            throw(ArgumentError("--prime-on-output requires one correction property ending in :closed"))
+        supervision === nothing && isempty(recovery_nodes) ||
+            throw(ArgumentError("--prime-on-output cannot be combined with recovery or supervision"))
+    end
     display_sink === nothing || (local_output !== nothing && local_output.node !== nothing) ||
         throw(ArgumentError("--latest-output-sink requires --latest-output"))
     local_output === nothing || (local_output = merge(local_output, (; sink = display_sink)))
@@ -194,7 +205,8 @@ function arguments(arguments)
             )
         ) : (;)
     return (;
-        remote, bootstrap_node = node, bootstrap_instance = instance, clock_policy...
+        remote, bootstrap_node = node, bootstrap_instance = instance, clock_policy...,
+        (prime_on_output === nothing ? (;) : (; prime_on_output = Symbol(prime_on_output)))...,
     ),
     graph,
     bindings,
@@ -321,10 +333,14 @@ extension).
 """
 function read_bindings end
 
+supports_offline_qualification(options) =
+    options.capture_backend === nothing && options.execution == "complete-frame" &&
+    options.row_workers == 0 && options.physical_offsets === nothing
+
 function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
                        recovery_nodes, supervision_path, offsets_path, qualification,
-                       local_output = nothing; offline = false)
-    return merge(
+                       local_output = nothing; offline = false, prime_on_output = nothing)
+    options = merge(
         Base.invokelatest(fgp.parse_arguments, graph_arguments),
         (;
             correction_properties,
@@ -334,11 +350,18 @@ function graph_options(fgp, graph_arguments, correction_properties, timeout_ms,
             supervision = supervision_path === nothing ? () :
                           read_supervision(supervision_path),
             qualify_at_install = qualification.at_install,
+            prime_on_output,
             chopped_warmup = qualification.path !== nothing && (offline || !qualification.at_install) ?
                              read_chopped_warmup(qualification.path) : nothing,
             local_output,
         ),
     )
+    if qualification.at_install && !supports_offline_qualification(options)
+        throw(ArgumentError(
+            "install qualification requires a complete-frame CPU graph without row workers or an offset receiver",
+        ))
+    end
+    return options
 end
 
 function _main(
@@ -360,7 +383,7 @@ function _main(
         options = graph_options(
             filter_graph_pipewire, graph_arguments, correction_properties,
             correction_timeout_ms, recovery_nodes, supervision_path, offsets_path, qualification,
-            local_output,
+            local_output; prime_on_output = get(binding, :prime_on_output, nothing),
         )
         entries = fits_path === nothing ? FITSBinding[] : bindings(fits_path)
         admitted.owner_check()
@@ -383,6 +406,11 @@ axes. FITS startup does not change legacy raw `--parameter` file semantics.
 `--correction-property NODE:PROPERTY` declares a Boolean correction-loop property
 for RTC-owned adoption tracking; repeat it for independent declared loops.
 This does not change startup closure, lifecycle, or the scientific controller.
+`--prime-on-output PORT` holds closure admission until the owner observes a valid
+live measurement on the declared output of a complete-frame CPU graph.
+Declare one initially open correction loop and a published, acquisition-aware
+output. Reset clears priming evidence while preserving the applied correction
+property. Open the loop before collecting a new open-loop measurement.
 `--recovery-node NODE` opts the declared coupled controllers into scoped CPU
 recovery; repeat it for every participating temporal filter and conditioner.
 The controller is implicit. Recovery refuses unsupported scopes before effects;

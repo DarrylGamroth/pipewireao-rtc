@@ -359,6 +359,33 @@ end
     @test check_correction!(
         runtime, RunningOrigin(), "graph", values, updates, declarations
     ) === nothing
+    primed = prefix * ".primed"
+    @test correction_status_field(primed)
+    declarations[primed] = PropertyDeclaration(SPA.POD_BOOL, false)
+    frame_observer = "pipewireao.frame-observer.state"
+    values[frame_observer] = Pod("active")
+    @test_throws ArgumentError check_correction!(
+        runtime, RunningOrigin(), "graph", values, updates, declarations
+    )
+    values[primed] = Pod(false)
+    @test_throws ArgumentError check_correction!(
+        runtime, RunningOrigin(), "graph", values, updates, declarations
+    )
+    values[primed] = Pod(true)
+    @test check_correction!(
+        runtime, RunningOrigin(), "graph", values, updates, declarations
+    ) === nothing
+    values[frame_observer] = Pod("failed")
+    @test_throws ArgumentError check_correction!(
+        runtime, RunningOrigin(), "graph", values, updates, declarations
+    )
+    @test check_correction!(
+        runtime, RunningOrigin(), "graph", values,
+        Dict("controller:closed" => Pod(false)), declarations,
+    ) === nothing
+    delete!(declarations, primed)
+    delete!(values, primed)
+    delete!(values, frame_observer)
     @test_throws ArgumentError check_correction!(
         runtime, ReadyOrigin(), "graph", values, updates, declarations
     )

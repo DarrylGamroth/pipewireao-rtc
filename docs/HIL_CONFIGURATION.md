@@ -193,6 +193,28 @@ A replacement RTC repeats admission against the current live endpoints.
 This mode supports one independent primary source. Profiles requiring managed
 auxiliary acquisition or explicit source End use the managed launch contract.
 
+### Start CAL2 with correction open
+
+With the live-priming CAL2 profile, installation tests the configured SCC
+and LLOWFS controllers against their calibration. It passes synthetic
+exposures to each graph, checks the required physical-offset output and
+discards the results. The installer runs this test even if Julia can
+reuse a compiled package image. The graph services skip that test on
+ordinary RTC restart.
+
+Service Ready means the replacement RTC has admitted the expected live
+source, controller ports, Links and placement. The operator can now
+Start processing. Both correction loops start open. LLOWFS needs one
+usable exposure, while SCC needs both members of a valid chopped pair.
+While open, neither controller integrates the residual. Each controller's
+`pipewireao.correction-control.correction:closed.primed` readback identifies
+when its declared modal residual has been observed from live camera data.
+A close request before that point is refused. Submit a new close request
+when the loop is ready. A fresh RTC starts both loops open. Within an
+existing session, Reset clears the priming evidence and preserves the
+applied closure setting. Open the loop first to repeat open-loop priming.
+Operate each loop independently through its `correction:closed` property.
+
 ## Migrate an RTC application
 
 Export the simulation from the selected instrument declaration before changing

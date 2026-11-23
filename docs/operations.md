@@ -713,6 +713,14 @@ A replacement RTC MUST verify the retained service identities and realize a
 fresh set of RTC-owned Links. RTC-controlled processing MUST remain held
 until explicitly started.
 
+When a profile selects install-time graph qualification, installation MUST
+exercise the configured graph and its required outputs using the installed
+calibration. RTC activation MUST use fresh controller state. For a loop
+declaring a live priming output, closure MUST require explicit operator
+intent and a usable measurement from that owner while open. A rejected
+early close MUST leave the correction open. Reset MUST clear priming.
+Input may already be publishing when the RTC joins the stream.
+
 Failure or loss of any required endpoint, Link, manager or owner MUST revoke
 admission and fault the session. Restart MUST use a fresh session incarnation,
 revalidate the dependent set and MUST NOT replay operator mutations. Shutdown

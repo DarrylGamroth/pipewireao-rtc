@@ -48,7 +48,11 @@ const GraphOwner = PipeWireAORTC.GraphOwner
 end
 
 module GraphOwnerPipeWire
-parse_arguments(args) = (; args)
+parse_arguments(args) = (;
+    args, capture_backend = nothing,
+    execution = "--row-block-test" in args ? "row-block" : "complete-frame",
+    row_workers = 0,
+)
 end
 
 @testset "native graph bootstrap arguments and cold load order" begin
@@ -99,6 +103,14 @@ end
     @test with_loop[4] == ["controller:closed"]
     @test with_loop[5] == 5000
     @test with_loop[2] == graph
+    priming = ["--prime-on-output", "modal-residual"]
+    @test_throws ArgumentError GraphOwner.arguments([argv; priming])
+    open_loop = [argv; "--correction-property"; "controller:closed"]
+    selected = GraphOwner.arguments([open_loop; priming])
+    @test first(selected).prime_on_output === Symbol("modal-residual")
+    @test selected[2] == graph && last(selected) === nothing
+    @test_throws ArgumentError GraphOwner.arguments([open_loop; priming; priming])
+    @test_throws ArgumentError GraphOwner.arguments([open_loop; "--prime-on-output=slash/port"])
     recovery = GraphOwner.arguments(
         [
             argv;
@@ -218,6 +230,10 @@ end
     @test GraphOwner.arguments(qualified)[9] == (; path = "/missing-test-data", at_install = true)
     @test_throws ArgumentError GraphOwner.arguments([qualified; "--qualify-at-install"])
     @test_throws ArgumentError GraphOwner.arguments([without_fits; "--qualify-at-install=true"])
+    @test_throws ArgumentError GraphOwner._main(
+        [qualified; "--row-block-test"];
+        with_owner = fake_owner, load_science = () -> GraphOwnerPipeWire,
+    )
     @test GraphOwner._main(
         qualified;
         with_owner = fake_owner,
@@ -428,6 +444,41 @@ end
             @test_throws ArgumentError GraphOwner.prepare_bindings(
                 [entry], (; values = (; element_type = T, shape = (2,)))
             )
+        end
+    end
+end
+
+@testset "installation runs the declared graph test on a cached workload" begin
+    startup = PipeWireAORTC.GraphStartup
+    mktempdir() do package
+        workload = joinpath(package, startup.DIRECTORY, "controller")
+        source = joinpath(workload, "ExportedGraphWarmup", "src")
+        mkpath(source)
+        observation = joinpath(package, "observed-calibration")
+        calibration = joinpath(package, "calibration")
+        write(joinpath(source, "ExportedGraphWarmup.jl"), """
+            module ExportedGraphWarmup
+            function qualify(args)
+                args == ["--graph", "controller.conf", "--qualify-at-install"] ||
+                    throw(ArgumentError("unexpected qualification arguments"))
+                write($(repr(observation)), read($(repr(calibration))))
+            end
+            end
+            """)
+        julia = Base.julia_cmd().exec[1]
+        owner = Dict("role" => "controller", "argv" => [julia, "-e", startup.ENTRY, "--"])
+        push!(owner["argv"], "--graph", "controller.conf")
+        startup.precompile!(julia, package, package, [owner])
+        @test !isfile(observation)
+        push!(owner["argv"], "--qualify-at-install")
+        for revision in ("first", "replacement")
+            write(calibration, revision)
+            startup.precompile!(julia, package, package, [owner])
+            @test read(observation, String) == revision
+        end
+        owner["argv"][end] = "--qualify-at-install=true"
+        redirect_stderr(devnull) do
+            @test_throws ProcessFailedException startup.precompile!(julia, package, package, [owner])
         end
     end
 end

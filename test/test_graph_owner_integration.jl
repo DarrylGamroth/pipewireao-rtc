@@ -21,6 +21,81 @@ using FilterGraphAlgorithms
     keys(Base.loaded_modules),
 )
 
+@testset "Correction priming observes accepted open-loop acquisitions" begin
+    extension = Base.get_extension(PipeWireAORTC, :PipeWireAORTCGraphExt)
+    graph = mktemp() do path, io
+        write(io, """
+filter.graph = {
+    nodes = [ { name=correction type=ndarray label=leaky-integrator-f32
+        config={ extent=2 initial_state=0 input_schema=test/cal2-residual/1
+            output_schema=test/cal2-command/1 }
+        props={ gain=-0.05 pole=1 closed=false } } ]
+    links=[]
+    inputs=[ { name=residual endpoint="correction:input" } ]
+    outputs=[ { name=offset endpoint="correction:output" } ]
+}
+""")
+        flush(io)
+        FilterGraphs.prepare_graph(path; algorithms = FilterGraphAlgorithms.algorithms())
+    end
+    try
+        options = (;
+            prime_on_output = :offset, session_run_control = true,
+            capture_backend = nothing, execution = "complete-frame",
+            correction_properties = ["correction:closed"],
+        )
+        observer = extension.prepare_priming(options, graph)
+        @test !observer.ready[]
+        @test_throws ArgumentError extension.prepare_priming(
+            merge(options, (; prime_on_output = :absent)), graph,
+        )
+        @test_throws ArgumentError extension.prepare_priming(
+            merge(options, (; local_output = (; port = :offset))), graph,
+        )
+        domain = ntuple(index -> UInt8(index), 16)
+        identity = FilterGraphAlgorithms.SampleAcquisitionIdentity(domain, 1, 1)
+        sample = FilterGraphAlgorithms.SampleMetadata(
+            1; exposure_duration_nanoseconds = 2_000_000, acquisition_identity = identity,
+        )
+        observe(sample, offset = zeros(Float32, 2); present = true) =
+            observer(Val(:frame), (; offset), (;
+                offset = FilterGraphAlgorithms.AdmittedSampleMetadata(present, sample),
+            ))
+        observe(sample; present = false)
+        @test !observer.ready[]
+        observe(sample, Float32[NaN, 0])
+        @test !observer.ready[]
+        observe(sample)
+        @test observer.ready[]
+        native_storage = zeros(Float32, 2)
+        metadata = (; offset = FilterGraphAlgorithms.AdmittedSampleMetadata(true, sample))
+        check_allocations(observer, storage, metadata) = GC.@preserve storage begin
+            offset = FilterGraphPipeWire.RowMajorBorrowedArray{Float32,1,false}(
+                pointer(storage), size(storage), length(storage),
+            )
+            observer(Val(:frame), (; offset), metadata)
+            return @allocated observer(Val(:frame), (; offset), metadata)
+        end
+        @test check_allocations(observer, native_storage, metadata) == 0
+        observe(FilterGraphAlgorithms.SampleMetadata(sample; corrupted = true))
+        @test !observer.ready[]
+        observe(sample)
+        observer(Val(:invalidated))
+        @test !observer.ready[]
+        observe(sample)
+        observer(Val(:reset))
+        @test !observer.ready[]
+        observe(sample)
+        FilterGraphs.replace_properties!(graph, "correction:closed" => true)
+        observe(sample)
+        @test !observer.ready[]
+        @test check_allocations(observer, native_storage, metadata) == 0
+        @test_throws ArgumentError extension.prepare_priming(options, graph)
+    finally
+        FilterGraphPipeWire.close_execution(graph)
+    end
+end
+
 @testset "FITS graph initial parameters adopt before node publication" begin
     mktempdir() do directory
         background = reshape(Float32.(1:48), 8, 6)

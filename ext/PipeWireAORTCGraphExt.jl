@@ -13,6 +13,7 @@ const Bootstrap = PipeWireAORTC.OwnerBootstrapRuntime
 
 include("analysis.jl")
 include("correction_supervision.jl")
+include("correction_priming.jl")
 include("latest_output.jl")
 
 function PipeWireAORTC.InstrumentConfiguration.controlled_actuators(
@@ -252,7 +253,8 @@ function graph_node(options, graph, instance)
             timeout_ms = options.correction_timeout_ms,
         )
     supervision = prepare_supervision(options, instance, graph)
-    observation = correction_observation(observer, supervision)
+    priming = prepare_priming(options, graph)
+    observation = correction_observation(observer, priming === nothing ? supervision : priming)
     offsets_path = get(options, :physical_offsets, nothing)
     offsets_path === nothing ||
         (
@@ -332,21 +334,13 @@ function warm_graph!(node, graph, options)
 end
 
 function Owner.precompile_graph_warmup(args)
-    _, graph_args, fits, properties, timeout, recovery, supervision, offsets, qualification, local_output =
+    binding, graph_args, fits, properties, timeout, recovery, supervision, offsets, qualification, local_output =
         Owner.arguments(args)
     options = Owner.graph_options(
         FilterGraphPipeWire, graph_args, properties, timeout, recovery, supervision, offsets, qualification,
-        local_output; offline = true,
+        local_output; offline = true, prime_on_output = get(binding, :prime_on_output, nothing),
     )
-    # Offline construction is limited to complete-frame CPU owners without
-    # optional physical offset transport or progressive worker placement.
-    if !(options.capture_backend === nothing && options.execution == "complete-frame" &&
-         options.row_workers == 0 && offsets === nothing)
-        qualification.at_install && throw(ArgumentError(
-            "install qualification requires a complete-frame CPU graph without row workers or an offset receiver",
-        ))
-        return nothing
-    end
+    Owner.supports_offline_qualification(options) || return nothing
     entries = fits === nothing ? Owner.FITSBinding[] : Owner.bindings(fits)
     declarations = FilterGraphPipeWire.algorithm_declarations(;
         packages = options.packages, algorithms = options.algorithms, builtins = options.builtins,

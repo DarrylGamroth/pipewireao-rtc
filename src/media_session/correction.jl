@@ -5,7 +5,7 @@ function correction_status_field(name::AbstractString)
     startswith(name, CORRECTION_PREFIX) || return false
     suffix = chopprefix(name, CORRECTION_PREFIX)
     suffix in ("version", "owner-instance") ||
-        occursin(r"^[^:]+:[^:]+\.(state|fault|requested)$", suffix)
+        occursin(r"^[^:]+:[^:]+\.(state|fault|requested|primed)$", suffix)
 end
 required_value(values, name) = get(values, name) do
     throw(ArgumentError("missing correction status: $name"))
@@ -270,7 +270,7 @@ function check_correction!(
         key = CORRECTION_PREFIX * property
         if any(
             field -> haskey(values, key * field) || haskey(declarations, key * field),
-            (".state", ".fault", ".requested"),
+            (".state", ".fault", ".requested", ".primed"),
         )
             version !== nothing ||
                 throw(ArgumentError("correction-control version missing"))
@@ -280,11 +280,19 @@ function check_correction!(
                 throw(ArgumentError("correction state is not ready"))
             isempty(correction_text(values, key * ".fault")) ||
                 throw(ArgumentError("correction fault is latched"))
-            policy_bool(update)
+            desired = policy_bool(update)
             active = correction_bool(values, property)
             correction_bool(values, key * ".requested") == active &&
             (current == "Closed") == active ||
                 throw(ArgumentError("inconsistent correction state"))
+            primed = key * ".primed"
+            if desired && !active && (haskey(declarations, primed) || haskey(values, primed))
+                info = get(declarations, primed, nothing)
+                info !== nothing && !info.writable && info.kind == PolicySPA.POD_BOOL &&
+                    correction_text(values, "pipewireao.frame-observer.state") == "active" &&
+                    correction_bool(values, primed) ||
+                    throw(ArgumentError("correction closure requires a valid live open-loop measurement"))
+            end
             matched = match(r"^([^:]+):.+$", property)
             matched !== nothing || throw(ArgumentError("invalid correction property"))
             algorithm = matched.captures[1]
