@@ -147,3 +147,7 @@ The [figure generator](startup-figure-source.tar.gz) reads the two evidence
 archives in this directory. To regenerate both PNGs and the event trace, run
 `python3 figures.py /path/to/independent-source-20261123` with Matplotlib
 3.11.2 and NumPy installed.
+
+The [subsequent CAL2 restart trial](../cal2-live-prime-20261123/README.md)
+moves the synthetic graph checks to installation and measures the first live
+open-loop residual and first closed-loop correction.

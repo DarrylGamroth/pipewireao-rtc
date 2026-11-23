@@ -12,6 +12,16 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### CAL2 first measurement and loop closure — 2026-11-23
+
+The development RTC supports testing both installed CAL2 graph owners at
+installation. At runtime the controllers start open. LLOWFS qualifies for
+closure on its first usable live measurement and SCC on its first usable
+chopped pair. The RTC verifies that the current owner has primed before
+accepting its close command. The [validation record](validation/cal2-live-prime-20261123/README.md)
+compares startup, live frames, callback latency and the signed first correction.
+Deploying the updated instrument profile requires a matching RTC release.
+
 ### GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
 The published RTC 0.7.29 exporter derives the live display from the operator view.

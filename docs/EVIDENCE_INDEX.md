@@ -1,5 +1,12 @@
 # Delivery evidence catalog
 
+## CAL2 live open-loop priming — 2026-11-23 Pacific
+
+The [installed restart comparison](validation/cal2-live-prime-20261123/README.md)
+separates RTC readiness, arrival of the first usable live exposure or SCC pair,
+and execution of the controller callback. It also checks the projected first
+correction against each installed calibration after native loop closure.
+
 ## GPI2 optional mean-pupil-intensity display — 2026-11-23 UTC
 
 The [qualification record](validation/gpi2-mean-pupil-intensity-20261122/README.md)
