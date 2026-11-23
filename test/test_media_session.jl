@@ -707,7 +707,7 @@ end
     @test m.effect.effect === S.Disconnect()
     @test m.fault_unknown
 end
-end
+
 @testset "Quit from HeldFault reports the first graph that failed to hold" begin
     m = running()
     S.required_lost!(m, "required graph Link removed")
@@ -723,7 +723,9 @@ end
     runtime = (;
         machine = m, graphs, declared_links = (), objects = Dict{UInt32,S.Object}(),
         configuration = Dict("node.pids" => Dict("left" => 151, "right" => 152)),
-        captured = Dict(UInt32(41) => (; serial = UInt64(101)), UInt32(42) => (; serial = UInt64(102))),
+        captured = Dict(
+            UInt32(41) => (; serial = UInt64(101)), UInt32(42) => (; serial = UInt64(102))
+        ),
     )
     err = try
         S.perform!(runtime, S.Job(ticket, false), ticket.effect)
@@ -737,6 +739,9 @@ end
     @test [attempt.target.name for attempt in attempts] == ["left", "right"]
     @test [attempt.target.serial for attempt in attempts] == [101, 102]
     @test all(attempt -> !attempt.submitted && !attempt.acknowledged, attempts)
-    @test occursin("for graph left (id=41, serial=101, pid=151", S.quit_failure_message(m.quit_failure))
+    @test occursin(
+        "for graph left (id=41, serial=101, pid=151", S.quit_failure_message(m.quit_failure)
+    )
     @test m.failure == "required graph Link removed"
+end
 end
