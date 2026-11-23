@@ -16,7 +16,8 @@ Two CAL2 RTCs attached to the same running simulator in 104.0 s and 58.3 s.
 Both cameras advanced between activations. A final observation timed out
 after the second RTC exited. The [startup study](validation/independent-source-20261123/startup.md)
 compares scheduler wait and process CPU across two more ordinary launches
-and bounds READY acknowledgement in a native HEART fixture.
+and bounds READY acknowledgement in a native HEART fixture. The [CAL2 timeline](validation/independent-source-20261123/phases.md)
+defines each phase and the controller checks performed before live input.
 
 Two sealed CAL2 activations reached Ready in 419.839 s and 89.696 s. See
 the [optical comparison](validation/cal2-fixed-pupil-20261122/README.md) and

@@ -37,6 +37,7 @@ On the shared host, two further ordinary RTC starts against one live CAL2
 source took 190.9 and 37.8 s. Scheduler counters account for about 150 s of
 the 153 s spread in the preparation and RTC leaders. Both used about 10 s
 of RTC leader CPU through Ready. [Startup attribution and HEART reference](validation/independent-source-20261123/startup.md)
+· [Measured timeline and phase definitions](validation/independent-source-20261123/phases.md)
 
 The fixed-pupil CAL2 candidate reached service Ready in 89.7 s, compared
 with 419.8 s for the paired ordinary activation. The [optical verification

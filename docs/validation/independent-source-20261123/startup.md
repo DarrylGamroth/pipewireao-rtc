@@ -1,5 +1,8 @@
 # CAL2 startup with both cameras already publishing
 
+The [timing diagram and phase definitions](phases.md) show how service startup,
+controller preparation and numerical warmup overlap.
+
 The [installed CAL2 restart](README.md#cal2-rtc-replacement-with-the-simulator-already-publishing)
 reached Ready in 58.287 s on its second activation. The individual graph
 journals put the following events on the same monotonic clock as the
