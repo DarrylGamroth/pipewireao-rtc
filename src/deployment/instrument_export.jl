@@ -53,6 +53,7 @@ const PROFILE_FIELDS = Set([
     "simulation",
     "application",
     "mode",
+    "omit-views",
     "devices",
     "calibration",
     "scheduling",
@@ -554,6 +555,12 @@ function prepare(
     authoring = merge_configuration(authoring, mode["application"])
     runtime_authoring = application_defaults!(deepcopy(authoring))
     pop!(authoring, "runtime-configurations", nothing)
+    latest_outputs = InstrumentConfiguration._declaration_object(
+        pop!(authoring, "latest-outputs", Dict()), "latest-outputs"
+    )
+    if !isempty(latest_outputs) && manifest !== nothing
+        validate_latest_output_manifest(checked_path(manifest))
+    end
     graph_configurations = pop!(authoring, "graph-configurations", [])
     configurations = pop!(authoring, "configuration-files", [])
     configuration = pop!(authoring, "configuration", nothing)
@@ -663,6 +670,7 @@ function prepare(
             calibration = rtc.calibration,
             configurations,
             queue_inputs,
+            latest_outputs,
         )
         haskey(spec, "session-runtime") && ScienceExport.stage_rtc!(application)
         GraphStartup.stage!(application, spec["owners"])

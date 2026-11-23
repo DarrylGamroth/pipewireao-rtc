@@ -227,6 +227,98 @@ function validate_session_graph_contracts(session, contracts)
     return nothing
 end
 
+# A declared view controls publication of its optional graph output. The
+# scientific graph keeps the output for offline uses, independent of export.
+function prepare_latest_outputs!(spec, application, declarations, files, graphs, prefix)
+    isempty(declarations) && return nothing
+    session = first(files).document
+    core = files[2].document
+    views = [
+        view for file in files[3:end] if file.format == "yaml" && file.document isa AbstractDict &&
+        get(file.document, "schema_version", nothing) == 11
+        for view in get(file.document, "view", ())
+    ]
+    published_nodes = Set(keys(spec["node-owners"]))
+    entries = Dict(owner["role"] => owner for owner in spec["owners"])
+    for (role, declaration) in declarations
+        fields = ("output", "view", "publisher", "queue")
+        InstrumentConfiguration.fields(declaration, fields, fields, "latest output")
+        output = InstrumentConfiguration._declaration_text(
+            declaration["output"], "latest output"
+        )
+        view_id = InstrumentConfiguration._declaration_text(
+            declaration["view"], "latest output view"
+        )
+        publisher = InstrumentConfiguration._declaration_text(
+            declaration["publisher"], "latest output publisher Node"
+        )
+        queue = InstrumentConfiguration._declaration_text(
+            declaration["queue"], "latest output queue"
+        )
+        owner = get(entries, role, nothing)
+        owner !== nothing || throw(ArgumentError("latest output $output has an unknown owner"))
+        arguments = GraphStartup.owner_arguments(owner)
+        arguments !== nothing ||
+            throw(ArgumentError("latest output $output requires a graph owner"))
+        flags = ("--latest-output", "--latest-output-sink", "--unpublished-output")
+        any(arg -> arg in flags, arguments) &&
+            throw(ArgumentError("the exporter selects publication for latest output $output"))
+        index = findfirst(==("--graph"), arguments)
+        index !== nothing && index < length(arguments) ||
+            throw(ArgumentError("latest output $output requires a prepared graph"))
+        path = D.substitute(arguments[index+1], Dict("PACKAGE" => application))
+        graph = D.decode(D.relative_asset(application, relpath(path, application)), prefix)
+        name = graph["node.name"]
+        contract = get(get(get(graphs, name, Dict()), "outputs", Dict()), output, nothing)
+        contract !== nothing && contract["shape"] == [1] &&
+            contract["element-type"] == "F32_LE" ||
+            throw(ArgumentError("latest output $output must be a prepared Float32 scalar"))
+        admitted = only(entry for entry in session["graphs"] if entry["node.name"] == name)
+        get(spec["node-owners"], name, nothing) == role &&
+            all(port -> port["name"] != output, admitted["ports"]) ||
+            throw(ArgumentError("latest output $output cannot be a required session Port"))
+        matching = filter(view -> get(view, "id", nothing) == view_id, views)
+        if isempty(matching)
+            append!(owner["argv"], ["--unpublished-output", output])
+            continue
+        end
+        view = only(matching)
+        source = get(view, "source", Dict())
+        node, media = get(source, "node_name", nothing), get(source, "media_name", nothing)
+        InstrumentDefinition.nonempty_text(node) && InstrumentDefinition.nonempty_text(media) &&
+            get(view, "expected_schema", nothing) == contract["schema"] ||
+            throw(ArgumentError("latest output $output requires a matching source view"))
+        input = latest_output_queue!(core, queue, node, media)
+        nodes = (publisher, input.node, node)
+        allunique(nodes) && all(name -> name ∉ published_nodes, nodes) ||
+            throw(ArgumentError("latest output $output requires distinct PipeWire Nodes"))
+        union!(published_nodes, nodes)
+        append!(
+            owner["argv"],
+            ["--latest-output", output, publisher, media,
+                "--latest-output-sink", input.node, input.port],
+        )
+    end
+    validate_telemetry_groups(core)
+    return nothing
+end
+
+function validate_latest_output_manifest(path)
+    dependencies = get(TOML.parsefile(path), "deps", Dict())
+    minimum_versions = (("PipeWireAORTC", v"0.7.29"), ("FilterGraphPipeWire", v"0.5.11"))
+    for (package, minimum) in minimum_versions
+        entries = get(dependencies, package, [])
+        version = length(entries) == 1 ?
+                  tryparse(VersionNumber, get(only(entries), "version", "")) : nothing
+        version !== nothing && version >= minimum || throw(
+            ArgumentError(
+                "latest-outputs requires $package $minimum or newer in the application Manifest"
+            ),
+        )
+    end
+    return nothing
+end
+
 """
     prepare_session_configuration!(application, spec, declarations, instrumentpath, prefix; kwargs...)
 
@@ -243,6 +335,7 @@ function prepare_session_configuration!(
     calibration::AbstractDict = Dict(),
     configurations = [],
     queue_inputs = D.PortAddress[],
+    latest_outputs = Dict(),
 )
     files = [map(("session", "core")) do field
         path = D.relative_asset(application, spec[field])
@@ -274,7 +367,7 @@ function prepare_session_configuration!(
         isfile(simulation_path) ? D.decode(simulation_path, prefix) : Dict()
     owners = get(spec, "node-owners", nothing)
     session_header = "Generated by PipeWireAORTC from application configuration; edit the YAML source and rebuild."
-    if isempty(roots) && !pupil_output && isempty(declarations)
+    if isempty(roots) && !pupil_output && isempty(declarations) && isempty(latest_outputs)
         session = first(files).document
         links = D.session_links(session)
         added_sinks = queue_sinks!(session, queue_inputs, links, owners)
@@ -368,6 +461,9 @@ function prepare_session_configuration!(
         (; entry.path, entry.format, document)
     end
     session = first(prepared).document
+    prepare_latest_outputs!(
+        spec, application, latest_outputs, prepared, get(context, "graphs", Dict()), prefix
+    )
     links = D.session_links(session)
     queue_sinks!(session, queue_inputs, links, owners)
     queue_metadata_profiles!(

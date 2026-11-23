@@ -152,6 +152,32 @@ function queue_templates!(core; metadata_defaults = true)
     return queue_inputs
 end
 
+# The publisher owns this queue's optional input Link. Do not return its
+# capture address to the session's required queue-sink compiler.
+function latest_output_queue!(core, name, node, media)
+    modules = core["context.modules"]
+    any(module_ -> get(get(module_, "args", Dict()), "node.name", nothing) == name, modules) &&
+        throw(ArgumentError("duplicate latest output queue $name"))
+    optional = Dict("context.modules" => [
+        Dict(
+            "template" => "telemetry",
+            "args" => Dict(
+                "node.name" => name,
+                "capture.props" => Dict(
+                    "node.loop.name" => "telemetry-loop",
+                    "node.group" => "pipewireao-telemetry",
+                ),
+                "playback.props" => Dict("node.name" => node, "media.name" => media),
+            ),
+        ),
+    ])
+    input = only(queue_templates!(optional; metadata_defaults = false))
+    telemetry_queues!(optional; metadata_defaults = false)
+    only(optional["context.modules"])["flags"] = ["nofail"]
+    append!(modules, optional["context.modules"])
+    return input
+end
+
 # Resolve only template sinks omitted from the session. The queue copies the
 # linked producer's ndarray representation and does not convert its format.
 function queue_sinks!(session, queue_inputs, links, owners)
