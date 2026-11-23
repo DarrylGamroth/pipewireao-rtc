@@ -21,6 +21,37 @@ end
     @test_throws UndefKeywordError SessionInstall.installed_launcher("/sdk/bin/julia")
 end
 
+@testset "installed startup commands select -O0" begin
+    mktempdir() do directory
+        julia = joinpath(mkpath(joinpath(directory, "sdk path")), "julia")
+        write(julia, raw"""
+            #!/bin/sh
+            IFS= read -r ready || exit 1
+            printf '%s\n' "$$" "$0" "$PIPEWIREAO_RTC_EXPORT_COMMIT" "$@"
+            """)
+        chmod(julia, 0o755)
+        environment = joinpath(directory, "app path's project")
+        commit = "0"^40
+        launcher = joinpath(directory, "client launcher")
+        write(launcher, SessionInstall.installed_launcher(julia; environment, commit))
+        chmod(launcher, 0o755)
+
+        julia_args = ["--startup-file=no", "--project=$environment"]
+        entry = "Base.exit_on_sigint(false); using PipeWireAORTC; exit(PipeWireAORTC.SessionCLI.main(ARGS))"
+        for command in ("prepare", "publish", "stop", "cleanup", "control", "restart", "sessions", "")
+            args = isempty(command) ? String[] : [command, "--runtime-root", "path with spaces", ""]
+            optimization = command in ("prepare", "publish") ? ["-O0"] : String[]
+            open(`$launcher $args`, "r+") do process
+                pid = getpid(process)
+                println(process, "ready")
+                flush(process)
+                @test readlines(process) ==
+                    [string(pid), julia, commit, julia_args..., optimization..., "-e", entry, "--", args...]
+            end
+        end
+    end
+end
+
 @testset "exact installed graceful stop hook" begin
     request = SessionLaunch.Request(
         "/sdk",

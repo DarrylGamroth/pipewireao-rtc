@@ -24,6 +24,13 @@ includes source rejections and the variation between runs.
 The [installation record](validation/hil-installed-startup-20261122/README.md)
 covers the HIL changes for the optical cache and synchronous command receiver.
 
+Newly installed session launchers select `-O0` for the one-shot `prepare` and
+`publish` commands. On the same sealed GPI2 CPU installation, ordinary runs
+reached Ready in 61.8 s and 63.1 s, and the `-O0` run reached Ready in 55.7 s.
+Each trial also passed Start, live frame observation, Stop and native Quit.
+Installer checks retain the exact byte format of explicitly sealed launchers
+with the same executable, project and export commit.
+
 ### Native object tracking and NDArray offers — 2026-11-22 UTC
 
 The [clean install of RTC 0.7.28](EVIDENCE_INDEX.md#pipewireaortc-0728-clean-install--2026-11-22)

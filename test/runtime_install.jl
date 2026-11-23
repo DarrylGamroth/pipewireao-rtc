@@ -251,6 +251,38 @@ end
         )
         @test file_hashes(relocated) == installed
         @test file_hashes(source) == before
+        # Sealed launchers must match the pinned installer arguments and one
+        # of the exact generated scripts, including the historical form.
+        sealed_source = joinpath(directory, "export with sealed launcher")
+        cp(source, sealed_source)
+        sealed_launcher = joinpath(sealed_source, "bin", "pipewireao-rtc-session")
+        mkpath(dirname(sealed_launcher))
+        julia_executable = Base.julia_cmd().exec[1]
+        for legacy in (true, false)
+            sealed_destination = joinpath(
+                directory, legacy ? "preserved launcher" : "sealed startup launcher"
+            )
+            script = P.SessionInstall.installed_launcher(
+                julia_executable; environment = sealed_destination, legacy
+            )
+            write(sealed_launcher, script)
+            P.InstrumentExport.seal!(sealed_source)
+            @test P.SessionInstall.install((;
+                package = sealed_source, destination = sealed_destination,
+                pipewire_prefix = prefix, julia_executable
+            )) == sealed_destination
+            @test read(joinpath(sealed_destination, "bin/pipewireao-rtc-session"), String) == script
+        end
+        sealed_destination = joinpath(directory, "tampered launcher")
+        script = P.SessionInstall.installed_launcher(julia_executable; environment = sealed_destination)
+        write(sealed_launcher, replace(script, "-O0" => "-O1"))
+        P.InstrumentExport.seal!(sealed_source)
+        @test_throws "sealed session launcher differs from the selected Julia executable" begin
+            P.SessionInstall.install((;
+                package = sealed_source, destination = sealed_destination,
+                pipewire_prefix = prefix, julia_executable
+            ))
+        end
         # The software environment relocates; the generated systemd unit retains
         # installation-specific absolute paths and must be regenerated to use it.
         unit = read(joinpath(relocated, "systemd/pipewireao-session@.service"), String)
