@@ -35,7 +35,11 @@
 - AdaptiveOpticsSimPipeWireHIL owns simulator execution and startup settings.
   RTC retains cold export, calibration assets and native source-control and
   bootstrap contracts for independent providers. HEART remains an external
-  owner. Follow the [offset calibration contract](docs/operations.md#rtc-dev-027--simulation-derived-calibration-offsets)
+  owner. For an already-publishing input, use the
+  [independent service binding](docs/HIL_CONFIGURATION.md#attach-an-rtc-to-an-already-publishing-source).
+  Verify live endpoints and placement on each RTC activation. The provider owns
+  its process, publication and model clock across RTC restarts. Follow the
+  [offset calibration contract](docs/operations.md#rtc-dev-027--simulation-derived-calibration-offsets)
   for simulated and declared hybrid inputs.
 - RTC owns calibration projections, native live acquisition and its clients,
   preparation evidence, bundle validation and export. Shared instrument tools

@@ -1,0 +1,490 @@
+[
+  {
+    "unit": "pipewireao-session@d6ac6fb83744.service",
+    "service_to_ready_s": 419.82851,
+    "owner_exec_s": {
+      "cal2-llowfs": 10.410543,
+      "cal2-scc": 10.420543,
+      "core": 8.390543,
+      "simulator": 10.420543,
+      "rtc": 14.650543
+    },
+    "intervals_s": {
+      "Loading optical startup image to Loading simulation packages": 0.000604,
+      "Loading simulation packages to Simulation packages loaded": 0.0,
+      "Preparing optical model to Optical model prepared": 1.558534,
+      "Warming up optical execution to Optical execution warmed up": 382.701646,
+      "Preparing optical transport to Optical transport prepared": 0.232078,
+      "Waiting for RTC control endpoint to Waiting for owner preparation and RTC warmup": 2.60814,
+      "Waiting for owner preparation and RTC warmup to RTC warmup completed": 384.688055,
+      "RTC warmup completed to Service Ready": 2.565579
+    },
+    "startup_log": [
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "pipewireao.rtc.bootstrap.cal2-scc",
+        "phase": "load FilterGraphPipeWire",
+        "at_s": 14.971349
+      },
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "pipewireao.rtc.bootstrap.cal2-scc",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 7.4139e-05,
+        "compile_seconds": 0.0,
+        "at_s": 15.001041
+      },
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-scc-controller",
+        "phase": "prepare graph",
+        "at_s": 16.058815
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "pipewireao.rtc.bootstrap.cal2-llowfs",
+        "phase": "load FilterGraphPipeWire",
+        "at_s": 16.554863
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "pipewireao.rtc.bootstrap.cal2-llowfs",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 0.000107662,
+        "compile_seconds": 0.0,
+        "at_s": 16.602678
+      },
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-scc-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.741112255,
+        "compile_seconds": 0.637515116,
+        "at_s": 16.800093
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Loading optical startup image",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "at_s": 17.394374
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Loading simulation packages",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "at_s": 17.394978
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Simulation packages loaded",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 4.25e-05,
+        "compile_seconds": 0.0,
+        "at_s": 17.394978
+      },
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-scc-controller",
+        "phase": "warm up graph",
+        "at_s": 17.92616
+      },
+      {
+        "pid": 256508,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-scc-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.003041537,
+        "compile_seconds": 0.0,
+        "at_s": 17.929387
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-llowfs-controller",
+        "phase": "prepare graph",
+        "at_s": 18.085351
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-llowfs-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.899761841,
+        "compile_seconds": 0.808378297,
+        "at_s": 18.985294
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-llowfs-controller",
+        "phase": "warm up graph",
+        "at_s": 20.289458
+      },
+      {
+        "pid": 256507,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-llowfs-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.000748101,
+        "compile_seconds": 0.0,
+        "at_s": 20.290273
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Preparing optical model",
+        "owner": "cal2-source",
+        "backend": ":cpu",
+        "at_s": 22.514143
+      },
+      {
+        "pid": 256622,
+        "command": "pipewireao-rtc",
+        "message": "Startup phase started",
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "at_s": 23.179951
+      },
+      {
+        "pid": 256622,
+        "command": "pipewireao-rtc",
+        "message": "Startup phase completed",
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.000527178,
+        "compile_seconds": 0.0,
+        "at_s": 23.332283
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Optical model prepared",
+        "owner": "cal2-source",
+        "wall_seconds": 1.558335894,
+        "compile_seconds": 0.068049108,
+        "at_s": 24.072677
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Warming up optical execution",
+        "owner": "cal2-source",
+        "at_s": 24.073347
+      },
+      {
+        "pid": 256623,
+        "command": "pipewireao-rtc-session",
+        "message": "Waiting for RTC control endpoint",
+        "unit": "pipewireao-session@d6ac6fb83744.service",
+        "at_s": 29.966736
+      },
+      {
+        "pid": 256623,
+        "command": "pipewireao-rtc-session",
+        "message": "Waiting for owner preparation and RTC warmup",
+        "unit": "pipewireao-session@d6ac6fb83744.service",
+        "at_s": 32.574876
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Optical execution warmed up",
+        "owner": "cal2-source",
+        "wall_seconds": 382.701515348,
+        "compile_seconds": 3.521808518,
+        "at_s": 406.774993
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Preparing optical transport",
+        "owner": "cal2-source",
+        "at_s": 412.697526
+      },
+      {
+        "pid": 256509,
+        "command": "julia",
+        "message": "Optical transport prepared",
+        "owner": "cal2-source",
+        "wall_seconds": 0.231934202,
+        "compile_seconds": 0.375156665,
+        "at_s": 412.929604
+      },
+      {
+        "pid": 256623,
+        "command": "pipewireao-rtc-session",
+        "message": "RTC warmup completed",
+        "unit": "pipewireao-session@d6ac6fb83744.service",
+        "wall_seconds": 387.945337388,
+        "at_s": 417.262931
+      }
+    ]
+  },
+  {
+    "unit": "pipewireao-session@8300ad0c3978.service",
+    "service_to_ready_s": 89.679033,
+    "owner_exec_s": {
+      "cal2-llowfs": 8.73447,
+      "cal2-scc": 8.73447,
+      "core": 7.03447,
+      "simulator": 8.73447,
+      "rtc": 11.91447
+    },
+    "intervals_s": {
+      "Loading optical startup image to Loading simulation packages": 0.001289,
+      "Loading simulation packages to Simulation packages loaded": 0.0,
+      "Preparing optical model to Optical model prepared": 1.207893,
+      "Warming up optical execution to Optical execution warmed up": 44.994142,
+      "Preparing optical transport to Optical transport prepared": 0.371135,
+      "Waiting for RTC control endpoint to Waiting for owner preparation and RTC warmup": 2.284289,
+      "Waiting for owner preparation and RTC warmup to RTC warmup completed": 57.383564,
+      "RTC warmup completed to Service Ready": 4.945467
+    },
+    "startup_log": [
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "pipewireao.rtc.bootstrap.cal2-llowfs",
+        "phase": "load FilterGraphPipeWire",
+        "at_s": 13.337977
+      },
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "pipewireao.rtc.bootstrap.cal2-llowfs",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 7.0051e-05,
+        "compile_seconds": 0.0,
+        "at_s": 13.364506
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "pipewireao.rtc.bootstrap.cal2-scc",
+        "phase": "load FilterGraphPipeWire",
+        "at_s": 13.994519
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "pipewireao.rtc.bootstrap.cal2-scc",
+        "phase": "load FilterGraphPipeWire",
+        "wall_seconds": 8.1112e-05,
+        "compile_seconds": 0.0,
+        "at_s": 14.029733
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Loading optical startup image",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "at_s": 14.118264
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Loading simulation packages",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "at_s": 14.119553
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Simulation packages loaded",
+        "owner": "pipewireao.rtc.bootstrap.simulator",
+        "wall_seconds": 3.6519e-05,
+        "compile_seconds": 0.0,
+        "at_s": 14.119553
+      },
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-llowfs-controller",
+        "phase": "prepare graph",
+        "at_s": 14.472155
+      },
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-llowfs-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.602283543,
+        "compile_seconds": 0.518077951,
+        "at_s": 15.074593
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-scc-controller",
+        "phase": "prepare graph",
+        "at_s": 15.375988
+      },
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-llowfs-controller",
+        "phase": "warm up graph",
+        "at_s": 15.93161
+      },
+      {
+        "pid": 298128,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-llowfs-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.00061451,
+        "compile_seconds": 0.0,
+        "at_s": 15.932352
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-scc-controller",
+        "phase": "prepare graph",
+        "wall_seconds": 0.909146895,
+        "compile_seconds": 0.77584717,
+        "at_s": 16.285376
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase started",
+        "owner": "cal2-scc-controller",
+        "phase": "warm up graph",
+        "at_s": 18.017054
+      },
+      {
+        "pid": 298129,
+        "command": "julia",
+        "message": "Startup phase completed",
+        "owner": "cal2-scc-controller",
+        "phase": "warm up graph",
+        "wall_seconds": 0.002847382,
+        "compile_seconds": 0.0,
+        "at_s": 18.020121
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Preparing optical model",
+        "owner": "cal2-source",
+        "backend": ":cpu",
+        "at_s": 18.574463
+      },
+      {
+        "pid": 298222,
+        "command": "pipewireao-rtc",
+        "message": "Startup phase started",
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "at_s": 19.276439
+      },
+      {
+        "pid": 298222,
+        "command": "pipewireao-rtc",
+        "message": "Startup phase completed",
+        "owner": "RTC",
+        "phase": "prepare control dispatch",
+        "wall_seconds": 0.000500658,
+        "compile_seconds": 0.0,
+        "failure": "ArgumentError: session effect expired; outcome unknown",
+        "cleanup": "ArgumentError: object is not captured",
+        "at_s": 19.395913
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Optical model prepared",
+        "owner": "cal2-source",
+        "wall_seconds": 1.206878901,
+        "compile_seconds": 0.058592579,
+        "at_s": 19.782356
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Warming up optical execution",
+        "owner": "cal2-source",
+        "at_s": 19.783009
+      },
+      {
+        "pid": 298224,
+        "command": "pipewireao-rtc-session",
+        "message": "Waiting for RTC control endpoint",
+        "unit": "pipewireao-session@8300ad0c3978.service",
+        "at_s": 25.065713
+      },
+      {
+        "pid": 298224,
+        "command": "pipewireao-rtc-session",
+        "message": "Waiting for owner preparation and RTC warmup",
+        "unit": "pipewireao-session@8300ad0c3978.service",
+        "at_s": 27.350002
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Optical execution warmed up",
+        "owner": "cal2-source",
+        "wall_seconds": 44.993865228,
+        "compile_seconds": 1.907815181,
+        "at_s": 64.777151
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Preparing optical transport",
+        "owner": "cal2-source",
+        "at_s": 75.938405
+      },
+      {
+        "pid": 298130,
+        "command": "julia",
+        "message": "Optical transport prepared",
+        "owner": "cal2-source",
+        "wall_seconds": 0.370861336,
+        "compile_seconds": 0.611240655,
+        "at_s": 76.30954
+      },
+      {
+        "pid": 298224,
+        "command": "pipewireao-rtc-session",
+        "message": "RTC warmup completed",
+        "unit": "pipewireao-session@8300ad0c3978.service",
+        "wall_seconds": 60.158381124,
+        "at_s": 84.733566
+      }
+    ]
+  }
+]

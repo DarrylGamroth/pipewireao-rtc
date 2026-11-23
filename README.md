@@ -89,12 +89,20 @@ at installation. The installer generates its launcher and exact systemd unit;
 the registered Julia dependency supplies the implementation. Existing sealed
 SDK deployments retain their recorded runtime and require their matching tools.
 
-Pkg manages the registered dependency environment from the exported Project
-and Manifest. The `artifacts` mapping in `deployment.conf` lists application
-runtime inputs. The installer verifies the exported files against the Git
-snapshot when one is configured. Applications without a snapshot use the same
-file, schema and scientific data validation on load. Older guides call this a
-*sealed* export.
+A *sealed application* in the validation reports is a deployment snapshot.
+The export records the instrument configuration, graphs, calibration files
+and runtime inputs. The Julia Manifest pins the package versions and source
+trees. When a Git snapshot is configured, the installer checks the files
+against that exact commit. This lets another installation reproduce the same
+inputs and makes it possible to check exactly what changed between two runs.
+
+A development checkout can run against a separately supervised simulator.
+Restarting the RTC service reuses its installation while the simulator keeps
+publishing. Create a new snapshot to deploy changed inputs or record a
+reproducible instrument test. The previous snapshot remains available for
+comparison or rollback if retained.
+Applications without a Git snapshot still validate files, schemas and
+scientific data on load.
 
 `GraphOwner.main` accepts graph options and `--fits-bindings PATH`. It publishes
 Preparing before loading optional graph packages. Simulation runs in a separate

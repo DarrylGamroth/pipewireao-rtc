@@ -12,6 +12,19 @@ preserve the original dependency sequence and dated increments; their “next”
 Use the [task index](README.md) to read the affected contracts, not the whole
 chronology. Architecture/requirement decisions remain authoritative.
 
+### Simulator lifetime and CAL2 startup — 2026-11-23
+
+Site-supervised core and source services can run across RTC replacement.
+MediaSession admits their live data Ports and the RTC-owned Links. The
+[restart record](validation/independent-source-20261123/README.md) covers
+frame delivery and native identities through process replacement. Managed
+acquisition continues to use its declared hold and release controls.
+
+The fixed-pupil CAL2 candidate reached service Ready in 89.7 s, compared
+with 419.8 s for the paired ordinary activation. The [optical verification
+and phase breakdown](validation/cal2-fixed-pupil-20261122/README.md) separate
+simulator warmup from Julia controller graph preparation.
+
 ### Instrument simulation and controller timing — 2026-11-22 Pacific
 
 The [released-cohort run](validation/rtc-0728-running/README.md) exercises

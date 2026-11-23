@@ -1,5 +1,15 @@
 # Delivery evidence catalog
 
+## Independent source and fixed-pupil CAL2 startup — 2026-11-23 Pacific
+
+An observer and replacement RTC received frames across native and systemd
+restart tests. The [independent source record](validation/independent-source-20261123/README.md)
+records the process boundaries, stream identities and delivery evidence.
+
+Two sealed CAL2 activations reached Ready in 419.839 s and 89.696 s. See
+the [optical comparison](validation/cal2-fixed-pupil-20261122/README.md) and
+[controller graph phase breakdown](validation/cal2-fixed-pupil-20261122/graph-startup.md).
+
 ## GPI2 per-frame CUDA deadline traces and sealed HIL startup — 2026-11-22 Pacific
 
 Four 120,000-slot windows on the released controller compare traces with the

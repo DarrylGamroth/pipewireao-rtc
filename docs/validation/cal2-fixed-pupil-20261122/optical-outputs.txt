@@ -1,0 +1,28 @@
+┌ Info: Preparing optical model
+│   owner = "optical comparison"
+└   backend = :cpu
+┌ Info: Optical model prepared
+│   owner = "optical comparison"
+│   wall_seconds = 1.204656969
+└   compile_seconds = 0.071788583
+(julia = v"1.13.3", fftw_threads = 1, manifest_sha256 = "dbf44bb44e84c7037cbbaf0670399663fb837d999687a5e480a3ce3dd5a3f678")
+(name = :llowfs, pts = 0, sequence = 0x0000000000000001, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 2000000, sequence = 0x0000000000000002, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 4000000, sequence = 0x0000000000000003, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 6000000, sequence = 0x0000000000000004, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 8000000, sequence = 0x0000000000000005, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :scc, pts = 0, sequence = 0x0000000000000001, trigger = ACQUISITION_TRIGGER_HIGH, optical = OPTICAL_FRINGED, sha256 = "0ddeba798bc5ba090125a073c42dbacf6d4d8327eadefb7f8c848c7bd45d519b")
+(name = :llowfs, pts = 10000000, sequence = 0x0000000000000006, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 12000000, sequence = 0x0000000000000007, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 14000000, sequence = 0x0000000000000008, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 16000000, sequence = 0x0000000000000009, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :llowfs, pts = 18000000, sequence = 0x000000000000000a, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "778f4ecd4f517812d0956cdbc00f0efeace311e4c6af9b935ad7af0f404ba490")
+(name = :scc, pts = 10000000, sequence = 0x0000000000000002, trigger = ACQUISITION_TRIGGER_LOW, optical = OPTICAL_UNFRINGED, sha256 = "9906f7bf46ffc92551535e5221c2b0e082e6124d28e5b4a837fdcbec055f2bc5")
+(reference = "ordinary.synthetic", matched = 12, graph_steps = (0x0000000000000001, 0x0000000000000001, 0x0000000000000001))
+(name = :llowfs, pts = 0, sequence = 0x0000000000000001, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "f97a30f1f81abb3d11216fedb96749ae6ce971f90ace1dd47baeb4b0544ca96c")
+(name = :llowfs, pts = 2000000, sequence = 0x0000000000000002, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "24c0c6462937ccdc87dfd2d3d1fc4c4a70727204276cef2353bac1ce07b1e86c")
+(name = :llowfs, pts = 4000000, sequence = 0x0000000000000003, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "5f9bde241b09e813b81aea5b335d8e16747e521580fd91f3fcd10446e3f0c7b5")
+(name = :llowfs, pts = 6000000, sequence = 0x0000000000000004, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "9bcd8e3fcc0865f9e44f6435cc634912556ee51c4a841100a2631ec6d8f92736")
+(name = :llowfs, pts = 8000000, sequence = 0x0000000000000005, trigger = ACQUISITION_TRIGGER_ABSENT, optical = OPTICAL_ABSENT, sha256 = "c6bb3b98e0f4806fc5ce7cf70da6f2ec44ff024cfb254df46c3efb683b73e7a9")
+(name = :scc, pts = 0, sequence = 0x0000000000000001, trigger = ACQUISITION_TRIGGER_HIGH, optical = OPTICAL_FRINGED, sha256 = "7af98b9ffe286089cbac69e76231a4c148271928059158d30b46fe1c36bac943")
+(reference = "ordinary.varying", matched = 6, graph_steps = (0x0000000000000005, 0x0000000000000005, 0x0000000000000000))
